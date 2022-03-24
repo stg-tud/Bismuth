@@ -1,10 +1,10 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.impl
 
-import de.tu_darmstadt.stg.daimpl.causality.impl.Defs.{Id, Time}
-import de.tu_darmstadt.stg.daimpl.causality.DotStore.Dot
-import de.tu_darmstadt.stg.daimpl.causality.LamportClock
-import de.tu_darmstadt.stg.daimpl.lattices.SemiLattice
+import causality.DotStore.Dot
+import causality.LamportClock
+import causality.impl.Defs.{Id, Time}
+import lattices.SemiLattice
 
 object Defs {
   type Id   = String
@@ -41,12 +41,12 @@ case class ArrayCausalContext(internal: Map[Id, ArrayRanges]) {
 
   def intersect(other: ArrayCausalContext): ArrayCausalContext =
     ArrayCausalContext {
-      internal.iterator.filter { case (id, _) => other.internal.contains(id) }.map {
-        case (id, range) =>
-          val otherRange = other.internal(id)
-          val res        = ArrayRanges.from(range.iterator.filter(otherRange.contains))
-          id -> res
-      }.toMap
+      internal.flatMap { case (id, ranges) =>
+        other.internal.get(id) match {
+          case Some(otherRanges) => Some(id -> ArrayRanges.intersect(ranges, otherRanges))
+          case None => None
+        }
+      }
     }
 
   def union(other: ArrayCausalContext): ArrayCausalContext = ArrayCausalContext.contextLattice.merged(this, other)
