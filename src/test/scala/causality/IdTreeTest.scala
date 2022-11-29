@@ -69,4 +69,25 @@ class IdTreeTest extends AnyFlatSpec {
     assert((Branch(1, Branch(1, 0)) + Branch(0, Branch(0, 1))).contains(seed))
   }
 
+  "NormalForm[IdTree]" should "normalize to 1 if Tree is all 1s" in {
+    assert(Leaf(1).normalize == Leaf(1))
+    assert(Branch(1, 1).normalize == Leaf(1))
+    assert(Branch(Branch(1, 1), 1).normalize == Leaf(1))
+    assert(Branch(1, Branch(1, 1)).normalize == Leaf(1))
+    assert(Branch(1, Branch(Branch(1, 1), 1)).normalize == Leaf(1))
+  }
+
+  it should "normalize to 0 if Tree is all 0s" in {
+    assert(Leaf(0).normalize == Leaf(0))
+    assert(Branch(0, 0).normalize == Leaf(0))
+    assert(Branch(Branch(0, 0), 0).normalize == Leaf(0))
+    assert(Branch(0, Branch(0, 0)).normalize == Leaf(0))
+    assert(Branch(0, Branch(Branch(0, 0), 0)).normalize == Leaf(0))
+  }
+
+  it should "normalize nested id tree correctly" in {
+    val id = Branch(Branch(1, 1), Branch(Branch(0, Branch(1, Branch(1, 1))), 0))
+    assert(id.normalize == Branch(1, Branch(Branch(0, 1), 0)))
+  }
+
 }

@@ -43,6 +43,9 @@ object IdTree {
   given NormalForm[IdTree] with
     extension (tree: IdTree)
       def normalize: IdTree = tree match
+        case l@Leaf(_) => l
         case Branch(l@Leaf(i1), Leaf(i2)) if i1 == i2 => l
-        case id@_ => id
+        case Branch(l, r) => (l.normalize, r.normalize) match
+          case (Leaf(lNormVal), Leaf(rNormVal)) if lNormVal == rNormVal => Leaf(lNormVal)
+          case (lNorm, rNorm) => Branch(lNorm, rNorm)
 }
