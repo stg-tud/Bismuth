@@ -17,20 +17,21 @@ enum IdTree:
     case Branch(i1, i2) =>
       (Branch(i1, Leaf(0)), Branch(Leaf(0), i2))
 
-  def +(otherId: IdTree): IdTree = (this, otherId) match
-    case (Leaf(0), otherId) => otherId
-    case (id, Leaf(0)) => id
+  def +(otherId: IdTree): Option[IdTree] = (this, otherId) match
+    case (Leaf(0), otherId) => Some(otherId)
+    case (id, Leaf(0)) => Some(id)
     case (Branch(l1, r1), Branch(l2, r2)) =>
-      val l: IdTree = (l1 + l2).normalize
-      val r: IdTree = (r1 + r2).normalize
-      Branch(l, r)
-// TODO: Maybe handle this differently.
-// The missing cases are invalid, when using + for join
-//case (Leaf(1), _) => Leaf(1)
-//case (_, Leaf(1)) => Leaf(1)
+      for {
+        l <- (l1 + l2).map(_.normalize)
+        r <- (r1 + r2).map(_.normalize)
+      } yield Branch(l, r)
+    // Cannot join two IdTrees that aren't disjoint
+    case (Leaf(1), _) => None
+    case (_, Leaf(1)) => None
 
 object IdTree {
   val seed: IdTree = Leaf(1)
+  val anonymous: IdTree = Leaf(0)
 
   given Conversion[Int, Leaf] = {
     case 0 => Leaf(0)
@@ -44,6 +45,4 @@ object IdTree {
       def normalize: IdTree = tree match
         case Branch(l@Leaf(i1), Leaf(i2)) if i1 == i2 => l
         case id@_ => id
-
-  val anonymous: IdTree = Leaf(0)
 }

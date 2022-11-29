@@ -1,9 +1,9 @@
 package de.tu_darmstadt.stg.daimpl
 package causality
 
-import EventTree.given
-import IdTree.{*, given}
-import IntervalTreeClock.given
+import causality.EventTree.given
+import causality.IdTree.{*, given}
+import causality.IntervalTreeClock.given
 
 import scala.math
 
@@ -31,22 +31,24 @@ object IntervalTreeClock {
         val (id1, id2) = stamp.idTree.split
         (IntervalTreeClock(id1, stamp.eventTree), IntervalTreeClock(id2, stamp.eventTree))
 
-      def join(otherStamp: IntervalTreeClock): IntervalTreeClock =
-        val newId = stamp.idTree + otherStamp.idTree
-        val newEventTree = stamp.eventTree join otherStamp.eventTree
-        IntervalTreeClock(newId, newEventTree)
+      def join(otherStamp: IntervalTreeClock): Option[IntervalTreeClock] =
+        for {
+          newId <- stamp.idTree + otherStamp.idTree
+          newEventTree <- stamp.eventTree join otherStamp.eventTree
+        } yield IntervalTreeClock(newId, newEventTree)
 
       /**
        * Precondition: stamp is not anonymous (i.e., idTree is 0)
        *
        * @return An IntervalTreeClock (i,e') such that e' = e + f * i
        */
-      def event: IntervalTreeClock = {
-        if stamp.idTree == IdTree.anonymous then
-          throw new IllegalArgumentException("Cannot perform events on an anonymous stamp")
-        IntervalTreeClock(
+      def event: Option[IntervalTreeClock] = {
+        if stamp.idTree == IdTree.anonymous then None // Cannot perform events on an anonymous stamp
+        else for {
+          event <- stamp.eventTree.increment(stamp.idTree)
+        } yield IntervalTreeClock(
           stamp.idTree,
-          stamp.eventTree.increment(stamp.idTree)
+          event
         )
       }
 

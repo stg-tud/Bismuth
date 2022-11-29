@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package causality
 
-import EventTree.{Leaf, MAX_DEPTH, given}
+import causality.EventTree.{Leaf, MAX_DEPTH, given}
 import causality.IdTree
 
 import scala.language.implicitConversions
@@ -28,25 +28,26 @@ enum EventTree:
     case Leaf(n) => Leaf(n - m)
     case Branch(n, e1, e2) => Branch(n - m, e1, e2)
 
-  def join(other: EventTree): EventTree = (this, other) match
-    case (Leaf(n1), Leaf(n2)) => Leaf(Math.max(n1, n2))
+  def join(other: EventTree): Option[EventTree] = (this, other) match
+    case (Leaf(n1), Leaf(n2)) => Some(Leaf(Math.max(n1, n2)))
     case (Leaf(n1), rb@Branch(_, _, _)) => Branch(n1, 0, 0) join rb
     case (lb@Branch(_, _, _), Leaf(n2)) => lb join Branch(n2, 0, 0)
     case (lb@Branch(n1, _, _), rb@Branch(n2, _, _)) if n1 > n2 => rb join lb
     case (Branch(n1, l1, r1), Branch(n2, l2, r2)) =>
-      Branch(
-        n1,
-        l1 join (l2 lift (n2 - n1)),
-        r1 join (r2 lift (n2 - n1))
-      ).normalize
+      for {
+        l <- l1 join (l2 lift (n2 - n1))
+        r <- r1 join (r2 lift (n2 - n1))
+      } yield Branch(n1, l, r).normalize
 
-  def increment(id: IdTree): EventTree =
+  def increment(id: IdTree): Option[EventTree] =
+    if (id == IdTree.anonymous) return None
+
     val filledEventTree = fill(id)
 
     if this != filledEventTree then
-      filledEventTree
+      Some(filledEventTree)
     else
-      grow(id)._1
+      Some(grow(id)._1)
 
   private def fill(id: IdTree): EventTree = (id, this) match
     case (IdTree.Leaf(0), e) => e
@@ -91,9 +92,8 @@ enum EventTree:
         (Branch(n, elGrown, er), elGrowCost + 1)
       else
         (Branch(n, el, erGrown), erGrowCost + 1)
-    // The following two cases should never be reached, since should be called before grow
-    //case (IdTree.Leaf(0), EventTree.Branch(_, _, _)) => ???
-    //case (IdTree.Leaf(1), EventTree.Branch(_, _, _)) => ???
+    // The following two case should never be reached. Either fill wasn't called before grow, or the id is anonymous
+    case _ => throw IllegalStateException(f"")
 
 
 object EventTree {
