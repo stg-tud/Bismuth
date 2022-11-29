@@ -22,9 +22,9 @@ enum IdTree:
     case (id, Leaf(0)) => Some(id)
     case (Branch(l1, r1), Branch(l2, r2)) =>
       for {
-        l <- (l1 + l2).map(_.normalize)
-        r <- (r1 + r2).map(_.normalize)
-      } yield Branch(l, r)
+        l <- l1 + l2
+        r <- r1 + r2
+      } yield Branch(l, r).normalize
     // Cannot join two IdTrees that aren't disjoint
     case (Leaf(1), _) => None
     case (_, Leaf(1)) => None
