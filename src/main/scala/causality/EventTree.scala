@@ -1,32 +1,32 @@
 package de.tu_darmstadt.stg.daimpl
 package causality
 
-import causality.EventTree.{Leaf, MAX_DEPTH, given}
+import causality.EventTree.{Branch, Leaf, MAX_DEPTH, given}
 import causality.IdTree
 
+import scala.annotation.targetName
 import scala.language.implicitConversions
 
-enum EventTree:
-  case Leaf(value: Int)
-
-  case Branch(value: Int, left: EventTree, right: EventTree)
-
+sealed trait EventTree:
   def min: Int = this match
     case Leaf(i) => i
     case Branch(n, left, right) =>
-      Math.min(Math.min(n, left.min), right.min)
+      // In a normalized EventTree, the min is simply n
+      n + Math.min(left.min, right.min)
 
   def max: Int = this match
     case Leaf(i) => i
-    case Branch(n, left, right) => n + left.max + right.max
+    case Branch(n, left, right) =>
+      n + Math.max(left.max, right.max)
 
   def lift(m: Int): EventTree = this match
     case Leaf(n) => Leaf(n + m)
     case Branch(n, e1, e2) => Branch(n + m, e1, e2)
 
   def sink(m: Int): EventTree = this match
-    case Leaf(n) => Leaf(n - m)
-    case Branch(n, e1, e2) => Branch(n - m, e1, e2)
+    case Leaf(n) if n >= m => Leaf(n - m)
+    case Branch(n, e1, e2) if n >= m => Branch(n - m, e1, e2)
+    case _ => throw IllegalArgumentException(f"Cannot sink $this by $m")
 
   def join(other: EventTree): Option[EventTree] = (this, other) match
     case (Leaf(n1), Leaf(n2)) => Some(Leaf(Math.max(n1, n2)))
@@ -74,7 +74,7 @@ enum EventTree:
         er.fill(ir)
       ).normalize
 
-  private def grow(id: IdTree): (EventTree, Int) = (id, this) match
+  protected def grow(id: IdTree): (EventTree, Int) = (id, this) match
     case (IdTree.Leaf(1), EventTree.Leaf(n)) => (Leaf(n + 1), 0)
     case (i, EventTree.Leaf(n)) =>
       val (eGrown, cost) = EventTree.Branch(n, 0, 0).grow(i)
@@ -92,11 +92,17 @@ enum EventTree:
         (Branch(n, elGrown, er), elGrowCost + 1)
       else
         (Branch(n, el, erGrown), erGrowCost + 1)
-    // The following two case should never be reached. Either fill wasn't called before grow, or the id is anonymous
-    case _ => throw IllegalStateException(f"")
+    // The following case should never be reached. Either fill wasn't called before grow, or the id is anonymous
+    case _ => throw IllegalStateException()
 
 
 object EventTree {
+  case class Leaf(value: Int) extends EventTree :
+    require(value >= 0)
+
+  case class Branch(value: Int, left: EventTree, right: EventTree) extends EventTree :
+    require(value >= 0)
+
   private val MAX_DEPTH = 4096
 
   val seed: EventTree = Leaf(0)
@@ -105,7 +111,9 @@ object EventTree {
 
   given PartialOrdering[EventTree] with {
     extension (left: EventTree)
+      @targetName("lteq")
       inline def <=(right: EventTree): Boolean = lteq(left, right)
+      @targetName("lteq")
       inline def <=(right: Int): Boolean = lteq(left, Leaf(right))
 
     override def lteq(x: EventTree, y: EventTree): Boolean = (x, y) match {

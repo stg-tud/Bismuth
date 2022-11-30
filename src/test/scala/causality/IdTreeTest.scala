@@ -8,6 +8,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import scala.language.implicitConversions
 
 class IdTreeTest extends AnyFlatSpec {
+  "Leaf" should "only accept 0 and 1 as value" in {
+    assertDoesNotCompile("Leaf(-1)")
+    assertDoesNotCompile("Leaf(2)")
+  }
+
   "split" should "work for seed" in {
     assert(seed.split == (Branch(1, 0), Branch(0, 1)))
   }
