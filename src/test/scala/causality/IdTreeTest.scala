@@ -261,9 +261,23 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   it should "be Some(-1) / Some(1) if a <= b && !(b <= a) / b <= a && !(a <= b)" in {
     forAll(genIdTree, genIdTree) { (idA: IdTree, idB: IdTree) =>
-      whenever(idPord.lteq(idA, idB) && !idPord.lteq(idB, idA)) {
-        idPord.tryCompare(idA, idB) shouldBe Some(-1)
-        idPord.tryCompare(idB, idA) shouldBe Some(1)
+      whenever(idPord.lteq(idA, idB) != idPord.lteq(idB, idA)) {
+        if (idPord.lteq(idA, idB)) {
+          idPord.tryCompare(idA, idB) shouldBe Some(-1)
+          idPord.tryCompare(idB, idA) shouldBe Some(1)
+        } else {
+          idPord.tryCompare(idA, idB) shouldBe Some(1)
+          idPord.tryCompare(idB, idA) shouldBe Some(-1)
+        }
+      }
+    }
+  }
+
+  it should "be None, if not comparable" in {
+    forAll(genIdTree, genIdTree) { (idA: IdTree, idB: IdTree) =>
+      whenever(!idPord.lteq(idA, idB) && !idPord.lteq(idB, idA)) {
+        idPord.tryCompare(idA, idB) shouldBe None
+        idPord.tryCompare(idB, idA) shouldBe None
       }
     }
   }
