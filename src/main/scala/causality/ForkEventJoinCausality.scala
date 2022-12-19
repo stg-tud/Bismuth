@@ -8,14 +8,10 @@ trait ForkEventJoinCausality[S: PartialOrdering]:
   extension (stamp: S)
     def fork: (S, S)
     def peek: S
-    def event: Option[S]
-    def join(otherStamp: S): Option[S]
-    def sync(otherStamp: S): Option[(S, S)] = (stamp join otherStamp).map(_.fork)
-    def send(otherStamp: S): Option[(S, S)] =
-      for {
-        newStamp <- stamp.event
-      } yield (newStamp, newStamp.peek)
-    def receive(otherStamp: S): Option[S] = for {
-      joined <- stamp join otherStamp
-      incremented <- joined.event
-    } yield incremented
+    def event: S
+    def join(otherStamp: S): S
+    def sync(otherStamp: S): (S, S) = (stamp join otherStamp).fork
+    def send(otherStamp: S): (S, S) =
+      val newStamp = stamp.event
+      (newStamp, newStamp.peek)
+    def receive(otherStamp: S): S = (stamp join otherStamp).event

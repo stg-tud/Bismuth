@@ -128,36 +128,51 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
   }
 
   "add" should "return the inverse of split for seed" in {
-    assert((seed.split._1 + seed.split._2).contains(seed))
+    (seed.split._1 + seed.split._2) shouldBe seed
   }
 
   it should "return 0 for (0,0)" in {
-    assert((anonymous + anonymous).contains(Leaf(0)))
+    (anonymous + anonymous) shouldBe Leaf(0)
   }
 
-  it should "return None if adding two overlapping ids" in {
-    assert((seed + seed).isEmpty)
-    assert((Branch(1, 0) + Branch(1, 0)).isEmpty)
-    assert((Branch(0, 1) + Branch(0, 1)).isEmpty)
+  it should "return throw an Exception if adding two overlapping ids" in {
+    assertThrows[IllegalArgumentException](seed + seed)
+    assertThrows[IllegalArgumentException](Branch(1, 0) + Branch(1, 0))
+    assertThrows[IllegalArgumentException](Branch(0, 1) + Branch(0, 1))
   }
 
-  it should "nomalize id" in {
-    assert((Branch(1, Branch(1, 0)) + Branch(0, Branch(0, 1))).contains(seed))
+  it should "return a nomalized id" in {
+    (Branch(1, Branch(1, 0)) + Branch(0, Branch(0, 1))) shouldBe seed
+    (Branch(1, Leaf(1)) + Branch(0, Branch(0, 0))) shouldBe seed
+    (Branch(0, 0) + Leaf(0)) shouldBe Leaf(0)
+    (Branch(Branch(0, 0), 0) + Leaf(0)) shouldBe Leaf(0)
+    (Leaf(0) + Branch(Branch(0, 0), 0)) shouldBe Leaf(0)
+    (Leaf(0) + Branch(Branch(1, 1), 1)) shouldBe Leaf(1)
+    (Leaf(0) + Branch(Branch(Branch(1, 1), 1), Branch(1, 1))) shouldBe Leaf(1)
+    (Branch(0, Branch(1, Branch(0, Branch(1, Branch(0, 1))))) +
+      Branch(Branch(Branch(1, 1), 1), Branch(0, Branch(1, Branch(0, Branch(1, 0)))))) shouldBe Leaf(1)
   }
 
   it should "not allow adding two disjoint ids" in {
     forAll(overlappingIdPairs) { (l, r) =>
-      (l + r).isEmpty shouldBe true
-      (r + l).isEmpty shouldBe true
-      (l + l).isEmpty shouldBe true
-      (r + r).isEmpty shouldBe true
+      assertThrows[IllegalArgumentException](l + r)
+      assertThrows[IllegalArgumentException](r + l)
+      assertThrows[IllegalArgumentException](l + l)
+      assertThrows[IllegalArgumentException](r + r)
     }
   }
 
   it should "be the inverse of split for testIds" in {
     forAll(testIds) { id =>
       id.split match
-        case (l, r) => (l + r).get shouldBe id.normalize
+        case (l, r) => (l + r) shouldBe id.normalize
+    }
+  }
+
+  it should "be the inverse of split for generated ids" in {
+    forAll(genIdTree) { id =>
+      id.split match
+        case (l, r) => (l + r) shouldBe id.normalize
     }
   }
 

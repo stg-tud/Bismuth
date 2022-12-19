@@ -4,6 +4,7 @@ package causality
 import causality.EventTree.{Branch, Leaf, seed, given}
 
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers.shouldBe
 
 import scala.language.implicitConversions
 
@@ -70,17 +71,17 @@ class EventTreeTest extends AnyFlatSpec {
   }
 
   "join" should "work for two Leafs" in {
-    assert((Leaf(1) join Leaf(1)).contains(Leaf(1)))
-    assert((Leaf(42) join Leaf(0)).contains(Leaf(42)))
-    assert((Leaf(0) join Leaf(1)).contains(Leaf(1)))
+    (Leaf(1) join Leaf(1)) shouldBe Leaf(1)
+    (Leaf(42) join Leaf(0)) shouldBe Leaf(42)
+    (Leaf(0) join Leaf(1)) shouldBe Leaf(1)
   }
 
   it should "work for Leaf and Branch" in {
-    assert((Leaf(42) join Branch(2, 4, 5)).contains(Leaf(42)))
-    assert((Branch(2, 4, 5) join Leaf(42)).contains(Leaf(42)))
+    (Leaf(42) join Branch(2, 4, 5)) shouldBe Leaf(42)
+    (Branch(2, 4, 5) join Leaf(42)) shouldBe Leaf(42)
   }
 
-  //it should "produce normalized Ids" in {
-  //  ???
-  //}
+  it should "produce normalized Ids" in {
+    // TODO: implement this
+  }
 }
