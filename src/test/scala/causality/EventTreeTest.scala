@@ -1,14 +1,22 @@
 package de.tu_darmstadt.stg.daimpl
+
 package causality
 
 import causality.EventTree.{Branch, Leaf, seed, given}
+import causality.EventTreeGenerators.genEventTree
 
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers.shouldBe
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.language.implicitConversions
 
-class EventTreeTest extends AnyFlatSpec {
+class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks {
+  private val eventTreePord = EventTree.given_PartialOrdering_EventTree
+
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    PropertyCheckConfiguration(maxDiscardedFactor = 20.0)
+
   "Leaf" should "only accept positive values" in {
     assertThrows[IllegalArgumentException](Leaf(-1))
     assertThrows[IllegalArgumentException](Leaf(-401))
@@ -83,5 +91,37 @@ class EventTreeTest extends AnyFlatSpec {
 
   it should "produce normalized Ids" in {
     // TODO: implement this
+  }
+
+  "increment" should "work" in {
+    ???
+  }
+
+  "PartialOrderingEventTree.lteq" should "work" in {
+    ???
+  }
+
+  "PartialOrderingEventTree.tryCompare" should "work" in {
+    ???
+  }
+
+  it should "be Some(0) when a == b" in {
+    forAll(genEventTree) { ev =>
+      eventTreePord.tryCompare(ev, ev) shouldBe Some(0)
+    }
+  }
+
+  it should "be Some(1) or Some(-1) when a <= b but not b <= a or vice versa" in {
+    forAll(genEventTree, genEventTree) { (left, right) =>
+      whenever(left <= right || right <= left) {
+        if (left <= right) {
+          eventTreePord.tryCompare(left, right) shouldBe Some(-1)
+          eventTreePord.tryCompare(right, left) shouldBe Some(1)
+        } else {
+          eventTreePord.tryCompare(left, right) shouldBe Some(1)
+          eventTreePord.tryCompare(right, left) shouldBe Some(-1)
+        }
+      }
+    }
   }
 }
