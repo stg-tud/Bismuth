@@ -46,10 +46,12 @@ sealed trait EventTree:
       throw IllegalArgumentException("Cannot increment an EventTree by the anonymous IdTree")
     }
 
-    val filledEventTree = fill(id)
+    val normalizedId = if !id.isNormalized then id.normalize else id
+
+    val filledEventTree = fill(normalizedId)
 
     if this != filledEventTree then filledEventTree
-    else grow(id)._1
+    else grow(normalizedId)._1
   }
 
   private def fill(id: IdTree): EventTree = (id, this) match
@@ -93,8 +95,9 @@ sealed trait EventTree:
       val (erGrown, erGrowCost) = er.grow(ir)
       if elGrowCost < erGrowCost then (Branch(n, elGrown, er), elGrowCost + 1)
       else (Branch(n, el, erGrown), erGrowCost + 1)
-    // The following case should never be reached. Either fill wasn't called before grow, or the id is anonymous
-    case _ => throw IllegalStateException()
+    // The following case should never be reached.
+    case _ =>
+      throw IllegalStateException("Either fill wasn't called before grow, or the id is anonymous/not normalized")
 
 object EventTree {
   case class Leaf(value: Int) extends EventTree:
@@ -127,7 +130,7 @@ object EventTree {
     // TODO: optimize this
     override def tryCompare(x: EventTree, y: EventTree): Option[Int] =
       if x <= y then
-        if y <= x then Some(1)
+        if y <= x then Some(0)
         else Some(-1)
       else if y <= x then Some(1)
       else None
