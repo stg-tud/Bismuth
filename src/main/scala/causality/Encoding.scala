@@ -20,7 +20,7 @@ object Encoder {
   def encode(idTree: IdTree, eventTree: EventTree): Encoding =
     encodeId(idTree) + encodeEvents(eventTree)
 
-  private def encodeId(idTree: IdTree): Encoding = {
+  def encodeId(idTree: IdTree): Encoding = {
     import causality.IdTree.{Branch, Leaf}
     idTree match 
       case Leaf(0)                  => Encoding(Digit(0, 2), Digit(0, 1))
@@ -30,7 +30,7 @@ object Encoder {
       case Branch(i1     , i2     ) => Encoding(Digit(3, 2)) + encodeId(i1) + encodeId(i2)
   }
 
-  private def encodeEvents(eventTree: EventTree): Encoding =
+  def encodeEvents(eventTree: EventTree): Encoding =
     import causality.EventTree.{Branch, Leaf}
     eventTree match 
       case Branch(0, Leaf(0), e      ) => Encoding(Digit(0, 1), Digit(0, 2)) + encodeEvents(e)
@@ -41,7 +41,7 @@ object Encoder {
       case Branch(n, e1     , e2     ) => Encoding(Digit(0, 1), Digit(3, 2), Digit(1, 1)) + encodeNum(n, 2) + encodeEvents(e1) + encodeEvents(e2)
       case Leaf(n)                     => Encoding(Digit(1, 1)) + encodeNum(n, 2)
 
-  private def encodeNum(n: Int, B: Int): Encoding = {
+  def encodeNum(n: Int, B: Int): Encoding = {
     if (n < pow(2, B)) {
       return Encoding(Digit(0, 1), Digit(n, B))
     } else {
