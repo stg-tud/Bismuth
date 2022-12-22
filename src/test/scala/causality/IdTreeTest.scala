@@ -2,7 +2,7 @@ package de.tu_darmstadt.stg.daimpl
 package causality
 
 import causality.IdTree.{Branch, Leaf, anonymous, seed, given}
-import causality.IdTreeGenerators.{genIdTree, genTwoNonOverlappingIdTrees, normalizedBaseCases}
+import causality.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees, normalizedBaseCases}
 
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -152,16 +152,25 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     (seed.split._1 + seed.split._2) shouldBe seed
   }
 
-  it should "return 0 for (0,0)" in {
+  it should "return 0 for (0 + 0)" in {
     (anonymous + anonymous) shouldBe Leaf(0)
   }
 
-  it should "return throw an Exception if adding two overlapping ids" in {
+  it should "throw an Exception if adding two overlapping ids" in {
     assertThrows[IllegalArgumentException](seed + seed)
     assertThrows[IllegalArgumentException](Branch(1, 0) + Branch(1, 0))
     assertThrows[IllegalArgumentException](Branch(0, 1) + Branch(0, 1))
     assertThrows[IllegalArgumentException](Branch(Branch(0, 0), 1) + Branch(0, 1))
     assertThrows[IllegalArgumentException](Branch(1, Branch(0, 1)) + Branch(0, 1))
+  }
+
+  it should "throw an Exception if adding two generated overlapping ids" in {
+    forAll(genIdTree, genIdTree) { (left, right) =>
+      whenever(left overlapsWith right) {
+        assertThrows[IllegalArgumentException](left + right)
+        assertThrows[IllegalArgumentException](right + left)
+      }
+    }
   }
 
   it should "return a normalized id" in {
@@ -218,6 +227,14 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     forAll(genIdTree) { id =>
       id.split match
         case (l, r) => (l + r) shouldBe id.normalized
+    }
+  }
+
+  it should "be commutative" in {
+    forAll(genIdTree, genIdTree) { (a, b) =>
+      whenever(!(a overlapsWith b)) {
+        a + b shouldBe b + a
+      }
     }
   }
 
@@ -290,6 +307,14 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     }
   }
 
+  it should "be commutative" in {
+    forAll(genIdTree, genIdTree) { (left, right) =>
+      whenever(left overlapsWith right) {
+        right overlapsWith left shouldBe true
+      }
+    }
+  }
+
   def partialOrderProperties(id: IdTree): Unit = {
     val normalizedId = id.normalized
     if (normalizedId != seed) {
@@ -337,7 +362,11 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
   }
 
   it should "work for normalized generated ids" in {
-    forAll(genIdTree)(partialOrderProperties)
+    forAll(genIdTreeBySplitting)(partialOrderProperties)
+  }
+
+  it should "work for ids generated using splitting" in {
+    forAll(genIdTreeBySplitting)(partialOrderProperties)
   }
 
   it should "work for non-normalized generated ids" in {
@@ -350,7 +379,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
   }
 
   "PartialOrdering[IdTree].tryCompare" should "be Some(0) if a <= b && b <= a" in {
-    forAll(genIdTree, genIdTree) { (idA: IdTree, idB: IdTree) =>
+    forAll(genIdTreeShallow, genIdTreeShallow) { (idA: IdTree, idB: IdTree) =>
       whenever(idPord.lteq(idA, idB) && idPord.lteq(idB, idA)) {
         idPord.tryCompare(idA, idB) shouldBe Some(0)
         idPord.tryCompare(idB, idA) shouldBe Some(0)
