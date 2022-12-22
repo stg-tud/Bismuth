@@ -20,10 +20,12 @@ sealed trait EventTree:
       n + Math.max(left.max, right.max)
 
   def lift(m: Int): EventTree = this match
+    case _ if m == 0       => this
     case Leaf(n)           => Leaf(n + m)
     case Branch(n, e1, e2) => Branch(n + m, e1, e2)
 
   def sink(m: Int): EventTree = this match
+    case _ if m == 0                 => this
     case Leaf(n) if n >= m           => Leaf(n - m)
     case Branch(n, e1, e2) if n >= m => Branch(n - m, e1, e2)
     case _                           => throw IllegalArgumentException(f"Cannot sink $this by $m")
@@ -138,14 +140,25 @@ object EventTree {
 
   given NormalForm[EventTree] with
     extension (tree: EventTree)
-      def normalized: EventTree = tree match
-        case leaf @ Leaf(_) => leaf
+      def normalized: EventTree = tree match {
+        case Leaf(_) => tree // Already normalized
         case Branch(n, l, r) =>
-          (l.normalized, r.normalized) match
-            case (Leaf(m1), Leaf(m2)) if m1 == m2 => // TODO: What if m1 != m2?
-              Leaf(n + m1)
-            case (e1, e2) =>
-              // TODO: Can be optimized, since e1 and e2 are normalized and for normalized tree t, t.min = n for t = (n, left, right)
-              val m = Math.min(e1.min, e2.min)
-              Branch(n + m, e1.sink(m), e2.sink(m))
+          val (lNorm, rNorm) = (l.normalized, r.normalized)
+          val min = (lNorm, rNorm) match {
+            case (Leaf(m1), Leaf(m2)) if m1 == m2     => return Leaf(n + m1)
+            case (Leaf(m1), Leaf(m2))                 => Math.min(m1, m2)
+            case (Leaf(m1), Branch(m2, _, _))         => Math.min(m1, m2)
+            case (Branch(m1, _, _), Leaf(m2))         => Math.min(m1, m2)
+            case (Branch(m1, _, _), Branch(m2, _, _)) => Math.min(m1, m2)
+          }
+          if (min == 0) {                       // Already normalized
+            if ((lNorm eq l) && (rNorm eq r)) { // Reuse reference if tree is already normalized
+              tree
+            } else {
+              Branch(n, lNorm, rNorm)
+            }
+          } else {
+            Branch(n + min, lNorm.sink(min), rNorm.sink(min))
+          }
+      }
 }
