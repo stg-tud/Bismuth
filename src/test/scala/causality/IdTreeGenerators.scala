@@ -16,6 +16,11 @@ object IdTreeGenerators {
     idTree   <- genIdTreeBranch(maxDepth)
   } yield idTree
 
+  given genTwoNonOverlappingIdTrees: Gen[(IdTree, IdTree)] = for {
+    left <- genIdTree
+    right <- genIdTree.suchThat(right => !(left overlapsWith right))
+  } yield (left, right)
+
   private def genIdTreeBranch(maxDepth: Int): Gen[IdTree] = for {
     maxDepthL <- Gen.choose(0, Math.max(0, maxDepth - 1))
     maxDepthR <- Gen.choose(0, Math.max(0, maxDepth - 1))

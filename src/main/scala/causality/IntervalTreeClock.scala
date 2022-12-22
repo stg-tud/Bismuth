@@ -12,8 +12,14 @@ case class IntervalTreeClock(idTree: IdTree, eventTree: EventTree)
 object IntervalTreeClock {
   given NormalForm[IntervalTreeClock] with
     extension (itc: IntervalTreeClock)
-      def normalize: IntervalTreeClock =
-        IntervalTreeClock(itc.idTree.normalize, itc.eventTree.normalize)
+      def normalized: IntervalTreeClock =
+        val idTreeNormalized    = itc.idTree.normalized
+        val eventTreeNormalized = itc.eventTree.normalized
+        if ((idTreeNormalized eq itc.idTree) && (eventTreeNormalized eq itc.eventTree)) {
+          itc
+        } else {
+          IntervalTreeClock(idTreeNormalized, eventTreeNormalized)
+        }
 
   given PartialOrdering[IntervalTreeClock] with {
     override def lteq(x: IntervalTreeClock, y: IntervalTreeClock): Boolean =
@@ -59,4 +65,4 @@ object IntervalTreeClock {
 }
 
 trait NormalForm[T]:
-  extension (tree: T) def normalize: T
+  extension (tree: T) def normalized: T

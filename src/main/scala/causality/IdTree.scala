@@ -15,7 +15,7 @@ enum IdTree:
     *   A tuple of non-overlapping child ids.
     */
   def split: (IdTree, IdTree) = {
-    splitNormalizedIdTree(this.normalize)
+    splitNormalizedIdTree(this.normalized)
   }
 
   /** Add two non-overlapping id trees, resulting in one normalized IdTree.
@@ -29,19 +29,32 @@ enum IdTree:
   @throws[IllegalArgumentException]("If the IdTrees overlap")
   @targetName("add")
   def +(otherId: IdTree): IdTree = (this, otherId) match
-    // TODO: This could be optimized to avoid multiple normalize calls on the same subtree
-    case (Leaf(0), otherId) => otherId.normalize
-    case (id, Leaf(0))      => id.normalize
+    case (Leaf(0), otherId) =>
+      otherId.normalized match {
+        case Leaf(0)         => this // Prefer left part of tree
+        case otherNormalized => otherNormalized
+      }
+    case (id, Leaf(0)) => id.normalized
     case (Branch(l1, r1), Branch(l2, r2)) => {
       val l = l1 + l2
       val r = r1 + r2
-      Branch(l, r).normalize
+
+      // Ensure normalization
+      (l, r) match {
+        case (Leaf(lVal), Leaf(rVal)) if lVal == rVal => l
+        case _                                        =>
+          // Reuse parts of the tree
+          if ((l eq l1) && (r eq r1)) return this
+          if ((l eq l2) && (r eq r2)) return otherId
+
+          Branch(l, r)
+      }
     }
     case (l, r) => {
-      (l.normalize, r.normalize) match {
-        case (Leaf(1), Leaf(0)) => Leaf(1)
-        case (Leaf(0), Leaf(1)) => Leaf(1)
-        case _                  => throw IllegalArgumentException("Cannot add two overlapping IdTrees")
+      (l.normalized, r.normalized) match {
+        case (l @ Leaf(1), Leaf(0)) => l
+        case (Leaf(0), r @ Leaf(1)) => r
+        case _                      => throw IllegalArgumentException("Cannot add two overlapping IdTrees")
       }
     }
 
@@ -62,6 +75,14 @@ enum IdTree:
   }
 
   def isAnonymous: Boolean = this.max == 0
+
+  def overlapsWith(otherId: IdTree): Boolean = (this, otherId) match
+    case (Leaf(0), _)                     => false
+    case (_, Leaf(0))                     => false
+    case (Leaf(1), Leaf(1))               => true
+    case (Leaf(1), r)                     => r.max != 0
+    case (l, Leaf(1))                     => l.max != 0
+    case (Branch(l1, r1), Branch(l2, r2)) => (l1 overlapsWith l2) || (r1 overlapsWith r2)
 
 object IdTree {
   val seed: IdTree      = Leaf(1)
@@ -100,18 +121,14 @@ object IdTree {
 
   given NormalForm[IdTree] with
     extension (tree: IdTree)
-      def normalize: IdTree = tree match
-        case l @ Leaf(_)                                => l
+      def normalized: IdTree = tree match
+        case Leaf(_)                                    => tree // Reuse reference if nothing has changed
         case Branch(l @ Leaf(i1), Leaf(i2)) if i1 == i2 => l
         case Branch(l, r) =>
-          (l.normalize, r.normalize) match
+          (l.normalized, r.normalized) match
             case (Leaf(lNormVal), Leaf(rNormVal)) if lNormVal == rNormVal => Leaf(lNormVal)
-            case (lNorm, rNorm)                                           => Branch(lNorm, rNorm)
-
-      def isNormalized: Boolean = tree match
-        case Leaf(_)                  => true
-        case Branch(Leaf(l), Leaf(r)) => l != r
-        case Branch(bLeft, bRight)    => bLeft.isNormalized && bRight.isNormalized
+            case (lNorm, rNorm) if ((l eq lNorm) && (r eq rNorm)) => tree // Reuse reference if nothing has changed
+            case (lNorm, rNorm)                                   => Branch(lNorm, rNorm)
 
   given PartialOrdering[IdTree] with {
     extension (left: IdTree) inline def <=(right: IdTree): Boolean = lteq(left, right)

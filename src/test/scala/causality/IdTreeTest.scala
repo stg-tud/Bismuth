@@ -2,11 +2,12 @@ package de.tu_darmstadt.stg.daimpl
 package causality
 
 import causality.IdTree.{Branch, Leaf, anonymous, seed, given}
-import causality.IdTreeGenerators.{genIdTree, normalizedBaseCases}
+import causality.IdTreeGenerators.{genIdTree, genTwoNonOverlappingIdTrees, normalizedBaseCases}
 
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.matchers.should.Matchers.shouldBe
 import org.scalatest.prop.TableDrivenPropertyChecks.*
 import org.scalatest.prop.{TableFor1, TableFor2}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -40,7 +41,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     Branch(Branch(0, 1), Branch(0, 0))
   )
 
-  val overlappingIdPairs: TableFor2[IdTree, IdTree] = Table(
+  val overlappingIdPairTable: TableFor2[IdTree, IdTree] = Table(
     ("left", "right"),
     (Leaf(1), Leaf(1)),
     (Branch(1, 1), Leaf(1)),
@@ -49,6 +50,18 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     (Branch(Branch(0, 1), 0), Leaf(1)),
     (Branch(Branch(0, 1), 0), Branch(1, 0)),
     (Branch(0, Branch(0, 1)), Branch(1, Branch(0, Branch(0, 1))))
+  )
+
+  val nonOverlappingIdPairs: TableFor2[IdTree, IdTree] = Table(
+    ("left", "right"),
+    (Leaf(1), Leaf(0)),
+    (Branch(1, 1), Leaf(0)),
+    (Branch(1, 0), Leaf(0)),
+    (Branch(0, 1), Leaf(0)),
+    (Branch(Branch(0, 1), 0), Leaf(0)),
+    (Branch(Branch(0, 0), 1), Branch(1, 0)),
+    (Branch(0, Branch(0, 0)), Branch(1, Branch(0, Branch(0, 1)))),
+    (Branch(0, Branch(1, Branch(1, 0))), Branch(1, Branch(0, Branch(0, 1))))
   )
 
   val nonNormalizedIds: TableFor1[IdTree] = Table(
@@ -113,7 +126,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
   }
 
   it should "work if both sides of branch are branches" in {
-    val branches = Table[Branch](
+    val branchesWithBranches = Table[Branch](
       "id",
       Branch(Branch(1, 0), Branch(0, 1)),
       Branch(Branch(1, 0), Branch(1, 0)),
@@ -121,9 +134,17 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
       Branch(Branch(0, 1), Branch(1, 0))
     )
 
-    forAll(branches) { testId =>
+    forAll(branchesWithBranches) { testId =>
       testId.split._1 shouldBe Branch(testId.left, 0)
       testId.split._2 shouldBe Branch(0, testId.right)
+    }
+  }
+
+  it should "produce normalized ids" in {
+    forAll(genIdTree) { id =>
+      val (left, right) = id.split
+      left shouldBe left.normalized
+      right shouldBe right.normalized
     }
   }
 
@@ -139,9 +160,11 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     assertThrows[IllegalArgumentException](seed + seed)
     assertThrows[IllegalArgumentException](Branch(1, 0) + Branch(1, 0))
     assertThrows[IllegalArgumentException](Branch(0, 1) + Branch(0, 1))
+    assertThrows[IllegalArgumentException](Branch(Branch(0, 0), 1) + Branch(0, 1))
+    assertThrows[IllegalArgumentException](Branch(1, Branch(0, 1)) + Branch(0, 1))
   }
 
-  it should "return a nomalized id" in {
+  it should "return a normalized id" in {
     (Branch(1, Branch(1, 0)) + Branch(0, Branch(0, 1))) shouldBe seed
     (Branch(1, Leaf(1)) + Branch(0, Branch(0, 0))) shouldBe seed
     (Branch(0, 0) + Leaf(0)) shouldBe Leaf(0)
@@ -153,8 +176,29 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
       Branch(Branch(Branch(1, 1), 1), Branch(0, Branch(1, Branch(0, Branch(1, 0)))))) shouldBe Leaf(1)
   }
 
+  it should "return a normalized id for non-overlapping id pair table" in {
+    forAll(nonOverlappingIdPairs) { case (left, right) =>
+      (left + right) shouldBe (left + right).normalized
+      (right + left) shouldBe (left + right).normalized
+    }
+  }
+
+  it should "return a normalized id for generated non-overlapping id pairs" in {
+    forAll(genTwoNonOverlappingIdTrees) { case (left, right) =>
+      (left + right) shouldBe (left + right).normalized
+      (right + left) shouldBe (left + right).normalized
+    }
+  }
+
+  it should "return normalized ids for generated pairs" in {
+    forAll(genTwoNonOverlappingIdTrees) { (left, right) =>
+      val sum = left + right
+      sum shouldBe sum.normalized
+    }
+  }
+
   it should "not allow adding two disjoint ids" in {
-    forAll(overlappingIdPairs) { (l, r) =>
+    forAll(overlappingIdPairTable) { (l, r) =>
       assertThrows[IllegalArgumentException](l + r)
       assertThrows[IllegalArgumentException](r + l)
       assertThrows[IllegalArgumentException](l + l)
@@ -164,50 +208,90 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   it should "be the inverse of split for testIds" in {
     forAll(testIds) { id =>
+      println(s"${id.normalized} -> ${id.split} -> ${id.split._1 + id.split._2}")
       id.split match
-        case (l, r) => (l + r) shouldBe id.normalize
+        case (l, r) => (l + r) shouldBe id.normalized
     }
   }
 
   it should "be the inverse of split for generated ids" in {
     forAll(genIdTree) { id =>
       id.split match
-        case (l, r) => (l + r) shouldBe id.normalize
+        case (l, r) => (l + r) shouldBe id.normalized
+    }
+  }
+
+  it should "return `normalizedId` reference when adding `normalizedId` + `anonymousEquivalent`" in {
+    forAll(genIdTree) { id =>
+      val normalizedId = id.normalized
+      assert(
+        (normalizedId + Branch(Branch(0, 0), Branch(Branch(0, Branch(0, Branch(0, 0))), 0))) eq normalizedId
+      )
+    }
+  }
+
+  it should "return `normalizedId` reference when adding `anonymous` + `normalizedId`" in {
+    forAll(genIdTree) { id =>
+      val normalizedId = id.normalized
+      whenever(normalizedId != anonymous) {
+        assert((anonymous + normalizedId) eq normalizedId)
+      }
     }
   }
 
   "NormalForm[IdTree]" should "normalize to 1 if Tree is all 1s" in {
-    assert(Leaf(1).normalize == Leaf(1))
-    assert(Branch(1, 1).normalize == Leaf(1))
-    assert(Branch(Branch(1, 1), 1).normalize == Leaf(1))
-    assert(Branch(1, Branch(1, 1)).normalize == Leaf(1))
-    assert(Branch(1, Branch(Branch(1, 1), 1)).normalize == Leaf(1))
+    assert(Leaf(1).normalized == Leaf(1))
+    assert(Branch(1, 1).normalized == Leaf(1))
+    assert(Branch(Branch(1, 1), 1).normalized == Leaf(1))
+    assert(Branch(1, Branch(1, 1)).normalized == Leaf(1))
+    assert(Branch(1, Branch(Branch(1, 1), 1)).normalized == Leaf(1))
   }
 
   it should "normalize to 0 if Tree is all 0s" in {
-    assert(Leaf(0).normalize == Leaf(0))
-    assert(Branch(0, 0).normalize == Leaf(0))
-    assert(Branch(Branch(0, 0), 0).normalize == Leaf(0))
-    assert(Branch(0, Branch(0, 0)).normalize == Leaf(0))
-    assert(Branch(0, Branch(Branch(0, 0), 0)).normalize == Leaf(0))
+    assert(Leaf(0).normalized == Leaf(0))
+    assert(Branch(0, 0).normalized == Leaf(0))
+    assert(Branch(Branch(0, 0), 0).normalized == Leaf(0))
+    assert(Branch(0, Branch(0, 0)).normalized == Leaf(0))
+    assert(Branch(0, Branch(Branch(0, 0), 0)).normalized == Leaf(0))
   }
 
   it should "normalize nested id tree correctly" in {
     val id = Branch(Branch(1, 1), Branch(Branch(0, Branch(1, Branch(1, 1))), 0))
-    assert(id.normalize == Branch(1, Branch(Branch(0, 1), 0)))
+    assert(id.normalized == Branch(1, Branch(Branch(0, 1), 0)))
   }
 
   it should "provide equal ids according to PartialOrdering[IdTree]" in {
     forAll(genIdTree) { id =>
-      val normalizedId = id.normalize
+      val normalizedId = id.normalized
       whenever(normalizedId != id) {
         idPord.tryCompare(normalizedId, id) shouldBe Some(0)
       }
     }
   }
 
+  it should "return `this` reference if already normalized" in {
+    forAll(genIdTree) { id =>
+      val normalizedId = id.normalized
+      assert(normalizedId eq normalizedId.normalized)
+    }
+  }
+
+  "overlapsWith" should "be true for overlapping pair table" in {
+    forAll(overlappingIdPairTable) { (left, right) =>
+      left overlapsWith right shouldBe true
+      right overlapsWith left shouldBe true
+    }
+  }
+
+  it should "be false for non-overlapping pair table" in {
+    forAll(nonOverlappingIdPairs) { case (left, right) =>
+      left overlapsWith right shouldBe false
+      right overlapsWith left shouldBe false
+    }
+  }
+
   def partialOrderProperties(id: IdTree): Unit = {
-    val normalizedId = id.normalize
+    val normalizedId = id.normalized
     if (normalizedId != seed) {
       idPord.lteq(seed, id) shouldBe false
     } else {
