@@ -1,26 +1,27 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.dots
 
+import causality.dots.Defs.{Id, Time}
 import util.MapHelper.max
 
 import scala.math.PartialOrdering
 
-case class VectorClock(timestamps: Map[String, Long] = Map()) {
+case class VectorClock(timestamps: Map[Id, Time] = Map()) {
   def merged(other: VectorClock): VectorClock = VectorClock(max(timestamps, other.timestamps))
 
-  def merged(other: Map[String, Long]): VectorClock = VectorClock(max(timestamps, other))
+  def merged(other: Map[Id, Time]): VectorClock = VectorClock(max(timestamps, other))
 
-  def merged(other: LamportClock): VectorClock = merged(Map(other.replicaId -> other.time))
+  def merged(other: Dot): VectorClock = merged(Map(other.replicaId -> other.time))
 
-  def advance(replicaId: String): VectorClock = VectorClock(
+  def advance(replicaId: Id): VectorClock = VectorClock(
     timestamps = timestamps + (replicaId -> (timestamps.getOrElse(replicaId, 0L) + 1L))
   )
 
-  def timeOf(replicaId: String): Long = timestamps.getOrElse(replicaId, 0)
+  def timeOf(replicaId: Id): Time = timestamps.getOrElse(replicaId, 0)
 
-  def clockOf(replicaId: String): LamportClock = LamportClock(timeOf(replicaId), replicaId)
+  def clockOf(replicaId: Id): Dot = Dot(timeOf(replicaId), replicaId)
 
-  def contains(timestamp: LamportClock): Boolean = timestamps.getOrElse(timestamp.replicaId, 0L) >= timestamp.time
+  def contains(timestamp: Dot): Boolean = timestamps.getOrElse(timestamp.replicaId, 0L) >= timestamp.time
 }
 
 object VectorClock {

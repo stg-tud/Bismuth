@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.dots.impl
 
-import causality.dots.impl.Defs.Time
+import causality.dots.Defs.Time
 import lattices.SemiLattice
 
 case class ArrayRanges(inner: Array[Time], used: Int) {

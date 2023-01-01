@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.dots.impl
 
-import causality.dots.impl.Defs.Time
+import causality.dots.Defs.Time
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.{shouldBe, shouldEqual}
