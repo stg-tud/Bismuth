@@ -1,9 +1,8 @@
 package de.tu_darmstadt.stg.daimpl
-package causality
+package causality.dots
 
-import causality.DotStore._
-
-import de.tu_darmstadt.stg.daimpl.causality.impl.ArrayCausalContext
+import causality.dots.DotStore.*
+import causality.dots.impl.ArrayCausalContext
 
 // See: Delta state replicated data types (https://doi.org/10.1016/j.jpdc.2017.08.003)
 sealed trait DotStore[D] {
@@ -13,9 +12,9 @@ sealed trait DotStore[D] {
 }
 
 object DotStore {
-  type Dot = LamportClock
-  type DotSet = ArrayCausalContext
-  type DotFun[V] = Map[Dot, V]
+  type Dot          = LamportClock
+  type DotSet       = ArrayCausalContext
+  type DotFun[V]    = Map[Dot, V]
   type DotMap[K, V] = Map[K, V]
 
   def apply[D](implicit dotStore: DotStore[D]): DotStore[D] = dotStore
@@ -35,7 +34,7 @@ object DotStore {
 
   implicit def dotMapDotStore[K, V: DotStore]: DotStore[DotMap[K, V]] = new DotStore[DotMap[K, V]] {
     override def dots(dotStore: DotMap[K, V]): DotSet =
-      dotStore.values.map(DotStore[V].dots(_)).reduce((l,r) => l union r)
+      dotStore.values.map(DotStore[V].dots(_)).reduce((l, r) => l union r)
 
     override def bottom: DotMap[K, V] = Map.empty
   }
@@ -45,9 +44,9 @@ object DotStore {
 object DotSetPartialOrdering extends PartialOrdering[DotSet] {
   override def tryCompare(x: DotSet, y: DotSet): Option[Int] = {
     val unionOfXandY = x union y
-    if (unionOfXandY == x) { // x contains all elements of union of x and y
-      if (unionOfXandY == y) return Some(0) // x = y
-      else return Some(1) // y doesn't contain all elements of x => x > y
+    if (unionOfXandY == x) {                     // x contains all elements of union of x and y
+      if (unionOfXandY == y) return Some(0)      // x = y
+      else return Some(1)                        // y doesn't contain all elements of x => x > y
     } else if (unionOfXandY == y) return Some(1) // y contains all elements of union of x and y but x doesn't
     else return None
   }

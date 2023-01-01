@@ -1,5 +1,5 @@
 package de.tu_darmstadt.stg.daimpl
-package causality
+package causality.dots
 
 import util.MapHelper.max
 
@@ -29,7 +29,7 @@ object VectorClock {
       if (x.timestamps.isEmpty) return Some(0)
       if (x.timestamps.keySet != y.timestamps.keySet) return None
 
-      val clockPairs = x.timestamps.keySet.map(key => (x.timestamps(key), y.timestamps(key)))
+      val clockPairs  = x.timestamps.keySet.map(key => (x.timestamps(key), y.timestamps(key)))
       val comparisons = clockPairs map { case (x, y) => x compare y }
 
       if (comparisons.max < 0) return Some(-1)
@@ -40,8 +40,8 @@ object VectorClock {
 
     override def lteq(x: VectorClock, y: VectorClock): Boolean = {
       if (x.timestamps.isEmpty) return true
-      val anyXGreaterY = x.timestamps.exists {
-        case (key, xTimeStampForKey) => xTimeStampForKey > y.timestamps.getOrElse(key, 0L)
+      val anyXGreaterY = x.timestamps.exists { case (key, xTimeStampForKey) =>
+        xTimeStampForKey > y.timestamps.getOrElse(key, 0L)
       }
 
       !anyXGreaterY
