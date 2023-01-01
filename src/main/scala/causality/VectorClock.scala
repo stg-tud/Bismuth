@@ -24,7 +24,7 @@ case class VectorClock(timestamps: Map[String, Long] = Map()) {
 }
 
 object VectorClock {
-  implicit object VectorClockOrdering extends PartialOrdering[VectorClock] {
+  given VectorClockOrdering: PartialOrdering[VectorClock] with {
     override def tryCompare(x: VectorClock, y: VectorClock): Option[Int] = {
       if (x.timestamps.isEmpty) return Some(0)
       if (x.timestamps.keySet != y.timestamps.keySet) return None

@@ -95,10 +95,8 @@ object ArrayCausalContext {
 
   def one(dot: Dot): ArrayCausalContext = empty.add(dot.replicaId, dot.time)
 
-  implicit val contextLattice: SemiLattice[ArrayCausalContext] = new SemiLattice[ArrayCausalContext] {
-    override def merged(left: ArrayCausalContext, right: ArrayCausalContext): ArrayCausalContext = {
-      ArrayCausalContext(SemiLattice.merged(left.internal, right.internal))
-    }
+  given contextLattice: SemiLattice[ArrayCausalContext] = (left: ArrayCausalContext, right: ArrayCausalContext) => {
+    ArrayCausalContext(SemiLattice.merged(left.internal, right.internal))
   }
 
   def fromSet(dots: Set[Dot]): ArrayCausalContext = ArrayCausalContext(dots.groupBy(_.replicaId).map {

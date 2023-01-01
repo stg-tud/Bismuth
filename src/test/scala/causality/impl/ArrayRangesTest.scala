@@ -4,7 +4,7 @@ package causality.impl
 import causality.impl.Defs.Time
 
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers.{shouldBe, shouldEqual}
 
 import scala.language.implicitConversions
 
