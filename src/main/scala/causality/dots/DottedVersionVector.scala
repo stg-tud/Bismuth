@@ -75,6 +75,7 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
     internal.flatMap { case (id, tree) =>
       tree.iterator.map(time => Dot(time, id)).filterNot(exclude).map(DottedVersionVector.one)
     }
+
   def forall(cond: Dot => Boolean): Boolean = internal.forall { case (id, tree) =>
     tree.iterator.forall(time => cond(Dot(time, id)))
   }
