@@ -15,9 +15,12 @@ object DotEncoder extends FixedSizeEncoder[Dot] {
     buffer.array()
   }
 
-  override inline def read(buffer: ByteBuffer): Dot = {
+  override inline def readArray(bytes: Array[Byte]): Dot = {
+    require(bytes.length == 2 * java.lang.Long.BYTES)
+    val buffer     = ByteBuffer.wrap(bytes)
     val time: Time = buffer.getLong(0)
-    val id: Id     = buffer.getLong(8)
+    require(time >= 0)
+    val id: Id = buffer.getLong(8)
     Dot(time, id)
   }
 }

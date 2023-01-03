@@ -16,8 +16,6 @@ trait Encoder[T] {
     base64Encoder.encodeToString(writeArray(obj))
   }
 
-  def read(buffer: ByteBuffer): T
-
   def readArray(bytes: Array[Byte]): T
 
   def readString(bytes: String): T = {
@@ -30,13 +28,18 @@ trait Encoder[T] {
 trait FixedSizeEncoder[T] extends Encoder[T] {
   val BYTES: Int
 
-  override def readArray(bytes: Array[Byte]): T = {
-    require(bytes.length == BYTES)
-    read(ByteBuffer.wrap(bytes))
-  }
-
   override def writeArray(obj: T): Array[Byte] = {
     val buffer = ByteBuffer.allocate(BYTES)
+    write(obj, buffer)
+    buffer.array()
+  }
+}
+
+trait VariableSizeEncoder[T] extends Encoder[T] {
+  protected def BYTES(obj: T): Int
+
+  override def writeArray(obj: T): Array[Byte] = {
+    val buffer = ByteBuffer.allocate(BYTES(obj))
     write(obj, buffer)
     buffer.array()
   }
