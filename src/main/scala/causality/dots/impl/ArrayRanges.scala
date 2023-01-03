@@ -5,6 +5,7 @@ import causality.dots.Defs.Time
 import lattices.SemiLattice
 
 case class ArrayRanges(inner: Array[Time], used: Int) {
+  require(used >= 0 && used % 2 == 0 && inner.length >= used)
 
   override def equals(obj: Any): Boolean = obj match {
     case ar: ArrayRanges => inner.iterator.take(used).sameElements(ar.inner.iterator.take(ar.used))

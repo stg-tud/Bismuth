@@ -17,14 +17,13 @@ object VectorClockEncoder extends VariableSizeEncoder[VectorClock] {
     }
   }
 
-  override def readArray(bytes: Array[Byte]): VectorClock = {
-    require(bytes.length % 2 * java.lang.Long.BYTES == 0)
+  override def read(buffer: ByteBuffer, length: Int): VectorClock = {
+    require(length % 2 * java.lang.Long.BYTES == 0)
 
     val mapBuilder = Map.newBuilder[Id, Time]
     mapBuilder.sizeHint(1)
-    val buffer = ByteBuffer.wrap(bytes)
 
-    Range(0, bytes.length, 2 * java.lang.Long.BYTES).foreach(_ => {
+    Range(0, length, 2 * java.lang.Long.BYTES).foreach(_ => {
       val id   = buffer.getLong
       val time = buffer.getLong
       require(time >= 0)
