@@ -6,7 +6,7 @@ import causality.dots.impl.ArrayRanges
 
 import java.nio.ByteBuffer
 
-object ArrayRangesEncoder extends VariableSizeEncoder[ArrayRanges] {
+given ArrayRangesEncoder: VariableSizeEncoder[ArrayRanges] with {
   override protected def BYTES(obj: ArrayRanges): Int =
     obj.used * java.lang.Long.BYTES
 

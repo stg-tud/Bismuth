@@ -6,7 +6,7 @@ import causality.dots.VectorClock
 
 import java.nio.ByteBuffer
 
-object VectorClockEncoder extends VariableSizeEncoder[VectorClock] {
+given VectorClockEncoder: VariableSizeEncoder[VectorClock] with {
   override protected inline def BYTES(obj: VectorClock): Int =
     obj.timestamps.size * java.lang.Long.BYTES * 2
 

@@ -44,7 +44,7 @@ trait FixedSizeEncoder[T] extends Encoder[T] {
 }
 
 trait VariableSizeEncoder[T] extends Encoder[T] {
-  protected def BYTES(obj: T): Int
+  def BYTES(obj: T): Int
 
   override def writeArray(obj: T): Array[Byte] = {
     val buffer = ByteBuffer.allocate(BYTES(obj))

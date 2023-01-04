@@ -7,7 +7,7 @@ import causality.dots.impl.ArrayRanges
 
 import java.nio.ByteBuffer
 
-object DottedVersionVectorEncoder extends VariableSizeEncoder[DottedVersionVector] {
+given DottedVersionVectorEncoder: VariableSizeEncoder[DottedVersionVector] with {
   override protected def BYTES(obj: DottedVersionVector): Int = {
     val bytesForArrayRanges = obj.internal.map { case (_, arrayRanges) =>
       java.lang.Integer.BYTES + arrayRanges.used * java.lang.Long.BYTES
@@ -48,7 +48,7 @@ object DottedVersionVectorEncoder extends VariableSizeEncoder[DottedVersionVecto
       val arrayRanges         = ArrayRangesEncoder.read(buffer, bytesForArrayRanges)
       mapBuilder += id -> arrayRanges
     }
-   
+
     DottedVersionVector(mapBuilder.result())
   }
 }
