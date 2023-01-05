@@ -4,6 +4,7 @@ package causality
 
 import causality.EventTree.{Branch, Leaf, seed, given}
 import causality.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
+import causality.IdTreeGenerators.genIdTree
 
 import org.scalacheck.Gen
 import org.scalatest.flatspec.AnyFlatSpec
@@ -15,7 +16,7 @@ import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks {
-  private val eventTreePord = EventTree.given_PartialOrdering_EventTree
+  private val eventTreePord = EventTree.partialOrdering
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(maxDiscardedFactor = 20.0)
@@ -111,6 +112,98 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
   it should "be commutative" in {
     forAll(genEventTree, genEventTree) { (ev1, ev2) =>
       (ev1 join ev2) shouldBe (ev2 join ev1)
+    }
+  }
+
+  "fill" should "return same reference if not fillable" in {
+    val eventsAndIds = Table(
+      ("eventTree", "idTree"),
+      (Leaf(1), IdTree.Leaf(0)),
+      (Leaf(0), IdTree.Leaf(1)),
+      (Leaf(42), IdTree.Leaf(1)),
+      (Branch(0, 1, 0), IdTree.Branch(0, IdTree.Branch(1, 0))),
+      (Branch(1, 3, 0), IdTree.Leaf(0)),
+      (Branch(1, 0, 3), IdTree.Leaf(0)),
+      (Branch(1, 3, 0), IdTree.Branch(1, 0)),
+      (Branch(1, 0, 3), IdTree.Branch(0, 1)),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(0, 1)),
+      (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0)),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0)),
+      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, IdTree.Branch(1, 0))),
+      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0))),
+    )
+
+    forAll(eventsAndIds) { (ev, id) =>
+      assert(ev eq ev.fill(id))
+    }
+  }
+
+  it should "simplify the EventTree if possible" in {
+    val fillTestTable = Table(
+      ("eventTree", "idTree", "expectedFilledEventTree"),
+      (Branch(1, 3, 0), IdTree.Leaf(1), Leaf(4)),
+      (Branch(1, 0, 3), IdTree.Leaf(1), Leaf(4)),
+      (Branch(1, Branch(4, 0, 0), 4), IdTree.Leaf(1), Leaf(5)),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Leaf(1), Leaf(4)),
+      (Branch(1, 4, Branch(3, 1, 0)), IdTree.Leaf(1), Leaf(5)),
+      (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Leaf(1), Leaf(2)),
+      (Branch(0, Branch(0, Branch(1, 0, 0), 2), Branch(0, 0, 2)), IdTree.Leaf(1), Leaf(2)),
+      (Branch(1, 0, 3), IdTree.Branch(1, 0), Leaf(4)),
+      (Branch(1, 3, 0), IdTree.Branch(0, 1), Leaf(4)),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(0, 1), 0), Leaf(4)),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(0, 1), 1), Leaf(4)),
+      (
+        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+        IdTree.Branch(0, IdTree.Branch(0, 1)),
+        Branch(0, Branch(0, 0, 2), 2)
+      ),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(1, 0), Leaf(4)),
+      (Branch(1, 3, Branch(0, 2, 0)), IdTree.Branch(0, 1), Leaf(4)),
+      (Branch(1, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, 1), Branch(1, Branch(0, 0, 2), 2)),
+      (
+        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+        IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(1, 0)),
+        Branch(0, 2, Branch(0, 2, 0))
+      ),
+      (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(1, 0), 1), Leaf(2)),
+      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(0, 1)), Leaf(2)),
+      (
+        Branch(0, Branch(0, Branch(0, 0, 1), 1), Branch(0, 2, 0)),
+        IdTree.Branch(IdTree.Branch(1, 0), 1),
+        Branch(1, 0, 1)
+      ),
+      (
+        Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)),
+        IdTree.Branch(1, IdTree.Branch(1, 0)),
+        Branch(0, 2, Branch(0, 2, 0))
+      )
+    )
+
+    forAll(fillTestTable) { (ev, id, expectedEvFilled) =>
+      val evFilled = ev.fill(id)
+      evFilled shouldBe expectedEvFilled
+      eventTreePord.tryCompare(evFilled, ev) shouldBe Some(1)
+      eventTreePord.tryCompare(ev, evFilled) shouldBe Some(-1)
+    }
+  }
+
+  it should "return same reference if equal to EventTree for generated EventTree and Id" in {
+    forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
+      val evFilled = ev.fill(id)
+      whenever(evFilled == ev) {
+        assert(evFilled eq ev)
+      }
+    }
+  }
+
+  it should "be greater according to PartialOrdering after successful fill" in {
+    forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
+      val evFilled = ev.fill(id)
+      whenever(!(evFilled eq ev)) {
+        isNormalized(evFilled) shouldBe true // Assumption of PartialOrdering
+        eventTreePord.tryCompare(evFilled, ev) shouldBe Some(1)
+        eventTreePord.tryCompare(ev, evFilled) shouldBe Some(-1)
+      }
     }
   }
 
