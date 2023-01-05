@@ -48,12 +48,16 @@ sealed trait EventTree:
       throw IllegalArgumentException("Cannot increment an EventTree by the anonymous IdTree")
     }
 
-    val normalizedId = id.normalized
+    val normalizedId        = id.normalized
+    val normalizedEventTree = this.normalized
 
-    val filledEventTree = fill(normalizedId)
+    val filledEventTree = normalizedEventTree.fill(normalizedId)
 
-    if this != filledEventTree then filledEventTree
-    else grow(normalizedId)._1
+    if (!(normalizedEventTree eq filledEventTree)) {
+      filledEventTree
+    } else {
+      normalizedEventTree.grow(normalizedId)._1
+    }
   }
 
   private def fill(id: IdTree): EventTree = (id, this) match
