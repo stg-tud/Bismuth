@@ -217,7 +217,6 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   it should "be the inverse of split for testIds" in {
     forAll(testIds) { id =>
-      println(s"${id.normalized} -> ${id.split} -> ${id.split._1 + id.split._2}")
       id.split match
         case (l, r) => (l + r) shouldBe id.normalized
     }
