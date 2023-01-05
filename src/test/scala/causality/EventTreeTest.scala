@@ -130,7 +130,7 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
       (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0)),
       (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0)),
       (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, IdTree.Branch(1, 0))),
-      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0))),
+      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0)))
     )
 
     forAll(eventsAndIds) { (ev, id) =>
@@ -138,47 +138,47 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     }
   }
 
-  it should "simplify the EventTree if possible" in {
-    val fillTestTable = Table(
-      ("eventTree", "idTree", "expectedFilledEventTree"),
-      (Branch(1, 3, 0), IdTree.Leaf(1), Leaf(4)),
-      (Branch(1, 0, 3), IdTree.Leaf(1), Leaf(4)),
-      (Branch(1, Branch(4, 0, 0), 4), IdTree.Leaf(1), Leaf(5)),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Leaf(1), Leaf(4)),
-      (Branch(1, 4, Branch(3, 1, 0)), IdTree.Leaf(1), Leaf(5)),
-      (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Leaf(1), Leaf(2)),
-      (Branch(0, Branch(0, Branch(1, 0, 0), 2), Branch(0, 0, 2)), IdTree.Leaf(1), Leaf(2)),
-      (Branch(1, 0, 3), IdTree.Branch(1, 0), Leaf(4)),
-      (Branch(1, 3, 0), IdTree.Branch(0, 1), Leaf(4)),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(0, 1), 0), Leaf(4)),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(0, 1), 1), Leaf(4)),
-      (
-        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
-        IdTree.Branch(0, IdTree.Branch(0, 1)),
-        Branch(0, Branch(0, 0, 2), 2)
-      ),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(1, 0), Leaf(4)),
-      (Branch(1, 3, Branch(0, 2, 0)), IdTree.Branch(0, 1), Leaf(4)),
-      (Branch(1, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, 1), Branch(1, Branch(0, 0, 2), 2)),
-      (
-        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
-        IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(1, 0)),
-        Branch(0, 2, Branch(0, 2, 0))
-      ),
-      (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(1, 0), 1), Leaf(2)),
-      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(0, 1)), Leaf(2)),
-      (
-        Branch(0, Branch(0, Branch(0, 0, 1), 1), Branch(0, 2, 0)),
-        IdTree.Branch(IdTree.Branch(1, 0), 1),
-        Branch(1, 0, 1)
-      ),
-      (
-        Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)),
-        IdTree.Branch(1, IdTree.Branch(1, 0)),
-        Branch(0, 2, Branch(0, 2, 0))
-      )
+  val fillTestTable = Table(
+    ("eventTree", "idTree", "expectedFilledEventTree"),
+    (Branch(1, 3, 0), IdTree.Leaf(1), Leaf(4)),
+    (Branch(1, 0, 3), IdTree.Leaf(1), Leaf(4)),
+    (Branch(1, Branch(4, 0, 0), 4), IdTree.Leaf(1), Leaf(5)),
+    (Branch(1, Branch(0, 3, 0), 3), IdTree.Leaf(1), Leaf(4)),
+    (Branch(1, 4, Branch(3, 1, 0)), IdTree.Leaf(1), Leaf(5)),
+    (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Leaf(1), Leaf(2)),
+    (Branch(0, Branch(0, Branch(1, 0, 0), 2), Branch(0, 0, 2)), IdTree.Leaf(1), Leaf(2)),
+    (Branch(1, 0, 3), IdTree.Branch(1, 0), Leaf(4)),
+    (Branch(1, 3, 0), IdTree.Branch(0, 1), Leaf(4)),
+    (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(0, 1), 0), Leaf(4)),
+    (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(0, 1), 1), Leaf(4)),
+    (
+      Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+      IdTree.Branch(0, IdTree.Branch(0, 1)),
+      Branch(0, Branch(0, 0, 2), 2)
+    ),
+    (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(1, 0), Leaf(4)),
+    (Branch(1, 3, Branch(0, 2, 0)), IdTree.Branch(0, 1), Leaf(4)),
+    (Branch(1, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, 1), Branch(1, Branch(0, 0, 2), 2)),
+    (
+      Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+      IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(1, 0)),
+      Branch(0, 2, Branch(0, 2, 0))
+    ),
+    (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(1, 0), 1), Leaf(2)),
+    (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(0, 1)), Leaf(2)),
+    (
+      Branch(0, Branch(0, Branch(0, 0, 1), 1), Branch(0, 2, 0)),
+      IdTree.Branch(IdTree.Branch(1, 0), 1),
+      Branch(1, 0, 1)
+    ),
+    (
+      Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)),
+      IdTree.Branch(1, IdTree.Branch(1, 0)),
+      Branch(0, 2, Branch(0, 2, 0))
     )
+  )
 
+  it should "simplify the EventTree if possible" in {
     forAll(fillTestTable) { (ev, id, expectedEvFilled) =>
       val evFilled = ev.fill(id)
       evFilled shouldBe expectedEvFilled
@@ -207,8 +207,203 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     }
   }
 
-  "increment" should "work" in {
-    ???
+  "grow" should "work for non-fillable examples and IdTree with single 1-Leaf" in {
+    val eventsAndIds = Table(
+      ("eventTree", "idTree", "expectedGrownEventTree"),
+      (Leaf(0), IdTree.Leaf(1), Leaf(1)),
+      (Leaf(42), IdTree.Leaf(1), Leaf(43)),
+      (Branch(1, 3, 0), IdTree.Branch(1, 0), Branch(1, 4, 0)),
+      (Branch(1, 0, 3), IdTree.Branch(0, 1), Branch(1, 0, 4)),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(0, 1), Branch(1, Branch(0, 3, 0), 4)),
+      (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0), Branch(1, 4, Branch(0, 3, 0))),
+      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0), Branch(1, Branch(0, 4, 0), 3)),
+      (
+        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+        IdTree.Branch(0, IdTree.Branch(1, 0)),
+        Branch(0, Branch(0, 0, 2), Branch(0, 3, 0))
+      )
+    )
+
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.grow(id)._1 shouldBe expectedEv
+      ev.increment(id) shouldBe expectedEv
+    }
+  }
+
+  it should "work when needing to split a Leaf" in {
+    val eventsAndIds = Table(
+      ("eventTree", "idTree", "expectedGrownEventTree"),
+      (Leaf(0), IdTree.Branch(0, 1), Branch(0, 0, 1)),
+      (Leaf(0), IdTree.Branch(1, 0), Branch(0, 1, 0)),
+      (Leaf(1), IdTree.Branch(0, 1), Branch(1, 0, 1)),
+      (Leaf(42), IdTree.Branch(1, 0), Branch(42, 1, 0)),
+      (Branch(42, 0, 1), IdTree.Branch(0, IdTree.Branch(0, 1)), Branch(42, 0, Branch(1, 0, 1))),
+      (Branch(42, 99, 0), IdTree.Branch(IdTree.Branch(1, 0), 0), Branch(42, Branch(99, 1, 0), 0))
+    )
+
+    // Test if test inputs are not fillable
+    forAll(eventsAndIds) { (ev, id, _) =>
+      ev.fill(id) shouldBe ev
+    }
+
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.grow(id)._1 shouldBe expectedEv
+    }
+
+    // Sanity check
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.increment(id) shouldBe expectedEv
+    }
+  }
+
+  it should "prefer increment closest to root for IdTree with multiple 1-leafs" in {
+    val eventsAndIds = Table(
+      ("eventTree", "idTree", "expectedGrownEventTree"),
+      // Two 1-leafs
+      (
+        Branch(0, 0, Branch(0, 0, 1)),
+        IdTree.Branch(1, IdTree.Branch(0, 1)),
+        Branch(0, 1, Branch(0, 0, 1))
+      ),
+      (
+        Branch(0, Branch(0, 0, 1), 1),
+        IdTree.Branch(IdTree.Branch(0, 1), 1),
+        Branch(0, Branch(0, 0, 1), 2)
+      ),
+      (
+        Branch(0, Branch(0, 0, 1), Branch(0, 0, Branch(0, 0, 1))),
+        IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(0, IdTree.Branch(0, 1))),
+        Branch(0, Branch(0, 0, 2), Branch(0, 0, Branch(0, 0, 1)))
+      ),
+      // Two equally distant increments -> Prefer right (as in paper)
+      (
+        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+        IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0)),
+        Branch(0, Branch(0, 0, 2), Branch(0, 3, 0))
+      ),
+      // Three 1-leafs
+      (
+        Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, Branch(0, 1, 0), Branch(0, 0, 1))),
+        IdTree.Branch(IdTree.Branch(0, IdTree.Branch(0, 1)), IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(0, 1))),
+        Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, Branch(0, 1, 0), Branch(0, 0, 2)))
+      ),
+
+      // splits
+      (
+        Branch(0, 1, 0),
+        IdTree.Branch(IdTree.Branch(1, 0), 0),
+        Branch(0, Branch(1, 1, 0), 0)
+      ),
+      (
+        Branch(0, 1, 0),
+        IdTree.Branch(IdTree.Branch(1, 0), IdTree.Branch(1, 0)),
+        Branch(0, 1, Branch(0, 1, 0))
+      )
+    )
+
+    // Test if inputs are not fillable and expectedEv is normalized
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.fill(id) shouldBe ev
+      isNormalized(expectedEv) shouldBe true
+    }
+
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.grow(id)._1 shouldBe expectedEv
+    }
+
+    // Also check if increment is correct
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.increment(id) shouldBe expectedEv
+    }
+  }
+
+  it should "prefer increments over branching" in {
+    val eventsAndIds = Table(
+      ("eventTree", "idTree", "expectedGrownEventTree"),
+      (
+        Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, 0, 1)),
+        IdTree.Branch(IdTree.Branch(0, IdTree.Branch(0, 1)), IdTree.Branch(0, 1)),
+        Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, 0, 2))
+      ),
+      (
+        Branch(42, Branch(0, 0, Branch(0, 0, 1)), 1),
+        IdTree.Branch(IdTree.Branch(0, IdTree.Branch(0, 1)), IdTree.Branch(0, 1)),
+        Branch(42, Branch(0, 0, Branch(0, 0, 2)), 1)
+      ),
+      (
+        Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, 0, 1)),
+        IdTree.Branch(IdTree.Branch(0, IdTree.Branch(0, 1)), IdTree.Branch(0, 1)),
+        Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, 0, 2))
+      )
+    )
+
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      assert(isNormalized(ev))
+      assert(id.normalized == id)
+      assert(isNormalized(expectedEv))
+    }
+
+    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+      ev.grow(id)._1 shouldBe expectedEv
+    }
+  }
+
+  it should "return EventTree that is larger according to PartialOrdering" in {
+    forAll(genEventTree.map(_.normalized), genIdTree.map(_.normalized).suchThat(!_.isAnonymous)) { (ev, id) =>
+      val evFilled = ev.fill(id)
+      eventTreePord.tryCompare(evFilled.grow(id)._1, evFilled) shouldBe Some(1)
+      eventTreePord.tryCompare(evFilled, evFilled.grow(id)._1) shouldBe Some(-1)
+    }
+  }
+
+  "increment" should "return normalized EventTree that is greater according to PartialOrdering" in {
+    forAll(genEventTree, genIdTree.suchThat(!_.isAnonymous)) { (ev, id) =>
+      val incEv = ev.increment(id)
+      incEv shouldBe incEv.normalized
+      eventTreePord.tryCompare(incEv, ev) shouldBe Some(1)
+      eventTreePord.tryCompare(ev, incEv) shouldBe Some(-1)
+
+      val incIncEv = incEv.increment(id)
+      incIncEv shouldBe incIncEv.normalized
+      eventTreePord.tryCompare(incIncEv, ev) shouldBe Some(1)
+      eventTreePord.tryCompare(incIncEv, incEv) shouldBe Some(1)
+      eventTreePord.tryCompare(incEv, incIncEv) shouldBe Some(-1)
+    }
+  }
+
+  it should "throw an Exception when passing anonymous id" in {
+    forAll(genEventTree) { ev =>
+      assertThrows[IllegalArgumentException](ev.increment(IdTree.anonymous))
+      assertThrows[IllegalArgumentException](ev.increment(IdTree.anonymous.split._1))
+      assertThrows[IllegalArgumentException](ev.increment(IdTree.anonymous.split._2))
+    }
+  }
+
+  it should "only fill event tree if possible" in {
+    Branch(0, 1, 0).increment(1) shouldBe Leaf(1)
+    Branch(0, 1, 0).increment(IdTree.Branch(0, 1)) shouldBe Leaf(1)
+    Branch(0, Branch(0, 1, 1), 0).increment(IdTree.Branch(0, 1)) shouldBe Leaf(1)
+
+    Branch(42, Branch(0, 0, 1), Branch(0, 0, 1))
+      .increment(
+        IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0))
+      ) shouldBe Branch(42, Branch(0, 0, 1), 1)
+  }
+
+  it should "only fill event tree for successful fill examples" in {
+    forAll(fillTestTable) { (ev, id, _) =>
+      ev.increment(id) shouldBe ev.fill(id)
+    }
+  }
+
+  it should "grow event tree if fill not possible and event tree not normalized" in {
+    Branch(0, 1, 1).increment(1) shouldBe Leaf(2)
+    Branch(1, 1, 1).increment(1) shouldBe Leaf(3)
+  }
+
+  it should "grow event tree if fill not possible" in {
+    Leaf(1).increment(1) shouldBe Leaf(2)
+    Branch(0, 1, Branch(0, 1, 0)).increment(IdTree.Branch(1, 0)) shouldBe Branch(0, 2, Branch(0, 1, 0))
   }
 
   "PartialOrderingEventTree.lteq" should "work" in {
