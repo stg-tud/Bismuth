@@ -60,32 +60,54 @@ sealed trait EventTree:
     }
   }
 
-  private def fill(id: IdTree): EventTree = (id, this) match
-    case (IdTree.Leaf(0), e)        => e
-    case (IdTree.Leaf(1), e)        => e.max
-    case (_, e @ EventTree.Leaf(_)) => e
-    case (IdTree.Branch(IdTree.Leaf(1), ir), EventTree.Branch(n, el, er)) =>
+  /** Fills the EventTree without growing it. Assumes that the EventTree and IdTree are normalized
+    * @param id
+    *   The IdTree that defines which parts of the EvenTree can be filled.
+    * @return
+    *   The filled IdTree or this, if not filled
+    */
+  private[causality] def fill(id: IdTree): EventTree = (id, this) match
+    case (IdTree.Leaf(0), e)                   => e // No change
+    case (IdTree.Leaf(1), e @ Branch(_, _, _)) => Leaf(e.max)
+    case (_, e @ EventTree.Leaf(_))            => e // No change
+    case (IdTree.Branch(IdTree.Leaf(1), ir), e @ EventTree.Branch(n, el, er)) =>
       val erFilled = er.fill(ir)
-      Branch(
-        n,
-        Math.max(el.max, erFilled.min),
-        erFilled
-      ).normalized
-    case (IdTree.Branch(il, IdTree.Leaf(1)), EventTree.Branch(n, el, er)) =>
+      val elFilled = Leaf(Math.max(el.max, erFilled.min))
+      if ((er eq erFilled) && (el == elFilled)) {
+        e // No change
+      } else {
+        Branch(
+          n,
+          elFilled,
+          erFilled
+        ).normalized
+      }
+    case (IdTree.Branch(il, IdTree.Leaf(1)), e @ EventTree.Branch(n, el, er)) =>
       val elFilled = el.fill(il)
-      Branch(
-        n,
-        elFilled,
-        Math.max(er.max, elFilled.min)
-      ).normalized
-    case (IdTree.Branch(il, ir), EventTree.Branch(n, el, er)) =>
-      Branch(
-        n,
-        el.fill(il),
-        er.fill(ir)
-      ).normalized
+      val erFilled = Leaf(Math.max(er.max, elFilled.min))
+      if ((el eq elFilled) && (er == erFilled)) {
+        e // No change
+      } else {
+        Branch(
+          n,
+          elFilled,
+          erFilled
+        ).normalized
+      }
+    case (IdTree.Branch(il, ir), e @ EventTree.Branch(n, el, er)) =>
+      val elFilled = el.fill(il)
+      val erFilled = er.fill(ir)
+      if ((el eq elFilled) && (er eq erFilled)) {
+        e // No change
+      } else {
+        Branch(
+          n,
+          elFilled,
+          erFilled
+        ).normalized
+      }
 
-  protected def grow(id: IdTree): (EventTree, Int) = (id, this) match
+  private[causality] def grow(id: IdTree): (EventTree, Int) = (id, this) match
     case (IdTree.Leaf(1), EventTree.Leaf(n)) => (Leaf(n + 1), 0)
     case (i, EventTree.Leaf(n)) =>
       val (eGrown, cost) = EventTree.Branch(n, 0, 0).grow(i)
@@ -101,9 +123,10 @@ sealed trait EventTree:
       val (erGrown, erGrowCost) = er.grow(ir)
       if elGrowCost < erGrowCost then (Branch(n, elGrown, er), elGrowCost + 1)
       else (Branch(n, el, erGrown), erGrowCost + 1)
-    // The following case should never be reached.
-    case _ =>
-      throw IllegalStateException("Either fill wasn't called before grow, or the id is anonymous/not normalized")
+    case (IdTree.Leaf(1), ev) =>
+      ev.normalized.fill(IdTree.Leaf(1)).grow(IdTree.Leaf(1))
+    case (IdTree.Leaf(0), _) =>
+      throw IllegalArgumentException("Cannot grow by anonymous id")
 
 object EventTree {
   case class Leaf(value: Int) extends EventTree:
@@ -118,7 +141,9 @@ object EventTree {
 
   given Conversion[Int, Leaf] = Leaf.apply
 
-  given PartialOrdering[EventTree] with {
+  /** Note: This only works with normalized event trees!
+    */
+  given partialOrdering: PartialOrdering[EventTree] with {
     extension (left: EventTree)
       @targetName("lteq")
       inline def <=(right: EventTree): Boolean = lteq(left, right)
