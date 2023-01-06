@@ -61,3 +61,52 @@ object Encoder {
     }
   }
 }
+
+object Decoder {
+  def decode(encoding: Encoding): (IdTree, EventTree) = {
+    val (idTree, enc) = decodeId(encoding)
+    val (eventTree, _) = decodeEvents(enc)
+    return (idTree, eventTree)
+  }
+
+  def decodeId(encoding: Encoding): (IdTree, Encoding) = {
+    import causality.IdTree.{Branch, Leaf}
+    encoding.get(2) match
+      case 0 => encoding.del(2).get(1) match
+        case 0 => (Leaf(0), encoding.del(3))
+        case 1 => (Leaf(1), encoding.del(3))
+        case _ => throw new Exception("error trying to decode id tree")
+      case 1 => { val (i, r) = decodeId(encoding.del(2)); (Branch(Leaf(0), i), r) }
+      case 2 => { val (i, r) = decodeId(encoding.del(2)); (Branch(i, Leaf(0)), r) }
+      case 3 => { val (i1, r1) = decodeId(encoding.del(2)); val (i2, r2) = decodeId(r1); (Branch(i1, i2), r2) }
+      case _ => throw new Exception("error trying to decode id tree")
+  }
+
+  def decodeEvents(encoding: Encoding): (EventTree, Encoding) = {
+    import causality.EventTree.{Branch, Leaf}
+    encoding.get(1) match
+      case 0 => encoding.del(1).get(2) match
+        case 0 => { val (e, r) = decodeEvents(encoding.del(3)); (Branch(0, Leaf(0), e), r) }
+        case 1 => { val (e, r) = decodeEvents(encoding.del(3)); (Branch(0, e, Leaf(0)), r) }
+        case 2 => { val (e1, r1) = decodeEvents(encoding.del(3)); val (e2, r2) = decodeEvents(r1); (Branch(0, e1, e2), r2) }
+        case 3 => encoding.del(3).get(1) match
+          case 0 => encoding.del(4).get(1) match
+            case 0 => { val (n, r1) = decodeNum(encoding.del(5), 2); val (e, r2) = decodeEvents(r1); (Branch(n, Leaf(0), e), r2) }
+            case 1 => { val (n, r1) = decodeNum(encoding.del(5), 2); val (e, r2) = decodeEvents(r1); (Branch(n, e, Leaf(0)), r2) }
+            case _ => throw new Exception("error trying to decode event tree")
+          case 1 => { val (n, r1) = decodeNum(encoding.del(4), 2); val (e1, r2) = decodeEvents(r1); val (e2, r3) = decodeEvents(r2); (Branch(n, e1, e2), r3) }
+          case _ => throw new Exception("error trying to decode event tree")
+        case _ => throw new Exception("error trying to decode event tree")
+      case 1 => { val (n, e) = decodeNum(encoding.del(1), 2); (Leaf(n), e) }
+      case _ => throw new Exception("error trying to decode event tree")
+  }
+
+  def decodeNum(encoding: Encoding, B: Int): (Int, Encoding) = {
+    encoding.get(1) match
+      case 0 => (encoding.del(1).get(B), encoding.del(1).del(B))
+      case 1 => {
+        val (n, enc) = decodeNum(encoding.del(1), B+1)
+        (n + (1 << B), enc)
+      }
+  }
+}
