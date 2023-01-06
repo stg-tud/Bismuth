@@ -10,6 +10,7 @@ import org.scalacheck.Gen
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.should.Matchers.shouldBe
+import org.scalatest.prop.{TableFor2, TableFor3}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.tailrec
@@ -138,11 +139,11 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     }
   }
 
-  val fillTestTable = Table(
+  val fillTestTable: TableFor3[Branch, IdTree, EventTree] = Table(
     ("eventTree", "idTree", "expectedFilledEventTree"),
     (Branch(1, 3, 0), IdTree.Leaf(1), Leaf(4)),
     (Branch(1, 0, 3), IdTree.Leaf(1), Leaf(4)),
-    (Branch(1, Branch(4, 0, 0), 4), IdTree.Leaf(1), Leaf(5)),
+    (Branch(1, Branch(0, 0, 4), 4), IdTree.Leaf(1), Leaf(5)),
     (Branch(1, Branch(0, 3, 0), 3), IdTree.Leaf(1), Leaf(4)),
     (Branch(1, 4, Branch(3, 1, 0)), IdTree.Leaf(1), Leaf(5)),
     (Branch(0, Branch(0, Branch(0, 0, 1), 2), Branch(0, 2, 0)), IdTree.Leaf(1), Leaf(2)),
@@ -406,12 +407,78 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     Branch(0, 1, Branch(0, 1, 0)).increment(IdTree.Branch(1, 0)) shouldBe Branch(0, 2, Branch(0, 1, 0))
   }
 
-  "PartialOrderingEventTree.lteq" should "work" in {
-    ???
+  val incomparableEventTrees: TableFor2[EventTree, EventTree] = Table(
+    ("ev1", "ev2"),
+    (Branch(0, 1, 0), Branch(0, 0, 1)),
+    (Branch(2, 1, 0), Branch(2, 0, 1)),
+    (Branch(2, 1, Branch(0, 0, 1)), Branch(2, 0, 1)),
+    (Branch(2, Branch(0, 0, 1), 1), Branch(2, 1, 0)),
+    (Branch(21, Branch(0, 0, 1), 0), Branch(21, Branch(0, 1, 0), Branch(21, 0, 1))),
+    (Branch(0, 1, Branch(0, 0, Branch(0, 1, 0))), Branch(0, Branch(1, 0, Branch(1, 0, 2)), 0)),
+    (Branch(21, Branch(0, 0, 1), Branch(20, 1, Branch(0, 0, 2))), Branch(21, 0, Branch(21, 0, 1))),
+    (Leaf(22), Branch(21, 0, 2))
+  )
+
+  val leftSmallerEventTrees: TableFor2[EventTree, EventTree] = Table(
+    ("ev1", "ev2"),
+    (Leaf(0), Leaf(1)),
+    (Leaf(0), Leaf(42)),
+    (Leaf(21), Leaf(42)),
+    (Leaf(21), Branch(21, 0, 42)),
+    (Leaf(21), Branch(21, 42, 0)),
+    (Leaf(21), Branch(21, Branch(0, 1, 0), 0)),
+    (Leaf(21), Branch(21, Branch(0, 0, 1), 0)),
+    (Leaf(21), Branch(21, 0, Branch(21, 0, 1))),
+    (Branch(21, Branch(0, 0, 1), 0), Branch(21, Branch(0, 0, 1), Branch(21, 0, 1))),
+    (Branch(21, 0, Branch(20, 1, Branch(0, 0, 2))), Branch(21, 0, Branch(21, 0, 1))),
+    (Branch(21, Branch(20, 1, Branch(0, 0, 2)), Branch(0, 1, 0)), Branch(21, Branch(21, 0, 1), Branch(0, 1, 0))),
+  )
+
+  "PartialOrderingEventTree test data" should "be normalized" in {
+    // Assumption of PartialOrdering
+    forAll(incomparableEventTrees) { (ev1, ev2) =>
+      ev1 shouldBe ev1.normalized
+      ev2 shouldBe ev2.normalized
+    }
+
+    forAll(leftSmallerEventTrees) {(ev1,ev2) =>
+      ev1 shouldBe ev1.normalized
+      ev2 shouldBe ev2.normalized
+    }
   }
 
-  "PartialOrderingEventTree.tryCompare" should "work" in {
-    ???
+  "PartialOrderingEventTree.lteq" should "work for incomparable EventTrees" in {
+    forAll(incomparableEventTrees) { (ev1, ev2) =>
+      ev1 <= ev2 shouldBe false
+      ev2 <= ev1 shouldBe false
+    }
+  }
+
+  it should "true when ev1 == ev2" in {
+    forAll(genEventTree.map(_.normalized)) { (ev) =>
+      eventTreePord.lteq(ev, ev) shouldBe true
+    }
+  }
+
+  it should "be true when left smaller right and vice versa" in {
+    forAll(leftSmallerEventTrees) { (ev1, ev2) =>
+      assert(ev1 <= ev2)
+      assert(!(ev2 <= ev1))
+    }
+  }
+
+  "PartialOrderingEventTree.tryCompare" should "work for incomparable EventTrees" in {
+    forAll(incomparableEventTrees) { (ev1, ev2) =>
+      eventTreePord.tryCompare(ev1, ev2) shouldBe None
+      eventTreePord.tryCompare(ev2, ev1) shouldBe None
+    }
+  }
+
+  it should "be true when left smaller right and vice versa" in {
+    forAll(leftSmallerEventTrees) { (ev1, ev2) =>
+      eventTreePord.tryCompare(ev1, ev2) shouldBe Some(-1)
+      eventTreePord.tryCompare(ev2, ev1) shouldBe Some(1)
+    }
   }
 
   it should "be Some(0) when a == b" in {
@@ -475,7 +542,7 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     }
   }
 
-  it should "produce event trees that are normalized" in {
+  it should "produce event trees that are normalized for generated EventTrees" in {
     forAll(genEventTree) { ev =>
       isNormalized(ev.normalized)
     }
