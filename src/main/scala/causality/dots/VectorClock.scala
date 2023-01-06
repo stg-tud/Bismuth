@@ -19,7 +19,7 @@ case class VectorClock(timestamps: Map[Id, Time] = Map()) {
 
   def timeOf(replicaId: Id): Time = timestamps.getOrElse(replicaId, 0)
 
-  def clockOf(replicaId: Id): Dot = Dot(timeOf(replicaId), replicaId)
+  def clockOf(replicaId: Id): Dot = Dot(replicaId, timeOf(replicaId))
 
   def contains(timestamp: Dot): Boolean = timestamps.getOrElse(timestamp.replicaId, 0L) >= timestamp.time
 }

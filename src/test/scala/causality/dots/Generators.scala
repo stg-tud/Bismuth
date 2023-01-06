@@ -10,7 +10,7 @@ object Generators {
   given dotGen: Gen[Dot] = for {
     time      <- Gen.posNum[Long]
     replicaId <- Gen.long
-  } yield Dot(time, replicaId)
+  } yield Dot(replicaId, time)
 
   given arrayRangesGen: Gen[ArrayRanges] = for {
     ranges <- Gen.listOf(timeRangeGen)

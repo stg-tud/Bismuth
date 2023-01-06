@@ -22,7 +22,7 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
 
   def nextTime(replicaId: Id): Time = rangeAt(replicaId).next.getOrElse(0)
 
-  def nextDot(replicaId: Id): Dot = Dot(nextTime(replicaId), replicaId)
+  def nextDot(replicaId: Id): Dot = Dot(replicaId, nextTime(replicaId))
 
   def diff(extern: DottedVersionVector): DottedVersionVector =
     DottedVersionVector(
@@ -66,18 +66,18 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
   def contains(d: Dot): Boolean = internal.get(d.replicaId).exists(_.contains(d.time))
 
   def toSet: Set[Dot] =
-    internal.flatMap { case (key, tree) => tree.iterator.map(time => Dot(time, key)) }.toSet
+    internal.flatMap { case (id, arrayRanges) => arrayRanges.iterator.map(time => Dot(id, time)) }.toSet
 
   def max(replicaID: Id): Option[Dot] =
-    internal.get(replicaID).flatMap(_.next.map(c => Dot(c - 1, replicaID)))
+    internal.get(replicaID).flatMap(_.next.map(c => Dot(replicaID, c - 1)))
 
   def decompose(exclude: Dot => Boolean): Iterable[DottedVersionVector] =
     internal.flatMap { case (id, tree) =>
-      tree.iterator.map(time => Dot(time, id)).filterNot(exclude).map(DottedVersionVector.one)
+      tree.iterator.map(time => Dot(id, time)).filterNot(exclude).map(DottedVersionVector.one)
     }
 
   def forall(cond: Dot => Boolean): Boolean = internal.forall { case (id, tree) =>
-    tree.iterator.forall(time => cond(Dot(time, id)))
+    tree.iterator.forall(time => cond(Dot(id, time)))
   }
 
   def <=(other: DottedVersionVector): Boolean = internal.forall { case (id, leftRange) =>
@@ -88,7 +88,7 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
 object DottedVersionVector {
   def single(replicaId: Id, time: Time): DottedVersionVector = empty.add(replicaId, time)
 
-  def single(lamportClock: Dot): DottedVersionVector = empty.add(lamportClock.replicaId, lamportClock.time)
+  def single(dot: Dot): DottedVersionVector = empty.add(dot.replicaId, dot.time)
 
   val empty: DottedVersionVector = DottedVersionVector(Map.empty)
 
