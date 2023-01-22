@@ -1,6 +1,11 @@
 package de.tu_darmstadt.stg.daimpl
-package causality
+package codecs
 
+import de.tu_darmstadt.stg.daimpl.causality.IntervalTreeClock
+import de.tu_darmstadt.stg.daimpl.codecs.Encoder
+import de.tu_darmstadt.stg.daimpl.causality.IdTree
+import de.tu_darmstadt.stg.daimpl.causality.EventTree
+import java.nio.ByteBuffer
 import scala.math.pow
 
 case class Encoding(bits: BigInt, digits: Int) {
@@ -22,9 +27,10 @@ case class Encoding(bits: BigInt, digits: Int) {
 object Encoding {
   def apply(): Encoding = Encoding(0, 0)
   def fromString(str: String): Encoding = Encoding(BigInt(str, 2), str.length)
+  def fromBytes(bytes: Array[Byte]): Encoding = Encoding(BigInt(bytes), bytes.length * 8)
 }
 
-object Encoder {
+given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
   def encode(idTree: IdTree, eventTree: EventTree): Encoding =
     encodeId(idTree) + encodeEvents(eventTree)
 
@@ -57,9 +63,7 @@ object Encoder {
       return Encoding().add(1, 1) + encodeNum(n - (1 << B), B+1)
     }
   }
-}
 
-object Decoder {
   def decode(encoding: Encoding): (IdTree, EventTree) = {
     val (idTree, enc) = decodeId(encoding)
     val (eventTree, _) = decodeEvents(enc)
@@ -105,5 +109,25 @@ object Decoder {
         val (n, enc) = decodeNum(encoding.del(1), B+1)
         (n + (1 << B), enc)
       }
+  }
+
+  override def write(obj: IntervalTreeClock, buffer: ByteBuffer): Unit = writeArray(obj).toBuffer
+  override def writeArray(obj: IntervalTreeClock): Array[Byte] = encode(obj.idTree, obj.eventTree).toByteArray()
+  override def writeString(obj: IntervalTreeClock): String = encode(obj.idTree, obj.eventTree).toString
+
+  override def read(buffer: ByteBuffer, length: Int): IntervalTreeClock = {
+    val bytes: Array[Byte] = new Array[Byte](length)
+    buffer.get(bytes)
+    return readArray(bytes)
+  }
+  override def readArray(bytes: Array[Byte]): IntervalTreeClock = {
+    val encoding = Encoding.fromBytes(bytes)
+    val (idTree, eventTree) = decode(encoding)
+    return IntervalTreeClock(idTree, eventTree)
+  }
+  override def readString(bytes: String): IntervalTreeClock = {
+    val encoding = Encoding.fromString(bytes)
+    val (idTree, eventTree) = decode(encoding)
+    return IntervalTreeClock(idTree, eventTree)
   }
 }
