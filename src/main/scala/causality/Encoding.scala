@@ -4,14 +4,13 @@ package causality
 import scala.math.pow
 
 case class Encoding(bits: BigInt, digits: Int) {
-  def add(n: Int, d: Int): Encoding = Encoding((bits << d) | n, digits + d)
-  def get(d: Int): Int = ((bits & ((1 << d) - 1 << digits-d)) >> digits-d).toInt
-  def del(d: Int): Encoding = Encoding(bits & (1 << digits-d) - 1, digits-d)
+  def add(n: Int, d: Int): Encoding = Encoding(n << digits | bits, digits + d)
+  def get(d: Int): Int = (bits & ((1 << d) - 1)).toInt
+  def del(d: Int): Encoding = Encoding(bits >> d, digits-d)
 
-  def +(other: Encoding): Encoding = Encoding((bits << other.digits) | other.bits, digits + other.digits)
+  def +(other: Encoding): Encoding = Encoding((other.bits << digits) | bits, digits + other.digits)
   override def equals(other: Any): Boolean = other match {
-    case other: Encoding => digits == other.digits &&
-      (bits & (1 << digits) - 1) == (other.bits & (1 << other.digits) - 1)
+    case other: Encoding => digits == other.digits && bits == other.bits
     case _ => false
   }
 
@@ -22,9 +21,7 @@ case class Encoding(bits: BigInt, digits: Int) {
 
 object Encoding {
   def apply(): Encoding = Encoding(0, 0)
-  def fromString(str: String): Encoding = {
-    str.split("").map(c => Encoding(if (c == "1") 1 else 0, 1)).foldLeft(Encoding())(_ + _)
-  }
+  def fromString(str: String): Encoding = Encoding(BigInt(str, 2), str.length)
 }
 
 object Encoder {
