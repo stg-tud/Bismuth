@@ -1,10 +1,12 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.dots
 
+import causality.ForkEventJoinCausality
 import causality.dots.Defs.{Id, Time}
 import util.MapHelper.max
 
 import scala.math.PartialOrdering
+import scala.util.Random
 
 case class VectorClock(timestamps: Map[Id, Time] = Map()) {
   def merged(other: VectorClock): VectorClock = VectorClock(max(timestamps, other.timestamps))
@@ -47,5 +49,26 @@ object VectorClock {
 
       !anyXGreaterY
     }
+  }
+
+  given vcFejc: ForkEventJoinCausality[(Id, VectorClock)] with {
+    override def seed: (Id, VectorClock) = (Random.nextLong(), VectorClock())
+
+    extension (localVectorClock: (Id, VectorClock))
+      def fork: ((Id, VectorClock), (Id, VectorClock)) = {
+        (localVectorClock, (Random.nextLong(), localVectorClock._2))
+      }
+
+      def join(remoteVectorClock: (Id, VectorClock)): (Id, VectorClock) = {
+        (localVectorClock._1, localVectorClock._2.merged(remoteVectorClock._2))
+      }
+
+      def event: (Id, VectorClock) = {
+        (localVectorClock._1, localVectorClock._2.advance(localVectorClock._1))
+      }
+
+      def peek: (Id, VectorClock) = {
+        (0, localVectorClock._2)
+      }
   }
 }
