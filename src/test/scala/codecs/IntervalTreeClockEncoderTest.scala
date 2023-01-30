@@ -7,6 +7,8 @@ import de.tu_darmstadt.stg.daimpl.causality.IntervalTreeClock
 import de.tu_darmstadt.stg.daimpl.causality.IdTree
 import de.tu_darmstadt.stg.daimpl.causality.EventTree
 
+import de.tu_darmstadt.stg.daimpl.causality.IntervalTreeClockGenerators.genIntervalTreeClock
+
 class EncodingTest extends AnyFlatSpec {
   "fromString" should "work for Encoding" in {
     assert(Encoding.fromString("0") == Encoding().add(0, 1))
@@ -47,7 +49,7 @@ class EncodingTest extends AnyFlatSpec {
 }
 
 
-class IntervalTreeClockEncoderTest extends AnyFlatSpec {
+class IntervalTreeClockEncoderTest extends EncoderSpec[IntervalTreeClock] {
 
   /***************
    *** ENCODER ***
