@@ -19,12 +19,12 @@ import scala.util.Random
 class ForkEventJoinSendReceiveBenchmark {
   @Benchmark
   def testIntervalTreeClock(program: ForkEventJoinProgram): Unit = {
-    runProgram(program, IntervalTreeClock.itcFejc.seed)
+    runProgram(program, IntervalTreeClock.Clock.seed)
   }
 
   @Benchmark
   def testVectorClock(program: ForkEventJoinProgram): Unit = {
-    runProgram(program, vcFejc.seed)
+    runProgram(program, VectorClock.Clock.seed)
   }
 
   private inline def runProgram[T: ForkEventJoinClock: ClassTag](

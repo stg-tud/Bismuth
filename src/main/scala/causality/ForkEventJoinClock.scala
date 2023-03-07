@@ -3,6 +3,7 @@ package causality
 
 trait ForkEventJoinClock[S]:
   def seed: S
+  val ordering: PartialOrdering[S]
 
   extension (stamp: S)
     def fork: (S, S)

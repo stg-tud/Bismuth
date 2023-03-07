@@ -21,7 +21,7 @@ object IntervalTreeClock {
           IntervalTreeClock(idTreeNormalized, eventTreeNormalized)
         }
 
-  given PartialOrdering[IntervalTreeClock] with {
+  given pOrd: PartialOrdering[IntervalTreeClock] with {
     override def lteq(x: IntervalTreeClock, y: IntervalTreeClock): Boolean =
       x.eventTree <= y.eventTree
 
@@ -32,14 +32,13 @@ object IntervalTreeClock {
   given Clock: ForkEventJoinClock[IntervalTreeClock] with
     val seed: IntervalTreeClock = IntervalTreeClock(IdTree.seed, EventTree.seed)
 
+    override val ordering: PartialOrdering[IntervalTreeClock] = pOrd
+
     extension (stamp: IntervalTreeClock)
       def fork: (IntervalTreeClock, IntervalTreeClock) =
         val (id1, id2) = stamp.idTree.split
         (IntervalTreeClock(id1, stamp.eventTree), IntervalTreeClock(id2, stamp.eventTree))
 
-      /** @param otherStamp
-        * @return
-        */
       @throws[IllegalArgumentException]("when the ids overlap")
       def join(otherStamp: IntervalTreeClock): IntervalTreeClock =
         IntervalTreeClock(

@@ -27,7 +27,7 @@ case class VectorClock(timestamps: Map[Id, Time] = Map()) {
 }
 
 object VectorClock {
-  given VectorClockOrdering: PartialOrdering[VectorClock] with {
+  given pOrd: PartialOrdering[VectorClock] with {
     override def tryCompare(x: VectorClock, y: VectorClock): Option[Int] = {
       if (x.timestamps.isEmpty) return Some(0)
       if (x.timestamps.keySet != y.timestamps.keySet) return None
@@ -54,21 +54,31 @@ object VectorClock {
   given Clock: ForkEventJoinClock[(Id, VectorClock)] with {
     override def seed: (Id, VectorClock) = (Random.nextLong(), VectorClock())
 
+    override val ordering: PartialOrdering[(Id, VectorClock)] = new PartialOrdering[(Id, VectorClock)]:
+      override def tryCompare(x: (Id, VectorClock), y: (Id, VectorClock)): Option[Int] = pOrd.tryCompare(x._2,y._2)
+
+      override def lteq(x: (Id, VectorClock), y: (Id, VectorClock)): Boolean = pOrd.lt(x._2, y._2)
+
     extension (localVectorClock: (Id, VectorClock))
-      def fork: ((Id, VectorClock), (Id, VectorClock)) = {
+      override def fork: ((Id, VectorClock), (Id, VectorClock)) = {
         (localVectorClock, (Random.nextLong(), localVectorClock._2))
       }
 
-      def join(remoteVectorClock: (Id, VectorClock)): (Id, VectorClock) = {
+      override def join(remoteVectorClock: (Id, VectorClock)): (Id, VectorClock) = {
         (localVectorClock._1, localVectorClock._2.merged(remoteVectorClock._2))
       }
 
-      def event: (Id, VectorClock) = {
+      override def event: (Id, VectorClock) = {
         (localVectorClock._1, localVectorClock._2.advance(localVectorClock._1))
       }
 
-      def peek: (Id, VectorClock) = {
+      override def peek: (Id, VectorClock) = {
         (0, localVectorClock._2)
+      }
+
+      override def sync(remoteVectorClock: (Id, VectorClock)): ((Id, VectorClock), (Id, VectorClock)) = {
+        val mergedEvent = remoteVectorClock._2 merged remoteVectorClock._2
+        ((localVectorClock._1, mergedEvent), (remoteVectorClock._1, mergedEvent))
       }
   }
 }
