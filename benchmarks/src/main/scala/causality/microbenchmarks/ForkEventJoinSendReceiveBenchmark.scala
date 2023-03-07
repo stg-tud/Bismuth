@@ -5,7 +5,7 @@ import causality.IntervalTreeClock.given
 import causality.dots.Defs.Id
 import causality.dots.VectorClock
 import causality.dots.VectorClock.{*, given}
-import causality.{EventTree, ForkEventJoinCausality, IdTree, IntervalTreeClock}
+import causality.{EventTree, ForkEventJoinClock, IdTree, IntervalTreeClock}
 
 import org.openjdk.jmh.annotations.*
 
@@ -27,7 +27,7 @@ class ForkEventJoinSendReceiveBenchmark {
     runProgram(program, vcFejc.seed)
   }
 
-  private inline def runProgram[T: ForkEventJoinCausality: ClassTag](
+  private inline def runProgram[T: ForkEventJoinClock: ClassTag](
       program: ForkEventJoinProgram,
       seedStamp: T
   ): Unit = {

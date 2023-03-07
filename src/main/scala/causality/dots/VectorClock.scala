@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.dots
 
-import causality.ForkEventJoinCausality
+import causality.ForkEventJoinClock
 import causality.dots.Defs.{Id, Time}
 import util.MapHelper.max
 
@@ -51,7 +51,7 @@ object VectorClock {
     }
   }
 
-  given vcFejc: ForkEventJoinCausality[(Id, VectorClock)] with {
+  given Clock: ForkEventJoinClock[(Id, VectorClock)] with {
     override def seed: (Id, VectorClock) = (Random.nextLong(), VectorClock())
 
     extension (localVectorClock: (Id, VectorClock))

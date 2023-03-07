@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package causality
 
-trait ForkEventJoinCausality[S]:
+trait ForkEventJoinClock[S]:
   def seed: S
 
   extension (stamp: S)

@@ -29,7 +29,7 @@ object IntervalTreeClock {
       summon[PartialOrdering[EventTree]].tryCompare(x.eventTree, y.eventTree)
   }
 
-  given itcFejc: ForkEventJoinCausality[IntervalTreeClock] with
+  given Clock: ForkEventJoinClock[IntervalTreeClock] with
     val seed: IntervalTreeClock = IntervalTreeClock(IdTree.seed, EventTree.seed)
 
     extension (stamp: IntervalTreeClock)
