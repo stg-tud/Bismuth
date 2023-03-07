@@ -1,5 +1,5 @@
 package de.tu_darmstadt.stg.daimpl
-package causality.microbenchmarks
+package causality.benchmarks
 
 import causality.IntervalTreeClock.given
 import causality.dots.Defs.Id

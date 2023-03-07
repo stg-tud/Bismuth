@@ -1,5 +1,5 @@
 package de.tu_darmstadt.stg.daimpl
-package causality.microbenchmarks
+package causality.benchmarks
 
 import causality.ForkEventJoinClock
 import codecs.Encoder
