@@ -28,8 +28,13 @@ object Generators {
     ranges <- Gen.listOfN(ids.size, arrayRangesGen)
   } yield DottedVersionVector(ids.zip(ranges).toMap)
 
-  given Gen[VectorClock] = for {
+  given VectorClockGen: Gen[VectorClock] = for {
     ids    <- Gen.listOf(Gen.posNum[Time])
     clocks <- Gen.listOfN(ids.size, Gen.posNum[Time])
   } yield VectorClock(ids.zip(clocks).toMap)
+
+  given VectorClockStampGen: Gen[(Id, VectorClock)] = for {
+    id <- Gen.posNum[Id]
+    vc <- VectorClockGen
+  } yield (id, vc)
 }
