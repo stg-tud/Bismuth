@@ -3,6 +3,7 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.2.1"
 
 lazy val root = (project in file("."))
+  .disablePlugins(JmhPlugin, AssemblyPlugin)
   .settings(
     name             := "interval-tree-clocks",
     idePackagePrefix := Some("de.tu_darmstadt.stg.daimpl"),
@@ -22,9 +23,13 @@ lazy val root = (project in file("."))
   )
 
 lazy val benchmarks = (project in file("benchmarks"))
-  .enablePlugins(JmhPlugin)
+  .enablePlugins(JmhPlugin, AssemblyPlugin)
   .settings(
-    name := "benchmarks",
+    name             := "benchmarks",
     idePackagePrefix := Some("de.tu_darmstadt.stg.daimpl"),
     scalacOptions ++= Seq("-explain", "-feature"),
-  ).dependsOn(root)
+    assembly                   := (assembly dependsOn (Jmh / compile)).value,
+    assembly / mainClass       := Some("org.openjdk.jmh.Main"),
+    assembly / assemblyJarName := "benchmarks.jar"
+  )
+  .dependsOn(root)
