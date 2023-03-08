@@ -7,3 +7,5 @@ target
 .metals
 metals.sbt
 .vscode
+benchmarks/.ipynb_checkpoints
+benchmarks/results
