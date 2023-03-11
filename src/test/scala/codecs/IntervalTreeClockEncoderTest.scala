@@ -1,13 +1,11 @@
 package de.tu_darmstadt.stg.daimpl
 package codecs
 
+import causality.{EventTree, IdTree, IntervalTreeClock}
+import causality.IntervalTreeClockGenerators.genIntervalTreeClock
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
-import de.tu_darmstadt.stg.daimpl.causality.IntervalTreeClock
-import de.tu_darmstadt.stg.daimpl.causality.IdTree
-import de.tu_darmstadt.stg.daimpl.causality.EventTree
-
-import de.tu_darmstadt.stg.daimpl.causality.IntervalTreeClockGenerators.genIntervalTreeClock
 
 class EncodingTest extends AnyFlatSpec {
   "fromString" should "work for Encoding" in {
