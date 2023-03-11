@@ -2,7 +2,7 @@ package de.tu_darmstadt.stg.daimpl
 package causality
 
 import causality.IdTree.{Branch, Leaf, anonymous, seed, given}
-import causality.IdTreeGenerators.*
+import causality.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees, normalizedBaseCases}
 
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.flatspec.AnyFlatSpec
