@@ -3,56 +3,33 @@ package codecs
 
 import causality.{EventTree, IdTree, IntervalTreeClock}
 import codecs.Encoder
+import codecs.encoding.BitEncoding
 
 import java.nio.ByteBuffer
 import scala.annotation.targetName
 import scala.math.pow
 
-case class Encoding(bits: BigInt, digits: Int) {
-  def add(n: Int, d: Int): Encoding = Encoding(n << digits | bits, digits + d)
-  def get(d: Int): Int = (bits & ((1 << d) - 1)).toInt
-  def del(d: Int): Encoding = Encoding(bits >> d, digits-d)
-
-  @targetName("sum")
-  def +(other: Encoding): Encoding = Encoding((other.bits << digits) | bits, digits + other.digits)
-  override def equals(other: Any): Boolean = other match {
-    case other: Encoding => digits == other.digits && bits == other.bits
-    case _ => false
-  }
-
-  override def toString: String = String.format("%1$" + digits + "s", bits.toString(2)).replace(' ', '0')
-
-  def toByteArray: Array[Byte] = bits.toByteArray
-  def length(): Int = digits
-}
-
-object Encoding {
-  def apply(): Encoding = Encoding(0, 0)
-  def fromString(str: String): Encoding = Encoding(BigInt(str, 2), str.length)
-  def fromBytes(bytes: Array[Byte]): Encoding = Encoding(BigInt(bytes), bytes.length * 8)
-}
-
 given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
-  def encode(idTree: IdTree, eventTree: EventTree): Encoding =
+  def encode(idTree: IdTree, eventTree: EventTree): BitEncoding =
     encodeId(idTree) + encodeEvents(eventTree)
 
-  def decode(encoding: Encoding): (IdTree, EventTree) = {
+  def decode(encoding: BitEncoding): (IdTree, EventTree) = {
     val (idTree, enc) = decodeId(encoding)
     val (eventTree, _) = decodeEvents(enc)
     (idTree, eventTree)
   }
 
-  def encodeId(idTree: IdTree): Encoding = {
+  def encodeId(idTree: IdTree): BitEncoding = {
     import causality.IdTree.{Branch, Leaf}
     idTree match
-      case Leaf(0)                  => Encoding().add(0, 2).add(0, 1)
-      case Leaf(1)                  => Encoding().add(0, 2).add(1, 1)
-      case Branch(Leaf(0), i      ) => Encoding().add(1, 2) + encodeId(i)
-      case Branch(i      , Leaf(0)) => Encoding().add(2, 2) + encodeId(i)
-      case Branch(i1     , i2     ) => Encoding().add(3, 2) + encodeId(i1) + encodeId(i2)
+      case Leaf(0)                  => BitEncoding().add(0, 2).add(0, 1)
+      case Leaf(1)                  => BitEncoding().add(0, 2).add(1, 1)
+      case Branch(Leaf(0), i      ) => BitEncoding().add(1, 2) + encodeId(i)
+      case Branch(i      , Leaf(0)) => BitEncoding().add(2, 2) + encodeId(i)
+      case Branch(i1     , i2     ) => BitEncoding().add(3, 2) + encodeId(i1) + encodeId(i2)
   }
 
-  def decodeId(encoding: Encoding): (IdTree, Encoding) = {
+  def decodeId(encoding: BitEncoding): (IdTree, BitEncoding) = {
     import causality.IdTree.{Branch, Leaf}
     encoding.get(2) match
       case 0 => encoding.del(2).get(1) match
@@ -68,19 +45,19 @@ given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
       case _ => throw new Exception("error trying to decode id tree")
   }
 
-  def encodeEvents(eventTree: EventTree): Encoding = {
+  def encodeEvents(eventTree: EventTree): BitEncoding = {
     import causality.EventTree.{Branch, Leaf}
     eventTree match
-      case Branch(0, Leaf(0), e      ) => Encoding().add(0, 1).add(0, 2) + encodeEvents(e)
-      case Branch(0, e      , Leaf(0)) => Encoding().add(0, 1).add(1, 2) + encodeEvents(e)
-      case Branch(0, e1     , e2     ) => Encoding().add(0, 1).add(2, 2) + encodeEvents(e1) + encodeEvents(e2)
-      case Branch(n, Leaf(0), e      ) => Encoding().add(0, 1).add(3, 2).add(0, 1).add(0, 1) + encodeNum(n, 2) + encodeEvents(e)
-      case Branch(n, e      , Leaf(0)) => Encoding().add(0, 1).add(3, 2).add(0, 1).add(1, 1) + encodeNum(n, 2) + encodeEvents(e)
-      case Branch(n, e1     , e2     ) => Encoding().add(0, 1).add(3, 2).add(1, 1) + encodeNum(n, 2) + encodeEvents(e1) + encodeEvents(e2)
-      case Leaf(n)                     => Encoding().add(1, 1) + encodeNum(n, 2)
+      case Branch(0, Leaf(0), e      ) => BitEncoding().add(0, 1).add(0, 2) + encodeEvents(e)
+      case Branch(0, e      , Leaf(0)) => BitEncoding().add(0, 1).add(1, 2) + encodeEvents(e)
+      case Branch(0, e1     , e2     ) => BitEncoding().add(0, 1).add(2, 2) + encodeEvents(e1) + encodeEvents(e2)
+      case Branch(n, Leaf(0), e      ) => BitEncoding().add(0, 1).add(3, 2).add(0, 1).add(0, 1) + encodeNum(n, 2) + encodeEvents(e)
+      case Branch(n, e      , Leaf(0)) => BitEncoding().add(0, 1).add(3, 2).add(0, 1).add(1, 1) + encodeNum(n, 2) + encodeEvents(e)
+      case Branch(n, e1     , e2     ) => BitEncoding().add(0, 1).add(3, 2).add(1, 1) + encodeNum(n, 2) + encodeEvents(e1) + encodeEvents(e2)
+      case Leaf(n)                     => BitEncoding().add(1, 1) + encodeNum(n, 2)
   }
 
-  def decodeEvents(encoding: Encoding): (EventTree, Encoding) = {
+  def decodeEvents(encoding: BitEncoding): (EventTree, BitEncoding) = {
     import causality.EventTree.{Branch, Leaf}
     require(encoding.digits > 0)
     encoding.get(1) match
@@ -115,15 +92,15 @@ given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
               (Branch(n, e, Leaf(0)), r2)
   }
 
-  def encodeNum(n: Int, B: Int): Encoding = {
+  def encodeNum(n: Int, B: Int): BitEncoding = {
     if (n < pow(2, B)) {
-      Encoding().add(0, 1).add(n, B)
+      BitEncoding().add(0, 1).add(n, B)
     } else {
-      Encoding().add(1, 1) + encodeNum(n - (1 << B), B+1)
+      BitEncoding().add(1, 1) + encodeNum(n - (1 << B), B+1)
     }
   }
 
-  def decodeNum(encoding: Encoding, B: Int): (Int, Encoding) = {
+  def decodeNum(encoding: BitEncoding, B: Int): (Int, BitEncoding) = {
     encoding.get(1) match
       case 0 => (encoding.del(1).get(B), encoding.del(1).del(B))
       case 1 =>
@@ -140,13 +117,15 @@ given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
     buffer.get(bytes)
     readArray(bytes)
   }
+
   override def readArray(bytes: Array[Byte]): IntervalTreeClock = {
-    val encoding = Encoding.fromBytes(bytes)
+    val encoding = BitEncoding.fromBytes(bytes)
     val (idTree, eventTree) = decode(encoding)
     IntervalTreeClock(idTree, eventTree)
   }
+
   override def readString(bytes: String): IntervalTreeClock = {
-    val encoding = Encoding.fromString(bytes)
+    val encoding = BitEncoding.fromString(bytes)
     val (idTree, eventTree) = decode(encoding)
     IntervalTreeClock(idTree, eventTree)
   }
