@@ -101,6 +101,7 @@ given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
   }
 
   def decodeNum(encoding: BitEncoding, B: Int): (Int, BitEncoding) = {
+    require(encoding.digits > 0)
     encoding.get(1) match
       case 0 => (encoding.del(1).get(B), encoding.del(1).del(B))
       case 1 =>
