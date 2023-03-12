@@ -19,6 +19,14 @@ trait EncoderSpec[T: Encoder: Gen] extends AnyFlatSpec with Matchers with ScalaC
       decoded shouldBe obj
     }
   }
+
+  "readObjectArray" should "be the inverse of writeObjectArray" in {
+    forAll(tGen) { (obj: T) =>
+      val encoded = encoder.writeObjectArray(obj)
+      val decoded = encoder.readObjectArray(encoded)
+      decoded shouldBe obj
+    }
+  }
 }
 
 trait FixedSizeEncoderSpec[T: FixedSizeEncoder] extends EncoderSpec[T] {
