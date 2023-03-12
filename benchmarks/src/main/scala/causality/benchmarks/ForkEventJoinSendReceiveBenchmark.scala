@@ -43,4 +43,16 @@ class ForkEventJoinSendReceiveBenchmark {
     val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas)
     runner.runProgram()
   }
+
+  @Benchmark
+  def testVectorClockWithObjectSerialization(program: ForkEventJoinProgram): Unit = {
+    val runner = new ProgramRunnerWithObjectSerialization(program, program.vcReplicas)
+    runner.runProgram()
+  }
+
+  @Benchmark
+  def testIntervalTreeClockWithObjectSerialization(program: ForkEventJoinProgram): Unit = {
+    val runner = new ProgramRunnerWithObjectSerialization(program, program.itcReplicas)
+    runner.runProgram()
+  }
 }
