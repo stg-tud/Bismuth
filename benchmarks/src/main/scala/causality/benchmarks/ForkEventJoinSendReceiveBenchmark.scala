@@ -6,7 +6,7 @@ import causality.dots.Defs.Id
 import causality.dots.VectorClock
 import causality.dots.VectorClock.{*, given}
 import causality.{EventTree, ForkEventJoinClock, IdTree, IntervalTreeClock}
-import codecs.{IntervalTreeClockEncoder, VectorClockStampEncoder}
+import codecs.{FastIntervalTreeClockEncoder, VectorClockStampEncoder}
 
 import org.openjdk.jmh.annotations.*
 

@@ -8,7 +8,7 @@ import codecs.encoding.BitEncoding
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.shouldBe
 
-class IntervalTreeClockEncoderTest extends EncoderSpec[IntervalTreeClock] {
+class IntervalTreeClockEncoderTest extends EncoderSpec[IntervalTreeClock](using IntervalTreeClockEncoder, genIntervalTreeClock) {
 
   /***************
    *** ENCODER ***
