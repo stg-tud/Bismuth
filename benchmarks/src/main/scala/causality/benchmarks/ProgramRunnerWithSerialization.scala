@@ -6,11 +6,11 @@ import codecs.Encoder
 
 class ProgramRunnerWithSerialization[T: ForkEventJoinClock](
     program: ForkEventJoinProgram,
-    val replicas: Array[T]
-)(using encoder: Encoder[T]) {
-  var numReplicas        = 1
+    val replicas: Array[T],
+    encoder: Encoder[T]) {
+  var numReplicas: Int   = program.initialReplicaCount
   var commandIndex: Int  = 0
-  var bandwidthUsed: Int = 0
+  var bandwidthUsed: Long = 0
 
   def step(): Unit = {
     exec(program.commands(commandIndex))

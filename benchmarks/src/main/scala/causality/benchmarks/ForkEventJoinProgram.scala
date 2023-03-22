@@ -18,7 +18,7 @@ class ForkEventJoinProgram {
   private lazy val probabilities: Array[Int] = {
     generationParams.split(',').drop(1).map(_.toInt)
   }
-  private lazy val initialReplicaCount: Int = {
+  lazy val initialReplicaCount: Int = {
     generationParams.split(',')(0).toInt
   }
 
