@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package codecs
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.nio.ByteBuffer
 import java.util.Base64
 
@@ -17,41 +17,12 @@ trait Encoder[T] {
     base64Encoder.encodeToString(writeArray(obj))
   }
 
-  def writeObject(obj: T, buffer: ByteBuffer): Unit = writeObjectArray(obj).toBuffer
-
-  def writeObjectArray(obj: T): Array[Byte] = {
-    val bs: ByteArrayOutputStream = ByteArrayOutputStream()
-    val os = ObjectOutputStream(bs)
-    os.writeObject(obj)
-    os.close()
-    bs.toByteArray
-  }
-
-  def writeObjectString(obj: T): String = {
-    base64Encoder.encodeToString(writeObjectArray(obj))
-  }
-
   def read(buffer: ByteBuffer, length: Int): T
 
   def readArray(bytes: Array[Byte]): T
 
   def readString(bytes: String): T = {
     readArray(
-      base64Decoder.decode(bytes)
-    )
-  }
-
-  def readObject(buffer: ByteBuffer, length: Int): T = readObjectArray(buffer.array())
-
-  def readObjectArray(bytes: Array[Byte]): T = {
-    val os = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    val v = os.readObject
-    os.close()
-    v.asInstanceOf[T]
-  }
-
-  def readObjectString(bytes: String): T = {
-    readObjectArray(
       base64Decoder.decode(bytes)
     )
   }

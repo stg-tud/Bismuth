@@ -6,7 +6,7 @@ import causality.dots.Defs.Id
 import causality.dots.VectorClock
 import causality.dots.VectorClock.{*, given}
 import causality.{EventTree, ForkEventJoinClock, IdTree, IntervalTreeClock}
-import codecs.{FastIntervalTreeClockEncoder, VectorClockStampEncoder}
+import codecs.{FastIntervalTreeClockEncoder, VectorClockStampEncoder, JavaSerializationEncoder}
 
 import org.openjdk.jmh.annotations.*
 
@@ -34,25 +34,25 @@ class ForkEventJoinSendReceiveBenchmark {
 
   @Benchmark
   def testVectorClockWithSerialization(program: ForkEventJoinProgram): Unit = {
-    val runner = new ProgramRunnerWithSerialization(program, program.vcReplicas)
+    val runner = new ProgramRunnerWithSerialization(program, program.vcReplicas, VectorClockStampEncoder)
     runner.runProgram()
   }
 
   @Benchmark
   def testIntervalTreeClockWithSerialization(program: ForkEventJoinProgram): Unit = {
-    val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas)
+    val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas, FastIntervalTreeClockEncoder)
     runner.runProgram()
   }
 
   @Benchmark
   def testVectorClockWithObjectSerialization(program: ForkEventJoinProgram): Unit = {
-    val runner = new ProgramRunnerWithObjectSerialization(program, program.vcReplicas)
+    val runner = new ProgramRunnerWithObjectSerialization(program, program.vcReplicas, JavaSerializationEncoder[(Id, VectorClock)])
     runner.runProgram()
   }
 
   @Benchmark
   def testIntervalTreeClockWithObjectSerialization(program: ForkEventJoinProgram): Unit = {
-    val runner = new ProgramRunnerWithObjectSerialization(program, program.itcReplicas)
+    val runner = new ProgramRunnerWithObjectSerialization(program, program.itcReplicas, JavaSerializationEncoder[IntervalTreeClock])
     runner.runProgram()
   }
 }
