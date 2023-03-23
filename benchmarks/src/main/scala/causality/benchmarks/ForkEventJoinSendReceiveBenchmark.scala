@@ -17,7 +17,7 @@ import scala.util.Random
 
 @Warmup(time = 1, iterations = 3)
 @Measurement(time = 1, iterations = 3)
-@Fork(1)
+@Fork(3)
 @BenchmarkMode(Array(Mode.AverageTime))
 class ForkEventJoinSendReceiveBenchmark {
   @Benchmark
