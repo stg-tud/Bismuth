@@ -6,14 +6,14 @@ import causality.dots.Dot
 import causality.dots.impl.ArrayRanges
 import lattices.SemiLattice
 
-case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
+case class DotSet(internal: Map[Id, ArrayRanges]) {
 
   def rangeAt(replicaId: Id): ArrayRanges = internal.getOrElse(replicaId, ArrayRanges.empty)
 
   def clockOf(replicaId: Id): Option[Dot] = max(replicaId)
 
-  def add(replicaId: Id, time: Time): DottedVersionVector =
-    DottedVersionVector(
+  def add(replicaId: Id, time: Time): DotSet =
+    DotSet(
       internal.updated(
         replicaId,
         rangeAt(replicaId).add(time)
@@ -24,8 +24,8 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
 
   def nextDot(replicaId: Id): Dot = Dot(replicaId, nextTime(replicaId))
 
-  def diff(extern: DottedVersionVector): DottedVersionVector =
-    DottedVersionVector(
+  def diff(extern: DotSet): DotSet =
+    DotSet(
       internal.map { case (id, range) =>
         val filtered = extern.internal.get(id).map { erange =>
           val keep = range.iterator.filterNot(erange.contains)
@@ -35,8 +35,8 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
       }
     )
 
-  def intersect(other: DottedVersionVector): DottedVersionVector =
-    DottedVersionVector {
+  def intersect(other: DotSet): DotSet =
+    DotSet {
       internal.flatMap { case (id, ranges) =>
         other.internal.get(id) match {
           case Some(otherRanges) =>
@@ -48,10 +48,10 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
       }
     }
 
-  def union(other: DottedVersionVector): DottedVersionVector = DottedVersionVector.contextLattice.merged(this, other)
+  def union(other: DotSet): DotSet = DotSet.contextLattice.merged(this, other)
 
-  def subtract(other: DottedVersionVector): DottedVersionVector = {
-    DottedVersionVector(
+  def subtract(other: DotSet): DotSet = {
+    DotSet(
       internal
         .map { case left @ (id, leftRanges) =>
           other.internal.get(id) match {
@@ -71,34 +71,34 @@ case class DottedVersionVector(internal: Map[Id, ArrayRanges]) {
   def max(replicaID: Id): Option[Dot] =
     internal.get(replicaID).flatMap(_.next.map(c => Dot(replicaID, c - 1)))
 
-  def decompose(exclude: Dot => Boolean): Iterable[DottedVersionVector] =
+  def decompose(exclude: Dot => Boolean): Iterable[DotSet] =
     internal.flatMap { case (id, tree) =>
-      tree.iterator.map(time => Dot(id, time)).filterNot(exclude).map(DottedVersionVector.one)
+      tree.iterator.map(time => Dot(id, time)).filterNot(exclude).map(DotSet.one)
     }
 
   def forall(cond: Dot => Boolean): Boolean = internal.forall { case (id, tree) =>
     tree.iterator.forall(time => cond(Dot(id, time)))
   }
 
-  def <=(other: DottedVersionVector): Boolean = internal.forall { case (id, leftRange) =>
+  def <=(other: DotSet): Boolean = internal.forall { case (id, leftRange) =>
     leftRange <= other.rangeAt(id)
   }
 }
 
-object DottedVersionVector {
-  def single(replicaId: Id, time: Time): DottedVersionVector = empty.add(replicaId, time)
+object DotSet {
+  def single(replicaId: Id, time: Time): DotSet = empty.add(replicaId, time)
 
-  def single(dot: Dot): DottedVersionVector = empty.add(dot.replicaId, dot.time)
+  def single(dot: Dot): DotSet = empty.add(dot.replicaId, dot.time)
 
-  val empty: DottedVersionVector = DottedVersionVector(Map.empty)
+  val empty: DotSet = DotSet(Map.empty)
 
-  def one(dot: Dot): DottedVersionVector = empty.add(dot.replicaId, dot.time)
+  def one(dot: Dot): DotSet = empty.add(dot.replicaId, dot.time)
 
-  given contextLattice: SemiLattice[DottedVersionVector] = (left: DottedVersionVector, right: DottedVersionVector) => {
-    DottedVersionVector(SemiLattice.merged(left.internal, right.internal))
+  given contextLattice: SemiLattice[DotSet] = (left: DotSet, right: DotSet) => {
+    DotSet(SemiLattice.merged(left.internal, right.internal))
   }
 
-  def fromSet(dots: Set[Dot]): DottedVersionVector = DottedVersionVector(
+  def fromSet(dots: Set[Dot]): DotSet = DotSet(
     dots.groupBy(_.replicaId).map { case (key, times) =>
       key -> ArrayRanges.from(times.iterator.map(_.time))
     }

@@ -23,10 +23,10 @@ object Generators {
     upper = Math.max(a, b)
   } yield (lower, upper)
 
-  given Gen[DottedVersionVector] = for {
+  given Gen[DotSet] = for {
     ids    <- Gen.listOf(Gen.posNum[Time])
     ranges <- Gen.listOfN(ids.size, arrayRangesGen)
-  } yield DottedVersionVector(ids.zip(ranges).toMap)
+  } yield DotSet(ids.zip(ranges).toMap)
 
   given VectorClockGen: Gen[VectorClock] = for {
     ids    <- Gen.listOf(Gen.posNum[Time])

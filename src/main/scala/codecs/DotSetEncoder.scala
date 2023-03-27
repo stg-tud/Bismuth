@@ -2,13 +2,13 @@ package de.tu_darmstadt.stg.daimpl
 package codecs
 
 import causality.dots.Defs.Id
-import causality.dots.DottedVersionVector
+import causality.dots.DotSet
 import causality.dots.impl.ArrayRanges
 
 import java.nio.ByteBuffer
 
-given DottedVersionVectorEncoder: VariableSizeEncoder[DottedVersionVector] with {
-  override def BYTES(obj: DottedVersionVector): Int = {
+given DotSetEncoder: VariableSizeEncoder[DotSet] with {
+  override def BYTES(obj: DotSet): Int = {
     val bytesForArrayRanges = obj.internal.map { case (_, arrayRanges) =>
       java.lang.Integer.BYTES + arrayRanges.used * java.lang.Long.BYTES
     }.sum
@@ -18,7 +18,7 @@ given DottedVersionVectorEncoder: VariableSizeEncoder[DottedVersionVector] with 
     bytesForArrayRanges + bytesForDottedVersionVectorLength + bytesForIds
   }
 
-  override def write(obj: DottedVersionVector, buffer: ByteBuffer): Unit = {
+  override def write(obj: DotSet, buffer: ByteBuffer): Unit = {
     // Number of entries in dotted version vector
     buffer.putInt(obj.internal.size)
     obj.internal.foreach { (id, arrayRanges) =>
@@ -31,7 +31,7 @@ given DottedVersionVectorEncoder: VariableSizeEncoder[DottedVersionVector] with 
     }
   }
 
-  override def read(buffer: ByteBuffer, length: Int): DottedVersionVector = {
+  override def read(buffer: ByteBuffer, length: Int): DotSet = {
     var remainingBytes = length
     require(remainingBytes >= java.lang.Integer.BYTES)
     val numEntries: Int = buffer.getInt()
@@ -49,6 +49,6 @@ given DottedVersionVectorEncoder: VariableSizeEncoder[DottedVersionVector] with 
       mapBuilder += id -> arrayRanges
     }
 
-    DottedVersionVector(mapBuilder.result())
+    DotSet(mapBuilder.result())
   }
 }
