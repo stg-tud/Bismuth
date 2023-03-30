@@ -1,6 +1,17 @@
 # Interval Tree Clocks in Scala
 
-This repository contains an implementation of Interval Tree Clocks in Scala based on the description of the [original paper](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf). Interval Tree Clocks (ITCs) are Data Structures for managing causality of events in distributed systems. As their implementation is based on branching, processing does not strictly depend on online communication but instead can work locally on a branch of the ITC. Additionally, the exact number of nodes is not necessarily needed as fork/join operations can be applied on the local branch without knowledge of cluster size.
+This repository contains an implementation of Interval Tree Clocks in Scala based on the description of the [original paper](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf) as well as an evaluation of our implementation and the behaviour of Interval Tree Clocks in general.
+
+## Short description of Interval Tree Clock
+Interval Tree Clocks (ITCs) are Data Structures for managing causality of events in distributed systems and can be used in place of Vector Clocks and Version Vectors.
+They are specifically designed to be used in highly dynamic systems, i.e., when group membership of replicas changes frequently.
+This is an area where Vector Clocks and Version Vectors struggle, as there is no native way for them to shrink, i.e., removing replicas from the timestamps, leading to a monotonically growing size of the timestamps.
+In dynamic systems, this either means that you need to rely on complicated, error-prone and possibly expensive mechanisms to reduce overhead, or to simply to accept the increasing overhead of causality management when using Version Vectors or Vector Clocks.
+Interval Tree Clocks on the other hand can grow and shrink with replicas entering and leaving the system.
+This is due to the way how IDs are assigned to replicas and how the IDs are used in the process of advancing the event tracking mechanism.
+Contrary to the scalar IDs and event counters of the vector based approaches, Interval Tree Clocks use tree representations for both the IDs (IdTrees) and the event tracking (EventTrees).
+
+More details on how Interval Tree Clocks work can be found in the [original paper](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf) as well as in [this blog post](https://ferd.ca/interval-tree-clocks.html).
 
 
 ## This implementation
