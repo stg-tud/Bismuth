@@ -14,17 +14,22 @@ Contrary to the scalar IDs and event counters of the vector based approaches, In
 More details on how Interval Tree Clocks work can be found in the [original paper](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf) as well as in [this blog post](https://ferd.ca/interval-tree-clocks.html).
 
 
-## This implementation
+## Notes on this implementation
 
-We aimed at implementing all features of the original paper in a Scala library for reference in future applications. This implementation includes the basic data structure (id and event trees), the event counter operation, fork and join operations and normalize operation. For convenience, each (fork/join) operation is executed on a normalized ITC.
+This repository contains tested implementations of all features of the original paper as a Scala library for reuse in applications as well as for further evaluation.
+This implementation includes the data structures of Interval Tree Clocks (`IdTree` and `EventTree`), as well as the operations on them.
+All of the user-facing operations that produce modified trees only produce normalized trees but don't assume normalized trees as input.
+We provide two interfaces for using Interval Tree Clocks in place of Vector Clocks and Version Vectors in the Fork-Event-Join-Model: `ForkEventJoinClock` and `ForkEventJoinVersioning`.
 
-For reference, the repository includes implementations some similar methods, namely Dotted Version Vectors (DVV) and Vector Clocks (VC). These are used as comparison in the [benchmarks](#benchmark).
+For reference, the repository includes implementations for other causality management solutions, most notably a `Map`-based Vector Clock that is used in the [benchmark](#benchmark).
 
-We included the encoder proposed in the paper and added a decoder to efficiently share ITCs between peers while using an encoding that uses as little bits as possible. The encoder exposes methods to write to byte array and string and works on top of Scalas BigInt implementation to store interim encodings memory efficient and allow for build-in bit shifting.
-Decoding a bit sequence stops as soon as a correct ITC has been read; leading zeros will be ignored.
-De-/encoders for VCs and DVVs are included as well and share the same API.
+We implemented an encoder and a decoder for the binary encoding proposed in the paper.
+The proposed encoding tries to minimize the number of bits used to encode the trees and therefore focuses on size rather than encoding speed.
+There are two implementations for the ITC encoders and decoders in this repository. One is based on BigDecimals and does not heavily rely on lower level bitwise operations, while the other one uses byte arrays and relies heavily on bitwise operations. The second implementation was needed because of the huge overhead found in the first implementation. The byte array based implementation can be found in `FastIntervalTreeClockEncoder` and is orders of magnitude faster than the `IntervalTreeClockEncoder`.
 
-Unit tests for relevant code are included. The tests use property-based testing to efficiently check correct behavior on arbitrary inputs using generators.
+Encoders and decoders are also implemented for the other causality management approaches found in this repository. They share the same interface and are composable.
+
+Unit tests can be found in `src/test`. This includes manually written test cases as well as tests based on property-based testing using generated test inputs.
 
 
 ## Benchmark
