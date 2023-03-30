@@ -56,6 +56,16 @@ We have collected some thoughts on the [original paper](https://gsd.di.uminho.pt
 - ITCs have comparatively complex operation semantics due to their use of trees instead of scalar values.
 - While they introduce a system model based on forking and joining for creating and "retiring" of replicas, they don't map this to more concrete models and give example for potential use real-world applications
 
+## Open research / evaluation questions
+- How do ITCs perform in real-world systems? Which scenarios are problematic?
+- How does the choice which replica to fork / join affect performance? (worst-case vs. best-case and different strategies)
+- How does fragmentation of the ID space through silent failures of replicas affect performance in the long run?
+- What strategies exist to combat this fragmentation? How safe are they?
+- How to decide which replica to fork / join with different assumptions? (knowledge of all replica IDs vs. knowledge of random selection vs. structured)
+- How does normalization affect performance?
+- Can servers lend IDs to clients instead of using Dotted Version Vectors to solve sibling explosion?
+- Is it possible to modify ITCs to separate the event identifier from the causal history? Just like in Dotted Version Vectors: essentially Dotted Interval Tree Clocks.
+
 ## License
 
 The project is licensed under the [MIT License](./LICENSE).
