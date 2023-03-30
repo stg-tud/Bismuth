@@ -34,20 +34,27 @@ Unit tests can be found in `src/test`. This includes manually written test cases
 
 ## Benchmark
 
-See [Benchmarks.ipynb](./benchmarks/Benchmarks.ipynb) for benchmark results.
+See [Benchmarks.ipynb](./benchmarks/Benchmarks.ipynb) for the results and a description of the benchmarks.
+
+TL;DR: Our ITC implementation performed better than our Map-based VC implementation in all benchmark scenarios, both in the static as well as in dynamic scenarios.
 
 
 ## Thoughts on the paper
 
 We have collected some thoughts on the [original paper](https://gsd.di.uminho.pt/members/cbm/ps/itc2008.pdf) that came to mind while implementing ITCs:
 
+- We think that overall it is both an excellent paper and a really elegant approach to causality management.
 - The explanation, especially the graphical representation of events, were helpful to understand the intuition behind operations and their impact on the data structures.
-- Conceptionally ITCs solve some issues regarding synchronization speed and conflict management of other approaches.
-- Some parts of the operations are explained very short and may need a little more details. It took us some time to get the hang of how to implement it.
-- Many operations require normalization for working correctly which can annihilate the performance advantage of ITCs. It should be more clear when to normalize and how to avoid it in some scenarios
-- The encoder is explained really short and is missing the description of a decoder
-- There is no description of what happens when ITCs get lost (i.e. failing nodes). Due to the nature of low syncing overhead there is no build-in way to know when other ITCs are forever lost. Obviously remaining ITCs get more fragmented, the addition of methods to clean ITCs can be helpful.
-
+- ITCs seem to effectively solve the scalability issues in causality management that are found in other approaches.
+- The paper gives system designers a great framework for causality management, since their great scalability and explicit system model make them quite flexible.
+- While the paper is relatively light on evaluation, their results seem to be accurate. Our evaluation also backs their claims. ITCs seem to be quite scalable and provide great performance both in dynamic and static systems.
+- While the paper does a good job at explaining how ITCs can be implemented, some of the operations are only covered briefly. Compared to Vector Clocks, which are quite simple to implement, ITCs are much more complex and the operations quite subtle in some places.
+- Some operations in the paper assume normalized inputs to work correctly, this should be made more explicit in the paper.
+- The impact of normalization on performance is not covered in the paper.
+- The definition of an encoding is not explained and is missing the description of a decoder. While coming up with a working decoder is not that hard, it feels like this should be documented (maybe in an extended version of the paper).
+- The authors don't talk about what happens when replicas fail. When replicas don't resurface, their part of the ID space can't be used in normalization. Frequent failures can affect the performance, since the trees can't be simplified in places where there are holes in the ID space. We came up with a few approaches on how this could be dealt with, so solutions for specific applications exist, but they are outside of the ITC logic.
+- ITCs have comparatively complex operation semantics due to their use of trees instead of scalar values.
+- While they introduce a system model based on forking and joining for creating and "retiring" of replicas, they don't map this to more concrete models and give example for potential use real-world applications
 
 ## License
 
