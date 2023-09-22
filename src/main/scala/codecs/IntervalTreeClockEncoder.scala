@@ -5,7 +5,7 @@ import causality.IntervalTreeClock
 
 import java.nio.ByteBuffer
 
-given FastIntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
+given IntervalTreeClockEncoder: Encoder[IntervalTreeClock] with {
   override def write(itc: IntervalTreeClock, buffer: ByteBuffer): Unit = {
     buffer.put(writeArray(itc))
   }

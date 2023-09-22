@@ -6,7 +6,7 @@ import causality.dots.Defs.Id
 import causality.dots.VectorClock
 import causality.dots.VectorClock.{*, given}
 import causality.{EventTree, ForkEventJoinClock, IdTree, IntervalTreeClock}
-import codecs.{FastIntervalTreeClockEncoder, VectorClockStampEncoder, JavaSerializationEncoder}
+import codecs.{IntervalTreeClockEncoder, VectorClockStampEncoder, JavaSerializationEncoder}
 
 import org.openjdk.jmh.annotations.*
 
@@ -40,7 +40,7 @@ class ForkEventJoinSendReceiveBenchmark {
 
   @Benchmark
   def testIntervalTreeClockWithSerialization(program: ForkEventJoinProgram): Unit = {
-    val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas, FastIntervalTreeClockEncoder)
+    val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas, IntervalTreeClockEncoder)
     runner.runProgram()
   }
 

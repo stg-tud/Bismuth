@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package causality.benchmarks
 
-import codecs.{FastIntervalTreeClockEncoder, VectorClockStampEncoder}
+import codecs.{IntervalTreeClockEncoder, VectorClockStampEncoder}
 
 import org.openjdk.jmh.annotations.*
 
@@ -76,7 +76,7 @@ class ForkEventJoinSizeBenchmarks {
     bandwidthFile.println("commands,bandwidth (bytes)")
     bandwidthFile.println("0,0")
 
-    val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas, FastIntervalTreeClockEncoder)
+    val runner = new ProgramRunnerWithSerialization(program, program.itcReplicas, IntervalTreeClockEncoder)
     while (runner.commandIndex < program.programLength) {
       runner.step()
       bandwidthFile.println(s"${runner.commandIndex},${runner.bandwidthUsed}")
