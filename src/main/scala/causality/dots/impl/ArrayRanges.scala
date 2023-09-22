@@ -4,13 +4,17 @@ package causality.dots.impl
 import causality.dots.Defs.Time
 import lattices.SemiLattice
 
+import scala.annotation.targetName
+
 case class ArrayRanges(inner: Array[Time], used: Int) {
   require(used >= 0 && used % 2 == 0 && inner.length >= used)
 
   override def equals(obj: Any): Boolean = obj match {
     case ar: ArrayRanges => inner.iterator.take(used).sameElements(ar.inner.iterator.take(ar.used))
+    case _ => false
   }
 
+  @targetName("lteq")
   def <=(right: ArrayRanges): Boolean = {
     if (isEmpty) return true
     if (right.isEmpty) return false

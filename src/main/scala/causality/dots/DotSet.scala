@@ -2,9 +2,10 @@ package de.tu_darmstadt.stg.daimpl
 package causality.dots
 
 import causality.dots.Defs.{Id, Time}
-import causality.dots.Dot
 import causality.dots.impl.ArrayRanges
 import lattices.SemiLattice
+
+import scala.annotation.targetName
 
 case class DotSet(internal: Map[Id, ArrayRanges]) {
 
@@ -80,6 +81,7 @@ case class DotSet(internal: Map[Id, ArrayRanges]) {
     tree.iterator.forall(time => cond(Dot(id, time)))
   }
 
+  @targetName("lteq")
   def <=(other: DotSet): Boolean = internal.forall { case (id, leftRange) =>
     leftRange <= other.rangeAt(id)
   }

@@ -1,7 +1,7 @@
 package de.tu_darmstadt.stg.daimpl
 package codecs
 
-import org.scalacheck.{Arbitrary, Gen, Properties}
+import org.scalacheck.Gen
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
