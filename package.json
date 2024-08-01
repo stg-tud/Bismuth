@@ -1,0 +1,24 @@
+{
+  "name": "text-rdt",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "prosemirror-commands": "^1.5.2",
+    "prosemirror-keymap": "^1.2.2",
+    "prosemirror-model": "^1.21.1",
+    "prosemirror-schema-basic": "^1.2.2",
+    "prosemirror-state": "^1.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.1",
+    "@scala-js/vite-plugin-scalajs": "^1.0.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.13"
+  }
+}
