@@ -20,7 +20,7 @@ class WebDriverFixture
   private def createWebDriver(): Browser = {
     val browser =
       playwright.chromium.nn
-        .launch(new BrowserType.LaunchOptions().setHeadless(true))
+        .launch(new BrowserType.LaunchOptions().setHeadless(true).nn)
         .nn
     browser
   }
@@ -33,11 +33,35 @@ class WebDriverFixture
       Some(driverOrNull)
     }
     val browser = optionDriver.getOrElse(createWebDriver())
-    val context = browser.newContext().nn;
+    val context = browser.newContext().nn
+    context.onWebError(error => {
+      throw new RuntimeException(error.toString())
+    })
+    /*context
+      .tracing()
+      .nn
+      .start(
+        new Tracing.StartOptions()
+          .setScreenshots(true)
+          .nn
+          .setSnapshots(true)
+          .nn
+          .setSources(true)
+          .nn
+      );*/
     context.newPage.nn
   }
 
   def giveBack(webDriver: Page, uuid: UUID): Unit = {
+    /*webDriver
+      .context()
+      .nn
+      .tracing()
+      .nn
+      .stop(
+        new Tracing.StopOptions()
+          .setPath(Paths.get(s"traces/trace-$uuid.zip"))
+      );*/
     val browser = webDriver.context().nn.browser().nn
     webDriver.context().nn.close()
     assert(drivers.offer(browser))

@@ -176,7 +176,7 @@ class ThesisTestSuite extends FunSuite {
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
     val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateC.insert(0, 's')
+    replicaStateC.insert(0, 'S')
     replicaStateC.insert(1, 'h')
     replicaStateC.insert(2, 'o')
     replicaStateC.insert(3, 'p')
@@ -527,7 +527,7 @@ class ThesisTestSuite extends FunSuite {
     }
 
     {
-      bench.until = 3
+      bench.until = 2
       bench.count = 3
       val replica = bench.evilInsert2ComplexAVL(text_rdt.Counters.Counters())
       exportGraph(

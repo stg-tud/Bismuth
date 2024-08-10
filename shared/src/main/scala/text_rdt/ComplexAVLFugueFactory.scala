@@ -819,7 +819,7 @@ object ComplexAVLFugueFactory {
                       singleRightChild.value.offset += 1
                       singleRightChild.value.rightmostDescendantCache.value += 1
                       singleRightChild.fixSizeRecursively(-1)
-                      sortedSet.addOne(
+                      val _ = sortedSet.addOne(
                         singleRightChild
                       )
                     }
@@ -861,12 +861,12 @@ object ComplexAVLFugueFactory {
                     ]] => {
                   assert(sortedSet.remove(singleRightChild))
                   singleRightChild.value.offset -= 1
-                  sortedSet.addOne(
+                  singleRightChild.value.rightmostDescendantCache.value -= 1
+                  val _ = sortedSet.addOne(
                     singleRightChild
                   )
                 }
               }
-
             }
             case default => {
               val (nodeToSplit, nodeRightSplit) =

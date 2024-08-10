@@ -415,6 +415,26 @@ abstract class InternalFugueTestSuite(
     replicaA.sync(replicaB)
   }
 
+  test("regression-27") {
+    val replicaStateA =
+      ReplicaState("D")(using factoryConstructor())
+    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaStateC =
+      ReplicaState("C")(using factoryConstructor())
+    val replicaC = Replica(replicaStateC, NoopEditory())
+    replicaStateA.insert(0, 'B')
+    replicaStateA.insert(0, '@')
+    replicaStateA.insert(2, 'u')
+    replicaStateA.insert(1, ')')
+    replicaStateA.insert(2, 'M')
+    replicaA.sync(replicaC)
+    replicaStateA.delete(0)
+    replicaStateC.delete(1)
+    replicaA.sync(replicaC)
+    assertEquals(replicaA.text(), "MBu")
+    assertEquals(replicaC.text(), "MBu")
+  }
+
   test("2023-weidner-minimizing-interleaving-figure-1") {
     val replicaStateA =
       ReplicaState("A")(using factoryConstructor())

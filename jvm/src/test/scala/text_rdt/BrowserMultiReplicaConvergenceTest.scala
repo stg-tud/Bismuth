@@ -115,10 +115,10 @@ case class BrowserMultiReplicaConvergenceTest(
   }
 
   abstract class BaseCommand extends SuccessCommand {
-    type Result = List[String]
+    type Result = (List[String], UUID)
 
     override def postCondition(state: State, result: Result): Prop = {
-      val grouped = nextState(state).zip(result).groupBy(e => e._1.revision)
+      val grouped = nextState(state).zip(result._1).groupBy(e => e._1.revision)
       val groupsToCompare = grouped
         .map(elem => elem._2.map(e => e._2))
         .filter(l => l.length > 1)
@@ -135,7 +135,7 @@ case class BrowserMultiReplicaConvergenceTest(
   }
 
   case class CreateReplica() extends BaseCommand {
-    type Result = List[String]
+    type Result = (List[String], UUID)
 
     override def preCondition(state: State): Boolean = true
 
@@ -145,7 +145,7 @@ case class BrowserMultiReplicaConvergenceTest(
       val editor =
         sut._1.locator(s"#editor${sut._2.length} div").nn
       val _ = sut._2.append(editor)
-      sut._2.map(_.textContent().nn).toList
+      (sut._2.map(_.textContent().nn).toList, sut.traceUuid)
     }
 
     override def nextState(state: State): State = {
@@ -156,13 +156,13 @@ case class BrowserMultiReplicaConvergenceTest(
   }
 
   case class DeleteReplica(replicaIndex: Int) extends BaseCommand {
-    type Result = List[String]
+    type Result = (List[String], UUID)
 
     override def preCondition(state: State): Boolean = replicaIndex < state.size
 
     override def run(sut: Sut): Result = {
       val _ = sut._2.remove(replicaIndex)
-      sut._2.map(_.textContent().nn).toList
+      (sut._2.map(_.textContent().nn).toList, sut.traceUuid)
     }
 
     override def nextState(state: State): State = {
@@ -172,7 +172,7 @@ case class BrowserMultiReplicaConvergenceTest(
 
   case class SyncReplicas(replicaIndex1: Int, replicaIndex2: Int)
       extends BaseCommand {
-    type Result = List[String]
+    type Result = (List[String], UUID)
 
     override def preCondition(state: State): Boolean =
       replicaIndex1 < state.size && replicaIndex2 < state.size && replicaIndex1 != replicaIndex2
@@ -185,7 +185,7 @@ case class BrowserMultiReplicaConvergenceTest(
           )
           .nn
       syncButton.click()
-      sut._2.map(_.textContent().nn).toList
+      (sut._2.map(_.textContent().nn).toList, sut.traceUuid)
     }
 
     override def nextState(state: State): State = {
@@ -200,7 +200,7 @@ case class BrowserMultiReplicaConvergenceTest(
 
   case class Insert(replicaIndex: Int, index: Int, character: Char)
       extends BaseCommand {
-    type Result = List[String]
+    type Result = (List[String], UUID)
 
     override def run(sut: Sut): Result = {
       val oldText =
@@ -211,7 +211,7 @@ case class BrowserMultiReplicaConvergenceTest(
         .elements(replicaIndex)
         .fill(StringBuilder(oldText).insert(fixedIndex, character).toString)
 
-      sut._2.map(_.textContent().nn).toList
+      (sut._2.map(_.textContent().nn).toList, sut.traceUuid)
     }
 
     override def preCondition(state: State): Boolean =
@@ -226,7 +226,7 @@ case class BrowserMultiReplicaConvergenceTest(
   }
 
   case class Delete(replicaIndex: Int, index: Int) extends BaseCommand {
-    type Result = List[String]
+    type Result = (List[String], UUID)
 
     override def run(sut: Sut): Result = {
       val oldText =
@@ -243,7 +243,7 @@ case class BrowserMultiReplicaConvergenceTest(
             .fill(toFill)
         }
       }
-      sut._2.map(_.textContent().nn).toList
+      (sut._2.map(_.textContent().nn).toList, sut.traceUuid)
     }
 
     override def preCondition(state: State): Boolean =
