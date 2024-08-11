@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "orderedmap": "^2.1.1",
+    "prosemirror-view": "^1.33.6",
+    "prosemirror-transform": "^1.8.0",
     "prosemirror-commands": "^1.5.2",
     "prosemirror-keymap": "^1.2.2",
     "prosemirror-model": "^1.21.1",
