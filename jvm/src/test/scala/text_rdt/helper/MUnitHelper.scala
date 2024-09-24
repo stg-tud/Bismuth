@@ -12,7 +12,7 @@ import com.microsoft.playwright.BrowserType
 
 class WebDriverFixture
     extends Fixture[ConcurrentLinkedQueue[Browser]]("webdriver") {
-  val playwright = Playwright.create.nn
+  lazy val playwright = Playwright.create.nn
 
   private val drivers: ConcurrentLinkedQueue[Browser] =
     ConcurrentLinkedQueue()

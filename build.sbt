@@ -5,7 +5,7 @@ import Tests.*
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / scalaVersion := "3.4.2"
+ThisBuild / scalaVersion := "3.5.0"
 
 lazy val root = project
   .in(file("."))
@@ -40,12 +40,12 @@ lazy val textrdt = crossProject(JVMPlatform, JSPlatform)
         (LocalRootProject / baseDirectory).value.toURI.toString
       s"-scalajs-mapSourceURI:$baseUrl->/"
     },
-    libraryDependencies += "org.scalacheck" %%% "scalacheck" % "1.18.0" % Test,
-    libraryDependencies += "org.scalameta" %%% "munit" % "1.0.0" % Test,
+    libraryDependencies += "org.scalacheck" %%% "scalacheck" % "1.18.1" % Test,
+    libraryDependencies += "org.scalameta" %%% "munit" % "1.0.2" % Test,
     libraryDependencies += "org.scalameta" %%% "munit-scalacheck" % "1.0.0" % Test,
-    libraryDependencies += "com.lihaoyi" %%% "ujson" % "3.3.1",
+    libraryDependencies += "com.lihaoyi" %%% "ujson" % "4.0.1",
     libraryDependencies += "com.lihaoyi" %%% "pprint" % "0.9.0",
-    libraryDependencies += "com.lihaoyi" %%% "upickle" % "3.3.1",
+    libraryDependencies += "com.lihaoyi" %%% "upickle" % "4.0.1",
     assembly / assemblyMergeStrategy := {
       case "module-info.class" => MergeStrategy.discard
       case PathList("META-INF", "versions", xs @ _, "module-info.class") =>
@@ -61,7 +61,7 @@ lazy val textrdt = crossProject(JVMPlatform, JSPlatform)
   .jvmConfigure(_.enablePlugins(JmhPlugin))
   .jsConfigure(_.enablePlugins(JmhPlugin))
   .jvmSettings(
-    libraryDependencies += "com.microsoft.playwright" % "playwright" % "1.44.0"
+    libraryDependencies += "com.microsoft.playwright" % "playwright" % "1.47.0"
   )
   .jsSettings(
     libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.8.0",
