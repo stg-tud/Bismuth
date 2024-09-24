@@ -90,7 +90,7 @@ def plotTreeNode(node: MyD3TreeNode): String = {
         plotTreeNode(child)
     })
     .mkString
-    + s"""<text font-family="monospace" id="x${node.value.toList
+    + s"""<text font-size="smaller" font-family="'Noto Sans Mono', 'Noto Sans Symbols 2'" id="x${node.value.toList
         .map(_.toInt.toHexString)
         .mkString}" shape-rendering="geometricPrecision" x="${node.x}" y="${node.y}" dominant-baseline="hanging" text-anchor="middle">${node.value}</text>
         """
