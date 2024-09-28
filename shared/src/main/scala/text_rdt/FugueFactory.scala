@@ -24,6 +24,8 @@ trait FugueFactory {
 
   extension (factory: F) {
 
+    def textWithDeleted(): Vector[Either[Char, Char]]
+
     def text(): String
 
     def atVisibleIndex(i: Int): N

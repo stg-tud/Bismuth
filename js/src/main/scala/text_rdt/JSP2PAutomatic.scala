@@ -131,9 +131,9 @@ private case class JSP2PAutomatic() {
         interval = org.scalajs.dom.window.setInterval(
           () => {
             if (channel.readyState == "open") {
-              channel.send("heads" + write(replica.state.cachedHeads))
-              replica.state.causalState = replica.state.causalState.clone()
-              replica.state.tick()
+              channel.send("heads" + write(replica.state.causalBroadcast.cachedHeads))
+              replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
+              replica.state.causalBroadcast.tick()
             } else {
               org.scalajs.dom.window.clearInterval(interval)
             }
@@ -147,14 +147,14 @@ private case class JSP2PAutomatic() {
             val heads: ArrayBuffer[mutable.HashMap[String, Integer]] =
               read(event.data.toString().stripPrefix("heads"))
             val potentiallyNewer2 =
-              replica.state
+              replica.state.causalBroadcast
                 .elementsPotentiallyNewer(
                   heads
                 )
                 .toSeq
             val result = write(potentiallyNewer2)
-            replica.state.causalState = replica.state.causalState.clone()
-            replica.state.tick()
+            replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
+            replica.state.causalBroadcast.tick()
             channel.send("diff" + result)
           } else if (event.data.toString().startsWith("diff")) {
             val potentiallyNewer: Seq[

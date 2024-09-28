@@ -3,8 +3,8 @@ package text_rdt
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
 
-final case class InternalSingleReplicaInsertDeleteTest(
-    factoryConstructor: () => FugueFactory
+final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
+    using val factoryContext: F
 ) extends Commands {
 
   type State = String
@@ -15,7 +15,7 @@ final case class InternalSingleReplicaInsertDeleteTest(
   override def newSut(state: State): Sut = {
     assert(state.isEmpty)
     val replicaState =
-      ReplicaState("test")(using factoryConstructor())
+      ReplicaState("test")(using factoryContext)
     Replica(replicaState, NoopEditory())
   }
 

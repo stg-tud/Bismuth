@@ -42,5 +42,5 @@ def peakMemory(): Unit = {
       .asInstanceOf[String]
   );
   val _ = replica.hashCode();
-  Thread.sleep(Duration.of(42, ChronoUnit.HOURS))
+  Thread.sleep(420)
 }

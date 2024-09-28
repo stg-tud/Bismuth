@@ -7,10 +7,11 @@ import scala.collection.mutable
 
 case class Convergence(revision: Int) {}
 
-case class InternalMultiReplicaConvergenceTest(
-    factoryConstructor: () => FugueFactory
+case class InternalMultiReplicaConvergenceTest[F <: FugueFactory]()(
+    using val factoryContext: F
 ) extends Commands {
 
+  // the second parameter is just a unique id so uniquely identify equal convergences??
   type State = (Map[Int, Convergence], Int)
 
   type Sut = mutable.Map[Int, Replica[?]]
@@ -26,7 +27,6 @@ case class InternalMultiReplicaConvergenceTest(
   override def genCommand(state: State): Gen[Command] = {
     val gens = List(
       genCreateReplica(state),
-      genDeleteReplica(state),
       genSyncReplicas(state),
       genInsert(state),
       genDelete(state)
@@ -38,18 +38,6 @@ case class InternalMultiReplicaConvergenceTest(
     replicaId <- Gen.choose(0, Int.MaxValue)
     if !state._1.keySet.contains(replicaId)
   } yield CreateReplica(replicaId))
-
-  def genDeleteReplica(state: State): Option[Gen[DeleteReplica]] = if (
-    state._1.isEmpty
-  ) {
-    None
-  } else {
-    Some(
-      for {
-        replicaIndex <- Gen.oneOf(state._1.keySet)
-      } yield DeleteReplica(replicaIndex)
-    )
-  }
 
   def genSyncReplicas(state: State): Option[Gen[SyncReplicas]] = if (
     state._1.size <= 1
@@ -127,7 +115,7 @@ case class InternalMultiReplicaConvergenceTest(
     override def run(sut: Sut): Result = {
       val replicaState = ReplicaState(
         id.toString
-      )(using factoryConstructor())
+      )(using factoryContext)
       val replica = Replica(replicaState, NoopEditory())
       val _ = sut.put(id, replica)
       sut.view.mapValues(_.text()).toMap
@@ -140,21 +128,6 @@ case class InternalMultiReplicaConvergenceTest(
         ),
         state._2 + 1
       )
-    }
-  }
-
-  case class DeleteReplica(replicaIndex: Int) extends BaseCommand {
-
-    override def preCondition(state: State): Boolean =
-      state._1.contains(replicaIndex)
-
-    override def run(sut: Sut): Result = {
-      val _ = sut.remove(replicaIndex)
-      sut.view.mapValues(_.text()).toMap
-    }
-
-    override def nextState(state: State): State = {
-      (state._1.removed(replicaIndex), state._2)
     }
   }
 

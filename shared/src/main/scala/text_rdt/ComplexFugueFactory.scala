@@ -500,6 +500,8 @@ object ComplexFugueFactory {
         }
       }
 
+      override def textWithDeleted(): Vector[Either[Char, Char]] = ???
+
       override def text(): String = {
         val root = get(null).complexTreeNode
         val stack = mutable.Stack(

@@ -5,24 +5,16 @@ import org.scalacheck.Test
 import text_rdt.helper.scalacheck
 
 class SimpleInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(() => {
-      SimpleFugueFactory.simpleFugueFactory
-    }) {}
+    extends InternalFugueScalaCheckSuite(using SimpleFugueFactory.simpleFugueFactory) {}
 
 class ComplexInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(() => {
-      ComplexFugueFactory.complexFugueFactory
-    }) {}
+    extends InternalFugueScalaCheckSuite(using ComplexFugueFactory.complexFugueFactory) {}
 
 class SimpleAVLInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(() => {
-      SimpleAVLFugueFactory.simpleAVLFugueFactory
-    }) {}
+    extends InternalFugueScalaCheckSuite(using SimpleAVLFugueFactory.simpleAVLFugueFactory) {}
 
 class ComplexAVLInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(() => {
-      ComplexAVLFugueFactory.complexAVLFugueFactory
-    }) {
+    extends InternalFugueScalaCheckSuite(using ComplexAVLFugueFactory.complexAVLFugueFactory) {
 
   override protected def scalaCheckInitialSeed: String =
     "EW9fMG9YY_yS7U_xrPdYhnQaD0XdHdBj2miRsRsemXC="
@@ -39,7 +31,7 @@ class ComplexAVLInternalFugueScalaCheckSuite
 }
 
 abstract class InternalFugueScalaCheckSuite(
-    val factoryConstructor: () => FugueFactory
+    using val factoryConstructor: FugueFactory
 ) extends ScalaCheckSuite {
 
   override def scalaCheckTestParameters: Test.Parameters =
@@ -56,12 +48,16 @@ abstract class InternalFugueScalaCheckSuite(
       scalacheck
     )
   ) {
-    InternalSingleReplicaInsertDeleteTest(factoryConstructor).property()
+    InternalSingleReplicaInsertDeleteTest()(using factoryConstructor).property()
   }
 
   property("All replicas should converge".tag(scalacheck)) {
-    InternalMultiReplicaConvergenceTest(factoryConstructor).property()
+    InternalMultiReplicaConvergenceTest()(using factoryConstructor).property()
   }
+
+  /*property("All replicas should follow the strong list specification".tag(scalacheck)) {
+    InternalMultiReplicaStrongListSpecificationTest()(using factoryConstructor).property()
+  }*/
 }
 
 class InternalFugueTreeEqualityCheckSuite extends ScalaCheckSuite {

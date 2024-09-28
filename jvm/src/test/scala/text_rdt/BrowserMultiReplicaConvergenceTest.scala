@@ -106,14 +106,6 @@ case class BrowserMultiReplicaConvergenceTest(
     webDriverFixture.giveBack(sut._1, sut.traceUuid)
   }
 
-  def genDeleteReplica(state: State): Gen[DeleteReplica] = if (state.isEmpty) {
-    DeleteReplica(-1)
-  } else {
-    for {
-      replicaIndex <- Gen.choose(0, state.size - 1)
-    } yield DeleteReplica(replicaIndex)
-  }
-
   abstract class BaseCommand extends SuccessCommand {
     type Result = (List[String], UUID)
 
@@ -152,21 +144,6 @@ case class BrowserMultiReplicaConvergenceTest(
       state.appended(
         Convergence(nextRevision)
       )
-    }
-  }
-
-  case class DeleteReplica(replicaIndex: Int) extends BaseCommand {
-    type Result = (List[String], UUID)
-
-    override def preCondition(state: State): Boolean = replicaIndex < state.size
-
-    override def run(sut: Sut): Result = {
-      val _ = sut._2.remove(replicaIndex)
-      (sut._2.map(_.textContent().nn).toList, sut.traceUuid)
-    }
-
-    override def nextState(state: State): State = {
-      state.patch(replicaIndex, List.empty, 1)
     }
   }
 

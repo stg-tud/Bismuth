@@ -13,50 +13,16 @@ final case class Replica[F <: FugueFactory](
   }
 
   def syncFrom(other: ReplicaState[F]): Unit = {
-    val heads1 = this.state.cachedHeads
-    val potentiallyNewer2 =
-      other.elementsPotentiallyNewer(heads1)
-    this.state.causalState = this.state.causalState.clone()
-    other.causalState = other.causalState.clone()
-    potentiallyNewer2.foreach(entry => {
-      deliveringRemote(
-        entry.asInstanceOf[
-          (
-              text_rdt.CausalID,
-              scala.collection.mutable.ArrayBuffer[
-                Replica.this.state.factoryContext.MSG
-              ]
-          )
-        ]
-      )
-    })
-    this.state.tick()
-    other.tick()
+    this.state.causalBroadcast.syncFrom(other.causalBroadcast.asInstanceOf[CausalBroadcast[Replica.this.state.factoryContext.MSG]], msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
   }
 
   def deliveringRemote(
       entry: (
           CausalID,
-          mutable.ArrayBuffer[state.factoryContext.MSG]
-      )
+          mutable.ArrayBuffer[Replica.this.state.factoryContext.MSG]
+      ),
   ): Unit = {
-    entry._1
-      .foreachEntry((rid, counter) => {
-        this.state.causalState
-          .update(
-            rid,
-            Math.max(
-              this.state.causalState.getOrElse(rid, CausalID.ZERO),
-              counter
-            )
-          )
-      })
-
-    this.state.addToHistory(entry)
-
-    entry._2.foreach(e =>
-      state.factoryContext.handleRemoteMessage(state.factory)(e, editor)
-    )
+    state.causalBroadcast.deliveringRemote(entry, msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
   }
 
   def text(): String = {

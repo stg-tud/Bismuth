@@ -945,6 +945,18 @@ object ComplexAVLFugueFactory {
         }
       }
 
+      override def textWithDeleted(): Vector[Either[Char, Char]] = {
+        factory.avlTree
+          .values()
+          .map(v => {
+            if (v._values != null) {
+              Left(v._values.nn.view(v.offset))
+            } else {
+              Right('⌫') // v._values.nn.view(v.offset)
+            }
+          }).toVector
+      }
+
       override def text(): String = {
         val result = factory.avlTree
           .values()

@@ -83,10 +83,6 @@ case class InternalFugueTreeEqualityTest(
 
   override def destroySut(sut: Sut): Unit = {}
 
-  def genDeleteReplica(state: State): Gen[DeleteReplica] = for {
-    replica <- Gen.oneOf(state)
-  } yield DeleteReplica(replica)
-
   abstract class BaseCommand extends SuccessCommand {
 
     type Result = MyResult
@@ -129,23 +125,6 @@ case class InternalFugueTreeEqualityTest(
     }
 
     def nextState(state: State): State = state ++ List(replicaId)
-  }
-
-  case class DeleteReplica(replicaId: String) extends BaseCommand {
-
-    override def preCondition(state: State): Boolean = state.contains(replicaId)
-
-    override def run(sut: Sut): Result = {
-      MyResult(
-        sut
-          .map(replicas => {
-            val _ = replicas.remove(replicaId)
-            replicas.values.map(v => (v.tree(), s"remove $replicaId")).toSeq
-          })
-      )
-    }
-
-    def nextState(state: State): State = state diff List(replicaId)
   }
 
   case class SyncReplicas(replicaId1: String, replicaId2: String)

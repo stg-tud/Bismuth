@@ -127,6 +127,8 @@ object SimpleAVLFugueFactory {
         result
       }
 
+      override def textWithDeleted(): Vector[Either[Char, Char]] = ???
+
       override def text(): String =
         factory.avlTree.values().filter(_.value != null).map(_.value).mkString
 

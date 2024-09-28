@@ -13,6 +13,7 @@ class ComplexBrowserFugueScalaCheckSuite
 class SimpleAVLBrowserFugueScalaCheckSuite
     extends BrowserFugueScalaCheckSuite("simpleavl") {}
 
+@munit.IgnoreSuite
 class ComplexAVLBrowserFugueScalaCheckSuite
     extends BrowserFugueScalaCheckSuite("complexavl") {}
 

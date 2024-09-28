@@ -188,6 +188,8 @@ object SimpleFugueFactory {
         vals.iterator.next
       }
 
+      override def textWithDeleted(): Vector[Either[Char, Char]] = ???
+
       override def text(): String = values().mkString
       override def visibleIndexOf(node: N): Int = {
         nodesWithTombstones()
