@@ -223,9 +223,9 @@ object ComplexAVLFugueFactory {
                 id
               )
               val deleted = treeNode.value() != null
+              val index = visibleIndexOf(get(id))
               val _ = factory.delete(treeNode)
               if (deleted) {
-                val index = visibleIndexOf(get(id))
                 editor.delete(index)
               }
             }

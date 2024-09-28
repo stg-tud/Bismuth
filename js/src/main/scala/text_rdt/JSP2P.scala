@@ -324,19 +324,20 @@ private case class JSP2P() {
     editorStateConfig
   )
 
+  val replica =
+    Replica[complexAVLTreeNodeD3Tree.factoryContext.type](
+      replicaState,
+    )
+
   val prosemirror =
     ProseMirror(
       s"#editor${replicaId}",
       state,
       complexAVLTreeNodeD3Tree,
-      replicaState
+      replica
     )
 
-  val replica =
-    Replica[complexAVLTreeNodeD3Tree.factoryContext.type](
-      replicaState,
-      prosemirror
-    )
+  replica.editor = prosemirror
 
   org.scalajs.dom.document
     .querySelector("#offer-connection")

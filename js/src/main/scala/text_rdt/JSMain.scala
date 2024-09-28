@@ -252,11 +252,13 @@ private case class JSMain[F <: FugueFactory](
 
     val state = EditorState.create(editorStateConfig)
 
-    val prosemirror =
-      ProseMirror(s"#editor$name", state, d3Tree, replicaState)
-
     val replica =
-      Replica[d3Tree.factoryContext.type](replicaState, prosemirror)
+      Replica[d3Tree.factoryContext.type](replicaState)
+
+    val prosemirror =
+      ProseMirror(s"#editor$name", state, d3Tree, replica)
+
+    replica.editor = prosemirror
 
     replica
   }

@@ -14,7 +14,7 @@ final class ProseMirror[F <: FugueFactory](
     elementSelector: String,
     var state: EditorState,
     d3Tree: D3Tree[F],
-    replicaState: ReplicaState[d3Tree.factoryContext.type]
+    replica: Replica[d3Tree.factoryContext.type]
 ) extends Editory {
 
   private var showTree: Boolean = {
@@ -54,11 +54,11 @@ final class ProseMirror[F <: FugueFactory](
                 )
 
               for (i <- end - 1 to start by -1) {
-                replicaState.delete(i)
+                replica.delete(i)
               }
 
               for ((char, i) <- text.zipWithIndex) {
-                replicaState.insert(start + i, char)
+                replica.insert(start + i, char)
               }
             case unknown =>
               println("unknown case")
@@ -75,7 +75,7 @@ final class ProseMirror[F <: FugueFactory](
   refresh()
 
   document
-    .querySelector(s"#editor${replicaState.replicaId}-toggle-graph")
+    .querySelector(s"#editor${replica.state.replicaId}-toggle-graph")
     .addEventListener(
       "click",
       click => {
@@ -104,12 +104,12 @@ final class ProseMirror[F <: FugueFactory](
 
   private def refresh(): Unit = {
     if (showTree) {
-      val root = replicaState.rootTreeNode.buildTree()
-      plotTree(s"#editor${replicaState.replicaId}-graph", root)
-      replicaState.factory match {
+      val root = replica.state.rootTreeNode.buildTree()
+      plotTree(s"#editor${replica.state.replicaId}-graph", root)
+      replica.state.factory match {
         case value1: SimpleAVLFugueFactory =>
           plotTree(
-            s"#editor${replicaState.replicaId}-graph-avl",
+            s"#editor${replica.state.replicaId}-graph-avl",
             value1.avlTree.root match {
               case null  => throw IllegalStateException()
               case value => buildTree(value, "")
@@ -117,7 +117,7 @@ final class ProseMirror[F <: FugueFactory](
           )
         case value1: ComplexAVLFugueFactory =>
           plotTree(
-            s"#editor${replicaState.replicaId}-graph-avl",
+            s"#editor${replica.state.replicaId}-graph-avl",
             value1.avlTree.root match {
               case null  => throw IllegalStateException()
               case value => buildTreeComplex(value, "")
@@ -127,10 +127,10 @@ final class ProseMirror[F <: FugueFactory](
       }
     } else {
       document
-        .querySelector(s"#editor${replicaState.replicaId}-graph")
+        .querySelector(s"#editor${replica.state.replicaId}-graph")
         .innerHTML = "";
       document
-        .querySelector(s"#editor${replicaState.replicaId}-graph-avl")
+        .querySelector(s"#editor${replica.state.replicaId}-graph-avl")
         .innerHTML = "";
     }
   }

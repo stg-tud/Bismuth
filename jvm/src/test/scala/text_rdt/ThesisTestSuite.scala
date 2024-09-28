@@ -59,36 +59,36 @@ class ThesisTestSuite extends FunSuite {
     "root-right-a".tag(browser)
   ) {
     val replicaState =
-      ReplicaState("A")(using
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
+      ), StringEditory())
     replicaState.insert(0, 'a')
-    exportGraph(replicaState.rootTreeNode.buildTree(), "root-right-a")
+    exportGraph(replicaState.state.rootTreeNode.buildTree(), "root-right-a")
   }
 
   test(
     "root-right-ac".tag(browser)
   ) {
     val replicaState =
-      ReplicaState("A")(using
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
+      ), StringEditory())
     replicaState.insert(0, 'a')
     replicaState.insert(1, 'c')
-    exportGraph(replicaState.rootTreeNode.buildTree(), "root-right-ac")
+    exportGraph(replicaState.state.rootTreeNode.buildTree(), "root-right-ac")
   }
 
   test(
     "root-right-ac-left-b".tag(browser)
   ) {
     val replicaState =
-      ReplicaState("A")(using
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
+      ), StringEditory())
     replicaState.insert(0, 'a')
     replicaState.insert(1, 'c')
     replicaState.insert(1, 'b')
-    exportGraph(replicaState.rootTreeNode.buildTree(), "root-right-ac-left-b")
+    exportGraph(replicaState.state.rootTreeNode.buildTree(), "root-right-ac-left-b")
   }
 
   test(
@@ -98,29 +98,29 @@ class ThesisTestSuite extends FunSuite {
       ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaA = Replica(replicaStateA, StringEditory())
     val replicaStateB =
       ReplicaState("B")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateA.insert(0, 't')
-    replicaStateA.insert(1, 'r')
-    replicaStateA.insert(2, 'e')
-    replicaStateA.insert(3, 'e')
-    replicaStateA.insert(4, 's')
-    replicaStateB.insert(0, '␣')
-    replicaStateB.insert(1, 'g')
-    replicaStateB.insert(2, 'r')
-    replicaStateB.insert(3, 'o')
-    replicaStateB.insert(4, 'w')
+    val replicaB = Replica(replicaStateB, StringEditory())
+    replicaA.insert(0, 't')
+    replicaA.insert(1, 'r')
+    replicaA.insert(2, 'e')
+    replicaA.insert(3, 'e')
+    replicaA.insert(4, 's')
+    replicaB.insert(0, '␣')
+    replicaB.insert(1, 'g')
+    replicaB.insert(2, 'r')
+    replicaB.insert(3, 'o')
+    replicaB.insert(4, 'w')
     replicaA.sync(replicaB)
-    replicaStateA.insert(0, 's')
-    replicaStateA.insert(1, 'm')
-    replicaStateA.insert(2, 'a')
-    replicaStateA.insert(3, 'l')
-    replicaStateA.insert(4, 'l')
-    replicaStateA.insert(5, '␣')
+    replicaA.insert(0, 's')
+    replicaA.insert(1, 'm')
+    replicaA.insert(2, 'a')
+    replicaA.insert(3, 'l')
+    replicaA.insert(4, 'l')
+    replicaA.insert(5, '␣')
     exportGraph(replicaStateA.rootTreeNode.buildTree(), "traversal-example")
   }
 
@@ -131,20 +131,20 @@ class ThesisTestSuite extends FunSuite {
       ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaA = Replica(replicaStateA, StringEditory())
     val replicaStateB =
       ReplicaState("B")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateA.insert(0, 'a')
-    replicaStateA.insert(1, 'l')
-    replicaStateA.insert(2, 'i')
-    replicaStateA.insert(3, 'c')
-    replicaStateA.insert(4, 'e')
-    replicaStateB.insert(0, 'b')
-    replicaStateB.insert(1, 'o')
-    replicaStateB.insert(2, 'b')
+    val replicaB = Replica(replicaStateB, StringEditory())
+    replicaA.insert(0, 'a')
+    replicaA.insert(1, 'l')
+    replicaA.insert(2, 'i')
+    replicaA.insert(3, 'c')
+    replicaA.insert(4, 'e')
+    replicaB.insert(0, 'b')
+    replicaB.insert(1, 'o')
+    replicaB.insert(2, 'b')
     exportGraph(replicaStateA.rootTreeNode.buildTree(), "concurrent-insert-a")
     exportGraph(replicaStateB.rootTreeNode.buildTree(), "concurrent-insert-b")
     replicaA.sync(replicaB)
@@ -161,60 +161,60 @@ class ThesisTestSuite extends FunSuite {
       ReplicaState("C")(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaC = Replica(replicaStateC, NoopEditory())
+    val replicaC = Replica(replicaStateC, StringEditory())
     val replicaStateA =
       ReplicaState("A")(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaA = Replica(replicaStateA, StringEditory())
     val replicaStateB =
       ReplicaState("B")(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateC.insert(0, 'S')
-    replicaStateC.insert(1, 'h')
-    replicaStateC.insert(2, 'o')
-    replicaStateC.insert(3, 'p')
-    replicaStateC.insert(4, 'p')
-    replicaStateC.insert(5, 'i')
-    replicaStateC.insert(6, 'n')
-    replicaStateC.insert(7, 'g')
+    val replicaB = Replica(replicaStateB, StringEditory())
+    replicaC.insert(0, 'S')
+    replicaC.insert(1, 'h')
+    replicaC.insert(2, 'o')
+    replicaC.insert(3, 'p')
+    replicaC.insert(4, 'p')
+    replicaC.insert(5, 'i')
+    replicaC.insert(6, 'n')
+    replicaC.insert(7, 'g')
 
     replicaC.sync(replicaA)
     replicaC.sync(replicaB)
 
-    replicaStateA.insert(8, '*')
-    replicaStateA.insert(9, ' ')
-    replicaStateA.insert(10, 'a')
-    replicaStateA.insert(11, 'p')
-    replicaStateA.insert(12, 'p')
-    replicaStateA.insert(13, 'l')
-    replicaStateA.insert(14, 'e')
-    replicaStateA.insert(15, 's')
+    replicaA.insert(8, '*')
+    replicaA.insert(9, ' ')
+    replicaA.insert(10, 'a')
+    replicaA.insert(11, 'p')
+    replicaA.insert(12, 'p')
+    replicaA.insert(13, 'l')
+    replicaA.insert(14, 'e')
+    replicaA.insert(15, 's')
 
-    replicaStateA.insert(8, 'F')
-    replicaStateA.insert(9, 'r')
-    replicaStateA.insert(10, 'u')
-    replicaStateA.insert(11, 'i')
-    replicaStateA.insert(12, 't')
-    replicaStateA.insert(13, ':')
+    replicaA.insert(8, 'F')
+    replicaA.insert(9, 'r')
+    replicaA.insert(10, 'u')
+    replicaA.insert(11, 'i')
+    replicaA.insert(12, 't')
+    replicaA.insert(13, ':')
 
-    replicaStateB.insert(8, '*')
-    replicaStateB.insert(9, ' ')
-    replicaStateB.insert(10, 'b')
-    replicaStateB.insert(11, 'r')
-    replicaStateB.insert(12, 'e')
-    replicaStateB.insert(13, 'a')
-    replicaStateB.insert(14, 'd')
+    replicaB.insert(8, '*')
+    replicaB.insert(9, ' ')
+    replicaB.insert(10, 'b')
+    replicaB.insert(11, 'r')
+    replicaB.insert(12, 'e')
+    replicaB.insert(13, 'a')
+    replicaB.insert(14, 'd')
 
-    replicaStateB.insert(8, 'B')
-    replicaStateB.insert(9, 'a')
-    replicaStateB.insert(10, 'k')
-    replicaStateB.insert(11, 'e')
-    replicaStateB.insert(12, 'r')
-    replicaStateB.insert(13, 'y')
-    replicaStateB.insert(14, ':')
+    replicaB.insert(8, 'B')
+    replicaB.insert(9, 'a')
+    replicaB.insert(10, 'k')
+    replicaB.insert(11, 'e')
+    replicaB.insert(12, 'r')
+    replicaB.insert(13, 'y')
+    replicaB.insert(14, ':')
 
     replicaA.sync(replicaB)
 
@@ -227,42 +227,42 @@ class ThesisTestSuite extends FunSuite {
   test(
     "delete".tag(browser)
   ) {
-    val replicaState =
-      ReplicaState("A")(using
+    val replica =
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
-    replicaState.insert(0, 'a')
-    replicaState.insert(1, 'c')
-    replicaState.insert(1, 'b')
-    replicaState.delete(1)
-    exportGraph(replicaState.rootTreeNode.buildTree(), "delete")
+      ), StringEditory())
+    replica.insert(0, 'a')
+    replica.insert(1, 'c')
+    replica.insert(1, 'b')
+    replica.delete(1)
+    exportGraph(replica.state.rootTreeNode.buildTree(), "delete")
   }
 
   test(
     "sequential-inserts".tag(browser)
   ) {
-    val replicaState =
-      ReplicaState("A")(using
+    val replica =
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
-    replicaState.insert(0, 'a')
-    replicaState.insert(1, 'c')
-    replicaState.insert(2, 'b')
-    exportGraph(replicaState.rootTreeNode.buildTree(), "sequential-inserts")
+      ), StringEditory())
+    replica.insert(0, 'a')
+    replica.insert(1, 'c')
+    replica.insert(2, 'b')
+    exportGraph(replica.state.rootTreeNode.buildTree(), "sequential-inserts")
   }
 
   test(
     "reverse-sequential-inserts".tag(browser)
   ) {
-    val replicaState =
-      ReplicaState("A")(using
+    val replica =
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
-    replicaState.insert(0, 'c')
-    replicaState.insert(0, 'b')
-    replicaState.insert(0, 'a')
+      ), StringEditory())
+    replica.insert(0, 'c')
+    replica.insert(0, 'b')
+    replica.insert(0, 'a')
     exportGraph(
-      replicaState.rootTreeNode.buildTree(),
+      replica.state.rootTreeNode.buildTree(),
       "reverse-sequential-inserts"
     )
   }
@@ -270,19 +270,19 @@ class ThesisTestSuite extends FunSuite {
   test(
     "efficiency-avl-before".tag(browser)
   ) {
-    val replicaState =
-      ReplicaState("A")(using
+    val replica =
+      Replica(ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
-      )
-    replicaState.insert(0, 'l')
-    replicaState.insert(1, 'o')
-    replicaState.insert(2, 'n')
-    replicaState.insert(3, 'g')
-    replicaState.insert(4, 't')
-    replicaState.insert(5, 'e')
-    replicaState.insert(6, 'x')
-    replicaState.insert(7, 't')
-    exportGraph(replicaState.rootTreeNode.buildTree(), "efficiency-avl-before")
+      ), StringEditory())
+    replica.insert(0, 'l')
+    replica.insert(1, 'o')
+    replica.insert(2, 'n')
+    replica.insert(3, 'g')
+    replica.insert(4, 't')
+    replica.insert(5, 'e')
+    replica.insert(6, 'x')
+    replica.insert(7, 't')
+    exportGraph(replica.state.rootTreeNode.buildTree(), "efficiency-avl-before")
   }
 
   test(
@@ -292,21 +292,21 @@ class ThesisTestSuite extends FunSuite {
       ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaA = Replica(replicaStateA, StringEditory())
     val replicaStateB =
       ReplicaState("B")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateA.insert(0, 'l')
-    replicaStateA.insert(1, 'o')
-    replicaStateA.insert(2, 'n')
-    replicaStateA.insert(3, 'g')
-    replicaStateA.insert(4, 't')
-    replicaStateA.insert(5, 'e')
-    replicaStateA.insert(6, 'x')
-    replicaStateA.insert(7, 't')
-    replicaStateB.insert(0, '.')
+    val replicaB = Replica(replicaStateB, StringEditory())
+    replicaA.insert(0, 'l')
+    replicaA.insert(1, 'o')
+    replicaA.insert(2, 'n')
+    replicaA.insert(3, 'g')
+    replicaA.insert(4, 't')
+    replicaA.insert(5, 'e')
+    replicaA.insert(6, 'x')
+    replicaA.insert(7, 't')
+    replicaB.insert(0, '.')
     replicaA.sync(replicaB)
     exportGraph(replicaStateA.rootTreeNode.buildTree(), "efficiency-avl")
   }
@@ -318,68 +318,68 @@ class ThesisTestSuite extends FunSuite {
       ReplicaState("A")(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaA = Replica(replicaStateA, StringEditory())
     val replicaStateB =
       ReplicaState("B")(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateA.insert(0, 'S')
-    replicaStateA.insert(1, 'h')
-    replicaStateA.insert(2, 'o')
-    replicaStateA.insert(3, 'p')
-    replicaStateA.insert(4, 'p')
-    replicaStateA.insert(5, 'i')
-    replicaStateA.insert(6, 'n')
-    replicaStateA.insert(7, 'g')
+    val replicaB = Replica(replicaStateB, StringEditory())
+    replicaA.insert(0, 'S')
+    replicaA.insert(1, 'h')
+    replicaA.insert(2, 'o')
+    replicaA.insert(3, 'p')
+    replicaA.insert(4, 'p')
+    replicaA.insert(5, 'i')
+    replicaA.insert(6, 'n')
+    replicaA.insert(7, 'g')
     exportGraph(
       replicaStateA.rootTreeNode.buildTree(),
       "fugue-is-broken-0"
     )
     replicaA.sync(replicaB)
-    replicaStateB.insert(8, '*')
-    replicaStateB.insert(9, 'b')
-    replicaStateB.insert(10, 'r')
-    replicaStateB.insert(11, 'e')
-    replicaStateB.insert(12, 'a')
-    replicaStateB.insert(13, 'd')
-    replicaStateB.delete(7)
-    replicaStateB.insert(7, 'g')
-    replicaStateB.insert(8, 'B')
-    replicaStateB.insert(9, 'a')
-    replicaStateB.insert(10, 'k')
-    replicaStateB.insert(11, 'e')
-    replicaStateB.insert(12, 'r')
-    replicaStateB.insert(13, 'y')
-    replicaStateB.insert(14, ':')
+    replicaB.insert(8, '*')
+    replicaB.insert(9, 'b')
+    replicaB.insert(10, 'r')
+    replicaB.insert(11, 'e')
+    replicaB.insert(12, 'a')
+    replicaB.insert(13, 'd')
+    replicaB.delete(7)
+    replicaB.insert(7, 'g')
+    replicaB.insert(8, 'B')
+    replicaB.insert(9, 'a')
+    replicaB.insert(10, 'k')
+    replicaB.insert(11, 'e')
+    replicaB.insert(12, 'r')
+    replicaB.insert(13, 'y')
+    replicaB.insert(14, ':')
 
-    replicaStateA.insert(8, '*')
-    replicaStateA.insert(9, 'a')
-    replicaStateA.insert(10, 'p')
-    replicaStateA.insert(11, 'p')
-    replicaStateA.insert(12, 'l')
-    replicaStateA.insert(13, 'e')
-    replicaStateA.insert(14, 's')
-    replicaStateA.insert(8, 'F')
-    replicaStateA.insert(9, 'r')
-    replicaStateA.insert(10, 'u')
-    replicaStateA.insert(11, 'i')
-    replicaStateA.insert(12, 't')
-    replicaStateA.insert(13, ':')
+    replicaA.insert(8, '*')
+    replicaA.insert(9, 'a')
+    replicaA.insert(10, 'p')
+    replicaA.insert(11, 'p')
+    replicaA.insert(12, 'l')
+    replicaA.insert(13, 'e')
+    replicaA.insert(14, 's')
+    replicaA.insert(8, 'F')
+    replicaA.insert(9, 'r')
+    replicaA.insert(10, 'u')
+    replicaA.insert(11, 'i')
+    replicaA.insert(12, 't')
+    replicaA.insert(13, ':')
 
     exportGraph(
-      replicaStateA.rootTreeNode.buildTree(),
+      replicaA.state.rootTreeNode.buildTree(),
       "fugue-is-broken-1a"
     )
     exportGraph(
-      replicaStateB.rootTreeNode.buildTree(),
+      replicaB.state.rootTreeNode.buildTree(),
       "fugue-is-broken-1b"
     )
 
     replicaA.sync(replicaB)
 
     exportGraph(
-      replicaStateA.rootTreeNode.buildTree(),
+      replicaA.state.rootTreeNode.buildTree(),
       "fugue-is-broken-2"
     )
   }
@@ -391,26 +391,26 @@ class ThesisTestSuite extends FunSuite {
       ReplicaState("A")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaA = Replica(replicaStateA, NoopEditory())
+    val replicaA = Replica(replicaStateA, StringEditory())
     val replicaStateB =
       ReplicaState("B")(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaB = Replica(replicaStateB, NoopEditory())
-    replicaStateA.insert(0, 'm')
-    replicaStateA.insert(1, 'i')
-    replicaStateA.insert(2, 'l')
-    replicaStateA.insert(3, 'k')
+    val replicaB = Replica(replicaStateB, StringEditory())
+    replicaA.insert(0, 'm')
+    replicaA.insert(1, 'i')
+    replicaA.insert(2, 'l')
+    replicaA.insert(3, 'k')
     replicaA.sync(replicaB)
-    replicaStateA.insert(4, 'e')
-    replicaStateA.insert(5, 'g')
-    replicaStateA.insert(6, 'g')
-    replicaStateA.insert(7, 's')
-    replicaStateB.insert(4, 'b')
-    replicaStateB.insert(5, 'r')
-    replicaStateB.insert(6, 'e')
-    replicaStateB.insert(7, 'a')
-    replicaStateB.insert(8, 'd')
+    replicaA.insert(4, 'e')
+    replicaA.insert(5, 'g')
+    replicaA.insert(6, 'g')
+    replicaA.insert(7, 's')
+    replicaB.insert(4, 'b')
+    replicaB.insert(5, 'r')
+    replicaB.insert(6, 'e')
+    replicaB.insert(7, 'a')
+    replicaB.insert(8, 'd')
     replicaA.sync(replicaB)
     exportGraph(
       replicaStateA.rootTreeNode.buildTree(),
@@ -423,9 +423,9 @@ class ThesisTestSuite extends FunSuite {
   ) {
     val size = 1000
     val replicaStateA =
-      ReplicaState("A")(using
+      Replica(ReplicaState("A")(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
-      )
+      ), StringEditory())
     MyRealWorldBenchmark.operations.view
       .slice(0, size)
       .foreach {
@@ -435,7 +435,7 @@ class ThesisTestSuite extends FunSuite {
           replicaStateA.delete(position)
       }
     exportGraph(
-      replicaStateA.rootTreeNode.buildTree(),
+      replicaStateA.state.rootTreeNode.buildTree(),
       "real-world"
     )
   }

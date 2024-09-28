@@ -16,7 +16,7 @@ final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
     assert(state.isEmpty)
     val replicaState =
       ReplicaState("test")(using factoryContext)
-    Replica(replicaState, NoopEditory())
+    Replica(replicaState, StringEditory())
   }
 
   override def initialPreCondition(state: State): Boolean = state.isEmpty
@@ -53,7 +53,12 @@ final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
     type Result = State
 
     override def run(sut: Sut): Result = {
-      sut.state.insert(index, character)
+      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+
+      sut.insert(index, character)
+  
+      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text(), s"${sut.editor.asInstanceOf[StringEditory].data.toString()} == ${sut.text()}")
+
       sut.text()
     }
 
@@ -74,7 +79,12 @@ final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
     type Result = State
 
     override def run(sut: Sut): Result = {
-      sut.state.delete(index)
+      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+
+      sut.delete(index)
+    
+      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+
       sut.text()
     }
 

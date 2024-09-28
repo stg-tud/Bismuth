@@ -116,7 +116,7 @@ case class InternalMultiReplicaConvergenceTest[F <: FugueFactory]()(
       val replicaState = ReplicaState(
         id.toString
       )(using factoryContext)
-      val replica = Replica(replicaState, NoopEditory())
+      val replica = Replica(replicaState, StringEditory())
       val _ = sut.put(id, replica)
       sut.view.mapValues(_.text()).toMap
     }
@@ -141,7 +141,13 @@ case class InternalMultiReplicaConvergenceTest[F <: FugueFactory]()(
       val replica1 = sut(replicaIndex1)
       val replica2 = sut(replicaIndex2)
 
+      assert(replica1.editor.asInstanceOf[StringEditory].data.toString() == replica1.text())
+      assert(replica2.editor.asInstanceOf[StringEditory].data.toString() == replica2.text())
+
       replica1.sync(replica2.asInstanceOf[replica1.type])
+
+      assert(replica1.editor.asInstanceOf[StringEditory].data.toString() == replica1.text(), s"${replica1.editor.asInstanceOf[StringEditory].data.toString()} == ${replica1.text()}")
+      assert(replica2.editor.asInstanceOf[StringEditory].data.toString() == replica2.text(), s"${replica2.editor.asInstanceOf[StringEditory].data.toString()} == ${replica2.text()}")
 
       sut.view.mapValues(_.text()).toMap
     }
@@ -165,7 +171,13 @@ case class InternalMultiReplicaConvergenceTest[F <: FugueFactory]()(
     override def run(sut: Sut): Result = {
       val len =
         sut(replicaIndex).text().length()
-      sut(replicaIndex).state.insert(index % (len + 1), character)
+
+      assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+
+      sut(replicaIndex).insert(index % (len + 1), character)
+
+      assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+
       sut.view.mapValues(_.text()).toMap
     }
 
@@ -188,9 +200,15 @@ case class InternalMultiReplicaConvergenceTest[F <: FugueFactory]()(
     override def run(sut: Sut): Result = {
       val len =
         sut(replicaIndex).text().length()
+
+      assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+
       if (len > 0) {
-        sut(replicaIndex).state.delete(index % len)
+        sut(replicaIndex).delete(index % len)
       }
+
+      assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+
       sut.view.mapValues(_.text()).toMap
     }
 

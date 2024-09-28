@@ -150,14 +150,14 @@ class MyRealWorldBenchmarkLocal {
         ComplexFugueFactory.complexFugueFactory.type |
         SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
         ComplexAVLFugueFactory.complexAVLFugueFactory.type
-    ](replicaStateA, NoopEditory())
+    ](replicaStateA, StringEditory())
     MyRealWorldBenchmark.operations.view
       .slice(0, size)
       .foreach {
         case FixtureOperation.Insert(position, character) =>
-          replicaStateA.insert(position, character)
+          replicaA.insert(position, character)
         case FixtureOperation.Delete(position) =>
-          replicaStateA.delete(position)
+          replicaA.delete(position)
       }
     replicaA
   }
@@ -224,7 +224,7 @@ class MyRealWorldBenchmarkLargeLocal {
         ComplexFugueFactory.complexFugueFactory.type |
         SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
         ComplexAVLFugueFactory.complexAVLFugueFactory.type
-    ](replicaStateA, NoopEditory())
+    ](replicaStateA, StringEditory())
     var index = 0
     val operations = MyRealWorldBenchmark.operations
     val operationsSize = operations.size
@@ -233,12 +233,12 @@ class MyRealWorldBenchmarkLargeLocal {
       while (i < operationsSize) {
         operations(i) match {
           case FixtureOperation.Insert(position, character) =>
-            replicaStateA.insert(
+            replicaA.insert(
               index * 104852 + position,
               character
             )
           case FixtureOperation.Delete(position) =>
-            replicaStateA.delete(
+            replicaA.delete(
               index * 104852 + position
             )
         }
@@ -309,17 +309,17 @@ class MyRealWorldBenchmarkLargeRemote {
         ComplexFugueFactory.complexFugueFactory.type |
         SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
         ComplexAVLFugueFactory.complexAVLFugueFactory.type
-    ](replicaStateA, NoopEditory())
+    ](replicaStateA, StringEditory())
     (0 until count).foreach(index => {
       MyRealWorldBenchmark.operations.view
         .foreach {
           case FixtureOperation.Insert(position, character) =>
-            replicaStateA.insert(
+            replicaA.insert(
               index * 104852 + position,
               character
             )
           case FixtureOperation.Delete(position) =>
-            replicaStateA.delete(
+            replicaA.delete(
               index * 104852 + position
             )
         }
@@ -353,7 +353,7 @@ class MyRealWorldBenchmarkLargeRemote {
         ComplexFugueFactory.complexFugueFactory.type |
         SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
         ComplexAVLFugueFactory.complexAVLFugueFactory.type
-    ](replicaStateA, NoopEditory())
+    ](replicaStateA, StringEditory())
     replicaA.syncFrom(
       replicaWithOperationsApplied.state
     )
@@ -434,9 +434,9 @@ class MyTerribleBenchmarkSequentialInserts {
         ComplexFugueFactory.complexFugueFactory.type |
         SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
         ComplexAVLFugueFactory.complexAVLFugueFactory.type
-    ](replicaStateA, NoopEditory())
+    ](replicaStateA, StringEditory())
     for (i <- 0 until size) {
-      replicaA.state.insert(i, 'a')
+      replicaA.insert(i, 'a')
     }
     if (shouldMeasureMemory) {
       assert(replicaStateA.text().equals("a" * size))
@@ -486,9 +486,9 @@ class MyTerribleBenchmarkEvilInsert {
             ComplexAVLFugueFactory.complexAVLFugueFactory
         }
       )
-    val replicaToSyncInto = Replica(replicaStateToSyncInto, NoopEditory())
+    val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     for (i <- 0 until until) {
-      replicaToSyncInto.state.insert(0, 'p')
+      replicaToSyncInto.insert(0, 'p')
     }
     replicaToSyncInto
   }
@@ -538,9 +538,9 @@ class MyTerribleBenchmarkEvilInsert {
       )(using
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
-    val replicaToSyncInto = Replica(replicaStateToSyncInto, NoopEditory())
+    val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     for (i <- 0 until count) {
-      replicaToSyncInto.state.insert(i, 'p')
+      replicaToSyncInto.insert(i, 'p')
     }
     replicaToSyncInto.deliveringRemote(
       (
@@ -580,9 +580,9 @@ class MyTerribleBenchmarkEvilInsert {
       )(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaToSyncInto = Replica(replicaStateToSyncInto, NoopEditory())
+    val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     for (i <- 0 until count) {
-      replicaToSyncInto.state.insert(
+      replicaToSyncInto.insert(
         i,
         'p'
       )
@@ -629,15 +629,15 @@ class MyTerribleBenchmarkEvilInsert {
       )(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaToSyncInto = Replica(replicaStateToSyncInto, NoopEditory())
+    val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     for (i <- 0 until count) {
-      replicaToSyncInto.state.insert(
+      replicaToSyncInto.insert(
         i,
         'p'
       )
     }
     for (i <- 0 until until / 2) {
-      replicaToSyncInto.state.delete(
+      replicaToSyncInto.delete(
         i + 1
       )
     }
@@ -663,9 +663,9 @@ class MyTerribleBenchmarkEvilInsert {
       )(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaToSyncInto = Replica(replicaStateToSyncInto, NoopEditory())
+    val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     for (i <- 0 until count) {
-      replicaToSyncInto.state.insert(
+      replicaToSyncInto.insert(
         i,
         'p'
       )
@@ -690,7 +690,7 @@ class MyTerribleBenchmarkEvilInsert {
       )
     )
     for (i <- 1 until until * 2 - 2 by 2) {
-      replicaToSyncInto.state.insert(
+      replicaToSyncInto.insert(
         i,
         's'
       )
@@ -717,7 +717,7 @@ class MyTerribleBenchmarkEvilInsert {
       )(using
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
-    val replicaToSyncInto = Replica(replicaStateToSyncInto, NoopEditory())
+    val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     replicaToSyncInto.deliveringRemote(
       (
         mutable.HashMap.empty,

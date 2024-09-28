@@ -9,7 +9,7 @@ final case class ReplicaState[F <: FugueFactory](
     replicaId: RID
 )(using
     val factoryContext: F
-) extends CollaborativeTextEditingAlgorithm {
+) {
   val causalBroadcast = CausalBroadcast[factoryContext.MSG](replicaId)
 
   val factory: factoryContext.F = factoryContext.create(replicaId)
@@ -34,7 +34,7 @@ final case class ReplicaState[F <: FugueFactory](
     factory.get(id)
   }
 
-  override def insert(i: Int, x: Char): Unit = {
+  def insert(i: Int, x: Char): Unit = {
     val message = factory.insert(i, x)
 
     causalBroadcast.addOneToHistory(
@@ -42,7 +42,7 @@ final case class ReplicaState[F <: FugueFactory](
     )
   }
 
-  override def delete(i: Int): Unit = {
+  def delete(i: Int): Unit = {
     val treeNode = factory.atVisibleIndex(i)
 
     val msg = factory.delete(treeNode)

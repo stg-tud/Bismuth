@@ -4,8 +4,18 @@ import scala.collection.mutable
 
 final case class Replica[F <: FugueFactory](
     state: ReplicaState[F],
-    editor: Editory
-) {
+    var editor: Editory
+) extends CollaborativeTextEditingAlgorithm {
+
+  override def insert(i: Int, x: Char): Unit = {
+    editor.localInsert(i, x)
+    state.insert(i, x)
+  }
+
+  override def delete(i: Int): Unit = {
+    editor.localDelete(i)
+    state.delete(i)
+  }
 
   def sync(other: Replica[F]): Unit = {
     this.syncFrom(other.state)
@@ -41,5 +51,12 @@ final case class Replica[F <: FugueFactory](
       .plainText
       .replace("\n", "")
       .nn
+  }
+}
+
+object Replica {
+
+  def apply[F <: FugueFactory](state: ReplicaState[F]): Replica[F] = {
+    Replica[F](state, null.asInstanceOf[Editory])
   }
 }

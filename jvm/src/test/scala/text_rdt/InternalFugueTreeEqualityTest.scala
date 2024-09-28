@@ -117,7 +117,7 @@ case class InternalFugueTreeEqualityTest(
             val replicaState = ReplicaState(
               replicaId
             )(using factoryConstructor())
-            val replica = Replica(replicaState, NoopEditory())
+            val replica = Replica(replicaState, StringEditory())
             val _ = replicas.put(replicaId, replica)
             replicas.values.map(v => (v.tree(), s"create $replicaId")).toSeq
           })
@@ -140,9 +140,16 @@ case class InternalFugueTreeEqualityTest(
             val replica1 = replicas(replicaId1)
             val replica2 = replicas(replicaId2)
 
+            assert(replica1.editor.asInstanceOf[StringEditory].data.toString() == replica1.text())
+            assert(replica2.editor.asInstanceOf[StringEditory].data.toString() == replica2.text())
+
             replica1.sync(
               replica2.asInstanceOf[replica1.type]
             )
+
+            assert(replica1.editor.asInstanceOf[StringEditory].data.toString() == replica1.text())
+            assert(replica2.editor.asInstanceOf[StringEditory].data.toString() == replica2.text())
+
             replicas.values
               .map(v => (v.tree(), s"sync $replicaId1 $replicaId2"))
               .toSeq
@@ -162,7 +169,13 @@ case class InternalFugueTreeEqualityTest(
           .map(replicas => {
             val len =
               replicas(replica).text().length()
-            replicas(replica).state.insert(index % (len + 1), character)
+
+            assert(replicas(replica).editor.asInstanceOf[StringEditory].data.toString() == replicas(replica).text())
+
+            replicas(replica).insert(index % (len + 1), character)
+
+            assert(replicas(replica).editor.asInstanceOf[StringEditory].data.toString() == replicas(replica).text())
+
             replicas.values
               .map(v =>
                 (v.tree(), s"insert $replica ${index % (len + 1)} $character")
@@ -185,9 +198,15 @@ case class InternalFugueTreeEqualityTest(
           .map(replicas => {
             val len =
               replicas(replica).text().length()
+
+            assert(replicas(replica).editor.asInstanceOf[StringEditory].data.toString() == replicas(replica).text())
+
             if (len > 0) {
-              replicas(replica).state.delete(index % len)
+              replicas(replica).delete(index % len)
             }
+        
+            assert(replicas(replica).editor.asInstanceOf[StringEditory].data.toString() == replicas(replica).text())
+
             replicas.values
               .map(v =>
                 (
