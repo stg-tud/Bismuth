@@ -42,7 +42,7 @@ val schema = Schema[Any, Any](
   )
 )
 
-val hardBreakCommand: Command = (state, dispatch, view) => {
+val hardBreakCommand: Command = (state, dispatch, _) => {
   dispatch.get(
     state.tr.insertText("\n")
   )

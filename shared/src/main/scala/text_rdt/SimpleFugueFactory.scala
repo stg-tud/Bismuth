@@ -96,7 +96,7 @@ object SimpleFugueFactory {
           id
         )
         val deleted = treeNode.value() != null
-        factory.delete(treeNode)
+        val _ = factory.delete(treeNode)
         deleted
       }
 

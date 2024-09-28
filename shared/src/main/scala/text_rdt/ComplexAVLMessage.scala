@@ -33,6 +33,7 @@ object ComplexAVLMessage {
         json match {
           case Str(value)             => value
           case value: ujson.Null.type => null
+          case other => ???
         }
       }
     )

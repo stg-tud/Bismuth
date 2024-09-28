@@ -2,8 +2,6 @@ package text_rdt
 
 import text_rdt.Helper.myAssert
 
-import scala.collection.mutable
-
 // TODO FIXME generalize for any algorithm or extract the messaging part out of this
 // probably extract messaging part first.
 

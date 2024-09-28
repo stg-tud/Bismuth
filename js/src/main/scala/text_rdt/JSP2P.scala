@@ -249,7 +249,7 @@ private case class JSP2P() {
 
     if (shouldOffer) {
       val offer = connection.createOffer().toFuture
-      offer.andThen(offerResult => {
+      val _ = offer.andThen(offerResult => {
         offerResult match {
           case Failure(exception) =>
             exception.printStackTrace()
@@ -285,26 +285,6 @@ private case class JSP2P() {
   </div>
 
   """
-
-  org.scalajs.dom.document
-    .querySelector("#offer-connection")
-    .addEventListener(
-      "click",
-      event => {
-        event.preventDefault()
-        awesomeFunc(true)
-      }
-    )
-
-  org.scalajs.dom.document
-    .querySelector("#answer-connection")
-    .addEventListener(
-      "click",
-      event => {
-        event.preventDefault()
-        awesomeFunc(false)
-      }
-    )
 
   val replicaId = UUID.randomUUID().nn.toString()
 
@@ -358,4 +338,23 @@ private case class JSP2P() {
       prosemirror
     )
 
+  org.scalajs.dom.document
+    .querySelector("#offer-connection")
+    .addEventListener(
+      "click",
+      event => {
+        event.preventDefault()
+        awesomeFunc(true)
+      }
+    )
+
+  org.scalajs.dom.document
+    .querySelector("#answer-connection")
+    .addEventListener(
+      "click",
+      event => {
+        event.preventDefault()
+        awesomeFunc(false)
+      }
+    )
 }

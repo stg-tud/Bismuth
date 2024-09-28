@@ -122,14 +122,6 @@ object ComplexFugueFactory {
         editor.insert(index, value)
       }
 
-      private def deliveringLocal(msg: Message[ID]): Unit = {
-        msg match {
-          case Message.Insert(id, value, parent, side) =>
-            deliveringLocalInsert(id, value, parent, side)
-          case Message.Delete(id) => val _ = deliveringLocalDelete(id)
-        }
-      }
-
       def deliveringLocalInsert(
           id: ID,
           value: Char,
@@ -146,7 +138,7 @@ object ComplexFugueFactory {
           id
         )
         val deleted = treeNode.value() != null
-        factory.delete(treeNode)
+        val _ = factory.delete(treeNode)
         deleted
       }
 

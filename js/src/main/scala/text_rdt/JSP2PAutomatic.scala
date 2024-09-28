@@ -13,7 +13,6 @@ import org.scalajs.dom.RTCSdpType
 import org.scalajs.dom.RTCSessionDescription
 import org.scalajs.dom.RTCSessionDescriptionInit
 import org.scalajs.dom.URL
-import org.scalajs.dom.WebSocket
 import org.scalajs.dom.document
 import typings.prosemirrorState.mod.EditorState
 import upickle.default.*
@@ -32,10 +31,6 @@ private case class JSP2PAutomatic() {
 
   val url = new URL(
     document.location.href.asInstanceOf[String]
-  )
-
-  private var webSocket = WebSocket(
-    "ws://localhost:8080/" + url.searchParams.get("doc")
   )
 
   private var peers: Seq[RTCPeerConnection] = List()
@@ -260,7 +255,7 @@ private case class JSP2PAutomatic() {
 
     if (shouldOffer) {
       val offer = connection.createOffer().toFuture
-      offer.andThen(offerResult => {
+      val _ = offer.andThen(offerResult => {
         offerResult match {
           case Failure(exception) =>
             exception.printStackTrace()
@@ -296,26 +291,6 @@ private case class JSP2PAutomatic() {
   </div>
 
   """
-
-  org.scalajs.dom.document
-    .querySelector("#offer-connection")
-    .addEventListener(
-      "click",
-      event => {
-        event.preventDefault()
-        awesomeFunc(true)
-      }
-    )
-
-  org.scalajs.dom.document
-    .querySelector("#answer-connection")
-    .addEventListener(
-      "click",
-      event => {
-        event.preventDefault()
-        awesomeFunc(false)
-      }
-    )
 
   val replicaId = UUID.randomUUID().nn.toString()
 
@@ -369,4 +344,23 @@ private case class JSP2PAutomatic() {
       prosemirror
     )
 
+  org.scalajs.dom.document
+    .querySelector("#offer-connection")
+    .addEventListener(
+      "click",
+      event => {
+        event.preventDefault()
+        awesomeFunc(true)
+      }
+    )
+
+  org.scalajs.dom.document
+    .querySelector("#answer-connection")
+    .addEventListener(
+      "click",
+      event => {
+        event.preventDefault()
+        awesomeFunc(false)
+      }
+    )
 }
