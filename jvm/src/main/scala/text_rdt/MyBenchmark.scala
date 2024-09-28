@@ -105,6 +105,7 @@ class MyRealWorldBenchmarkLocal {
   var factoryConstructor: String = uninitialized
 
   @Param(Array("10000", "20000", "259778"))
+  @annotation.nowarn("msg=unset private variable")
   private var count: Int = uninitialized
 
   @Benchmark
@@ -392,6 +393,7 @@ class MyTerribleBenchmarkSequentialInserts {
       "10000"
     )
   )
+  @annotation.nowarn("msg=unset private variable")
   private var count: Int = uninitialized
 
   @Benchmark

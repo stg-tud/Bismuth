@@ -2,8 +2,6 @@ package text_rdt
 
 import text_rdt.Helper.myAssert
 
-import scala.collection.mutable
-
 // TODO FIXME generalize for any algorithm or extract the messaging part out of this
 // probably extract messaging part first.
 
@@ -47,7 +45,6 @@ final case class ReplicaState[F <: FugueFactory](
   override def delete(i: Int): Unit = {
     val treeNode = factory.atVisibleIndex(i)
 
-    val deleted = treeNode.value() != null
     val msg = factory.delete(treeNode)
 
     causalBroadcast.addOneToHistory(msg)

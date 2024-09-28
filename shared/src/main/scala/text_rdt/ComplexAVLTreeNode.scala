@@ -6,7 +6,6 @@ import text_rdt.avl.AVLTreeNode
 import scala.collection.mutable
 import scala.collection.View
 import text_rdt.avl2.AVL2TreeNode
-import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered
 import scala.collection.mutable.SortedSet
 
@@ -102,9 +101,6 @@ final case class ComplexAVLTreeNodeSingle(
 }
 
 object ComplexAVLTreeNodeSingle {
-
-  given canEqual: CanEqual[ComplexAVLTreeNodeSingle, ComplexAVLTreeNodeSingle] =
-    CanEqual.derived
 
   given complexAVLTreeNodeSingle: TreeNodey[ComplexAVLTreeNodeSingle] with {
     override type ID = ComplexID

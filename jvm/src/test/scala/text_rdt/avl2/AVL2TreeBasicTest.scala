@@ -3,7 +3,6 @@ package text_rdt.avl2
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
 import text_rdt.Side
-import text_rdt.canEqualNullNullable
 
 case class Wrapper(var value: AVL2Tree[Unit])
 

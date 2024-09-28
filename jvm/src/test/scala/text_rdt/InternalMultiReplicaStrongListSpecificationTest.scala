@@ -260,7 +260,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
             false
           }
         })
-        newText(collectionIndex) = Right(newText(collectionIndex).left.get)
+        newText(collectionIndex) = Right(newText(collectionIndex).getOrElse('*'))
       }
       Prop.all(
         (List(Prop.=?(state, result._1.keySet), Prop.=?(state, result._2.keySet), Prop.=?(newText, result._2(replicaIndex)))

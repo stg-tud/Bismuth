@@ -38,8 +38,3 @@ final case class SimpleTreeNode(
 
   override def toString: String = pprintNonAVL.apply(this).plainText
 }
-
-object SimpleTreeNode {
-  given canEqual: CanEqual[SimpleTreeNode, SimpleTreeNode] =
-    CanEqual.derived
-}

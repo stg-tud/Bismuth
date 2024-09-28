@@ -1,58 +1,36 @@
 package text_rdt
 
-import org.scalablytyped.runtime.StringDictionary
-import org.scalajs.dom.{Element, document}
-import typings.prosemirrorCommands.mod.^ as test
-import typings.prosemirrorKeymap.mod.keymap
-import typings.prosemirrorModel.mod.Schema
-import typings.prosemirrorState.mod.{
-  EditorState,
-  EditorStateConfig,
-  Plugin,
-  PluginSpec,
-  Command
-}
-import scala.scalajs.js
-import org.scalajs.dom.URL
-import org.scalajs.dom.HTMLElement
-import typings.std.HTMLOrSVGElement
-import org.scalajs.dom.HTMLHtmlElement
-import org.scalajs.dom.RTCPeerConnection
-import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalajs.dom.Element
 import org.scalajs.dom.HTMLInputElement
-import org.scalajs.dom.RTCSessionDescription
+import org.scalajs.dom.HTMLTextAreaElement
+import org.scalajs.dom.RTCConfiguration
+import org.scalajs.dom.RTCDataChannelInit
+import org.scalajs.dom.RTCIceCandidate
+import org.scalajs.dom.RTCIceCandidateInit
+import org.scalajs.dom.RTCIceServer
+import org.scalajs.dom.RTCPeerConnection
 import org.scalajs.dom.RTCSdpType
+import org.scalajs.dom.RTCSessionDescription
+import org.scalajs.dom.RTCSessionDescriptionInit
+import org.scalajs.dom.URL
+import org.scalajs.dom.document
+import typings.prosemirrorState.mod.EditorState
+import upickle.default.*
+
+import java.util.UUID
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.scalajs.js
 import scala.util.Failure
 import scala.util.Success
-import org.scalajs.dom.RTCDataChannelInit
-import scala.collection.mutable
-import org.scalajs.dom.RTCIceCandidate
-import scala.scalajs.js.JSConverters.iterableOnceConvertible2JSRichIterableOnce
-import scala.concurrent.Future
-import org.scalajs.dom.HTMLTextAreaElement
-import java.util.Base64
-import org.scalajs.dom.RTCIceServer
-import org.scalajs.dom.RTCConfiguration
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.immutable
-import org.scalajs.dom.RTCSessionDescriptionInit
-import org.scalajs.dom.RTCIceCandidateInit
-import typings.prosemirrorModel.mod.SchemaSpec
-import typings.prosemirrorModel.mod.NodeSpec
-import typings.prosemirrorModel.mod.TagParseRule
-import typings.prosemirrorModel.prosemirrorModelStrings.full
-import org.scalajs.dom.WebSocket
-import upickle.default._
 
 private case class JSP2PAutomatic() {
 
   val url = new URL(
     document.location.href.asInstanceOf[String]
-  )
-
-  private var webSocket = WebSocket(
-    "ws://localhost:8080/" + url.searchParams.get("doc")
   )
 
   private var peers: Seq[RTCPeerConnection] = List()
@@ -188,7 +166,7 @@ private case class JSP2PAutomatic() {
     var candidates = Array[RTCIceCandidate]()
 
     connection.onicecandidate = event => {
-      if (event.candidate == null) {
+      if (event.candidate eq null) {
         child5.value = write(
           (
             sessionDescription.nn.`type`.toString(),
@@ -277,7 +255,7 @@ private case class JSP2PAutomatic() {
 
     if (shouldOffer) {
       val offer = connection.createOffer().toFuture
-      offer.andThen(offerResult => {
+      val _ = offer.andThen(offerResult => {
         offerResult match {
           case Failure(exception) =>
             exception.printStackTrace()
@@ -313,26 +291,6 @@ private case class JSP2PAutomatic() {
   </div>
 
   """
-
-  org.scalajs.dom.document
-    .querySelector("#offer-connection")
-    .addEventListener(
-      "click",
-      event => {
-        event.preventDefault()
-        awesomeFunc(true)
-      }
-    )
-
-  org.scalajs.dom.document
-    .querySelector("#answer-connection")
-    .addEventListener(
-      "click",
-      event => {
-        event.preventDefault()
-        awesomeFunc(false)
-      }
-    )
 
   val replicaId = UUID.randomUUID().nn.toString()
 
@@ -386,4 +344,23 @@ private case class JSP2PAutomatic() {
       prosemirror
     )
 
+  org.scalajs.dom.document
+    .querySelector("#offer-connection")
+    .addEventListener(
+      "click",
+      event => {
+        event.preventDefault()
+        awesomeFunc(true)
+      }
+    )
+
+  org.scalajs.dom.document
+    .querySelector("#answer-connection")
+    .addEventListener(
+      "click",
+      event => {
+        event.preventDefault()
+        awesomeFunc(false)
+      }
+    )
 }

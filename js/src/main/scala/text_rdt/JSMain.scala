@@ -1,49 +1,24 @@
 package text_rdt
 
 import org.scalablytyped.runtime.StringDictionary
-import org.scalajs.dom.{Element, document}
-import typings.prosemirrorCommands.mod.^ as test
-import typings.prosemirrorKeymap.mod.keymap
-import typings.prosemirrorModel.mod.Schema
-import typings.prosemirrorState.mod.{
-  EditorState,
-  EditorStateConfig,
-  Plugin,
-  PluginSpec,
-  Command
-}
-import scala.scalajs.js
-import org.scalajs.dom.URL
+import org.scalajs.dom.Element
 import org.scalajs.dom.HTMLElement
-import typings.std.HTMLOrSVGElement
-import org.scalajs.dom.HTMLHtmlElement
-import org.scalajs.dom.RTCPeerConnection
-import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
-import org.scalajs.dom.HTMLInputElement
-import org.scalajs.dom.RTCSessionDescription
-import org.scalajs.dom.RTCSdpType
-import scala.util.Failure
-import scala.util.Success
-import org.scalajs.dom.RTCDataChannelInit
-import scala.collection.mutable
-import org.scalajs.dom.RTCIceCandidate
-
-import scala.scalajs.js.JSConverters.iterableOnceConvertible2JSRichIterableOnce
-import scala.concurrent.Future
-import org.scalajs.dom.HTMLTextAreaElement
-import java.util.Base64
-import org.scalajs.dom.RTCIceServer
-import org.scalajs.dom.RTCConfiguration
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.immutable
-import org.scalajs.dom.RTCSessionDescriptionInit
-import org.scalajs.dom.RTCIceCandidateInit
-import typings.prosemirrorModel.mod.SchemaSpec
+import org.scalajs.dom.URL
+import org.scalajs.dom.document
+import typings.prosemirrorKeymap.mod.keymap
 import typings.prosemirrorModel.mod.NodeSpec
+import typings.prosemirrorModel.mod.Schema
+import typings.prosemirrorModel.mod.SchemaSpec
 import typings.prosemirrorModel.mod.TagParseRule
 import typings.prosemirrorModel.prosemirrorModelStrings.full
-import upickle.default._
+import typings.prosemirrorState.mod.Command
+import typings.prosemirrorState.mod.EditorState
+import typings.prosemirrorState.mod.EditorStateConfig
+import typings.prosemirrorState.mod.Plugin
+import upickle.default.*
+
+import scala.collection.immutable
+import scala.scalajs.js
 
 val schema = Schema[Any, Any](
   SchemaSpec(
@@ -67,7 +42,7 @@ val schema = Schema[Any, Any](
   )
 )
 
-val hardBreakCommand: Command = (state, dispatch, view) => {
+val hardBreakCommand: Command = (state, dispatch, _) => {
   dispatch.get(
     state.tr.insertText("\n")
   )

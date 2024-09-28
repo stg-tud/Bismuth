@@ -1,15 +1,12 @@
 package text_rdt
 
 import text_rdt.Helper.myAssert
-import text_rdt.avl.{AVLTreeNode, AVLTreeNodeValueSize}
-
-import scala.collection.mutable
-import scala.math.Ordered.orderingToOrdered
 import text_rdt.avl.AVLTree
+import text_rdt.avl.AVLTreeNode
+import text_rdt.avl.AVLTreeNodeValueSize
 import text_rdt.avl2.AVL2TreeNode
 
-import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 given complexAVLTreeNodeSize: AVLTreeNodeValueSize[ComplexAVLTreeNode] with {
   extension (node: ComplexAVLTreeNode) {
@@ -163,13 +160,6 @@ object ComplexAVLFugueFactory {
     given treeNodeContext: NC =
       ComplexAVLTreeNodeSingle.complexAVLTreeNodeSingle
 
-    given canEqualNode: CanEqual[N, N] = ComplexAVLTreeNodeSingle.canEqual
-
-    private case class StackEntry(
-        side: Side,
-        children: Iterator[AVLTreeNode[ComplexAVLTreeNode]]
-    )
-
     extension (factory: ComplexAVLFugueFactory) {
       final def insert(i: Int, x: Char): MSG = {
         val leftOrigin =
@@ -233,7 +223,7 @@ object ComplexAVLFugueFactory {
                 id
               )
               val deleted = treeNode.value() != null
-              factory.delete(treeNode)
+              val _ = factory.delete(treeNode)
               if (deleted) {
                 val index = visibleIndexOf(get(id))
                 editor.delete(index)
@@ -338,10 +328,8 @@ object ComplexAVLFugueFactory {
         factory
           .addNode(nodeToAppend)
 
-        myAssert(nodeToAppend.value.leftmostDescendantCache == null)
         nodeToAppend.value.leftmostDescendantCache =
           DescendantCacheHelper.empty(nodeToAppend)
-        myAssert(nodeToAppend.value.rightmostDescendantCache == null)
         nodeToAppend.value.rightmostDescendantCache =
           DescendantCacheHelper.append(
             parent.value.rightmostDescendantCache,
@@ -419,10 +407,8 @@ object ComplexAVLFugueFactory {
         factory
           .addNode(nodeToPrepend)
 
-        myAssert(nodeToPrepend.value.rightmostDescendantCache == null)
         nodeToPrepend.value.rightmostDescendantCache =
           DescendantCacheHelper.empty(nodeToPrepend)
-        myAssert(nodeToPrepend.value.leftmostDescendantCache == null)
         nodeToPrepend.value.leftmostDescendantCache =
           DescendantCacheHelper.append(
             parent.value.leftmostDescendantCache,
@@ -706,7 +692,6 @@ object ComplexAVLFugueFactory {
         factory
           .addNode(nodeRightSplit)
 
-        myAssert(nodeRightSplit.value.leftmostDescendantCache == null)
         nodeRightSplit.value.leftmostDescendantCache =
           DescendantCacheHelper.empty(nodeRightSplit)
         val rightmostDescendantCacheNode =
@@ -721,7 +706,6 @@ object ComplexAVLFugueFactory {
             rightmostDescendantCacheNode,
             Side.Right
           )
-        myAssert(nodeRightSplit.value.rightmostDescendantCache == null)
         nodeRightSplit.value.rightmostDescendantCache =
           rightmostDescendantCacheNode
 

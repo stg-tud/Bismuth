@@ -9,8 +9,6 @@ trait FugueFactory {
   type F
   type MSG
 
-  given canEqualNode: CanEqual[N, N]
-
   given treeNodeContext: NC
 
   def create(replicaId: RID): F

@@ -1,11 +1,6 @@
 package text_rdt
 
-final case class SimpleID(rid: RID, counter: Int) derives CanEqual {}
-
-object SimpleID {
-  given canEqualSimpleIdNullable: CanEqual[SimpleID | Null, SimpleID | Null] =
-    CanEqual.derived
-}
+final case class SimpleID(rid: RID, counter: Int) {}
 
 given simpleId: Idy[SimpleID] with {
 
