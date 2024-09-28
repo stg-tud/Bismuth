@@ -1,7 +1,6 @@
 package text_rdt
 
 import munit.FunSuite
-import scala.concurrent.duration.Duration
 
 class SimpleInternalFugueTestSuite
     extends InternalFugueTestSuite(() => {

@@ -4,8 +4,6 @@ import com.microsoft.playwright.{Page, Playwright}
 import munit.Fixture
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import com.microsoft.playwright.Tracing
-import java.nio.file.Paths
 import com.microsoft.playwright.Browser
 import java.util.UUID
 import com.microsoft.playwright.BrowserType

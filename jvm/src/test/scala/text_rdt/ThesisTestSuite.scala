@@ -3,15 +3,11 @@ package text_rdt
 import munit.FunSuite
 import text_rdt.helper.{WebDriverFixture, browser}
 
-import java.nio.file.{Files, Paths}
-import java.util.{Base64, Optional}
+import java.nio.file.Paths
 import com.microsoft.playwright.Page
 import java.util.UUID
 import scala.concurrent.duration.Duration
-import com.microsoft.playwright.options.Margin
-import com.microsoft.playwright.impl.driver.Driver
 import com.microsoft.playwright.Locator
-import com.microsoft.playwright.BrowserContext
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
