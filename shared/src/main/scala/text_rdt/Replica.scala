@@ -33,9 +33,9 @@ final case class Replica[F <: FugueFactory](
     pprint
       .copy(
         defaultIndent = 0,
-        additionalHandlers = { case value: state.factoryContext.N =>
-          value.treeify()
-        }
+        additionalHandlers = { 
+          case value: state.factoryContext.N => value.treeify()
+        }: @annotation.nowarn("msg=cannot be checked at runtime because it refers to an abstract type member or type parameter")
       )
       .apply(state.rootTreeNode)
       .plainText

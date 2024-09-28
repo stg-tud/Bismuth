@@ -1,11 +1,7 @@
 package text_rdt
 
 import java.lang.management.ManagementFactory
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import javax.management.ObjectName
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 
 @main
 def peakMemory(): Unit = {

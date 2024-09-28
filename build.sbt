@@ -24,6 +24,7 @@ lazy val textrdt = crossProject(JVMPlatform, JSPlatform)
     scalacOptions ++= Seq(
       "-no-indent",
       "-Wall",
+      "-Werror",
       "-Yexplicit-nulls",
     ),
     scalacOptions += {

@@ -70,7 +70,7 @@ final class ProseMirror[F <: FugueFactory](
         refresh()
       }).asInstanceOf[Any => Unit]
     )
-  )
+  ): @unchecked
 
   refresh()
 

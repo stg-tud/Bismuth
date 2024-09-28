@@ -45,7 +45,6 @@ final case class ReplicaState[F <: FugueFactory](
   override def delete(i: Int): Unit = {
     val treeNode = factory.atVisibleIndex(i)
 
-    val deleted = treeNode.value() != null
     val msg = factory.delete(treeNode)
 
     causalBroadcast.addOneToHistory(msg)
