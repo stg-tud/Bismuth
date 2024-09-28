@@ -1,7 +1,6 @@
 package text_rdt
 
 import org.scalajs.dom.document
-import org.scalajs.dom.Element
 import org.scalajs.dom.SVGTextElement
 import scala.scalajs.js
 

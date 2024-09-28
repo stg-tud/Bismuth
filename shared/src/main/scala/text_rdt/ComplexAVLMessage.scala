@@ -1,14 +1,9 @@
 package text_rdt
 
-import upickle.default._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import ujson.Str
-import ujson.Obj
-import ujson.Arr
-import ujson.Num
-import ujson.False
-import ujson.True
+import upickle.default.*
+
+import scala.collection.mutable
 
 enum ComplexAVLMessage {
   case Insert(

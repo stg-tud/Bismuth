@@ -9,7 +9,6 @@ import typings.prosemirrorView.mod.{DirectEditorProps, EditorView}
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 import org.scalajs.dom.URL
-import typings.std.stdStrings.replace
 
 final class ProseMirror[F <: FugueFactory](
     elementSelector: String,

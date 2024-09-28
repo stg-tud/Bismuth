@@ -1,15 +1,12 @@
 package text_rdt
 
 import text_rdt.Helper.myAssert
-import text_rdt.avl.{AVLTreeNode, AVLTreeNodeValueSize}
-
-import scala.collection.mutable
-import scala.math.Ordered.orderingToOrdered
 import text_rdt.avl.AVLTree
+import text_rdt.avl.AVLTreeNode
+import text_rdt.avl.AVLTreeNodeValueSize
 import text_rdt.avl2.AVL2TreeNode
 
-import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 given complexAVLTreeNodeSize: AVLTreeNodeValueSize[ComplexAVLTreeNode] with {
   extension (node: ComplexAVLTreeNode) {
