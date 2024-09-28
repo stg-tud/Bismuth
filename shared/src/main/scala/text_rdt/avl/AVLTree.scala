@@ -5,8 +5,6 @@ import text_rdt.{Helper, Side, pprintAVL}
 
 import scala.annotation.tailrec
 import scala.compiletime.uninitialized
-import text_rdt.canEqualNullNullable
-import text_rdt.canEqualNullableNull
 
 trait AVLTreeNodeValueSize[T] {
 
@@ -62,8 +60,6 @@ extension [T](optionalAvlNode: AVLTreeNode[T] | Null) {
 }
 
 object AVLTreeNode {
-
-  given canEqual[T]: CanEqual[AVLTreeNode[T], AVLTreeNode[T]] = CanEqual.derived
 
   def apply[T: AVLTreeNodeValueSize](
       gen: AVLTreeNode[T] => T

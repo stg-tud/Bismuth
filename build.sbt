@@ -5,7 +5,7 @@ import Tests.*
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / scalaVersion := "3.5.0"
+ThisBuild / scalaVersion := "3.5.2-RC1"
 
 lazy val root = project
   .in(file("."))
@@ -23,17 +23,8 @@ lazy val textrdt = crossProject(JVMPlatform, JSPlatform)
     version := "0.1.0-SNAPSHOT",
     scalacOptions ++= Seq(
       "-no-indent",
-      "-Wnonunit-statement",
-      "-Wunused:all",
-      "-Wvalue-discard",
-      "-deprecation",
-      "-feature",
-      "-unchecked",
-      "-Wimplausible-patterns",
-      "-WunstableInlineAccessors",
-      "-Xlint:all",
+      "-Wall",
       "-Yexplicit-nulls",
-      "-language:strictEquality"
     ),
     scalacOptions += {
       val baseUrl: String =

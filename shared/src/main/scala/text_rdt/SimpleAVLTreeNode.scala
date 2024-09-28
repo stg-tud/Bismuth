@@ -7,9 +7,6 @@ import text_rdt.avl2.AVL2TreeNode
 import scala.collection.mutable
 
 object SimpleAVLTreeNode {
-  given canEqual: CanEqual[SimpleAVLTreeNode, SimpleAVLTreeNode] =
-    CanEqual.derived
-
   given simpleAVLTreeNode: TreeNodey[AVLTreeNode[SimpleAVLTreeNode]] with {
     type ID = SimpleID
 

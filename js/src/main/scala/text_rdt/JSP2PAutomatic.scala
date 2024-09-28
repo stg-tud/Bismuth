@@ -188,7 +188,7 @@ private case class JSP2PAutomatic() {
     var candidates = Array[RTCIceCandidate]()
 
     connection.onicecandidate = event => {
-      if (event.candidate == null) {
+      if (event.candidate eq null) {
         child5.value = write(
           (
             sessionDescription.nn.`type`.toString(),

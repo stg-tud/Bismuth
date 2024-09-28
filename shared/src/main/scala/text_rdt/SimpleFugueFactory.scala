@@ -18,8 +18,6 @@ object SimpleFugueFactory {
 
     given treeNodeContext: NC = simpleTreeNode
 
-    given canEqualNode: CanEqual[N, N] = SimpleTreeNode.canEqual
-
     private case class StackEntry(
         side: Side,
         children: Iterator[N]

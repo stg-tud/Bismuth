@@ -103,9 +103,6 @@ final case class ComplexAVLTreeNodeSingle(
 
 object ComplexAVLTreeNodeSingle {
 
-  given canEqual: CanEqual[ComplexAVLTreeNodeSingle, ComplexAVLTreeNodeSingle] =
-    CanEqual.derived
-
   given complexAVLTreeNodeSingle: TreeNodey[ComplexAVLTreeNodeSingle] with {
     override type ID = ComplexID
 

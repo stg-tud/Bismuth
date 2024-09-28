@@ -4,8 +4,6 @@ import text_rdt.Helper.myAssert
 import text_rdt.{Helper, Side, pprintAVL}
 import scala.math.Ordered.orderingToOrdered
 import scala.annotation.tailrec
-import text_rdt.canEqualNullNullable
-import text_rdt.canEqualNullableNull
 
 object AVL2TreeNode {
 

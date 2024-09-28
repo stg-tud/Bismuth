@@ -5,8 +5,6 @@ import text_rdt.avl2.{AVL2Tree, AVL2TreeNode}
 
 import scala.collection.mutable
 import scala.math.Ordered.orderingToOrdered
-import text_rdt.canEqualNullableNull
-import text_rdt.canEqualNullNullable
 
 given simpleAVLTreeNodeSize: AVLTreeNodeValueSize[SimpleAVLTreeNode] with {
   extension (node: SimpleAVLTreeNode) {
@@ -33,9 +31,6 @@ object SimpleAVLFugueFactory {
     }
 
     given treeNodeContext: NC = SimpleAVLTreeNode.simpleAVLTreeNode
-
-    given canEqualNode: CanEqual[N, N] =
-      AVLTreeNode.canEqual[SimpleAVLTreeNode]
 
     extension (factory: SimpleAVLFugueFactory) {
       def insert(i: Int, x: Char): MSG = {

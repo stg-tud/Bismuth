@@ -58,8 +58,6 @@ object ComplexFugueFactory {
       ComplexFugueFactory(replicaId)
     }
 
-    given canEqualNode: CanEqual[N, N] = ComplexTreeNodeSingle.canEqual
-
     given treeNodeContext: NC = ComplexTreeNodeSingle.complexTreeNodeSingle
 
     private case class StackEntry(

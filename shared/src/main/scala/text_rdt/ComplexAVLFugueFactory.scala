@@ -163,8 +163,6 @@ object ComplexAVLFugueFactory {
     given treeNodeContext: NC =
       ComplexAVLTreeNodeSingle.complexAVLTreeNodeSingle
 
-    given canEqualNode: CanEqual[N, N] = ComplexAVLTreeNodeSingle.canEqual
-
     private case class StackEntry(
         side: Side,
         children: Iterator[AVLTreeNode[ComplexAVLTreeNode]]
@@ -338,10 +336,8 @@ object ComplexAVLFugueFactory {
         factory
           .addNode(nodeToAppend)
 
-        myAssert(nodeToAppend.value.leftmostDescendantCache == null)
         nodeToAppend.value.leftmostDescendantCache =
           DescendantCacheHelper.empty(nodeToAppend)
-        myAssert(nodeToAppend.value.rightmostDescendantCache == null)
         nodeToAppend.value.rightmostDescendantCache =
           DescendantCacheHelper.append(
             parent.value.rightmostDescendantCache,
@@ -419,10 +415,8 @@ object ComplexAVLFugueFactory {
         factory
           .addNode(nodeToPrepend)
 
-        myAssert(nodeToPrepend.value.rightmostDescendantCache == null)
         nodeToPrepend.value.rightmostDescendantCache =
           DescendantCacheHelper.empty(nodeToPrepend)
-        myAssert(nodeToPrepend.value.leftmostDescendantCache == null)
         nodeToPrepend.value.leftmostDescendantCache =
           DescendantCacheHelper.append(
             parent.value.leftmostDescendantCache,
@@ -706,7 +700,6 @@ object ComplexAVLFugueFactory {
         factory
           .addNode(nodeRightSplit)
 
-        myAssert(nodeRightSplit.value.leftmostDescendantCache == null)
         nodeRightSplit.value.leftmostDescendantCache =
           DescendantCacheHelper.empty(nodeRightSplit)
         val rightmostDescendantCacheNode =
@@ -721,7 +714,6 @@ object ComplexAVLFugueFactory {
             rightmostDescendantCacheNode,
             Side.Right
           )
-        myAssert(nodeRightSplit.value.rightmostDescendantCache == null)
         nodeRightSplit.value.rightmostDescendantCache =
           rightmostDescendantCacheNode
 

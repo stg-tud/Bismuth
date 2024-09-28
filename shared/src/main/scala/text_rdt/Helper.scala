@@ -1,8 +1,5 @@
 package text_rdt
 
-given canEqualNullableNull[T]: CanEqual[T | Null, Null] = CanEqual.derived
-given canEqualNullNullable[T]: CanEqual[Null, T | Null] = CanEqual.derived
-
 object Helper {
 
   final val ENABLE =

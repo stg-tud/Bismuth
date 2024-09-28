@@ -88,9 +88,6 @@ final case class ComplexTreeNodeSingle(
 }
 
 object ComplexTreeNodeSingle {
-  given canEqual: CanEqual[ComplexTreeNodeSingle, ComplexTreeNodeSingle] =
-    CanEqual.derived
-
   given complexTreeNodeSingle: TreeNodey[ComplexTreeNodeSingle] with {
     override type ID = ComplexID
 
