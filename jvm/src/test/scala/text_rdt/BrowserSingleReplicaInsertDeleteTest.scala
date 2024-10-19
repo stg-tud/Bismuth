@@ -101,7 +101,7 @@ case class BrowserSingleReplicaInsertDeleteTest(
         sut.element.textContent().nn
       val toFill = StringBuilder(oldText).deleteCharAt(index).toString
       if (toFill.isEmpty()) {
-        sut.element.fill("\n")
+        sut.element.fill("")
       } else {
         sut.element
           .fill(toFill)

@@ -2,15 +2,16 @@ package text_rdt
 
 import scala.collection.mutable
 import upickle.default._
+import scala.annotation.tailrec
 
-type CausalID = mutable.HashMap[RID, Integer]
+type CausalID = mutable.HashMap[RID, Int]
 
-implicit val fooReadWrite: ReadWriter[mutable.HashMap[RID, Integer]] =
-  readwriter[Map[RID, Integer]]
-    .bimap[mutable.HashMap[RID, Integer]](Map.from(_), mutable.HashMap.from(_))
+implicit val fooReadWrite: ReadWriter[CausalID] =
+  readwriter[Map[RID, Int]]
+    .bimap[CausalID](Map.from(_), mutable.HashMap.from(_))
 
 object CausalID {
-  final val ZERO: Integer = 0
+  assert(!CausalID.partialOrder.lt(mutable.HashMap("A" -> 1, "B" -> 1), mutable.HashMap("B" -> 2)))
 
   given partialOrder: PartialOrdering[CausalID] with {
     def lteq(x: CausalID, y: CausalID): Boolean = {
@@ -29,7 +30,7 @@ object CausalID {
       var rightLarger = false
       left.foreachEntry((rid, counter) => {
         val leftValue = counter
-        val rightValue = right.getOrElse(rid, ZERO)
+        val rightValue = right.getOrElse(rid, 0)
         if (leftValue > rightValue) {
           leftLarger = true
         } else if (leftValue < rightValue) {
@@ -38,7 +39,7 @@ object CausalID {
       })
       right.foreachEntry((rid, counter) => {
         val rightValue = counter
-        val leftValue = left.getOrElse(rid, ZERO)
+        val leftValue = left.getOrElse(rid, 0)
         if (leftValue > rightValue) {
           leftLarger = true
         } else if (leftValue < rightValue) {
@@ -53,6 +54,25 @@ object CausalID {
         Some(-1)
       } else {
         Some(0)
+      }
+    }
+  }
+
+  given totalOrder: Ordering[CausalID] with {
+    def compare(x: CausalID, y: CausalID): Int = {
+      partialOrder.tryCompare(x, y) match {
+        case None =>
+          @tailrec
+          def smaller(remaining: List[RID]): Int = remaining match {
+            case key :: t =>
+              val result = x.getOrElse(key, 0).compare(y.getOrElse(key, 0))
+              if result == 0 then smaller(t) else result
+            case Nil =>
+              0
+          }
+          val keys = (x.keysIterator ++ y.keysIterator).toList.sorted
+          smaller(keys)
+        case Some(value) => value
       }
     }
   }

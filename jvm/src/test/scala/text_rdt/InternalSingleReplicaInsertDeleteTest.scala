@@ -3,20 +3,17 @@ package text_rdt
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
 
-final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
-    using val factoryContext: F
-) extends Commands {
+final case class InternalSingleReplicaInsertDeleteTest[A](
+    val factoryConstructor: String => A
+)(using algorithm: CollaborativeTextEditingAlgorithm[A]) extends Commands {
 
   type State = String
 
-  type Sut =
-    Replica[?]
+  type Sut = A
 
   override def newSut(state: State): Sut = {
     assert(state.isEmpty)
-    val replicaState =
-      ReplicaState("test")(using factoryContext)
-    Replica(replicaState, StringEditory())
+    factoryConstructor("test")
   }
 
   override def initialPreCondition(state: State): Boolean = state.isEmpty
@@ -53,11 +50,15 @@ final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
     type Result = State
 
     override def run(sut: Sut): Result = {
-      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+      if (sut.isInstanceOf[Replica[?]]) {
+        assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+      }
 
       sut.insert(index, character)
   
-      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text(), s"${sut.editor.asInstanceOf[StringEditory].data.toString()} == ${sut.text()}")
+      if (sut.isInstanceOf[Replica[?]]) {
+        assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text(), s"${sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${sut.text()}")
+      }
 
       sut.text()
     }
@@ -79,11 +80,15 @@ final case class InternalSingleReplicaInsertDeleteTest[F <: FugueFactory]()(
     type Result = State
 
     override def run(sut: Sut): Result = {
-      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+      if (sut.isInstanceOf[Replica[?]]) {
+        assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+      }
 
       sut.delete(index)
     
-      assert(sut.editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+      if (sut.isInstanceOf[Replica[?]]) {
+        assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
+      }
 
       sut.text()
     }

@@ -5,14 +5,14 @@ import scala.collection.mutable
 final case class Replica[F <: FugueFactory](
     state: ReplicaState[F],
     var editor: Editory
-) extends CollaborativeTextEditingAlgorithm {
+) {
 
-  override def insert(i: Int, x: Char): Unit = {
+  def insert(i: Int, x: Char): Unit = {
     editor.localInsert(i, x)
     state.insert(i, x)
   }
 
-  override def delete(i: Int): Unit = {
+  def delete(i: Int): Unit = {
     editor.localDelete(i)
     state.delete(i)
   }
@@ -23,7 +23,7 @@ final case class Replica[F <: FugueFactory](
   }
 
   def syncFrom(other: ReplicaState[F]): Unit = {
-    this.state.causalBroadcast.syncFrom(other.causalBroadcast.asInstanceOf[CausalBroadcast[Replica.this.state.factoryContext.MSG]], msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
+    this.state.causalBroadcast.syncFrom(other.causalBroadcast.asInstanceOf[CausalBroadcast[Replica.this.state.factoryContext.MSG]], (causalId, msg) => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
   }
 
   def deliveringRemote(
@@ -32,7 +32,7 @@ final case class Replica[F <: FugueFactory](
           mutable.ArrayBuffer[Replica.this.state.factoryContext.MSG]
       ),
   ): Unit = {
-    state.causalBroadcast.deliveringRemote(entry, msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
+    state.causalBroadcast.deliveringRemote(entry, (causalId, msg) => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
   }
 
   def text(): String = {
@@ -58,5 +58,19 @@ object Replica {
 
   def apply[F <: FugueFactory](state: ReplicaState[F]): Replica[F] = {
     Replica[F](state, null.asInstanceOf[Editory])
+  }
+
+  given algorithm[F <: FugueFactory]: CollaborativeTextEditingAlgorithm[Replica[F]] with {
+    extension (replica: Replica[F]) {
+      def insert(i: Int, x: Char): Unit = replica.insert(i, x)
+
+      def delete(i: Int): Unit = replica.delete(i)
+
+      def text(): String = replica.text()
+
+      def sync(other: Replica[F]): Unit = replica.sync(other)
+
+      def syncFrom(other: Replica[F]): Unit = replica.syncFrom(other.state)
+    }
   }
 }

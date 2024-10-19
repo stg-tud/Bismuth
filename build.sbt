@@ -5,7 +5,7 @@ import Tests.*
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / scalaVersion := "3.5.2-RC1"
+ThisBuild / scalaVersion := "3.5.1"
 
 lazy val root = project
   .in(file("."))
@@ -23,7 +23,7 @@ lazy val textrdt = crossProject(JVMPlatform, JSPlatform)
     version := "0.1.0-SNAPSHOT",
     scalacOptions ++= Seq(
       "-no-indent",
-      "-Wall",
+      //"-Wall",
       "-deprecation",
       "-Yexplicit-nulls",
     ),

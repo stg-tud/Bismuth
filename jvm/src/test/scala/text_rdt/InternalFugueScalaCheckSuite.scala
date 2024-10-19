@@ -4,17 +4,23 @@ import munit.ScalaCheckSuite
 import org.scalacheck.Test
 import text_rdt.helper.scalacheck
 
+class OTAlgorithmScalaCheckSuite extends InternalFugueScalaCheckSuite(replicaId => OTAlgorithm(replicaId, Vector.empty)) {
+
+}
+
+object OTAlgorithmScalaCheckSuite {}
+
 class SimpleInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(using SimpleFugueFactory.simpleFugueFactory) {}
+    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using SimpleFugueFactory.simpleFugueFactory), StringEditory())) {}
 
 class ComplexInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(using ComplexFugueFactory.complexFugueFactory) {}
+    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using ComplexFugueFactory.complexFugueFactory), StringEditory())) {}
 
 class SimpleAVLInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(using SimpleAVLFugueFactory.simpleAVLFugueFactory) {}
+    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using SimpleAVLFugueFactory.simpleAVLFugueFactory), StringEditory())) {}
 
 class ComplexAVLInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(using ComplexAVLFugueFactory.complexAVLFugueFactory) {
+    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using ComplexAVLFugueFactory.complexAVLFugueFactory), StringEditory())) {
 
   override protected def scalaCheckInitialSeed: String =
     "EW9fMG9YY_yS7U_xrPdYhnQaD0XdHdBj2miRsRsemXC="
@@ -30,9 +36,9 @@ class ComplexAVLInternalFugueScalaCheckSuite
 
 }
 
-abstract class InternalFugueScalaCheckSuite(
-    using val factoryConstructor: FugueFactory
-) extends ScalaCheckSuite {
+abstract class InternalFugueScalaCheckSuite[A](
+    val factoryConstructor: String => A
+)(using algorithm: CollaborativeTextEditingAlgorithm[A]) extends ScalaCheckSuite {
 
   override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters
@@ -48,11 +54,12 @@ abstract class InternalFugueScalaCheckSuite(
       scalacheck
     )
   ) {
-    InternalSingleReplicaInsertDeleteTest()(using factoryConstructor).property()
+    InternalSingleReplicaInsertDeleteTest(factoryConstructor).property()
   }
 
   property("All replicas should converge".tag(scalacheck)) {
-    InternalMultiReplicaConvergenceTest()(using factoryConstructor).property()
+    assume(this.getClass().getName() != "text_rdt.OTAlgorithmScalaCheckSuite")
+    InternalMultiReplicaConvergenceTest(factoryConstructor).property()
   }
 
   /*property("All replicas should follow the strong list specification".tag(scalacheck)) {

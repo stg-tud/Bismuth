@@ -2,9 +2,6 @@ package text_rdt
 
 import text_rdt.Helper.myAssert
 
-// TODO FIXME generalize for any algorithm or extract the messaging part out of this
-// probably extract messaging part first.
-
 final case class ReplicaState[F <: FugueFactory](
     replicaId: RID
 )(using

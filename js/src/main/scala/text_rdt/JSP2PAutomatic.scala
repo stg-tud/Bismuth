@@ -122,7 +122,7 @@ private case class JSP2PAutomatic() {
         channel.onmessage = event => {
 
           if (event.data.toString().startsWith("heads")) {
-            val heads: ArrayBuffer[mutable.HashMap[String, Integer]] =
+            val heads: ArrayBuffer[CausalID] =
               read(event.data.toString().stripPrefix("heads"))
             val potentiallyNewer2 =
               replica.state.causalBroadcast

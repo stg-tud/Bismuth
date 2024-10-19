@@ -213,7 +213,7 @@ case class BrowserMultiReplicaConvergenceTest(
 
         val toFill = StringBuilder(oldText).deleteCharAt(fixedIndex).toString
         if (toFill.isEmpty()) {
-          sut.elements(replicaIndex).fill("\n")
+          sut.elements(replicaIndex).fill("")
         } else {
           sut
             .elements(replicaIndex)
