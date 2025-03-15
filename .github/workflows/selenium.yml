@@ -57,7 +57,7 @@ jobs:
         run: SELENIUM_BROWSER=${{ inputs.browser }} npm run test
       - name: Selenium
         run: SELENIUM_BROWSER=${{ inputs.browser }} npm run selenium
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: screenshots
