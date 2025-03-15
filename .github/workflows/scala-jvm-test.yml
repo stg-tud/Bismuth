@@ -28,6 +28,9 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "sbt"
+      - uses: sbt/setup-sbt@v1
+        with:
+          sbt-runner-version: 1.10.10
       - name: Create .env file
         run: |
           cd ..

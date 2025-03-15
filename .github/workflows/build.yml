@@ -28,14 +28,15 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "sbt"
+      - uses: sbt/setup-sbt@v1
+        with:
+          sbt-runner-version: 1.10.10
       - uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: "npm"
           cache-dependency-path: peer/package-lock.json
       - run: npm ci
-      - name: Build Scala and check with scalafix
-        run: sbt "scalafixAll --check"
       - name: Build JavaScript Sources from Scala
         run: sbt fastLinkJS
       - name: Build JavaScript

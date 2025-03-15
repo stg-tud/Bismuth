@@ -31,6 +31,9 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "sbt"
+      - uses: sbt/setup-sbt@v1
+        with:
+          sbt-runner-version: 1.10.10
       - name: Run Coturn
         uses: addnab/docker-run-action@v3
         with:
