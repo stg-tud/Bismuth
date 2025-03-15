@@ -298,7 +298,8 @@ class DiscoveryService {
 
       ws.get.onopen = _ => {
         online.set(true)
-        emit(ws.get, "authenticate", js.Dynamic.literal("token" -> token.now.orNull.nn))
+        import scala.language.unsafeNulls
+        emit(ws.get, "authenticate", js.Dynamic.literal("token" -> token.now.orNull))
         promise.success(true)
       }
 

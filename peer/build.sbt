@@ -1,13 +1,9 @@
-import scala.sys.process
-import org.scalajs.linker.interface.ModuleSplitStyle
 import org.scalajs.linker.interface.ModuleInitializer
-import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
-
-Global / onChangedBuildSource := ReloadOnSourceChanges
+import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
 name := "Reform"
 ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "3.3.0"
+ThisBuild / scalaVersion := "3.6.4"
 // ThisBuild / wartremoverErrors ++= Warts.unsafe
 
 ThisBuild  / envFileName := "../.env"
@@ -77,23 +73,13 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform)
       // "-W",
       // "-Y",
       "-Yexplicit-nulls",
-      "-Ysafe-init",
-      "-Wunused:all",
+      "-Wsafe-init",
       "-deprecation",
-      if (sys.env.get("CI").contains("true")) "-Werror" else "",
+      "-Werror",
       // "-Xcheck-macros", // breaks utest, outwatch
     ),
   )
 
-// needed by scalafix
-ThisBuild / scalafixDependencies += "org.scalalint" %% "rules" % "0.1.4"
-inThisBuild(
-  List(
-    scalaVersion := "3.3.0",
-    semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision,
-  ),
-)
 
 ThisBuild / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
