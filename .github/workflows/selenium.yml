@@ -44,8 +44,10 @@ jobs:
           node-version: 16
           cache: "npm"
           cache-dependency-path: peer/package-lock.json
-      - run: cp env.example .env
-        working-directory: ..
+      - name: Create .env file
+        run: |
+          cd ..
+          cp env.example .env
       - run: npm ci
       - name: Build ScalaJS
         run: sbt fastLinkJS
