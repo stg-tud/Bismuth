@@ -1,7 +1,7 @@
 package loreCompilerPlugin
 
 import dotty.tools.dotc.{CompilationUnit, report}
-import dotty.tools.dotc.ast.Trees.{Block, DefDef, Tree, Literal}
+import dotty.tools.dotc.ast.Trees.{Block, Tree, Literal}
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.core.Contexts.Context
@@ -11,7 +11,6 @@ import dotty.tools.dotc.transform.{Inlining, Pickler}
 import dotty.tools.dotc.util.SourceFile
 import java.io.File // For getting URIs and the system-independent path separator
 import lore.ast.Term
-import loreCompilerPlugin.annotation.LoReProgram
 import loreCompilerPlugin.codegen.LoReGen.*
 import loreCompilerPlugin.codegen.DafnyGen.generate as generateDafnyCode
 import loreCompilerPlugin.lsp.DafnyLSPClient

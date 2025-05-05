@@ -95,10 +95,12 @@ object DafnyGen {
       refs.filter((ref: String) => {
         // This check is for skipping non-top-level definition references (e.g. arrow func parameters)
         if ctx.isDefinedAt(ref) then {
-          // TupleType is not currently implemented in the frontend, so this cast is safe.
-          val tp: SimpleType = ctx(ref).loreType.asInstanceOf[SimpleType]
-          // TODO: Add Interaction and Invariant type names to this check. Those are not implemented yet.
-          tp.name == "Signal"
+          val tp: Type = ctx(ref).loreType
+
+          tp match
+            // TODO: Add Interaction and Invariant type names to this check. Those are not implemented yet.
+            case SimpleType(name, _) => name == "Signal"
+            case TupleType(_)        => false // TODO: TupleTypes?
         } else false
       })
 
@@ -119,13 +121,29 @@ object DafnyGen {
   def generate(ast: List[Term], loreMethodName: String)(using scalaCtx: Context): String = {
     var compilationContext: Map[String, NodeInfo] = Map()
 
+    // Interactions have various different type names depending on what parts they have
+    val interactionTypeList: List[String] = List(
+      "BoundInteraction",
+      "Interaction",
+      "InteractionWithActs",
+      "InteractionWithExecutes",
+      "InteractionWithExecutesAndActs",
+      "InteractionWithExecutesAndModifies",
+      "InteractionWithModifies",
+      "InteractionWithModifiesAndActs",
+      "UnboundInteraction"
+    )
+
     // Split term list into sublists that require different handling
     val termGroups: Map[String, List[Term]] = ast.groupBy {
       case TAbs(_, _type, _, _, _) =>
-        if _type.asInstanceOf[SimpleType].name == "Var" then "sourceDefs"
-        else if _type.asInstanceOf[SimpleType].name == "Signal" then "derivedDefs"
-        else if _type.asInstanceOf[SimpleType].name == "Interaction" then "interactionDefs"
-        else "otherDefs"
+        _type match
+          case SimpleType(name, _) =>
+            if name == "Var" then "sourceDefs"
+            else if name == "Signal" then "derivedDefs"
+            else if interactionTypeList.contains(name) then "interactionDefs"
+            else "otherDefs"
+          case TupleType(_) => "otherDefs" // TupleType not implemented
       case _ => "statements"
     }
 
@@ -187,13 +205,13 @@ object DafnyGen {
        |}
        |
        |// Derived definitions
-       |${dafnyCode.getOrElse("derivedDefs", List()).mkString("\n")}
+       |${dafnyCode.getOrElse("derivedDefs", List()).mkString("\n\n")}
        |
        |// Interaction definitions
-       |${dafnyCode.getOrElse("interactionDefs", List()).mkString("\n")}
+       |${dafnyCode.getOrElse("interactionDefs", List()).mkString("\n\n")}
        |
        |// Invariant definitions
-       |${dafnyCode.getOrElse("invariantDefs", List()).mkString("\n")}
+       |${dafnyCode.getOrElse("invariantDefs", List()).mkString("\n\n")}
        |
        |// Main method
        |method {:main} Main() {
@@ -211,7 +229,7 @@ object DafnyGen {
     * @param node The LoRe Term node.
     * @return The generated Dafny code.
     */
-  private def generate(node: Term, ctx: Map[String, NodeInfo])(using scalaCtx: Context) = {
+  private def generate(node: Term, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
     node match
       // Cases ordered by order in LoRe AST definition.
       case n: TViperImport => generateFromTViperImport(n, ctx)
@@ -255,6 +273,7 @@ object DafnyGen {
   private def generateFromSimpleType(node: SimpleType, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
     val dafnyType: String = getDafnyType(node.name)
 
+    // TODO: Add case for Interactions
     if dafnyType == "Var" then {
       // Source (REScala Var) terms are modeled as Dafny fields typed after the inner type of the Source in LoRe.
       // That is to say, a "Source[Int]" is just an "int" type field in Dafny - the Source types does not appear.
