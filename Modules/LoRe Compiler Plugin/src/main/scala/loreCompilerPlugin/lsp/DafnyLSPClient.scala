@@ -171,6 +171,12 @@ class DafnyLSPClient {
       if json("method").str == "dafny/textDocument/symbolStatus" then {
         json("$type") = "SymbolStatusNotification"
         lspMessage = upickleRead[SymbolStatusNotification](json)
+      } else if json("method").str == "dafny/compilation/status" then {
+        json("$type") = "CompilationStatusNotification"
+        lspMessage = upickleRead[CompilationStatusNotification](json)
+      } else if json("method").str == "textDocument/publishDiagnostics" then {
+        json("$type") = "PublishDiagnosticsNotification"
+        lspMessage = upickleRead[PublishDiagnosticsNotification](json)
       } else {
         // Any other notifications
         json("$type") = "LSPNotification"
@@ -199,10 +205,10 @@ class DafnyLSPClient {
     *
     * @return The symbol status notification.
     */
-  def waitForVerificationResult(): (SymbolStatusNotification, Option[LSPNotification]) = {
+  def waitForVerificationResult(): (SymbolStatusNotification, Option[PublishDiagnosticsNotification]) = {
     println(s"Waiting for a \"dafny/textDocument/symbolStatus\"-Notification of all status 4 or 5...")
-    var latestReadMessage: LSPMessage                    = readMessage()
-    var diagnosticsNotification: Option[LSPNotification] = None
+    var latestReadMessage: LSPMessage                                   = readMessage()
+    var diagnosticsNotification: Option[PublishDiagnosticsNotification] = None
 
     // Continue reading messages while the read message isn't a symbol status
     // notification, or any of the named verifiables are not on status 4/5 yet
@@ -214,10 +220,15 @@ class DafnyLSPClient {
       // If a diagnostics message was read, check if it contains a fatal error (e.g. syntax) or just verification errors
       // If it contains a fatal error, throw an error. If it's just verification errors, save the message to return after.
       latestReadMessage match
-        case diag: LSPNotification if diag.method == "textDocument/publishDiagnostics" =>
+        case diag: PublishDiagnosticsNotification =>
           // TODO: Check for fatal error vs verification error
-          println("Diagnostics notification read while waiting for symbol status")
-          diagnosticsNotification = Some(diag)
+          if diag.params.diagnostics.exists(d => d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error)
+          then throw Error("Dafny Diagnostics error!")
+          else
+            println("Diagnostics notification read while waiting for symbol status")
+            diagnosticsNotification = Some(diag)
+        case comp: CompilationStatusNotification =>
+          if comp.params.status == CompilationStatus.ParsingFailed then throw Error("Dafny parsing failed!")
         case _ => ()
 
       latestReadMessage = readMessage()

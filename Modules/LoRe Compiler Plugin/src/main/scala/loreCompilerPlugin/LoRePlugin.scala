@@ -14,7 +14,7 @@ import lore.ast.Term
 import loreCompilerPlugin.codegen.LoReGen.*
 import loreCompilerPlugin.codegen.DafnyGen.generate as generateDafnyCode
 import loreCompilerPlugin.lsp.DafnyLSPClient
-import loreCompilerPlugin.lsp.LSPDataTypes.{LSPNotification, NamedVerifiable, SymbolStatusNotification, VerificationStatus}
+import loreCompilerPlugin.lsp.LSPDataTypes.*
 import ujson.Obj
 
 import scala.annotation.nowarn
@@ -102,18 +102,18 @@ class LoRePhase extends PluginPhase {
     var counter: Int = 0
 
     // Iterate through all term lists and generate Dafny code for them + verify it
-    for termList <- loreTerms do {
-      println(s"Now processing LoRe AST parts for compilation unit: ${termList._1}.")
+    for ((file, method), terms) <- loreTerms do {
+      println(s"Now processing LoRe AST for: $file")
 
       // Turn the filepath into an URI and then sneakily change the file extension the LSP gets to see
-      val filePath: String = File(termList._1._1.path).toURI.toString.replace(".scala", ".dfy")
+      val filePath: String = File(file.path).toURI.toString.replace(".scala", ".dfy")
 
       // Generate Dafny code from term list
-      val dafnyRes: String = generateDafnyCode(termList._2, termList._1._2.toString)
+      val dafnyCode: String = generateDafnyCode(terms, method.toString)
 
       counter += 1
       // todo: this is dummy code, normally output by the to-be-implemented dafny generator
-      val dafnyCode: String =
+      val dafnyDummyCode: String =
         s"""method Test(x: int) returns (y: int)
            |  ensures {:error "Error on LoRe ln X, col Y"} y == ${if counter == 1 then "x" else counter}
            |  {
@@ -141,7 +141,10 @@ class LoRePhase extends PluginPhase {
       lspClient.sendMessage(didOpenMessage)
 
       // Wait for verification results and then filter out any verification errors that occurred
-      val (verificationResult: SymbolStatusNotification, diagnosticsNotification: Option[LSPNotification]) =
+      val (
+        verificationResult: SymbolStatusNotification,
+        diagnosticsNotification: Option[PublishDiagnosticsNotification]
+      ) =
         lspClient.waitForVerificationResult()
 
       val erroneousVerifiables: List[NamedVerifiable] =
