@@ -5,7 +5,7 @@ import dotty.tools.dotc.ast.Trees.{Block, Tree, Literal}
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.core.Contexts.Context
-import dotty.tools.dotc.core.Symbols.Symbol
+import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
 import dotty.tools.dotc.transform.{Inlining, Pickler}
 import dotty.tools.dotc.util.SourceFile
@@ -38,7 +38,7 @@ class LoRePhase extends PluginPhase {
   override val runsAfter: Set[String]  = Set(Pickler.name)
   override val runsBefore: Set[String] = Set(Inlining.name)
 
-  private var loreTerms: Map[(SourceFile, Symbol), List[Term]] = Map()
+  private var loreTerms: Map[(SourceFile, Name), List[Term]] = Map()
 
   override def transformDefDef(tree: tpd.DefDef)(using ctx: Context): tpd.Tree = {
     // Only process DefDefs marked as LoreProgram
@@ -57,20 +57,20 @@ class LoRePhase extends PluginPhase {
           case _ => List()
 
       // Process each individual part of this LoRe program
-      for tree <- programContents do {
+      for t <- programContents do {
         // Generate LoRe term for this tree
-        val loreTerm: List[Term] = createLoreTermFromTree(tree)
+        val loreTerm: List[Term] = createLoreTermFromTree(t)
 
         // Add LoRe term to the respective program's term list, or create a term list if it doesn't exist yet
-        val programTermList: Option[List[Term]] = loreTerms.get((tree.source, ctx.owner))
+        val programTermList: Option[List[Term]] = loreTerms.get((tree.source, tree.name))
         programTermList match
           case Some(list) =>
             val newList: List[Term] = list :++ loreTerm // Append list with loreTerm list
-            loreTerms = loreTerms.updated((tree.source, ctx.owner), newList)
+            loreTerms = loreTerms.updated((tree.source, tree.name), newList)
           case None =>
-            println(s"Adding new term list to Map for ${ctx.owner.toString} in ${tree.source.name}")
+            println(s"Adding new term list to Map for ${tree.name} in ${tree.source.name}")
             val newList: List[Term] = loreTerm // loreTerm is already a list
-            loreTerms = loreTerms.updated((tree.source, ctx.owner), newList)
+            loreTerms = loreTerms.updated((tree.source, tree.name), newList)
       }
     }
 
@@ -109,7 +109,7 @@ class LoRePhase extends PluginPhase {
       val filePath: String = File(termList._1._1.path).toURI.toString.replace(".scala", ".dfy")
 
       // Generate Dafny code from term list
-      val dafnyRes: String = generateDafnyCode(termList._2, termList._1._2.name.toString)
+      val dafnyRes: String = generateDafnyCode(termList._2, termList._1._2.toString)
 
       counter += 1
       // todo: this is dummy code, normally output by the to-be-implemented dafny generator
