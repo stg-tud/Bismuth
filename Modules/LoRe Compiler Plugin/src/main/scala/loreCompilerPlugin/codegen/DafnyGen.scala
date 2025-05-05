@@ -199,7 +199,7 @@ object DafnyGen {
        |  ${sourceDecls.mkString("\n  ")}
        |
        |  constructor () {
-       |    // Definition of Source values (initial values)
+       |    // Definition of Source values (initial values used in LoRe definition)
        |    ${sourceDefs.mkString("\n    ")}
        |  }
        |}
