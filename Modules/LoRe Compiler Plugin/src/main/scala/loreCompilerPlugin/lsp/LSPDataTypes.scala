@@ -105,7 +105,7 @@ object LSPDataTypes {
   // Reference: https://github.com/dafny-lang/dafny/blob/2473d8da29c2b934b5465ef92073305f34910596/Source/DafnyLanguageServer/Workspace/FileVerificationStatus.cs#L11
   case class SymbolStatusParams(
       uri: String,
-      version: Int,
+      version: Option[Int] = None,
       namedVerifiables: List[NamedVerifiable]
   ) derives ReadWriter
 
@@ -150,9 +150,9 @@ object LSPDataTypes {
   // Reference: https://github.com/dafny-lang/dafny/blob/master/Source/DafnyLanguageServer/Workspace/Notifications/CompilationStatusParams.cs
   case class CompilationStatusParams(
       uri: String,
-      version: Int,
+      version: Option[Int] = None,
       status: CompilationStatus,
-      message: String
+      message: Option[String] = None
   ) derives ReadWriter
 
   // Reference: https://github.com/dafny-lang/dafny/blob/master/Source/DafnyLanguageServer/Workspace/Notifications/CompilationStatus.cs
@@ -191,7 +191,7 @@ object LSPDataTypes {
   // Reference: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#publishDiagnosticsParams
   case class PublishDiagnosticsParams(
       uri: String,
-      version: Int,
+      version: Option[Int] = None,
       diagnostics: List[Diagnostic]
   ) derives ReadWriter
 
