@@ -84,8 +84,8 @@ class LoRePhase extends PluginPhase {
     // This will cause the compiler to call above-defined methods which will generate the LoRe AST nodes.
     val result = super.runOn(units)
 
-    println("LoRe AST generation completed.")
-    println(s"Processed ${loreTerms.size} compilation units with ${loreTerms.map(_._2.size).mkString(",")} terms each.")
+    val termCounts: String = loreTerms.map(_._2.size).mkString(",")
+    println(s"LoRe AST generation completed. Processed ${loreTerms.size} files with $termCounts terms each.")
 
     // Initialize LSP client that will be used for verification after codegen
     val lspClient: DafnyLSPClient = new DafnyLSPClient()
