@@ -38,8 +38,6 @@ object LoReGen {
     tree match
       case ap: Apply[?] => // Function or method calls, e.g. "println(...)" or "foo.bar()"
         List(createLoreTermFromApply(ap))
-//      case as: Assign[?] => // Assignments of previously-defined names, e.g. "foo = bar" (only for vars)
-//        List(createLoreTermFromAssign(as))
       case bl: Block[?] => // Blocks of trees
         val blockTerms: List[Term] = bl.stats.flatMap(t => createLoreTermFromTree(t))
 
@@ -126,16 +124,6 @@ object LoReGen {
   private def createLoreTermFromApply(tree: tpd.Apply)(using ctx: Context): Term = {
     // Apply statements are covered as part of RHS term building for ValDefs
     buildLoreRhsTerm(tree)
-  }
-
-  /** Creates a LoRe Term from a Scala Assign Tree.
-    *
-    * @param tree The Scala Assign Tree.
-    * @return The LoRe Term.
-    */
-  private def createLoreTermFromAssign(tree: tpd.Assign)(using ctx: Context): Term = {
-    // TODO?
-    TVar("<not implemented>")
   }
 
   /** Creates a LoRe Term from a Scala Select Tree.
