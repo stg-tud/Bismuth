@@ -2,6 +2,7 @@ package loreCompilerPlugin.lsp
 
 import java.nio.charset.StandardCharsets
 import LSPDataTypes.*
+import loreCompilerPlugin.lsp.LSPDataTypes.CompilationStatus.{InternalException, ParsingFailed, ResolutionFailed}
 import os.{SubProcess, spawn}
 import scala.collection.mutable.ArrayBuffer
 import ujson.{Null, Obj, Str, Value, read as ujsonRead}
@@ -217,18 +218,19 @@ class DafnyLSPClient {
         nv.status != VerificationStatus.Error && nv.status != VerificationStatus.Correct
       )
     do {
-      // If a diagnostics message was read, check if it contains a fatal error (e.g. syntax) or just verification errors
-      // If it contains a fatal error, throw an error. If it's just verification errors, save the message to return after.
+      // If a diagnostics message was read, save the message to return it alongside the result later.
+      // If a compilation status notification with a critical error appears, stop waiting for the verification result
+      // (it will not be sent in this case) and return an empty result plus any diagnostics possibly read so far.
       latestReadMessage match
         case diag: PublishDiagnosticsNotification =>
-          // TODO: Check for fatal error vs verification error
-          if diag.params.diagnostics.exists(d => d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error)
-          then throw Error("Dafny Diagnostics error!")
-          else
-            println("Diagnostics notification read while waiting for symbol status")
-            diagnosticsNotification = Some(diag)
+          println(s"Diagnostics notification read while waiting for verification result.")
+          diagnosticsNotification = Some(diag)
         case comp: CompilationStatusNotification =>
-          if comp.params.status == CompilationStatus.ParsingFailed then throw Error("Dafny parsing failed!")
+          comp.params.status match
+            case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
+              println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
+              return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
+            case _ => ()
         case _ => ()
 
       latestReadMessage = readMessage()

@@ -79,11 +79,12 @@ class LoRePhase extends PluginPhase {
   }
 
   override def runOn(units: List[CompilationUnit])(using ctx: Context): List[CompilationUnit] = {
+    println("Generating LoRe AST nodes from Scala code...")
     // First, run the runOn method for regular Scala compilation (do not remove this or this phase breaks).
     // This will cause the compiler to call above-defined methods which will generate the LoRe AST nodes.
     val result = super.runOn(units)
 
-    println("LoRe AST node generation was run for all compilation units.")
+    println("LoRe AST generation completed.")
     println(s"Processed ${loreTerms.size} compilation units with ${loreTerms.map(_._2.size).mkString(",")} terms each.")
 
     // Initialize LSP client that will be used for verification after codegen
@@ -103,13 +104,16 @@ class LoRePhase extends PluginPhase {
 
     // Iterate through all term lists and generate Dafny code for them + verify it
     for ((file, method), terms) <- loreTerms do {
-      println(s"Now processing LoRe AST for: $file")
+      println(s"Generating Dafny code from LoRe AST of ${method.toString}...")
 
       // Turn the filepath into an URI and then sneakily change the file extension the LSP gets to see
       val filePath: String = File(file.path).toURI.toString.replace(".scala", ".dfy")
 
       // Generate Dafny code from term list
-      val dafnyCode: String = generateDafnyCode(terms, method.toString)
+      val dafnyCode: String        = generateDafnyCode(terms, method.toString)
+      val dafnyLines: List[String] = dafnyCode.linesIterator.toList
+
+      println(s"Dafny code generation for ${method.toString} completed.")
 
       counter += 1
       // todo: this is dummy code, normally output by the to-be-implemented dafny generator
@@ -125,6 +129,8 @@ class LoRePhase extends PluginPhase {
            |  var a: int := Test(0);
            |  print a;
            |}""".stripMargin
+
+      println(s"Compiling and verifying Dafny code for ${method.toString}...")
 
       // Send the generated code "file" to the language server to verify
       val didOpenMessage: String = DafnyLSPClient.constructLSPMessage("textDocument/didOpen")(
@@ -147,18 +153,25 @@ class LoRePhase extends PluginPhase {
       ) =
         lspClient.waitForVerificationResult()
 
-      val erroneousVerifiables: List[NamedVerifiable] =
-        verificationResult.params.namedVerifiables.filter(nv => nv.status == VerificationStatus.Error)
-
-      // Process potential verification errors
-      if erroneousVerifiables.isEmpty then {
-        println("No unverifiable claims could be found in the program.")
-        // This report is a debug log, remove this later and make it silent
-        report.log("All claims were verified successfully.")
+      // If the wait for verification results was halted prematurely, a critical Dafny compilation error occurred.
+      if verificationResult.params == null then {
+        diagnosticsNotification match
+          // No diagnostics were read before the error occurred: No error info known.
+          case None => report.error("A critical Dafny compilation error occurred.")
+          case Some(diag) =>
+            report.error("detailed error stuff should be here... probably")
       } else {
-        println("Some claims in the program could not be verified.")
-        // Add details to this later, just simple debug for now
-        report.error("Some claims could not be verified.")
+        // Regular processing of verification results.
+        val erroneousVerifiables: List[NamedVerifiable] =
+          verificationResult.params.namedVerifiables.filter(nv => nv.status == VerificationStatus.Error)
+
+        // Process potential verification errors
+        if erroneousVerifiables.isEmpty then {
+          println(s"No unverifiable claims could be found in the Dafny code for ${method.toString}.")
+        } else {
+          // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error etc)
+          println(s"Some claims in the Dafny code for ${method.toString} could not be verified.")
+        }
       }
     }
 
