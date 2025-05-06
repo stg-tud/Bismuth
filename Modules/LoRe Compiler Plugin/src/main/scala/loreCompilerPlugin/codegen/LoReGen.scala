@@ -47,6 +47,10 @@ object LoReGen {
         bl.expr match
           case Literal(Constant(_: Unit)) => blockTerms
           case _                          => blockTerms :++ createLoreTermFromTree(bl.expr)
+      case id: Ident[?] => // References
+        List(createLoreTermFromIdent(id))
+      case li: Literal[?] => // Literals (e.g. 0, "foo", ...)
+        List(createLoreTermFromLiteral(li))
       case se: Select[?] => // Property access, e.g. "foo.bar"
         List(createLoreTermFromSelect(se))
       case vd: ValDef[?] => // Val definitions, i.e. "val foo: Bar = baz" where baz is any valid RHS
@@ -55,6 +59,46 @@ object LoReGen {
       case _ =>
         report.error(s"This syntax is not supported in LoRe.", tree.sourcePos)
         List(TVar("<error>")) // Make compiler happy
+  }
+
+  /** Creates a LoRe Term from a Scala Apply Tree.
+    *
+    * @param tree The Scala Apply Tree.
+    * @return The LoRe Term.
+    */
+  private def createLoreTermFromApply(tree: tpd.Apply)(using ctx: Context): Term = {
+    // Apply statements are covered as part of RHS term building for ValDefs
+    buildLoreRhsTerm(tree)
+  }
+
+  /** Creates a LoRe Term from a Scala Ident Tree.
+    *
+    * @param tree The Scala Ident Tree.
+    * @return The LoRe Term.
+    */
+  private def createLoreTermFromIdent(tree: tpd.Ident)(using ctx: Context): Term = {
+    // Ident statements are covered as part of RHS term building for ValDefs
+    buildLoreRhsTerm(tree)
+  }
+
+  /** Creates a LoRe Term from a Scala Literal Tree.
+    *
+    * @param tree The Scala Literal Tree.
+    * @return The LoRe Term.
+    */
+  private def createLoreTermFromLiteral(tree: tpd.Literal)(using ctx: Context): Term = {
+    // Literal statements are covered as part of RHS term building for ValDefs
+    buildLoreRhsTerm(tree)
+  }
+
+  /** Creates a LoRe Term from a Scala Select Tree.
+    *
+    * @param tree The Scala Select Tree.
+    * @return The LoRe Term.
+    */
+  private def createLoreTermFromSelect(tree: tpd.Select)(using ctx: Context): Term = {
+    // Select statements are covered as part of RHS term building for ValDefs
+    buildLoreRhsTerm(tree)
   }
 
   /** Creates a LoRe Term from a Scala ValDef Tree.
@@ -114,26 +158,6 @@ object LoReGen {
             println(s"Detected tuple type, these are currently unsupported. Tree:\n$tree")
             report.error("LoRe Tuple Types are not currently supported", tree.sourcePos)
             TVar("<error>") // Make compiler happy
-  }
-
-  /** Creates a LoRe Term from a Scala Apply Tree.
-    *
-    * @param tree The Scala Apply Tree.
-    * @return The LoRe Term.
-    */
-  private def createLoreTermFromApply(tree: tpd.Apply)(using ctx: Context): Term = {
-    // Apply statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree)
-  }
-
-  /** Creates a LoRe Term from a Scala Select Tree.
-    *
-    * @param tree The Scala Select Tree.
-    * @return The LoRe Term.
-    */
-  private def createLoreTermFromSelect(tree: tpd.Select)(using ctx: Context): Term = {
-    // Select statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree)
   }
 
   /** Builds a LoRe Type node based on a Scala type tree

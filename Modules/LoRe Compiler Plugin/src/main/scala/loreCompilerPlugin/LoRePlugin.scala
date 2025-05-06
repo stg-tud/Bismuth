@@ -175,6 +175,21 @@ class LoRePhase extends PluginPhase {
           println(s"Some claims in the Dafny code for ${method.toString} could not be verified.")
         }
       }
+
+      // Close the "file"
+      val didCloseMessage: String = DafnyLSPClient.constructLSPMessage("textDocument/didClose")(
+        (
+          "textDocument",
+          Obj(
+            "uri"        -> filePath,
+            "languageId" -> "dafny",
+            "version"    -> 1,
+            "text"       -> dafnyCode
+          )
+        ),
+      )
+      lspClient.sendMessage(didCloseMessage)
+
     }
 
     // Always return result of default runOn method for regular Scala compilation, as we do not modify it.
