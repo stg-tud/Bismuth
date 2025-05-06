@@ -68,7 +68,7 @@ class LoRePhase extends PluginPhase {
             val newList: List[Term] = list :++ loreTerm // Append list with loreTerm list
             loreTerms = loreTerms.updated((tree.source, tree.name), newList)
           case None =>
-            println(s"Adding new term list to Map for ${tree.name} in ${tree.source.name}")
+            println(s"Creating new term list for ${tree.name} in ${tree.source.name}.")
             val newList: List[Term] = loreTerm // loreTerm is already a list
             loreTerms = loreTerms.updated((tree.source, tree.name), newList)
       }
@@ -104,7 +104,7 @@ class LoRePhase extends PluginPhase {
 
     // Iterate through all term lists and generate Dafny code for them + verify it
     for ((file, method), terms) <- loreTerms do {
-      println(s"Generating Dafny code from LoRe AST of ${method.toString}...")
+      println(s"\nGenerating Dafny code from LoRe AST of ${method.toString}...")
 
       // Turn the filepath into an URI and then sneakily change the file extension the LSP gets to see
       val filePath: String = File(file.path).toURI.toString.replace(".scala", ".dfy")
@@ -157,9 +157,10 @@ class LoRePhase extends PluginPhase {
       if verificationResult.params == null then {
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
-          case None => report.error("A critical Dafny compilation error occurred.")
+          case None       => report.error("A critical Dafny compilation error occurred.")
           case Some(diag) =>
-            report.error("detailed error stuff should be here... probably")
+            // TODO: Dig into diagnostics to report error details
+            report.error("A critical Dafny compilation error occurred.")
       } else {
         // Regular processing of verification results.
         val erroneousVerifiables: List[NamedVerifiable] =

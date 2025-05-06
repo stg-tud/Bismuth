@@ -207,7 +207,7 @@ class DafnyLSPClient {
     * @return The symbol status notification.
     */
   def waitForVerificationResult(): (SymbolStatusNotification, Option[PublishDiagnosticsNotification]) = {
-    println(s"Waiting for a \"dafny/textDocument/symbolStatus\"-Notification of all status 4 or 5...")
+    println("Waiting for the result of Dafny code verification...")
     var latestReadMessage: LSPMessage                                   = readMessage()
     var diagnosticsNotification: Option[PublishDiagnosticsNotification] = None
 
@@ -236,7 +236,7 @@ class DafnyLSPClient {
       latestReadMessage = readMessage()
     }
 
-    println(s"symbolStatus notification with only status 4 or 5 found:\n${upickleWrite(latestReadMessage)}")
+    println("Dafny verification result has been received.")
 
     (
       latestReadMessage.asInstanceOf[SymbolStatusNotification], // Cast is safe because of above check
