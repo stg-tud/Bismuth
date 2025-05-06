@@ -100,6 +100,7 @@ class LoRePhase extends PluginPhase {
     val folderPath: String = File(unitPath.split(rootPatternEscaped).head.concat(rootPattern)).toURI.toString
     lspClient.initializeLSP(folderPath)
 
+    // TODO: dummy variable, remove later
     var counter: Int = 0
 
     // Iterate through all term lists and generate Dafny code for them + verify it
