@@ -19,7 +19,7 @@ object Settings {
   // and https://www.scala-lang.org/api/current/scala/language$.html
   // and run: cs launch scala3-compiler -- -help
 
-  val scala3defaults = Def.settings(
+  val scala3defaultsUnstable = Def.settings(
     scalaVersion := scala3VersionString,
     fullFeatureDeprecationWarnings,
     scalaSourceLevel(scala3VersionMinor),
@@ -27,6 +27,11 @@ object Settings {
     valueDiscard(Compile / compile),
     typeParameterShadow(Compile / compile),
     privateShadow(Compile / compile),
+  )
+
+  val scala3defaults = Def.settings(
+    scala3defaultsUnstable,
+    unstableInlineAccessors(Compile / compile),
   )
 
   // enabled to see what breaks and maybe play around with
@@ -56,6 +61,9 @@ object Settings {
 
   // can be annoying with methods that have optional results, can also help with methods that have non optional results …
   def nonunitStatement(conf: TaskKey[?]*) = taskSpecificScalacOption("-Wnonunit-statement", conf*)
+
+  // reports methods that have public forwarders (in the binaries) because they are accessed by an inline function
+  def unstableInlineAccessors(conf: TaskKey[?]*) = taskSpecificScalacOption("-WunstableInlineAccessors", conf*)
 
   // type parameter shadowing often is accidental, and especially for short type names keeping them separate seems good
   def typeParameterShadow(conf: TaskKey[?]*) = taskSpecificScalacOption("-Wshadow:type-parameter-shadow", conf*)

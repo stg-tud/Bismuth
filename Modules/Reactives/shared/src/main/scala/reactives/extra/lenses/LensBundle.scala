@@ -10,7 +10,7 @@ import reactives.operator.{Event, Evt, Flatten, Signal}
   * @param state  The state of the LVar
   * @param events Incoming events indicating a change to the LVar cluster
   */
-class LVar[M] private[reactives] (state: Signal[M], events: Evt[Event[M]]) {
+class LVar[M] private[reactives] (val state: Signal[M], events: Evt[Event[M]]) {
 
   /** TODO: The BijectiveSigLens requires a reactive read without evaluating dependencies. As this is currently not supported by REScala, it uses .now instead!
     * Creates a new LVar which is connected to this LVar via the given Lens.
