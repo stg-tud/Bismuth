@@ -181,7 +181,7 @@ class LoRePhase extends PluginPhase {
           println(s"No unverifiable claims could be found in the Dafny code for ${method.toString}.")
         } else {
           // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error etc)
-          println(s"Some claims in the Dafny code for ${method.toString} could not be verified.")
+          report.error(s"Some claims in the Dafny code for ${method.toString} could not be verified.")
         }
       }
 
