@@ -35,12 +35,12 @@ object Dependencies {
     )
 
   def borer = libraryDependencies ++= Seq(
-    "io.bullet" %%% "borer-core"       % "1.16.0",
-    "io.bullet" %%% "borer-derivation" % "1.16.0"
+    "io.bullet" %%% "borer-core"       % "1.16.1",
+    "io.bullet" %%% "borer-derivation" % "1.16.1"
   )
 
   def jetty = {
-    val jettyVersion = "12.0.19"
+    val jettyVersion = "12.0.20"
     Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
@@ -50,8 +50,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.34.1",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.34.1" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.35.2",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.35.2" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "23.0.1-R34"
