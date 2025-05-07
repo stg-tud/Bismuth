@@ -158,10 +158,19 @@ class LoRePhase extends PluginPhase {
       if verificationResult.params == null then {
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
-          case None       => report.error("A critical Dafny compilation error occurred.")
+          case None       => report.error("An unknown critical Dafny compilation error occurred.")
           case Some(diag) =>
             // TODO: Dig into diagnostics to report error details
-            report.error("A critical Dafny compilation error occurred.")
+            val errors: List[Diagnostic] = diag.params.diagnostics.filter(d => {
+              d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
+            })
+
+            val errorPlural: String = if errors.size > 1 then "errors" else "error"
+
+            report.error(
+              s"""${errors.size} Dafny compilation $errorPlural occurred:
+                 |${errors.map(e => e.message).mkString("\n")}""".stripMargin
+            )
       } else {
         // Regular processing of verification results.
         val erroneousVerifiables: List[NamedVerifiable] =
@@ -189,7 +198,6 @@ class LoRePhase extends PluginPhase {
         ),
       )
       lspClient.sendMessage(didCloseMessage)
-
     }
 
     // Always return result of default runOn method for regular Scala compilation, as we do not modify it.
