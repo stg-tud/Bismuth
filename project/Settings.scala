@@ -8,12 +8,11 @@ import sbt.Keys.*
 object Settings {
 
   // also consider updating the -source param below
-  val scala3VersionString = sys.env.getOrElse("SCALA_VERSION", "3.6.4")
+  val scala3VersionString = sys.env.getOrElse("SCALA_VERSION", "3.7.0")
 
   // needs either 3.7 or 3.5 minor version in 3.6, otherwise there is a unfixable warning about changed implicit order
   // see https://github.com/scala/scala3/issues/22153
-  val scala3VersionMinor = "3.7"
-  // val scala3VersionMinor = scala3VersionString.reverse.dropWhile(c => c != '.').drop(1).reverse
+  val scala3VersionMinor = scala3VersionString.reverse.dropWhile(c => c != '.').drop(1).reverse
 
   // see https://docs.scala-lang.org/overviews/compiler-options/
   // and https://docs.scala-lang.org/scala3/guides/migration/options-new.html
@@ -33,7 +32,7 @@ object Settings {
   // enabled to see what breaks and maybe play around with
   // named tuples seems likely for 3.7, modularity is not SIP approved (though I also have not seen someone arguing against)
   def experimentalOptions =
-    scalacOptions ++= List("-language:experimental.namedTuples", "-language:experimental.modularity")
+    scalacOptions ++= List("-language:experimental.modularity")
 
   // Spell out feature and deprecation warnings instead of summarizing them into a single warning
   // always turn this on to make the compiler less ominous
