@@ -187,15 +187,7 @@ class LoRePhase extends PluginPhase {
 
       // Close the "file"
       val didCloseMessage: String = DafnyLSPClient.constructLSPMessage("textDocument/didClose")(
-        (
-          "textDocument",
-          Obj(
-            "uri"        -> filePath,
-            "languageId" -> "dafny",
-            "version"    -> 1,
-            "text"       -> dafnyCode
-          )
-        ),
+        ("textDocument", Obj("uri" -> filePath))
       )
       lspClient.sendMessage(didCloseMessage)
     }
