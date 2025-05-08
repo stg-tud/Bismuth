@@ -152,7 +152,7 @@ class LoRePhase extends PluginPhase {
         verificationResult: SymbolStatusNotification,
         diagnosticsNotification: Option[PublishDiagnosticsNotification]
       ) =
-        lspClient.waitForVerificationResult()
+        lspClient.waitForVerificationResult(file.name.replace(".scala", ".dfy"))
 
       // If the wait for verification results was halted prematurely, a critical Dafny compilation error occurred.
       if verificationResult.params == null then {
@@ -180,7 +180,7 @@ class LoRePhase extends PluginPhase {
         if erroneousVerifiables.isEmpty then {
           println(s"All verifiables in ${method.toString} were verified successfully.")
         } else {
-          // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error etc)
+          // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error *with positions* etc)
           val unverifiableNames: List[String] = erroneousVerifiables.map(verifiable => {
             // The names of verifiables (e.g. method names) will be on one line, so no need to check across
             val startChar: Int = verifiable.nameRange.start.character

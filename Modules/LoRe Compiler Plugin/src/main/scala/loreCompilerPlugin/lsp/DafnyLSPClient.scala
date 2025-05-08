@@ -204,16 +204,18 @@ class DafnyLSPClient {
     * method is found, in which the "status" parameter of all entries in the namedVerifiables list are either
     * "Error" or "Correct". Any messages read while waiting that don't match will be discarded.
     *
+    * @param name The name of the file to wait for.
     * @return The symbol status notification.
     */
-  def waitForVerificationResult(): (SymbolStatusNotification, Option[PublishDiagnosticsNotification]) = {
+  def waitForVerificationResult(name: String): (SymbolStatusNotification, Option[PublishDiagnosticsNotification]) = {
     println("Waiting for the result of Dafny code verification...")
     var latestReadMessage: LSPMessage                                   = readMessage()
     var diagnosticsNotification: Option[PublishDiagnosticsNotification] = None
 
-    // Continue reading messages while the read message isn't a symbol status
-    // notification, or any of the named verifiables are not on status 4/5 yet
+    // Continue reading messages while the read message isn't a symbol status notification
+    // unrelated to the desired file, or any of the named verifiables are not on status 4/5 yet
     while !latestReadMessage.isInstanceOf[SymbolStatusNotification]
+      || !latestReadMessage.asInstanceOf[SymbolStatusNotification].params.uri.endsWith(name)
       || latestReadMessage.asInstanceOf[SymbolStatusNotification].params.namedVerifiables.exists(nv =>
         nv.status != VerificationStatus.Error && nv.status != VerificationStatus.Correct
       )
@@ -223,14 +225,18 @@ class DafnyLSPClient {
       // (it will not be sent in this case) and return an empty result plus any diagnostics possibly read so far.
       latestReadMessage match
         case diag: PublishDiagnosticsNotification =>
-          println(s"Diagnostics notification read while waiting for verification result.")
-          diagnosticsNotification = Some(diag)
+          if diag.params.uri.endsWith(name) then {
+            println(s"Diagnostics notification read while waiting for verification result.")
+            diagnosticsNotification = Some(diag)
+          }
         case comp: CompilationStatusNotification =>
-          comp.params.status match
-            case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
-              println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
-              return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
-            case _ => ()
+          if comp.params.uri.endsWith(name) then {
+            comp.params.status match
+              case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
+                println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
+                return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
+              case _ => ()
+          }
         case _ => ()
 
       latestReadMessage = readMessage()
