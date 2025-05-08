@@ -178,10 +178,20 @@ class LoRePhase extends PluginPhase {
 
         // Process potential verification errors
         if erroneousVerifiables.isEmpty then {
-          println(s"No unverifiable claims could be found in the Dafny code for ${method.toString}.")
+          println(s"All verifiables in ${method.toString} were verified successfully.")
         } else {
           // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error etc)
-          report.error(s"Some claims in the Dafny code for ${method.toString} could not be verified.")
+          val unverifiableNames: List[String] = erroneousVerifiables.map(verifiable => {
+            // The names of verifiables (e.g. method names) will be on one line, so no need to check across
+            val startChar: Int = verifiable.nameRange.start.character
+            val endChar: Int   = verifiable.nameRange.end.character
+            dafnyLines(verifiable.nameRange.start.line).substring(startChar, endChar)
+          })
+
+          report.error(
+            s"""The following verifiables in ${method.toString} could not be verified:
+               |${unverifiableNames.mkString("\n")}""".stripMargin
+          )
         }
       }
 
