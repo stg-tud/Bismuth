@@ -158,8 +158,27 @@ object DafnyGen {
     })
 
     // Generate Dafny code for all term groups
+    // Also check for forward references in terms, and report an error for offending terms
     val dafnyCode: Map[String, List[String]] = termGroups.map((termType, termList) => {
-      val generated: List[String] = termList.map(term => generate(term, compilationContext))
+      val generated: List[String] = termList.map(term => {
+        // Check for forward references
+        val refs: Set[String] = usedReferences(term, compilationContext)
+        refs.foreach((ref: String) => {
+          // Find the definition of the reference from context (should always be present because it was built above)
+          val refDef: Option[NodeInfo] = compilationContext.get(ref)
+          refDef match
+            case None       => ()
+            case Some(node) =>
+              // If both terms have positions recorded, compare their starting line
+              // If the ref term is ahead of (smaller than) the node def, this is a forward reference
+              if term.scalaSourcePos.isDefined && node.loreNode.scalaSourcePos.isDefined then
+                if term.scalaSourcePos.get.startLine < node.loreNode.scalaSourcePos.get.startLine then
+                  report.error("Forward references are not allowed.", term.scalaSourcePos.orNull)
+        })
+
+        // Map to generation result of term
+        generate(term, compilationContext)
+      })
 
       if termType == "statements" then {
         // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
