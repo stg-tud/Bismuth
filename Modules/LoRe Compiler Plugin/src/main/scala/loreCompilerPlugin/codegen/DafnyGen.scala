@@ -19,6 +19,17 @@ case class NodeInfo(
     dafnyType: String
 )
 
+/** Replaces references in the given term to the names in the first list by the names in the second list (in 1:1 order).
+  * @param term The term in which to replace references
+  * @param originalNames The original names to replace with new names.
+  * @param newNames The new names to replace the original names with.
+  * @return The equivalent term with replaced references.
+  */
+private def replaceReferences(term: Term, originalNames: List[String], newNames: List[String]): Term = {
+  // TODO
+  term
+}
+
 object DafnyGen {
 
   /** Takes a Scala type name and returns the corresponding Dafny type name, if one exists.
@@ -306,6 +317,7 @@ object DafnyGen {
     } else if dafnyType.matches("Tuple\\d+") then {
       // The name of Dafny's tuple type is blank, and instead of angled brackets uses parens, i.e. (string, int).
       // That means we just concat the inner types surrounded by parens for building tuple type annotations.
+      // TODO: Should be reworked so Scala Tuples are turned into TupleType on the front end, but that is future work.
       // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-tuple-types
       s"(${node.inner.map(t => generate(t, ctx)).mkString(", ")})"
     } else if dafnyType.matches("Function\\d+") then {
@@ -396,7 +408,86 @@ object DafnyGen {
            |}""".stripMargin
       case n: TInteraction =>
         // TODO: Implement in tandem with Interactions.
-        ""
+        // Interaction terms are realized as Dafny methods. Methods may have side-effects.
+        // As Interactions modify state directly, they do not have return values, however.
+        // Their parameters are the state (a reference to the main object) as well as
+        // any parameters as specified in the definition of the Interaction.
+
+        // Warning: TupleTypes are currently not implemented in the frontend. This means that any tuples will show up as
+        // SimpleType with the name "TupleN", where N is the tuple arity. Additionally, Interactions are defined so that
+        // the reactiveType will always be a tuple, regardless of how many there are (one reactive then being Tuple1).
+        // Therefore, once TupleType is implemented in the frontend, the only case that is will be entered here will
+        // be the third case that handles TupleType. At that point, the other two cases are likely to be dead code.
+        val reactiveTypes: List[String] = n.reactiveType match
+          case SimpleType(name, inner) if name.matches("Tuple\\d+") => inner.map(t => generate(t, ctx)) // Tuples
+          case t: SimpleType                                        => List(generate(t, ctx))           // Non-Tuples
+          case TupleType(inner)                                     => inner.map(t => generate(t, ctx)).toList
+        val reactiveNames: List[String] = n.modifies
+
+        // Warning: See above comment on TupleTypes.
+        val argumentTypes = n.argumentType match
+          case SimpleType(name, inner) if name.matches("Tuple\\d+") => inner.map(t => generate(t, ctx)) // Tuples
+          case t: SimpleType                                        => List(generate(t, ctx))           // Non-Tuples
+          case TupleType(inner)                                     => inner.map(t => generate(t, ctx)).toList
+        val argumentNames: List[String] = n.executes match
+          case None               => List() // No body in this Interaction
+          case Some(term: TArrow) =>
+            // Regular body: an arrow function
+
+            // Find list of arguments by going through left side
+            // Warning: Normally, this should be possible simply through accessing term.args, but that
+            // property calls a function which does something similar to below code, but it is currently broken.
+            val args: List[String] = term.left match
+              case TTuple(a, _, _) => a.collect {
+                  case TArgT(name, _, _, _) => name
+                }
+              case _ => List()
+
+            // Reactives aren't arguments, so remove those
+            args.drop(reactiveTypes.length)
+          case Some(term) => List() // Irrelevant body: non-arrow func
+
+        // TODO: Search for invariants relevant to the above reactives and include them as pre- and post-conditions.
+
+        val preconditions: List[String] = n.requires.map {
+          case t: TArrow => s"requires ${generate(replaceReferences(t.right, argumentNames, reactiveNames), ctx)}"
+          case _         => ""
+        }
+
+        val postconditions: List[String] = n.ensures.map {
+          case t: TArrow => s"ensures ${generate(replaceReferences(t.right, argumentNames, reactiveNames), ctx)}"
+          case _         => ""
+        }
+
+        // As only objects can be referenced in Dafny modifies clauses, the main object is directly used here.
+        // To still ensure only the specified sources are modified, instead attach ensures clauses that include
+        // a condition specifying the not-mentioned sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
+        // for every source that is not included in the modifies list, where obj is the main object of the program.
+        val unmodifiedSources: List[NodeInfo] = ctx.values.filter(definition => {
+          definition.loreNode match
+            case TAbs(name, _, body: TSource, _, _) => !n.modifies.contains(name)
+            case _                                  => false
+        }).toList
+        val modifies: List[String] = "modifies LoReFields" :: unmodifiedSources.map(source => {
+          s"ensures old(LoReFields.${source.name}) == LoReFields.${source.name}"
+        })
+
+        val body: String = n.executes match
+          case Some(t: TArrow) => generate(replaceReferences(t.right, argumentNames, reactiveNames), ctx)
+          case Some(t: Term)   => "" // Non-arrow function bodies are irrelevant
+          case None            => "" // No body specified
+
+        val argsString: String = argumentNames.zip(argumentTypes) match
+          case Nil  => "LoReFields: LoReFields"
+          case args => s"LoReFields: LoReFields, ${args.map((name, tp) => s"$name: $tp").mkString(", ")}"
+
+        s"""method ${node.name}($argsString)
+           |  ${preconditions.mkString("\n  ")}
+           |  ${postconditions.mkString("\n  ")}
+           |  ${modifies.mkString("\n  ")}
+           |{
+           |  $body
+           |}""".stripMargin.linesIterator.filter(l => !l.isBlank).mkString("\n")
       case _ =>
         // Default into generic *const* declarations for other types, as all TAbs are by default non-mutable.
         val typeAnnot: String = generate(node._type, ctx)
