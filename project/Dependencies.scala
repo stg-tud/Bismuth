@@ -10,7 +10,7 @@ object Dependencies {
   val fansi       = libraryDependencies += "com.lihaoyi"           %%% "fansi"                  % "0.5.0"
   val jetcd       = libraryDependencies += "io.etcd"                 % "jetcd-core"             % "0.8.5"
   val monocleCore = libraryDependencies += "dev.optics"            %%% "monocle-core"           % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.1.0"  % Test
+  val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.1.1"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.1.0"  % Test
   val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.4"
   val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.0"
@@ -50,11 +50,11 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.35.2",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.35.2" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.35.3",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.35.3" % Provided
     )
 
-  def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "23.0.1-R34"
+  def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.0-R35"
 
   def scalatags(conf: Configuration = Compile) = libraryDependencies += "com.lihaoyi" %%% "scalatags" % "0.13.1" % conf
 

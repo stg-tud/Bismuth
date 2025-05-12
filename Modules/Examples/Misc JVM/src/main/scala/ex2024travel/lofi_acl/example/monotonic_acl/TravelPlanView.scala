@@ -7,7 +7,7 @@ import scalafx.scene.layout.*
 import scalafx.scene.text.Text
 
 class TravelPlanView(viewModel: TravelPlanViewModel) extends GridPane {
-  delegate.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE)
+  delegate.setMaxSize(Region.UseComputedSize, Region.UseComputedSize)
 
   private val shareButton = Button()
   shareButton.text = "Share"
