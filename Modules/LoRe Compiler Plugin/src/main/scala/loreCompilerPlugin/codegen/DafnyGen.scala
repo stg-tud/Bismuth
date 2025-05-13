@@ -434,9 +434,10 @@ object DafnyGen {
           case Some(term: TArrow) =>
             // Regular body: an arrow function
 
-            // Find list of arguments by going through left side
+            // Find list of arguments by going through the left side.
             // Warning: Normally, this should be possible simply through accessing term.args, but that
-            // property calls a function which does something similar to below code, but it is currently broken.
+            // property calls a function with similar behavior to the below, but it relies on TArrow nodes
+            // being structured via currying rather than having a singular argument tuple in "left".
             val args: List[String] = term.left match
               case TTuple(a, _, _) => a.collect {
                   case TArgT(name, _, _, _) => name
