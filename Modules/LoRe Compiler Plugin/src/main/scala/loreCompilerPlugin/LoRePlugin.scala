@@ -61,7 +61,7 @@ class LoRePhase extends PluginPhase {
       // Process each individual part of this LoRe program
       for t <- programContents do {
         // Generate LoRe term for this tree
-        val loreTerm: List[Term] = createLoreTermFromTree(t)
+        val loreTerm: List[Term] = createLoreTermFromTree(t, programTermList)
 
         // Add generated LoRe term to this LoreProgram's term list
         programTermList = programTermList :++ loreTerm
