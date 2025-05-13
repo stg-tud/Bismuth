@@ -45,6 +45,8 @@ class LoRePhase extends PluginPhase {
     val loreAnnotation = tree.symbol.annotations.find(annot => annot.symbol.name.toString == "LoReProgram")
 
     if loreAnnotation.isDefined then {
+      var programTermList: List[Term] = List()
+
       val programContents: List[Tree[?]] =
         tree.rhs match
           case block: Block[?] =>
@@ -61,17 +63,13 @@ class LoRePhase extends PluginPhase {
         // Generate LoRe term for this tree
         val loreTerm: List[Term] = createLoreTermFromTree(t)
 
-        // Add LoRe term to the respective program's term list, or create a term list if it doesn't exist yet
-        val programTermList: Option[List[Term]] = loreTerms.get((tree.source, tree.name))
-        programTermList match
-          case Some(list) =>
-            val newList: List[Term] = list :++ loreTerm // Append list with loreTerm list
-            loreTerms = loreTerms.updated((tree.source, tree.name), newList)
-          case None =>
-            println(s"Creating new term list for ${tree.name} in ${tree.source.name}.")
-            val newList: List[Term] = loreTerm // loreTerm is already a list
-            loreTerms = loreTerms.updated((tree.source, tree.name), newList)
+        // Add generated LoRe term to this LoreProgram's term list
+        programTermList = programTermList :++ loreTerm
       }
+
+      // Add the finalized term list for this LoreProgram to the phase's overall term list
+      println(s"Adding new term list for ${tree.name} in ${tree.source.name}.")
+      loreTerms = loreTerms.updated((tree.source, tree.name), programTermList)
     }
 
     // Original Scala tree is returned for regular Scala compilation to proceed
