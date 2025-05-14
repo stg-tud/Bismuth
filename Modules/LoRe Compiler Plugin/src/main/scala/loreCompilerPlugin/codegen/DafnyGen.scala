@@ -4,6 +4,8 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.report
 import dotty.tools.dotc.util.SourcePosition
 import lore.ast.*
+import lore.backends.rename
+import lore.backends.traverseFromNode
 import scala.util.matching.Regex
 
 /** Information about a definition in Dafny generated from a LoRe AST node.
@@ -19,15 +21,48 @@ case class NodeInfo(
     dafnyType: String
 )
 
-/** Replaces references in the given arrow function to the names in the first list by the names in the second list.
-  * @param arrow The arrow function term in which to replace references
-  * @param originalNames The original names to replace with new names.
-  * @param newNames The new names to replace the original names with.
-  * @return The equivalent term with replaced references.
+/** Prepares the given pre-, postcondition or body term of an Interaction for Dafny code generation.
+  * This includes replacing the names of arrow function arguments with the proper Source names specified
+  * in the Interaction's modifies clause, as well as replacing references to Sources with field calls to
+  * the main object's Source properties of the same names
+  * @param term The Interaction term to prepare. These are always arrow functions.
+  * @param modifiesNames The names of Sources specified in the Interaction's modifies clause.
+  * @param argumentNames The names of arguments specified in the Interaction's executes clause.
+  * @param sources The list of info nodes on sources defined in the program.
+  * @return The equivalent term prepared for Dafny code generation.
   */
-private def replaceReferences(arrow: TArrow, originalNames: List[String], newNames: List[String]): TArrow = {
-  // TODO
-  arrow
+private def prepareInteractionTerm(
+    term: TArrow,
+    modifiesNames: List[String],
+    argumentNames: List[String],
+    sources: List[NodeInfo]
+): TArrow = {
+  // Find list of currently used actual names in Interaction
+  val args: List[String] = term.left match
+    case TTuple(a, _, _) => a.collect {
+        case TArgT(name, _, _, _) => name
+      }
+    case _ => List()
+  val (actualReactiveNames, actualArgumentNames) = args.splitAt(modifiesNames.length)
+
+  // Replace actual reactive names with those specified in the modifies clause
+  val reactivesInserted: Term = (actualReactiveNames zip modifiesNames).foldLeft(term.right) {
+    case (body: Term, (from: String, to: String)) => rename(from, to, body)
+  }
+
+  // Replace actual argument names with those specified in the executes clause
+  val argumentsInserted: Term = (actualArgumentNames zip argumentNames).foldLeft(reactivesInserted) {
+    case (body: Term, (from: String, to: String)) => rename(from, to, body)
+  }
+
+  def replaceSourceRefWithFieldCall: Term => Term = {
+    case t: TVar if sources.exists(node => node.name == t.name) =>
+      TFCall(TVar("LoReFields"), t.name, null, t.sourcePos, t.scalaSourcePos)
+    case t => t
+  }
+
+  // Replace source references with field calls
+  traverseFromNode(term.copy(right = argumentsInserted), replaceSourceRefWithFieldCall)
 }
 
 object DafnyGen {
@@ -223,25 +258,25 @@ object DafnyGen {
        |// Main object containing all fields
        |class LoReFields {
        |  // Constant field definitions
-       |  ${dafnyCode.getOrElse("otherDefs", List()).mkString("\n  ")}
+       |  ${dafnyCode.getOrElse("otherDefs", List()).filter(l => !l.isBlank).mkString("\n  ")}
        |
        |  // Source declarations
-       |  ${sourceDecls.mkString("\n  ")}
+       |  ${sourceDecls.filter(l => !l.isBlank).mkString("\n  ")}
        |
        |  constructor () {
        |    // Definition of Source values (initial values used in LoRe definition)
-       |    ${sourceDefs.mkString("\n    ")}
+       |    ${sourceDefs.filter(l => !l.isBlank).mkString("\n    ")}
        |  }
        |}
        |
        |// Derived definitions
-       |${dafnyCode.getOrElse("derivedDefs", List()).mkString("\n\n")}
+       |${dafnyCode.getOrElse("derivedDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
        |
        |// Interaction definitions
-       |${dafnyCode.getOrElse("interactionDefs", List()).mkString("\n\n")}
+       |${dafnyCode.getOrElse("interactionDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
        |
        |// Invariant definitions
-       |${dafnyCode.getOrElse("invariantDefs", List()).mkString("\n\n")}
+       |${dafnyCode.getOrElse("invariantDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
        |
        |// Main method
        |method {:main} Main() {
@@ -249,7 +284,7 @@ object DafnyGen {
        |  var LoReFields := new LoReFields();
        |
        |  // Statements: Function calls, method calls, if-conditions etc.
-       |  ${dafnyCode.getOrElse("statements", List()).mkString("\n  ")}
+       |  ${dafnyCode.getOrElse("statements", List()).filter(l => !l.isBlank).mkString("\n  ")}
        |}
        |""".stripMargin
   }
@@ -413,6 +448,11 @@ object DafnyGen {
         // Their parameters are the state (a reference to the main object) as well as
         // any parameters as specified in the definition of the Interaction.
 
+        // Only generate Dafny code for fully-featured interactions, i.e. those with both modifies and executes.
+        // When either is lacking, the generated Dafny code would be invalid. When incomplete Interactions are
+        // defined in Scala and then completed through a reference on them with an added method, that is handled fine.
+        if n.modifies.isEmpty || n.executes.isEmpty then return ""
+
         // Warning: TupleTypes are currently not implemented in the frontend. This means that any tuples will show up as
         // SimpleType with the name "TupleN", where N is the tuple arity. Additionally, Interactions are defined so that
         // the reactiveType will always be a tuple, regardless of how many there are (one reactive then being Tuple1).
@@ -439,9 +479,21 @@ object DafnyGen {
             // property calls a function with similar behavior to the below, but it relies on TArrow nodes
             // being structured via currying rather than having a singular argument tuple in "left".
             val args: List[String] = term.left match
-              case TTuple(a, _, _) => a.collect {
-                  case TArgT(name, _, _, _) => name
-                }
+              case TTuple(arg, _, _) =>
+                // Index count is to swap in names for Scala args left blank
+                var argIdx: Int = 1
+
+                arg.collect(a => {
+                  val argName: String = a match
+                    // Replace any arguments left as blanks in Scala with a name that's valid in Dafny
+                    case TArgT(name, _, _, _) if name.startsWith("_") => s"arg$argIdx"
+                    // Use given argument name if one as specified
+                    case TArgT(name, _, _, _) => name
+                    case _                    => s"arg$argIdx" // Should never happen, only so match is exhaustive
+
+                  argIdx += 1
+                  argName
+                })
               case _ => List()
 
             // Reactives aren't arguments, so remove those
@@ -450,9 +502,15 @@ object DafnyGen {
 
         // TODO: Search for invariants relevant to the above reactives and include them as pre- and post-conditions.
 
+        val definedSources: List[NodeInfo] = ctx.values.filter(definition => {
+          definition.loreNode match
+            case TAbs(name, _, body: TSource, _, _) => true
+            case _                                  => false
+        }).toList
+
         val preconditions: List[String] = n.requires.map {
           case t: TArrow =>
-            val pre: TArrow = replaceReferences(t, argumentNames, reactiveNames)
+            val pre: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
             t.scalaSourcePos match
               case None      => s"requires ${generate(pre.right, ctx)}"
               case Some(pos) => s"requires {:error \"${pos.span.coords}\"} ${generate(pre.right, ctx)}"
@@ -461,7 +519,7 @@ object DafnyGen {
 
         val postconditions: List[String] = n.ensures.map {
           case t: TArrow =>
-            val post: TArrow = replaceReferences(t, argumentNames, reactiveNames)
+            val post: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
             t.scalaSourcePos match
               case None      => s"ensures ${generate(post.right, ctx)}"
               case Some(pos) => s"ensures {:error \"${pos.span.coords}\"} ${generate(post.right, ctx)}"
@@ -472,13 +530,9 @@ object DafnyGen {
         // To still ensure only the specified sources are modified, instead attach ensures clauses that include
         // a condition specifying the not-mentioned sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
         // for every source that is not included in the modifies list, where obj is the main object of the program.
-        val unmodifiedSources: List[NodeInfo] = ctx.values.filter(definition => {
-          definition.loreNode match
-            case TAbs(name, _, body: TSource, _, _) => !n.modifies.contains(name)
-            case _                                  => false
-        }).toList
+        val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
         val modifies: List[String] = "modifies LoReFields" :: unmodifiedSources.map(source => {
-          // No specific position is available for this, since the modifies list isn't a list of terms, but strings
+          // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
           n.scalaSourcePos match
             case None =>
               s"ensures old(LoReFields.${source.name}) == LoReFields.${source.name}"
@@ -488,8 +542,8 @@ object DafnyGen {
 
         val body: String = n.executes match
           case Some(t: TArrow) =>
-            val bod: TArrow = replaceReferences(t, argumentNames, reactiveNames)
-            generate(bod.right, ctx)
+            val b: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+            generate(b.right, ctx)
           case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
           case None          => "" // No body specified
 
