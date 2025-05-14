@@ -513,7 +513,29 @@ object LoReGen {
             println("surprise tuple type")
             report.error("LoRe Tuple Types are not currently supported", reactiveTree.sourcePos)
             TVar("<error>")
-      case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" => // Arrow fun
+      case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" =>
+        // Arrow funcs: When all parameters are defined, the function is in the first parameter
+        logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+        TArrow(            // (foo: Int) => foo + 1
+          TTuple(lhs.map { // (foo: Int)
+            case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
+              TArgT(
+                paramName.toString,
+                buildLoreTypeNode(paramType.tpe, paramType.sourcePos),
+                scalaSourcePos = Some(argTree.sourcePos)
+              )
+            case _ =>
+              report.error(
+                s"${"\t".repeat(indentLevel)}Error building LHS term for arrow function:\n${"\t".repeat(indentLevel)}$tree",
+                arrowTree.sourcePos
+              )
+              TVar("<error>")
+          }),
+          buildLoreRhsTerm(rhs, termList, indentLevel + 1, operandSide), // foo + 1
+          scalaSourcePos = Some(arrowTree.sourcePos)
+        )
+      case arrowTree @ Block(_, Block(List(DefDef(name, List(lhs), _, rhs)), _)) if name.toString == "$anonfun" =>
+        // Arrow funcs 2: When a parameter is wildcarded (i.e. via _), the function is in the second parameter instead
         logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
         TArrow(            // (foo: Int) => foo + 1
           TTuple(lhs.map { // (foo: Int)
@@ -534,16 +556,18 @@ object LoReGen {
           scalaSourcePos = Some(arrowTree.sourcePos)
         )
       case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
+        // Always return a TSeq in this case, regardless of how many statements there are
         if blockBody.nonEmpty then {
-          // Block has multiple statements that need to be packed into a TSeq
           val blockList: NonEmptyList[Term] = NonEmptyList.fromList(
             blockBody.map(b => buildLoreRhsTerm(b, termList, indentLevel, operandSide))
             :+ buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
           ).get
           TSeq(blockList, scalaSourcePos = Some(blockTree.sourcePos))
         } else {
-          // Block is a single statement that can be returned by itself
-          buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
+          TSeq(
+            NonEmptyList.of(buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)),
+            scalaSourcePos = Some(blockTree.sourcePos)
+          )
         }
       case _ => // Unsupported RHS forms
         // No access to sourcePos here due to LazyTree
