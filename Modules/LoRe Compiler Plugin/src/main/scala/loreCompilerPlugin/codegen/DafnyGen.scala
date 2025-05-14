@@ -19,15 +19,15 @@ case class NodeInfo(
     dafnyType: String
 )
 
-/** Replaces references in the given term to the names in the first list by the names in the second list (in 1:1 order).
-  * @param term The term in which to replace references
+/** Replaces references in the given arrow function to the names in the first list by the names in the second list.
+  * @param arrow The arrow function term in which to replace references
   * @param originalNames The original names to replace with new names.
   * @param newNames The new names to replace the original names with.
   * @return The equivalent term with replaced references.
   */
-private def replaceReferences(term: Term, originalNames: List[String], newNames: List[String]): Term = {
+private def replaceReferences(arrow: TArrow, originalNames: List[String], newNames: List[String]): TArrow = {
   // TODO
-  term
+  arrow
 }
 
 object DafnyGen {
@@ -451,13 +451,21 @@ object DafnyGen {
         // TODO: Search for invariants relevant to the above reactives and include them as pre- and post-conditions.
 
         val preconditions: List[String] = n.requires.map {
-          case t: TArrow => s"requires ${generate(replaceReferences(t.right, argumentNames, reactiveNames), ctx)}"
-          case _         => ""
+          case t: TArrow =>
+            val pre: TArrow = replaceReferences(t, argumentNames, reactiveNames)
+            t.scalaSourcePos match
+              case None      => s"requires ${generate(pre.right, ctx)}"
+              case Some(pos) => s"requires {:error \"${pos.span.coords}\"} ${generate(pre.right, ctx)}"
+          case _ => ""
         }
 
         val postconditions: List[String] = n.ensures.map {
-          case t: TArrow => s"ensures ${generate(replaceReferences(t.right, argumentNames, reactiveNames), ctx)}"
-          case _         => ""
+          case t: TArrow =>
+            val post: TArrow = replaceReferences(t, argumentNames, reactiveNames)
+            t.scalaSourcePos match
+              case None      => s"ensures ${generate(post.right, ctx)}"
+              case Some(pos) => s"ensures {:error \"${pos.span.coords}\"} ${generate(post.right, ctx)}"
+          case _ => ""
         }
 
         // As only objects can be referenced in Dafny modifies clauses, the main object is directly used here.
@@ -470,13 +478,20 @@ object DafnyGen {
             case _                                  => false
         }).toList
         val modifies: List[String] = "modifies LoReFields" :: unmodifiedSources.map(source => {
-          s"ensures old(LoReFields.${source.name}) == LoReFields.${source.name}"
+          // No specific position is available for this, since the modifies list isn't a list of terms, but strings
+          n.scalaSourcePos match
+            case None =>
+              s"ensures old(LoReFields.${source.name}) == LoReFields.${source.name}"
+            case Some(pos) =>
+              s"ensures {:error \"${pos.span.coords}\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
         })
 
         val body: String = n.executes match
-          case Some(t: TArrow) => generate(replaceReferences(t.right, argumentNames, reactiveNames), ctx)
-          case Some(t: Term)   => "" // Non-arrow function bodies are irrelevant
-          case None            => "" // No body specified
+          case Some(t: TArrow) =>
+            val bod: TArrow = replaceReferences(t, argumentNames, reactiveNames)
+            generate(bod.right, ctx)
+          case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
+          case None          => "" // No body specified
 
         val argsString: String = argumentNames.zip(argumentTypes) match
           case Nil  => "LoReFields: LoReFields"
