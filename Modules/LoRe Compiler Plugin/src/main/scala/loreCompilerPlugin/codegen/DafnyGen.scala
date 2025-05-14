@@ -21,50 +21,6 @@ case class NodeInfo(
     dafnyType: String
 )
 
-/** Prepares the given pre-, postcondition or body term of an Interaction for Dafny code generation.
-  * This includes replacing the names of arrow function arguments with the proper Source names specified
-  * in the Interaction's modifies clause, as well as replacing references to Sources with field calls to
-  * the main object's Source properties of the same names
-  * @param term The Interaction term to prepare. These are always arrow functions.
-  * @param modifiesNames The names of Sources specified in the Interaction's modifies clause.
-  * @param argumentNames The names of arguments specified in the Interaction's executes clause.
-  * @param sources The list of info nodes on sources defined in the program.
-  * @return The equivalent term prepared for Dafny code generation.
-  */
-private def prepareInteractionTerm(
-    term: TArrow,
-    modifiesNames: List[String],
-    argumentNames: List[String],
-    sources: List[NodeInfo]
-): TArrow = {
-  // Find list of currently used actual names in Interaction
-  val args: List[String] = term.left match
-    case TTuple(a, _, _) => a.collect {
-        case TArgT(name, _, _, _) => name
-      }
-    case _ => List()
-  val (actualReactiveNames, actualArgumentNames) = args.splitAt(modifiesNames.length)
-
-  // Replace actual reactive names with those specified in the modifies clause
-  val reactivesInserted: Term = (actualReactiveNames zip modifiesNames).foldLeft(term.right) {
-    case (body: Term, (from: String, to: String)) => rename(from, to, body)
-  }
-
-  // Replace actual argument names with those specified in the executes clause
-  val argumentsInserted: Term = (actualArgumentNames zip argumentNames).foldLeft(reactivesInserted) {
-    case (body: Term, (from: String, to: String)) => rename(from, to, body)
-  }
-
-  def replaceSourceRefWithFieldCall: Term => Term = {
-    case t: TVar if sources.exists(node => node.name == t.name) =>
-      TFCall(TVar("LoReFields"), t.name, null, t.sourcePos, t.scalaSourcePos)
-    case t => t
-  }
-
-  // Replace source references with field calls
-  traverseFromNode(term.copy(right = argumentsInserted), replaceSourceRefWithFieldCall)
-}
-
 object DafnyGen {
 
   /** Takes a Scala type name and returns the corresponding Dafny type name, if one exists.
@@ -158,6 +114,51 @@ object DafnyGen {
       // flattened references (e.g. "someRef", "otherRef" and "anotherRef" in the above).
       refs -- deepRefs ++ deepRefsFlat
     }
+  }
+
+  /** Prepares the given pre-, postcondition or body term of an Interaction for Dafny code generation.
+    * This includes replacing the names of arrow function arguments with the proper Source names specified
+    * in the Interaction's modifies clause, as well as replacing references to Sources with field calls to
+    * the main object's Source properties of the same names
+    *
+    * @param term          The Interaction term to prepare. These are always arrow functions.
+    * @param modifiesNames The names of Sources specified in the Interaction's modifies clause.
+    * @param argumentNames The names of arguments specified in the Interaction's executes clause.
+    * @param sources       The list of info nodes on sources defined in the program.
+    * @return The equivalent term prepared for Dafny code generation.
+    */
+  private def prepareInteractionTerm(
+      term: TArrow,
+      modifiesNames: List[String],
+      argumentNames: List[String],
+      sources: List[NodeInfo]
+  ): TArrow = {
+    // Find list of currently used actual names in Interaction
+    val args: List[String] = term.left match
+      case TTuple(a, _, _) => a.collect {
+          case TArgT(name, _, _, _) => name
+        }
+      case _ => List()
+    val (actualReactiveNames, actualArgumentNames) = args.splitAt(modifiesNames.length)
+
+    // Replace actual reactive names with those specified in the modifies clause
+    val reactivesInserted: Term = actualReactiveNames.zip(modifiesNames).foldLeft(term.right) {
+      case (body: Term, (from: String, to: String)) => rename(from, to, body)
+    }
+
+    // Replace actual argument names with those specified in the executes clause
+    val argumentsInserted: Term = actualArgumentNames.zip(argumentNames).foldLeft(reactivesInserted) {
+      case (body: Term, (from: String, to: String)) => rename(from, to, body)
+    }
+
+    def replaceSourceRefWithFieldCall: Term => Term = {
+      case t: TVar if sources.exists(node => node.name == t.name) =>
+        TFCall(TVar("LoReFields"), t.name, null, t.sourcePos, t.scalaSourcePos)
+      case t => t
+    }
+
+    // Replace source references with field calls
+    traverseFromNode(term.copy(right = argumentsInserted), replaceSourceRefWithFieldCall)
   }
 
   /** Compiles a list of LoRe terms into Dafny code.
