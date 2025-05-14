@@ -515,6 +515,7 @@ object LoReGen {
             TVar("<error>")
       case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" =>
         // Arrow funcs: When all parameters are defined, the function is in the first parameter
+        // Duplicated code from below, but seems that is how it has to be. Can't bind in alternatives, after all.
         logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
         TArrow(            // (foo: Int) => foo + 1
           TTuple(lhs.map { // (foo: Int)
@@ -536,6 +537,7 @@ object LoReGen {
         )
       case arrowTree @ Block(_, Block(List(DefDef(name, List(lhs), _, rhs)), _)) if name.toString == "$anonfun" =>
         // Arrow funcs 2: When a parameter is wildcarded (i.e. via _), the function is in the second parameter instead
+        // Duplicated code from above, but seems that is how it has to be. Can't bind in alternatives, after all.
         logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
         TArrow(            // (foo: Int) => foo + 1
           TTuple(lhs.map { // (foo: Int)
