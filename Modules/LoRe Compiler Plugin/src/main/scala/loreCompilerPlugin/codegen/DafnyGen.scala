@@ -557,7 +557,7 @@ object DafnyGen {
            |  ${postconditions.mkString("\n  ")}
            |  ${modifies.mkString("\n  ")}
            |{
-           |  $body
+           |${body.indent(2)}
            |}""".stripMargin.linesIterator.filter(l => !l.isBlank).mkString("\n")
       case _ =>
         // Default into generic *const* declarations for other types, as all TAbs are by default non-mutable.
@@ -608,8 +608,16 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTSeq(node: TSeq, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
-    // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-sequences
-    s"[${node.body.map(t => generate(t, ctx)).toList.mkString(", ")}]"
+    // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-block-statement
+    // TSeq terms are not collections (such as in e.g. Scala), they're blocks of statements
+    node.body.map(t => {
+      val gen: String = generate(t, ctx)
+      // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
+      // Therefore, if this statement doesn't end with a curly brace already, it has to end with a semicolon.
+      // This semicolon isn't already added in generation as it is not appropriate in all situations.
+      // The curly brace however would always already have been added as part of always-required syntax.
+      if gen.endsWith("}") then gen else s"$gen;"
+    }).toList.mkString("\n")
   }
 
   /** Generates Dafny code for the given LoRe TArrow.

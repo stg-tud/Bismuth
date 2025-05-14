@@ -1,6 +1,6 @@
 package loreCompilerPlugin.codegen
 
-import cats.parse.Caret
+import cats.data.NonEmptyList
 import dotty.tools.dotc.ast.Trees.*
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Constants.Constant
@@ -448,8 +448,18 @@ object LoReGen {
                       case "ensures" =>
                         interactionTerm = prevInteractionTerm.copy(ensures = ensList.prepended(methodParamTerm))
                       case "executes" =>
-                        // executes can only have one value due to being an Option, so simply replace the value with this one
-                        interactionTerm = prevInteractionTerm.copy(executes = Some(methodParamTerm))
+                        // Build sequence of terms read from the executes call
+                        prevInteractionTerm.executes match
+                          case None => interactionTerm = prevInteractionTerm.copy(executes = Some(methodParamTerm))
+                          case Some(seq: TSeq) =>
+                            // Sequence already exists, so append to it
+                            val newSeq: TSeq = seq.copy(body = seq.body.append(methodParamTerm))
+                            interactionTerm = prevInteractionTerm.copy(executes = Some(newSeq))
+                          case Some(term: Term) =>
+                            // Executes is currently a single term, so form sequence
+                            val seqBody: NonEmptyList[Term] = NonEmptyList.of(term, methodParamTerm)
+                            val seq: TSeq = TSeq(seqBody, scalaSourcePos = Some(reactiveTree.sourcePos))
+                            interactionTerm = prevInteractionTerm.copy(executes = Some(seq))
                   case interactionReference @ TVar(name, _, _) =>
                     // The interaction term is a reference to an already-defined Interaction, so find the
                     // definition of this Interaction in the list of terms, copy that definition, and then
@@ -471,7 +481,17 @@ object LoReGen {
                                 interactionTerm = interaction.copy(ensures = ensList.prepended(methodParamTerm))
                               case "executes" =>
                                 // executes can only have one value due to being an Option, so simply replace the value
-                                interactionTerm = interaction.copy(executes = Some(methodParamTerm))
+                                interaction.executes match
+                                  case None => interactionTerm = interaction.copy(executes = Some(methodParamTerm))
+                                  case Some(seq: TSeq) =>
+                                    // Sequence already exists, so append to it
+                                    val newSeq: TSeq = seq.copy(body = seq.body.append(methodParamTerm))
+                                    interactionTerm = interaction.copy(executes = Some(newSeq))
+                                  case Some(term: Term) =>
+                                    // Executes is currently a single term, so form sequence
+                                    val seqBody: NonEmptyList[Term] = NonEmptyList.of(term, methodParamTerm)
+                                    val seq: TSeq = TSeq(seqBody, scalaSourcePos = Some(reactiveTree.sourcePos))
+                                    interactionTerm = interaction.copy(executes = Some(seq))
                       case _ => // Matching on both "None" and "Some"s of any different shape than above
                         // No definition found in the list of already-processed terms, which means it must be a
                         // forward reference. If it didn't exist at all, the Scala compiler would have errored out
@@ -493,38 +513,38 @@ object LoReGen {
             println("surprise tuple type")
             report.error("LoRe Tuple Types are not currently supported", reactiveTree.sourcePos)
             TVar("<error>")
-      case arrowTree @ Block(List(fun), Closure(_, Ident(name), _)) if name.toString == "$anonfun" => // Arrow functions
-        fun match // Arrow function def is a DefDef, arrowLhs is a list of ValDefs
-          case DefDef(_, List(arrowLhs), _, arrowRhs) =>
-            logRhsInfo(indentLevel, operandSide, s"arrow function with ${arrowLhs.length} arguments", "")
-            TArrow(                 // (foo: Int) => foo + 1
-              TTuple(arrowLhs.map { // (foo: Int)
-                case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
-                  TArgT(
-                    paramName.toString,
-                    buildLoreTypeNode(paramType.tpe, paramType.sourcePos),
-                    scalaSourcePos = Some(argTree.sourcePos)
-                  )
-                case _ =>
-                  report.error(
-                    s"${"\t".repeat(indentLevel)}Error building LHS term for arrow function:\n${"\t".repeat(indentLevel)}$tree",
-                    arrowTree.sourcePos
-                  )
-                  TVar("<error>")
-              }),
-              buildLoreRhsTerm(arrowRhs, termList, indentLevel + 1, operandSide), // foo + 1
-              scalaSourcePos = Some(arrowTree.sourcePos)
-            )
-          case _ =>
-            report.error(
-              s"${"\t".repeat(indentLevel)}Error building RHS term for arrow function:\n${"\t".repeat(indentLevel)}$tree",
-              arrowTree.sourcePos
-            )
-            TVar("<error>")
-      case arrowBodyTree @ Block(_, arrowBody) => // Arrow functions part 2
-        // When the body of the arrow function is in the second parameter as opposed to the first, for some reason
-        // This happens for example when you call requires/ensures/executes/modifies on Interactions, "{ (..) => (..) }"
-        buildLoreRhsTerm(arrowBody, termList, indentLevel, operandSide)
+      case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" => // Arrow fun
+        logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+        TArrow(            // (foo: Int) => foo + 1
+          TTuple(lhs.map { // (foo: Int)
+            case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
+              TArgT(
+                paramName.toString,
+                buildLoreTypeNode(paramType.tpe, paramType.sourcePos),
+                scalaSourcePos = Some(argTree.sourcePos)
+              )
+            case _ =>
+              report.error(
+                s"${"\t".repeat(indentLevel)}Error building LHS term for arrow function:\n${"\t".repeat(indentLevel)}$tree",
+                arrowTree.sourcePos
+              )
+              TVar("<error>")
+          }),
+          buildLoreRhsTerm(rhs, termList, indentLevel + 1, operandSide), // foo + 1
+          scalaSourcePos = Some(arrowTree.sourcePos)
+        )
+      case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
+        if blockBody.nonEmpty then {
+          // Block has multiple statements that need to be packed into a TSeq
+          val blockList: NonEmptyList[Term] = NonEmptyList.fromList(
+            blockBody.map(b => buildLoreRhsTerm(b, termList, indentLevel, operandSide))
+            :+ buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
+          ).get
+          TSeq(blockList, scalaSourcePos = Some(blockTree.sourcePos))
+        } else {
+          // Block is a single statement that can be returned by itself
+          buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
+        }
       case _ => // Unsupported RHS forms
         // No access to sourcePos here due to LazyTree
         report.error(
