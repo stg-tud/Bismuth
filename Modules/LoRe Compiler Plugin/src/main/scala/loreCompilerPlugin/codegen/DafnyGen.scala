@@ -422,7 +422,7 @@ object DafnyGen {
       case n: TSource =>
         // Source terms are realized as Dafny fields that can be modified post-definition.
         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
-        s"var ${node.name}: ${generate(node._type, ctx)} := ${generateFromTSource(n, ctx)};"
+        s"var ${node.name}: ${generate(node._type, ctx)} := ${generate(n.body, ctx)};"
       case n: TDerived =>
         // Derived terms are realized as Dafny functions. Functions do not have side-effects.
         // The return type of these functions is the type parameter of the Derived, while any
@@ -432,7 +432,7 @@ object DafnyGen {
 
         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
         s"""function ${node.name}(${parameters.mkString(", ")}): ${generate(node._type, ctx)} {
-           |  ${generateFromTDerived(n, ctx)}
+           |  ${generate(n.body, ctx)}
            |}""".stripMargin
       case n: TInteraction =>
         // Interaction terms are realized as Dafny methods. Methods may have side-effects.
@@ -653,9 +653,9 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTReactive(node: TReactive, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
-    // These methods only generate the body of the reactive terms, not the surrounding structure.
-    // E.g. for a Source(1+2), this only processes the 1+2 part. For a Derived { foo }, only the foo part.
-    // For the structure, such as the function modelling of Derived, see the generateFromTAbs function.
+    // These methods would only be entered if a reactive was declared as a literal within another expression.
+    // These use-cases are not supported, which is why the below methods simply report a compiler error instead.
+    // For the actual generation, such as the function modelling of Derived, see the generateFromTAbs function.
     val reactive: String = node match
       case n: TSource  => generateFromTSource(n, ctx)
       case n: TDerived => generateFromTDerived(n, ctx)
@@ -669,9 +669,12 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTSource(node: TSource, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
-    // Sources are realized as Dafny fields. This method however just generates the body of the definition,
-    // since the TSource node only contains that information (see generateFromTAbs for the field definition).
-    generate(node.body, ctx)
+    // Source terms are realized as Dafny fields, which happens in generateFromTAbs. This method is only entered
+    // when a Source term is declared as a literal within another expression - a use-case that is not supported.
+    node.scalaSourcePos match
+      case Some(pos) => report.error("Declaring Source reactives within other expressions is not supported.", pos)
+      case None      => report.error("Declaring Source reactives within other expressions is not supported.")
+    "<error>"
   }
 
   /** Generates Dafny code for the given LoRe TDerived.
@@ -680,9 +683,12 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTDerived(node: TDerived, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
-    // Derived terms are realized as Dafny functions. This method however just generates the body of the function,
-    // since the TDerived node only contains that information (see generateFromTAbs for the function definition).
-    generate(node.body, ctx)
+    // Derived terms are realized as Dafny functions, which happens in generateFromTAbs. This method is only entered
+    // when a Derived term is declared as a literal within another expression - a use-case that is not supported.
+    node.scalaSourcePos match
+      case Some(pos) => report.error("Declaring Derived reactives within other expressions is not supported.", pos)
+      case None      => report.error("Declaring Derived reactives within other expressions is not supported.")
+    "<error>"
   }
 
   /** Generates Dafny code for the given LoRe TInteraction.
@@ -693,8 +699,12 @@ object DafnyGen {
   private def generateFromTInteraction(node: TInteraction, ctx: Map[String, NodeInfo])(using
       scalaCtx: Context
   ): String = {
-    // TODO: Implement. Requires finding relevant existing Invariants and adding them as requires/ensures conditions!
-    ""
+    // Interaction terms are realized as Dafny methods, which happens in generateFromTAbs. This method is only entered
+    // when an Interaction term is declared as a literal within another expression - a use-case that is not supported.
+    node.scalaSourcePos match
+      case Some(pos) => report.error("Declaring Interactions within other expressions is not supported.", pos)
+      case None      => report.error("Declaring Interactions within other expressions is not supported.")
+    "<error>"
   }
 
   /** Generates Dafny code for the given LoRe TArith.
