@@ -216,10 +216,10 @@ object DafnyGen {
 
       if termType == "statements" then {
         // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
-        // Therefore, if this statement doesn't end with a curly brace already, it has to end with a semicolon.
+        // Therefore, if this statement doesn't end with a curly brace or semi already, it has to end with a semicolon.
         // This semicolon isn't already added in generation as it is not appropriate in all situations.
         // The curly brace however would always already have been added as part of always-required syntax.
-        (termType, generated.map(t => if t.endsWith("}") then t else s"$t;"))
+        (termType, generated.map(t => if t.endsWith("}") || t.endsWith(";") then t else s"$t;"))
       } else {
         // All other term types are taken as generated
         (termType, generated)
@@ -472,17 +472,17 @@ object DafnyGen {
             // property calls a function with similar behavior to the below, but it relies on TArrow nodes
             // being structured via currying rather than having a singular argument tuple in "left".
             val args: List[String] = term.left match
-              case TTuple(arg, _, _) =>
+              case TTuple(args, _, _) =>
                 // Index count is to swap in names for Scala args left blank
                 var argIdx: Int = 1
 
-                arg.collect(a => {
+                args.collect(a => {
                   val argName: String = a match
                     // Replace any arguments left as blanks in Scala with a name that's valid in Dafny
                     case TArgT(name, _, _, _) if name.startsWith("_") => s"arg$argIdx"
                     // Use given argument name if one as specified
                     case TArgT(name, _, _, _) => name
-                    case _                    => s"arg$argIdx" // Should never happen, only so match is exhaustive
+                    case _                    => s"arg$argIdx" // Should not happen, only so match is exhaustive
 
                   argIdx += 1
                   argName
@@ -535,8 +535,10 @@ object DafnyGen {
 
         val body: String = n.executes match
           case Some(t: TArrow) =>
-            val b: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-            generate(b.right, ctx)
+            val bodyArrow: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+            val b: String         = generate(bodyArrow.right, ctx)
+            // All statements included in the method body have to end with either a closing brace or a semicolon
+            b.linesIterator.map(l => { if l.endsWith("}") || l.endsWith(";") then l else s"$l;" }).mkString("\n")
           case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
           case None          => "" // No body specified
 
@@ -606,10 +608,10 @@ object DafnyGen {
     node.body.map(t => {
       val gen: String = generate(t, ctx)
       // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
-      // Therefore, if this statement doesn't end with a curly brace already, it has to end with a semicolon.
+      // Therefore, if this statement doesn't end with a curly brace or semi already, it has to end with a semicolon.
       // This semicolon isn't already added in generation as it is not appropriate in all situations.
       // The curly brace however would always already have been added as part of always-required syntax.
-      if gen.endsWith("}") then gen else s"$gen;"
+      if gen.endsWith("}") || gen.endsWith(";") then gen else s"$gen;"
     }).toList.mkString("\n")
   }
 
@@ -634,7 +636,7 @@ object DafnyGen {
     */
   private def generateFromTAssert(node: TAssert, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-assert-statement
-    s"assert ${generate(node.body, ctx)};"
+    s"assert ${generate(node.body, ctx)}"
   }
 
   /** Generates Dafny code for the given LoRe TAssume.
@@ -644,7 +646,7 @@ object DafnyGen {
     */
   private def generateFromTAssume(node: TAssume, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-assume-statement
-    s"assume ${generate(node.body, ctx)};"
+    s"assume ${generate(node.body, ctx)}"
   }
 
   /** Generates Dafny code for the given LoRe TReactive.

@@ -571,18 +571,16 @@ object LoReGen {
           scalaSourcePos = Some(arrowTree.sourcePos)
         )
       case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
-        // Always return a TSeq in this case, regardless of how many statements there are
         if blockBody.nonEmpty then {
+          // Multiple statements in this block: Build a LoRe sequence of statements
           val blockList: NonEmptyList[Term] = NonEmptyList.fromList(
             blockBody.map(b => buildLoreRhsTerm(b, termList, indentLevel, operandSide))
             :+ buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
           ).get
           TSeq(blockList, scalaSourcePos = Some(blockTree.sourcePos))
         } else {
-          TSeq(
-            NonEmptyList.of(buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)),
-            scalaSourcePos = Some(blockTree.sourcePos)
-          )
+          // Only a single statement in this block: Just return the one statement by itself
+          buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
         }
       case _ => // Unsupported RHS forms
         // No access to sourcePos here due to LazyTree
