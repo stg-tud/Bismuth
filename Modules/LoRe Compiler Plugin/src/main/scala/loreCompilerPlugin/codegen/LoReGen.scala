@@ -179,10 +179,23 @@ object LoReGen {
         SimpleType(typeTree.asInstanceOf[CachedTypeRef].name.toString, List())
       case AppliedType(outerType: CachedTypeRef, args: List[ScalaType]) => // Parameterized types like List, Map, etc
         // For some reason, probably due to the type definitions in UnboundInteraction, Interactions with requires show
-        // up as type "T" and those with executes as type "E", so manually do some digging here to get the proper name
-        // Also keep UnboundInteraction consistent as "Interaction", just so it's not as much of a mess with the above
-        val typeString = if outerType.name.toString == "UnboundInteraction" then "Interaction"
-        else if outerType.prefix.typeConstructor.show.contains("Interaction") then "Interaction"
+        // up as type "T" and those with executes as type "E", so manually do some digging here to get the proper name.
+        // Also output any other Interaction types as plain "Interaction", as this type name is not backend-relevant.
+
+        // Interactions have various different type names depending on what parts they have
+        val interactionTypeList: List[String] = List(
+          "BoundInteraction",
+          "Interaction",
+          "InteractionWithActs",
+          "InteractionWithExecutes",
+          "InteractionWithExecutesAndActs",
+          "InteractionWithExecutesAndModifies",
+          "InteractionWithModifies",
+          "InteractionWithModifiesAndActs",
+          "UnboundInteraction"
+        )
+        val typeString = if interactionTypeList.contains(outerType.name.toString) then "Interaction"
+        else if interactionTypeList.exists(t => outerType.prefix.typeConstructor.show.contains(t)) then "Interaction"
         else outerType.name.toString
 
         SimpleType(typeString, args.map(t => buildLoreTypeNode(t, sourcePos)))

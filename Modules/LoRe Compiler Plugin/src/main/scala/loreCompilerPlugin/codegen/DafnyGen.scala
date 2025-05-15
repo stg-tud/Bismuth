@@ -100,8 +100,8 @@ object DafnyGen {
           val tp: Type = ctx(ref).loreType
 
           tp match
-            // TODO: Add Interaction and Invariant type names to this check. Those are not implemented yet.
-            case SimpleType(name, _) => name == "Signal"
+            // TODO: Add Invariant type name to this check. These are not implemented yet.
+            case SimpleType(name, _) => name == "Signal" || name == "Interaction"
             case TupleType(_)        => false // TODO: TupleTypes?
         } else false
       })
@@ -168,19 +168,6 @@ object DafnyGen {
   def generate(ast: List[Term], loreMethodName: String)(using scalaCtx: Context): String = {
     var compilationContext: Map[String, NodeInfo] = Map()
 
-    // Interactions have various different type names depending on what parts they have
-    val interactionTypeList: List[String] = List(
-      "BoundInteraction",
-      "Interaction",
-      "InteractionWithActs",
-      "InteractionWithExecutes",
-      "InteractionWithExecutesAndActs",
-      "InteractionWithExecutesAndModifies",
-      "InteractionWithModifies",
-      "InteractionWithModifiesAndActs",
-      "UnboundInteraction"
-    )
-
     // Split term list into sublists that require different handling
     val termGroups: Map[String, List[Term]] = ast.groupBy {
       case TAbs(_, _type, _, _, _) =>
@@ -188,7 +175,7 @@ object DafnyGen {
           case SimpleType(name, _) =>
             if name == "Var" then "sourceDefs"
             else if name == "Signal" then "derivedDefs"
-            else if interactionTypeList.contains(name) then "interactionDefs"
+            else if name == "Interaction" then "interactionDefs"
             else "otherDefs"
           case TupleType(_) => "otherDefs" // TupleType not implemented
       case _ => "statements"
@@ -396,6 +383,7 @@ object DafnyGen {
   private def generateFromTArgT(node: TArgT, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
     val typeAnnot: String = generate(node._type, ctx)
 
+    // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#273-identifier-type-combinations
     s"${node.name}: $typeAnnot"
   }
 
@@ -409,9 +397,13 @@ object DafnyGen {
 
     ctx(node.name).loreType match
       case SimpleType(typeName, inner) if typeName == "Signal" || typeName == "Var" =>
-        // Reactives (i.e. Sources and Derived) may not be referenced plainly.
-        // When accessed, it must be via access to the "value" property.
-        // For Sources, this turns into a simple reference, for Deriveds into a function call.
+        // Reactives (i.e. Sources and Derived) may not be referenced plainly, only via the "value" method.
+        // This is because Derived terms are translated into functions, and the type used for Derived in Dafny
+        // is simply the type parameter of the Derived, or in Dafny's case the return type of the function.
+        // However, when a Derived would be referenced without that reference being a call (which would turn
+        // the reference's type into the return type), it would be necessary to give the reference the
+        // _function type_ of that translated Derived instead. Therefore, when accessed, it must be via access
+        // to the "value" property. For Sources this turns into a reference, for Deriveds into a function call.
         report.error(
           "Reactives may not be referenced directly, apart from calling the \"value\" property.",
           node.scalaSourcePos.orNull
@@ -443,15 +435,15 @@ object DafnyGen {
            |  ${generateFromTDerived(n, ctx)}
            |}""".stripMargin
       case n: TInteraction =>
-        // TODO: Implement in tandem with Interactions.
         // Interaction terms are realized as Dafny methods. Methods may have side-effects.
         // As Interactions modify state directly, they do not have return values, however.
         // Their parameters are the state (a reference to the main object) as well as
         // any parameters as specified in the definition of the Interaction.
 
         // Only generate Dafny code for fully-featured interactions, i.e. those with both modifies and executes.
-        // When either is lacking, the generated Dafny code would be invalid. When incomplete Interactions are
-        // defined in Scala and then completed through a reference on them with an added method, that is handled fine.
+        // When either is lacking, the Interaction would be irrelevant either way, as it does not affect anything.
+        // Additionally, incomplete Interactions lead to invalid generated Dafny code would be invalid. Defining
+        // incomplete Interactions in Scala and then completing them through a reference is fine, however.
         if n.modifies.isEmpty || n.executes.isEmpty then return ""
 
         // Warning: TupleTypes are currently not implemented in the frontend. This means that any tuples will show up as
@@ -552,6 +544,7 @@ object DafnyGen {
           case Nil  => "LoReFields: LoReFields"
           case args => s"LoReFields: LoReFields, ${args.map((name, tp) => s"$name: $tp").mkString(", ")}"
 
+        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
         s"""method ${node.name}($argsString)
            |  ${preconditions.mkString("\n  ")}
            |  ${postconditions.mkString("\n  ")}
@@ -608,8 +601,8 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTSeq(node: TSeq, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
+    // TSeq terms are not "sequences" as in collections of values, they're blocks of statements.
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-block-statement
-    // TSeq terms are not collections (such as in e.g. Scala), they're blocks of statements
     node.body.map(t => {
       val gen: String = generate(t, ctx)
       // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
@@ -640,6 +633,7 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTAssert(node: TAssert, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
+    // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-assert-statement
     s"assert ${generate(node.body, ctx)};"
   }
 
@@ -649,6 +643,7 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTAssume(node: TAssume, ctx: Map[String, NodeInfo])(using scalaCtx: Context): String = {
+    // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-assume-statement
     s"assume ${generate(node.body, ctx)};"
   }
 
@@ -1024,7 +1019,7 @@ object DafnyGen {
     // References:
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-maps
-    // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-sets
+    // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-sequences
     node.name match
       case "Map" =>
         // Map instantiations differ from regular function calls.
@@ -1039,7 +1034,7 @@ object DafnyGen {
         })
         s"map[${mapKeyValues.mkString(", ")}]"
       case "List" =>
-        // List instantiations also differ, these are turned into Dafny sets.
+        // List instantiations also differ, these are turned into Dafny sequences.
         val items: Seq[String] = node.args.map(i => generate(i, ctx))
         s"[${items.mkString(", ")}]"
       case _ =>
