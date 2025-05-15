@@ -503,19 +503,37 @@ object DafnyGen {
 
         val preconditions: List[String] = n.requires.map {
           case t: TArrow =>
-            val pre: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-            t.scalaSourcePos match
-              case None      => s"requires ${generate(pre.right, ctx)}"
-              case Some(pos) => s"requires {:error \"${pos.span.coords}\"} ${generate(pre.right, ctx)}"
+            t.right match
+              case s: TSeq =>
+                // Preconditions must be a single expression, so blocks are not allowed.
+                // This is because Dafny preconditions only allow a single expression.
+                s.scalaSourcePos match
+                  case None      => report.error("Preconditions may only contain a single expression.")
+                  case Some(pos) => report.error("Preconditions may only contain a single expression.", pos)
+                "<error>" // Compiler still requires a return value
+              case _ =>
+                val pre: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+                t.scalaSourcePos match
+                  case None      => s"requires ${generate(pre.right, ctx)}"
+                  case Some(pos) => s"requires {:error \"${pos.span.coords}\"} ${generate(pre.right, ctx)}"
           case _ => ""
         }
 
         val postconditions: List[String] = n.ensures.map {
           case t: TArrow =>
-            val post: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-            t.scalaSourcePos match
-              case None      => s"ensures ${generate(post.right, ctx)}"
-              case Some(pos) => s"ensures {:error \"${pos.span.coords}\"} ${generate(post.right, ctx)}"
+            t.right match
+              case s: TSeq =>
+                // Postconditions must be a single expression, so blocks are not allowed.
+                // This is because Dafny postconditions only allow a single expression.
+                s.scalaSourcePos match
+                  case None      => report.error("Postconditions may only contain a single expression.")
+                  case Some(pos) => report.error("Postconditions may only contain a single expression.", pos)
+                "<error>" // Compiler still requires a return value
+              case _ =>
+                val post: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+                t.scalaSourcePos match
+                  case None      => s"ensures ${generate(post.right, ctx)}"
+                  case Some(pos) => s"ensures {:error \"${pos.span.coords}\"} ${generate(post.right, ctx)}"
           case _ => ""
         }
 
