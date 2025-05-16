@@ -11,6 +11,7 @@ import dotty.tools.dotc.core.Types.{AppliedType, CachedTypeRef, TypeRef, Type as
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import lore.ast.{Type as LoReType, *}
+import loreCompilerPlugin.LogLevel
 
 object LoReGen {
 
@@ -21,7 +22,9 @@ object LoReGen {
     * @param rhsType     The type of the RHS in question
     * @param rhsValue    The value of the RHS in question
     */
-  private def logRhsInfo(indentLevel: Integer, operandSide: String, rhsType: String, rhsValue: String): Unit = {
+  private def logRhsInfo(indentLevel: Integer, operandSide: String, rhsType: String, rhsValue: String)(using
+      logLevel: LogLevel
+  ): Unit = {
     if operandSide.nonEmpty then
       println(s"${"\t".repeat(indentLevel)}The $operandSide parameter is a $rhsType $rhsValue")
     else
@@ -34,7 +37,10 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  def createLoreTermFromTree(tree: tpd.Tree, termList: List[Term])(using ctx: Context): List[Term] = {
+  def createLoreTermFromTree(tree: tpd.Tree, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): List[Term] = {
     // Returns a List instead of a singular term because of blocks
     tree match
       case ap: Apply[?] => // Function or method calls, e.g. "println(...)" or "foo.bar()"
@@ -68,7 +74,10 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromApply(tree: tpd.Apply, termList: List[Term])(using ctx: Context): Term = {
+  private def createLoreTermFromApply(tree: tpd.Apply, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): Term = {
     // Apply statements are covered as part of RHS term building for ValDefs
     buildLoreRhsTerm(tree, termList)
   }
@@ -79,7 +88,10 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromIdent(tree: tpd.Ident, termList: List[Term])(using ctx: Context): Term = {
+  private def createLoreTermFromIdent(tree: tpd.Ident, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): Term = {
     // Ident statements are covered as part of RHS term building for ValDefs
     buildLoreRhsTerm(tree, termList)
   }
@@ -90,7 +102,10 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromLiteral(tree: tpd.Literal, termList: List[Term])(using ctx: Context): Term = {
+  private def createLoreTermFromLiteral(tree: tpd.Literal, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): Term = {
     // Literal statements are covered as part of RHS term building for ValDefs
     buildLoreRhsTerm(tree, termList)
   }
@@ -101,7 +116,10 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromSelect(tree: tpd.Select, termList: List[Term])(using ctx: Context): Term = {
+  private def createLoreTermFromSelect(tree: tpd.Select, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): Term = {
     // Select statements are covered as part of RHS term building for ValDefs
     buildLoreRhsTerm(tree, termList)
   }
@@ -112,7 +130,10 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromValDef(tree: tpd.ValDef, termList: List[Term])(using ctx: Context): Term = {
+  private def createLoreTermFromValDef(tree: tpd.ValDef, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): Term = {
     tree match
       case ValDef(name, tpt, rhs) =>
         val loreTypeNode = buildLoreTypeNode(tpt.tpe, tpt.sourcePos)
@@ -129,7 +150,8 @@ object LoReGen {
         //   so we can assume everything we see here is of suitable types instead of doing any further checks.
         loreTypeNode match
           case SimpleType(typeName, typeArgs) =>
-            println(s"Detected $typeName definition with name \"$name\"")
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+              println(s"Detected $typeName definition with name \"$name\"")
             rhs match
               case Apply(source @ Apply(_, List(properRhs)), _)
                   if typeName == "Var" => // E.g. "foo: Source[bar] = Source(baz)"
@@ -172,7 +194,10 @@ object LoReGen {
     * @param sourcePos A SourcePosition for the type tree
     * @return The LoRe Type node
     */
-  private def buildLoreTypeNode(typeTree: ScalaType, sourcePos: SourcePosition)(using ctx: Context): LoReType =
+  private def buildLoreTypeNode(typeTree: ScalaType, sourcePos: SourcePosition)(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): LoReType =
     // May need to also support LoRe TupleTypes at one point in the future
     typeTree match
       case TypeRef(_, _) => // Non-parameterized types (e.g. Int, String)
@@ -217,21 +242,30 @@ object LoReGen {
       indentLevel: Integer = 0,
       operandSide: String = ""
   )(using
-      Context
+      logLevel: LogLevel,
+      ctx: Context
   ): Term = {
     tree match
       case number @ Literal(Constant(num: Int)) => // Basic int values like 0 or 1
-        logRhsInfo(indentLevel, operandSide, "literal integer value", num.toString)
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, "literal integer value", num.toString)
+        }
         TNum(num, scalaSourcePos = Some(number.sourcePos))
       case string @ Literal(Constant(str: String)) => // Basic string values like "foo"
-        logRhsInfo(indentLevel, operandSide, "literal string value", str)
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, "literal string value", str)
+        }
         TString(str, scalaSourcePos = Some(string.sourcePos))
       case boolean @ Literal(Constant(bool: Boolean)) => // Basic boolean values true or false
-        logRhsInfo(indentLevel, operandSide, "literal boolean value", bool.toString)
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, "literal boolean value", bool.toString)
+        }
         if bool then TTrue(scalaSourcePos = Some(boolean.sourcePos))
         else TFalse(scalaSourcePos = Some(boolean.sourcePos))
       case ident @ Ident(referenceName: Name) => // References to variables (any type)
-        logRhsInfo(indentLevel, operandSide, "reference to variable", referenceName.toString)
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, "reference to variable", referenceName.toString)
+        }
         // No need to check whether the reference specified here actually exists, because if it didn't
         // then the original Scala code would not have compiled due to invalid reference and this
         // point would not have been reached either way, so just pass on the reference name to a TVar
@@ -239,7 +273,10 @@ object LoReGen {
       case fieldUnaryTree @ Select(arg, opOrField) => // Field access and unary operator applications
         opOrField match
           case nme.UNARY_! => // Overall case catching supported unary operators, add other unary operators via |s here
-            logRhsInfo(indentLevel, operandSide, "unary operator application of", opOrField.show)
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+              logRhsInfo(indentLevel, operandSide, "unary operator application of", opOrField.show)
+            }
+
             opOrField match // Match individual unary operators
               // This specifically has to be nme.UNARY_! and not e.g. nme.NOT
               case nme.UNARY_! => TNeg(
@@ -256,7 +293,10 @@ object LoReGen {
             // Unary operators that aren't explicitly supported will also land here and be turned
             // into property/method access AST nodes instead, which makes sense given the Scala base
             // as operators are basically just methods on the data types themselves in the first place.
-            logRhsInfo(indentLevel, operandSide, "field access to field", opOrField.show)
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+              logRhsInfo(indentLevel, operandSide, "field access to field", opOrField.show)
+            }
+
             TFCall(                                                          // foo.bar
               buildLoreRhsTerm(arg, termList, indentLevel + 1, operandSide), // foo (might be a more complex expression)
               field.toString,                                                // bar
@@ -268,7 +308,10 @@ object LoReGen {
         opOrMethod match
           case nme.ADD | nme.SUB | nme.MUL | nme.DIV | nme.And | nme.Or | nme.LT | nme.GT | nme.LE | nme.GE | nme.EQ | nme.NE =>
             // Supported Binary operator applications (as operator applications are methods on types, like left.+(right), etc)
-            logRhsInfo(indentLevel, operandSide, "operator application of operator", opOrMethod.show)
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+              logRhsInfo(indentLevel, operandSide, "operator application of operator", opOrMethod.show)
+            }
+
             val rightArg = params.head
             opOrMethod match
               case nme.ADD =>
@@ -348,7 +391,10 @@ object LoReGen {
                 )
                 TVar("<error>")
           case methodName => // Method calls outside of explicitly supported binary operators
-            logRhsInfo(indentLevel, operandSide, s"call to a method with ${params.size} params:", methodName.toString)
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+              logRhsInfo(indentLevel, operandSide, s"call to a method with ${params.size} params:", methodName.toString)
+            }
+
             TFCall(                                                              // foo.bar(baz, qux, ...)
               buildLoreRhsTerm(leftArg, termList, indentLevel + 1, operandSide), // foo (might be a more complex term)
               methodName.toString,                                               // bar
@@ -358,7 +404,10 @@ object LoReGen {
               scalaSourcePos = Some(methodBinaryTree.sourcePos)
             )
       case funcCallTree @ Apply(Ident(name: Name), params: List[?]) => // Function calls
-        logRhsInfo(indentLevel, operandSide, s"call to a function with ${params.size} params:", name.toString)
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"call to a function with ${params.size} params:", name.toString)
+        }
+
         TFunC(            // foo(bar, baz)
           name.toString,  // foo
           params.map(p => // bar, baz, ... (might each be more complex terms)
@@ -371,7 +420,10 @@ object LoReGen {
             List(Typed(SeqLiteral(params: List[?], _), _))
           ) =>
         // Type instantiations like Lists etc, i.e. specifically "List(...)" and so forth
-        logRhsInfo(indentLevel, operandSide, s"type call to ${typeName.toString} with ${params.length} params", "")
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"type call to ${typeName.toString} with ${params.length} params", "")
+        }
+
         TFunC(
           typeName.toString,
           params.map(p => buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)),
@@ -379,7 +431,10 @@ object LoReGen {
         )
       case tupleTree @ Apply(TypeApply(Select(Ident(typeName: Name), _), _), params: List[?]) =>
         // Tuple definitions, may also catch currently unknown other cases (and has to stay below type instant. case)
-        logRhsInfo(indentLevel, operandSide, s"tuple call to $typeName with ${params.length} members", "")
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"tuple call to $typeName with ${params.length} members", "")
+        }
+
         TTuple(
           params.map(p => buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)),
           scalaSourcePos = Some(tupleTree.sourcePos)
@@ -394,7 +449,10 @@ object LoReGen {
             // TODO: reactiveType and argumentType are based on the type tree here, not the types written in the RHS
             // Because Interactions use Tuple1 for the first parameters in the type annotation, but the RHS does not,
             // this may cause issues and require fixing.
-            logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+              logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
+            }
+
             TInteraction(
               reactiveType,
               argumentType,
@@ -419,7 +477,10 @@ object LoReGen {
         var innerTerm = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
         innerTerm match
           case interactionTerm @ TInteraction(_, _, modifiesList, requiresList, ensuresList, executesOption, _, _) =>
-            logRhsInfo(indentLevel, operandSide, s"call to the modifies method with the identifier:", modVar.toString)
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+              logRhsInfo(indentLevel, operandSide, s"call to the modifies method with the identifier:", modVar.toString)
+            }
+
             innerTerm = interactionTerm.copy(modifies = modifiesList.prepended(modVar.toString))
           case _ =>
             report.error(
@@ -435,19 +496,26 @@ object LoReGen {
           case SimpleType(loreTypeName, typeArgs) =>
             loreTypeName match
               case "Var" =>
-                logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
+                if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+                  logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
+                }
                 TSource(
                   buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide),
                   scalaSourcePos = Some(reactiveTree.sourcePos)
                 )
               case "Signal" =>
-                logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
+                if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+                  logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
+                }
                 TDerived(
                   buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide),
                   scalaSourcePos = Some(reactiveTree.sourcePos)
                 )
               case "Interaction" =>
-                logRhsInfo(indentLevel, operandSide, s"call to the $methodName method", "")
+                if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+                  logRhsInfo(indentLevel, operandSide, s"call to the $methodName method", "")
+                }
+
                 // Build the terms for the Interaction itself and the term for the method being called on it
                 var interactionTerm = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
                 val methodParamTerm = buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide)
@@ -529,7 +597,10 @@ object LoReGen {
       case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" =>
         // Arrow funcs: When all parameters are defined, the function is in the first parameter
         // Duplicated code from below, but seems that is how it has to be. Can't bind in alternatives, after all.
-        logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+        }
+
         TArrow(            // (foo: Int) => foo + 1
           TTuple(lhs.map { // (foo: Int)
             case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
@@ -551,7 +622,10 @@ object LoReGen {
       case arrowTree @ Block(_, Block(List(DefDef(name, List(lhs), _, rhs)), _)) if name.toString == "$anonfun" =>
         // Arrow funcs 2: When a parameter is wildcarded (i.e. via _), the function is in the second parameter instead
         // Duplicated code from above, but seems that is how it has to be. Can't bind in alternatives, after all.
-        logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+        }
+
         TArrow(            // (foo: Int) => foo + 1
           TTuple(lhs.map { // (foo: Int)
             case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>

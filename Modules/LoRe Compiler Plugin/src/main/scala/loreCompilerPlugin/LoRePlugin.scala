@@ -19,6 +19,21 @@ import ujson.Obj
 
 import scala.annotation.nowarn
 
+enum LogLevel(val level: Int) {
+  case None      extends LogLevel(0)
+  case Essential extends LogLevel(1)
+  case Sparse    extends LogLevel(2)
+  case Verbose   extends LogLevel(3)
+
+  /** Is this log level equal to or higher than the given log level?
+    * @param level The log level to compare to
+    * @return Whether this log level is equal to or higher than the given log levl.
+    */
+  def isLevelOrHigher(level: LogLevel): Boolean = {
+    this.level >= level.level
+  }
+}
+
 class LoRePlugin extends StandardPlugin {
   val name: String        = "LoRe Compiler Plugin"
   val description: String = "Verifies Scala-embedded LoRe code through Dafny"
@@ -38,6 +53,8 @@ class LoRePhase extends PluginPhase {
   override val runsAfter: Set[String]  = Set(Pickler.name)
   override val runsBefore: Set[String] = Set(Inlining.name)
 
+  private given logLevel: LogLevel = LogLevel.Essential
+  // Generated LoRe ASTs per method
   private var loreTerms: Map[(SourceFile, Name), List[Term]] = Map()
 
   override def transformDefDef(tree: tpd.DefDef)(using ctx: Context): tpd.Tree = {
@@ -68,7 +85,9 @@ class LoRePhase extends PluginPhase {
       }
 
       // Add the finalized term list for this LoreProgram to the phase's overall term list
-      println(s"Adding new term list for ${tree.name} in ${tree.source.name}.")
+      if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
+        println(s"Adding new term list for ${tree.name} in ${tree.source.name}.")
+      }
       loreTerms = loreTerms.updated((tree.source, tree.name), programTermList)
     }
 
@@ -77,16 +96,20 @@ class LoRePhase extends PluginPhase {
   }
 
   override def runOn(units: List[CompilationUnit])(using ctx: Context): List[CompilationUnit] = {
-    println("Generating LoRe AST nodes from Scala code...")
+    if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+      println("Generating LoRe AST nodes from Scala code...")
+    }
     // First, run the runOn method for regular Scala compilation (do not remove this or this phase breaks).
     // This will cause the compiler to call above-defined methods which will generate the LoRe AST nodes.
     val result = super.runOn(units)
 
     val termCounts: String = loreTerms.map(_._2.size).mkString(",")
-    println(s"LoRe AST generation completed. Processed ${loreTerms.size} files with $termCounts terms each.")
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
+      println(s"LoRe AST generation completed. Processed ${loreTerms.size} files with $termCounts terms each.")
+    }
 
     // Initialize LSP client that will be used for verification after codegen
-    val lspClient: DafnyLSPClient = new DafnyLSPClient()
+    val lspClient: DafnyLSPClient = new DafnyLSPClient(logLevel)
 
     // Get the root path of the project these compilation units are from.
     // Basically, cut off anything that comes after "src/main/scala".
@@ -98,12 +121,13 @@ class LoRePhase extends PluginPhase {
     val folderPath: String = File(unitPath.split(rootPatternEscaped).head.concat(rootPattern)).toURI.toString
     lspClient.initializeLSP(folderPath)
 
-    // TODO: dummy variable, remove later
-    var counter: Int = 0
+    var programsWithErrors: List[String] = List()
 
     // Iterate through all term lists and generate Dafny code for them + verify it
     for ((file, method), terms) <- loreTerms do {
-      println(s"\nGenerating Dafny code from LoRe AST of ${method.toString}...")
+      if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+        println(s"\nGenerating Dafny code from LoRe AST of ${method.toString}...")
+      }
 
       // Turn the filepath into an URI and then sneakily change the file extension the LSP gets to see
       val filePath: String = File(file.path).toURI.toString.replace(".scala", ".dfy")
@@ -112,24 +136,10 @@ class LoRePhase extends PluginPhase {
       val dafnyCode: String        = generateDafnyCode(terms, method.toString)
       val dafnyLines: List[String] = dafnyCode.linesIterator.toList
 
-      println(s"Dafny code generation for ${method.toString} completed.")
-
-      counter += 1
-      // todo: this is dummy code, normally output by the to-be-implemented dafny generator
-      val dafnyDummyCode: String =
-        s"""method Test(x: int) returns (y: int)
-           |  ensures {:error "Error on LoRe ln X, col Y"} y == ${if counter == 1 then "x" else counter}
-           |  {
-           |    y := x;
-           |  }
-           |
-           |method Main()
-           |{
-           |  var a: int := Test(0);
-           |  print a;
-           |}""".stripMargin
-
-      println(s"Compiling and verifying Dafny code for ${method.toString}...")
+      if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+        println(s"Dafny code generation for ${method.toString} completed.")
+        println(s"Compiling and verifying Dafny code for ${method.toString}...")
+      }
 
       // Send the generated code "file" to the language server to verify
       val didOpenMessage: String = DafnyLSPClient.constructLSPMessage("textDocument/didOpen")(
@@ -154,6 +164,8 @@ class LoRePhase extends PluginPhase {
 
       // If the wait for verification results was halted prematurely, a critical Dafny compilation error occurred.
       if verificationResult.params == null then {
+        programsWithErrors = programsWithErrors :+ method.toString
+
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
           case None       => report.error("An unknown critical Dafny compilation error occurred.")
@@ -176,8 +188,12 @@ class LoRePhase extends PluginPhase {
 
         // Process potential verification errors
         if erroneousVerifiables.isEmpty then {
-          println(s"All verifiables in ${method.toString} were verified successfully.")
+          if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+            println(s"All verifiables in ${method.toString} were verified successfully.")
+          }
         } else {
+          programsWithErrors = programsWithErrors :+ method.toString
+
           // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error *with positions* etc)
           val unverifiableNames: List[String] = erroneousVerifiables.map(verifiable => {
             // The names of verifiables (e.g. method names) will be on one line, so no need to check across
@@ -198,6 +214,19 @@ class LoRePhase extends PluginPhase {
         ("textDocument", Obj("uri" -> filePath))
       )
       lspClient.sendMessage(didCloseMessage)
+    }
+
+    if programsWithErrors.nonEmpty then {
+      if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+        println(
+          s"""\n${programsWithErrors.length} LoRe programs exhibited syntax or verification errors:
+             |${programsWithErrors.mkString("\n")}""".stripMargin
+        )
+      }
+    } else {
+      if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+        println("\nAll LoRe programs verified successfully.")
+      }
     }
 
     // Always return result of default runOn method for regular Scala compilation, as we do not modify it.

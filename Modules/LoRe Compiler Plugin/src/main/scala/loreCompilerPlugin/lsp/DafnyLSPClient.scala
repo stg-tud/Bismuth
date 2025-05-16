@@ -2,13 +2,19 @@ package loreCompilerPlugin.lsp
 
 import java.nio.charset.StandardCharsets
 import LSPDataTypes.*
+import loreCompilerPlugin.LogLevel
 import loreCompilerPlugin.lsp.LSPDataTypes.CompilationStatus.{InternalException, ParsingFailed, ResolutionFailed}
 import os.{SubProcess, spawn}
+
 import scala.collection.mutable.ArrayBuffer
 import ujson.{Null, Obj, Str, Value, read as ujsonRead}
 import upickle.default.{read as upickleRead, write as upickleWrite}
 
-class DafnyLSPClient {
+/** A client for communicating with the Dafny Language Server.
+  * @param logLevel The log level. 0 being no logs, 1 being sparse log, 2 being verbose logging.
+  *                 A higher level (e.g. 2) includes the logs of a lower level (0 and 1).
+  */
+class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
   /** The subprocess running the language server. */
   private var process: Option[SubProcess] = None
@@ -21,7 +27,8 @@ class DafnyLSPClient {
     */
   def initializeLSP(rootUri: String, initId: Int = 0): Unit = {
     if process.isDefined && process.get.isAlive() then {
-      println("Attempted to initialize LSP when active process already exists")
+      if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+        println("Attempted to initialize LSP when active process already exists. Doing nothing.")
       return
     }
 
@@ -38,7 +45,8 @@ class DafnyLSPClient {
     if initRes.error.isDefined then {
       throw new Error(s"An error occurred initializing the LSP client:\n${upickleWrite(initRes.error.get)}")
     } else {
-      println("Successfully initialized a connection with the language server.")
+      if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+        println("Successfully initialized a connection with the language server.")
     }
 
     val initializedNotification: String = DafnyLSPClient.constructLSPMessage("initialized")()
@@ -64,19 +72,22 @@ class DafnyLSPClient {
     * @param message The message to write.
     */
   def sendMessage(message: String): Unit = {
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Sending a message to the language server...")
     val proc: SubProcess = process.getOrElse(throw new Error("LSP Client not initialized"))
 
     val msgBytes: Array[Byte] = message.getBytes(StandardCharsets.UTF_8)
     val msgHeader: String     = s"Content-Length: ${msgBytes.length}\r\n\r\n"
 
-    println(s"The header to be written is:\n$msgHeader")
-    println(s"The message to be written is:\n$message")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+      println(s"The header to be written is:\n$msgHeader")
+      println(s"The message to be written is:\n$message")
+    }
 
-    println(s"Writing header to stdin...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Writing header to stdin...")
     proc.stdin.write(msgHeader)
-    println("Writing message to stdin...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Writing message to stdin...")
     proc.stdin.write(message)
-    println("Flushing input stream...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Flushing input stream...")
     proc.stdin.flush()
   }
 
@@ -98,9 +109,10 @@ class DafnyLSPClient {
     * @return The read message.
     */
   private def readStringMessage(): String = {
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Reading a message from the language server...")
     val proc: SubProcess = process.getOrElse(throw new Error("LSP Client not initialized"))
 
-    println("Reading header from stdout...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Reading header from stdout...")
     val headerBytes: ArrayBuffer[Byte] = new ArrayBuffer[Byte]()
     val terminator: Array[Byte]        = "\r\n\r\n".getBytes(StandardCharsets.UTF_8)
     var foundTerminator: Boolean       = false
@@ -122,20 +134,20 @@ class DafnyLSPClient {
     }
 
     val replyHeader: String = new String(headerBytes.toArray, StandardCharsets.UTF_8)
-    println(s"Header read:\n$replyHeader")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Header read:\n$replyHeader")
 
-    println("Checking header for message length...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Checking header for message length...")
     val contentLength: Int = "Content-Length:\\s*(\\d+)".r.findFirstMatchIn(replyHeader) match {
       case Some(m) => m.group(1).toInt
       case None    => throw new Exception("Content-Length header not found.")
     }
 
-    println(s"Reading $contentLength bytes of message content...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Reading $contentLength bytes of message content...")
     val replyBytes: Array[Byte] = new Array[Byte](contentLength)
     proc.stdout.readFully(replyBytes)
 
     val replyMessage: String = new String(replyBytes, StandardCharsets.UTF_8)
-    println(s"Read message content:\n$replyMessage")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Read message content:\n$replyMessage")
 
     replyMessage
   }
@@ -208,7 +220,7 @@ class DafnyLSPClient {
     * @return The symbol status notification.
     */
   def waitForVerificationResult(name: String): (SymbolStatusNotification, Option[PublishDiagnosticsNotification]) = {
-    println("Waiting for the result of Dafny code verification...")
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then println("Waiting for the result of Dafny code verification...")
     var latestReadMessage: LSPMessage                                   = readMessage()
     var diagnosticsNotification: Option[PublishDiagnosticsNotification] = None
 
@@ -226,14 +238,16 @@ class DafnyLSPClient {
       latestReadMessage match
         case diag: PublishDiagnosticsNotification =>
           if diag.params.uri.endsWith(name) then {
-            println(s"Diagnostics notification read while waiting for verification result.")
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+              println(s"Diagnostics notification read while waiting for verification result.")
             diagnosticsNotification = Some(diag)
           }
         case comp: CompilationStatusNotification =>
           if comp.params.uri.endsWith(name) then {
             comp.params.status match
               case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
-                println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
+                if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+                  println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
                 return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
               case _ => ()
           }
@@ -242,7 +256,7 @@ class DafnyLSPClient {
       latestReadMessage = readMessage()
     }
 
-    println("Dafny verification result has been received.")
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then println("Dafny verification result has been received.")
 
     (
       latestReadMessage.asInstanceOf[SymbolStatusNotification], // Cast is safe because of above check
@@ -257,7 +271,7 @@ class DafnyLSPClient {
     * @return The notification using the given method.
     */
   def waitForNotification(method: String): LSPNotification = {
-    println(s"Waiting for a notification with method $method...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Waiting for a notification with method $method...")
     var msg: LSPMessage = readMessage()
 
     while !msg.isInstanceOf[LSPNotification] || msg.asInstanceOf[LSPNotification].method != method
@@ -265,7 +279,8 @@ class DafnyLSPClient {
       msg = readMessage()
     }
 
-    println(s"Message using method $method found:\n${upickleWrite(msg)}")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+      println(s"Message using method $method found:\n${upickleWrite(msg)}")
     msg.asInstanceOf[LSPNotification] // Cast is safe because of above check
   }
 
@@ -276,7 +291,7 @@ class DafnyLSPClient {
     * @return The message using the given id.
     */
   def waitForResponse(id: Int): LSPResponse = {
-    println(s"Waiting for a response with id $id...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Waiting for a response with id $id...")
     var msg: LSPMessage = readMessage()
 
     while !msg.isInstanceOf[LSPResponse] || msg.asInstanceOf[LSPResponse].id != id
@@ -284,7 +299,7 @@ class DafnyLSPClient {
       msg = readMessage()
     }
 
-    println(s"Response with id $id found:\n${upickleWrite(msg)}")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Response with id $id found:\n${upickleWrite(msg)}")
     msg.asInstanceOf[LSPResponse] // Cast is safe because of above check
   }
 
