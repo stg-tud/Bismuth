@@ -510,7 +510,7 @@ object LoReGen {
                         // forward reference. If it didn't exist at all, the Scala compiler would have errored out
                         // in a previous phase already, before this point would ever have been reached.
                         report.error(
-                          s"${"\t".repeat(indentLevel)}Forward references are not allowed for Interactions",
+                          s"${"\t".repeat(indentLevel)}Could not find Interaction definition. Forward references are not allowed.",
                           reactiveTree.sourcePos
                         )
                         return TVar("<error>")

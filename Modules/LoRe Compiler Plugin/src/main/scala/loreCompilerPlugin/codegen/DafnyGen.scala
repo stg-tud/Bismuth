@@ -151,6 +151,7 @@ object DafnyGen {
       case (body: Term, (from: String, to: String)) => rename(from, to, body)
     }
 
+    // For each defined LoRe Source "source", replace e.g. "source + foo" with "LoreFields.source + foo".
     def replaceSourceRefWithFieldCall: Term => Term = {
       case t: TVar if sources.exists(node => node.name == t.name) =>
         TFCall(TVar("LoReFields"), t.name, null, t.sourcePos, t.scalaSourcePos)
@@ -159,6 +160,42 @@ object DafnyGen {
 
     // Replace source references with field calls
     traverseFromNode(term.copy(right = argumentsInserted), replaceSourceRefWithFieldCall)
+  }
+
+  /** Creates a Dafny assignment statement from the given LoRe Interation executes term.
+    * @param t The term to turn into an assignment (or multiple for tuples).
+    * @param reactiveNames The names of the reactives specified in the Interaction's modifies clause.
+    * @param ctx The compilation context for this Dafny code generation.
+    * @return The assignment statement(s) for the Interaction's body.
+    */
+  private def getInteractionAssignment(t: Term, reactiveNames: List[String], ctx: Map[String, NodeInfo])(using
+      scalaCtx: Context
+  ): String = {
+    t match
+      case tup: TTuple =>
+        // Multiple Sources are being modified, so generate multiple assignments.
+        if tup.factors.length != reactiveNames.length then
+          t.scalaSourcePos match
+            case Some(pos) =>
+              report.error(
+                s"Invalid executes in Interaction:" +
+                s"Number of modifies reactives (${reactiveNames.length})" +
+                s"and number of values supplied in return value tuple (${tup.factors.length}) do not match.",
+                pos
+              )
+            case None =>
+              report.error(
+                s"Invalid executes in Interaction:" +
+                s"Number of modifies reactives (${reactiveNames.length})" +
+                s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
+              )
+
+        reactiveNames.zip(tup.factors)
+          .map((r, v) => s"LoReFields.$r := ${generate(v, ctx)};")
+          .mkString("\n")
+      case _ =>
+        // Body is a single expression for a single Source (i.e. not a tuple), so that becomes the assignment.
+        s"LoReFields.${reactiveNames.head} := ${generate(t, ctx)};"
   }
 
   /** Compiles a list of LoRe terms into Dafny code.
@@ -551,12 +588,33 @@ object DafnyGen {
               s"ensures {:error \"${pos.span.coords}\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
         })
 
+        // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
+        // block is. Instead, return values are named and appear similar to local variables, and must be assigned to in
+        // the body of the method at some point (as often as desired, even). Then, at the end of the method's body, the
+        // current value of those return value variables is taken as the method's return value(s). The methods which are
+        // used to model Interactions don't have any return values to begin with, so because in Scala/LoRe the last
+        // expression decides the return value that will be assigned to the Source that is being modifies (as specified
+        // in the modifies clause), all that needs to be done is get the last expression of the executes block
+        // specified in LoRe, and then turn that into an assignment to the Source specified in the modifies clause.
+        // This last expression already must be of the correct type, otherwise the Scala type checker would've errored.
+        // If the Interaction modifies multiple Sources, this expression will be a tuple in Scala. Therefore, create
+        // an assignment in Dafny for each item of the tuple to the specified modifies-Sources in order.
         val body: String = n.executes match
           case Some(t: TArrow) =>
             val bodyArrow: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-            val b: String         = generate(bodyArrow.right, ctx)
-            // All statements included in the method body have to end with either a closing brace or a semicolon
-            b.linesIterator.map(l => { if l.endsWith("}") || l.endsWith(";") then l else s"$l;" }).mkString("\n")
+            bodyArrow.right match
+              case seq: TSeq =>
+                // Body is a block, so go through and turn the last expression into Source assignment(s).
+                val bodyStatements: List[String] = seq.body.take(seq.body.length - 1).map(term => generate(term, ctx))
+                val bodyAssignment: String       = getInteractionAssignment(seq.body.last, reactiveNames, ctx)
+
+                // All statements included in the method body have to end with either a closing brace or a semicolon
+                (bodyStatements :+ bodyAssignment).map(l => {
+                  if l.endsWith("}") || l.endsWith(";") then l else s"$l;"
+                }).mkString("\n")
+              case b =>
+                // Body is a single expression, so turn that into the assignment(s).
+                getInteractionAssignment(b, reactiveNames, ctx)
           case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
           case None          => "" // No body specified
 
