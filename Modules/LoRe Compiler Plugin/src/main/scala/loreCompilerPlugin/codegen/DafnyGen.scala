@@ -263,21 +263,18 @@ object DafnyGen {
       }
     })
 
-    // Sources have to be split into declaration and definition, since they're modelled as Dafny class fields.
-    // Class fields can't be initialized immediately, only declared, and must be defined in a constructor.
-    // The shape of the generated code for Sources is "var foo: bar := baz;", whereas declarations are of the
-    // shape "var foo: bar" (no semicolon) and definitions are of the shape "foo := baz;" (with semicolon).
+    // Sources have to first be split into their components (name, type and value), since they're modelled as
+    // Dafny class fields. Class fields can't be initialized immediately, only declared, and must be defined in a
+    // constructor. The shape of the generated code for Sources is "var foo: bar := baz;", whereas declarations are
+    // of the shape "var foo: bar" (no semicolon) and definitions are of the shape "foo := baz;" (with semicolon).
+    // Additionally, ensures conditions are attached to the constructor for verifying their initial values.
     val sourceRegex: Regex = """var (.*): (.*) := (.*);""".r
-    val sourceDecls: List[String] = dafnyCode.getOrElse("sourceDefs", List()).map {
-      case sourceRegex(name, _type, _) => s"var $name: $_type"
-      case _                           => ""
-    }
-    val sourceDefs: List[String] = dafnyCode.getOrElse("sourceDefs", List()).map {
-      case sourceRegex(name, _, value) => s"$name := $value;"
-      case _                           => ""
-    }
+    val sourceParts: List[(String, String, String)] = dafnyCode.getOrElse("sourceDefs", List()).map {
+      case sourceRegex(name, _type, value) => (name, _type, value)
+      case _                               => ("", "", "")
+    }.filter((n, t, v) => !(n + t + v).isBlank)
 
-    // Splice together generated Dafny code of all term groups appropriately
+    // Splice together generated Dafny code of all term groups appropriately.
     s"""// Generated from Scala: $loreMethodName
        |
        |// Main object containing all fields
@@ -286,11 +283,14 @@ object DafnyGen {
        |  ${dafnyCode.getOrElse("otherDefs", List()).filter(l => !l.isBlank).mkString("\n  ")}
        |
        |  // Source declarations
-       |  ${sourceDecls.filter(l => !l.isBlank).mkString("\n  ")}
+       |  ${sourceParts.map((n, t, _) => s"var $n: $t").mkString("\n  ")}
        |
-       |  constructor () {
+       |  constructor ()
+       |    // For verification purposes: Ensure sources are of the given values.
+       |    ${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n    ")}
+       |  {
        |    // Definition of Source values (initial values used in LoRe definition)
-       |    ${sourceDefs.filter(l => !l.isBlank).mkString("\n    ")}
+       |    ${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n    ")}
        |  }
        |}
        |
