@@ -656,6 +656,14 @@ object LoReGen {
           // Only a single statement in this block: Just return the one statement by itself
           buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
         }
+      case ifTree @ If(cond, _then, _else) => // If conditions (e.g. "if x then y else z")
+        val condTerm: Term = buildLoreRhsTerm(cond, termList, indentLevel, operandSide)  // if x
+        val thenTerm: Term = buildLoreRhsTerm(_then, termList, indentLevel, operandSide) // then y
+        val elseTerm: Option[Term] = _else match // else z
+          case Literal(Constant(_: Unit)) => None // No else exists
+          case _ => Some(buildLoreRhsTerm(_else, termList, indentLevel, operandSide)) // Else exists
+
+        TIf(condTerm, thenTerm, elseTerm, scalaSourcePos = Some(ifTree.sourcePos))
       case _ => // Unsupported RHS forms
         // No access to sourcePos here due to LazyTree
         report.error(

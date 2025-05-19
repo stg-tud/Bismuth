@@ -691,13 +691,13 @@ object DafnyGen {
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-if-statement
     if elseExpr.isEmpty then {
       s"""if $cond {
-         |  $thenExpr
+         |  ${if thenExpr.endsWith("}") || thenExpr.endsWith(";") then thenExpr else s"$thenExpr;"}
          |}""".stripMargin
     } else {
       s"""if $cond {
-         |  $thenExpr
+         |  ${if thenExpr.endsWith("}") || thenExpr.endsWith(";") then thenExpr else s"$thenExpr;"}
          |} else {
-         |  $elseExpr
+         |  ${if elseExpr.endsWith("}") || elseExpr.endsWith(";") then elseExpr else s"$elseExpr;"}
          |}""".stripMargin
     }
   }
