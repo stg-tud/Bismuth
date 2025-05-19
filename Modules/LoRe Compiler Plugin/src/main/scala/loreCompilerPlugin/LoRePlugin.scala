@@ -8,7 +8,8 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
 import dotty.tools.dotc.transform.{Inlining, Pickler}
-import dotty.tools.dotc.util.SourceFile
+import dotty.tools.dotc.util.{SourceFile, SourcePosition}
+import dotty.tools.dotc.util.Spans.Span
 import java.io.File // For getting URIs and the system-independent path separator
 import lore.ast.Term
 import loreCompilerPlugin.codegen.LoReGen.*
@@ -131,6 +132,7 @@ class LoRePhase extends PluginPhase {
 
       // Turn the filepath into an URI and then sneakily change the file extension the LSP gets to see
       val filePath: String = File(file.path).toURI.toString.replace(".scala", ".dfy")
+      val fileName: String = filePath.substring(filePath.lastIndexOf("/") + 1)
 
       // Generate Dafny code from term list
       val dafnyCode: String        = generateDafnyCode(terms, method.toString)
@@ -160,7 +162,7 @@ class LoRePhase extends PluginPhase {
         verificationResult: SymbolStatusNotification,
         diagnosticsNotification: Option[PublishDiagnosticsNotification]
       ) =
-        lspClient.waitForVerificationResult(file.name.replace(".scala", ".dfy"))
+        lspClient.waitForVerificationResult(fileName)
 
       // If the wait for verification results was halted prematurely, a critical Dafny compilation error occurred.
       if verificationResult.params == null then {
@@ -194,7 +196,6 @@ class LoRePhase extends PluginPhase {
         } else {
           programsWithErrors = programsWithErrors :+ method.toString
 
-          // TODO: Make compiler add relevant errors/warnings that IDEs can show (via report.error *with positions* etc)
           val unverifiableNames: List[String] = erroneousVerifiables.map(verifiable => {
             // The names of verifiables (e.g. method names) will be on one line, so no need to check across
             val startChar: Int = verifiable.nameRange.start.character
@@ -202,10 +203,32 @@ class LoRePhase extends PluginPhase {
             dafnyLines(verifiable.nameRange.start.line).substring(startChar, endChar)
           })
 
-          report.error(
-            s"""The following verifiables in ${method.toString} could not be verified:
-               |${unverifiableNames.mkString("\n")}""".stripMargin
-          )
+          diagnosticsNotification match
+            case None =>
+              report.error(
+                s"""The following verifiables in ${method.toString} could not be verified:
+                  |${unverifiableNames.mkString("\n")}""".stripMargin
+              )
+            case Some(diag) =>
+              // Order of diagnostics and named verifiables lists is the same so we can associate by zipping
+              diag.params.diagnostics.zip(unverifiableNames).foreach((d, n) => {
+                d.relatedInformation match
+                  case None =>
+                    // No direct Scala position known
+                    report.error(s"A compilation/verification error occurred in $n.")
+                  case Some(info) =>
+                    info.foreach(i => {
+                      val scalaPos: Option[Long] = i.message.toLongOption
+
+                      scalaPos match
+                        case None =>
+                          // Message isn't an encoded Scala position, so position unknown
+                          report.error(s"A compilation/verification error occurred in $n.")
+                        case Some(pos) =>
+                          val sourcePos: SourcePosition = SourcePosition(file, new Span(pos))
+                          report.error(d.message, sourcePos)
+                    })
+              })
         }
       }
 
@@ -218,8 +241,9 @@ class LoRePhase extends PluginPhase {
 
     if programsWithErrors.nonEmpty then {
       if logLevel.isLevelOrHigher(LogLevel.Essential) then {
+        val errorPlural: String = if programsWithErrors.size > 1 then "programs" else "program"
         println(
-          s"""\n${programsWithErrors.length} LoRe programs exhibited syntax or verification errors:
+          s"""\n${programsWithErrors.length} LoRe $errorPlural exhibited syntax or verification errors:
              |${programsWithErrors.mkString("\n")}""".stripMargin
         )
       }
