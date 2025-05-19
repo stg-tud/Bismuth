@@ -1,9 +1,6 @@
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{fastLinkJS, scalaJSLinkerOutputDirectory}
 import sbt.*
 import sbt.Keys.*
-import xerial.sbt.Sonatype.autoImport.{sonatypeCredentialHost, sonatypeProfileName, sonatypePublishTo, sonatypePublishToBundle}
-import xerial.sbt.Sonatype.sonatypeLegacy
-import xerial.sbt.Sonatype.sonatypeCentralHost
 
 import scala.scalanative.build.{LTO, NativeConfig}
 
@@ -50,12 +47,10 @@ object SettingsLocal {
     }
   }
 
-  // use `publishSigned` to publish
-  // go to https://oss.sonatype.org/#stagingRepositories to move from staging to maven central
-  // alternatively, use `sonatypeRelease` to release from sbt
-  // if the bundle feature is enabled, then `publishSigned` only puts the files into a local folder,
-  // use `sonatypeBundleRelease` to release that local bundle, or try the individual steps to see intermediate results
-  // `sonatypePrepare; sonatypeBundleUpload; sonatypeRelease`
+
+  // publishSigned: to generate bundle to be published into a local staging repo
+  // sonaUpload: upload to sonatype and publish and verify manually
+  // sonaRelease: to (upload?) and release the bundle automatically
   val publishSonatype = Def.settings(
     organization         := "de.tu-darmstadt.stg",
     organizationName     := "Software Technology Group",
@@ -81,14 +76,22 @@ object SettingsLocal {
     versionScheme := Some("semver-spec"),
 
     // sonatype sbt plugin settings
-    sonatypeCredentialHost := sonatypeCentralHost,
-    sonatypeProfileName    := "de.tu-darmstadt.stg",
+    // sonatypeCredentialHost := sonatypeCentralHost,
+    // sonatypeProfileName    := "de.tu-darmstadt.stg",
 
     // Remove all additional repository other than Maven Central from POM
     pomIncludeRepository := { _ => false },
     // change to sonatypePublishTo to not use the bundle feature
-    publishTo            := sonatypePublishToBundle.value,
+    publishTo            := localStaging.value,
     publishMavenStyle    := true
   )
+
+  // old publishing documentation for legacy purposes
+  // use `publishSigned` to publish
+  // go to https://oss.sonatype.org/#stagingRepositories to move from staging to maven central
+  // alternatively, use `sonatypeRelease` to release from sbt
+  // if the bundle feature is enabled, then `publishSigned` only puts the files into a local folder,
+  // use `sonatypeBundleRelease` to release that local bundle, or try the individual steps to see intermediate results
+  // `sonatypePrepare; sonatypeBundleUpload; sonatypeRelease`
 
 }
