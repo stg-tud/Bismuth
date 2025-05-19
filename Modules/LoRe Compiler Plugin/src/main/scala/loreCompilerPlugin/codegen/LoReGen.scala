@@ -182,10 +182,27 @@ object LoReGen {
                   buildLoreRhsTerm(rhs, termList, 1), // baz (e.g. 0, 1 + 2, "test", true, 2 > 1, bar reference, etc)
                   scalaSourcePos = Some(tree.sourcePos)
                 )
-          case TupleType(_) => // TODO tuple types?
-            println(s"Detected tuple type, these are currently unsupported. Tree:\n$tree")
-            report.error("LoRe Tuple Types are not currently supported", tree.sourcePos)
-            TVar("<error>") // Make compiler happy
+          case TupleType(types) =>
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+              println(s"Detected Tuple definition with name \"$name\"")
+
+            rhs match
+              case Apply(tupleDef @ TypeApply(Select(Ident(tpName), _), _), tupleContents)
+                  if tpName.toString.matches("Tuple\\d+") =>
+                TAbs(
+                  name.toString,
+                  loreTypeNode,
+                  TTuple(
+                    tupleContents.map(tupleElement => {
+                      buildLoreRhsTerm(tupleElement, termList, 1)
+                    }),
+                    scalaSourcePos = Some(tupleDef.sourcePos)
+                  ),
+                  scalaSourcePos = Some(tree.sourcePos)
+                )
+              case _ =>
+                report.error(s"Detected tuple type with non-tuple RHS:\n$tree", tree.sourcePos)
+                TVar("<error>")
   }
 
   /** Builds a LoRe Type node based on a Scala type tree
@@ -197,8 +214,7 @@ object LoReGen {
   private def buildLoreTypeNode(typeTree: ScalaType, sourcePos: SourcePosition)(using
       logLevel: LogLevel,
       ctx: Context
-  ): LoReType =
-    // May need to also support LoRe TupleTypes at one point in the future
+  ): LoReType = {
     typeTree match
       case TypeRef(_, _) => // Non-parameterized types (e.g. Int, String)
         SimpleType(typeTree.asInstanceOf[CachedTypeRef].name.toString, List())
@@ -219,14 +235,35 @@ object LoReGen {
           "InteractionWithModifiesAndActs",
           "UnboundInteraction"
         )
-        val typeString = if interactionTypeList.contains(outerType.name.toString) then "Interaction"
+        val typeString: String = if interactionTypeList.contains(outerType.name.toString) then "Interaction"
         else if interactionTypeList.exists(t => outerType.prefix.typeConstructor.show.contains(t)) then "Interaction"
         else outerType.name.toString
 
-        SimpleType(typeString, args.map(t => buildLoreTypeNode(t, sourcePos)))
+        if typeString.matches("Tuple\\d+") then {
+          // Can get the arity from the type by simply checking the type name
+          val tupleArity: Int = typeString.split("Tuple").last.toInt
+
+          if tupleArity > 1 then {
+            // Actual tuple: More than 1 element
+            val typeList: Option[NonEmptyList[LoReType]] =
+              NonEmptyList.fromList(args.map(t => buildLoreTypeNode(t, sourcePos)))
+
+            typeList match
+              case None =>
+                report.error(s"Detected tuple type without any type elements in AST:\n$typeTree", sourcePos)
+                SimpleType("<error>", List())
+              case Some(l) => TupleType(l)
+          } else {
+            // Not actually a tuple: Just 1 element, so return that type instead
+            buildLoreTypeNode(args.head, sourcePos)
+          }
+        } else {
+          SimpleType(typeString, args.map(t => buildLoreTypeNode(t, sourcePos)))
+        }
       case _ =>
         report.error(s"An error occurred building the LoRe type for the following tree:\n$typeTree", sourcePos)
         SimpleType("<error>", List())
+  }
 
   /** Takes the tree for a Scala RHS value and builds a LoRe term for it.
     *
@@ -429,8 +466,8 @@ object LoReGen {
           params.map(p => buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)),
           scalaSourcePos = Some(instTree.sourcePos)
         )
-      case tupleTree @ Apply(TypeApply(Select(Ident(typeName: Name), _), _), params: List[?]) =>
-        // Tuple definitions, may also catch currently unknown other cases (and has to stay below type instant. case)
+      case tupleTree @ Apply(TypeApply(Select(Ident(typeName: Name), _), _), params: List[?])
+          if typeName.toString.matches("Tuple\\d+") =>
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
           logRhsInfo(indentLevel, operandSide, s"tuple call to $typeName with ${params.length} members", "")
         }
@@ -446,9 +483,7 @@ object LoReGen {
         val rhsType = buildLoreTypeNode(rawInteractionTree.tpe, rawInteractionTree.sourcePos)
         rhsType match
           case SimpleType(loreTypeName, List(reactiveType, argumentType)) =>
-            // TODO: reactiveType and argumentType are based on the type tree here, not the types written in the RHS
-            // Because Interactions use Tuple1 for the first parameters in the type annotation, but the RHS does not,
-            // this may cause issues and require fixing.
+            // reactiveType and argumentType are based on the type tree here, not the types written in the RHS.
             if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
               logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
             }
@@ -458,10 +493,6 @@ object LoReGen {
               argumentType,
               scalaSourcePos = Some(rawInteractionTree.sourcePos)
             )
-          case TupleType(_) => // TODO tuple types?
-            println(s"Detected tuple type, these are currently unsupported. Tree:\n$tree")
-            report.error("LoRe Tuple Types are not currently supported", rawInteractionTree.sourcePos)
-            TVar("<error>")
           case _ =>
             report.error(
               s"${"\t".repeat(indentLevel)}Error building RHS interaction term:\n${"\t".repeat(indentLevel)}$tree",
@@ -590,9 +621,11 @@ object LoReGen {
                     return TVar("<error>")
 
                 interactionTerm
-          case TupleType(_) => // TODO tuple types?
-            println("surprise tuple type")
-            report.error("LoRe Tuple Types are not currently supported", reactiveTree.sourcePos)
+          case _ =>
+            report.error(
+              s"${"\t".repeat(indentLevel)}Error building RHS term:\n${"\t".repeat(indentLevel)}$tree",
+              reactiveTree.sourcePos
+            )
             TVar("<error>")
       case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" =>
         // Arrow funcs: When all parameters are defined, the function is in the first parameter

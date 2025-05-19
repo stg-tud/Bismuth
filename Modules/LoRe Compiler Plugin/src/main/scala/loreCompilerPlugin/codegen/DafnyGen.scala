@@ -103,7 +103,11 @@ object DafnyGen {
           tp match
             // TODO: Add Invariant type name to this check. These are not implemented yet.
             case SimpleType(name, _) => name == "Signal" || name == "Interaction"
-            case TupleType(_)        => false // TODO: TupleTypes?
+            case TupleType(_)        =>
+              // For a derived/interaction to appear in a tuple type, it would have to be declared within
+              // a tuple expression. However, this implementation forbids Derived/Interaction declarations
+              // to happen within other expressions, so this case is unreachable as long as that is unchanged.
+              false
         } else false
       })
 
@@ -216,7 +220,10 @@ object DafnyGen {
             else if name == "Signal" then "derivedDefs"
             else if name == "Interaction" then "interactionDefs"
             else "otherDefs"
-          case TupleType(_) => "otherDefs" // TupleType not implemented
+          case TupleType(_) =>
+            // Reactives and Interactions are forbidden from being declared within tuples.
+            // Therefore, a tuple type must always be a def that is neither of those.
+            "otherDefs"
       case _ => "statements"
     }
 
@@ -383,12 +390,6 @@ object DafnyGen {
       // Derived in LoRe. That is to say, a "foo: Derived[Int]" is a "function foo(...): int { ... }", with no mention
       // of a Derived type. A Derived only has one type parameter, so generate the annotation for it and return it.
       generate(node.inner.head, ctx)
-    } else if dafnyType.matches("Tuple\\d+") then {
-      // The name of Dafny's tuple type is blank, and instead of angled brackets uses parens, i.e. (string, int).
-      // That means we just concat the inner types surrounded by parens for building tuple type annotations.
-      // TODO: Should be reworked so Scala Tuples are turned into TupleType on the front end, but that is future work.
-      // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-tuple-types
-      s"(${node.inner.map(t => generate(t, ctx)).mkString(", ")})"
     } else if dafnyType.matches("Function\\d+") then {
       // Anonymous functions
 
@@ -506,22 +507,14 @@ object DafnyGen {
         // incomplete Interactions in Scala and then completing them through a reference is fine, however.
         if n.modifies.isEmpty || n.executes.isEmpty then return ""
 
-        // Warning: TupleTypes are currently not implemented in the frontend. This means that any tuples will show up as
-        // SimpleType with the name "TupleN", where N is the tuple arity. Additionally, Interactions are defined so that
-        // the reactiveType will always be a tuple, regardless of how many there are (one reactive then being Tuple1).
-        // Therefore, once TupleType is implemented in the frontend, the only case that is will be entered here will
-        // be the third case that handles TupleType. At that point, the other two cases are likely to be dead code.
         val reactiveTypes: List[String] = n.reactiveType match
-          case SimpleType(name, inner) if name.matches("Tuple\\d+") => inner.map(t => generate(t, ctx)) // Tuples
-          case t: SimpleType                                        => List(generate(t, ctx))           // Non-Tuples
-          case TupleType(inner)                                     => inner.map(t => generate(t, ctx)).toList
+          case t: SimpleType    => List(generate(t, ctx))
+          case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
         val reactiveNames: List[String] = n.modifies
 
-        // Warning: See above comment on TupleTypes.
         val argumentTypes = n.argumentType match
-          case SimpleType(name, inner) if name.matches("Tuple\\d+") => inner.map(t => generate(t, ctx)) // Tuples
-          case t: SimpleType                                        => List(generate(t, ctx))           // Non-Tuples
-          case TupleType(inner)                                     => inner.map(t => generate(t, ctx)).toList
+          case t: SimpleType    => List(generate(t, ctx))
+          case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
         val argumentNames: List[String] = n.executes match
           case None               => List() // No body in this Interaction
           case Some(term: TArrow) =>
