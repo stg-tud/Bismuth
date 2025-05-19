@@ -3,6 +3,7 @@ import sbt.*
 import sbt.Keys.*
 import xerial.sbt.Sonatype.autoImport.{sonatypeCredentialHost, sonatypeProfileName, sonatypePublishTo, sonatypePublishToBundle}
 import xerial.sbt.Sonatype.sonatypeLegacy
+import xerial.sbt.Sonatype.sonatypeCentralHost
 
 import scala.scalanative.build.{LTO, NativeConfig}
 
@@ -59,12 +60,12 @@ object SettingsLocal {
     organization         := "de.tu-darmstadt.stg",
     organizationName     := "Software Technology Group",
     organizationHomepage := Some(url("https://www.stg.tu-darmstadt.de/")),
-    homepage             := Some(url("https://www.rescala-lang.com/")),
+    homepage             := Some(url("https://github.com/stg-tud/Bismuth")),
     licenses             := List("Apache 2" -> new URI("http://www.apache.org/licenses/LICENSE-2.0.txt").toURL),
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/rescala-lang/REScala"),
-        "scm:git@github.com:rescala-lang/REScala.git"
+        url("https://github.com/stg-tud/Bismuth"),
+        "scm:git@github.com:stg-tud/Bismuth.git"
       )
     ),
     developers := List(
@@ -80,7 +81,7 @@ object SettingsLocal {
     versionScheme := Some("semver-spec"),
 
     // sonatype sbt plugin settings
-    sonatypeCredentialHost := sonatypeLegacy,
+    sonatypeCredentialHost := sonatypeCentralHost,
     sonatypeProfileName    := "de.tu-darmstadt.stg",
 
     // Remove all additional repository other than Maven Central from POM
