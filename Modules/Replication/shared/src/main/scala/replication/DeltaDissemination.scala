@@ -7,6 +7,7 @@ import de.rmgk.delay.{Async, Callback}
 import rdts.base.Lattice.optionLattice
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.time.Dots
+import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
 
@@ -20,10 +21,49 @@ trait Aead {
   def decrypt(cypher: Array[Byte], associated: Array[Byte]): Try[Array[Byte]]
 }
 
+trait DeltaStorage[State] {
+
+  def allPayloads: List[CachedMessage[Payload[State]]]
+
+  def rememberPayload(payload: CachedMessage[Payload[State]]): Unit
+
+}
+
+class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
+
+  private val lock = new {}
+
+  private var pastPayloads: Queue[CachedMessage[Payload[State]]] = Queue.empty
+
+  override def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(pastPayloads.toList)
+
+  override def rememberPayload(payload: CachedMessage[Payload[State]]): Unit = lock.synchronized {
+    pastPayloads = pastPayloads.enqueue(payload)
+    if pastPayloads.sizeIs > size then
+      pastPayloads = pastPayloads.drop(1)
+      ()
+  }
+
+}
+
+class StateDeltaStorage[State: JsonValueCodec](getState: () => State, dots: () => Dots, replicaId: LocalUid) extends DeltaStorage[State] {
+
+  override def allPayloads: List[CachedMessage[Payload[State]]] = 
+    List(SentCachedMessage(Payload(replicaId.uid, dots(), getState()))(using pmscodec))
+
+  override def rememberPayload(payload: CachedMessage[Payload[State]]): Unit = {}
+
+}
+
 object DeltaDissemination {
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
     override def reportFailure(cause: Throwable): Unit = throw cause
+  }
+
+  def pmscodec[State: JsonValueCodec, T <: ProtocolMessage[State]]: JsonValueCodec[T] = {
+    val pmscodecInv: JsonValueCodec[ProtocolMessage[State]] = JsonCodecMaker.make
+    pmscodecInv.asInstanceOf[JsonValueCodec[T]]
   }
 }
 
@@ -34,16 +74,13 @@ class DeltaDissemination[State](
     immediateForward: Boolean = false,
     sendingActor: ExecutionContext = DeltaDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),
+    val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
 )(using JsonValueCodec[State]) {
 
   type Message = CachedMessage[ProtocolMessage[State]]
 
   given LocalUid = replicaId
 
-  def pmscodec[T <: ProtocolMessage[State]]: JsonValueCodec[T] = {
-    val pmscodecInv: JsonValueCodec[ProtocolMessage[State]] = JsonCodecMaker.make
-    pmscodecInv.asInstanceOf[JsonValueCodec[T]]
-  }
 
   def cachedMessages(conn: LatentConnection[MessageBuffer])
       : LatentConnection[CachedMessage[ProtocolMessage[State]]] = {
@@ -135,19 +172,9 @@ class DeltaDissemination[State](
       ))(using pmscodec)
     )
   }
+
   // note that deltas are not guaranteed to be ordered the same in the buffers
   val lock: AnyRef                                               = new {}
-  private var pastPayloads: Queue[CachedMessage[Payload[State]]] = Queue.empty
-
-  val keepPastPayloads: Int = 108
-
-  def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(pastPayloads.toList)
-  private def rememberPayload(payload: CachedMessage[Payload[State]]): Unit = lock.synchronized {
-    pastPayloads = pastPayloads.enqueue(payload)
-    if pastPayloads.sizeIs > keepPastPayloads then
-      pastPayloads = pastPayloads.drop(1)
-      ()
-  }
 
   private var contexts: Map[Uid, Dots] = Map.empty
 
@@ -159,7 +186,7 @@ class DeltaDissemination[State](
       val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
       updateContext(replicaId.uid, payload.dots)
       val message = SentCachedMessage(payload)(using pmscodec)
-      rememberPayload(message)
+      deltaStorage.rememberPayload(message)
       message
     }
     disseminate(message)
@@ -177,14 +204,14 @@ class DeltaDissemination[State](
         println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
         println(s"current state is ${selfContext}")
       case Request(uid, knows) =>
-        val relevant = allPayloads.filterNot { dt => dt.payload.dots <= knows }
+        val relevant = deltaStorage.allPayloads.filterNot { dt => dt.payload.dots <= knows }
         {
           val newknowledge =
             knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
           val diff = selfContext `subtract` newknowledge
           if !diff.isEmpty then
             throw IllegalStateException(
-              s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant}\n knows: ${knows}\n  selfcontext: ${selfContext}}"
+              s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${selfContext}}"
             )
         }
         relevant.foreach: msg =>
@@ -197,7 +224,7 @@ class DeltaDissemination[State](
             updateContext(uid, context)
           }
           updateContext(replicaId.uid, context)
-          rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
+          deltaStorage.rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
         }
         receiveCallback(data)
         if immediateForward then

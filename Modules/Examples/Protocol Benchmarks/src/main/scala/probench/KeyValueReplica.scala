@@ -1,5 +1,6 @@
 package probench
 
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import probench.Codecs.given
 import probench.data.RequestResponseQueue.Req
 import probench.data.*
@@ -9,7 +10,7 @@ import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.datatypes.experiments.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 import rdts.time.Time
-import replication.DeltaDissemination
+import replication.{DeltaDissemination, StateDeltaStorage}
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.collection.mutable
@@ -76,7 +77,12 @@ class KeyValueReplica(
       localUid,
       handleIncoming,
       immediateForward = true,
-      sendingActor = sendingActor
+      sendingActor = sendingActor,
+      deltaStorage = StateDeltaStorage[ClusterState](
+        { () => lock.synchronized(state) },
+        { () => dataManager.selfContext },
+        localUid
+      )
     )
 
     override def handleIncoming(delta: ClusterState): Unit = lock.synchronized {
@@ -124,6 +130,7 @@ class KeyValueReplica(
     def maybeLeaderElection(peers: Set[Uid]): Unit = {
       peers.minOption match
         case Some(id) if id == uid =>
+          log(s"Proposing election of $uid")
           transform(_.startLeaderElection): Unit
         case _ => ()
     }
@@ -178,7 +185,12 @@ class KeyValueReplica(
       localUid,
       handleIncoming,
       immediateForward = true,
-      sendingActor = sendingActor
+      sendingActor = sendingActor,
+      deltaStorage = StateDeltaStorage[ClientState](
+        { () => lock.synchronized(state) },
+        { () => dataManager.selfContext },
+        localUid
+      )
     )
 
     override def handleIncoming(delta: ClientState): Unit = {
@@ -224,7 +236,12 @@ class KeyValueReplica(
       localUid,
       handleIncoming,
       immediateForward = false,
-      sendingActor = sendingActor
+      sendingActor = sendingActor,
+      deltaStorage = StateDeltaStorage[ConnInformation](
+        { () => lock.synchronized(state) },
+        { () => dataManager.selfContext },
+        localUid
+      )
     )
 
     override def handleIncoming(delta: ConnInformation): Unit = {
@@ -254,14 +271,14 @@ class KeyValueReplica(
 
     def checkLiveness(): Unit = {
       val newAlivePeers = state
-        .filter((_, llw) => llw.value >= (System.currentTimeMillis() - timeoutThreshold))
+        .filter((_, lww) => lww.value >= (System.currentTimeMillis() - timeoutThreshold))
         .map((uid, _) => uid.uid)
         .toSet
 
       (alivePeers -- newAlivePeers).foreach(id => println(s"Peer $id timed out"))
       alivePeers = newAlivePeers
 
-      println(s"Alive peers: $alivePeers")
+      log(s"Alive peers: $alivePeers")
 
       if !alivePeers.exists(cluster.state.leader.contains) then {
         println("Detected leader failure, triggering new election")
