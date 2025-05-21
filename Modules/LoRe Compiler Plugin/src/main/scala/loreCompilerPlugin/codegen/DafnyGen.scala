@@ -219,6 +219,7 @@ object DafnyGen {
             if name == "Var" then "sourceDefs"
             else if name == "Signal" then "derivedDefs"
             else if name == "Interaction" then "interactionDefs"
+            else if name == "Invariant" then "invariantDefs"
             else "otherDefs"
           case TupleType(_) =>
             // Reactives and Interactions are forbidden from being declared within tuples.
@@ -310,11 +311,11 @@ object DafnyGen {
        |// Derived definitions
        |${dafnyCode.getOrElse("derivedDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
        |
-       |// Interaction definitions
-       |${dafnyCode.getOrElse("interactionDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
-       |
        |// Invariant definitions
        |${dafnyCode.getOrElse("invariantDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
+       |
+       |// Interaction definitions
+       |${dafnyCode.getOrElse("interactionDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
        |
        |// Main method
        |method {:main} Main() {
@@ -496,6 +497,17 @@ object DafnyGen {
         s"""function ${node.name}(${parameters.mkString(", ")}): ${generate(node._type, ctx)} {
            |  ${generate(n.body, ctx)}
            |}""".stripMargin
+      case n: TInvariant =>
+        // Invariant terms are also realized as Dafny functions, like Derived terms.
+        // References are again turned into function parameters.
+        // The body as well as return type of all invariants is a boolean (expression).
+        val references: Set[String] = usedReferences(n.condition, ctx)
+        val parameters: Set[String] = references.map(ref => s"$ref: ${ctx(ref).dafnyType}")
+
+        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
+        s"""function ${node.name}(${parameters.mkString(", ")}): bool {
+           |  ${generate(n.condition, ctx)}
+           |}""".stripMargin
       case n: TInteraction =>
         // Interaction terms are realized as Dafny methods. Methods may have side-effects.
         // As Interactions modify state directly, they do not have return values, however.
@@ -504,8 +516,8 @@ object DafnyGen {
 
         // Only generate Dafny code for fully-featured interactions, i.e. those with both modifies and executes.
         // When either is lacking, the Interaction would be irrelevant either way, as it does not affect anything.
-        // Additionally, incomplete Interactions lead to invalid generated Dafny code would be invalid. Defining
-        // incomplete Interactions in Scala and then completing them through a reference is fine, however.
+        // Additionally, incomplete Interactions lead to invalid generated Dafny code. Defining incomplete Interactions
+        // in Scala and then completing them through a reference is fine, however.
         if n.modifies.isEmpty || n.executes.isEmpty then return ""
 
         val reactiveTypes: List[String] = n.reactiveType match
@@ -546,8 +558,6 @@ object DafnyGen {
             // Reactives aren't arguments, so remove those
             args.drop(reactiveTypes.length)
           case Some(term) => List() // Irrelevant body: non-arrow func
-
-        // TODO: Search for invariants relevant to the above reactives and include them as pre- and post-conditions.
 
         val definedSources: List[NodeInfo] = ctx.values.filter(definition => {
           definition.loreNode match
@@ -621,16 +631,71 @@ object DafnyGen {
           val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
             case None =>
               DafnyEmbeddedLoReError(
-                "A source not specified in this Interaction's modifies clause was modified."
+                s"It could not be proven that the ${source.name} source, which was not specified in this Interaction's modifies clause, was not modified."
               )
             case Some(pos) =>
               DafnyEmbeddedLoReError(
-                "A source not specified in this Interaction's modifies clause was modified.",
+                s"It could not be proven that the ${source.name} source, which was not specified in this Interaction's modifies clause, was not modified.",
                 Some(pos.span.coords)
               )
           val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
 
-          s"ensures {:error \"${embeddedErrorEsc}\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
+          s"ensures {:error \"$embeddedErrorEsc\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
+        })
+
+        val definedInvariants: List[NodeInfo] = ctx.values.filter(definition => {
+          definition.loreNode match
+            case TAbs(name, _, body: TInvariant, _, _) => true
+            case _                                     => false
+        }).toList
+
+        // Get any invariants which includes references to any of the sources modified by this Interaction
+        val relevantInvariants: List[NodeInfo] = definedInvariants.filter(inv => {
+          inv.loreNode match
+            case TAbs(_, _, TInvariant(cond, _, _), _, _) =>
+              val invRefs: Set[String] = usedReferences(cond, ctx)
+              reactiveNames.exists(s => invRefs.contains(s))
+            case _ => false
+        })
+
+        val invariants: List[String] = relevantInvariants.map(inv => {
+          // No invariant-specific position is available, since the Invariants aren't specifically
+          // called for individual Interactions, but checked through other means in Scala execution.
+          val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
+            n.scalaSourcePos match
+              case None =>
+                val preErr = DafnyEmbeddedLoReError(
+                  s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
+                )
+                val postErr = DafnyEmbeddedLoReError(
+                  s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
+                )
+                (preErr, postErr)
+              case Some(pos) =>
+                val preErr = DafnyEmbeddedLoReError(
+                  s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
+                  Some(pos.span.coords)
+                )
+                val postErr = DafnyEmbeddedLoReError(
+                  s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
+                  Some(pos.span.coords)
+                )
+                (preErr, postErr)
+
+          val embeddedErrorsEsc: (String, String) = (
+            upickleWrite(embeddedErrorPre).replace("\"", "\\\""),
+            upickleWrite(embeddedErrorPost).replace("\"", "\\\"")
+          )
+
+          // Assemble list of parameters for invariant call:
+          // Any calls to definitions that exist are turned into field calls on the main object.
+          val refs: Set[String] = usedReferences(inv.loreNode, ctx).map(ref => {
+            if ctx.exists((name, node) => name == ref) then s"LoReFields.$ref" else ref
+          })
+
+          // Call the Invariant both before execution and after execution of the Interaction
+          s"""requires {:error \"${embeddedErrorsEsc._1}\"} ${inv.name}(${refs.mkString(", ")})
+             |ensures {:error \"${embeddedErrorsEsc._2}\"} ${inv.name}(${refs.mkString(", ")})""".stripMargin
         })
 
         // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
@@ -669,9 +734,10 @@ object DafnyGen {
 
         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
         s"""method ${node.name}($argsString)
-           |  ${preconditions.mkString("\n  ")}
-           |  ${postconditions.mkString("\n  ")}
-           |  ${modifies.mkString("\n  ")}
+           |${preconditions.mkString("\n").indent(2)}
+           |${postconditions.mkString("\n").indent(2)}
+           |${modifies.mkString("\n").indent(2)}
+           |${invariants.mkString("\n").indent(2)}
            |{
            |${body.indent(2)}
            |}""".stripMargin.linesIterator.filter(l => !l.isBlank).mkString("\n")
@@ -855,6 +921,24 @@ object DafnyGen {
     node.scalaSourcePos match
       case Some(pos) => report.error("Declaring Interactions within other expressions is not supported.", pos)
       case None      => report.error("Declaring Interactions within other expressions is not supported.")
+    "<error>"
+  }
+
+  /** Generates Dafny code for the given LoRe TInvariant.
+    *
+    * @param node The LoRe TInvariant node.
+    * @return The generated Dafny code.
+    */
+  private def generateFromTInvariant(node: TInvariant, ctx: Map[String, NodeInfo])(using
+      logLevel: LogLevel,
+      scalaCtx: Context
+  ): String = {
+    // Interaction terms are realized as Dafny functions, like Deriver terms, and this happens in generateFromTAbs.
+    // This method is only entered when an Invariant term is declared as a literal within another expression.
+    // Said use-case is not supported.
+    node.scalaSourcePos match
+      case Some(pos) => report.error("Declaring Invariants within other expressions is not supported.", pos)
+      case None      => report.error("Declaring Invariants within other expressions is not supported.")
     "<error>"
   }
 
@@ -1307,19 +1391,6 @@ object DafnyGen {
       scalaCtx: Context
   ): String = {
     // Leave out for now. Maybe in later work.
-    throw new Error("Term type not implemented")
-  }
-
-  /** Generates Dafny code for the given LoRe TInvariant.
-    *
-    * @param node The LoRe TInvariant node.
-    * @return The generated Dafny code.
-    */
-  private def generateFromTInvariant(node: TInvariant, ctx: Map[String, NodeInfo])(using
-      logLevel: LogLevel,
-      scalaCtx: Context
-  ): String = {
-    // To be implemented later, but out of scope for the current project.
     throw new Error("Term type not implemented")
   }
 

@@ -340,6 +340,18 @@ object LoReGen {
               null, // null instead of empty list to differentiate between properties and methods without arguments
               scalaSourcePos = Some(fieldUnaryTree.sourcePos)
             )
+      case invariantTree @ Apply(Select(Ident(name), method), invExpr)
+          if name.toString == "Invariant" && method.toString == "apply" =>
+        val invTerm: Term = buildLoreRhsTerm(invExpr.head, termList, indentLevel, operandSide)
+        invTerm match
+          case expr: TBoolean =>
+            TInvariant(expr, scalaSourcePos = Some(invariantTree.sourcePos))
+          case _ =>
+            report.error(
+              s"${"\t".repeat(indentLevel)}Invariant term is not a boolean expression:\n$tree",
+              invariantTree.sourcePos
+            )
+            TVar("<error>")
       case methodBinaryTree @ Apply(Select(leftArg, opOrMethod), params: List[?]) =>
         // Method calls and binary operator applications
         opOrMethod match
