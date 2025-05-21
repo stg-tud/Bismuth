@@ -201,7 +201,7 @@ object LoReGen {
                   scalaSourcePos = Some(tree.sourcePos)
                 )
               case _ =>
-                report.error(s"Detected tuple type with non-tuple RHS:\n$tree", tree.sourcePos)
+                report.error(s"Detected tuple type with non-tuple RHS:", tree.sourcePos)
                 TVar("<error>")
   }
 
@@ -322,7 +322,7 @@ object LoReGen {
                 ) // !operand
               case _ => // Unsupported unary operators
                 report.error(
-                  s"${"\t".repeat(indentLevel)}Unsupported unary operator ${opOrField.show} used:\n$tree",
+                  s"Unsupported unary operator ${opOrField.show} used:",
                   fieldUnaryTree.sourcePos
                 )
                 TVar("<error>")
@@ -348,7 +348,7 @@ object LoReGen {
             TInvariant(expr, scalaSourcePos = Some(invariantTree.sourcePos))
           case _ =>
             report.error(
-              s"${"\t".repeat(indentLevel)}Invariant term is not a boolean expression:\n$tree",
+              s"Invariant term is not a boolean expression",
               invariantTree.sourcePos
             )
             TVar("<error>")
@@ -435,7 +435,7 @@ object LoReGen {
                 )
               case _ => // Unsupported binary operators
                 report.error(
-                  s"${"\t".repeat(indentLevel)}Unsupported binary operator ${opOrMethod.show} used:\n${"\t".repeat(indentLevel)}$tree",
+                  s"Unsupported binary operator ${opOrMethod.show} used",
                   methodBinaryTree.sourcePos
                 )
                 TVar("<error>")
@@ -507,7 +507,7 @@ object LoReGen {
             )
           case _ =>
             report.error(
-              s"${"\t".repeat(indentLevel)}Error building RHS interaction term:\n${"\t".repeat(indentLevel)}$tree",
+              s"Error building RHS interaction term",
               rawInteractionTree.sourcePos
             )
             TVar("<error>")
@@ -527,7 +527,7 @@ object LoReGen {
             innerTerm = interactionTerm.copy(modifies = modifiesList.prepended(modVar.toString))
           case _ =>
             report.error(
-              s"${"\t".repeat(indentLevel)}Error building RHS term for Interaction modifies call:\n${"\t".repeat(indentLevel)}$tree",
+              s"Error building RHS term for Interaction modifies call",
               modifiesTree.sourcePos
             )
             TVar("<error>")
@@ -621,13 +621,13 @@ object LoReGen {
                         // forward reference. If it didn't exist at all, the Scala compiler would have errored out
                         // in a previous phase already, before this point would ever have been reached.
                         report.error(
-                          s"${"\t".repeat(indentLevel)}Could not find Interaction definition. Forward references are not allowed.",
+                          s"Could not find Interaction definition. Forward references are not allowed.",
                           reactiveTree.sourcePos
                         )
                         return TVar("<error>")
                   case _ =>
                     report.error(
-                      s"${"\t".repeat(indentLevel)}Error building RHS term for Interaction:\n${"\t".repeat(indentLevel)}$tree",
+                      s"Error building RHS term for Interaction",
                       reactiveTree.sourcePos
                     )
                     return TVar("<error>")
@@ -635,7 +635,7 @@ object LoReGen {
                 interactionTerm
           case _ =>
             report.error(
-              s"${"\t".repeat(indentLevel)}Error building RHS term:\n${"\t".repeat(indentLevel)}$tree",
+              s"Error building RHS term",
               reactiveTree.sourcePos
             )
             TVar("<error>")
@@ -656,7 +656,7 @@ object LoReGen {
               )
             case _ =>
               report.error(
-                s"${"\t".repeat(indentLevel)}Error building LHS term for arrow function:\n${"\t".repeat(indentLevel)}$tree",
+                s"Error building LHS term for arrow function",
                 arrowTree.sourcePos
               )
               TVar("<error>")
@@ -681,7 +681,7 @@ object LoReGen {
               )
             case _ =>
               report.error(
-                s"${"\t".repeat(indentLevel)}Error building LHS term for arrow function:\n${"\t".repeat(indentLevel)}$tree",
+                s"Error building LHS term for arrow function",
                 arrowTree.sourcePos
               )
               TVar("<error>")
@@ -709,11 +709,11 @@ object LoReGen {
           case _ => Some(buildLoreRhsTerm(_else, termList, indentLevel, operandSide)) // Else exists
 
         TIf(condTerm, thenTerm, elseTerm, scalaSourcePos = Some(ifTree.sourcePos))
-      case _ => // Unsupported RHS forms
-        // No access to sourcePos here due to LazyTree
-        report.error(
-          s"${"\t".repeat(indentLevel)}Unsupported RHS form used:\n${"\t".repeat(indentLevel)}$tree"
-        )
+      case t: Tree[?] => // Unsupported RHS forms
+        report.error(s"Unsupported RHS form used", t.sourcePos)
+        TVar("<error>")
+      case _ => // This case shouldn't be hit, but compiler warns about potentially inexhaustive matches.
+        report.error(s"Unsupported RHS form used:\n$tree")
         TVar("<error>")
   }
 }
