@@ -1,16 +1,17 @@
 package probench
 
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import probench.Codecs.given
-import probench.data.RequestResponseQueue.Req
 import probench.data.*
+import probench.data.RequestResponseQueue.Req
 import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.datatypes.experiments.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 import rdts.time.Time
-import replication.{DeltaDissemination, StateDeltaStorage}
+import replication.DeltaStorage.Type.*
+import replication.ProtocolMessage.Payload
+import replication.{DeltaDissemination, DeltaStorage}
 
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.collection.mutable
@@ -32,7 +33,8 @@ trait State[T: Lattice] {
 class KeyValueReplica(
     val uid: Uid,
     val votingReplicas: Set[Uid],
-    offloadSending: Boolean = true
+    offloadSending: Boolean = true,
+    deltaStorageType: DeltaStorage.Type = KeepAll
 ) {
 
   inline def log(inline msg: String): Unit =
@@ -73,16 +75,14 @@ class KeyValueReplica(
       var state: ClusterState = MultiPaxos.empty,
   ) extends State[ClusterState] {
 
+    given Lattice[Payload[ClusterState]] = Lattice.derived
+
     override val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
       localUid,
       handleIncoming,
       immediateForward = true,
       sendingActor = sendingActor,
-      deltaStorage = StateDeltaStorage[ClusterState](
-        { () => lock.synchronized(state) },
-        { () => dataManager.selfContext },
-        localUid
-      )
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, { () => lock.synchronized(state) })
     )
 
     override def handleIncoming(delta: ClusterState): Unit = lock.synchronized {
@@ -181,16 +181,14 @@ class KeyValueReplica(
       var state: ClientState = RequestResponseQueue.empty
   ) extends State[ClientState] {
 
+    given Lattice[Payload[ClientState]] = Lattice.derived
+
     override val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
       handleIncoming,
       immediateForward = true,
       sendingActor = sendingActor,
-      deltaStorage = StateDeltaStorage[ClientState](
-        { () => lock.synchronized(state) },
-        { () => dataManager.selfContext },
-        localUid
-      )
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, { () => lock.synchronized(state) })
     )
 
     override def handleIncoming(delta: ClientState): Unit = {
@@ -230,6 +228,8 @@ class KeyValueReplica(
       val timeoutThreshold: Long = 5000
   ) extends State[ConnInformation] {
 
+    given Lattice[Payload[ConnInformation]] = Lattice.derived
+
     var alivePeers: Set[Uid] = Set.empty
 
     override val dataManager: DeltaDissemination[ConnInformation] = DeltaDissemination(
@@ -237,11 +237,7 @@ class KeyValueReplica(
       handleIncoming,
       immediateForward = false,
       sendingActor = sendingActor,
-      deltaStorage = StateDeltaStorage[ConnInformation](
-        { () => lock.synchronized(state) },
-        { () => dataManager.selfContext },
-        localUid
-      )
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, { () => lock.synchronized(state) })
     )
 
     override def handleIncoming(delta: ConnInformation): Unit = {

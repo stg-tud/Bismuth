@@ -11,7 +11,6 @@ import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
 
-import scala.annotation.targetName
 import scala.collection.immutable.Queue
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -19,40 +18,6 @@ import scala.util.{Failure, Success, Try}
 trait Aead {
   def encrypt(plain: Array[Byte], associated: Array[Byte]): Array[Byte]
   def decrypt(cypher: Array[Byte], associated: Array[Byte]): Try[Array[Byte]]
-}
-
-trait DeltaStorage[State] {
-
-  def allPayloads: List[CachedMessage[Payload[State]]]
-
-  def rememberPayload(payload: CachedMessage[Payload[State]]): Unit
-
-}
-
-class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
-
-  private val lock = new {}
-
-  private var pastPayloads: Queue[CachedMessage[Payload[State]]] = Queue.empty
-
-  override def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(pastPayloads.toList)
-
-  override def rememberPayload(payload: CachedMessage[Payload[State]]): Unit = lock.synchronized {
-    pastPayloads = pastPayloads.enqueue(payload)
-    if pastPayloads.sizeIs > size then
-      pastPayloads = pastPayloads.drop(1)
-      ()
-  }
-
-}
-
-class StateDeltaStorage[State: JsonValueCodec](getState: () => State, dots: () => Dots, replicaId: LocalUid) extends DeltaStorage[State] {
-
-  override def allPayloads: List[CachedMessage[Payload[State]]] = 
-    List(SentCachedMessage(Payload(replicaId.uid, dots(), getState()))(using pmscodec))
-
-  override def rememberPayload(payload: CachedMessage[Payload[State]]): Unit = {}
-
 }
 
 object DeltaDissemination {
@@ -80,7 +45,6 @@ class DeltaDissemination[State](
   type Message = CachedMessage[ProtocolMessage[State]]
 
   given LocalUid = replicaId
-
 
   def cachedMessages(conn: LatentConnection[MessageBuffer])
       : LatentConnection[CachedMessage[ProtocolMessage[State]]] = {

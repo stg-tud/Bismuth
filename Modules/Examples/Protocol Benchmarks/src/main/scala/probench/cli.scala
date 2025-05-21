@@ -9,13 +9,14 @@ import probench.clients.{BenchmarkMode, ClientCLI, EtcdClient, ProBenchClient}
 import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation, KVState}
 import rdts.base.Uid
 import rdts.datatypes.experiments.protocols.MultiPaxos
-import replication.{DeltaDissemination, FileConnection, ProtocolMessage}
+import replication.{DeltaDissemination, DeltaStorage, FileConnection, ProtocolMessage}
 
 import java.net.{DatagramSocket, InetSocketAddress}
 import java.nio.file.{Files, Path}
 import java.util.Timer
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
+import scala.util.matching.Regex
 import scala.util.{Failure, Success}
 
 object Codecs {
@@ -101,6 +102,23 @@ object cli {
 
     end benchmarkModeParser
 
+    given deltaStorageTypeParser: ArgumentValueParser[DeltaStorage.Type] with
+      val discarding: Regex = """discarding\((\d+)\)""".r
+      val merging: Regex    = """merging\((\d+)\)""".r
+
+      override def parse(args: List[String]): Result[DeltaStorage.Type] =
+        args match {
+          case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
+          case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
+          case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
+          case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
+          case _                           => Result.Err("not a valid delta storage type", descriptor)
+        }
+
+      override def descriptor: Descriptor =
+        Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")
+    end deltaStorageTypeParser
+
     def socketPath(host: String, port: Int) = {
 //      val p = Path.of(s"target/sockets/$name")
 //      Files.createDirectories(p.getParent)
@@ -115,6 +133,7 @@ object cli {
     val clientNode        = named[(String, Int)]("--node", "<ip:port>")
     val name              = named[Uid]("--name", "", Uid.gen())
     val endpoints         = named[List[String]]("--endpoints", "")
+    val deltaStorageType  = named[DeltaStorage.Type]("--delta-storage-type", "", DeltaStorage.Type.Merging(2000))
 
     val warmup      = named[Int]("--warmup", "warmup period for the benchmark in seconds")
     val measurement = named[Int]("--measurement", "measurement period for the benchmark in seconds")
@@ -158,7 +177,8 @@ object cli {
 
         },
         subcommand("node", "starts a cluster node") {
-          val node = KeyValueReplica(name.value, initialClusterIds.value.toSet)
+          val node =
+            KeyValueReplica(name.value, initialClusterIds.value.toSet, deltaStorageType = deltaStorageType.value)
 
           val nioTCP = NioTCP()
           ec.execute(() => nioTCP.loopSelection(Abort()))
@@ -214,7 +234,8 @@ object cli {
           }
         },
         subcommand("udp-node", "starts a cluster node") {
-          val node = KeyValueReplica(name.value, initialClusterIds.value.toSet)
+          val node =
+            KeyValueReplica(name.value, initialClusterIds.value.toSet, deltaStorageType = deltaStorageType.value)
 
           node.client.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(clientPort.value), ec))
           node.cluster.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value), ec))
@@ -261,7 +282,11 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          client.dataManager.addBinaryConnection(UDP.connect(InetSocketAddress(ip, port), () => new DatagramSocket(), ec))
+          client.dataManager.addBinaryConnection(UDP.connect(
+            InetSocketAddress(ip, port),
+            () => new DatagramSocket(),
+            ec
+          ))
 
           ClientCLI(name.value, client).startCLI()
           executor.shutdownNow()
