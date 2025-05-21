@@ -17,6 +17,8 @@ import loreCompilerPlugin.codegen.DafnyGen.generate as generateDafnyCode
 import loreCompilerPlugin.lsp.DafnyLSPClient
 import loreCompilerPlugin.lsp.LSPDataTypes.*
 import ujson.Obj
+import upickle.default.read as upickleRead
+import upickle.default.ReadWriter
 
 import scala.annotation.nowarn
 
@@ -34,6 +36,18 @@ enum LogLevel(val level: Int) {
     this.level >= level.level
   }
 }
+
+/** The bridging data structure for reporting Dafny verification errors at the correct LoRe source code positions.
+  * Embedded into Dafny pre- and postcondition source code via the error attribute and read out via LSP diagnostics.
+  *
+  * @see [[https://dafny.org/dafny/DafnyRef/DafnyRef#sec-error-attribute]]
+  * @param message The embedded error message to report in the Scala compiler.
+  * @param position The Scala position to report this error at.
+  */
+case class DafnyEmbeddedLoReError(
+    message: String,
+    position: Option[Long] = None
+) derives ReadWriter
 
 class LoRePlugin extends StandardPlugin {
   val name: String        = "LoRe Compiler Plugin"
@@ -170,15 +184,15 @@ class LoRePhase extends PluginPhase {
 
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
-          case None       => report.error("An unknown critical Dafny compilation error occurred.")
+          case None => report.error("An unknown critical Dafny compilation error occurred.")
           case Some(diag) =>
-            // TODO: Dig into diagnostics to report error details
             val errors: List[Diagnostic] = diag.params.diagnostics.filter(d => {
               d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
             })
 
             val errorPlural: String = if errors.size > 1 then "errors" else "error"
 
+            // Unfortunately, these errors will not have Scala positions to report cleanly to.
             report.error(
               s"""${errors.size} Dafny compilation $errorPlural occurred:
                  |${errors.map(e => e.message).mkString("\n")}""".stripMargin
@@ -215,18 +229,20 @@ class LoRePhase extends PluginPhase {
                 d.relatedInformation match
                   case None =>
                     // No direct Scala position known
-                    report.error(s"A compilation/verification error occurred in $n.")
+                    report.error(s"A verification error occurred in $n:\n${d.message}")
                   case Some(info) =>
                     info.foreach(i => {
-                      val scalaPos: Option[Long] = i.message.toLongOption
+                      // Message has to be de-escaped to be parsed properly
+                      val embeddedError: DafnyEmbeddedLoReError =
+                        upickleRead[DafnyEmbeddedLoReError](i.message.replace("\\\"", "\""))
 
-                      scalaPos match
+                      embeddedError.position match
                         case None =>
-                          // Message isn't an encoded Scala position, so position unknown
-                          report.error(s"A compilation/verification error occurred in $n.")
+                          // No position embedded, so only message known
+                          report.error(s"A verification error occurred in $n:\n${embeddedError.message}")
                         case Some(pos) =>
                           val sourcePos: SourcePosition = SourcePosition(file, new Span(pos))
-                          report.error(d.message, sourcePos)
+                          report.error(embeddedError.message, sourcePos)
                     })
               })
         }

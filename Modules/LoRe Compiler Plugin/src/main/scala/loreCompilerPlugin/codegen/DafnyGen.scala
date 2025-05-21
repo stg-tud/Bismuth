@@ -6,8 +6,9 @@ import dotty.tools.dotc.util.SourcePosition
 import lore.ast.*
 import lore.backends.rename
 import lore.backends.traverseFromNode
-import loreCompilerPlugin.LogLevel
+import loreCompilerPlugin.{DafnyEmbeddedLoReError, LogLevel}
 import scala.util.matching.Regex
+import upickle.default.write as upickleWrite
 
 /** Information about a definition in Dafny generated from a LoRe AST node.
   * @param name The name of the definition, equal across Dafny and LoRe
@@ -566,9 +567,19 @@ object DafnyGen {
                 "<error>" // Compiler still requires a return value
               case _ =>
                 val pre: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-                t.scalaSourcePos match
-                  case None      => s"requires ${generate(pre.right, ctx)}"
-                  case Some(pos) => s"requires {:error \"${pos.span.coords}\"} ${generate(pre.right, ctx)}"
+                val embeddedError: DafnyEmbeddedLoReError = t.scalaSourcePos match
+                  case None =>
+                    DafnyEmbeddedLoReError(
+                      "A precondition could be not be proven, but no Scala source position is available."
+                    )
+                  case Some(pos) =>
+                    DafnyEmbeddedLoReError(
+                      "This precondition could be not be proven.",
+                      Some(pos.span.coords)
+                    )
+                val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
+
+                s"requires {:error \"$embeddedErrorEsc\"} ${generate(pre.right, ctx)}"
           case _ => ""
         }
 
@@ -584,9 +595,19 @@ object DafnyGen {
                 "<error>" // Compiler still requires a return value
               case _ =>
                 val post: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-                t.scalaSourcePos match
-                  case None      => s"ensures ${generate(post.right, ctx)}"
-                  case Some(pos) => s"ensures {:error \"${pos.span.coords}\"} ${generate(post.right, ctx)}"
+                val embeddedError: DafnyEmbeddedLoReError = t.scalaSourcePos match
+                  case None =>
+                    DafnyEmbeddedLoReError(
+                      "A postcondition could be not be proven, but no Scala source position is available."
+                    )
+                  case Some(pos) =>
+                    DafnyEmbeddedLoReError(
+                      "This postcondition could be not be proven.",
+                      Some(pos.span.coords)
+                    )
+                val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
+
+                s"ensures {:error \"$embeddedErrorEsc\"} ${generate(post.right, ctx)}"
           case _ => ""
         }
 
@@ -597,11 +618,19 @@ object DafnyGen {
         val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
         val modifies: List[String] = "modifies LoReFields" :: unmodifiedSources.map(source => {
           // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
-          n.scalaSourcePos match
+          val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
             case None =>
-              s"ensures old(LoReFields.${source.name}) == LoReFields.${source.name}"
+              DafnyEmbeddedLoReError(
+                "A source not specified in this Interaction's modifies clause was modified."
+              )
             case Some(pos) =>
-              s"ensures {:error \"${pos.span.coords}\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
+              DafnyEmbeddedLoReError(
+                "A source not specified in this Interaction's modifies clause was modified.",
+                Some(pos.span.coords)
+              )
+          val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
+
+          s"ensures {:error \"${embeddedErrorEsc}\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
         })
 
         // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
