@@ -2,7 +2,6 @@ package loreCompilerPlugin.codegen
 
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.report
-import dotty.tools.dotc.util.SourcePosition
 import lore.ast.*
 import lore.backends.rename
 import lore.backends.traverseFromNode
@@ -380,7 +379,8 @@ object DafnyGen {
   ): String = {
     val dafnyType: String = getDafnyType(node.name)
 
-    // TODO: Add case for Interactions
+    // FYI: No special case for Interactions required as they're modelled as methods without return values
+
     if dafnyType == "Var" then {
       // Source (REScala Var) terms are modeled as Dafny fields typed after the inner type of the Source in LoRe.
       // That is to say, a "Source[Int]" is just an "int" type field in Dafny - the Source types does not appear.

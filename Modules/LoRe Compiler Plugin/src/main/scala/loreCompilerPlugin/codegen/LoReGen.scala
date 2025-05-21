@@ -8,8 +8,8 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.core.StdNames.nme
 import dotty.tools.dotc.core.Types.{AppliedType, CachedTypeRef, TypeRef, Type as ScalaType}
-import dotty.tools.dotc.{CompilationUnit, report}
-import dotty.tools.dotc.util.{SourceFile, SourcePosition}
+import dotty.tools.dotc.report
+import dotty.tools.dotc.util.SourcePosition
 import lore.ast.{Type as LoReType, *}
 import loreCompilerPlugin.LogLevel
 
@@ -37,7 +37,7 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  def createLoreTermFromTree(tree: tpd.Tree, termList: List[Term])(using
+  def createLoReTermFromTree(tree: tpd.Tree, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
   ): List[Term] = {
@@ -46,14 +46,14 @@ object LoReGen {
       case ap: Apply[?] => // Function or method calls, e.g. "println(...)" or "foo.bar()"
         List(createLoreTermFromApply(ap, termList))
       case bl: Block[?] => // Blocks of trees
-        val blockTerms: List[Term] = bl.stats.flatMap(t => createLoreTermFromTree(t, termList))
+        val blockTerms: List[Term] = bl.stats.flatMap(t => createLoReTermFromTree(t, termList))
 
         // All of the block's trees, apart from the very last (which is used as return value), are included
         // in the "stats" property. We also want the last one however, so add it to the list manually.
         // The exception to this is when the last tree is a definition, where expr is an Constant Literal of Unit.
         bl.expr match
           case Literal(Constant(_: Unit)) => blockTerms
-          case _                          => blockTerms :++ createLoreTermFromTree(bl.expr, termList)
+          case _                          => blockTerms :++ createLoReTermFromTree(bl.expr, termList)
       case id: Ident[?] => // References
         List(createLoreTermFromIdent(id, termList))
       case li: Literal[?] => // Literals (e.g. 0, "foo", ...)

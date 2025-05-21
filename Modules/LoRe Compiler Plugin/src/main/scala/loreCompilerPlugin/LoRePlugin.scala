@@ -12,7 +12,7 @@ import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
 import java.io.File // For getting URIs and the system-independent path separator
 import lore.ast.Term
-import loreCompilerPlugin.codegen.LoReGen.*
+import loreCompilerPlugin.codegen.LoReGen.createLoReTermFromTree
 import loreCompilerPlugin.codegen.DafnyGen.generate as generateDafnyCode
 import loreCompilerPlugin.lsp.DafnyLSPClient
 import loreCompilerPlugin.lsp.LSPDataTypes.*
@@ -93,7 +93,7 @@ class LoRePhase extends PluginPhase {
       // Process each individual part of this LoRe program
       for t <- programContents do {
         // Generate LoRe term for this tree
-        val loreTerm: List[Term] = createLoreTermFromTree(t, programTermList)
+        val loreTerm: List[Term] = createLoReTermFromTree(t, programTermList)
 
         // Add generated LoRe term to this LoreProgram's term list
         programTermList = programTermList :++ loreTerm
@@ -198,7 +198,7 @@ class LoRePhase extends PluginPhase {
                  |${errors.map(e => e.message).mkString("\n")}""".stripMargin
             )
       } else {
-        // Regular processing of verification results.
+        // Regular processing of verification results
         val erroneousVerifiables: List[NamedVerifiable] =
           verificationResult.params.namedVerifiables.filter(nv => nv.status == VerificationStatus.Error)
 
@@ -219,6 +219,7 @@ class LoRePhase extends PluginPhase {
 
           diagnosticsNotification match
             case None =>
+              // No diagnostics received, so no error details known
               report.error(
                 s"""The following verifiables in ${method.toString} could not be verified:
                   |${unverifiableNames.mkString("\n")}""".stripMargin
@@ -257,15 +258,15 @@ class LoRePhase extends PluginPhase {
 
     if programsWithErrors.nonEmpty then {
       if logLevel.isLevelOrHigher(LogLevel.Essential) then {
-        val errorPlural: String = if programsWithErrors.size > 1 then "programs" else "program"
+        val programPlural: String = if programsWithErrors.size > 1 then "programs" else "program"
         println(
-          s"""\n${programsWithErrors.length} LoRe $errorPlural exhibited syntax or verification errors:
+          s"""\n${programsWithErrors.length} LoRe $programPlural exhibited syntax or verification errors:
              |${programsWithErrors.mkString("\n")}""".stripMargin
         )
       }
     } else {
       if logLevel.isLevelOrHigher(LogLevel.Essential) then {
-        println("\nAll LoRe programs verified successfully.")
+        println("\nAll LoRe programs have been successfully verified.")
       }
     }
 
