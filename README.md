@@ -57,13 +57,13 @@ The RDT library is still being actively researched
 
 Projects are within the `Modules` folder, notable ones include:
 
-• Aead: A wrapper around authenticated encryption with associated data providers for JS & JVM
-• Channels: A minimal send/receive abstraction over various data communication methods (TCP, Websockets, WebRTC, BroadcastChannel)
-• Examples: Various case studies
-• Lore: Invariant based coordination reasoning
-• RDTs: Replicated data types, includes both automatic generation of required typeclass for algebraic types, and multiple pre-defined types
-• Reactives: Time-changing values in a transactional dataflow graph.
-• Replication: Combining channels, rdts, and reactives into a out-of-the-box usable framework (kinda).
+* Aead: A wrapper around authenticated encryption with associated data providers for JS & JVM
+* Channels: A minimal send/receive abstraction over various data communication methods (TCP, Websockets, WebRTC, BroadcastChannel)
+* Examples: Various case studies
+* Lore: Invariant based coordination reasoning
+* RDTs: Replicated data types, includes both automatic generation of required typeclass for algebraic types, and multiple pre-defined types
+* Reactives: Time-changing values in a transactional dataflow graph.
+* Replication: Combining channels, rdts, and reactives into a out-of-the-box usable framework (kinda).
 
 
 # Workflow and Git
@@ -73,16 +73,18 @@ We research the core libraries in this repository. Experiments that involve sign
 The monorepo aids both goals. Core changes are applied (often automatically by IDE tooling) and tested against all branch experiments. Branch experiments can immediately make use of improvements of core libraries. Moving features from branches to the core is also straightforward.
 
 To make this work best in the git repo:
-• Push/pull to main/master often. Applying core changes on merge is more painful than as part of the change.
-• Ensure that at least the tip commits you push compile and test – that is, the newest public commit on main/master should always compile and test. It’s a nice bonus if intermediate commits do so as well, but not as important.
-• Avoid force pushing to main/master if someone may depend on that commit (i.e., it’s fine to force push to fixup something you pushed just now, but otherwise just push a fixup commit).
-• If in doubt, when working on some larger change that may require up/downstream dependencies to remain stable for a while, use the chat above for coordination.
+
+* Push/pull to main/master often. Applying core changes on merge is more painful than as part of the change.
+* Ensure that at least the tip commits you push compile and test – that is, the newest public commit on main/master should always compile and test. It’s a nice bonus if intermediate commits do so as well, but not as important.
+* Avoid force pushing to main/master if someone may depend on that commit (i.e., it’s fine to force push to fixup something you pushed just now, but otherwise just push a fixup commit).
+* If in doubt, when working on some larger change that may require up/downstream dependencies to remain stable for a while, use the chat above for coordination.
 
 
 It’s generally up to you how you want to work with git, but a couple of tips:
-• “feature branches” seem to be a bad idea in our context, they tend to get lost and never merged, and cause lots of unnecessary work. Avoid.
-	• Do use branches if you want to propose a change for review (but don’t let it diverge too much)
-• Prefer rebasing of your own commits on top of main/master before pushing to reduce history graph complexity. Note that this is a specific choice for our project, also see the following for interesting insights: https://www.yarchive.net/comp/linux/git_rebase.html
-	• Merge commits may be preferable when there are actual conflicts to be solved.
+
+* “feature branches” seem to be a bad idea in our context, they tend to get lost and never merged, and cause lots of unnecessary work. Avoid.
+	* Do use branches if you want to propose a change for review (but don’t let it diverge too much)
+* Prefer rebasing of your own commits on top of main/master before pushing to reduce history graph complexity. Note that this is a specific choice for our project, also see the following for interesting insights: https://www.yarchive.net/comp/linux/git_rebase.html
+	* Merge commits may be preferable when there are actual conflicts to be solved.
 
 
