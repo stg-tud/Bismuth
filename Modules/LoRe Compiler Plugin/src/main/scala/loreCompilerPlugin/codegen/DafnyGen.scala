@@ -290,23 +290,22 @@ object DafnyGen {
 
     if logLevel.isLevelOrHigher(LogLevel.Sparse) then println(s"Generating composed Dafny code...")
     // Splice together generated Dafny code of all term groups appropriately.
+    // Because the indent method adds a newline at the end of the string, the whole string has to be constructed
+    // so that it looks as desired taking those newlines into account, particularly in the object constructor.
+    // That is why the opening and closing brace aren't on their own lines already in the formatted string here.
     s"""// Generated from Scala: $loreMethodName
        |
        |// Main object containing all fields
        |class LoReFields {
        |  // Constant field definitions
        |${dafnyCode.getOrElse("otherDefs", List()).filter(l => !l.isBlank).mkString("\n").indent(2)}
-       |
        |  // Source declarations
        |${sourceParts.map((n, t, _) => s"var $n: $t").mkString("\n").indent(2)}
-       |
        |  constructor ()
        |    // For verification purposes: Ensure sources are of the given initialization values.
-       |${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n").indent(4)}
-       |  {
+       |${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n").indent(4)}  {
        |    // Definition of Source values (initial values used in LoRe definition)
-       |${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n").indent(4)}
-       |  }
+       |${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n").indent(4)}  }
        |}
        |
        |// Derived definitions
@@ -325,8 +324,7 @@ object DafnyGen {
        |
        |  // Statements: Function calls, method calls, if-conditions etc.
        |${dafnyCode.getOrElse("statements", List()).filter(l => !l.isBlank).mkString("\n").indent(2)}
-       |}
-       |""".stripMargin
+       |}""".stripMargin
   }
 
   /** Generates Dafny code for the given LoRe Term node.
