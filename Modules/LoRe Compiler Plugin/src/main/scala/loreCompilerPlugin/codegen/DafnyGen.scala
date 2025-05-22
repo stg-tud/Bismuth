@@ -1,5 +1,6 @@
 package loreCompilerPlugin.codegen
 
+import cats.data.NonEmptyList
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.report
 import lore.ast.*
@@ -1380,6 +1381,19 @@ object DafnyGen {
         // List instantiations also differ, these are turned into Dafny sequences.
         val items: Seq[String] = node.args.map(i => generate(i, ctx))
         s"[${items.mkString(", ")}]"
+      case "println" =>
+        // Dafny does not have a "println" function, so turn it into a sequence of two print calls.
+        // The first print call prints the intended string, and the second prints a newline character.
+        val printlnCall: TSeq = TSeq(
+          NonEmptyList.of(
+            node.copy(name = "print"), // Just replace the function name for the original call
+            node.copy(name = "print", args = List(TString("\\n", node.sourcePos, node.scalaSourcePos))), // print a "\n"
+          ),
+          node.sourcePos,
+          node.scalaSourcePos
+        )
+
+        generate(printlnCall, ctx)
       case _ =>
         val args: Seq[String] = node.args.map(arg => generate(arg, ctx))
         s"${node.name}(${args.mkString(", ")})"

@@ -26,6 +26,9 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     * @param initId The id to use for the LSP initialization message.
     */
   def initializeLSP(rootUri: String, initId: Int = 0): Unit = {
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+      println("Initializing a connection with the language server...")
+
     if process.isDefined && process.get.isAlive() then {
       if logLevel.isLevelOrHigher(LogLevel.Sparse) then
         println("Attempted to initialize LSP when active process already exists. Doing nothing.")
@@ -55,6 +58,9 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
   /** Shut down the internal instance running the Dafny language server, if running. */
   def shutdownLSP(): Unit = {
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+      println("Shutting down the connection with the language server...")
+
     if process.isDefined then {
       // Only try to destroy if it wasn't already
       if process.get.isAlive() then process.get.destroy()

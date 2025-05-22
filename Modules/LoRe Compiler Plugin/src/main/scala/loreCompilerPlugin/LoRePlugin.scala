@@ -120,7 +120,8 @@ class LoRePhase extends PluginPhase {
 
     val termCounts: String = loreTerms.map(_._2.size).mkString(",")
     if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
-      println(s"LoRe AST generation completed. Processed ${loreTerms.size} files with $termCounts terms each.")
+      val filePlural: String = if loreTerms.size > 1 then "files" else "file"
+      println(s"LoRe AST generation completed. Processed ${loreTerms.size} $filePlural with $termCounts terms.")
     }
 
     // Initialize LSP client that will be used for verification after codegen
