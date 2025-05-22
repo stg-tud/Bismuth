@@ -295,17 +295,17 @@ object DafnyGen {
        |// Main object containing all fields
        |class LoReFields {
        |  // Constant field definitions
-       |  ${dafnyCode.getOrElse("otherDefs", List()).filter(l => !l.isBlank).mkString("\n  ")}
+       |${dafnyCode.getOrElse("otherDefs", List()).filter(l => !l.isBlank).mkString("\n").indent(2)}
        |
        |  // Source declarations
-       |  ${sourceParts.map((n, t, _) => s"var $n: $t").mkString("\n  ")}
+       |${sourceParts.map((n, t, _) => s"var $n: $t").mkString("\n").indent(2)}
        |
        |  constructor ()
        |    // For verification purposes: Ensure sources are of the given initialization values.
-       |    ${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n    ")}
+       |${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n").indent(4)}
        |  {
        |    // Definition of Source values (initial values used in LoRe definition)
-       |    ${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n    ")}
+       |${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n").indent(4)}
        |  }
        |}
        |
@@ -324,7 +324,7 @@ object DafnyGen {
        |  var LoReFields := new LoReFields();
        |
        |  // Statements: Function calls, method calls, if-conditions etc.
-       |  ${dafnyCode.getOrElse("statements", List()).filter(l => !l.isBlank).mkString("\n  ")}
+       |${dafnyCode.getOrElse("statements", List()).filter(l => !l.isBlank).mkString("\n").indent(2)}
        |}
        |""".stripMargin
   }
@@ -797,13 +797,13 @@ object DafnyGen {
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-if-statement
     if elseExpr.isEmpty then {
       s"""if $cond {
-         |  ${if thenExpr.endsWith("}") || thenExpr.endsWith(";") then thenExpr else s"$thenExpr;"}
+         |${(if thenExpr.endsWith("}") || thenExpr.endsWith(";") then thenExpr else s"$thenExpr;").indent(2)}
          |}""".stripMargin
     } else {
       s"""if $cond {
-         |  ${if thenExpr.endsWith("}") || thenExpr.endsWith(";") then thenExpr else s"$thenExpr;"}
+         |${(if thenExpr.endsWith("}") || thenExpr.endsWith(";") then thenExpr else s"$thenExpr;").indent(2)}
          |} else {
-         |  ${if elseExpr.endsWith("}") || elseExpr.endsWith(";") then elseExpr else s"$elseExpr;"}
+         |${(if elseExpr.endsWith("}") || elseExpr.endsWith(";") then elseExpr else s"$elseExpr;").indent(2)}
          |}""".stripMargin
     }
   }
