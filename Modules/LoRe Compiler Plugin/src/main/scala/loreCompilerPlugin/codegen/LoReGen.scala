@@ -520,14 +520,35 @@ object LoReGen {
           )
           if methodName.toString == "modifies" =>
         // Interaction modifies is different from the other methods as it doesn't take an arrow function as input
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"call to the modifies method with the identifier:", modVar.toString)
+        }
+
         var innerTerm = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
         innerTerm match
           case interactionTerm @ TInteraction(_, _, modifiesList, requiresList, ensuresList, executesOption, _, _) =>
-            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-              logRhsInfo(indentLevel, operandSide, s"call to the modifies method with the identifier:", modVar.toString)
+            innerTerm = interactionTerm.copy(modifies = modifiesList.prepended(modVar.toString))
+          case interactionReference @ TVar(name, _, _) =>
+            // The Interaction term is a reference to an already-defined Interaction, so find the
+            // definition of this Interaction in the list of terms, copy that definition, and then
+            // modify it to include the additional modifies call on it like above.
+            val interactionDef: Option[Term] = termList.find {
+              case TAbs(`name`, _, body: TInteraction, _, _) => true
+              case _                                         => false
             }
 
-            innerTerm = interactionTerm.copy(modifies = modifiesList.prepended(modVar.toString))
+            interactionDef match
+              case Some(TAbs(_, _, interactionTerm: TInteraction, _, _)) =>
+                innerTerm = interactionTerm.copy(modifies = interactionTerm.modifies.prepended(modVar.toString))
+              case _ => // Matching on both "None" and "Some"s of any different shape than above
+                // No definition found in the list of already-processed terms, which means it must be a
+                // forward reference. If it didn't exist at all, the Scala compiler would have errored out
+                // in a previous phase already, before this point would ever have been reached.
+                report.error(
+                  s"Could not find Interaction definition. Forward references are not allowed.",
+                  modifiesTree.sourcePos
+                )
+                return TVar("<error>")
           case _ =>
             report.error(
               s"Error building RHS term for Interaction modifies call",
