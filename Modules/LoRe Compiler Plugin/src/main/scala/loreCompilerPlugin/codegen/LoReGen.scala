@@ -136,7 +136,7 @@ object LoReGen {
   ): Term = {
     tree match
       case ValDef(name, tpt, rhs) =>
-        val loreTypeNode = buildLoreTypeNode(tpt.tpe, tpt.sourcePos)
+        val loreTypeNode: LoReType = buildLoreTypeNode(tpt.tpe, tpt.sourcePos)
         // Several notes to make here regarding handling the RHS of reactives for future reference:
         // * There's an Apply around the whole RHS whose significance I'm not exactly sure of.
         //   Maybe it's related to a call for Inlining or such, as this plugin runs before that phase
@@ -492,7 +492,7 @@ object LoReGen {
         // Raw Interaction definitions (without method calls) on the RHS, e.g. Interaction[Int, String]
         // This probably breaks if you alias/import Interaction as a different name, not sure how to handle that
         // When not checking for type name, this would match all types you apply as "TypeName[TypeParam, ...]"
-        val rhsType = buildLoreTypeNode(rawInteractionTree.tpe, rawInteractionTree.sourcePos)
+        val rhsType: LoReType = buildLoreTypeNode(rawInteractionTree.tpe, rawInteractionTree.sourcePos)
         rhsType match
           case SimpleType(loreTypeName, List(reactiveType, argumentType)) =>
             // reactiveType and argumentType are based on the type tree here, not the types written in the RHS.
@@ -534,7 +534,7 @@ object LoReGen {
         innerTerm
       case reactiveTree @ Apply(Apply(TypeApply(Select(innerNode, methodName), _), params: List[?]), _) =>
         // Reactive definitions not covered above
-        val rhsType = buildLoreTypeNode(reactiveTree.tpe, reactiveTree.sourcePos)
+        val rhsType: LoReType = buildLoreTypeNode(reactiveTree.tpe, reactiveTree.sourcePos)
         rhsType match
           case SimpleType(loreTypeName, typeArgs) =>
             loreTypeName match
@@ -560,8 +560,8 @@ object LoReGen {
                 }
 
                 // Build the terms for the Interaction itself and the term for the method being called on it
-                var interactionTerm = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
-                val methodParamTerm = buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide)
+                var interactionTerm: Term = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
+                val methodParamTerm: Term = buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide)
                 interactionTerm match
                   case prevInteractionTerm @ TInteraction(_, _, modList, reqList, ensList, execOption, _, _) =>
                     // The interaction term is a direct definition of an Interaction, so add this method term to it.

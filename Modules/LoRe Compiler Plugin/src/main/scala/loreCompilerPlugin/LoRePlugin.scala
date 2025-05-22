@@ -116,7 +116,7 @@ class LoRePhase extends PluginPhase {
     }
     // First, run the runOn method for regular Scala compilation (do not remove this or this phase breaks).
     // This will cause the compiler to call above-defined methods which will generate the LoRe AST nodes.
-    val result = super.runOn(units)
+    val result: List[CompilationUnit] = super.runOn(units)
 
     val termCounts: String = loreTerms.map(_._2.size).mkString(",")
     if logLevel.isLevelOrHigher(LogLevel.Sparse) then {

@@ -101,11 +101,10 @@ object DafnyGen {
           val tp: Type = ctx(ref).loreType
 
           tp match
-            // TODO: Add Invariant type name to this check. These are not implemented yet.
-            case SimpleType(name, _) => name == "Signal" || name == "Interaction"
+            case SimpleType(name, _) => name == "Signal" || name == "Interaction" || name == "Invariant"
             case TupleType(_)        =>
-              // For a derived/interaction to appear in a tuple type, it would have to be declared within
-              // a tuple expression. However, this implementation forbids Derived/Interaction declarations
+              // For a derived/interaction/invariant to appear in a tuple type, it would have to be declared
+              // within a tuple expression. However, this implementation forbids declarations for these types
               // to happen within other expressions, so this case is unreachable as long as that is unchanged.
               false
         } else false
@@ -184,18 +183,19 @@ object DafnyGen {
           t.scalaSourcePos match
             case Some(pos) =>
               report.error(
-                s"Invalid executes in Interaction:" +
-                s"Number of modifies reactives (${reactiveNames.length})" +
+                s"Invalid executes in Interaction: " +
+                s"Number of modifies reactives (${reactiveNames.length}) " +
                 s"and number of values supplied in return value tuple (${tup.factors.length}) do not match.",
                 pos
               )
             case None =>
               report.error(
-                s"Invalid executes in Interaction:" +
-                s"Number of modifies reactives (${reactiveNames.length})" +
+                s"Invalid executes in Interaction: " +
+                s"Number of modifies reactives (${reactiveNames.length}) " +
                 s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
               )
 
+        // Order of assignments is the same as the order of sources in the modifies list
         reactiveNames.zip(tup.factors)
           .map((r, v) => s"LoReFields.$r := ${generate(v, ctx)};")
           .mkString("\n")
@@ -229,7 +229,7 @@ object DafnyGen {
     }
 
     // Record compilation context info of all definitions (name, lore term, lore + dafny type) before generation
-    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Recording definitions in context...")
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then println("Recording definitions in context...")
     termGroups.values.foreach(termList => {
       termList.foreach {
         case term @ TAbs(name, _type, body, _, _) =>
@@ -287,7 +287,7 @@ object DafnyGen {
       case _                               => ("", "", "")
     }.filter((n, t, v) => !(n + t + v).isBlank)
 
-    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Generating composed Dafny code...")
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then println(s"Generating composed Dafny code...")
     // Splice together generated Dafny code of all term groups appropriately.
     s"""// Generated from Scala: $loreMethodName
        |
@@ -380,7 +380,8 @@ object DafnyGen {
   ): String = {
     val dafnyType: String = getDafnyType(node.name)
 
-    // FYI: No special case for Interactions required as they're modelled as methods without return values
+    // FYI: No special case for Interactions required as they're modelled as methods without return values.
+    // Similarly, Invariants are generated as functions which always have the "bool" return type.
 
     if dafnyType == "Var" then {
       // Source (REScala Var) terms are modeled as Dafny fields typed after the inner type of the Source in LoRe.
@@ -406,8 +407,8 @@ object DafnyGen {
       // TODO: Can be one of three arrow types: "->", "-->" or "~>". See notes on thoughts.
       s"(${inputs.mkString(", ")}) -> $output"
     } else { // All other types are simply output according to regular Dafny type syntax
-      val inner: String =
-        if node.inner.isEmpty then "" else s"<${node.inner.map(t => generate(t, ctx)).mkString(", ")}>"
+      val innerList: List[String] = node.inner.map(t => generate(t, ctx))
+      val inner: String           = if innerList.isEmpty then "" else s"<${innerList.mkString(", ")}>"
       s"$dafnyType$inner"
     }
   }
@@ -454,7 +455,7 @@ object DafnyGen {
     if !ctx.isDefinedAt(node.name) then return node.name // Skip non-top-level definition references
 
     ctx(node.name).loreType match
-      case SimpleType(typeName, inner) if typeName == "Signal" || typeName == "Var" =>
+      case SimpleType(typeName, _) if typeName == "Signal" || typeName == "Var" =>
         // Reactives (i.e. Sources and Derived) may not be referenced plainly, only via the "value" method.
         // This is because Derived terms are translated into functions, and the type used for Derived in Dafny
         // is simply the type parameter of the Derived, or in Dafny's case the return type of the function.
@@ -462,10 +463,23 @@ object DafnyGen {
         // the reference's type into the return type), it would be necessary to give the reference the
         // _function type_ of that translated Derived instead. Therefore, when accessed, it must be via access
         // to the "value" property. For Sources this turns into a reference, for Deriveds into a function call.
-        report.error(
-          "Reactives may not be referenced directly, apart from calling the \"value\" property.",
-          node.scalaSourcePos.orNull
-        )
+        node.scalaSourcePos match
+          case None =>
+            report.error(
+              "Reactives may not be referenced directly, apart from calling the \"value\" property."
+            )
+          case Some(pos) =>
+            report.error(
+              "Reactives may not be referenced directly, apart from calling the \"value\" property.",
+              pos
+            )
+        "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
+      case SimpleType("Invariant", _) =>
+        // Invariants may not be referenced, for mostly same reasons as Derived terms explained above.
+        // Invariants however do not have the exception of access via the "value" method, as it does not exist.
+        node.scalaSourcePos match
+          case None      => report.error("Invariants may not be referenced.")
+          case Some(pos) => report.error("Invariants may not be referenced.", pos)
         "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
       case _ => node.name // Simply place the reference for other types
   }
@@ -525,7 +539,7 @@ object DafnyGen {
           case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
         val reactiveNames: List[String] = n.modifies
 
-        val argumentTypes = n.argumentType match
+        val argumentTypes: List[String] = n.argumentType match
           case t: SimpleType    => List(generate(t, ctx))
           case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
         val argumentNames: List[String] = n.executes match
@@ -538,12 +552,12 @@ object DafnyGen {
             // property calls a function with similar behavior to the below, but it relies on TArrow nodes
             // being structured via currying rather than having a singular argument tuple in "left".
             val args: List[String] = term.left match
-              case TTuple(args, _, _) =>
+              case TTuple(arguments, _, _) =>
                 // Index count is to swap in names for Scala args left blank
                 var argIdx: Int = 1
 
-                args.collect(a => {
-                  val argName: String = a match
+                arguments.collect(arg => {
+                  val argName: String = arg match
                     // Replace any arguments left as blanks in Scala with a name that's valid in Dafny
                     case TArgT(name, _, _, _) if name.startsWith("_") => s"arg$argIdx"
                     // Use given argument name if one as specified
@@ -664,19 +678,19 @@ object DafnyGen {
           val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
             n.scalaSourcePos match
               case None =>
-                val preErr = DafnyEmbeddedLoReError(
+                val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
                   s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
                 )
-                val postErr = DafnyEmbeddedLoReError(
+                val postErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
                   s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
                 )
                 (preErr, postErr)
               case Some(pos) =>
-                val preErr = DafnyEmbeddedLoReError(
+                val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
                   s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
                   Some(pos.span.coords)
                 )
-                val postErr = DafnyEmbeddedLoReError(
+                val postErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
                   s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
                   Some(pos.span.coords)
                 )
@@ -722,12 +736,13 @@ object DafnyGen {
                 (bodyStatements :+ bodyAssignment).map(l => {
                   if l.endsWith("}") || l.endsWith(";") then l else s"$l;"
                 }).mkString("\n")
-              case b =>
+              case b: Term =>
                 // Body is a single expression, so turn that into the assignment(s).
                 getInteractionAssignment(b, reactiveNames, ctx)
           case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
           case None          => "" // No body specified
 
+        // Arguments for the Interaction are the main object (for Sources), as well as any non-Source executes arguments
         val argsString: String = argumentNames.zip(argumentTypes) match
           case Nil  => "LoReFields: LoReFields"
           case args => s"LoReFields: LoReFields, ${args.map((name, tp) => s"$name: $tp").mkString(", ")}"
@@ -823,7 +838,8 @@ object DafnyGen {
     val arrowHead: String = generate(node.left, ctx)
     val arrowBody: String = generate(node.right, ctx)
 
-    // Anonymous function body always uses "=>" in Dafny. Differentiation between "->", "-->" and "~>" is for types.
+    // The anonymous function body always uses "=>" in Dafny.
+    // Differentiation between "->", "-->" and "~>" is for types.
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-lambda-expression
     s"$arrowHead => $arrowBody"
   }
@@ -933,7 +949,7 @@ object DafnyGen {
       logLevel: LogLevel,
       scalaCtx: Context
   ): String = {
-    // Interaction terms are realized as Dafny functions, like Deriver terms, and this happens in generateFromTAbs.
+    // Invariant terms are realized as Dafny functions, like Derived terms, and this happens in generateFromTAbs.
     // This method is only entered when an Invariant term is declared as a literal within another expression.
     // Said use-case is not supported.
     node.scalaSourcePos match
@@ -1302,26 +1318,27 @@ object DafnyGen {
     if node.args == null then {
       // Property (field) access
 
-      // Accesses to the "value" property of a Source or Derived reference in LoRe are modeled differently in Dafny.
-      // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
-      // Therefore, the call to the "value" property has to be replaced by the respectively generated parent code.
-      if node.parent.isInstanceOf[TVar] && node.field == "value" then {
-        val n: TVar       = node.parent.asInstanceOf[TVar] // Safe cast because of prior check
-        val refType: Type = ctx(n.name).loreType
-
-        refType match
-          case simpleType: SimpleType if simpleType.name == "Var" => // Source is REScala "Var" type
-            return n.name
-          case simpleType: SimpleType if simpleType.name == "Signal" => // Derived is REScala "Signal" type
-            val refs: Set[String] = usedReferences(node.parent, ctx)
-            return s"${n.name}(${refs.mkString(", ")})"
-          case _ => () // Fall through to below regular TFCall generation if this isn't a Source or Derived
-      }
-
       // References:
       // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
       // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-class-types
-      s"${generate(node.parent, ctx)}.${node.field}"
+
+      // Accesses to the "value" property of a Source or Derived reference in LoRe are modeled differently in Dafny.
+      // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
+      // Therefore, the call to the "value" property has to be replaced by the respective ref or function call.
+      node.parent match
+        case n: TVar if node.field == "value" =>
+          val refType: Type = ctx(n.name).loreType
+
+          refType match
+            case SimpleType(name, _) if name == "Var" => // Source is REScala "Var" type
+              n.name
+            case SimpleType(name, _) if name == "Signal" => // Derived is REScala "Signal" type
+              val refs: Set[String] = usedReferences(node.parent, ctx)
+              s"${n.name}(${refs.mkString(", ")})"
+            case _ => // "value" property access of a non-Source/non-Derived
+              s"${generate(node.parent, ctx)}.${node.field}"
+        case _ => // Any other field accesses
+          s"${generate(node.parent, ctx)}.${node.field}"
     } else {
       // Method access
 
