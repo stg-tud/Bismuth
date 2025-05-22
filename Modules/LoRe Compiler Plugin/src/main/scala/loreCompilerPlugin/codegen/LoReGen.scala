@@ -342,6 +342,9 @@ object LoReGen {
             )
       case invariantTree @ Apply(Select(Ident(name), method), invExpr)
           if name.toString == "Invariant" && method.toString == "apply" =>
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, "definition of an Invariant", "")
+        }
         val invTerm: Term = buildLoreRhsTerm(invExpr.head, termList, indentLevel, operandSide)
         invTerm match
           case expr: TBoolean =>
@@ -690,6 +693,10 @@ object LoReGen {
           scalaSourcePos = Some(arrowTree.sourcePos)
         )
       case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"block of statements", "")
+        }
+
         if blockBody.nonEmpty then {
           // Multiple statements in this block: Build a LoRe sequence of statements
           val blockList: NonEmptyList[Term] = NonEmptyList.fromList(
@@ -702,6 +709,10 @@ object LoReGen {
           buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
         }
       case ifTree @ If(cond, _then, _else) => // If conditions (e.g. "if x then y else z")
+        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+          logRhsInfo(indentLevel, operandSide, s"conditional expression", "")
+        }
+
         val condTerm: Term = buildLoreRhsTerm(cond, termList, indentLevel, operandSide)  // if x
         val thenTerm: Term = buildLoreRhsTerm(_then, termList, indentLevel, operandSide) // then y
         val elseTerm: Option[Term] = _else match // else z
