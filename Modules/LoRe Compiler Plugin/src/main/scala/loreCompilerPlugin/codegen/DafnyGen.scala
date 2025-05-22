@@ -404,8 +404,10 @@ object DafnyGen {
       val output: String       = generate(node.inner.last, ctx)
 
       // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-arrow-types
-      // TODO: Can be one of three arrow types: "->", "-->" or "~>". See notes on thoughts.
-      s"(${inputs.mkString(", ")}) -> $output"
+      // TODO: Can be one of three arrow types: "->", "-->" or "~>".
+      // Detecting which of the three would be appropriate depends on the function's body.
+      // This is however out of scope for the current work, so use the type of all kinds of functions for now.
+      s"(${inputs.mkString(", ")}) ~> $output"
     } else { // All other types are simply output according to regular Dafny type syntax
       val innerList: List[String] = node.inner.map(t => generate(t, ctx))
       val inner: String           = if innerList.isEmpty then "" else s"<${innerList.mkString(", ")}>"
