@@ -512,7 +512,7 @@ object DafnyGen {
 
         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
         s"""function ${node.name}(${parameters.mkString(", ")}): ${generate(node._type, ctx)} {
-           |  ${generate(n.body, ctx)}
+           |${generate(n.body, ctx).indent(2)}
            |}""".stripMargin
       case n: TInvariant =>
         // Invariant terms are also realized as Dafny functions, like Derived terms.
@@ -523,7 +523,7 @@ object DafnyGen {
 
         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
         s"""function ${node.name}(${parameters.mkString(", ")}): bool {
-           |  ${generate(n.condition, ctx)}
+           |${generate(n.condition, ctx).indent(2)}
            |}""".stripMargin
       case n: TInteraction =>
         // Interaction terms are realized as Dafny methods. Methods may have side-effects.
