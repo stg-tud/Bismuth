@@ -104,7 +104,7 @@ object DafnyGen {
           tp match
             case SimpleType(name, _) => name == "Signal" || name == "Interaction" || name == "Invariant"
             case TupleType(_)        =>
-              // For a derived/interaction/invariant to appear in a tuple type, it would have to be declared
+              // For a Derived/Interaction/Invariant to appear in a tuple type, it would have to be declared
               // within a tuple expression. However, this implementation forbids declarations for these types
               // to happen within other expressions, so this case is unreachable as long as that is unchanged.
               false
@@ -129,7 +129,7 @@ object DafnyGen {
     * @param term          The Interaction term to prepare. These are always arrow functions.
     * @param modifiesNames The names of Sources specified in the Interaction's modifies clause.
     * @param argumentNames The names of arguments specified in the Interaction's executes clause.
-    * @param sources       The list of info nodes on sources defined in the program.
+    * @param sources       The list of info nodes on Sources defined in the program.
     * @return The equivalent term prepared for Dafny code generation.
     */
   private def prepareInteractionTerm(
@@ -163,7 +163,7 @@ object DafnyGen {
       case t => t
     }
 
-    // Replace source references with field calls
+    // Replace Source references with field calls
     traverseFromNode(term.copy(right = argumentsInserted), replaceSourceRefWithFieldCall)
   }
 
@@ -196,7 +196,7 @@ object DafnyGen {
                 s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
               )
 
-        // Order of assignments is the same as the order of sources in the modifies list
+        // Order of assignments is the same as the order of Sources in the modifies list
         reactiveNames.zip(tup.factors)
           .map((r, v) => s"LoReFields.$r := ${generate(v, ctx)};")
           .mkString("\n")
@@ -210,6 +210,10 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   def generate(ast: List[Term], loreMethodName: String)(using logLevel: LogLevel, scalaCtx: Context): String = {
+    // TODO: Simply using a map with a string and an associated node causes bugs because it ignores scoping.
+    // Specifically, referencing definitions with the same name across different scoping levels will always be
+    // assumed to reference the top-level definition instead, potentially causing errors about forward references
+    // (if the top-level definition comes later) or being unable to reference e.g. reactives (if it comes before).
     var compilationContext: Map[String, NodeInfo] = Map()
 
     // Split term list into sublists that require different handling
@@ -270,10 +274,10 @@ object DafnyGen {
         // Therefore, if this statement doesn't end with a curly brace or semi already, it has to end with a semicolon.
         // This semicolon isn't already added in generation as it is not appropriate in all situations.
         // The curly brace however would always already have been added as part of always-required syntax.
-        (termType, generated.map(t => if t.endsWith("}") || t.endsWith(";") then t else s"$t;"))
+        (termType, generated.filter(l => !l.isBlank).map(t => if t.endsWith("}") || t.endsWith(";") then t else s"$t;"))
       } else {
         // All other term types are taken as generated
-        (termType, generated)
+        (termType, generated.filter(l => !l.isBlank))
       }
     })
 
@@ -298,24 +302,28 @@ object DafnyGen {
        |// Main object containing all fields
        |class LoReFields {
        |  // Constant field definitions
-       |${dafnyCode.getOrElse("otherDefs", List()).filter(l => !l.isBlank).mkString("\n").indent(2)}
+       |${dafnyCode.getOrElse("otherDefs", List()).mkString("\n").indent(2)}
+       |
        |  // Source declarations
        |${sourceParts.map((n, t, _) => s"var $n: $t").mkString("\n").indent(2)}
+       |
        |  constructor ()
        |    // For verification purposes: Ensure sources are of the given initialization values.
-       |${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n").indent(4)}  {
+       |${sourceParts.map((n, _, v) => s"ensures $n == $v").mkString("\n").indent(4)}
+       |  {
        |    // Definition of Source values (initial values used in LoRe definition)
-       |${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n").indent(4)}  }
+       |${sourceParts.map((n, _, v) => s"$n := $v;").mkString("\n").indent(4)}
+       |  }
        |}
        |
        |// Derived definitions
-       |${dafnyCode.getOrElse("derivedDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
+       |${dafnyCode.getOrElse("derivedDefs", List()).mkString("\n|\n")}
        |
        |// Invariant definitions
-       |${dafnyCode.getOrElse("invariantDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
+       |${dafnyCode.getOrElse("invariantDefs", List()).mkString("\n|\n")}
        |
        |// Interaction definitions
-       |${dafnyCode.getOrElse("interactionDefs", List()).filter(l => !l.isBlank).mkString("\n\n")}
+       |${dafnyCode.getOrElse("interactionDefs", List()).mkString("\n|\n")}
        |
        |// Main method
        |method {:main} Main() {
@@ -323,8 +331,8 @@ object DafnyGen {
        |  var LoReFields := new LoReFields();
        |
        |  // Statements: Function calls, method calls, if-conditions etc.
-       |${dafnyCode.getOrElse("statements", List()).filter(l => !l.isBlank).mkString("\n").indent(2)}
-       |}""".stripMargin
+       |${dafnyCode.getOrElse("statements", List()).mkString("\n").indent(2)}
+       |}""".linesIterator.filter(l => !l.isBlank).mkString("\n").stripMargin
   }
 
   /** Generates Dafny code for the given LoRe Term node.
@@ -515,7 +523,7 @@ object DafnyGen {
       case n: TInvariant =>
         // Invariant terms are also realized as Dafny functions, like Derived terms.
         // References are again turned into function parameters.
-        // The body as well as return type of all invariants is a boolean (expression).
+        // The body as well as return type of all Invariants is a boolean (expression).
         val references: Set[String] = usedReferences(n.condition, ctx)
         val parameters: Set[String] = references.map(ref => s"$ref: ${ctx(ref).dafnyType}")
 
@@ -529,7 +537,7 @@ object DafnyGen {
         // Their parameters are the state (a reference to the main object) as well as
         // any parameters as specified in the definition of the Interaction.
 
-        // Only generate Dafny code for fully-featured interactions, i.e. those with both modifies and executes.
+        // Only generate Dafny code for fully-featured Interactions, i.e. those with both modifies and executes.
         // When either is lacking, the Interaction would be irrelevant either way, as it does not affect anything.
         // Additionally, incomplete Interactions lead to invalid generated Dafny code. Defining incomplete Interactions
         // in Scala and then completing them through a reference is fine, however.
@@ -637,20 +645,20 @@ object DafnyGen {
         }
 
         // As only objects can be referenced in Dafny modifies clauses, the main object is directly used here.
-        // To still ensure only the specified sources are modified, instead attach ensures clauses that include
-        // a condition specifying the not-mentioned sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
-        // for every source that is not included in the modifies list, where obj is the main object of the program.
+        // To still ensure only the specified Sources are modified, instead attach ensures clauses that include
+        // a condition specifying the not-mentioned Sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
+        // for every Source that is not included in the modifies list, where obj is the main object of the program.
         val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
         val modifies: List[String] = "modifies LoReFields" :: unmodifiedSources.map(source => {
           // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
           val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
             case None =>
               DafnyEmbeddedLoReError(
-                s"It could not be proven that the ${source.name} source, which was not specified in this Interaction's modifies clause, was not modified."
+                s"It could not be proven that the ${source.name} Source, which was not specified in this Interaction's modifies clause, was not modified."
               )
             case Some(pos) =>
               DafnyEmbeddedLoReError(
-                s"It could not be proven that the ${source.name} source, which was not specified in this Interaction's modifies clause, was not modified.",
+                s"It could not be proven that the ${source.name} Source, which was not specified in this Interaction's modifies clause, was not modified.",
                 Some(pos.span.coords)
               )
           val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
@@ -664,7 +672,7 @@ object DafnyGen {
             case _                                     => false
         }).toList
 
-        // Get any invariants which includes references to any of the sources modified by this Interaction
+        // Get any Invariants which includes references to any of the Sources modified by this Interaction
         val relevantInvariants: List[NodeInfo] = definedInvariants.filter(inv => {
           inv.loreNode match
             case TAbs(_, _, TInvariant(cond, _, _), _, _) =>
@@ -674,7 +682,7 @@ object DafnyGen {
         })
 
         val invariants: List[String] = relevantInvariants.map(inv => {
-          // No invariant-specific position is available, since the Invariants aren't specifically
+          // No Invariant-specific position is available, since the Invariants aren't specifically
           // called for individual Interactions, but checked through other means in Scala execution.
           val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
             n.scalaSourcePos match
@@ -702,7 +710,7 @@ object DafnyGen {
             upickleWrite(embeddedErrorPost).replace("\"", "\\\"")
           )
 
-          // Assemble list of parameters for invariant call:
+          // Assemble list of parameters for Invariant call:
           // Any calls to definitions that exist are turned into field calls on the main object.
           val refs: Set[String] = usedReferences(inv.loreNode, ctx).map(ref => {
             if ctx.exists((name, node) => name == ref) then s"LoReFields.$ref" else ref
