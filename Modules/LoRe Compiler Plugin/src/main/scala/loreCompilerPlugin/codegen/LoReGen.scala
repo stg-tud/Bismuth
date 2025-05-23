@@ -44,7 +44,7 @@ object LoReGen {
     // Returns a List instead of a singular term because of blocks
     tree match
       case ap: Apply[?] => // Function or method calls, e.g. "println(...)" or "foo.bar()"
-        List(createLoreTermFromApply(ap, termList))
+        List(createLoReTermFromApply(ap, termList))
       case bl: Block[?] => // Blocks of trees
         val blockTerms: List[Term] = bl.stats.flatMap(t => createLoReTermFromTree(t, termList))
 
@@ -55,14 +55,16 @@ object LoReGen {
           case Literal(Constant(_: Unit)) => blockTerms
           case _                          => blockTerms :++ createLoReTermFromTree(bl.expr, termList)
       case id: Ident[?] => // References
-        List(createLoreTermFromIdent(id, termList))
+        List(createLoReTermFromIdent(id, termList))
+      case i: If[?] => // If definitions, i.e. "if foo then bar else baz" where foo is a boolean expr
+        List(createLoReTermFromIf(i, termList))
       case li: Literal[?] => // Literals (e.g. 0, "foo", ...)
-        List(createLoreTermFromLiteral(li, termList))
+        List(createLoReTermFromLiteral(li, termList))
       case se: Select[?] => // Property access, e.g. "foo.bar"
-        List(createLoreTermFromSelect(se, termList))
+        List(createLoReTermFromSelect(se, termList))
       case vd: ValDef[?] => // Val definitions, i.e. "val foo: Bar = baz" where baz is any valid RHS
-        List(createLoreTermFromValDef(vd, termList))
-      // Implement other Tree types for the frontend here, such as If, etc.
+        List(createLoReTermFromValDef(vd, termList))
+      // Implement other Tree types for the frontend here
       case _ =>
         report.error(s"This syntax is not supported in LoRe.", tree.sourcePos)
         List(TVar("<error>")) // Make compiler happy
@@ -74,7 +76,7 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromApply(tree: tpd.Apply, termList: List[Term])(using
+  private def createLoReTermFromApply(tree: tpd.Apply, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
   ): Term = {
@@ -88,11 +90,25 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromIdent(tree: tpd.Ident, termList: List[Term])(using
+  private def createLoReTermFromIdent(tree: tpd.Ident, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
   ): Term = {
     // Ident statements are covered as part of RHS term building for ValDefs
+    buildLoreRhsTerm(tree, termList)
+  }
+
+  /** Creates a LoRe Term from a Scala If Tree.
+    *
+    * @param tree     The Scala If Tree.
+    * @param termList The list of already-created LoRe terms for this program.
+    * @return The LoRe Term.
+    */
+  private def createLoReTermFromIf(tree: tpd.If, termList: List[Term])(using
+      logLevel: LogLevel,
+      ctx: Context
+  ): Term = {
+    // If statements are covered as part of RHS term building for ValDefs
     buildLoreRhsTerm(tree, termList)
   }
 
@@ -102,7 +118,7 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromLiteral(tree: tpd.Literal, termList: List[Term])(using
+  private def createLoReTermFromLiteral(tree: tpd.Literal, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
   ): Term = {
@@ -116,7 +132,7 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromSelect(tree: tpd.Select, termList: List[Term])(using
+  private def createLoReTermFromSelect(tree: tpd.Select, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
   ): Term = {
@@ -130,7 +146,7 @@ object LoReGen {
     * @param termList The list of already-created LoRe terms for this program.
     * @return The LoRe Term.
     */
-  private def createLoreTermFromValDef(tree: tpd.ValDef, termList: List[Term])(using
+  private def createLoReTermFromValDef(tree: tpd.ValDef, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
   ): Term = {
