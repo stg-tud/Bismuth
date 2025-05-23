@@ -88,4 +88,4 @@ object interactionExamples:
   println("ccc")
 
   if true then print("aaaa") else print("bbbb")
-end interactionExamplesObject
+end interactionExamples

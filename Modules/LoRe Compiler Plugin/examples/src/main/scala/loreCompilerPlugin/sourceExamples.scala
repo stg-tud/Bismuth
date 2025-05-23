@@ -77,4 +77,4 @@ object sourceExamples:
   val boolReferenceNumeralBinaryOpSource1: Source[Boolean] = Source(integerLiteral >= integerLiteral + 1)
   val boolReferenceNumeralBinaryOpSource2: Source[Boolean] = Source(1 != integerLiteral)
   val boolReferenceNumeralBinaryOpSource3: Source[Boolean] = Source(integerLiteral <= 2)
-end sourceExamplesObject
+end sourceExamples
