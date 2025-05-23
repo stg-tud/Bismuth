@@ -381,7 +381,7 @@ object Parser {
       case (o, ((_, field, args), s) :: rest) =>
         val pos = Some(SourcePos(start = o.sourcePos.get.start, end = s.end))
         evalFieldAcc(
-          TFCall(parent = o, field = field, args = args, sourcePos = pos),
+          TFCall(parent = o, field = field, args = Some(args), sourcePos = pos),
           rest
         )
       case x =>

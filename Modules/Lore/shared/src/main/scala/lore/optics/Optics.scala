@@ -122,7 +122,7 @@ given HasChildren[Term] with {
       case TExists(vars, body, sourcePos, _)          => vars.toList :+ body
       case TParens(inner, sourcePos, _)               => List(inner)
       case TString(value, sourcePos, _)               => List.empty
-      case TFCall(parent, field, args, sourcePos, _)  => List(parent) ++ args
+      case TFCall(parent, field, args, sourcePos, _)  => List(parent) ++ args.getOrElse(List())
       case TFCurly(parent, field, body, sourcePos, _) => List(parent) :+ body
       case TFunC(name, args, sourcePos, _)            => args.toList
     }
@@ -189,7 +189,7 @@ val children: Fold[Term, Term] = {
           Monoid[M].combineAll(((vars.toList :+ body).map(f)))
         case TParens(inner, sourcePos, _) => f(inner)
         case TFCall(parent, field, args, sourcePos, _) =>
-          Monoid[M].combineAll((List(parent) ++ args).map(f))
+          Monoid[M].combineAll((List(parent) ++ args.getOrElse(List())).map(f))
         case TFCurly(parent, field, body, sourcePos, _) =>
           Monoid[M].combineAll((List(parent) :+ body).map(f))
         case TFunC(name, args, sourcePos, _) =>

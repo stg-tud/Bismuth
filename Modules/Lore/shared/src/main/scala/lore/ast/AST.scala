@@ -373,7 +373,7 @@ sealed trait TFAcc extends Term {
 case class TFCall( // field call
     parent: Term,
     field: ID,
-    args: List[Term],
+    args: Option[List[Term]],
     sourcePos: Option[SourcePos] = None,
     scalaSourcePos: Option[SourcePosition] = None
 ) extends TFAcc

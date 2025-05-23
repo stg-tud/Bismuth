@@ -83,7 +83,9 @@ object DafnyGen {
         val refs: Set[String] = usedReferences(parent, ctx)
         // The called field/method is not a standalone reference, so don't include it.
         // If this is a field call, args will be null, otherwise contains method parameters.
-        if args != null then refs ++ args.flatMap((n: Term) => usedReferences(n, ctx)).toSet else refs
+        args match
+          case None    => refs
+          case Some(a) => refs ++ a.flatMap((n: Term) => usedReferences(n, ctx)).toSet
       case TFCurly(parent, _, body, _, _) => usedReferences(parent, ctx) ++ usedReferences(body, ctx)
       case TFunC(_, args, _, _)           => args.flatMap((n: Term) => usedReferences(n, ctx)).toSet
 
@@ -159,7 +161,7 @@ object DafnyGen {
     // For each defined LoRe Source "source", replace e.g. "source + foo" with "LoreFields.source + foo".
     def replaceSourceRefWithFieldCall: Term => Term = {
       case t: TVar if sources.exists(node => node.name == t.name) =>
-        TFCall(TVar("LoReFields"), t.name, null, t.sourcePos, t.scalaSourcePos)
+        TFCall(TVar("LoReFields"), t.name, None, t.sourcePos, t.scalaSourcePos)
       case t => t
     }
 
@@ -1324,37 +1326,36 @@ object DafnyGen {
       logLevel: LogLevel,
       scalaCtx: Context
   ): String = {
-    if node.args == null then {
-      // Property (field) access
+    node.args match
+      case None =>
+        // Property (field) access
 
-      // References:
-      // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
-      // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-class-types
+        // References:
+        // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
+        // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-class-types
 
-      // Accesses to the "value" property of a Source or Derived reference in LoRe are modeled differently in Dafny.
-      // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
-      // Therefore, the call to the "value" property has to be replaced by the respective ref or function call.
-      node.parent match
-        case n: TVar if node.field == "value" =>
-          val refType: Type = ctx(n.name).loreType
+        // Accesses to the "value" property of a Source or Derived reference in LoRe are modeled differently in Dafny.
+        // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
+        // Therefore, the call to the "value" property has to be replaced by the respective ref or function call.
+        node.parent match
+          case n: TVar if node.field == "value" =>
+            val refType: Type = ctx(n.name).loreType
 
-          refType match
-            case SimpleType(name, _) if name == "Var" => // Source is REScala "Var" type
-              n.name
-            case SimpleType(name, _) if name == "Signal" => // Derived is REScala "Signal" type
-              val refs: Set[String] = usedReferences(node.parent, ctx)
-              s"${n.name}(${refs.mkString(", ")})"
-            case _ => // "value" property access of a non-Source/non-Derived
-              s"${generate(node.parent, ctx)}.${node.field}"
-        case _ => // Any other field accesses
-          s"${generate(node.parent, ctx)}.${node.field}"
-    } else {
-      // Method access
-
-      // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
-      val args: List[String] = node.args.map(arg => generate(arg, ctx))
-      s"${generate(node.parent, ctx)}.${node.field}(${args.mkString(", ")})"
-    }
+            refType match
+              case SimpleType(name, _) if name == "Var" => // Source is REScala "Var" type
+                n.name
+              case SimpleType(name, _) if name == "Signal" => // Derived is REScala "Signal" type
+                val refs: Set[String] = usedReferences(node.parent, ctx)
+                s"${n.name}(${refs.mkString(", ")})"
+              case _ => // "value" property access of a non-Source/non-Derived
+                s"${generate(node.parent, ctx)}.${node.field}"
+          case _ => // Any other field accesses
+            s"${generate(node.parent, ctx)}.${node.field}"
+      case Some(args) =>
+        // Method access
+        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
+        val argsList: List[String] = args.map(arg => generate(arg, ctx))
+        s"${generate(node.parent, ctx)}.${node.field}(${argsList.mkString(", ")})"
   }
 
   /** Generates Dafny code for the given LoRe TFunC.

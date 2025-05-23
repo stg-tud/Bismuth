@@ -79,7 +79,7 @@ def flattenInteractions(ctx: CompilationContext): CompilationContext = {
         flatten(parent, ctx) match {
           // parent is an interaction
           case i: TInteraction =>
-            args.foldLeft(i) {
+            args.getOrElse(List()).foldLeft(i) {
               case (i, TVar(id, _, _)) => i.copy(modifies = i.modifies :+ id)
               case e =>
                 throw Exception(
@@ -224,7 +224,9 @@ def traverseFromNode[A <: Term](
       case t: TFCall =>
         t.copy(
           parent = traverseFromNode(t.parent, transformer),
-          args = if t.args == null then null else t.args.map(traverseFromNode(_, transformer))
+          args = t.args match
+            case None    => None
+            case Some(a) => Some(a.map(traverseFromNode(_, transformer)))
         )
       case t: TFCurly =>
         t.copy(

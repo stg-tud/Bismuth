@@ -116,7 +116,7 @@ object ViperBackend {
     // step 1: field calls as function calls
     def fieldCallToFunCall: Term => Term = {
       case t: TFCall =>
-        TFunC(t.field, t.parent +: t.args)
+        TFunC(t.field, t.parent +: t.args.getOrElse(List()))
       case t => t
     }
     val ctx2 =
@@ -382,7 +382,7 @@ object ViperBackend {
     // replace reactive names with field accesses on the graph object
     def transformer: Term => Term = {
       case t: TVar if ctx.sources.contains(t.name) =>
-        TFCall(TVar("graph"), t.name, List())
+        TFCall(TVar("graph"), t.name, Some(List()))
       case t => t
     }
 

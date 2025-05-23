@@ -268,7 +268,7 @@ class BooleanExpressionParsing extends ParserSuite {
             "old",
             List(
               TFCall(
-                TFCall(TVar("ph"), "toSet", List()),
+                TFCall(TVar("ph"), "toSet", Some(List())),
                 "union",
                 List(TFunC("Set", List(TVar("h"))))
               )

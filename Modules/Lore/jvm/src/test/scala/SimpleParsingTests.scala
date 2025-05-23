@@ -71,7 +71,7 @@ class SimpleParsing extends ParserSuite {
     assertParsingResult(
       Parser.term,
       "foo.bar(1, false)",
-      TFCall(TVar("foo"), "bar", List(TNum(1), TFalse()))
+      TFCall(TVar("foo"), "bar", Some(List(TNum(1)), TFalse()))
     )
 
     assertParsingResult(
@@ -81,17 +81,17 @@ class SimpleParsing extends ParserSuite {
         TFCall(
           TVar("foo"),
           "bar",
-          List(TEq(TTrue(), TFalse()))
+          Some(List(TEq(TTrue(), TFalse())))
         ),
         "baz",
-        List()
+        Some(List())
       )
     )
 
     assertParsingResult(
       Parser.term,
       "size(d2).max",
-      TFCall(TFunC("size", List(TVar("d2"))), "max", List())
+      TFCall(TFunC("size", List(TVar("d2"))), "max", Some(List()))
     )
 
     assert(
@@ -147,9 +147,9 @@ class SimpleParsing extends ParserSuite {
       "Derived{ work.toSet.union(vacation.toSet) }",
       TDerived(
         TFCall(
-          TFCall(TVar("work"), "toSet", List()),
+          TFCall(TVar("work"), "toSet", Some(List())),
           "union",
-          List(TFCall(TVar("vacation"), "toSet", List()))
+          Some(List(TFCall(TVar("vacation"), "toSet", Some(List()))))
         )
       )
     )
@@ -179,9 +179,9 @@ class SimpleParsing extends ParserSuite {
         ),
         TDerived(
           TFCall(
-            TFCall(TVar("work"), "toSet", List()),
+            TFCall(TVar("work"), "toSet", Some(List())),
             "union",
-            List(TFCall(TVar("vacation"), "toSet", List()))
+            Some(List(TFCall(TVar("vacation"), "toSet", Some(List()))))
           )
         )
       )
@@ -223,7 +223,7 @@ class SimpleParsing extends ParserSuite {
     assertParsingResult(
       Parser.term,
       "customerYTD.get(c) - s",
-      TSub(TFCall(TVar("customerYTD"), "get", List(TVar("c"))), TVar("s"))
+      TSub(TFCall(TVar("customerYTD"), "get", Some(List(TVar("c")))), TVar("s"))
     )
   }
 
@@ -301,7 +301,7 @@ class SimpleParsing extends ParserSuite {
         TArrow(
           TVar("s"),
           TSub(
-            TFCall(TVar("customerYTD"), "get", List(TVar("c"))),
+            TFCall(TVar("customerYTD"), "get", Some(List(TVar("c")))),
             TVar("s")
           )
         )

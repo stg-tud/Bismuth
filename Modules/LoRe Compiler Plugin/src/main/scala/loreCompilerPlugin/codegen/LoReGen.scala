@@ -353,7 +353,7 @@ object LoReGen {
             TFCall(                                                          // foo.bar
               buildLoreRhsTerm(arg, termList, indentLevel + 1, operandSide), // foo (might be a more complex expression)
               field.toString,                                                // bar
-              null, // null instead of empty list to differentiate between properties and methods without arguments
+              None,                                                          // None (field) vs Empty List (0-ar method)
               scalaSourcePos = Some(fieldUnaryTree.sourcePos)
             )
       case invariantTree @ Apply(Select(Ident(name), method), invExpr)
@@ -466,9 +466,9 @@ object LoReGen {
             TFCall(                                                              // foo.bar(baz, qux, ...)
               buildLoreRhsTerm(leftArg, termList, indentLevel + 1, operandSide), // foo (might be a more complex term)
               methodName.toString,                                               // bar
-              params.map(p => // baz, qux, ... (each can be more complex terms)
+              Some(params.map(p =>                                               // baz, qux, ... (maybe complex terms)
                 buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)
-              ),
+              )),
               scalaSourcePos = Some(methodBinaryTree.sourcePos)
             )
       case funcCallTree @ Apply(Ident(name: Name), params: List[?]) => // Function calls
