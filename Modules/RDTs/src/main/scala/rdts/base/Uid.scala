@@ -69,8 +69,8 @@ object Base64 {
 
   private val sb = StringBuilder(12)
 
-  /** Encodes the 6 least significant bits to the start of the string.
-    * It is thus very unlikely to match any other base64 encodings of longs.
+  /** Encodes in chunks of 6 bits, starting from the least significant bits.
+    * Thus very unlikely to match any other base64 encoding.
     */
   def encode(long: Long): String = synchronized {
     sb.clear()
