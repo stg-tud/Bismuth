@@ -1334,11 +1334,11 @@ object DafnyGen {
         // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
         // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-class-types
 
-        // Accesses to the "value" property of a Source or Derived reference in LoRe are modeled differently in Dafny.
+        // Accesses to the "value"/"now" field of a Source/Derived reference in LoRe are modeled differently in Dafny.
         // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
-        // Therefore, the call to the "value" property has to be replaced by the respective ref or function call.
+        // Therefore, the call to the "value"/"now" property has to be replaced by the respective ref or function call.
         node.parent match
-          case n: TVar if node.field == "value" =>
+          case n: TVar if node.field == "value" || node.field == "now" =>
             val refType: Type = ctx(n.name).loreType
 
             refType match
