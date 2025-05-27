@@ -125,8 +125,7 @@ The compilation backend currently does not support:
 
 Additionally, Source, Derived, Interaction and Invariant literals placed within another expression are not supported, e.g. you may not include any expression such as `foo(Source(1))` or `Source(Derived { 1 })` etc.
 
-Names may also only be used once across a LoReProgram (i.e. a Scala `object` with said annotation), regardless of scoping. This is because of a restriction in the current backend implementation and could be fixed by improving this in the future. For example, if you define a `val foo` on the top-level of a LoReProgram, you may not define either a `val foo` within a block contained by an expression of this LoReProgram (e.g. the `then` block of an `if` statement) or as the name of a parameter in e.g. an arrow function (e.g. `(foo) => (...)`).
-
+Names may also only be used once across a LoReProgram (i.e. a Scala `object` with said annotation), regardless of scoping. This is because of a restriction in the current backend implementation and could be fixed by improving this section of the backend in the future. For example, if you define a `val foo` on the top-level of a LoReProgram, you may not define either a `val foo` within a block contained by an expression of this LoReProgram (e.g. the `then` block of an `if` statement) or as the name of a parameter in e.g. an arrow function (e.g. `(foo) => (...)`), even if that would normally be permissible under a working implementation of scoping. Duplicated top-level definitions are, of course, unsupported as normal.
 ### Actual plugin
 
 The plugin itself implements the following features:
