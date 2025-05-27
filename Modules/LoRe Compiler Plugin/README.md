@@ -27,6 +27,7 @@ The compilation frontend supports generation of the following LoRe AST nodes fro
 
 - TArgT (from function and method arguments, e.g. the `x: Int, y: String` part in `def foo(x: Int, y: String): ...`)
 - TVar (references to existing definitions)
+  - Even though Scala supports forward references (marking them as warnings, but supporting them nonetheless), the backend does not support these and will error upon detection
 - TAbs (definitions in the Scala form `val foo: bar = baz`)
 - TTuple (tuple values such as `(foo, bar)` in Scala, with arbitrary tuple length)
 - TIf (if statements, such as `if foo then bar else baz` in Scala, with or without `else` case, but only as statements, not expressions)
@@ -36,6 +37,7 @@ The compilation frontend supports generation of the following LoRe AST nodes fro
 - TDerived (LoRe Derived reactives, realized through the REScala `Signal` type)
 - TInteraction (LoRe Interactions defined as part of the LoRe DSL for Scala, with `modifies`, `requires`, `ensures` and `executes` calls)
   - Only Interactions with one reactive and one parameter (i.e. `Interaction[Foo, Bar]`) are currently supported
+  - While the frontend does not place restrictions here, pre- and postconditions (i.e. `requires` and `ensures` calls respectively) may only contain a single expression, else backend generation will error
 - TInvariant (LoRe Invariants defined as part of the LoRe DSL for Scala)
 - TNum (integer literals), TString (string literals), TTrue and TFalse (boolean base literals)
   - TEq (equality), TIneq (inequality) on integers, strings, booleans
@@ -74,6 +76,7 @@ The compilation backend supports Dafny generation of the following LoRe AST node
   - References to the `value` property of a Source definition are transformed into plain references to their Dafny field
   - References to the `value` property of a Derived definition are transformed into calls to their model functions
   - References to Invariant definitions are invalid
+  - Forward references are invalid
 - TAbs (into Dafny `const` definitions for all values apart from Source, Derived, Interaction and Invariant)
   - All definitions aside from Source, Derived, Interaction and Invariant are modelled as immutable `const` fields on the main class
 - TTuple (tuple values such as `(foo, bar)`)
@@ -91,6 +94,7 @@ The compilation backend supports Dafny generation of the following LoRe AST node
   - Definitions of Interactions are modelled as models without a return type, as these modify the state given as parameter
   - The main class instance containing all fields, as well as the interaction parameter are turned into parameters of the model method
   - Any Invariants relevant for this Interaction are automatically included as a pre- and postcondition for it
+  - Each element of the pre- and postconditions list (i.e. each `requires` and `ensures` entry respectively) may only contain a single expression
 - TInvariant (LoRe Invariants, modelled as Dafny functions)
   - Definitions of Invariants are modelled as functions whose return type is a boolean
   - All references used in the definition of the Interaction are turned into parameters of the model function
@@ -117,7 +121,11 @@ The compilation backend currently does not support:
 - TForall (universal quantification)
 - TExists (existential quantification)
 - TFCurly
-	- The necessity of this AST type is as Dafny does not require such differentiation between paren types anywhere
+	- The necessity of this AST type is uncertain as Dafny does not require such differentiation between paren types anywhere
+
+Additionally, Source, Derived, Interaction and Invariant literals placed within another expression are not supported, e.g. you may not include any expression such as `foo(Source(1))` or `Source(Derived { 1 })` etc.
+
+Names may also only be used once across a LoReProgram (i.e. a Scala `object` with said annotation), regardless of scoping. This is because of a restriction in the current backend implementation and could be fixed by improving this in the future. For example, if you define a `val foo` on the top-level of a LoReProgram, you may not define either a `val foo` within a block contained by an expression of this LoReProgram (e.g. the `then` block of an `if` statement) or as the name of a parameter in e.g. an arrow function (e.g. `(foo) => (...)`).
 
 ### Actual plugin
 
@@ -127,7 +135,7 @@ The plugin itself implements the following features:
 - Initiating the backend on the results of the frontend for generation of respective Dafny code and storing its output
 - Initiating a client for communication with the Dafny LSP implementation
 - Sending the results of the backend to the Dafny LSP implementation for code verification
-- Reading out the verification results of the backend code sent to the LSP implementation and reporting any errors to the user
+- Reading out the verification results of the backend code sent to the LSP implementation and reporting any errors to the user via the Scala compiler
 
 ## Examples
 
