@@ -19,7 +19,7 @@ indent_style = tab
 indent_style = space
 indent_size = 2
 
-# yml seems to require space indentation
-[*.{yml,yaml}]
+# yaml seems to require space indentation
+[*.{yml,yaml,sublime-syntax}]
 indent_style = space
 indent_size = 2

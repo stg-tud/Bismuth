@@ -15,13 +15,13 @@ object Dependencies {
   val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.4"
   val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.0"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules" %% "scala-swing"            % "3.0.0"
-  val scalaXml    = libraryDependencies += "org.scala-lang.modules" %% "scala-xml"              % "2.3.0"
+  val scalaXml    = libraryDependencies += "org.scala-lang.modules" %% "scala-xml"              % "2.4.0"
   val scalajsDom  = libraryDependencies += "org.scala-js"          %%% "scalajs-dom"            % "2.8.0"
   val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
-  val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.13.0"
+  val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
   val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.7"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.17.0"
-  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.1.0"
+  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.2.1"
 
   val sslcontextKickstart = libraryDependencies ++= List(
     "io.github.hakky54" % "sslcontext-kickstart"         % "9.1.0",
@@ -50,8 +50,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.35.3",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.35.3" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.36.2",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.36.2" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.0-R35"
