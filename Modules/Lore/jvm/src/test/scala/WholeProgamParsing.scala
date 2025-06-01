@@ -64,11 +64,13 @@ class WholeProgramParsing extends FunSuite {
       case Left(e)       => fail(e.show) // parsing failure
       case Right(parsed) =>
         // uncomment when AST format changes
-//         import java.nio.file.{Files, Path}
-//         Files.write(
-//           Path.of("src/test/resources/calendar_new.ast"),
-//           writeToString(parsed).getBytes(StandardCharsets.UTF_8)
-//         )
+//        import java.nio.file.{Files, Path}
+//        val path = Path.of("src/test/resources/calendar_new.ast")
+//        Files.createDirectories(path.getParent)
+//        Files.write(
+//          path,
+//          writeToString(parsed).getBytes(StandardCharsets.UTF_8)
+//        )
         Try(readFromString[NonEmptyList[Term]](astStr)) match {
           // check if AST matches expectation
           case Success(ast) =>
@@ -86,10 +88,12 @@ class WholeProgramParsing extends FunSuite {
       case Right(parsed) =>
         // uncomment when AST format changes
 //        import java.nio.file.{Files, Path}
+//        val path = Path.of("src/test/resources/calendar_advanced.ast")
+//        Files.createDirectories(path.getParent)
 //        Files.write(
-//          Path.of("src/test/resources/calendar_advanced.ast"),
+//          path,
 //          writeToArray(parsed)
-//          //writeToString(parsed).getBytes(StandardCharsets.UTF_8)
+//          // writeToString(parsed).getBytes(StandardCharsets.UTF_8)
 //        )
         Try(readFromString[NonEmptyList[Term]](astStr)) match {
           // check if AST matches expectation
