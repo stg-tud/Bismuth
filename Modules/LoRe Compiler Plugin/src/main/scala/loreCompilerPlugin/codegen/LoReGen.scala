@@ -82,7 +82,7 @@ object LoReGen {
       ctx: Context
   ): Term = {
     // Apply statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree, termList)
+    buildLoReRhsTerm(tree, termList)
   }
 
   /** Creates a LoRe Term from a Scala Ident Tree.
@@ -96,7 +96,7 @@ object LoReGen {
       ctx: Context
   ): Term = {
     // Ident statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree, termList)
+    buildLoReRhsTerm(tree, termList)
   }
 
   /** Creates a LoRe Term from a Scala If Tree.
@@ -110,7 +110,7 @@ object LoReGen {
       ctx: Context
   ): Term = {
     // If statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree, termList)
+    buildLoReRhsTerm(tree, termList)
   }
 
   /** Creates a LoRe Term from a Scala Literal Tree.
@@ -124,7 +124,7 @@ object LoReGen {
       ctx: Context
   ): Term = {
     // Literal statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree, termList)
+    buildLoReRhsTerm(tree, termList)
   }
 
   /** Creates a LoRe Term from a Scala Select Tree.
@@ -138,7 +138,7 @@ object LoReGen {
       ctx: Context
   ): Term = {
     // Select statements are covered as part of RHS term building for ValDefs
-    buildLoreRhsTerm(tree, termList)
+    buildLoReRhsTerm(tree, termList)
   }
 
   /** Creates a LoRe Term from a Scala ValDef Tree.
@@ -153,7 +153,7 @@ object LoReGen {
   ): Term = {
     tree match
       case ValDef(name, tpt, rhs) =>
-        val loreTypeNode: LoReType = buildLoreTypeNode(tpt.tpe, tpt.sourcePos)
+        val loreTypeNode: LoReType = buildLoReTypeNode(tpt.tpe, tpt.sourcePos)
         // Several notes to make here regarding handling the RHS of reactives for future reference:
         // * There's an Apply around the whole RHS whose significance I'm not exactly sure of.
         //   Maybe it's related to a call for Inlining or such, as this plugin runs before that phase
@@ -165,40 +165,21 @@ object LoReGen {
         // * The Source and Derived parameter lists always have length 1, those of Interactions always have length 2.
         // * Typechecking for whether all of this is correct is already done by the Scala type-checker before this phase,
         //   so we can assume everything we see here is of suitable types instead of doing any further checks.
+        // * The above was previously handled here directly, matching on the rhs variable and then handling any
+        //   Source/Derived definitions here to shortcut any function calls, but this is now moved and also handled
+        //   as part of the same buildLoReRhsTerm function that handles everything else too.
         loreTypeNode match
           case SimpleType(typeName, typeArgs) =>
-            if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
               println(s"Detected $typeName definition with name \"$name\"")
-            rhs match
-              case Apply(source @ Apply(_, List(properRhs)), _)
-                  if typeName == "Var" => // E.g. "foo: Source[bar] = Source(baz)"
-                TAbs( // foo: Source[Bar] = Source(baz)
-                  name.toString, // foo
-                  loreTypeNode, // Source[Bar]
-                  TSource( // Source(baz)
-                    buildLoreRhsTerm(properRhs, termList, 1),
-                    scalaSourcePos = Some(source.sourcePos)
-                  ),
-                  scalaSourcePos = Some(tree.sourcePos)
-                )
-              case Apply(derived @ Apply(_, List(Block(_, properRhs))), _)
-                  if typeName == "Signal" => // E.g. "foo: Derived[bar] = Derived { baz } "
-                TAbs( // foo: Derived[Bar] = Derived { baz }
-                  name.toString, // foo
-                  loreTypeNode, // Derived[Bar]
-                  TDerived( // Derived { baz }
-                    buildLoreRhsTerm(properRhs, termList, 1),
-                    scalaSourcePos = Some(derived.sourcePos)
-                  ),
-                  scalaSourcePos = Some(tree.sourcePos)
-                )
-              case _ => // Interactions (UnboundInteraction, ...) and any non-reactive RHS (Int, String, Bool, ...)
-                TAbs( // foo: Bar = baz
-                  name.toString, // foo (any valid Scala identifier)
-                  loreTypeNode, // Bar
-                  buildLoreRhsTerm(rhs, termList, 1), // baz (e.g. 0, 1 + 2, "test", true, 2 > 1, bar reference, etc)
-                  scalaSourcePos = Some(tree.sourcePos)
-                )
+            }
+
+            TAbs(                                 // foo: Bar = baz
+              name.toString,                      // foo (any valid Scala identifier)
+              loreTypeNode,                       // Bar
+              buildLoReRhsTerm(rhs, termList, 1), // baz (e.g. 0, 1 + 2, "test", true, 2 > 1, bar reference, etc)
+              scalaSourcePos = Some(tree.sourcePos)
+            )
           case TupleType(types) =>
             if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
               println(s"Detected Tuple definition with name \"$name\"")
@@ -212,7 +193,7 @@ object LoReGen {
                   loreTypeNode,
                   TTuple(
                     tupleContents.map(tupleElement => {
-                      buildLoreRhsTerm(tupleElement, termList, 1)
+                      buildLoReRhsTerm(tupleElement, termList, 1)
                     }),
                     scalaSourcePos = Some(tupleDef.sourcePos)
                   ),
@@ -229,7 +210,7 @@ object LoReGen {
     * @param sourcePos A SourcePosition for the type tree
     * @return The LoRe Type node
     */
-  private def buildLoreTypeNode(typeTree: ScalaType, sourcePos: SourcePosition)(using
+  private def buildLoReTypeNode(typeTree: ScalaType, sourcePos: SourcePosition)(using
       logLevel: LogLevel,
       ctx: Context
   ): LoReType = {
@@ -264,7 +245,7 @@ object LoReGen {
           if tupleArity > 1 then {
             // Actual tuple: More than 1 element
             val typeList: Option[NonEmptyList[LoReType]] =
-              NonEmptyList.fromList(args.map(t => buildLoreTypeNode(t, sourcePos)))
+              NonEmptyList.fromList(args.map(t => buildLoReTypeNode(t, sourcePos)))
 
             typeList match
               case None =>
@@ -273,10 +254,10 @@ object LoReGen {
               case Some(l) => TupleType(l)
           } else {
             // Not actually a tuple: Just 1 element, so return that type instead
-            buildLoreTypeNode(args.head, sourcePos)
+            buildLoReTypeNode(args.head, sourcePos)
           }
         } else {
-          SimpleType(typeString, args.map(t => buildLoreTypeNode(t, sourcePos)))
+          SimpleType(typeString, args.map(t => buildLoReTypeNode(t, sourcePos)))
         }
       case _ =>
         report.error(s"An error occurred building the LoRe type for the following tree:\n$typeTree", sourcePos)
@@ -291,7 +272,7 @@ object LoReGen {
     * @param operandSide Which side to refer to in logs if expressing binary expressions (none by default)
     * @return The corresponding LoRe AST Tree node of the RHS
     */
-  private def buildLoreRhsTerm(
+  private def buildLoReRhsTerm(
       tree: tpd.LazyTree,
       termList: List[Term],
       indentLevel: Integer = 0,
@@ -335,7 +316,7 @@ object LoReGen {
             opOrField match // Match individual unary operators
               // This specifically has to be nme.UNARY_! and not e.g. nme.NOT
               case nme.UNARY_! => TNeg(
-                  buildLoreRhsTerm(arg, termList, indentLevel + 1, operandSide),
+                  buildLoReRhsTerm(arg, termList, indentLevel + 1, operandSide),
                   scalaSourcePos = Some(fieldUnaryTree.sourcePos)
                 ) // !operand
               case _ => // Unsupported unary operators
@@ -353,7 +334,7 @@ object LoReGen {
             }
 
             TFCall(                                                          // foo.bar
-              buildLoreRhsTerm(arg, termList, indentLevel + 1, operandSide), // foo (might be a more complex expression)
+              buildLoReRhsTerm(arg, termList, indentLevel + 1, operandSide), // foo (might be a more complex expression)
               field.toString,                                                // bar
               None,                                                          // None (field) vs Empty List (0-ar method)
               scalaSourcePos = Some(fieldUnaryTree.sourcePos)
@@ -363,7 +344,7 @@ object LoReGen {
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
           logRhsInfo(indentLevel, operandSide, "definition of an Invariant", "")
         }
-        val invTerm: Term = buildLoreRhsTerm(invExpr.head, termList, indentLevel, operandSide)
+        val invTerm: Term = buildLoReRhsTerm(invExpr.head, termList, indentLevel, operandSide)
         invTerm match
           case expr: TBoolean =>
             TInvariant(expr, scalaSourcePos = Some(invariantTree.sourcePos))
@@ -386,72 +367,72 @@ object LoReGen {
             opOrMethod match
               case nme.ADD =>
                 TAdd( // left + right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.SUB =>
                 TSub( // left - right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.MUL =>
                 TMul( // left * right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.DIV =>
                 TDiv( // left / right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.And => TConj( // left && right, Important: nme.AND is & and nme.And is &&
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.Or => TDisj( // left || right, Important: nme.OR is | and nme.Or is ||
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.LT =>
                 TLt( // left < right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.GT =>
                 TGt( // left > right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.LE =>
                 TLeq( // left <= right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.GE =>
                 TGeq( // left >= right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.EQ =>
                 TEq( // left == right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case nme.NE =>
                 TIneq( // left != right
-                  buildLoreRhsTerm(leftArg, termList, indentLevel + 1, "left"),
-                  buildLoreRhsTerm(rightArg, termList, indentLevel + 1, "right"),
+                  buildLoReRhsTerm(leftArg, termList, indentLevel + 1, "left"),
+                  buildLoReRhsTerm(rightArg, termList, indentLevel + 1, "right"),
                   scalaSourcePos = Some(methodBinaryTree.sourcePos)
                 )
               case _ => // Unsupported binary operators
@@ -466,10 +447,10 @@ object LoReGen {
             }
 
             TFCall(                                                              // foo.bar(baz, qux, ...)
-              buildLoreRhsTerm(leftArg, termList, indentLevel + 1, operandSide), // foo (might be a more complex term)
+              buildLoReRhsTerm(leftArg, termList, indentLevel + 1, operandSide), // foo (might be a more complex term)
               methodName.toString,                                               // bar
               Some(params.map(p =>                                               // baz, qux, ... (maybe complex terms)
-                buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)
+                buildLoReRhsTerm(p, termList, indentLevel + 1, operandSide)
               )),
               scalaSourcePos = Some(methodBinaryTree.sourcePos)
             )
@@ -481,7 +462,7 @@ object LoReGen {
         TFunC(            // foo(bar, baz)
           name.toString,  // foo
           params.map(p => // bar, baz, ... (might each be more complex terms)
-            buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)
+            buildLoReRhsTerm(p, termList, indentLevel + 1, operandSide)
           ),
           scalaSourcePos = Some(funcCallTree.sourcePos)
         )
@@ -496,7 +477,7 @@ object LoReGen {
 
         TFunC(
           typeName.toString,
-          params.map(p => buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)),
+          params.map(p => buildLoReRhsTerm(p, termList, indentLevel + 1, operandSide)),
           scalaSourcePos = Some(instTree.sourcePos)
         )
       case tupleTree @ Apply(TypeApply(Select(Ident(typeName: Name), _), _), params: List[?])
@@ -506,14 +487,14 @@ object LoReGen {
         }
 
         TTuple(
-          params.map(p => buildLoreRhsTerm(p, termList, indentLevel + 1, operandSide)),
+          params.map(p => buildLoReRhsTerm(p, termList, indentLevel + 1, operandSide)),
           scalaSourcePos = Some(tupleTree.sourcePos)
         )
       case rawInteractionTree @ TypeApply(Select(Ident(tpName), _), _) if tpName.toString == "Interaction" =>
         // Raw Interaction definitions (without method calls) on the RHS, e.g. Interaction[Int, String]
         // This probably breaks if you alias/import Interaction as a different name, not sure how to handle that
         // When not checking for type name, this would match all types you apply as "TypeName[TypeParam, ...]"
-        val rhsType: LoReType = buildLoreTypeNode(rawInteractionTree.tpe, rawInteractionTree.sourcePos)
+        val rhsType: LoReType = buildLoReTypeNode(rawInteractionTree.tpe, rawInteractionTree.sourcePos)
         rhsType match
           case SimpleType(loreTypeName, List(reactiveType, argumentType)) =>
             // reactiveType and argumentType are based on the type tree here, not the types written in the RHS.
@@ -739,24 +720,24 @@ object LoReGen {
         if blockBody.nonEmpty then {
           // Multiple statements in this block: Build a LoRe sequence of statements
           val blockList: NonEmptyList[Term] = NonEmptyList.fromList(
-            blockBody.map(b => buildLoreRhsTerm(b, termList, indentLevel, operandSide))
-            :+ buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
+            blockBody.map(b => buildLoReRhsTerm(b, termList, indentLevel, operandSide))
+            :+ buildLoReRhsTerm(blockReturn, termList, indentLevel, operandSide)
           ).get
           TSeq(blockList, scalaSourcePos = Some(blockTree.sourcePos))
         } else {
           // Only a single statement in this block: Just return the one statement by itself
-          buildLoreRhsTerm(blockReturn, termList, indentLevel, operandSide)
+          buildLoReRhsTerm(blockReturn, termList, indentLevel, operandSide)
         }
       case ifTree @ If(cond, _then, _else) => // If conditions (e.g. "if x then y else z")
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
           logRhsInfo(indentLevel, operandSide, s"conditional expression", "")
         }
 
-        val condTerm: Term = buildLoreRhsTerm(cond, termList, indentLevel, operandSide)  // if x
-        val thenTerm: Term = buildLoreRhsTerm(_then, termList, indentLevel, operandSide) // then y
+        val condTerm: Term = buildLoReRhsTerm(cond, termList, indentLevel, operandSide)  // if x
+        val thenTerm: Term = buildLoReRhsTerm(_then, termList, indentLevel, operandSide) // then y
         val elseTerm: Option[Term] = _else match // else z
           case Literal(Constant(_: Unit)) => None // No else exists
-          case _ => Some(buildLoreRhsTerm(_else, termList, indentLevel, operandSide)) // Else exists
+          case _ => Some(buildLoReRhsTerm(_else, termList, indentLevel, operandSide)) // Else exists
 
         TIf(condTerm, thenTerm, elseTerm, scalaSourcePos = Some(ifTree.sourcePos))
       case t: Tree[?] => // Unsupported RHS forms
