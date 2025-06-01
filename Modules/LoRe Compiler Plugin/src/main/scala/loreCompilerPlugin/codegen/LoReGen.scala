@@ -25,10 +25,11 @@ object LoReGen {
   private def logRhsInfo(indentLevel: Integer, operandSide: String, rhsType: String, rhsValue: String)(using
       logLevel: LogLevel
   ): Unit = {
-    if operandSide.nonEmpty then
+    if operandSide.nonEmpty then {
       println(s"${"\t".repeat(indentLevel)}The $operandSide parameter is a $rhsType $rhsValue")
-    else
+    } else {
       println(s"${"\t".repeat(indentLevel)}The parameter is a $rhsType $rhsValue")
+    }
   }
 
   /** Creates a LoRe Term from a Scala Tree.
@@ -199,8 +200,9 @@ object LoReGen {
                   scalaSourcePos = Some(tree.sourcePos)
                 )
           case TupleType(types) =>
-            if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
               println(s"Detected Tuple definition with name \"$name\"")
+            }
 
             rhs match
               case Apply(tupleDef @ TypeApply(Select(Ident(tpName), _), _), tupleContents)

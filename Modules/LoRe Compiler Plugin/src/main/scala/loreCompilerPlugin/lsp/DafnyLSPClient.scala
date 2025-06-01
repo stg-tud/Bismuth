@@ -26,12 +26,14 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     * @param initId The id to use for the LSP initialization message.
     */
   def initializeLSP(rootUri: String, initId: Int = 0): Unit = {
-    if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
       println("Initializing a connection with the language server...")
+    }
 
     if process.isDefined && process.get.isAlive() then {
-      if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+      if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
         println("Attempted to initialize LSP when active process already exists. Doing nothing.")
+      }
       return
     }
 
@@ -48,8 +50,9 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     if initRes.error.isDefined then {
       throw new Error(s"An error occurred initializing the LSP client:\n${upickleWrite(initRes.error.get)}")
     } else {
-      if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+      if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
         println("Successfully initialized a connection with the language server.")
+      }
     }
 
     val initializedNotification: String = DafnyLSPClient.constructLSPMessage("initialized")()
@@ -58,8 +61,9 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
   /** Shut down the internal instance running the Dafny language server, if running. */
   def shutdownLSP(): Unit = {
-    if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
       println("Shutting down the connection with the language server...")
+    }
 
     if process.isDefined then {
       // Only try to destroy if it wasn't already
@@ -244,16 +248,18 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
       latestReadMessage match
         case diag: PublishDiagnosticsNotification =>
           if diag.params.uri.endsWith(name) then {
-            if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+            if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
               println(s"Diagnostics notification read while waiting for verification result.")
+            }
             diagnosticsNotification = Some(diag)
           }
         case comp: CompilationStatusNotification =>
           if comp.params.uri.endsWith(name) then {
             comp.params.status match
               case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
-                if logLevel.isLevelOrHigher(LogLevel.Sparse) then
+                if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
                   println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
+                }
                 return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
               case _ => ()
           }
@@ -285,8 +291,9 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
       msg = readMessage()
     }
 
-    if logLevel.isLevelOrHigher(LogLevel.Verbose) then
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
       println(s"Message using method $method found:\n${upickleWrite(msg)}")
+    }
     msg.asInstanceOf[LSPNotification] // Cast is safe because of above check
   }
 

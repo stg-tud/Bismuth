@@ -182,7 +182,7 @@ object DafnyGen {
     t match
       case tup: TTuple =>
         // Multiple Sources are being modified, so generate multiple assignments.
-        if tup.factors.length != reactiveNames.length then
+        if tup.factors.length != reactiveNames.length then {
           t.scalaSourcePos match
             case Some(pos) =>
               report.error(
@@ -197,6 +197,7 @@ object DafnyGen {
                 s"Number of modifies reactives (${reactiveNames.length}) " +
                 s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
               )
+        }
 
         // Order of assignments is the same as the order of Sources in the modifies list
         reactiveNames.zip(tup.factors)
@@ -262,9 +263,11 @@ object DafnyGen {
             case Some(node) =>
               // If both terms have positions recorded, compare their starting line
               // If the ref term is ahead of (smaller than) the node def, this is a forward reference
-              if term.scalaSourcePos.isDefined && node.loreNode.scalaSourcePos.isDefined then
-                if term.scalaSourcePos.get.startLine < node.loreNode.scalaSourcePos.get.startLine then
+              if term.scalaSourcePos.isDefined && node.loreNode.scalaSourcePos.isDefined then {
+                if term.scalaSourcePos.get.startLine < node.loreNode.scalaSourcePos.get.startLine then {
                   report.error("Forward references are not allowed.", term.scalaSourcePos.orNull)
+                }
+              }
         })
 
         // Map to generation result of term
@@ -1371,6 +1374,7 @@ object DafnyGen {
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-maps
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-sequences
+
     node.name match
       case "Map" =>
         // Map instantiations differ from regular function calls.
