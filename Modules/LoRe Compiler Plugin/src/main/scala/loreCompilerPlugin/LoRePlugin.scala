@@ -1,7 +1,7 @@
 package loreCompilerPlugin
 
 import dotty.tools.dotc.{CompilationUnit, report}
-import dotty.tools.dotc.ast.Trees.{Tree, Template, TypeDef}
+import dotty.tools.dotc.ast.Trees.{Template, Tree, TypeDef}
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.core.Contexts.Context
@@ -10,7 +10,8 @@ import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
 import dotty.tools.dotc.transform.{Inlining, Pickler}
 import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
-import java.io.File // For getting URIs and the system-independent path separator
+
+import java.io.{File, IOException}
 import lore.ast.Term
 import loreCompilerPlugin.codegen.LoReGen.createLoReTermFromTree
 import loreCompilerPlugin.codegen.DafnyGen.generate as generateDafnyCode
@@ -132,7 +133,14 @@ class LoRePhase extends PluginPhase {
     val rootPatternEscaped: String = rootPattern.replace("\\", "\\\\") // Gotta escape since split takes regex
     // Take the first half of the split, then add the split off separator back on and get the path as an URI string
     val folderPath: String = File(unitPath.split(rootPatternEscaped).head.concat(rootPattern)).toURI.toString
-    lspClient.initializeLSP(folderPath)
+
+    try {
+      lspClient.initializeLSP(folderPath)
+    } catch {
+      case _: IOException =>
+        report.inform(s"could not starty dafny lsp, make sure dafny is on the path")
+        return units
+    }
 
     var programsWithErrors: List[String] = List()
 
