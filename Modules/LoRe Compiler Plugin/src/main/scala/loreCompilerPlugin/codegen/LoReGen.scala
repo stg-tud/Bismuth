@@ -218,11 +218,11 @@ object LoReGen {
       case TypeRef(_, _) => // Non-parameterized types (e.g. Int, String)
         SimpleType(typeTree.asInstanceOf[CachedTypeRef].name.toString, List())
       case AppliedType(outerType: CachedTypeRef, args: List[ScalaType]) => // Parameterized types like List, Map, etc
-        // For some reason, probably due to the type definitions in UnboundInteraction, Interactions with requires show
-        // up as type "T" and those with executes as type "E", so manually do some digging here to get the proper name.
-        // Also output any other Interaction types as plain "Interaction", as this type name is not backend-relevant.
-
         // Interactions have various different type names depending on what parts they have
+        // For some reason, probably due to the type definitions in UnboundInteraction/Interaction, Interactions with
+        // requires show up as type "T" and those with executes as type "E", so those have to be added to this list.
+        // This feels fragile, but it appears that is how it will have to be to make things work.
+        // Also output any other Interaction types as plain "Interaction", as this type name is not backend-relevant.
         val interactionTypeList: List[String] = List(
           "BoundInteraction",
           "Interaction",
@@ -232,7 +232,9 @@ object LoReGen {
           "InteractionWithExecutesAndModifies",
           "InteractionWithModifies",
           "InteractionWithModifiesAndActs",
-          "UnboundInteraction"
+          "UnboundInteraction",
+          "T",
+          "E"
         )
         val typeString: String = if interactionTypeList.contains(outerType.name.toString) then "Interaction"
         else if interactionTypeList.exists(t => outerType.prefix.typeConstructor.show.contains(t)) then "Interaction"
@@ -513,51 +515,15 @@ object LoReGen {
               rawInteractionTree.sourcePos
             )
             TVar("<error>")
-      case modifiesTree @ Apply(
-            Apply(TypeApply(Select(_, methodName), _), List(innerNode)),
-            List(Block(_, Ident(modVar)))
-          )
-          if methodName.toString == "modifies" =>
-        // Interaction modifies is different from the other methods as it doesn't take an arrow function as input
-        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-          logRhsInfo(indentLevel, operandSide, s"call to the modifies method with the identifier:", modVar.toString)
-        }
-
-        var innerTerm = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
-        innerTerm match
-          case interactionTerm @ TInteraction(_, _, modifiesList, requiresList, ensuresList, executesOption, _, _) =>
-            innerTerm = interactionTerm.copy(modifies = modifiesList.prepended(modVar.toString))
-          case interactionReference @ TVar(name, _, _) =>
-            // The Interaction term is a reference to an already-defined Interaction, so find the
-            // definition of this Interaction in the list of terms, copy that definition, and then
-            // modify it to include the additional modifies call on it like above.
-            val interactionDef: Option[Term] = termList.find {
-              case TAbs(`name`, _, body: TInteraction, _, _) => true
-              case _                                         => false
-            }
-
-            interactionDef match
-              case Some(TAbs(_, _, interactionTerm: TInteraction, _, _)) =>
-                innerTerm = interactionTerm.copy(modifies = interactionTerm.modifies.prepended(modVar.toString))
-              case _ => // Matching on both "None" and "Some"s of any different shape than above
-                // No definition found in the list of already-processed terms, which means it must be a
-                // forward reference. If it didn't exist at all, the Scala compiler would have errored out
-                // in a previous phase already, before this point would ever have been reached.
-                report.error(
-                  s"Could not find Interaction definition. Forward references are not allowed.",
-                  modifiesTree.sourcePos
-                )
-                return TVar("<error>")
-          case _ =>
-            report.error(
-              s"Error building RHS term for Interaction modifies call",
-              modifiesTree.sourcePos
-            )
-            TVar("<error>")
-        innerTerm
-      case reactiveTree @ Apply(Apply(TypeApply(Select(innerNode, methodName), _), params: List[?]), _) =>
-        // Reactive definitions not covered above
-        val rhsType: LoReType = buildLoreTypeNode(reactiveTree.tpe, reactiveTree.sourcePos)
+      case reactiveTree @ Apply(
+            Apply(
+              TypeApply(Select(reactive, reactiveMethodName), _),
+              reactiveParamTree: List[?]
+            ),
+            outerReactiveParamTree: List[?],
+          ) =>
+        // Method calls on Interactions (requires, ensures, modifies, executes)
+        val rhsType: LoReType = buildLoReTypeNode(reactiveTree.tpe, reactiveTree.sourcePos)
         rhsType match
           case SimpleType(loreTypeName, typeArgs) =>
             loreTypeName match
@@ -566,7 +532,7 @@ object LoReGen {
                   logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
                 }
                 TSource(
-                  buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide),
+                  buildLoReRhsTerm(reactiveParamTree.head, termList, indentLevel + 1, operandSide),
                   scalaSourcePos = Some(reactiveTree.sourcePos)
                 )
               case "Signal" =>
@@ -574,144 +540,57 @@ object LoReGen {
                   logRhsInfo(indentLevel, operandSide, s"definition of a $loreTypeName reactive", "")
                 }
                 TDerived(
-                  buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide),
+                  buildLoReRhsTerm(reactiveParamTree.head, termList, indentLevel + 1, operandSide),
                   scalaSourcePos = Some(reactiveTree.sourcePos)
                 )
               case "Interaction" =>
                 if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-                  logRhsInfo(indentLevel, operandSide, s"call to the $methodName method", "")
+                  logRhsInfo(indentLevel, operandSide, s"call to the $reactiveMethodName Interaction method", "")
                 }
 
-                // Build the terms for the Interaction itself and the term for the method being called on it
-                var interactionTerm: Term = buildLoreRhsTerm(innerNode, termList, indentLevel + 1, operandSide)
-                val methodParamTerm: Term = buildLoreRhsTerm(params.head, termList, indentLevel + 1, operandSide)
-                interactionTerm match
-                  case prevInteractionTerm @ TInteraction(_, _, modList, reqList, ensList, execOption, _, _) =>
-                    // The interaction term is a direct definition of an Interaction, so add this method term to it.
-                    methodName.toString match
-                      // modifies is handled specifically in above case due to different structure
-                      case "requires" =>
-                        interactionTerm = prevInteractionTerm.copy(requires = reqList.prepended(methodParamTerm))
-                      case "ensures" =>
-                        interactionTerm = prevInteractionTerm.copy(ensures = ensList.prepended(methodParamTerm))
-                      case "executes" =>
-                        // Build sequence of terms read from the executes call
-                        prevInteractionTerm.executes match
-                          case None => interactionTerm = prevInteractionTerm.copy(executes = Some(methodParamTerm))
-                          case Some(seq: TSeq) =>
-                            // Sequence already exists, so append to it
-                            val newSeq: TSeq = seq.copy(body = seq.body.append(methodParamTerm))
-                            interactionTerm = prevInteractionTerm.copy(executes = Some(newSeq))
-                          case Some(term: Term) =>
-                            // Executes is currently a single term, so form sequence
-                            val seqBody: NonEmptyList[Term] = NonEmptyList.of(term, methodParamTerm)
-                            val seq: TSeq = TSeq(seqBody, scalaSourcePos = Some(reactiveTree.sourcePos))
-                            interactionTerm = prevInteractionTerm.copy(executes = Some(seq))
-                  case interactionReference @ TVar(name, _, _) =>
-                    // The interaction term is a reference to an already-defined Interaction, so find the
-                    // definition of this Interaction in the list of terms, copy that definition, and then
-                    // modify it to include the additionally called method on it like above.
-                    val interactionDef: Option[Term] = termList.find {
-                      case TAbs(`name`, _, body: TInteraction, _, _) => true
-                      case _                                         => false
-                    }
+                // The DSL definitions of Interactions have lots of magic going on, so there's AST variations.
+                // Whenever you call "modifies" on an interaction definition, that AST tree will be wrapped in an
+                // implicit "Ex" object. Said implicit object is defined in the Interaction file found in the DSL of
+                // the LoRe implementation. This wrapping shifts the position of relevant parts of its Scala AST node.
+                // Therefore, some of the variable names may not make sense in the Interaction context.
 
-                    interactionDef match
-                      case Some(TAbs(_, _, interaction: TInteraction, _, _)) =>
-                        interaction match
-                          case TInteraction(_, _, modList, reqList, ensList, execOption, _, _) =>
-                            methodName.toString match
-                              // modifies is handled specifically in above case due to different structure
-                              case "requires" =>
-                                interactionTerm = interaction.copy(requires = reqList.prepended(methodParamTerm))
-                              case "ensures" =>
-                                interactionTerm = interaction.copy(ensures = ensList.prepended(methodParamTerm))
-                              case "executes" =>
-                                // executes can only have one value due to being an Option, so simply replace the value
-                                interaction.executes match
-                                  case None => interactionTerm = interaction.copy(executes = Some(methodParamTerm))
-                                  case Some(seq: TSeq) =>
-                                    // Sequence already exists, so append to it
-                                    val newSeq: TSeq = seq.copy(body = seq.body.append(methodParamTerm))
-                                    interactionTerm = interaction.copy(executes = Some(newSeq))
-                                  case Some(term: Term) =>
-                                    // Executes is currently a single term, so form sequence
-                                    val seqBody: NonEmptyList[Term] = NonEmptyList.of(term, methodParamTerm)
-                                    val seq: TSeq = TSeq(seqBody, scalaSourcePos = Some(reactiveTree.sourcePos))
-                                    interactionTerm = interaction.copy(executes = Some(seq))
-                      case _ => // Matching on both "None" and "Some"s of any different shape than above
-                        // No definition found in the list of already-processed terms, which means it must be a
-                        // forward reference. If it didn't exist at all, the Scala compiler would have errored out
-                        // in a previous phase already, before this point would ever have been reached.
-                        report.error(
-                          s"Could not find Interaction definition. Forward references are not allowed.",
-                          reactiveTree.sourcePos
-                        )
-                        return TVar("<error>")
+                var interactionTree: tpd.Tree = tpd.EmptyTree
+                var methodParamTree: tpd.Tree = tpd.EmptyTree
+
+                reactive match
+                  case Ident(name) if name.toString == "Ex" =>
+                    // Implicit Ex case
+                    interactionTree = reactiveParamTree.head
+                    methodParamTree = outerReactiveParamTree.head
                   case _ =>
-                    report.error(
-                      s"Error building RHS term for Interaction",
-                      reactiveTree.sourcePos
-                    )
-                    return TVar("<error>")
+                    // Any other Interaction method calls are regular
+                    interactionTree = reactive
+                    methodParamTree = reactiveParamTree.head
 
-                interactionTerm
+                // Build Interaction using the correctly set trees
+                buildLoReInteractionTerm(
+                  reactiveTree,
+                  interactionTree,
+                  methodParamTree,
+                  reactiveMethodName,
+                  termList,
+                  indentLevel,
+                  operandSide
+                )
+              case _ =>
+                report.error(s"Error building RHS term", reactiveTree.sourcePos)
+                TVar("<error>")
           case _ =>
-            report.error(
-              s"Error building RHS term",
-              reactiveTree.sourcePos
-            )
+            report.error(s"Error building RHS term", reactiveTree.sourcePos)
             TVar("<error>")
       case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" =>
         // Arrow funcs: When all parameters are defined, the function is in the first parameter
         // Duplicated code from below, but seems that is how it has to be. Can't bind in alternatives, after all.
-        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-          logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
-        }
-
-        TArrow(            // (foo: Int) => foo + 1
-          TTuple(lhs.map { // (foo: Int)
-            case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
-              TArgT(
-                paramName.toString,
-                buildLoreTypeNode(paramType.tpe, paramType.sourcePos),
-                scalaSourcePos = Some(argTree.sourcePos)
-              )
-            case _ =>
-              report.error(
-                s"Error building LHS term for arrow function",
-                arrowTree.sourcePos
-              )
-              TVar("<error>")
-          }),
-          buildLoreRhsTerm(rhs, termList, indentLevel + 1, operandSide), // foo + 1
-          scalaSourcePos = Some(arrowTree.sourcePos)
-        )
+        buildLoReArrowTerm(arrowTree, lhs, rhs, termList, indentLevel, operandSide)
       case arrowTree @ Block(_, Block(List(DefDef(name, List(lhs), _, rhs)), _)) if name.toString == "$anonfun" =>
         // Arrow funcs 2: When a parameter is wildcarded (i.e. via _), the function is in the second parameter instead
         // Duplicated code from above, but seems that is how it has to be. Can't bind in alternatives, after all.
-        if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-          logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
-        }
-
-        TArrow(            // (foo: Int) => foo + 1
-          TTuple(lhs.map { // (foo: Int)
-            case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
-              TArgT(
-                paramName.toString,
-                buildLoreTypeNode(paramType.tpe, paramType.sourcePos),
-                scalaSourcePos = Some(argTree.sourcePos)
-              )
-            case _ =>
-              report.error(
-                s"Error building LHS term for arrow function",
-                arrowTree.sourcePos
-              )
-              TVar("<error>")
-          }),
-          buildLoreRhsTerm(rhs, termList, indentLevel + 1, operandSide), // foo + 1
-          scalaSourcePos = Some(arrowTree.sourcePos)
-        )
+        buildLoReArrowTerm(arrowTree, lhs, rhs, termList, indentLevel, operandSide)
       case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
           logRhsInfo(indentLevel, operandSide, s"block of statements", "")
@@ -746,5 +625,119 @@ object LoReGen {
       case _ => // This case shouldn't be hit, but compiler warns about potentially inexhaustive matches.
         report.error(s"Unsupported RHS form used:\n$tree")
         TVar("<error>")
+  }
+
+  // See the reactiveTree case in buildLoReRhsTerm, code extracted to avoid duplication
+  private def buildLoReInteractionTerm(
+      tree: tpd.Tree,
+      interactionTree: tpd.Tree,
+      methodParamTree: tpd.Tree,
+      methodName: Name,
+      termList: List[Term],
+      indentLevel: Integer,
+      operandSide: String,
+  )(using logLevel: LogLevel, ctx: Context): Term = {
+    val interactionTerm: Term = buildLoReRhsTerm(interactionTree, termList, indentLevel + 1, operandSide)
+    val methodParamTerm: Term = buildLoReRhsTerm(methodParamTree, termList, indentLevel + 1, operandSide)
+
+    interactionTerm match
+      case interaction: TInteraction =>
+        // Call on an Interaction literal (not a reference to an already-defined interaction),
+        // so build upon this Interaction literal and attach the new method call to the literal.
+        addMethodToInteractionTerm(tree, interaction, methodParamTerm, methodName.toString)
+      case interactionReference @ TVar(name, _, _) =>
+        // The interaction term is a reference to an already-defined Interaction, so find the
+        // definition of this Interaction in the list of terms, copy that definition, and then
+        // modify it to include the additionally called method on it like above.
+        val interactionDef: Option[Term] = termList.find {
+          case TAbs(`name`, _, body: TInteraction, _, _) => true
+          case _                                         => false
+        }
+
+        interactionDef match
+          case Some(TAbs(_, _, interaction: TInteraction, _, _)) =>
+            addMethodToInteractionTerm(tree, interaction, methodParamTerm, methodName.toString)
+          case _ => // Matching on both "None" and "Some"s of any different shape than above
+            // No definition found in the list of already-processed terms, which means it must be a
+            // forward reference. If it didn't exist at all, the Scala compiler would have errored out
+            // in a previous phase already, before this point would ever have been reached.
+            report.error(
+              s"Could not find Interaction definition for this reference. Forward references are not allowed.",
+              tree.sourcePos
+            )
+            TVar("<error>")
+      // Other cases are errors
+      case _ =>
+        report.error(s"Error building RHS term for Interaction", tree.sourcePos)
+        TVar("<error>")
+  }
+
+  private def addMethodToInteractionTerm(
+      tree: tpd.Tree,
+      interaction: TInteraction,
+      methodParamTerm: Term,
+      methodName: String
+  )(using logLevel: LogLevel, ctx: Context): TInteraction = {
+    methodName match
+      // modifies is handled specifically in above case due to different structure
+      case "modifies" =>
+        methodParamTerm match
+          case TVar(modVar, _, _) => interaction.copy(modifies = interaction.modifies.prepended(modVar))
+          case _ =>
+            report.error(
+              s"Error building RHS term for Interaction modifies call",
+              tree.sourcePos
+            )
+            interaction
+      case "requires" =>
+        interaction.copy(requires = interaction.requires.prepended(methodParamTerm))
+      case "ensures" =>
+        interaction.copy(ensures = interaction.ensures.prepended(methodParamTerm))
+      case "executes" =>
+        // executes can only have one value due to being an Option, so simply replace the value
+        interaction.executes match
+          case None            => interaction.copy(executes = Some(methodParamTerm))
+          case Some(seq: TSeq) =>
+            // Sequence already exists, so append to it
+            val newSeq: TSeq = seq.copy(body = seq.body.append(methodParamTerm))
+            interaction.copy(executes = Some(newSeq))
+          case Some(term: Term) =>
+            // Executes is currently a single term, so form sequence
+            val seqBody: NonEmptyList[Term] = NonEmptyList.of(term, methodParamTerm)
+            val seq: TSeq                   = TSeq(seqBody, scalaSourcePos = Some(tree.sourcePos))
+            interaction.copy(executes = Some(seq))
+  }
+
+  // See the two arrowTree cases in buildLoReRhsTerm, code extracted to avoid duplication
+  private def buildLoReArrowTerm(
+      tree: tpd.Tree,
+      lhs: List[tpd.Tree],
+      rhs: tpd.LazyTree,
+      termList: List[Term],
+      indentLevel: Integer,
+      operandSide: String
+  )(using logLevel: LogLevel, ctx: Context): TArrow = {
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+      logRhsInfo(indentLevel, operandSide, s"arrow function with ${lhs.length} arguments", "")
+    }
+
+    TArrow(            // (foo: Int) => foo + 1
+      TTuple(lhs.map { // (foo: Int)
+        case argTree @ ValDef(paramName, paramType, tpd.EmptyTree) =>
+          TArgT(
+            paramName.toString,
+            buildLoReTypeNode(paramType.tpe, paramType.sourcePos),
+            scalaSourcePos = Some(argTree.sourcePos)
+          )
+        case _ =>
+          report.error(
+            s"Error building LHS term for arrow function",
+            tree.sourcePos
+          )
+          TVar("<error>")
+      }),
+      buildLoReRhsTerm(rhs, termList, indentLevel + 1, operandSide), // foo + 1
+      scalaSourcePos = Some(tree.sourcePos)
+    )
   }
 }
