@@ -587,10 +587,10 @@ object LoReGen {
         // Arrow funcs: When all parameters are defined, the function is in the first parameter
         // Duplicated code from below, but seems that is how it has to be. Can't bind in alternatives, after all.
         buildLoReArrowTerm(arrowTree, lhs, rhs, termList, indentLevel, operandSide)
-      case arrowTree @ Block(_, Block(List(DefDef(name, List(lhs), _, rhs)), _)) if name.toString == "$anonfun" =>
+      case arrowTree2 @ Block(_, Block(List(DefDef(name, List(lhs), _, rhs)), _)) if name.toString == "$anonfun" =>
         // Arrow funcs 2: When a parameter is wildcarded (i.e. via _), the function is in the second parameter instead
         // Duplicated code from above, but seems that is how it has to be. Can't bind in alternatives, after all.
-        buildLoReArrowTerm(arrowTree, lhs, rhs, termList, indentLevel, operandSide)
+        buildLoReArrowTerm(arrowTree2, lhs, rhs, termList, indentLevel, operandSide)
       case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
           logRhsInfo(indentLevel, operandSide, s"block of statements", "")
