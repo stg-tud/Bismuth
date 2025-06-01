@@ -1,5 +1,4 @@
 package lore
-import cats.data.NonEmptyList
 import cats.implicits.*
 import lore.ast.*
 import lore.test.util.ParserSuite
@@ -71,7 +70,7 @@ class SimpleParsing extends ParserSuite {
     assertParsingResult(
       Parser.term,
       "foo.bar(1, false)",
-      TFCall(TVar("foo"), "bar", Some(List(TNum(1)), TFalse()))
+      TFCall(TVar("foo"), "bar", Some(List(TNum(1), TFalse())))
     )
 
     assertParsingResult(

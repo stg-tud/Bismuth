@@ -119,7 +119,7 @@ class BooleanExpressionParsing extends ParserSuite {
       "size(d) == size(d2).max",
       TEq(
         TFunC("size", List(TVar("d"))),
-        TFCall(TFunC("size", List(TVar("d2"))), "max", List())
+        TFCall(TFunC("size", List(TVar("d2"))), "max", Some(Nil))
       )
     )
 
@@ -263,14 +263,14 @@ class BooleanExpressionParsing extends ParserSuite {
       TExists(
         NonEmptyList.one(TArgT("h", SimpleType("History", List()))),
         TEq(
-          TFCall(TVar("ph"), "toSet", List()),
+          TFCall(TVar("ph"), "toSet", Some(Nil)),
           TFunC(
             "old",
             List(
               TFCall(
                 TFCall(TVar("ph"), "toSet", Some(List())),
                 "union",
-                List(TFunC("Set", List(TVar("h"))))
+                Some(List(TFunC("Set", List(TVar("h")))))
               )
             )
           )
