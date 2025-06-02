@@ -480,13 +480,23 @@ object DafnyGen {
         node.scalaSourcePos match
           case None =>
             report.error(
-              "Reactives may not be referenced directly, apart from calling the \"value\" property."
+              "Reactives may not be referenced directly, apart from calling the \"value\" or \"now\" property."
             )
           case Some(pos) =>
             report.error(
-              "Reactives may not be referenced directly, apart from calling the \"value\" property.",
+              "Reactives may not be referenced directly, apart from calling the \"value\" or \"now\" property.",
               pos
             )
+        "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
+      case SimpleType("Interaction", _) =>
+        // Interactions may not be referenced if said reference is not used to extend the Interaction with further
+        // components (i.e. requires, ensures, executes, modifies), for similar reasons to Derived terms above.
+        // References that extensions Interactions will already have been processed into TInteraction terms in the
+        // rather than showing up as TVars, so references of such kind would not show up anymore in the LoRe AST.
+        // Therefore, if a reference to an Interaction shows up, it is always faulty.
+        node.scalaSourcePos match
+          case None      => report.error("Interactions may not be referenced without further method calls.")
+          case Some(pos) => report.error("Interactions may not be referenced without further method calls.", pos)
         "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
       case SimpleType("Invariant", _) =>
         // Invariants may not be referenced, for mostly same reasons as Derived terms explained above.
