@@ -19,7 +19,7 @@ object Dependencies {
   val scalajsDom  = libraryDependencies += "org.scala-js"          %%% "scalajs-dom"            % "2.8.0"
   val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
   val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.7"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.8"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.17.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.2.1"
 
@@ -30,8 +30,8 @@ object Dependencies {
   val bouncyCastle = libraryDependencies ++=
     List(
       // Note, jdk18 means JDK 1.8
-      "org.bouncycastle" % "bcprov-jdk18on" % "1.80",
-      "org.bouncycastle" % "bcpkix-jdk18on" % "1.80",
+      "org.bouncycastle" % "bcprov-jdk18on" % "1.81",
+      "org.bouncycastle" % "bcpkix-jdk18on" % "1.81",
     )
 
   def borer = libraryDependencies ++= Seq(
@@ -40,7 +40,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.0.21"
+    val jettyVersion = "12.0.22"
     Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
