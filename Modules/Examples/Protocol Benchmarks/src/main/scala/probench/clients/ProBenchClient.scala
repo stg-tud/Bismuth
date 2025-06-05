@@ -10,7 +10,7 @@ import java.util.concurrent.Semaphore
 
 import probench.Codecs.given
 
-class ProBenchClient(val name: Uid, blocking: Boolean = true) extends Client(name) {
+class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolean) extends Client(name, logTimings) {
   type State = RequestResponseQueue[KVOperation[String, String], String]
 
   given localUid: LocalUid = LocalUid(name)

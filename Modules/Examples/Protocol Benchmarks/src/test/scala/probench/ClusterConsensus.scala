@@ -33,7 +33,7 @@ class ClusterConsensus extends munit.FunSuite {
     primary.client.dataManager.addObjectConnection(clientConnection.server)
 
     val clientUid = Uid.gen()
-    val client    = ProBenchClient(clientUid, blocking = true)
+    val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
     client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
 
     client.write("test", "Hi")

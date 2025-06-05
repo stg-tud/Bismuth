@@ -34,7 +34,7 @@ class ClientCLI(name: Uid, client: Client) {
         case Some(multiget(key, times))        => client.multiget(key, parseInt(times))
         case Some(multiput(key, value, times)) => client.multiput(key, value, parseInt(times))
         case Some(mp(times))                   => client.multiput("key%n", "value%n", parseInt(times))
-        case Some(mixed(min, max, times))      => client.mixed(parseInt(min), parseInt(max), parseInt(times))
+        case Some(mixed(min, max, times))      => client.mixed(parseInt(times), parseInt(min), parseInt(max))
         case Some(benchmark()) =>
           client.doBenchmark = true
         case Some(saveBenchmark()) =>

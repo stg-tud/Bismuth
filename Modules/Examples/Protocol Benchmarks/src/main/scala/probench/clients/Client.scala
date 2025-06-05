@@ -8,12 +8,17 @@ import java.nio.file.Path
 import scala.collection.mutable
 
 enum BenchmarkMode {
+  case Fixed
+  case Timed
+}
+
+enum BenchmarkOpType {
   case Read
   case Write
   case Mixed
 }
 
-trait Client(name: Uid) {
+trait Client(name: Uid, logTimings: Boolean) {
 
   var printResults                                     = true
   var doBenchmark: Boolean                             = false
@@ -22,21 +27,43 @@ trait Client(name: Uid) {
   def read(key: String): Unit                 = handleOp(KVOperation.Read(key))
   def write(key: String, value: String): Unit = handleOp(KVOperation.Write(key, value))
 
+  def log(f: => String): Unit = if logTimings then println(f)
+
   def multiget(key: String, times: Int, offset: Int = 0): Unit = {
     val start = System.nanoTime()
     for i <- (offset + 1) to (times + offset) do read(key.replace("%n", i.toString))
-    println(s"Did $times get queries in ${(System.nanoTime() - start) / 1_000_000}ms")
-    println(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
+    log(s"Did $times get queries in ${(System.nanoTime() - start) / 1_000_000}ms")
+    log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
+  }
+
+  def randomMultiGet(key: String, times: Int, min: Int, max: Int): Unit = {
+    val start = System.nanoTime()
+    for _ <- 0 to times do {
+      val index = Math.round(min + Math.random() * (max - min)).toInt
+      read(key.replace("%n", index.toString))
+    }
+    log(s"Did $times get queries in ${(System.nanoTime() - start) / 1_000_000}ms")
+    log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
   }
 
   def multiput(key: String, value: String, times: Int, offset: Int = 0): Unit = {
     val start = System.nanoTime()
     for i <- (offset + 1) to (times + offset) do write(key.replace("%n", i.toString), value.replace("%n", i.toString))
-    println(s"Did $times put queries in ${(System.nanoTime() - start) / 1_000_000}ms")
-    println(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
+    log(s"Did $times put queries in ${(System.nanoTime() - start) / 1_000_000}ms")
+    log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
   }
 
-  def mixed(min: Int, max: Int, times: Int): Unit = {
+  def randomMultiPut(key: String, value: String, times: Int, min: Int, max: Int): Unit = {
+    val start = System.nanoTime()
+    for _ <- 0 to times do {
+      val index = Math.round(min + Math.random() * (max - min)).toInt
+      write(key.replace("%n", index.toString), value.replace("%n", index.toString))
+    }
+    log(s"Did $times put queries in ${(System.nanoTime() - start) / 1_000_000}ms")
+    log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
+  }
+
+  def mixed(times: Int, min: Int, max: Int): Unit = {
     val start = System.nanoTime()
     for i <- 1 to times do {
       val num = Math.round(Math.random() * (max - min) + min).toInt
@@ -45,27 +72,25 @@ trait Client(name: Uid) {
       else
         write(f"key$num", f"value$num")
     }
-    println(s"Did $times mixed queries in ${(System.nanoTime() - start) / 1_000_000}ms")
-    println(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
+    log(s"Did $times mixed queries in ${(System.nanoTime() - start) / 1_000_000}ms")
+    log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
   }
 
-  def benchmark(mode: BenchmarkMode, times: Int, min: Int = 1, max: Int = 10000): Unit = {
-    // printResults = false
-
+  def benchmarkFixed(mode: BenchmarkOpType, warmup: Int, measurement: Int, min: Int, max: Int): Unit = {
     println("Initializing")
 
     mode match
-      case BenchmarkMode.Read | BenchmarkMode.Mixed => multiput("key%n", "value", max)
-      case BenchmarkMode.Write                      =>
+      case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min, min)
+      case BenchmarkOpType.Write                        =>
 
     println("Warmup")
 
     val warmupStart = System.currentTimeMillis()
 
     mode match
-      case BenchmarkMode.Read  => multiget("key%n", 100000)
-      case BenchmarkMode.Write => multiput("warmup%n", "value%n", 100000)
-      case BenchmarkMode.Mixed => mixed(1, 1000, 100000)
+      case BenchmarkOpType.Read  => randomMultiGet("key%n", warmup, min, max)
+      case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", warmup, min, max)
+      case BenchmarkOpType.Mixed => mixed(warmup, min, max)
 
     println("Measurement")
 
@@ -74,26 +99,26 @@ trait Client(name: Uid) {
     val start = System.currentTimeMillis()
 
     mode match
-      case BenchmarkMode.Read  => multiget("key%n", times)
-      case BenchmarkMode.Write => multiput("key%n", "value%n", times)
-      case BenchmarkMode.Mixed => mixed(min, max, times)
+      case BenchmarkOpType.Read  => randomMultiGet("key%n", measurement, min, max)
+      case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", measurement, min, max)
+      case BenchmarkOpType.Mixed => mixed(measurement, min, max)
 
     val duration = System.currentTimeMillis() - start
 
-    println(s"Did $times queries in ${duration}ms")
-    println(s"Did ${times / (duration / 1000)} op/s")
+    println(s"Did $measurement queries in ${duration}ms")
+    println(s"Did ${measurement / (duration / 1000)} op/s")
 
     saveBenchmark(name)
   }
 
-  def benchmarkTimed(warmup: Int, measurement: Int, mode: BenchmarkMode): Unit = {
+  def benchmarkTimed(warmup: Int, measurement: Int, mode: BenchmarkOpType, min: Int, max: Int, blockSize: Int): Unit = {
     printResults = false
 
     println("Initializing")
 
     mode match
-      case BenchmarkMode.Read | BenchmarkMode.Mixed => multiput("key%n", "value%n", 1000)
-      case BenchmarkMode.Write                      =>
+      case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min)
+      case BenchmarkOpType.Write                        =>
 
     println("Warmup")
 
@@ -101,9 +126,9 @@ trait Client(name: Uid) {
 
     while (System.currentTimeMillis() - warmupStart) < warmup * 1000 do {
       mode match
-        case BenchmarkMode.Read  => multiget("key%n", 10, Math.round(Math.random() * 990).toInt)
-        case BenchmarkMode.Write => multiput("key%n", "value%n", 10, Math.round(Math.random() * 990).toInt)
-        case BenchmarkMode.Mixed => mixed(1, 1000, 10)
+        case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
+        case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
+        case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
     }
 
     println("Measurement")
@@ -115,10 +140,10 @@ trait Client(name: Uid) {
 
     while (System.currentTimeMillis() - measurementStart) < measurement * 1000 do {
       mode match
-        case BenchmarkMode.Read  => multiget("key%n", 10, Math.round(Math.random() * 990).toInt)
-        case BenchmarkMode.Write => multiput("key%n", "value%n", 10, Math.round(Math.random() * 990).toInt)
-        case BenchmarkMode.Mixed => mixed(1, 10, 10)
-      queries += 10
+        case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
+        case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
+        case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
+      queries += blockSize
     }
 
     val duration = System.currentTimeMillis() - measurementStart
@@ -135,7 +160,7 @@ trait Client(name: Uid) {
     handleOpImpl(op)
 
     if doBenchmark then {
-      val end = System.nanoTime()
+      val end      = System.nanoTime()
       val opString = op match
         case KVOperation.Read(_)     => "get"
         case KVOperation.Write(_, _) => "put"
@@ -155,12 +180,12 @@ trait Client(name: Uid) {
   }
 
   def saveBenchmark(name: Uid): Unit = {
-    println("Saving Benchmark Data")
     val env           = System.getenv()
     val runId         = env.getOrDefault("RUN_ID", Uid.gen().delegate)
     val system        = env.getOrDefault("SYSTEM_ID", "pb")
     val benchmarkPath = Path.of(env.getOrDefault("BENCH_RESULTS_DIR", "bench-results")).resolve(system).resolve(runId)
-    val writer        = new CSVWriter(";", benchmarkPath, s"${name.delegate}-$runId", BenchmarkData.header)
+    println(s"Saving Benchmark Data to \n\t$benchmarkPath")
+    val writer = new CSVWriter(";", benchmarkPath, s"${name.delegate}-$runId", BenchmarkData.header)
     benchmarkData.foreach { row =>
       writer.writeRow(
         s"${row.name}",

@@ -6,7 +6,7 @@ import probench.data
 import probench.data.KVOperation
 import rdts.base.Uid
 
-class EtcdClient(val name: Uid, val endpoints: List[String]) extends Client(name) {
+class EtcdClient(val name: Uid, val endpoints: List[String], logTimings: Boolean) extends Client(name, logTimings) {
 
   private val etcdClient = jetcd.Client.builder().endpoints(endpoints*).build()
   private val kvClient   = etcdClient.getKVClient

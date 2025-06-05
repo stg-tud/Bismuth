@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
-import probench.clients.{BenchmarkMode, ClientCLI, EtcdClient, ProBenchClient}
+import probench.clients.{BenchmarkMode, BenchmarkOpType, ClientCLI, EtcdClient, ProBenchClient}
 import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation, KVState}
 import rdts.base.Uid
 import rdts.datatypes.experiments.protocols.MultiPaxos
@@ -49,7 +49,7 @@ object cli {
   ): Unit = {
 
     dataManager.prepareBinaryConnection(connection).run(using ()) {
-      case Success(_) => ()
+      case Success(_)  => ()
       case Failure(ex) =>
         println(s"Failed to connect to $connection, retrying in $delay ms, retries: $tries")
         if tries > 0 then
@@ -92,15 +92,27 @@ object cli {
     given benchmarkModeParser: ArgumentValueParser[BenchmarkMode] with
       override def parse(args: List[String]): Result[BenchmarkMode] =
         args match {
-          case "read" :: rest  => Result.Ok(BenchmarkMode.Read, rest)
-          case "write" :: rest => Result.Ok(BenchmarkMode.Write, rest)
-          case "mixed" :: rest => Result.Ok(BenchmarkMode.Mixed, rest)
+          case "fixed" :: rest => Result.Ok(BenchmarkMode.Fixed, rest)
+          case "timed" :: rest => Result.Ok(BenchmarkMode.Timed, rest)
           case _               => Result.Err("not a valid benchmark mode", descriptor)
         }
 
-      override def descriptor: Descriptor = Descriptor("mode", "read|write|mixed")
+      override def descriptor: Descriptor = Descriptor("mode", "fixed|timed")
 
     end benchmarkModeParser
+
+    given benchmarkOpTypeParser: ArgumentValueParser[BenchmarkOpType] with
+      override def parse(args: List[String]): Result[BenchmarkOpType] =
+        args match {
+          case "read" :: rest  => Result.Ok(BenchmarkOpType.Read, rest)
+          case "write" :: rest => Result.Ok(BenchmarkOpType.Write, rest)
+          case "mixed" :: rest => Result.Ok(BenchmarkOpType.Mixed, rest)
+          case _               => Result.Err("not a valid benchmark opType", descriptor)
+        }
+
+      override def descriptor: Descriptor = Descriptor("opType", "read|write|mixed")
+
+    end benchmarkOpTypeParser
 
     given deltaStorageTypeParser: ArgumentValueParser[DeltaStorage.Type] with
       val discarding: Regex = """discarding\((\d+)\)""".r
@@ -119,6 +131,33 @@ object cli {
         Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")
     end deltaStorageTypeParser
 
+    given booleanParser: ArgumentValueParser[Boolean] with
+      override def parse(args: List[String]): Result[Boolean] =
+        args match {
+          case "true" :: rest  => Result.Ok(true, rest)
+          case "false" :: rest => Result.Ok(false, rest)
+          case _               => Result.Err("not a valid boolean", descriptor)
+        }
+
+      override def descriptor: Descriptor = Descriptor("boolean", "true|false")
+    end booleanParser
+
+    class TupleArgumentValueParser[T](preselect: String => Boolean)(using avp: ArgumentValueParser[T])
+        extends ArgumentValueParser[(T, T)] {
+      override def parse(args: List[String]): Result[(T, T)] =
+        avp.parse(args) match
+          case Result.Ok(first, remaining) =>
+            avp.parse(remaining) match
+              case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
+              case Result.Err(_, _, _)          => Result.Err("not a valid tuple", descriptor)
+          case Result.Err(_, _, _) => Result.Err("not a valid tuple", descriptor)
+
+      override def descriptor: Descriptor = avp.descriptor.mapSpec(s => s"$s $s")
+    }
+
+    given [T](using avp: ArgumentValueParser[T]): ArgumentValueParser[(T, T)] =
+      TupleArgumentValueParser[T](arg => !arg.startsWith("--"))
+
     def socketPath(host: String, port: Int) = {
 //      val p = Path.of(s"target/sockets/$name")
 //      Files.createDirectories(p.getParent)
@@ -134,11 +173,19 @@ object cli {
     val name              = named[Uid]("--name", "", Uid.gen())
     val endpoints         = named[List[String]]("--endpoints", "")
     val deltaStorageType  = named[DeltaStorage.Type]("--delta-storage-type", "", DeltaStorage.Type.Merging(2000))
+    val logTimings        = named[Boolean]("--log-timings", "true|false", true)
 
-    val warmup      = named[Int]("--warmup", "warmup period for the benchmark in seconds")
-    val measurement = named[Int]("--measurement", "measurement period for the benchmark in seconds")
-    val times       = named[Int]("--times", "number of operations for the benchmark")
+    /*
+    fixed opType warmup measurement min max
+    timed opType warmup measurement min max blockSize
+     */
+
     val mode        = named[BenchmarkMode]("--mode", "mode for the benchmark")
+    val opType      = named[BenchmarkOpType]("--op-type", "opType for the benchmark")
+    val warmup      = named[Int]("--warmup", "warmup period/operations for the benchmark in seconds")
+    val measurement = named[Int]("--measurement", "measurement period/operations for the benchmark in seconds")
+    val kvRange     = named[(Int, Int)]("--kv-range", "min/max key/value index", (1000, 1999))
+    val blockSize   = named[Int]("--block-size", "block size for timed benchmarks")
 
     val argparse = composedParser {
 
@@ -170,7 +217,7 @@ object cli {
           primary.client.dataManager.addObjectConnection(clientConnection.server)
 
           val clientUid = Uid.gen()
-          val client    = ProBenchClient(clientUid)
+          val client    = ProBenchClient(clientUid, logTimings = false)
           client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
 
           ClientCLI(clientUid, client).startCLI()
@@ -205,8 +252,8 @@ object cli {
               node.connInf.sendHeartbeat()
               node.connInf.checkLiveness()
             },
-            1000,
-            1000
+            100,
+            100
           )
 
           cluster.value.foreach { (host, port) =>
@@ -257,7 +304,7 @@ object cli {
           }
         },
         subcommand("client", "starts a client to interact with a node") {
-          val client = ProBenchClient(name.value)
+          val client = ProBenchClient(name.value, logTimings = logTimings.value)
 
           val (ip, port) = clientNode.value
 
@@ -278,7 +325,7 @@ object cli {
           executor.shutdownNow()
         },
         subcommand("udp-client", "starts a client to interact with a node") {
-          val client = ProBenchClient(name.value)
+          val client = ProBenchClient(name.value, logTimings = logTimings.value)
 
           val (ip, port) = clientNode.value
 
@@ -292,7 +339,7 @@ object cli {
           executor.shutdownNow()
         },
         subcommand("benchmark-client", "starts a benchmark client") {
-          val client = ProBenchClient(name.value)
+          val client = ProBenchClient(name.value, logTimings = logTimings.value)
 
           val (ip, port) = clientNode.value
 
@@ -307,41 +354,58 @@ object cli {
             10
           )
 
-          client.benchmark(mode = mode.value, times = times.value)
+          mode.value match
+            case BenchmarkMode.Timed =>
+              val (min, max) = kvRange.value
+              client.benchmarkTimed(
+                mode = opType.value,
+                warmup = warmup.value,
+                measurement = measurement.value,
+                min = min,
+                max = max,
+                blockSize = blockSize.value
+              )
+            case BenchmarkMode.Fixed =>
+              val (min, max) = kvRange.value
+              client.benchmarkFixed(
+                mode = opType.value,
+                warmup = warmup.value,
+                measurement = measurement.value,
+                min = min,
+                max = max
+              )
 
           abort.closeRequest = true
           executor.shutdownNow()
         },
-        subcommand("benchmark-client-timed", "starts a benchmark client") {
-          val client = ProBenchClient(name.value)
+        subcommand("etcd-benchmark", "starts a benchmark client") {
+          val client = EtcdClient(name.value, endpoints.value, logTimings.value)
 
-          val (ip, port) = clientNode.value
-
-          val nioTCP = NioTCP()
-          val abort  = Abort()
-          ec.execute(() => nioTCP.loopSelection(abort))
-
-          addRetryingLatentConnection(
-            client.dataManager,
-            nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(ip, port))),
-            1000,
-            10
-          )
-
-          client.benchmarkTimed(warmup.value, measurement.value, mode.value)
-
-          abort.closeRequest = true
-          executor.shutdownNow()
-        },
-        subcommand("etcd-client-timed", "starts a benchmark client") {
-          val client = EtcdClient(name.value, endpoints.value)
-
-          client.benchmarkTimed(warmup.value, measurement.value, mode.value)
+          mode.value match
+            case BenchmarkMode.Timed =>
+              val (min, max) = kvRange.value
+              client.benchmarkTimed(
+                mode = opType.value,
+                warmup = warmup.value,
+                measurement = measurement.value,
+                min = min,
+                max = max,
+                blockSize = blockSize.value
+              )
+            case BenchmarkMode.Fixed =>
+              val (min, max) = kvRange.value
+              client.benchmarkFixed(
+                mode = opType.value,
+                warmup = warmup.value,
+                measurement = measurement.value,
+                min = min,
+                max = max
+              )
 
           executor.shutdownNow()
         },
         subcommand("etcd-client", "starts a client to interact with an etcd cluster") {
-          val client = EtcdClient(name.value, endpoints.value)
+          val client = EtcdClient(name.value, endpoints.value, logTimings.value)
 
           ClientCLI(name.value, client).startCLI()
 

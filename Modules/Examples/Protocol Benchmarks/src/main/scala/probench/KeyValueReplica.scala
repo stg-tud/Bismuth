@@ -225,7 +225,7 @@ class KeyValueReplica(
       localUid: LocalUid,
       sendingActor: ExecutionContext,
       var state: ConnInformation = Map.empty,
-      val timeoutThreshold: Long = 5000
+      val timeoutThreshold: Long = 1000
   ) extends State[ConnInformation] {
 
     given Lattice[Payload[ConnInformation]] = Lattice.derived
