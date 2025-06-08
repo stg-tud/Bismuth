@@ -4,7 +4,6 @@ import org.scalacheck.{Arbitrary, Gen, Shrink}
 import rdts.base.*
 import rdts.datatypes.*
 import rdts.datatypes.GrowOnlyList.Node
-import rdts.datatypes.alternatives.{ObserveRemoveSet}
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.{CausalDelta, CausalStore}
 import rdts.dotted.*
@@ -62,14 +61,6 @@ object DataGenerator {
   )
 
   given Lattice[Int] = _ max _
-
-  given arbORSet[A: Arbitrary]: Arbitrary[ObserveRemoveSet[A]] = Arbitrary(for
-    added   <- Gen.nonEmptyListOf(Arbitrary.arbitrary[A])
-    removed <- Gen.listOf(Gen.oneOf(added))
-  yield {
-    val a = added.foldLeft(ObserveRemoveSet.empty[A])((s, v) => Lattice.merge(s, s.add(v)))
-    removed.foldLeft(a)((s, v) => Lattice.merge(s, s.remove(v)))
-  })
 
   val genDot: Gen[Dot] =
     for

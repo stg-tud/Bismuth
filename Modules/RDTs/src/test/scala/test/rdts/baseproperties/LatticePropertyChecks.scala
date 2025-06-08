@@ -3,7 +3,6 @@ package test.rdts.baseproperties
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Lattice}
-import rdts.datatypes.alternatives.ObserveRemoveSet
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.CausalStore
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet}
@@ -38,7 +37,6 @@ class MapChecks               extends LatticePropertyChecks[Map[String, Int]]
 class OptionChecks            extends LatticePropertyChecks[Option[Int]]
 class CusalLwwChecks          extends LatticePropertyChecks[LastWriterWins[Int]]
 class LWWOptionChecks         extends LatticePropertyChecks[Option[LastWriterWins[Int]]]
-class OrSetChecks             extends LatticePropertyChecks[ObserveRemoveSet[Int]]
 class PosNegChecks            extends LatticePropertyChecks[PosNegCounter]
 class TupleChecks             extends LatticePropertyChecks[(Set[Int], GrowOnlyCounter)]
 class VectorClockChecks       extends LatticePropertyChecks[VectorClock]
