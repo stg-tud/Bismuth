@@ -22,7 +22,6 @@ lazy val app = (project in file("app"))
       "org.scala-js" %%% "scalajs-dom" % "2.8.0",
     ),
     scalaJSUseMainModuleInitializer := true,
-    mainClass := Some("Main"),
     Compile / fastOptJS / crossTarget := baseDirectory.value,
     Compile / fullOptJS / crossTarget := baseDirectory.value
   )
