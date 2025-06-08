@@ -35,10 +35,10 @@ case class Spreadsheet(
     )
     Obrem(
       Spreadsheet(
-        rowIds = rowIds.append(rowId).data
-        // keepRows = keepRowsUpdate.data
+        rowIds = rowIds.append(rowId).data,
+        keepRows = keepRowsUpdate.data
       ),
-      Dots.single(rowId),
+      keepRowsUpdate.observed `union` Dots.single(rowId),
       Dots.empty
     )
   }
@@ -52,10 +52,10 @@ case class Spreadsheet(
     )
     Obrem(
       Spreadsheet(
-        colIds = colIds.append(colId).data
-        // keepCols = keepColsUpdate.data
+        colIds = colIds.append(colId).data,
+        keepCols = keepColsUpdate.data
       ),
-      Dots.single(colId),
+      keepColsUpdate.observed `union` Dots.single(colId),
       Dots.empty
     )
   }
@@ -64,7 +64,7 @@ case class Spreadsheet(
     val keepRowsUpdate = keepRows.update(rowIds.read(rowIdx).get, MultiValueRegister(Map.empty))
     Obrem(
       Spreadsheet(
-        // keepRows = keepRowsUpdate.data
+        keepRows = keepRowsUpdate.data
       ),
       Dots.empty,
       rowIds.delete(rowIdx).context
@@ -75,7 +75,7 @@ case class Spreadsheet(
     val keepColsUpdate = keepCols.update(colIds.read(colIdx).get, MultiValueRegister(Map.empty))
     Obrem(
       Spreadsheet(
-        // keepCols = keepColsUpdate.data
+        keepCols = keepColsUpdate.data
       ),
       Dots.empty,
       colIds.delete(colIdx).context
@@ -88,8 +88,7 @@ case class Spreadsheet(
       Spreadsheet(
         rowIds = rowIds.insert(rowIdx, rowId).data
       ),
-      // Dots.from(keepRows.queryKey(rowId).values).add(rowId),
-      Dots.single(rowId),
+      Dots.from(keepRows.queryKey(rowId).values) `union` Dots.single(rowId),
       Dots.empty
     )
   }
@@ -100,8 +99,7 @@ case class Spreadsheet(
       Spreadsheet(
         colIds = colIds.insert(colIdx, colId).data
       ),
-      // Dots.from(keepCols.queryKey(colId).values).add(colId),
-      Dots.single(colId),
+      Dots.from(keepCols.queryKey(colId).values) `union` Dots.single(colId),
       Dots.empty
     )
   }
@@ -118,14 +116,12 @@ case class Spreadsheet(
 
     Obrem(
       Spreadsheet(
-        rowIds = rowIds,
-        colIds = colIds,
-        content = Map(colId -> Map(rowId -> LastWriterWins(CausalTime.now(), content)))
-        // keepRows = keepRowsUpdate.data,
-        // keepCols = keepColsUpdate.data
+        rowIds = rowIds, colIds = colIds,
+        content = Map(colId -> Map(rowId -> LastWriterWins(CausalTime.now(), content))),
+        keepRows = keepRowsUpdate.data,
+        keepCols = keepColsUpdate.data
       ),
-      // (keepRowsUpdate.observed `union` keepRowsUpdate.observed).add(colId).add(rowId),
-      Dots.single(colId).add(rowId),
+      (keepRowsUpdate.observed `union` keepRowsUpdate.observed).add(colId).add(rowId),
       Dots.empty
     )
   }
