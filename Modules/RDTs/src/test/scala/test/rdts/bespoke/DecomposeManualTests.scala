@@ -3,8 +3,7 @@ package test.rdts.bespoke
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.GrowOnlySet.{elements, insert}
-import rdts.datatypes.contextual.MultiVersionRegister
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, PosNegCounter}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, MultiVersionRegister, PosNegCounter}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.UtilHacks.*
@@ -57,27 +56,27 @@ class DecomposeManualTests extends munit.ScalaCheckSuite {
   }
 
 
-  test("Dotted[MultiVersionRegister[Int]] decomposition") {
+  test("MultiVersionRegister[Int] decomposition") {
 
-    val empty: Dotted[MultiVersionRegister[Int]] = Dotted(Bottom[MultiVersionRegister[Int]].empty)
+    val empty: MultiVersionRegister[Int] = Bottom[MultiVersionRegister[Int]].empty
 
-    val delta_1: Dotted[MultiVersionRegister[Int]] = empty.mod(_.write(using r1)(1))
-    assertEquals(delta_1.data.read, Set(1))
+    val delta_1: MultiVersionRegister[Int] = empty.write(using r1)(1)
+    assertEquals(delta_1.read, Set(1))
 
     // delta_1 and delta_2 are in parallel
 
-    val delta_2: Dotted[MultiVersionRegister[Int]] = empty.mod(_.write(using r2)(2))
-    assertEquals(delta_2.data.read, Set(2))
+    val delta_2: MultiVersionRegister[Int] = empty.write(using r2)(2)
+    assertEquals(delta_2.read, Set(2))
 
-    val merged: Dotted[MultiVersionRegister[Int]] = Lattice.merge(delta_1, delta_2)
-    assertEquals(merged.data.read, Set(1, 2))
+    val merged: MultiVersionRegister[Int] = Lattice.merge(delta_1, delta_2)
+    assertEquals(merged.read, Set(1, 2))
 
-    val decomposed: Seq[Dotted[MultiVersionRegister[Int]]] =
-      Decompose.decompose(merged).toSeq.sortBy(_.data.read.headOption)
+    val decomposed: Seq[MultiVersionRegister[Int]] =
+      Decompose.decompose(merged).toSeq.sortBy(_.read.headOption)
     // MultiVersionRegister decomposes every version
     assertEquals(decomposed.size, 2)
-    assertEquals(decomposed(0).data.read, Set(1))
-    assertEquals(decomposed(1).data.read, Set(2))
+    assertEquals(decomposed(0).read, Set(1))
+    assertEquals(decomposed(1).read, Set(2))
   }
 
   test("Dotted[LastWriterWins[Int]] decomposition") {

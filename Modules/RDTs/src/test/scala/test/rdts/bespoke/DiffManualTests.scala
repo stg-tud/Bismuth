@@ -3,8 +3,7 @@ package test.rdts.bespoke
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.GrowOnlySet.{elements, insert}
-import rdts.datatypes.contextual.MultiVersionRegister
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, PosNegCounter}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, MultiVersionRegister, PosNegCounter}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.UtilHacks.*
@@ -95,34 +94,34 @@ class DiffManualTests extends munit.ScalaCheckSuite {
     assertEquals(merged_diff_delta_2.isDefined, false, "delta_2 should be contained in merged")
   }
 
-  test("Dotted[MultiVersionRegister[Int]] diff") {
+  test("MultiVersionRegister[Int] diff") {
 
-    val empty: Dotted[MultiVersionRegister[Int]] = Dotted(Bottom[MultiVersionRegister[Int]].empty)
+    val empty: MultiVersionRegister[Int] = Bottom[MultiVersionRegister[Int]].empty
 
-    val delta_1: Dotted[MultiVersionRegister[Int]] = empty.mod(_.write(using r1)(1))
-    assertEquals(delta_1.data.read, Set(1))
+    val delta_1: MultiVersionRegister[Int] = empty.write(using r1)(1)
+    assertEquals(delta_1.read, Set(1))
 
     // delta_1 and delta_2 are in parallel
 
-    val delta_2: Dotted[MultiVersionRegister[Int]] = empty.mod(_.write(using r2)(2))
-    assertEquals(delta_2.data.read, Set(2))
+    val delta_2: MultiVersionRegister[Int] = empty.write(using r2)(2)
+    assertEquals(delta_2.read, Set(2))
 
-    val merged: Dotted[MultiVersionRegister[Int]] = Lattice.merge(delta_1, delta_2)
-    assertEquals(merged.data.read, Set(1, 2))
+    val merged: MultiVersionRegister[Int] = Lattice.merge(delta_1, delta_2)
+    assertEquals(merged.read, Set(1, 2))
 
-    val delta_1_diff_delta_2: Option[Dotted[MultiVersionRegister[Int]]] =
+    val delta_1_diff_delta_2: Option[MultiVersionRegister[Int]] =
       Lattice.diff(delta_1, delta_2)
     assertEquals(delta_1_diff_delta_2.isDefined, true, "delta_2 is not contained in delta_1")
 
-    val delta_2_diff_delta_1: Option[Dotted[MultiVersionRegister[Int]]] =
+    val delta_2_diff_delta_1: Option[MultiVersionRegister[Int]] =
       Lattice.diff(delta_2, delta_1)
     assertEquals(delta_2_diff_delta_1.isDefined, true, "delta_1 is not contained in delta_2")
 
-    val merged_diff_delta_1: Option[Dotted[MultiVersionRegister[Int]]] =
+    val merged_diff_delta_1: Option[MultiVersionRegister[Int]] =
       Lattice.diff(merged, delta_1)
     assertEquals(merged_diff_delta_1.isDefined, false, "delta_1 should be contained in merged")
 
-    val merged_diff_delta_2: Option[Dotted[MultiVersionRegister[Int]]] =
+    val merged_diff_delta_2: Option[MultiVersionRegister[Int]] =
       Lattice.diff(merged, delta_2)
     assertEquals(merged_diff_delta_2.isDefined, false, "delta_2 should be contained in merged")
   }

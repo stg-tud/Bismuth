@@ -4,16 +4,22 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import deltaAntiEntropy.tests.NetworkGenerators.*
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
+import lofi_acl.access.A
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
-import rdts.datatypes.contextual.MultiVersionRegister
+import rdts.datatypes.MultiVersionRegister
+import rdts.dotted.{Dotted, DottedLattice, HasDots}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
 import scala.util.Random
 
 object MVRegisterGenerators {
+
+  given [A]: HasDots[MultiVersionRegister[A]] = HasDots.noDots
+  given [A]: DottedLattice[MultiVersionRegister[A]] = Dotted.lattice
+
   def genMVRegister[A: Lattice](using
       a: Arbitrary[A],
       cA: JsonValueCodec[A],
@@ -28,8 +34,8 @@ object MVRegisterGenerators {
       val ops = Random.shuffle(values.indices ++ List.fill(nClear.toInt)(-1))
 
       ops.foldLeft(AntiEntropyContainer[MultiVersionRegister[A]](ae)) {
-        case (r, -1) => r.mod(_.clear())
-        case (r, n)  => r.mod(_.write(using r.replicaID)(values(n)))
+        case (r, -1) => r.map(_.clear())
+        case (r, n)  => r.map(_.write(using r.replicaID)(values(n)))
       }
     }
 
@@ -48,7 +54,7 @@ class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
 
   property("write") {
     forAll { (reg: AntiEntropyContainer[MultiVersionRegister[Int]], v: Int) =>
-      val written = reg.mod(_.write(using reg.replicaID)(v))
+      val written = reg.modn(_.write(using reg.replicaID)(v))
 
       assert(
         written.data.read == Set(v),
@@ -58,7 +64,7 @@ class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
   }
   property("clear") {
     forAll { (reg: AntiEntropyContainer[MultiVersionRegister[Int]]) =>
-      val cleared = reg.mod(_.clear())
+      val cleared = reg.modn(_.clear())
 
       assert(
         cleared.data.read.isEmpty,
@@ -73,8 +79,8 @@ class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
       val aea = new AntiEntropy[MultiVersionRegister[Int]]("a", network, mutable.Buffer("b"))
       val aeb = new AntiEntropy[MultiVersionRegister[Int]]("b", network, mutable.Buffer("a"))
 
-      val ra0 = AntiEntropyContainer[MultiVersionRegister[Int]](aea).mod(_.write(using aea.localUid)(vA))
-      val rb0 = AntiEntropyContainer[MultiVersionRegister[Int]](aeb).mod(_.write(using aeb.localUid)(vB))
+      val ra0 = AntiEntropyContainer[MultiVersionRegister[Int]](aea).modn(_.write(using aea.localUid)(vA))
+      val rb0 = AntiEntropyContainer[MultiVersionRegister[Int]](aeb).modn(_.write(using aeb.localUid)(vB))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -98,8 +104,8 @@ class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
       val aea = new AntiEntropy[MultiVersionRegister[Int]]("a", network, mutable.Buffer("b"))
       val aeb = new AntiEntropy[MultiVersionRegister[Int]]("b", network, mutable.Buffer("a"))
 
-      val ra0 = AntiEntropyContainer[MultiVersionRegister[Int]](aea).mod(_.write(using aea.localUid)(v))
-      val rb0 = AntiEntropyContainer[MultiVersionRegister[Int]](aeb).mod(_.clear())
+      val ra0 = AntiEntropyContainer[MultiVersionRegister[Int]](aea).modn(_.write(using aea.localUid)(v))
+      val rb0 = AntiEntropyContainer[MultiVersionRegister[Int]](aeb).modn(_.clear())
 
       AntiEntropy.sync(aea, aeb)
 
@@ -127,12 +133,12 @@ class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
         val opsB = Random.shuffle(valuesB.indices ++ List.fill(nClearB.toInt)(-1))
 
         val ra0 = opsA.foldLeft(AntiEntropyContainer[MultiVersionRegister[Int]](aea)) {
-          case (r, -1) => r.mod(_.clear())
-          case (r, n)  => r.mod(_.write(using r.replicaID)(valuesA(n)))
+          case (r, -1) => r.modn(_.clear())
+          case (r, n)  => r.modn(_.write(using r.replicaID)(valuesA(n)))
         }
         val rb0 = opsB.foldLeft(AntiEntropyContainer[MultiVersionRegister[Int]](aeb)) {
-          case (r, -1) => r.mod(_.clear())
-          case (r, n)  => r.mod(_.write(using r.replicaID)(valuesB(n)))
+          case (r, -1) => r.modn(_.clear())
+          case (r, n)  => r.modn(_.write(using r.replicaID)(valuesB(n)))
         }
 
         AntiEntropy.sync(aea, aeb)

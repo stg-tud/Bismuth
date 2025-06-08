@@ -9,7 +9,7 @@ import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
 import rdts.datatypes.contextual.ReplicatedList
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.CausalStore
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, PosNegCounter, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, TwoPhaseSet, contextual}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots, VectorClock}
 import test.rdts.DataGenerator.RGAGen.given
@@ -32,7 +32,7 @@ class DotSetChecks            extends LatticePropertyChecks[Dotted[Dots]]
 class EnableWinsFlagChecks    extends LatticePropertyChecks[EnableWinsFlag]
 class DotFunChecks            extends LatticePropertyChecks[Dotted[Map[Dot, Int]]]
 class DotFunExampleChecks     extends LatticePropertyChecks[Dotted[Map[Dot, ExampleData]]]
-class ConMultiVersionChecks   extends LatticePropertyChecks[Dotted[contextual.MultiVersionRegister[Int]]]
+class ConMultiVersionChecks   extends LatticePropertyChecks[MultiVersionRegister[Int]]
 class DotMapChecks            extends LatticePropertyChecks[Dotted[Map[rdts.base.Uid, Dots]]](expensive = true)
 class GrowOnlyCounterChecks   extends LatticePropertyChecks[GrowOnlyCounter]
 class GrowOnlyMapChecks       extends LatticePropertyChecks[GrowOnlyMap[String, Int]]

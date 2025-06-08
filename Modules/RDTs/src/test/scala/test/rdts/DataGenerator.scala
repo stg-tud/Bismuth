@@ -166,9 +166,12 @@ object DataGenerator {
     (dotted.context.decomposed.iterator concat dotted.context.iterator.map(Dots.single)).toStream.flatMap: e =>
       dotted.data.removeDots(e).map(Dotted(_, dotted.context.subtract(e)))
 
-  given arbCMultiVersion[E](using arb: Arbitrary[E]): Arbitrary[contextual.MultiVersionRegister[E]] = Arbitrary:
-    Gen.listOf(Gen.zip(uniqueDot, arb.arbitrary)).map: pairs =>
-      MultiVersionRegister(pairs.toMap)
+  given arbCMultiVersion[E](using arb: Arbitrary[E]): Arbitrary[MultiVersionRegister[E]] = Arbitrary {
+    for
+      elements <- Gen.listOf(Gen.zip(uniqueDot, arb.arbitrary))
+      removed <- arbDots.arbitrary
+    yield MultiVersionRegister(elements.toMap, removed)
+  }
 
   given arbEnableWinsFlag: Arbitrary[EnableWinsFlag] = Arbitrary {
     for

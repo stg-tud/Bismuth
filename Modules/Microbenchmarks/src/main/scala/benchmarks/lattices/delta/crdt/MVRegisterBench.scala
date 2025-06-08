@@ -3,7 +3,7 @@ package benchmarks.lattices.delta.crdt
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.contextual.MultiVersionRegister
+import rdts.datatypes.MultiVersionRegister
 import rdts.dotted.Dotted
 
 import java.util.concurrent.TimeUnit
@@ -21,24 +21,24 @@ class MVRegisterBench {
   var numWrites: Int = scala.compiletime.uninitialized
 
   given Lattice[Int]                                    = math.max
-  var reg: DeltaBufferDotted[MultiVersionRegister[Int]] = scala.compiletime.uninitialized
+  var reg: NamedDeltaBuffer[MultiVersionRegister[Int]] = scala.compiletime.uninitialized
 
   @Setup
   def setup(): Unit = {
-    reg = (0 until numWrites).foldLeft(NamedDeltaBuffer.dotted("-1".asId, MultiVersionRegister.empty[Int])) {
+    reg = (0 until numWrites).foldLeft(NamedDeltaBuffer("-1".asId, MultiVersionRegister.empty[Int])) {
       case (r, i) =>
         given rid: LocalUid = i.toString.asId
-        val delta           = Dotted(MultiVersionRegister.empty[Int]).mod(_.write(i))
+        val delta           = MultiVersionRegister.empty[Int].write(i)
         r.applyDelta(rid.uid, delta)
     }
   }
 
   @Benchmark
-  def read(): Set[Int] = reg.data.read
+  def read(): Set[Int] = reg.state.read
 
   @Benchmark
-  def write(): DeltaBufferDotted[MultiVersionRegister[Int]] = reg.mod(_.write(using reg.replicaID)(-1))
+  def write(): NamedDeltaBuffer[MultiVersionRegister[Int]] = reg.mod(_.write(using reg.replicaID)(-1))
 
   @Benchmark
-  def clear(): DeltaBufferDotted[MultiVersionRegister[Int]] = reg.mod(_.clear())
+  def clear(): NamedDeltaBuffer[MultiVersionRegister[Int]] = reg.mod(_.clear())
 }
