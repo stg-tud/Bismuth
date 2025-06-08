@@ -29,7 +29,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     aec.modn(_.insert(using aec.replicaID)(0, "00"))
 
-    aec.modn(_.update(using LocalUid.predefined("b"))(0, "UPD"))
+    aec.modn(_.update(0, "UPD"))
 
     assertEquals(aec.data.toList, List("UPD"))
 
@@ -111,11 +111,11 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
       }
 
       val deleted = removedAB._1.foldLeft(inserted) {
-        case (rga, i) => rga.modn(_.delete(using rga.replicaID)(i))
+        case (rga, i) => rga.modn(_.delete(i))
       }
 
       updatedAB._1.foldLeft(deleted) {
-        case (rga, (i, e)) => rga.modn(_.update(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.modn(_.update(i, e))
       }
     }
 
@@ -125,11 +125,11 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
       }
 
       val deleted = removedAB._2.foldLeft(inserted) {
-        case (rga, i) => rga.modn(_.delete(using rga.replicaID)(i))
+        case (rga, i) => rga.modn(_.delete(i))
       }
 
       updatedAB._2.foldLeft(deleted) {
-        case (rga, (i, e)) => rga.modn(_.update(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.modn(_.update(i, e))
       }
     }
 

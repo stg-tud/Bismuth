@@ -1,6 +1,5 @@
 package lofi_acl.collections
 
-import lofi_acl.collections.DeltaStore
 import rdts.base.{Bottom, Lattice}
 import rdts.time.{Dot, Dots}
 

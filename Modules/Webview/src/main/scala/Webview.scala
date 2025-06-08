@@ -7,6 +7,7 @@ import replication.DeltaDissemination
 import webview.WebView
 
 import java.nio.file.{Files, Path, StandardOpenOption}
+import scala.annotation.unused
 import scala.concurrent.Future
 
 object Webview {
@@ -46,6 +47,7 @@ object Webview {
     w.run()
   }
 
+  @unused
   private def callbackTests(w: WebView) = {
     w.init(
       raw"""

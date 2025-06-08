@@ -11,7 +11,7 @@ import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
 
-import scala.collection.immutable.Queue
+import scala.annotation.{nowarn, unused}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -35,7 +35,7 @@ object DeltaDissemination {
 class DeltaDissemination[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
-    crypto: Option[Aead] = None,
+  @unused crypto: Option[Aead] = None,
     immediateForward: Boolean = false,
     sendingActor: ExecutionContext = DeltaDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),

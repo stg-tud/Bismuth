@@ -3,6 +3,7 @@ package dtn.routing
 import dtn.{DtnPeer, MonitoringClientInterface, NoMonitoringClient, Packet, PreviousNodeBlock, Sender, WSEroutingClient}
 
 import java.util.concurrent.ConcurrentHashMap
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
@@ -65,7 +66,7 @@ class EpidemicStrategy {
 
   def onRequestSenderForBundle(
       peers: ConcurrentHashMap[String, DtnPeer],
-      services: ConcurrentHashMap[Int, String],
+      @unused services: ConcurrentHashMap[Int, String],
       packet: Packet.RequestSenderForBundle
   ): Option[Packet.ResponseSenderForBundle] = {
     val selected_clas = peers.asScala

@@ -2,7 +2,8 @@ package rdts.time
 
 import rdts.base.{Decompose, Lattice}
 
-import java.util
+import scala.annotation.unused
+
 
 /** Efficient storage of a set of [[Time]] when most stored values are contiguous ranges. */
 class ArrayRanges(
@@ -106,8 +107,8 @@ class ArrayRanges(
   def next: Option[Time] = Option.when(used != 0)(inner(used - 1))
 
   def iterator: Iterator[Time] = new Iterator[Time] {
-    var pos   = 0
-    var value = if used == 0 then 0 else inner(0)
+    @unused var pos   = 0
+    @unused var value = if used == 0 then 0 else inner(0)
 
     override def hasNext: Boolean = used > pos
     override def next(): Time     =

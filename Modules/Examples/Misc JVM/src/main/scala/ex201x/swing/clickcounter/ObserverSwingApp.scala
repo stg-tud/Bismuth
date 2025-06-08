@@ -1,5 +1,6 @@
 package ex201x.swing.clickcounter
 
+import scala.annotation.unused
 import scala.swing.*
 import scala.swing.event.*
 
@@ -23,7 +24,7 @@ object ObserverSwingApp extends SimpleSwingApplication {
 
       /* The logic */
       listenTo(button)
-      var nClicks = 0
+      @unused var nClicks = 0
       reactions += {
         case ButtonClicked(b) =>
           nClicks += 1

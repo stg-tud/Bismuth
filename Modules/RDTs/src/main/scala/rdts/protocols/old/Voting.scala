@@ -3,8 +3,6 @@ package rdts.protocols.old
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{Epoch, LastWriterWins, ReplicatedSet}
-import rdts.dotted.Dotted
-import rdts.time.Dots
 
 case class Vote(leader: Uid, voter: Uid)
 
@@ -15,7 +13,7 @@ case class Voting(rounds: Epoch[ReplicatedSet[Vote]], numParticipants: LastWrite
     val (id, count) = leadingCount
     id == replicaId && count >= threshold
 
-  def request(using LocalUid, Dots): Voting =
+  def request(using LocalUid): Voting =
     if !rounds.value.isEmpty then Voting.unchanged
     else voteFor(replicaId)
 
@@ -24,16 +22,16 @@ case class Voting(rounds: Epoch[ReplicatedSet[Vote]], numParticipants: LastWrite
     then Voting.unchanged
     else Voting(Epoch(rounds.counter + 1, ReplicatedSet.empty), numParticipants)
 
-  def upkeep(using LocalUid, Dots): Voting =
+  def upkeep(using LocalUid): Voting =
     val (id, count) = leadingCount
     if checkIfMajorityPossible(count)
     then voteFor(id)
     else forceRelease
 
-  def forceRelease(using LocalUid): Voting =
+  def forceRelease: Voting =
     Voting(Epoch(rounds.counter + 1, ReplicatedSet.empty), numParticipants)
 
-  def voteFor(uid: Uid)(using LocalUid, Dots): Voting =
+  def voteFor(uid: Uid)(using LocalUid): Voting =
     if rounds.value.elements.exists { case Vote(_, voter) => voter == replicaId }
     then Voting.unchanged // already voted!
     else

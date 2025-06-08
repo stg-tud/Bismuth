@@ -1,7 +1,7 @@
 package reactives.extra.lenses
 
 import reactives.SelectedScheduler.State
-import reactives.core.{CreationScope, CreationTicket, Disconnectable, PlanTransactionScope, Scheduler}
+import reactives.core.{CreationScope, CreationTicket, Disconnectable, PlanTransactionScope}
 import reactives.operator.{Event, Evt, Flatten, Signal}
 
 /** LVars serve as the basis for reactive lenses. To create the root of a new LVar cluster, use the apply() function
@@ -39,7 +39,7 @@ class LVar[M] private[reactives] (val state: Signal[M], events: Evt[Event[M]]) {
   ): Disconnectable = state.observe(onValue, onError, fireImmediately)
 
   /** Function to access state of LVar in reactives. Simple wrapper for internal.value. */
-  inline def value(using sched: Scheduler[State]): M = state.value
+  inline def value: M = state.value
 
 }
 

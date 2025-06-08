@@ -17,7 +17,7 @@ class TravelPlanViewModel(model: TravelPlanModel) extends GridPane {
   val titleTextField: TextField = TextField()
 
   titleTextField.text = model.title.get()
-  model.title.onChange((op, oldVal, newVal) =>
+  model.title.onChange((_, _, _) =>
     if !titleTextField.isFocused then
       titleTextField.text = model.state.title.read
   )

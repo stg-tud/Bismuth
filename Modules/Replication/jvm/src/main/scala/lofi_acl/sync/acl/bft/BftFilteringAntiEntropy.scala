@@ -12,19 +12,20 @@ import lofi_acl.sync.acl.bft.BftFilteringAntiEntropy.SyncMsg
 import lofi_acl.sync.acl.bft.BftFilteringAntiEntropy.SyncMsg.*
 import lofi_acl.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
 import lofi_acl.sync.acl.monotonic.PartialReplicationPeerSubsetSolver
-import lofi_acl.sync.{ConnectionManager, JsoniterCodecs, MessageReceiver, MessageSerialization}
+import lofi_acl.sync.{ConnectionManager, MessageReceiver, MessageSerialization}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.unused
 import scala.collection.immutable.Queue
 import scala.util.Random
 
 // Responsible for enforcing ACL
 class BftFilteringAntiEntropy[RDT](
     localIdentity: PrivateIdentity,
-    aclRoot: EncodedDelegation,
+    @unused aclRoot: EncodedDelegation,
     syncInstance: SyncWithBftMonotonicAcl[RDT]
 )(using
     rdtCodec: JsonValueCodec[RDT],
@@ -47,6 +48,7 @@ class BftFilteringAntiEntropy[RDT](
   // Stores inbound messages
   val msgQueue: LinkedBlockingQueue[(SyncMsg[RDT], PublicIdentity)] = LinkedBlockingQueue()
   // Stores deltas that couldn't be processed because of missing causal dependencies
+  @unused
   private var aclMessageBacklog: Map[Signature, Delegation] = Map.empty
   private var deltaMessageBacklog                           = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
 

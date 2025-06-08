@@ -8,7 +8,6 @@ import org.bouncycastle.crypto.util.DigestFactory
 import rdts.time.Dot
 
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.{KeyPair, SecureRandom}
 
@@ -35,7 +34,7 @@ class KeyDerivationKey /* private constructor to make sure that ikm is not modif
   }
 
   def recursiveChildKeyDerivationKey(path: Array[String]): KeyDerivationKey = {
-    val outputKeyMaterial = path.foldLeft(inputKeyMaterial) { (ikm, pathElement) =>
+    val outputKeyMaterial = path.foldLeft(inputKeyMaterial) { (_, pathElement) =>
       generateChildKeyDerivationKeyMaterial(inputKeyMaterial, pathElement)
     }
     KeyDerivationKey(outputKeyMaterial)

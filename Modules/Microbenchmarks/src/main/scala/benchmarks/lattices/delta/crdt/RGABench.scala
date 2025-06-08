@@ -54,20 +54,20 @@ class RGABench {
   def appendTen(): SUT = rga.mod(_.appendAll(using rga.replicaID)(rgaSize until rgaSize + 10))
 
   @Benchmark
-  def updateFirst(): SUT = rga.mod(_.update(using rga.replicaID)(0, -1))
+  def updateFirst(): SUT = rga.mod(_.update(0, -1))
 
   @Benchmark
-  def updateLast(): SUT = rga.mod(_.update(using rga.replicaID)(rgaSize - 1, -1))
+  def updateLast(): SUT = rga.mod(_.update(rgaSize - 1, -1))
 
   @Benchmark
-  def deleteFirst(): SUT = rga.mod(_.delete(using rga.replicaID)(0))
+  def deleteFirst(): SUT = rga.mod(_.delete(0))
 
   @Benchmark
-  def deleteLast(): SUT = rga.mod(_.delete(using rga.replicaID)(rgaSize - 1))
+  def deleteLast(): SUT = rga.mod(_.delete(rgaSize - 1))
 
   @Benchmark
   def clear(): SUT = rga.mod(_.clear())
 
   @Benchmark
-  def purgeTombstones(): SUT = rgaCleared.mod(_.purgeTombstones(using rgaCleared.replicaID)())
+  def purgeTombstones(): SUT = rgaCleared.mod(_.purgeTombstones())
 }

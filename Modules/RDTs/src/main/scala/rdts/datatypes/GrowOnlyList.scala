@@ -109,7 +109,7 @@ object GrowOnlyList {
   def empty[E]: GrowOnlyList[E] = GrowOnlyList(Map.empty)
 
   given bottomInstance[E]: Bottom[GrowOnlyList[E]]    = Bottom.derived
-  given hasDots[E: HasDots]: HasDots[GrowOnlyList[E]] = HasDots.noDots
+  given hasDots[E]: HasDots[GrowOnlyList[E]] = HasDots.noDots
 
   given lattice[E]: Lattice[GrowOnlyList[E]] with Decompose[GrowOnlyList[E]] with {
     override def subsumption(

@@ -1,7 +1,7 @@
 package reactives.extra.reactivestreams
 
 import reactives.SelectedScheduler.State
-import reactives.core.{Base, Derived, DynamicScope, PlanTransactionScope, ReInfo, ReadAs, Scheduler}
+import reactives.core.{Base, Derived, PlanTransactionScope, ReInfo, ReadAs, Scheduler}
 import reactives.operator.*
 import reactives.structure.Pulse
 

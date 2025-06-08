@@ -2,15 +2,12 @@ package ex2021encfxtodo.sync
 
 import channels.NioTCP
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, LegacyKeysetSerialization, RegistryConfiguration}
-import rdts.base.{Bottom, Lattice, LocalUid}
-import rdts.dotted.{Dotted, HasDots, Obrem}
+import rdts.base.LocalUid
 import replication.DeltaDissemination
-import replication.JsoniterCodecs.given
 
-import java.net.{InetSocketAddress, Socket, URI}
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
@@ -24,7 +21,7 @@ class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aea
     Try(aead.decrypt(data, associated))
 }
 
-class DataManagerConnectionManager[State: {JsonValueCodec, Lattice, Bottom, HasDots}](
+class DataManagerConnectionManager[State: {JsonValueCodec}](
     replicaId: LocalUid,
     receiveCallback: State => Unit
 ) extends ConnectionManager[State] {

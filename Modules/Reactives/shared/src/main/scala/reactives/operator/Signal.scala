@@ -6,7 +6,6 @@ import reactives.macros.MacroAccess
 import reactives.structure.RExceptions.{EmptySignalControlThrowable, ObservedException}
 import reactives.structure.{Diff, Observe, Pulse, RExceptions, SignalImpl}
 
-import scala.annotation.nowarn
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 import scala.util.control.NonFatal

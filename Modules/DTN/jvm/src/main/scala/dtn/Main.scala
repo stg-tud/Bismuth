@@ -1,12 +1,7 @@
 package dtn
 
-import _root_.replication.DeltaDissemination
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import dtn.rdt.{Channel, Client, ClientOperationMode}
+import dtn.rdt.ClientOperationMode
 import dtn.routing.{BaseRouter, DirectRouter, EpidemicRouter, FloodingRouter, RandomSprayRouter, RdtRouter, RdtRouter2, SprayAndWaitRouter}
-import rdts.base.LocalUid
-import rdts.time.Dots
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

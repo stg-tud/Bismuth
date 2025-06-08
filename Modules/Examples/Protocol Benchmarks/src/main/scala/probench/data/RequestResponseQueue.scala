@@ -21,7 +21,7 @@ case class RequestResponseQueue[S, T](
     val updated    = myRequests.value + Req(value, replicaId, timestamp)
     RequestResponseQueue(requests = Map(replicaId -> myRequests.write(updated)))
 
-  def respond(request: Req[S], value: T)(using LocalUid): RequestResponseQueue[S, T] =
+  def respond(request: Req[S], value: T): RequestResponseQueue[S, T] =
     RequestResponseQueue(responses =
       Map(request.timestamp -> Res(value))
     )

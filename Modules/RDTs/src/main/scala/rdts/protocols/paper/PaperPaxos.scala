@@ -25,14 +25,12 @@ case class Paxos[A](
   // voting
   def voteLeader(leader: Uid)(using
       LocalUid,
-      Participants
   ): PaxosRound[A] =
     PaxosRound(leaderElection =
       currentRound.getOrElse(PaxosRound()).leaderElection.voteFor(leader)
     )
   def voteValue(value: A)(using
       LocalUid,
-      Participants
   ): PaxosRound[A] =
     PaxosRound(proposals =
       currentRound.getOrElse(PaxosRound()).proposals.voteFor(value)
@@ -57,14 +55,14 @@ case class Paxos[A](
     case _ => false
 
   // protocol actions:
-  def phase1a(using LocalUid, Participants): Paxos[A] =
+  def phase1a(using LocalUid): Paxos[A] =
     // try to become leader
     Paxos(Map(nextBallotNum -> voteLeader(replicaId)))
-  def phase1a(value: A)(using LocalUid, Participants): Paxos[A] =
+  def phase1a(value: A)(using LocalUid): Paxos[A] =
     // try to become leader
     Paxos(Map(nextBallotNum -> voteLeader(replicaId), BallotNum(replicaId, -1) -> voteValue(value)))
 
-  def phase1b(using LocalUid, Participants): Paxos[A] =
+  def phase1b(using LocalUid): Paxos[A] =
     updateIf(currentRoundHasCandidate)(
       // vote in the current leader election
       lastValueVote match
@@ -94,7 +92,7 @@ case class Paxos[A](
         Paxos(Map(currentBallotNum -> voteValue(myValue)))
     )
 
-  def phase2b(using LocalUid, Participants): Paxos[A] =
+  def phase2b(using LocalUid): Paxos[A] =
     // accept proposed value
     updateIf(currentRoundHasProposal) {
       val proposal =
@@ -130,7 +128,7 @@ case class Paxos[A](
       case None => None
   def lastValueVote: Option[(BallotNum, PaxosRound[A])] =
     rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
-  def newestReceivedVal(using LocalUid) =
+  def newestReceivedVal =
     lastValueVote.map(_._2.proposals.votes.head.value)
   def myValue(using LocalUid): A = rounds(BallotNum(
     replicaId,

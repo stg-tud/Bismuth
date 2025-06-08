@@ -106,7 +106,7 @@ object BFT {
 
   def apply[V](initial: V)(using Byteable[V]): BFT[V] = BFT(Set(BFTDelta(initial, Set.empty)))
 
-  def lattice[V](using lat: Lattice[V])(using Byteable[V]): Lattice[BFT[V]] = {
+  def lattice[V](using Byteable[V]): Lattice[BFT[V]] = {
     (left: BFT[V], right: BFT[V]) =>
       {
         BFT((left.deltas ++ right.deltas).filter(_.hashCorrect))

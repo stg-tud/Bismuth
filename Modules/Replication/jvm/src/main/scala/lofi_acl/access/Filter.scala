@@ -6,6 +6,7 @@ import rdts.base.Bottom
 import rdts.dotted.{Dotted, Obrem}
 import rdts.time.{ArrayRanges, Dots}
 
+import scala.annotation.unused
 import scala.compiletime.{constValue, erasedValue, summonAll}
 import scala.deriving.Mirror
 
@@ -134,10 +135,10 @@ object Filter:
 
   class SumTypeFilter[T](
       sm: Mirror.SumOf[T],
-      bottom: Bottom[T],                   // The bottom of the sum
-      elementNames: Array[String],         // The names of the types
-      elementBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each element
-      elementFilters: IArray[Filter[Any]]  // The Filter TypeClass instance for each element
+      bottom: Bottom[T],                                         // The bottom of the sum
+      elementNames: Array[String],                               // The names of the types
+      @unused elementBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each element
+      elementFilters: IArray[Filter[Any]]                        // The Filter TypeClass instance for each element
   ) extends AlgebraicFilter[T](elementNames.zipWithIndex.toMap, elementFilters):
     override def filter(delta: T, permission: PermissionTree): T =
       permission match

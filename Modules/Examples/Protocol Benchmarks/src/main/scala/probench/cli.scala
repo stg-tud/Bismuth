@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
 import probench.clients.{BenchmarkMode, BenchmarkOpType, ClientCLI, EtcdClient, ProBenchClient}
-import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation, KVState}
+import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation}
 import rdts.base.Uid
 import rdts.protocols.MultiPaxos
 import replication.{DeltaDissemination, DeltaStorage, FileConnection, ProtocolMessage}
@@ -15,6 +15,7 @@ import java.net.{DatagramSocket, InetSocketAddress}
 import java.nio.file.{Files, Path}
 import java.util.Timer
 import java.util.concurrent.{ExecutorService, Executors}
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex
 import scala.util.{Failure, Success}
@@ -142,8 +143,9 @@ object cli {
       override def descriptor: Descriptor = Descriptor("boolean", "true|false")
     end booleanParser
 
-    class TupleArgumentValueParser[T](preselect: String => Boolean)(using avp: ArgumentValueParser[T])
-        extends ArgumentValueParser[(T, T)] {
+    class TupleArgumentValueParser[T](@unused /* TODO: this seems wrong … */ preselect: String => Boolean)(using
+        avp: ArgumentValueParser[T]
+    ) extends ArgumentValueParser[(T, T)] {
       override def parse(args: List[String]): Result[(T, T)] =
         avp.parse(args) match
           case Result.Ok(first, remaining) =>

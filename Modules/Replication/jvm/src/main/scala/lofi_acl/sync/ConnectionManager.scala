@@ -22,7 +22,6 @@ class ConnectionManager[MSG](
 
   @volatile private var running: Boolean           = false
   @volatile private var stopped: Boolean           = false
-  private var listenerFuture: Option[Future[Unit]] = None
 
   @volatile private var connections: Map[PublicIdentity, SSLSocket] = Map.empty
   private val localPublicId                                         = privateIdentity.getPublic

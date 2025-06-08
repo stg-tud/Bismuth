@@ -6,11 +6,12 @@ import crypto.PublicIdentity
 import lofi_acl.collections.DeltaStore
 import lofi_acl.sync.*
 import lofi_acl.sync.no_acl.MutuallyTrustingSyncMessage.*
-import rdts.base.{Bottom, Lattice, Uid}
+import rdts.base.{Lattice, Uid}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.unused
 import scala.concurrent.duration.{Duration, MILLISECONDS, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -21,7 +22,6 @@ class MutuallyTrustingSync[RDT](
     initialPermissions: (Dots, Set[PublicIdentity]) // Should contain local identity
 )(using
     lattice: Lattice[RDT],
-    bottom: Bottom[RDT],
     msgJsonCode: JsonValueCodec[MutuallyTrustingSyncMessage[RDT]]
 ) extends CausalityCheckingMessageHandler[MutuallyTrustingSyncMessage[RDT]] {
 
@@ -34,9 +34,7 @@ class MutuallyTrustingSync[RDT](
   private val lastLocalPermissionsDot: AtomicReference[Dot]                      =
     AtomicReference(initialPermissions._1.max(Uid(localPublicId.id)).getOrElse(Dot(Uid(localPublicId.id), -1)))
 
-  @volatile private var stopped = false
-
-  private var remoteTimes: Map[PublicIdentity, Dots] = Map.empty
+  @unused private val stopped = false
 
   // Only ever modified by a single thread
   @volatile private var rdtDeltaStore: DeltaStore[RDT] =
@@ -209,6 +207,7 @@ class MutuallyTrustingSync[RDT](
     }
   }
 
+  @unused
   private val antiEntropyThread = executor.submit(new Runnable:
     private val rand         = Random()
     override def run(): Unit =

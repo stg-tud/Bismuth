@@ -116,9 +116,9 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
     }
   }
 
-  def update(using LocalUid)(i: Int, e: E): C = setAtIndex(i, Some(e))
+  def update(i: Int, e: E): C = setAtIndex(i, Some(e))
 
-  def delete(using LocalUid)(i: Int): C = setAtIndex(i, None)
+  def delete(i: Int): C = setAtIndex(i, None)
 
   def findUpdateIndex(n: Int): Option[Int] = {
     current.order.value.toLazyList.zip(LazyList.from(0)).filter {
@@ -126,7 +126,7 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
     }.map(_._2).lift(n)
   }
 
-  def setAtIndex(using LocalUid)(i: Int, e: Option[E]): C = {
+  def setAtIndex(i: Int, e: Option[E]): C = {
     findUpdateIndex(i) match {
       case Some(index) => updateRGANode(current, index, e)
       case None        => ReplicatedList.empty[E]
@@ -150,13 +150,13 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
     deltaState[E].make(df = updates, cc = Dots.from(touched))
   }
 
-  def updateBy(using LocalUid)(cond: E => Boolean, e: E): C =
+  def updateBy(cond: E => Boolean, e: E): C =
     updateRGANodeBy(current, cond, old => Some(old.write(e)))
 
-  def deleteBy(using LocalUid)(cond: E => Boolean): C =
+  def deleteBy(cond: E => Boolean): C =
     updateRGANodeBy(current, cond, _ => None)
 
-  def purgeTombstones(using LocalUid)(): C = {
+  def purgeTombstones(): C = {
     val ReplicatedList(epoche, df) = current
 
     val known: List[Dot] = epoche.value.toList

@@ -7,7 +7,7 @@ import reactives.extra.Tags.reattach
 import replication.WebRTCConnectionView
 import scalatags.JsDom.all
 import scalatags.JsDom.all.given
-import todo.TodoDataManager.{TodoRepState, dataManager}
+import todo.TodoDataManager.{TodoRepState}
 
 import java.util.Timer
 import scala.scalajs.js

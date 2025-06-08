@@ -8,18 +8,14 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import org.scalajs.dom
 import org.scalajs.dom.*
-import org.scalajs.dom.html.{Div, Input, Table}
-import rdts.dotted.Dotted
-import reactives.operator.{Evt, Fold}
+import org.scalajs.dom.html.Table
 import replication.DeltaDissemination
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
-import scalatags.generic.TypedTag
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.ExecutionContext
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSExportTopLevel
-import scala.scalajs.js.{Array, Date}
+import scala.scalajs.js.Date
 import scala.util.{Failure, Random, Success}
 
 sealed trait BroadcastCommunication
@@ -35,7 +31,7 @@ given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 
-class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S])(using JsonValueCodec[S]) {
+class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
 
   // label seems mostly for auto negotiation
   val channelLabel = "webrtc-channel"
@@ -57,7 +53,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S])(using Json
     val renderedAddConnectionButton = button("new peerConnection").render
 
     Async.fromCallback {
-      renderedAddConnectionButton.onclick = (ev: MouseEvent) =>
+      renderedAddConnectionButton.onclick = (_: MouseEvent) =>
         Async.handler.succeed(())
     }.map: _ =>
       val handling = WebRTCHandling(None)

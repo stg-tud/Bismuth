@@ -5,7 +5,6 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.{Consensus, Participants}
 
-import scala.compiletime.{constValue, summonFrom}
 
 enum Phase:
   case One

@@ -44,7 +44,7 @@ class DeltaAWLWWMContainer[K, V](
     delta
   }
 
-  def removeAllDelta(keys: Seq[K]): State[K, V] = {
+  def removeAllDelta(): State[K, V] = {
     val delta = _state.clear()
     mutate(delta)
     delta

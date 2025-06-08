@@ -27,7 +27,6 @@ class FilteringAntiEntropy[RDT](
     initialRdtDeltas: DeltaMapWithPrefix[RDT],
     syncInstance: Sync[RDT]
 )(using
-    rdtCodec: JsonValueCodec[RDT],
     filter: Filter[RDT],
     rdtLattice: Lattice[RDT],
     rdtBottom: Bottom[RDT],

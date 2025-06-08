@@ -3,12 +3,14 @@ package rdts.experiments
 import rdts.base.{Lattice, Uid}
 import rdts.time.VectorClock
 
+import scala.annotation.unused
+
 type Secret = String
 
 case class AEAD[S, A](cyphertext: S, metadata: A)
 
 def decrypt[S, A](aead: AEAD[S, A], key: Secret): Option[S]      = Option.when(key == "secret")(aead.cyphertext)
-def encrypt[S, A](data: S, metadata: A, key: Secret): AEAD[S, A] = AEAD(data, metadata)
+def encrypt[S, A](data: S, metadata: A, @unused key: Secret): AEAD[S, A] = AEAD(data, metadata)
 
 type EnCRDT[S] = Set[AEAD[S, VectorClock]]
 

@@ -17,7 +17,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
-trait State[T: Lattice] {
+trait State[T] {
 
   val lock: AnyRef
 

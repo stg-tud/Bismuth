@@ -2,7 +2,7 @@ package reactives
 
 import reactives.SelectedScheduler.State
 import reactives.core.{AdmissionTicket, ReSource, Transaction}
-import reactives.scheduler.{GlobalCandidate, LevelbasedVariants}
+import reactives.scheduler.GlobalCandidate
 
 /** [[Event]] and [[Signal]] represent different time-changing values, commonly referred to as reactives.
   * Use [[Var]] to create signal sources and [[Evt]] to create event sources.

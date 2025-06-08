@@ -6,6 +6,8 @@ import reactives.operator.*
 import scalatags.JsDom.all.*
 import scalatags.JsDom.{Attr, TypedTag}
 
+import scala.annotation.unused
+
 object RenderUtil {
   def inputFieldHandler(tag: TypedTag[Input], attr: Attr, clear: Boolean = true): (Event[String], Input) = {
     val handler               = Event.fromCallback(tag(attr := Event.handle[UIEvent]))
@@ -23,7 +25,7 @@ object RenderUtil {
     (inputFieldText, todoInputField)
   }
 
-  def dropDownHandler(tag: TypedTag[Select], attr: Attr, clear: Boolean = true): (Event[String], Select) = {
+  def dropDownHandler(tag: TypedTag[Select], attr: Attr, @unused clear: Boolean = true): (Event[String], Select) = {
     val handler                = Event.fromCallback(tag(attr := Event.handle[UIEvent]))
     val todoInputField: Select = handler.data.render
 

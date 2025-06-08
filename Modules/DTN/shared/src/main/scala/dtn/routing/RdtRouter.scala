@@ -8,8 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
-import scala.math.{addExact, max}
-import scala.util.{Random, Try}
+import scala.util.Random
 
 /*
   This router only routes rdt-bundles. Other bundles are currently ignored.

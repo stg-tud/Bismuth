@@ -4,7 +4,6 @@ import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.MultiVersionRegister
-import rdts.dotted.Dotted
 
 import java.util.concurrent.TimeUnit
 

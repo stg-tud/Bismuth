@@ -3,7 +3,6 @@ package benchmarks.lattices.delta.crdt
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.Dotted
 
 import java.util.concurrent.TimeUnit
 

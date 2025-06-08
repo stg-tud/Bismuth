@@ -2,10 +2,9 @@ package channels
 
 import channels.MesageBufferExtensions.asArrayBuffer
 import de.rmgk.delay.{Async, Callback, toAsync}
-import org.scalajs.dom.{EventSource, Headers, HttpMethod, MessageEvent, ReadableStream, ReadableStreamReader, RequestInit, fetch}
+import org.scalajs.dom.{Headers, HttpMethod, ReadableStreamReader, RequestInit, fetch}
 import rdts.base.LocalUid
 
-import java.net.URI
 import java.nio.ByteBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.typedarray.{Int8Array, Uint8Array}

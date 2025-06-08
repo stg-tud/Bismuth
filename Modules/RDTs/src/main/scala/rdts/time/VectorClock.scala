@@ -1,6 +1,6 @@
 package rdts.time
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, Uid}
 
 import scala.annotation.tailrec
 import scala.math.PartialOrdering

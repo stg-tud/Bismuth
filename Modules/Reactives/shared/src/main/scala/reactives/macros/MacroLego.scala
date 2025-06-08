@@ -1,6 +1,6 @@
 package reactives.macros
 
-import reactives.core.{CreationScope, Transaction, TransactionSearch}
+import reactives.core.{TransactionSearch}
 
 import scala.quoted.*
 

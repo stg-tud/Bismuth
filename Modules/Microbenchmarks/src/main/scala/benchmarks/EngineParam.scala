@@ -1,6 +1,6 @@
 package benchmarks
 
-import org.openjdk.jmh.annotations.{Param, Scope, State}
+import org.openjdk.jmh.annotations.{Scope, State}
 
 @State(Scope.Benchmark)
 class EngineParam {

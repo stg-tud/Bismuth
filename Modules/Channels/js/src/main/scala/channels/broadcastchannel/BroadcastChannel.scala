@@ -9,9 +9,8 @@ import org.scalajs.dom.{BroadcastChannel, MessageEvent}
 
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.ArrayBuffer
-import scala.util.{Failure, Success}
 
-class BroadcastException(message: String, event: MessageEvent) extends Exception(message)
+class BroadcastException(message: String, val event: MessageEvent) extends Exception(message)
 
 object BroadcastChannelConnector {
   def named(name: String): LatentConnection[MessageBuffer] = new LatentConnection {

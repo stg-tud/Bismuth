@@ -2,7 +2,6 @@ package rdts.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.LastWriterWins
 import Paxos.given
 
 case class PaxosRound[A](leaderElection: LeaderElection = Voting(), proposals: Voting[A] = Voting[A]())
@@ -37,7 +36,7 @@ case class Paxos[A](
   def myHighestBallot(using LocalUid): Option[(BallotNum, PaxosRound[A])] =
     rounds.filter { case (b, p) => b.uid == replicaId }.maxOption
   def lastValueVote: Option[(BallotNum, PaxosRound[A])] = rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
-  def newestReceivedVal(using LocalUid)                 = lastValueVote.map(_._2.proposals.votes.head.value)
+  def newestReceivedVal                 = lastValueVote.map(_._2.proposals.votes.head.value)
   def myValue(using LocalUid): Option[A]                =
     rounds.get(BallotNum(replicaId, -1)).map(_.proposals.votes.head.value)
   def decidedVal(using Participants): Option[A] =

@@ -1,9 +1,7 @@
 package probench.clients
 
-import probench.benchmark.{BenchmarkData, CSVWriter}
 import rdts.base.Uid
 
-import java.nio.file.Path
 import scala.io.StdIn.readLine
 import scala.util.matching.Regex
 

@@ -4,9 +4,11 @@ import rdts.base.{LocalUid, Uid}
 import rdts.dotted.Dotted
 import rdts.time.{Dot, Dots}
 
+import scala.annotation.unused
+
 object ACL {
 
-  trait Operation(id: Dot, signer: User, predecessors: Dots)
+  trait Operation(@unused id: Dot, @unused signer: User, @unused predecessors: Dots)
 
   object Operation {
     case class Create(signer: User, id: Dot, roomid: Uid)

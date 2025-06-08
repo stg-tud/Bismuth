@@ -133,7 +133,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
     // ====================== edit ====================== //
 
     val editAppointment = Interaction[Calendar, (Appointment, Appointment)]
-      .requires { (cal: Calendar, aps) => aps._2.start <= aps._2.end }
+      .requires { (_: Calendar, aps) => aps._2.start <= aps._2.end }
       .requires { (cal: Calendar, aps) => cal.state.elements.contains(aps._1) }
       .requires { (cal: Calendar, aps) => !cal.state.elements.contains(aps._2) }
       .executes { (cal: Calendar, aps) => cal.clearDeltas().mod(_.remove(aps._1)).mod(_.add(aps._2)) }

@@ -11,6 +11,7 @@ import sttp.ws.WebSocketFrame.{Binary, Ping, Pong, Text}
 import java.nio.charset.StandardCharsets
 import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -85,7 +86,7 @@ object WSConnection {
 class WSEndpointClient(host: String, port: Int, connection: WSConnection, val nodeId: String) {
   protected var registeredServices: List[String] = List()
 
-  private var lock: AtomicBoolean = AtomicBoolean()
+  private val lock: AtomicBoolean = AtomicBoolean()
 
   def receiveBundle(): Future[Bundle] = {
     /*
@@ -166,7 +167,12 @@ object WSEndpointClient {
   }
 }
 
-class WSEroutingClient(host: String, port: Int, connection: WSConnection, val nodeId: String) {
+class WSEroutingClient(
+    @unused host: String,
+    @unused port: Int,
+    connection: WSConnection,
+    val nodeId: String
+) {
   def receivePacket(): Future[Packet] = {
     connection.receiveWholeMessage().flatMap {
       case s: String => {

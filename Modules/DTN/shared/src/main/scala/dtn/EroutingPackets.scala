@@ -4,8 +4,6 @@ import io.bullet.borer.NullOptions.given
 import io.bullet.borer.derivation.MapBasedCodecs.*
 import io.bullet.borer.{AdtEncodingStrategy, Codec, Decoder, Encoder}
 
-import scala.annotation.nowarn // dtn7-rs erouting encodes rust None-Options as null
-
 given AdtEncodingStrategy =
   AdtEncodingStrategy.flat(typeMemberName = "type") // dtn7-rs erouting encodes packet-enum flat with type key
 
@@ -38,7 +36,6 @@ enum PeerType derives Codec:
 case class Duration(secs: Int, nanos: Int) derives Codec
 
 // example encoded: {"eid": ..., "addr": ...}  // no class type info
-@nowarn("msg=Given search preference")
 case class DtnPeer(
     eid: Endpoint,
     addr: PeerAddress,
@@ -51,7 +48,6 @@ case class DtnPeer(
 ) derives Codec
 
 // example encoded: {"source": ..., "destination": ...}  // no class type info
-@nowarn("msg=Given search preference")
 case class BundlePack(
     source: Endpoint,
     destination: Endpoint,
@@ -68,7 +64,6 @@ case class BundlePack(
 case class Sender(remote: PeerAddress, port: Option[Int], agent: String, next_hop: Endpoint) derives Codec
 
 // example encoded: {"type": "Error", "reason": "some error reason"}
-@nowarn("msg=Given search preference")
 enum Packet derives Codec.All:
   // packets sent from dtnd
   case RequestSenderForBundle(clas: List[String], bp: BundlePack)

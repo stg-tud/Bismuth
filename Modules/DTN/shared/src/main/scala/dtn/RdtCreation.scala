@@ -10,6 +10,7 @@ import rdts.dotted.Obrem
 import rdts.time.{Dot, Dots}
 import replication.DeltaDissemination
 
+import scala.annotation.unused
 import scala.util.Random
 
 trait CaseStudyRdt {
@@ -30,7 +31,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
   val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
     LocalUid.gen(),
-    state => println("replica received new state information"),
+    _ => println("replica received new state information"),
   )
 
   def connect(
@@ -85,8 +86,9 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
     replicaId,
-    state =>
-      println("replica received new state information"), // we ignore state updates as there will be only one active rdt
+    (_ =>
+      println("replica received new state information")),
+    // we ignore state updates as there will be only one active rdt
   )
 
   var state: RdtType = ObserveRemoveMap.empty[String, Dot]
@@ -94,10 +96,6 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
   private def addStringGetDelta(s: String): RdtType = {
     val nextDot = state.repr.context.nextDot(dataManager.replicaId.uid)
     state.update(s, nextDot)
-  }
-
-  private def removeStringGetDelta(s: String): RdtType = {
-    state.remove(s)
   }
 
   private def clearGetDelta(): RdtType = state.clear()
@@ -170,7 +168,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
     replicaId,
-    state => println("replica received new state information"),
+    (_ => println("replica received new state information")): @unused,
   )
 
   var state = LastWriterWins.empty[Set[String]]

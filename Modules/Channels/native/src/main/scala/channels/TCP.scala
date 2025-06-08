@@ -1,12 +1,10 @@
 package channels
 
-import de.rmgk.delay
 import de.rmgk.delay.{Async, Callback}
 
 import java.net.{InetSocketAddress, ServerSocket, Socket, SocketException}
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 object TCP {
 

@@ -2,7 +2,6 @@ package dtn.rdt
 
 import channels.{Abort, Connection, LatentConnection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import de.rmgk.delay
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 import dtn.{MonitoringClientInterface, NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid

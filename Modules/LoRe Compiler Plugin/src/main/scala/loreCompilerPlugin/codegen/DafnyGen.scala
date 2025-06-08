@@ -8,6 +8,7 @@ import lore.backends.{rename, traverseFromNode}
 import loreCompilerPlugin.{DafnyEmbeddedLoReError, LogLevel}
 import upickle.default.write as upickleWrite
 
+import scala.annotation.unused
 import scala.util.matching.Regex
 
 /** Information about a definition in Dafny generated from a LoRe AST node.
@@ -463,7 +464,7 @@ object DafnyGen {
     * @return The generated Dafny code.
     */
   private def generateFromTVar(node: TVar, ctx: Map[String, NodeInfo])(using
-      logLevel: LogLevel,
+      @unused logLevel: LogLevel,
       scalaCtx: Context
   ): String = {
     if !ctx.isDefinedAt(node.name) then return node.name // Skip non-top-level definition references
@@ -1010,9 +1011,9 @@ object DafnyGen {
     * @param node The LoRe TNum node.
     * @return The generated Dafny code.
     */
-  private def generateFromTNum(node: TNum, ctx: Map[String, NodeInfo])(using
-      logLevel: LogLevel,
-      scalaCtx: Context
+  private def generateFromTNum(node: TNum, @unused ctx: Map[String, NodeInfo])(using
+      @unused logLevel: LogLevel,
+      @unused scalaCtx: Context
   ): String = {
     // Transforming an integer into a string to output a number may seem odd,
     // but in reality it'll be a number in code as it's not surrounded by quotes.
@@ -1304,9 +1305,9 @@ object DafnyGen {
     * @param node The LoRe TString node.
     * @return The generated Dafny code.
     */
-  private def generateFromTString(node: TString, ctx: Map[String, NodeInfo])(using
-      logLevel: LogLevel,
-      scalaCtx: Context
+  private def generateFromTString(node: TString, @unused ctx: Map[String, NodeInfo])(using
+      @unused logLevel: LogLevel,
+      @unused scalaCtx: Context
   ): String = {
     // Surround by quotes so it's an actual string within the resulting Dafny code.
     // Could technically also be output as a sequence of chars, if this was desired.

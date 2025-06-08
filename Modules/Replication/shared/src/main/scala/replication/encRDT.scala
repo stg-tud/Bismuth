@@ -1,8 +1,10 @@
 package replication
 
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.Lattice
 import rdts.dotted.{Dotted, DottedLattice}
 import rdts.time.Dots
+
+import scala.annotation.unused
 
 type ByteArray = Array[Byte]
 
@@ -15,11 +17,9 @@ given encrdtLattice[S]: Lattice[EncRDT[S]] with
     val combined = left.deltas `union` right.deltas
     EncRDT(combined.filterNot(s => combined.exists(o => s.context <= o.context)))
 
-extension [S](c: EncRDT[S])
+extension [S](@unused c: EncRDT[S])
   def version: Dots = c.deltas.map(_.context).reduceOption(Lattice.merge).getOrElse(Dots.empty)
-  def send(data: Dotted[S], aead: Aead)(using
-      rid: LocalUid
-  )(using Conversion[S, ByteArray], Conversion[Dots, ByteArray]): EncRDT[S] =
+  def send(data: Dotted[S], aead: Aead)(using Conversion[S, ByteArray], Conversion[Dots, ByteArray]): EncRDT[S] =
     EncRDT(Set(Dotted(
       new String(java.util.Base64.getEncoder.encode(aead.encrypt(data.data.convert, data.context.convert))),
       data.context

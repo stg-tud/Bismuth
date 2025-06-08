@@ -1,6 +1,6 @@
 package rdts.base
 
-import scala.compiletime.{erasedValue, summonAll, summonFrom, summonInline}
+import scala.compiletime.summonAll
 import scala.deriving.Mirror
 
 object Orderings {

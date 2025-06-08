@@ -1,15 +1,14 @@
 package channels.webrtc
 
 import de.rmgk.delay
-import de.rmgk.delay.{Async, Sync, toAsync}
+import de.rmgk.delay.{Async, toAsync}
 import org.scalajs.dom
 import org.scalajs.dom.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters.*
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 case class SessionDescription(descType: String, sdp: String) {
   def sessionDescription = new dom.RTCSessionDescription(

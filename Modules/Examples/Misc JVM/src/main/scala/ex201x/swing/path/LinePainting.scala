@@ -1,6 +1,7 @@
 package ex201x.swing.path
 
 import java.awt.{Color, Graphics2D, Point, geom}
+import scala.annotation.unused
 import scala.swing.Swing.*
 import scala.swing.event.*
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
@@ -27,7 +28,7 @@ object LinePainting extends SimpleSwingApplication {
     }
 
     /* records the dragging */
-    var path = new geom.GeneralPath
+    @unused var path = new geom.GeneralPath
 
     def lineTo(p: Point): Unit = { path.lineTo(p.x.toFloat, p.y.toFloat); repaint() }
     def moveTo(p: Point): Unit = { path.moveTo(p.x.toFloat, p.y.toFloat); repaint() }

@@ -9,12 +9,10 @@ import org.eclipse.jetty.util.Callback as JettyUtilCallback
 import org.eclipse.jetty.websocket.api.Session.Listener
 import org.eclipse.jetty.websocket.api.{Session, Callback as JettyCallback}
 import org.eclipse.jetty.websocket.client.WebSocketClient
-import org.eclipse.jetty.websocket.server
 import org.eclipse.jetty.websocket.server.*
 
 import java.net.URI
 import java.nio.ByteBuffer
-import scala.util.{Failure, Success}
 
 def println(str: Any): Unit = System.out.println(s"$str [${Thread.currentThread().getName()}]")
 

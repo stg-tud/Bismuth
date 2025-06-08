@@ -8,7 +8,6 @@ import org.scalajs.dom
 import java.io.IOException
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.ArrayBuffer
-import scala.util.{Failure, Success}
 
 class WebsocketException(msg: String) extends IOException(msg)
 
@@ -60,14 +59,14 @@ object WebsocketConnect {
             }
           }
 
-          socket.onerror = (event: dom.Event) =>
+          socket.onerror = (_: dom.Event) =>
             socket.close()
             callback.fail(new WebsocketException("Error during websocket communication"))
 
           Async.handler.succeed(connect)
         }
 
-        socket.onerror = (event: dom.Event) =>
+        socket.onerror = (_: dom.Event) =>
           socket.close()
           Async.handler.fail(new WebsocketException("Websocket failed to connect"))
       }

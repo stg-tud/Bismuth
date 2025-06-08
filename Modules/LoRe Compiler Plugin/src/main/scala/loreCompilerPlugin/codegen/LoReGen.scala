@@ -13,6 +13,8 @@ import dotty.tools.dotc.util.SourcePosition
 import lore.ast.{Type as LoReType, *}
 import loreCompilerPlugin.LogLevel
 
+import scala.annotation.unused
+
 object LoReGen {
 
   /** Logs info about a RHS value. Not very robust, rather a (temporary?) solution to prevent large logging code duplication.
@@ -23,7 +25,7 @@ object LoReGen {
     * @param rhsValue    The value of the RHS in question
     */
   private def logRhsInfo(indentLevel: Integer, operandSide: String, rhsType: String, rhsValue: String)(using
-      logLevel: LogLevel
+      @unused logLevel: LogLevel
   ): Unit = {
     if operandSide.nonEmpty then {
       println(s"${"\t".repeat(indentLevel)}The $operandSide parameter is a $rhsType $rhsValue")
@@ -677,7 +679,7 @@ object LoReGen {
       interaction: TInteraction,
       methodParamTerm: Term,
       methodName: String
-  )(using logLevel: LogLevel, ctx: Context): TInteraction = {
+  )(using @unused logLevel: LogLevel, ctx: Context): TInteraction = {
     methodName match
       // modifies is handled specifically in above case due to different structure
       case "modifies" =>

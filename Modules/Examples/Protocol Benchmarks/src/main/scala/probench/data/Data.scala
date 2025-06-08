@@ -1,7 +1,7 @@
 package probench.data
 
 import probench.data.RequestResponseQueue.Req
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.{MultiPaxos, Participants}
 

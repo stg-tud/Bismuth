@@ -1,7 +1,7 @@
 package com.github.ckuessner.aead
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.{JSBracketAccess, JSGlobal, JSGlobalScope, JSImport, JSName}
+import scala.scalajs.js.annotation.{JSBracketAccess, JSImport}
 import scala.scalajs.js.typedarray.Uint8Array
 
 object libsodiumWrappersStrings {

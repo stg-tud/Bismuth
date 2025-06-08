@@ -1,9 +1,7 @@
 package lofi_acl.transport
 
 import channels.tls.{P2PX509TrustManager, PrivateIdentity, X509Util}
-import channels.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
 import crypto.PublicIdentity
-import de.rmgk.delay
 import nl.altindag.ssl.SSLFactory
 import nl.altindag.ssl.pem.util.PemUtils
 
@@ -57,7 +55,7 @@ class P2PTlsTcpConnector(private val identity: PrivateIdentity, _listenPort: Int
     sslServerSocket.close()
   }
 
-  private def doHandshake(socket: SSLSocket)(using ec: ExecutionContext): Future[PublicIdentity] = {
+  private def doHandshake(socket: SSLSocket): Future[PublicIdentity] = {
     val identityPromise = Promise[PublicIdentity]
 
     socket.addHandshakeCompletedListener { ev =>

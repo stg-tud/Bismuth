@@ -63,8 +63,8 @@ class BenchState {
       val room2 = (i + size.size / 2) % size.size
       cs.join(client, room1)
       cs.join(client, room2)
-      cs.histories.get(room1).observe(v => work.consume())
-      cs.histories.get(room2).observe(v => work.consume())
+      cs.histories.get(room1).observe(_ => work.consume())
+      cs.histories.get(room2).observe(_ => work.consume())
     }
 
     if reactives.SelectedScheduler.candidate.scheduler == reactives.scheduler.LevelbasedVariants.unmanaged then {

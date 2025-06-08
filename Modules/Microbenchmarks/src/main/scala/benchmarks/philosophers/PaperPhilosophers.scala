@@ -1,13 +1,13 @@
 package benchmarks.philosophers
 
 import reactives.SelectedScheduler.State as BundleState
-import reactives.core.{CreationTicket, ReInfo, ReSource}
+import reactives.core.{CreationTicket, ReInfo}
 import reactives.default.*
 import reactives.parrp.Backoff
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{Executors, ThreadLocalRandom}
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.{Failure, Success, Try}
@@ -117,7 +117,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
     for i <- 0 until size yield sights(i).changed
   val successes = for i <- 0 until size yield sightChngs(i).filter(_ == Done)
 
-  def manuallyLocked[T](idx: Int)(f: => T): T = synchronized { f }
+  def manuallyLocked[T](@unused idx: Int)(f: => T): T = synchronized { f }
 
   def maybeEat(idx: Int): Unit = {
     transaction(phils(idx)) { t ?=>
@@ -215,7 +215,7 @@ trait SingleFoldTopper {
   self: PaperPhilosophers =>
   import engine.*
 
-  val successCount: Signal[Int] = Fold(0)(successes.map(s => s branch { v => Fold.current[Int] + 1 })*)
+  val successCount: Signal[Int] = Fold(0)(successes.map(s => s branch { _ => Fold.current[Int] + 1 })*)
   override def total: Int       = successCount.readValueOnce
 }
 

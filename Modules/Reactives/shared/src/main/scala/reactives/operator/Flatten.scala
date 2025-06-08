@@ -3,7 +3,7 @@ package reactives.operator
 import reactives.SelectedScheduler.State
 import reactives.core.CreationTicket
 
-import scala.annotation.{implicitNotFound, nowarn}
+import scala.annotation.implicitNotFound
 import scala.collection.IterableOps
 import scala.reflect.ClassTag
 

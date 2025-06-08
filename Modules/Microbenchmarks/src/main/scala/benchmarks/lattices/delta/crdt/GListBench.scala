@@ -2,9 +2,7 @@ package benchmarks.lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
-import rdts.base.{Bottom, Decompose}
 import rdts.datatypes.GrowOnlyList
-import rdts.dotted.{Dotted, HasDots}
 
 import java.util.concurrent.TimeUnit
 

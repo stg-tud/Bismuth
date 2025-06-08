@@ -29,14 +29,14 @@ case class Voting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
 object Voting {
   given lattice[A]: Lattice[Voting[A]] = Lattice.derived
 
-  given bottom[A](using Participants): Bottom[Voting[A]] with
+  given bottom[A]: Bottom[Voting[A]] with
     override def empty: Voting[A] = unchanged
 
-  def unchanged[A](using Participants): Voting[A] = Voting(Set.empty)
+  def unchanged[A]: Voting[A] = Voting(Set.empty)
 }
 
 case class MultiRoundVoting[A](rounds: Epoch[Voting[A]]):
-  def release(using Participants): MultiRoundVoting[A] =
+  def release: MultiRoundVoting[A] =
     MultiRoundVoting(Epoch(rounds.counter + 1, Voting.unchanged))
 
   def upkeep(using LocalUid, Participants): MultiRoundVoting[A] =
@@ -59,7 +59,7 @@ case class MultiRoundVoting[A](rounds: Epoch[Voting[A]]):
     rounds.value.result
 
 object MultiRoundVoting {
-  def unchanged[A](using Participants): MultiRoundVoting[A] = MultiRoundVoting(Epoch.empty[Voting[A]])
+  def unchanged[A]: MultiRoundVoting[A] = MultiRoundVoting(Epoch.empty[Voting[A]])
   given lattice[A]: Lattice[MultiRoundVoting[A]]            = Lattice.derived
 }
 

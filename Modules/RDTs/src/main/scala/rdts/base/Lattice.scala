@@ -159,8 +159,7 @@ object Lattice {
 
   inline def productLattice[T <: Product](using pm: Mirror.ProductOf[T]): Lattice[T] = {
     val lattices: Tuple = summonAll[Tuple.Map[pm.MirroredElemTypes, Lattice]]
-    val bottoms: Tuple  = Derivation.summonAllMaybe[Tuple.Map[pm.MirroredElemTypes, Bottom]]
-    new Derivation.ProductLattice[T](lattices, bottoms, pm, valueOf[pm.MirroredLabel])
+    new Derivation.ProductLattice[T](lattices, pm, valueOf[pm.MirroredLabel])
   }
 
   trait OrdinalLattices[T] {
@@ -202,7 +201,6 @@ object Lattice {
 
     class ProductLattice[T <: Product](
         lattices: Tuple,
-        bottoms: Tuple,
         pm: Mirror.ProductOf[T],
         label: String
     ) extends Lattice[T] {
@@ -210,14 +208,6 @@ object Lattice {
       override def toString: String = s"ProductLattice[${label}]"
 
       private def lat(i: Int): Lattice[Any]      = lattices.productElement(i).asInstanceOf[Lattice[Any]]
-      private def bot(i: Int, default: Any): Any =
-        val btm = bottoms.productElement(i)
-        if btm == null
-        then default
-        else btm.asInstanceOf[Bottom[Any]].empty
-      private def isEmpty(i: Int)(a: Any): Boolean =
-        val btm = bottoms.productElement(i)
-        if btm == null then false else btm.asInstanceOf[Bottom[Any]].isEmpty(a)
 
       override def merge(left: T, right: T): T =
         pm.fromProduct(new Product {

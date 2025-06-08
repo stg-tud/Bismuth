@@ -118,11 +118,6 @@ object CreationTicket {
     new CreationTicket(scopeSearch, info.derive(str))
 }
 
-final class CreationTicketCont[State[_]](ct: CreationTicket[State])
-object CreationTicketCont {
-  given fromTicket[State[_]](using ct: CreationTicket[State]): CreationTicketCont[State] = CreationTicketCont(ct)
-}
-
 /** Essentially a kill switch, that will remove the reactive at some point. */
 trait Disconnectable {
   def disconnect(): Unit

@@ -1,6 +1,6 @@
 package reactives.scheduler
 
-import reactives.core.{AdmissionTicket, InitialChange, Initializer, ReSource, ReevTicket, Scheduler}
+import reactives.core.{AdmissionTicket, InitialChange, Initializer, ReSource, ReevTicket}
 
 import java.util.PriorityQueue
 import scala.collection.mutable.ListBuffer

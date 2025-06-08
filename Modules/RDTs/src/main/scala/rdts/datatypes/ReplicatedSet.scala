@@ -9,7 +9,7 @@ import rdts.time.{Dot, Dots}
   * Each unique element tracks the dots of when it was inserted.
   * Removals do not override concurrent inserts.
   */
-case class ReplicatedSet[E](repr: Dotted[Map[E, Dots]]) derives Lattice, Decompose {
+case class ReplicatedSet[E](repr: Dotted[Map[E, Dots]]) {
 
   def inner = repr.data
 

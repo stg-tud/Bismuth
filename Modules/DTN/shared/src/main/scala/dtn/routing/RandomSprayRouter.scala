@@ -1,6 +1,6 @@
 package dtn.routing
 
-import dtn.{DtnPeer, Endpoint, MonitoringClientInterface, NoMonitoringClient, Packet, PreviousNodeBlock, Sender, WSEroutingClient}
+import dtn.{Endpoint, MonitoringClientInterface, NoMonitoringClient, Packet, PreviousNodeBlock, Sender, WSEroutingClient}
 
 import java.time.ZonedDateTime
 import java.util.concurrent.ConcurrentHashMap

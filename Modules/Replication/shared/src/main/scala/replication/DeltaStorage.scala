@@ -1,7 +1,7 @@
 package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, Uid}
 import rdts.time.Dots
 import replication.DeltaDissemination.pmscodec
 import replication.DeltaStorage.Type.Discarding

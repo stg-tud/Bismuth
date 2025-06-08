@@ -6,8 +6,6 @@ import rdts.datatypes.ReplicatedSet
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.Dots
 
-import scala.util.chaining.scalaUtilChainingOps
-
 case class Ownership(epoch: Long, owner: Uid)
 
 object Ownership {
@@ -22,10 +20,10 @@ case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
 
   def isOwner(using LocalUid): Boolean = replicaId == os.owner
 
-  def request(using LocalUid, Dots): Token =
+  def request(using LocalUid): Token =
     Token(Ownership.unchanged, wants.add(replicaId))
 
-  def release(using LocalUid, Dots): Token =
+  def release(using LocalUid): Token =
     Token(Ownership.unchanged, wants.remove(replicaId))
 
   def upkeep(using LocalUid): Token =
@@ -53,7 +51,7 @@ case class ExampleTokens(
     calendarBinteractionA: Token
 )
 
-case class Exclusive[T: {Lattice, Bottom}](token: Token, value: T) {
+case class Exclusive[T: {Bottom}](token: Token, value: T) {
   def transform(f: T => T)(using LocalUid) =
     if token.isOwner then f(value) else Bottom.empty
 }

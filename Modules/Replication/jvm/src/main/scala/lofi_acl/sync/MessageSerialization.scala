@@ -1,6 +1,6 @@
 package lofi_acl.sync
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReaderException, JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 
 import java.io.{DataInputStream, DataOutputStream}
 

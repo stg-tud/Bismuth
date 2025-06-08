@@ -3,8 +3,6 @@ package rdts.experiments
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
 import AuctionInterface.Bid.User
-import rdts.dotted.Dotted
-import rdts.time.Dots
 
 import scala.util.chaining.scalaUtilChainingOps
 

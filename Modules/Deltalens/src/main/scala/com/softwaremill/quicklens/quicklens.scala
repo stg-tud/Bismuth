@@ -3,7 +3,7 @@ package com.softwaremill
 import com.softwaremill.quicklens.QuicklensMacros.*
 
 import scala.annotation.compileTimeOnly
-import scala.collection.{Factory, SortedMap}
+import scala.collection.{SortedMap}
 import scala.reflect.ClassTag
 
 package object quicklens {

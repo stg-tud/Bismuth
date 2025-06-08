@@ -32,6 +32,7 @@ object Settings {
   val scala3defaults = Def.settings(
     scala3defaultsUnstable,
     unstableInlineAccessors(Compile / compile),
+    unusedWarnings(Compile / compile)
   )
 
   // enabled to see what breaks and maybe play around with
@@ -117,13 +118,13 @@ object Settings {
         // Warn if a private member is unused,
         "-Wunused:privates",
         // Warn if a local definition is unused,
-        "-Wunused:locals",
+        // "-Wunused:locals",
         // Warn if an explicit parameter is unused,
-        "-Wunused:explicits",
+        // "-Wunused:explicits",
         // Warn if an implicit parameter is unused,
         "-Wunused:implicits",
         // (UNSAFE) Warn if a variable bound in a pattern is unused. This warning can generate false positive, as warning cannot be suppressed yet.
-        "-Wunused:unsafe-warn-patvars",
+        // "-Wunused:unsafe-warn-patvars",
       )
     }
   }

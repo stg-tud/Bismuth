@@ -2,7 +2,6 @@ package rdts.protocols.raft
 
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 
 import scala.util.Random

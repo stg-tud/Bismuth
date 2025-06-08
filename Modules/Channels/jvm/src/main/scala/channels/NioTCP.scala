@@ -1,6 +1,5 @@
 package channels
 
-import de.rmgk.delay
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import java.io.IOException
@@ -8,7 +7,6 @@ import java.net.{SocketAddress, SocketException, StandardProtocolFamily, Standar
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 case class AcceptAttachment(
     callback: Callback[Connection[MessageBuffer]],

@@ -183,7 +183,7 @@ object DataGenerator {
       }
 
       removed.foldLeft(afterInsert) {
-        case (rga, i) => rga `merge` rga.delete(using rid)(i)
+        case (rga, i) => rga `merge` rga.delete(i)
       }
     }
 

@@ -9,7 +9,6 @@ import lofi_acl.collections.DeltaAWLWWMContainer
 import lofi_acl.collections.DeltaAWLWWMContainer.State
 import rdts.base.LocalUid
 import rdts.datatypes.ObserveRemoveMap
-import rdts.dotted.{Dotted, Obrem}
 import rdts.time.Dots
 
 import java.util.UUID
@@ -69,7 +68,7 @@ class SecureToDoListClient(
 
   def removeToDoItems(uuids: Seq[UUID]): Unit = {
     val _disseminatedBefore = _disseminatedDataInBytes
-    val delta               = crdt.removeAllDelta(uuids)
+    val delta               = crdt.removeAllDelta()
     localChangeRemovalOptimized(delta, uuids)
     _disseminatedDataRemoval += _disseminatedDataInBytes - _disseminatedBefore
   }

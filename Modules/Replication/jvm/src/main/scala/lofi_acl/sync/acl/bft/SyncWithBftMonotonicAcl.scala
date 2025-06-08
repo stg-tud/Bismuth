@@ -4,10 +4,10 @@ import channels.tls.PrivateIdentity
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import lofi_acl.access.{Filter, Operation, PermissionTree}
+import lofi_acl.sync
 import lofi_acl.sync.*
 import lofi_acl.sync.acl.Sync
-import lofi_acl.sync.acl.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
-import lofi_acl.{access, sync}
+import lofi_acl.sync.acl.bft.BftAclOpGraph.{EncodedDelegation, Signature}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.time.{Dot, Dots}
 

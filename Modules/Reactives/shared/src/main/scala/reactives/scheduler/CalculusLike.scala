@@ -3,7 +3,6 @@
   */
 package reactives.scheduler
 
-import reactives.core.ReSource.of
 import reactives.core.{AccessHandler, AdmissionTicket, Derived, DynamicTicket, Initializer, Observation, ReSource, ReadAs, ReevTicket, SchedulerWithDynamicScope, Transaction}
 
 object CalculusLike {

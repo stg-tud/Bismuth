@@ -43,7 +43,7 @@ case class Membership[A, C[_], D[_]](
 
   given Participants = Participants(rounds.value.members)
 
-  def currentMembers(using Consensus[C], Consensus[D]): Set[Uid] =
+  def currentMembers: Set[Uid] =
     rounds.value.members
 
   def counter: Time                 = rounds.counter
@@ -85,7 +85,7 @@ case class Membership[A, C[_], D[_]](
     else bottomRound
   }
 
-  def isMember(using LocalUid, Consensus[C], Consensus[D]): Boolean = currentMembers.contains(replicaId)
+  def isMember(using LocalUid): Boolean = currentMembers.contains(replicaId)
 
   def upkeep()(using rid: LocalUid, cc: Consensus[C], cd: Consensus[D]): Membership[A, C, D] =
     if !isMember then return writeRound(bottomRound) // do nothing if we are not a member anymore

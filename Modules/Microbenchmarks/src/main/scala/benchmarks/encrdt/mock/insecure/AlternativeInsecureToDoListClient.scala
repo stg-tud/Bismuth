@@ -17,8 +17,6 @@ class AlternativeInsecureToDoListClient(
     using JsonValueCodec[ToDoListState]
 ) extends ToDoListClient {
 
-  private val stateCodec: JsonValueCodec[ToDoListState] = summon
-
   override def completeToDoItem(uuid: UUID): Unit = {
     val _disseminatedBefore = _disseminatedDataInBytes
     val delta               = crdt.putDelta(
@@ -42,7 +40,7 @@ class AlternativeInsecureToDoListClient(
 
   override def removeToDoItems(uuids: Seq[UUID]): Unit = {
     val _disseminatedBefore = _disseminatedDataInBytes
-    val delta               = crdt.removeAllDelta(uuids)
+    val delta               = crdt.removeAllDelta()
 
     disseminate(delta)
 

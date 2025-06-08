@@ -4,7 +4,6 @@ import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Fork, Level, Measu
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{GrowOnlyCounter, ReplicatedList}
-import rdts.dotted.Dotted
 
 import java.util.concurrent.TimeUnit
 
@@ -109,7 +108,7 @@ object BFTBenchmark {
   }
 
   def byteableGOC: Byteable[GrowOnlyCounter]       = it => it.inner.toString.getBytes
-  def bftGOCLattice: Lattice[BFT[GrowOnlyCounter]] = BFT.lattice(using gocLattice)(using byteableGOC)
+  def bftGOCLattice: Lattice[BFT[GrowOnlyCounter]] = BFT.lattice(using byteableGOC)
 
   def generateListDeltaList(size: Int): List[ReplicatedList[Int]] = {
     val id1 = LocalUid.gen()
@@ -154,6 +153,6 @@ object BFTBenchmark {
   def bottomListDeltaList: Bottom[ReplicatedList[Int]]           = summon
   def byteableListDeltaList: Byteable[ReplicatedList[Int]]       = Byteable.toStringBased
   def latticeBFTListDeltaList: Lattice[BFT[ReplicatedList[Int]]] =
-    BFT.lattice(using dottedRepListIntLattice)(using byteableListDeltaList)
+    BFT.lattice(using byteableListDeltaList)
 
 }

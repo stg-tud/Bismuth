@@ -3,7 +3,7 @@ package replication.dtn
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.*
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.PosNegCounter
 import rdts.syntax.*
 
@@ -114,7 +114,7 @@ class Replica[S: {Lattice, JsonValueCodec}](
     }
 }
 
-class ReplicaListener[S: {Lattice, JsonValueCodec}](replica: Replica[S]) extends Listener {
+class ReplicaListener[S](replica: Replica[S]) extends Listener {
 
   val modeSwitched: Promise[true] = Promise[true]
 
@@ -131,7 +131,7 @@ class ReplicaListener[S: {Lattice, JsonValueCodec}](replica: Replica[S]) extends
 }
 
 class ReplicaMutator[S](val replica: Replica[S]) {
-  inline def apply(f: S => S)(using Lattice[S]): Unit =
+  inline def apply(f: S => S): Unit =
     replica.applyLocalDelta(f(replica.data))
 }
 

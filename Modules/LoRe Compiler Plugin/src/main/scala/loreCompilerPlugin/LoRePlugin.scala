@@ -1,10 +1,8 @@
 package loreCompilerPlugin
 
-import dotty.tools.dotc.ast.Trees.{Template, Tree, TypeDef}
+import dotty.tools.dotc.ast.Trees.{Template, Tree}
 import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.core.Contexts.Context
-import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
 import dotty.tools.dotc.transform.{Inlining, Pickler}
 import dotty.tools.dotc.util.Spans.Span

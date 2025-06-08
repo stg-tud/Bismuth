@@ -1,6 +1,5 @@
 package reactives.scheduler
 
-import reactives.core
 import reactives.core.{AccessHandler, AdmissionTicket, DynamicTicket, InitialChange, Observation, ReSource, ReadAs, ReevTicket, SchedulerWithDynamicScope, Tracing, Transaction}
 
 import scala.collection.mutable.ListBuffer

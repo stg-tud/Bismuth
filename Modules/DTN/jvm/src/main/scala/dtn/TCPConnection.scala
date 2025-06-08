@@ -2,7 +2,6 @@ package dtn
 
 import java.io.{BufferedInputStream, BufferedOutputStream, DataInputStream, DataOutputStream, EOFException, IOException}
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, Socket, SocketException}
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.{ConcurrentHashMap, LinkedBlockingQueue}
 
 class TCPConnection(socket: Socket) {

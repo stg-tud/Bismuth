@@ -1,6 +1,5 @@
 package reactives.parrp
 
-import reactives.core.Scheduler
 import reactives.locking.*
 import reactives.scheduler.Levelbased
 

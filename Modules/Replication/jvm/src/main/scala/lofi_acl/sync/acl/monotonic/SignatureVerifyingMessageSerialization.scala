@@ -8,15 +8,14 @@ import rdts.time.Dot
 
 import java.io.{DataInputStream, DataOutputStream}
 import java.security.{PrivateKey, SignatureException}
-import java.util.Base64
+import scala.annotation.unused
 
 class SignatureVerifyingMessageSerialization[RDT](
-    localIdentity: PublicIdentity,
-    signingKey: PrivateKey
+    @unused localIdentity: PublicIdentity,
+    @unused signingKey: PrivateKey
 )(using
     JsonValueCodec[MonotonicAclSyncMessage[RDT]]
 ) extends MessageSerialization[MonotonicAclSyncMessage[RDT]] {
-  private val base64Decoder = Base64.getDecoder
 
   override def writeToStream(msg: MonotonicAclSyncMessage[RDT], outputStream: DataOutputStream): Unit =
     msg match
