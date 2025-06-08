@@ -116,7 +116,8 @@ case class Spreadsheet(
 
     Obrem(
       Spreadsheet(
-        rowIds = rowIds, colIds = colIds,
+        rowIds = rowIds,
+        colIds = colIds,
         content = Map(colId -> Map(rowId -> LastWriterWins(CausalTime.now(), content))),
         keepRows = keepRowsUpdate.data,
         keepCols = keepColsUpdate.data
