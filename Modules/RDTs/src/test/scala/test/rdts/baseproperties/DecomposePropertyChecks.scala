@@ -6,8 +6,7 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.alternatives.MultiValueRegister
-import rdts.datatypes.contextual.ReplicatedList
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet, contextual}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.DataGenerator.RGAGen.given
@@ -32,7 +31,7 @@ class PosNegDecomposeChecks          extends DecomposePropertyChecks[PosNegCount
 class TupleDecomposeChecks           extends DecomposePropertyChecks[(Set[Int], GrowOnlyCounter)]
 class GrowOnlyListDecomposeChecks    extends DecomposePropertyChecks[GrowOnlyList[Int]](expensive = true)
 class ReplicatedListDecomposeChecks
-    extends DecomposePropertyChecks[Dotted[ReplicatedList[ExampleData]]](expensive = true)
+    extends DecomposePropertyChecks[ReplicatedList[ExampleData]](expensive = true)
 class LWWTupleDecomposeChecks
     extends LatticePropertyChecks[(Option[LastWriterWins[Int]], Option[LastWriterWins[Int]])]
 

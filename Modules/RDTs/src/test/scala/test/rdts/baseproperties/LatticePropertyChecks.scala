@@ -6,10 +6,9 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
-import rdts.datatypes.contextual.ReplicatedList
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.CausalStore
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet, contextual}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots, VectorClock}
 import test.rdts.DataGenerator.RGAGen.given
@@ -49,7 +48,7 @@ class PosNegChecks            extends LatticePropertyChecks[PosNegCounter]
 class TupleChecks             extends LatticePropertyChecks[(Set[Int], GrowOnlyCounter)]
 class VectorClockChecks       extends LatticePropertyChecks[VectorClock]
 class GrowOnlyListChecks      extends LatticePropertyChecks[GrowOnlyList[Int]](expensive = true)
-class ReplicatedListChecks    extends LatticePropertyChecks[Dotted[ReplicatedList[ExampleData]]](expensive = true)
+class ReplicatedListChecks    extends LatticePropertyChecks[ReplicatedList[ExampleData]](expensive = true)
 class ListAsVectorChecks      extends LatticePropertyChecks[List[Int]]
 class LWWTupleChecks
     extends LatticePropertyChecks[(Option[LastWriterWins[Int]], Option[LastWriterWins[Int]])]

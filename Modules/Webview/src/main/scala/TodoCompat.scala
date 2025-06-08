@@ -1,8 +1,7 @@
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Lattice}
-import rdts.datatypes.LastWriterWins
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.{LastWriterWins, ReplicatedList}
 import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import replication.JsoniterCodecs.given
@@ -12,7 +11,7 @@ case class TaskData(
     desc: String,
     done: Boolean = false
 )
-case class TodoRepState(list: Dotted[ReplicatedList[TaskRef]], entries: Map[String, LastWriterWins[Option[TaskData]]])
+case class TodoRepState(list: ReplicatedList[TaskRef], entries: Map[String, LastWriterWins[Option[TaskData]]])
 
 given Lattice[TodoRepState] = Lattice.derived
 given Bottom[TodoRepState]  = Bottom.derived

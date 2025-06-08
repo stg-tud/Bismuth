@@ -4,7 +4,7 @@ import org.scalajs.dom
 import org.scalajs.dom.html.{Div, Input, LI}
 import org.scalajs.dom.{HTMLDivElement, window}
 import rdts.base.Bottom
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.ReplicatedList
 import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
@@ -46,8 +46,8 @@ class TodoAppUI(val storagePrefix: String) {
     val taskrefs = TaskReferences(toggleAll.event, storagePrefix)
     val taskOps  = new TaskOps(taskrefs, replicaId)
 
-    val tasksRDT: Signal[DeltaBuffer[Dotted[ReplicatedList[TaskRef]]]] =
-      Storing.storedAs(storagePrefix, DeltaBuffer(Dotted(ReplicatedList.empty[TaskRef]))) { init =>
+    val tasksRDT: Signal[DeltaBuffer[ReplicatedList[TaskRef]]] =
+      Storing.storedAs(storagePrefix, DeltaBuffer(ReplicatedList.empty[TaskRef])) { init =>
         TodoDataManager.hookup(
           init.state,
           list => Bottom.empty[TodoRepState].copy(list = list),
@@ -58,14 +58,14 @@ class TodoAppUI(val storagePrefix: String) {
             taskOps.handleCreateTodo(createTodo),
             taskOps.handleRemoveAll(removeAll.event),
             Fold.branch {
-              current.data.toList.flatMap(_.removed.value).foldLeft(current) { (c, e) => taskOps.handleRemove(c)(e) }
+              current.state.toList.flatMap(_.removed.value).foldLeft(current) { (c, e) => taskOps.handleRemove(c)(e) }
             },
             branch
           )
         }
       }
 
-    val tasksList: Signal[List[TaskRef]] = tasksRDT.map { _.data.toList }
+    val tasksList: Signal[List[TaskRef]] = tasksRDT.map { _.state.toList }
     val tasksData: Signal[List[TaskData]] =
       Signal.dynamic { tasksList.value.flatMap(l => l.task.value.state.read) }
     val taskTags: Signal[List[LI]] = Signal { tasksList.value.map(_.tag) }

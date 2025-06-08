@@ -1,7 +1,6 @@
 package test.rdts.bespoke
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.GrowOnlyList
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.{GrowOnlyList, ReplicatedList}
 import rdts.dotted.Dotted
 import rdts.time.Dot
 
@@ -34,69 +33,69 @@ class ReplicatedListTest extends munit.FunSuite {
   }
 
   test("insert into replicated list") {
-    val v1 = Dotted(ReplicatedList.empty[String])
+    val v1 = ReplicatedList.empty[String]
 
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("a")
 
-    val v2 = v1.mod(_.insert(using aid)(0, "10"))
+    val v2 = v1.insert(using aid)(0, "10")
 
-    assertEquals(v2.data.toList, List("10"))
+    assertEquals(v2.toList, List("10"))
 
-    val v3d = v2.mod(_.insert(using aid)(1, "20"))
+    val v3d = v2.insert(using aid)(1, "20")
 
-    val mergedOrder = v2.data.order.value `merge` v3d.data.order.value
+    val mergedOrder = v2.order.value `merge` v3d.order.value
 
-    val mergedLists: ReplicatedList[String] = v3d.data `merge` v2.data
+    val mergedLists: ReplicatedList[String] = v3d `merge` v2
     val v3                                  = v2 `merge` v3d
 
     assertEquals(
-      v3.data.order.value.inner.get(GrowOnlyList.Node.Head),
+      v3.order.value.inner.get(GrowOnlyList.Node.Head),
       mergedLists.order.value.inner.get(GrowOnlyList.Node.Head)
     )
 
-    assertEquals(v3.data, mergedLists)
+    assertEquals(v3, mergedLists)
 
     assertEquals(mergedLists.order.value.toList, List(Dot(aid, 0), Dot(aid, 1)))
     assertEquals(mergedOrder.toList, List(Dot(aid, 0), Dot(aid, 1)))
-    assertEquals(v3.data.order.value.toList, List(Dot(aid, 0), Dot(aid, 1)))
+    assertEquals(v3.order.value.toList, List(Dot(aid, 0), Dot(aid, 1)))
 
-    assertEquals(v3.data.toList, List("10", "20"))
+    assertEquals(v3.toList, List("10", "20"))
 
-    val v4 = v3 `merge` v3.mod(_.insert(using aid)(1, "30"))
+    val v4 = v3 `merge` v3.insert(using aid)(1, "30")
 
-    assertEquals(v4.data.toList, List("10", "30", "20"))
+    assertEquals(v4.toList, List("10", "30", "20"))
 
   }
 
   test("purge tombstones") {
 
     val withPurging = {
-      var l = Dotted(ReplicatedList.empty[String])
+      var l = ReplicatedList.empty[String]
 
       given LocalUid = LocalUid.gen()
 
-      l = l `merge` l.mod(_.append("A"))
-      l = l `merge` l.mod(_.append("B"))
-      l = l `merge` l.mod(_.append("C"))
-      l = l `merge` l.mod(_.delete(1))
-      l = l `merge` l.mod(_.purgeTombstones())
-      l = l `merge` l.mod(_.delete(1))
+      l = l `merge` l.append("A")
+      l = l `merge` l.append("B")
+      l = l `merge` l.append("C")
+      l = l `merge` l.delete(1)
+      l = l `merge` l.purgeTombstones()
+      l = l `merge` l.delete(1)
       l
     }
     val withoutPurging = {
-      var m = Dotted(ReplicatedList.empty[String])
+      var m = ReplicatedList.empty[String]
 
       given LocalUid = LocalUid.gen()
 
-      m = m `merge` m.mod(_.append("A"))
-      m = m `merge` m.mod(_.append("B"))
-      m = m `merge` m.mod(_.append("C"))
-      m = m `merge` m.mod(_.delete(1))
-      m = m `merge` m.mod(_.delete(1))
+      m = m `merge` m.append("A")
+      m = m `merge` m.append("B")
+      m = m `merge` m.append("C")
+      m = m `merge` m.delete(1)
+      m = m `merge` m.delete(1)
       m
     }
-    assertEquals(withPurging.data.toList, withoutPurging.data.toList)
+    assertEquals(withPurging.toList, withoutPurging.toList)
   }
 
 }

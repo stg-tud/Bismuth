@@ -5,8 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import deltaAntiEntropy.tests.NetworkGenerators.*
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.GrowOnlyList
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.{GrowOnlyList, ReplicatedList}
 import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 import test.rdts.DataGenerator.RGAGen.makeRGA
@@ -19,6 +18,8 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
   given HasDots[Int]                     = HasDots.noDots
   given HasDots[String]                  = HasDots.noDots
 
+  given [E]: HasDots[ReplicatedList[E]] = HasDots.noDots
+
   test("basic") {
 
     val network = new Network(0, 0, 0)
@@ -26,25 +27,25 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val aec = AntiEntropyContainer[ReplicatedList[String]](ae)
 
-    aec.mod(_.insert(using aec.replicaID)(0, "00"))
+    aec.modn(_.insert(using aec.replicaID)(0, "00"))
 
-    aec.mod(_.update(using LocalUid.predefined("b"))(0, "UPD"))
+    aec.modn(_.update(using LocalUid.predefined("b"))(0, "UPD"))
 
     assertEquals(aec.data.toList, List("UPD"))
 
-    aec.mod(_.insert(using aec.replicaID)(1, "100"))
+    aec.modn(_.insert(using aec.replicaID)(1, "100"))
 
     assertEquals(aec.data.toList, List("UPD", "100"))
 
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-      aec.mod(_.insert(using aec.replicaID)(0, elem))
-    // aec.mod(_.insertAll(using aec.replicaID)(0, lots))
+      aec.modn(_.insert(using aec.replicaID)(0, elem))
+    // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("UPD", "100"))
 
-    aec.mod(_.insert(using LocalUid.predefined("b"))(1, "b00"))
+    aec.modn(_.insert(using LocalUid.predefined("b"))(1, "b00"))
 
     assertEquals(aec.data.read(1), Some("b00"))
 
@@ -70,7 +71,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     lots.foreach: elem =>
       aec.modn(_.insertGL(0, elem))
-    // aec.mod(_.insertAll(using aec.replicaID)(0, lots))
+    // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("00", "100"))
 
@@ -97,7 +98,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
     val la0 = AntiEntropyContainer(aea)
     la0.applyDelta(Named(
       Uid.predefined(aea.replicaID),
-      makeRGA(inserted, removed, LocalUid.predefined(aea.replicaID))
+      Dotted(makeRGA(inserted, removed, LocalUid.predefined(aea.replicaID)))
     ))
     network.startReliablePhase()
     AntiEntropy.sync(aea, aeb)
@@ -106,29 +107,29 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val la1 = {
       val inserted = insertedAB._1.foldLeft(la0) {
-        case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.modn(_.insert(using rga.replicaID)(i, e))
       }
 
       val deleted = removedAB._1.foldLeft(inserted) {
-        case (rga, i) => rga.mod(_.delete(using rga.replicaID)(i))
+        case (rga, i) => rga.modn(_.delete(using rga.replicaID)(i))
       }
 
       updatedAB._1.foldLeft(deleted) {
-        case (rga, (i, e)) => rga.mod(_.update(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.modn(_.update(using rga.replicaID)(i, e))
       }
     }
 
     val lb1 = {
       val inserted = insertedAB._2.foldLeft(lb0) {
-        case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.modn(_.insert(using rga.replicaID)(i, e))
       }
 
       val deleted = removedAB._2.foldLeft(inserted) {
-        case (rga, i) => rga.mod(_.delete(using rga.replicaID)(i))
+        case (rga, i) => rga.modn(_.delete(using rga.replicaID)(i))
       }
 
       updatedAB._2.foldLeft(deleted) {
-        case (rga, (i, e)) => rga.mod(_.update(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.modn(_.update(using rga.replicaID)(i, e))
       }
     }
 

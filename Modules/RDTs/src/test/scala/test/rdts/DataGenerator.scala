@@ -197,17 +197,17 @@ object DataGenerator {
         inserted: List[(Int, E)],
         removed: List[Int],
         rid: LocalUid
-    ): Dotted[ReplicatedList[E]] = {
-      val afterInsert = inserted.foldLeft(Dotted(ReplicatedList.empty[E])) {
-        case (rga, (i, e)) => rga `merge` rga.mod(_.insert(using rid)(i, e))
+    ): ReplicatedList[E] = {
+      val afterInsert = inserted.foldLeft(ReplicatedList.empty[E]) {
+        case (rga, (i, e)) => rga `merge` rga.insert(using rid)(i, e)
       }
 
       removed.foldLeft(afterInsert) {
-        case (rga, i) => rga.mod(_.delete(using rid)(i))
+        case (rga, i) => rga `merge` rga.delete(using rid)(i)
       }
     }
 
-    def genRGA[E](using e: Arbitrary[E]): Gen[Dotted[ReplicatedList[E]]] =
+    def genRGA[E](using e: Arbitrary[E]): Gen[ReplicatedList[E]] =
       for
         nInserted       <- Gen.choose(0, 20)
         insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
@@ -220,10 +220,9 @@ object DataGenerator {
 
     given arbRGA[E](using
         e: Arbitrary[E],
-    ): Arbitrary[Dotted[ReplicatedList[E]]] =
+    ): Arbitrary[ReplicatedList[E]] =
       Arbitrary(genRGA)
 
-    given arbPlainRGA[E: Arbitrary]: Arbitrary[ReplicatedList[E]] = Arbitrary(genRGA.map(_.data))
   }
 
   given arbOpGraph[T](using arbData: Arbitrary[T]): Arbitrary[OpGraph[T]] = Arbitrary:

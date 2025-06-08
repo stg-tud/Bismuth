@@ -3,7 +3,7 @@ package test.rdts.baseproperties
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Uid
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.ReplicatedList
 import rdts.datatypes.experiments.CausalStore
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{ArrayRanges, Dot, Dots, VectorClock}
@@ -15,7 +15,7 @@ import scala.math.Ordering.Implicits.infixOrderingOps
 
 class DotSetHDChecks         extends HasDotsChecks[Dots]
 class CausalStoreHDChecks    extends HasDotsChecks[CausalStore[Map[Dot, ExampleData]]]
-class ReplicatedListHDChecks extends HasDotsChecks[ReplicatedList[ExampleData]]
+// class ReplicatedListHDChecks extends HasDotsChecks[ReplicatedList[ExampleData]]
 
 // the specification of these tests is nice, but the generators are essentially useless, as it is extremely unlikely
 // that they will produce any kind of comparable values

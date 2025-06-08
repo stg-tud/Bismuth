@@ -3,8 +3,7 @@ package todo
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Lattice}
-import rdts.datatypes.LastWriterWins
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.{LastWriterWins, ReplicatedList}
 import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import rdts.time.Dots
@@ -15,7 +14,7 @@ import replication.JsoniterCodecs.given
 
 object TodoDataManager {
 
-  case class TodoRepState(list: Dotted[ReplicatedList[TaskRef]], entries: Map[String, LastWriterWins[Option[TaskData]]])
+  case class TodoRepState(list: ReplicatedList[TaskRef], entries: Map[String, LastWriterWins[Option[TaskData]]])
 
   given JsonValueCodec[TodoRepState] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   given Lattice[TodoRepState]        = Lattice.derived

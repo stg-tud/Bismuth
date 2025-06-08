@@ -2,7 +2,6 @@ package ex2024bft
 
 import rdts.base.*
 import rdts.datatypes.*
-import rdts.datatypes.contextual.ReplicatedList
 import rdts.dotted.Dotted
 
 class BFTTest extends munit.ScalaCheckSuite {

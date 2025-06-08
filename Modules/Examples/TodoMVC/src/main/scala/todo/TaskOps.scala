@@ -1,7 +1,7 @@
 package todo
 
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.ReplicatedList
 import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
@@ -18,7 +18,7 @@ object TaskOps {
 // that a `taskrefs` needs to be created before taskops may be used
 class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
 
-  type State = DeltaBuffer[Dotted[ReplicatedList[TaskRef]]]
+  type State = DeltaBuffer[ReplicatedList[TaskRef]]
 
   given LocalUid = replicaID
 
@@ -26,12 +26,12 @@ class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
     val taskid = s"Task(${ThreadLocalRandom.current().nextLong().toHexString})"
     TaskReferences.lookupOrCreateTaskRef(taskid, Some(TaskData(desc)))
     val taskref = TaskRef(taskid)
-    current.modd(_.prepend(taskref))
+    current.mod(_.prepend(taskref))
   }
 
   def handleRemoveAll(removeAll: Event[Any]): Fold.Branch[State] =
     removeAll.branch: _ =>
-      current.modd(_.deleteBy { (taskref: TaskRef) =>
+      current.mod(_.deleteBy { (taskref: TaskRef) =>
         val isDone = taskref.task.value.state.read.exists(_.done)
         // todo, move to observer, disconnect during transaction does not respect rollbacks
         if isDone then taskref.task.disconnect()
@@ -39,7 +39,7 @@ class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
       })
 
   def handleRemove(state: State)(id: String): State = {
-    state.modd(_.deleteBy { (taskref: TaskRef) =>
+    state.mod(_.deleteBy { (taskref: TaskRef) =>
       val delete = taskref.id == id
       // todo, move to observer, disconnect during transaction does not respect rollbacks
       if delete then taskref.task.disconnect()
@@ -55,8 +55,8 @@ class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
 
       val newList = deltaBuffered.applyDelta(delta)
 
-      val oldIDs = deltaBuffered.data.toList.toSet
-      val newIDs = newList.data.toList.toSet
+      val oldIDs = deltaBuffered.state.toList.toSet
+      val newIDs = newList.state.toList.toSet
 
       val removed = oldIDs -- newIDs
       removed.foreach { _.task.disconnect() }

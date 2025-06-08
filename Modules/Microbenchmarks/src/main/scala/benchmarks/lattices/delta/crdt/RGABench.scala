@@ -2,7 +2,7 @@ package benchmarks.lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
-import rdts.datatypes.contextual.ReplicatedList
+import rdts.datatypes.ReplicatedList
 
 import java.util.concurrent.TimeUnit
 
@@ -18,28 +18,28 @@ class RGABench {
   @Param(Array("0", "1", "10", "100", "1000"))
   var rgaSize: Int = scala.compiletime.uninitialized
 
-  type SUT = DeltaBufferDotted[ReplicatedList[Int]]
+  type SUT = NamedDeltaBuffer[ReplicatedList[Int]]
 
   var rga: SUT        = scala.compiletime.uninitialized
   var rgaCleared: SUT = scala.compiletime.uninitialized
 
   @Setup
   def setup(): Unit = {
-    rga = NamedDeltaBuffer.dotted("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(using "".asId)(0 until rgaSize))
+    rga = NamedDeltaBuffer("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(using "".asId)(0 until rgaSize))
     rgaCleared = rga.mod(_.clear())
   }
 
   @Benchmark
-  def readFirst(): Option[Int] = rga.data.read(0)
+  def readFirst(): Option[Int] = rga.state.read(0)
 
   @Benchmark
-  def readLast(): Option[Int] = rga.data.read(rgaSize - 1)
+  def readLast(): Option[Int] = rga.state.read(rgaSize - 1)
 
   @Benchmark
-  def size(): Int = rga.data.size
+  def size(): Int = rga.state.size
 
   @Benchmark
-  def toList: List[Int] = rga.data.toList
+  def toList: List[Int] = rga.state.toList
 
   @Benchmark
   def prepend(): SUT = rga.mod(_.prepend(using rga.replicaID)(-1))
