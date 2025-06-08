@@ -1,7 +1,7 @@
 package rdts.datatypes.experiments.protocols.raft
 
 import rdts.base.{Lattice, LocalUid, Uid}
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 
@@ -14,14 +14,14 @@ case class RaftToken(id: Long, owner: Uid, value: String) derives CanEqual {
 case class RaftTokens(
     replicaID: Uid,
     tokenAgreement: RaftState[RaftToken],
-    want: DeltaBuffer[Dotted[ReplicatedSet[RaftToken]]],
-    tokenFreed: DeltaBuffer[Dotted[ReplicatedSet[RaftToken]]]
+    want: DeltaBuffer[ReplicatedSet[RaftToken]],
+    tokenFreed: DeltaBuffer[ReplicatedSet[RaftToken]],
 ) {
 
   given LocalUid = replicaID.convert
 
   def owned(value: String): List[RaftToken] = {
-    val freed  = tokenFreed.state.data.elements
+    val freed  = tokenFreed.state.elements
     val owners = tokenAgreement.values.filter(t => t.value == value && !freed.contains(t))
     val mine   = owners.filter(_.owner == replicaID)
     // return all ownership tokens if this replica owns the oldest one
@@ -34,21 +34,21 @@ case class RaftTokens(
     val token = RaftToken(Random.nextLong(), replicaID, value)
 
     // conditional is only an optimization
-    if !(tokenAgreement.values.iterator ++ want.state.data.elements.iterator).exists(_.same(token)) then {
-      copy(want = want.modd(_.add(token)))
+    if !(tokenAgreement.values.iterator ++ want.state.elements.iterator).exists(_.same(token)) then {
+      copy(want = want.mod(_.add(token)))
     } else this
   }
 
   def free(value: String): RaftTokens = {
-    copy(tokenFreed = tokenFreed.modd(_.addAll(owned(value))))
+    copy(tokenFreed = tokenFreed.mod(_.addAll(owned(value))))
   }
 
   def update(): RaftTokens = {
     val generalDuties = tokenAgreement.supportLeader(replicaID).supportProposal(replicaID)
 
     if tokenAgreement.leader == replicaID then {
-      val unwanted = want.modd(_.removeAll(want.state.data.elements.filter(generalDuties.values.contains)))
-      unwanted.state.data.elements.headOption match {
+      val unwanted = want.mod(_.removeAll(want.state.elements.filter(generalDuties.values.contains)))
+      unwanted.state.elements.headOption match {
         case None => copy(tokenAgreement = generalDuties, want = unwanted)
         case Some(tok) =>
           copy(tokenAgreement = generalDuties.propose(replicaID, tok), want = unwanted)
@@ -56,11 +56,11 @@ case class RaftTokens(
     } else copy(tokenAgreement = generalDuties)
   }
 
-  def applyWant(state: Dotted[ReplicatedSet[RaftToken]]): RaftTokens = {
+  def applyWant(state: ReplicatedSet[RaftToken]): RaftTokens = {
     copy(want = want.applyDelta(state))
   }
 
-  def applyFree(state: Dotted[ReplicatedSet[RaftToken]]): RaftTokens = {
+  def applyFree(state: ReplicatedSet[RaftToken]): RaftTokens = {
     copy(tokenFreed = tokenFreed.applyDelta(state))
   }
 
@@ -78,7 +78,7 @@ object RaftTokens {
     RaftTokens(
       replicaID,
       RaftState(Set(replicaID)),
-      DeltaBuffer(Dotted(ReplicatedSet.empty[RaftToken])),
-      DeltaBuffer(Dotted(ReplicatedSet.empty[RaftToken]))
+      DeltaBuffer(ReplicatedSet.empty[RaftToken]),
+      DeltaBuffer(ReplicatedSet.empty[RaftToken])
     )
 }

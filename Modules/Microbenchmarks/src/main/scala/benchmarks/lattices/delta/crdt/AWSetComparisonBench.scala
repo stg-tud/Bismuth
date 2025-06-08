@@ -3,8 +3,7 @@ package benchmarks.lattices.delta.crdt
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice
 import rdts.base.LocalUid.asId
-import rdts.datatypes.contextual.ReplicatedSet
-import rdts.dotted.Dotted
+import rdts.datatypes.ReplicatedSet
 
 import java.util.concurrent.TimeUnit
 
@@ -20,7 +19,7 @@ class AWSetComparisonBench {
   @Param(Array("0", "1", "10", "100", "1000"))
   var setSize: Int = scala.compiletime.uninitialized
 
-  type State = Dotted[ReplicatedSet[String]]
+  type State = ReplicatedSet[String]
 
   var setAState: State        = scala.compiletime.uninitialized
   var setBState: State        = scala.compiletime.uninitialized
@@ -28,8 +27,8 @@ class AWSetComparisonBench {
   var setAStatePlusOne: State = scala.compiletime.uninitialized
 
   private def createSet(replicaID: String): State = {
-    (0 until setSize).foldLeft(Dotted(ReplicatedSet.empty[String])) { (s, i) =>
-      val delta = s.mod(_.add(using replicaID.asId)(s"${i.toString}$replicaID"))
+    (0 until setSize).foldLeft(ReplicatedSet.empty[String]) { (s, i) =>
+      val delta = s.add(using replicaID.asId)(s"${i.toString}$replicaID")
       Lattice.merge(s, delta)
     }
   }
@@ -39,7 +38,7 @@ class AWSetComparisonBench {
     setAState = createSet("a")
     setBState = createSet("b")
 
-    plusOneDelta = setBState.mod(_.add(using "b".asId)("hallo welt"))
+    plusOneDelta = setBState.add(using "b".asId)("hallo welt")
     setAStatePlusOne = Lattice.merge(setAState, setBState)
   }
 
@@ -47,7 +46,7 @@ class AWSetComparisonBench {
   def create(): State = createSet("c")
 
   @Benchmark
-  def addOne(): State = setAState.mod(_.add(using "a".asId)("Hallo Welt"))
+  def addOne(): State = setAState.add(using "a".asId)("Hallo Welt")
 
   @Benchmark
   def merge(): State = Lattice.merge(setAState, setBState)

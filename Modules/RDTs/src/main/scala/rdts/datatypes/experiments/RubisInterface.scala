@@ -1,10 +1,12 @@
 package rdts.datatypes.experiments
 
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.datatypes.experiments.AuctionInterface.Bid.User
 import rdts.dotted.Dotted
 import rdts.time.Dots
+
+import scala.util.chaining.scalaUtilChainingOps
 
 /** A Rubis (Rice University Bidding System) is a Delta CRDT modeling an auction system.
   *
@@ -56,15 +58,15 @@ object RubisInterface {
       deltaState.make(auctions = newMap)
     }
 
-    def requestRegisterUser(using LocalUid)(userId: User)(using context: Dots): Dotted[Delta] = {
+    def requestRegisterUser(using LocalUid)(userId: User): Delta = {
       val (req, users, _) = current
-      if users.contains(userId) then Dotted(deltaState.make(), context)
+      if users.contains(userId) then deltaState.make()
       else
-        val merged = req.add(userId -> LocalUid.replicaId)(using context)
-        Dotted(deltaState.make(userRequests = merged.data), merged.context)
+        val merged = req.add(userId -> LocalUid.replicaId)
+        deltaState.make(userRequests = merged)
     }
 
-    def resolveRegisterUser(): Dotted[Delta] = {
+    def resolveRegisterUser(): Delta = {
       val (req, users, _) = current
       val newUsers = req.elements.foldLeft(Map.empty[User, Uid]) {
         case (newlyRegistered, (uid, rid)) =>
@@ -75,7 +77,7 @@ object RubisInterface {
           }
       }
 
-      req.clear().map { ur =>
+      req.clear().pipe { ur =>
         deltaState.make(
           userRequests = ur,
           users = newUsers

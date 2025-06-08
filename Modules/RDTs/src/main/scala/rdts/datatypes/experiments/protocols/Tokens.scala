@@ -2,9 +2,11 @@ package rdts.datatypes.experiments.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Orderings, Uid}
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.Dots
+
+import scala.util.chaining.scalaUtilChainingOps
 
 case class Ownership(epoch: Long, owner: Uid)
 
@@ -20,11 +22,11 @@ case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
 
   def isOwner(using LocalUid): Boolean = replicaId == os.owner
 
-  def request(using LocalUid, Dots): Dotted[Token] =
-    wants.add(replicaId).map(w => Token(Ownership.unchanged, w))
+  def request(using LocalUid, Dots): Token =
+    Token(Ownership.unchanged, wants.add(replicaId))
 
-  def release(using LocalUid, Dots): Dotted[Token] =
-    wants.remove(replicaId).map(w => Token(Ownership.unchanged, w))
+  def release(using LocalUid, Dots): Token =
+    Token(Ownership.unchanged, wants.remove(replicaId))
 
   def upkeep(using LocalUid): Token =
     if !isOwner then Token.unchanged

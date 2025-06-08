@@ -1,5 +1,6 @@
-package rdts.datatypes.contextual
+package rdts.datatypes
 
+import com.sun.crypto.provider.ML_KEM_Impls.K
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.dotted.*
 import rdts.dotted.HasDots.mapInstance
@@ -9,16 +10,18 @@ import rdts.time.{Dot, Dots}
   * Each unique element tracks the dots of when it was inserted.
   * Removals do not override concurrent inserts.
   */
-case class ReplicatedSet[E](inner: Map[E, Dots]) derives Lattice, Decompose {
+case class ReplicatedSet[E](repr: Dotted[Map[E, Dots]]) derives Lattice, Decompose {
 
-  type Delta = Dotted[ReplicatedSet[E]]
+  def inner = repr.data
+
+  type Delta = ReplicatedSet[E]
 
   def elements: Set[E] = inner.keySet
 
   def contains(elem: E): Boolean = inner.contains(elem)
 
-  def add(using LocalUid)(e: E)(using context: Dots): Delta = {
-    val nextDot = context.nextDot(LocalUid.replicaId)
+  def add(using LocalUid)(e: E): Delta = {
+    val nextDot = repr.context.nextDot(LocalUid.replicaId)
     val v: Dots = inner.getOrElse(e, Dots.empty)
 
     deltaState(
@@ -27,8 +30,8 @@ case class ReplicatedSet[E](inner: Map[E, Dots]) derives Lattice, Decompose {
     )
   }
 
-  def addAll(using LocalUid)(elems: Iterable[E])(using context: Dots): Delta = {
-    val nextCounter = context.nextTime(LocalUid.replicaId)
+  def addAll(using LocalUid)(elems: Iterable[E]): Delta = {
+    val nextCounter = repr.context.nextTime(LocalUid.replicaId)
     val nextDots    = Dots.from((nextCounter until nextCounter + elems.size).map(Dot(LocalUid.replicaId, _)))
 
     val ccontextSet = elems.foldLeft(nextDots) {
@@ -76,18 +79,18 @@ case class ReplicatedSet[E](inner: Map[E, Dots]) derives Lattice, Decompose {
   private def deltaState(
       dm: Map[E, Dots],
       cc: Dots
-  ): Delta = Dotted(ReplicatedSet(dm), cc)
+  ): Delta = ReplicatedSet(Dotted((dm), cc))
 
   private def deltaState(cc: Dots): Delta = deltaState(Map.empty, cc)
 }
 
 object ReplicatedSet {
 
-  def empty[E]: ReplicatedSet[E] = ReplicatedSet(Map.empty)
+  def empty[E]: ReplicatedSet[E] = ReplicatedSet(Dotted.empty)
 
   given bottom[E]: Bottom[ReplicatedSet[E]]       = Bottom.provide(empty)
   given lattice[E]: Lattice[ReplicatedSet[E]]     = Lattice.derived
   given decompose[E]: Decompose[ReplicatedSet[E]] = Decompose.derived
-  given hasDots[E]: HasDots[ReplicatedSet[E]]     = HasDots.derived
+  given hasDots[E]: HasDots[ReplicatedSet[E]]     = HasDots.noDots
 
 }

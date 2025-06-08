@@ -2,7 +2,7 @@ package benchmarks.lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.dotted.Dotted
 
 import java.util.concurrent.TimeUnit
@@ -19,10 +19,10 @@ class AWSetBench {
   @Param(Array("0", "1", "10", "100", "1000"))
   var size: Int = scala.compiletime.uninitialized
 
-  var set: DeltaBufferDotted[ReplicatedSet[Int]] = scala.compiletime.uninitialized
+  var set: NamedDeltaBuffer[ReplicatedSet[Int]] = scala.compiletime.uninitialized
 
-  def createBySize(size: Int): DeltaBufferDotted[ReplicatedSet[Int]] =
-    (0 until size).foldLeft(NamedDeltaBuffer.dotted("a".asId, ReplicatedSet.empty[Int])) {
+  def createBySize(size: Int): NamedDeltaBuffer[ReplicatedSet[Int]] =
+    (0 until size).foldLeft(NamedDeltaBuffer("a".asId, ReplicatedSet.empty[Int])) {
       case (s, e) => s.mod(_.add(using s.replicaID)(e))
     }
 
@@ -32,28 +32,28 @@ class AWSetBench {
   }
 
   @Benchmark
-  def elements(): Set[Int] = set.state.data.elements
+  def elements(): Set[Int] = set.state.elements
 
   @Benchmark
-  def add(): DeltaBufferDotted[ReplicatedSet[Int]] = set.mod(_.add(using set.replicaID)(-1))
+  def add(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.add(using set.replicaID)(-1))
 
   @Benchmark
-  def addAll(): DeltaBufferDotted[ReplicatedSet[Int]] =
-    val ndb = NamedDeltaBuffer.dotted("a".asId, ReplicatedSet.empty[Int])
+  def addAll(): NamedDeltaBuffer[ReplicatedSet[Int]] =
+    val ndb = NamedDeltaBuffer("a".asId, ReplicatedSet.empty[Int])
     ndb.mod(_.addAll(using ndb.replicaID)(0 until size))
 
   @Benchmark
-  def remove(): DeltaBufferDotted[ReplicatedSet[Int]] = set.mod(_.remove(0))
+  def remove(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.remove(0))
 
   @Benchmark
-  def removeBy(): DeltaBufferDotted[ReplicatedSet[Int]] = set.mod(_.removeBy((e: Int) => e == 0))
+  def removeBy(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.removeBy((e: Int) => e == 0))
 
   @Benchmark
-  def removeAll(): DeltaBufferDotted[ReplicatedSet[Int]] = set.mod(_.removeAll(set.state.data.elements))
+  def removeAll(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.removeAll(set.state.elements))
 
   @Benchmark
-  def clear(): DeltaBufferDotted[ReplicatedSet[Int]] = set.mod(_.clear())
+  def clear(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.clear())
 
   @Benchmark
-  def construct(): DeltaBufferDotted[ReplicatedSet[Int]] = createBySize(size)
+  def construct(): NamedDeltaBuffer[ReplicatedSet[Int]] = createBySize(size)
 }

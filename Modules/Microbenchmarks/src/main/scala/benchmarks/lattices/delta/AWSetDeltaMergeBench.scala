@@ -4,7 +4,7 @@ import org.openjdk.jmh.annotations
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
 import rdts.base.{Lattice, Uid}
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.dotted.{Dotted, DottedLattice}
 import rdts.time.{Dot, Dots}
 
@@ -35,10 +35,10 @@ class AWSetDeltaMergeBench {
   def setup(): Unit = {
     val baseState = Dotted(ReplicatedSet.empty[Long])
 
-    val deltaState = baseState.mod(_.addAll(using "".asId)(0L to size))
+    val deltaState = baseState.modn(_.addAll(using "".asId)(0L to size))
     fullState = Lattice.merge(baseState, deltaState)
 
-    plusOneDeltaState = fullState.mod(_.add(using "".asId)(size))
+    plusOneDeltaState = fullState.modn(_.add(using "".asId)(size))
     plusOneState = Lattice.merge(fullState, plusOneDeltaState)
   }
 

@@ -4,7 +4,7 @@ import calendar.Codecs.given
 import lore.dsl.{Interaction, InteractionWithExecutes, Invariant}
 import org.scalajs.dom.html.{Div, Input}
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import reactives.core.CreationTicket
@@ -72,7 +72,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
 
   given LocalUid = replicaId.convert
 
-  type Calendar = DeltaBuffer[Dotted[ReplicatedSet[Appointment]]]
+  type Calendar = DeltaBuffer[ReplicatedSet[Appointment]]
 
   def getContents(): Div = {
     // ====================== Inputs ====================== //
@@ -90,8 +90,8 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
         val cal1 = c1.value
         val cal2 = c2.value
 
-        cal1.data.elements.forall { a =>
-          cal2.data.elements.forall { b =>
+        cal1.state.elements.forall { a =>
+          cal2.state.elements.forall { b =>
             if a != b then {
               a.end < b.start || a.start > b.end
             } else true
@@ -109,16 +109,16 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
 
     val addAppointment = Interaction[Calendar, Appointment]
       .requires { (_, a: Appointment) => a.start <= a.end }
-      .requires { (cal: Calendar, a) => !cal.data.contains(a) }
-      .executes { (cal: Calendar, a) => cal.clearDeltas().modd(_.add(a)) }
-      .ensures { (cal: Calendar, a) => cal.data.contains(a) }
+      .requires { (cal: Calendar, a) => !cal.state.contains(a) }
+      .executes { (cal: Calendar, a) => cal.clearDeltas().mod(_.add(a)) }
+      .ensures { (cal: Calendar, a) => cal.state.contains(a) }
 
     // ====================== remove ====================== //
 
     val removeAppointment: InteractionWithExecutes[Tuple1[Calendar], Appointment] = Interaction[Calendar, Appointment]
-      .requires { (cal: Calendar, a) => cal.data.contains(a) }
-      .executes { (cal: Calendar, a) => cal.clearDeltas().modd(_.remove(a)) }
-      .ensures { (cal: Calendar, a) => !cal.data.contains(a) }
+      .requires { (cal: Calendar, a) => cal.state.contains(a) }
+      .executes { (cal: Calendar, a) => cal.clearDeltas().mod(_.remove(a)) }
+      .ensures { (cal: Calendar, a) => !cal.state.contains(a) }
     /*
       .ensures { (cal: Calendar, a) =>
         cal == old(cal).setminus(Set(a))
@@ -129,30 +129,30 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
      */
 
     val removeEvents = (cal: Signal[Calendar]) =>
-      cal.map { buf => buf.data.elements.toList.map(_.removeEvent) }.flatten(using Flatten.firstFiringEvent)
+      cal.map { buf => buf.state.elements.toList.map(_.removeEvent) }.flatten(using Flatten.firstFiringEvent)
 
     // ====================== edit ====================== //
 
     val editAppointment = Interaction[Calendar, (Appointment, Appointment)]
       .requires { (cal: Calendar, aps) => aps._2.start <= aps._2.end }
-      .requires { (cal: Calendar, aps) => cal.data.elements.contains(aps._1) }
-      .requires { (cal: Calendar, aps) => !cal.data.elements.contains(aps._2) }
-      .executes { (cal: Calendar, aps) => cal.clearDeltas().modd(_.remove(aps._1)).modd(_.add(aps._2)) }
-      .ensures { (cal: Calendar, aps) => cal.data.elements.contains(aps._2) }
+      .requires { (cal: Calendar, aps) => cal.state.elements.contains(aps._1) }
+      .requires { (cal: Calendar, aps) => !cal.state.elements.contains(aps._2) }
+      .executes { (cal: Calendar, aps) => cal.clearDeltas().mod(_.remove(aps._1)).mod(_.add(aps._2)) }
+      .ensures { (cal: Calendar, aps) => cal.state.elements.contains(aps._2) }
       // .ensures { (cal: Calendar, aps) => cal.toSet == old(cal.toSet.setminus(Set(oldApp)).union(Set(newApp))) }
-      .ensures { (cal: Calendar, aps) => !cal.data.elements.contains(aps._1) }
-      .ensures { (cal: Calendar, aps) => cal.data.elements contains aps._2 }
+      .ensures { (cal: Calendar, aps) => !cal.state.elements.contains(aps._1) }
+      .ensures { (cal: Calendar, aps) => cal.state.elements contains aps._2 }
     // .ensures { (cal: Calendar, aps) => size(cal.toSet) == old(size(cal.toSet)) }
 
     val editEvents = (cal: Signal[Calendar]) =>
-      cal.map { buf => buf.data.elements.toList.map(_.editEvent) }.flatten(using Flatten.firstFiringEvent)
+      cal.map { buf => buf.state.elements.toList.map(_.editEvent) }.flatten(using Flatten.firstFiringEvent)
 
     // ====================== RDTs ====================== //
 
     // val deltaEvt = GlobalRegistry.subscribe[ReplicatedSet[Appointment]]("workCal")
 
     def events[T](cal: Calendar)(mapper: Appointment => Event[T]): Event[T] = {
-      val events = cal.data.elements.map(mapper)
+      val events = cal.state.elements.map(mapper)
 
       Event.Impl.static(events.toSeq*) { st =>
         events.map(st.dependStatic)
@@ -161,7 +161,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
     }
 
     val workCalendarRDT: Signal[Calendar] =
-      Storing.storedAs(storagePrefix + "-work", DeltaBuffer(Dotted(ReplicatedSet.empty[Appointment]))) { init =>
+      Storing.storedAs(storagePrefix + "-work", DeltaBuffer(ReplicatedSet.empty[Appointment])) { init =>
         Fold(init)(
           addAppointment.actsOn(newWorkAppointment.submitEvent).foldInto,
           removeAppointment.actWith[Calendar](events(current)(_.removeEvent)),
@@ -170,7 +170,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
       }
 
     val vacationCalendarRDT: Signal[Calendar] =
-      Storing.storedAs(storagePrefix + "-vacation", DeltaBuffer(Dotted(ReplicatedSet.empty[Appointment]))) { init =>
+      Storing.storedAs(storagePrefix + "-vacation", DeltaBuffer(ReplicatedSet.empty[Appointment])) { init =>
         Fold(init)(
           addAppointment.actsOn(newVacation.submitEvent).foldInto,
           removeAppointment.actWith[Calendar](events(current)(_.removeEvent)),
@@ -184,11 +184,11 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
 
     // ====================== UI ====================== //
 
-    val workCalList: Signal[List[Appointment]] = workCalendarRDT.map { it => it.data.elements.toList.sortBy(_.start) }
+    val workCalList: Signal[List[Appointment]] = workCalendarRDT.map { it => it.state.elements.toList.sortBy(_.start) }
     val workCalTags: Signal[List[Div]]         = workCalList.map { it => it.map { _.toTag } }
 
     val vacationCalList: Signal[List[Appointment]] = vacationCalendarRDT.map { it =>
-      it.data.elements.toList.sortBy(_.start)
+      it.state.elements.toList.sortBy(_.start)
     }
     val vacationCalTags: Signal[List[Div]] = vacationCalList.map { it => it.map { _.toTag } }
 

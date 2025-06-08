@@ -2,7 +2,7 @@ package rdts.datatypes.alternatives.rga
 
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.ReplicatedSet
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.Dots
 
@@ -15,7 +15,7 @@ case class DeltaSequence[A](
 ) {
 
   def current = this
-  type C = Dotted[DeltaSequence[A]]
+  type C = DeltaSequence[A]
 
   def successor(v: Vertex): Option[Vertex] = {
     current.edges.inner.get(v) match {
@@ -25,24 +25,25 @@ case class DeltaSequence[A](
     }
   }
 
-  def addRightDelta(replica: Uid, left: Vertex, insertee: Vertex, value: A)(using context: Dots): C = {
+  def addRightDelta(replica: Uid, left: Vertex, insertee: Vertex, value: A): C = {
     val newEdges    = current.edges.addRightEdgeDelta(left, insertee)
-    val newVertices = current.vertices.add(using replica.convert)(insertee)(using context)
+    val newVertices = current.vertices.add(using replica.convert)(insertee)
     val newValues   = Map(insertee -> value)
-    newVertices.context.wrap(DeltaSequence(newVertices.data, newEdges, newValues))
+    DeltaSequence(newVertices, newEdges, newValues)
   }
 
   def prependDelta(replica: Uid, value: A)(using context: Dots): C =
     addRightDelta(replica, Vertex.start, Vertex.fresh(), value)
 
   def removeDelta(v: Vertex): C =
-    current.vertices.remove(v).map(vert => current.copy(vertices = vert))
+    val vert = current.vertices.remove(v)
+    current.copy(vertices = vert)
 
   def filterDelta(keep: A => Boolean)(using context: Dots): C = {
     val removed: immutable.Iterable[Vertex] = current.values.collect { case (k, v) if !keep(v) => k }
-    removed.foldLeft(context.wrap(current: DeltaSequence[A])) {
+    removed.foldLeft(current: DeltaSequence[A]) {
       case (curr, toRemove) =>
-        val delta = curr.mod(_.removeDelta(toRemove))
+        val delta = curr.removeDelta(toRemove)
         Lattice.merge(curr, delta)
     }
   }
@@ -80,9 +81,9 @@ object DeltaSequence {
   }
 
   def empty[A]: DeltaSequence[A] =
-    val addStart = ReplicatedSet.empty[Vertex].add(using Vertex.start.id.convert)(Vertex.start)(using Dots.empty)
+    val addStart = ReplicatedSet.empty[Vertex].add(using Vertex.start.id.convert)(Vertex.start)
     DeltaSequence(
-      addStart.data,
+      addStart,
       DeltaSequenceOrder(Map()),
       Map.empty,
     )

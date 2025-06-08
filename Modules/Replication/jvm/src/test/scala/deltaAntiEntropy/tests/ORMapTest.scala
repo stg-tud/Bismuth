@@ -6,7 +6,8 @@ import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import rdts.base
 import rdts.base.{Bottom, LocalUid}
-import rdts.datatypes.contextual.{ObserveRemoveMap, ReplicatedSet}
+import rdts.datatypes.ReplicatedSet
+import rdts.datatypes.contextual.ObserveRemoveMap
 import rdts.dotted.Dotted
 import replication.JsoniterCodecs.given
 
@@ -38,22 +39,22 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val set = {
         val added: AntiEntropyContainer[ReplicatedSet[Int]] = add.foldLeft(AntiEntropyContainer(aeb)) {
-          case (s, e) => s.mod(_.add(using s.replicaID)(e))
+          case (s, e) => s.modn(_.add(using s.replicaID)(e))
         }
 
         remove.foldLeft(added) {
-          case (s, e) => s.mod(_.remove(e))
+          case (s, e) => s.modn(_.remove(e))
         }
       }
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
           case (m, e) =>
-            m.mod(_.transform(k)(_.mod(_.add(using m.replicaID)(e))).toDotted)
+            m.mod(_.transform(k)(_.modn(_.add(using m.replicaID)(e))).toDotted)
         }
 
         remove.foldLeft(added) {
-          case (m, e) => m.mod(_.transform(k)(_.mod(_.remove(e))).toDotted)
+          case (m, e) => m.mod(_.transform(k)(_.modn(_.remove(e))).toDotted)
         }
       }
 
@@ -77,11 +78,11 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
-          case (m, e) => m.mod(_.transform(k)(_.mod(_.add(using m.replicaID)(e))).toDotted)
+          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.add(using m.replicaID)(e))).toDotted)
         }
 
         remove.foldLeft(added) {
-          case (m, e) => m.mod(_.transform(k)(_.mod(_.remove(e))).toDotted)
+          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))).toDotted)
         }
       }
 

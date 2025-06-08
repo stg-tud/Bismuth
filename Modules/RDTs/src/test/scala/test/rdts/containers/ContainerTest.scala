@@ -2,8 +2,7 @@ package test.rdts.containers
 
 import rdts.base.{Bottom, LocalUid}
 import rdts.base.LocalUid.asId
-import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
-import rdts.datatypes.contextual.ReplicatedSet
+import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ReplicatedSet}
 import rdts.datatypes.experiments.AuctionInterface
 import rdts.datatypes.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.dotted.Dotted
@@ -74,43 +73,43 @@ class ContainerTest extends munit.FunSuite {
 
     assert(awSet.data.elements.isEmpty)
 
-    val added = awSet.mod(_.add("First"))
+    val added = awSet.modn(_.add("First"))
     assertEquals(added.data.elements.size, 1)
     assert(added.data.elements.contains("First"))
     assert(added.data.contains("First"))
 
-    val removed = added.mod(_.remove("First"))
+    val removed = added.modn(_.remove("First"))
     assert(removed.data.elements.isEmpty)
   }
 
   // NOTE: DeltaBuffer cannot contain contextual ReplicatedSet without Dotted, as ReplicatedSet needs a context
 
   test("Dotted DeltaBuffer can contain contextual ReplicatedSet[String]") {
-    val awSet: DeltaBuffer[Dotted[ReplicatedSet[String]]] = DeltaBuffer(Dotted.empty)
+    val awSet: DeltaBuffer[ReplicatedSet[String]] = DeltaBuffer(Bottom.empty)
 
-    assert(awSet.data.elements.isEmpty)
+    assert(awSet.state.elements.isEmpty)
 
-    val added = awSet.modd(_.add("First"))
-    assertEquals(added.data.elements.size, 1)
-    assert(added.data.elements.contains("First"))
-    assert(added.data.contains("First"))
+    val added = awSet.mod(_.add("First"))
+    assertEquals(added.state.elements.size, 1)
+    assert(added.state.elements.contains("First"))
+    assert(added.state.contains("First"))
 
-    val removed = added.modd(_.remove("First"))
-    assert(removed.data.elements.isEmpty)
+    val removed = added.mod(_.remove("First"))
+    assert(removed.state.elements.isEmpty)
   }
 
   test("Dotted DeltaBufferContainer can contain contextual ReplicatedSet[String]") {
-    val awSet: DeltaBufferContainer[Dotted[ReplicatedSet[String]]] = DeltaBufferContainer(DeltaBuffer(Dotted.empty))
+    val awSet: DeltaBufferContainer[ReplicatedSet[String]] = DeltaBufferContainer(DeltaBuffer(Bottom.empty))
 
-    assert(awSet.data.elements.isEmpty)
+    assert(awSet.result.state.elements.isEmpty)
 
-    awSet.modd(_.add("First"))
-    assertEquals(awSet.data.elements.size, 1)
-    assert(awSet.data.elements.contains("First"))
-    assert(awSet.data.contains("First"))
+    awSet.mod(_.add("First"))
+    assertEquals(awSet.result.state.elements.size, 1)
+    assert(awSet.result.state.elements.contains("First"))
+    assert(awSet.result.state.contains("First"))
 
-    awSet.modd(_.remove("First"))
-    assert(awSet.data.elements.isEmpty)
+    awSet.mod(_.remove("First"))
+    assert(awSet.result.state.elements.isEmpty)
   }
 
   // END ReplicatedSet

@@ -2,8 +2,7 @@ package rdts.datatypes.experiments.protocols.old
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.contextual.ReplicatedSet
-import rdts.datatypes.{Epoch, LastWriterWins}
+import rdts.datatypes.{Epoch, LastWriterWins, ReplicatedSet}
 import rdts.dotted.Dotted
 import rdts.time.Dots
 
@@ -16,30 +15,30 @@ case class Voting(rounds: Epoch[ReplicatedSet[Vote]], numParticipants: LastWrite
     val (id, count) = leadingCount
     id == replicaId && count >= threshold
 
-  def request(using LocalUid, Dots): Dotted[Voting] =
+  def request(using LocalUid, Dots): Voting =
     if !rounds.value.isEmpty then Voting.unchanged
     else voteFor(replicaId)
 
   def release(using LocalUid): Voting =
     if !isOwner
-    then Voting.unchanged.data
+    then Voting.unchanged
     else Voting(Epoch(rounds.counter + 1, ReplicatedSet.empty), numParticipants)
 
-  def upkeep(using LocalUid, Dots): Dotted[Voting] =
+  def upkeep(using LocalUid, Dots): Voting =
     val (id, count) = leadingCount
     if checkIfMajorityPossible(count)
     then voteFor(id)
-    else Dotted(forceRelease)
+    else forceRelease
 
   def forceRelease(using LocalUid): Voting =
     Voting(Epoch(rounds.counter + 1, ReplicatedSet.empty), numParticipants)
 
-  def voteFor(uid: Uid)(using LocalUid, Dots): Dotted[Voting] =
+  def voteFor(uid: Uid)(using LocalUid, Dots): Voting =
     if rounds.value.elements.exists { case Vote(_, voter) => voter == replicaId }
     then Voting.unchanged // already voted!
     else
       val newVote = rounds.value.add(Vote(uid, replicaId))
-      newVote.map(rs => Voting(rounds.write(rs), numParticipants))
+      Voting(rounds.write(newVote), numParticipants)
 
   def checkIfMajorityPossible(count: Int): Boolean =
     val totalVotes     = rounds.value.elements.size
@@ -58,7 +57,7 @@ case class Voting(rounds: Epoch[ReplicatedSet[Vote]], numParticipants: LastWrite
 object Voting {
   given Bottom[Int] with
     def empty = 0
-  val unchanged: Dotted[Voting] = Dotted(Voting(Epoch.empty, LastWriterWins.empty[Int]))
+  val unchanged: Voting = Voting(Epoch.empty, LastWriterWins.empty[Int])
 
   given Lattice[Voting] = Lattice.derived
 
