@@ -6,26 +6,24 @@ import deltaAntiEntropy.tests.NetworkGenerators.*
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
-import rdts.datatypes.GrowOnlySet
-import rdts.datatypes.GrowOnlySet.{elements, insert, given}
 import replication.JsoniterCodecs.{*, given}
 
 import scala.collection.mutable
 
 object GSetGenerators {
-  def genGSet[E: JsonValueCodec](using e: Arbitrary[E]): Gen[AntiEntropyContainer[GrowOnlySet[E]]] =
+  def genGSet[E: JsonValueCodec](using e: Arbitrary[E]): Gen[AntiEntropyContainer[Set[E]]] =
     for
       elements <- Gen.containerOf[List, E](e.arbitrary)
     yield {
       val network = new Network(0, 0, 0)
-      val ae      = new AntiEntropy[GrowOnlySet[E]]("a", network, mutable.Buffer())
+      val ae      = new AntiEntropy[Set[E]]("a", network, mutable.Buffer())
 
-      elements.foldLeft(AntiEntropyContainer[GrowOnlySet[E]](ae)) {
-        case (set, e) => set.modn(_.insert(e))
+      elements.foldLeft(AntiEntropyContainer[Set[E]](ae)) {
+        case (set, e) => set.modn(_ => Set(e))
       }
     }
 
-  given arbGSet[E: JsonValueCodec](using e: Arbitrary[E]): Arbitrary[AntiEntropyContainer[GrowOnlySet[E]]] =
+  given arbGSet[E: JsonValueCodec](using e: Arbitrary[E]): Arbitrary[AntiEntropyContainer[Set[E]]] =
     Arbitrary(genGSet)
 }
 
@@ -34,12 +32,12 @@ class GSetTest extends munit.ScalaCheckSuite {
 
   given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
   property("insert") {
-    forAll { (set: AntiEntropyContainer[GrowOnlySet[Int]], e: Int) =>
-      val setInserted = set.modn(_.insert(e))
+    forAll { (set: AntiEntropyContainer[Set[Int]], e: Int) =>
+      val setInserted = set.modn(_ => Set(e))
 
       assert(
-        setInserted.data.elements.contains(e),
-        s"The set should contain an element after it is inserted, but ${setInserted.data.elements} does not contain $e"
+        setInserted.data.contains(e),
+        s"The set should contain an element after it is inserted, but ${setInserted.data} does not contain $e"
       )
     }
   }
@@ -47,11 +45,11 @@ class GSetTest extends munit.ScalaCheckSuite {
     forAll { (e: Int, e1: Int, e2: Int) =>
       val network = new Network(0, 0, 0)
 
-      val aea = new AntiEntropy[GrowOnlySet[Int]]("a", network, mutable.Buffer("b"))
-      val aeb = new AntiEntropy[GrowOnlySet[Int]]("b", network, mutable.Buffer("a"))
+      val aea = new AntiEntropy[Set[Int]]("a", network, mutable.Buffer("b"))
+      val aeb = new AntiEntropy[Set[Int]]("b", network, mutable.Buffer("a"))
 
-      val sa0 = AntiEntropyContainer[GrowOnlySet[Int]](aea).modn(_.insert(e))
-      val sb0 = AntiEntropyContainer[GrowOnlySet[Int]](aeb).modn(_.insert(e))
+      val sa0 = AntiEntropyContainer[Set[Int]](aea).modn(_ => Set(e))
+      val sb0 = AntiEntropyContainer[Set[Int]](aeb).modn(_ => Set(e))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -59,16 +57,16 @@ class GSetTest extends munit.ScalaCheckSuite {
       val sb1 = sb0.processReceivedDeltas()
 
       assert(
-        sa1.data.elements.contains(e),
-        s"Concurrently inserting the same element should have the same effect as inserting it once, but ${sa1.data.elements} does not contain $e"
+        sa1.data.contains(e),
+        s"Concurrently inserting the same element should have the same effect as inserting it once, but ${sa1.data} does not contain $e"
       )
       assert(
-        sb1.data.elements.contains(e),
-        s"Concurrently inserting the same element should have the same effect as inserting it once, but ${sb1.data.elements} does not contain $e"
+        sb1.data.contains(e),
+        s"Concurrently inserting the same element should have the same effect as inserting it once, but ${sb1.data} does not contain $e"
       )
 
-      val sa2 = sa1.modn(_.insert(e1))
-      val sb2 = sb1.modn(_.insert(e2))
+      val sa2 = sa1.modn(_ => Set(e1))
+      val sb2 = sb1.modn(_ => Set(e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -76,26 +74,26 @@ class GSetTest extends munit.ScalaCheckSuite {
       val sb3 = sb2.processReceivedDeltas()
 
       assert(
-        Set(e1, e2).subsetOf(sa3.data.elements),
-        s"Concurrently inserting two elements should have the same effect as inserting them sequentially, but ${sa3.data.elements} does not contain both $e1 and $e2"
+        Set(e1, e2).subsetOf(sa3.data),
+        s"Concurrently inserting two elements should have the same effect as inserting them sequentially, but ${sa3.data} does not contain both $e1 and $e2"
       )
       assert(
-        Set(e1, e2).subsetOf(sb3.data.elements),
-        s"Concurrently inserting two elements should have the same effect as inserting them sequentially, but ${sb3.data.elements} does not contain both $e1 and $e2"
+        Set(e1, e2).subsetOf(sb3.data),
+        s"Concurrently inserting two elements should have the same effect as inserting them sequentially, but ${sb3.data} does not contain both $e1 and $e2"
       )
     }
   }
   property("convergence") {
     forAll { (insertedA: List[Int], insertedB: List[Int], networkGen: NetworkGenerator) =>
       val network = networkGen.make()
-      val aea     = new AntiEntropy[GrowOnlySet[Int]]("a", network, mutable.Buffer("b"))
-      val aeb     = new AntiEntropy[GrowOnlySet[Int]]("b", network, mutable.Buffer("a"))
+      val aea     = new AntiEntropy[Set[Int]]("a", network, mutable.Buffer("b"))
+      val aeb     = new AntiEntropy[Set[Int]]("b", network, mutable.Buffer("a"))
 
-      val sa0 = insertedA.foldLeft(AntiEntropyContainer[GrowOnlySet[Int]](aea)) {
-        case (set, e) => set.modn(_.insert(e))
+      val sa0 = insertedA.foldLeft(AntiEntropyContainer[Set[Int]](aea)) {
+        case (set, e) => set.modn(_ => Set(e))
       }
-      val sb0 = insertedB.foldLeft(AntiEntropyContainer[GrowOnlySet[Int]](aeb)) {
-        case (set, e) => set.modn(_.insert(e))
+      val sb0 = insertedB.foldLeft(AntiEntropyContainer[Set[Int]](aeb)) {
+        case (set, e) => set.modn(_ => Set(e))
       }
 
       AntiEntropy.sync(aea, aeb)
@@ -106,8 +104,8 @@ class GSetTest extends munit.ScalaCheckSuite {
       val sb1 = sb0.processReceivedDeltas()
 
       assert(
-        sa1.data.elements == sb1.data.elements,
-        s"After synchronization messages were reliably exchanged all replicas should converge, but ${sa1.data.elements} does not equal ${sb1.data.elements}"
+        sa1.data == sb1.data,
+        s"After synchronization messages were reliably exchanged all replicas should converge, but ${sa1.data} does not equal ${sb1.data}"
       )
     }
   }

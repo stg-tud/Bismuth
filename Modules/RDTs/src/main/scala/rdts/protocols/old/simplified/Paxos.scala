@@ -5,7 +5,7 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Participants.participants
 import Paxos.given
-import rdts.datatypes.{GrowOnlySet, LastWriterWins}
+import rdts.datatypes.{LastWriterWins}
 import rdts.protocols.{Consensus, Participants}
 
 import scala.math.Ordering.Implicits.infixOrderingOps
@@ -18,10 +18,10 @@ case class Accept[A](proposal: ProposalNum, value: A)
 case class Accepted[A](proposal: ProposalNum, acceptor: Uid)
 
 case class Paxos[A](
-    prepares: GrowOnlySet[Prepare],
-    promises: GrowOnlySet[Promise[A]],
-    accepts: GrowOnlySet[Accept[A]],
-    accepted: GrowOnlySet[Accepted[A]],
+    prepares: Set[Prepare],
+    promises: Set[Promise[A]],
+    accepts: Set[Accept[A]],
+    accepted: Set[Accepted[A]],
     members: Map[Uid, Option[LastWriterWins[A]]] // keep track of what value each member wants to propose
 ) {
 //  override def toString: String = pprint.apply(this).render
@@ -107,10 +107,10 @@ case class Paxos[A](
 object Paxos:
   def unchanged[A]: Paxos[A] =
     Paxos[A](
-      GrowOnlySet.empty[Prepare],
-      GrowOnlySet.empty[Promise[A]],
-      GrowOnlySet.empty[Accept[A]],
-      GrowOnlySet.empty[Accepted[A]],
+      Set.empty[Prepare],
+      Set.empty[Promise[A]],
+      Set.empty[Accept[A]],
+      Set.empty[Accepted[A]],
       Map.empty
     )
 

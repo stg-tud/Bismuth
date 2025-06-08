@@ -2,7 +2,6 @@ package benchmarks.lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
-import rdts.datatypes.GrowOnlySet.*
 
 import java.util.concurrent.TimeUnit
 
@@ -22,7 +21,7 @@ class GSetBench {
   @Setup
   def setup(): Unit = {
     set = (0 until size).foldLeft(NamedDeltaBuffer("a".asId, Set.empty[Int])) {
-      case (s, e) => s.mod(_.insert(e))
+      case (s, e) => s.mod(_ => Set(e))
     }
   }
 
@@ -30,5 +29,5 @@ class GSetBench {
   def elements(): Set[Int] = set.state
 
   @Benchmark
-  def insert(): NamedDeltaBuffer[Set[Int]] = set.mod(_.insert(-1))
+  def insert(): NamedDeltaBuffer[Set[Int]] = set.mod(_ => Set(-1))
 }

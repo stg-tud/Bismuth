@@ -2,8 +2,7 @@ package test.rdts.bespoke
 
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
-import rdts.datatypes.GrowOnlySet.{elements, insert}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, MultiVersionRegister, PosNegCounter}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter}
 import rdts.dotted.{Dotted, HasDots}
 
 class DiffManualTests extends munit.ScalaCheckSuite {
@@ -124,32 +123,31 @@ class DiffManualTests extends munit.ScalaCheckSuite {
     assertEquals(merged_diff_delta_2.isDefined, false, "delta_2 should be contained in merged")
   }
 
-  test("GrowOnlySet[Int] diff") {
-    import GrowOnlySet.given
+  test("Set[Int] diff") {
 
-    val empty: GrowOnlySet[Int] = Bottom[GrowOnlySet[Int]].empty
+    val empty: Set[Int] = Bottom[Set[Int]].empty
 
-    val delta_1: GrowOnlySet[Int] = empty.insert(1)
-    assertEquals(delta_1.elements, Set(1))
+    val delta_1: Set[Int] = Set(1)
+    assertEquals(delta_1, Set(1))
 
     // delta_1 and delta_2 are in parallel
 
-    val delta_2: GrowOnlySet[Int] = empty.insert(2)
-    assertEquals(delta_2.elements, Set(2))
+    val delta_2: Set[Int] = Set(2)
+    assertEquals(delta_2, Set(2))
 
-    val merged: GrowOnlySet[Int] = Lattice.merge(delta_1, delta_2)
-    assertEquals(merged.elements, Set(1, 2))
+    val merged: Set[Int] = Lattice.merge(delta_1, delta_2)
+    assertEquals(merged, Set(1, 2))
 
-    val delta_1_diff_delta_2: Option[GrowOnlySet[Int]] = Lattice.diff(delta_1, delta_2)
+    val delta_1_diff_delta_2: Option[Set[Int]] = Lattice.diff(delta_1, delta_2)
     assertEquals(delta_1_diff_delta_2.isDefined, true, "delta_2 is not contained in delta_1")
 
-    val delta_2_diff_delta_1: Option[GrowOnlySet[Int]] = Lattice.diff(delta_2, delta_1)
+    val delta_2_diff_delta_1: Option[Set[Int]] = Lattice.diff(delta_2, delta_1)
     assertEquals(delta_2_diff_delta_1.isDefined, true, "delta_1 is not contained in delta_2")
 
-    val merged_diff_delta_1: Option[GrowOnlySet[Int]] = Lattice.diff(merged, delta_1)
+    val merged_diff_delta_1: Option[Set[Int]] = Lattice.diff(merged, delta_1)
     assertEquals(merged_diff_delta_1.isDefined, false, "delta_1 should be contained in merged")
 
-    val merged_diff_delta_2: Option[GrowOnlySet[Int]] = Lattice.diff(merged, delta_2)
+    val merged_diff_delta_2: Option[Set[Int]] = Lattice.diff(merged, delta_2)
     assertEquals(merged_diff_delta_2.isDefined, false, "delta_2 should be contained in merged")
   }
 

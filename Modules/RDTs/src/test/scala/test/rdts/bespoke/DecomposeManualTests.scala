@@ -2,8 +2,7 @@ package test.rdts.bespoke
 
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
-import rdts.datatypes.GrowOnlySet.{elements, insert}
-import rdts.datatypes.{GrowOnlyCounter, GrowOnlySet, MultiVersionRegister, PosNegCounter}
+import rdts.datatypes.{GrowOnlyCounter, MultiVersionRegister, PosNegCounter}
 
 class DecomposeManualTests extends munit.ScalaCheckSuite {
 
@@ -75,28 +74,27 @@ class DecomposeManualTests extends munit.ScalaCheckSuite {
     assertEquals(decomposed(1).read, Set(2))
   }
 
-  test("GrowOnlySet[Int] decomposition") {
-    import GrowOnlySet.given
+  test("Set[Int] decomposition") {
 
-    val empty: GrowOnlySet[Int] = Bottom[GrowOnlySet[Int]].empty
+    val empty: Set[Int] = Bottom[Set[Int]].empty
 
-    val delta_1: GrowOnlySet[Int] = empty.insert(1)
-    assertEquals(delta_1.elements, Set(1))
+    val delta_1: Set[Int] = Set(1)
+    assertEquals(delta_1, Set(1))
 
     // delta_1 and delta_2 are in parallel
 
-    val delta_2: GrowOnlySet[Int] = empty.insert(2)
-    assertEquals(delta_2.elements, Set(2))
+    val delta_2: Set[Int] = Set(2)
+    assertEquals(delta_2, Set(2))
 
-    val merged: GrowOnlySet[Int] = Lattice.merge(delta_1, delta_2)
-    assertEquals(merged.elements, Set(1, 2))
+    val merged: Set[Int] = Lattice.merge(delta_1, delta_2)
+    assertEquals(merged, Set(1, 2))
 
-    val decomposed: Seq[GrowOnlySet[Int]] =
-      Decompose.decompose(merged).toSeq.sortBy(_.elements.headOption)
-    // GrowOnlySet decomposes every entry
+    val decomposed: Seq[Set[Int]] =
+      Decompose.decompose(merged).toSeq.sortBy(_.headOption)
+    // Set decomposes every entry
     assertEquals(decomposed.size, 2)
-    assertEquals(decomposed(0).elements, Set(1))
-    assertEquals(decomposed(1).elements, Set(2))
+    assertEquals(decomposed(0), Set(1))
+    assertEquals(decomposed(1), Set(2))
   }
 
 }

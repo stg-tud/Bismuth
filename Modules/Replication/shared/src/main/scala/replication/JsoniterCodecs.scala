@@ -58,7 +58,7 @@ object JsoniterCodecs {
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
   /** GrowOnlySet */
-  given GSetStateCodec[E: JsonValueCodec]: JsonValueCodec[GrowOnlySet[E]] = JsonCodecMaker.make
+  given GSetStateCodec[E: JsonValueCodec]: JsonValueCodec[Set[E]] = JsonCodecMaker.make
 
   /** LastWriterWins */
   given LastWriterWinsStateCodec[A: JsonValueCodec]: JsonValueCodec[Dotted[Map[Dot, LastWriterWins[A]]]] =

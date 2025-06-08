@@ -3,8 +3,6 @@ package rdts.protocols.old
 import rdts.base.Lattice.setLattice
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.GrowOnlySet
-import rdts.datatypes.GrowOnlySet.*
 import rdts.protocols.{Consensus, Participants}
 
 import scala.compiletime.{constValue, summonFrom}
@@ -32,10 +30,10 @@ given Ordering[Accept[?]] with
   override def compare(x: Accept[?], y: Accept[?]): Int = Ordering[Prepare].compare(x.proposal, y.proposal)
 
 case class Paxos[A](
-    prepares: GrowOnlySet[Prepare],
-    promises: GrowOnlySet[Promise[A]],
-    accepts: GrowOnlySet[Accept[A]],
-    accepteds: GrowOnlySet[Accepted[A]],
+    prepares: Set[Prepare],
+    promises: Set[Promise[A]],
+    accepts: Set[Accept[A]],
+    accepteds: Set[Accepted[A]],
     members: Set[Uid] // constant
 ) {
   private def quorum: Int = members.size / 2 + 1
@@ -179,10 +177,10 @@ object Paxos {
 
   def unchanged[A]: Paxos[A] =
     Paxos[A](
-      GrowOnlySet.empty[Prepare],
-      GrowOnlySet.empty[Promise[A]],
-      GrowOnlySet.empty[Accept[A]],
-      GrowOnlySet.empty[Accepted[A]],
+      Set.empty[Prepare],
+      Set.empty[Promise[A]],
+      Set.empty[Accept[A]],
+      Set.empty[Accepted[A]],
       Set.empty
     )
 
