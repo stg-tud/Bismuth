@@ -42,9 +42,11 @@ object SpreadsheetComponent {
       }
     }
 
-    private def modSpreadsheetWithSelectionClear(f: Spreadsheet => Obrem[Spreadsheet]): Callback = {
-      modSpreadsheet(f) >> $.modState(_.copy(selectedRow = None, selectedColumn = None))
-    }
+    private def withSelectedRow(f: Int => Callback): Callback =
+      $.state.flatMap(_.selectedRow.map(f).getOrElse(Callback.empty))
+
+    private def withSelectedColumn(f: Int => Callback): Callback =
+      $.state.flatMap(_.selectedColumn.map(f).getOrElse(Callback.empty))
 
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
       $.props.flatMap { props =>
@@ -68,11 +70,9 @@ object SpreadsheetComponent {
 
     def commitEdit(): Callback = {
       $.state.flatMap { state =>
-        state.editingCell match {
-          case Some((rowIdx, colIdx)) =>
-            val value = state.editingValue.trim
-            modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
-          case None => Callback.empty
+        state.editingCell.traverse_ { case (rowIdx, colIdx) =>
+          val value = state.editingValue.trim
+          modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
         }
       }
     }
@@ -90,53 +90,31 @@ object SpreadsheetComponent {
     }
 
     def insertRowAbove(): Callback =
-      $.state.flatMap(
-        _.selectedRow
-          .map(rowIdx => modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(_.copy(selectedRow = None)))
-          .getOrElse(Callback.empty)
-      )
+      withSelectedRow(rowIdx => modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(_.copy(selectedRow = None)))
 
     def insertRowBelow(): Callback =
-      $.state.flatMap(
-        _.selectedRow
-          .map(rowIdx => modSpreadsheet(_.insertRow(rowIdx + 1)) >> $.modState(_.copy(selectedRow = None)))
-          .getOrElse(Callback.empty)
-      )
+      withSelectedRow(rowIdx => modSpreadsheet(_.insertRow(rowIdx + 1)) >> $.modState(_.copy(selectedRow = None)))
 
     def removeRow(): Callback =
-      $.state.flatMap(
-        _.selectedRow
-          .map(rowIdx =>
-            modSpreadsheet(_.removeRow(rowIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
-              _.copy(selectedRow = None)
-            )
-          )
-          .getOrElse(Callback.empty)
+      withSelectedRow(rowIdx =>
+        modSpreadsheet(_.removeRow(rowIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
+          _.copy(selectedRow = None)
+        )
       )
 
     def insertColumnLeft(): Callback =
-      $.state.flatMap(
-        _.selectedColumn
-          .map(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
-          .getOrElse(Callback.empty)
-      )
+      withSelectedColumn(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
 
     def insertColumnRight(): Callback =
-      $.state.flatMap(
-        _.selectedColumn
-          .map(colIdx => modSpreadsheet(_.insertColumn(colIdx + 1)) >> $.modState(_.copy(selectedColumn = None)))
-          .getOrElse(Callback.empty)
+      withSelectedColumn(
+        colIdx => modSpreadsheet(_.insertColumn(colIdx + 1)) >> $.modState(_.copy(selectedColumn = None))
       )
 
     def removeColumn(): Callback =
-      $.state.flatMap(
-        _.selectedColumn
-          .map(colIdx =>
-            modSpreadsheet(_.removeColumn(colIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
-              _.copy(selectedColumn = None)
-            )
-          )
-          .getOrElse(Callback.empty)
+      withSelectedColumn(colIdx =>
+        modSpreadsheet(_.removeColumn(colIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
+          _.copy(selectedColumn = None)
+        )
       )
 
     def addRow(): Callback = modSpreadsheet(_.addRow())
