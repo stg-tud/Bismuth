@@ -4,11 +4,11 @@ import cats.data.NonEmptyList
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.report
 import lore.ast.*
-import lore.backends.rename
-import lore.backends.traverseFromNode
+import lore.backends.{rename, traverseFromNode}
 import loreCompilerPlugin.{DafnyEmbeddedLoReError, LogLevel}
-import scala.util.matching.Regex
 import upickle.default.write as upickleWrite
+
+import scala.util.matching.Regex
 
 /** Information about a definition in Dafny generated from a LoRe AST node.
   * @param name The name of the definition, equal across Dafny and LoRe

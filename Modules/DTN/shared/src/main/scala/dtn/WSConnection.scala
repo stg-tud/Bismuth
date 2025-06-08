@@ -9,10 +9,10 @@ import sttp.ws.WebSocket
 import sttp.ws.WebSocketFrame.{Binary, Ping, Pong, Text}
 
 import java.nio.charset.StandardCharsets
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class WSConnection(ws: WebSocket[Future]) {
   val backend: GenericBackend[Future, WebSockets] = CompatCode.backend

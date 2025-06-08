@@ -1,8 +1,7 @@
 package channels
 
 import channels.MesageBufferExtensions.asArrayBuffer
-import de.rmgk.delay.toAsync
-import de.rmgk.delay.{Async, Callback}
+import de.rmgk.delay.{Async, Callback, toAsync}
 import org.scalajs.dom.{EventSource, Headers, HttpMethod, MessageEvent, ReadableStream, ReadableStreamReader, RequestInit, fetch}
 import rdts.base.LocalUid
 

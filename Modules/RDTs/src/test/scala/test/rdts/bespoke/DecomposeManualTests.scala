@@ -3,9 +3,7 @@ package test.rdts.bespoke
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.GrowOnlySet.{elements, insert}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, MultiVersionRegister, PosNegCounter}
-import rdts.dotted.{Dotted, HasDots}
-import rdts.time.{Dot, Dots}
+import rdts.datatypes.{GrowOnlyCounter, GrowOnlySet, MultiVersionRegister, PosNegCounter}
 
 class DecomposeManualTests extends munit.ScalaCheckSuite {
 

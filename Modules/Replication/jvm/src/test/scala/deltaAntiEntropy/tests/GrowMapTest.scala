@@ -4,8 +4,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.forAll
-import rdts.datatypes.{GrowOnlyMap, ReplicatedSet}
 import rdts.datatypes.GrowOnlyMap.bottom
+import rdts.datatypes.{GrowOnlyMap, ReplicatedSet}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable

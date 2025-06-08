@@ -2,12 +2,12 @@ package test.rdts.corestructs
 
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
+import rdts.base.Lattice.syntax
 import rdts.base.{Decompose, Lattice}
 import rdts.dotted.Dotted
 import rdts.dotted.HasDots.mapInstance
 import rdts.time.{ArrayRanges, Dot, Dots}
 import test.rdts.DataGenerator.{*, given}
-import Lattice.syntax
 
 import scala.annotation.tailrec
 

@@ -1,8 +1,8 @@
 package test.rdts.bespoke
 
 import org.scalacheck.{Arbitrary, Gen}
-import rdts.base.{Lattice, LocalUid}
 import rdts.base.LocalUid.asId
+import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.EnableWinsFlag
 import rdts.dotted.HasDots.*
 import rdts.dotted.{Dotted, HasDots}

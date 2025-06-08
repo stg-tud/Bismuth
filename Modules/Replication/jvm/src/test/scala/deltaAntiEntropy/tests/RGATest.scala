@@ -6,7 +6,7 @@ import deltaAntiEntropy.tests.NetworkGenerators.*
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.ReplicatedList
 import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given

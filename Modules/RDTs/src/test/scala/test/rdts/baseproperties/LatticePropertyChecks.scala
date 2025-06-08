@@ -4,7 +4,7 @@ import munit.TestValues
 import munit.internal.FutureCompat.ExtensionFuture
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
-import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
+import rdts.base.{Bottom, BottomOpt, Lattice}
 import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.CausalStore

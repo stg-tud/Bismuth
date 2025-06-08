@@ -1,12 +1,11 @@
 package dtn.routing
 
-import dtn.{DtnPeer, Packet, Sender, WSEroutingClient, MonitoringClientInterface, NoMonitoringClient}
+import dtn.{DtnPeer, MonitoringClientInterface, NoMonitoringClient, Packet, PreviousNodeBlock, Sender, WSEroutingClient}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
-import dtn.PreviousNodeBlock
 
 /*
   Includes the standalone EpidemicRouter and the extracted EpidemicStrategy for use in other routers.

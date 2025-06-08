@@ -1,14 +1,14 @@
 package rdts.datatypes.experiments.protocols.paper
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.experiments.protocols
 import rdts.datatypes.experiments.protocols.Participants.participants
 import rdts.datatypes.experiments.protocols.{Consensus, Participants}
 // imports from this file
-import Paxos.given
-import util.*
-import util.Agreement.*
+import rdts.datatypes.experiments.protocols.paper.Paxos.given
+import rdts.datatypes.experiments.protocols.paper.util.*
+import rdts.datatypes.experiments.protocols.paper.util.Agreement.*
 
 // Paxos PRDT
 type LeaderElection = Voting[Uid]

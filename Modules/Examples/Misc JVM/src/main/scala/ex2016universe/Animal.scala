@@ -1,7 +1,7 @@
 package ex2016universe
 
-import reactives.default.*
 import ex2016universe.Animal.*
+import reactives.default.*
 
 object Animal {
   val StartEnergy = 200

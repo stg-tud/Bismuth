@@ -4,7 +4,7 @@ import rdts.base.Lattice.mapLattice
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.experiments.protocols.Participants.participants
-import Paxos.given
+import rdts.datatypes.experiments.protocols.old.simplified.Paxos.given
 import rdts.datatypes.experiments.protocols.{Consensus, Participants}
 import rdts.datatypes.{GrowOnlySet, LastWriterWins}
 

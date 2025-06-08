@@ -5,7 +5,6 @@ import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.GrowOnlySet.{elements, insert}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, GrowOnlySet, LastWriterWins, MultiVersionRegister, PosNegCounter}
 import rdts.dotted.{Dotted, HasDots}
-import rdts.time.{Dot, Dots}
 
 class DiffManualTests extends munit.ScalaCheckSuite {
 

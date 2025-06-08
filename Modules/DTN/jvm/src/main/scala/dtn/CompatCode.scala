@@ -5,15 +5,12 @@ import sttp.client4.*
 import sttp.client4.httpclient.HttpClientFutureBackend
 import sttp.model.Uri
 
+import java.io.PrintStream
+import java.nio.file.{Files, Paths}
+import java.time.{ZoneId, ZonedDateTime}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Using
-import java.nio.file.Files
-import scala.util.Try
-import java.nio.file.Paths
-import java.time.ZonedDateTime
-import java.time.ZoneId
-import java.io.PrintStream
+import scala.util.{Try, Using}
 
 object CompatCode {
   val backend: GenericBackend[Future, WebSockets] = HttpClientFutureBackend()

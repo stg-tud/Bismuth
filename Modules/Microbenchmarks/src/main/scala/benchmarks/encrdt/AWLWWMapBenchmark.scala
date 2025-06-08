@@ -9,9 +9,8 @@ import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.time.VectorClock
 
-import scala.language.implicitConversions
-
 import java.util.concurrent.TimeUnit
+import scala.language.implicitConversions
 
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))

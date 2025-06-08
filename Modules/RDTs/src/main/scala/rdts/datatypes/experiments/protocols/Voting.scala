@@ -2,8 +2,8 @@ package rdts.datatypes.experiments.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.experiments.protocols.Participants.participants
 import rdts.datatypes.Epoch
+import rdts.datatypes.experiments.protocols.Participants.participants
 
 case class Vote[A](value: A, voter: Uid)
 

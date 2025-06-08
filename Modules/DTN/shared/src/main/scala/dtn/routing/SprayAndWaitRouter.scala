@@ -1,11 +1,11 @@
 package dtn.routing
 
-import dtn.{DtnPeer, Packet, Sender, WSEroutingClient, MonitoringClientInterface, NoMonitoringClient}
+import dtn.{DtnPeer, MonitoringClientInterface, NoMonitoringClient, Packet, Sender, WSEroutingClient}
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
-import java.util.concurrent.ConcurrentHashMap
 
 /*
   spray-and-wait router

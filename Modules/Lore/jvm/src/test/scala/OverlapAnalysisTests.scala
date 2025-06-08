@@ -4,7 +4,7 @@ import cats.implicits.*
 import lore.Parser
 import lore.ast.*
 import lore.backends.OverlapAnalysis.*
-import lore.backends.{flattenInteractions, *}
+import lore.backends.*
 import munit.FunSuite
 
 class OverlapAnalysisTests extends FunSuite {

@@ -4,10 +4,9 @@ import benchmarks.encrdt.Codecs.deltaAwlwwmapJsonCodec
 import benchmarks.encrdt.statebased.{DecryptedState, EncryptedState, UntrustedReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import lofi_acl.collections.DeltaAWLWWMContainer
-import DeltaAWLWWMContainer.State
+import lofi_acl.collections.DeltaAWLWWMContainer.State
 import rdts.time.VectorClock
 
-import scala.language.implicitConversions
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
 import scala.language.implicitConversions

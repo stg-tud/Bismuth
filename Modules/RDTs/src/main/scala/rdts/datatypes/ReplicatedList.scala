@@ -1,7 +1,7 @@
 package rdts.datatypes
 
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
-import ReplicatedList.deltaState
+import rdts.datatypes.ReplicatedList.deltaState
 import rdts.datatypes.{Epoch, GrowOnlyList, LastWriterWins}
 import rdts.dotted.HasDots.mapInstance
 import rdts.dotted.{Dotted, HasDots}

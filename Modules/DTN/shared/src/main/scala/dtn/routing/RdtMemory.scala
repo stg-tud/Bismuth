@@ -1,7 +1,6 @@
 package dtn.routing
 
-import scala.collection.immutable.SortedSet
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable.{SortedSet, TreeSet}
 
 object BundleIdAgeOrdering extends Ordering[String] {
   def compare(x: String, y: String): Int = {

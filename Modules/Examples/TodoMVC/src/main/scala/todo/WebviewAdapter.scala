@@ -1,6 +1,6 @@
 package todo
 
-import channels.{Abort, ArrayMessageBuffer, Connection, Receive, LatentConnection, MessageBuffer}
+import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 
 import scala.scalajs.js

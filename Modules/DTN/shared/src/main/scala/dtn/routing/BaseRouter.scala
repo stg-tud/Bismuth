@@ -1,13 +1,11 @@
 package dtn.routing
 
-import dtn.{MonitoringMessage, DtnPeer, Packet, WSEroutingClient}
+import dtn.{DtnPeer, MonitoringClientInterface, MonitoringMessage, Packet, WSEroutingClient, recoverAndLog}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
-import dtn.MonitoringClientInterface
-import dtn.recoverAndLog
 
 trait Routing {
   def peers: ConcurrentHashMap[String, DtnPeer]

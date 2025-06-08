@@ -14,9 +14,8 @@ import java.util.concurrent.{ConcurrentHashMap, ForkJoinPool, ForkJoinTask}
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
-import scala.util.Try
-
 import scala.language.unsafeNulls
+import scala.util.Try
 
 type State[V] = FullMVState[V, FullMVTurn]
 

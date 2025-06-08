@@ -1,10 +1,10 @@
 package dtn
 
-import io.bullet.borer.Codec
 import io.bullet.borer.derivation.MapBasedCodecs.*
+import io.bullet.borer.{Codec, Decoder, Encoder}
 import rdts.time.Dots
+
 import java.time.ZonedDateTime
-import io.bullet.borer.{Encoder, Decoder}
 
 enum MonitoringMessage derives Codec.All:
   case BundleReceivedAtRouter(nodeId: String, bundleId: String, time: Option[ZonedDateTime] = None)

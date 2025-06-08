@@ -3,14 +3,14 @@ package ex2024travel.lofi_acl.example.travelplanner
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.softwaremill.quicklens.*
-import lofi_acl.collections.ORMap.{observeRemoveMapEntryFilter, stringKeyORMapFilter}
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.{*, given}
 import lofi_acl.access.Filter
 import lofi_acl.ardt.datatypes.LWW
+import lofi_acl.collections.DeltaAWLWWMContainer.Entry
+import lofi_acl.collections.ORMap.{observeRemoveMapEntryFilter, stringKeyORMapFilter}
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.dotted.{HasDots, Obrem}
-import lofi_acl.collections.DeltaAWLWWMContainer.Entry
 import rdts.time.Dots
 
 import java.util.Base64

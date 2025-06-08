@@ -1,6 +1,5 @@
 package loreCompilerPlugin
 
-import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.ast.Trees.{Template, Tree, TypeDef}
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Constants.Constant
@@ -8,19 +7,18 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
 import dotty.tools.dotc.transform.{Inlining, Pickler}
-import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
-
-import java.io.{File, IOException}
+import dotty.tools.dotc.util.{SourceFile, SourcePosition}
+import dotty.tools.dotc.{CompilationUnit, report}
 import lore.ast.Term
-import loreCompilerPlugin.codegen.LoReGen.createLoReTermFromTree
 import loreCompilerPlugin.codegen.DafnyGen.generate as generateDafnyCode
+import loreCompilerPlugin.codegen.LoReGen.createLoReTermFromTree
 import loreCompilerPlugin.lsp.DafnyLSPClient
 import loreCompilerPlugin.lsp.LSPDataTypes.*
 import ujson.Obj
-import upickle.default.read as upickleRead
-import upickle.default.ReadWriter
+import upickle.default.{ReadWriter, read as upickleRead}
 
+import java.io.{File, IOException}
 import scala.annotation.nowarn
 
 enum LogLevel(val level: Int) {

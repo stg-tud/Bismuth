@@ -3,7 +3,7 @@ package rdts.base
 import scala.annotation.targetName
 import scala.collection.IterableOps
 import scala.collection.immutable.MapOps
-import scala.compiletime.{erasedValue, summonAll, summonFrom, summonInline}
+import scala.compiletime.{erasedValue, summonAll, summonFrom}
 import scala.deriving.Mirror
 
 /** A lattice describes a set of values where we always can [[merge]] two values and get a “consistent” result.

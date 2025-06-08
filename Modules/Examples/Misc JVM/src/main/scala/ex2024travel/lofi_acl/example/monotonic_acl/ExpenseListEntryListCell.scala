@@ -1,8 +1,8 @@
 package ex2024travel.lofi_acl.example.monotonic_acl
 
+import ex2024travel.lofi_acl.example.monotonic_acl.ExpenseListEntryListCell.amountTextFilter
 import javafx.scene.control.ListCell
 import javafx.scene.layout.HBox
-import ex2024travel.lofi_acl.example.monotonic_acl.ExpenseListEntryListCell.amountTextFilter
 import scalafx.beans.property.StringProperty
 import scalafx.event.subscriptions.Subscription
 import scalafx.scene.control.{TextField, TextFormatter}

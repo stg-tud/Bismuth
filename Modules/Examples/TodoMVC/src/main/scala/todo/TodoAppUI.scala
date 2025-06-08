@@ -5,7 +5,6 @@ import org.scalajs.dom.html.{Div, Input, LI}
 import org.scalajs.dom.{HTMLDivElement, window}
 import rdts.base.Bottom
 import rdts.datatypes.ReplicatedList
-import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.*

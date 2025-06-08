@@ -12,7 +12,6 @@ import rdts.dotted.HasDots.mapInstance
 import rdts.time.*
 
 import scala.annotation.{nowarn, tailrec}
-import scala.collection.immutable.Queue
 
 object DataGenerator {
 

@@ -1,11 +1,11 @@
 package benchmarks.lattices.delta.crdt
 
+import benchmarks.lattices.delta.crdt.NamedDeltaBuffer.mod
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid
 import rdts.base.LocalUid.asId
 import rdts.datatypes.alternatives.ResettableCounter
 import rdts.dotted.Dotted
-import benchmarks.lattices.delta.crdt.NamedDeltaBuffer.mod
 
 import java.util.concurrent.TimeUnit
 

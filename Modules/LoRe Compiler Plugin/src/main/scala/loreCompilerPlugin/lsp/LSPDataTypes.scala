@@ -1,7 +1,7 @@
 package loreCompilerPlugin.lsp
 
-import upickle.default.ReadWriter
 import ujson.Value
+import upickle.default.ReadWriter
 
 /** Various Data structures for parsing any kind of message sent from the language server to the client.
   * Not intended be used for constructing messages to send to the Dafny Language Server, such usage may break.

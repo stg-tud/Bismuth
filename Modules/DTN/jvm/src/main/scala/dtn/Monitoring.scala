@@ -1,21 +1,15 @@
 package dtn
 
-import io.bullet.borer.Json
+import io.bullet.borer.{Codec, Json}
+import io.bullet.borer.derivation.MapBasedCodecs.*
 import rdts.base.Lattice.syntax
 import rdts.time.Dots
 
-import java.io.BufferedOutputStream
-import java.io.BufferedReader
+import java.io.{BufferedOutputStream, BufferedReader}
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.Duration
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.nio.file.{Files, Paths}
+import java.time.{Duration, ZoneId, ZonedDateTime}
 import scala.util.Using
-
-import io.bullet.borer.Codec
-import io.bullet.borer.derivation.MapBasedCodecs.*
 
 class MonitoringPaths(base_dir: String = "/shared/monitoring") {
   val monitoring_dir                = Paths.get(base_dir)

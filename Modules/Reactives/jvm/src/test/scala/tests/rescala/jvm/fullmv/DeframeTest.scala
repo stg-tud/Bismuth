@@ -6,9 +6,8 @@ import reactives.fullmv.tasks.{Framing, Notification, Reevaluation, SupersedeFra
 import reactives.fullmv.{FramingBranchResult, FullMVEngine, FullMVState, NotificationBranchResult, State}
 import reactives.structure.Pulse
 
-import scala.language.implicitConversions
-
 import scala.concurrent.duration.Duration
+import scala.language.implicitConversions
 
 class DeframeTest extends munit.FunSuite {
   if reactives.SelectedScheduler.candidate.scheduler.isInstanceOf[FullMVEngine] then {

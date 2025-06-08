@@ -1,7 +1,6 @@
 package test.rdts.bespoke
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
-import rdts.dotted.Dotted
 import rdts.time.Dot
 
 import scala.language.implicitConversions

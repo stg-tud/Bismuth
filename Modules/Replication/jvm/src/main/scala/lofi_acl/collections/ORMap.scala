@@ -2,10 +2,10 @@ package lofi_acl.collections
 
 import lofi_acl.access.Permission.*
 import lofi_acl.access.{Filter, InvalidPathException, PermissionTree}
+import lofi_acl.collections.DeltaAWLWWMContainer.Entry
 import rdts.base.Bottom
 import rdts.datatypes.ObserveRemoveMap
 import rdts.dotted.Obrem
-import DeltaAWLWWMContainer.Entry
 import rdts.time.Dots
 
 object ORMap {

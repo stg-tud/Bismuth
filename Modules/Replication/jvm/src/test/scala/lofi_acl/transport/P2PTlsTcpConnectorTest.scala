@@ -1,7 +1,7 @@
 package lofi_acl.transport
 
-import X509TestHelper.genCertSignedByWrongKey
 import channels.tls.{IdentityFactory, PrivateIdentity}
+import lofi_acl.transport.X509TestHelper.genCertSignedByWrongKey
 import munit.FunSuite
 
 import java.io.IOException

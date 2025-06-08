@@ -1,15 +1,13 @@
 package dtn.routing
 
-import dtn.{DtnPeer, Packet, Sender, WSEroutingClient, MonitoringClientInterface, NoMonitoringClient}
+import dtn.{DtnPeer, Endpoint, MonitoringClientInterface, NoMonitoringClient, Packet, PreviousNodeBlock, Sender, WSEroutingClient}
 
+import java.time.ZonedDateTime
+import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
-import java.util.concurrent.ConcurrentHashMap
-import java.time.ZonedDateTime
-import dtn.Endpoint
 import scala.util.Random
-import dtn.PreviousNodeBlock
 
 /*
   The RandomSprayRouter implements the backup strategy only of the RdtRouter

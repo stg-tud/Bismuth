@@ -1,4 +1,4 @@
-import channels.{Abort, ArrayMessageBuffer, Connection, Receive, LatentConnection, MessageBuffer}
+import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Sync}

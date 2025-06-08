@@ -1,8 +1,8 @@
 package ex2024travel.lofi_acl.example.monotonic_acl
 
 import crypto.PublicIdentity
-import lofi_acl.access.PermissionTree
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan
+import lofi_acl.access.PermissionTree
 import lofi_acl.sync.acl.monotonic.MonotonicAcl
 import scalafx.application.Platform
 import scalafx.scene.Scene

@@ -9,9 +9,9 @@ import lofi_acl.collections.DeltaAWLWWMContainer
 import rdts.base.Bottom
 import rdts.time.{Dot, Dots}
 
-import scala.language.implicitConversions
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
+import scala.language.implicitConversions
 import scala.util.Try
 
 object DeltaStateBasedUntrustedReplicaSizeBenchmark extends App with DeltaStateUntrustedReplicaSizeBenchEnvironment {

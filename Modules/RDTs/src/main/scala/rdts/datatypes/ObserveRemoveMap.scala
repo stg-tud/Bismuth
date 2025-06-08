@@ -2,7 +2,7 @@ package rdts.datatypes
 
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.dotted.HasDots.mapInstance
-import rdts.dotted.{Dotted, HasDots, Obrem}
+import rdts.dotted.{HasDots, Obrem}
 import rdts.time.Dots
 
 case class ObserveRemoveMap[K, V](repr: Obrem[Map[K, V]]) {

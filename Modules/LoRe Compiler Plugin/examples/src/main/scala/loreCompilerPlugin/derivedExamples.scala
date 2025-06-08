@@ -2,7 +2,7 @@ package loreCompilerPlugin
 
 import lore.dsl.*
 import loreCompilerPlugin.annotation.LoReProgram
-import reactives.default.{Var as Source, Signal as Derived}
+import reactives.default.{Signal as Derived, Var as Source}
 
 def foo(bar: Int, baz: String): Int = 0
 

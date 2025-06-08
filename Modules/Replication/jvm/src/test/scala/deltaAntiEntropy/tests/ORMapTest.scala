@@ -11,7 +11,6 @@ import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
-import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
   given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make

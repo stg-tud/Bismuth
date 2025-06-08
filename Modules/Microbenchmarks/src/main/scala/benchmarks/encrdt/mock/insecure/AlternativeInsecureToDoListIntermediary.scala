@@ -5,7 +5,7 @@ import benchmarks.encrdt.mock.IntermediarySizeInfo
 import benchmarks.encrdt.todolist.ToDoEntry
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import lofi_acl.collections.DeltaAWLWWMContainer
-import DeltaAWLWWMContainer.State
+import lofi_acl.collections.DeltaAWLWWMContainer.State
 
 import java.util.UUID
 

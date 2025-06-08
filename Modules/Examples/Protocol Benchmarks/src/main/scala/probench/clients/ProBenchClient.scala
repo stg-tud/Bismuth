@@ -1,5 +1,6 @@
 package probench.clients
 
+import probench.Codecs.given
 import probench.data.RequestResponseQueue.Req
 import probench.data.{KVOperation, RequestResponseQueue}
 import rdts.base.LocalUid.replicaId
@@ -7,8 +8,6 @@ import rdts.base.{LocalUid, Uid}
 import replication.DeltaDissemination
 
 import java.util.concurrent.Semaphore
-
-import probench.Codecs.given
 
 class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolean) extends Client(name, logTimings) {
   type State = RequestResponseQueue[KVOperation[String, String], String]

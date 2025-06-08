@@ -2,7 +2,6 @@ package test.rdts.bespoke
 
 import rdts.base.Uid
 import rdts.datatypes.MultiVersionRegister
-import rdts.dotted.Dotted
 import test.rdts.given
 
 class MultiVersionRegisterTest extends munit.FunSuite {

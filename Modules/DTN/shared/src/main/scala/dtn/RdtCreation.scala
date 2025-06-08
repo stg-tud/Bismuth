@@ -1,21 +1,16 @@
 package dtn
 
-import rdts.base.LocalUid
-import dtn.rdt.Channel
 import _root_.replication.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
-import dtn.rdt.ClientOperationMode
-import rdts.datatypes.alternatives.ObserveRemoveSet
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import dtn.rdt.{Channel, ClientOperationMode}
+import rdts.base.{Lattice, LocalUid}
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.dotted.Obrem
+import rdts.time.{Dot, Dots}
+import replication.DeltaDissemination
 
 import scala.util.Random
-import rdts.dotted.Obrem
-import rdts.time.Dot
-import rdts.base.Lattice
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import rdts.time.Dots
-import replication.DeltaDissemination
 
 trait CaseStudyRdt {
   def connect(

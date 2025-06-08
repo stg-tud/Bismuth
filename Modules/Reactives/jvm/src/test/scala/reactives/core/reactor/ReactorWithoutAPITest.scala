@@ -1,9 +1,9 @@
 package reactives.core.reactor
 
+import munit.FunSuite
 import reactives.SelectedScheduler.State
 import reactives.core.{CreationTicket, ReInfo, ReSource, ReadAs}
 import reactives.macros.MacroAccess
-import munit.FunSuite
 
 import scala.annotation.tailrec
 

@@ -1,14 +1,14 @@
 package loreCompilerPlugin.lsp
 
-import java.nio.charset.StandardCharsets
-import LSPDataTypes.*
 import loreCompilerPlugin.LogLevel
+import loreCompilerPlugin.lsp.LSPDataTypes.*
 import loreCompilerPlugin.lsp.LSPDataTypes.CompilationStatus.{InternalException, ParsingFailed, ResolutionFailed}
 import os.{SubProcess, spawn}
-
-import scala.collection.mutable.ArrayBuffer
 import ujson.{Null, Obj, Str, Value, read as ujsonRead}
 import upickle.default.{read as upickleRead, write as upickleWrite}
+
+import java.nio.charset.StandardCharsets
+import scala.collection.mutable.ArrayBuffer
 
 /** A client for communicating with the Dafny Language Server.
   * @param logLevel The log level. 0 being no logs, 1 being sparse log, 2 being verbose logging.

@@ -4,7 +4,7 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.experiments.protocols.Participants
 import rdts.datatypes.experiments.protocols.Participants.participants
-import PrepareAbort.{Abort, Prepare}
+import rdts.datatypes.experiments.protocols.PrepareAbort.{Abort, Prepare}
 
 enum PrepareAbort:
   case Prepare

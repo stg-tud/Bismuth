@@ -1,10 +1,10 @@
 package test.rdts.containers
 
-import rdts.base.{Bottom, LocalUid}
 import rdts.base.LocalUid.asId
-import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ReplicatedSet}
+import rdts.base.{Bottom, LocalUid}
 import rdts.datatypes.experiments.AuctionInterface
 import rdts.datatypes.experiments.AuctionInterface.{AuctionData, Bid}
+import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ReplicatedSet}
 import rdts.dotted.Dotted
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 

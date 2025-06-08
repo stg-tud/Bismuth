@@ -1,20 +1,15 @@
 package dtn
 
+import _root_.replication.DeltaDissemination
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import dtn.rdt.{Channel, Client, ClientOperationMode}
+import dtn.routing.{BaseRouter, DirectRouter, EpidemicRouter, FloodingRouter, RandomSprayRouter, RdtRouter, RdtRouter2, SprayAndWaitRouter}
+import rdts.base.LocalUid
 import rdts.time.Dots
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
-import routing.{BaseRouter, FloodingRouter, DirectRouter, EpidemicRouter, RdtRouter, RdtRouter2, SprayAndWaitRouter}
-import rdt.{Client, ClientOperationMode}
-
-import _root_.replication.DeltaDissemination
-import rdts.base.LocalUid
-import dtn.rdt.Channel
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
-import dtn.routing.RandomSprayRouter
 
 /*
   this file contains all jvm main methods

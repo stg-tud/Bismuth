@@ -1,17 +1,6 @@
 package dtn.rdt
 
-import dtn.Bundle
-import dtn.BundleCreation
-import dtn.Endpoint
-import dtn.MonitoringClientInterface
-import dtn.MonitoringMessage
-import dtn.NoMonitoringClient
-import dtn.PayloadBlock
-import dtn.RdtMessageType
-import dtn.RdtMetaBlock
-import dtn.RdtMetaInfo
-import dtn.WSEndpointClient
-import dtn.recoverAndLog
+import dtn.{Bundle, BundleCreation, Endpoint, MonitoringClientInterface, MonitoringMessage, NoMonitoringClient, PayloadBlock, RdtMessageType, RdtMetaBlock, RdtMetaInfo, WSEndpointClient, recoverAndLog}
 import rdts.time.Dots
 
 import scala.concurrent.ExecutionContext.Implicits.global

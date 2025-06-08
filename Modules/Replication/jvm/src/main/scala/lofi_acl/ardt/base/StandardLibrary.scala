@@ -2,7 +2,6 @@ package lofi_acl.ardt.base
 
 import lofi_acl.access.*
 import lofi_acl.access.Permission.{ALLOW, PARTIAL}
-import lofi_acl.access.InvalidPathException
 import rdts.base.Lattice
 
 object StandardLibrary:

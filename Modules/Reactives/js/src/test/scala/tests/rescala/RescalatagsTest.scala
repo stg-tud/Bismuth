@@ -1,5 +1,6 @@
 package tests.rescala
 
+import munit.FunSuite
 import org.scalajs.dom
 import org.scalajs.dom.html.Span
 import org.scalajs.dom.{Element, Node}
@@ -9,7 +10,6 @@ import reactives.extra.Tags.*
 import scalatags.JsDom.TypedTag
 import scalatags.JsDom.all.*
 import scalatags.generic.StylePair
-import munit.FunSuite
 
 import scala.util.chaining.scalaUtilChainingOps
 

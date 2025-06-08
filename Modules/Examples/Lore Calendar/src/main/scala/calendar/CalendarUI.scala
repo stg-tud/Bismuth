@@ -5,7 +5,6 @@ import lore.dsl.{Interaction, InteractionWithExecutes, Invariant}
 import org.scalajs.dom.html.{Div, Input}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import reactives.core.CreationTicket
 import reactives.default.*
