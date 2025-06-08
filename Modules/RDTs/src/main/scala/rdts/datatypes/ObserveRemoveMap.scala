@@ -34,19 +34,6 @@ case class ObserveRemoveMap[K, V](repr: Obrem[Map[K, V]]) {
     }
   }
 
-  def transform(using
-      bot: Bottom[V],
-      hd: HasDots[V]
-  )(k: K)(m: Dotted[V] => Dotted[V]): Delta = {
-    val v   = inner.getOrElse(k, Bottom[V].empty)
-    val res = m(Dotted(v, repr.context))
-
-    ObserveRemoveMap(Obrem(
-      Map(k -> res.data),
-      observed = res.contained,
-      deletions = res.deletions
-    ))
-  }
 
   def remove(using HasDots[V])(k: K): Delta = {
     inner.get(k) match
