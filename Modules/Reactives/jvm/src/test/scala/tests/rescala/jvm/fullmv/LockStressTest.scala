@@ -25,7 +25,7 @@ class LockStressTest extends munit.FunSuite {
       val duration = 10000
       println(s"starting lock stress test for ${duration / 1000} seconds...")
       var running: Boolean = true
-      val threads = Array.tabulate(numWorkers)(i =>
+      val threads          = Array.tabulate(numWorkers)(i =>
         Spawn {
           try {
             val random     = new Random()
@@ -38,7 +38,7 @@ class LockStressTest extends munit.FunSuite {
                 ownTurn.beginExecuting()
                 turns(i).set(ownTurn)
               } else {
-                val pick = random.nextInt(numWorkers)
+                val pick                       = random.nextInt(numWorkers)
                 @tailrec def reTryLock(): Unit = {
                   if running then
                     SerializationGraphTracking.tryLock(turns(pick).get, ownTurn, UnlockedUnknown) match {

@@ -37,7 +37,7 @@ final class ReLock[InterTurn]() {
     if !v.compareAndSet(old, update) then transform(v)(f)
   }
 
-  def share(key: Key[InterTurn]): Unit = transform(shared)(_.enqueue(key))
+  def share(key: Key[InterTurn]): Unit              = transform(shared)(_.enqueue(key))
   def acquired(key: Key[InterTurn]): Key[InterTurn] = {
     transform(shared) { q =>
       val (k, r) = q.dequeue

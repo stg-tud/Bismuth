@@ -43,7 +43,7 @@ object Sourcecode {
 
   object Util {
     def isSynthetic(using Quotes)(s: quotes.reflect.Symbol) = isSyntheticName(getName(s))
-    def isSyntheticName(name: String) = {
+    def isSyntheticName(name: String)                       = {
       name == "<init>" || (name.startsWith("<local ") && name.endsWith(">")) || name == "$anonfun" || name == "macro"
     }
     def getName(using Quotes)(s: quotes.reflect.Symbol) = {

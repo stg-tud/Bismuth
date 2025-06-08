@@ -118,7 +118,7 @@ class ReplicaListener[S: {Lattice, JsonValueCodec}](replica: Replica[S]) extends
 
   val modeSwitched: Promise[true] = Promise[true]
 
-  override def onOpen(webSocket: WebSocket): Unit = ()
+  override def onOpen(webSocket: WebSocket): Unit                                                  = ()
   override def onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage[?] =
     if CharSequence.compare(data, "200 tx mode: JSON") == 0 then modeSwitched.succeed(true)
     println(data)
@@ -136,7 +136,7 @@ class ReplicaMutator[S](val replica: Replica[S]) {
 }
 
 def traverse[T](list: List[Async[Any, T]]): Async[Any, List[T]] = list match
-  case Nil => Async { Nil }
+  case Nil    => Async { Nil }
   case h :: t => Async {
       val hr   = h.bind
       val rest = traverse(t).bind
@@ -154,7 +154,7 @@ def run(): Unit =
     given LocalUid = replica.id.convert
 
     val bundleString = sget(URI.create(s"$api/status/bundles")).bind
-    val bundles = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
+    val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
       bget(URI.create(s"$api/download?$id"))
     }).bind
 

@@ -93,7 +93,7 @@ class FilteringAntiEntropy[RDT](
   // Executed in thread from ConnectionManager
   override def connectionEstablished(remote: PublicIdentity): Unit = {
     val (aclVersion, acl) = aclReference.get()
-    val permissions =
+    val permissions       =
       acl.write.getOrElse(localPublicId, PermissionTree.empty)
         .intersect(acl.read.getOrElse(remote, PermissionTree.empty))
     outboundMessageLock.synchronized {
@@ -155,7 +155,7 @@ class FilteringAntiEntropy[RDT](
   }
 
   @volatile private var stopped = false
-  def stop(): Unit = {
+  def stop(): Unit              = {
     stopped = true
     connectionManager.shutdown()
   }
@@ -237,11 +237,11 @@ class FilteringAntiEntropy[RDT](
         val rdtDots = rdtDeltas.deltaDots
 
         val missingAclDeltas = receivedAclDots.subtract(remoteAclDots).iterator.flatMap { dot => aclDeltas.get(dot) }
-        val _ =
+        val _                =
           connectionManager.sendMultiple(sender, missingAclDeltas.toArray*) // No need to lock or filter for ACL deltas
 
         val missingRdtDeltas = rdtDots.subtract(remoteRdtDots)
-        val deltas =
+        val deltas           =
           rdtDeltas.retrieveDeltas(missingRdtDeltas).map[Delta[RDT]]((dot, delta) => Delta(delta, dot, aclDots)).toArray
         val _ = disseminateFiltered(sender, deltas*)
 
@@ -255,7 +255,7 @@ class FilteringAntiEntropy[RDT](
   private def processBacklog(): Unit = {
     // Process backlogged ACL entries
     while { // TODO: Could be optimized by processing them in topological order
-      val aclDots = aclReference.get()._1
+      val aclDots                               = aclReference.get()._1
       val (processableAclDeltas, unprocessable) =
         aclMessageBacklog.partition((entry, _) => aclDots.contains(entry.cc))
       aclMessageBacklog = unprocessable
@@ -264,8 +264,8 @@ class FilteringAntiEntropy[RDT](
     } do {}
 
     // Process backlogged deltas
-    val (aclDots, acl)                    = aclReference.get()
-    val partialDeltaStoreBeforeProcessing = partialDeltaStore
+    val (aclDots, acl)                           = aclReference.get()
+    val partialDeltaStoreBeforeProcessing        = partialDeltaStore
     val (processableDeltas, unprocessableDeltas) =
       deltaMessageBacklog.partition((delta, _, _) => aclDots.contains(delta.aclCC))
     deltaMessageBacklog = unprocessableDeltas
@@ -434,7 +434,7 @@ class FilteringAntiEntropy[RDT](
   }
 
   private val antiEntropyThread = new Thread {
-    private val rand = Random()
+    private val rand         = Random()
     override def run(): Unit = {
       while !stopped do {
         try {

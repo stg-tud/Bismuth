@@ -28,7 +28,7 @@ object AddWinsSet:
     def add[E](set: AddWinsSet[E], replicaId: LocalUid, element: E): AddWinsSet[E] =
       val newDot                      = set.context.nextDot(replicaId.uid)
       val deltaDotStore: Map[E, Dots] = Map(element -> Dots.single(newDot))
-      val deltaCausalContext = set.data.get(element) match
+      val deltaCausalContext          = set.data.get(element) match
         case Some(dots) => dots.add(newDot)
         case None       => Dots.single(newDot)
       Dotted(deltaDotStore, deltaCausalContext)

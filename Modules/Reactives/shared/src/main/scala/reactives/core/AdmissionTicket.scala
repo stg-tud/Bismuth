@@ -21,7 +21,7 @@ final class AdmissionTicket[State[_]](val tx: Transaction[State], declaredWrites
   private var _initialChanges: Map[ReSource.of[State], InitialChange[State]] =
     Map[ReSource.of[State], InitialChange[State]]()
   private[reactives] def initialChanges: Map[ReSource.of[State], InitialChange[State]] = _initialChanges
-  def recordChange[T](ic: InitialChange[State]): Unit = {
+  def recordChange[T](ic: InitialChange[State]): Unit                                  = {
     assert(
       declaredWrites.contains(ic.source),
       "must not set a source that has not been pre-declared for the transaction"

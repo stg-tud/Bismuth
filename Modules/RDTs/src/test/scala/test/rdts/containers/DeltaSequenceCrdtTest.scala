@@ -8,10 +8,10 @@ import test.rdts.given
 class DeltaSequenceCrdtTest extends munit.FunSuite {
 
   test("basic interaction") {
-    val ds      = DeltaBuffer(DeltaSequence.empty[String])
-    val a       = "a"
-    val vertex1 = Vertex.fresh()
-    val vertex2 = Vertex.fresh()
+    val ds                                         = DeltaBuffer(DeltaSequence.empty[String])
+    val a                                          = "a"
+    val vertex1                                    = Vertex.fresh()
+    val vertex2                                    = Vertex.fresh()
     val added2: DeltaBuffer[DeltaSequence[String]] = ds
       .mod(_.addRightDelta(a, Vertex.start, vertex1, "Hello world!"))
       .mod(_.addRightDelta(a, Vertex.start, vertex2, "Hello world 2!"))

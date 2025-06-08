@@ -19,7 +19,7 @@ def arbPermissionTreeMaxDepth(maxDepth: Int): Gen[PermissionTree] =
       permission           <- Gen.oneOf(ALLOW, PARTIAL)
       numChildren          <- Gen.choose(0, 4)
       maxDepths: List[Int] <- Gen.listOfN(numChildren, Gen.choose(0, maxDepth - 1))
-      children <- Gen.mapOfN(
+      children             <- Gen.mapOfN(
         numChildren,
         for
           maxDepthOfChild <- Gen.choose(0, maxDepth - 1)
@@ -59,7 +59,7 @@ class PermissionTreePropertyChecks extends munit.ScalaCheckSuite {
   def inNormalizedTreeAllSiblingsContainWildcardChildren(tree: PermissionTree): Unit =
     def contains(tree: PermissionTree, wildcardBranch: Map[String, PermissionTree]): Boolean =
       tree match
-        case PermissionTree(ALLOW, _) => true
+        case PermissionTree(ALLOW, _)              => true
         case PermissionTree(PARTIAL, treeChildren) => wildcardBranch.forall((wLabel, wChild) =>
             treeChildren.contains(wLabel) && contains(treeChildren(wLabel), wChild.children)
           )

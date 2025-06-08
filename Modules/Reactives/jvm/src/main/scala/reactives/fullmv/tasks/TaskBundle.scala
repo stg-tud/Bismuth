@@ -148,8 +148,8 @@ trait RegularReevaluationHandling extends ReevaluationHandling[Derived.of[State]
   def doReevaluation(retainBranch: Boolean): Unit = {
 //    assert(Thread.currentThread() == turn.userlandThread, s"$this on different thread ${Thread.currentThread().getName}")
     assert(turn.phase == TurnPhase.Executing, s"$turn cannot reevaluate (requires executing phase")
-    var value             = node.state.reevIn(turn)
-    val transactionHandle = TransactionHandle(turn)
+    var value                                 = node.state.reevIn(turn)
+    val transactionHandle                     = TransactionHandle(turn)
     val ticket: ReevTicket[State, node.Value] =
       new ReevTicket[State, node.Value](transactionHandle, value, FullAccessHandle)
     val res: Result[State, node.Value] =

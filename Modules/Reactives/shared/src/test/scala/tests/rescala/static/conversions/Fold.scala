@@ -180,7 +180,7 @@ class FoldTests extends munit.FunSuite {
 
     test("create folds during tx") {
 
-      val e = Evt[String]()
+      val e      = Evt[String]()
       val listed = transaction(e) { t ?=>
         e.admit("hello")
         e.list()
@@ -197,7 +197,7 @@ class FoldTests extends munit.FunSuite {
       val word  = Evt[String]()
       val count = Evt[Int]()
       val reset = Evt[Unit]()
-      val res = Fold("")(
+      val res   = Fold("")(
         reset `branch` (_ => ""),
         word `branch` identity,
         count `branch` (Fold.current * _)
@@ -224,8 +224,8 @@ class FoldTests extends munit.FunSuite {
     }
 
     test("fold expression compiles with values of a subtype") {
-      val e0 = Evt[Unit]()
-      val e1 = Evt[Int]()
+      val e0  = Evt[Unit]()
+      val e1  = Evt[Int]()
       val res = Fold(Option.empty[Int])(
         e0 `branch` { _ => Some(1) },
         e1 `branch` { _ => Option(2) }

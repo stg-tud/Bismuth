@@ -103,7 +103,7 @@ trait InvariantBundle extends TopoBundle {
           generated: List[(ReSource, Any)] = List.empty
       ): Prop =
         signalGeneratorPairs match {
-          case Nil => Prop(f(generated))
+          case Nil                => Prop(f(generated))
           case (sig, gen) :: tail =>
             forAll(gen)(t => customForAll(tail, f, generated :+ ((sig, t))))
         }

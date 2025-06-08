@@ -47,7 +47,7 @@ class VarTestSuite extends FunSuite {
     test("dependant Is Only Invoked On Value Change") {
       var changes = 0
       val v       = Var(1)
-      val s = v.map { i =>
+      val s       = v.map { i =>
         changes += 1; i + 1
       }
       assertEquals(s.readValueOnce, 2)

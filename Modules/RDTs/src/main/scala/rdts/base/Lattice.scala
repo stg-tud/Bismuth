@@ -70,7 +70,7 @@ object Lattice {
     }
 
   def latticeOrder[A: Lattice as A]: PartialOrdering[A] = new {
-    override def lteq(x: A, y: A): Boolean = A.subsumption(x, y)
+    override def lteq(x: A, y: A): Boolean           = A.subsumption(x, y)
     override def tryCompare(x: A, y: A): Option[Int] =
       val lr = lteq(x, y)
       val rl = lteq(y, x)
@@ -193,7 +193,7 @@ object Lattice {
       val res =
         inline erasedValue[T] match
           case _: EmptyTuple => EmptyTuple
-          case _: (τ *: τs) => summonFrom {
+          case _: (τ *: τs)  => summonFrom {
               case b: τ => b
               case _    => null
             } *: summonAllMaybe[τs]
@@ -209,7 +209,7 @@ object Lattice {
 
       override def toString: String = s"ProductLattice[${label}]"
 
-      private def lat(i: Int): Lattice[Any] = lattices.productElement(i).asInstanceOf[Lattice[Any]]
+      private def lat(i: Int): Lattice[Any]      = lattices.productElement(i).asInstanceOf[Lattice[Any]]
       private def bot(i: Int, default: Any): Any =
         val btm = bottoms.productElement(i)
         if btm == null

@@ -49,7 +49,7 @@ class CreationTicketTest extends FunSuite {
 
   test("implicit In Closures") {
     val closureDefinition: Transaction[State] = getTurn(using reactives.SelectedScheduler.candidate.scheduler)
-    val closure = {
+    val closure                               = {
       given it: Transaction[State] = closureDefinition
 
       () => implicitly[CreationTicket[State]]

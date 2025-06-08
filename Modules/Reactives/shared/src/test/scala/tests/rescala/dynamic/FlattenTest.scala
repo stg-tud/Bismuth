@@ -113,10 +113,10 @@ class FlattenTest extends FunSuite {
     }
 
     test("flatten Event") {
-      val e1          = Evt[Int]()
-      val condition   = e1.hold(-1)
-      val level1Event = e1.map(_ => "level 1")
-      val level2Event = level1Event.map(_ => "level 2")
+      val e1            = Evt[Int]()
+      val condition     = e1.hold(-1)
+      val level1Event   = e1.map(_ => "level 1")
+      val level2Event   = level1Event.map(_ => "level 2")
       val dynamicSignal = Signal {
         if condition.value == 1 then level1Event
         else level2Event
@@ -138,7 +138,7 @@ class FlattenTest extends FunSuite {
       val level2Condition = e1.hold(-1).map(identity)
       val level1EventA    = e1.map(_ => "A")
       val level1EventB    = e1.map(_ => "B")
-      val dynamicSignal = Signal {
+      val dynamicSignal   = Signal {
         if level2Condition.value == 1 then level1EventA
         else level1EventB
       }

@@ -46,7 +46,7 @@ class PongWindow {
       reactions += PongWindow.this.mouse.react
 
       preferredSize = new Dimension(Pong.Max_X, Pong.Max_Y)
-      val scoreFont = new Font("Tahoma", java.awt.Font.PLAIN, 32)
+      val scoreFont                                    = new Font("Tahoma", java.awt.Font.PLAIN, 32)
       override def paintComponent(g: Graphics2D): Unit =
         transaction(ball.x, ball.y, ball.leftRacket.area, ball.rightRacket.area) { t ?=>
           g.setColor(java.awt.Color.DARK_GRAY)

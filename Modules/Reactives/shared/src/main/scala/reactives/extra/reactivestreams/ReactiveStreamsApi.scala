@@ -26,7 +26,7 @@ class RESubscriber[T](evt: Evt[T]) extends Subscriber[T] {
       subscription = s
       subscription.request(1)
     }
-  override def onComplete(): Unit = {}
+  override def onComplete(): Unit     = {}
   override def onNext(value: T): Unit =
     synchronized {
       Objects.requireNonNull(value)
@@ -60,7 +60,7 @@ class SubscriptionReactive[T](
 
   override protected[reactives] def reevaluate(rein: ReIn): Rout = {
     rein.dependStatic(dependency).toOptionTry match {
-      case None => rein
+      case None           => rein
       case Some(tryValue) =>
         synchronized {
           while requested <= 0 && !cancelled do wait(100)

@@ -312,7 +312,7 @@ object PermissionTreePane {
       parentCommentRead: BooleanProperty,
       parentCommentWrite: BooleanProperty,
   ) {
-    val (read, write) = wiredReadWriteCheckboxes(parentRead, parentWrite)
+    val (read, write)                       = wiredReadWriteCheckboxes(parentRead, parentWrite)
     val (descriptionRead, descriptionWrite) =
       wiredReadWriteCheckboxes(read.selected, write.selected, parentDescriptionRead, parentDescriptionWrite)
     val (amountRead, amountWrite) =

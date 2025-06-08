@@ -28,10 +28,10 @@ class MutuallyTrustingSync[RDT](
   private val localPublicId = localIdentity.getPublic
 
   private val rdtReference: AtomicReference[(Dots, RDT)] = AtomicReference(initialRdt)
-  private val lastLocalRdtDot: AtomicReference[Dot] =
+  private val lastLocalRdtDot: AtomicReference[Dot]      =
     AtomicReference(initialRdt._1.max(Uid(localPublicId.id)).getOrElse(Dot(Uid(localPublicId.id), -1)))
   private val permissionsReference: AtomicReference[(Dots, Set[PublicIdentity])] = AtomicReference(initialPermissions)
-  private val lastLocalPermissionsDot: AtomicReference[Dot] =
+  private val lastLocalPermissionsDot: AtomicReference[Dot]                      =
     AtomicReference(initialPermissions._1.max(Uid(localPublicId.id)).getOrElse(Dot(Uid(localPublicId.id), -1)))
 
   @volatile private var stopped = false
@@ -210,7 +210,7 @@ class MutuallyTrustingSync[RDT](
   }
 
   private val antiEntropyThread = executor.submit(new Runnable:
-    private val rand = Random()
+    private val rand         = Random()
     override def run(): Unit =
       while !stopped do {
         Thread.sleep(Duration(30, SECONDS).toMillis)

@@ -78,7 +78,7 @@ object Decompose {
 
       override def toString: String = s"ProductDecompose[${label}]"
 
-      private def lat(i: Int): Decompose[Any] = lattices.productElement(i).asInstanceOf[Decompose[Any]]
+      private def lat(i: Int): Decompose[Any]    = lattices.productElement(i).asInstanceOf[Decompose[Any]]
       private def bot(i: Int, default: Any): Any =
         val btm = bottoms.productElement(i)
         if btm == null
@@ -100,7 +100,7 @@ object Decompose {
                 pm.fromProduct(new Product {
                   def canEqual(that: Any): Boolean = false
                   def productArity: Int            = lattices.productArity
-                  def productElement(i: Int): Any = if i == j then elem
+                  def productElement(i: Int): Any  = if i == j then elem
                   else bot(i, a.productElement(i))
                 })
               }

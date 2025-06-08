@@ -39,7 +39,7 @@ object FullMVUtil {
   }
 
   type CallAccumulator[T] = List[Future[T]]
-  def newAccumulator(): CallAccumulator[Unit] = Nil
+  def newAccumulator(): CallAccumulator[Unit]                                          = Nil
   def broadcast[C](collection: Iterable[C])(makeCall: C => Future[Unit]): Future[Unit] = {
     condenseCallResults(accumulateBroadcastFutures(newAccumulator(), collection)(makeCall))
   }

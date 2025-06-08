@@ -9,8 +9,8 @@ object FramingBranchResult {
 
 sealed trait NotificationBranchResult[+T, +R]
 object NotificationBranchResult {
-  case object DoNothing         extends NotificationBranchResult[Nothing, Nothing]
-  case object ReevaluationReady extends NotificationBranchResult[Nothing, Nothing]
+  case object DoNothing                   extends NotificationBranchResult[Nothing, Nothing]
+  case object ReevaluationReady           extends NotificationBranchResult[Nothing, Nothing]
   sealed trait ReevOutBranchResult[+T, R] extends NotificationBranchResult[T, R] {
     val out: Set[R]
   }

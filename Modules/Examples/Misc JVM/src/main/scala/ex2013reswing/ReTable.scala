@@ -85,7 +85,7 @@ class ReTable[A <: AnyRef](
     { rowData =>
       (peer.peer.getModel match {
         case model: ReTable.ReTableModel[A @unchecked] => model
-        case _ =>
+        case _                                         =>
           val model = new ReTable.ReTableModel[A]
           peer.peer `setModel` model
           modelChanged()
@@ -112,7 +112,7 @@ class ReTable[A <: AnyRef](
     { columnNames =>
       (peer.peer.getModel match {
         case model: ReTable.ReTableModel[?] => model
-        case _ =>
+        case _                              =>
           val model = new ReTable.ReTableModel[A]
           peer.peer `setModel` model
           modelChanged()
@@ -134,7 +134,7 @@ class ReTable[A <: AnyRef](
     { editable =>
       (peer.peer.getModel match {
         case model: ReTable.ReTableModel[?] => model
-        case _ =>
+        case _                              =>
           val model = new ReTable.ReTableModel[A]
           peer.peer `setModel` model
           modelChanged()
@@ -277,8 +277,8 @@ object ReTable {
     def getColumnNames  = columnNames
     def getCellEditable = editable
 
-    def getRowCount    = rowData.length
-    def getColumnCount = columnNames.length
+    def getRowCount                    = rowData.length
+    def getColumnCount                 = columnNames.length
     def getValueAt(row: Int, col: Int) = {
       if rowData.isDefinedAt(row) then {
         val data = rowData(row)
@@ -290,7 +290,7 @@ object ReTable {
         null
     }
 
-    override def getColumnName(column: Int) = columnNames(column).toString
+    override def getColumnName(column: Int)            = columnNames(column).toString
     override def isCellEditable(row: Int, column: Int) =
       if editable != null then
         editable(row, column)

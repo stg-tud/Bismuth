@@ -113,7 +113,7 @@ class ConnectionManager[MSG](
 
   def connectTo(host: String, port: Int): Unit = {
     connector.connect(host, port).onComplete {
-      case Failure(exception) => Console.err.println(s"Can't connect to $host:$port")
+      case Failure(exception)        => Console.err.println(s"Can't connect to $host:$port")
       case Success((socket, peerId)) =>
         if peerId == localPublicId
         then // We don't want to connect to ourselves.
@@ -132,7 +132,7 @@ class ConnectionManager[MSG](
     }
 
     connector.connect(host, port).onComplete {
-      case Failure(exception) => Console.err.println(s"Can't connect to $host:$port")
+      case Failure(exception)                        => Console.err.println(s"Can't connect to $host:$port")
       case Success((socket, peerId: PublicIdentity)) =>
         if expectedUser == peerId
         then connectionEstablished(socket, peerId, establishedByRemote = false)

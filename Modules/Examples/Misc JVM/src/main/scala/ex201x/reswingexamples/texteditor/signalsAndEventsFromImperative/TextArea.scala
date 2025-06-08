@@ -103,7 +103,7 @@ class TextArea extends ReComponent {
     def markPos_=(value: Position) = mark = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
     // caret location as offset
-    def offset = dot
+    def offset                     = dot
     def offset_=(value: Int): Unit = {
       dot = value
       mark = value
@@ -113,8 +113,8 @@ class TextArea extends ReComponent {
     def position                    = dotPos
     def position_=(value: Position) = offset = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
-    protected[TextArea] val blink  = new Timer(500) start
-    protected[TextArea] val steady = new Timer(500, false)
+    protected[TextArea] val blink   = new Timer(500) start
+    protected[TextArea] val steady  = new Timer(500, false)
     protected[TextArea] val visible = blink.fired.toggle(
       Signal { hasFocus.value },
       Signal { hasFocus.value && steady.running.value }

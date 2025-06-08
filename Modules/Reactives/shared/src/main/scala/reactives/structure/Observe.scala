@@ -45,7 +45,7 @@ object Observe {
       extends Observe.ObserveInteract {
     override def checkExceptionAndRemoval(): Boolean = {
       reevalVal match {
-        case Pulse.empty(info) => ()
+        case Pulse.empty(info)                       => ()
         case Pulse.Exceptional(f) if onError == null =>
           throw ObservedException(location, "observed", f)
         case _ => ()

@@ -49,7 +49,7 @@ case class RaftTokens(
     if tokenAgreement.leader == replicaID then {
       val unwanted = want.mod(_.removeAll(want.state.elements.filter(generalDuties.values.contains)))
       unwanted.state.elements.headOption match {
-        case None => copy(tokenAgreement = generalDuties, want = unwanted)
+        case None      => copy(tokenAgreement = generalDuties, want = unwanted)
         case Some(tok) =>
           copy(tokenAgreement = generalDuties.propose(replicaID, tok), want = unwanted)
       }

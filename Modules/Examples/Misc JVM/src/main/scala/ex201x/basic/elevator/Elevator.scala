@@ -57,7 +57,7 @@ class Elevator(val nFloors: Int) {
     tick branch { _ => if isWaiting.now then Fold.current - 1 else Fold.current }
   )
 
-  val stoppedWaiting = waitingTime.changed.filter(_ == 0)
+  val stoppedWaiting             = waitingTime.changed.filter(_ == 0)
   val isWaiting: Signal[Boolean] =
     (reachedFloor.map((_: Int) => true) || stoppedWaiting.map((_: Any) => false)).hold(false)
 

@@ -122,7 +122,7 @@ class XmlParser {
 
     for
       channel <- parseChannel((channelXML, Some(url)))
-      items <- itemsOpt.map { items =>
+      items   <- itemsOpt.map { items =>
         items.map { i => RSSItem.changeSource(i, Some(channel)) }
       }
     yield {

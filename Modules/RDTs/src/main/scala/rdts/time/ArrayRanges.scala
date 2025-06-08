@@ -110,7 +110,7 @@ class ArrayRanges(
     var value = if used == 0 then 0 else inner(0)
 
     override def hasNext: Boolean = used > pos
-    override def next(): Time =
+    override def next(): Time     =
       val res = value
       value += 1
       if value >= inner(pos + 1) then
@@ -233,17 +233,17 @@ class ArrayRanges(
     if right.isEmpty then return this
     if isEmpty then return this
 
-    var newInnerNextIndex = 0
-    val newInner          = new Array[Time](used + right.used)
+    var newInnerNextIndex                                 = 0
+    val newInner                                          = new Array[Time](used + right.used)
     def includeRangeInclusive(min: Time, max: Time): Unit = {
       newInner(newInnerNextIndex) = min         // From lMin
       newInner(newInnerNextIndex + 1) = max + 1 // to lMax (but range is in array is exclusive, so lMax+1)
       newInnerNextIndex += 2
     }
 
-    var lIndex = 0
-    var lMin   = inner(0)
-    var lMax   = inner(1) - 1
+    var lIndex              = 0
+    var lMin                = inner(0)
+    var lMax                = inner(1) - 1
     def nextLeft(): Boolean = {
       lIndex += 2
       if lIndex < used then {
@@ -255,9 +255,9 @@ class ArrayRanges(
       }
     }
 
-    var rIndex = 0
-    var rMin   = right.inner(0)
-    var rMax   = right.inner(1) - 1
+    var rIndex                               = 0
+    var rMin                                 = right.inner(0)
+    var rMax                                 = right.inner(1) - 1
     def nextRightOrAddAllFromLeft(): Boolean = {
       rIndex += 2
       if rIndex < right.used then {
@@ -325,7 +325,7 @@ class ArrayRanges(
 }
 
 object ArrayRanges {
-  val empty: ArrayRanges = new ArrayRanges(Array.emptyLongArray, 0)
+  val empty: ArrayRanges                              = new ArrayRanges(Array.emptyLongArray, 0)
   def apply(elements: Seq[(Time, Time)]): ArrayRanges =
     elements.map((s, e) => new ArrayRanges(Array(s, e), 2)).foldLeft(ArrayRanges.empty)(_ `union` _)
   def elems(elems: Time*): ArrayRanges = from(elems)
@@ -373,12 +373,12 @@ object ArrayRanges {
     case (false, false) => None
 
   given partialOrder: PartialOrdering[ArrayRanges] with {
-    override def lteq(x: ArrayRanges, y: ArrayRanges): Boolean = x <= y
+    override def lteq(x: ArrayRanges, y: ArrayRanges): Boolean                  = x <= y
     override def tryCompare(left: ArrayRanges, right: ArrayRanges): Option[Int] = {
       (left.isEmpty, right.isEmpty) match
-        case (true, true)  => Some(0)
-        case (true, false) => Some(-1)
-        case (false, true) => Some(1)
+        case (true, true)   => Some(0)
+        case (true, false)  => Some(-1)
+        case (false, true)  => Some(1)
         case (false, false) =>
           var leftIndex  = 0
           var rightIndex = 0

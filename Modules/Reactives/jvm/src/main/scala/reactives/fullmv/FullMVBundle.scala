@@ -225,7 +225,7 @@ trait FullMVTurn
 // TODO draft for async turn phase transitions
 //  val executingWaiters = AtomicReference[List[() => Unit]]
 //  val completionWaiters = AtomicReference[List[() => Unit]]
-  val waiters = new ConcurrentHashMap[Thread, TurnPhase.Type]()
+  val waiters                                                     = new ConcurrentHashMap[Thread, TurnPhase.Type]()
   def wakeWaitersAfterPhaseSwitch(newPhase: TurnPhase.Type): Unit = {
     val it = waiters.entrySet().iterator()
     while it.hasNext do {

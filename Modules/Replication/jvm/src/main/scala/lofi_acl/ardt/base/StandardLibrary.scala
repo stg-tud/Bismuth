@@ -12,7 +12,7 @@ object StandardLibrary:
     given filter[T: Filter]: Filter[Option[T]] with
       override def filter(delta: Option[T], permission: PermissionTree): Option[T] =
         delta match
-          case None => delta
+          case None        => delta
           case Some(value) => permission match
               case PermissionTree(ALLOW, _)          => delta
               case PermissionTree(PARTIAL, children) =>
@@ -36,7 +36,7 @@ object StandardLibrary:
       override def filter(delta: Set[T], permission: PermissionTree): Set[T] = permission match
         case PermissionTree(ALLOW, _)                                              => delta
         case PermissionTree(PARTIAL, entryPermissions) if entryPermissions.isEmpty => Set.empty
-        case PermissionTree(PARTIAL, entryPermissions) =>
+        case PermissionTree(PARTIAL, entryPermissions)                             =>
           throw IllegalArgumentException("Non-terminal rule used in terminal filter")
 
       override def validatePermissionTree(permission: PermissionTree): Unit =

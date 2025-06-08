@@ -46,9 +46,9 @@ abstract class BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClie
           case Some(response) => ws.sendPacket(response)
         }
       }
-      case p: Packet.Error         => Future(onError(p))
-      case p: Packet.Timeout       => Future(onTimeout(p))
-      case p: Packet.SendingFailed => Future(onSendingFailed(p))
+      case p: Packet.Error            => Future(onError(p))
+      case p: Packet.Timeout          => Future(onTimeout(p))
+      case p: Packet.SendingFailed    => Future(onSendingFailed(p))
       case p: Packet.SendingSucceeded => {
         monitoringClient.send(MonitoringMessage.BundleForwardedAtRouter(ws.nodeId, p.bid))
         Future(onSendingSucceeded(p))
@@ -73,7 +73,7 @@ abstract class BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClie
   override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit                                   = ???
   override def onIncomingBundle(packet: Packet.IncomingBundle): Unit                                       = ???
   override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit = ???
-  override def onEncounteredPeer(packet: Packet.EncounteredPeer): Unit = {
+  override def onEncounteredPeer(packet: Packet.EncounteredPeer): Unit                                     = {
     if !peers.containsKey(packet.name) then {
       println(s"encountered new peer: ${packet.name}") // limit log file spam
     }

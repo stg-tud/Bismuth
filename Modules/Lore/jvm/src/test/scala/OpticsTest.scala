@@ -13,7 +13,7 @@ class OpticsSuite extends FunSuite {
     for
       parsed <- a
       replaced = parsed.map(replaceSourcePos)
-      _ = assertEquals(
+      _        = assertEquals(
         replaced,
         NonEmptyList.one(TParens(TParens(TNum(12))))
       )

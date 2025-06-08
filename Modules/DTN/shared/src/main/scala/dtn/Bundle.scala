@@ -40,7 +40,7 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
           case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED => Endpoint.NONE_ENDPOINT
-          case _: Int => throw Exception(s"unkown integer specific part: $specific_part")
+          case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
           case s: String =>
             val i: Int = s.indexOf("/", 2)
             if i == -1 then Endpoint(scheme, specific_part)
@@ -69,7 +69,7 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
         specific_part match
           case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED =>
             Endpoint.NONE_ENDPOINT_SPECIFIC_PART_NAME.split("/")(2) // "none"
-          case _: Int => throw Exception(s"unkown integer specific part: $specific_part")
+          case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
           case s: String =>
             val arr: Array[String] = s.split("/")
             if arr.length == 4 then arr(3) else ""
@@ -116,7 +116,7 @@ object CreationTimestamp {
   def NOW: CreationTimestamp = {
     // DTN only uses millisecond resolution. So to avoid bundles with indistinguishable creation-timestamps we base our comparison on the already truncated timestamp.
     val untruncated_bundle_creation_time = ZonedDateTime.now(ZoneId.of("UTC"))
-    val bundle_creation_time = untruncated_bundle_creation_time.`with`(
+    val bundle_creation_time             = untruncated_bundle_creation_time.`with`(
       ChronoField.NANO_OF_SECOND,
       (untruncated_bundle_creation_time.getNano / 1000000) * 1000000
     )
@@ -340,7 +340,7 @@ given Encoder[Endpoint] = Encoder { (writer, endpoint) =>
 given Decoder[Endpoint] = Decoder { reader =>
   // readArrayOpen(arity: Long) is JSON compatible, e.g. allows the serialized array to be unbounded
   val unbounded = reader.readArrayOpen(2)
-  val endpoint = Endpoint(
+  val endpoint  = Endpoint(
     scheme = reader.readInt(),
     // the specific part can be a string to an dtn-endpoint or 0 to indicate the special dtn-endpoint "//none" (IPN not handled specifically, but endpoints are also encoded as string)
     specific_part = if reader.hasInt then reader.readInt() else reader.readString()
@@ -359,7 +359,7 @@ given Encoder[CreationTimestamp] = Encoder { (writer, timestamp) =>
 given Decoder[CreationTimestamp] = Decoder { reader =>
   def from_dtn_timestamp(ts: Long): ZonedDateTime = CreationTimestamp.DTN_REFERENCE_TIMSTAMP.plus(Duration.ofMillis(ts))
 
-  val unbounded = reader.readArrayOpen(2)
+  val unbounded          = reader.readArrayOpen(2)
   val creation_timestamp = CreationTimestamp(
     bundle_creation_time = from_dtn_timestamp(reader.readLong()),
     sequence_number = reader.readInt()

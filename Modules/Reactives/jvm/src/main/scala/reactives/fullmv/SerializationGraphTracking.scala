@@ -18,7 +18,7 @@ case object UnlockedSameSCC extends SCCConnectivity {
 case class LockedSameSCC(lock: SubsumableLock) extends SCCState {
   override def unlockedIfLocked(): UnlockedSameSCC.type = unlock()
   override def known: this.type                         = this
-  def unlock(): UnlockedSameSCC.type = {
+  def unlock(): UnlockedSameSCC.type                    = {
 //    SerializationGraphTracking.released()
     lock.asyncUnlock()
     UnlockedSameSCC

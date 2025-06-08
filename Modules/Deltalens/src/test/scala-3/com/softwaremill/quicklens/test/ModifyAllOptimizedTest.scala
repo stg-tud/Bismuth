@@ -172,9 +172,9 @@ object ModifyAllOptimizedTest {
     }
   }
   object Cons {
-    var copyCount = 0
+    var copyCount                               = 0
     def fromList(list: List[Int]): Option[Cons] = list match {
-      case Nil => None
+      case Nil          => None
       case head :: tail =>
         Some(Cons(head, fromList(tail)))
     }
@@ -190,7 +190,7 @@ object ModifyAllOptimizedTest {
     override def get: Nothing = ???
   }
   case class Just[+A](val a: A) extends Opt[A] {
-    override def get: A = a
+    override def get: A                      = a
     override def equals(other: Any): Boolean = other match {
       case Just(a1) => a == a1
       case _        => false
@@ -213,9 +213,9 @@ object ModifyAllOptimizedTest {
     }
   }
   object ConsOpt {
-    var copyCount = 0
+    var copyCount                               = 0
     def fromList(list: List[Int]): Opt[ConsOpt] = list match {
-      case Nil => Nada
+      case Nil          => Nada
       case head :: tail =>
         Just(ConsOpt(head, fromList(tail)))
     }

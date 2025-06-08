@@ -30,7 +30,7 @@ object MLTest {
     }
 
   def multiply(i: SD) = i.map(v => v * v)
-  def app(i: SD) =
+  def app(i: SD)      =
     multiply(dense(i))
 
   def app_pipe(i: SD): SD =

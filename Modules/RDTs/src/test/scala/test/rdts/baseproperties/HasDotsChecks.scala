@@ -13,8 +13,8 @@ import test.rdts.DataGenerator.{*, given}
 import scala.collection.immutable.Queue
 import scala.math.Ordering.Implicits.infixOrderingOps
 
-class DotSetHDChecks         extends HasDotsChecks[Dots]
-class CausalStoreHDChecks    extends HasDotsChecks[CausalStore[Map[Dot, ExampleData]]]
+class DotSetHDChecks      extends HasDotsChecks[Dots]
+class CausalStoreHDChecks extends HasDotsChecks[CausalStore[Map[Dot, ExampleData]]]
 // class ReplicatedListHDChecks extends HasDotsChecks[ReplicatedList[ExampleData]]
 
 // the specification of these tests is nice, but the generators are essentially useless, as it is extremely unlikely
@@ -24,8 +24,8 @@ abstract class HasDotsChecks[A: {Arbitrary, HasDots}] extends munit.ScalaCheckSu
     forAll: (a: A) =>
       val dots = a.dots
       dots.iterator.foreach: dot =>
-        val single = Dots.single(dot)
-        val should = dots `subtract` single
+        val single    = Dots.single(dot)
+        val should    = dots `subtract` single
         val remaining = a.removeDots(single) match
           case None        => Dots.empty
           case Some(value) => value.dots

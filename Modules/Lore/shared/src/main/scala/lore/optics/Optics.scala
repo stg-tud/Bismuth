@@ -112,11 +112,11 @@ given HasChildren[Term] with {
             _
           ) =>
         ((requires ++ ensures).map(Some(_)) :+ executes).flatten
-      case TInvariant(condition, sourcePos, _) => List(condition)
-      case TNum(value, sourcePos, _)           => List.empty
-      case TTrue(sourcePos, _)                 => List.empty
-      case TFalse(sourcePos, _)                => List.empty
-      case TNeg(body, sourcePos, _)            => List(body)
+      case TInvariant(condition, sourcePos, _)         => List(condition)
+      case TNum(value, sourcePos, _)                   => List.empty
+      case TTrue(sourcePos, _)                         => List.empty
+      case TFalse(sourcePos, _)                        => List.empty
+      case TNeg(body, sourcePos, _)                    => List(body)
       case TForall(vars, triggers, body, sourcePos, _) =>
         vars.toList ++ triggers.map(_.toList).flatten :+ body
       case TExists(vars, body, sourcePos, _)          => vars.toList :+ body
@@ -154,7 +154,7 @@ val children: Fold[Term, Term] = {
             TString) =>
           Monoid[M].empty
         case TAbs(name, _type, body, sourcePos, _) => f(body)
-        case x: TTuple =>
+        case x: TTuple                             =>
           Monoid[M].combineAll(x.factors.toList.map(f))
         case TIf(cond, _then, _else, sourcePos, _) =>
           Monoid[M].combineAll(
@@ -179,15 +179,15 @@ val children: Fold[Term, Term] = {
           Monoid[M].combineAll(
             ((requires ++ ensures).map(Some(_)) :+ executes).flatten.map(f)
           )
-        case TInvariant(condition, sourcePos, _) => f(condition)
-        case TNeg(body, sourcePos, _)            => f(body)
+        case TInvariant(condition, sourcePos, _)         => f(condition)
+        case TNeg(body, sourcePos, _)                    => f(body)
         case TForall(vars, triggers, body, sourcePos, _) =>
           Monoid[M].combineAll(
             (vars.toList ++ triggers.map(_.toList).flatten :+ body).map(f)
           )
         case TExists(vars, body, sourcePos, _) =>
           Monoid[M].combineAll(((vars.toList :+ body).map(f)))
-        case TParens(inner, sourcePos, _) => f(inner)
+        case TParens(inner, sourcePos, _)              => f(inner)
         case TFCall(parent, field, args, sourcePos, _) =>
           Monoid[M].combineAll((List(parent) ++ args.getOrElse(List())).map(f))
         case TFCurly(parent, field, body, sourcePos, _) =>

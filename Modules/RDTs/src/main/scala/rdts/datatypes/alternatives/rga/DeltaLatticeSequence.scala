@@ -19,7 +19,7 @@ case class DeltaSequence[A](
 
   def successor(v: Vertex): Option[Vertex] = {
     current.edges.inner.get(v) match {
-      case None => None
+      case None    => None
       case Some(u) =>
         if current.vertices.contains(u) then Some(u) else successor(u)
     }
@@ -106,7 +106,7 @@ object DeltaSequence {
 
   given hasDots[A]: HasDots[DeltaSequence[A]] with {
     extension (value: DeltaSequence[A])
-      def dots: Dots = value.vertices.dots
+      def dots: Dots                                                = value.vertices.dots
       override def removeDots(dots: Dots): Option[DeltaSequence[A]] =
         HasDots.apply[ReplicatedSet[Vertex]].removeDots(value.vertices)(dots).map { nv =>
           value.copy(vertices = nv)

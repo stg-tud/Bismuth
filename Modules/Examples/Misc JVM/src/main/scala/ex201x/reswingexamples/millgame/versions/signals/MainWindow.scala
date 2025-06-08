@@ -183,7 +183,7 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
           g.setStroke(new BasicStroke(width.toFloat))
 
           shape match {
-            case Point(x, y) => ()
+            case Point(x, y)    => ()
             case Line(from, to) =>
               g.drawLine(from.x, from.y, to.x, to.y)
             case Rect(anchor, width, height) =>

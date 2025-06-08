@@ -17,7 +17,7 @@ object PartialReplicationPeerSubsetSolver {
     if contributingPermissions.isEmpty
     then (Set.empty, PermissionTree.empty)
     else
-      val arr = contributingPermissions.toArray
+      val arr                            = contributingPermissions.toArray
       val (replicas, achievedPermission) =
         randomSubsetThatAllowsReconstruction(arr, arr.length, Set.empty, PermissionTree.empty, requiredPermissions)
       // Drop all replicas whose permissions are <= than another replica from the set.

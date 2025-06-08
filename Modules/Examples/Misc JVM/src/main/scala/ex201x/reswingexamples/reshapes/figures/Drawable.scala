@@ -56,9 +56,9 @@ object Shape {
       shape.path map { p => <point x={p.x.toString} y={p.y.toString} /> }
 
     def shapeProps(shape: Shape, elem: Elem) =
-      elem %
+      elem                                                                    %
       Attribute(None, "stroke-width", Text(shape.strokeWidth.toString), Null) %
-      Attribute(None, "color", Text(shape.color.getRGB.toString), Null) %
+      Attribute(None, "color", Text(shape.color.getRGB.toString), Null)       %
       Attribute(None, "current", Text(shape.current.toString), Null)
 
     <shapes> {
@@ -68,7 +68,7 @@ object Shape {
         case shape: Oval      => shapeProps(shape, <oval> {shapePath(shape)} </oval>)
         case shape: Rectangle => shapeProps(shape, <rectangle> {shapePath(shape)} </rectangle>)
         case shape: Triangle  => shapeProps(shape, <triangle> {shapePath(shape)} </triangle>)
-        case shape =>
+        case shape            =>
           throw new UnsupportedOperationException("Saving type " + shape.getClass.getSimpleName + " not implemented.")
       }
     }  </shapes>

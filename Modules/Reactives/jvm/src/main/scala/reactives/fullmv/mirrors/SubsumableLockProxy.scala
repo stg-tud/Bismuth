@@ -12,7 +12,7 @@ case object RemoteSubsumed extends RemoteTrySubsumeResult {
   val futured: Future[RemoteSubsumed.type] = Future.successful(this)
 }
 case class RemoteBlocked(newRoot: SubsumableLock) extends RemoteTrySubsumeResult with RemoteTryLockResult
-case object RemoteGCd extends RemoteTrySubsumeResult with RemoteTryLockResult {
+case object RemoteGCd                             extends RemoteTrySubsumeResult with RemoteTryLockResult {
   val futured: Future[RemoteGCd.type] = Future.successful(this)
 }
 

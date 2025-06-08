@@ -37,7 +37,6 @@ class ContainerTest extends munit.FunSuite {
     assertEquals(disabled.data.read, false)
   }
 
-
   test("Dotted DeltaBuffer can contain contextual EnableWinsFlag") {
     val flag: DeltaBuffer[EnableWinsFlag] = DeltaBuffer(EnableWinsFlag.empty)
 
@@ -113,7 +112,6 @@ class ContainerTest extends munit.FunSuite {
   // END ReplicatedSet
 
   // START LastWriterWins
-
 
   test("DeltaBuffer can contain non-contextual LastWriterWins[String]") {
     val lww: DeltaBuffer[LastWriterWins[String]] = DeltaBuffer(LastWriterWins.empty)

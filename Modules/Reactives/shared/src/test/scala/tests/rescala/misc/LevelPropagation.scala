@@ -21,7 +21,7 @@ class LevelPropagation extends munit.FunSuite {
     }
     assertEquals(level_1_to_4.readValueOnce, 42)
     var evaluatesOnlyOncePerTurn = 0
-    val level_2_to_5 = Signal.lift(level0, level_1_to_4) { (x, y) =>
+    val level_2_to_5             = Signal.lift(level0, level_1_to_4) { (x, y) =>
       evaluatesOnlyOncePerTurn += 1; x + y
     }
     assertEquals(level_2_to_5.readValueOnce, 0 + 42)
@@ -51,10 +51,10 @@ class LevelPropagation extends munit.FunSuite {
   }
 
   test("does Not Break Stuff When Nothing Changes Before Dependencies Are Correct") {
-    val l0 = Var(0)
-    val l1 = l0.map(_ + 1)
-    val l2 = l1.map(_ + 1)
-    val l3 = l2.map(_ + 1)
+    val l0   = Var(0)
+    val l1   = l0.map(_ + 1)
+    val l2   = l1.map(_ + 1)
+    val l3   = l2.map(_ + 1)
     val l1t4 = Signal.dynamic(l0) { t =>
       if t.depend(l0) == 10 then t.depend(l3) else 3
     }
@@ -77,15 +77,15 @@ class LevelPropagation extends munit.FunSuite {
   }
 
   test("does Not Reevaluate Stuff If Nothing Changes") {
-    val l0 = Var(0)
-    val l1 = l0.map(_ + 1)
-    val l2 = l1.map(_ + 1)
-    val l3 = l2.map(_ + 1)
+    val l0   = Var(0)
+    val l1   = l0.map(_ + 1)
+    val l2   = l1.map(_ + 1)
+    val l3   = l2.map(_ + 1)
     val l1t4 = Signal.dynamic(l0) { t =>
       if t.depend(l0) == 10 then t.depend(l3) else 13
     }
     var reevals = 0
-    val l2t5 = l1t4.map { v =>
+    val l2t5    = l1t4.map { v =>
       reevals += 1; v + 1
     }
     // in the initial state t1t4 depends on 20 which is not 10, so the result is 14
@@ -115,19 +115,19 @@ class LevelPropagation extends munit.FunSuite {
   }
 
   test("level Increase And Change From Somewhere Else Works Together") {
-    val l0 = Var(0)
-    val l1 = l0.map(_ + 1)
-    val l2 = l1.map(_ + 1)
-    val l3 = l2.map(_ + 1)
+    val l0   = Var(0)
+    val l1   = l0.map(_ + 1)
+    val l2   = l1.map(_ + 1)
+    val l3   = l2.map(_ + 1)
     val l1t4 = Signal.dynamic(l0) { t =>
       if t.depend(l0) == 10 then t.depend(l3) else 13
     }
     var reevals = 0
-    val l2t5 = Signal.lift(l1t4, l1) { (a, b) =>
+    val l2t5    = Signal.lift(l1t4, l1) { (a, b) =>
       reevals += 1; a + b
     }
     var reevals2 = 0
-    val l3t6 = l2t5.map { v =>
+    val l3t6     = l2t5.map { v =>
       reevals2 += 1; v + 1
     }
 
@@ -154,15 +154,15 @@ class LevelPropagation extends munit.FunSuite {
 
   test("level increase but value change only after correct level is reached") {
 
-    val l0 = Var(0)
-    val l1 = l0.map(_ + 1)
-    val l2 = l1.map(_ + 1)
-    val l3 = l2.map(_ + 1)
+    val l0   = Var(0)
+    val l1   = l0.map(_ + 1)
+    val l2   = l1.map(_ + 1)
+    val l3   = l2.map(_ + 1)
     val l1t4 = Signal.dynamic(l0) { t =>
       if t.depend(l0) == 10 then t.depend(l3) else 3
     }
     var reevals = 0
-    val l2t5 = l1t4.map { v =>
+    val l2t5    = l1t4.map { v =>
       reevals += 1; v + 1
     }
     // in the initial state t1t4 depends on 20 which is not 10, so the result is 14

@@ -612,9 +612,9 @@ object LoReGen {
           logRhsInfo(indentLevel, operandSide, s"conditional expression", "")
         }
 
-        val condTerm: Term = buildLoReRhsTerm(cond, termList, indentLevel, operandSide)  // if x
-        val thenTerm: Term = buildLoReRhsTerm(_then, termList, indentLevel, operandSide) // then y
-        val elseTerm: Option[Term] = _else match // else z
+        val condTerm: Term         = buildLoReRhsTerm(cond, termList, indentLevel, operandSide)  // if x
+        val thenTerm: Term         = buildLoReRhsTerm(_then, termList, indentLevel, operandSide) // then y
+        val elseTerm: Option[Term] = _else match                                                 // else z
           case Literal(Constant(_: Unit)) => None // No else exists
           case _ => Some(buildLoReRhsTerm(_else, termList, indentLevel, operandSide)) // Else exists
 
@@ -683,7 +683,7 @@ object LoReGen {
       case "modifies" =>
         methodParamTerm match
           case TVar(modVar, _, _) => interaction.copy(modifies = interaction.modifies.prepended(modVar))
-          case _ =>
+          case _                  =>
             report.error(
               s"Error building RHS term for Interaction modifies call",
               tree.sourcePos

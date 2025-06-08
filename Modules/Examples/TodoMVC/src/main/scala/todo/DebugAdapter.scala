@@ -11,7 +11,7 @@ import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 
 object DebugAdapter {
 
-  given infoCodec: JsonValueCodec[ReInfo] = JsonCodecMaker.make
+  given infoCodec: JsonValueCodec[ReInfo]       = JsonCodecMaker.make
   given resourceCodec: JsonValueCodec[ReSource] = {
     new JsonValueCodec[ReSource]:
       override def decodeValue(in: JsonReader, default: ReSource): ReSource =
@@ -27,7 +27,7 @@ object DebugAdapter {
     case s: (Seq[Any])                            => s.iterator.map(debugPrinter).mkString(s"List(", ", ", ")")
     case m: scalatags.generic.Modifier[?]         => "<some html>"
     case p: Pulse[Any]                            => p.map(debugPrinter).getOrElse("")
-    case p: Product => Range(0, p.productArity).map(n =>
+    case p: Product                               => Range(0, p.productArity).map(n =>
         s"${p.productElementName(n)} = ${debugPrinter(p.productElement(n))}"
       ).mkString(s"${p.getClass.getName}(", ", ", ")")
     case other => s"<unknown: ${other.getClass}>"

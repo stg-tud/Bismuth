@@ -59,7 +59,7 @@ class HkdfTests extends FunSuite {
 
   test("Combining keys") {
     val inputKeyMaterial: Array[Byte] = Array.ofDim(32) // 256 bits
-    val kdkPart1 = {
+    val kdkPart1                      = {
       val hkdfParameters = HKDFParameters.skipExtractParameters(inputKeyMaterial, "PART A".getBytes())
       val hkdf           = HKDFBytesGenerator(SHA256Digest())
       hkdf.init(hkdfParameters)

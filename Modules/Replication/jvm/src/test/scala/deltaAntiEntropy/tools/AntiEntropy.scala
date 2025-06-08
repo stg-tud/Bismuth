@@ -113,7 +113,7 @@ class AntiEntropy[A](
   def sendChangesToAllNeighbors(): Unit = {
     neighbors.foreach { id =>
       prepareDeltaMsg(id) match {
-        case None =>
+        case None      =>
         case Some(msg) =>
           val eitherMsg: Message = Right(msg)
           network.sendMessage(id, writeToArray(eitherMsg))

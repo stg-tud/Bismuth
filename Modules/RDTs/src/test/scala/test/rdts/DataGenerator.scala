@@ -132,7 +132,7 @@ object DataGenerator {
   def badInternalGrowOnlyList[E](using arb: Arbitrary[E]): Arbitrary[GrowOnlyList[E]] = Arbitrary:
     Gen.listOf(arbLww(using arb).arbitrary).map: list =>
       val elems: List[Node.Elem[LastWriterWins[E]]] = list.map(GrowOnlyList.Node.Elem.apply)
-      val pairs = elems.distinct.sortBy(_.value.timestamp).sliding(2).flatMap:
+      val pairs                                     = elems.distinct.sortBy(_.value.timestamp).sliding(2).flatMap:
         case Seq(l, r) => Some(l -> r)
         case _         => None // filters out uneven numbers of elements
       val all =
@@ -168,13 +168,13 @@ object DataGenerator {
   given arbCMultiVersion[E](using arb: Arbitrary[E]): Arbitrary[MultiVersionRegister[E]] = Arbitrary {
     for
       elements <- Gen.listOf(Gen.zip(uniqueDot, arb.arbitrary))
-      removed <- arbDots.arbitrary
+      removed  <- arbDots.arbitrary
     yield MultiVersionRegister(elements.toMap, removed)
   }
 
   given arbEnableWinsFlag: Arbitrary[EnableWinsFlag] = Arbitrary {
     for
-      set <- arbDots.arbitrary
+      set   <- arbDots.arbitrary
       unset <- arbDots.arbitrary
     yield EnableWinsFlag(set, unset)
   }

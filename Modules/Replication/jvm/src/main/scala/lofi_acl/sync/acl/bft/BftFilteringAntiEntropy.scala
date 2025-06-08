@@ -92,7 +92,7 @@ class BftFilteringAntiEntropy[RDT](
   }
 
   @volatile private var stopped = false
-  def stop(): Unit = {
+  def stop(): Unit              = {
     stopped = true
     connectionManager.shutdown()
   }
@@ -139,7 +139,7 @@ class BftFilteringAntiEntropy[RDT](
       case RequestMissingAcl(heads: Set[Signature], knownMissing: Set[Signature]) =>
         // TODO: Save ACL peer state
         val opGraph = syncInstance.currentAcl._1
-        val msgs = knownMissing
+        val msgs    = knownMissing
           .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.encode(sig)) }
           .map[AclDelta[RDT]](delegation => AclDelta(delegation))
         val _ = connectionManager.sendMultiple(sender, msgs.toArray*)
@@ -157,7 +157,7 @@ class BftFilteringAntiEntropy[RDT](
 
         val rdtDots          = rdtDeltas.deltaDots
         val missingRdtDeltas = rdtDots.subtract(remoteRdtDots)
-        val deltas =
+        val deltas           =
           rdtDeltaCopy.retrieveDeltas(missingRdtDeltas).map[RdtDelta[RDT]] { case (dot, (delta, authorAcl)) =>
             RdtDelta(dot, delta, authorAcl, aclOpGraph.heads)
           }.toArray
@@ -182,8 +182,8 @@ class BftFilteringAntiEntropy[RDT](
 
   private def processBacklog(): Unit = {
     // Process backlogged rdt deltas
-    val aclOpGraph                        = syncInstance.currentAcl._1
-    val partialDeltaStoreBeforeProcessing = partialDeltaStore
+    val aclOpGraph                               = syncInstance.currentAcl._1
+    val partialDeltaStoreBeforeProcessing        = partialDeltaStore
     val (processableDeltas, unprocessableDeltas) = deltaMessageBacklog.partition((delta, _) =>
       delta.authorAclContext.union(delta.senderAclContext).forall(aclOpGraph.ops.contains)
     )
@@ -270,7 +270,7 @@ class BftFilteringAntiEntropy[RDT](
   }
 
   private val antiEntropyThread = new Thread {
-    private val rand = Random()
+    private val rand         = Random()
     override def run(): Unit = {
       while !stopped do {
         try {

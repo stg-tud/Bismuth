@@ -61,7 +61,7 @@ object Todolist {
 
 object DTNTestConnector {
   def getConnectorContents() = {
-    val portInput = all.input(all.placeholder := "dtnd ws port").render
+    val portInput     = all.input(all.placeholder := "dtnd ws port").render
     val connectButton = all.button(all.onclick := { () =>
       TodoDataManager.dataManager.addObjectConnection(
         Channel[TodoRepState]("127.0.0.1", portInput.value.toInt, "app1", scala.concurrent.ExecutionContext.global)

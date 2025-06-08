@@ -8,9 +8,8 @@ import rdts.dotted.HasDots
 
 object ConnectionManagerFactory {
 
-  given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]] = HasDots.noDots
+  given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]]       = HasDots.noDots
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
-
 
   var impl: (LocalUid, () => StateType, StateType => Unit) => ConnectionManager[StateType] =
     (replicaId, queryCrdtState, handleStateReceived) =>

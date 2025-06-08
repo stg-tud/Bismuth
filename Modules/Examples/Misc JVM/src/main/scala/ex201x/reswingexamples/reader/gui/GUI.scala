@@ -28,7 +28,7 @@ class GUI(
 
   def top = {
     new MainFrame {
-      val quitAction = swing.Action("Quit") { quit() }
+      val quitAction      = swing.Action("Quit") { quit() }
       val urlDialogAction = swing.Action("Add url") {
         val input = Dialog.showInput(
           null,

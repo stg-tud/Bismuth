@@ -103,7 +103,7 @@ object Tags {
       override def checkExceptionAndRemoval(): Boolean = {
         reevalVal match {
           case Pulse.empty(_) | Pulse.NoChange => false
-          case Pulse.Exceptional(f) =>
+          case Pulse.Exceptional(f)            =>
             throw ObservedException(rendered, s"signal tag attached to $parent observed", f)
           case Pulse.Value(v) =>
             isInDocumentHack(parent)(v)
@@ -113,7 +113,7 @@ object Tags {
       override def execute(): Unit =
         reevalVal match {
           case Pulse.empty(_) | Pulse.NoChange => ()
-          case Pulse.Value(v) =>
+          case Pulse.Value(v)                  =>
             fun(v)
           case Pulse.Exceptional(f) =>
             throw new IllegalStateException("should have aborted earlier", f)

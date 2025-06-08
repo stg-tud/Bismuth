@@ -12,7 +12,7 @@ class SubsumableLockReflection(
     override val guid: Host.GUID,
     val proxy: SubsumableLockProxy
 ) extends SubsumableLock {
-  override def getLockedRoot: Future[LockStateResult0] = proxy.getLockedRoot
+  override def getLockedRoot: Future[LockStateResult0]         = proxy.getLockedRoot
   override def tryLock0(hopCount: Int): Future[TryLockResult0] = {
     if Host.DEBUG then println(s"[${Thread.currentThread().getName}] $this sending remote tryLock request")
     proxy.remoteTryLock().map {

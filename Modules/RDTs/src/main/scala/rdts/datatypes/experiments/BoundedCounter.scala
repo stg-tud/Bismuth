@@ -14,7 +14,7 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
 
   def allocated(id: Uid): Int       = allocations.inner.getOrElse(id, 0)
   def reserved(using LocalUid): Int = reserved(LocalUid.replicaId)
-  def reserved(id: Uid): Int =
+  def reserved(id: Uid): Int        =
     current.reservations.pos.inner.getOrElse(id, 0) - current.reservations.neg.inner.getOrElse(id, 0)
   def available(id: Uid): Int        = reserved(id) - allocated(id)
   def available(using LocalUid): Int = available(LocalUid.replicaId)

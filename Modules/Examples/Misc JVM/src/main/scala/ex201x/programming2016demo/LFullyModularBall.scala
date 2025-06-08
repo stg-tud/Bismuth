@@ -55,7 +55,7 @@ object LFullyModularBall extends Main {
   class BouncingBall(val initVx: Double, val initVy: Double, val diameter: Signal[Int], val reset: Event[Point]) {
     val horizontalBounceSources: Var[List[Event[Any]]] = Var(List())
     val verticalBounceSources: Var[List[Event[Any]]]   = Var(List())
-    val filteredHorizontalBounceSources = horizontalBounceSources.map(_.map(_.recover {
+    val filteredHorizontalBounceSources                = horizontalBounceSources.map(_.map(_.recover {
       case _: IllegalArgumentException => None
     }))
 

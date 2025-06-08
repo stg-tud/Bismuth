@@ -29,7 +29,7 @@ object BroadcastCommunication {
   case class Response(from: Long, to: Long, sessionDescription: SessionDescription) extends BroadcastCommunication
 }
 
-given converterRead[T](using JsonValueCodec[T]): Conversion[MessageBuffer, T] = mb => readFromArray[T](mb.asArray)
+given converterRead[T](using JsonValueCodec[T]): Conversion[MessageBuffer, T]  = mb => readFromArray[T](mb.asArray)
 given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
   v => ArrayMessageBuffer(writeToArray[T](v))
 
@@ -85,7 +85,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S])(using Json
 
     latentConnection.prepare { conn =>
       {
-        case Failure(ex) => errorReporter.fail(ex)
+        case Failure(ex)  => errorReporter.fail(ex)
         case Success(msg) =>
           val communication: BroadcastCommunication = converterRead[BroadcastCommunication].convert(msg)
           Async[Abort].fromCallback {
@@ -143,7 +143,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S])(using Json
 }
 
 def errorReporter: Callback[Any] =
-  case Success(_) =>
+  case Success(_)  =>
   case Failure(ex) =>
     println(s"creating offer failed weirdly?")
     ex.printStackTrace()
@@ -165,7 +165,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
     val answerArea =
       textarea(
         placeholder := "remote session description",
-        oninput := { (ev: UIEvent) =>
+        oninput     := { (ev: UIEvent) =>
           try
             val cs = readFromString(ev.target.asInstanceOf[dom.html.TextArea].value)(using codec)
             println(s"pending resolved, setting connector")
@@ -187,7 +187,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
     def sessionDisplay(sessionDescription: SessionDescription): dom.html.TextArea = {
       textarea(
         readonly := true,
-        onfocus := { (ev: UIEvent) =>
+        onfocus  := { (ev: UIEvent) =>
           ev.target.asInstanceOf[dom.html.TextArea].select()
         },
         writeToString(sessionDescription)(using codec)

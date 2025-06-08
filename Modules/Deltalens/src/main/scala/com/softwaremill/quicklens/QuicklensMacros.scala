@@ -74,10 +74,10 @@ object QuicklensMacros {
       /** adds some path to the current tree */
       def add(symbols: Seq[PathSymbol]): PathTree = {
         this match
-          case PathTree.Empty => symbols.toPathTree
+          case PathTree.Empty          => symbols.toPathTree
           case PathTree.Node(children) =>
             symbols match
-              case Nil => this
+              case Nil           => this
               case symbol :: Nil =>
                 PathTree.Node {
                   if !children.exists(_._1 `equiv` symbol)
@@ -230,7 +230,7 @@ object QuicklensMacros {
 
         val argsMap: Map[Int, Term] = fields.map { (field, trees) =>
           val (fieldMethod, idx) = termAccessorMethodByNameUnsafe(obj, field.name)
-          val resTerm: Term = trees.foldLeft[Term](Select(obj, fieldMethod)) { (term, tree) =>
+          val resTerm: Term      = trees.foldLeft[Term](Select(obj, fieldMethod)) { (term, tree) =>
             mapToCopy(owner, mod, term, tree)
           }
           val namedArg = NamedArg(field.name, resTerm)
@@ -244,7 +244,7 @@ object QuicklensMacros {
         val constructorTree: DefDef   = objSymbol.primaryConstructor.tree.asInstanceOf[DefDef]
         val firstParamListLength: Int = constructorTree.termParamss.headOption.map(_.params).toList.flatten.length
         val fieldsIdxs                = 1.to(firstParamListLength)
-        val args = fieldsIdxs.map { i =>
+        val args                      = fieldsIdxs.map { i =>
           val defaultMethod = bottom.select(symbolMethodByNameUnsafe(objSymbol, "copy$default$" + i.toString))
           argsMap.getOrElse(
             i,
@@ -310,7 +310,7 @@ object QuicklensMacros {
         MethodType(List("x"))(_ => List(f.typeTree.tpe), _ => f.typeTree.tpe)
       )
       val fMethod = termMethodByNameUnsafe(f.givn, f.name)
-      val fun = TypeApply(
+      val fun     = TypeApply(
         Select(f.givn, fMethod),
         List(f.typeTree)
       )
@@ -372,7 +372,7 @@ object QuicklensMacros {
         report.errorAndAbort(unsupportedShapeInfo(tree))
     }
 
-    val focusesTrees: Seq[Tree] = focuses.map(_.asTerm)
+    val focusesTrees: Seq[Tree]     = focuses.map(_.asTerm)
     val paths: Seq[Seq[PathSymbol]] =
       focusesTrees.zip(focuses).map { (tree, focus) =>
         toPath(extractFocus(tree), focus)

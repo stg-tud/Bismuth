@@ -10,7 +10,7 @@ class DotMap[+V /*<: AnyRef*/ ] private (private val content: Map[Uid, IArray[V]
 
   override def removed(dot: Dot): DotMap[V] =
     require(dot.time >= 0 && dot.time <= Int.MaxValue)
-    val idx = dot.time.asInstanceOf[Int]
+    val idx        = dot.time.asInstanceOf[Int]
     val newContent = content.updatedWith(dot.place) {
       case Some(arr) =>
         if idx == (arr.length - 1) then Some(arr.dropRight(1)) // Optimization when removing tail
@@ -24,7 +24,7 @@ class DotMap[+V /*<: AnyRef*/ ] private (private val content: Map[Uid, IArray[V]
     require(dot.time >= 0 && dot.time <= Int.MaxValue)
     given ClassTag[V1] = ct.asInstanceOf[ClassTag[V1]]
     val idx            = dot.time.asInstanceOf[Int]
-    val newContent = content.updatedWith(dot.place) {
+    val newContent     = content.updatedWith(dot.place) {
       case Some(arr) =>
         if idx == arr.length then Some(arr.appended(value))
         else if idx >= arr.length
@@ -74,7 +74,7 @@ class DotMap[+V /*<: AnyRef*/ ] private (private val content: Map[Uid, IArray[V]
     }
 
 object DotMap {
-  def empty[V <: AnyRef: ClassTag]: DotMap[V] = DotMap(Map.empty)
+  def empty[V <: AnyRef: ClassTag]: DotMap[V]                        = DotMap(Map.empty)
   def from[V <: AnyRef: ClassTag](it: Iterable[(Dot, V)]): DotMap[V] = {
     DotMap(
       it.groupMap((dot, v) => dot.place)((dot, v) => dot.time.asInstanceOf[Int] -> v)

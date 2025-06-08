@@ -188,7 +188,7 @@ object CalculusLike {
           // as they have no attached operation in REScala
           // in the calculus they just execute the empty operation
           println(s"reevaluating $r")
-          val oldRstring = r.state.inputs
+          val oldRstring             = r.state.inputs
           val (evaluated, propagate) = r match {
             case r: Derived =>
               Reevaluate.evaluate(r, isReady, transaction)

@@ -21,7 +21,7 @@ class CausalPlusIsTieBreakerIsNonAssociative extends munit.FunSuite {
     override def compare(x: CausalPlus, y: CausalPlus): Int =
       VectorClock.vectorClockOrdering.tryCompare(x.vectorClock, y.vectorClock) match
         case Some(value) => value
-        case None =>
+        case None        =>
           Integer.compare(x.tieBreaker, y.tieBreaker)
   given Lattice[CausalPlus] = Lattice.fromOrdering(using summon)
 

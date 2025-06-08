@@ -134,7 +134,7 @@ trait Disconnectable {
   */
 trait DisconnectableImpl extends Derived with Disconnectable {
   @volatile private var disconnected = false
-  final def disconnect(): Unit = {
+  final def disconnect(): Unit       = {
     disconnected = true
   }
 

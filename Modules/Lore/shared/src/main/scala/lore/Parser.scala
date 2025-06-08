@@ -110,7 +110,7 @@ object Parser {
       parens | fieldAcc | functionCall | number.backtrack | _var
     )
   def evalArithm(seq: (Term, List[(String, Term)])): Term = seq match {
-    case (x, Nil) => x
+    case (x, Nil)                                                    => x
     case (l, (op, x) :: xs) if List("-", "+", "*", "/").contains(op) =>
       val r = evalArithm(x, xs)
       val s = calcSourcePos(l, r)
@@ -161,7 +161,7 @@ object Parser {
 
   val biImplication: P[Term] =
     P.defer(boolTpl(implication, P.string("<==>"))).map {
-      case (left, None) => left
+      case (left, None)        => left
       case (left, Some(right)) =>
         TBImpl(
           left = left,
@@ -172,7 +172,7 @@ object Parser {
 
   val implication: P[Term] =
     P.defer(boolTpl(disjunction, P.string("==>"))).map {
-      case (left, None) => left
+      case (left, None)        => left
       case (left, Some(right)) =>
         TImpl(
           left = left,
@@ -187,7 +187,7 @@ object Parser {
   val equality: P[Term] =
     P.defer(boolTpl(inequality, P.string("==") <* P.char('>').unary_!))
       .map {
-        case (left, None) => left
+        case (left, None)        => left
         case (left, Some(right)) =>
           TEq(
             left = left,
@@ -197,7 +197,7 @@ object Parser {
       }
   val inequality: P[Term] =
     P.defer(boolTpl(boolFactor, P.string("!="))).map {
-      case (left, None) => left
+      case (left, None)        => left
       case (left, Some(right)) =>
         TIneq(
           left = left,
@@ -210,7 +210,7 @@ object Parser {
     parseSeq(factor, P.string(separator).as(separator)).map(evalBoolSeq)
   def evalBoolSeq(seq: (Term, Seq[(String, Term)])): Term =
     seq match {
-      case (root, Nil) => root
+      case (root, Nil)                                            => root
       case (root, (op, x) :: xs) if List("||", "&&").contains(op) =>
         val r = evalBoolSeq(x, xs)
         val s = calcSourcePos(root, r)
@@ -263,7 +263,7 @@ object Parser {
       wsOrNl ~ P.char(',') ~ wsOrNl
     ) <* wsOrNl ~ P.char('}')
   private val triggers: P0[List[NonEmptyList[Term]]] = trigger.repSep0(wsOrNl)
-  val forall: P[TForall] =
+  val forall: P[TForall]                             =
     withSourcePos(
       ((P.string("forall") ~ ws *> quantifierVars) <* wsOrNl ~ P.string(
         "::"
@@ -288,7 +288,7 @@ object Parser {
 
   // reactives
   val reactive: P[TReactive] = P.defer(source | derived)
-  val source: P[TSource] =
+  val source: P[TSource]     =
     withSourcePos(
       P.string("Source") ~ ws ~ P.char('(') ~ wsOrNl *> P.defer(
         term
@@ -318,7 +318,7 @@ object Parser {
   val invariant: P[TInvariant] =
     withSourcePos(P.string("invariant") ~ wsOrNl *> booleanExpr).map {
       case (b: TBoolean, s) => TInvariant(b, sourcePos = Some(s))
-      case (x, s) =>
+      case (x, s)           =>
         throw ParsingException(
           s"Expected a boolean expression as invariant body but got: $x at $s"
         )
@@ -336,8 +336,8 @@ object Parser {
       }
 
   // object orientation (e.g. dot syntax)
-  private val args      = P.defer0(term.repSep0(P.char(',') ~ wsOrNl))
-  private val objFactor = P.defer(interaction | functionCall | _var)
+  private val args       = P.defer0(term.repSep0(P.char(',') ~ wsOrNl))
+  private val objFactor  = P.defer(interaction | functionCall | _var)
   val fieldAcc: P[TFAcc] =
     P.defer(
       objFactor.soft ~ withSourcePos(round | curly | field).rep
@@ -371,7 +371,7 @@ object Parser {
       calls: List[((callType, ID, List[Term]), SourcePos)]
   ): TFAcc =
     (obj, calls) match {
-      case (o: TFAcc, Nil) => o
+      case (o: TFAcc, Nil)                                     => o
       case (o, ((callType.curly, field, b :: Nil), s) :: rest) =>
         val pos = Some(SourcePos(start = o.sourcePos.get.start, end = s.end))
         evalFieldAcc(
@@ -408,7 +408,7 @@ object Parser {
       .map {
         case (("assert", t), s) => TAssert(t, sourcePos = Some(s))
         case (("assume", t), s) => TAssume(t, sourcePos = Some(s))
-        case sth =>
+        case sth                =>
           throw ParsingException(s"not a valid assertion/assumption: $sth")
       }
 
@@ -424,7 +424,7 @@ object Parser {
   def rewriteLambda(params: List[TVar], right: Term): TArrow =
     (params, right) match {
       case (Nil, r: TArrow) => r
-      case (x :: xs, r) =>
+      case (x :: xs, r)     =>
         val s = calcSourcePos(params.head, right)
         rewriteLambda(xs, TArrow(x, r, sourcePos = s))
       case (Nil, r) => throw ParsingException(s"Not a valid lambda term: $r")

@@ -17,7 +17,7 @@ object AutomergyOpGraphLWW {
   case class Entry[T](op: Op[T], predecessors: Set[Id])
 
   case class OpGraph[T](elements: Map[Id, Entry[T]]) {
-    lazy val predecessors: Set[Id] = elements.values.flatMap(_.predecessors).toSet
+    lazy val predecessors: Set[Id]    = elements.values.flatMap(_.predecessors).toSet
     lazy val heads: Map[Id, Entry[T]] =
       elements.filter((k, _) => !predecessors.contains(k))
     lazy val latest: Option[Id] = elements.keysIterator.reduceOption(Lattice.merge[CausalTime])
@@ -25,8 +25,8 @@ object AutomergyOpGraphLWW {
     def values: List[T] =
       def getTerminals(cur: Map[Id, Entry[T]]): List[T] =
         cur.toList.sortBy(_._1)(using CausalTime.ordering.reverse).map(_._2.op).flatMap:
-          case Op.set(v) => List(v)
-          case Op.del    => Nil
+          case Op.set(v)       => List(v)
+          case Op.del          => Nil
           case Op.undo(anchor) => elements.get(anchor).toList.flatMap: pred =>
               getTerminals(elements.filter((k, _) => pred.predecessors.contains(k)))
 

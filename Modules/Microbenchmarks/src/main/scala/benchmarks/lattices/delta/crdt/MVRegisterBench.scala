@@ -20,7 +20,7 @@ class MVRegisterBench {
   @Param(Array("0", "1", "10", "100", "1000"))
   var numWrites: Int = scala.compiletime.uninitialized
 
-  given Lattice[Int]                                    = math.max
+  given Lattice[Int]                                   = math.max
   var reg: NamedDeltaBuffer[MultiVersionRegister[Int]] = scala.compiletime.uninitialized
 
   @Setup

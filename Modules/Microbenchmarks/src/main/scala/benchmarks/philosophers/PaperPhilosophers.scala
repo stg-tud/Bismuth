@@ -138,7 +138,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
   }
 
   def eatOnce(seating: Int) = {
-    val bo = new Backoff()
+    val bo                           = new Backoff()
     @tailrec def retryEating(): Unit = {
       maybeEat(seating)
       if hasEaten(seating) then {
@@ -158,7 +158,7 @@ trait EventPyramidTopper {
   self: PaperPhilosophers =>
   import engine.*
 
-  val anySuccess = successes.reduce(_ || _)
+  val anySuccess                = successes.reduce(_ || _)
   val successCount: Signal[Int] =
     anySuccess.fold(0) { (acc, _) => acc + 1 }(using CreationTicket.fromName(s"successCount"))
   override def total: Int = successCount.readValueOnce
@@ -177,7 +177,7 @@ trait IndividualCounts {
 trait NoTopper extends IndividualCounts {
   self: PaperPhilosophers =>
 
-  val locks = Array.fill(size) { new ReentrantLock() }
+  val locks                                            = Array.fill(size) { new ReentrantLock() }
   override def manuallyLocked[T](idx: Int)(f: => T): T = {
     val (lock1, lock2, lock3) =
       if idx == 0 then {
@@ -258,7 +258,7 @@ object PaperPhilosophers {
       }
 
     @volatile var abort: Boolean = false
-    def driver(idx: Int): Int = {
+    def driver(idx: Int): Int    = {
       try {
         var localCount = 0
         while !abort && continue() do {
@@ -280,7 +280,7 @@ object PaperPhilosophers {
 
     while threads.exists(!_.isCompleted) && !abort && continue() do { Thread.sleep(10) }
     val timeout = System.currentTimeMillis() + 3000
-    val scores = threads.map { t =>
+    val scores  = threads.map { t =>
       Try { Await.result(t, (timeout - System.currentTimeMillis()).millis) }
     }
     executor.shutdown()

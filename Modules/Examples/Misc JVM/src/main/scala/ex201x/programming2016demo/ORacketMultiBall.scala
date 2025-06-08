@@ -43,7 +43,7 @@ object ORacketMultiBall extends Main {
     def collisionWith(collider: Shape): Event[Any] = {
       val collisionBoxHeight = Signal { height.value + collider.hitboxHeight.value }
       val collisionBoxWidth  = Signal { width.value + collider.hitboxWidth.value }
-      val shapeInsideRacket = Signal {
+      val shapeInsideRacket  = Signal {
         (posX.value - collisionBoxWidth.value / 2 < collider.centerX.value) &&
         (posX.value + collisionBoxWidth.value / 2 > collider.centerX.value) &&
         (posY.value - collisionBoxHeight.value / 2 < collider.centerY.value) &&

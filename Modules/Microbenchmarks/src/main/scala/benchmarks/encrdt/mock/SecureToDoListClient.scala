@@ -23,7 +23,7 @@ class SecureToDoListClient(
 ) extends TrustedReplica[ToDoMapLattice](replicaId1, crdt.merge, aead) with ToDoListClient {
 
   private val uuidToDeltaGroupMap: mutable.Map[UUID, DecryptedDeltaGroup[ToDoMapLattice]] = mutable.Map.empty
-  private var cleanupDeltaGroup: DecryptedDeltaGroup[ToDoMapLattice] =
+  private var cleanupDeltaGroup: DecryptedDeltaGroup[ToDoMapLattice]                      =
     DecryptedDeltaGroup(ObserveRemoveMap.empty, Dots.empty)
 
   private var _disseminatedDataInBytes: Long = 0
@@ -49,7 +49,7 @@ class SecureToDoListClient(
     val _disseminatedBefore = _disseminatedDataInBytes
 
     crdt.get(uuid).map(_.copy(completed = true)) match
-      case None =>
+      case None          =>
       case Some(updated) =>
         val delta = crdt.putDelta(
           uuid,

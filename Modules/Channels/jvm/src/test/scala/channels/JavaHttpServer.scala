@@ -16,7 +16,7 @@ object JavaHttpServerTest {
     val conn = SSEServer(handler => server.createContext("/channel", handler))
 
     conn.prepare(inc => msg => println(msg)).run(using Abort()):
-      case Failure(ex) => ex.printStackTrace()
+      case Failure(ex)   => ex.printStackTrace()
       case Success(conn) =>
         println(s"received connection, replying")
         conn.send("yay!".convert).run(using Abort())(res => println(res))

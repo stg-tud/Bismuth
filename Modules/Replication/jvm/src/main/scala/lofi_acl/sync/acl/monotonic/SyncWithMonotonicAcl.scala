@@ -33,7 +33,7 @@ class SyncWithMonotonicAcl[RDT](
 
   private val localPublicId = localIdentity.getPublic
 
-  def state: RDT = rdtReference.get()._2
+  def state: RDT                                         = rdtReference.get()._2
   private val rdtReference: AtomicReference[(Dots, RDT)] = AtomicReference(
     initialRdt.allDots ->
     initialRdt.prefix.merge(initialRdt.deltas.foldLeft(bottom.empty) { case (l, (_, r)) => l.merge(r) })

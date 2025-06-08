@@ -27,7 +27,7 @@ object Invitation {
       joinAddress: String
   ): (PublicIdentity, Invitation) = {
     val createdPrincipalId = Ed25519Util.generateNewKeyPair
-    val publicIdentity =
+    val publicIdentity     =
       PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(createdPrincipalId.getPublic))
     (publicIdentity, Invitation(rootOfTrust, createdPrincipalId, inviter, joinAddress))
   }

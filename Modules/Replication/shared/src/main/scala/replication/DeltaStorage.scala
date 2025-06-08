@@ -26,7 +26,9 @@ object DeltaStorage {
     case Merging(blockSize: Int)
   }
 
-  def getStorage[State: JsonValueCodec](t: Type, getState: () => State)(using Lattice[Payload[State]]): DeltaStorage[State] = t match {
+  def getStorage[State: JsonValueCodec](t: Type, getState: () => State)(using
+      Lattice[Payload[State]]
+  ): DeltaStorage[State] = t match {
     case Type.Discarding(maxSize) => DiscardingHistory(maxSize)
     case Type.State               => StateDeltaStorage[State](getState)
     case Type.KeepAll             => KeepAllHistory[State]()

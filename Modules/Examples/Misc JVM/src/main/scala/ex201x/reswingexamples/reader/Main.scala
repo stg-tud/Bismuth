@@ -18,7 +18,7 @@ object Main extends App {
   val fetcher = new Fetcher(checker.checkedURL.fold(Set.empty[URL])(_ + _))
   val parser  = new XmlParser
   val store   = new FeedStore(parser.channelParsed, parser.itemParsed)
-  val app = new GUI(
+  val app     = new GUI(
     store,
     (store.itemAdded map { (x: RSSItem) => // #EF
       (x.srcChannel map (_.title) getOrElse "<unknown>") + ": " + x.title

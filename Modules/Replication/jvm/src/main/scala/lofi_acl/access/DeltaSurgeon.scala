@@ -57,7 +57,7 @@ object DeltaSurgeon {
     val elementSurgeons =
       summonAll[Tuple.Map[m.MirroredElemTypes, DeltaSurgeon]].toIArray.map(_.asInstanceOf[DeltaSurgeon[Any]])
     inline m match
-      case sumMirror: Mirror.SumOf[T] => SumTypeDeltaSurgeon[T](elementLabels, elementSurgeons)(using sumMirror)
+      case sumMirror: Mirror.SumOf[T]        => SumTypeDeltaSurgeon[T](elementLabels, elementSurgeons)(using sumMirror)
       case singletonMirror: Mirror.Singleton =>
         given bottom: Bottom[T] = Bottom.provide(singletonMirror.fromProduct(null))
         ProductTypeSurgeon[T](bottom, elementLabels, IArray.empty, elementSurgeons)(using singletonMirror)
@@ -156,7 +156,7 @@ object DeltaSurgeon {
   given dotsDeltaSurgeon: DeltaSurgeon[Dots]                                   = ofTerminalValue[Dots]
   given dottedDeltaSurgeon[T: {DeltaSurgeon, Bottom}]: DeltaSurgeon[Dotted[T]] = DeltaSurgeon.derived
   given obremDeltaSurgeon[T: {DeltaSurgeon, Bottom}]: DeltaSurgeon[Obrem[T]]   = DeltaSurgeon.derived
-  given optionSurgeon[T: {Bottom, DeltaSurgeon}]: DeltaSurgeon[Option[T]] = {
+  given optionSurgeon[T: {Bottom, DeltaSurgeon}]: DeltaSurgeon[Option[T]]      = {
     given noneBottom: Bottom[None.type] = Bottom.provide(None) // TODO: Bottom for singletons should be derivable
     given noneDeltaSurgeon: DeltaSurgeon[None.type] = DeltaSurgeon.derived
     given someBottom: Bottom[Some[T]]               = Bottom.derived

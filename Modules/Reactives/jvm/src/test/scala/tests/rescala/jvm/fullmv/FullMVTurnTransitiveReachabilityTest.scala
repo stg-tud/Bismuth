@@ -75,7 +75,7 @@ class FullMVTurnTransitiveReachabilityTest extends munit.FunSuite {
   ): Map[Int, Set[Int]] = {
     val fromTree = trees(from)
     val toTree   = trees(to)
-    val res =
+    val res      =
       if !fromTree.isTransitivePredecessor(toTree) then {
         Await.result(fromTree.addPredecessor(toTree.selfNode), Duration.Zero)
         addedEdges + (from -> (addedEdges(from) + to))

@@ -82,11 +82,11 @@ abstract class Animal(using _world: World) extends BoardElement {
   def reachedState(target: BoardElement): AnimalState
 
   protected def nextAction(pos: Pos): AnimalState = {
-    val neighbors = world.board.neighbors(pos)
-    val food      = neighbors.collectFirst(findFood.readValueOnce)
+    val neighbors               = world.board.neighbors(pos)
+    val food                    = neighbors.collectFirst(findFood.readValueOnce)
     val nextAction: AnimalState = food match {
       case Some(target) => reachedState(target) // I'm near food, eat it!
-      case None => // I have to look for food nearby
+      case None         =>                      // I have to look for food nearby
         world.board.nearby(pos, Animal.ViewRadius).collectFirst(findFood.readValueOnce) match {
           case Some(target) =>
             val destination = world.board.getPosition(target)

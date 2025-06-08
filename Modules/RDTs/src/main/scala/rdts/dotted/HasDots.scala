@@ -101,7 +101,7 @@ object HasDots {
         val res = pm.fromProduct(new Product {
           def canEqual(that: Any): Boolean = false
           def productArity: Int            = children.size
-          def productElement(i: Int): Any =
+          def productElement(i: Int): Any  =
             children(i).removeDots(a.productElement(i))(dots).getOrElse {
               bottoms.productElement(i).asInstanceOf[Bottom[Any]].empty
             }

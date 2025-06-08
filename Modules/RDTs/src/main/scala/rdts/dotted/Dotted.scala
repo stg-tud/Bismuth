@@ -89,8 +89,10 @@ object Dotted {
 
         val compacted   = compact(deltas.toList, Nil)
         val presentDots = compacted.iterator.map(_.context).foldLeft(Dots.empty)(_ `union` _)
-        assert(a.context.contains(presentDots),
-          s"fantasized new dots (${presentDots} not a subset of ${a.context}), this likely means a bug elsewhere.\n\tdecomposition was ${a.data.decomposed.toList}")
+        assert(
+          a.context.contains(presentDots),
+          s"fantasized new dots (${presentDots} not a subset of ${a.context}), this likely means a bug elsewhere.\n\tdecomposition was ${a.data.decomposed.toList}"
+        )
         val removed = a.context `subtract` presentDots
         val empty   = Bottom[A].empty
         compacted concat removed.decomposed.flatMap(dots => Option.when(!dots.isEmpty)(Dotted(empty, dots)))
@@ -110,14 +112,14 @@ object Dotted {
 
   // combines entries with overlapping dots
   def compact[T](rem: List[Dotted[T]], acc: List[Dotted[T]])(using dl: Lattice[T]): List[Dotted[T]] = rem match
-    case Nil => acc
+    case Nil       => acc
     case h :: tail =>
       def overlap(e: Dotted[T]): Boolean = !h.context.disjunct(e.context)
 
       val (tin, tother)     = tail.partition(overlap)
       val (accin, accother) = acc.partition(overlap)
       val all               = tin ++ accin
-      val compacted = all.foldLeft(h): (l, r) =>
+      val compacted         = all.foldLeft(h): (l, r) =>
         Dotted(dl.merge(l.data, r.data), l.context `union` r.context)
 
       // have to repeat the check with compacted, until it did not grow

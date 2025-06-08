@@ -130,7 +130,7 @@ object Pulse {
     */
   def diffPulse[P](newValue: P, oldPulse: Pulse[P]): Pulse[P] =
     oldPulse match {
-      case NoChange => Value(newValue)
+      case NoChange        => Value(newValue)
       case Value(oldValue) =>
         if newValue == oldValue then NoChange
         else Value(newValue)
@@ -149,7 +149,7 @@ object Pulse {
 
   /** the pulse representing an empty signal */
   object empty {
-    def apply(info: ReInfo) = Exceptional(EmptySignalControlThrowable(info))
+    def apply(info: ReInfo)                            = Exceptional(EmptySignalControlThrowable(info))
     def unapply(exceptional: Pulse[?]): Option[ReInfo] = exceptional match
       case Exceptional(EmptySignalControlThrowable(reSource)) => Some(reSource)
       case _                                                  => None

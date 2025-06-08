@@ -36,7 +36,7 @@ case class MultiPaxos[A](
           if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
       case _ => throw new Error("Inconsistent Paxos State")
 
-  def read: List[A] = log.toList.sortBy(_._1).map(_._2)
+  def read: List[A]                               = log.toList.sortBy(_._1).map(_._2)
   def readDecisionsSince(time: Time): Iterable[A] =
     NumericRange(time, rounds.counter, 1L).view.flatMap(log.get)
 

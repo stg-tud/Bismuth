@@ -17,9 +17,8 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 class ORMapBench {
 
-  given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]] = HasDots.noDots
+  given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]]       = HasDots.noDots
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
-
 
   @Param(Array("1", "10", "100", "1000"))
   var numEntries: Int = scala.compiletime.uninitialized
@@ -28,7 +27,7 @@ class ORMapBench {
 
   var map: SUT = scala.compiletime.uninitialized
 
-  given LocalUid = LocalUid.predefined("a")
+  given LocalUid                = LocalUid.predefined("a")
   given HasDots[EnableWinsFlag] = HasDots.noDots
 
   @Setup

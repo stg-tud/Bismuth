@@ -143,13 +143,13 @@ object Filter:
       permission match
         case PermissionTree(ALLOW, _)                              => delta
         case PermissionTree(PARTIAL, children) if children.isEmpty => bottom.empty
-        case PermissionTree(PARTIAL, children) =>
+        case PermissionTree(PARTIAL, children)                     =>
           val ordinal     = sm.ordinal(delta)
           val elementName = elementNames(ordinal)
           children.getOrElse(elementName, children.getOrElse("*", PermissionTree.empty)) match
             case PermissionTree(ALLOW, _)                              => delta
             case PermissionTree(PARTIAL, children) if children.isEmpty => bottom.empty
-            case childPerm @ PermissionTree(PARTIAL, children) =>
+            case childPerm @ PermissionTree(PARTIAL, children)         =>
               elementFilters(ordinal).filter(delta, childPerm).asInstanceOf[T]
 
   given dotsFilter: Filter[Dots] with
@@ -157,10 +157,10 @@ object Filter:
       permission match
         case PermissionTree(ALLOW, _)                              => delta
         case PermissionTree(PARTIAL, children) if children.isEmpty => Dots.empty
-        case PermissionTree(PARTIAL, perms) =>
+        case PermissionTree(PARTIAL, perms)                        =>
           Dots(delta.internal.flatMap((uid, ranges) =>
             perms.get(uid.delegate) match
-              case Some(PermissionTree(ALLOW, _)) => Some(uid -> ranges)
+              case Some(PermissionTree(ALLOW, _))                => Some(uid -> ranges)
               case Some(PermissionTree(PARTIAL, dotPermissions)) =>
                 val allowedRanges = ArrayRanges.from(
                   dotPermissions.flatMap { (timeAsString, perm) =>
@@ -192,7 +192,7 @@ object Filter:
         permissionTree.children.flatMap {
           case (uid, PermissionTree(ALLOW, _))                              => Some(uid -> PermissionTree.allow)
           case (uid, PermissionTree(PARTIAL, dotPerms)) if dotPerms.isEmpty => None
-          case (uid, PermissionTree(PARTIAL, dotPerms)) =>
+          case (uid, PermissionTree(PARTIAL, dotPerms))                     =>
             dotPerms.flatMap {
               case (time, PermissionTree(ALLOW, _))   => Some(time -> PermissionTree.allow)
               case (time, PermissionTree(PARTIAL, _)) => None

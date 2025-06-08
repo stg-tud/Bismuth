@@ -12,7 +12,7 @@ import scala.collection.mutable
 import scala.util.Random
 
 object EWFlagGenerators {
-  given HasDots[EnableWinsFlag] = HasDots.noDots
+  given HasDots[EnableWinsFlag]                            = HasDots.noDots
   def genEWFlag: Gen[AntiEntropyContainer[EnableWinsFlag]] =
     for
       nEnable  <- Gen.posNum[Int]

@@ -41,7 +41,7 @@ object SealedTestData {
   case class Cat(name: String)  extends LeggedPet
   case class Dog(name: String)  extends LeggedPet
 
-  val pets = List[Pet](Fish("Finn"), Cat("Catia"), Dog("Douglas"))
+  val pets       = List[Pet](Fish("Finn"), Cat("Catia"), Dog("Douglas"))
   val juniorPets =
     List[Pet](Fish("Finn, Jr."), Cat("Catia, Jr."), Dog("Douglas, Jr."))
 }

@@ -17,7 +17,7 @@ case class RaftState[T](
     maxTerm: Int,
     leader: Uid
   ) = {
-    val grouped = leaderVotes.groupBy(v => (v.term, v.leader))
+    val grouped          = leaderVotes.groupBy(v => (v.term, v.leader))
     val (cterm, cleader) = Try {
       grouped.iterator
         .map { case (k, v) => (k, v.size) }

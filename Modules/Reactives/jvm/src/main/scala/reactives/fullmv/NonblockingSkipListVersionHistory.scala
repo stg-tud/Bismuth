@@ -111,7 +111,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
 
     def isZeroCounters: Boolean = pending == 0 && changed == 0
     def isStable: Boolean       = previousWriteIfStable != null
-    def isFinal: Boolean =
+    def isFinal: Boolean        =
       value match {
         case Unwritten     => true
         case Written(_, _) => true
@@ -837,7 +837,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
   def dynamicBefore(txn: T): V =
     try {
       val selfOrFinalPredecessor = ensureDynamicReadVersion(txn)
-      val res =
+      val res                    =
         if !selfOrFinalPredecessor.isStable then {
           sleepForVersionProperty(
             NonblockingSkipListVersionHistory.stableSleeperUpdate,
@@ -873,7 +873,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
     if version.addSleeper(sleeperUpdater) then {
       ForkJoinPool.managedBlock(new ManagedBlocker() {
         override def isReleasable: Boolean = check(version)
-        override def block(): Boolean = {
+        override def block(): Boolean      = {
           if NonblockingSkipListVersionHistory.DEBUG || FullMVUtil.DEBUG then
             println(s"[${Thread.currentThread().getName}] parking for $label $version.")
           val timeBefore = System.nanoTime()
@@ -935,7 +935,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
   def dynamicAfter(txn: T): V =
     try {
       val selfOrFinalPredecessor = ensureDynamicReadVersion(txn)
-      val res =
+      val res                    =
         if selfOrFinalPredecessor.txn == txn then {
           if !selfOrFinalPredecessor.isFinal then {
             sleepForVersionProperty(
@@ -1075,7 +1075,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
       latestStableAndFirstFrame: (QueuedVersion, QueuedVersion)
   ): (List[T], Option[T]) = {
     val maybeFirstFrame = latestStableAndFirstFrame._2
-    val frame =
+    val frame           =
       if maybeFirstFrame != null then {
         // TODO in distributed, test if we can turn this into a positive lessThanAssumingNoRaceConditions(txn, maybeFirstFrame.txn).
 //      assert(txn != maybeFirstFrame.txn && !txn.isTransitivePredecessor(maybeFirstFrame.txn), s"$txn must not retrofit in the future (firstFrame was $maybeFirstFrame).\r\nSource (this) state is: $this\r\nSink $sink state is: ${sink.asInstanceOf[rescala.core.Reactive[FullMVStruct]].state}\r\n, readTracker says ${perThreadReadTracker.get()}")
@@ -1121,7 +1121,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
 //    checkFrames(successorWrittenVersions)
 
     var current = firstFrame
-    val res = successorWrittenVersions.filter { txn =>
+    val res     = successorWrittenVersions.filter { txn =>
       val version =
         if current.txn == txn then {
           // can only occur for successorWrittenVersions.head
@@ -1145,7 +1145,7 @@ class NonblockingSkipListVersionHistory[V, T <: FullMVTurn](init: T, val valuePe
     }
 
     if maybeSuccessorFrame.isDefined then {
-      val txn = maybeSuccessorFrame.get
+      val txn     = maybeSuccessorFrame.get
       val version =
         if current.txn == txn then {
           // can only occur if successorWrittenVersions.isEmpty

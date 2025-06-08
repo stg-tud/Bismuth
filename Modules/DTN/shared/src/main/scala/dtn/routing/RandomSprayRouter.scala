@@ -91,7 +91,7 @@ class RandomSprayRouter(
     packet.bndl.other_blocks.collectFirst {
       case x: PreviousNodeBlock => x
     } match {
-      case None => println("received incoming bundle without previous node block. ignoring")
+      case None                      => println("received incoming bundle without previous node block. ignoring")
       case Some(previous_node_block) => {
         delivered.get(packet.bndl.id) match {
           case null =>

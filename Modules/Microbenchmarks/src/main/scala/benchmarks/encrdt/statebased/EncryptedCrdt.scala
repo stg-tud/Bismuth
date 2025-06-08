@@ -60,7 +60,7 @@ object EncryptedState {
 case class DecryptedState[T](state: T, versionVector: VectorClock) {
   def encrypt(aead: Aead)(using tJsonCodec: JsonValueCodec[T]): EncryptedState = {
     val serialVectorClock = writeToArray(versionVector)
-    val stateCipherText = aead.encrypt(
+    val stateCipherText   = aead.encrypt(
       writeToArray(state),
       serialVectorClock
     )

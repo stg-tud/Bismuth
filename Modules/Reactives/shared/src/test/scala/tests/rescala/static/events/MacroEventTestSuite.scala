@@ -5,8 +5,8 @@ class MacroEventTestSuite extends munit.FunSuite {
   {
 
     test("simple") {
-      val ev1 = Evt[Int]()
-      val v1  = Var(8)
+      val ev1           = Evt[Int]()
+      val v1            = Var(8)
       val snapshotEvent = Event {
         ev1.value.map(i => i + v1.value)
       }

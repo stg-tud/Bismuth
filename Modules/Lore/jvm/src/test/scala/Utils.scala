@@ -22,7 +22,7 @@ class ParserSuite extends FunSuite {
   ): Unit =
     parser.parseAll(input) match {
       case Left(error) => fail(error.show)
-      case Right(ast) =>
+      case Right(ast)  =>
         assertEquals(
           traverseFromNode(ast, sourcePosLens.replace(None)),
           result
@@ -38,7 +38,7 @@ class ParserSuite extends FunSuite {
   ): Unit =
     parser.parseAll(input) match {
       case Left(error) => fail(error.show)
-      case Right(ast) =>
+      case Right(ast)  =>
         assertEquals(ast, result)
     }
 }

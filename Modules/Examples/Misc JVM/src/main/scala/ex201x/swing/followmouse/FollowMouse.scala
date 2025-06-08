@@ -46,7 +46,7 @@ class FollowMouse {
   stateChanged observe { _ => frame.repaint() }
 
   // drawing code
-  def top = frame
+  def top              = frame
   val frame: MainFrame = new MainFrame {
     title = "Rotating around the mouse"
     resizable = false

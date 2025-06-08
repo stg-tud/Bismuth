@@ -3,11 +3,11 @@ package ex201x.reswingexamples.texteditor
 class LineIterator(it: Iterator[Char]) extends Iterator[String] {
   private var blank            = !it.hasNext
   private var ch: Option[Char] = None
-  private def nextChar =
+  private def nextChar         =
     if ch.nonEmpty then { val c = ch.get; ch = None; c }
     else it.next()
 
-  def hasNext = blank || !ch.isEmpty || it.hasNext
+  def hasNext        = blank || !ch.isEmpty || it.hasNext
   def next(): String = {
     if blank then { blank = false; return "" }
 

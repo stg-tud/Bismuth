@@ -105,7 +105,7 @@ object ViperBackend {
     }
     def insertTypes: Term => Term = {
       case t: TArgT => TArgT(t.name, replaceType(t._type))
-      case t: TAbs =>
+      case t: TAbs  =>
         TAbs(t.name, replaceType(t._type), t.body)
       case TInteraction(rt, at, m, r, en, ex, _, _) =>
         TInteraction(replaceType(rt), replaceType(at), m, r, en, ex)
@@ -125,7 +125,7 @@ object ViperBackend {
     // step 2: turn references to derived reactives to macro calls
     def transformer: Term => Term = {
       case t: TVar if ctx2.derived.contains(t.name) =>
-        val (derived, _) = ctx2.graph(t.name)
+        val (derived, _)  = ctx2.graph(t.name)
         val usedReactives =
           uses(derived).filter(r => ctx2.graph.keys.toSet.contains(r))
         TFunC(t.name, usedReactives.toList.sorted.map(TVar(_)))
@@ -250,7 +250,7 @@ object ViperBackend {
         s"ensures ${expressionToViper(insertArgs(interaction.modifies, argNames, p))}"
       )
 
-    val invariantsNumbered = ctx.invariants.zip(1 to ctx.invariants.length + 1)
+    val invariantsNumbered    = ctx.invariants.zip(1 to ctx.invariants.length + 1)
     val overlappingInvariants =
       OverlapAnalysis.overlappingInvariants(interaction)
     val relevantInvariants: Seq[String] =
@@ -313,7 +313,7 @@ object ViperBackend {
     // collect explicitly mentioned source reactives
     val mentioned = uses(interaction).filter(ctx.sources.keySet.contains)
     val writes    = interaction.modifies
-    val reads =
+    val reads     =
       (overlappingInvariants.flatMap(
         ctx.reactivesPerInvariant(_)
       ) ++ mentioned) -- writes
@@ -392,7 +392,7 @@ object ViperBackend {
   private def typeToViper(t: Type)(using ctx: CompilationContext): String =
     t match {
       // replace type aliases
-      case SimpleType(name, Nil) => name
+      case SimpleType(name, Nil)       => name
       case SimpleType("Source", inner) =>
         s"${inner.map(typeToViper).mkString(", ")}"
       case SimpleType(name, inner) =>
@@ -425,10 +425,10 @@ object ViperBackend {
             case t: TInSet => "in"
           }
           s"${expressionToViper(b.left)} $operator ${expressionToViper(b.right)}"
-        case t: TVar   => t.name
-        case t: TTrue  => "true"
-        case t: TFalse => "false"
-        case t: TNeg   => s"!${expressionToViper(t.body)}"
+        case t: TVar        => t.name
+        case t: TTrue       => "true"
+        case t: TFalse      => "false"
+        case t: TNeg        => s"!${expressionToViper(t.body)}"
         case t: TQuantifier =>
           val varString =
             t.vars
@@ -482,9 +482,9 @@ object ViperBackend {
         case t: TAbs =>
           s"""|var ${t.name}: ${typeToViper(t._type)}
               |${t.name} := ${expressionToViper(t.body)}""".stripMargin
-        case t: TSeq    => t.body.map(expressionToViper).toList.mkString("\n")
-        case t: TAssert => s"assert ${expressionToViper(t.body)}"
-        case t: TAssume => s"assume ${expressionToViper(t.body)}"
+        case t: TSeq         => t.body.map(expressionToViper).toList.mkString("\n")
+        case t: TAssert      => s"assert ${expressionToViper(t.body)}"
+        case t: TAssume      => s"assume ${expressionToViper(t.body)}"
         case t: TViperImport =>
           s"import \"${t.path.toString().replace("\\", "/")}\""
       }

@@ -55,7 +55,7 @@ class ReComboBox[A](
     { items =>
       val model = javaPeer.getModel match {
         case model: ReComboBox.ReComboBoxModel[A] => model
-        case _ =>
+        case _                                    =>
           val model = new ReComboBox.ReComboBoxModel[A]
           javaPeer `setModel` model
           modelChanged()
@@ -114,8 +114,8 @@ object ReComboBox {
     def getSize              = items.size
     def getItems             = items
 
-    private var selected: AnyRef = scala.compiletime.uninitialized
-    def getSelectedItem: AnyRef  = selected
+    private var selected: AnyRef            = scala.compiletime.uninitialized
+    def getSelectedItem: AnyRef             = selected
     def setSelectedItem(item: AnyRef): Unit = {
       if
         (item == null || (items contains item)) &&

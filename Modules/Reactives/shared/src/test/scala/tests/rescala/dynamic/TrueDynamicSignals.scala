@@ -85,7 +85,7 @@ class TrueDynamicSignals extends FunSuite {
       def sig(using ct: CreationTicket[BundleState]) = Signal { v.value }
     }
 
-    val evt = Evt[Int]()
+    val evt     = Evt[Int]()
     val testsig = Signal.dynamic {
       obj.sig.value + (evt `hold` -1).value
     }
@@ -174,7 +174,7 @@ class TrueDynamicSignals extends FunSuite {
     val ifTrue        = Var(0)
     val ifFalse       = Var(10)
     var reevaluations = 0
-    val s = Signal.dynamic(condition) { (dt: DynamicTicket[BundleState]) =>
+    val s             = Signal.dynamic(condition) { (dt: DynamicTicket[BundleState]) =>
       reevaluations += 1
       if dt.depend(condition) then dt.depend(ifTrue) else dt.depend(ifFalse)
     }
@@ -229,7 +229,7 @@ class TrueDynamicSignals extends FunSuite {
     val v0 = Var("level 0")
     val v3 = v0.map(_ => "level 1").map(_ => "level 2").map(_ => "level 3")
 
-    val condition = Var(false)
+    val condition                                         = Var(false)
     val `dynamic signal changing from level 1 to level 4` = Signal.dynamic(condition) { t =>
       if t.depend(condition) then t.depend(v3) else t.depend(v0)
     }

@@ -11,7 +11,7 @@ class FileConnection[T](path: Path)(using JsonValueCodec[ProtocolMessage[T]])
     extends LatentConnection[ProtocolMessage[T]] {
 
   class InnerConnection(peerFun: => Callback[ProtocolMessage[T]]) extends channels.Connection[ProtocolMessage[T]] {
-    lazy val peer = peerFun
+    lazy val peer                                           = peerFun
     def send(message: ProtocolMessage[T]): Async[Any, Unit] = Async.fromCallback {
       message match
         case ProtocolMessage.Request(sender, knows) =>

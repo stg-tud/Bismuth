@@ -23,7 +23,7 @@ trait TopoBundle {
     var discovered              = false
     var dirty                   = false
     var done                    = false
-    def reset(v: V): Unit = {
+    def reset(v: V): Unit       = {
       discovered = false
       dirty = false
       done = false
@@ -109,7 +109,7 @@ trait TopoBundle {
         if !idle then throw new IllegalStateException("Scheduler is not reentrant")
         idle = false
         val afterCommitObservers: ListBuffer[Observation] = ListBuffer.empty
-        val res = {
+        val res                                           = {
           try {
             val creation    = new TopoInitializer(afterCommitObservers)
             val transaction = TopoTransaction(creation)
@@ -117,7 +117,7 @@ trait TopoBundle {
               // admission
               val admissionTicket: AdmissionTicket[State] = new AdmissionTicket[State](transaction, initialWrites)
               val admissionResult                         = admissionPhase(admissionTicket)
-              val sources = admissionTicket.initialChanges.values.collect {
+              val sources                                 = admissionTicket.initialChanges.values.collect {
                 case iv if iv.writeValue(iv.source.state.value, iv.source.state.value = _) => iv.source
               }.toSeq
 
@@ -201,7 +201,7 @@ trait TopoBundle {
         } else false
       }
       glitched match {
-        case None => evaluatees
+        case None           => evaluatees
         case Some(reactive) =>
           val evaluateNext = evaluatees.filterNot(_.state.done) ++ creation.initializer.drainCreated()
           evaluateNext.foreach(_.state.discovered = false)
@@ -215,7 +215,7 @@ trait TopoBundle {
         afterCommitObservers: ListBuffer[Observation]
     ): Boolean = {
       var potentialGlitch = false
-      val dt = new ReevTicket[State, reactive.Value](
+      val dt              = new ReevTicket[State, reactive.Value](
         creationTicket,
         reactive.state.value,
         new AccessHandler[State] {

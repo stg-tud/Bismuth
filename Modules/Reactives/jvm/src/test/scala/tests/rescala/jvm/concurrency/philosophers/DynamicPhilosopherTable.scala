@@ -20,7 +20,7 @@ class DynamicPhilosopherTable[S](philosopherCount: Int)(ri: reactives.default.ty
         val right                  = phils(nextCircularIndex)
         Signal {
           left.value match {
-            case Hungry => Taken(i.toString)
+            case Hungry   => Taken(i.toString)
             case Thinking =>
               right.value match {
                 case Hungry   => Taken(nextCircularIndex.toString)
@@ -35,11 +35,11 @@ class DynamicPhilosopherTable[S](philosopherCount: Int)(ri: reactives.default.ty
       val fork1          = forks(i)
       val fork2          = forks(mod(i - 1))
       given info: ReInfo = ReInfo.create.derive(s"Vision($i)")
-      val vision = Signal {
+      val vision         = Signal {
         fork1.value match {
           case Taken(`ownName`) => Eating
           case Taken(name)      => WaitingFor(name)
-          case Free => fork2.value match {
+          case Free             => fork2.value match {
               case Free        => Ready
               case Taken(name) => WaitingFor(name)
             }

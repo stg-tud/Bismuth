@@ -26,8 +26,8 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmark extends App with DeltaStateU
     val maxParallelStates = 4
     val elementsInCommon  = totalElements - maxParallelStates
 
-    val benchmarkSharedUntrustedReplica = new UntrustedDeltaBasedReplicaMock;
-    var benchmarkSharedCurrentDot       = Dot("0", 0);
+    val benchmarkSharedUntrustedReplica                           = new UntrustedDeltaBasedReplicaMock;
+    var benchmarkSharedCurrentDot                                 = Dot("0", 0);
     val benchmarkSharedCrdt: DeltaAWLWWMContainer[String, String] =
       new DeltaAWLWWMContainer[String, String]("0")
 
@@ -56,7 +56,7 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmark extends App with DeltaStateU
 
         var unmergedDeltas = List.empty[DeltaAWLWWMContainer.State[String, String]]
         for replicaId <- 1 to parallelStates do {
-          val entry = dummyKeyValuePairs(totalElements - replicaId)
+          val entry               = dummyKeyValuePairs(totalElements - replicaId)
           val replicaSpecificCrdt =
             new DeltaAWLWWMContainer[String, String](replicaId.toString, crdt.state)
           val delta = replicaSpecificCrdt.putDelta(entry._1, entry._2)
@@ -70,8 +70,8 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmark extends App with DeltaStateU
         unmergedDeltas.foreach(delta => mergedCrdt.merge(delta))
         val serializedDecryptedMergedState = writeToArray(mergedCrdt.state)
 
-        val mergedSize      = serializedDecryptedMergedState.length
-        val mergedEncrypted = DecryptedDeltaGroup(mergedCrdt.state, untrustedReplica.getCausalContext).encrypt(aead)
+        val mergedSize          = serializedDecryptedMergedState.length
+        val mergedEncrypted     = DecryptedDeltaGroup(mergedCrdt.state, untrustedReplica.getCausalContext).encrypt(aead)
         val mergedEncryptedSize =
           mergedEncrypted.serialDottedVersionVector.length + mergedEncrypted.stateCiphertext.length
         val csvLine =
@@ -108,7 +108,7 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmarkLinearScaling extends App
     if (i + 1) % 1_000 == 0 then {
       val serializedInternalCrdt = writeToArray(crdt.state)
       val encrdtFullyMerged      = DecryptedDeltaGroup(crdt.state, untrustedReplica.getCausalContext).encrypt(aead)
-      val encrdtFullyMergedSize =
+      val encrdtFullyMergedSize  =
         encrdtFullyMerged.stateCiphertext.length + encrdtFullyMerged.serialDottedVersionVector.length
 
       val csvLine =

@@ -358,7 +358,7 @@ class SimpleParsing extends ParserSuite {
          |lalala""".stripMargin
     Parser.comment.parse(multilineString) match {
       case Left(error) => fail(error.show)
-      case Right(ast) =>
+      case Right(ast)  =>
         assertEquals(
           ast,
           ("\nlalala", ())

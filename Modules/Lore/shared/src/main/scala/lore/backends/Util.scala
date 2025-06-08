@@ -23,7 +23,7 @@ private case class CompilationContext(
     i
   })
   val interactions: Map[String, TInteraction] = allInteractions(ast)
-  val typeAliases: Map[String, Type] = ast.collect {
+  val typeAliases: Map[String, Type]          = ast.collect {
     case TTypeAl(name, _type, _, _) =>
       (name, _type)
   }.toMap
@@ -81,7 +81,7 @@ def flattenInteractions(ctx: CompilationContext): CompilationContext = {
           case i: TInteraction =>
             args.getOrElse(List()).foldLeft(i) {
               case (i, TVar(id, _, _)) => i.copy(modifies = i.modifies :+ id)
-              case e =>
+              case e                   =>
                 throw Exception(
                   s"Invalid argumeViperCompilationExceptionnt for modifies statement: $e"
                 )
@@ -116,7 +116,7 @@ def traverseFromNode[A <: Term](
 ): A = {
   // apply transformer to start node
   val transformed = transformer(node)
-  val result = {
+  val result      = {
     // if node has children, traverse
     transformed match {
       // basic terms
@@ -160,7 +160,7 @@ def traverseFromNode[A <: Term](
           right = traverseFromNode(t.right, transformer)
         )
       case t: TNeg => t.copy(body = traverseFromNode(t.body, transformer))
-      case t: TLt =>
+      case t: TLt  =>
         t.copy(
           left = traverseFromNode(t.left, transformer),
           right = traverseFromNode(t.right, transformer)
@@ -280,7 +280,7 @@ def rename(from: ID, to: ID, term: Term): Term = {
   val transformer: Term => Term = {
     case t: TArgT => if t.name == from then TArgT(to, t._type) else t
     case t: TVar  => if t.name == from then TVar(to) else t
-    case t: TAbs =>
+    case t: TAbs  =>
       val newName = if t.name == from then to else t.name
       TAbs(newName, t._type, rename(from, to, t.body))
     case t => t
@@ -324,7 +324,7 @@ def getSubgraph(
 ): Set[ID] = {
   val reactive = graph.get(reactiveName)
   reactive match {
-    case Some(s: TSource) => Set(reactiveName)
+    case Some(s: TSource)  => Set(reactiveName)
     case Some(d: TDerived) =>
       val usedReactives =
         uses(d).filter(name => graph.keys.toSet.contains(name))

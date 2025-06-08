@@ -7,7 +7,7 @@ import rdts.dotted.HasDots
 case class GrowOnlyCounter(inner: Map[Uid, Int]) {
   lazy val value: Int = inner.valuesIterator.sum
 
-  def inc()(using localReplicaId: LocalUid): GrowOnlyCounter = add(1)
+  def inc()(using localReplicaId: LocalUid): GrowOnlyCounter            = add(1)
   def add(amount: Int)(using localReplicaId: LocalUid): GrowOnlyCounter =
     require(amount >= 0, "may not decrease counter")
     GrowOnlyCounter(Map(localReplicaId.uid -> (inner.getOrElse(localReplicaId.uid, 0) + amount)))

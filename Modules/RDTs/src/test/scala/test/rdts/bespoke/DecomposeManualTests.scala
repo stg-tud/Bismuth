@@ -54,7 +54,6 @@ class DecomposeManualTests extends munit.ScalaCheckSuite {
     assertEquals(decomposed(1).value, 1)
   }
 
-
   test("MultiVersionRegister[Int] decomposition") {
 
     val empty: MultiVersionRegister[Int] = Bottom[MultiVersionRegister[Int]].empty

@@ -5,7 +5,6 @@ import rdts.datatypes.LastWriterWins
 import rdts.dotted.Dotted
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 
-
 object UtilHacks2 {
   extension [V](dottedLww: DeltaBuffer[Dotted[LastWriterWins[V]]]) {
     private def workaround3: LastWriterWins[V] = dottedLww.state.data

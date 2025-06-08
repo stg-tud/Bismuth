@@ -34,7 +34,7 @@ final class ReevTicket[State[_], V](
   private var _propagate                 = false
   private var value: V                   = scala.compiletime.uninitialized
   private var effect: Observation | Null = null
-  override def toString: String =
+  override def toString: String          =
     s"Result(value = $value, propagate = $activate, deps = $collectedDependencies)"
   def before: V = _before
 
@@ -47,7 +47,7 @@ final class ReevTicket[State[_], V](
   }
   def trackStatic(): ReevTicket[State, V]             = { collectedDependencies = null; this }
   def withPropagate(p: Boolean): ReevTicket[State, V] = { _propagate = p; this }
-  def withValue(v: V): ReevTicket[State, V] = {
+  def withValue(v: V): ReevTicket[State, V]           = {
     require(v != null, "value must not be null")
     value = v
     _propagate = true;

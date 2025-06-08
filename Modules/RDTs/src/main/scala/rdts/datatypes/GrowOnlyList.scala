@@ -132,7 +132,7 @@ object GrowOnlyList {
       edge match {
         case (l, r @ Elem(e1)) =>
           state.inner.get(l) match {
-            case None => GrowOnlyList(state.inner + edge)
+            case None                  => GrowOnlyList(state.inner + edge)
             case Some(next @ Elem(e2)) =>
               if e1.timestamp > e2.timestamp
               then GrowOnlyList(state.inner + edge + (r -> next))
@@ -148,7 +148,7 @@ object GrowOnlyList {
         current: Node[LastWriterWins[E]]
     ): GrowOnlyList[E] =
       right.inner.get(current) match {
-        case None => left
+        case None       => left
         case Some(next) =>
           val leftMerged =
             if left.inner.contains(current) && left.inner.exists { case (_, r) => r == next }

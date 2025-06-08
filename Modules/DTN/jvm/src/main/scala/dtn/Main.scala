@@ -47,7 +47,7 @@ commandline options:
         keyword_args += (pair.head -> pair(1))
       })
 
-      val method: String = keyword_args("-m")
+      val method: String       = keyword_args("-m")
       val host_address: String =
         keyword_args.getOrElse("-a", if method.equals("monitoring") then "0.0.0.0" else "127.0.0.1")
       val host_port: Int = keyword_args.getOrElse("-p", if method.equals("monitoring") then "5000" else "3000").toInt
@@ -64,7 +64,7 @@ commandline options:
 
       method match
         case "monitoring" => start_monitoring_server(host_address, host_port)
-        case "routing" => {
+        case "routing"    => {
           _route_forever(
             routing_strategy match
               case "direct" =>

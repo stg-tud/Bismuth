@@ -20,7 +20,7 @@ class LightImplicitSyntaxTest extends munit.FunSuite {
       val price    = Var(3)
       val tax      = price.map { p => p / 3 }
       val quantity = Var(1)
-      val total = Signal {
+      val total    = Signal {
         quantity * (price + tax)
       }
 

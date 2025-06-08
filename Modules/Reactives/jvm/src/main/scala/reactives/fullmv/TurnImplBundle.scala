@@ -397,7 +397,7 @@ class FullMVTurnImpl(
       val newSuccessorCall = newTransitivePredecessor.newSuccessor(this)
       var updatedAccu      = FullMVUtil.accumulateFuture(newSuccessorCallsAccumulator, newSuccessorCall)
 
-      val copiedSpanningTreeNode = new MutableTransactionSpanningTreeNode(newTransitivePredecessor)
+      val copiedSpanningTreeNode                    = new MutableTransactionSpanningTreeNode(newTransitivePredecessor)
       var updatedBufferPredecessorSpanningTreeNodes =
         bufferPredecessorSpanningTreeNodes + (newTransitivePredecessor -> copiedSpanningTreeNode)
       updatedBufferPredecessorSpanningTreeNodes(attachBelow).addChild(copiedSpanningTreeNode)

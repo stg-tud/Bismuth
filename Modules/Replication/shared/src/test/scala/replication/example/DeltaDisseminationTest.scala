@@ -28,8 +28,14 @@ class DeltaDisseminationTest extends munit.FunSuite {
     dd2.applyDelta(Set("b"))
     dd3.applyDelta(Set("c"))
 
-    assertEquals(dd1.deltaStorage.allPayloads.map(_.payload.data).toSet, dd2.deltaStorage.allPayloads.map(_.payload.data).toSet)
-    assertEquals(dd2.deltaStorage.allPayloads.map(_.payload.data).toSet, dd3.deltaStorage.allPayloads.map(_.payload.data).toSet)
+    assertEquals(
+      dd1.deltaStorage.allPayloads.map(_.payload.data).toSet,
+      dd2.deltaStorage.allPayloads.map(_.payload.data).toSet
+    )
+    assertEquals(
+      dd2.deltaStorage.allPayloads.map(_.payload.data).toSet,
+      dd3.deltaStorage.allPayloads.map(_.payload.data).toSet
+    )
 
   }
 

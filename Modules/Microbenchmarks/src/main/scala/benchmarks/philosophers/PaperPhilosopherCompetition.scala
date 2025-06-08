@@ -42,7 +42,7 @@ class PaperCompetition extends BusyThreads {
 
   @Setup(Level.Trial)
   def printSystemStats() = {
-    var assertions = false
+    var assertions                       = false
     @inline def captureAssertionsEnabled = {
       assertions = true
       true

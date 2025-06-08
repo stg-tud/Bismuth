@@ -53,7 +53,7 @@ class AeadKeyTest extends munit.FunSuite {
     val key: AeadKey = AeadKey.generateKey
     val aead         = key.aeadPrimitive
     aead.encrypt("Hello World!", "Test123") match {
-      case Failure(exception) => fail("Could not encrypt with generated key", exception)
+      case Failure(exception)  => fail("Could not encrypt with generated key", exception)
       case Success(ciphertext) =>
         aead.decrypt(ciphertext, "Test123") match {
           case Failure(exception) => fail("Could not decrypt with generated key", exception)

@@ -22,7 +22,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor waits for event when using next") {
-      val e1 = Evt[Unit]()
+      val e1      = Evt[Unit]()
       val reactor = Reactor.once(42) {
         S.next(e1) {
           S.set(1)
@@ -90,7 +90,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Rector can loop") {
-      val e1 = Evt[Unit]()
+      val e1      = Evt[Unit]()
       val reactor = Reactor.loop("Initial Value") {
         S.set("First Stage").next(e1) {
           S.set("Second Stage").next(e1) { Stage() }
@@ -117,7 +117,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor read can branch") {
-      val e1 = Evt[Int]()
+      val e1      = Evt[Int]()
       val reactor = Reactor.loop("") {
         S.next(e1) { eventValue =>
           S.read(_ =>
@@ -138,7 +138,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor stage loop") {
-      val e1 = Evt[Int]()
+      val e1      = Evt[Int]()
       val reactor = Reactor.once(42) {
         S.loop {
           S.next(e1) { eventValue =>
@@ -155,7 +155,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor complex stage loop") {
-      val e1 = Evt[Int]()
+      val e1      = Evt[Int]()
       val reactor = Reactor.once(42) {
         Stage().loop {
           S.next(e1) { eventValue =>
@@ -179,7 +179,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor until works") {
-      val e1 = Evt[Unit]()
+      val e1      = Evt[Unit]()
       val reactor = Reactor.once("Initial Value") {
         S.until(
           e1,
@@ -198,7 +198,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor until passes event value") {
-      val e1 = Evt[String]()
+      val e1      = Evt[String]()
       val reactor = Reactor.once("Initial Value") {
         S.until(
           e1,
@@ -219,7 +219,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     test("Reactor until can contain loops") {
       val interrupt   = Evt[Unit]()
       val modifyEvent = Evt[String]()
-      val reactor = Reactor.once("Initial Value") {
+      val reactor     = Reactor.once("Initial Value") {
         S.until(
           interrupt,
           body = {
@@ -247,7 +247,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     test("Reactor until works without interruptHandler") {
       val interrupt = Evt[Unit]()
       val modifier  = Evt[Int]()
-      val reactor = Reactor.once(0) {
+      val reactor   = Reactor.once(0) {
         S.until(
           interrupt,
           body = {
@@ -269,7 +269,7 @@ class ReactorWithoutAPITest extends munit.FunSuite {
     }
 
     test("Reactor multiple changes in a single stage") {
-      val start = Evt[Unit]()
+      val start   = Evt[Unit]()
       val reactor = Reactor.once(0) {
         S.next(start) {
           S.set(1).set(42)

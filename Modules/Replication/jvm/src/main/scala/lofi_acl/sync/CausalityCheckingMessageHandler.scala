@@ -16,7 +16,7 @@ private[sync] trait CausalityCheckingMessageHandler[MSG] extends Runnable with M
         val msgTuple @ (msg, sender) = msgQueue.take()
         if canHandleMessage(msg) then {
           if handleMessage(msg, sender) then {
-            val backlogMessages = backlog.removeAll()
+            val backlogMessages   = backlog.removeAll()
             val unhandledMessages = backlogMessages.filter { (msg, sender) =>
               if !canHandleMessage(msg) then false
               else

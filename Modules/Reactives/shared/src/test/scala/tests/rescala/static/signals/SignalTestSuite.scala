@@ -69,7 +69,7 @@ class SignalTestSuite extends FunSuite {
   test("dependant Is Only Invoked On Value Changes") {
     var changes = 0
     val v       = Var(1)
-    val s = Signal {
+    val s       = Signal {
       changes += 1;
       v.value + 1
     }
@@ -128,8 +128,8 @@ class SignalTestSuite extends FunSuite {
 
   test("the Expression Is Evaluated Only Once") {
 
-    var a = 0
-    val v = Var(10)
+    var a               = 0
+    val v               = Var(10)
     val s1: Signal[Int] = v.map { i =>
       a += 1
       i % 10

@@ -57,7 +57,7 @@ object StateBasedUntrustedReplicaSizeBenchmark extends App {
         val entry               = dummyKeyValuePairs(totalElements - parallelUpdates + replicaId - 1)
         val replicaSpecificCrdt = new DeltaAWLWWMContainer[String, String](replicaId.toString, commonState)
         replicaSpecificCrdt.put(entry._1, entry._2)
-        val replicaSpecificVersionVector = versionVector.inc(replicaId.toString)
+        val replicaSpecificVersionVector                                   = versionVector.inc(replicaId.toString)
         val replicaSpecificDecState: DecryptedState[State[String, String]] =
           DecryptedState(replicaSpecificCrdt.state, replicaSpecificVersionVector)
         val replicaSpecificEncState = replicaSpecificDecState.encrypt(aead)
@@ -70,7 +70,7 @@ object StateBasedUntrustedReplicaSizeBenchmark extends App {
       }
 
       val mergedSize = writeToArray(decryptedStatesMerged.state).length
-      val csvLine =
+      val csvLine    =
         s"$parallelUpdates,${totalElements - parallelUpdates},$totalElements,${untrustedReplica.size},$mergedSize"
       println(csvLine)
       csvFile.println(csvLine)

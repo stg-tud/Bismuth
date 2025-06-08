@@ -40,7 +40,7 @@ final class TaskRefData(
     val removed: Event[String],
     val id: String,
 ) {
-  override def hashCode(): Int = id.hashCode
+  override def hashCode(): Int           = id.hashCode
   override def equals(obj: Any): Boolean = obj match {
     case other: TaskRef => id == other.id
     case _              => false
@@ -180,7 +180,7 @@ given optionAttrValue[T](using ev: AttrValue[T]): AttrValue[Option[T]] =
     override def apply(t: Element, a: Attr, v: Option[T]): Unit = {
       v match {
         case Some(value) => ev.apply(t, a, value)
-        case None =>
+        case None        =>
           a.namespace match {
             case None     => t.removeAttribute(a.name)
             case Some(ns) => t.removeAttributeNS(ns.uri, a.name)

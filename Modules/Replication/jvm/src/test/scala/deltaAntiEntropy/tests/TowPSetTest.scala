@@ -19,7 +19,7 @@ object TwoPSetGenerators {
       removed <- Gen.pick(n, added)
     yield {
       val network = new Network(0, 0, 0)
-      val ae =
+      val ae      =
         new AntiEntropy[TwoPhaseSet[E]]("a", network, mutable.Buffer())(using summon, twoPSetContext[E], summon)
       val setAdded = added.foldLeft(AntiEntropyContainer[TwoPhaseSet[E]](ae)) {
         case (set, e) => set.modn(_.insert(e))

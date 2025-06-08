@@ -142,7 +142,7 @@ object ModifyAllOrderTest {
 
   object Cons {
     def fromList(list: List[Int]): Option[Cons] = list match {
-      case Nil => None
+      case Nil          => None
       case head :: tail =>
         Some(Cons(head, fromList(tail)))
     }

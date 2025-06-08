@@ -154,5 +154,4 @@ class DiffManualTests extends munit.ScalaCheckSuite {
     assertEquals(merged_diff_delta_2.isDefined, false, "delta_2 should be contained in merged")
   }
 
-
 }

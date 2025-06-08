@@ -24,7 +24,7 @@ object Dot {
 
   given hasDot: HasDots[Dot] with
     extension (dotted: Dot)
-      def dots: Dots = Dots.single(dotted)
+      def dots: Dots                          = Dots.single(dotted)
       def removeDots(dots: Dots): Option[Dot] =
         if dots.contains(dotted) then None else Some(dotted)
 }

@@ -35,7 +35,7 @@ class ClientCLI(name: Uid, client: Client) {
         case Some(multiput(key, value, times)) => client.multiput(key, value, parseInt(times))
         case Some(mp(times))                   => client.multiput("key%n", "value%n", parseInt(times))
         case Some(mixed(min, max, times))      => client.mixed(parseInt(times), parseInt(min), parseInt(max))
-        case Some(benchmark()) =>
+        case Some(benchmark())                 =>
           client.doBenchmark = true
         case Some(saveBenchmark()) =>
           client.saveBenchmark(name)
@@ -43,7 +43,7 @@ class ClientCLI(name: Uid, client: Client) {
           client.printResults = !client.printResults
           println(s"Printing Results: ${client.printResults}")
         case None | Some("exit") => running = false
-        case _ =>
+        case _                   =>
           println("assuming put")
           client.write("key", "value")
       }

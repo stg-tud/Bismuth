@@ -32,7 +32,7 @@ case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
     if !isOwner then Token.unchanged
     else
       selectFrom(wants) match
-        case None => Token.unchanged
+        case None            => Token.unchanged
         case Some(nextOwner) =>
           Token(Ownership(os.epoch + 1, nextOwner), ReplicatedSet.empty)
 

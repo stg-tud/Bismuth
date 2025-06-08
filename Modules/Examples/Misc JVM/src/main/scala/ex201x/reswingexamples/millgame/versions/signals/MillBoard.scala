@@ -30,7 +30,7 @@ class MillBoard {
    */
 
   /* access slot state by index */
-  def apply(slot: SlotIndex): Slot = stonesVar.now.apply(slot.index)
+  def apply(slot: SlotIndex): Slot               = stonesVar.now.apply(slot.index)
   def update(slot: SlotIndex, color: Slot): Unit =
     stonesVar.transform(_.updated(slot.index, color))
   def update(indexColor: Map[SlotIndex, Slot]): Unit =
@@ -111,8 +111,8 @@ class MillBoard {
     val stones = stonesVar.value
     (color: Slot) => stones.count(_ == color)
   }
-  val blackStones = Signal { numStones.value(Black) } // #SIG
-  val whiteStones = Signal { numStones.value(White) } // #SIG
-  val numStonesChanged: Event[(Slot, Int)] = // #EVT
+  val blackStones                          = Signal { numStones.value(Black) } // #SIG
+  val whiteStones                          = Signal { numStones.value(White) } // #SIG
+  val numStonesChanged: Event[(Slot, Int)] =                                   // #EVT
     blackStones.changed.map((Black, _: Int)) || whiteStones.changed.map((White, _: Int)) // #IF //#EF //#IF
 }

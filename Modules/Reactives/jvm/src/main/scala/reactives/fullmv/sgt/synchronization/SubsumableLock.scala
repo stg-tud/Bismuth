@@ -22,7 +22,7 @@ case object Deallocated extends TrySubsumeResult with TryLockResult {
 sealed trait LockStateResult
 sealed trait LockStateResult0
 case class LockedState(guid: Host.GUID) extends LockStateResult with LockStateResult0
-case object UnlockedState extends LockStateResult with LockStateResult0 {
+case object UnlockedState               extends LockStateResult with LockStateResult0 {
   val futured = Future.successful(this)
 }
 case object CompletedState extends LockStateResult {
@@ -46,7 +46,7 @@ sealed trait TryLockResult0
 case class Locked0(failedRefChanges: Int, lockedRoot: SubsumableLock) extends TryLockResult0
 
 case class Blocked0(failedRefChanges: Int, newParent: SubsumableLock) extends TrySubsumeResult0 with TryLockResult0
-case object GarbageCollected0 extends TrySubsumeResult0 with TryLockResult0 {
+case object GarbageCollected0                                         extends TrySubsumeResult0 with TryLockResult0 {
   val futured = Future.successful(this)
 }
 

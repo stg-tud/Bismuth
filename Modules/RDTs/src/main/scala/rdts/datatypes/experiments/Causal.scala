@@ -8,7 +8,7 @@ case class CausalDelta[A](contained: Dots, predecessors: Dots, delta: A) derives
 object CausalDelta {
   given hasDots[A: HasDots]: HasDots[CausalDelta[A]] with {
     extension (dotted: CausalDelta[A])
-      def dots: Dots = dotted.contained
+      def dots: Dots                                     = dotted.contained
       def removeDots(dots: Dots): Option[CausalDelta[A]] =
         dotted.delta.removeDots(dots).map: delta =>
           val overlap = dotted.contained `union` dots

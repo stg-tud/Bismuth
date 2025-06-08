@@ -448,7 +448,7 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
       }
     }
     ticket.recordChange(new InitialChange[State] {
-      override val source: IncSeq.this.type = IncSeq.this
+      override val source: IncSeq.this.type                              = IncSeq.this
       override def writeValue(b: Delta[T], v: Delta[T] => Unit): Boolean = {
         v(delta)
         true

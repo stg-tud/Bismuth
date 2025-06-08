@@ -77,7 +77,7 @@ trait Female extends Animal {
   final def createOffspring(father: Animal): Animal = {
     val male        = world.randomness.nextBoolean()
     val nHerbivores = List(this, father).map(_.isInstanceOf[Herbivore]).count(_ == true)
-    val herbivore =
+    val herbivore   =
       if nHerbivores == 0 then false      // both parents are a carnivores, child is carnivore
       else if nHerbivores == 2 then true  // both parents are herbivores, child is herbivore
       else world.randomness.nextBoolean() // mixed parents, random
@@ -99,7 +99,7 @@ trait Male extends Animal {
 
       val nextAction: AnimalState = females match {
         case Some(female) => Procreating(female)
-        case None => // I have to look for females nearby
+        case None         => // I have to look for females nearby
           world.board.nearby(pos, Animal.ViewRadius).collectFirst(findFemale) match {
             case Some(target) =>
               val destination = world.board.getPosition(target)

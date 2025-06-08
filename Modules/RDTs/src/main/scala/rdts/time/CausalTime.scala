@@ -13,7 +13,7 @@ import scala.util.Random
   */
 case class CausalTime(time: Time, causal: Long, random: Long):
   def causalIncrement: CausalTime = CausalTime(time, causal + 1, CausalTime.countedTime())
-  def advance: CausalTime =
+  def advance: CausalTime         =
     val now = CausalTime.now()
     if now <= this
     then causalIncrement

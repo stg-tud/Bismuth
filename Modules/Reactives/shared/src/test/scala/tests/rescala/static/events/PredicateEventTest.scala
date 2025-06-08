@@ -28,7 +28,7 @@ class PredicateEventTest extends FunSuite {
       var test = 0
       var cond = false
       val e1   = Evt[Int]()
-      val e2 = e1.collect {
+      val e2   = e1.collect {
         case e if cond => e
       }
       e2 `observe` ((_: Int) => { test += 1 })

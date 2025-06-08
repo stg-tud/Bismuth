@@ -12,21 +12,24 @@ object ORMap {
   given stringKeyORMapFilter[V: Filter]: Filter[ObserveRemoveMap[String, V]] with
     override def filter(delta: ObserveRemoveMap[String, V], permission: PermissionTree): ObserveRemoveMap[String, V] =
       permission match
-        case PermissionTree(ALLOW, _) => delta
+        case PermissionTree(ALLOW, _)                       => delta
         case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
           val wildcardPermission = mapOfEntryPermissions.get("*")
           ObserveRemoveMap(
-            Obrem(delta.inner.flatMap { case key -> value =>
-              // Assumes normalized PermissionTree
-              mapOfEntryPermissions.get(key) match
-                case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
-                case None =>
-                  if wildcardPermission.nonEmpty
-                  then Some(key -> Filter[V].filter(value, wildcardPermission.get))
-                  else None /* No rule for key -> discard entry */
-            },
-            // TODO: these being empty seems wildly incorrect
-              Dots.empty, Dots.empty)
+            Obrem(
+              delta.inner.flatMap { case key -> value =>
+                // Assumes normalized PermissionTree
+                mapOfEntryPermissions.get(key) match
+                  case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
+                  case None                  =>
+                    if wildcardPermission.nonEmpty
+                    then Some(key -> Filter[V].filter(value, wildcardPermission.get))
+                    else None /* No rule for key -> discard entry */
+              },
+              // TODO: these being empty seems wildly incorrect
+              Dots.empty,
+              Dots.empty
+            )
           )
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =

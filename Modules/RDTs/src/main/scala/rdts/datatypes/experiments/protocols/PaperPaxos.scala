@@ -224,7 +224,7 @@ case class Voting[A](votes: Set[Vote[A]]) {
 
 object Voting {
   given [A]: Lattice[Voting[A]] = Lattice.derived
-  given [A]: Bottom[Voting[A]] =
+  given [A]: Bottom[Voting[A]]  =
     Bottom.provide(Voting(Set.empty[Vote[A]]))
 }
 

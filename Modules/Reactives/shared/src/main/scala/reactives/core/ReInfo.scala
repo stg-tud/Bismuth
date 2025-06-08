@@ -20,7 +20,7 @@ object ReInfo {
   ): ReInfo = ReInfo(nextCount(), "", enclosing.value.intern(), file.value.intern(), line.value)
 
   private var counter: Int = 0
-  private def nextCount() = synchronized {
+  private def nextCount()  = synchronized {
     counter = counter + 1
     counter
   }

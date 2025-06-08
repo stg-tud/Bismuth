@@ -56,7 +56,7 @@ abstract class ReComponent(
     def __super__paintBorder(g: Graphics2D)    = super.paintBorder(g)
     override def paintChildren(g: Graphics2D)  = ReComponent.this.paintChildren(g)
     def __super__paintChildren(g: Graphics2D)  = super.paintChildren(g)
-    override def paint(g: Graphics2D) = {
+    override def paint(g: Graphics2D)          = {
       ReComponent.this.location() = location
       ReComponent.this.bounds() = bounds
       ReComponent.this.size() = size

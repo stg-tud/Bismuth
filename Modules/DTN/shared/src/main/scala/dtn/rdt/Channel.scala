@@ -30,7 +30,7 @@ class ClientContext[T: JsonValueCodec](
         // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
         // todo: actually there should be no requests being sent anymore then. is that the case?
         operationMode match
-          case ClientOperationMode.PushAll => Sync { () }
+          case ClientOperationMode.PushAll      => Sync { () }
           case ClientOperationMode.RequestLater =>
             connection.send(RdtMessageType.Request, Array(), dots).toAsync(using executionContext)
         Sync { () }

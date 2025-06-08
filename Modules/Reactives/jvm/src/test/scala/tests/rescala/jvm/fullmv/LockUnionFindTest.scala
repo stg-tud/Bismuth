@@ -103,7 +103,7 @@ class LockUnionFindTest extends munit.FunSuite {
 
   test("multiple subsumed gc works") {
     val maxIdx = 10
-    val turns = Array.fill(maxIdx + 1) {
+    val turns  = Array.fill(maxIdx + 1) {
       val turn = engine.newTurn()
       turn.beginExecuting()
       turn

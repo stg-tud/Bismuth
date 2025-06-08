@@ -26,7 +26,7 @@ object OverlapAnalysis {
   def reaches(interaction: TInteraction)(using
       ctx: CompilationContext
   ): Set[ID] = {
-    val graph = ctx.graph.view.mapValues((r, _) => r).toMap
+    val graph                              = ctx.graph.view.mapValues((r, _) => r).toMap
     val dependencies: Map[String, Set[ID]] =
       ctx.graph.keys.map(name => (name, getSubgraph(name, graph))).toMap
 

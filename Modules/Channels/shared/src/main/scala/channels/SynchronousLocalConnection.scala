@@ -48,7 +48,7 @@ class SynchronousLocalConnection[T] {
 
       /* This is the connection that is passed to the server, which just calls the callback defined by the handler. */
       val toClient = new Connection[T] {
-        override def close(): Unit = ()
+        override def close(): Unit                      = ()
         override def send(message: T): Async[Any, Unit] = Sync {
           callback.succeed(message)
         }

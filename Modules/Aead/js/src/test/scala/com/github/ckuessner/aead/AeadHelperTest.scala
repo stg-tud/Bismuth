@@ -21,7 +21,7 @@ class AeadHelperTest extends munit.FunSuite {
 
   override def munitFixtures: Seq[AnyFixture[?]] = List(
     new Fixture[Unit]("ready") {
-      override def apply(): Unit = ()
+      override def apply(): Unit     = ()
       override def beforeAll(): Unit =
         AeadHelper.ready().andThen { _ =>
           key = AeadHelper.generateRawKey

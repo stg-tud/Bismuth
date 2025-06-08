@@ -22,7 +22,7 @@ object SubsumableLockImpl {
 
   def acquireLock[R](contender: FullMVTurn, timeout: Duration): SubsumableLock = {
     if DEBUG then System.out.println(s"[${Thread.currentThread().getName}] syncing on SCC of $contender")
-    val bo = new Backoff()
+    val bo                                   = new Backoff()
     @tailrec def reTryLock(): SubsumableLock = {
       FullMVUtil.myAwait(contender.tryLock(), timeout) match {
         case Locked(lockedRoot) =>
@@ -45,7 +45,7 @@ object SubsumableLockImpl {
     assert(defender.host == contender.host, s"trying to sync $defender and $contender from different hosts")
     if DEBUG then
       System.out.println(s"[${Thread.currentThread().getName}] syncing $defender and $contender into a common SCC")
-    val bo = new Backoff()
+    val bo                                           = new Backoff()
     @tailrec def reTryLock(): Option[SubsumableLock] = {
       FullMVUtil.myAwait(contender.tryLock(), timeout) match {
         case Locked(lockedRoot) =>
@@ -453,7 +453,7 @@ class SubsumableLockImpl(override val host: SubsumableLockHost, override val gui
           println(s"[${Thread.currentThread().getName}] $this deallocated without parent")
       case Self       => throw new AssertionError(s"$this was garbage collected while locked")
       case host.dummy => throw new AssertionError(s"$this was already garbage collected earlier")
-      case parent =>
+      case parent     =>
         if SubsumableLockImpl.DEBUG then
           println(s"[${Thread.currentThread().getName}] $this deallocated, dropping parent ref on $parent")
         parent.localSubRefs(1)

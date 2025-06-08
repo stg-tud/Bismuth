@@ -74,14 +74,14 @@ object TestData {
 
   case class M2(m3: Map[String, A4])
 
-  val m1 = Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
-  val m2 = M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
+  val m1    = Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
+  val m2    = M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
   val m1dup =
     Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
   val m1missingdup =
     Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")), "K4" -> A4(A5("d4d4")))
   val m2missingdup = M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")), "K4" -> A4(A5("d4d4"))))
-  val m1dupEach =
+  val m1dupEach    =
     Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2d2")), "K3" -> A4(A5("d3d3")))
   val m2dup = M2(Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
   val ms1   = collection.immutable.SortedMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))

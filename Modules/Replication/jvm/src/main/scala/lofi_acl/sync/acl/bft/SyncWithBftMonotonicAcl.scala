@@ -38,7 +38,7 @@ class SyncWithBftMonotonicAcl[RDT](
   // Only change using grantPermissions!
   private val localAcl: AtomicReference[(BftAclOpGraph, Acl)] = {
     aclRoot.decode match
-      case Failure(exception) => throw exception
+      case Failure(exception)         => throw exception
       case Success((sig, delegation)) =>
         val opGraph = BftAclOpGraph(Map(sig -> delegation), Set(sig))
         AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
@@ -66,7 +66,7 @@ class SyncWithBftMonotonicAcl[RDT](
       val old @ (opGraph, acl) = localAcl.get()
       opGraph.receive(encodedDelegation.sig, encodedDelegation.op) match
         case Left(missingSignatures) => return missingSignatures
-        case Right(updatedOpGraph) =>
+        case Right(updatedOpGraph)   =>
           val updatedAcl = updatedOpGraph.reconstruct(updatedOpGraph.heads).get
           assert {
             val delegation = encodedDelegation.decode.get._2

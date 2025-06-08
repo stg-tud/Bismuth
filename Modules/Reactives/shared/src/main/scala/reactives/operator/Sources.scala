@@ -27,14 +27,14 @@ class Evt[T] private[reactives] (initialState: State[Pulse[T]], name: ReInfo)
 
   /** Trigger the event */
   @deprecated("use .fire instead of apply", "0.21.0")
-  def apply(value: T)(using PlanTransactionScope[State]): Unit          = fire(value)
-  def fire()(using PlanTransactionScope[State])(using Unit =:= T): Unit = fire(())
+  def apply(value: T)(using PlanTransactionScope[State]): Unit                      = fire(value)
+  def fire()(using PlanTransactionScope[State])(using Unit =:= T): Unit             = fire(())
   def fire(value: T)(using planTransactionScope: PlanTransactionScope[State]): Unit =
     planTransactionScope.planTransaction(this)(admit(value)(using _))
-  override def disconnect(): Unit = ()
+  override def disconnect(): Unit                                             = ()
   def admitPulse(pulse: Pulse[T])(using ticket: AdmissionTicket[State]): Unit = {
     ticket.recordChange(new InitialChange[State] {
-      override val source: Evt.this.type = Evt.this
+      override val source: Evt.this.type                                                = Evt.this
       override def writeValue(base: Pulse[T], writeCallback: Pulse[T] => Unit): Boolean = {
         writeCallback(pulse); true
       }
@@ -74,7 +74,7 @@ class Var[A] private[reactives] (initialState: State[Pulse[A]], name: ReInfo)
 
   def admitPulse(pulse: Pulse[A])(using ticket: AdmissionTicket[State]): Unit = {
     ticket.recordChange(new InitialChange[State] {
-      override val source: Var.this.type = Var.this
+      override val source: Var.this.type                                                = Var.this
       override def writeValue(base: Pulse[A], writeCallback: Pulse[A] => Unit): Boolean =
         if base != pulse then { writeCallback(pulse); true }
         else false

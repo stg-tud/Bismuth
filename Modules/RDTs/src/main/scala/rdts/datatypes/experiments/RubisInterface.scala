@@ -27,7 +27,7 @@ object RubisInterface {
 
     def placeBid(auctionId: AID, userId: User, price: Int)(using LocalUid): Delta = {
       val (_, users, m) = current
-      val newMap =
+      val newMap        =
         if users.get(userId).contains(LocalUid.replicaId) && m.contains(auctionId) then {
           m.updatedWith(auctionId) {
             _.map(a => a.bid(userId, price))
@@ -39,7 +39,7 @@ object RubisInterface {
 
     def closeAuction(auctionId: AID): Delta = {
       val (_, _, m) = current
-      val newMap =
+      val newMap    =
         if m.contains(auctionId) then {
           m.updatedWith(auctionId) {
             _.map(a => a.knockDown())
@@ -51,7 +51,7 @@ object RubisInterface {
 
     def openAuction(auctionId: AID): Delta = {
       val (_, _, m) = current
-      val newMap =
+      val newMap    =
         if m.contains(auctionId) then Map.empty[AID, AuctionInterface.AuctionData]
         else Map(auctionId -> AuctionInterface.AuctionData())
 
@@ -68,7 +68,7 @@ object RubisInterface {
 
     def resolveRegisterUser(): Delta = {
       val (req, users, _) = current
-      val newUsers = req.elements.foldLeft(Map.empty[User, Uid]) {
+      val newUsers        = req.elements.foldLeft(Map.empty[User, Uid]) {
         case (newlyRegistered, (uid, rid)) =>
           if (users ++ newlyRegistered).contains(uid) then
             newlyRegistered

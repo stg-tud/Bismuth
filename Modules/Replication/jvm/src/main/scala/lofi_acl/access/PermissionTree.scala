@@ -16,8 +16,8 @@ case class PermissionTree(permission: Permission, children: Map[String, Permissi
   @targetName("lteq")
   def <=(right: PermissionTree): Boolean =
     (this, right) match
-      case (_, PermissionTree(ALLOW, _))                          => true
-      case (PermissionTree(ALLOW, _), PermissionTree(PARTIAL, _)) => false
+      case (_, PermissionTree(ALLOW, _))                                                   => true
+      case (PermissionTree(ALLOW, _), PermissionTree(PARTIAL, _))                          => false
       case (PermissionTree(PARTIAL, leftChildren), PermissionTree(PARTIAL, rightChildren)) =>
         leftChildren.forall((key, leftChild) =>
           rightChildren.get(key) match
@@ -27,9 +27,9 @@ case class PermissionTree(permission: Permission, children: Map[String, Permissi
 
   // Assumes normalized trees (with wildcards merged into siblings)
   def intersect(that: PermissionTree): PermissionTree = (this, that) match
-    case (PermissionTree(ALLOW, _), PermissionTree(ALLOW, _))   => allow
-    case (PermissionTree(ALLOW, _), PermissionTree(PARTIAL, _)) => that
-    case (PermissionTree(PARTIAL, _), PermissionTree(ALLOW, _)) => this
+    case (PermissionTree(ALLOW, _), PermissionTree(ALLOW, _))                            => allow
+    case (PermissionTree(ALLOW, _), PermissionTree(PARTIAL, _))                          => that
+    case (PermissionTree(PARTIAL, _), PermissionTree(ALLOW, _))                          => this
     case (PermissionTree(PARTIAL, leftChildren), PermissionTree(PARTIAL, rightChildren)) =>
       val intersectionOfChildren = leftChildren.keySet.intersect(rightChildren.keySet).map(label =>
         label -> leftChildren(label).intersect(rightChildren(label))
@@ -43,7 +43,7 @@ case class PermissionTree(permission: Permission, children: Map[String, Permissi
       def pathStringsRec(pathElements: Queue[String]): Set[String] = p match
         case PermissionTree(ALLOW, _)                              => Set(pathElements.mkString("", ".", ".*"))
         case PermissionTree(PARTIAL, children) if children.isEmpty => Set()
-        case PermissionTree(PARTIAL, children) =>
+        case PermissionTree(PARTIAL, children)                     =>
           children.flatMap((childName, childPerm) => childPerm.pathStringsRec(pathElements.appended(childName))).toSet
 
     this.pathStringsRec(Queue.empty)
@@ -65,17 +65,17 @@ object PermissionTree {
 
     private[PermissionTree] def mergeNonNormalizing(left: PermissionTree, right: PermissionTree): PermissionTree =
       (left, right) match
-        case (PermissionTree(ALLOW, _), PermissionTree(_, _)) => allow
-        case (PermissionTree(_, _), PermissionTree(ALLOW, _)) => allow
+        case (PermissionTree(ALLOW, _), PermissionTree(_, _))                                => allow
+        case (PermissionTree(_, _), PermissionTree(ALLOW, _))                                => allow
         case (PermissionTree(PARTIAL, leftChildren), PermissionTree(PARTIAL, rightChildren)) =>
           PermissionTree(PARTIAL, childrenLattice.merge(leftChildren, rightChildren))
 
     def normalizeWildcards(tree: PermissionTree): PermissionTree = tree match
       case PermissionTree(ALLOW, _)                                                    => allow
       case PermissionTree(_, children) if children.forall((_, child) => child.isEmpty) => empty
-      case PermissionTree(_, children) => children.get("*") match
+      case PermissionTree(_, children)                                                 => children.get("*") match
           case Some(PermissionTree(ALLOW, _)) => allow // Normalize trailing * -> allow
-          case Some(w) =>
+          case Some(w)                        =>
             val wildcardTree = normalizeWildcards(w)
             if wildcardTree == allow then return allow
             // Merge all wildcard children into all children of siblings

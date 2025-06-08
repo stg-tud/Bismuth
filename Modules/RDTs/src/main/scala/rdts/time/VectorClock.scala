@@ -10,7 +10,7 @@ case class VectorClock(timestamps: Map[Uid, Time]) {
 
   def dotOf(replicaId: Uid): Dot = Dot(replicaId, timeOf(replicaId))
 
-  def inc(id: Uid): VectorClock = VectorClock(Map(id -> (timestamps.getOrElse(id, 0L) + 1)))
+  def inc(id: Uid): VectorClock   = VectorClock(Map(id -> (timestamps.getOrElse(id, 0L) + 1)))
   def <=(o: VectorClock): Boolean = timestamps.forall: (k, v) =>
     o.timestamps.get(k) match
       case None        => false
@@ -38,7 +38,7 @@ object VectorClock {
     override def compare(x: VectorClock, y: VectorClock): Int =
       vectorClockOrdering.tryCompare(x, y) match
         case Some(v) => v
-        case None =>
+        case None    =>
           @tailrec
           def smaller(remaining: List[Uid]): Int = remaining match {
             case h :: t =>

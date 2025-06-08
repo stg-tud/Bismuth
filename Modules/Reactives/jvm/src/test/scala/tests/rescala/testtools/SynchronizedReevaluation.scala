@@ -9,7 +9,7 @@ import java.util.concurrent.{CountDownLatch, ForkJoinPool}
 class SynchronizedReevaluation extends ManagedBlocker {
   var latches: List[CountDownLatch]  = Nil
   var notifies: List[CountDownLatch] = Nil
-  def reev[X](v1: X): X = {
+  def reev[X](v1: X): X              = {
     latches.foreach { _.countDown() }
     // notify after latches so tests can assert latch counts correctly
     notifies.foreach { _.countDown() }

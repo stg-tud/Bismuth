@@ -60,7 +60,7 @@ class ReListView[A](
 
       (javaPeer.getModel match {
         case model: ReListView.ReListModel[A] => model
-        case _ =>
+        case _                                =>
           val model = new ReListView.ReListModel[A]
           javaPeer `setModel` model
           modelChanged()
@@ -96,7 +96,7 @@ class ReListView[A](
 
     val leadIndex   = ReSwingValue.using({ () => peer.leadIndex }, (peer, classOf[ListSelectionChanged[?]]))
     val anchorIndex = ReSwingValue.using({ () => peer.anchorIndex }, (peer, classOf[ListSelectionChanged[?]]))
-    val indices = ReSwingValue.using(
+    val indices     = ReSwingValue.using(
       { () => javaPeer.getSelectedIndices.toSet },
       (peer, classOf[ListSelectionChanged[?]])
     )
@@ -138,7 +138,7 @@ object ReListView {
 
   class ReListModel[A] extends javax.swing.AbstractListModel[A] {
     private var items: scala.collection.Seq[A] = Seq.empty[A]
-    def update(listData: Seq[A]): Unit = {
+    def update(listData: Seq[A]): Unit         = {
       val itemsSize  = items.size
       val additional = listData.size - itemsSize
       items = listData

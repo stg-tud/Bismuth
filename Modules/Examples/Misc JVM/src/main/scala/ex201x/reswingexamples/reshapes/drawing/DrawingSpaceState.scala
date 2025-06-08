@@ -62,7 +62,7 @@ class DrawingSpaceState {
             (command :: commands, command `execute` shapes)
           case Revert(command) =>
             commands indexOf command match {
-              case -1 => (commands, shapes)
+              case -1    => (commands, shapes)
               case index =>
                 val count = index + 1
                 (

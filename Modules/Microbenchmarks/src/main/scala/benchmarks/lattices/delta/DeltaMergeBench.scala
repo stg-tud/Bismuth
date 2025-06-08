@@ -22,8 +22,8 @@ class DeltaMergeBench {
   @Param(Array("1", "10", "100", "1000"))
   var size: Long = scala.compiletime.uninitialized
 
-  var fullState: ReplicatedList[Long] = scala.compiletime.uninitialized
-  var plusOneState: ReplicatedList[Long] = scala.compiletime.uninitialized
+  var fullState: ReplicatedList[Long]         = scala.compiletime.uninitialized
+  var plusOneState: ReplicatedList[Long]      = scala.compiletime.uninitialized
   var plusOneDeltaState: ReplicatedList[Long] = scala.compiletime.uninitialized
 
   def makeCContext(replicaID: String): Dots = {

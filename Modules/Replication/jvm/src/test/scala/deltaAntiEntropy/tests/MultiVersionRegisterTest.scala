@@ -17,7 +17,7 @@ import scala.util.Random
 
 object MVRegisterGenerators {
 
-  given [A]: HasDots[MultiVersionRegister[A]] = HasDots.noDots
+  given [A]: HasDots[MultiVersionRegister[A]]       = HasDots.noDots
   given [A]: DottedLattice[MultiVersionRegister[A]] = Dotted.lattice
 
   def genMVRegister[A: Lattice](using

@@ -58,11 +58,11 @@ object ConversionTest {
     val rightVar = leftVar.applyLens(SignalLens(Signal { conversionLens(leftUnitSignal.value, rightUnitSignal.value) }))
 
     // Create text fields and input events for the values
-    val leftValueInput: TypedTag[Input] = input(value := leftVar.now)
+    val leftValueInput: TypedTag[Input]                           = input(value := leftVar.now)
     val (leftValueEvent: Event[String], renderedLeftValue: Input) =
       RenderUtil.inputFieldHandler(leftValueInput, oninput, clear = false)
 
-    val rightValueInput: TypedTag[Input] = input(value := rightVar.now)
+    val rightValueInput: TypedTag[Input]                            = input(value := rightVar.now)
     val (rightValueEvent: Event[String], renderedRightValue: Input) =
       RenderUtil.inputFieldHandler(rightValueInput, oninput, clear = false)
 

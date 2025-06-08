@@ -25,7 +25,7 @@ case class Options(file: Option[Path] = None, inline: Option[String] = None, out
 
 object Options {
 
-  private val file: Opts[Path] = Opts.argument[Path](metavar = "FILE")
+  private val file: Opts[Path]     = Opts.argument[Path](metavar = "FILE")
   private val inline: Opts[String] =
     Opts.option[String]("inline", metavar = "SOURCECODE", help = "Pass a program via inline sourcecode.")
 

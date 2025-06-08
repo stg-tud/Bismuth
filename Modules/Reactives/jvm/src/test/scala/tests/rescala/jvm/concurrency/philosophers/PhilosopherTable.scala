@@ -54,7 +54,7 @@ class PhilosopherTable(philosopherCount: Int)(val interface: reactives.default.t
 
     for i <- 0 until tableSize yield {
       val previousCircularIndex = mod(i - 1)
-      val vision =
+      val vision                =
         interface.Signal.lift(forks(previousCircularIndex), forks(i))(calcVision(i.toString))(using s"Vision($i)")
       Seating(i, phils(i), forks(previousCircularIndex), forks(i), vision)
     }

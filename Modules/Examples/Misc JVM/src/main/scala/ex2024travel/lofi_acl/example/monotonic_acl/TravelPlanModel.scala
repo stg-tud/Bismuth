@@ -118,7 +118,7 @@ class TravelPlanModel(
     val bucketListEntriesInDelta = delta.bucketList.inner
     if bucketListEntriesInDelta.nonEmpty then
       val newIds = bucketListEntriesInDelta.keySet.diff(bucketListIdSet)
-      val props = bucketListProperties.updateAndGet(oldProps =>
+      val props  = bucketListProperties.updateAndGet(oldProps =>
         oldProps ++ newIds.map(id => id -> StringProperty(""))
       )
       bucketListEntriesInDelta.foreach { (id, entry) =>
@@ -131,7 +131,7 @@ class TravelPlanModel(
     val expenseEntriesInDelta = delta.expenses.inner
     if expenseEntriesInDelta.nonEmpty then
       val newIds = expenseEntriesInDelta.keySet.diff(expenseIdSet)
-      val props = expenseListProperties.updateAndGet(oldProps =>
+      val props  = expenseListProperties.updateAndGet(oldProps =>
         oldProps ++ newIds.map(id =>
           id -> (StringProperty(""), StringProperty("0.00 €"), StringProperty(""))
         )

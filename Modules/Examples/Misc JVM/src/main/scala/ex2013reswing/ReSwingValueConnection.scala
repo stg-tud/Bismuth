@@ -175,7 +175,7 @@ private[ex2013reswing] trait ReSwingValueConnection {
     def propertyChange(e: java.beans.PropertyChangeEvent): Unit = {
       enforcedProperties get e.getPropertyName match {
         case Some(setter) => setter()
-        case _ => changingProperties get e.getPropertyName match {
+        case _            => changingProperties get e.getPropertyName match {
             case Some(signals) => for signal <- signals do signal()
             case _             =>
           }

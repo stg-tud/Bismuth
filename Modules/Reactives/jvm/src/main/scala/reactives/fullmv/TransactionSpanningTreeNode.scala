@@ -13,11 +13,11 @@ trait TransactionSpanningTreeNode[T] {
 
 case class CaseClassTransactionSpanningTreeNode[T](txn: T, children: Array[CaseClassTransactionSpanningTreeNode[T]])
     extends TransactionSpanningTreeNode[T] {
-  override def childCount(): Int = children.length
+  override def childCount(): Int                                                   = children.length
   override def iterator(): java.util.Iterator[? <: TransactionSpanningTreeNode[T]] =
     new java.util.Iterator[CaseClassTransactionSpanningTreeNode[T]] {
-      var current                   = 0
-      override def hasNext: Boolean = current < children.length
+      var current                                                  = 0
+      override def hasNext: Boolean                                = current < children.length
       override def next(): CaseClassTransactionSpanningTreeNode[T] = {
         val e = children(current)
         current += 1
@@ -45,10 +45,10 @@ class MutableTransactionSpanningTreeNode[T](val txn: T) extends TransactionSpann
     size += 1
   }
 
-  override def childCount(): Int = size
+  override def childCount(): Int                                                = size
   override def iterator(): util.Iterator[MutableTransactionSpanningTreeNode[T]] =
     new util.Iterator[MutableTransactionSpanningTreeNode[T]] {
-      private var idx = 0
+      private var idx                                            = 0
       override def next(): MutableTransactionSpanningTreeNode[T] = {
         val r = children(idx)
         idx += 1

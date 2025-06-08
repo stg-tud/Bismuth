@@ -72,7 +72,7 @@ object ReShapes extends SimpleSwingApplication {
     private lazy val itemsEvents: Signal[Seq[(Component, Event[Command])]] = // #SIG
       (update map { (_: Any) => // #EF
         (ui.tabbedPane.pages filter { tab => tab.index != ui.tabbedPane.selection.index } map { (tab: Page) =>
-          val item = new ReMenuItem(tab.title) // #IS( // )
+          val item    = new ReMenuItem(tab.title)      // #IS( // )
           val command = item.clicked map { (_: Any) => // #EF
             new MergeDrawingSpaces(panelDrawingSpaceStates(tab)._1)
           }
@@ -142,7 +142,7 @@ object ReShapes extends SimpleSwingApplication {
           override lazy val strokeWidth = Signal { ui.strokeInputPanel.strokeWidth.value } // #SIG
           override lazy val color       = Signal { ui.strokeInputPanel.color.value }       // #SIG
 
-          override lazy val executed: Event[Command] = // #EVT
+          override lazy val executed: Event[Command] =                                 // #EVT
             value(panel.drawn || ui.shapePanel.deleted || menu.merged) && (_ => isCurrentState) // #EF //#EF //#EF
           override lazy val reverted: Event[Command] = value(ui.commandPanel.revert || // #EVT //#EF
             (menu.undo.clicked map { (_: Any) => commands.value.head })) && (_ => isCurrentState) // #EF //#EF
@@ -166,7 +166,7 @@ object ReShapes extends SimpleSwingApplication {
       case (true, true, false)  => new DrawingPanel(state) with ShowIntersection with ShowCoordinateSystem
       case (false, false, true) => new DrawingPanel(state) with ShowNameLabels
       case (true, false, true)  => new DrawingPanel(state) with ShowIntersection with ShowNameLabels
-      case (true, true, true) =>
+      case (true, true, true)   =>
         new DrawingPanel(state) with ShowIntersection with ShowCoordinateSystem with ShowNameLabels
       case _ => new DrawingPanel(state)
     }

@@ -22,7 +22,7 @@ class SignalTestSuite extends munit.ScalaCheckSuite {
       val s: Signal[scala.collection.LinearSeq[Int]] = e.list(lastN)
 
       var fireCount = 0
-      val fire = (value: Int) => {
+      val fire      = (value: Int) => {
         e.fire(value);
         fireCount += 1
       }
@@ -103,8 +103,8 @@ class SignalTestSuite extends munit.ScalaCheckSuite {
   test("iterate only depends on init value") {
     forAll(Arbitrary.arbitrary[Array[Int]], Arbitrary.arbInt.arbitrary) {
       (values: Array[Int], initial: Int) =>
-        var t   = 0;
-        val evt = Evt[Int]()
+        var t    = 0;
+        val evt  = Evt[Int]()
         val func = (x: Int) => {
           t = x; x + 1
         }

@@ -18,7 +18,7 @@ class PaperExampleSharedCalendar extends munit.FunSuite {
     def nationalHolidays(): Event[Entry] = holiday
   }
   object Log { def appendEntry(entry: Entry): Unit = println(s"Log: $entry") }
-  object Ui {
+  object Ui  {
     def displayEntryList(entry: Set[Entry]): Unit = println(s"UI: $entry")
     def displayError(error: Throwable): Unit      = println(s"Error: $error")
   }

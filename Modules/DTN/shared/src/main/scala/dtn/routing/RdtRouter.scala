@@ -328,7 +328,7 @@ class DotState {
    */
   def getDestinationNodeEndpoints(node_endpoint: Endpoint, rdt_id: String, dots: Dots): Set[Endpoint] = {
     map.get(rdt_id) match
-      case null => Set()
+      case null                                       => Set()
       case rdt_map: ConcurrentHashMap[Endpoint, Dots] =>
         rdt_map.asScala
           .filter((n: Endpoint, d: Dots) => !n.equals(node_endpoint) && !(dots <= d))

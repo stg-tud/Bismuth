@@ -30,8 +30,8 @@ class MonitoringServer(server: TCPReadonlyServer, paths: MonitoringPaths = Monit
     val dir = Paths.get("/shared/monitoring")
 
     Using.Manager { use =>
-      val streamReceived  = use(BufferedOutputStream(Files.newOutputStream(paths.received_data_fp)))
-      val streamForwarded = use(BufferedOutputStream(Files.newOutputStream(paths.forwarded_data_fp)))
+      val streamReceived            = use(BufferedOutputStream(Files.newOutputStream(paths.received_data_fp)))
+      val streamForwarded           = use(BufferedOutputStream(Files.newOutputStream(paths.forwarded_data_fp)))
       val streamCreatedAndDelivered =
         use(BufferedOutputStream(Files.newOutputStream(paths.created_and_delivered_data_fp)))
 
@@ -108,7 +108,7 @@ class MonitoringBundlesReceivedPrinter(paths: MonitoringPaths = MonitoringPaths(
             case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => ()
             case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => ()
             case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time)   => ()
-            case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time) => {
+            case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => {
               if oldTime.isEmpty then oldTime = time
 
               if Duration.between(time.get, oldTime.get).toSeconds() >= 1 then {
@@ -144,7 +144,7 @@ class MonitoringBundlesForwardedPrinter(paths: MonitoringPaths = MonitoringPaths
             case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => ()
             case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time)   => ()
             case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => ()
-            case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time) => {
+            case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => {
               if oldTime.isEmpty then oldTime = time
 
               if Duration.between(time.get, oldTime.get).toSeconds() >= 1 then {
@@ -184,8 +184,8 @@ class MonitoringStateDevelopmentPrinter(creationClientId: String, paths: Monitor
           Thread.sleep(10)
         } else {
           Json.decode(line.getBytes()).to[MonitoringMessage].value match
-            case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)  => ()
-            case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time) => ()
+            case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => ()
+            case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => ()
             case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => {
               if clientId == creationClientId then {
                 bundlesDeliveredAtCreationCounter += 1
@@ -239,8 +239,8 @@ class MonitoringStateDevelopmentToRatioConverter(creationClientId: String, paths
       var line = in.readLine()
       while line != null do {
         Json.decode(line.getBytes()).to[MonitoringMessage].value match
-          case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)  => ()
-          case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time) => ()
+          case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => ()
+          case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => ()
           case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => {
             if clientId == creationClientId then {
               bundlesDeliveredAtCreationCounter += 1

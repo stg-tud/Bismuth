@@ -45,7 +45,7 @@ class ReactorWithoutAPITest extends FunSuite {
           case NextAction(event, handler) :: tail =>
             val eventValue = input.depend(event)
             eventValue match {
-              case None => stage
+              case None        => stage
               case Some(value) =>
                 val stages = handler(value)
                 processActions(stage.copy(stages = stages))
@@ -144,7 +144,7 @@ class ReactorWithoutAPITest extends FunSuite {
   }
 
   test("Reactor waits for event when using next") {
-    val e1 = Evt[Unit]()
+    val e1      = Evt[Unit]()
     val reactor = Reactor.once(42, Set(e1)) {
       StageBuilder().next(e1) { (_) =>
         StageBuilder().set(1)

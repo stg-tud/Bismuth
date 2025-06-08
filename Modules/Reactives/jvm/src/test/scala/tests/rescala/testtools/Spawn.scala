@@ -20,8 +20,8 @@ class Spawn[T] private (future: Future[T]) {
 }
 object Spawn {
   def apply[T](f: => T, desiredName: Option[String] = None): Spawn[T] = {
-    val promise = Promise[T]()
-    val latch   = new CountDownLatch(1)
+    val promise  = Promise[T]()
+    val latch    = new CountDownLatch(1)
     val runnable = new Runnable {
       override def run(): Unit = {
         latch.countDown()

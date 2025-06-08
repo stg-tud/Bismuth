@@ -12,7 +12,7 @@ class EvaluationOrderWithHigherOrderSignalsTest extends FunSuite {
     import engine.*
 
     val initialX = "initialValue"
-    val newX = if changeX == SetChanged then "changedValue"
+    val newX     = if changeX == SetChanged then "changedValue"
     else initialX
 
     val results =
@@ -23,7 +23,7 @@ class EvaluationOrderWithHigherOrderSignalsTest extends FunSuite {
 
         val ho                         = Var(x: Signal[String])
         var reevaluationRestartTracker = List.empty[String]
-        val flatten = Signal.dynamic {
+        val flatten                    = Signal.dynamic {
           val res = ho.value.value
           reevaluationRestartTracker ::= res
           res
@@ -31,7 +31,7 @@ class EvaluationOrderWithHigherOrderSignalsTest extends FunSuite {
 
         changeX match {
           case DontSet => ho.set(x4)
-          case _ => transaction(x, ho) { tx ?=>
+          case _       => transaction(x, ho) { tx ?=>
               x.admit(newX)(using tx)
               ho.admit(x4)(using tx)
             }

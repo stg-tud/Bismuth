@@ -47,7 +47,7 @@ class SmashingParticles {
   new Oval(point4, time)
 
   // drawing code
-  def top = frame
+  def top   = frame
   val frame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)

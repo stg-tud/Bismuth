@@ -1,8 +1,6 @@
 package rdts.syntax
 
 import rdts.base.Lattice
-import rdts.dotted.Dotted
-import rdts.time.Dots
 
 /** ReactiveCRDTs are Delta CRDTs that store applied deltas in their deltaBuffer attribute. Middleware should regularly
   * take these deltas and ship them to other replicas, using applyDelta to apply them on the remote state. After deltas
@@ -42,4 +40,3 @@ class DeltaBufferContainer[A](var result: DeltaBuffer[A]) {
     this
   }
 }
-

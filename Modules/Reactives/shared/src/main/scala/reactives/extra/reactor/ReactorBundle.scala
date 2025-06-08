@@ -39,7 +39,7 @@ class Reactor[T](
 
         val eventValue: Option[E] = input.depend(event)
         eventValue match {
-          case None => currentState
+          case None        => currentState
           case Some(value) =>
             progressedNextAction = true
             val stages = handler(value)
@@ -81,7 +81,7 @@ class Reactor[T](
       }
 
       currentState.currentStage.actions match {
-        case Nil => currentState
+        case Nil                                => currentState
         case ReactorAction.SetAction(v) :: tail =>
           setAction(v, tail)
         case ReactorAction.ModifyAction(modifier) :: tail =>

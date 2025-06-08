@@ -22,7 +22,7 @@ class WithoutAPITest extends FunSuite {
 
       def makeChange(newValue: T) =
         new InitialChange[State] {
-          override val source: CustomSource.this.type = outer
+          override val source: CustomSource.this.type                                               = outer
           override def writeValue(base: source.Value, writeCallback: source.Value => Unit): Boolean = {
             if base != newValue then {
               writeCallback(newValue)

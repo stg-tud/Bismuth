@@ -59,7 +59,7 @@ class DeltaDissemination[State](
   @volatile var connections: List[ConnectionContext] = Nil
 
   def debugCallbackAndRemoveCon(con: ConnectionContext): Callback[Any] =
-    case Success(value) => ()
+    case Success(value)     => ()
     case Failure(exception) =>
       lock.synchronized {
         connections = connections.filter(cc => cc != con)
@@ -111,7 +111,7 @@ class DeltaDissemination[State](
 
     val preparedConnection: Async[Abort, Connection[Message]] = latentConnection.prepare { from =>
       {
-        case Success(msg) => handleMessage(msg, from)
+        case Success(msg)   => handleMessage(msg, from)
         case Failure(error) =>
           println(s"exception during message handling")
           error.printStackTrace()
@@ -138,7 +138,7 @@ class DeltaDissemination[State](
   }
 
   // note that deltas are not guaranteed to be ordered the same in the buffers
-  val lock: AnyRef                                               = new {}
+  val lock: AnyRef = new {}
 
   private var contexts: Map[Uid, Dots] = Map.empty
 

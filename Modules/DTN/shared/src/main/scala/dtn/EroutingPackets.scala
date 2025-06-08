@@ -103,7 +103,7 @@ given Decoder[PeerAddress] = Decoder { reader =>
   var peerAddress: PeerAddress | Null = null
 
   reader.readString() match
-    case "Ip" => peerAddress = PeerAddress.Ip(reader.readString())
+    case "Ip"               => peerAddress = PeerAddress.Ip(reader.readString())
     case "BroadcastGeneric" =>
       val arr_unbounded = reader.readArrayOpen(2)
       peerAddress = PeerAddress.BroadcastGeneric(reader.readString(), reader.readString())

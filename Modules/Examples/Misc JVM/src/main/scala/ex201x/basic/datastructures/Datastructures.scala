@@ -19,7 +19,7 @@ class SQueue[T] {
 
   // methods mutating the state of the SQueue
   def enqueue(elem: T) = _queue `set` _queue.now.enqueue(elem)
-  def dequeue(): T = {
+  def dequeue(): T     = {
     val (first, tail): (T, Queue[T]) = _queue.now.dequeue
     _queue `set` tail
     first
@@ -44,7 +44,7 @@ class SStack[T] {
 
   // methods mutating the state of the SQueue
   def push(elem: T): Unit = _stack.transform(elem :: _)
-  def pop(): T = {
+  def pop(): T            = {
     val out :: rest = _stack.now: @unchecked
     _stack.set(rest)
     out

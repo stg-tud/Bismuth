@@ -21,7 +21,7 @@ class AlternativeInsecureToDoListClient(
 
   override def completeToDoItem(uuid: UUID): Unit = {
     val _disseminatedBefore = _disseminatedDataInBytes
-    val delta = crdt.putDelta(
+    val delta               = crdt.putDelta(
       uuid,
       crdt.get(uuid).get.copy(completed = true)
     )

@@ -81,7 +81,7 @@ object MacroLegos {
         def replaceAccess(a: TypeTree, xy: Term): Term = {
           replacement.get(xy) match
             case Some(replaced) => accessTree(a)(true, replaced.asExpr.asTerm)
-            case None =>
+            case None           =>
               val xye = transformTree(xy)(owner).asInstanceOf[Term]
               accessTree(a)(false, xye)
           end match
@@ -141,7 +141,7 @@ object MacroLegos {
           { (sym, params) =>
             val staticTicket = params.head
             val cutOut       = ReplaceInterp(replacementMap, staticTicket).transformTree(expr.asTerm)(sym).asExprOf[Res]
-            val res =
+            val res          =
               new ReplaceImplicitTickets(staticTicket.asInstanceOf[Term]).transformTerm(cutOut.asTerm)(
                 Symbol.spliceOwner
               ).changeOwner(sym)
