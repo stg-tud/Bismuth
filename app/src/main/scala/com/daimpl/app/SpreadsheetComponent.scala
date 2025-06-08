@@ -3,54 +3,53 @@ package com.daimpl.app
 import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
-import org.scalajs.dom
-import rdts.base.LocalUid
-import rdts.dotted.{Dotted, Obrem}
+import rdts.base.{Lattice, LocalUid}
+import rdts.dotted.Obrem
 import rdts.time.Dots
 
 object SpreadsheetComponent {
 
   def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[Spreadsheet] = {
     given LocalUid = LocalUid.gen()
-    val spreadsheet = SpreadsheetDeltaAggregator(Obrem(Spreadsheet()))
-
-    spreadsheet
+    new SpreadsheetDeltaAggregator(Obrem(Spreadsheet()))
       .edit(_.addRow())
       .edit(_.addRow())
-      .edit(_.addColumn())
-      .edit(_.addColumn())
-      .edit(_.editCell(0, 0, "Hello World!"))
-      .edit(_.editCell(1, 0, "Still here!"))
       .edit(_.addRow())
       .edit(_.addColumn())
-      .edit(_.editCell(0, 0, "1"))
-      .edit(_.editCell(0, 1, "2"))
-      .edit(_.editCell(1, 0, "3"))
-      .edit(_.editCell(1, 1, "4"))
-      .edit(_.insertRow(1))
-      .edit(_.insertColumn(0))
-
-    spreadsheet
+      .edit(_.addColumn())
+      .edit(_.addColumn())
   }
 
+  case class Props(
+      spreadsheetAggregator: SpreadsheetDeltaAggregator[Spreadsheet],
+      onDelta: Obrem[Spreadsheet] => Callback
+  )
+
   case class State(
-      spreadsheet: SpreadsheetDeltaAggregator[Spreadsheet],
       editingCell: Option[(Int, Int)],
       editingValue: String,
       selectedRow: Option[Int],
       selectedColumn: Option[Int]
   )
 
-  class Backend($ : BackendScope[Unit, State]) {
+  class Backend($ : BackendScope[Props, State]) {
     given LocalUid = LocalUid.gen()
 
+    private def modSpreadsheet(f: Dots ?=> Spreadsheet => Obrem[Spreadsheet]): Callback = {
+      $.props.flatMap { props =>
+        val delta = props.spreadsheetAggregator.editAndGetDelta(f)
+        props.onDelta(delta)
+      }
+    }
+
+    private def modSpreadsheetWithSelectionClear(f: Spreadsheet => Obrem[Spreadsheet]): Callback = {
+      modSpreadsheet(f) >> $.modState(_.copy(selectedRow = None, selectedColumn = None))
+    }
+
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
-      $.modState { state =>
-        val currentValue = state.spreadsheet.current.read(colIdx, rowIdx).getOrElse("")
-        state.copy(
-          editingCell = Some((rowIdx, colIdx)),
-          editingValue = currentValue
-        )
+      $.props.flatMap { props =>
+        val currentValue = props.spreadsheetAggregator.current.read(colIdx, rowIdx).getOrElse("")
+        $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = currentValue))
       }
     }
 
@@ -60,28 +59,20 @@ object SpreadsheetComponent {
     }
 
     def handleKeyPress(e: ReactKeyboardEvent): Callback = {
-      if (e.key == "Enter") {
-        commitEdit()
-      } else if (e.key == "Escape") {
-        cancelEdit()
-      } else {
-        Callback.empty
+      e.key match {
+        case "Enter"  => commitEdit()
+        case "Escape" => cancelEdit()
+        case _        => Callback.empty
       }
     }
 
     def commitEdit(): Callback = {
-      $.modState { state =>
+      $.state.flatMap { state =>
         state.editingCell match {
           case Some((rowIdx, colIdx)) =>
-            val newSpreadsheet = state.spreadsheet
-              .edit(_.editCell(rowIdx, colIdx, if (state.editingValue.trim.isEmpty) null else state.editingValue))
-
-            state.copy(
-              spreadsheet = newSpreadsheet,
-              editingCell = None,
-              editingValue = ""
-            )
-          case None => state
+            val value = state.editingValue.trim
+            modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
+          case None => Callback.empty
         }
       }
     }
@@ -98,100 +89,70 @@ object SpreadsheetComponent {
       $.modState(_.copy(selectedColumn = Some(colIdx), selectedRow = None))
     }
 
-    def insertRowAbove(): Callback = {
-      $.modState { state =>
-        state.selectedRow match {
-          case Some(rowIdx) =>
-            val newSpreadsheet = state.spreadsheet.edit(_.insertRow(rowIdx))
-            state.copy(spreadsheet = newSpreadsheet, selectedRow = None)
-          case None => state
-        }
-      }
-    }
+    def insertRowAbove(): Callback =
+      $.state.flatMap(
+        _.selectedRow
+          .map(rowIdx => modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(_.copy(selectedRow = None)))
+          .getOrElse(Callback.empty)
+      )
 
-    def insertRowBelow(): Callback = {
-      $.modState { state =>
-        state.selectedRow match {
-          case Some(rowIdx) =>
-            val newSpreadsheet = state.spreadsheet.edit(_.insertRow(rowIdx + 1))
-            state.copy(spreadsheet = newSpreadsheet, selectedRow = None)
-          case None => state
-        }
-      }
-    }
+    def insertRowBelow(): Callback =
+      $.state.flatMap(
+        _.selectedRow
+          .map(rowIdx => modSpreadsheet(_.insertRow(rowIdx + 1)) >> $.modState(_.copy(selectedRow = None)))
+          .getOrElse(Callback.empty)
+      )
 
-    def removeRow(): Callback = {
-      $.modState { state =>
-        state.selectedRow match {
-          case Some(rowIdx) if state.spreadsheet.current.numRows > 1 =>
-            val newSpreadsheet = state.spreadsheet
-              .edit(_.removeRow(rowIdx))
-              .edit(_.purgeTombstones())
-            state.copy(spreadsheet = newSpreadsheet, selectedRow = None)
-          case _ => state
-        }
-      }
-    }
+    def removeRow(): Callback =
+      $.state.flatMap(
+        _.selectedRow
+          .map(rowIdx =>
+            modSpreadsheet(_.removeRow(rowIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
+              _.copy(selectedRow = None)
+            )
+          )
+          .getOrElse(Callback.empty)
+      )
 
-    def insertColumnLeft(): Callback = {
-      $.modState { state =>
-        state.selectedColumn match {
-          case Some(colIdx) =>
-            val newSpreadsheet = state.spreadsheet.edit(_.insertColumn(colIdx))
-            state.copy(spreadsheet = newSpreadsheet, selectedColumn = None)
-          case None => state
-        }
-      }
-    }
+    def insertColumnLeft(): Callback =
+      $.state.flatMap(
+        _.selectedColumn
+          .map(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
+          .getOrElse(Callback.empty)
+      )
 
-    def insertColumnRight(): Callback = {
-      $.modState { state =>
-        state.selectedColumn match {
-          case Some(colIdx) =>
-            val newSpreadsheet = state.spreadsheet.edit(_.insertColumn(colIdx + 1))
-            state.copy(spreadsheet = newSpreadsheet, selectedColumn = None)
-          case None => state
-        }
-      }
-    }
+    def insertColumnRight(): Callback =
+      $.state.flatMap(
+        _.selectedColumn
+          .map(colIdx => modSpreadsheet(_.insertColumn(colIdx + 1)) >> $.modState(_.copy(selectedColumn = None)))
+          .getOrElse(Callback.empty)
+      )
 
-    def removeColumn(): Callback = {
-      $.modState { state =>
-        dom.console.log(state.spreadsheet.current.numColumns)
-        dom.console.log(state.selectedColumn)
-        state.selectedColumn match {
-          case Some(colIdx) if state.spreadsheet.current.numColumns > 1 =>
-            val newSpreadsheet = state.spreadsheet.edit(_.removeColumn(colIdx)).edit(_.purgeTombstones())
-            newSpreadsheet.current.printToConsole()
-            state.copy(spreadsheet = newSpreadsheet, selectedColumn = None)
-          case _ => state
-        }
-      }
-    }
+    def removeColumn(): Callback =
+      $.state.flatMap(
+        _.selectedColumn
+          .map(colIdx =>
+            modSpreadsheet(_.removeColumn(colIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
+              _.copy(selectedColumn = None)
+            )
+          )
+          .getOrElse(Callback.empty)
+      )
 
-    def addRow(): Callback = {
-      $.modState { state =>
-        val newSpreadsheet = state.spreadsheet.edit(_.addRow())
-        state.copy(spreadsheet = newSpreadsheet)
-      }
-    }
+    def addRow(): Callback = modSpreadsheet(_.addRow())
 
-    def addColumn(): Callback = {
-      $.modState { state =>
-        val newSpreadsheet = state.spreadsheet.edit(_.addColumn())
-        state.copy(spreadsheet = newSpreadsheet)
-      }
-    }
+    def addColumn(): Callback = modSpreadsheet(_.addColumn())
   }
 
   val Component = ScalaComponent
-    .builder[Unit]("Spreadsheet")
-    .initialState(State(createSampleSpreadsheet(), None, "", None, None))
+    .builder[Props]("Spreadsheet")
+    .initialState(State(None, "", None, None))
     .backend(new Backend(_))
     .render { $ =>
+      val props = $.props
       val state = $.state
       val backend = $.backend
-      val spreadsheet = state.spreadsheet.current
+      val spreadsheet = props.spreadsheetAggregator.current
       val data = spreadsheet.toList
 
       <.div(
@@ -305,7 +266,7 @@ object SpreadsheetComponent {
                         case _ =>
                           <.span(
                             ^.className := "block cursor-pointer min-h-[1.5rem] overflow-hidden text-ellipsis whitespace-nowrap",
-                            ^.title := s"Double-click to edit: ${cell.getOrElse("")}",
+                            ^.title := cell.getOrElse(""),
                             cell.getOrElse("")
                           )
                       }
