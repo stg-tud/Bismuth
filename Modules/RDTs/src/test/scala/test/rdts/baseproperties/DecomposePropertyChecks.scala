@@ -6,7 +6,7 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.alternatives.MultiValueRegister
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.DataGenerator.RGAGen.given

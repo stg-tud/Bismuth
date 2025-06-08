@@ -8,7 +8,7 @@ import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.CausalStore
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots, VectorClock}
 import test.rdts.DataGenerator.RGAGen.given

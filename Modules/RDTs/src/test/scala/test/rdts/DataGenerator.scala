@@ -5,7 +5,6 @@ import rdts.base.*
 import rdts.datatypes.*
 import rdts.datatypes.GrowOnlyList.Node
 import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
-import rdts.datatypes.contextual.*
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.{CausalDelta, CausalStore}
 import rdts.dotted.*
