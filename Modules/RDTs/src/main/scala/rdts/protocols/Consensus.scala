@@ -1,4 +1,4 @@
-package rdts.experiments.protocols
+package rdts.protocols
 
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import Participants.participants

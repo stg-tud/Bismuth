@@ -7,7 +7,7 @@ import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.experiments.protocols.{MultiPaxos, MultipaxosPhase, Participants}
+import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 import rdts.time.Time
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload

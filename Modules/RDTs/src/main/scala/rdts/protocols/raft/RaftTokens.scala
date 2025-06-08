@@ -1,4 +1,4 @@
-package rdts.experiments.protocols.raft
+package rdts.protocols.raft
 
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet

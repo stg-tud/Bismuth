@@ -4,7 +4,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.LocalUid
-import rdts.experiments.protocols.old.simplified.Paxos
+import rdts.protocols.old.simplified.Paxos
 
 import scala.util.Try
 

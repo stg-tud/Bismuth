@@ -5,8 +5,8 @@ import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.GrowOnlyMap.*
 import rdts.datatypes.{GrowOnlyCounter, GrowOnlyMap}
 import rdts.dotted.{Dotted, DottedLattice}
-import rdts.experiments.protocols.Participants
-import rdts.experiments.protocols.paper.Paxos
+import rdts.protocols.Participants
+import rdts.protocols.paper.Paxos
 import rdts.time.Dots
 
 class PaperPaxosTest2 extends munit.FunSuite {

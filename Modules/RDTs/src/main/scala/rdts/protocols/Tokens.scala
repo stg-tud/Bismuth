@@ -1,4 +1,4 @@
-package rdts.experiments.protocols
+package rdts.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Orderings, Uid}

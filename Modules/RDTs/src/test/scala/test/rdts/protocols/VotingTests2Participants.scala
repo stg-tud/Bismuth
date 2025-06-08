@@ -2,7 +2,7 @@ package test.rdts.protocols
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{Epoch, LastWriterWins, ReplicatedSet}
-import rdts.experiments.protocols.old.{Vote, Voting}
+import rdts.protocols.old.{Vote, Voting}
 import rdts.time.Dots
 
 class VotingTests2Participants extends munit.FunSuite {

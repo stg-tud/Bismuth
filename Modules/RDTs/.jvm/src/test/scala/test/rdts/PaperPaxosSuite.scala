@@ -1,7 +1,7 @@
 package test.rdts
 
-import rdts.experiments.protocols.Paxos
-import rdts.experiments.protocols.paper.Paxos as PaperPaxos
+import rdts.protocols.Paxos
+import rdts.protocols.paper.Paxos as PaperPaxos
 
 class PaperPaxosSuite extends munit.ScalaCheckSuite:
 

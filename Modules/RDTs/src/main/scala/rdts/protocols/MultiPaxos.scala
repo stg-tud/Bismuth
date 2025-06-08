@@ -1,4 +1,4 @@
-package rdts.experiments.protocols
+package rdts.protocols
 
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}

@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import probench.clients.ProBenchClient
 import probench.data.{ClientState, ClusterState, KVOperation}
 import rdts.base.{LocalUid, Uid}
-import rdts.experiments.protocols.{MultiPaxos, Participants}
+import rdts.protocols.{MultiPaxos, Participants}
 import replication.ProtocolMessage
 
 class ClusterConsensus extends munit.FunSuite {

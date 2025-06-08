@@ -1,4 +1,4 @@
-package rdts.experiments.protocols.raft
+package rdts.protocols.raft
 
 import rdts.base.{Lattice, Uid}
 import RaftState.{DecisionImpossible, Propose, Undecided, Vote}

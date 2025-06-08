@@ -3,8 +3,8 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
-import rdts.experiments.protocols.MultipaxosPhase.LeaderElection
-import rdts.experiments.protocols.{MultiPaxos, Participants}
+import rdts.protocols.MultipaxosPhase.LeaderElection
+import rdts.protocols.{MultiPaxos, Participants}
 
 import scala.util.Try
 

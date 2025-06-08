@@ -3,7 +3,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
-import rdts.experiments.protocols.{Consensus, Participants}
+import rdts.protocols.{Consensus, Participants}
 
 import scala.util.Try
 

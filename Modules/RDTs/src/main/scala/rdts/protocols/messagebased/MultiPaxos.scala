@@ -1,9 +1,9 @@
-package rdts.experiments.protocols.messagebased
+package rdts.protocols.messagebased
 
 import rdts.base.LocalUid
 import rdts.base.LocalUid.replicaId
 import Message.{Prepare, Promise}
-import rdts.experiments.protocols.BallotNum
+import rdts.protocols.BallotNum
 
 enum Message:
   case Prepare(ballotNum: BallotNum)

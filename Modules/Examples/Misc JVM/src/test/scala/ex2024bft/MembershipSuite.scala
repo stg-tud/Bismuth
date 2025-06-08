@@ -5,8 +5,8 @@ import org.scalacheck.Prop.propBoolean
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
 import rdts.base.{LocalUid, Uid}
-import rdts.experiments.protocols.Membership
-import rdts.experiments.protocols.old.Paxos
+import rdts.protocols.Membership
+import rdts.protocols.old.Paxos
 
 import scala.collection.mutable.ArrayBuffer
 

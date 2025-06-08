@@ -3,7 +3,7 @@ package probench.data
 import probench.data.RequestResponseQueue.Req
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.LastWriterWins
-import rdts.experiments.protocols.{MultiPaxos, Participants}
+import rdts.protocols.{MultiPaxos, Participants}
 
 enum KVOperation[Key, Value] {
   def key: Key

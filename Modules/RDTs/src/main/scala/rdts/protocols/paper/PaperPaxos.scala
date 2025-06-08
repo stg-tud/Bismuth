@@ -1,10 +1,9 @@
-package rdts.experiments.protocols.paper
+package rdts.protocols.paper
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.experiments.protocols
-import rdts.experiments.protocols.Participants.participants
-import rdts.experiments.protocols.{Consensus, Participants}
+import rdts.protocols.Participants.participants
+import rdts.protocols.{Consensus, Participants}
 // imports from this file
 import Paxos.given
 import util.*

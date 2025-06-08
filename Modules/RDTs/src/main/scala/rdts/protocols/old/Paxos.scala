@@ -1,12 +1,11 @@
-package rdts.experiments.protocols.old
+package rdts.protocols.old
 
 import rdts.base.Lattice.setLattice
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.GrowOnlySet
 import rdts.datatypes.GrowOnlySet.*
-import rdts.experiments.protocols.*
-import rdts.experiments.protocols.{Consensus, Participants}
+import rdts.protocols.{Consensus, Participants}
 
 import scala.compiletime.{constValue, summonFrom}
 
