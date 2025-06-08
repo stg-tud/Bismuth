@@ -10,7 +10,7 @@ case class Spreadsheet(
   columns: ReplicatedList[Dot] = ReplicatedList.empty,
   rows: ReplicatedList[Dot] = ReplicatedList.empty,
   content: Map[Dot, Map[Dot, LastWriterWins[String | Null]]] = Map.empty
-)
+) derives Lattice, HasDots, Bottom
 {
   def addRow()(using LocalUid)(using context: Dots): Dotted[Spreadsheet] = {
     val nextDot = context.nextDot(LocalUid.replicaId)
@@ -52,7 +52,6 @@ case class Spreadsheet(
   }
 
   def printToConsole(): Unit = {
-
     val maxStringLength = content.values.flatMap(_.values).map(_.value.length()).maxOption().getOrElse(1)
 
     println(s"${columns.toList.size}x${rows.toList.size}")
@@ -77,14 +76,4 @@ case class Spreadsheet(
       colDelta.context `union` rowDelta.context
     )
   }
-}
-
-object Spreadsheet {
-  given Lattice[Spreadsheet] = {
-    Lattice.derived
-  }
-
-  given hasDots[E]: HasDots[Spreadsheet] = HasDots.derived
-
-  given bottom[E]: Bottom[Spreadsheet] = Bottom.provide(Spreadsheet())
 }
