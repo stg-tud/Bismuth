@@ -194,7 +194,6 @@ object SpreadsheetComponent {
       val data = spreadsheet.toList
 
       <.div(
-        ^.className := "bg-white rounded-lg shadow-2xl p-8 max-w-4xl mx-auto",
         <.div(
           ^.className := "mb-4 flex flex-wrap gap-2",
           state.selectedRow match {
