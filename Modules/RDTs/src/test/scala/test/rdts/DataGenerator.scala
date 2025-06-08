@@ -4,7 +4,7 @@ import org.scalacheck.{Arbitrary, Gen, Shrink}
 import rdts.base.*
 import rdts.datatypes.*
 import rdts.datatypes.GrowOnlyList.Node
-import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
+import rdts.datatypes.alternatives.{ObserveRemoveSet}
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.{CausalDelta, CausalStore}
 import rdts.dotted.*
@@ -70,15 +70,6 @@ object DataGenerator {
     val a = added.foldLeft(ObserveRemoveSet.empty[A])((s, v) => Lattice.merge(s, s.add(v)))
     removed.foldLeft(a)((s, v) => Lattice.merge(s, s.remove(v)))
   })
-
-  given arbMVR[A: Arbitrary]: Arbitrary[MultiValueRegister[A]] =
-    val pairgen =
-      for
-        version <- arbVectorClock.arbitrary
-        value   <- Arbitrary.arbitrary[A]
-      yield (version, value)
-    val map = Gen.listOf(pairgen).map(vs => MultiValueRegister(vs.toMap))
-    Arbitrary(map)
 
   val genDot: Gen[Dot] =
     for

@@ -4,43 +4,9 @@ import benchmarks.encrdt.statebased.DecryptedState.vectorClockJsonCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Lattice
-import rdts.base.Lattice.*
-import rdts.datatypes.alternatives.MultiValueRegister
 import rdts.time.VectorClock
 import replication.Aead
 import replication.JsoniterCodecs.given
-
-import scala.util.{Failure, Success, Try}
-
-class EncryptedCrdt(initialState: MultiValueRegister[EncryptedState] = MultiValueRegister(Map.empty)) {
-
-  private var _state = initialState
-
-  def state: MultiValueRegister[EncryptedState] = _state
-
-  def currentTime: VectorClock =
-    if state.versions.isEmpty then VectorClock.zero
-    else state.versions.keys.reduce((a, b) => a.merge(b))
-
-  def unseal[T: Lattice](aead: Aead)(using jsonValueCodec: JsonValueCodec[T]): Try[DecryptedState[T]] =
-    state.versions.values.map { (encState: EncryptedState) =>
-      Try {
-        encState.decrypt[T](aead)(using jsonValueCodec)
-      }
-    } reduce ((leftTry: Try[DecryptedState[T]], rightTry: Try[DecryptedState[T]]) => {
-      (leftTry, rightTry) match {
-        case (Success(left), Success(right)) => Success(
-            DecryptedState(Lattice.merge(left.state, right.state), left.versionVector.merge(right.versionVector))
-          )
-        case (Failure(e), _) => Failure(e)
-        case (_, Failure(e)) => Failure(e)
-      }
-    })
-
-  def merge(other: MultiValueRegister[EncryptedState]): Unit = {
-    _state = Lattice.merge(_state, other)
-  }
-}
 
 case class EncryptedState(stateCiphertext: Array[Byte], serialVersionVector: Array[Byte]) {
   lazy val versionVector: VectorClock = readFromArray[VectorClock](serialVersionVector)
