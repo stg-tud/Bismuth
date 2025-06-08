@@ -1,12 +1,11 @@
-package lofi_acl.ardt.datatypes
+package lofi_acl.collections
 
 import lofi_acl.access.Permission.*
-import lofi_acl.access.InvalidPathException
-import lofi_acl.access.{Filter, PermissionTree}
+import lofi_acl.access.{Filter, InvalidPathException, PermissionTree}
 import rdts.base.Bottom
 import rdts.datatypes.ObserveRemoveMap
-import ObserveRemoveMap.Entry
 import rdts.dotted.Obrem
+import DeltaAWLWWMContainer.Entry
 import rdts.time.Dots
 
 object ORMap {

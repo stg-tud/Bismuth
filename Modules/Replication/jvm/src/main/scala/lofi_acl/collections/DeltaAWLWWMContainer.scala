@@ -1,10 +1,9 @@
-package rdts.syntax
+package lofi_acl.collections
 
-import rdts.base.{Lattice, LocalUid}
+import lofi_acl.collections.DeltaAWLWWMContainer.{Entry, State}
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import ObserveRemoveMap.Entry
-import rdts.dotted.{Dotted, Obrem}
-import rdts.syntax.DeltaAWLWWMContainer.State
+import rdts.dotted.{HasDots, Obrem}
 import rdts.time.Dots
 
 /** This is used for the encrypted todolist and associated benchmark */
@@ -64,6 +63,24 @@ class DeltaAWLWWMContainer[K, V](
 }
 
 object DeltaAWLWWMContainer {
+
+  case class Entry[V](dots: Dots, value: V)
+  object Entry {
+    given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
+    given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
+
+    given hasDots[V]: HasDots[Entry[V]] = new HasDots[Entry[V]] {
+      extension (dotted: Entry[V]) {
+        override def dots: Dots = dotted.dots
+
+        override def removeDots(dots: Dots): Option[Entry[V]] =
+          val res = dotted.dots `subtract` dots
+          Option.when(!res.isEmpty):
+            Entry(res, dotted.value)
+      }
+    }
+  }
+
   type Inner[K, V] = ObserveRemoveMap[K, Entry[LastWriterWins[V]]]
   type State[K, V] = Inner[K, V]
 

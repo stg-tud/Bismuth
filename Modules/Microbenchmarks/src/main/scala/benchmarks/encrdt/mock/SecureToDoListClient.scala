@@ -5,11 +5,11 @@ import benchmarks.encrdt.deltabased.{DecryptedDeltaGroup, EncryptedDeltaGroup, T
 import benchmarks.encrdt.localidFromString
 import benchmarks.encrdt.mock.SecureToDoListClient.{ToDoMapLattice, mergeDecryptedDeltas}
 import benchmarks.encrdt.todolist.ToDoEntry
+import lofi_acl.collections.DeltaAWLWWMContainer
 import rdts.base.LocalUid
 import rdts.datatypes.ObserveRemoveMap
 import rdts.dotted.{Dotted, Obrem}
-import rdts.syntax.DeltaAWLWWMContainer
-import rdts.syntax.DeltaAWLWWMContainer.State
+import DeltaAWLWWMContainer.State
 import rdts.time.Dots
 
 import java.util.UUID

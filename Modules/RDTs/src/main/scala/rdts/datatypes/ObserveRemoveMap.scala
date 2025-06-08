@@ -30,10 +30,9 @@ case class ObserveRemoveMap[K, V](repr: Obrem[Map[K, V]]) {
   def transformPlain(using LocalUid)(k: K)(m: Option[V] => Option[V]): Delta = {
     m(inner.get(k)) match {
       case Some(value) => update(k, value)
-      case None        => ObserveRemoveMap(Obrem(Map.empty, Dots.single(repr.context.nextDot(LocalUid.replicaId)), Dots.empty))
+      case None => ObserveRemoveMap(Obrem(Map.empty, Dots.single(repr.context.nextDot(LocalUid.replicaId)), Dots.empty))
     }
   }
-
 
   def remove(using HasDots[V])(k: K): Delta = {
     inner.get(k) match
@@ -90,26 +89,9 @@ case class ObserveRemoveMap[K, V](repr: Obrem[Map[K, V]]) {
   */
 object ObserveRemoveMap {
 
-  case class Entry[V](dots: Dots, value: V)
-  object Entry {
-    given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
-    given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
-
-    given hasDots[V]: HasDots[Entry[V]] = new HasDots[Entry[V]] {
-      extension (dotted: Entry[V]) {
-        override def dots: Dots = dotted.dots
-
-        override def removeDots(dots: Dots): Option[Entry[V]] =
-          val res = dotted.dots `subtract` dots
-          Option.when(!res.isEmpty):
-            Entry(res, dotted.value)
-      }
-    }
-  }
-
   def empty[K, V]: ObserveRemoveMap[K, V] = ObserveRemoveMap(Obrem(Map.empty, Dots.empty, Dots.empty))
 
-  given bottom[K, V]: Bottom[ObserveRemoveMap[K, V]]                  = Bottom.derived
+  given bottom[K, V]: Bottom[ObserveRemoveMap[K, V]] = Bottom.derived
 
   given lattice[K, V: {Lattice, HasDots}]: Lattice[ObserveRemoveMap[K, V]] =
     Lattice.derived

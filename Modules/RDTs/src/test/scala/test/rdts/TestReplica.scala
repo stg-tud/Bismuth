@@ -1,4 +1,4 @@
-package rdts.syntax
+package test.rdts
 
 import rdts.base.{Lattice, LocalUid, Uid}
 

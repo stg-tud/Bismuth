@@ -1,8 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.datatypes.experiments.BoundedCounter
-import rdts.syntax.TestReplica
-import test.rdts.given
+import test.rdts.{TestReplica, given}
 
 class BoundedCounterTest extends munit.FunSuite {
 

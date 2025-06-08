@@ -4,8 +4,8 @@ import benchmarks.encrdt.mock.insecure.AlternativeInsecureToDoListClient.ToDoLis
 import benchmarks.encrdt.mock.{DisseminationStats, ToDoListClient}
 import benchmarks.encrdt.todolist.ToDoEntry
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import rdts.syntax.DeltaAWLWWMContainer
-import rdts.syntax.DeltaAWLWWMContainer.State
+import lofi_acl.collections.DeltaAWLWWMContainer
+import DeltaAWLWWMContainer.State
 
 import java.util.UUID
 

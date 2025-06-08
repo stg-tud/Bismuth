@@ -3,10 +3,9 @@ package test.rdts.bespoke
 import rdts.base.Uid
 import rdts.datatypes.experiments.{BoundedCounter, CausalDelta, CausalStore}
 import rdts.dotted.Dotted
-import rdts.syntax.TestReplica
 import rdts.time.{ArrayRanges, Dot, Dots}
 import test.rdts.DataGenerator.ExampleData
-import test.rdts.given
+import test.rdts.{TestReplica, given}
 
 import scala.language.implicitConversions
 
