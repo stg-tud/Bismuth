@@ -1,15 +1,12 @@
 package com.daimpl.lib
 
-import scala.collection.mutable.ArrayBuilder
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.LastWriterWins
 import rdts.datatypes.contextual.ReplicatedList
 import rdts.datatypes.contextual.ObserveRemoveMap
 import rdts.datatypes.alternatives.MultiValueRegister
-import rdts.dotted.{Dotted, HasDots, Obrem}
-import rdts.time.{CausalTime, Dot, Dots, Time, VectorClock}
-
-import scala.collection.mutable
+import rdts.dotted.{HasDots, Obrem}
+import rdts.time.{CausalTime, Dot, Dots, VectorClock}
 
 case class Spreadsheet(
   colIds: ReplicatedList[Dot] = ReplicatedList.empty,
@@ -35,10 +32,7 @@ case class Spreadsheet(
   def addRow()(using LocalUid)(using context: Dots): D = {
     val rowId = context.nextDot(LocalUid.replicaId)
     val operationId = context.nextDot(LocalUid.replicaId)
-    val keepRowsUpdate = keepRows.update(
-      rowId,
-      MultiValueRegister(Map(VectorClock(Map(LocalUid.replicaId -> Time.current())) -> operationId))
-    )
+    val keepRowsUpdate = keepRows.update(rowId, keepRows.queryKey(rowId).write(LocalUid.replicaId, operationId))
     Obrem(
       Spreadsheet(
         rowIds = rowIds.append(rowId).data,
@@ -52,10 +46,7 @@ case class Spreadsheet(
   def addColumn()(using LocalUid)(using context: Dots): D = {
     val colId = context.nextDot(LocalUid.replicaId)
     val operationId = context.nextDot(LocalUid.replicaId)
-    val keepColsUpdate = keepCols.update(
-      colId,
-      MultiValueRegister(Map(VectorClock(Map(LocalUid.replicaId -> Time.current())) -> operationId))
-    )
+    val keepColsUpdate = keepCols.update(colId, keepCols.queryKey(colId).write(LocalUid.replicaId, operationId))
     Obrem(
       Spreadsheet(
         colIds = colIds.append(colId).data,
@@ -93,11 +84,14 @@ case class Spreadsheet(
   def insertRow(visibleRowIdx: Int)(using LocalUid)(using context: Dots): D = {
     val rowIdx = visibleRowIdxToRowIdx(visibleRowIdx)
     val rowId = context.nextDot(LocalUid.replicaId)
+    val operationId = context.nextDot(LocalUid.replicaId)
+    val keepRowsUpdate = keepRows.update(rowId, keepRows.queryKey(rowId).write(LocalUid.replicaId, operationId))
     Obrem(
       Spreadsheet(
-        rowIds = rowIds.insert(rowIdx, rowId).data
+        rowIds = rowIds.insert(rowIdx, rowId).data,
+        keepRows = keepRowsUpdate.data
       ),
-      Dots.from(keepRows.queryKey(rowId).values) `union` Dots.single(rowId),
+      keepRowsUpdate.observed `union` Dots.single(rowId),
       Dots.empty
     )
   }
@@ -105,11 +99,14 @@ case class Spreadsheet(
   def insertColumn(visibleColIdx: Int)(using LocalUid)(using context: Dots): D = {
     val colIdx = visibleColIdxToColIdx(visibleColIdx)
     val colId = context.nextDot(LocalUid.replicaId)
+    val operationId = context.nextDot(LocalUid.replicaId)
+    val keepColsUpdate = keepCols.update(colId, keepCols.queryKey(colId).write(LocalUid.replicaId, operationId))
     Obrem(
       Spreadsheet(
-        colIds = colIds.insert(colIdx, colId).data
+        colIds = colIds.insert(colIdx, colId).data,
+        keepCols = keepColsUpdate.data
       ),
-      Dots.from(keepCols.queryKey(colId).values) `union` Dots.single(colId),
+      keepColsUpdate.observed `union` Dots.single(colId),
       Dots.empty
     )
   }
