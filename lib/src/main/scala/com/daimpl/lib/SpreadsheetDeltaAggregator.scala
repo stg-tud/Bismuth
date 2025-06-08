@@ -1,20 +1,21 @@
 package com.daimpl.lib
 
-import rdts.base.LocalUid
-import rdts.dotted.Dotted
+import rdts.base.{Lattice, LocalUid}
+import rdts.dotted.{Dotted, Obrem}
 import rdts.time.Dots
 
-class SpreadsheetDeltaAggregator(
-  var spreadsheet: Dotted[Spreadsheet]
-)
+class SpreadsheetDeltaAggregator[S](
+  private var spreadsheet: Obrem[S]
+):
 {
-  def edit(fn: Spreadsheet => rdts.time.Dots ?=> Dotted[Spreadsheet])(using LocalUid): SpreadsheetDeltaAggregator = {
+  def edit(fn: Dots ?=> S => Obrem[S])(using LocalUid)(using Lattice[Obrem[S]])
+  : SpreadsheetDeltaAggregator[S] =
     spreadsheet = spreadsheet.merge(spreadsheet.mod(fn))
     this
-  }
 
-  def visit(fn: Spreadsheet => Unit): SpreadsheetDeltaAggregator = {
+  def visit(fn: S => Unit): SpreadsheetDeltaAggregator[S] =
     fn(spreadsheet.data)
     this
-  }
+
+  def current: S = spreadsheet.data
 }

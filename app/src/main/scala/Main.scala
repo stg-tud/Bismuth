@@ -4,13 +4,13 @@ import org.scalajs.dom
 import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import rdts.base.LocalUid
 import rdts.time.Dots
-import rdts.dotted.Dotted
+import rdts.dotted.{Dotted, Obrem}
 
 object Main {
 
-  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator = {
+  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[Spreadsheet] = {
     given LocalUid = LocalUid.gen()
-    val spreadsheet = SpreadsheetDeltaAggregator(Dotted(Spreadsheet()))
+    val spreadsheet = SpreadsheetDeltaAggregator(Obrem(Spreadsheet()))
 
     spreadsheet
       .edit(_.addRow())
@@ -32,7 +32,7 @@ object Main {
   }
 
   case class State(
-    spreadsheet: SpreadsheetDeltaAggregator,
+    spreadsheet: SpreadsheetDeltaAggregator[Spreadsheet],
     editingCell: Option[(Int, Int)],
     editingValue: String,
     selectedRow: Option[Int],
@@ -44,7 +44,7 @@ object Main {
 
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
       $.modState { state =>
-        val currentValue = state.spreadsheet.current().read(colIdx, rowIdx).getOrElse("")
+        val currentValue = state.spreadsheet.current.read(colIdx, rowIdx).getOrElse("")
         state.copy(
           editingCell = Some((rowIdx, colIdx)),
           editingValue = currentValue
@@ -121,7 +121,7 @@ object Main {
     def removeRow(): Callback = {
       $.modState { state =>
         state.selectedRow match {
-          case Some(rowIdx) if state.spreadsheet.current().numRows > 1 =>
+          case Some(rowIdx) if state.spreadsheet.current.numRows > 1 =>
             val newSpreadsheet = state.spreadsheet
               .edit(_.removeRow(rowIdx))
               .edit(_.purgeTombstones())
@@ -155,12 +155,12 @@ object Main {
 
     def removeColumn(): Callback = {
       $.modState { state =>
-        dom.console.log(state.spreadsheet.current().numColumns)
+        dom.console.log(state.spreadsheet.current.numColumns)
         dom.console.log(state.selectedColumn)
         state.selectedColumn match {
-          case Some(colIdx) if state.spreadsheet.current().numColumns > 1 =>
+          case Some(colIdx) if state.spreadsheet.current.numColumns > 1 =>
             val newSpreadsheet = state.spreadsheet.edit(_.removeColumn(colIdx)).edit(_.purgeTombstones())
-            newSpreadsheet.current().printToConsole()
+            newSpreadsheet.current.printToConsole()
             state.copy(spreadsheet = newSpreadsheet, selectedColumn = None)
           case _ => state
         }
@@ -188,7 +188,7 @@ object Main {
     .render { $ =>
       val state = $.state
       val backend = $.backend
-      val spreadsheet = state.spreadsheet.current()
+      val spreadsheet = state.spreadsheet.current
       val data = spreadsheet.toList
 
       <.div(
