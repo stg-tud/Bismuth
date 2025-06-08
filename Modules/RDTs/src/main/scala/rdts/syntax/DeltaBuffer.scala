@@ -43,16 +43,3 @@ class DeltaBufferContainer[A](var result: DeltaBuffer[A]) {
   }
 }
 
-object DeltaBufferContainer {
-
-  extension [A](curr: DeltaBufferContainer[Dotted[A]])(using Lattice[Dotted[A]]) {
-    inline def modd(f: A => Dots ?=> Dotted[A]): Unit = {
-      curr.applyDelta(curr.result.state.mod(f(_)))
-    }
-  }
-
-  extension [A](curr: DeltaBufferContainer[Dotted[A]]) {
-    def data: A = curr.result.state.data
-  }
-
-}
