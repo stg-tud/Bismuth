@@ -1,5 +1,5 @@
 package test.rdts.bespoke
-import rdts.base.Uid
+import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.GrowOnlyList
 import rdts.datatypes.contextual.ReplicatedList
 import rdts.dotted.Dotted
@@ -67,6 +67,36 @@ class ReplicatedListTest extends munit.FunSuite {
 
     assertEquals(v4.data.toList, List("10", "30", "20"))
 
+  }
+
+  test("purge tombstones") {
+
+    val withPurging = {
+      var l = Dotted(ReplicatedList.empty[String])
+
+      given LocalUid = LocalUid.gen()
+
+      l = l `merge` l.mod(_.append("A"))
+      l = l `merge` l.mod(_.append("B"))
+      l = l `merge` l.mod(_.append("C"))
+      l = l `merge` l.mod(_.delete(1))
+      l = l `merge` l.mod(_.purgeTombstones())
+      l = l `merge` l.mod(_.delete(1))
+      l
+    }
+    val withoutPurging = {
+      var m = Dotted(ReplicatedList.empty[String])
+
+      given LocalUid = LocalUid.gen()
+
+      m = m `merge` m.mod(_.append("A"))
+      m = m `merge` m.mod(_.append("B"))
+      m = m `merge` m.mod(_.append("C"))
+      m = m `merge` m.mod(_.delete(1))
+      m = m `merge` m.mod(_.delete(1))
+      m
+    }
+    assertEquals(withPurging.data.toList, withoutPurging.data.toList)
   }
 
 }
