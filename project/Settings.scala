@@ -31,8 +31,7 @@ object Settings {
 
   val scala3defaults = Def.settings(
     scala3defaultsUnstable,
-    unstableInlineAccessors(Compile / compile),
-    unusedWarnings(Compile / compile)
+    unstableInlineAccessors(Compile / compile)
   )
 
   // enabled to see what breaks and maybe play around with
