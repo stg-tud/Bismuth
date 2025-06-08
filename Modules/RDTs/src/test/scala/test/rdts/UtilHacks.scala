@@ -5,19 +5,7 @@ import rdts.datatypes.LastWriterWins
 import rdts.dotted.Dotted
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 
-object UtilHacks {
-  extension [V](dottedLww: Dotted[LastWriterWins[V]]) {
-    private def workaround: LastWriterWins[V] = dottedLww.data
-    export workaround.read
-    def write(v: V) = Dotted(dottedLww.data.write(v))
-  }
 
-  extension [V](dottedLww: DeltaBuffer[LastWriterWins[V]]) {
-    private def workaround2: LastWriterWins[V] = dottedLww.state
-    export workaround2.read
-    def write(v: V) = dottedLww.transform(_.write(v))
-  }
-}
 object UtilHacks2 {
   extension [V](dottedLww: DeltaBuffer[Dotted[LastWriterWins[V]]]) {
     private def workaround3: LastWriterWins[V] = dottedLww.state.data

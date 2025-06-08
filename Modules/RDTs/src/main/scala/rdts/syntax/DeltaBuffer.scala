@@ -12,6 +12,7 @@ case class DeltaBuffer[A](
     state: A,
     deltaBuffer: List[A] = Nil
 ) {
+
   def applyDelta(delta: A)(using Lattice[A]): DeltaBuffer[A] =
     val merged = state `merge` delta
     DeltaBuffer(merged, if merged == state then deltaBuffer else delta :: deltaBuffer)
@@ -30,19 +31,6 @@ case class DeltaBuffer[A](
     applyDelta(f(state))
   }
 
-}
-
-object DeltaBuffer {
-
-  extension [A](curr: DeltaBuffer[Dotted[A]])(using Lattice[Dotted[A]]) {
-    inline def modd(f: A => Dots ?=> Dotted[A]): DeltaBuffer[Dotted[A]] = {
-      curr.applyDelta(curr.state.mod(f(_)))
-    }
-  }
-
-  extension [A](curr: DeltaBuffer[Dotted[A]]) {
-    def data: A = curr.state.data
-  }
 }
 
 class DeltaBufferContainer[A](var result: DeltaBuffer[A]) {

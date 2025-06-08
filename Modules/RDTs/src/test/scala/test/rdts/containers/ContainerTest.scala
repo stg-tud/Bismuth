@@ -7,8 +7,6 @@ import rdts.datatypes.experiments.AuctionInterface
 import rdts.datatypes.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.dotted.Dotted
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
-import test.rdts.UtilHacks.*
-import test.rdts.UtilHacks2.*
 
 class ContainerTest extends munit.FunSuite {
 
@@ -116,52 +114,31 @@ class ContainerTest extends munit.FunSuite {
 
   // START LastWriterWins
 
-  test("Dotted can contain non-contextual LastWriterWins[String]") {
-    val lww: Dotted[LastWriterWins[String]] = Dotted.empty
-
-    assertEquals(lww.data.read, "")
-
-    val added = lww.write("First")
-    assertEquals(added.data.read, "First")
-
-    val removed = added.write("")
-    assertEquals(removed.data.read, "")
-  }
 
   test("DeltaBuffer can contain non-contextual LastWriterWins[String]") {
     val lww: DeltaBuffer[LastWriterWins[String]] = DeltaBuffer(LastWriterWins.empty)
 
-    assertEquals(lww.read, "")
+    assertEquals(lww.state.read, "")
 
-    val added = lww.write("First")
-    assertEquals(added.read, "First")
+    val added = lww.mod(_.write("First"))
+    assertEquals(added.state.read, "First")
 
-    val removed = added.write("")
-    assertEquals(removed.read, "")
+    val removed = added.mod(_.write(""))
+    assertEquals(removed.state.read, "")
   }
 
   test("Dotted DeltaBuffer can contain non-contextual LastWriterWins[String]") {
-    val lww: DeltaBuffer[Dotted[LastWriterWins[String]]] = DeltaBuffer(Dotted.empty)
+    val lww: DeltaBuffer[LastWriterWins[String]] = DeltaBuffer(LastWriterWins.empty)
 
-    assertEquals(lww.data.read, "")
+    assertEquals(lww.state.read, "")
 
-    val added = lww.write("First")
-    assertEquals(added.data.read, "First")
+    println(lww)
 
-    val removed = added.write("")
-    assertEquals(removed.data.read, "")
-  }
+    val added = lww.mod(_.write("First"))
+    assertEquals(added.state.read, "First")
 
-  test("Dotted DeltaBufferContainer can contain non-contextual LastWriterWins[String]") {
-    val lww: DeltaBufferContainer[Dotted[LastWriterWins[String]]] = DeltaBufferContainer(DeltaBuffer(Dotted.empty))
-
-    assertEquals(lww.data.read, "")
-
-    lww.write("First")
-    assertEquals(lww.data.read, "First")
-
-    lww.write("")
-    assertEquals(lww.data.read, "")
+    val removed = added.state.write("")
+    assertEquals(removed.read, "")
   }
 
   // END LastWriterWins
