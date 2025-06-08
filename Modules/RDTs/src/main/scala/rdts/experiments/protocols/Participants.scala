@@ -1,4 +1,4 @@
-package rdts.datatypes.experiments.protocols
+package rdts.experiments.protocols
 
 import rdts.base.Uid
 

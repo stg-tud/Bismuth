@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 
-import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
+import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 
 class OpGraphTest extends munit.FunSuite {
 

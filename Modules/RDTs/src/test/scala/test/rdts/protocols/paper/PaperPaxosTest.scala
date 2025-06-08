@@ -1,8 +1,8 @@
 package test.rdts.protocols.paper
 
 import rdts.base.LocalUid
-import rdts.datatypes.experiments.protocols.Paxos.given
-import rdts.datatypes.experiments.protocols.{Participants, Paxos}
+import rdts.experiments.protocols.Paxos.given
+import rdts.experiments.protocols.{Participants, Paxos}
 
 class PaperPaxosTest extends munit.FunSuite {
 

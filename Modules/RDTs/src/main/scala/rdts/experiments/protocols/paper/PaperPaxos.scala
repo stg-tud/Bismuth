@@ -1,14 +1,14 @@
-package rdts.datatypes.experiments.protocols.paper
+package rdts.experiments.protocols.paper
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.experiments.protocols
-import rdts.datatypes.experiments.protocols.Participants.participants
-import rdts.datatypes.experiments.protocols.{Consensus, Participants}
+import rdts.experiments.protocols
+import rdts.experiments.protocols.Participants.participants
+import rdts.experiments.protocols.{Consensus, Participants}
 // imports from this file
-import rdts.datatypes.experiments.protocols.paper.Paxos.given
-import rdts.datatypes.experiments.protocols.paper.util.*
-import rdts.datatypes.experiments.protocols.paper.util.Agreement.*
+import Paxos.given
+import util.*
+import util.Agreement.*
 
 // Paxos PRDT
 type LeaderElection = Voting[Uid]
@@ -160,20 +160,20 @@ object Paxos {
 
   given Consensus[Paxos] with
     extension [A](c: Paxos[A])
-      override def propose(value: A)(using LocalUid, protocols.Participants): Paxos[A] =
+      override def propose(value: A)(using LocalUid, Participants): Paxos[A] =
         // check if I can propose a value
         if c.isCurrentLeader then
           c.phase2a
         else
           c.phase1a(value)
     extension [A](c: Paxos[A])
-      override def decision(using protocols.Participants): Option[A] =
+      override def decision(using Participants): Option[A] =
         c.dec match
           case Agreement.Invalid        => None
           case Agreement.Decided(value) => Some(value)
           case Agreement.Undecided      => None
     extension [A](c: Paxos[A])
-      override def upkeep()(using LocalUid, protocols.Participants): Paxos[A] =
+      override def upkeep()(using LocalUid, Participants): Paxos[A] =
         if c.currentRoundHasProposal then
           c.phase2b
         else if c.isCurrentLeader then

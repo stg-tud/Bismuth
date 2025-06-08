@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Uid
 import rdts.datatypes.*
-import rdts.datatypes.experiments.AuctionInterface.AuctionData
+import rdts.experiments.AuctionInterface.AuctionData
 import rdts.dotted.Dotted
 import rdts.time.{ArrayRanges, Dot, Dots, Time}
 

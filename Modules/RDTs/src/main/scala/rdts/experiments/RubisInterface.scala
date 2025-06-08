@@ -1,8 +1,8 @@
-package rdts.datatypes.experiments
+package rdts.experiments
 
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.datatypes.experiments.AuctionInterface.Bid.User
+import AuctionInterface.Bid.User
 import rdts.dotted.Dotted
 import rdts.time.Dots
 

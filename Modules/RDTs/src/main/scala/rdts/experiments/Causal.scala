@@ -1,4 +1,4 @@
-package rdts.datatypes.experiments
+package rdts.experiments
 
 import rdts.base.{Bottom, Lattice}
 import rdts.dotted.HasDots

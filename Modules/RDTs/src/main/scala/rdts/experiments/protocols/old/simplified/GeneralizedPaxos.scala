@@ -1,9 +1,9 @@
-package rdts.datatypes.experiments.protocols.old.simplified
+package rdts.experiments.protocols.old.simplified
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.datatypes.experiments.protocols.{BallotNum, Consensus, LeaderElection, Participants, Voting}
+import rdts.experiments.protocols.{BallotNum, Consensus, LeaderElection, Participants, Voting}
 
 case class GeneralizedPaxos[A](
     rounds: Map[BallotNum, (LeaderElection, Voting[A])] =

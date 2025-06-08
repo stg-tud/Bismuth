@@ -1,10 +1,9 @@
-package rdts.datatypes.experiments.protocols
+package rdts.experiments.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.datatypes.experiments.protocols.Paxos.given
-import rdts.datatypes.experiments.protocols.{Consensus, Participants}
+import Paxos.given
 
 case class PaxosRound[A](leaderElection: LeaderElection = Voting(), proposals: Voting[A] = Voting[A]())
 type LeaderElection = Voting[Uid]

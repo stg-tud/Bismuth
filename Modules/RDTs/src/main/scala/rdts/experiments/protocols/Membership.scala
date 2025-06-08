@@ -1,10 +1,10 @@
-package rdts.datatypes.experiments.protocols
+package rdts.experiments.protocols
 
 import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.Epoch
-import rdts.datatypes.experiments.protocols.Consensus.given
+import Consensus.given
 import rdts.time.Time
 
 import scala.collection.immutable.NumericRange

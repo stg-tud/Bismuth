@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.{Lattice, Uid}
-import rdts.datatypes.experiments.BoundedCounter
+import rdts.experiments.BoundedCounter
 import rdts.time.VectorClock
 import test.rdts.{TestReplica, given}
 

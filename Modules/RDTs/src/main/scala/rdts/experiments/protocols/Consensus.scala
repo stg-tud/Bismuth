@@ -1,7 +1,7 @@
-package rdts.datatypes.experiments.protocols
+package rdts.experiments.protocols
 
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.datatypes.experiments.protocols.Participants.participants
+import Participants.participants
 
 // Type class for consensus algorithms
 trait Consensus[C[_]] {

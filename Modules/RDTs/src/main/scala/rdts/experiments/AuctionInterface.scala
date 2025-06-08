@@ -1,7 +1,7 @@
-package rdts.datatypes.experiments
+package rdts.experiments
 
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.datatypes.experiments.AuctionInterface.Bid.User
+import AuctionInterface.Bid.User
 import rdts.dotted.HasDots
 
 object AuctionInterface {

@@ -1,7 +1,8 @@
 package test.rdts
 
-import rdts.datatypes.experiments.protocols.Paxos
-import rdts.datatypes.experiments.protocols.paper.Paxos as PaperPaxos
+import rdts.experiments.protocols.Paxos
+import rdts.experiments.protocols.paper.Paxos as PaperPaxos
+
 class PaperPaxosSuite extends munit.ScalaCheckSuite:
 
   //  override def scalaCheckInitialSeed = "ZcBq5Oa3t8-hWG0Snkx22h6nivxFRCvp27NO4tFKzbN="

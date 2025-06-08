@@ -1,10 +1,8 @@
 package test.rdts.protocols
 
-import rdts.base.{Lattice, LocalUid, Uid}
-import rdts.datatypes.experiments.protocols
-import rdts.datatypes.experiments.protocols.old.{Vote, Voting}
+import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{Epoch, LastWriterWins, ReplicatedSet}
-import rdts.dotted.{Dotted, DottedLattice}
+import rdts.experiments.protocols.old.{Vote, Voting}
 import rdts.time.Dots
 
 class VotingTests2Participants extends munit.FunSuite {

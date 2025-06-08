@@ -4,10 +4,10 @@ import org.scalacheck.{Arbitrary, Gen, Shrink}
 import rdts.base.*
 import rdts.datatypes.*
 import rdts.datatypes.GrowOnlyList.Node
-import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.datatypes.experiments.{CausalDelta, CausalStore}
+import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.dotted.*
 import rdts.dotted.HasDots.mapInstance
+import rdts.experiments.{CausalDelta, CausalStore}
 import rdts.time.*
 
 import scala.annotation.{nowarn, tailrec}

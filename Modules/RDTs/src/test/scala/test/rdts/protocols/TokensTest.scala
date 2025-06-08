@@ -2,8 +2,8 @@ package test.rdts.protocols
 
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.datatypes.experiments.protocols.{Ownership, Token}
 import rdts.dotted.Dotted
+import rdts.experiments.protocols.{Ownership, Token}
 import rdts.time.Dots
 
 class TokensTest extends munit.FunSuite {

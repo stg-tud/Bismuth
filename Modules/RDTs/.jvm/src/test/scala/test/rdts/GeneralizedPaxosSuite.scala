@@ -1,5 +1,6 @@
 package test.rdts
-import rdts.datatypes.experiments.protocols.old.simplified.GeneralizedPaxos
+
+import rdts.experiments.protocols.old.simplified.GeneralizedPaxos
 
 class GeneralizedPaxosSuite extends munit.ScalaCheckSuite {
 

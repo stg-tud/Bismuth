@@ -3,10 +3,10 @@ package test.rdts.protocols
 import rdts.base.Lattice.merge
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.GrowOnlyMap.*
-import rdts.datatypes.experiments.protocols.Participants
-import rdts.datatypes.experiments.protocols.paper.Paxos
 import rdts.datatypes.{GrowOnlyCounter, GrowOnlyMap}
 import rdts.dotted.{Dotted, DottedLattice}
+import rdts.experiments.protocols.Participants
+import rdts.experiments.protocols.paper.Paxos
 import rdts.time.Dots
 
 class PaperPaxosTest2 extends munit.FunSuite {

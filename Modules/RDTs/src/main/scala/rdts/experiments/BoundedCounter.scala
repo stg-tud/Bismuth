@@ -1,7 +1,7 @@
-package rdts.datatypes.experiments
+package rdts.experiments
 
 import rdts.base.{Lattice, LocalUid, Uid}
-import rdts.datatypes.experiments.BoundedCounter.neutral
+import BoundedCounter.neutral
 import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
 
 case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCounter, participants: Set[Uid]) {

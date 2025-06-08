@@ -4,9 +4,9 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.experiments.protocols.old.simplified
-import rdts.datatypes.experiments.protocols.old.simplified.GeneralizedPaxos
-import rdts.datatypes.experiments.protocols.{Consensus, Membership, Paxos}
+import rdts.experiments.protocols.old.simplified
+import rdts.experiments.protocols.{Consensus, Membership, Paxos}
+import rdts.experiments.protocols.old.simplified.{GeneralizedPaxos}
 
 import scala.util.Try
 class MembershipSuite extends munit.ScalaCheckSuite {
@@ -25,7 +25,7 @@ class MembershipSuite extends munit.ScalaCheckSuite {
       .withMinSize(100)
       .withMaxSize(500)
 
-  property("Membership with simplepaxos")(MembershipSpec[Int, simplified.Paxos, simplified.Paxos](
+  property("Membership with simplepaxos")(MembershipSpec[Int, Paxos, Paxos](
     logging = false,
     minDevices = 3,
     maxDevices = 6,
@@ -58,7 +58,7 @@ class MembershipSuite extends munit.ScalaCheckSuite {
     removeMemberFreq = 1
   ).property())
 
-  property("Membership with two different algos")(MembershipSpec[Int, simplified.Paxos, GeneralizedPaxos](
+  property("Membership with two different algos")(MembershipSpec[Int, Paxos, GeneralizedPaxos](
     logging = false,
     minDevices = 3,
     maxDevices = 6,

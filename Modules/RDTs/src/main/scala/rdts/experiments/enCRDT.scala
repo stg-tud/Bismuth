@@ -1,4 +1,4 @@
-package rdts.datatypes.experiments
+package rdts.experiments
 
 import rdts.base.{Lattice, Uid}
 import rdts.time.VectorClock

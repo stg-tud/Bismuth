@@ -2,10 +2,10 @@ package test.rdts.containers
 
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, LocalUid}
-import rdts.datatypes.experiments.AuctionInterface
-import rdts.datatypes.experiments.AuctionInterface.{AuctionData, Bid}
+import rdts.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ReplicatedSet}
 import rdts.dotted.Dotted
+import rdts.experiments.AuctionInterface
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 
 class ContainerTest extends munit.FunSuite {

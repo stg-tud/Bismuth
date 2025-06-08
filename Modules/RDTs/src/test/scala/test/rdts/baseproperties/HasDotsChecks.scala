@@ -4,8 +4,8 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Uid
 import rdts.datatypes.ReplicatedList
-import rdts.datatypes.experiments.CausalStore
 import rdts.dotted.{Dotted, HasDots}
+import rdts.experiments.CausalStore
 import rdts.time.{ArrayRanges, Dot, Dots, VectorClock}
 import test.rdts.DataGenerator.RGAGen.given
 import test.rdts.DataGenerator.{*, given}
