@@ -14,3 +14,5 @@ jobs:
         uses: sbt/setup-sbt@v1
       - name: Compile project
         run: sbt compile
+      - name: Run linter
+        run: sbt scalafmtCheckAll
