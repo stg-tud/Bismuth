@@ -2,8 +2,8 @@ package test.rdts.containers
 
 import rdts.base.{Bottom, LocalUid}
 import rdts.base.LocalUid.asId
-import rdts.datatypes.LastWriterWins
-import rdts.datatypes.contextual.{EnableWinsFlag, ReplicatedSet}
+import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
+import rdts.datatypes.contextual.ReplicatedSet
 import rdts.datatypes.experiments.AuctionInterface
 import rdts.datatypes.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.dotted.Dotted
@@ -33,37 +33,36 @@ class ContainerTest extends munit.FunSuite {
 
     assertEquals(flag.data.read, false)
 
-    val enabled = flag.mod(_.enable())
+    val enabled = flag.modn(_.enable())
     assertEquals(enabled.data.read, true)
 
-    val disabled = enabled.mod(_.disable())
+    val disabled = enabled.modn(_.disable())
     assertEquals(disabled.data.read, false)
   }
 
-  // NOTE: DeltaBuffer cannot contain contextual EnableWinsFlag without Dotted, as EnableWinsFlag needs a context
 
   test("Dotted DeltaBuffer can contain contextual EnableWinsFlag") {
-    val flag: DeltaBuffer[Dotted[EnableWinsFlag]] = DeltaBuffer(Dotted.empty)
+    val flag: DeltaBuffer[EnableWinsFlag] = DeltaBuffer(EnableWinsFlag.empty)
 
-    assertEquals(flag.data.read, false)
+    assertEquals(flag.state.read, false)
 
-    val enabled = flag.modd(_.enable())
-    assertEquals(enabled.data.read, true)
+    val enabled = flag.mod(_.enable())
+    assertEquals(enabled.state.read, true)
 
-    val disabled = enabled.modd(_.disable())
-    assertEquals(disabled.data.read, false)
+    val disabled = enabled.mod(_.disable())
+    assertEquals(disabled.state.read, false)
   }
 
   test("Dotted DeltaBufferContainer can contain contextual EnableWinsFlag") {
-    val flag: DeltaBufferContainer[Dotted[EnableWinsFlag]] = DeltaBufferContainer(DeltaBuffer(Dotted.empty))
+    val flag: DeltaBufferContainer[EnableWinsFlag] = DeltaBufferContainer(DeltaBuffer(EnableWinsFlag.empty))
 
-    assertEquals(flag.data.read, false)
+    assertEquals(flag.result.state.read, false)
 
-    flag.modd(_.enable())
-    assertEquals(flag.data.read, true)
+    flag.mod(_.enable())
+    assertEquals(flag.result.state.read, true)
 
-    flag.modd(_.disable())
-    assertEquals(flag.data.read, false)
+    flag.mod(_.disable())
+    assertEquals(flag.result.state.read, false)
   }
 
   // END EnableWinsFlag

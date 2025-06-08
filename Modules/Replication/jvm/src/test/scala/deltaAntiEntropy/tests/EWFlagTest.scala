@@ -4,13 +4,15 @@ import deltaAntiEntropy.tests.NetworkGenerators.*
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
-import rdts.datatypes.contextual.EnableWinsFlag
+import rdts.datatypes.EnableWinsFlag
+import rdts.dotted.HasDots
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
 import scala.util.Random
 
 object EWFlagGenerators {
+  given HasDots[EnableWinsFlag] = HasDots.noDots
   def genEWFlag: Gen[AntiEntropyContainer[EnableWinsFlag]] =
     for
       nEnable  <- Gen.posNum[Int]
@@ -22,8 +24,8 @@ object EWFlagGenerators {
       val ops = Random.shuffle(List.fill(nEnable)(1) ++ List.fill(nDisable)(0))
 
       ops.foldLeft(AntiEntropyContainer[EnableWinsFlag](ae)) {
-        case (f, 0) => f.mod(_.disable())
-        case (f, 1) => f.mod(_.enable(using rdts.base.LocalUid.predefined(ae.replicaID))())
+        case (f, 0) => f.modn(_.disable())
+        case (f, 1) => f.modn(_.enable(using rdts.base.LocalUid.predefined(ae.replicaID))())
         // default case is only needed to stop the compiler from complaining about non-exhaustive match
         case (f, _) => f
       }
@@ -37,7 +39,7 @@ class EWFlagTest extends munit.ScalaCheckSuite {
 
   property("enable") {
     forAll { (flag: AntiEntropyContainer[EnableWinsFlag]) =>
-      val flagEnabled = flag.mod(_.enable(using flag.replicaID)())
+      val flagEnabled = flag.modn(_.enable(using flag.replicaID)())
 
       assert(
         flagEnabled.data.read,
@@ -48,7 +50,7 @@ class EWFlagTest extends munit.ScalaCheckSuite {
 
   property("disable") {
     forAll { (flag: AntiEntropyContainer[EnableWinsFlag]) =>
-      val flagDisabled = flag.mod(_.disable())
+      val flagDisabled = flag.modn(_.disable())
 
       assert(
         !flagDisabled.data.read,
@@ -63,8 +65,8 @@ class EWFlagTest extends munit.ScalaCheckSuite {
     val aea = new AntiEntropy[EnableWinsFlag]("a", network, mutable.Buffer("b"))
     val aeb = new AntiEntropy[EnableWinsFlag]("b", network, mutable.Buffer("a"))
 
-    val fa0 = AntiEntropyContainer[EnableWinsFlag](aea).mod(_.enable(using aea.localUid)())
-    val fb0 = AntiEntropyContainer[EnableWinsFlag](aeb).mod(_.enable(using aeb.localUid)())
+    val fa0 = AntiEntropyContainer[EnableWinsFlag](aea).modn(_.enable(using aea.localUid)())
+    val fb0 = AntiEntropyContainer[EnableWinsFlag](aeb).modn(_.enable(using aeb.localUid)())
 
     AntiEntropy.sync(aea, aeb)
 
@@ -90,8 +92,8 @@ class EWFlagTest extends munit.ScalaCheckSuite {
     val fa0 = AntiEntropyContainer[EnableWinsFlag](aea)
     val fb0 = AntiEntropyContainer[EnableWinsFlag](aeb)
 
-    val fa1 = fa0.mod(_.disable())
-    val fb1 = fb0.mod(_.disable())
+    val fa1 = fa0.modn(_.disable())
+    val fb1 = fb0.modn(_.disable())
 
     AntiEntropy.sync(aea, aeb)
 
@@ -114,8 +116,8 @@ class EWFlagTest extends munit.ScalaCheckSuite {
     val aea = new AntiEntropy[EnableWinsFlag]("a", network, mutable.Buffer("b"))
     val aeb = new AntiEntropy[EnableWinsFlag]("b", network, mutable.Buffer("a"))
 
-    val fa0 = AntiEntropyContainer[EnableWinsFlag](aea).mod(_.enable(using aea.localUid)())
-    val fb0 = AntiEntropyContainer[EnableWinsFlag](aeb).mod(_.disable())
+    val fa0 = AntiEntropyContainer[EnableWinsFlag](aea).modn(_.enable(using aea.localUid)())
+    val fb0 = AntiEntropyContainer[EnableWinsFlag](aeb).modn(_.disable())
 
     AntiEntropy.sync(aea, aeb)
 
@@ -139,12 +141,12 @@ class EWFlagTest extends munit.ScalaCheckSuite {
       val aeb     = new AntiEntropy[EnableWinsFlag]("b", network, mutable.Buffer("a"))
 
       val fa0 = opsA.foldLeft(AntiEntropyContainer[EnableWinsFlag](aea)) {
-        case (f, false) => f.mod(_.disable())
-        case (f, true)  => f.mod(_.enable(using f.replicaID)())
+        case (f, false) => f.modn(_.disable())
+        case (f, true)  => f.modn(_.enable(using f.replicaID)())
       }
       val fb0 = opsB.foldLeft(AntiEntropyContainer[EnableWinsFlag](aeb)) {
-        case (f, false) => f.mod(_.disable())
-        case (f, true)  => f.mod(_.enable(using f.replicaID)())
+        case (f, false) => f.modn(_.disable())
+        case (f, true)  => f.modn(_.enable(using f.replicaID)())
       }
 
       AntiEntropy.sync(aea, aeb)

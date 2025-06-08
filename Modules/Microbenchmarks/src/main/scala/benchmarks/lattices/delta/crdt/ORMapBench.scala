@@ -1,9 +1,11 @@
 package benchmarks.lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
+import rdts.base.LocalUid
 import rdts.base.LocalUid.asId
-import rdts.datatypes.contextual.{EnableWinsFlag, ObserveRemoveMap}
-import rdts.dotted.{Dotted, Obrem}
+import rdts.datatypes.EnableWinsFlag
+import rdts.datatypes.contextual.ObserveRemoveMap
+import rdts.dotted.{Dotted, HasDots, Obrem}
 
 import java.util.concurrent.TimeUnit
 
@@ -23,13 +25,16 @@ class ORMapBench {
 
   var map: SUT = scala.compiletime.uninitialized
 
+  given LocalUid = LocalUid.predefined("a")
+  given HasDots[EnableWinsFlag] = HasDots.noDots
+
   @Setup
   def setup(): Unit = {
     map = (0 until numEntries).foldLeft(NamedDeltaBuffer.obrem[ObserveRemoveMap[Int, EnableWinsFlag]](
-      "a".asId,
+      summon,
       ObserveRemoveMap.empty
     )) {
-      case (m, i) => m.mod(_.transform(i)(_.mod(_.enable(using m.replicaID)())))
+      case (m, i) => m.mod(_.transformPlain(i)(_.map(_.enable(using m.replicaID)())))
     }
   }
 
@@ -49,10 +54,10 @@ class ORMapBench {
   def queryAllEntries(): Iterable[Boolean] = map.data.queryAllEntries.map(_.read)
 
   @Benchmark
-  def mutateExisting(): SUT = map.mod(_.transform(0)(_.mod(_.disable())))
+  def mutateExisting(): SUT = map.mod(_.transformPlain(0)(_.map(_.disable())))
 
   @Benchmark
-  def mutateMissing(): SUT = map.mod(_.transform(-1)(_.mod(_.enable(using map.replicaID)())))
+  def mutateMissing(): SUT = map.mod(_.transformPlain(-1)(_.map(_.enable())))
 
   @Benchmark
   def removeExisting(): SUT = map.mod(_.remove(0))

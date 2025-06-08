@@ -1,8 +1,7 @@
 package test.rdts.containers
 
 import rdts.base.{Bottom, LocalUid}
-import rdts.datatypes.contextual.EnableWinsFlag
-import rdts.dotted.Dotted
+import rdts.datatypes.EnableWinsFlag
 import rdts.syntax.DeltaBuffer
 
 class DeltaBufferDottedTest extends munit.FunSuite {
@@ -11,17 +10,18 @@ class DeltaBufferDottedTest extends munit.FunSuite {
 
     given LocalUid = LocalUid.gen()
 
-    val dbe = DeltaBuffer[Dotted[EnableWinsFlag]](Dotted(EnableWinsFlag.empty))
+    val dbe = DeltaBuffer[EnableWinsFlag](EnableWinsFlag.empty)
 
-    assertEquals(dbe.state.data, Bottom.empty[EnableWinsFlag])
-    assert(!dbe.data.read)
+    assertEquals(dbe.state, Bottom.empty[EnableWinsFlag])
+    assert(!dbe.state.read)
     assertEquals(dbe.deltaBuffer, List.empty)
 
-    val dis = dbe.modd(_.enable()).modd(_.enable())
-    assert(dis.data.read)
-    val en = dis.modd(_.disable())
+    // two enables produce the exact same result, so do not cause delta buffer to grow
+    val dis = dbe.mod(_.enable()).mod(_.enable())
+    assert(dis.state.read)
+    val en = dis.mod(_.disable())
 
-    assert(!en.data.read)
+    assert(!en.state.read)
     assertEquals(en.deltaBuffer.size, 3)
 
   }

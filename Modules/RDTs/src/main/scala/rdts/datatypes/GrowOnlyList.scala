@@ -65,7 +65,7 @@ case class GrowOnlyList[E](inner: Map[Node[LastWriterWins[E]], Elem[LastWriterWi
 
   def insertGL(i: Int, e: E): Delta = {
     GrowOnlyList(findNth(this, Head, i) match {
-      case None => Map.empty
+      case None       => Map.empty
       case Some(pred) =>
         Map(pred -> Elem(LastWriterWins.now(e)))
     })
@@ -76,7 +76,7 @@ case class GrowOnlyList[E](inner: Map[Node[LastWriterWins[E]], Elem[LastWriterWi
       GrowOnlyList.empty[E]
     else
       GrowOnlyList(findNth(this, Head, i) match {
-        case None => Map.empty
+        case None        => Map.empty
         case Some(after) =>
           val order = elems.map(e => Elem(LastWriterWins.now(e)): Elem[LastWriterWins[E]])
           Map((List(after) ++ order.init) zip order*)
@@ -86,7 +86,7 @@ case class GrowOnlyList[E](inner: Map[Node[LastWriterWins[E]], Elem[LastWriterWi
   @tailrec
   private def withoutRec(state: GrowOnlyList[E], current: Node[LastWriterWins[E]], elems: Set[E]): GrowOnlyList[E] =
     state.inner.get(current) match {
-      case None => state
+      case None                                                => state
       case Some(next @ Elem(tv)) if elems.contains(tv.payload) =>
         val edgeRemoved = state.inner.get(next) match {
           case Some(nextnext) => state.inner.removed(current).removed(next) + (current -> nextnext)

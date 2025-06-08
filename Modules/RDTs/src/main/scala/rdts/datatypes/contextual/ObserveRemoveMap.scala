@@ -5,10 +5,8 @@ import rdts.dotted.HasDots.mapInstance
 import rdts.dotted.{Dotted, HasDots, Obrem}
 import rdts.time.Dots
 
-case class ObserveRemoveMap[K, V](inner: Map[K, V]) derives Decompose {
+case class ObserveRemoveMap[K, V](inner: Map[K, V]) {
   export inner.get
-
-  import ObserveRemoveMap.make
 
   type Delta = Obrem[ObserveRemoveMap[K, V]]
 
@@ -61,7 +59,7 @@ case class ObserveRemoveMap[K, V](inner: Map[K, V]) derives Decompose {
 
   def removeAll(using Bottom[V], HasDots[V])(keys: Iterable[K]): Delta = {
     val values = keys.map(k => inner.getOrElse(k, Bottom[V].empty))
-    val dots = values.foldLeft(Dots.empty) {
+    val dots   = values.foldLeft(Dots.empty) {
       case (set, v) => set `union` HasDots[V].dots(v)
     }
 
@@ -121,7 +119,8 @@ object ObserveRemoveMap {
 
   def empty[K, V]: ObserveRemoveMap[K, V] = ObserveRemoveMap(Map.empty)
 
-  given bottom[K, V]: Bottom[ObserveRemoveMap[K, V]] = Bottom.derived
+  given bottom[K, V]: Bottom[ObserveRemoveMap[K, V]]                  = Bottom.derived
+  given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
   given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]] = HasDots.derived
 

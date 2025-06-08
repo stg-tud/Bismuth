@@ -2,7 +2,7 @@ package benchmarks.lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
-import rdts.datatypes.contextual.EnableWinsFlag
+import rdts.datatypes.EnableWinsFlag
 
 import java.util.concurrent.TimeUnit
 
@@ -15,30 +15,30 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 class EWFlagBench {
 
-  var flagEnabled: DeltaBufferDotted[EnableWinsFlag]  = scala.compiletime.uninitialized
-  var flagDisabled: DeltaBufferDotted[EnableWinsFlag] = scala.compiletime.uninitialized
+  var flagEnabled: NamedDeltaBuffer[EnableWinsFlag]  = scala.compiletime.uninitialized
+  var flagDisabled: NamedDeltaBuffer[EnableWinsFlag] = scala.compiletime.uninitialized
 
   @Setup
   def setup(): Unit = {
-    flagEnabled = NamedDeltaBuffer.dotted("a".asId, EnableWinsFlag.empty).mod(_.enable(using "a".asId)())
-    flagDisabled = NamedDeltaBuffer.dotted("b".asId, EnableWinsFlag.empty).mod(_.disable())
+    flagEnabled = NamedDeltaBuffer("a".asId, EnableWinsFlag.empty).mod(_.enable(using "a".asId)())
+    flagDisabled = NamedDeltaBuffer("b".asId, EnableWinsFlag.empty).mod(_.disable())
   }
 
   @Benchmark
-  def readEnabled(): Boolean = flagEnabled.data.read
+  def readEnabled(): Boolean = flagEnabled.state.read
 
   @Benchmark
-  def readDisabled(): Boolean = flagDisabled.data.read
+  def readDisabled(): Boolean = flagDisabled.state.read
 
   @Benchmark
-  def enableEnabled(): DeltaBufferDotted[EnableWinsFlag] = flagEnabled.mod(_.enable(using flagEnabled.replicaID)())
+  def enableEnabled(): NamedDeltaBuffer[EnableWinsFlag] = flagEnabled.mod(_.enable(using flagEnabled.replicaID)())
 
   @Benchmark
-  def enableDisabled(): DeltaBufferDotted[EnableWinsFlag] = flagDisabled.mod(_.enable(using flagDisabled.replicaID)())
+  def enableDisabled(): NamedDeltaBuffer[EnableWinsFlag] = flagDisabled.mod(_.enable(using flagDisabled.replicaID)())
 
   @Benchmark
-  def disableEnabled(): DeltaBufferDotted[EnableWinsFlag] = flagEnabled.mod(_.disable())
+  def disableEnabled(): NamedDeltaBuffer[EnableWinsFlag] = flagEnabled.mod(_.disable())
 
   @Benchmark
-  def disableDisabled(): DeltaBufferDotted[EnableWinsFlag] = flagDisabled.mod(_.disable())
+  def disableDisabled(): NamedDeltaBuffer[EnableWinsFlag] = flagDisabled.mod(_.disable())
 }

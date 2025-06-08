@@ -170,8 +170,12 @@ object DataGenerator {
     Gen.listOf(Gen.zip(uniqueDot, arb.arbitrary)).map: pairs =>
       MultiVersionRegister(pairs.toMap)
 
-  given arbEnableWinsFlag: Arbitrary[contextual.EnableWinsFlag] = Arbitrary:
-    arbDots.arbitrary.map(EnableWinsFlag.apply)
+  given arbEnableWinsFlag: Arbitrary[EnableWinsFlag] = Arbitrary {
+    for
+      set <- arbDots.arbitrary
+      unset <- arbDots.arbitrary
+    yield EnableWinsFlag(set, unset)
+  }
 
   given arbCausalDelta[A: {Arbitrary, HasDots}]: Arbitrary[CausalDelta[A]] = Arbitrary:
     for

@@ -4,12 +4,12 @@ import munit.TestValues
 import munit.internal.FutureCompat.ExtensionFuture
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
-import rdts.base.{Bottom, BottomOpt, Lattice, Decompose}
+import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.alternatives.{MultiValueRegister, ObserveRemoveSet}
 import rdts.datatypes.contextual.ReplicatedList
 import rdts.datatypes.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.experiments.CausalStore
-import rdts.datatypes.{GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, PosNegCounter, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, PosNegCounter, TwoPhaseSet, contextual}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots, VectorClock}
 import test.rdts.DataGenerator.RGAGen.given
@@ -29,7 +29,7 @@ class OpGraphChecks           extends LatticePropertyChecks[OpGraph[ExampleData]
 class CausalStoreChecks       extends LatticePropertyChecks[CausalStore[Map[Dot, ExampleData]]]
 class DottedCausalStoreChecks extends LatticePropertyChecks[Dotted[CausalStore[Map[Dot, ExampleData]]]]
 class DotSetChecks            extends LatticePropertyChecks[Dotted[Dots]]
-class EnableWinsFlagChecks    extends LatticePropertyChecks[Dotted[contextual.EnableWinsFlag]]
+class EnableWinsFlagChecks    extends LatticePropertyChecks[EnableWinsFlag]
 class DotFunChecks            extends LatticePropertyChecks[Dotted[Map[Dot, Int]]]
 class DotFunExampleChecks     extends LatticePropertyChecks[Dotted[Map[Dot, ExampleData]]]
 class ConMultiVersionChecks   extends LatticePropertyChecks[Dotted[contextual.MultiVersionRegister[Int]]]

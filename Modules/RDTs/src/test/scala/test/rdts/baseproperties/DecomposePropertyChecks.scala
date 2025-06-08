@@ -7,7 +7,7 @@ import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.alternatives.MultiValueRegister
 import rdts.datatypes.contextual.ReplicatedList
-import rdts.datatypes.{GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, PosNegCounter, TwoPhaseSet, contextual}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, PosNegCounter, TwoPhaseSet, contextual}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.DataGenerator.RGAGen.given
@@ -17,7 +17,7 @@ import test.rdts.isGithubCi
 import scala.util.{Failure, Success}
 
 class DotSetDecomposeChecks          extends DecomposePropertyChecks[Dotted[Dots]]
-class EnableWinsFlagDecomposeChecks  extends DecomposePropertyChecks[Dotted[contextual.EnableWinsFlag]]
+class EnableWinsFlagDecomposeChecks  extends DecomposePropertyChecks[EnableWinsFlag]
 class DotFunDecomposeChecks          extends DecomposePropertyChecks[Dotted[Map[Dot, Int]]]
 class ConMultiVersionDecomposeChecks extends DecomposePropertyChecks[Dotted[contextual.MultiVersionRegister[Int]]]
 class DotMapDecomposeChecks          extends DecomposePropertyChecks[Dotted[Map[rdts.base.Uid, Dots]]](expensive = true)

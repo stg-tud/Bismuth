@@ -89,7 +89,8 @@ object Dotted {
 
         val compacted   = compact(deltas.toList, Nil)
         val presentDots = compacted.iterator.map(_.context).foldLeft(Dots.empty)(_ `union` _)
-        assert(a.context.contains(presentDots), "fantasized new dots, this likely means a bug elsewhere")
+        assert(a.context.contains(presentDots),
+          s"fantasized new dots (${presentDots} not a subset of ${a.context}), this likely means a bug elsewhere.\n\tdecomposition was ${a.data.decomposed.toList}")
         val removed = a.context `subtract` presentDots
         val empty   = Bottom[A].empty
         compacted concat removed.decomposed.flatMap(dots => Option.when(!dots.isEmpty)(Dotted(empty, dots)))

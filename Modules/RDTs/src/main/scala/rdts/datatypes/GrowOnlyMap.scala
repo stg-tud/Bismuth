@@ -15,7 +15,7 @@ import rdts.time.Dots
 case class GrowOnlyMap[K, V](inner: Map[K, V]) {
 
   export inner.{get, getOrElse, contains, values, valuesIterator, keySet, keys, keysIterator, exists, iterator}
-
+  
   def mutateKeyNamedCtx(k: K, default: => V)(m: Dotted[V] => Dotted[V])(using
       context: Dots
   ): Dotted[GrowOnlyMap[K, V]] = {
