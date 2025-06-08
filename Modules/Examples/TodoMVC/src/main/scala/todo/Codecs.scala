@@ -4,7 +4,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Uid
 import rdts.datatypes.{LastWriterWins, ReplicatedList}
-import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 import rdts.time.Dot
 import replication.JsoniterCodecs.given

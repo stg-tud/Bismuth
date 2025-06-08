@@ -7,7 +7,7 @@ import reactives.core.{ReInfo, ReSource, Tracing}
 import reactives.structure.Pulse
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+import scala.scalajs.js.annotation.JSExportTopLevel
 
 object DebugAdapter {
 
