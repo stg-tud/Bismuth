@@ -111,25 +111,28 @@ case class Spreadsheet(
     )
   }
 
-  def editCell(visibleRowIdx: Int, visibleColIdx: Int, content: String | Null)(using LocalUid)(using context: Dots): D =
-  {
+  def editCell(visibleRowIdx: Int, visibleColIdx: Int, cellContent: String | Null)(using LocalUid)(using context: Dots): D = {
     val rowIdx = visibleRowIdxToRowIdx(visibleRowIdx)
-    val colIdx = visibleColIdxToColIdx(visibleColIdx)
-
     val rowId = rowIds.read(rowIdx).get
+    val rowOperationId = context.nextDot(LocalUid.replicaId)
+    val keepRowsUpdate = keepRows.update(rowId, keepRows.queryKey(rowId).write(LocalUid.replicaId, rowOperationId))
+
+    val colIdx = visibleColIdxToColIdx(visibleColIdx)
     val colId = colIds.read(colIdx).get
+    val colOperationId = context.nextDot(LocalUid.replicaId)
+    val keepColsUpdate = keepCols.update(colId, keepCols.queryKey(colId).write(LocalUid.replicaId, colOperationId))
 
-    val operation1Id = context.nextDot(LocalUid.replicaId)
-    val operation2Id = context.nextDot(LocalUid.replicaId)
-
-    val keepRowsUpdate = keepRows.update(rowId, keepRows.queryKey(rowId).write(LocalUid.replicaId, operation1Id))
-    val keepColsUpdate = keepCols.update(colId, keepCols.queryKey(colId).write(LocalUid.replicaId, operation2Id))
+    val lastWriterWinsCellContent =
+      if(content.get(colId).exists(_.contains(rowId)))
+        content.get(colId).get(rowId).write(cellContent)
+      else
+        LastWriterWins(CausalTime.now(), cellContent)
 
     Obrem(
       Spreadsheet(
         rowIds = rowIds,
         colIds = colIds,
-        content = Map(colId -> Map(rowId -> LastWriterWins(CausalTime.now(), content))),
+        content = Map(colId -> Map(rowId -> lastWriterWinsCellContent)),
         keepRows = keepRowsUpdate.data,
         keepCols = keepColsUpdate.data
       ),
