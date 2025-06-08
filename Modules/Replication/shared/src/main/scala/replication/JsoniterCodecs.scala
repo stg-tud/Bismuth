@@ -4,7 +4,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Uid
 import rdts.datatypes.*
-import rdts.datatypes.alternatives.ResettableCounter
 import rdts.datatypes.experiments.AuctionInterface.AuctionData
 import rdts.dotted.Dotted
 import rdts.time.{ArrayRanges, Dot, Dots, Time}
@@ -80,11 +79,6 @@ object JsoniterCodecs {
   /** PNCounter */
 
   given PNCounterStateCodec: JsonValueCodec[PosNegCounter] = JsonCodecMaker.make
-
-  /** ResettableCounter */
-
-  given RCounterStateCodec: JsonValueCodec[ResettableCounter] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
   /** RGA */
   given RGAStateCodec[E: JsonValueCodec]: JsonValueCodec[Dotted[ReplicatedList[E]]] = {
