@@ -9,8 +9,7 @@ import rdts.time.Dots
 
 object SpreadsheetComponent {
 
-  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[Spreadsheet] = {
-    given LocalUid = LocalUid.gen()
+  def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet] = {
     new SpreadsheetDeltaAggregator(Obrem(Spreadsheet()))
       .edit(_.addRow())
       .edit(_.addRow())
@@ -22,7 +21,8 @@ object SpreadsheetComponent {
 
   case class Props(
       spreadsheetAggregator: SpreadsheetDeltaAggregator[Spreadsheet],
-      onDelta: Obrem[Spreadsheet] => Callback
+      onDelta: Obrem[Spreadsheet] => Callback,
+      replicaId: LocalUid
   )
 
   case class State(
@@ -33,10 +33,10 @@ object SpreadsheetComponent {
   )
 
   class Backend($ : BackendScope[Props, State]) {
-    given LocalUid = LocalUid.gen()
 
-    private def modSpreadsheet(f: Dots ?=> Spreadsheet => Obrem[Spreadsheet]): Callback = {
+    private def modSpreadsheet(f: (LocalUid) ?=> (Dots ?=> Spreadsheet => Obrem[Spreadsheet])): Callback = {
       $.props.flatMap { props =>
+        given LocalUid = props.replicaId
         val delta = props.spreadsheetAggregator.editAndGetDelta(f)
         props.onDelta(delta)
       }
@@ -70,10 +70,10 @@ object SpreadsheetComponent {
 
     def commitEdit(): Callback = {
       $.state.flatMap { state =>
-        state.editingCell.traverse_ { case (rowIdx, colIdx) =>
+        state.editingCell.map { case (rowIdx, colIdx) =>
           val value = state.editingValue.trim
           modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
-        }
+        }.getOrElse(Callback.empty)
       }
     }
 

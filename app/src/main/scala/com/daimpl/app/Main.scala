@@ -5,16 +5,23 @@ import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
 import rdts.base.Lattice
+import rdts.base.LocalUid
 import rdts.dotted.Obrem
 
 object Main {
-  case class SpreadsheetData(id: Int, isOnline: Boolean, aggregator: SpreadsheetDeltaAggregator[Spreadsheet])
+  case class SpreadsheetData(
+      id: Int,
+      isOnline: Boolean,
+      aggregator: SpreadsheetDeltaAggregator[Spreadsheet],
+      replicaId: LocalUid
+  )
   case class State(spreadsheets: List[SpreadsheetData], nextId: Int)
 
   class Backend($ : BackendScope[Unit, State]) {
     def addSpreadsheet(): Callback = {
       $.modState { state =>
         val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
+        given LocalUid = LocalUid.gen()
 
         val newAggregator =
           if (onlineSpreadsheets.isEmpty) {
@@ -27,7 +34,7 @@ object Main {
           }
 
         state.copy(
-          spreadsheets = state.spreadsheets :+ SpreadsheetData(state.nextId, isOnline = true, newAggregator),
+          spreadsheets = state.spreadsheets :+ SpreadsheetData(state.nextId, isOnline = true, newAggregator, summon),
           nextId = state.nextId + 1
         )
       }
@@ -90,9 +97,13 @@ object Main {
 
   val App = ScalaComponent
     .builder[Unit]("App")
-    .initialState(
-      State(List(SpreadsheetData(1, isOnline = true, SpreadsheetComponent.createSampleSpreadsheet())), 2)
-    )
+    .initialState {
+      given LocalUid = LocalUid.gen()
+      State(
+        List(SpreadsheetData(1, isOnline = true, SpreadsheetComponent.createSampleSpreadsheet(), summon)),
+        2
+      )
+    }
     .backend(new Backend(_))
     .render { $ =>
       val state = $.state
@@ -125,7 +136,8 @@ object Main {
               SpreadsheetComponent.Component(
                 SpreadsheetComponent.Props(
                   spreadsheetAggregator = sheetData.aggregator,
-                  onDelta = delta => backend.handleDelta(sheetData.id, delta)
+                  onDelta = delta => backend.handleDelta(sheetData.id, delta),
+                  replicaId = sheetData.replicaId
                 )
               )
             )
