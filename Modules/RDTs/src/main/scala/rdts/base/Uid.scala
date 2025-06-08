@@ -13,7 +13,7 @@ case class Uid(delegate: String) derives CanEqual {
     s"🪪$shortened"
 }
 
-object Uid:
+object Uid {
   given ordering: Ordering[Uid]  = Ordering.String.on(_.delegate)
   def predefined(s: String): Uid = Uid(s)
   def unwrap(id: Uid): String    = id.delegate
@@ -23,7 +23,7 @@ object Uid:
 
   given toLocal: Conversion[Uid, LocalUid] = x => LocalUid(x)
 
-  val jvmID: String = Base64.encode(scala.util.Random.nextLong(1L << 48))
+  val jvmID: String = UidEncoding.encode(scala.util.Random.nextLong(1L << 48))
 
   private var idCounter: Long = -1
 
@@ -34,10 +34,10 @@ object Uid:
   def gen(): Uid = synchronized {
     idCounter = (idCounter + 1)
 
-    if idCounter != 0 then Uid(s"${Base64.encode(idCounter)}.$jvmID")
+    if idCounter != 0 then Uid(s"${UidEncoding.encode(idCounter)}.$jvmID")
     else Uid(s"$jvmID")
   }
-
+}
 @implicitNotFound(
   "Requires a replica ID of the current local replica that is doing the modification."
 )
@@ -60,7 +60,7 @@ object LocalUid {
   def replicaId(using rid: LocalUid): Uid = rid.uid
 }
 
-object Base64 {
+object UidEncoding {
   private val alphabet: Array[Char] = Array(
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
     'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
@@ -69,14 +69,15 @@ object Base64 {
 
   private val sb = StringBuilder(12)
 
-  /** Encodes in chunks of 6 bits, starting from the least significant bits.
-    * Thus very unlikely to match any other base64 encoding.
+  /** Uids are stored as short strings for efficient JSON encoding.
+    * The encoding is inspired by 64, but without the additional characters to signify the number of encoded bits.
+    * Encodes in chunks of 6 bits, starting from the least significant bits.
     */
   def encode(long: Long): String = synchronized {
     sb.clear()
     var remaining = long
     while remaining != 0 do
-      sb.append(alphabet((remaining & 63).toInt))
+      sb.append(alphabet((remaining & 0b111111).toInt))
       remaining = remaining >>> 6
     sb.result()
   }
