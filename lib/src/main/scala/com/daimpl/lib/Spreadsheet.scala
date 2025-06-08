@@ -12,29 +12,31 @@ import rdts.time.{CausalTime, Dot, Dots, Time, VectorClock}
 import scala.collection.mutable
 
 case class Spreadsheet(
-  colIds:   ReplicatedList[Dot] = ReplicatedList.empty,
-  rowIds:   ReplicatedList[Dot] = ReplicatedList.empty,
-  content:  Map[Dot, Map[Dot, LastWriterWins[String | Null]]] = Map.empty,
-  keepCols: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty,
-  keepRows: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty
-) extends SpreadsheetLike[Obrem[Spreadsheet]] derives Lattice, HasDots, Bottom
-{
+    colIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    content: Map[Dot, Map[Dot, LastWriterWins[String | Null]]] = Map.empty,
+    keepCols: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty,
+    keepRows: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty
+) extends SpreadsheetLike[Obrem[Spreadsheet]] derives Lattice, HasDots, Bottom {
   type D = Obrem[Spreadsheet]
 
   def visibleRowIds: List[Dot] =
-    rowIds.toList//.filter(keepRows.queryKey(_).values.size > 0)
+    rowIds.toList // .filter(keepRows.queryKey(_).values.size > 0)
 
   def visibleColIds: List[Dot] =
-    colIds.toList//.filter(keepCols.queryKey(_).values.size > 0)
+    colIds.toList // .filter(keepCols.queryKey(_).values.size > 0)
 
   def addRow()(using LocalUid)(using context: Dots): D = {
     val rowId = context.nextDot(LocalUid.replicaId)
     val operationId = context.nextDot(LocalUid.replicaId)
-    val keepRowsUpdate = keepRows.update(rowId, MultiValueRegister(Map(VectorClock(Map(LocalUid.replicaId -> Time.current())) -> operationId)))
+    val keepRowsUpdate = keepRows.update(
+      rowId,
+      MultiValueRegister(Map(VectorClock(Map(LocalUid.replicaId -> Time.current())) -> operationId))
+    )
     Obrem(
       Spreadsheet(
-        rowIds = rowIds.append(rowId).data,
-        //keepRows = keepRowsUpdate.data
+        rowIds = rowIds.append(rowId).data
+        // keepRows = keepRowsUpdate.data
       ),
       Dots.single(rowId),
       Dots.empty
@@ -44,11 +46,14 @@ case class Spreadsheet(
   def addColumn()(using LocalUid)(using context: Dots): D = {
     val colId = context.nextDot(LocalUid.replicaId)
     val operationId = context.nextDot(LocalUid.replicaId)
-    val keepColsUpdate = keepCols.update(colId, MultiValueRegister(Map(VectorClock(Map(LocalUid.replicaId -> Time.current())) -> operationId)))
+    val keepColsUpdate = keepCols.update(
+      colId,
+      MultiValueRegister(Map(VectorClock(Map(LocalUid.replicaId -> Time.current())) -> operationId))
+    )
     Obrem(
       Spreadsheet(
-        colIds = colIds.append(colId).data,
-        //keepCols = keepColsUpdate.data
+        colIds = colIds.append(colId).data
+        // keepCols = keepColsUpdate.data
       ),
       Dots.single(colId),
       Dots.empty
@@ -59,10 +64,10 @@ case class Spreadsheet(
     val keepRowsUpdate = keepRows.update(rowIds.read(rowIdx).get, MultiValueRegister(Map.empty))
     Obrem(
       Spreadsheet(
-        //keepRows = keepRowsUpdate.data
+        // keepRows = keepRowsUpdate.data
       ),
       Dots.empty,
-      rowIds.delete(rowIdx).context,
+      rowIds.delete(rowIdx).context
     )
   }
 
@@ -70,7 +75,7 @@ case class Spreadsheet(
     val keepColsUpdate = keepCols.update(colIds.read(colIdx).get, MultiValueRegister(Map.empty))
     Obrem(
       Spreadsheet(
-        //keepCols = keepColsUpdate.data
+        // keepCols = keepColsUpdate.data
       ),
       Dots.empty,
       colIds.delete(colIdx).context
@@ -83,7 +88,7 @@ case class Spreadsheet(
       Spreadsheet(
         rowIds = rowIds.insert(rowIdx, rowId).data
       ),
-      //Dots.from(keepRows.queryKey(rowId).values).add(rowId),
+      // Dots.from(keepRows.queryKey(rowId).values).add(rowId),
       Dots.single(rowId),
       Dots.empty
     )
@@ -95,14 +100,13 @@ case class Spreadsheet(
       Spreadsheet(
         colIds = colIds.insert(colIdx, colId).data
       ),
-      //Dots.from(keepCols.queryKey(colId).values).add(colId),
+      // Dots.from(keepCols.queryKey(colId).values).add(colId),
       Dots.single(colId),
       Dots.empty
     )
   }
 
-  def editCell(rowIdx: Int, colIdx: Int, content: String | Null)(using LocalUid)(using context: Dots): D =
-  {
+  def editCell(rowIdx: Int, colIdx: Int, content: String | Null)(using LocalUid)(using context: Dots): D = {
     val rowId = rowIds.read(rowIdx).get
     val colId = colIds.read(colIdx).get
 
@@ -114,12 +118,13 @@ case class Spreadsheet(
 
     Obrem(
       Spreadsheet(
-        rowIds = rowIds, colIds = colIds,
-        content = Map(colId -> Map(rowId -> LastWriterWins(CausalTime.now(), content))),
-        //keepRows = keepRowsUpdate.data,
-        //keepCols = keepColsUpdate.data
+        rowIds = rowIds,
+        colIds = colIds,
+        content = Map(colId -> Map(rowId -> LastWriterWins(CausalTime.now(), content)))
+        // keepRows = keepRowsUpdate.data,
+        // keepCols = keepColsUpdate.data
       ),
-      //(keepRowsUpdate.observed `union` keepRowsUpdate.observed).add(colId).add(rowId),
+      // (keepRowsUpdate.observed `union` keepRowsUpdate.observed).add(colId).add(rowId),
       Dots.single(colId).add(rowId),
       Dots.empty
     )
@@ -131,11 +136,15 @@ case class Spreadsheet(
     println(s"${colIds.toList.size}x${rowIds.toList.size}")
     for (r <- rowIds.toList) {
       val line = colIds.toList
-        .map(c => ("%" + maxStringLength + "s").format(content.get(c)
-          .flatMap(_.get(r))
-          .map(_.value)
-          .getOrElse("·")
-        ))
+        .map(c =>
+          ("%" + maxStringLength + "s").format(
+            content
+              .get(c)
+              .flatMap(_.get(r))
+              .map(_.value)
+              .getOrElse("·")
+          )
+        )
         .mkString("| ", " | ", " |")
       println(line)
     }

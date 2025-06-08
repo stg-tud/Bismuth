@@ -15,7 +15,6 @@ def main(): Unit = {
   list = list `merge` list.mod(_.delete(1))
   println(list.data.toList)
 
-
   /*val spreadsheet = SpreadsheetDeltaAggregator(Dotted(Spreadsheet()))
   val localUid = new LocalUid(new Uid("user1"))
   given LocalUid = localUid

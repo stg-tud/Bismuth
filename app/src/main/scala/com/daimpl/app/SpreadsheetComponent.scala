@@ -34,14 +34,14 @@ object SpreadsheetComponent {
   }
 
   case class State(
-    spreadsheet: SpreadsheetDeltaAggregator[Spreadsheet],
-    editingCell: Option[(Int, Int)],
-    editingValue: String,
-    selectedRow: Option[Int],
-    selectedColumn: Option[Int]
+      spreadsheet: SpreadsheetDeltaAggregator[Spreadsheet],
+      editingCell: Option[(Int, Int)],
+      editingValue: String,
+      selectedRow: Option[Int],
+      selectedColumn: Option[Int]
   )
 
-  class Backend($: BackendScope[Unit, State]) {
+  class Backend($ : BackendScope[Unit, State]) {
     given LocalUid = LocalUid.gen()
 
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
@@ -75,7 +75,7 @@ object SpreadsheetComponent {
           case Some((rowIdx, colIdx)) =>
             val newSpreadsheet = state.spreadsheet
               .edit(_.editCell(rowIdx, colIdx, if (state.editingValue.trim.isEmpty) null else state.editingValue))
-            
+
             state.copy(
               spreadsheet = newSpreadsheet,
               editingCell = None,
@@ -184,7 +184,8 @@ object SpreadsheetComponent {
     }
   }
 
-  val Component = ScalaComponent.builder[Unit]("Spreadsheet")
+  val Component = ScalaComponent
+    .builder[Unit]("Spreadsheet")
     .initialState(State(createSampleSpreadsheet(), None, "", None, None))
     .backend(new Backend(_))
     .render { $ =>
@@ -253,19 +254,22 @@ object SpreadsheetComponent {
                   ^.className := "border border-gray-300 px-4 py-2 bg-gray-50 font-semibold w-16",
                   "#"
                 ),
-                (0 until spreadsheet.numColumns).map(i =>
-                  <.th(
-                    ^.key := s"header-$i",
-                    ^.className := {
-                      val baseClass = "border border-gray-300 px-4 py-2 font-semibold w-32 max-w-32 cursor-pointer hover:bg-gray-200"
-                      if (state.selectedColumn.contains(i)) baseClass + " bg-blue-200"
-                      else baseClass + " bg-gray-100"
-                    },
-                    ^.onClick --> backend.selectColumn(i),
-                    ^.title := "Click to select column",
-                    (i + 'A').toChar.toString
+                (0 until spreadsheet.numColumns)
+                  .map(i =>
+                    <.th(
+                      ^.key := s"header-$i",
+                      ^.className := {
+                        val baseClass =
+                          "border border-gray-300 px-4 py-2 font-semibold w-32 max-w-32 cursor-pointer hover:bg-gray-200"
+                        if (state.selectedColumn.contains(i)) baseClass + " bg-blue-200"
+                        else baseClass + " bg-gray-100"
+                      },
+                      ^.onClick --> backend.selectColumn(i),
+                      ^.title := "Click to select column",
+                      (i + 'A').toChar.toString
+                    )
                   )
-                ).toVdomArray
+                  .toVdomArray
               )
             ),
             <.tbody(
@@ -274,7 +278,8 @@ object SpreadsheetComponent {
                   ^.key := s"row-$rowIdx",
                   <.td(
                     ^.className := {
-                      val baseClass = "border border-gray-300 px-4 py-2 font-medium text-center cursor-pointer hover:bg-gray-200"
+                      val baseClass =
+                        "border border-gray-300 px-4 py-2 font-medium text-center cursor-pointer hover:bg-gray-200"
                       if (state.selectedRow.contains(rowIdx)) baseClass + " bg-blue-200"
                       else baseClass + " bg-gray-50"
                     },
@@ -314,4 +319,4 @@ object SpreadsheetComponent {
       )
     }
     .build
-} 
+}

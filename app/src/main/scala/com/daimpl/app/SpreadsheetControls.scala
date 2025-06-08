@@ -4,15 +4,16 @@ import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 
 object SpreadsheetControls {
-  
+
   case class Props(
-    spreadsheetId: Int,
-    isOnline: Boolean,
-    onToggleOnline: Int => Callback,
-    onRemove: Int => Callback
+      spreadsheetId: Int,
+      isOnline: Boolean,
+      onToggleOnline: Int => Callback,
+      onRemove: Int => Callback
   )
 
-  val Component = ScalaComponent.builder[Props]("SpreadsheetControls")
+  val Component = ScalaComponent
+    .builder[Props]("SpreadsheetControls")
     .render_P { props =>
       <.div(
         ^.className := "flex justify-between items-center mb-4 p-3 bg-gray-50 rounded-lg border",
@@ -37,11 +38,11 @@ object SpreadsheetControls {
           ^.className := "flex gap-2",
           <.button(
             ^.className := s"px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
-              if (props.isOnline) 
-                "bg-red-500 hover:bg-red-600 text-white" 
-              else 
-                "bg-green-500 hover:bg-green-600 text-white"
-            }",
+                if (props.isOnline)
+                  "bg-red-500 hover:bg-red-600 text-white"
+                else
+                  "bg-green-500 hover:bg-green-600 text-white"
+              }",
             ^.onClick --> props.onToggleOnline(props.spreadsheetId),
             if (props.isOnline) "Go Offline" else "Go Online"
           ),
@@ -54,4 +55,4 @@ object SpreadsheetControls {
       )
     }
     .build
-} 
+}
