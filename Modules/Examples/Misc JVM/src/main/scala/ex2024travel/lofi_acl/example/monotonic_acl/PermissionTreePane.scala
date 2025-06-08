@@ -36,12 +36,12 @@ class PermissionTreePane(
   private val expensesParentCheckBoxes =
     ExpensePermCheckBoxes(globalReadCheckBox.selected, globalWriteCheckBox.selected)
 
-  private val bucketListEntryCheckBoxes = rdt.bucketList.data.inner.map { (id, description) =>
+  private val bucketListEntryCheckBoxes = rdt.bucketList.inner.map { (id, description) =>
     val (read, write) = wiredReadWriteCheckboxes(bucketListReadCheckBox.selected, bucketListWriteCheckBox.selected)
     id -> (description.value.read, read, write)
   }
 
-  private val expenseEntryCheckBoxes = rdt.expenses.data.inner.map { (id, expense) =>
+  private val expenseEntryCheckBoxes = rdt.expenses.inner.map { (id, expense) =>
     id -> ExpensePermEntryCheckBoxes(
       expense.value.description.read.getOrElse("N/A"),
       parentRead = expensesParentCheckBoxes.read.selected,

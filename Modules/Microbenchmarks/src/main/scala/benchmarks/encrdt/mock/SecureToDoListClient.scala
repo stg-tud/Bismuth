@@ -6,6 +6,7 @@ import benchmarks.encrdt.localidFromString
 import benchmarks.encrdt.mock.SecureToDoListClient.{ToDoMapLattice, mergeDecryptedDeltas}
 import benchmarks.encrdt.todolist.ToDoEntry
 import rdts.base.LocalUid
+import rdts.datatypes.ObserveRemoveMap
 import rdts.dotted.{Dotted, Obrem}
 import rdts.syntax.DeltaAWLWWMContainer
 import rdts.syntax.DeltaAWLWWMContainer.State
@@ -23,7 +24,7 @@ class SecureToDoListClient(
 
   private val uuidToDeltaGroupMap: mutable.Map[UUID, DecryptedDeltaGroup[ToDoMapLattice]] = mutable.Map.empty
   private var cleanupDeltaGroup: DecryptedDeltaGroup[ToDoMapLattice] =
-    DecryptedDeltaGroup(Obrem.empty, Dots.empty)
+    DecryptedDeltaGroup(ObserveRemoveMap.empty, Dots.empty)
 
   private var _disseminatedDataInBytes: Long = 0
   def disseminatedDataInBytes: Long          = _disseminatedDataInBytes

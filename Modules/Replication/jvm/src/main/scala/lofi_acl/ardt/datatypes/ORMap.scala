@@ -4,8 +4,10 @@ import lofi_acl.access.Permission.*
 import lofi_acl.access.InvalidPathException
 import lofi_acl.access.{Filter, PermissionTree}
 import rdts.base.Bottom
-import rdts.datatypes.contextual.ObserveRemoveMap
-import rdts.datatypes.contextual.ObserveRemoveMap.Entry
+import rdts.datatypes.ObserveRemoveMap
+import ObserveRemoveMap.Entry
+import rdts.dotted.Obrem
+import rdts.time.Dots
 
 object ORMap {
   given stringKeyORMapFilter[V: Filter]: Filter[ObserveRemoveMap[String, V]] with
@@ -15,7 +17,7 @@ object ORMap {
         case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
           val wildcardPermission = mapOfEntryPermissions.get("*")
           ObserveRemoveMap(
-            delta.inner.flatMap { case key -> value =>
+            Obrem(delta.inner.flatMap { case key -> value =>
               // Assumes normalized PermissionTree
               mapOfEntryPermissions.get(key) match
                 case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
@@ -23,7 +25,9 @@ object ORMap {
                   if wildcardPermission.nonEmpty
                   then Some(key -> Filter[V].filter(value, wildcardPermission.get))
                   else None /* No rule for key -> discard entry */
-            }
+            },
+            // TODO: these being empty seems wildly incorrect
+              Dots.empty, Dots.empty)
           )
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =

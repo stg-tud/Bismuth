@@ -11,10 +11,9 @@ import rdts.datatypes.alternatives.ObserveRemoveSet
 
 import scala.util.Random
 import rdts.dotted.Obrem
-import rdts.datatypes.contextual.ObserveRemoveMap
 import rdts.time.Dot
 import rdts.base.Lattice
-import rdts.datatypes.LastWriterWins
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.time.Dots
 import replication.DeltaDissemination
 
@@ -81,7 +80,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 }
 
 class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long) extends CaseStudyRdt {
-  type RdtType = Obrem[ObserveRemoveMap[String, Dot]]
+  type RdtType = ObserveRemoveMap[String, Dot]
 
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
@@ -95,26 +94,18 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
       println("replica received new state information"), // we ignore state updates as there will be only one active rdt
   )
 
-  var state: RdtType = Obrem(ObserveRemoveMap.empty[String, Dot])
+  var state: RdtType = ObserveRemoveMap.empty[String, Dot]
 
   private def addStringGetDelta(s: String): RdtType = {
-    state.mod { ctx ?=> current =>
-      val nextDot = ctx.nextDot(dataManager.replicaId.uid)
-      current.update(s, nextDot)
-    }
+      val nextDot = state.repr.context.nextDot(dataManager.replicaId.uid)
+      state.update(s, nextDot)
   }
 
   private def removeStringGetDelta(s: String): RdtType = {
-    state.mod { ctx ?=> current =>
-      current.remove(s)
-    }
+    state.remove(s)
   }
 
-  private def clearGetDelta(): RdtType = {
-    state.mod { ctx ?=> current =>
-      current.clear()
-    }
-  }
+  private def clearGetDelta(): RdtType = state.clear()
 
   def connect(
       host: String,

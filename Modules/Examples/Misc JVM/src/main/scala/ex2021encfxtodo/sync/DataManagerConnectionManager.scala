@@ -26,10 +26,8 @@ class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aea
 
 class DataManagerConnectionManager[State: {JsonValueCodec, Lattice, Bottom, HasDots}](
     replicaId: LocalUid,
-    receiveCallback: Obrem[State] => Unit
-) extends ConnectionManager[Obrem[State]] {
-
-  given JsonValueCodec[Obrem[State]] = JsonCodecMaker.make
+    receiveCallback: State => Unit
+) extends ConnectionManager[State] {
 
   AeadConfig.register()
   private val keysetFilePath: Path = Path.of("demokey.json")
@@ -44,8 +42,8 @@ class DataManagerConnectionManager[State: {JsonValueCodec, Lattice, Bottom, HasD
 
   println(LegacyKeysetSerialization.getKeysetInfo(keyset))
 
-  val dataManager: DeltaDissemination[Obrem[State]] =
-    DeltaDissemination[Obrem[State]](
+  val dataManager: DeltaDissemination[State] =
+    DeltaDissemination[State](
       replicaId: LocalUid,
       receiveCallback,
       crypto = Some(AeadTranslation(aead))
@@ -66,7 +64,7 @@ class DataManagerConnectionManager[State: {JsonValueCodec, Lattice, Bottom, HasD
 
   override val localReplicaId: String = replicaId.toString
 
-  override def stateChanged(newState: Obrem[State]): Unit = {
+  override def stateChanged(newState: State): Unit = {
     dataManager.applyDelta(newState)
   }
 

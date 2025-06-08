@@ -1,9 +1,8 @@
 package rdts.syntax
 
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.LastWriterWins
-import rdts.datatypes.contextual.ObserveRemoveMap
-import rdts.datatypes.contextual.ObserveRemoveMap.Entry
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import ObserveRemoveMap.Entry
 import rdts.dotted.{Dotted, Obrem}
 import rdts.syntax.DeltaAWLWWMContainer.State
 import rdts.time.Dots
@@ -20,18 +19,16 @@ class DeltaAWLWWMContainer[K, V](
   given LocalUid = replicaId
 
   def get(key: K): Option[V] =
-    _state.data.get(key).map(_.value.value)
+    _state.get(key).map(_.value.value)
 
   def put(key: K, value: V): Unit = { putDelta(key, value); () }
 
   def putDelta(key: K, value: V): State[K, V] = {
     val delta = {
-      _state.mod { (context: Dots) ?=> (ormap: ObserveRemoveMap[K, Entry[LastWriterWins[V]]]) =>
-        val nextDot = Dots.single(context.nextDot(replicaId.uid))
-        ormap.transformPlain(key) {
-          case Some(prior) => Some(Entry(nextDot, prior.value.write(value)))
-          case None        => Some(Entry(nextDot, LastWriterWins.now(value)))
-        }
+      val nextDot = Dots.single(_state.repr.context.nextDot(replicaId.uid))
+      _state.transformPlain(key) {
+        case Some(prior) => Some(Entry(nextDot, prior.value.write(value)))
+        case None        => Some(Entry(nextDot, LastWriterWins.now(value)))
       }
     }
     mutate(delta)
@@ -42,39 +39,37 @@ class DeltaAWLWWMContainer[K, V](
 
   def removeDelta(key: K): State[K, V] = {
     val delta = {
-      _state.mod { (context: Dots) ?=> (ormap: ObserveRemoveMap[K, Entry[LastWriterWins[V]]]) =>
-        ormap.remove(key)
-      }
+      _state.remove(key)
     }
     mutate(delta)
     delta
   }
 
   def removeAllDelta(keys: Seq[K]): State[K, V] = {
-    val delta = _state.mod(orm => orm.clear())
+    val delta = _state.clear()
     mutate(delta)
     delta
   }
 
   def values: Map[K, V] =
-    _state.data.entries.map((k, v) => (k, v.value.value)).toMap
+    _state.entries.map((k, v) => (k, v.value.value)).toMap
 
   def merge(other: State[K, V]): Unit = {
     mutate(other)
   }
 
   private def mutate(delta: State[K, V]): Unit = {
-    _state = Obrem.lattice.merge(_state, delta)
+    _state = _state `merge` delta
   }
 }
 
 object DeltaAWLWWMContainer {
   type Inner[K, V] = ObserveRemoveMap[K, Entry[LastWriterWins[V]]]
-  type State[K, V] = Obrem[Inner[K, V]]
+  type State[K, V] = Inner[K, V]
 
   def empty[K, V]: State[K, V] =
-    Obrem(ObserveRemoveMap.empty[K, Entry[LastWriterWins[V]]])
+    ObserveRemoveMap.empty[K, Entry[LastWriterWins[V]]]
 
-  given lattice[K, V]: Lattice[State[K, V]] = Obrem.lattice
+  given lattice[K, V]: Lattice[State[K, V]] = Lattice.derived
 
 }

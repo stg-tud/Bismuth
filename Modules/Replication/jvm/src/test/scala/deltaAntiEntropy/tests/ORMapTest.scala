@@ -5,30 +5,35 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import rdts.base
-import rdts.base.{Bottom, LocalUid}
-import rdts.datatypes.ReplicatedSet
-import rdts.datatypes.contextual.ObserveRemoveMap
-import rdts.dotted.Dotted
+import rdts.base.{Bottom, Decompose, LocalUid}
+import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
+import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
+import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
   given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+
+  given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]]       = HasDots.noDots
+  given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
   property("contains") {
     given LocalUid = base.LocalUid.predefined("test")
     given Bottom[Int] with
       def empty = Int.MinValue
     forAll { (entries: List[Int]) =>
-      val orMap = entries.foldLeft(Dotted(ObserveRemoveMap.empty[Int, Int])) { (curr, elem) =>
-        curr.mod(_.update(elem, elem).toDotted)
+      val orMap = entries.foldLeft(ObserveRemoveMap.empty[Int, Int]) { (curr, elem) =>
+        curr.update(elem, elem)
       }
-      orMap.data.entries.foreach { (k, v) =>
-        assert(orMap.data.contains(k))
+      orMap.entries.foreach { (k, v) =>
+        assert(orMap.contains(k))
       }
     }
   }
+
+  override def scalaCheckInitialSeed = "lPgf7xFq7_7vIU7GYBVoOB6L8jOHDqcNvcxn2wWlpbF="
 
   property("mutateKey/queryKey") {
     forAll { (add: List[Int], remove: List[Int], k: Int) =>
@@ -50,11 +55,13 @@ class ORMapTest extends munit.ScalaCheckSuite {
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
           case (m, e) =>
-            m.mod(_.transform(k)(_.modn(_.add(using m.replicaID)(e))).toDotted)
+            m.modn(_.transformPlain(using m.replicaID)(k) { rs =>
+              Some(rs.getOrElse(ReplicatedSet.empty[Int]).add(using m.replicaID)(e))
+            })
         }
-
         remove.foldLeft(added) {
-          case (m, e) => m.mod(_.transform(k)(_.modn(_.remove(e))).toDotted)
+          case (m, e) =>
+            m.modn(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))))
         }
       }
 
@@ -62,7 +69,7 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       assert(
         mapElements == set.data.elements,
-        s"Mutating/Querying a key in an ObserveRemoveMap should have the same behavior as modifying a standalone CRDT of that type, but $mapElements does not equal ${set.data.elements}"
+        s"Mutating/Querying a key in an ObserveRemoveMap should have the same behavior as modifying a standalone CRDT of that type, but $mapElements does not equal ${set.data.elements}\n\t${map.state}\n\t${set.state}"
       )
     }
   }
@@ -70,7 +77,7 @@ class ORMapTest extends munit.ScalaCheckSuite {
   property("remove") {
     forAll { (add: List[Int], remove: List[Int], k: Int) =>
       val network = new Network(0, 0, 0)
-      val aea =
+      val aea     =
         new AntiEntropy[ObserveRemoveMap[Int, ReplicatedSet[Int]]]("a", network, mutable.Buffer())
       val aeb = new AntiEntropy[ReplicatedSet[Int]]("b", network, mutable.Buffer())
 
@@ -78,15 +85,15 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
-          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.add(using m.replicaID)(e))).toDotted)
+          case (m, e) => m.modn(_.transformPlain(using aea.localUid)(k)(_.map(_.add(using m.replicaID)(e))))
         }
 
         remove.foldLeft(added) {
-          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))).toDotted)
+          case (m, e) => m.modn(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))))
         }
       }
 
-      val removed = map.mod(_.remove(k).toDotted)
+      val removed = map.modn(_.remove(k))
 
       val queryResult = removed.data.queryKey(k).elements
 
