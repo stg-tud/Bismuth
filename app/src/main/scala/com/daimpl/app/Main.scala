@@ -53,7 +53,7 @@ object Main {
 
           case Some(sheet) => // Is offline -> turn online and sync
             val otherOnlineSheets = state.spreadsheets.filter(s => s.id != id && s.isOnline)
-            val sheetToSyncObrem  = sheet.aggregator.getObrem
+            val sheetToSyncObrem = sheet.aggregator.getObrem
 
             val updatedSpreadsheets = state.spreadsheets.map {
               case s if s.id == id => // The sheet that is coming online

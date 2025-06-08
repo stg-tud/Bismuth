@@ -9,11 +9,11 @@ import rdts.dotted.{HasDots, Obrem}
 import rdts.time.{CausalTime, Dot, Dots, VectorClock}
 
 case class Spreadsheet(
-  colIds: ReplicatedList[Dot] = ReplicatedList.empty,
-  rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
-  content: Map[Dot, Map[Dot, LastWriterWins[String | Null]]] = Map.empty,
-  keepCols: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty,
-  keepRows: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty
+    colIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    content: Map[Dot, Map[Dot, LastWriterWins[String | Null]]] = Map.empty,
+    keepCols: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty,
+    keepRows: ObserveRemoveMap[Dot, MultiValueRegister[Dot]] = ObserveRemoveMap.empty
 ) extends SpreadsheetLike[Obrem[Spreadsheet]] derives Lattice, HasDots, Bottom {
   type D = Obrem[Spreadsheet]
 
@@ -111,7 +111,9 @@ case class Spreadsheet(
     )
   }
 
-  def editCell(visibleRowIdx: Int, visibleColIdx: Int, cellContent: String | Null)(using LocalUid)(using context: Dots): D = {
+  def editCell(visibleRowIdx: Int, visibleColIdx: Int, cellContent: String | Null)(using
+      LocalUid
+  )(using context: Dots): D = {
     val rowIdx = visibleRowIdxToRowIdx(visibleRowIdx)
     val rowId = rowIds.read(rowIdx).get
     val rowOperationId = context.nextDot(LocalUid.replicaId)
@@ -123,7 +125,7 @@ case class Spreadsheet(
     val keepColsUpdate = keepCols.update(colId, keepCols.queryKey(colId).write(LocalUid.replicaId, colOperationId))
 
     val lastWriterWinsCellContent =
-      if(content.get(colId).exists(_.contains(rowId)))
+      if (content.get(colId).exists(_.contains(rowId)))
         content.get(colId).get(rowId).write(cellContent)
       else
         LastWriterWins(CausalTime.now(), cellContent)

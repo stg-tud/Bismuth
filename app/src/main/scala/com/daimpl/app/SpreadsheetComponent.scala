@@ -70,10 +70,12 @@ object SpreadsheetComponent {
 
     def commitEdit(): Callback = {
       $.state.flatMap { state =>
-        state.editingCell.map { case (rowIdx, colIdx) =>
-          val value = state.editingValue.trim
-          modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
-        }.getOrElse(Callback.empty)
+        state.editingCell
+          .map { case (rowIdx, colIdx) =>
+            val value = state.editingValue.trim
+            modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
+          }
+          .getOrElse(Callback.empty)
       }
     }
 
@@ -106,8 +108,8 @@ object SpreadsheetComponent {
       withSelectedColumn(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
 
     def insertColumnRight(): Callback =
-      withSelectedColumn(
-        colIdx => modSpreadsheet(_.insertColumn(colIdx + 1)) >> $.modState(_.copy(selectedColumn = None))
+      withSelectedColumn(colIdx =>
+        modSpreadsheet(_.insertColumn(colIdx + 1)) >> $.modState(_.copy(selectedColumn = None))
       )
 
     def removeColumn(): Callback =
