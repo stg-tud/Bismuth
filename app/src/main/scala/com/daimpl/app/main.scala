@@ -23,6 +23,7 @@ def main(): Unit = {
     .visit(_.printToConsole())
     .edit(_.addRow())
     .edit(_.addColumn())
+    .edit(_.purgeTombstones())
     .edit(_.editCell(0, 0, "1"))
     .edit(_.editCell(0, 1, "2"))
     .edit(_.editCell(1, 0, "3"))

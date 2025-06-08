@@ -67,6 +67,16 @@ case class Spreadsheet(
       println(line)
     }
   }
+
+  def purgeTombstones()(using LocalUid, Dots): Dotted[Spreadsheet] = {
+    val colDelta = columns.purgeTombstones()
+    val rowDelta = rows.purgeTombstones()
+
+    Dotted(
+      Spreadsheet(colDelta.data, rowDelta.data),
+      colDelta.context `union` rowDelta.context
+    )
+  }
 }
 
 object Spreadsheet {
