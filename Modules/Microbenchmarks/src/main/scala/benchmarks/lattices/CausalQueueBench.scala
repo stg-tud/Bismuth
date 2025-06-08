@@ -1,8 +1,8 @@
 package benchmarks.lattices
 
 import org.openjdk.jmh.annotations.*
-import rdts.datatypes.alternatives.rga.Sequence
-import rdts.datatypes.alternatives.rga.Sequence.{RGA, RGAOps}
+import rdts.base.LocalUid
+import rdts.datatypes.ReplicatedList
 
 import java.util.concurrent.TimeUnit
 
@@ -21,24 +21,26 @@ class CausalQueueBenchWithRGA {
   @Param(Array("10000"))
   var operations: Int = scala.compiletime.uninitialized
 
-  var lca: RGA[Int] = scala.compiletime.uninitialized
+  var lca: ReplicatedList[Int] = scala.compiletime.uninitialized
+
+  given LocalUid = LocalUid.predefined("a")
 
   @Setup
   def setup(): Unit = {
-    lca = (1 to size).foldLeft(Sequence.empty[Int]) { (q, e) => q.prepend(e) }
+    lca = (1 to size).foldLeft(ReplicatedList.empty[Int]) { (q, e) => q.prepend(e) }
   }
 
-  def make(base: RGA[Int], ops: Int) = {
+  def make(base: ReplicatedList[Int], ops: Int) = {
     val s     = ops / 2
     val added = (1 to s).foldLeft(base) { (acc, v) => acc.prepend(v) }
-    (1 to s).foldLeft(added) { (acc, _) => acc.remove(Seq(acc.vertexIterator.next())) }
+    (1 to s).foldLeft(added) { (acc, _) => acc.delete(0) }
   }
 
   @Benchmark
-  def create(): RGA[Int] = make(lca, operations)
+  def create(): ReplicatedList[Int] = make(lca, operations)
 
   @Benchmark
-  def createAndMerge(): RGA[Int] = {
+  def createAndMerge(): ReplicatedList[Int] = {
     val left  = make(lca, operations)
     val right = make(lca, operations)
 
