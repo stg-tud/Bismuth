@@ -76,21 +76,14 @@ object Main {
 
     def handleDelta(sourceSheetId: Int, delta: Obrem[Spreadsheet]): Callback = {
       $.modState { state =>
-        val sourceIsOnline = state.spreadsheets.find(_.id == sourceSheetId).exists(_.isOnline)
-
-        if (sourceIsOnline) {
-          val updatedSpreadsheets = state.spreadsheets.map { sheet =>
-            if (sheet.id != sourceSheetId && sheet.isOnline) {
-              sheet.aggregator.merge(delta)
-              sheet
-            } else {
-              sheet
-            }
+        val updatedSpreadsheets = state.spreadsheets.map { sheet =>
+          if (sheet.id != sourceSheetId && sheet.isOnline) {
+            sheet.copy(aggregator = sheet.aggregator.merge(delta))
+          } else {
+            sheet
           }
-          state.copy(spreadsheets = updatedSpreadsheets)
-        } else {
-          state // Do nothing if the source spreadsheet is offline
         }
+        state.copy(spreadsheets = updatedSpreadsheets)
       }
     }
   }
@@ -136,7 +129,8 @@ object Main {
               SpreadsheetComponent.Component(
                 SpreadsheetComponent.Props(
                   spreadsheetAggregator = sheetData.aggregator,
-                  onDelta = delta => backend.handleDelta(sheetData.id, delta),
+                  onDelta = if (sheetData.isOnline) delta => backend.handleDelta(sheetData.id, delta)
+                  else _ => Callback.empty,
                   replicaId = sheetData.replicaId
                 )
               )
