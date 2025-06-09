@@ -48,6 +48,12 @@ object SpreadsheetComponent {
     private def withSelectedColumn(f: Int => Callback): Callback =
       $.state.flatMap(_.selectedColumn.map(f).getOrElse(Callback.empty))
 
+    private def withSelectedRowAndProps(f: (Int, Props) => Callback): Callback =
+      withSelectedRow(rowIdx => $.props.flatMap(props => f(rowIdx, props)))
+
+    private def withSelectedColumnAndProps(f: (Int, Props) => Callback): Callback =
+      withSelectedColumn(colIdx => $.props.flatMap(props => f(colIdx, props)))
+
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
       $.props.flatMap { props =>
         val currentValue = props.spreadsheetAggregator.current.read(colIdx, rowIdx).getOrElse("")
@@ -95,7 +101,13 @@ object SpreadsheetComponent {
       withSelectedRow(rowIdx => modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(_.copy(selectedRow = None)))
 
     def insertRowBelow(): Callback =
-      withSelectedRow(rowIdx => modSpreadsheet(_.insertRow(rowIdx + 1)) >> $.modState(_.copy(selectedRow = None)))
+      withSelectedRowAndProps { (rowIdx, props) =>
+        val spreadsheet = props.spreadsheetAggregator.current
+        val action =
+          if (rowIdx == spreadsheet.numRows - 1) modSpreadsheet(_.addRow())
+          else modSpreadsheet(_.insertRow(rowIdx + 1))
+        action >> $.modState(_.copy(selectedRow = None))
+      }
 
     def removeRow(): Callback =
       withSelectedRow(rowIdx =>
@@ -108,9 +120,13 @@ object SpreadsheetComponent {
       withSelectedColumn(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
 
     def insertColumnRight(): Callback =
-      withSelectedColumn(colIdx =>
-        modSpreadsheet(_.insertColumn(colIdx + 1)) >> $.modState(_.copy(selectedColumn = None))
-      )
+      withSelectedColumnAndProps { (colIdx, props) =>
+        val spreadsheet = props.spreadsheetAggregator.current
+        val action =
+          if (colIdx == spreadsheet.numColumns - 1) modSpreadsheet(_.addColumn())
+          else modSpreadsheet(_.insertColumn(colIdx + 1))
+        action >> $.modState(_.copy(selectedColumn = None))
+      }
 
     def removeColumn(): Callback =
       withSelectedColumn(colIdx =>

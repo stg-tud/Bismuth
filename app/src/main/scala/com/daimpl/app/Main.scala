@@ -129,8 +129,9 @@ object Main {
               SpreadsheetComponent.Component(
                 SpreadsheetComponent.Props(
                   spreadsheetAggregator = sheetData.aggregator,
-                  onDelta = if (sheetData.isOnline) delta => backend.handleDelta(sheetData.id, delta)
-                  else _ => Callback.empty,
+                  onDelta =
+                    if (sheetData.isOnline) delta => backend.handleDelta(sheetData.id, delta)
+                    else _ => Callback.empty,
                   replicaId = sheetData.replicaId
                 )
               )
