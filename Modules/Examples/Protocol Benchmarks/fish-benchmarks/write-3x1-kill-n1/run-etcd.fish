@@ -21,16 +21,23 @@ for i in (seq $ITERATIONS);
 	rm -rf /tmp/data*.etcd
 
 	echo Starting Node 1
-	etcd --data-dir=/tmp/data1.etcd --name {$NAME_1} --initial-advertise-peer-urls http://localhost:2381 --listen-peer-urls http://localhost:2381 --advertise-client-urls http://localhost:8010 --listen-client-urls http://localhost:8010 --initial-cluster {$CLUSTER} --initial-cluster-state {$CLUSTER_STATE} --initial-cluster-token token-01 > /dev/null &
+	etcd --data-dir=/tmp/data1.etcd --name {$NAME_1} --initial-advertise-peer-urls http://localhost:2381 --listen-peer-urls http://localhost:2381 --advertise-client-urls http://localhost:8010 --listen-client-urls http://localhost:8010 --initial-cluster {$CLUSTER} --initial-cluster-state {$CLUSTER_STATE} --initial-cluster-token token-01  &
 	set -l NODE1 (jobs -pl)
 
 	echo Starting Node 2
-	etcd --data-dir=/tmp/data2.etcd --name {$NAME_2} --initial-advertise-peer-urls http://localhost:2382 --listen-peer-urls http://localhost:2382 --advertise-client-urls http://localhost:8020 --listen-client-urls http://localhost:8020 --initial-cluster {$CLUSTER} --initial-cluster-state {$CLUSTER_STATE} --initial-cluster-token token-01 > /dev/null &
+	etcd --data-dir=/tmp/data2.etcd --name {$NAME_2} --initial-advertise-peer-urls http://localhost:2382 --listen-peer-urls http://localhost:2382 --advertise-client-urls http://localhost:8020 --listen-client-urls http://localhost:8020 --initial-cluster {$CLUSTER} --initial-cluster-state {$CLUSTER_STATE} --initial-cluster-token token-01  &
 	set -l NODE2 (jobs -pl)
 
 	echo Starting Node 3
-	etcd --data-dir=/tmp/data3.etcd --name {$NAME_3} --initial-advertise-peer-urls http://localhost:2383 --listen-peer-urls http://localhost:2383 --advertise-client-urls http://localhost:8030 --listen-client-urls http://localhost:8030 --initial-cluster {$CLUSTER} --initial-cluster-state {$CLUSTER_STATE} --initial-cluster-token token-01 > /dev/null &
+	etcd --data-dir=/tmp/data3.etcd --name {$NAME_3} --initial-advertise-peer-urls http://localhost:2383 --listen-peer-urls http://localhost:2383 --advertise-client-urls http://localhost:8030 --listen-client-urls http://localhost:8030 --initial-cluster {$CLUSTER} --initial-cluster-state {$CLUSTER_STATE} --initial-cluster-token token-01  &
 	set -l NODE3 (jobs -pl)
+
+	echo Started CLUSTER
+
+	set -lx ETCD_CLUSTER {$HOST_1}:8010,{$HOST_2}:8020,{$HOST_3}:8030
+
+	set -lx ep_status (string split "," (etcdctl --endpoints $ETCD_CLUSTER endpoint status | grep {$leader}))
+	etcdctl --endpoints $ETCD_CLUSTER move-leader (string trim $ep_status[2])
 
 	echo Starting Client
 	# start client

@@ -38,8 +38,9 @@ set -lx BENCHMARK "put-30s-kN1A10"
 set -lx KILL_AFTER 10
 
 set -lx SYSTEM_ID pb
-# fish ./fish-benchmarks/write-3x1-kill-n1/run-pb.fish
+fish ./fish-benchmarks/write-3x1-kill-n1/run-pb.fish
 
+set -lx leader 8010
 set -lx SYSTEM_ID etcd
 fish ./fish-benchmarks/write-3x1-kill-n1/run-etcd.fish
 
