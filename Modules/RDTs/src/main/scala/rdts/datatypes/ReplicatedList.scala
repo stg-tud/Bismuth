@@ -29,7 +29,6 @@ import rdts.time.{Dot, Dots}
 case class ReplicatedList[E](
     order: Epoch[GrowOnlyList[Dot]],
     elements: Map[Dot, LastWriterWins[E]],
-    observed: Dots,
     deleted: Dots
 ) {
 
@@ -51,6 +50,8 @@ case class ReplicatedList[E](
     }.map(_._2).prepended(0).lift(n)
   }
 
+  lazy val observed = deleted.union(Dots.from(elements.keys))
+
   /** Inserts at list index `i` */
   def insert(using LocalUid)(i: Int, e: E): C = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
@@ -66,7 +67,6 @@ case class ReplicatedList[E](
         ReplicatedList.make(
           epoche = glistDelta,
           df = dfDelta,
-          cc = Dots.single(nextDot)
         )
     }
   }
@@ -90,7 +90,6 @@ case class ReplicatedList[E](
         ReplicatedList.make(
           epoche = glistDelta,
           df = dfDelta,
-          cc = Dots.from(nextDots.toSet)
         )
     }
   }
@@ -103,9 +102,9 @@ case class ReplicatedList[E](
           case None          => ReplicatedList.empty
           case Some(current) =>
             newNode match
-              case None        => ReplicatedList.make(cc = Dots.single(d))
+              case None        => ReplicatedList.make(delete = Dots.single(d))
               case Some(value) =>
-                ReplicatedList.make(df = Map(d -> current.write(value)), cc = Dots.single(d))
+                ReplicatedList.make(df = Map(d -> current.write(value)))
     }
   }
 
@@ -140,7 +139,7 @@ case class ReplicatedList[E](
         transform(value).map(nv => dot -> nv)
       .toMap
 
-    ReplicatedList.make(df = updates, cc = Dots.from(touched))
+    ReplicatedList.make(df = updates, delete = Dots.from(touched).subtract(Dots.from(updates.keys)))
   }
 
   def updateBy(cond: E => Boolean, e: E): C =
@@ -160,13 +159,12 @@ case class ReplicatedList[E](
 
     ReplicatedList.make(
       epoche = order.epocheWrite(golistPurged),
-      cc = Dots.from(removed)
     )
   }
 
   def clear(): C = {
     ReplicatedList.make(
-      cc = observed
+      delete = Dots.from(elements.keys)
     )
   }
 
@@ -181,7 +179,7 @@ case class ReplicatedList[E](
 }
 object ReplicatedList {
 
-  def empty[E]: ReplicatedList[E] = ReplicatedList(Epoch.empty, Map.empty, Dots.empty, Dots.empty)
+  def empty[E]: ReplicatedList[E] = ReplicatedList(Epoch.empty, Map.empty, Dots.empty)
 
   given lattice[E]: Lattice[ReplicatedList[E]] =
     DecoratedLattice.filter(Lattice.derived[ReplicatedList[E]]) { (base, other) =>
@@ -197,10 +195,9 @@ object ReplicatedList {
   def make[E](
       epoche: Epoch[GrowOnlyList[Dot]] = empty._1,
       df: Map[Dot, LastWriterWins[E]] = Map.empty,
-      cc: Dots = Dots.empty
+      delete: Dots = Dots.empty
   ): ReplicatedList[E] = {
-    val obrem = Dotted(df, cc).toObrem
-    ReplicatedList(epoche, obrem.data, obrem.observed, obrem.deletions)
+    ReplicatedList(epoche, df, delete)
   }
 
 }
