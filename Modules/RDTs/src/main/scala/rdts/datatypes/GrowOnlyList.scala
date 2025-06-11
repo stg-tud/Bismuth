@@ -3,7 +3,6 @@ package rdts.datatypes
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.datatypes.GrowOnlyList.Node
 import rdts.datatypes.GrowOnlyList.Node.*
-import rdts.dotted.HasDots
 
 import scala.annotation.tailrec
 import scala.math.Ordering.Implicits.infixOrderingOps
