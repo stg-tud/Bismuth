@@ -8,7 +8,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.ReplicatedList
-import rdts.dotted.{Dotted, HasDots}
+import rdts.dotted.HasDots
 import replication.JsoniterCodecs.given
 import test.rdts.DataGenerator.RGAGen.{makeRGA, given}
 
@@ -22,7 +22,7 @@ object RGAGenerators {
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[ReplicatedList[E]]("a", network, mutable.Buffer())
     val aec     = AntiEntropyContainer[ReplicatedList[E]](ae)
-    aec.applyDelta(Named(Uid.predefined("a"), Dotted(rl)))
+    aec.applyDelta(Named(Uid.predefined("a"), rl))
     aec
 }
 
@@ -117,7 +117,7 @@ class RGATest extends munit.ScalaCheckSuite {
         val aeb = new AntiEntropy[ReplicatedList[Int]]("b", network, mutable.Buffer("a"))
 
         val la0 = AntiEntropyContainer(aea)
-        la0.applyDelta(Named(aea.localUid.uid, Dotted(makeRGA(inserted, removed, aea.localUid))))
+        la0.applyDelta(Named(aea.localUid.uid, makeRGA(inserted, removed, aea.localUid)))
         AntiEntropy.sync(aea, aeb)
         val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
@@ -155,7 +155,7 @@ class RGATest extends munit.ScalaCheckSuite {
       val aeb = new AntiEntropy[ReplicatedList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = AntiEntropyContainer(aea)
-      la0.applyDelta(Named(aea.localUid.uid, Dotted(makeRGA(inserted, removed, aea.localUid))))
+      la0.applyDelta(Named(aea.localUid.uid, makeRGA(inserted, removed, aea.localUid)))
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
@@ -209,7 +209,7 @@ class RGATest extends munit.ScalaCheckSuite {
       val aeb = new AntiEntropy[ReplicatedList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = AntiEntropyContainer(aea)
-      la0.applyDelta(Named(aea.localUid.uid, Dotted(makeRGA(inserted, removed, aea.localUid))))
+      la0.applyDelta(Named(aea.localUid.uid, (makeRGA(inserted, removed, aea.localUid))))
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
@@ -239,7 +239,7 @@ class RGATest extends munit.ScalaCheckSuite {
       val aeb = new AntiEntropy[ReplicatedList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = AntiEntropyContainer(aea)
-      la0.applyDelta(Named(aea.localUid.uid, Dotted(makeRGA(inserted, removed, aea.localUid))))
+      la0.applyDelta(Named(aea.localUid.uid, (makeRGA(inserted, removed, aea.localUid))))
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
@@ -269,7 +269,7 @@ class RGATest extends munit.ScalaCheckSuite {
       val aeb = new AntiEntropy[ReplicatedList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = AntiEntropyContainer(aea)
-      la0.applyDelta(Named(aea.localUid.uid, Dotted(makeRGA(inserted, removed, aea.localUid))))
+      la0.applyDelta(Named(aea.localUid.uid, (makeRGA(inserted, removed, aea.localUid))))
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
@@ -307,7 +307,7 @@ class RGATest extends munit.ScalaCheckSuite {
           val aeb = new AntiEntropy[ReplicatedList[Int]]("b", network, mutable.Buffer("a"))
 
           val la0 = AntiEntropyContainer(aea)
-          la0.applyDelta(Named(aea.localUid.uid, Dotted(makeRGA(inserted, removed, aea.localUid))))
+          la0.applyDelta(Named(aea.localUid.uid, (makeRGA(inserted, removed, aea.localUid))))
           network.startReliablePhase()
           AntiEntropy.sync(aea, aeb)
           network.endReliablePhase()
@@ -341,7 +341,7 @@ class RGATest extends munit.ScalaCheckSuite {
             }
           }
 
-          val beforeA1: Dotted[ReplicatedList[Int]] = la1.state
+          val beforeA1: ReplicatedList[Int] = la1.state
           val beforeB1                              = lb1.state
 
           AntiEntropy.sync(aea, aeb)
@@ -352,11 +352,11 @@ class RGATest extends munit.ScalaCheckSuite {
           val lb2 = lb1.processReceivedDeltas()
 
           assertEquals(
-            beforeA1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[Dotted[ReplicatedList[Int]]]),
+            beforeA1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[ReplicatedList[Int]]),
             beforeA1
           )
           assertEquals(
-            beforeB1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[Dotted[ReplicatedList[Int]]]),
+            beforeB1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[ReplicatedList[Int]]),
             beforeB1
           )
 

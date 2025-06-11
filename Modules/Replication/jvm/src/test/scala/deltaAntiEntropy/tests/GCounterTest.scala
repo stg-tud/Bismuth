@@ -28,17 +28,17 @@ object GCounterGenerators {
 class GCounterTest extends munit.ScalaCheckSuite {
   import GCounterGenerators.given
 
-  extension (aec: AntiEntropyContainer[GrowOnlyCounter]) def value = aec.state.data.value
+  extension (aec: AntiEntropyContainer[GrowOnlyCounter]) def value = aec.state.value
 
   property("inc") {
     forAll { (counter: AntiEntropyContainer[GrowOnlyCounter]) =>
-      val before     = counter.state.data.value
+      val before     = counter.state.value
       val counterInc = counter.map(_.inc())
 
       assertEquals(
-        counterInc.state.data.value,
+        counterInc.state.value,
         before + 1,
-        s"Incrementing the counter should increase its value by 1, but ${counterInc.state.data.value} does not equal ${counter.state.data.value} + 1"
+        s"Incrementing the counter should increase its value by 1, but ${counterInc.state.value} does not equal ${counter.state.value} + 1"
       )
     }
   }

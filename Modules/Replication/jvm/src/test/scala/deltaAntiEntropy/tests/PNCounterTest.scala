@@ -33,11 +33,11 @@ object PosNegCounterGenerator {
 class PosNegCounterTest extends munit.ScalaCheckSuite {
   import PosNegCounterGenerator.given
 
-  extension (aec: AntiEntropyContainer[PosNegCounter]) def value = aec.state.data.value
+  extension (aec: AntiEntropyContainer[PosNegCounter]) def value = aec.state.value
 
   property("inc") {
     forAll { (counter: AntiEntropyContainer[PosNegCounter]) =>
-      val before = counter.state.data.value
+      val before = counter.state.value
       val inced  = counter.map(_.inc())
 
       assert(

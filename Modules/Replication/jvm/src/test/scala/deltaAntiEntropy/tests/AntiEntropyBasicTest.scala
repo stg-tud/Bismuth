@@ -98,7 +98,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
     val la0 = AntiEntropyContainer(aea)
     la0.applyDelta(Named(
       Uid.predefined(aea.replicaID),
-      Dotted(makeRGA(inserted, removed, LocalUid.predefined(aea.replicaID)))
+      makeRGA(inserted, removed, LocalUid.predefined(aea.replicaID))
     ))
     network.startReliablePhase()
     AntiEntropy.sync(aea, aeb)
@@ -133,8 +133,8 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
       }
     }
 
-    val beforeA1: Dotted[ReplicatedList[Int]] = la1.state
-    val beforeB1                              = lb1.state
+    val beforeA1: ReplicatedList[Int] = la1.state
+    val beforeB1                      = lb1.state
 
     AntiEntropy.sync(aea, aeb)
     network.startReliablePhase()

@@ -81,7 +81,7 @@ object JsoniterCodecs {
   given PNCounterStateCodec: JsonValueCodec[PosNegCounter] = JsonCodecMaker.make
 
   /** RGA */
-  given RGAStateCodec[E: JsonValueCodec]: JsonValueCodec[Dotted[ReplicatedList[E]]] = {
+  given RGAStateCodec[E: JsonValueCodec]: JsonValueCodec[ReplicatedList[E]] = {
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   }
 
@@ -94,9 +94,6 @@ object JsoniterCodecs {
   )] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  /** TwoPhaseSet */
-
-  given withContextWrapper[E: JsonValueCodec]: JsonValueCodec[Dotted[E]] = JsonCodecMaker.make
 
 
 }
