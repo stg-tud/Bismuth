@@ -2,7 +2,7 @@ package test.rdts.bespoke
 
 import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, LastWriterWins, MultiVersionRegister, PosNegCounter}
 import rdts.dotted.{Dotted, HasDots}
 
 class DiffManualTests extends munit.ScalaCheckSuite {

@@ -4,7 +4,7 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Lattice}
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, GrowOnlyMap, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.experiments.CausalStore
 import rdts.time.{Dot, Dots, VectorClock}
@@ -29,7 +29,6 @@ class DotFunExampleChecks     extends LatticePropertyChecks[Dotted[Map[Dot, Exam
 class ConMultiVersionChecks   extends LatticePropertyChecks[MultiVersionRegister[Int]]
 class DotMapChecks            extends LatticePropertyChecks[Dotted[Map[rdts.base.Uid, Dots]]](expensive = true)
 class GrowOnlyCounterChecks   extends LatticePropertyChecks[GrowOnlyCounter]
-class GrowOnlyMapChecks       extends LatticePropertyChecks[GrowOnlyMap[String, Int]]
 class TwoPhaseSetChecks       extends LatticePropertyChecks[TwoPhaseSet[Int]]
 class IntChecks               extends LatticePropertyChecks[Int]
 class SetChecks               extends LatticePropertyChecks[Set[String]]
