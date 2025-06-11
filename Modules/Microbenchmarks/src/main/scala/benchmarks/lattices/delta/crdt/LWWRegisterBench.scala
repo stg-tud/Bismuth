@@ -29,9 +29,9 @@ class LWWRegisterBench {
   def readFull(): Int = full.state.read
 
   @Benchmark
-  def writeFull(): NamedDeltaBuffer[LastWriterWins[Int]] = full.transform(_.write(1))
+  def writeFull(): NamedDeltaBuffer[LastWriterWins[Int]] = full.mod(_.write(1))
 
   @Benchmark
-  def mapFull(): NamedDeltaBuffer[LastWriterWins[Int]] = full.transform(_.write(full.state.read + 1))
+  def mapFull(): NamedDeltaBuffer[LastWriterWins[Int]] = full.mod(_.write(full.state.read + 1))
 
 }
