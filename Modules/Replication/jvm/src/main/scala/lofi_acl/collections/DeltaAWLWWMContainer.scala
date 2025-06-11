@@ -81,8 +81,7 @@ object DeltaAWLWWMContainer {
     }
   }
 
-  type Inner[K, V] = ObserveRemoveMap[K, Entry[LastWriterWins[V]]]
-  type State[K, V] = Inner[K, V]
+  type State[K, V] = ObserveRemoveMap[K, Entry[LastWriterWins[V]]]
 
   def empty[K, V]: State[K, V] =
     ObserveRemoveMap.empty[K, Entry[LastWriterWins[V]]]
