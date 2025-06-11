@@ -1,8 +1,6 @@
 package rdts.datatypes
 
 import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
-import rdts.dotted.HasDots
-import rdts.dotted.HasDots.mapInstance
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
@@ -48,7 +46,7 @@ object MultiVersionRegister {
     given Lattice[A] = Lattice.assertEquals
     val decorated    = Lattice.derived[MultiVersionRegister[A]]
     DecoratedLattice.filter(decorated) { (base, other) =>
-      base.copy(repr = base.repr.removeDots(other.removed).getOrElse(Map.empty))
+      base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
     }
 
 }

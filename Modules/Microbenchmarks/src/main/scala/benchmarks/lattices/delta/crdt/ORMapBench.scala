@@ -3,7 +3,6 @@ package benchmarks.lattices.delta.crdt
 import org.openjdk.jmh.annotations.*
 import rdts.base.{Decompose, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, ObserveRemoveMap}
-import rdts.dotted.HasDots
 
 import java.util.concurrent.TimeUnit
 
@@ -26,8 +25,6 @@ class ORMapBench {
   var map: SUT = scala.compiletime.uninitialized
 
   given LocalUid = LocalUid.predefined("a")
-  // required, or the SUT is no lattice
-  given HasDots[EnableWinsFlag] = HasDots.noDots
 
   @Setup
   def setup(): Unit = {

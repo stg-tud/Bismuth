@@ -6,7 +6,6 @@ import deltaAntiEntropy.tests.NetworkGenerators.*
 import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
-import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 import test.rdts.DataGenerator.RGAGen.makeRGA
 
@@ -140,11 +139,11 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
     val lb2 = lb1.processReceivedDeltas()
 
     assertEquals(
-      beforeA1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[Dotted[ReplicatedList[Int]]]),
+      beforeA1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[ReplicatedList[Int]]),
       beforeA1
     )
     assertEquals(
-      beforeB1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[Dotted[ReplicatedList[Int]]]),
+      beforeB1.decomposed.reduceOption(Lattice.merge).getOrElse(Bottom.empty[ReplicatedList[Int]]),
       beforeB1
     )
 

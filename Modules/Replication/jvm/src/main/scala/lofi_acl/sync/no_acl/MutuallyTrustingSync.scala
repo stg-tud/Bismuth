@@ -56,7 +56,7 @@ class MutuallyTrustingSync[RDT](
   def addUser(user: PublicIdentity): Unit = {
     val dot         = lastLocalPermissionsDot.updateAndGet(dot => dot.advance)
     val dots        = permissionsReference.get()._1
-    val addUsersMsg = AddUsers[RDT](Set(user), dot.dots, dots)
+    val addUsersMsg = AddUsers[RDT](Set(user), Dots.single(dot), dots)
     receivedMessage(addUsersMsg, localPublicId)
     val _ = connectionManager.broadcast(addUsersMsg)
   }
@@ -66,7 +66,7 @@ class MutuallyTrustingSync[RDT](
     val (dots, rdt) = rdtReference.get()
     // Handing the message over to receivedMessage has the downside of the message not being merged immediately.
     val delta =
-      Delta(delta = deltaMutator(rdt), dots = dot.dots, rdtCC = dots, permCC = permissionsReference.get()._1)
+      Delta(delta = deltaMutator(rdt), dots = Dots.single(dot), rdtCC = dots, permCC = permissionsReference.get()._1)
     receivedMessage(
       delta,
       localIdentity.getPublic

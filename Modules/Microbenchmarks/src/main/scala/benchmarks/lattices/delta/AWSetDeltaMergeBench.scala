@@ -5,7 +5,6 @@ import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
 import rdts.base.{Lattice, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.Dotted
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.TimeUnit

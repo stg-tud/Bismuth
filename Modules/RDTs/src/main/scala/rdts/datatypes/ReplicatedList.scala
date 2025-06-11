@@ -2,8 +2,6 @@ package rdts.datatypes
 
 import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
 import rdts.datatypes.{Epoch, GrowOnlyList, LastWriterWins}
-import rdts.dotted.HasDots.mapInstance
-import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 
 /** An RGA (Replicated Growable Array) is a Delta CRDT modeling a list.
@@ -151,9 +149,7 @@ case class ReplicatedList[E](
   def purgeTombstones(): C = {
     val known: List[Dot] = order.value.toList
 
-    val contained = observed.dots
-
-    val removed = known.filter(dot => !contained.contains(dot))
+    val removed = known.filter(dot => !observed.contains(dot))
 
     val golistPurged = order.value.without(removed.toSet)
 

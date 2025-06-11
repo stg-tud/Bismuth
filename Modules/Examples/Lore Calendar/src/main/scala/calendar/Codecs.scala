@@ -3,7 +3,6 @@ package calendar
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.Dotted
 import rdts.syntax.DeltaBuffer
 
 object Codecs {

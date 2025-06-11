@@ -1,9 +1,8 @@
 package lofi_acl.collections
 
-import lofi_acl.collections.DeltaAWLWWMContainer.{State}
+import lofi_acl.collections.DeltaAWLWWMContainer.State
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import rdts.dotted.{HasDots, Obrem}
 import rdts.time.Dots
 
 /** This is used for the encrypted todolist and associated benchmark */
@@ -61,8 +60,6 @@ class DeltaAWLWWMContainer[K, V](
 }
 
 object DeltaAWLWWMContainer {
-
-
 
   type State[K, V] = ObserveRemoveMap[K, LastWriterWins[V]]
 

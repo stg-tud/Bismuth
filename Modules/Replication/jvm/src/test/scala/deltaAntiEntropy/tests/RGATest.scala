@@ -8,7 +8,6 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.ReplicatedList
-import rdts.dotted.HasDots
 import replication.JsoniterCodecs.given
 import test.rdts.DataGenerator.RGAGen.{makeRGA, given}
 
@@ -340,7 +339,7 @@ class RGATest extends munit.ScalaCheckSuite {
           }
 
           val beforeA1: ReplicatedList[Int] = la1.state
-          val beforeB1                              = lb1.state
+          val beforeB1                      = lb1.state
 
           AntiEntropy.sync(aea, aeb)
           network.startReliablePhase()

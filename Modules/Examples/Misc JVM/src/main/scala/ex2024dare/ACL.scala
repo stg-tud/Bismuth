@@ -1,12 +1,13 @@
 package ex2024dare
 
 import rdts.base.{LocalUid, Uid}
-import rdts.dotted.Dotted
 import rdts.time.{Dot, Dots}
 
 import scala.annotation.unused
 
 object ACL {
+
+  case class Dotted[A](value: A, dots: Dots)
 
   trait Operation(@unused id: Dot, @unused signer: User, @unused predecessors: Dots)
 

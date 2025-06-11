@@ -2,7 +2,6 @@ package lofi_acl.access
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import rdts.base.Bottom
-import rdts.dotted.{Dotted, Obrem}
 import rdts.time.Dots
 
 import scala.compiletime.*
@@ -153,10 +152,8 @@ object DeltaSurgeon {
 
   import lofi_acl.sync.JsoniterCodecs.dotsCodec
 
-  given dotsDeltaSurgeon: DeltaSurgeon[Dots]                                   = ofTerminalValue[Dots]
-  given dottedDeltaSurgeon[T: {DeltaSurgeon, Bottom}]: DeltaSurgeon[Dotted[T]] = DeltaSurgeon.derived
-  given obremDeltaSurgeon[T: {DeltaSurgeon, Bottom}]: DeltaSurgeon[Obrem[T]]   = DeltaSurgeon.derived
-  given optionSurgeon[T: {Bottom, DeltaSurgeon}]: DeltaSurgeon[Option[T]]      = {
+  given dotsDeltaSurgeon: DeltaSurgeon[Dots]                              = ofTerminalValue[Dots]
+  given optionSurgeon[T: {Bottom, DeltaSurgeon}]: DeltaSurgeon[Option[T]] = {
     given noneBottom: Bottom[None.type] = Bottom.provide(None) // TODO: Bottom for singletons should be derivable
     given noneDeltaSurgeon: DeltaSurgeon[None.type] = DeltaSurgeon.derived
     given someBottom: Bottom[Some[T]]               = Bottom.derived

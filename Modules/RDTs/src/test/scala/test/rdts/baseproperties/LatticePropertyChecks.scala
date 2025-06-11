@@ -5,7 +5,6 @@ import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Lattice}
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList}
-import rdts.dotted.{Dotted, HasDots}
 import rdts.experiments.CausalStore
 import rdts.time.{Dot, Dots, VectorClock}
 import test.rdts.DataGenerator.RGAGen.given
@@ -19,27 +18,23 @@ import test.rdts.isGithubCi
 // This currently happens rarely enough, that a fix is postponed until a better strategy in general is found (just not allowing ID reuse might work, but would also exclude possible correct states, reducing the chance to find bugs. Though, that does not seem to be very high anyway …)
 
 // class CausalQueueChecks       extends LatticePropertyChecks[Dotted[CausalQueue[ExampleData]]]
-class OpGraphChecks           extends LatticePropertyChecks[OpGraph[ExampleData]]
-class CausalStoreChecks       extends LatticePropertyChecks[CausalStore[Map[Dot, ExampleData]]]
-class DotSetChecks            extends LatticePropertyChecks[Dotted[Dots]]
-class EnableWinsFlagChecks    extends LatticePropertyChecks[EnableWinsFlag]
-class DotFunChecks            extends LatticePropertyChecks[Dotted[Map[Dot, Int]]]
-class DotFunExampleChecks     extends LatticePropertyChecks[Dotted[Map[Dot, ExampleData]]]
-class ConMultiVersionChecks   extends LatticePropertyChecks[MultiVersionRegister[Int]]
-class DotMapChecks            extends LatticePropertyChecks[Dotted[Map[rdts.base.Uid, Dots]]](expensive = true)
-class GrowOnlyCounterChecks   extends LatticePropertyChecks[GrowOnlyCounter]
-class IntChecks               extends LatticePropertyChecks[Int]
-class SetChecks               extends LatticePropertyChecks[Set[String]]
-class MapChecks               extends LatticePropertyChecks[Map[String, Int]]
-class OptionChecks            extends LatticePropertyChecks[Option[Int]]
-class CusalLwwChecks          extends LatticePropertyChecks[LastWriterWins[Int]]
-class LWWOptionChecks         extends LatticePropertyChecks[Option[LastWriterWins[Int]]]
-class PosNegChecks            extends LatticePropertyChecks[PosNegCounter]
-class TupleChecks             extends LatticePropertyChecks[(Set[Int], GrowOnlyCounter)]
-class VectorClockChecks       extends LatticePropertyChecks[VectorClock]
-class GrowOnlyListChecks      extends LatticePropertyChecks[GrowOnlyList[Int]](expensive = true)
-class ReplicatedListChecks    extends LatticePropertyChecks[ReplicatedList[ExampleData]](expensive = true)
-class ListAsVectorChecks      extends LatticePropertyChecks[List[Int]]
+class OpGraphChecks         extends LatticePropertyChecks[OpGraph[ExampleData]]
+class CausalStoreChecks     extends LatticePropertyChecks[CausalStore[Map[Dot, ExampleData]]]
+class EnableWinsFlagChecks  extends LatticePropertyChecks[EnableWinsFlag]
+class ConMultiVersionChecks extends LatticePropertyChecks[MultiVersionRegister[Int]]
+class GrowOnlyCounterChecks extends LatticePropertyChecks[GrowOnlyCounter]
+class IntChecks             extends LatticePropertyChecks[Int]
+class SetChecks             extends LatticePropertyChecks[Set[String]]
+class MapChecks             extends LatticePropertyChecks[Map[String, Int]]
+class OptionChecks          extends LatticePropertyChecks[Option[Int]]
+class CusalLwwChecks        extends LatticePropertyChecks[LastWriterWins[Int]]
+class LWWOptionChecks       extends LatticePropertyChecks[Option[LastWriterWins[Int]]]
+class PosNegChecks          extends LatticePropertyChecks[PosNegCounter]
+class TupleChecks           extends LatticePropertyChecks[(Set[Int], GrowOnlyCounter)]
+class VectorClockChecks     extends LatticePropertyChecks[VectorClock]
+class GrowOnlyListChecks    extends LatticePropertyChecks[GrowOnlyList[Int]](expensive = true)
+class ReplicatedListChecks  extends LatticePropertyChecks[ReplicatedList[ExampleData]](expensive = true)
+class ListAsVectorChecks    extends LatticePropertyChecks[List[Int]]
 class LWWTupleChecks
     extends LatticePropertyChecks[(Option[LastWriterWins[Int]], Option[LastWriterWins[Int]])]
 

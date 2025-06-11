@@ -1,7 +1,6 @@
 package replication
 
 import rdts.base.Lattice
-import rdts.dotted.Dotted
 import rdts.time.Dots
 
 import scala.annotation.unused
@@ -9,6 +8,8 @@ import scala.annotation.unused
 type ByteArray = Array[Byte]
 
 type Secret = String
+
+case class Dotted[V](data: V, context: Dots)
 
 case class EncRDT[S](deltas: Set[Dotted[Secret]])
 

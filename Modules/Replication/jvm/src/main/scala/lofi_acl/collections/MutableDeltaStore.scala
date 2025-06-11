@@ -35,11 +35,9 @@ class MutableDeltaStore[RDT: Bottom] {
     val mergedPrefix = prefix.merge(delta)
     val mergedDots   = prefixDots.merge(dots)
 
-    unionOfDots.intersect(dots).removeDots(prefixDots) match
-      case Some(toRemove) => toRemove.iterator.foreach { dot =>
-          deltaMap.remove(dot)
-        }
-      case None =>
+    unionOfDots.intersect(dots).subtract(prefixDots).iterator.foreach { dot =>
+      deltaMap.remove(dot)
+    }
 
     prefix = mergedPrefix
     prefixDots = mergedDots

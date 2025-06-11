@@ -1,7 +1,6 @@
 package rdts.time
 
 import rdts.base.{Decompose, Lattice, Uid}
-import rdts.dotted.{Dotted, HasDots}
 
 import scala.annotation.targetName
 
@@ -12,8 +11,6 @@ import scala.annotation.targetName
   * as well as for ensuring causality during replication.
   */
 case class Dots(internal: Map[Uid, ArrayRanges]) {
-
-  def wrap[A](a: A): Dotted[A] = Dotted(a, this)
 
   def isEmpty: Boolean = internal.forall((_, r) => r.isEmpty)
 
@@ -143,18 +140,6 @@ object Dots {
       ArrayRanges.leftRightToOrder(leftLTE, rightLTE)
 
     override def lteq(x: Dots, y: Dots): Boolean = x <= y
-  }
-
-  given HasDots[Dots] with {
-    extension (dotted: Dots)
-      def dots: Dots = dotted
-
-      /** Removes dots and anything associated to them from the value.
-        * In case the value becomes fully “empty” returns None
-        */
-      def removeDots(dots: Dots): Option[Dots] =
-        val res = dotted.diff(dots)
-        if res.isEmpty then None else Some(res)
   }
 
 }

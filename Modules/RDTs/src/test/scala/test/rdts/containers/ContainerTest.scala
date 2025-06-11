@@ -4,7 +4,6 @@ import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, LocalUid}
 import rdts.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ReplicatedSet}
-import rdts.dotted.Dotted
 import rdts.experiments.AuctionInterface
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 
@@ -23,19 +22,6 @@ class ContainerTest extends munit.FunSuite {
   import helper.given
 
   // START EnableWinsFlag
-
-  test("Dotted can contain contextual EnableWinsFlag") {
-    val flag: Dotted[EnableWinsFlag] = Dotted.empty
-    given LocalUid                   = "me".asId
-
-    assertEquals(flag.data.read, false)
-
-    val enabled = flag.modn(_.enable())
-    assertEquals(enabled.data.read, true)
-
-    val disabled = enabled.modn(_.disable())
-    assertEquals(disabled.data.read, false)
-  }
 
   test("Dotted DeltaBuffer can contain contextual EnableWinsFlag") {
     val flag: DeltaBuffer[EnableWinsFlag] = DeltaBuffer(EnableWinsFlag.empty)
@@ -64,20 +50,6 @@ class ContainerTest extends munit.FunSuite {
   // END EnableWinsFlag
 
   // START ReplicatedSet
-
-  test("Dotted can contain contextual ReplicatedSet[String]") {
-    val awSet: Dotted[ReplicatedSet[String]] = Dotted.empty
-
-    assert(awSet.data.elements.isEmpty)
-
-    val added = awSet.modn(_.add("First"))
-    assertEquals(added.data.elements.size, 1)
-    assert(added.data.elements.contains("First"))
-    assert(added.data.contains("First"))
-
-    val removed = added.modn(_.remove("First"))
-    assert(removed.data.elements.isEmpty)
-  }
 
   // NOTE: DeltaBuffer cannot contain contextual ReplicatedSet without Dotted, as ReplicatedSet needs a context
 

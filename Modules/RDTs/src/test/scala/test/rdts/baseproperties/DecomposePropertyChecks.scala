@@ -6,7 +6,6 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList}
-import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.DataGenerator.RGAGen.given
 import test.rdts.DataGenerator.{*, given}
@@ -14,11 +13,8 @@ import test.rdts.isGithubCi
 
 import scala.util.{Failure, Success}
 
-class DotSetDecomposeChecks          extends DecomposePropertyChecks[Dotted[Dots]]
 class EnableWinsFlagDecomposeChecks  extends DecomposePropertyChecks[EnableWinsFlag]
-class DotFunDecomposeChecks          extends DecomposePropertyChecks[Dotted[Map[Dot, Int]]]
 class ConMultiVersionDecomposeChecks extends DecomposePropertyChecks[MultiVersionRegister[Int]]
-class DotMapDecomposeChecks          extends DecomposePropertyChecks[Dotted[Map[rdts.base.Uid, Dots]]](expensive = true)
 class GrowOnlyCounterDecomposeChecks extends DecomposePropertyChecks[GrowOnlyCounter]
 class IntDecomposeChecks             extends DecomposePropertyChecks[Int]
 class SetDecomposeChecks             extends DecomposePropertyChecks[Set[String]]
@@ -65,8 +61,6 @@ abstract class DecomposePropertyChecks[A](
       val decomposed = theValue.decomposed
       val normalized = Lattice.normalize(theValue)
 
-      val isDotted = theValue.isInstanceOf[Dotted[?]]
-
       decomposed.foreach { d =>
         assertEquals(
           d `merge` theValue,
@@ -81,15 +75,6 @@ abstract class DecomposePropertyChecks[A](
         then
           BottomOpt.explicit: bo =>
             assertNotEquals(bo.empty, d, s"decomposed result was empty\n  $decomposed")
-        if isDotted
-        then
-          // do some extra checks which will cause failure later, but have better error reporting when done here
-          decomposed.foreach: other =>
-            if d != other
-            then
-              val thisCtx  = d.asInstanceOf[Dotted[?]].context
-              val otherCtx = other.asInstanceOf[Dotted[?]].context
-              assert(thisCtx `disjunct` otherCtx, s"overlapping context\n  ${d}\n  ${other}")
       }
 
       BottomOpt.explicit: bo =>

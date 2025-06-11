@@ -12,14 +12,14 @@ class DeltaStoreTest extends FunSuite {
   private val d = Uid("d")
 
   private val testStore = DeltaStore.empty[Set[Int]]()
-    .addDeltaIfNew(Dot(a, 0).dots, Set(0))
-    .addDeltaIfNew(Dot(a, 1).dots, Set(1))
-    .addDeltaIfNew(Dot(a, 2).dots, Set(2))
-    .addDeltaIfNew(Dot(a, 5).dots, Set(5))
-    .addDeltaIfNew(Dot(b, 42).dots, Set(42))
-    .addDeltaIfNew(Dot(c, 21).dots, Set(21))
-    .addDeltaIfNew(Dot(c, 4711).dots, Set(4711))
-    .addDeltaIfNew(Dot(d, 7).dots, Set(7))
+    .addDeltaIfNew(Dots.single(Dot(a, 0)), Set(0))
+    .addDeltaIfNew(Dots.single(Dot(a, 1)), Set(1))
+    .addDeltaIfNew(Dots.single(Dot(a, 2)), Set(2))
+    .addDeltaIfNew(Dots.single(Dot(a, 5)), Set(5))
+    .addDeltaIfNew(Dots.single(Dot(b, 42)), Set(42))
+    .addDeltaIfNew(Dots.single(Dot(c, 21)), Set(21))
+    .addDeltaIfNew(Dots.single(Dot(c, 4711)), Set(4711))
+    .addDeltaIfNew(Dots.single(Dot(d, 7)), Set(7))
 
   test("replacePrefixPruningDeltas and mergeIntoPrefixPruningDeltas prunes deltas") {
     val store = testStore
@@ -34,16 +34,16 @@ class DeltaStoreTest extends FunSuite {
     test(store.mergeIntoPrefixPruningDeltas(prefixDots, Set.empty))
 
     def test(prunedStore: DeltaStore[Set[Int]]): Unit =
-      assertEquals(prunedStore.readAvailableDeltas(Dot(d, 7).dots), Seq(Dot(d, 7).dots -> Set(7)))
+      assertEquals(prunedStore.readAvailableDeltas(Dots.single(Dot(d, 7))), Seq(Dots.single(Dot(d, 7)) -> Set(7)))
       assertEquals(prunedStore.readAvailableDeltas(prefixDots), Seq(prefixDots -> Set.empty))
-      assertEquals(prunedStore.readAvailableDeltas(Dot(a, 0).dots), Seq(prefixDots -> Set.empty))
+      assertEquals(prunedStore.readAvailableDeltas(Dots.single(Dot(a, 0))), Seq(prefixDots -> Set.empty))
       assertEquals(
-        prunedStore.readAvailableDeltas(Dot(c, 10_022).dots.add(Dot(d, 7))),
-        Seq(Dot(d, 7).dots -> Set(7), prefixDots -> Set.empty)
+        prunedStore.readAvailableDeltas(Dots.single(Dot(c, 10_022)).add(Dot(d, 7))),
+        Seq(Dots.single(Dot(d, 7)) -> Set(7), prefixDots -> Set.empty)
       )
       assertEquals(
-        prunedStore.readAvailableDeltas(Dot(c, 10_022).dots.add(Dot(d, 7)).add(Dot(b, 42))).toSet,
-        Set(Dot(d, 7).dots -> Set(7), prefixDots -> Set.empty, Dot(b, 42).dots -> Set(42))
+        prunedStore.readAvailableDeltas(Dots.single(Dot(c, 10_022)).add(Dot(d, 7)).add(Dot(b, 42))).toSet,
+        Set(Dots.single(Dot(d, 7)) -> Set(7), prefixDots -> Set.empty, Dots.single(Dot(b, 42)) -> Set(42))
       )
   }
 
@@ -71,12 +71,12 @@ class DeltaStoreTest extends FunSuite {
     val store = DeltaStore.empty[Set[Int]]()
       .replacePrefixPruningDeltas(Dots.single(a, 0), Set(0))
       .addDeltaIfNew(Dots.single(a, 1).add(a, 2), Set(1, 2))
-      .addDeltaIfNew(Dot(b, 42).dots, Set(42))
+      .addDeltaIfNew(Dots.single(Dot(b, 42)), Set(42))
 
     assertEquals(
       store.readAvailableDeltas(Dots.single(a, 0).add(a, 1).add(a, 100)).toSet, // a -> 100 is not available
       Set(
-        Dot(a, 0).dots              -> Set(0), // prefix
+        Dots.single(Dot(a, 0))      -> Set(0), // prefix
         Dots.single(a, 1).add(a, 2) -> Set(1, 2)
       )
     )

@@ -28,4 +28,3 @@ object DecoratedLattice {
       override def compact(merged: A): A = comp(merged)
     }: @nowarn("msg=class definition will be duplicated")
 }
-

@@ -5,7 +5,6 @@ import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice
 import rdts.base.LocalUid.asId
 import rdts.datatypes.ReplicatedList
-import rdts.dotted.Dotted
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.TimeUnit
@@ -43,8 +42,8 @@ class DeltaMergeBench {
   }
 
   @Benchmark
-  def fullMerge: Dotted[ReplicatedList[Long]] = {
-    Dotted(Lattice.merge(fullState, plusOneState))
+  def fullMerge: ReplicatedList[Long] = {
+    Lattice.merge(fullState, plusOneState)
   }
 
   @Benchmark

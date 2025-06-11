@@ -6,7 +6,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import dtn.rdt.{Channel, ClientOperationMode}
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import rdts.dotted.Obrem
 import rdts.time.{Dot, Dots}
 import replication.DeltaDissemination
 

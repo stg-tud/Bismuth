@@ -5,8 +5,6 @@ import rdts.base.*
 import rdts.datatypes.*
 import rdts.datatypes.GrowOnlyList.Node
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.dotted.*
-import rdts.dotted.HasDots.mapInstance
 import rdts.experiments.{CausalDelta, CausalStore}
 import rdts.time.*
 
@@ -19,7 +17,6 @@ object DataGenerator {
   }
   object ExampleData:
     given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
-    given hasDots: HasDots[ExampleData]   = HasDots.noDots
 
   given Arbitrary[ExampleData] = Arbitrary:
     Gen.oneOf(List("Anne", "Ben", "Chris", "Erin", "Julina", "Lynn", "Sara", "Taylor")).map(name =>
@@ -120,22 +117,10 @@ object DataGenerator {
         elems.headOption.map(GrowOnlyList.Node.Head -> _) concat pairs
       GrowOnlyList(all.toMap)
 
-  given arbDotted[E: HasDots](using arb: Arbitrary[E]): Arbitrary[Dotted[E]] = Arbitrary:
-    for
-      dots <- Arbitrary.arbitrary[Dots]
-      elem <- arb.arbitrary
-    yield Dotted(elem, dots `union` elem.dots)
-
-  given arbDotmap[K, V: HasDots](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =
+  given arbDotmap[K, V](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =
     Arbitrary:
       Gen.listOf(Gen.zip[K, V](arbElem.arbitrary, arbKey.arbitrary)).map: pairs =>
-        // remove dots happens to normalize the structure to remove empty inner elements
-        pairs.toMap.removeDots(Dots.empty).getOrElse(Map.empty)
-
-  @nowarn
-  given shrinkDotted[A: HasDots]: Shrink[Dotted[A]] = Shrink: dotted =>
-    (dotted.context.decomposed.iterator concat dotted.context.iterator.map(Dots.single)).toStream.flatMap: e =>
-      dotted.data.removeDots(e).map(Dotted(_, dotted.context.subtract(e)))
+        pairs.toMap
 
   given arbCMultiVersion[E](using arb: Arbitrary[E]): Arbitrary[MultiVersionRegister[E]] = Arbitrary {
     for
@@ -151,13 +136,14 @@ object DataGenerator {
     yield EnableWinsFlag(set, unset)
   }
 
-  given arbCausalDelta[A: {Arbitrary, HasDots}]: Arbitrary[CausalDelta[A]] = Arbitrary:
+  given arbCausalDelta[A: {Arbitrary}]: Arbitrary[CausalDelta[A]] = Arbitrary:
     for
       predec <- arbDots.arbitrary
       value  <- Arbitrary.arbitrary[A]
-    yield CausalDelta(value.dots, Dots.empty, value)
+      dots   <- arbDots.arbitrary
+    yield CausalDelta(dots, Dots.empty, value)
 
-  given arbCausalStore[A: {Arbitrary, HasDots, Bottom, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
+  given arbCausalStore[A: {Arbitrary, Bottom, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
     for
       predec <- Gen.listOf(arbCausalDelta.arbitrary)
       value  <- Arbitrary.arbitrary[A]

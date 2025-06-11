@@ -2,16 +2,15 @@ package test.rdts.protocols
 
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.Dotted
 import rdts.protocols.{Ownership, Token}
 import rdts.time.Dots
 
 class TokensTest extends munit.FunSuite {
-  given dots: Dots             = Dots.empty
-  given Lattice[Dotted[Token]] = Lattice.derived
-  val numOfReplicas            = 5
-  val replicas: Seq[LocalUid]  = List.tabulate(numOfReplicas)(_ => LocalUid.gen())
-  var token                    = Token(
+  given dots: Dots            = Dots.empty
+  given Lattice[Token]        = Lattice.derived
+  val numOfReplicas           = 5
+  val replicas: Seq[LocalUid] = List.tabulate(numOfReplicas)(_ => LocalUid.gen())
+  var token                   = Token(
     os = Ownership.unchanged,
     wants = ReplicatedSet.empty
   )

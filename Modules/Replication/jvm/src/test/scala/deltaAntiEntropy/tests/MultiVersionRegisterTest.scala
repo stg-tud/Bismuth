@@ -8,7 +8,6 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
 import rdts.datatypes.MultiVersionRegister
-import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable

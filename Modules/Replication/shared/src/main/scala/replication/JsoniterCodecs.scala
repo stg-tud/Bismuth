@@ -5,7 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.base.Uid
 import rdts.datatypes.*
 import rdts.experiments.AuctionInterface.AuctionData
-import rdts.dotted.Dotted
 import rdts.time.{ArrayRanges, Dot, Dots, Time}
 
 object JsoniterCodecs {
@@ -61,7 +60,7 @@ object JsoniterCodecs {
   given GSetStateCodec[E: JsonValueCodec]: JsonValueCodec[Set[E]] = JsonCodecMaker.make
 
   /** LastWriterWins */
-  given LastWriterWinsStateCodec[A: JsonValueCodec]: JsonValueCodec[Dotted[Map[Dot, LastWriterWins[A]]]] =
+  given LastWriterWinsStateCodec[A: JsonValueCodec]: JsonValueCodec[Map[Dot, LastWriterWins[A]]] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
   given LastWriterWinsEmbeddedCodec[A: JsonValueCodec]: JsonValueCodec[Map[Dot, LastWriterWins[A]]] =
@@ -84,16 +83,5 @@ object JsoniterCodecs {
   given RGAStateCodec[E: JsonValueCodec]: JsonValueCodec[ReplicatedList[E]] = {
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   }
-
-  /** Rubis */
-
-  given RubisStateCodec: JsonValueCodec[(
-      Dotted[Map[(String, String), Set[Dot]]],
-      Map[String, String],
-      Map[String, AuctionData]
-  )] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
-
 
 }

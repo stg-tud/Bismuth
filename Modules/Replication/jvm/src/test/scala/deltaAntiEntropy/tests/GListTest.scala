@@ -7,7 +7,6 @@ import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Named, Network
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.GrowOnlyList
-import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable

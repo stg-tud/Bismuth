@@ -1,7 +1,6 @@
 package test.rdts.bespoke
 
 import rdts.base.{Bottom, Lattice, Uid}
-import rdts.dotted.Dotted
 import rdts.experiments.{BoundedCounter, CausalDelta, CausalStore}
 import rdts.time.{ArrayRanges, Dot, Dots}
 import test.rdts.DataGenerator.ExampleData

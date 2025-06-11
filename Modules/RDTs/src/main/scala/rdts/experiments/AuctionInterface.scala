@@ -2,7 +2,6 @@ package rdts.experiments
 
 import rdts.base.{Bottom, Decompose, Lattice}
 import AuctionInterface.Bid.User
-import rdts.dotted.HasDots
 
 object AuctionInterface {
   sealed trait Status

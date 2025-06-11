@@ -3,7 +3,6 @@ package lofi_acl.access
 import lofi_acl.access.Permission.{ALLOW, PARTIAL}
 import lofi_acl.access.PermissionTree.allow
 import rdts.base.Bottom
-import rdts.dotted.{Dotted, Obrem}
 import rdts.time.{ArrayRanges, Dots}
 
 import scala.annotation.unused
@@ -214,7 +213,3 @@ object Filter:
         case PermissionTree(PARTIAL, _) => PermissionTree.empty
 
   def ofTerminalValue[T: Bottom]: Filter[T] = TerminalFilter[T]()
-
-  given dottedFilter[A: {Filter, Bottom}]: Filter[Dotted[A]] = Filter.derived
-
-  given obremFilter[A: {Filter, Bottom}]: Filter[Obrem[A]] = Filter.derived

@@ -1,7 +1,6 @@
 package benchmarks.lattices.delta.crdt
 
 import rdts.base.{Decompose, Lattice, LocalUid, Uid}
-import rdts.dotted.{Dotted, HasDots, Obrem}
 import rdts.time.{Dot, Dots}
 
 case class Named[T](replicaId: Uid, anon: T)
