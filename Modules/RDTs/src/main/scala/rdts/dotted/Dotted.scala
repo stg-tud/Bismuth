@@ -9,9 +9,6 @@ case class Obrem[A](data: A, observed: Dots, deletions: Dots) {
 
   inline def mod[B](f: Dots ?=> A => Obrem[B]): Obrem[B] = f(using context)(data)
   inline def modn[B](f: A => B): Dotted[B]               = Dotted(f(data))
-
-  /** For temporary compat */
-  def toDotted: Dotted[A] = Dotted(data, observed `union` deletions)
 }
 
 /** Decorates an existing lattice to filter the values before merging them.
@@ -62,13 +59,6 @@ case class Dotted[A](data: A, context: Dots) {
   def toObrem(using HasDots[A]) =
     val dots = data.dots
     Obrem(data, dots, context `subtract` dots)
-}
-
-type DottedLattice[T] = Lattice[Dotted[T]]
-object DottedLattice {
-  export Lattice.{apply as _, *}
-
-  def apply[A](using ev: Lattice[Dotted[A]]): Lattice[Dotted[A]] = ev
 }
 
 object Dotted {

@@ -5,7 +5,7 @@ import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice
 import rdts.base.LocalUid.asId
 import rdts.datatypes.ReplicatedList
-import rdts.dotted.{Dotted, DottedLattice}
+import rdts.dotted.Dotted
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.TimeUnit
@@ -49,12 +49,12 @@ class DeltaMergeBench {
 
   @Benchmark
   def fullDiff: Option[ReplicatedList[Long]] = {
-    DottedLattice.diff(fullState, plusOneState)
+    Lattice.diff(fullState, plusOneState)
   }
 
   @Benchmark
   def deltaMerge: ReplicatedList[Long] = {
-    DottedLattice.diff(fullState, plusOneDeltaState) match {
+    Lattice.diff(fullState, plusOneDeltaState) match {
       case Some(stateDiff) =>
         Lattice.merge(fullState, stateDiff)
       case None => fullState

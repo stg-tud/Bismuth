@@ -8,7 +8,7 @@ import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
 import rdts.datatypes.MultiVersionRegister
-import rdts.dotted.{Dotted, DottedLattice, HasDots}
+import rdts.dotted.{Dotted, HasDots}
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
@@ -16,8 +16,7 @@ import scala.util.Random
 
 object MVRegisterGenerators {
 
-  given [A]: HasDots[MultiVersionRegister[A]]       = HasDots.noDots
-  given [A]: DottedLattice[MultiVersionRegister[A]] = Dotted.lattice
+  given [A]: HasDots[MultiVersionRegister[A]] = HasDots.noDots
 
   def genMVRegister[A: Lattice](using
       a: Arbitrary[A],

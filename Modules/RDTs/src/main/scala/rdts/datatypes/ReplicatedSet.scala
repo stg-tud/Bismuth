@@ -78,7 +78,7 @@ case class ReplicatedSet[E](repr: Dotted[Map[E, Dots]]) {
   private def deltaState(
       dm: Map[E, Dots],
       cc: Dots
-  ): Delta = ReplicatedSet(Dotted((dm), cc))
+  ): Delta = ReplicatedSet(Dotted(dm, cc))
 
   private def deltaState(cc: Dots): Delta = deltaState(Map.empty, cc)
 }

@@ -5,7 +5,7 @@ import org.openjdk.jmh.annotations.*
 import rdts.base.LocalUid.asId
 import rdts.base.{Lattice, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.dotted.{Dotted, DottedLattice}
+import rdts.dotted.Dotted
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.TimeUnit
@@ -22,9 +22,9 @@ class AWSetDeltaMergeBench {
   @Param(Array("1", "10", "100", "1000"))
   var size: Long = scala.compiletime.uninitialized
 
-  var fullState: Dotted[ReplicatedSet[Long]]         = scala.compiletime.uninitialized
-  var plusOneState: Dotted[ReplicatedSet[Long]]      = scala.compiletime.uninitialized
-  var plusOneDeltaState: Dotted[ReplicatedSet[Long]] = scala.compiletime.uninitialized
+  var fullState: ReplicatedSet[Long]         = scala.compiletime.uninitialized
+  var plusOneState: ReplicatedSet[Long]      = scala.compiletime.uninitialized
+  var plusOneDeltaState: ReplicatedSet[Long] = scala.compiletime.uninitialized
 
   def makeCContext(replicaID: Uid): Dots = {
     val dots = (0L until size).map(Dot(replicaID, _)).toSet
@@ -33,36 +33,36 @@ class AWSetDeltaMergeBench {
 
   @Setup
   def setup(): Unit = {
-    val baseState = Dotted(ReplicatedSet.empty[Long])
+    val baseState = ReplicatedSet.empty[Long]
 
-    val deltaState = baseState.modn(_.addAll(using "".asId)(0L to size))
+    val deltaState = baseState.addAll(using "".asId)(0L to size)
     fullState = Lattice.merge(baseState, deltaState)
 
-    plusOneDeltaState = fullState.modn(_.add(using "".asId)(size))
+    plusOneDeltaState = fullState.add(using "".asId)(size)
     plusOneState = Lattice.merge(fullState, plusOneDeltaState)
   }
 
   @Benchmark
-  def fullMerge: Dotted[ReplicatedSet[Long]] = {
+  def fullMerge: ReplicatedSet[Long] = {
     Lattice.merge(fullState, plusOneState)
   }
 
   @Benchmark
-  def fullDiff: Option[Dotted[ReplicatedSet[Long]]] = {
-    DottedLattice.diff(fullState, plusOneState)
+  def fullDiff: Option[ReplicatedSet[Long]] = {
+    Lattice.diff(fullState, plusOneState)
   }
 
   @Benchmark
-  def deltaMerge: Dotted[ReplicatedSet[Long]] = {
-    DottedLattice.diff(fullState, plusOneDeltaState) match {
+  def deltaMerge: ReplicatedSet[Long] = {
+    Lattice.diff(fullState, plusOneDeltaState) match {
       case Some(stateDiff) =>
-        DottedLattice[ReplicatedSet[Long]].merge(fullState, stateDiff)
+        Lattice.merge(fullState, stateDiff)
       case None => fullState
     }
   }
 
   @Benchmark
-  def deltaMergeNoDiff: Dotted[ReplicatedSet[Long]] = {
-    DottedLattice[ReplicatedSet[Long]].merge(fullState, plusOneDeltaState)
+  def deltaMergeNoDiff: ReplicatedSet[Long] = {
+    Lattice.merge(fullState, plusOneDeltaState)
   }
 }

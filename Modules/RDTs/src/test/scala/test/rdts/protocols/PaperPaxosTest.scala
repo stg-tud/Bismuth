@@ -4,7 +4,7 @@ import rdts.base.Lattice.merge
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.GrowOnlyMap.*
 import rdts.datatypes.{GrowOnlyCounter, GrowOnlyMap}
-import rdts.dotted.{Dotted, DottedLattice}
+import rdts.dotted.Dotted
 import rdts.protocols.Participants
 import rdts.protocols.paper.Paxos
 import rdts.time.Dots

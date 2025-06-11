@@ -1,7 +1,7 @@
 package replication
 
 import rdts.base.Lattice
-import rdts.dotted.{Dotted, DottedLattice}
+import rdts.dotted.Dotted
 import rdts.time.Dots
 
 import scala.annotation.unused
@@ -26,7 +26,7 @@ extension [S](@unused c: EncRDT[S])
     )))
 
   def recombine(aead: Aead)(using
-      DottedLattice[S],
+      Lattice[Dotted[S]],
       Conversion[Dots, ByteArray],
       Conversion[ByteArray, S]
   ): Option[Dotted[S]] =
