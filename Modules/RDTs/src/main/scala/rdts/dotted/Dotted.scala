@@ -1,6 +1,6 @@
 package rdts.dotted
 
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, FilteredLattice, Lattice, LocalUid}
 import rdts.time.{Dot, Dots}
 
 case class Obrem[A](data: A, observed: Dots, deletions: Dots) {
@@ -9,19 +9,6 @@ case class Obrem[A](data: A, observed: Dots, deletions: Dots) {
 
   inline def mod[B](f: Dots ?=> A => Obrem[B]): Obrem[B] = f(using context)(data)
   inline def modn[B](f: A => B): Dotted[B]               = Dotted(f(data))
-}
-
-/** Decorates an existing lattice to filter the values before merging them.
-  * Warning: Decoration breaks when the decorated lattice has overridden methods except merge and decompose, or uses merge from within merge/decompose.
-  */
-@FunctionalInterface
-trait FilteredLattice[A](decorated: Lattice[A]) extends Lattice[A] {
-  def filter(base: A, other: A): A
-
-  def merge(left: A, right: A): A =
-    val filteredLeft  = filter(left, right)
-    val filteredRight = filter(right, left)
-    decorated.merge(filteredLeft, filteredRight)
 }
 
 object Obrem {

@@ -1,8 +1,8 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, FilteredLattice, Lattice, LocalUid}
 import rdts.dotted.HasDots.mapInstance
-import rdts.dotted.{FilteredLattice, HasDots}
+import rdts.dotted.HasDots
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
