@@ -1,10 +1,9 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
-import rdts.datatypes.ReplicatedList.deltaState
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
 import rdts.datatypes.{Epoch, GrowOnlyList, LastWriterWins}
 import rdts.dotted.HasDots.mapInstance
-import rdts.dotted.{Dotted, HasDots}
+import rdts.dotted.{Dotted, HasDots, Obrem}
 import rdts.time.{Dot, Dots}
 
 /** An RGA (Replicated Growable Array) is a Delta CRDT modeling a list.
@@ -27,38 +26,34 @@ import rdts.time.{Dot, Dots}
   * for collaborative applications", see [[https://www.sciencedirect.com/science/article/pii/S0743731510002716?casa_token=lQaLin7aEvcAAAAA:Esc3h3WvkFHUcvhalTPPvV5HbJge91D4-2jyKiSlz8GBDjx31l4xvfH8DIstmQ973PVi46ckXHg here]]
   * However, since then the implementation was changed significantly, thus it may be a different or even a novel strategy by now.
   */
-case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[Dot, LastWriterWins[E]]]) {
+case class ReplicatedList[E](
+    order: Epoch[GrowOnlyList[Dot]],
+    elements: Map[Dot, LastWriterWins[E]],
+    observed: Dots,
+    deleted: Dots
+) {
 
-  private def current = this
   type C = ReplicatedList[E]
 
   def read(i: Int): Option[E] = {
-    val ReplicatedList(fw, df) = this
-    fw.value.toLazyList.flatMap(df.data.get).map(_.payload).lift(i)
+    order.value.toLazyList.flatMap(elements.get).map(_.payload).lift(i)
   }
 
-  def size: Int = meta.data.size
+  def size: Int = elements.size
 
   def toList: List[E] = {
-    val ReplicatedList(fw, df) = this
-    fw.value.toList.flatMap(df.data.get).map(_.payload)
-  }
-
-  def sequence: Long = {
-    val ReplicatedList(fw, _) = this
-    fw.counter
+    order.value.toList.flatMap(elements.get).map(_.payload)
   }
 
   def findInsertIndex(n: Int): Option[Int] = {
-    current.order.value.toLazyList.zip(LazyList.from(1)).filter {
-      case (dot, _) => current.meta.data.contains(dot)
+    order.value.toLazyList.zip(LazyList.from(1)).filter {
+      case (dot, _) => elements.contains(dot)
     }.map(_._2).prepended(0).lift(n)
   }
 
   /** Inserts at list index `i` */
   def insert(using LocalUid)(i: Int, e: E): C = {
-    val ReplicatedList(order, entries) = current
-    val nextDot                        = meta.context.nextDot(LocalUid.replicaId)
+    val nextDot = observed.nextDot(LocalUid.replicaId)
 
     findInsertIndex(i) match {
       case None                   => ReplicatedList.empty[E]
@@ -68,7 +63,7 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
         }
         val dfDelta = Map(nextDot -> LastWriterWins.now(e))
 
-        deltaState[E].make(
+        ReplicatedList.make(
           epoche = glistDelta,
           df = dfDelta,
           cc = Dots.single(nextDot)
@@ -77,8 +72,7 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
   }
 
   def insertAll(using LocalUid)(i: Int, elems: Iterable[E]): C = {
-    val ReplicatedList(fw, df) = current
-    val nextDot                = meta.context.nextDot(LocalUid.replicaId)
+    val nextDot = observed.nextDot(LocalUid.replicaId)
 
     val nextDots = List.iterate(nextDot, elems.size) {
       case Dot(c, r) => Dot(c, r + 1)
@@ -88,12 +82,12 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
       case None                   => ReplicatedList.empty
       case Some(glistInsertIndex) =>
         val glistDelta =
-          fw.map { gl =>
+          order.map { gl =>
             gl.insertAllGL(glistInsertIndex, nextDots)
           }
         val dfDelta = Map.empty[Dot, LastWriterWins[E]] ++ (nextDots zip elems.map(e => LastWriterWins.now(e)))
 
-        deltaState[E].make(
+        ReplicatedList.make(
           epoche = glistDelta,
           df = dfDelta,
           cc = Dots.from(nextDots.toSet)
@@ -102,17 +96,16 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
   }
 
   private def updateRGANode(state: ReplicatedList[E], i: Int, newNode: Option[E]): ReplicatedList[E] = {
-    val ReplicatedList(fw, df) = state
-    fw.value.toLazyList.lift(i) match {
+    state.order.value.toLazyList.lift(i) match {
       case None    => ReplicatedList.empty
       case Some(d) =>
-        df.data.get(d) match
+        state.elements.get(d) match
           case None          => ReplicatedList.empty
           case Some(current) =>
             newNode match
-              case None        => deltaState[E].make(cc = Dots.single(d))
+              case None        => ReplicatedList.make(cc = Dots.single(d))
               case Some(value) =>
-                deltaState[E].make(df = Map(d -> current.write(value)), cc = Dots.single(d))
+                ReplicatedList.make(df = Map(d -> current.write(value)), cc = Dots.single(d))
     }
   }
 
@@ -121,14 +114,14 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
   def delete(i: Int): C = setAtIndex(i, None)
 
   def findUpdateIndex(n: Int): Option[Int] = {
-    current.order.value.toLazyList.zip(LazyList.from(0)).filter {
-      case (dot, _) => current.meta.data.contains(dot)
+    order.value.toLazyList.zip(LazyList.from(0)).filter {
+      case (dot, _) => elements.contains(dot)
     }.map(_._2).lift(n)
   }
 
   def setAtIndex(i: Int, e: Option[E]): C = {
     findUpdateIndex(i) match {
-      case Some(index) => updateRGANode(current, index, e)
+      case Some(index) => updateRGANode(this, index, e)
       case None        => ReplicatedList.empty[E]
     }
   }
@@ -138,44 +131,42 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
       cond: E => Boolean,
       transform: LastWriterWins[E] => Option[LastWriterWins[E]]
   ): ReplicatedList[E] = {
-    val touched: Iterable[Dot] = state.meta.data.flatMap: (k, v) =>
+    val touched: Iterable[Dot] = state.elements.flatMap: (k, v) =>
       Option.when(cond(v.payload))(k)
 
     val updates =
       touched.flatMap: dot =>
-        val value = state.meta.data(dot)
+        val value = state.elements(dot)
         transform(value).map(nv => dot -> nv)
       .toMap
 
-    deltaState[E].make(df = updates, cc = Dots.from(touched))
+    ReplicatedList.make(df = updates, cc = Dots.from(touched))
   }
 
   def updateBy(cond: E => Boolean, e: E): C =
-    updateRGANodeBy(current, cond, old => Some(old.write(e)))
+    updateRGANodeBy(this, cond, old => Some(old.write(e)))
 
   def deleteBy(cond: E => Boolean): C =
-    updateRGANodeBy(current, cond, _ => None)
+    updateRGANodeBy(this, cond, _ => None)
 
   def purgeTombstones(): C = {
-    val ReplicatedList(epoche, df) = current
+    val known: List[Dot] = order.value.toList
 
-    val known: List[Dot] = epoche.value.toList
-
-    val contained = df.data.dots
+    val contained = observed.dots
 
     val removed = known.filter(dot => !contained.contains(dot))
 
-    val golistPurged = epoche.value.without(removed.toSet)
+    val golistPurged = order.value.without(removed.toSet)
 
-    deltaState[E].make(
-      epoche = epoche.epocheWrite(golistPurged),
+    ReplicatedList.make(
+      epoche = order.epocheWrite(golistPurged),
       cc = Dots.from(removed)
     )
   }
 
   def clear(): C = {
-    deltaState[E].make(
-      cc = meta.context
+    ReplicatedList.make(
+      cc = observed
     )
   }
 
@@ -190,25 +181,26 @@ case class ReplicatedList[E](order: Epoch[GrowOnlyList[Dot]], meta: Dotted[Map[D
 }
 object ReplicatedList {
 
-  def empty[E]: ReplicatedList[E] = ReplicatedList(Epoch.empty, Dotted.empty)
+  def empty[E]: ReplicatedList[E] = ReplicatedList(Epoch.empty, Map.empty, Dots.empty, Dots.empty)
 
-  given lattice[E]: Lattice[ReplicatedList[E]]     = Lattice.derived
-  given decompose[E]: Decompose[ReplicatedList[E]] =
-    given Decompose[LastWriterWins[E]] = Decompose.atomic
-    Decompose.derived
+  given lattice[E]: Lattice[ReplicatedList[E]] =
+    DecoratedLattice.filter(Lattice.derived[ReplicatedList[E]]) { (base, other) =>
+      val elem = base.elements.removedAll(other.deleted.iterator)
+      base.copy(elements = elem)
+    }
+
+  given decompose[E]: Decompose[ReplicatedList[E]] = Decompose.derived
 
   given bottom[E]: Bottom[ReplicatedList[E]] = new:
     override def empty: ReplicatedList[E] = ReplicatedList.empty
 
-  private class DeltaStateFactory[E] {
-
-    def make(
-        epoche: Epoch[GrowOnlyList[Dot]] = empty._1,
-        df: Map[Dot, LastWriterWins[E]] = Map.empty,
-        cc: Dots = Dots.empty
-    ): ReplicatedList[E] = ReplicatedList(epoche, Dotted(df, cc))
+  def make[E](
+      epoche: Epoch[GrowOnlyList[Dot]] = empty._1,
+      df: Map[Dot, LastWriterWins[E]] = Map.empty,
+      cc: Dots = Dots.empty
+  ): ReplicatedList[E] = {
+    val obrem = Dotted(df, cc).toObrem
+    ReplicatedList(epoche, obrem.data, obrem.observed, obrem.deletions)
   }
-
-  private def deltaState[E]: DeltaStateFactory[E] = new DeltaStateFactory[E]
 
 }

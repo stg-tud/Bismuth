@@ -73,8 +73,6 @@ object HasDots {
         if res.isEmpty then None else Some(res)
   }
 
-
-
   inline given tuple[T <: Tuple: Mirror.ProductOf]: HasDots[T] = derived
 
   inline def derived[T <: Product](using pm: Mirror.ProductOf[T]): HasDots[T] =

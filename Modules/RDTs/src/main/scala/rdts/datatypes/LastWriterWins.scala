@@ -35,6 +35,8 @@ object LastWriterWins {
 
   def now[A](v: A): LastWriterWins[A] = LastWriterWins(CausalTime.now(), v)
 
+  given decompose[E]: Decompose[LastWriterWins[E]] = Decompose.atomic
+
   given lattice[A]: Lattice[LastWriterWins[A]] =
     given Ordering[A] = Lattice.assertEqualsOrdering
     Lattice.fromOrdering(using Orderings.lexicographic)
@@ -48,13 +50,9 @@ object LastWriterWins {
     case _                        => GenericLastWriterWinsLattice(Lattice.assertEquals)
   }
 
-  class GenericLastWriterWinsLattice[A](conflict: Lattice[A]) extends Lattice[LastWriterWins[A]]
-      with Decompose[LastWriterWins[A]] {
+  class GenericLastWriterWinsLattice[A](conflict: Lattice[A]) extends Lattice[LastWriterWins[A]] {
     override def subsumption(left: LastWriterWins[A], right: LastWriterWins[A]): Boolean =
       left.timestamp <= right.timestamp
-
-    extension (a: LastWriterWins[A])
-      override def decomposed: Iterable[LastWriterWins[A]] = List(a)
 
     override def merge(left: LastWriterWins[A], right: LastWriterWins[A]): LastWriterWins[A] =
       CausalTime.ordering.compare(left.timestamp, right.timestamp) match

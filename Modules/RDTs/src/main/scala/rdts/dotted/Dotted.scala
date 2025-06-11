@@ -17,6 +17,9 @@ object Obrem {
 
   def empty[A: Bottom]: Obrem[A] = Obrem(Bottom.empty[A], Dots.empty, Dots.empty)
 
+  // TODO: is this sound????
+  given decompose[A: Decompose]: Decompose[Obrem[A]] = Decompose.derived
+
   given lattice[A: {HasDots, Bottom, Lattice}]: DecoratedLattice[Obrem[A]](Lattice.derived) with {
     override def filter(base: Obrem[A], other: Obrem[A]): Obrem[A] =
       if other.deletions.isEmpty
