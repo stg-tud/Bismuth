@@ -120,10 +120,6 @@ object DataGenerator {
         elems.headOption.map(GrowOnlyList.Node.Head -> _) concat pairs
       GrowOnlyList(all.toMap)
 
-  given arbTwoPhaseSet[E](using arb: Arbitrary[E]): Arbitrary[TwoPhaseSet[E]] = Arbitrary:
-    Gen.listOf(arb.arbitrary).flatMap: additions =>
-      Gen.listOf(arb.arbitrary).map: removals =>
-        TwoPhaseSet(additions.toSet, removals.toSet)
 
   given arbDotted[E: HasDots](using arb: Arbitrary[E]): Arbitrary[Dotted[E]] = Arbitrary:
     for

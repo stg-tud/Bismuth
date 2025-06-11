@@ -5,7 +5,7 @@ import munit.internal.FutureCompat.ExtensionFuture
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList, TwoPhaseSet}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList}
 import rdts.dotted.{Dotted, HasDots}
 import rdts.time.{Dot, Dots}
 import test.rdts.DataGenerator.RGAGen.given
@@ -20,7 +20,6 @@ class DotFunDecomposeChecks          extends DecomposePropertyChecks[Dotted[Map[
 class ConMultiVersionDecomposeChecks extends DecomposePropertyChecks[MultiVersionRegister[Int]]
 class DotMapDecomposeChecks          extends DecomposePropertyChecks[Dotted[Map[rdts.base.Uid, Dots]]](expensive = true)
 class GrowOnlyCounterDecomposeChecks extends DecomposePropertyChecks[GrowOnlyCounter]
-class TwoPhaseSetDecomposeChecks     extends DecomposePropertyChecks[TwoPhaseSet[Int]]
 class IntDecomposeChecks             extends DecomposePropertyChecks[Int]
 class SetDecomposeChecks             extends DecomposePropertyChecks[Set[String]]
 class MapDecomposeChecks             extends DecomposePropertyChecks[Map[String, Int]]

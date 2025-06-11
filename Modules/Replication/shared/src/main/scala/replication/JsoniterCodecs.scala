@@ -96,11 +96,7 @@ object JsoniterCodecs {
 
   /** TwoPhaseSet */
 
-  given TwoPSetStateCodec[E: JsonValueCodec]: JsonValueCodec[TwoPhaseSet[E]] = JsonCodecMaker.make
-
   given withContextWrapper[E: JsonValueCodec]: JsonValueCodec[Dotted[E]] = JsonCodecMaker.make
 
-  given twoPSetContext[E: JsonValueCodec]: JsonValueCodec[Dotted[TwoPhaseSet[E]]] =
-    withContextWrapper(using TwoPSetStateCodec)
 
 }
