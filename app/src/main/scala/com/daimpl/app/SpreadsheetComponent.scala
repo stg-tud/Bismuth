@@ -38,6 +38,7 @@ object SpreadsheetComponent {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta = props.spreadsheetAggregator.editAndGetDelta(f)
+        props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)
       }
     }
@@ -111,7 +112,7 @@ object SpreadsheetComponent {
 
     def removeRow(): Callback =
       withSelectedRow(rowIdx =>
-        modSpreadsheet(_.removeRow(rowIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
+        modSpreadsheet(_.removeRow(rowIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
           _.copy(selectedRow = None)
         )
       )
@@ -130,7 +131,7 @@ object SpreadsheetComponent {
 
     def removeColumn(): Callback =
       withSelectedColumn(colIdx =>
-        modSpreadsheet(_.removeColumn(colIdx)) >> modSpreadsheet(_.purgeTombstones()) >> $.modState(
+        modSpreadsheet(_.removeColumn(colIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
           _.copy(selectedColumn = None)
         )
       )
