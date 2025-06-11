@@ -139,6 +139,8 @@ object SpreadsheetComponent {
     def addRow(): Callback = modSpreadsheet(_.addRow())
 
     def addColumn(): Callback = modSpreadsheet(_.addColumn())
+
+    def purgeTombstones(): Callback = modSpreadsheet(_.purgeTombstones())
   }
 
   val Component = ScalaComponent
@@ -272,6 +274,14 @@ object SpreadsheetComponent {
                 )
               }.toVdomArray
             )
+          )
+        ),
+        <.div(
+          ^.className := "mt-4 flex flex-wrap gap-2",
+          <.button(
+            ^.className := "px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-xs",
+            ^.onClick --> backend.purgeTombstones(),
+            "Purge Tombstones"
           )
         )
       )
