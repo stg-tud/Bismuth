@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 
-import rdts.base.Uid
+import rdts.base.{Bottom, Lattice, Uid}
 import rdts.dotted.Dotted
 import rdts.experiments.{BoundedCounter, CausalDelta, CausalStore}
 import rdts.time.{ArrayRanges, Dot, Dots}
@@ -13,44 +13,40 @@ class CausalStoreTest extends munit.FunSuite {
 
   test("basic usage") {
 
-    val a: Dotted[CausalStore[Map[Dot, ExampleData]]] =
-      Dotted(
-        CausalStore(
-          CausalDelta(
-            Dots(Map(Uid.predefined("c") -> ArrayRanges.elems(1))),
-            Dots(Map()),
-            Map(Dot("c", 1) -> "A pen Chris")
-          ),
-          Map(Dot("a", 2) -> "A in Anne")
-        ),
-        Dots.empty
+    val a: CausalStore[Map[Dot, ExampleData]] =
+      CausalStore(
+        Set(CausalDelta(
+          Dots(Map(Uid.predefined("c") -> ArrayRanges.elems(1))),
+          Dots(Map()),
+          Map(Dot("c", 1) -> "A pen Chris")
+        )),
+        Dots.single(Dot("a", 2)),
+        Map(Dot("a", 2) -> "A in Anne")
       )
 
-    val b: Dotted[CausalStore[Map[Dot, ExampleData]]] = Dotted(
+    val b: CausalStore[Map[Dot, ExampleData]] =
       CausalStore(
-        CausalDelta(
+        Set(CausalDelta(
           Dots(Map(Uid.predefined("d") -> ArrayRanges.elems(3))),
           Dots(Map()),
           Map(Dot("d", 3) -> "B pen Erin")
-        ),
+        )),
+        Dots(Map(Uid.predefined("d") -> ArrayRanges.elems(3), Uid.predefined("g") -> ArrayRanges.elems(4))),
         Map(Dot("g", 4) -> "B in Taylor")
-      ),
-      Dots(Map(Uid.predefined("d") -> ArrayRanges.elems(3), Uid.predefined("g") -> ArrayRanges.elems(4)))
-    )
+      )
 
-    val c: Dotted[CausalStore[Map[Dot, ExampleData]]] = Dotted(
+    val c: CausalStore[Map[Dot, ExampleData]] =
       CausalStore(
-        CausalDelta(
+        Set(CausalDelta(
           Dots.empty,
           Dots.empty,
           Map.empty
-        ),
+        )),
+        Dots(Map(
+          Uid.predefined("d") -> ArrayRanges.elems(3),
+        )),
         Map()
-      ),
-      Dots(Map(
-        Uid.predefined("d") -> ArrayRanges.elems(3),
-      ))
-    )
+      )
 
     val ab = a `merge` b
     val bc = b `merge` c
@@ -60,4 +56,21 @@ class CausalStoreTest extends munit.FunSuite {
 
     assertEquals(ab_c, a_bc)
   }
+
+  test("compacts") {
+    val a: CausalStore[Map[Dot, ExampleData]] =
+      CausalStore(
+        Set(CausalDelta(
+          Dots(Map(Uid.predefined("c") -> ArrayRanges.elems(1))),
+          Dots(Map()),
+          Map(Dot("c", 1) -> "A pen Chris")
+        )),
+        Dots.single(Dot("a", 2)),
+        Map(Dot("a", 2) -> "A in Anne")
+      )
+
+    val norm = Lattice.normalize(a)
+    assertEquals(norm.pending, Set.empty)
+  }
+
 }

@@ -21,7 +21,6 @@ import test.rdts.isGithubCi
 // class CausalQueueChecks       extends LatticePropertyChecks[Dotted[CausalQueue[ExampleData]]]
 class OpGraphChecks           extends LatticePropertyChecks[OpGraph[ExampleData]]
 class CausalStoreChecks       extends LatticePropertyChecks[CausalStore[Map[Dot, ExampleData]]]
-class DottedCausalStoreChecks extends LatticePropertyChecks[Dotted[CausalStore[Map[Dot, ExampleData]]]]
 class DotSetChecks            extends LatticePropertyChecks[Dotted[Dots]]
 class EnableWinsFlagChecks    extends LatticePropertyChecks[EnableWinsFlag]
 class DotFunChecks            extends LatticePropertyChecks[Dotted[Map[Dot, Int]]]

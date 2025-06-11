@@ -73,14 +73,7 @@ object HasDots {
         if res.isEmpty then None else Some(res)
   }
 
-  given option[A: HasDots]: HasDots[Option[A]] with
-    extension (dotted: Option[A])
-      def dots: Dots = dotted match
-        case None    => Dots.empty
-        case Some(v) => HasDots[A].dots(v)
-      def removeDots(dots: Dots): Option[Option[A]] = dotted match
-        case None    => None
-        case Some(v) => v.removeDots(dots).map(Some.apply)
+
 
   inline given tuple[T <: Tuple: Mirror.ProductOf]: HasDots[T] = derived
 

@@ -120,7 +120,6 @@ object DataGenerator {
         elems.headOption.map(GrowOnlyList.Node.Head -> _) concat pairs
       GrowOnlyList(all.toMap)
 
-
   given arbDotted[E: HasDots](using arb: Arbitrary[E]): Arbitrary[Dotted[E]] = Arbitrary:
     for
       dots <- Arbitrary.arbitrary[Dots]
@@ -160,9 +159,10 @@ object DataGenerator {
 
   given arbCausalStore[A: {Arbitrary, HasDots, Bottom, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
     for
-      predec <- arbCausalDelta.arbitrary
+      predec <- Gen.listOf(arbCausalDelta.arbitrary)
       value  <- Arbitrary.arbitrary[A]
-    yield Lattice.normalize(CausalStore(predec, value))
+      dots   <- arbDots.arbitrary
+    yield Lattice.normalize(CausalStore(predec.toSet, dots, value))
 
   object RGAGen {
     def makeRGA[E](

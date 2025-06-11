@@ -14,7 +14,6 @@ import scala.collection.immutable.Queue
 import scala.math.Ordering.Implicits.infixOrderingOps
 
 class DotSetHDChecks      extends HasDotsChecks[Dots]
-class CausalStoreHDChecks extends HasDotsChecks[CausalStore[Map[Dot, ExampleData]]]
 // class ReplicatedListHDChecks extends HasDotsChecks[ReplicatedList[ExampleData]]
 
 // the specification of these tests is nice, but the generators are essentially useless, as it is extremely unlikely
