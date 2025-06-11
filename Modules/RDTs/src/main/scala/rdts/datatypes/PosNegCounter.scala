@@ -28,5 +28,4 @@ object PosNegCounter {
 
   val zero: PosNegCounter = PosNegCounter(GrowOnlyCounter.zero, GrowOnlyCounter.zero)
 
-  given hasDots: HasDots[PosNegCounter] = HasDots.noDots
 }

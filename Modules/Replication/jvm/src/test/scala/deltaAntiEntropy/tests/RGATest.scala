@@ -16,8 +16,6 @@ import scala.collection.mutable
 
 object RGAGenerators {
 
-  given [E]: HasDots[ReplicatedList[E]] = HasDots.noDots
-
   def makeNet[E: JsonValueCodec](rl: ReplicatedList[E]) =
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[ReplicatedList[E]]("a", network, mutable.Buffer())

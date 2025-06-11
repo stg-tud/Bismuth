@@ -98,7 +98,7 @@ case class Expense(
     description: LastWriterWins[Option[String]],
     amount: LastWriterWins[Option[String]],
     comment: LastWriterWins[Option[String]],
-) derives Lattice, HasDots, Bottom, Filter
+) derives Lattice, Bottom, Filter
 
 object TravelPlan {
   private val base64Encoder     = Base64.getEncoder

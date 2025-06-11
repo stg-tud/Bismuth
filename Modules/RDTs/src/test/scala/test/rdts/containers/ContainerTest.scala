@@ -169,24 +169,6 @@ class ContainerTest extends munit.FunSuite {
     assertEquals(knockedDown.winner, Some("First"))
   }
 
-  test("Dotted can contain plain AuctionData") {
-    val auction: Dotted[AuctionData] = Dotted.empty
-
-    assertEquals(auction.data.bids, Set.empty)
-    assertEquals(auction.data.status, AuctionInterface.Open)
-    assertEquals(auction.data.winner, None)
-
-    val added = auction.modn(_.bid("First", 1))
-    assertEquals(added.data.bids, Set(Bid("First", 1)))
-    assertEquals(added.data.status, AuctionInterface.Open)
-    assertEquals(added.data.winner, None)
-
-    val knockedDown = added `merge` added.modn(_.knockDown())
-    assertEquals(knockedDown.data.bids, Set(Bid("First", 1)))
-    assertEquals(knockedDown.data.status, AuctionInterface.Closed)
-    assertEquals(knockedDown.data.winner, Some("First"))
-  }
-
   test("Dotted DeltaBuffer can contain plain AuctionData") {
     val auction: DeltaBuffer[AuctionData] = DeltaBuffer(AuctionData.empty)
 

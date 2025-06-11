@@ -5,14 +5,12 @@ import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.EnableWinsFlag
-import rdts.dotted.HasDots
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
 import scala.util.Random
 
 object EWFlagGenerators {
-  given HasDots[EnableWinsFlag]                            = HasDots.noDots
   def genEWFlag: Gen[AntiEntropyContainer[EnableWinsFlag]] =
     for
       nEnable  <- Gen.posNum[Int]

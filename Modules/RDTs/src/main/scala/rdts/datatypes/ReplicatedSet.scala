@@ -90,6 +90,5 @@ object ReplicatedSet {
   given bottom[E]: Bottom[ReplicatedSet[E]]       = Bottom.provide(empty)
   given lattice[E]: Lattice[ReplicatedSet[E]]     = Lattice.derived
   given decompose[E]: Decompose[ReplicatedSet[E]] = Decompose.derived
-  given hasDots[E]: HasDots[ReplicatedSet[E]]     = HasDots.noDots
 
 }

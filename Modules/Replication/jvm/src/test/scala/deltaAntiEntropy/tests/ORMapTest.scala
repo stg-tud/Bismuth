@@ -7,15 +7,15 @@ import org.scalacheck.Prop.*
 import rdts.base
 import rdts.base.{Bottom, Decompose, LocalUid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
-import rdts.dotted.{Dotted, HasDots}
+import rdts.dotted.HasDots
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
 
 class ORMapTest extends munit.ScalaCheckSuite {
   given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+  given HasDots[ReplicatedSet[Int]] = HasDots.noDots
 
-  given hasDots[K, V: HasDots]: HasDots[ObserveRemoveMap[K, V]]       = HasDots.noDots
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
   property("contains") {

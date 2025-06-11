@@ -16,8 +16,6 @@ import scala.util.Random
 
 object MVRegisterGenerators {
 
-  given [A]: HasDots[MultiVersionRegister[A]] = HasDots.noDots
-
   def genMVRegister[A: Lattice](using
       a: Arbitrary[A],
       cA: JsonValueCodec[A],

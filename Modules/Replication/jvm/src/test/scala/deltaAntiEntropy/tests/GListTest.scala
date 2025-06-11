@@ -22,12 +22,12 @@ object GListGenerators {
       }
     }
 
-  given arbGList[E: {JsonValueCodec, HasDots}](using
+  given arbGList[E: {JsonValueCodec}](using
       e: Arbitrary[E]
   ): Arbitrary[GrowOnlyList[E]] =
     Arbitrary(genGList)
 
-  def makeNet[E: {JsonValueCodec, HasDots}](v: GrowOnlyList[E]) =
+  def makeNet[E: {JsonValueCodec}](v: GrowOnlyList[E]) =
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[GrowOnlyList[E]]("a", network, mutable.Buffer())
     val aec     = AntiEntropyContainer[GrowOnlyList[E]](ae)
@@ -39,7 +39,6 @@ class GListTest extends munit.ScalaCheckSuite {
   import GListGenerators.{*, given}
 
   given IntCodec: JsonValueCodec[Int] = JsonCodecMaker.make
-  given HasDots[Int]                  = HasDots.noDots
 
   property("size, toList, read") {
     forAll { (gol: GrowOnlyList[Int], readIdx: Int) =>

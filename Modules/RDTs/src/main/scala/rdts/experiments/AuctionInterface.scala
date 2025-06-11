@@ -41,7 +41,6 @@ object AuctionInterface {
     val empty: AuctionData = AuctionData()
 
     given bottom: Bottom[AuctionData] with { override def empty: AuctionData = AuctionData.empty }
-    given hasDots: HasDots[AuctionData] = HasDots.noDots
 
     given AuctionDataAsUIJDLattice: Lattice[AuctionData] with Decompose[AuctionData] with {
       override def subsumption(left: AuctionData, right: AuctionData): Boolean = (left, right) match {

@@ -17,8 +17,6 @@ case class GrowOnlyCounter(inner: Map[Uid, Int]) {
 object GrowOnlyCounter {
   def zero: GrowOnlyCounter = GrowOnlyCounter(Map.empty)
 
-  given hasDots: HasDots[GrowOnlyCounter] = HasDots.noDots
-
   given bottom: Bottom[GrowOnlyCounter] = Bottom.derived
 
   given lattice: Lattice[GrowOnlyCounter] =

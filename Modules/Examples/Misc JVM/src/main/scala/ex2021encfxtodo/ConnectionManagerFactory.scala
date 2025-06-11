@@ -4,11 +4,9 @@ import ex2021encfxtodo.SyncedTodoListCrdt.{StateType, given}
 import ex2021encfxtodo.sync.{ConnectionManager, DataManagerConnectionManager}
 import rdts.base.{Decompose, LocalUid}
 import rdts.datatypes.ObserveRemoveMap
-import rdts.dotted.HasDots
 
 object ConnectionManagerFactory {
 
-  given hasDots[K, V]: HasDots[ObserveRemoveMap[K, V]]     = HasDots.noDots
   given decompose[K, V]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
   var impl: (LocalUid, () => StateType, StateType => Unit) => ConnectionManager[StateType] =

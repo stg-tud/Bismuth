@@ -35,8 +35,6 @@ object LastWriterWins {
 
   def now[A](v: A): LastWriterWins[A] = LastWriterWins(CausalTime.now(), v)
 
-  given hasDots[A]: HasDots[LastWriterWins[A]] = HasDots.noDots
-
   given lattice[A]: Lattice[LastWriterWins[A]] =
     given Ordering[A] = Lattice.assertEqualsOrdering
     Lattice.fromOrdering(using Orderings.lexicographic)
