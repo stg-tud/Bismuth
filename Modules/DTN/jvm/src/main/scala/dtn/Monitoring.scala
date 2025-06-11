@@ -5,7 +5,7 @@ import io.bullet.borer.derivation.MapBasedCodecs.*
 import rdts.base.Lattice.syntax
 import rdts.time.Dots
 
-import java.io.{BufferedOutputStream}
+import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.time.{Duration, ZoneId, ZonedDateTime}

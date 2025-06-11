@@ -59,8 +59,8 @@ case class MultiRoundVoting[A](rounds: Epoch[Voting[A]]):
     rounds.value.result
 
 object MultiRoundVoting {
-  def unchanged[A]: MultiRoundVoting[A] = MultiRoundVoting(Epoch.empty[Voting[A]])
-  given lattice[A]: Lattice[MultiRoundVoting[A]]            = Lattice.derived
+  def unchanged[A]: MultiRoundVoting[A]          = MultiRoundVoting(Epoch.empty[Voting[A]])
+  given lattice[A]: Lattice[MultiRoundVoting[A]] = Lattice.derived
 }
 
 case class BallotNum(uid: Uid, counter: Long)

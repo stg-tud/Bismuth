@@ -9,7 +9,7 @@ import lofi_acl.sync.*
 import lofi_acl.sync.JsoniterCodecs.messageJsonCodec
 import lofi_acl.sync.acl.Sync
 import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.*
-import lofi_acl.{sync}
+import lofi_acl.sync
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.time.{Dot, Dots}
 

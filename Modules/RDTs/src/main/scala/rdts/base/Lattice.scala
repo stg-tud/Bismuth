@@ -207,7 +207,7 @@ object Lattice {
 
       override def toString: String = s"ProductLattice[${label}]"
 
-      private def lat(i: Int): Lattice[Any]      = lattices.productElement(i).asInstanceOf[Lattice[Any]]
+      private def lat(i: Int): Lattice[Any] = lattices.productElement(i).asInstanceOf[Lattice[Any]]
 
       override def merge(left: T, right: T): T =
         pm.fromProduct(new Product {

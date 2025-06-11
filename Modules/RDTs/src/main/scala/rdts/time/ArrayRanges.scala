@@ -4,7 +4,6 @@ import rdts.base.{Decompose, Lattice}
 
 import scala.annotation.unused
 
-
 /** Efficient storage of a set of [[Time]] when most stored values are contiguous ranges. */
 class ArrayRanges(
     /** Internally, ranges are stored as [begin, end) in a single array where begin is inclusive and end is exclusive.

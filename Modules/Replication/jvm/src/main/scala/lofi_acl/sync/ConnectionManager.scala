@@ -20,8 +20,8 @@ class ConnectionManager[MSG](
 
   private val connector = P2PTlsTcpConnector(privateIdentity)
 
-  @volatile private var running: Boolean           = false
-  @volatile private var stopped: Boolean           = false
+  @volatile private var running: Boolean = false
+  @volatile private var stopped: Boolean = false
 
   @volatile private var connections: Map[PublicIdentity, SSLSocket] = Map.empty
   private val localPublicId                                         = privateIdentity.getPublic

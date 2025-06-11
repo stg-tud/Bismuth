@@ -35,7 +35,7 @@ object DeltaDissemination {
 class DeltaDissemination[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
-  @unused crypto: Option[Aead] = None,
+    @unused crypto: Option[Aead] = None,
     immediateForward: Boolean = false,
     sendingActor: ExecutionContext = DeltaDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),

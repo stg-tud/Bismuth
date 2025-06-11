@@ -17,7 +17,7 @@ case class CaseClassTransactionSpanningTreeNode[T](txn: T, children: Array[CaseC
   override def childCount(): Int                                                   = children.length
   override def iterator(): java.util.Iterator[? <: TransactionSpanningTreeNode[T]] =
     new java.util.Iterator[CaseClassTransactionSpanningTreeNode[T]] {
-      @unused var current: Int                                             = 0
+      @unused var current: Int                                     = 0
       override def hasNext: Boolean                                = current < children.length
       override def next(): CaseClassTransactionSpanningTreeNode[T] = {
         val e = children(current)
