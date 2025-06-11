@@ -19,7 +19,7 @@ object GSetGenerators {
       val ae      = new AntiEntropy[Set[E]]("a", network, mutable.Buffer())
 
       elements.foldLeft(AntiEntropyContainer[Set[E]](ae)) {
-        case (set, e) => set.modn(_ => Set(e))
+        case (set, e) => set.mod(_ => Set(e))
       }
     }
 
@@ -33,7 +33,7 @@ class GSetTest extends munit.ScalaCheckSuite {
   given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
   property("insert") {
     forAll { (set: AntiEntropyContainer[Set[Int]], e: Int) =>
-      val setInserted = set.modn(_ => Set(e))
+      val setInserted = set.mod(_ => Set(e))
 
       assert(
         setInserted.data.contains(e),
@@ -48,8 +48,8 @@ class GSetTest extends munit.ScalaCheckSuite {
       val aea = new AntiEntropy[Set[Int]]("a", network, mutable.Buffer("b"))
       val aeb = new AntiEntropy[Set[Int]]("b", network, mutable.Buffer("a"))
 
-      val sa0 = AntiEntropyContainer[Set[Int]](aea).modn(_ => Set(e))
-      val sb0 = AntiEntropyContainer[Set[Int]](aeb).modn(_ => Set(e))
+      val sa0 = AntiEntropyContainer[Set[Int]](aea).mod(_ => Set(e))
+      val sb0 = AntiEntropyContainer[Set[Int]](aeb).mod(_ => Set(e))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -65,8 +65,8 @@ class GSetTest extends munit.ScalaCheckSuite {
         s"Concurrently inserting the same element should have the same effect as inserting it once, but ${sb1.data} does not contain $e"
       )
 
-      val sa2 = sa1.modn(_ => Set(e1))
-      val sb2 = sb1.modn(_ => Set(e2))
+      val sa2 = sa1.mod(_ => Set(e1))
+      val sb2 = sb1.mod(_ => Set(e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -90,10 +90,10 @@ class GSetTest extends munit.ScalaCheckSuite {
       val aeb     = new AntiEntropy[Set[Int]]("b", network, mutable.Buffer("a"))
 
       val sa0 = insertedA.foldLeft(AntiEntropyContainer[Set[Int]](aea)) {
-        case (set, e) => set.modn(_ => Set(e))
+        case (set, e) => set.mod(_ => Set(e))
       }
       val sb0 = insertedB.foldLeft(AntiEntropyContainer[Set[Int]](aeb)) {
-        case (set, e) => set.modn(_ => Set(e))
+        case (set, e) => set.mod(_ => Set(e))
       }
 
       AntiEntropy.sync(aea, aeb)

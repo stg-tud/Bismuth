@@ -39,11 +39,10 @@ class ORMapBench {
     }
   }
 
-  @Benchmark
-  def queryExisting(): Boolean = map.state.queryKey(0).read
+  def queryExisting(): Boolean = map.state.get(0).exists(_.read)
 
   @Benchmark
-  def queryMissing(): Boolean = map.state.queryKey(-1).read
+  def queryMissing(): Boolean = map.state.get(-1).exists(_.read)
 
   @Benchmark
   def containsExisting(): Boolean = map.state.contains(0)

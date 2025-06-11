@@ -2,8 +2,6 @@ package deltaAntiEntropy.tools
 
 import rdts.base.{Decompose, Lattice, LocalUid}
 
-import scala.annotation.targetName
-
 /** BasicCRDTs are Delta CRDTs that use [[IAntiEntropy]] and [[Network]] as Middleware for exchanging deltas between replicas.
   * They cannot actually be used on multiple connected replicas, but are useful for locally testing the behavior of
   * Delta CRDTs.
@@ -49,19 +47,15 @@ class AntiEntropyContainer[State](
     antiEntropy.getReceivedDeltas.foldLeft(this) {
       (crdt, delta) => crdt.applyDelta(delta)
     }
+
+  def data: State = state
+
+  def mod(f: State => State)(using Lattice[State], Decompose[State]): AntiEntropyContainer[State] = {
+    applyDelta(Named(replicaID.uid, f(state)))
+  }
 }
 
 object AntiEntropyContainer {
-
-  extension [A](curr: AntiEntropyContainer[A]) {
-    def data: A = curr.state
-  }
-
-  extension [A](curr: AntiEntropyContainer[A])(using Lattice[A], Decompose[A]) {
-    @targetName("modNoDelta") inline def modn(f: A => A): AntiEntropyContainer[A] = {
-      curr.applyDelta(Named(curr.replicaID.uid, f(curr.state)))
-    }
-  }
 
   /** Creates a new PNCounter instance
     *

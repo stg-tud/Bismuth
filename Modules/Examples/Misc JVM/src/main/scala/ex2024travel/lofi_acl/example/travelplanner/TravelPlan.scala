@@ -6,7 +6,6 @@ import com.softwaremill.quicklens.*
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.{*, given}
 import lofi_acl.access.Filter
 import lofi_acl.ardt.datatypes.LWW
-import lofi_acl.collections.DeltaAWLWWMContainer.Entry
 import lofi_acl.collections.ORMap.{observeRemoveMapEntryFilter, stringKeyORMapFilter}
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
@@ -18,8 +17,8 @@ import scala.util.Random
 
 case class TravelPlan(
     title: LastWriterWins[Title],
-    bucketList: ObserveRemoveMap[UniqueId, Entry[LastWriterWins[String]]],
-    expenses: ObserveRemoveMap[UniqueId, Entry[Expense]]
+    bucketList: ObserveRemoveMap[UniqueId, LastWriterWins[String]],
+    expenses: ObserveRemoveMap[UniqueId, Expense]
 ) derives Lattice, Bottom, Filter {
   def changeTitle(newTitle: String): Delta = {
     this.deltaModify(_.title).using(_.write(newTitle))
@@ -28,9 +27,8 @@ case class TravelPlan(
   def addBucketListEntry(text: String)(using localUid: LocalUid): Delta = {
     val key = randomKey
     this.deltaModify(_.bucketList).using { ormap =>
-      val nextDot = Dots.single(ormap.repr.context.nextDot(localUid.uid))
       ormap.transformPlain(key) {
-        case None => Some(Entry(nextDot, LastWriterWins.now(text)))
+        case None => Some(LastWriterWins.now(text))
         case _    => ???
       }
     }
@@ -38,10 +36,9 @@ case class TravelPlan(
 
   def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.bucketList).using { ormap =>
-      val nextDot = Dots.single(ormap.repr.context.nextDot(localUid.uid))
       ormap.transformPlain(bucketListId) {
-        case Some(prior) => Some(Entry(nextDot, prior.value.write(text)))
-        case None        => Some(Entry(nextDot, LastWriterWins.now(text)))
+        case Some(prior) => Some(prior.write(text))
+        case None        => Some(LastWriterWins.now(text))
       }
     }
   }
@@ -49,11 +46,10 @@ case class TravelPlan(
   def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta = {
     val key = randomKey
     this.deltaModify(_.expenses).using { ormap =>
-      val nextDot = Dots.single(ormap.repr.context.nextDot(localUid.uid))
       val expense =
         Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.now(None))
       ormap.transformPlain(key) {
-        case None => Some(Entry(nextDot, expense))
+        case None => Some(expense)
         case _    => ???
       }
     }
@@ -61,10 +57,9 @@ case class TravelPlan(
 
   def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.expenses).using { ormap =>
-      val nextDot = Dots.single(ormap.repr.context.nextDot(localUid.uid))
       ormap.transformPlain(expenseId) {
-        case Some(prior: Entry[Expense]) =>
-          Some(Entry(nextDot, prior.value.deltaModify(_.amount).using(_.write(Some(amount)))))
+        case Some(prior: Expense) =>
+          Some(prior.deltaModify(_.amount).using(_.write(Some(amount))))
         case None => ???
       }
     }
@@ -72,10 +67,9 @@ case class TravelPlan(
 
   def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.expenses).using { ormap =>
-      val nextDot = Dots.single(ormap.repr.context.nextDot(localUid.uid))
       ormap.transformPlain(expenseId) {
-        case Some(prior: Entry[Expense]) =>
-          Some(Entry(nextDot, prior.value.deltaModify(_.description).using(_.write(Some(description)))))
+        case Some(prior) =>
+          Some(prior.deltaModify(_.description).using(_.write(Some(description))))
         case None => ???
       }
     }
@@ -84,10 +78,9 @@ case class TravelPlan(
   def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta = {
     val commentValue = if comment.isEmpty then None else Some(comment)
     this.deltaModify(_.expenses).using { ormap =>
-      val nextDot = Dots.single(ormap.repr.context.nextDot(localUid.uid))
       ormap.transformPlain(expenseId) {
-        case Some(prior: Entry[Expense]) =>
-          Some(Entry(nextDot, prior.value.deltaModify(_.comment).using(_.write(commentValue))))
+        case Some(prior) =>
+          Some(prior.deltaModify(_.comment).using(_.write(commentValue)))
         case None => ???
       }
     }

@@ -23,25 +23,25 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val aec = AntiEntropyContainer[ReplicatedList[String]](ae)
 
-    aec.modn(_.insert(using aec.replicaID)(0, "00"))
+    aec.mod(_.insert(using aec.replicaID)(0, "00"))
 
-    aec.modn(_.update(0, "UPD"))
+    aec.mod(_.update(0, "UPD"))
 
     assertEquals(aec.data.toList, List("UPD"))
 
-    aec.modn(_.insert(using aec.replicaID)(1, "100"))
+    aec.mod(_.insert(using aec.replicaID)(1, "100"))
 
     assertEquals(aec.data.toList, List("UPD", "100"))
 
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-      aec.modn(_.insert(using aec.replicaID)(0, elem))
+      aec.mod(_.insert(using aec.replicaID)(0, elem))
     // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("UPD", "100"))
 
-    aec.modn(_.insert(using LocalUid.predefined("b"))(1, "b00"))
+    aec.mod(_.insert(using LocalUid.predefined("b"))(1, "b00"))
 
     assertEquals(aec.data.read(1), Some("b00"))
 
@@ -55,23 +55,23 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val aec = AntiEntropyContainer(ae)
 
-    aec.modn(_.insertGL(0, "00"))
+    aec.mod(_.insertGL(0, "00"))
 
     assertEquals(aec.data.toList, List("00"))
 
-    aec.modn(_.insertGL(1, "100"))
+    aec.mod(_.insertGL(1, "100"))
 
     assertEquals(aec.data.toList, List("00", "100"), aec.state)
 
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-      aec.modn(_.insertGL(0, elem))
+      aec.mod(_.insertGL(0, elem))
     // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("00", "100"))
 
-    aec.modn(_.insertGL(1, "b00"))
+    aec.mod(_.insertGL(1, "b00"))
 
     assertEquals(aec.data.read(1), Some("b00"))
 
@@ -103,29 +103,29 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val la1 = {
       val inserted = insertedAB._1.foldLeft(la0) {
-        case (rga, (i, e)) => rga.modn(_.insert(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
       }
 
       val deleted = removedAB._1.foldLeft(inserted) {
-        case (rga, i) => rga.modn(_.delete(i))
+        case (rga, i) => rga.mod(_.delete(i))
       }
 
       updatedAB._1.foldLeft(deleted) {
-        case (rga, (i, e)) => rga.modn(_.update(i, e))
+        case (rga, (i, e)) => rga.mod(_.update(i, e))
       }
     }
 
     val lb1 = {
       val inserted = insertedAB._2.foldLeft(lb0) {
-        case (rga, (i, e)) => rga.modn(_.insert(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
       }
 
       val deleted = removedAB._2.foldLeft(inserted) {
-        case (rga, i) => rga.modn(_.delete(i))
+        case (rga, i) => rga.mod(_.delete(i))
       }
 
       updatedAB._2.foldLeft(deleted) {
-        case (rga, (i, e)) => rga.modn(_.update(i, e))
+        case (rga, (i, e)) => rga.mod(_.update(i, e))
       }
     }
 

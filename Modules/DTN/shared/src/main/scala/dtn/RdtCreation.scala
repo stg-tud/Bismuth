@@ -94,7 +94,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
   var state: RdtType = ObserveRemoveMap.empty[String, Dot]
 
   private def addStringGetDelta(s: String): RdtType = {
-    val nextDot = state.repr.context.nextDot(dataManager.replicaId.uid)
+    val nextDot = state.observed.nextDot(dataManager.replicaId.uid)
     state.update(s, nextDot)
   }
 

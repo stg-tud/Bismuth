@@ -25,10 +25,10 @@ object AWSetGenerators {
       given LocalUid = LocalUid.predefined(ae.replicaID)
 
       val setAdded = added.foldLeft(AntiEntropyContainer[ReplicatedSet[A]](ae)) {
-        case (set, e) => set.modn(_.add(e))
+        case (set, e) => set.mod(_.add(e))
       }
       removed.foldLeft(setAdded) {
-        case (set, e) => set.modn(_.remove(e))
+        case (set, e) => set.mod(_.remove(e))
       }
     }
 
@@ -45,7 +45,7 @@ class AWSetTest extends munit.ScalaCheckSuite {
   property("add") {
     forAll { (set: AntiEntropyContainer[ReplicatedSet[Int]], e: Int) =>
       given LocalUid                                      = set.replicaID
-      val added: AntiEntropyContainer[ReplicatedSet[Int]] = set.modn(_.add(e))
+      val added: AntiEntropyContainer[ReplicatedSet[Int]] = set.mod(_.add(e))
 
       val elems = added.data.elements
       assert(
@@ -57,9 +57,9 @@ class AWSetTest extends munit.ScalaCheckSuite {
   property("remove") {
     forAll { (set: AntiEntropyContainer[ReplicatedSet[Int]], e: Int) =>
       given LocalUid          = set.replicaID
-      val removedNotContained = set.modn(_.remove(e))
-      val added               = set.modn(_.add(e))
-      val removed             = added.modn(_.remove(e))
+      val removedNotContained = set.mod(_.remove(e))
+      val added               = set.mod(_.add(e))
+      val removed             = added.mod(_.remove(e))
 
       assert(
         set.data.elements.contains(e) || removedNotContained.data.elements == set.data.elements,
@@ -74,7 +74,7 @@ class AWSetTest extends munit.ScalaCheckSuite {
   }
   property("clear") {
     forAll { (set: AntiEntropyContainer[ReplicatedSet[Int]]) =>
-      val cleared = set.modn(_.clear())
+      val cleared = set.mod(_.clear())
 
       assert(
         cleared.data.elements.isEmpty,
@@ -92,8 +92,8 @@ class AWSetTest extends munit.ScalaCheckSuite {
       val seta0 = AntiEntropyContainer[ReplicatedSet[Int]](aea)
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb)
 
-      val seta1 = seta0.modn(_.add(using seta0.replicaID)(e))
-      val setb1 = setb0.modn(_.add(using setb0.replicaID)(e))
+      val seta1 = seta0.mod(_.add(using seta0.replicaID)(e))
+      val setb1 = setb0.mod(_.add(using setb0.replicaID)(e))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -109,8 +109,8 @@ class AWSetTest extends munit.ScalaCheckSuite {
         s"Concurrently adding the same element should have the same effect as adding it once, but ${setb2.data.elements} does not contain $e"
       )
 
-      val seta3 = seta2.modn(_.add(using seta2.replicaID)(e1))
-      val setb3 = setb2.modn(_.add(using setb2.replicaID)(e2))
+      val seta3 = seta2.mod(_.add(using seta2.replicaID)(e1))
+      val setb3 = setb2.mod(_.add(using setb2.replicaID)(e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -136,13 +136,13 @@ class AWSetTest extends munit.ScalaCheckSuite {
 
       val seta0 =
         given LocalUid = LocalUid.predefined(aea.replicaID)
-        AntiEntropyContainer[ReplicatedSet[Int]](aea).modn(_.add(e)).modn(_.add(e1)).modn(_.add(e2))
+        AntiEntropyContainer[ReplicatedSet[Int]](aea).mod(_.add(e)).mod(_.add(e1)).mod(_.add(e2))
       aea.sendChangesToAllNeighbors()
       aeb.receiveFromNetwork()
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb).processReceivedDeltas()
 
-      val seta1 = seta0.modn(_.remove(e))
-      val setb1 = setb0.modn(_.remove(e))
+      val seta1 = seta0.mod(_.remove(e))
+      val setb1 = setb0.mod(_.remove(e))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -158,8 +158,8 @@ class AWSetTest extends munit.ScalaCheckSuite {
         s"Concurrently removing the same element should have the same effect as removing it once, but ${setb2.data.elements} contains $e"
       )
 
-      val seta3 = seta2.modn(_.remove(e1))
-      val setb3 = setb2.modn(_.remove(e2))
+      val seta3 = seta2.mod(_.remove(e1))
+      val setb3 = setb2.mod(_.remove(e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -185,13 +185,13 @@ class AWSetTest extends munit.ScalaCheckSuite {
 
       val seta0 =
         given LocalUid = LocalUid.predefined(aea.replicaID)
-        AntiEntropyContainer[ReplicatedSet[Int]](aea).modn(_.add(e2))
+        AntiEntropyContainer[ReplicatedSet[Int]](aea).mod(_.add(e2))
       aea.sendChangesToAllNeighbors()
       aeb.receiveFromNetwork()
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb).processReceivedDeltas()
 
-      val seta1 = seta0.modn(_.add(using seta0.replicaID)(e))
-      val setb1 = setb0.modn(_.remove(e))
+      val seta1 = seta0.mod(_.add(using seta0.replicaID)(e))
+      val setb1 = setb0.mod(_.remove(e))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -207,8 +207,8 @@ class AWSetTest extends munit.ScalaCheckSuite {
         s"When concurrently adding and removing the same element the add operation should win, but ${setb2.data.elements} does not contain $e"
       )
 
-      val seta3 = seta2.modn(_.add(using seta2.replicaID)(e1))
-      val setb3 = setb2.modn(_.remove(e2))
+      val seta3 = seta2.mod(_.add(using seta2.replicaID)(e1))
+      val setb3 = setb2.mod(_.remove(e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -234,12 +234,12 @@ class AWSetTest extends munit.ScalaCheckSuite {
 
       val seta0 =
         given LocalUid = LocalUid.predefined(aea.replicaID)
-        AntiEntropyContainer[ReplicatedSet[Int]](aea).modn(_.add(e1)).modn(_.add(e2))
+        AntiEntropyContainer[ReplicatedSet[Int]](aea).mod(_.add(e1)).mod(_.add(e2))
       AntiEntropy.sync(aea, aeb)
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb).processReceivedDeltas()
 
-      val seta1 = seta0.modn(_.add(using seta0.replicaID)(e))
-      val setb1 = setb0.modn(_.clear())
+      val seta1 = seta0.mod(_.add(using seta0.replicaID)(e))
+      val setb1 = setb0.mod(_.clear())
 
       AntiEntropy.sync(aea, aeb)
 
@@ -264,17 +264,17 @@ class AWSetTest extends munit.ScalaCheckSuite {
         val aeb     = new AntiEntropy[ReplicatedSet[Int]]("b", network, mutable.Buffer("a"))
 
         val setaAdded = addedA.foldLeft(AntiEntropyContainer[ReplicatedSet[Int]](aea)) {
-          case (set, e) => set.modn(_.add(using set.replicaID)(e))
+          case (set, e) => set.mod(_.add(using set.replicaID)(e))
         }
         val seta0 = removedA.foldLeft(setaAdded) {
-          case (set, e) => set.modn(_.remove(e))
+          case (set, e) => set.mod(_.remove(e))
         }
 
         val setbAdded = addedB.foldLeft(AntiEntropyContainer[ReplicatedSet[Int]](aeb)) {
-          case (set, e) => set.modn(_.add(using set.replicaID)(e))
+          case (set, e) => set.mod(_.add(using set.replicaID)(e))
         }
         val setb0 = removedB.foldLeft(setbAdded) {
-          case (set, e) => set.modn(_.remove(e))
+          case (set, e) => set.mod(_.remove(e))
         }
 
         AntiEntropy.sync(aea, aeb)

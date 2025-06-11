@@ -63,7 +63,7 @@ class GListTest extends munit.ScalaCheckSuite {
 
       val n = if szeBefore == 0 then 0 else (insertIndex % szeBefore).abs
 
-      list.modn(_.insertGL(n, e))
+      list.mod(_.insertGL(n, e))
 
       val inserted =
         val (b, a) = l.splitAt(n)
@@ -101,7 +101,7 @@ class GListTest extends munit.ScalaCheckSuite {
       val aeb = new AntiEntropy[GrowOnlyList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = base.reverse.foldLeft(AntiEntropyContainer[GrowOnlyList[Int]](aea)) {
-        case (l, e) => l.modn(_.insertGL(0, e))
+        case (l, e) => l.mod(_.insertGL(0, e))
       }
 
       AntiEntropy.sync(aea, aeb)
@@ -111,8 +111,8 @@ class GListTest extends munit.ScalaCheckSuite {
       val idx1 = if size == 0 then 0 else math.floorMod(n1, size)
       val idx2 = if size == 0 then 0 else Math.floorMod(n2, size)
 
-      val la1 = la0.modn(_.insertGL(idx1, e1))
-      lb0.modn(_.insertGL(idx2, e2))
+      val la1 = la0.mod(_.insertGL(idx1, e1))
+      lb0.mod(_.insertGL(idx2, e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -139,15 +139,15 @@ class GListTest extends munit.ScalaCheckSuite {
       val aeb     = new AntiEntropy[GrowOnlyList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = base.reverse.foldLeft(AntiEntropyContainer[GrowOnlyList[Int]](aea)) {
-        case (l, e) => l.modn(_.insertGL(0, e))
+        case (l, e) => l.mod(_.insertGL(0, e))
       }
       network.startReliablePhase()
       AntiEntropy.sync(aea, aeb)
       network.endReliablePhase()
       val lb0 = AntiEntropyContainer[GrowOnlyList[Int]](aeb).processReceivedDeltas()
 
-      val la1 = insertedA.foldLeft(la0) { (l, e) => l.modn(_.insertGL(e, e)) }
-      val lb1 = insertedB.foldLeft(lb0) { (l, e) => l.modn(_.insertGL(e, e)) }
+      val la1 = insertedA.foldLeft(la0) { (l, e) => l.mod(_.insertGL(e, e)) }
+      val lb1 = insertedB.foldLeft(lb0) { (l, e) => l.mod(_.insertGL(e, e)) }
 
       AntiEntropy.sync(aea, aeb)
       network.startReliablePhase()

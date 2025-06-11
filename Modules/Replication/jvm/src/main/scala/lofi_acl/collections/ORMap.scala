@@ -2,9 +2,9 @@ package lofi_acl.collections
 
 import lofi_acl.access.Permission.*
 import lofi_acl.access.{Filter, InvalidPathException, PermissionTree}
-import lofi_acl.collections.DeltaAWLWWMContainer.Entry
 import rdts.base.Bottom
 import rdts.datatypes.ObserveRemoveMap
+import rdts.datatypes.ObserveRemoveMap.Entry
 import rdts.dotted.Obrem
 import rdts.time.Dots
 
@@ -16,20 +16,16 @@ object ORMap {
         case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
           val wildcardPermission = mapOfEntryPermissions.get("*")
           ObserveRemoveMap(
-            Obrem(
-              delta.inner.flatMap { case key -> value =>
-                // Assumes normalized PermissionTree
-                mapOfEntryPermissions.get(key) match
-                  case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
-                  case None                  =>
-                    if wildcardPermission.nonEmpty
-                    then Some(key -> Filter[V].filter(value, wildcardPermission.get))
-                    else None /* No rule for key -> discard entry */
-              },
-              // TODO: these being empty seems wildly incorrect
-              Dots.empty,
-              Dots.empty
-            )
+            delta.inner.flatMap { case key -> value =>
+              // Assumes normalized PermissionTree
+              mapOfEntryPermissions.get(key) match
+                case Some(entryPermission) => Some(key -> value.copy(value = Filter[V].filter(value.value, entryPermission)))
+                case None                  =>
+                  if wildcardPermission.nonEmpty
+                  then Some(key -> value.copy(value = Filter[V].filter(value.value, wildcardPermission.get)))
+                  else None /* No rule for key -> discard entry */
+            },
+            Dots.empty
           )
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =

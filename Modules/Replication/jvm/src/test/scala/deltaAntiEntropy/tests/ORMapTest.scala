@@ -11,10 +11,11 @@ import rdts.dotted.HasDots
 import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
+import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
   given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
-  given HasDots[ReplicatedSet[Int]] = HasDots.noDots
+  given HasDots[ReplicatedSet[Int]]   = HasDots.noDots
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
@@ -32,8 +33,6 @@ class ORMapTest extends munit.ScalaCheckSuite {
     }
   }
 
-  override def scalaCheckInitialSeed = "lPgf7xFq7_7vIU7GYBVoOB6L8jOHDqcNvcxn2wWlpbF="
-
   property("mutateKey/queryKey") {
     forAll { (add: List[Int], remove: List[Int], k: Int) =>
 
@@ -43,28 +42,30 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val set = {
         val added: AntiEntropyContainer[ReplicatedSet[Int]] = add.foldLeft(AntiEntropyContainer(aeb)) {
-          case (s, e) => s.modn(_.add(using s.replicaID)(e))
+          case (s, e) => s.mod(_.add(using s.replicaID)(e))
         }
 
         remove.foldLeft(added) {
-          case (s, e) => s.modn(_.remove(e))
+          case (s, e) => s.mod(_.remove(e))
         }
       }
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
           case (m, e) =>
-            m.modn(_.transformPlain(using m.replicaID)(k) { rs =>
-              Some(rs.getOrElse(ReplicatedSet.empty[Int]).add(using m.replicaID)(e))
+            m.mod(_.transformPlain(using m.replicaID)(k) { rs =>
+              val before = rs.getOrElse(ReplicatedSet.empty[Int])
+              Some(before `merge` before.add(using m.replicaID)(e))
             })
         }
-        remove.foldLeft(added) {
+        val res = remove.foldLeft(added) {
           case (m, e) =>
-            m.modn(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))))
+            m.mod(_.transformPlain(using aea.localUid)(k)(_.map(v => v.remove(e))))
         }
+        res
       }
 
-      val mapElements = map.data.queryKey(k).elements
+      val mapElements = map.data.get(k).getOrElse(ReplicatedSet.empty).elements
 
       assert(
         mapElements == set.data.elements,
@@ -84,17 +85,17 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
-          case (m, e) => m.modn(_.transformPlain(using aea.localUid)(k)(_.map(_.add(using m.replicaID)(e))))
+          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.add(using m.replicaID)(e))))
         }
 
         remove.foldLeft(added) {
-          case (m, e) => m.modn(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))))
+          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))))
         }
       }
 
-      val removed = map.modn(_.remove(k))
+      val removed = map.mod(_.remove(k))
 
-      val queryResult = removed.data.queryKey(k).elements
+      val queryResult = removed.data.get(k).getOrElse(ReplicatedSet.empty).elements
 
       assertEquals(
         queryResult,

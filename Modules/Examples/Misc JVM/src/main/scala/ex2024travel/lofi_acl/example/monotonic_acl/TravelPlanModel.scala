@@ -139,7 +139,7 @@ class TravelPlanModel(
       expenseEntriesInDelta.foreach { (id, _) =>
         val (description, amount, comment) = props(id)
         // TODO: Would fail on removal of entries
-        val curValue = newTravelPlan.expenses.get(id).get.value
+        val curValue = newTravelPlan.expenses.get(id).get
         description.value = curValue.description.read.getOrElse("")
         amount.value = curValue.amount.read.getOrElse("0.00 €")
         comment.value = curValue.comment.read.getOrElse("")

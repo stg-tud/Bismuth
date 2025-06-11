@@ -1,82 +1,63 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Lattice, LocalUid}
-import rdts.dotted.HasDots.mapInstance
-import rdts.dotted.{HasDots, Obrem}
+import rdts.base.{Bottom, DecoratedLattice, Lattice, LocalUid}
+import rdts.datatypes.ObserveRemoveMap.Entry
 import rdts.time.Dots
 
-case class ObserveRemoveMap[K, V](repr: Obrem[Map[K, V]]) {
+case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
 
-  val inner: Map[K, V] = repr.data
-
-  export inner.get
+  lazy val observed: Dots = inner.values.foldLeft(Dots.empty) {
+    case (set, v) => set `union` v.dots
+  }
 
   type Delta = ObserveRemoveMap[K, V]
 
   def contains(k: K): Boolean = inner.contains(k)
 
-  def queryKey[A](using Bottom[V])(k: K): V = {
-    inner.getOrElse(k, Bottom[V].empty)
-  }
+  def get(k: K): Option[V] = inner.get(k).map(_.value)
 
-  def queryAllEntries: Iterable[V] = inner.values
+  def queryAllEntries: Iterable[V] = inner.values.map(_.value)
 
-  def entries: Iterable[(K, V)] = inner.view
+  def entries: Iterable[(K, V)] = inner.view.mapValues(_.value)
 
+  /** merges `v` into the current value stored in the map */
   def update(using LocalUid)(k: K, v: V): Delta = {
-    ObserveRemoveMap(Obrem(Map(k -> v), Dots.single(repr.context.nextDot(LocalUid.replicaId)), Dots.empty))
+    val next = Dots.single(observed.nextDot(LocalUid.replicaId))
+    ObserveRemoveMap(
+      Map(k -> Entry(next, v)),
+      Dots.empty
+    )
   }
 
   def transformPlain(using LocalUid)(k: K)(m: Option[V] => Option[V]): Delta = {
-    m(inner.get(k)) match {
+    m(inner.get(k).map(_.value)) match {
       case Some(value) => update(k, value)
-      case None => ObserveRemoveMap(Obrem(Map.empty, Dots.single(repr.context.nextDot(LocalUid.replicaId)), Dots.empty))
+      case None        => remove(k)
     }
   }
 
-  def remove(using HasDots[V])(k: K): Delta = {
-    inner.get(k) match
-      case Some(value) =>
-        ObserveRemoveMap(Obrem(
-          Map.empty,
-          observed = Dots.empty,
-          deletions = HasDots[V].dots(value)
-        ))
-      case None => ObserveRemoveMap.empty
-
+  def remove(k: K): Delta = {
+    ObserveRemoveMap(Map.empty, inner.get(k).map(_.dots).getOrElse(Dots.empty))
   }
 
-  def removeAll(using Bottom[V], HasDots[V])(keys: Iterable[K]): Delta = {
-    val values = keys.map(k => inner.getOrElse(k, Bottom[V].empty))
-    val dots   = values.foldLeft(Dots.empty) {
-      case (set, v) => set `union` HasDots[V].dots(v)
-    }
-
-    ObserveRemoveMap(Obrem(
-      Map.empty,
-      observed = Dots.empty,
-      deletions = dots
-    ))
+  def removeAll(keys: Iterable[K]): Delta = {
+    val rem = keys.flatMap(inner.get).map(_.dots).foldLeft(Dots.empty)(_ `union` _)
+    ObserveRemoveMap(Map.empty, rem)
   }
 
-  def removeByValue(using HasDots[V])(cond: V => Boolean): Delta = {
+  def removeByValue(cond: V => Boolean): Delta = {
     val toRemove = inner.values.collect {
-      case v if cond(v) => v.dots
+      case v if cond(v.value) => v.dots
     }.fold(Dots.empty)(_ `union` _)
 
-    ObserveRemoveMap(Obrem(
+    ObserveRemoveMap(
       Map.empty,
-      observed = Dots.empty,
-      deletions = toRemove
-    ))
+      toRemove
+    )
   }
 
-  def clear(using HasDots[V])(): Delta = {
-    ObserveRemoveMap(Obrem(
-      Map.empty,
-      observed = Dots.empty,
-      deletions = inner.dots
-    ))
+  def clear(): Delta = {
+    ObserveRemoveMap(Map.empty, inner.values.map(_.dots).foldLeft(Dots.empty)(_ `union` _))
   }
 }
 
@@ -89,10 +70,18 @@ case class ObserveRemoveMap[K, V](repr: Obrem[Map[K, V]]) {
   */
 object ObserveRemoveMap {
 
-  def empty[K, V]: ObserveRemoveMap[K, V] = ObserveRemoveMap(Obrem(Map.empty, Dots.empty, Dots.empty))
+  case class Entry[V](dots: Dots, value: V)
+  object Entry {
+    given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
+    given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
+  }
+
+  def empty[K, V]: ObserveRemoveMap[K, V] = ObserveRemoveMap(Map.empty, Dots.empty)
 
   given bottom[K, V]: Bottom[ObserveRemoveMap[K, V]] = Bottom.derived
 
-  given lattice[K, V: {Lattice, HasDots}]: Lattice[ObserveRemoveMap[K, V]] =
-    Lattice.derived
+  given lattice[K, V: {Lattice}]: Lattice[ObserveRemoveMap[K, V]] =
+    DecoratedLattice.filter[ObserveRemoveMap[K, V]](Lattice.derived) { (base, other) =>
+      base.copy(inner = base.inner.filter((_, e) => !other.removed.subsumes(e.dots)))
+    }
 }

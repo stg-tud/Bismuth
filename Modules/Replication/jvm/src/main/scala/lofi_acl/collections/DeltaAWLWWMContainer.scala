@@ -1,6 +1,6 @@
 package lofi_acl.collections
 
-import lofi_acl.collections.DeltaAWLWWMContainer.{Entry, State}
+import lofi_acl.collections.DeltaAWLWWMContainer.{State}
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.dotted.{HasDots, Obrem}
@@ -17,17 +17,15 @@ class DeltaAWLWWMContainer[K, V](
 
   given LocalUid = replicaId
 
-  def get(key: K): Option[V] =
-    _state.get(key).map(_.value.value)
+  def get(key: K): Option[V] = _state.get(key).map(_.value)
 
   def put(key: K, value: V): Unit = { putDelta(key, value); () }
 
   def putDelta(key: K, value: V): State[K, V] = {
     val delta = {
-      val nextDot = Dots.single(_state.repr.context.nextDot(replicaId.uid))
       _state.transformPlain(key) {
-        case Some(prior) => Some(Entry(nextDot, prior.value.write(value)))
-        case None        => Some(Entry(nextDot, LastWriterWins.now(value)))
+        case Some(prior) => Some(prior.write(value))
+        case None        => Some(LastWriterWins.now(value))
       }
     }
     mutate(delta)
@@ -51,7 +49,7 @@ class DeltaAWLWWMContainer[K, V](
   }
 
   def values: Map[K, V] =
-    _state.entries.map((k, v) => (k, v.value.value)).toMap
+    _state.entries.map((k, v) => (k, v.value)).toMap
 
   def merge(other: State[K, V]): Unit = {
     mutate(other)
@@ -64,27 +62,12 @@ class DeltaAWLWWMContainer[K, V](
 
 object DeltaAWLWWMContainer {
 
-  case class Entry[V](dots: Dots, value: V)
-  object Entry {
-    given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
-    given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
 
-    given hasDots[V]: HasDots[Entry[V]] = new HasDots[Entry[V]] {
-      extension (dotted: Entry[V]) {
-        override def dots: Dots = dotted.dots
 
-        override def removeDots(dots: Dots): Option[Entry[V]] =
-          val res = dotted.dots `subtract` dots
-          Option.when(!res.isEmpty):
-            Entry(res, dotted.value)
-      }
-    }
-  }
-
-  type State[K, V] = ObserveRemoveMap[K, Entry[LastWriterWins[V]]]
+  type State[K, V] = ObserveRemoveMap[K, LastWriterWins[V]]
 
   def empty[K, V]: State[K, V] =
-    ObserveRemoveMap.empty[K, Entry[LastWriterWins[V]]]
+    ObserveRemoveMap.empty[K, LastWriterWins[V]]
 
   given lattice[K, V]: Lattice[State[K, V]] = Lattice.derived
 
