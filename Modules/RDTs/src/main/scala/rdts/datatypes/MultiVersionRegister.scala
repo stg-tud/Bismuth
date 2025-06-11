@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, FilteredLattice, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
 import rdts.dotted.HasDots.mapInstance
 import rdts.dotted.HasDots
 import rdts.time.{Dot, Dots}
@@ -47,9 +47,8 @@ object MultiVersionRegister {
   given lattice[A]: Lattice[MultiVersionRegister[A]] =
     given Lattice[A] = Lattice.assertEquals
     val decorated    = Lattice.derived[MultiVersionRegister[A]]
-    new FilteredLattice[MultiVersionRegister[A]](decorated) {
-      override def filter(base: MultiVersionRegister[A], other: MultiVersionRegister[A]): MultiVersionRegister[A] =
-        base.copy(repr = base.repr.removeDots(other.removed).getOrElse(Map.empty))
+    DecoratedLattice.filter(decorated) { (base, other) =>
+      base.copy(repr = base.repr.removeDots(other.removed).getOrElse(Map.empty))
     }
 
 }

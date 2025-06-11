@@ -1,6 +1,6 @@
 package rdts.dotted
 
-import rdts.base.{Bottom, Decompose, FilteredLattice, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice}
 import rdts.time.{Dot, Dots}
 
 case class Obrem[A](data: A, observed: Dots, deletions: Dots) {
@@ -17,7 +17,7 @@ object Obrem {
 
   def empty[A: Bottom]: Obrem[A] = Obrem(Bottom.empty[A], Dots.empty, Dots.empty)
 
-  given lattice[A: {HasDots, Bottom, Lattice}]: FilteredLattice[Obrem[A]](Lattice.derived) with {
+  given lattice[A: {HasDots, Bottom, Lattice}]: DecoratedLattice[Obrem[A]](Lattice.derived) with {
     override def filter(base: Obrem[A], other: Obrem[A]): Obrem[A] =
       if other.deletions.isEmpty
       then base
@@ -38,7 +38,6 @@ case class Dotted[A](data: A, context: Dots) {
   def knows(dot: Dot): Boolean          = context.contains(dot)
   def deletions(using HasDots[A]): Dots = context `diff` contained
   def contained(using HasDots[A]): Dots = data.dots
-  def advanced(r: LocalUid): Dotted[A]  = Dotted(data, context.advanced(r.uid))
 
   inline def mod[B](f: A => Dots ?=> Dotted[B]): Dotted[B] = f(data)(using context)
   inline def modn[B](f: A => B): Dotted[B]                 = Dotted(f(data))
@@ -76,7 +75,7 @@ object Dotted {
       }
   }
 
-  given lattice[A: {HasDots, Bottom, Lattice}]: FilteredLattice[Dotted[A]](Lattice.derived) with {
+  given lattice[A: {HasDots, Bottom, Lattice}]: DecoratedLattice[Dotted[A]](Lattice.derived) with {
 
     override def filter(base: Dotted[A], other: Dotted[A]): Dotted[A] =
       val deletions = other.deletions
