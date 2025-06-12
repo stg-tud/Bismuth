@@ -1,4 +1,4 @@
-package channels.tls
+package crypto.channels
 
 import crypto.Ed25519Util
 import org.bouncycastle.cert.X509CertificateHolder

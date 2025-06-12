@@ -1,6 +1,6 @@
 package ex2024travel.lofi_acl.example.monotonic_acl
 
-import channels.tls.{IdentityFactory, PrivateIdentity}
+import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.given

@@ -1,4 +1,4 @@
-package channels.tls
+package crypto.channels
 
 import crypto.{CertificatePem, Ed25519Util, PublicIdentity}
 import org.bouncycastle.asn1.DERUTF8String

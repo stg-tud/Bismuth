@@ -1,7 +1,7 @@
 package lofi_acl.sync.acl.monotonic
 
-import channels.tls.PrivateIdentity
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import lofi_acl.access.Operation.WRITE
 import lofi_acl.access.{Filter, Operation, PermissionTree}

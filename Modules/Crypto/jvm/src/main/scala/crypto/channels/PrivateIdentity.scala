@@ -1,6 +1,6 @@
-package channels.tls
+package crypto.channels
 
-import channels.tls.X509Util.toPem
+import crypto.channels.X509Util.toPem
 import crypto.{CertificatePem, Ed25519Util, PrivateKeyPem, PublicIdentity}
 import org.bouncycastle.cert.X509CertificateHolder
 

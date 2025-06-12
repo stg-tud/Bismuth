@@ -1,7 +1,7 @@
 package lofi_acl.transport
 
-import channels.tls.{P2PX509TrustManager, PrivateIdentity, X509Util}
 import crypto.PublicIdentity
+import crypto.channels.{P2PX509TrustManager, PrivateIdentity, X509Util}
 import nl.altindag.ssl.SSLFactory
 import nl.altindag.ssl.pem.util.PemUtils
 

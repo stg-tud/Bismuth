@@ -1,8 +1,8 @@
 package lofi_acl.transport
 
-import channels.tls.P2PX509TrustManager
-import channels.tls.X509Util.toJavaCertificate
+import crypto.channels.X509Util.toJavaCertificate
 import crypto.Ed25519Util
+import crypto.channels.P2PX509TrustManager
 import lofi_acl.transport.X509TestHelper
 import munit.FunSuite
 

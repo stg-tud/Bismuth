@@ -1,7 +1,8 @@
-package channels
+package crypto.channels
 
 import channels.EchoServerTestP2PTls.{p2pTls1, p2pTls2}
-import channels.tls.{IdentityFactory, PrivateIdentity}
+import channels.EchoCommunicationTest
+import crypto.channels.{IdentityFactory, PrivateIdentity}
 
 class EchoServerTestP2PTls extends EchoCommunicationTest(
       ec => {

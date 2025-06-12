@@ -1,9 +1,9 @@
 package lofi_acl.sync
 
-import channels.tls.IdentityFactory
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
+import crypto.channels.IdentityFactory
 import lofi_acl.sync.ConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
 import munit.FunSuite
 

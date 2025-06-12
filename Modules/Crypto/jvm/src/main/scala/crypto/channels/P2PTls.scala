@@ -1,7 +1,7 @@
-package channels
+package crypto.channels
 
 import channels.*
-import channels.tls.{P2PX509TrustManager, PrivateIdentity, X509Util}
+import crypto.channels.{P2PX509TrustManager, PrivateIdentity, X509Util}
 import crypto.PublicIdentity
 import de.rmgk.delay.{Async, Sync}
 import nl.altindag.ssl.SSLFactory

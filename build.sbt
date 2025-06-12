@@ -74,21 +74,23 @@ lazy val aead = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Aead"))
   )
 
 lazy val crypto = crossProject(/*JSPlatform,*/ JVMPlatform).in(file("Modules/Crypto"))
+  .dependsOn(channels, rdts % "compile->compile;test->test")
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.munit,
     Dependencies.munitCheck,
+    Dependencies.slips,
   ).jvmSettings(
     Dependencies.bouncyCastle,
-    Dependencies.tink
+    Dependencies.tink,
+    Dependencies.sslcontextKickstart
   )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
   .in(file("Modules/Channels"))
   .dependsOn(rdts)
-  .jvmConfigure(_.dependsOn(crypto.jvm))
   .settings(
     Settings.scala3defaults,
     Settings.javaOutputVersion(17),
@@ -107,7 +109,6 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     Test / fork := true,
     libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
     Dependencies.slf4jSimple,
-    Dependencies.sslcontextKickstart
   )
 
 lazy val deltalens = project.in(file("Modules/Deltalens"))
@@ -293,7 +294,8 @@ lazy val replication = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(
     Dependencies.tink,
     Dependencies.bouncyCastle,
     Test / fork := true,
-  )
+  ).jvmConfigure(_.dependsOn(crypto.jvm))
+
 
 lazy val todolist = project.in(file("Modules/Examples/TodoMVC"))
   .enablePlugins(ScalaJSPlugin)

@@ -1,6 +1,6 @@
 package lofi_acl.transport
 
-import channels.tls.{IdentityFactory, PrivateIdentity}
+import crypto.channels.{IdentityFactory, PrivateIdentity}
 import lofi_acl.transport.X509TestHelper.genCertSignedByWrongKey
 import munit.FunSuite
 

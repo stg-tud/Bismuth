@@ -1,8 +1,8 @@
 package lofi_acl.sync.acl.bft
 
-import channels.tls.PrivateIdentity
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
+import crypto.channels.PrivateIdentity
 import lofi_acl.access.{Filter, Operation, PermissionTree}
 import lofi_acl.sync
 import lofi_acl.sync.*
