@@ -187,7 +187,7 @@ class LoRePhase extends PluginPhase {
 
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
-          case None       => report.error("An unknown critical Dafny compilation error occurred.")
+          case None => report.error("An unknown critical Dafny compilation error occurred.")
           case Some(diag) =>
             val errors: List[Diagnostic] = diag.params.diagnostics.filter(d => {
               d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
@@ -236,9 +236,13 @@ class LoRePhase extends PluginPhase {
                     report.error(s"A verification error occurred in $n:\n${d.message}")
                   case Some(info) =>
                     info.foreach(i => {
-                      // Message has to be de-escaped to be parsed properly
+                      // If the message doesn't start with an opening bracket, it's not an embedded error,
+                      // but a different error output by the Dafny verifier, so take the string as it is.
+                      // If it does, however, then the message has to be de-escaped to be parsed properly.
                       val embeddedError: DafnyEmbeddedLoReError =
-                        upickleRead[DafnyEmbeddedLoReError](i.message.replace("\\\"", "\""))
+                        if i.message.startsWith("{") then
+                          upickleRead[DafnyEmbeddedLoReError](i.message.replace("\\\"", "\""))
+                        else DafnyEmbeddedLoReError(i.message, None)
 
                       embeddedError.position match
                         case None =>
