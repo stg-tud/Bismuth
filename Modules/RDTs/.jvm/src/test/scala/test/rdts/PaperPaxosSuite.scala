@@ -1,7 +1,6 @@
 package test.rdts
 
 import rdts.protocols.Paxos
-import rdts.protocols.paper.Paxos as PaperPaxos
 
 class PaperPaxosSuite extends munit.ScalaCheckSuite:
 
@@ -14,14 +13,6 @@ class PaperPaxosSuite extends munit.ScalaCheckSuite:
       .withMaxSize(200)
 
   property("Paper Paxos")(ConsensusPropertySpec[Int, Paxos](
-    logging = false,
-    minDevices = 3,
-    maxDevices = 7,
-    writeFreq = 20,
-    mergeFreq = 70
-  ).property())
-
-  property("Paper Paxos new")(ConsensusPropertySpec[Int, PaperPaxos](
     logging = false,
     minDevices = 3,
     maxDevices = 7,

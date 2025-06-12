@@ -4,10 +4,10 @@ import rdts.base.Lattice.merge
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.GrowOnlyCounter
 import rdts.protocols.Participants
-import rdts.protocols.paper.Paxos
+import rdts.protocols.Paxos
 import rdts.time.Dots
 
-class PaperPaxosTest2 extends munit.FunSuite {
+class PaperPaxosTest extends munit.FunSuite {
   given Bottom[Int] with
     override def empty: Int = Int.MinValue
 
@@ -32,7 +32,6 @@ class PaperPaxosTest2 extends munit.FunSuite {
   }
   test("Upkeep on empty") {
     var a: Paxos[Int] = emptyPaxosObject
-    assert(!a.currentRoundHasCandidate)
     a.upkeep()(using id1)
   }
 }
