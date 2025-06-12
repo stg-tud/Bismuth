@@ -25,7 +25,7 @@ publishSigned sbtOpts="":
 	sbt {{sbtOpts}} 'publishedProjects / publishSigned'
 
 sonaRelease sbtOpts="":
-	sbt {{sbtOpts}} 'project publishedProjects; sonaUpload; sonaRelease'
+	sbt {{sbtOpts}} 'sonaRelease'
 
 runSimpleCaseStudy sbtOpts="":
 	sbt {{sbtOpts}} 'examplesMiscJVM / run'
