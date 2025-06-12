@@ -10,8 +10,7 @@ test sbtOpts="":
 	sbt {{sbtOpts}} test
 
 publishLocal sbtOpts="":
-	sbt {{sbtOpts}} 'rdtsAggregate / publishM2'
-	sbt {{sbtOpts}} 'reactivesAggregate / publishM2'
+	sbt {{sbtOpts}} 'publishedProjects / publishM2'
 
 
 # most useful for the jitpack export, though not sure if that even works …
@@ -19,12 +18,13 @@ export CUSTOM_SCALAJS_SOURCE_MAP_PREFIX:="https://raw.githubusercontent.com/resc
 
 # supposed to be used to publish when running on jitpack
 publishJitpack:
-	sbt -Dsbt.log.noformat=true 'rdtsAggregate / publishM2'
-	sbt -Dsbt.log.noformat=true 'reactivesAggregate / publishM2'
+	sbt -Dsbt.log.noformat=true 'publishedProjects / publishM2'
 
 publishSigned sbtOpts="":
-	sbt {{sbtOpts}} 'rdtsAggregate / publishSigned'
-	sbt {{sbtOpts}} 'reactivesAggregate / publishSigned'
+	sbt {{sbtOpts}} 'publishedProjects / publishSigned'
+
+sonaRelease sbtOpts="":
+	sbt {{sbtOpts}} 'project publishedProjects; sonaUpload; sonaRelease'
 
 runSimpleCaseStudy sbtOpts="":
 	sbt {{sbtOpts}} 'examplesMiscJVM / run'
