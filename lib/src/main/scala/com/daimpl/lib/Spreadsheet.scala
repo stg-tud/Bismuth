@@ -23,28 +23,29 @@ case class Spreadsheet(
   given Bottom[String] = Bottom.provide("")
 
   def visibleRowIds: List[Dot] =
-    rowIds.toList.filter(keepRows.queryKey(_).values.size > 0)
+    rowIds.toList.filter(keepRows.get(_).exists(_.values.nonEmpty))
 
   def visibleColIds: List[Dot] =
-    colIds.toList.filter(keepCols.queryKey(_).values.size > 0)
+    colIds.toList.filter(keepCols.get(_).exists(_.values.nonEmpty))
 
-  def visibleRowIdxToRowIdx: List[Int] =
-    rowIds.toList.zipWithIndex.filter(x => keepRows.queryKey(rowIds.read(x._2).get).values.size > 0).map(_._2)
+  private def visibleRowIdxToRowIdx: List[Int] =
+    rowIds.toList.zipWithIndex.filter(p => keepRows.get(p._1).exists(_.values.nonEmpty)).map(_._2)
 
-  def visibleColIdxToColIdx: List[Int] =
-    colIds.toList.zipWithIndex.filter(x => keepCols.queryKey(colIds.read(x._2).get).values.size > 0).map(_._2)
+  private def visibleColIdxToColIdx: List[Int] =
+    colIds.toList.zipWithIndex.filter(p => keepCols.get(p._1).exists(_.values.nonEmpty)).map(_._2)
 
   def addRow()(using LocalUid)(using context: Dots): D = {
     val replicaId = LocalUid.replicaId
     val rowId = context.nextDot(replicaId)
     val operationId = context.nextDot(replicaId)
+    val rowIdsUpdate = rowIds.append(rowId)
     val keepRowsUpdate = keepRows.update(rowId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> operationId)))
     Obrem(
       Spreadsheet(
-        rowIds = rowIds.append(rowId).data,
+        rowIds = rowIdsUpdate.data,
         keepRows = keepRowsUpdate.data
       ),
-      keepRowsUpdate.observed `union` Dots.single(rowId), //`union` Dots.single(operationId),
+      keepRowsUpdate.observed `union` rowIdsUpdate.context `union` Dots.single(rowId) `union` Dots.single(operationId),
       Dots.empty
     )
   }
@@ -53,13 +54,14 @@ case class Spreadsheet(
     val replicaId = LocalUid.replicaId
     val colId = context.nextDot(replicaId)
     val operationId = context.nextDot(replicaId)
+    val colIdsUpdate = colIds.append(colId)
     val keepColsUpdate = keepCols.update(colId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> operationId)))
     Obrem(
       Spreadsheet(
-        colIds = colIds.append(colId).data,
+        colIds = colIdsUpdate.data,
         keepCols = keepColsUpdate.data
       ),
-      keepColsUpdate.observed `union` Dots.single(colId), //`union` Dots.single(operationId),
+      keepColsUpdate.observed `union` colIdsUpdate.context `union` Dots.single(colId) `union` Dots.single(operationId),
       Dots.empty
     )
   }
@@ -67,28 +69,26 @@ case class Spreadsheet(
   def removeRow(visibleRowIdx: Int)(using LocalUid)(using context: Dots): D = {
     val rowIdx = visibleRowIdxToRowIdx(visibleRowIdx)
     val rowId = rowIds.read(rowIdx).get
-    //val oldKeepRows = keepRows.queryKey(rowId)
-    val keepRowsUpdate = keepRows.remove(rowId)
+    val keepRowsDeleted = keepRows.remove(rowId)
     Obrem(
       Spreadsheet(
-        keepRows = keepRowsUpdate.data
+        keepRows = keepRowsDeleted.data
       ),
       Dots.empty,
-      /*Dots.from(oldKeepRows.values) `union`*/ keepRowsUpdate.deletions //`union` rowIds.delete(rowIdx).context
+      keepRowsDeleted.deletions //`union` rowIds.delete(rowIdx).context
     )
   }
 
   def removeColumn(visibleColIdx: Int)(using LocalUid)(using context: Dots): D = {
     val colIdx = visibleColIdxToColIdx(visibleColIdx)
     val colId = colIds.read(colIdx).get
-    //val oldKeepCols = keepCols.queryKey(colId)
-    val keepColsUpdate = keepCols.remove(colId)
+    val keepColsDeleted = keepCols.remove(colId)
     Obrem(
       Spreadsheet(
-        keepCols = keepColsUpdate.data
+        keepCols = keepColsDeleted.data
       ),
       Dots.empty,
-      /*Dots.from(oldKeepCols.values) `union`*/ keepColsUpdate.deletions //`union` colIds.delete(colIdx).context
+      keepColsDeleted.deletions //`union` colIds.delete(colIdx).context
     )
   }
 
@@ -97,13 +97,14 @@ case class Spreadsheet(
     val rowIdx = visibleRowIdxToRowIdx(visibleRowIdx)
     val rowId = context.nextDot(replicaId)
     val operationId = context.nextDot(replicaId)
+    val rowIdsUpdate = rowIds.insert(rowIdx, rowId)
     val keepRowsUpdate = keepRows.update(rowId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> operationId)))
     Obrem(
       Spreadsheet(
-        rowIds = rowIds.insert(rowIdx, rowId).data,
+        rowIds = rowIdsUpdate.data,
         keepRows = keepRowsUpdate.data
       ),
-      keepRowsUpdate.observed `union` Dots.single(rowId), //`union` Dots.single(operationId),
+      keepRowsUpdate.observed `union` rowIdsUpdate.context `union` Dots.single(rowId) `union` Dots.single(operationId),
       Dots.empty
     )
   }
@@ -113,13 +114,14 @@ case class Spreadsheet(
     val colIdx = visibleColIdxToColIdx(visibleColIdx)
     val colId = context.nextDot(replicaId)
     val operationId = context.nextDot(replicaId)
+    val colIdsUpdate = colIds.insert(colIdx, colId)
     val keepColsUpdate = keepCols.update(colId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> operationId)))
     Obrem(
       Spreadsheet(
-        colIds = colIds.insert(colIdx, colId).data,
+        colIds = colIdsUpdate.data,
         keepCols = keepColsUpdate.data
       ),
-      keepColsUpdate.observed `union` Dots.single(colId), //`union` Dots.single(operationId),
+      keepColsUpdate.observed `union` colIdsUpdate.context `union` Dots.single(colId) `union` Dots.single(operationId),
       Dots.empty
     )
   }
@@ -128,16 +130,17 @@ case class Spreadsheet(
     val replicaId = LocalUid.replicaId
 
     val rowIdx = visibleRowIdxToRowIdx(visibleRowIdx)
-    val rowId = rowIds.read(rowIdx).get
-    val rowOperationId = context.nextDot(replicaId)
-    //val oldKeepRows = keepRows.queryKey(rowId)
-    val keepRowsUpdate = keepRows.update(rowId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> rowOperationId)))
-
     val colIdx = visibleColIdxToColIdx(visibleColIdx)
+
+    val rowId = rowIds.read(rowIdx).get
+    val keepRowsDeleted = keepRows.remove(rowId)
+    val rowOperationId = context.nextDot(replicaId)
+    val keepRowsUpdate = keepRowsDeleted.data.update(rowId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> rowOperationId)))
+
     val colId = colIds.read(colIdx).get
+    val keepColsDeleted = keepCols.remove(colId)
     val colOperationId = context.nextDot(replicaId)
-    //val oldKeepCols = keepCols.queryKey(colId)
-    val keepColsUpdate = keepCols.update(colId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> colOperationId)))
+    val keepColsUpdate = keepColsDeleted.data.update(colId, MultiValueRegister(Map(VectorClock(Map(replicaId -> CausalTime.now().time)) -> colOperationId)))
 
     val lastWriterWinsCellContent =
       if (content.contains((colId, rowId)))
@@ -149,14 +152,12 @@ case class Spreadsheet(
 
     Obrem(
       Spreadsheet(
-        rowIds = rowIds, //.update(rowIdx, rowId).data,
-        colIds = colIds, //.update(colIdx, colId).data,
         content = contentUpdate.data,
-        keepRows = keepRowsUpdate.data,
-        keepCols = keepColsUpdate.data
+        keepRows = keepRowsDeleted.data `merge` keepRowsUpdate.data,
+        keepCols = keepColsDeleted.data `merge` keepColsUpdate.data
       ),
-      contentUpdate.observed `union` keepRowsUpdate.observed `union` keepColsUpdate.observed `union` Dots.from(Array(rowId, colId/*, rowOperationId, colOperationId*/)),
-      Dots.empty //Dots.from(oldKeepRows.values) `union` Dots.from(oldKeepCols.values)
+      contentUpdate.observed `union` keepRowsUpdate.observed `union` keepColsUpdate.observed `union` Dots.from(Array(rowId, colId, rowOperationId, colOperationId)),
+      keepRowsDeleted.deletions `union` keepColsDeleted.deletions
     )
   }
 

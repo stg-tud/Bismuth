@@ -12,11 +12,11 @@ trait SpreadsheetLike[D]:
 
   def toList: List[List[Option[String]]]
 
-  def addRow()(using LocalUid)(using ctx: Dots): D
-  def addColumn()(using LocalUid)(using ctx: Dots): D
+  def addRow()(using LocalUid)(using context: Dots): D
+  def addColumn()(using LocalUid)(using context: Dots): D
 
-  def insertRow(rowIdx: Int)(using LocalUid)(using ctx: Dots): D
-  def insertColumn(colIdx: Int)(using LocalUid)(using ctx: Dots): D
+  def insertRow(rowIdx: Int)(using LocalUid)(using context: Dots): D
+  def insertColumn(colIdx: Int)(using LocalUid)(using context: Dots): D
 
   def removeRow(rowIdx: Int)(using LocalUid)(using context: Dots): D
   def removeColumn(colIdx: Int)(using LocalUid)(using context: Dots): D
