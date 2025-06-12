@@ -21,6 +21,7 @@ publishJitpack:
 	sbt -Dsbt.log.noformat=true 'publishedProjects / publishM2'
 
 publishSigned sbtOpts="":
+	rm -r "target/sona-staging"
 	sbt {{sbtOpts}} 'publishedProjects / publishSigned'
 
 sonaRelease sbtOpts="":
