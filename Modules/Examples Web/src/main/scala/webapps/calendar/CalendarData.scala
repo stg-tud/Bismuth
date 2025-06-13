@@ -32,7 +32,7 @@ case class Appointment(name: String, start: Int, end: Int) {
   }
 
   def toTag: Div =
-    div().render.reattach(tagSignal, true)
+    div().render.reattach(tagSignal)
 }
 
 type Calendar = Set[Appointment]

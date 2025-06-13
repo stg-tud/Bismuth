@@ -10,8 +10,6 @@ import reactives.operator.*
 import reactives.structure.RExceptions.ObservedException
 import reactives.structure.{Observe, Pulse}
 
-import scala.scalajs.js
-
 object Tags {
 
   trait RangeSplice[-A <: dom.Element, -T]:
@@ -23,7 +21,7 @@ object Tags {
     }
     given many[A <: dom.Element, T](using other: RangeSplice[A, T]): RangeSplice[A, Seq[T]] with {
       override def splice(anchor: A, range: Range, value: Seq[T]) =
-        value.reverseIterator.foreach(v => other.splice(anchor, range, v))
+        value.reverseIterator.foreach { v => other.splice(anchor, range, v) }
     }
     given string: RangeSplice[dom.Element, String] with {
       override def splice(anchor: dom.Element, range: Range, value: String) =
@@ -31,28 +29,20 @@ object Tags {
     }
 
   extension [A <: dom.Element](anchor: A)
-    def reattach[T](signal: Signal[T], removeOnContainerMismatch: Boolean = false)(using
+    def reattach[T](signal: Signal[T])(using
         splicer: RangeSplice[A, T],
         creationTicket: CreationTicket[SelectedScheduler.State]
     ): anchor.type = {
-      val range = document.createRange()
-      range.selectNodeContents(anchor)
-      range.collapse(toStart = false)
+      val startMarker = document.createComment("reattach start")
+      val endMarker   = document.createComment("reattach end")
+      anchor.append(startMarker, endMarker)
       Observe.strong(signal, true) {
         tagObserver(anchor, signal) { v =>
-          if range.commonAncestorContainer != anchor then
-            println(
-              "weird state",
-              anchor,
-              range,
-              range.commonAncestorContainer,
-              range.startContainer,
-              range.endContainer
-            )
-
-          if range.commonAncestorContainer == anchor || !removeOnContainerMismatch then
-            range.extractContents()
-            splicer.splice(anchor, range, v)
+          val range = document.createRange()
+          range.setStartAfter(startMarker)
+          range.setEndBefore(endMarker)
+          range.deleteContents()
+          splicer.splice(anchor, range, v)
         }
       }
       anchor
@@ -78,16 +68,12 @@ object Tags {
         }.flatten
     }
 
-  def isInDocument(element: Element): Boolean = {
-    js.Dynamic.global.document.contains(element).asInstanceOf[Boolean]
-  }
-
   /* This only returns true the second time it is called to prevent observers to directly trigger */
   def isInDocumentHack(elem: dom.Element): Any => Boolean = {
     var second = false
     _ => {
       if second then {
-        !isInDocument(elem)
+        !document.contains(elem)
       } else {
         second = true
         false
@@ -95,6 +81,7 @@ object Tags {
     }
   }
 
+  /** Tag observer removes the observer if it fires while the element is NOT in the dom. */
   def tagObserver[A](
       parent: dom.Element,
       rendered: Signal[A]

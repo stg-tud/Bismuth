@@ -1,14 +1,14 @@
 package webapps.todo
 
 import dtn.rdt.Channel
-import org.scalajs.dom.experimental.webrtc
+import org.scalajs.dom.html.Div
 import org.scalajs.dom.{document, window}
 import rdts.base.{Lattice, LocalUid}
 import reactives.extra.Tags.reattach
 import replication.WebRTCConnectionView
 import scalatags.JsDom.all
 import scalatags.JsDom.all.given
-import TodoDataManager.TodoRepState
+import webapps.todo.TodoDataManager.TodoRepState
 
 import java.util.{Timer, TimerTask}
 import scala.scalajs.js
@@ -30,10 +30,25 @@ object Todolist {
 
   // TodoDataManager.dataManager.addLatentConnection(WebviewAdapterChannel.listen())
 
-  lazy val webrtc = WebRTCConnectionView(TodoDataManager.dataManager).example()
+  lazy val webrtc = WebRTCConnectionView(TodoDataManager.dataManager).example().render
 
-  val updateTask: TimerTask = { () =>
-    TodoDataManager.dataManager.requestData()
+  lazy val updateTask: Unit = {
+
+    timer.scheduleAtFixedRate(
+      () => TodoDataManager.dataManager.requestData(),
+      1000,
+      1000
+    )
+
+  }
+
+  lazy val dtnConnectorContents: Div = DTNTestConnector.getConnectorContents()
+
+  lazy val statusInfo: Div = {
+    all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
+      val state = TodoDataManager.dataManager.deltaStorage.allPayloads.map(_.payload.data).reduceOption(Lattice.merge)
+      all.pre(all.stringFrag(pprint.apply(state).plainText)).render
+    ).hold(all.span.render))
   }
 
   @JSExportTopLevel("Todolist")
@@ -43,31 +58,20 @@ object Todolist {
 
     container.replaceChildren(contents)
 
-    container.appendChild(DTNTestConnector.getConnectorContents())
+    container.appendChild(dtnConnectorContents)
 
-    container.appendChild(webrtc.render)
+    container.appendChild(webrtc)
 
-    container.appendChild {
-      all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
-        val state = TodoDataManager.dataManager.deltaStorage.allPayloads.map(_.payload.data).reduceOption(Lattice.merge)
-        all.pre(all.stringFrag(pprint.apply(state).plainText)).render
-      ).hold(all.span.render))
-    }
+    container.appendChild(statusInfo)
 
-    updateTask.cancel()
+    updateTask
 
-    timer.scheduleAtFixedRate(
-      updateTask,
-      1000,
-      1000
-    )
-    ()
   }
 
 }
 
 object DTNTestConnector {
-  def getConnectorContents() = {
+  def getConnectorContents(): Div = {
     val portInput     = all.input(all.placeholder := "dtnd ws port").render
     val connectButton = all.button(all.onclick := { () =>
       TodoDataManager.dataManager.addObjectConnection(
