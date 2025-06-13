@@ -26,11 +26,11 @@ case class MultiPaxos[A](
   // public API
   def leader(using Participants): Option[Uid] = currentPaxos.currentRound match
     case Some(PaxosRound(leaderElection, _)) => leaderElection.result
-    case None                                     => None
+    case None                                => None
 
   def phase(using Participants): MultipaxosPhase =
     currentPaxos.currentRound match
-      case None                                                                      => MultipaxosPhase.LeaderElection
+      case None                                                                 => MultipaxosPhase.LeaderElection
       case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty => MultipaxosPhase.LeaderElection
       case Some(PaxosRound(leaderElection, proposals))
           if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
@@ -46,14 +46,7 @@ case class MultiPaxos[A](
     MultiPaxos(rounds.write(currentPaxos.phase1a)) // start new Paxos round with self proposed as leader
 
   def proposeIfLeader(value: A)(using LocalUid, Participants): MultiPaxos[A] =
-    // insert value before calling phase2a
-    val withValue     = currentPaxos.copy(rounds =
-      currentPaxos.rounds.updated(
-        BallotNum(replicaId, -1),
-        PaxosRound(proposals = PaxosRound().proposals.voteFor(value))
-      )
-    )
-    MultiPaxos(rounds = rounds.write(withValue.phase2a)) // phase 2a already checks if I am the leader
+    MultiPaxos(rounds = rounds.write(currentPaxos.phase2a(value))) // phase 2a already checks if I am the leader
 
   def upkeep(using LocalUid, Participants): MultiPaxos[A] = {
     // perform upkeep in Paxos
