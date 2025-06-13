@@ -41,7 +41,7 @@ runReplication:
 buildTodoMVC sbtOpts="":
 	sbt {{sbtOpts}} 'print webapps/deploy'
 
-webapps:
+webappsServe:
 	npm --prefix "Modules/Examples Web/" install
 	"Modules/Examples Web/node_modules/vite/bin/vite.js" "Modules/Examples Web/"
 
