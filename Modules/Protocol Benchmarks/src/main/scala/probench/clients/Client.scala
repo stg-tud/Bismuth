@@ -31,7 +31,7 @@ trait Client(name: Uid, logTimings: Boolean) {
 
   def multiget(key: String, times: Int, offset: Int = 0): Unit = {
     val start = System.nanoTime()
-    for i <- (offset + 1) to (times + offset) do read(key.replace("%n", i.toString))
+    for i <- (offset) to (times + offset) do read(key.replace("%n", i.toString))
     log(s"Did $times get queries in ${(System.nanoTime() - start) / 1_000_000}ms")
     log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
   }
@@ -48,7 +48,7 @@ trait Client(name: Uid, logTimings: Boolean) {
 
   def multiput(key: String, value: String, times: Int, offset: Int = 0): Unit = {
     val start = System.nanoTime()
-    for i <- (offset + 1) to (times + offset) do write(key.replace("%n", i.toString), value.replace("%n", i.toString))
+    for i <- (offset) to (times + offset) do write(key.replace("%n", i.toString), value.replace("%n", i.toString))
     log(s"Did $times put queries in ${(System.nanoTime() - start) / 1_000_000}ms")
     log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
   }
