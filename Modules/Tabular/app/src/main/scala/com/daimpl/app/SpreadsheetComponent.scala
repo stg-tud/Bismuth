@@ -4,13 +4,12 @@ import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import rdts.base.{Lattice, LocalUid}
-import rdts.dotted.Obrem
 import rdts.time.Dots
 
 object SpreadsheetComponent {
 
   def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet] = {
-    new SpreadsheetDeltaAggregator(Obrem(Spreadsheet()))
+    new SpreadsheetDeltaAggregator(Spreadsheet())
       .edit(_.addRow())
       .edit(_.addRow())
       .edit(_.addRow())
@@ -21,7 +20,7 @@ object SpreadsheetComponent {
 
   case class Props(
       spreadsheetAggregator: SpreadsheetDeltaAggregator[Spreadsheet],
-      onDelta: Obrem[Spreadsheet] => Callback,
+      onDelta: Spreadsheet => Callback,
       replicaId: LocalUid
   )
 
@@ -34,7 +33,7 @@ object SpreadsheetComponent {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    private def modSpreadsheet(f: (LocalUid) ?=> (Dots ?=> Spreadsheet => Obrem[Spreadsheet])): Callback = {
+    private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet => Spreadsheet)): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta = props.spreadsheetAggregator.editAndGetDelta(f)

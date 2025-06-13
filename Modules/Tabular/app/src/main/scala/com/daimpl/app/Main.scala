@@ -6,7 +6,6 @@ import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
 import rdts.base.Lattice
 import rdts.base.LocalUid
-import rdts.dotted.Obrem
 
 object Main {
   case class SpreadsheetData(
@@ -29,7 +28,7 @@ object Main {
           } else {
             val mergedObrem = onlineSpreadsheets
               .map(_.aggregator.getObrem)
-              .reduce((s1, s2) => Lattice[Obrem[Spreadsheet]].merge(s1, s2))
+              .reduce((s1, s2) => Lattice.merge(s1, s2))
             new SpreadsheetDeltaAggregator(mergedObrem)
           }
 
@@ -74,7 +73,7 @@ object Main {
       }
     }
 
-    def handleDelta(sourceSheetId: Int, delta: Obrem[Spreadsheet]): Callback = {
+    def handleDelta(sourceSheetId: Int, delta: Spreadsheet): Callback = {
       $.modState { state =>
         val updatedSpreadsheets = state.spreadsheets.map { sheet =>
           if (sheet.id != sourceSheetId && sheet.isOnline) {
@@ -145,5 +144,6 @@ object Main {
   def main(args: Array[String]): Unit = {
     val container = dom.document.getElementById("root")
     App().renderIntoDOM(container)
+    ()
   }
 }
