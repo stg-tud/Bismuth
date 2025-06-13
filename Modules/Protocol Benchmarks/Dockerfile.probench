@@ -1,4 +1,4 @@
-FROM docker.io/sbtscala/scala-sbt:eclipse-temurin-21.0.5_11_1.10.7_3.6.3
+FROM docker.io/sbtscala/scala-sbt:eclipse-temurin-21.0.7_6_1.11.2_3.7.1
 
 WORKDIR /src
 COPY . .
