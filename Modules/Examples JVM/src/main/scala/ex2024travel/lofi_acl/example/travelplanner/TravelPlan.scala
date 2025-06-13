@@ -26,7 +26,7 @@ case class TravelPlan(
   def addBucketListEntry(text: String)(using localUid: LocalUid): Delta = {
     val key = randomKey
     this.deltaModify(_.bucketList).using { ormap =>
-      ormap.transformPlain(key) {
+      ormap.transform(key) {
         case None => Some(LastWriterWins.now(text))
         case _    => ???
       }
@@ -35,7 +35,7 @@ case class TravelPlan(
 
   def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.bucketList).using { ormap =>
-      ormap.transformPlain(bucketListId) {
+      ormap.transform(bucketListId) {
         case Some(prior) => Some(prior.write(text))
         case None        => Some(LastWriterWins.now(text))
       }
@@ -47,7 +47,7 @@ case class TravelPlan(
     this.deltaModify(_.expenses).using { ormap =>
       val expense =
         Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.now(None))
-      ormap.transformPlain(key) {
+      ormap.transform(key) {
         case None => Some(expense)
         case _    => ???
       }
@@ -56,7 +56,7 @@ case class TravelPlan(
 
   def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.expenses).using { ormap =>
-      ormap.transformPlain(expenseId) {
+      ormap.transform(expenseId) {
         case Some(prior: Expense) =>
           Some(prior.deltaModify(_.amount).using(_.write(Some(amount))))
         case None => ???
@@ -66,7 +66,7 @@ case class TravelPlan(
 
   def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.expenses).using { ormap =>
-      ormap.transformPlain(expenseId) {
+      ormap.transform(expenseId) {
         case Some(prior) =>
           Some(prior.deltaModify(_.description).using(_.write(Some(description))))
         case None => ???
@@ -77,7 +77,7 @@ case class TravelPlan(
   def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta = {
     val commentValue = if comment.isEmpty then None else Some(comment)
     this.deltaModify(_.expenses).using { ormap =>
-      ormap.transformPlain(expenseId) {
+      ormap.transform(expenseId) {
         case Some(prior) =>
           Some(prior.deltaModify(_.comment).using(_.write(commentValue)))
         case None => ???

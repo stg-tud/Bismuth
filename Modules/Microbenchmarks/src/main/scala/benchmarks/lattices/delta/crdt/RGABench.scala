@@ -36,7 +36,7 @@ class RGABench {
   def readLast(): Option[Int] = rga.state.read(rgaSize - 1)
 
   @Benchmark
-  def size(): Int = rga.state.size
+  def size(): Int = rga.state.sizeIncludingDeadElements
 
   @Benchmark
   def toList: List[Int] = rga.state.toList

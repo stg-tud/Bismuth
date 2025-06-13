@@ -14,7 +14,7 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
 
   def compact: MultiVersionRegister[A] = MultiVersionRegister(repr.filter((d, _) => !removed.contains(d)), removed)
 
-  def write(using LocalUid)(v: A): MultiVersionRegister[A] = {
+  def write(v: A)(using LocalUid): MultiVersionRegister[A] = {
 
     val containedDots = Dots.from(repr.keys)
     val nextDot       = (removed.union(containedDots)).nextDot(LocalUid.replicaId)
@@ -33,6 +33,8 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
 }
 
 object MultiVersionRegister {
+
+  def of[A](a: A)(using LocalUid) = empty.write(a)
 
   given bottomInstance[A]: Bottom[MultiVersionRegister[A]] = Bottom.derived
   def empty[A]: MultiVersionRegister[A]                    = Bottom.empty

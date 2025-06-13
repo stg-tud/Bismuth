@@ -32,7 +32,7 @@ class ORMapBench {
       summon,
       ObserveRemoveMap.empty
     )) {
-      case (m, i) => m.mod(_.transformPlain(i)(_.map(_.enable(using m.replicaID)())))
+      case (m, i) => m.mod(_.transform(i)(_.map(_.enable(using m.replicaID)())))
     }
   }
 
@@ -51,10 +51,10 @@ class ORMapBench {
   def queryAllEntries(): Iterable[Boolean] = map.state.queryAllEntries.map(_.read)
 
   @Benchmark
-  def mutateExisting(): SUT = map.mod(_.transformPlain(0)(_.map(_.disable())))
+  def mutateExisting(): SUT = map.mod(_.transform(0)(_.map(_.disable())))
 
   @Benchmark
-  def mutateMissing(): SUT = map.mod(_.transformPlain(-1)(_.map(_.enable())))
+  def mutateMissing(): SUT = map.mod(_.transform(-1)(_.map(_.enable())))
 
   @Benchmark
   def removeExisting(): SUT = map.mod(_.remove(0))

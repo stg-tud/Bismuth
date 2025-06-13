@@ -36,7 +36,7 @@ class MVRegisterBench {
   def read(): Set[Int] = reg.state.read
 
   @Benchmark
-  def write(): NamedDeltaBuffer[MultiVersionRegister[Int]] = reg.mod(_.write(using reg.replicaID)(-1))
+  def write(): NamedDeltaBuffer[MultiVersionRegister[Int]] = reg.mod(_.write(-1)(using reg.replicaID))
 
   @Benchmark
   def clear(): NamedDeltaBuffer[MultiVersionRegister[Int]] = reg.mod(_.clear())

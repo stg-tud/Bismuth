@@ -157,7 +157,7 @@ object DataGenerator {
         rid: LocalUid
     ): ReplicatedList[E] = {
       val afterInsert = inserted.foldLeft(ReplicatedList.empty[E]) {
-        case (rga, (i, e)) => rga `merge` rga.insert(using rid)(i, e)
+        case (rga, (i, e)) => rga `merge` rga.insert(i, e)(using rid)
       }
 
       removed.foldLeft(afterInsert) {

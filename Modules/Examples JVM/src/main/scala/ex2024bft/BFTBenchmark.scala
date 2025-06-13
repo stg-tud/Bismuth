@@ -120,7 +120,7 @@ object BFTBenchmark {
     list +:= repList
 
     for i <- 0 to size do {
-      repList = repList.insert(using id1)(0, i)
+      repList = repList.insert(0, i)(using id1)
       list +:= repList
     }
 
@@ -139,7 +139,7 @@ object BFTBenchmark {
     list +:= bft
 
     for i <- 0 to size do {
-      bft = bft.update(_.insert(using id1)(0, i))(using
+      bft = bft.update(_.insert(0, i)(using id1))(using
         byteableListDeltaList,
         dottedRepListIntLattice,
         bottomListDeltaList

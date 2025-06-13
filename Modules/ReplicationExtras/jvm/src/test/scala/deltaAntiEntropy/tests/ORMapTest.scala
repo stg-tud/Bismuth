@@ -51,14 +51,14 @@ class ORMapTest extends munit.ScalaCheckSuite {
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
           case (m, e) =>
-            m.mod(_.transformPlain(using m.replicaID)(k) { rs =>
+            m.mod(_.transform(k) { rs =>
               val before = rs.getOrElse(ReplicatedSet.empty[Int])
               Some(before `merge` before.add(using m.replicaID)(e))
-            })
+            }(using m.replicaID))
         }
         val res = remove.foldLeft(added) {
           case (m, e) =>
-            m.mod(_.transformPlain(using aea.localUid)(k)(_.map(v => v.remove(e))))
+            m.mod(_.transform(k)(_.map(v => v.remove(e)))(using aea.localUid))
         }
         res
       }
@@ -83,11 +83,11 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
-          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.add(using m.replicaID)(e))))
+          case (m, e) => m.mod(_.transform(k)(_.map(_.add(using m.replicaID)(e)))(using aea.localUid))
         }
 
         remove.foldLeft(added) {
-          case (m, e) => m.mod(_.transformPlain(using aea.localUid)(k)(_.map(_.remove(e))))
+          case (m, e) => m.mod(_.transform(k)(_.map(_.remove(e)))(using aea.localUid))
         }
       }
 

@@ -34,10 +34,10 @@ class DeltaMergeBench {
   def setup(): Unit = {
     val baseState = ReplicatedList.empty[Long]
 
-    val deltaState = baseState.insertAll(using "".asId)(0, 0L to size)
+    val deltaState = baseState.insertAll(0, 0L to size)(using "".asId)
     fullState = Lattice.merge(baseState, deltaState)
 
-    plusOneDeltaState = fullState.insert(using "".asId)(0, size)
+    plusOneDeltaState = fullState.insert(0, size)(using "".asId)
     plusOneState = Lattice.merge(fullState, plusOneDeltaState)
   }
 

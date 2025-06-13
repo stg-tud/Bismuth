@@ -36,7 +36,9 @@ case class ReplicatedList[E](
     order.value.toLazyList.flatMap(elements.get).map(_.payload).lift(i)
   }
 
-  def size: Int = elements.size
+  def sizeIncludingDeadElements: Int = elements.size
+
+  def size: Int = toList.size
 
   def toList: List[E] = {
     order.value.toList.flatMap(elements.get).map(_.payload)
@@ -48,10 +50,10 @@ case class ReplicatedList[E](
     }.map(_._2).prepended(0).lift(n)
   }
 
-  lazy val observed = deleted.union(Dots.from(elements.keys))
+  lazy val observed: Dots = deleted.union(Dots.from(elements.keys))
 
   /** Inserts at list index `i` */
-  def insert(using LocalUid)(i: Int, e: E): C = {
+  def insert(i: Int, e: E)(using LocalUid): C = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
 
     findInsertIndex(i) match {
@@ -69,7 +71,7 @@ case class ReplicatedList[E](
     }
   }
 
-  def insertAll(using LocalUid)(i: Int, elems: Iterable[E]): C = {
+  def insertAll(i: Int, elems: Iterable[E])(using LocalUid): C = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
 
     val nextDots = List.iterate(nextDot, elems.size) {
@@ -146,6 +148,7 @@ case class ReplicatedList[E](
   def deleteBy(cond: E => Boolean): C =
     updateRGANodeBy(this, cond, _ => None)
 
+  /** Note: this operation may drop concurrent additions to removed items. */
   def purgeTombstones(): C = {
     val known: List[Dot] = order.value.toList
 
@@ -166,11 +169,11 @@ case class ReplicatedList[E](
 
   def prepend(using LocalUid)(e: E): C = insert(0, e)
 
-  def append(using LocalUid)(e: E): C = insert(size, e)
+  def append(using LocalUid)(e: E): C = insert(sizeIncludingDeadElements, e)
 
   def prependAll(using LocalUid)(elems: Iterable[E]): C = insertAll(0, elems)
 
-  def appendAll(using LocalUid)(elems: Iterable[E]): C = insertAll(size, elems)
+  def appendAll(using LocalUid)(elems: Iterable[E]): C = insertAll(sizeIncludingDeadElements, elems)
 
 }
 object ReplicatedList {

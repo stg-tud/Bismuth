@@ -37,7 +37,7 @@ class RGATest extends munit.ScalaCheckSuite {
 
       assertEquals(listInitial, rgaList)
 
-      assertEquals(rga.data.size, listInitial.size, s"  ${rga.state}\n  $listInitial")
+      assertEquals(rga.data.sizeIncludingDeadElements, listInitial.size, s"  ${rga.state}\n  $listInitial")
 
       assertEquals(rga.data.read(readIdx), listInitial.lift(readIdx))
     }
@@ -46,16 +46,16 @@ class RGATest extends munit.ScalaCheckSuite {
   property("insert") {
     forAll { (rl: ReplicatedList[Int], insertIdx: Int, insertValue: Int) =>
       val rga      = makeNet(rl)
-      val inserted = rga.mod(_.insert(using rga.replicaID)(insertIdx, insertValue))
+      val inserted = rga.mod(_.insert(insertIdx, insertValue)(using rga.replicaID))
 
       assert(
-        insertIdx < 0 || insertIdx > rga.data.size || inserted.data.read(insertIdx).contains(insertValue),
+        insertIdx < 0 || insertIdx > rga.data.sizeIncludingDeadElements || inserted.data.read(insertIdx).contains(insertValue),
         s"After inserting a value at a valid index, reading the rga at that index should return the inserted value but ${inserted.data.read(
             insertIdx
           )} does not contain $insertValue\n  $rga\n  $inserted"
       )
       assert(
-        (insertIdx >= 0 && insertIdx <= rga.data.size) || inserted.data.toList == rga.data.toList,
+        (insertIdx >= 0 && insertIdx <= rga.data.sizeIncludingDeadElements) || inserted.data.toList == rga.data.toList,
         s"Attempting to insertGL a value at an invalid index should not change the rga, but ${inserted.data.toList} does not equal ${rga.data.toList}"
       )
     }
@@ -64,13 +64,13 @@ class RGATest extends munit.ScalaCheckSuite {
   property("delete") {
     forAll { (rl: ReplicatedList[Int], deleteIdx: Int) =>
       val rga        = makeNet(rl)
-      val sizebefore = rga.data.size
+      val sizebefore = rga.data.sizeIncludingDeadElements
       val listbefore = rga.data.toList
       val deleted    = rga.mod(_.delete(deleteIdx))
 
       assert(
-        deleteIdx < 0 || deleteIdx >= sizebefore || deleted.data.size == sizebefore - 1,
-        s"After deleting a valid index the size of the rga should be reduced by 1, but ${deleted.data.size} does not equal ${rga.data.size} - 1"
+        deleteIdx < 0 || deleteIdx >= sizebefore || deleted.data.sizeIncludingDeadElements == sizebefore - 1,
+        s"After deleting a valid index the size of the rga should be reduced by 1, but ${deleted.data.sizeIncludingDeadElements} does not equal ${rga.data.sizeIncludingDeadElements} - 1"
       )
       assert(
         (deleteIdx >= 0 && deleteIdx < sizebefore) || deleted.data.toList == listbefore,
@@ -88,18 +88,18 @@ class RGATest extends munit.ScalaCheckSuite {
       val updated     = rga.mod(_.update(updateIdx, updateValue))
 
       assert(
-        updated.data.size == rga.data.size,
-        s"update should not change the size of the rga, but ${updated.data.size} does not equal ${rga.data.size}"
+        updated.data.sizeIncludingDeadElements == rga.data.sizeIncludingDeadElements,
+        s"update should not change the size of the rga, but ${updated.data.sizeIncludingDeadElements} does not equal ${rga.data.sizeIncludingDeadElements}"
       )
-      assertEquals(rga.data.size, rga.data.toList.size)
+      assertEquals(rga.data.sizeIncludingDeadElements, rga.data.toList.size)
       assert(
-        updateIdx < 0 || updateIdx >= rga.data.size || updated.data.read(updateIdx).contains(updateValue),
+        updateIdx < 0 || updateIdx >= rga.data.sizeIncludingDeadElements || updated.data.read(updateIdx).contains(updateValue),
         s"After updating a valid index reading the rga at that index should return the updated value, but ${updated.data.read(
             updateIdx
           )} does not contain $updateValue ($updateIdx) \n  ${rga.data.toList}\n  $rllist\n  ${initiallist}\n  ${updated.state}\n  $rl"
       )
       assert(
-        (updateIdx >= 0 && updateIdx < rga.data.size) || updated.data.toList == rga.data.toList,
+        (updateIdx >= 0 && updateIdx < rga.data.sizeIncludingDeadElements) || updated.data.toList == rga.data.toList,
         s"Attempting to update an invalid index should not change th rga, but ${updated.data.toList} does not equal ${rga.data.toList}"
       )
     }
@@ -118,12 +118,12 @@ class RGATest extends munit.ScalaCheckSuite {
         AntiEntropy.sync(aea, aeb)
         val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-        val size = la0.data.size
+        val size = la0.data.sizeIncludingDeadElements
         val idx1 = if size == 0 then 0 else math.floorMod(n1, size)
         val idx2 = if size == 0 then 0 else Math.floorMod(n2, size)
 
-        val la1 = la0.mod(_.insert(using la0.replicaID)(idx1, e1))
-        lb0.mod(_.insert(using lb0.replicaID)(idx2, e2))
+        val la1 = la0.mod(_.insert(idx1, e1)(using la0.replicaID))
+        lb0.mod(_.insert(idx2, e2)(using lb0.replicaID))
 
         AntiEntropy.sync(aea, aeb)
 
@@ -156,7 +156,7 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.size == 0 then 0 else math.floorMod(n, la0.data.size)
+      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
       val la1 = la0.mod(_.delete(idx))
       val lb1 = lb0.mod(_.delete(idx))
@@ -171,7 +171,7 @@ class RGATest extends munit.ScalaCheckSuite {
         s"Concurrently deleting the same index twice should have the same result as deleting it once, but ${la2.data.toList} does not equal ${la1.data.toList}"
       )
 
-      val size = la2.data.size
+      val size = la2.data.sizeIncludingDeadElements
       val idx1 = if size == 0 then 0 else math.floorMod(n1, size)
       val idx2 = if size == 0 then 0 else math.floorMod(n2, size)
 
@@ -210,16 +210,16 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.size == 0 then 0 else math.floorMod(n, la0.data.size)
+      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
-      val la1 = la0.mod(_.insert(using la0.replicaID)(idx, e1))
+      val la1 = la0.mod(_.insert(idx, e1)(using la0.replicaID))
       lb0.mod(_.update(idx, e2))
 
       AntiEntropy.sync(aea, aeb)
 
       val la2 = la1.processReceivedDeltas()
 
-      val sequential = la0.mod(_.update(idx, e2)).mod(_.insert(using la0.replicaID)(idx, e1))
+      val sequential = la0.mod(_.update(idx, e2)).mod(_.insert(idx, e1)(using la0.replicaID))
 
       assert(
         la2.data.toList == sequential.data.toList,
@@ -240,16 +240,16 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.size == 0 then 0 else math.floorMod(n, la0.data.size)
+      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
-      val la1 = la0.mod(_.insert(using la0.replicaID)(idx + 1, e))
+      val la1 = la0.mod(_.insert(idx + 1, e)(using la0.replicaID))
       lb0.mod(_.delete(idx))
 
       AntiEntropy.sync(aea, aeb)
 
       val la2 = la1.processReceivedDeltas()
 
-      val sequential = la0.mod(_.insert(using la0.replicaID)(idx + 1, e)).mod(_.delete(idx))
+      val sequential = la0.mod(_.insert(idx + 1, e)(using la0.replicaID)).mod(_.delete(idx))
 
       assert(
         la2.data.toList == sequential.data.toList,
@@ -270,7 +270,7 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.size == 0 then 0 else math.floorMod(n, la0.data.size)
+      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
       val la1 = la0.mod(_.delete(idx))
       lb0.mod(_.update(idx, e))
@@ -312,7 +312,7 @@ class RGATest extends munit.ScalaCheckSuite {
 
           val la1 = {
             val inserted = insertedAB._1.foldLeft(la0) {
-              case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
+              case (rga, (i, e)) => rga.mod(_.insert(i, e)(using rga.replicaID))
             }
 
             val deleted = removedAB._1.foldLeft(inserted) {
@@ -326,7 +326,7 @@ class RGATest extends munit.ScalaCheckSuite {
 
           val lb1 = {
             val inserted = insertedAB._2.foldLeft(lb0) {
-              case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
+              case (rga, (i, e)) => rga.mod(_.insert(i, e)(using rga.replicaID))
             }
 
             val deleted = removedAB._2.foldLeft(inserted) {

@@ -6,9 +6,10 @@ import rdts.time.Dots
 
 case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
 
-  lazy val observed: Dots = inner.values.foldLeft(Dots.empty) {
-    case (set, v) => set `union` v.dots
-  }
+  lazy val observed: Dots = removed.union:
+    inner.values.foldLeft(Dots.empty) {
+      case (set, v) => set `union` v.dots
+    }
 
   type Delta = ObserveRemoveMap[K, V]
 
@@ -21,7 +22,7 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
   def entries: Iterable[(K, V)] = inner.view.mapValues(_.value)
 
   /** merges `v` into the current value stored in the map */
-  def update(using LocalUid)(k: K, v: V): Delta = {
+  def update(k: K, v: V)(using LocalUid): Delta = {
     val next = Dots.single(observed.nextDot(LocalUid.replicaId))
     ObserveRemoveMap(
       Map(k -> Entry(next, v)),
@@ -29,7 +30,7 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     )
   }
 
-  def transformPlain(using LocalUid)(k: K)(m: Option[V] => Option[V]): Delta = {
+  def transform(k: K)(m: Option[V] => Option[V])(using LocalUid): Delta = {
     m(inner.get(k).map(_.value)) match {
       case Some(value) => update(k, value)
       case None        => remove(k)
@@ -43,6 +44,13 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
   def removeAll(keys: Iterable[K]): Delta = {
     val rem = keys.flatMap(inner.get).map(_.dots).foldLeft(Dots.empty)(_ `union` _)
     ObserveRemoveMap(Map.empty, rem)
+  }
+
+  def removeBy(cond: K => Boolean): Delta = {
+    val toRemove = inner.collect {
+      case (k, v) if cond(k) => v.dots
+    }.fold(Dots.empty)(_ `union` _)
+    ObserveRemoveMap(Map.empty, toRemove)
   }
 
   def removeByValue(cond: V => Boolean): Delta = {

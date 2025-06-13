@@ -22,7 +22,7 @@ class DeltaAWLWWMContainer[K, V](
 
   def putDelta(key: K, value: V): State[K, V] = {
     val delta = {
-      _state.transformPlain(key) {
+      _state.transform(key) {
         case Some(prior) => Some(prior.write(value))
         case None        => Some(LastWriterWins.now(value))
       }

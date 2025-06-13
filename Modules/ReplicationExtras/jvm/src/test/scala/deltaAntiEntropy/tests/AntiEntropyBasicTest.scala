@@ -22,25 +22,25 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val aec = AntiEntropyContainer[ReplicatedList[String]](ae)
 
-    aec.mod(_.insert(using aec.replicaID)(0, "00"))
+    aec.mod(_.insert(0, "00")(using aec.replicaID))
 
     aec.mod(_.update(0, "UPD"))
 
     assertEquals(aec.data.toList, List("UPD"))
 
-    aec.mod(_.insert(using aec.replicaID)(1, "100"))
+    aec.mod(_.insert(1, "100")(using aec.replicaID))
 
     assertEquals(aec.data.toList, List("UPD", "100"))
 
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-      aec.mod(_.insert(using aec.replicaID)(0, elem))
+      aec.mod(_.insert(0, elem)(using aec.replicaID))
     // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("UPD", "100"))
 
-    aec.mod(_.insert(using LocalUid.predefined("b"))(1, "b00"))
+    aec.mod(_.insert(1, "b00")(using LocalUid.predefined("b")))
 
     assertEquals(aec.data.read(1), Some("b00"))
 
@@ -102,7 +102,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val la1 = {
       val inserted = insertedAB._1.foldLeft(la0) {
-        case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.mod(_.insert(i, e)(using rga.replicaID))
       }
 
       val deleted = removedAB._1.foldLeft(inserted) {
@@ -116,7 +116,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val lb1 = {
       val inserted = insertedAB._2.foldLeft(lb0) {
-        case (rga, (i, e)) => rga.mod(_.insert(using rga.replicaID)(i, e))
+        case (rga, (i, e)) => rga.mod(_.insert(i, e)(using rga.replicaID))
       }
 
       val deleted = removedAB._2.foldLeft(inserted) {

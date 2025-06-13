@@ -94,12 +94,12 @@ class DiffManualTests extends munit.ScalaCheckSuite {
 
     val empty: MultiVersionRegister[Int] = Bottom[MultiVersionRegister[Int]].empty
 
-    val delta_1: MultiVersionRegister[Int] = empty.write(using r1)(1)
+    val delta_1: MultiVersionRegister[Int] = empty.write(1)(using r1)
     assertEquals(delta_1.read, Set(1))
 
     // delta_1 and delta_2 are in parallel
 
-    val delta_2: MultiVersionRegister[Int] = empty.write(using r2)(2)
+    val delta_2: MultiVersionRegister[Int] = empty.write(2)(using r2)
     assertEquals(delta_2.read, Set(2))
 
     val merged: MultiVersionRegister[Int] = Lattice.merge(delta_1, delta_2)
