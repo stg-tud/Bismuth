@@ -18,18 +18,18 @@ case class Voting[A](votes: Set[Vote[A]]) {
 
   // decision function
   def decision(using Participants): Agreement[A] =
-    if hasDuplicateVotes() then Invalid
+    if hasDuplicateVotes then Invalid
     else
-      getLeadingValue() match
+      getLeadingValue match
         case Some(value, count) if count >= majority => Decided(value)
         case _                                       => Undecided
 
   // helper functions
   def majority(using Participants) =
     participants.size / 2 + 1
-  def hasDuplicateVotes(): Boolean =
+  def hasDuplicateVotes: Boolean =
     votes.groupBy(_.voter).values.filter(_.size > 1).nonEmpty
-  def getLeadingValue(): Option[(A, Int)] =
+  def getLeadingValue: Option[(A, Int)] =
     votes.groupBy(_.value)
       .map((value, vts) => (value, vts.size)).maxByOption(_._2)
 
