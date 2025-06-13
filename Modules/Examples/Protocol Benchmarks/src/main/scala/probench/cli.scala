@@ -95,7 +95,7 @@ object cli {
         args match {
           case "fixed" :: rest => Result.Ok(BenchmarkMode.Fixed, rest)
           case "timed" :: rest => Result.Ok(BenchmarkMode.Timed, rest)
-          case _               => Result.Err("not a valid benchmark mode", descriptor)
+          case _               => Result.Err(s"not a valid benchmark mode: $args", descriptor)
         }
 
       override def descriptor: Descriptor = Descriptor("mode", "fixed|timed")
