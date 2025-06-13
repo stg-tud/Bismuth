@@ -4,9 +4,10 @@ import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
 // imports from this file
 import Paxos.given
-import util.*
-import util.Agreement.*
-import Participants.participants
+import Util.*
+import Util.Agreement.*
+import rdts.protocols.Participants
+import rdts.protocols.Participants.participants
 
 // Paxos PRDT
 type LeaderElection = Voting[Uid]
@@ -50,7 +51,7 @@ case class Paxos[A](
         if leaderElection.decision == Decided(replicaId) =>
       true
     case _ => false
-  def currentRoundHasProposal: Boolean  = currentRound match
+  def currentRoundHasProposal: Boolean = currentRound match
     case Some(PaxosRound(_, proposals))
         if proposals.votes.nonEmpty => true
     case _ => false
@@ -70,7 +71,7 @@ case class Paxos[A](
             currentBallotNum -> voteLeader(leaderCandidate),
             promisedBallot   -> acceptedVal
           )) // previously accepted value
-        case None                              =>
+        case None =>
           // no value voted for, just vote for candidate
           Paxos(Map(
             currentBallotNum -> voteLeader(leaderCandidate)
@@ -107,26 +108,26 @@ case class Paxos[A](
     }.getOrElse(Undecided)
 
   // helper functions
-  def nextBallotNum(using LocalUid): BallotNum          =
+  def nextBallotNum(using LocalUid): BallotNum =
     val maxCounter: Long = rounds
       .map((b, _) => b.counter)
       .maxOption
       .getOrElse(-1)
     BallotNum(replicaId, maxCounter + 1)
-  def currentRound: Option[PaxosRound[A]]               =
+  def currentRound: Option[PaxosRound[A]] =
     rounds.maxOption.map(_._2)
-  def currentBallotNum: BallotNum                       =
+  def currentBallotNum: BallotNum =
     rounds.maxOption.map(_._1).get
-  def leaderCandidate: Uid                              =
+  def leaderCandidate: Uid =
     currentLeaderElection.map(_.votes.head.value).get
-  def currentLeaderElection: Option[LeaderElection]     =
+  def currentLeaderElection: Option[LeaderElection] =
     currentRound match
       case Some(PaxosRound(leaderElection, _)) =>
         Some(leaderElection)
-      case None                                => None
+      case None => None
   def lastValueVote: Option[(BallotNum, PaxosRound[A])] =
     rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
-  def newestReceivedVal(using LocalUid)                 =
+  def newestReceivedVal(using LocalUid) =
     lastValueVote.map(_._2.proposals.votes.head.value)
   def myValue(using LocalUid): A = rounds(BallotNum(
     replicaId,
@@ -195,9 +196,3 @@ object Paxos {
 //  given [A]: Bottom[Voting[A]]  =
 //    Bottom.provide(Voting(Set.empty[Vote[A]]))
 //}
-
-
-case class Participants(members: Set[Uid])
-object Participants:
-  def participants(using p: Participants): Set[Uid] =
-    p.members
