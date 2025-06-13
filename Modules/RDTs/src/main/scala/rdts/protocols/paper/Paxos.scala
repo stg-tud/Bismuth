@@ -137,12 +137,12 @@ case class Paxos[A](
       case None => None
   def lastValueVote: Option[(BallotNum, PaxosRound[A])] =
     rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
-  def newestReceivedVal(using LocalUid) =
-    lastValueVote.map(_._2.proposals.votes.head.value)
+  def newestReceivedVal(using LocalUid): Option[A] =
+    lastValueVote.flatMap(_._2.proposals.votes.headOption).map(_.value)
   def myValue(using LocalUid): Option[A] = rounds.get(BallotNum(
     replicaId,
     -1
-  )).map(_.proposals.votes.head.value)
+  )).flatMap(_.proposals.votes.headOption).map(_.value)
   def newestBallotWithLeader(using Participants): Option[(BallotNum, PaxosRound[A])] =
     rounds.filter(_._2.leaderElection.result.nonEmpty).maxOption
 }
