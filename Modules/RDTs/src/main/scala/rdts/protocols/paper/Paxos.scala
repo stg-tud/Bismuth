@@ -2,10 +2,10 @@ package rdts.protocols.paper
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.protocols.{Consensus, Participants}
 import rdts.protocols.paper.Paxos.given
 import rdts.protocols.paper.Util.*
 import rdts.protocols.paper.Util.Agreement.*
-import rdts.protocols.{Consensus, Participants}
 
 // Paxos PRDT
 type LeaderElection = Voting[Uid]
@@ -91,6 +91,18 @@ case class Paxos[A](
         // no values received during leader election, propose my value
         Paxos(Map(currentBallotNum -> voteValue(myValue)))
     )
+  def phase2a(myValue: A)(using LocalUid, Participants): Paxos[A] =
+    // propose a value if I am the leader
+    updateIf(isCurrentLeader)(
+      if newestReceivedVal.nonEmpty then
+        // propose most recent received value
+        Paxos(Map(currentBallotNum -> voteValue(
+          newestReceivedVal.get
+        )))
+      else
+        // no values received during leader election, propose my value
+        Paxos(Map(currentBallotNum -> voteValue(myValue)))
+    )
 
   def phase2b(using LocalUid, Participants): Paxos[A] =
     // accept proposed value
@@ -134,6 +146,8 @@ case class Paxos[A](
     replicaId,
     -1
   )).proposals.votes.head.value
+  def newestBallotWithLeader(using Participants): Option[(BallotNum, PaxosRound[A])] =
+    rounds.filter(_._2.leaderElection.result.nonEmpty).maxOption
 }
 
 object Paxos {

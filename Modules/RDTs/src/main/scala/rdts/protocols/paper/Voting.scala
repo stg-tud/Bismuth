@@ -9,7 +9,7 @@ import rdts.protocols.Participants
 
 case class Vote[A](voter: Uid, value: A)
 
-case class Voting[A](votes: Set[Vote[A]]) {
+case class Voting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
   // boolean threshold queries
   def hasNotVoted(using LocalUid): Boolean =
     !votes.exists {
