@@ -117,7 +117,7 @@ trait Client(name: Uid, logTimings: Boolean) {
     println("Initializing")
 
     mode match
-      case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min)
+      case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min, min)
       case BenchmarkOpType.Write                        =>
 
     println("Warmup")
