@@ -314,6 +314,6 @@ lazy val tabularApp = (project in file("Modules/Tabular/app"))
       "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.1",
     ),
     scalaJSUseMainModuleInitializer   := true,
-    Compile / fastOptJS / crossTarget := baseDirectory.value,
-    Compile / fullOptJS / crossTarget := baseDirectory.value
+    Compile / fastOptJS / crossTarget := target.value,
+    Compile / fullOptJS / crossTarget := target.value
   )
