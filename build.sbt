@@ -295,3 +295,25 @@ lazy val webview = project.in(file("Modules/Webview"))
       SettingsLocal.osSpecificWebviewConfig(d)
     }
   )
+
+lazy val tabularLib = (project in file("Modules/Tabular/lib"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(channels.js, rdts.js)
+  .settings(
+    scala3defaults
+  )
+
+lazy val tabularApp = (project in file("Modules/Tabular/app"))
+  .dependsOn(tabularLib)
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    scala3defaults,
+    Dependencies.scalajsDom,
+    libraryDependencies ++= Seq(
+      "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.1",
+      "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.1",
+    ),
+    scalaJSUseMainModuleInitializer   := true,
+    Compile / fastOptJS / crossTarget := baseDirectory.value,
+    Compile / fullOptJS / crossTarget := baseDirectory.value
+  )
