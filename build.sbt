@@ -8,6 +8,7 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
   aead.jvm,
   channels.js,
   channels.jvm,
+  crypto.jvm,
   dtn.js,
   dtn.jvm,
   deltalens,
@@ -74,7 +75,7 @@ lazy val aead = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Aead"))
   )
 
 lazy val crypto = crossProject(/*JSPlatform,*/ JVMPlatform).in(file("Modules/Crypto"))
-  .dependsOn(channels, rdts % "compile->compile;test->test")
+  .dependsOn(channels % "compile->compile;test->test", rdts % "compile->compile;test->test", replication)
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
@@ -292,8 +293,6 @@ lazy val replication = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(
     Dependencies.munit,
     Dependencies.jsoniterScala,
   ).jvmSettings(
-    Dependencies.tink,
-    Dependencies.bouncyCastle,
     Test / fork := true,
   )
 

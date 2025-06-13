@@ -1,15 +1,14 @@
 package crypto.channels
 
-import channels.EchoServerTestP2PTls.{p2pTls1, p2pTls2}
-import channels.EchoCommunicationTest
 import crypto.channels.{IdentityFactory, PrivateIdentity}
+import channels.EchoCommunicationTest
 
 class EchoServerTestP2PTls extends EchoCommunicationTest(
       ec => {
-        val latentConnection = p2pTls1.latentListener(0, ec)
+        val latentConnection = EchoServerTestP2PTls.p2pTls1.latentListener(0, ec)
         (latentConnection.listenPort, latentConnection)
       },
-      ec => port => p2pTls2.latentConnect("localhost", port, ec)
+      ec => port => EchoServerTestP2PTls.p2pTls2.latentConnect("localhost", port, ec)
     )
 
 object EchoServerTestP2PTls {
