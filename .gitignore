@@ -1,13 +1,13 @@
 .bloop/
 .bsp/
 .idea/
-.vscode/
 .metals/
 .scala-build/
+.vscode/
+bun.lock
 metals.sbt
 node_modules/
 package-lock.json
 target/
-package.json
-yarn.lock
 webview.h
+yarn.lock

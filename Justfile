@@ -41,6 +41,10 @@ runReplication:
 buildTodoMVC sbtOpts="":
 	sbt {{sbtOpts}} 'print webapps/deploy'
 
+webapps:
+	npm --prefix Modules/Examples/WebApps/ install
+	Modules/Examples/WebApps/node_modules/vite/bin/vite.js Modules/Examples/WebApps/
+
 webviewExample sbtOpts="": (buildTodoMVC sbtOpts)
 	cp "$(pwd)/Modules/Webview/src/main/resources/vite.config.ts" "$(pwd)/Modules/Examples/WebApps/target"
 	podman run --rm --interactive --volume "$(pwd)/Modules/Examples/WebApps/target":/home/bun/app "docker.io/oven/bun" -- install vite-plugin-singlefile
