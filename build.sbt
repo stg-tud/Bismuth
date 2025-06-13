@@ -82,6 +82,7 @@ lazy val crypto = crossProject(/*JSPlatform,*/ JVMPlatform).in(file("Modules/Cry
     Dependencies.munit,
     Dependencies.munitCheck,
     Dependencies.slips,
+    Dependencies.jsoniterScala,
   ).jvmSettings(
     Dependencies.bouncyCastle,
     Dependencies.tink,
@@ -146,7 +147,7 @@ lazy val exampleLenses = project.in(file("Modules/Examples/ReactiveLenses"))
 
 lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(reactives.jvm, replication.jvm, deltalens)
+  .dependsOn(reactives.jvm, replication.jvm, deltalens, crypto.jvm)
   .settings(
     scala3defaults,
     fork := true,
@@ -212,7 +213,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(reactives.jvm, rdts.jvm, replication.jvm)
+  .dependsOn(reactives.jvm, rdts.jvm, replication.jvm, crypto.jvm)
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
@@ -294,7 +295,7 @@ lazy val replication = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(
     Dependencies.tink,
     Dependencies.bouncyCastle,
     Test / fork := true,
-  ).jvmConfigure(_.dependsOn(crypto.jvm))
+  )
 
 
 lazy val todolist = project.in(file("Modules/Examples/TodoMVC"))
