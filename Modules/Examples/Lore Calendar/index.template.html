@@ -23,13 +23,15 @@
 			window.reScalaId = Math.random();
 			window.domAssocations = new Map();
 
-			DebugAdapter.setListener(data => {
-				if (data.type === 'DomAssociation') {
-					window.domAssocations.set(JSON.parse(data.reSource).idCounter, data.node);
-				} else if (typeof data === 'string') {
-					window.reScalaEvents.push(JSON.parse(data));
-				}
-			});
+			if (typeof DebugAdapter !== 'undefined') {
+				DebugAdapter.setListener(data => {
+					if (data.type === 'DomAssociation') {
+						window.domAssocations.set(JSON.parse(data.reSource).idCounter, data.node);
+					} else if (typeof data === 'string') {
+						window.reScalaEvents.push(JSON.parse(data));
+					}
+				});
+			}
 
 			Calendar();
 		</script>
