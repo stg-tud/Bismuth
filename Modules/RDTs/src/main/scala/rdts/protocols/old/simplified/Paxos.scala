@@ -145,7 +145,7 @@ object Paxos:
             case None => becomeLeader // no proposals yet, try to become leader
         else Paxos.unchanged
     extension [A](c: Paxos[A])
-      override def decision(using Participants): Option[A] =
+      override def result(using Participants): Option[A] =
         val acceptancePerProposal: Map[ProposalNum, Set[Accepted[A]]] = c.accepted.groupBy(_.proposal)
         for
           (proposal, votes) <- acceptancePerProposal.maxByOption((_, a) => a.size)

@@ -166,7 +166,7 @@ object Paxos {
         else
           afterProposal
     extension [A](c: Paxos[A])(using Participants)
-      override def decision: Option[A] = c.decision match {
+      override def result: Option[A] = c.decision match {
         case Invalid                       => None
         case Util.Agreement.Decided(value) => Some(value)
         case Util.Agreement.Undecided      => None

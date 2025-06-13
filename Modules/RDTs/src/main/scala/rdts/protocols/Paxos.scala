@@ -115,7 +115,7 @@ object Paxos:
         else
           afterProposal
     extension [A](c: Paxos[A])(using Participants)
-      override def decision: Option[A] = c.decidedVal
+      override def result: Option[A] = c.decidedVal
     extension [A](c: Paxos[A])
       // upkeep can be used to perform the next protocol step automatically
       override def upkeep()(using LocalUid, Participants): Paxos[A] =

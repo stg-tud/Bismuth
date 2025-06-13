@@ -38,10 +38,10 @@ class SimplePaxosTest extends munit.FunSuite {
     val proposal = a.chooseProposalNumber(using id1)
     a = a `merge` a.prepare()(using id1)
     a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)
-    assertEquals(a.decision, None)
+    assertEquals(a.result, None)
     a = a `merge` a.phase2a(proposal, 1)(using id1)
     a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)
-    assertEquals(a.decision, Some(1))
+    assertEquals(a.result, Some(1))
   }
 
   test("newer proposal numbers are bigger") {
@@ -160,13 +160,13 @@ class SimplePaxosTest extends munit.FunSuite {
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assertEquals(testPaxosObject.decision, None)
+    assertEquals(testPaxosObject.result, None)
     // replica 1 tries to write again
     testPaxosObject = testPaxosObject.merge(testPaxosObject.propose(writeValue)(using id1))
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assertEquals(testPaxosObject.decision, Some(writeValue))
+    assertEquals(testPaxosObject.result, Some(writeValue))
   }
 
   test("concurrent writes") {
@@ -178,7 +178,7 @@ class SimplePaxosTest extends munit.FunSuite {
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assertEquals(testPaxosObject.decision, None)
+    assertEquals(testPaxosObject.result, None)
     // deliver proposal
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
@@ -187,6 +187,6 @@ class SimplePaxosTest extends munit.FunSuite {
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assert(clue(testPaxosObject.decision) == Some(2) || clue(testPaxosObject.decision) == Some(1))
+    assert(clue(testPaxosObject.result) == Some(2) || clue(testPaxosObject.result) == Some(1))
   }
 }

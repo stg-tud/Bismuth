@@ -103,7 +103,7 @@ object GeneralizedPaxos:
         else
           afterProposal
     extension [A](c: GeneralizedPaxos[A])(using Participants)
-      override def decision: Option[A] = c.newestDecidedVal
+      override def result: Option[A] = c.newestDecidedVal
     extension [A](c: GeneralizedPaxos[A])
       override def upkeep()(using LocalUid, Participants): GeneralizedPaxos[A] =
         // check which phase we are in

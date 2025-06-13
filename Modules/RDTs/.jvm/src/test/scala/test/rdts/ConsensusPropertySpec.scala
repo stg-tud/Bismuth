@@ -65,14 +65,14 @@ class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
       given Participants = Participants(state.keySet.map(_.uid))
 
       val res      = result.get
-      val resValue = res(left).decision
+      val resValue = res(left).result
 
       if logging && resValue.nonEmpty then println(s"accepted value: ${resValue.get}")
 
       // if two devices read a value it has to be the same
       Prop.forAll(genId(res)) {
         index =>
-          (resValue, res(index).decision) match
+          (resValue, res(index).result) match
             case (Some(v1), Some(v2)) =>
               (v1 == v2) :| s"if two devices read a value, it has to be the same, got $v1, $v2" &&
               res(index).members.nonEmpty :| s"members are never empty" &&

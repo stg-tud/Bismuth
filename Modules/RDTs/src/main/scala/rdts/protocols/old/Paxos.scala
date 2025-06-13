@@ -190,7 +190,7 @@ object Paxos {
     extension [A](c: Paxos[A])
       override def propose(value: A)(using LocalUid, Participants): Paxos[A] = c.write(value)
     extension [A](c: Paxos[A])
-      override def decision(using Participants): Option[A] = c.read
+      override def result(using Participants): Option[A] = c.read
     extension [A](c: Paxos[A])
       override def upkeep()(using LocalUid, Participants): Paxos[A] = c.upkeep()
 

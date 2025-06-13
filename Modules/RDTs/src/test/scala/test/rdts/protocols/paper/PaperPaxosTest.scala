@@ -21,13 +21,13 @@ class PaperPaxosTest extends munit.FunSuite {
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assertEquals(testPaxosObject.decision, None)
+    assertEquals(testPaxosObject.result, None)
     // replica 1 tries to write again
     testPaxosObject = testPaxosObject.merge(testPaxosObject.propose(proposeValue)(using id1))
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assertEquals(testPaxosObject.decision, Some(proposeValue))
+    assertEquals(testPaxosObject.result, Some(proposeValue))
   }
 
   test("concurrent proposals") {
@@ -39,7 +39,7 @@ class PaperPaxosTest extends munit.FunSuite {
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assertEquals(testPaxosObject.decision, None)
+    assertEquals(testPaxosObject.result, None)
     // deliver proposal
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
@@ -48,6 +48,6 @@ class PaperPaxosTest extends munit.FunSuite {
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
     )).merge(testPaxosObject.upkeep()(using id3))
-    assert(clue(testPaxosObject.decision) == Some(2) || clue(testPaxosObject.decision) == Some(1))
+    assert(clue(testPaxosObject.result) == Some(2) || clue(testPaxosObject.result) == Some(1))
   }
 }

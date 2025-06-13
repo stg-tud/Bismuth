@@ -93,7 +93,7 @@ case class Membership[A, C[_], D[_]](
     val newMembers   = rounds.value.membersConsensus.merge(deltaMembers)
     val deltaInner   = rounds.value.innerConsensus.upkeep()
     val newInner     = rounds.value.innerConsensus.merge(deltaInner)
-    (newMembers.decision, newInner.decision) match
+    (newMembers.result, newInner.result) match
       // member consensus reached -> members have changed
       case (Some(members), _) =>
         assert(!members.isEmpty, "members consensus reached but no members found")

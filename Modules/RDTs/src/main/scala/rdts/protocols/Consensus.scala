@@ -6,7 +6,7 @@ import Participants.participants
 // Type class for consensus algorithms
 trait Consensus[C[_]] {
   extension [A](c: C[A]) def propose(value: A)(using LocalUid, Participants): C[A]
-  extension [A](c: C[A]) def decision(using Participants): Option[A]
+  extension [A](c: C[A]) def result(using Participants): Option[A]
   extension [A](c: C[A]) def members(using Participants): Set[Uid] = participants
   extension [A](c: C[A]) def upkeep()(using LocalUid, Participants): C[A]
 

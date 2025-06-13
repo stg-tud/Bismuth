@@ -56,7 +56,7 @@ case class MultiPaxos[A](
     val deltaPaxos = currentPaxos.upkeep()
     val newPaxos   = currentPaxos.merge(deltaPaxos)
 
-    (newPaxos.decision, newPaxos.newestBallotWithLeader) match
+    (newPaxos.result, newPaxos.newestBallotWithLeader) match
       case (Some(decision), Some((ballotNum, PaxosRound(leaderElection, _)))) =>
         // we are voting on proposals and there is a decision
 

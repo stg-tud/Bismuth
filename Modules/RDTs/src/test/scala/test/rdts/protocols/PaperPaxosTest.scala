@@ -1,10 +1,8 @@
 package test.rdts.protocols
 
-import rdts.base.Lattice.merge
-import rdts.base.{Bottom, LocalUid, Uid}
-import rdts.datatypes.GrowOnlyCounter
-import rdts.protocols.Participants
-import rdts.protocols.Paxos
+import rdts.base.{Bottom, LocalUid}
+import rdts.protocols.{Participants, Paxos}
+import rdts.protocols.paper.Paxos as PaperPaxos
 import rdts.time.Dots
 
 class PaperPaxosTest extends munit.FunSuite {
@@ -25,13 +23,23 @@ class PaperPaxosTest extends munit.FunSuite {
 
     a = a `merge` a.propose(1)(using id1)
     a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)
-    assertEquals(a.decision, None)
+    assertEquals(a.result, None)
     a = a `merge` a.upkeep()(using id1)
     a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)
-    assertEquals(a.decision, Some(1))
+    assertEquals(a.result, Some(1))
   }
   test("Upkeep on empty") {
     var a: Paxos[Int] = emptyPaxosObject
     a.upkeep()(using id1)
+  }
+  test("Paperpaxos") {
+    var a: PaperPaxos[Int] = PaperPaxos()
+
+    a = a `merge` a.propose(1)(using id1)
+    a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)
+    assertEquals(a.result, None)
+    a = a `merge` a.upkeep()(using id1)
+    a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)
+    assertEquals(a.result, Some(1))
   }
 }
