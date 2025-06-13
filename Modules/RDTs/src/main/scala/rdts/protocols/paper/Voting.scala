@@ -17,7 +17,7 @@ case class Voting[A](votes: Set[Vote[A]]) {
     }
 
   // decision function
-  def decision(using Participants): Agreement[A] = // §\label{line:voting-decision}
+  def decision(using Participants): Agreement[A] =
     if hasDuplicateVotes() then Invalid
     else
       getLeadingValue() match
@@ -37,6 +37,14 @@ case class Voting[A](votes: Set[Vote[A]]) {
     updateIf(hasNotVoted)( // §\label{line:updateif}
       Voting(Set(Vote(replicaId, value))) // §\label{line:voting-voteforreturn}
     )
+
+  // convenience function to read decision as option
+  def result(using Participants): Option[A] =
+    decision match {
+      case Invalid => None
+      case Decided(value) => Some(value)
+      case Undecided => None
+    }
 }
 
 object Voting {

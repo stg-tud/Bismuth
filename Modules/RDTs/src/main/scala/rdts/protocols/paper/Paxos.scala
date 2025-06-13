@@ -1,13 +1,11 @@
 package rdts.protocols.paper
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
-// imports from this file
-import Paxos.given
-import Util.*
-import Util.Agreement.*
-import rdts.protocols.Participants
-import rdts.protocols.Participants.participants
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.protocols.paper.Paxos.given
+import rdts.protocols.paper.Util.*
+import rdts.protocols.paper.Util.Agreement.*
+import rdts.protocols.{Consensus, Participants}
 
 // Paxos PRDT
 type LeaderElection = Voting[Uid]
@@ -57,6 +55,9 @@ case class Paxos[A](
     case _ => false
 
   // protocol actions:
+  def phase1a(using LocalUid, Participants)(value: A): Paxos[A] =
+    // try to become leader and remember a value for later
+    Paxos(Map(nextBallotNum -> voteLeader(replicaId), BallotNum(replicaId, -1) -> voteValue(value)))
   def phase1a(using LocalUid, Participants): Paxos[A] =
     // try to become leader
     Paxos(Map(nextBallotNum -> voteLeader(replicaId)))
@@ -136,8 +137,9 @@ case class Paxos[A](
 }
 
 object Paxos {
-  given [A]: Lattice[PaxosRound[A]] = Lattice.derived
-  given l[A]: Lattice[Paxos[A]]     = Lattice.derived
+  given [A]: Lattice[PaxosRound[A]]        = Lattice.derived
+  given paxosLattice[A]: Lattice[Paxos[A]] = Lattice.derived
+  given paxosBottom[A]: Bottom[Paxos[A]]   = Bottom.provide(Paxos())
 
   given Ordering[BallotNum] with
     override def compare(x: BallotNum, y: BallotNum): Int =
@@ -152,47 +154,40 @@ object Paxos {
       case ((x, _), (y, _)) =>
         Ordering[BallotNum].compare(x, y)
 
-  given [A]: Bottom[Paxos[A]] = Bottom.provide(Paxos())
-}
+  // implementation of consensus typeclass for the testing framework
+  given consensus: Consensus[Paxos] with
+    extension [A](c: Paxos[A])
+      override def propose(value: A)(using LocalUid, Participants): Paxos[A] =
+        // check if I can propose a value
+        val afterProposal = c.phase2a
+        if Lattice.subsumption(afterProposal, c) then
+          // proposing did not work, try to become leader
+          c.phase1a(value)
+        else
+          afterProposal
+    extension [A](c: Paxos[A])(using Participants)
+      override def decision: Option[A] = c.decision match {
+        case Invalid                       => None
+        case Util.Agreement.Decided(value) => Some(value)
+        case Util.Agreement.Undecided      => None
+      }
+    extension [A](c: Paxos[A])
+      // upkeep can be used to perform the next protocol step automatically
+      override def upkeep()(using LocalUid, Participants): Paxos[A] =
+        // check which phase we are in
+        c.currentRound match
+          case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>
+            // we have a leader -> phase 2
+            if leaderElection.result.get == replicaId then
+              c.phase2a
+            else
+              c.phase2b
+          // we are in the process of electing a new leader
+          case _ =>
+            c.phase1b
 
-//// voting PRDT
-//case class Vote[A](voter: Uid, value: A)
-//case class Voting[A](votes: Set[Vote[A]]) {
-//  // boolean threshold queries
-//  def hasNotVoted(using LocalUid): Boolean =
-//    !votes.exists {
-//      case Vote(r, _) => r == replicaId
-//    }
-//
-//  // decision function
-//  def hasDuplicateVotes: Boolean          =
-//    votes.groupBy(
-//      _.voter
-//    ).values.filter(_.size > 1).nonEmpty
-//  def getLeadingValue(): Option[(A, Int)] =
-//    votes.groupBy(_.value).map((value, vts) =>
-//      (value, vts.size)
-//    ).maxByOption(_._2)
-//  def majority(using Participants)        =
-//    participants.size / 2 + 1
-//
-//  def decision(using Participants): Agreement[A] =
-//    if hasDuplicateVotes then Invalid
-//    else
-//      getLeadingValue() match
-//        case Some(value, count) if count >= majority =>
-//          Decided(value)
-//        case _ => Undecided
-//
-//  // protocol actions
-//  def voteFor(value: A)(using LocalUid): Voting[A] =
-//    updateIf(hasNotVoted)(
-//      Voting(Set(Vote(replicaId, value)))
-//    )
-//}
-//
-//object Voting {
-//  given [A]: Lattice[Voting[A]] = Lattice.derived
-//  given [A]: Bottom[Voting[A]]  =
-//    Bottom.provide(Voting(Set.empty[Vote[A]]))
-//}
+    override def empty[A]: Paxos[A] = paxosBottom.empty
+
+    override def lattice[A]: Lattice[Paxos[A]] = paxosLattice
+
+}
