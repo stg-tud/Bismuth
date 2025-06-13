@@ -1,6 +1,6 @@
-package calendar
+package webapps.calendar
 
-import calendar.Codecs.given
+import Codecs.given
 import lore.dsl.{Interaction, InteractionWithExecutes, Invariant}
 import org.scalajs.dom.html.{Div, Input}
 import rdts.base.{LocalUid, Uid}

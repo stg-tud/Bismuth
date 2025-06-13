@@ -1,4 +1,4 @@
-package calendar
+package webapps.calendar
 
 import org.scalajs.dom.html.{Button, Div, Input, LI}
 import reactives.default.*

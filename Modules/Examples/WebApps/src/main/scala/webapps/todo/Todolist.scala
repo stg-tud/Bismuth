@@ -1,4 +1,4 @@
-package todo
+package webapps.todo
 
 import dtn.rdt.Channel
 import org.scalajs.dom.experimental.webrtc
@@ -8,7 +8,7 @@ import reactives.extra.Tags.reattach
 import replication.WebRTCConnectionView
 import scalatags.JsDom.all
 import scalatags.JsDom.all.given
-import todo.TodoDataManager.TodoRepState
+import TodoDataManager.TodoRepState
 
 import java.util.{Timer, TimerTask}
 import scala.scalajs.js

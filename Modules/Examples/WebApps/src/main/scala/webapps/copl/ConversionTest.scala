@@ -1,4 +1,4 @@
-package copl
+package webapps.copl
 
 import org.scalajs.dom.document
 import org.scalajs.dom.html.{Input, Select}

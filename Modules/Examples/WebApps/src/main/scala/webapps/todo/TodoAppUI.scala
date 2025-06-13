@@ -1,4 +1,4 @@
-package todo
+package webapps.todo
 
 import org.scalajs.dom
 import org.scalajs.dom.html.{Div, Input, LI}
@@ -12,9 +12,9 @@ import replication.Storing
 import scalatags.JsDom
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
-import todo.Codecs.given
-import todo.TodoDataManager.TodoRepState
-import todo.Todolist.replicaId
+import Codecs.given
+import TodoDataManager.TodoRepState
+import Todolist.replicaId
 
 class TodoAppUI(val storagePrefix: String) {
 

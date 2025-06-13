@@ -1,10 +1,10 @@
-package todo
+package webapps.todo
 
 import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
-import todo.TodoDataManager.TodoRepState
+import TodoDataManager.TodoRepState
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.unused

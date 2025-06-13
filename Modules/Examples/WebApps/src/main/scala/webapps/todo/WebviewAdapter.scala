@@ -1,4 +1,4 @@
-package todo
+package webapps.todo
 
 import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}

@@ -1,4 +1,4 @@
-package todo
+package webapps.todo
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

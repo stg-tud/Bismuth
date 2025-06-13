@@ -1,4 +1,4 @@
-package calendar
+package webapps.calendar
 
 import org.scalajs.dom.{document, window}
 import rdts.base.Uid

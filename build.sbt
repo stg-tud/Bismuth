@@ -1,4 +1,5 @@
 import Settings.scala3defaults
+import org.scalajs.linker.interface.ModuleSplitStyle
 
 import java.net.URI
 import scala.scalanative.build.{LTO, Mode}
@@ -262,6 +263,7 @@ lazy val webapps = project.in(file("Modules/Examples/WebApps"))
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
         .withExperimentalUseWebAssembly(false) // use the Wasm backend
         .withModuleKind(ModuleKind.ESModule)   // required by the Wasm backend
+        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
     },
     // todolist does not have tests, but still fails to execute them with Wasm backend
     test      := {},

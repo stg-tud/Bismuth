@@ -1,4 +1,4 @@
-package todo
+package webapps.todo
 
 import org.scalajs.dom
 import org.scalajs.dom.Element
@@ -10,8 +10,8 @@ import reactives.default.*
 import reactives.extra.Tags.*
 import replication.Storing
 import scalatags.JsDom.all.*
-import todo.TodoDataManager.TodoRepState
-import todo.Todolist.replicaId
+import TodoDataManager.TodoRepState
+import Todolist.replicaId
 
 import scala.Function.const
 import scala.collection.mutable

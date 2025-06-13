@@ -1,4 +1,4 @@
-package copl
+package webapps.copl
 
 import org.scalajs.dom.UIEvent
 import org.scalajs.dom.html.{Input, Select}
