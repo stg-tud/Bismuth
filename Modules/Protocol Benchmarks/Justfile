@@ -16,12 +16,12 @@ protoBenchRunNativeImage node="node" client="client" args="bench-1-1":
 	kitty ./probench {{node}} --name NODE3 --listen-client-port 8030 --listen-peer-port 8031 --cluster localhost:8011 localhost:8021 --initial-cluster-ids NODE1 NODE2 NODE3 &
 
 	sleep 1;
-	cat "Modules/Examples/Protocol Benchmarks/args/bench-1-1" | ./probench {{client}} --node localhost:8010 --name Client1
+	cat "Modules/Protocol Benchmarks/args/bench-1-1" | ./probench {{client}} --node localhost:8010 --name Client1
 
 [working-directory: '../../../']
 runProtoBenchNoNet args="bench-1-1":
 	sbt --client 'set proBench/JarExport.packageJarsPath := "target/probench/jars"; proBench/packageJars'
-	cat "Modules/Examples/Protocol Benchmarks/args/bench-1-1" | java --class-path "target/probench/jars/*" probench.cli easy-setup
+	cat "Modules/Protocol Benchmarks/args/bench-1-1" | java --class-path "target/probench/jars/*" probench.cli easy-setup
 
 [working-directory: '../../../']
 create-jar:
@@ -64,7 +64,7 @@ runProtoBenchClients runId client="client" benchmark="put-100k-1C1N" benchResult
 
 	set -l jarspath (sbt --error "print proBench/packageJars")
 
-	cd "Modules/Examples/Protocol Benchmarks"
+	cd "Modules/Protocol Benchmarks"
 
 	set -lx RUN_ID {{runId}}-id(random)_run1
 	set -lx SYSTEM_ID pb
@@ -111,7 +111,7 @@ runProtoBenchClientsEtcd runId benchmark="put-100k-1C1N" benchResultsDir="bench-
 	set -lx RUN_ID {{runId}}-id(random)_run1
 	set -lx SYSTEM_ID etcd
 
-	cd "Modules/Examples/Protocol Benchmarks"
+	cd "Modules/Protocol Benchmarks"
 
 	set -lx BENCH_RESULTS_DIR {{benchResultsDir}}
 

@@ -42,16 +42,16 @@ buildTodoMVC sbtOpts="":
 	sbt {{sbtOpts}} 'print webapps/deploy'
 
 webapps:
-	npm --prefix Modules/Examples/WebApps/ install
-	Modules/Examples/WebApps/node_modules/vite/bin/vite.js Modules/Examples/WebApps/
+	npm --prefix "Modules/Examples Web/" install
+	"Modules/Examples Web/node_modules/vite/bin/vite.js" "Modules/Examples Web/"
 
 webappsBundle:
-	npm --prefix Modules/Examples/WebApps/ install
-	Modules/Examples/WebApps/node_modules/vite/bin/vite.js build Modules/Examples/WebApps/ --outDir "target/dist"
+	npm --prefix "Modules/Examples Web/" install
+	"Modules/Examples Web/node_modules/vite/bin/vite.js" build "Modules/Examples Web/" --outDir "target/dist"
 
 webviewExample sbtOpts="": webappsBundle
 	sbt {{sbtOpts}} 'webview / fetchResources'
-	sbt {{sbtOpts}} 'webview / run Modules/Examples/WebApps/target/dist/index.html'
+	sbt {{sbtOpts}} 'webview / run "Modules/Examples Web/target/dist/index.html"'
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}

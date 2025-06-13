@@ -4,6 +4,6 @@ import {viteSingleFile} from "vite-plugin-singlefile"
 
 export default defineConfig({
 	plugins: [scalaJSPlugin({
-		projectID: "webapps"
+		projectID: "examplesWeb"
 	}), viteSingleFile()],
 });

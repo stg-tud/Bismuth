@@ -5,14 +5,13 @@ import java.net.URI
 import scala.scalanative.build.{LTO, Mode}
 
 lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
-  replicationExtras.js,
-  replicationExtras.jvm,
   channels.js,
   channels.jvm,
+  deltalens,
   dtn.js,
   dtn.jvm,
-  deltalens,
-  examplesMiscJVM,
+  examplesJVM,
+  examplesWeb,
   lore.js,
   lore.jvm,
   loreCompilerPlugin,
@@ -24,7 +23,9 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
   reactives.js,
   reactives.jvm,
   reactives.native,
-  webapps
+  replicationExtras.js,
+  replicationExtras.jvm,
+  webview,
 )
 
 // aggregate projects allow compiling all variants (js, jvm, native) at the same time
@@ -93,7 +94,7 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
     Dependencies.borer
   )
 
-lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
+lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(deltalens, replicationExtras.jvm)
   .settings(
@@ -107,6 +108,30 @@ lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
     Dependencies.scalaSwing,
     Dependencies.conscript,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
+  )
+
+lazy val examplesWeb = project.in(file("Modules/Examples Web"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(replicationExtras.js, dtn.js, lore.js)
+  .settings(
+    scala3defaults,
+    Settings.explicitNulls(Compile / compile),
+    Settings.safeInit(Compile / compile),
+    Settings.resolverJitpack,
+    Dependencies.scalatags(),
+    Dependencies.jsoniterScala,
+    SettingsLocal.deployTask,
+    Dependencies.pprint,
+    scalaJSLinkerConfig := {
+      scalaJSLinkerConfig.value
+        // WASM does NOT work when running on webview (and is documented to not work on chrome)
+        .withExperimentalUseWebAssembly(false) // use the Wasm backend
+        .withModuleKind(ModuleKind.ESModule)   // required by the Wasm backend
+        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
+    },
+    // todolist does not have tests, but still fails to execute them with Wasm backend
+    test      := {},
+    testQuick := {},
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
@@ -161,7 +186,7 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
     Dependencies.conscript,
   )
 
-lazy val proBench = project.in(file("Modules/Examples/Protocol Benchmarks"))
+lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .dependsOn(reactives.jvm, rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
   .enablePlugins(JavaAppPackaging)
   .settings(
@@ -244,30 +269,6 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
     Compile / npmDependencies ++= Seq(
       "libsodium-wrappers" -> "0.7.13",
     ),
-  )
-
-lazy val webapps = project.in(file("Modules/Examples/WebApps"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(replicationExtras.js, dtn.js, lore.js)
-  .settings(
-    scala3defaults,
-    Settings.explicitNulls(Compile / compile),
-    Settings.safeInit(Compile / compile),
-    Settings.resolverJitpack,
-    Dependencies.scalatags(),
-    Dependencies.jsoniterScala,
-    SettingsLocal.deployTask,
-    Dependencies.pprint,
-    scalaJSLinkerConfig := {
-      scalaJSLinkerConfig.value
-        // WASM does NOT work when running on webview (and is documented to not work on chrome)
-        .withExperimentalUseWebAssembly(false) // use the Wasm backend
-        .withModuleKind(ModuleKind.ESModule)   // required by the Wasm backend
-        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
-    },
-    // todolist does not have tests, but still fails to execute them with Wasm backend
-    test      := {},
-    testQuick := {},
   )
 
 lazy val webview = project.in(file("Modules/Webview"))

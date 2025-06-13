@@ -13,7 +13,7 @@ RUN apt-get install unzip
 WORKDIR /project
 
 
-COPY --from=0 ["/src/Modules/Examples/Protocol Benchmarks/target/universal/probench.zip", "."]
+COPY --from=0 ["/src/Modules/Protocol Benchmarks/target/universal/probench.zip", "."]
 RUN unzip probench.zip
 RUN rm probench.zip
 
