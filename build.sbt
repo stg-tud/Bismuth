@@ -259,8 +259,9 @@ lazy val webapps = project.in(file("Modules/Examples/WebApps"))
     Dependencies.pprint,
     scalaJSLinkerConfig := {
       scalaJSLinkerConfig.value
-        .withExperimentalUseWebAssembly(true) // use the Wasm backend
-        .withModuleKind(ModuleKind.ESModule)  // required by the Wasm backend
+        // WASM does NOT work when running on webview (and is documented to not work on chrome)
+        .withExperimentalUseWebAssembly(false) // use the Wasm backend
+        .withModuleKind(ModuleKind.ESModule)   // required by the Wasm backend
     },
     // todolist does not have tests, but still fails to execute them with Wasm backend
     test      := {},

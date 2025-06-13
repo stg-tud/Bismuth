@@ -39,11 +39,14 @@ runReplication:
 	java -cp $path"/*" replication.cli --help
 
 buildTodoMVC sbtOpts="":
-	sbt {{sbtOpts}} 'print todolist/deploy'
+	sbt {{sbtOpts}} 'print webapps/deploy'
 
 webviewExample sbtOpts="": (buildTodoMVC sbtOpts)
+	cp "$(pwd)/Modules/Webview/src/main/resources/vite.config.ts" "$(pwd)/Modules/Examples/WebApps/target"
+	podman run --rm --interactive --volume "$(pwd)/Modules/Examples/WebApps/target":/home/bun/app "docker.io/oven/bun" -- install vite-plugin-singlefile
+	podman run --rm --interactive --volume "$(pwd)/Modules/Examples/WebApps/target":/home/bun/app "docker.io/oven/bun" -- x vite build
 	sbt {{sbtOpts}} 'webview / fetchResources'
-	sbt {{sbtOpts}} 'webview / run Modules/Examples/TodoMVC/target/index.html'
+	sbt {{sbtOpts}} 'webview / run Modules/Examples/WebApps/target/dist/index.html'
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}

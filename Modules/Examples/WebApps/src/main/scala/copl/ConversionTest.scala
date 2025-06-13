@@ -15,7 +15,7 @@ object ConversionTest {
   @JSExportTopLevel("UnitConversion")
   def run(): Unit = {
     val temperatureConverter = unitConverter()
-    document.body.firstElementChild.replaceChildren(temperatureConverter.render)
+    document.getElementById("app").replaceChildren(temperatureConverter.render)
     ()
   }
 

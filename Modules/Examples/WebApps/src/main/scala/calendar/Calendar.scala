@@ -17,7 +17,7 @@ object Calendar {
     val calendar = new CalendarUI(storagePrefix, replicaId)
     val div      = calendar.getContents()
 
-    document.body.firstElementChild.replaceChildren(div)
+    document.getElementById("app").replaceChildren(div)
 
     ()
   }

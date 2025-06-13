@@ -39,7 +39,7 @@ object Todolist {
   @JSExportTopLevel("Todolist")
   def run(): Unit = {
 
-    val container = document.body.firstElementChild
+    val container = document.getElementById("app")
 
     container.replaceChildren(contents)
 
