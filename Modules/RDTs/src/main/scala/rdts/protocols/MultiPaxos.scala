@@ -47,7 +47,7 @@ case class MultiPaxos[A](
     val afterProposal = currentPaxos.phase2a(value)
     // check if proposing does anything, otherwise return empty delta
     if currentPaxos.subsumes(afterProposal) then
-      MultiPaxos()
+      MultiPaxos.empty
     else
       MultiPaxos(rounds = rounds.write(afterProposal)) // phase 2a already checks if I am the leader
 
