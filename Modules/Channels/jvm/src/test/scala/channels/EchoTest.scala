@@ -1,9 +1,6 @@
 package channels
 
-import channels.jettywebsockets.{JettyWsConnection, JettyWsListener}
 import com.sun.net.httpserver.HttpServer
-import org.eclipse.jetty.http.pathmap.PathSpec
-import org.eclipse.jetty.server.ServerConnector
 import rdts.base.LocalUid
 
 import java.net.http.HttpClient
@@ -11,16 +8,6 @@ import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI,
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.nio.file.Files
 
-class EchoServerTestJetty extends EchoCommunicationTest(
-      { ec =>
-        val listener   = JettyWsListener.prepareServer(0)
-        val echoServer = listener.listen(PathSpec.from("/registry/*"))
-        listener.server.start()
-        val port = listener.server.getConnectors.head.asInstanceOf[ServerConnector].getLocalPort
-        (port, echoServer)
-      },
-      _ => port => JettyWsConnection.connect(URI.create(s"ws://localhost:$port/registry/"))
-    )
 
 class EchoServerTestUDP extends EchoCommunicationTest(
       ec => {

@@ -4,11 +4,10 @@ import java.net.URI
 import scala.scalanative.build.{LTO, Mode}
 
 lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
-  aead.js,
-  aead.jvm,
+  replicationExtras.js,
+  replicationExtras.jvm,
   channels.js,
   channels.jvm,
-  crypto.jvm,
   dtn.js,
   dtn.jvm,
   deltalens,
@@ -26,9 +25,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
   reactives.js,
   reactives.jvm,
   reactives.native,
-  replication.js,
-  replication.jvm,
-  replication.native,
   todolist
 )
 
@@ -46,49 +42,12 @@ lazy val publishedProjects =
       channels.jvm,
       channels.js,
       channels.native,
-      replication.jvm,
-      replication.js,
-      replication.native
     )
     // set publishing settings to have aggregate commands of bundle uploading work,
     // but do not publish this project itselfs
     .settings(SettingsLocal.publishSonatype, publish / skip := true)
 
 // projects in alphabetical order
-
-lazy val aead = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Aead"))
-  .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
-  .settings(
-    scala3defaults,
-    Settings.explicitNulls(Compile / compile),
-    Settings.safeInit(Compile / compile),
-    Dependencies.munit,
-    Dependencies.munitCheck,
-  )
-  .jvmSettings(
-    Dependencies.tink
-  )
-  .jsSettings(
-    Compile / npmDependencies ++= Seq(
-      "libsodium-wrappers" -> "0.7.13",
-    )
-  )
-
-lazy val crypto = crossProject(/*JSPlatform,*/ JVMPlatform).in(file("Modules/Crypto"))
-  .dependsOn(channels % "compile->compile;test->test", rdts % "compile->compile;test->test", replication)
-  .settings(
-    scala3defaults,
-    Settings.explicitNulls(Compile / compile),
-    Settings.safeInit(Compile / compile),
-    Dependencies.munit,
-    Dependencies.munitCheck,
-    Dependencies.slips,
-    Dependencies.jsoniterScala,
-  ).jvmSettings(
-    Dependencies.bouncyCastle,
-    Dependencies.tink,
-    Dependencies.sslcontextKickstart
-  )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
   .in(file("Modules/Channels"))
@@ -100,7 +59,9 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     Settings.safeInit(Compile / compile),
     Dependencies.slips,
     Dependencies.munit,
-    SettingsLocal.publishSonatype
+    Dependencies.munitCheck,
+    Dependencies.jsoniterScala,
+    SettingsLocal.publishSonatype,
   )
   .jsSettings(
     Settings.jsEnvDom,
@@ -109,8 +70,6 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   )
   .jvmSettings(
     Test / fork := true,
-    libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
-    Dependencies.slf4jSimple,
   )
 
 lazy val deltalens = project.in(file("Modules/Deltalens"))
@@ -125,7 +84,7 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
 
 lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
   .in(file("Modules/DTN"))
-  .dependsOn(reactives, rdts, replication)
+  .dependsOn(reactives, rdts, channels)
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
@@ -148,7 +107,7 @@ lazy val exampleLenses = project.in(file("Modules/Examples/ReactiveLenses"))
 
 lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(reactives.jvm, replication.jvm, deltalens, crypto.jvm)
+  .dependsOn(deltalens, replicationExtras.jvm)
   .settings(
     scala3defaults,
     fork := true,
@@ -164,7 +123,7 @@ lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
 
 lazy val loCal = project.in(file("Modules/Examples/Lore Calendar"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(rdts.js, reactives.js, channels.js, lore.js, replication.js)
+  .dependsOn(replicationExtras.js, lore.js)
   .settings(
     scala3defaults,
     Settings.resolverJitpack,
@@ -214,7 +173,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(reactives.jvm, rdts.jvm, replication.jvm, crypto.jvm)
+  .dependsOn(replicationExtras.jvm)
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
@@ -226,7 +185,7 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   )
 
 lazy val proBench = project.in(file("Modules/Examples/Protocol Benchmarks"))
-  .dependsOn(reactives.jvm, rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test", replication.jvm)
+  .dependsOn(reactives.jvm, rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
   .enablePlugins(JavaAppPackaging)
   .settings(
     scala3defaults,
@@ -281,25 +240,38 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Settings.sourcemapFromEnv(),
   )
 
-lazy val replication = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(file("Modules/Replication"))
-  .dependsOn(reactives, rdts, channels, rdts % "compile->compile;test->test")
+lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modules/ReplicationExtras"))
+  .dependsOn(
+    channels % "compile->compile;test->test",
+    rdts     % "compile->compile;test->test",
+    reactives,
+  )
+  .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
   .settings(
     scala3defaults,
-    Settings.javaOutputVersion(17),
     Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
-    SettingsLocal.publishSonatype,
-    Dependencies.munitCheck,
     Dependencies.munit,
+    Dependencies.munitCheck,
+    Dependencies.slips,
     Dependencies.jsoniterScala,
-  ).jvmSettings(
-    Test / fork := true,
   )
-
+  .jvmSettings(
+    Dependencies.bouncyCastle,
+    Dependencies.sslcontextKickstart,
+    Dependencies.tink,
+    libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
+    Dependencies.slf4jSimple,
+  )
+  .jsSettings(
+    Compile / npmDependencies ++= Seq(
+      "libsodium-wrappers" -> "0.7.13",
+    ),
+  )
 
 lazy val todolist = project.in(file("Modules/Examples/TodoMVC"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(replication.js, dtn.js)
+  .dependsOn(replicationExtras.js, dtn.js)
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
@@ -321,7 +293,7 @@ lazy val todolist = project.in(file("Modules/Examples/TodoMVC"))
 
 lazy val webview = project.in(file("Modules/Webview"))
   .enablePlugins(ScalaNativePlugin)
-  .dependsOn(replication.native)
+  .dependsOn(channels.native)
   .settings(
     Settings.scala3defaults,
     Settings.explicitNulls(Compile / compile),
