@@ -10,17 +10,15 @@ object Calendar {
   given replicaId: Uid = Uid.gen()
 
   @JSExportTopLevel("Calendar")
-  def run(): Unit = main(Array.empty[String])
-
-  def main(args: Array[String]): Unit = {
-
+  def run(): Unit = {
     val storagePrefix = window.location.href
     println(storagePrefix)
 
     val calendar = new CalendarUI(storagePrefix, replicaId)
     val div      = calendar.getContents()
 
-    document.body.replaceChild(div, document.body.firstElementChild)
+    document.body.firstElementChild.replaceChildren(div)
+
     ()
   }
 

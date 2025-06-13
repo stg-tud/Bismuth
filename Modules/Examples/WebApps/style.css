@@ -7,6 +7,28 @@ body {
   padding: 0;
 }
 
+div:has(#work-appointment-container) {
+	width: 80%;
+	margin: auto;
+}
+
+.new-appointment-form {
+	width: 40%;
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+}
+
+.new-appointment-form > * {
+	flex: 48%;
+}
+
+.new-appointment-title {
+	flex: 96%;
+}
+
+
 .todoapp button {
   margin: 0;
   padding: 0;

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>WebApp Examples</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<section class="app">
+	<noscript>
+		<div style="padding:2em;text-align:center;font-size:2em">
+			Please enable JavaScript!
+		</div>
+	</noscript>
+</section>
+
+
+<footer class="info">
+	<button id="todolist-btn">Show Todo List</button>
+	<button id="calendar-btn">Show Calendar</button>
+	<button id="unit-conversion-btn">Show Unit Conversion</button>
+	<p>Created by the <a href="https://www.rescala-lang.com/">REScala Team</a></p>
+	<p>Todolist based on <a href="https://todomvc.com">TodoMVC</a></p>
+</footer>
+
+<script type="text/javascript" src=""></script>
+<script type="text/javascript">
+
+</script>
+
+<script type="module">
+	import { Todolist, Calendar, UnitConversion, DebugAdapterSetListener } from 'JSPATH';
+
+	// Add event listeners
+	document.getElementById('todolist-btn').addEventListener('click', Todolist);
+	document.getElementById('calendar-btn').addEventListener('click', Calendar);
+	document.getElementById('unit-conversion-btn').addEventListener('click', UnitConversion);
+
+	window.reScalaEvents = [];
+	window.reScalaId = Math.random();
+	window.domAssocations = new Map();
+
+	DebugAdapterSetListener(data => {
+		if (data.type === 'DomAssociation') {
+			window.domAssocations.set(JSON.parse(data.reSource).idCounter, data.node);
+		} else if (typeof data === 'string') {
+			window.reScalaEvents.push(JSON.parse(data));
+		}
+	});
+
+	// default open todolist
+	Todolist();
+</script>
+
+</body>
+</html>

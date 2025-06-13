@@ -1,6 +1,7 @@
 package todo
 
 import dtn.rdt.Channel
+import org.scalajs.dom.experimental.webrtc
 import org.scalajs.dom.{document, window}
 import rdts.base.{Lattice, LocalUid}
 import reactives.extra.Tags.reattach
@@ -9,7 +10,7 @@ import scalatags.JsDom.all
 import scalatags.JsDom.all.given
 import todo.TodoDataManager.TodoRepState
 
-import java.util.Timer
+import java.util.{Timer, TimerTask}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 
@@ -17,43 +18,49 @@ object Todolist {
 
   val replicaId: LocalUid = LocalUid.gen()
 
-  @JSExportTopLevel("Todolist")
-  def run(): Unit = main(Array.empty[String])
-
   val timer = new Timer()
 
-  def main(args: Array[String]): Unit = {
-
+  lazy val contents = {
     val storagePrefix = window.location.href
     println(storagePrefix)
 
-    val todoApp  = new TodoAppUI(storagePrefix)
-    val contents = todoApp.getContents()
+    val todoApp = new TodoAppUI(storagePrefix)
+    todoApp.getContents()
+  }
 
-    // TodoDataManager.dataManager.addLatentConnection(WebviewAdapterChannel.listen())
+  // TodoDataManager.dataManager.addLatentConnection(WebviewAdapterChannel.listen())
 
-    val webrtc = WebRTCConnectionView(TodoDataManager.dataManager).example()
+  lazy val webrtc = WebRTCConnectionView(TodoDataManager.dataManager).example()
 
-    document.body.replaceChild(contents, document.body.firstElementChild)
+  val updateTask: TimerTask = { () =>
+    TodoDataManager.dataManager.requestData()
+  }
 
-    document.body.appendChild(DTNTestConnector.getConnectorContents())
+  @JSExportTopLevel("Todolist")
+  def run(): Unit = {
 
-    document.body.appendChild(webrtc.render)
+    val container = document.body.firstElementChild
 
-    document.body.appendChild:
+    container.replaceChildren(contents)
+
+    container.appendChild(DTNTestConnector.getConnectorContents())
+
+    container.appendChild(webrtc.render)
+
+    container.appendChild {
       all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
         val state = TodoDataManager.dataManager.deltaStorage.allPayloads.map(_.payload.data).reduceOption(Lattice.merge)
         all.pre(all.stringFrag(pprint.apply(state).plainText)).render
       ).hold(all.span.render))
+    }
+
+    updateTask.cancel()
 
     timer.scheduleAtFixedRate(
-      { () =>
-        TodoDataManager.dataManager.requestData()
-      },
+      updateTask,
       1000,
       1000
     )
-
     ()
   }
 

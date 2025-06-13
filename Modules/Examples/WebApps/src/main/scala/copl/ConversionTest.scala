@@ -13,11 +13,9 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 object ConversionTest {
 
   @JSExportTopLevel("UnitConversion")
-  def run(): Unit = main(Array.empty[String])
-
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     val temperatureConverter = unitConverter()
-    document.body.replaceChild(temperatureConverter.render, document.body.firstChild)
+    document.body.firstElementChild.replaceChildren(temperatureConverter.render)
     ()
   }
 

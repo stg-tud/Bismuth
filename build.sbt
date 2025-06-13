@@ -11,9 +11,7 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
   dtn.js,
   dtn.jvm,
   deltalens,
-  exampleLenses,
   examplesMiscJVM,
-  loCal,
   lore.js,
   lore.jvm,
   loreCompilerPlugin,
@@ -25,7 +23,7 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
   reactives.js,
   reactives.jvm,
   reactives.native,
-  todolist
+  webapps
 )
 
 // aggregate projects allow compiling all variants (js, jvm, native) at the same time
@@ -94,17 +92,6 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
     Dependencies.borer
   )
 
-lazy val exampleLenses = project.in(file("Modules/Examples/ReactiveLenses"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(reactives.js)
-  .settings(
-    scala3defaults,
-    Settings.explicitNulls(Compile / compile),
-    Settings.safeInit(Compile / compile),
-    Dependencies.scalatags(),
-    SettingsLocal.deployTask,
-  )
-
 lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(deltalens, replicationExtras.jvm)
@@ -119,17 +106,6 @@ lazy val examplesMiscJVM = project.in(file("Modules/Examples/Misc JVM"))
     Dependencies.scalaSwing,
     Dependencies.conscript,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
-  )
-
-lazy val loCal = project.in(file("Modules/Examples/Lore Calendar"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(replicationExtras.js, lore.js)
-  .settings(
-    scala3defaults,
-    Settings.resolverJitpack,
-    Dependencies.scalatags(),
-    Dependencies.jsoniterScala,
-    SettingsLocal.deployTask
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
@@ -269,9 +245,9 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
     ),
   )
 
-lazy val todolist = project.in(file("Modules/Examples/TodoMVC"))
+lazy val webapps = project.in(file("Modules/Examples/WebApps"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(replicationExtras.js, dtn.js)
+  .dependsOn(replicationExtras.js, dtn.js, lore.js)
   .settings(
     scala3defaults,
     Settings.explicitNulls(Compile / compile),
