@@ -61,13 +61,6 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
   }
 }
 
-/** An ObserveRemoveMap (Observed-Remove Map) is a Delta CRDT that models a map from an arbitrary key type to nested causal Delta CRDTs.
-  * In contrast to [[GrowOnlyMap]], ObserveRemoveMap allows the removal of key/value pairs from the map.
-  *
-  * The nested CRDTs can be queried/mutated by calling the queryKey/mutateKey methods with a DeltaQuery/DeltaMutator generated
-  * by a CRDT Interface method of the nested CRDT. For example, to enable a nested EWFlag, one would pass `EWFlagInterface.enable()`
-  * as the DeltaMutator to mutateKey.
-  */
 object ObserveRemoveMap {
 
   case class Entry[V](dots: Dots, value: V)

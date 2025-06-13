@@ -61,7 +61,7 @@ trait LatentConnection[T] {
     * It is generally not assumed to be safe to run prepare twice (neither running a single async twice, nor running two different returned asyncs).
     * Notably, “server” like implementations may try to bind a specific port, and immediately fail if that is not available.
     *
-    * The async may produce multiple connections and will run [[incomingHandler]] for each of them.
+    * The async may produce multiple connections and will run `receiver` for each of them.
     */
   def prepare(receiver: Receive[T]): Async[Abort, Connection[T]]
 }
