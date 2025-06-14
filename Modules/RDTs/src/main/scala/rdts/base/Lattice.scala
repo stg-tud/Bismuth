@@ -20,7 +20,7 @@ trait Lattice[A] {
     */
   def merge(left: A, right: A): A
 
-  /** Lattice order is derived from merge.
+  /** Subsumption states that `left` <= `right` in the sense that everything information in `left` is already contained in `right`.
     * Overriding implementations must make sure that they compute exactly the same results as the equation below.
     */
   def subsumption(left: A, right: A): Boolean = merge(left, right) == Lattice.normalize(right)(using this)
@@ -33,6 +33,7 @@ trait Lattice[A] {
     /** Merging `right` into `left` has no effect */
     inline def subsumes(right: A): Boolean = Lattice.this.subsumption(right, left)
 
+    /** Merging `left` into `right` is strictly larger than right */
     inline def inflates(right: A): Boolean = !Lattice.this.subsumption(left, right)
 
     @targetName("mergeInfix")
