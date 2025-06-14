@@ -31,5 +31,5 @@ object CausalTime:
 
   // originally used `System.nanoTime` for the third component, but the Web does not offer high precision timers, so a counter it is!
   private val timeCounter = AtomicLong(Random.nextLong())
-  def countedTime()       = timeCounter.getAndIncrement()
-  def now()               = CausalTime(Time.current(), 0, countedTime())
+  def countedTime(): Long = timeCounter.getAndIncrement()
+  def now()               = CausalTime(Time.currentWallMillis(), 0, countedTime())
