@@ -274,8 +274,8 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
     scala3defaults,
     Dependencies.scalajsDom,
     libraryDependencies ++= Seq(
-      "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.1",
-      "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.1",
+      "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.2",
+      "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.2",
     ),
     scalaJSUseMainModuleInitializer   := true,
     Compile / fastOptJS / crossTarget := target.value,
