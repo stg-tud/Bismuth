@@ -11,9 +11,9 @@ import scala.collection.immutable.Queue
 
 trait DeltaStorage[State] {
 
-  def allPayloads: List[CachedMessage[Payload[State]]]
+  def getHistory: List[CachedMessage[Payload[State]]]
 
-  def rememberPayload(message: CachedMessage[Payload[State]]): Unit
+  def remember(message: CachedMessage[Payload[State]]): Unit
 
 }
 
@@ -39,13 +39,11 @@ object DeltaStorage {
 
 class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
 
-  private val lock = new {}
-
   private var pastPayloads: Queue[CachedMessage[Payload[State]]] = Queue.empty
 
-  override def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(pastPayloads.toList)
+  override def getHistory: List[CachedMessage[Payload[State]]] = pastPayloads.toList
 
-  override def rememberPayload(message: CachedMessage[Payload[State]]): Unit = lock.synchronized {
+  override def remember(message: CachedMessage[Payload[State]]): Unit = {
     pastPayloads = pastPayloads.enqueue(message)
     if pastPayloads.sizeIs > size then
       pastPayloads = pastPayloads.drop(1)
@@ -59,10 +57,10 @@ class StateDeltaStorage[State: JsonValueCodec](getState: () => State)(using Latt
   private var dots    = Dots.empty
   private var senders = Set.empty[Uid]
 
-  override def allPayloads: List[CachedMessage[Payload[State]]] =
+  override def getHistory: List[CachedMessage[Payload[State]]] =
     List(SentCachedMessage(Payload(senders, dots, getState()))(using pmscodec))
 
-  override def rememberPayload(message: CachedMessage[Payload[State]]): Unit = {
+  override def remember(message: CachedMessage[Payload[State]]): Unit = {
     dots = dots.merge(message.payload.dots)
     senders = senders ++ message.payload.senders
   }
@@ -71,13 +69,11 @@ class StateDeltaStorage[State: JsonValueCodec](getState: () => State)(using Latt
 
 class KeepAllHistory[State] extends DeltaStorage[State] {
 
-  private val lock = new {}
-
   private var history: List[CachedMessage[Payload[State]]] = List.empty
 
-  override def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(history)
+  override def getHistory: List[CachedMessage[Payload[State]]] = history
 
-  override def rememberPayload(message: CachedMessage[Payload[State]]): Unit = lock.synchronized {
+  override def remember(message: CachedMessage[Payload[State]]): Unit = {
     history = message :: history
   }
 
@@ -85,14 +81,12 @@ class KeepAllHistory[State] extends DeltaStorage[State] {
 
 class MergingHistory[State: JsonValueCodec](blockSize: Int)(using Lattice[Payload[State]]) extends DeltaStorage[State] {
 
-  private val lock = new {}
-
   private var mergedHistory: List[CachedMessage[Payload[State]]] = List.empty
   private var history: List[CachedMessage[Payload[State]]]       = List.empty
 
-  override def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(mergedHistory ::: history)
+  override def getHistory: List[CachedMessage[Payload[State]]] = mergedHistory ::: history
 
-  override def rememberPayload(message: CachedMessage[Payload[State]]): Unit = lock.synchronized {
+  override def remember(message: CachedMessage[Payload[State]]): Unit = {
     history = message :: history
 
     if history.sizeIs >= blockSize then {

@@ -31,7 +31,7 @@ object TodoDataManager {
     dataManager.lock.synchronized {
       dataManager.applyDelta(wrap(init))
       val fullInit =
-        dataManager.deltaStorage.allPayloads.flatMap(v => unwrap(v.payload.data)).foldLeft(init)(Lattice.merge)
+        dataManager.allPayloads.flatMap(v => unwrap(v.payload.data)).foldLeft(init)(Lattice.merge)
 
       val branch = Fold.branch[DeltaBuffer[A]] {
         receivedCallback.value.flatMap(unwrap) match

@@ -150,7 +150,7 @@ class DeltaDissemination[State](
       val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
       updateContext(replicaId.uid, payload.dots)
       val message = SentCachedMessage(payload)(using pmscodec)
-      deltaStorage.rememberPayload(message)
+      rememberPayload(message)
       message
     }
     disseminate(message)
@@ -158,6 +158,9 @@ class DeltaDissemination[State](
   def updateContext(rr: Uid, dots: Dots): Unit = lock.synchronized {
     contexts = contexts.updatedWith(rr)(curr => curr `merge` Some(dots))
   }
+
+  def allPayloads = lock.synchronized(deltaStorage.getHistory)
+  def rememberPayload(message: CachedMessage[Payload[State]]) = lock.synchronized(deltaStorage.remember(message))
 
   def handleMessage(msg: Message, from: ConnectionContext): Unit = {
     if globalAbort.closeRequest then return
@@ -168,7 +171,7 @@ class DeltaDissemination[State](
         println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
         println(s"current state is ${selfContext}")
       case Request(uid, knows) =>
-        val relevant = deltaStorage.allPayloads.filterNot { dt => dt.payload.dots <= knows }
+        val relevant = allPayloads.filterNot { dt => dt.payload.dots <= knows }
         {
           val newknowledge =
             knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
@@ -188,7 +191,7 @@ class DeltaDissemination[State](
             updateContext(uid, context)
           }
           updateContext(replicaId.uid, context)
-          deltaStorage.rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
+          rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
         }
         receiveCallback(data)
         if immediateForward then
