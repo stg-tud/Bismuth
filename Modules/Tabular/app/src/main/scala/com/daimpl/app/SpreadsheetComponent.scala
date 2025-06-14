@@ -80,7 +80,7 @@ object SpreadsheetComponent {
           .map { case (rowIdx, colIdx) =>
             val value = state.editingValue.trim
             println(s"value $value")
-            modSpreadsheet(_.editCell(rowIdx, colIdx, if value.isEmpty then null else value)) >> cancelEdit()
+            modSpreadsheet(_.editCell(rowIdx, colIdx, value)) >> cancelEdit()
           }
           .getOrElse(Callback.empty)
       }

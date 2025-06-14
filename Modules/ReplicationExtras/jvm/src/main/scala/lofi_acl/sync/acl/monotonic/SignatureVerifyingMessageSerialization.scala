@@ -59,7 +59,7 @@ class SignatureVerifyingMessageSerialization[RDT](
     require(msg.signature != null && msg.signature.sig.length == 64)
     val msgBytes = writeToArray(msg.copy(signature = null))
     outputStream.writeBoolean(true /* signature following */ ) // 1 byte
-    outputStream.write(msg.signature.sig)                      // 64 bytes
+    outputStream.write(msg.signature.nn.sig)                      // 64 bytes
     outputStream.writeInt(msgBytes.length)                     // 4 bytes
     outputStream.write(msgBytes)                               // n-bytes with n == length of the message
 

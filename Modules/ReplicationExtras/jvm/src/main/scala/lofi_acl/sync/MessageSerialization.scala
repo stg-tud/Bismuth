@@ -20,4 +20,4 @@ object MessageSerialization:
       val message         = inputStream.readNBytes(lengthOfMessage)
       readFromArray[MSG](message)
 
-class InvalidMessageException(message: String = null) extends RuntimeException(message)
+class InvalidMessageException(message: String | Null = null) extends RuntimeException(message)

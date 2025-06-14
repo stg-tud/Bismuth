@@ -82,13 +82,7 @@ object Settings {
   // but is super annoying with java interop.
   // Scala 3.5 tries to improve that interop by making java return types special, see https://github.com/scala/scala3/pull/17369
   // If i understand correctly, that is enabled by default, and the second flag could be used to restore old behaviour
-  def explicitNulls(conf: TaskKey[?]*) =
-    if (scala3VersionString.startsWith("3.5"))
-      Def.settings(
-        taskSpecificScalacOption("-Yexplicit-nulls", conf*),
-        // taskSpecificScalacOption("-Yno-flexible-types", conf: _*),
-      )
-    else Seq()
+  def explicitNulls(conf: TaskKey[?]*) = taskSpecificScalacOption("-Yexplicit-nulls", conf*)
 
   // Enforce then and do syntax, combine with rewrite to automatically rewrite
   def newSyntax = scalacOptions += "-new-syntax"

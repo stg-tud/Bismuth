@@ -4,7 +4,7 @@ import java.security.PublicKey
 import java.util.Base64
 
 case class PublicIdentity(id: String) {
-  require(id != null && id.length == 44 && id.endsWith("="))
+  require(id.length == 44 && id.endsWith("="))
 
   def publicKey: PublicKey = Ed25519Util.base64PublicKeyBytesToPublicKey(id)
 

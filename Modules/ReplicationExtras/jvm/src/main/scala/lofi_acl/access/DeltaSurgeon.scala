@@ -58,7 +58,7 @@ object DeltaSurgeon {
     inline m match
       case sumMirror: Mirror.SumOf[T]        => SumTypeDeltaSurgeon[T](elementLabels, elementSurgeons)(using sumMirror)
       case singletonMirror: Mirror.Singleton =>
-        given bottom: Bottom[T] = Bottom.provide(singletonMirror.fromProduct(null))
+        given bottom: Bottom[T] = Bottom.provide(singletonMirror.fromProduct(null.asInstanceOf[Product]))
         ProductTypeSurgeon[T](bottom, elementLabels, IArray.empty, elementSurgeons)(using singletonMirror)
       case productMirror: Mirror.ProductOf[T] =>
         val elementBottoms = summonAll[Tuple.Map[m.MirroredElemTypes, Bottom]].toIArray.map(_.asInstanceOf[Bottom[Any]])

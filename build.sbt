@@ -25,6 +25,8 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaults).aggregate(
   reactives.native,
   replicationExtras.js,
   replicationExtras.jvm,
+  tabularApp,
+  tabularLib,
 )
 
 // aggregate projects allow compiling all variants (js, jvm, native) at the same time
@@ -296,19 +298,14 @@ lazy val webview = project.in(file("Modules/Webview"))
     }
   )
 
-lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js, rdts.js)
-  .settings(
-    scala3defaults,
-    Dependencies.munit,
-  )
-
 lazy val tabularApp = project.in(file("Modules/Tabular/app"))
   .dependsOn(tabularLib)
   .enablePlugins(ScalaJSPlugin)
   .settings(
     scala3defaults,
+    Settings.javaOutputVersion(17),
+    Settings.explicitNulls(Compile / compile),
+    Settings.safeInit(Compile / compile),
     Dependencies.scalajsDom,
     libraryDependencies ++= Seq(
       "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.1",
@@ -318,3 +315,16 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
     Compile / fastOptJS / crossTarget := target.value,
     Compile / fullOptJS / crossTarget := target.value
   )
+
+
+lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(channels.js, rdts.js)
+  .settings(
+    scala3defaults,
+    Settings.javaOutputVersion(17),
+    Settings.explicitNulls(Compile / compile),
+    Settings.safeInit(Compile / compile),
+    Dependencies.munit,
+  )
+

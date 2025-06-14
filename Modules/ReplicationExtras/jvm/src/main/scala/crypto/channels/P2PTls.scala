@@ -84,7 +84,7 @@ class P2PTls(private val identity: PrivateIdentity) {
 
           executionContext.execute(() =>
             while !abort.closeRequest do {
-              val socket = serverSocket.accept().asInstanceOf[SSLSocket]
+              val socket = serverSocket.accept().asInstanceOf[SSLSocket | Null]
               if socket != null
               then
                 startHandshake(socket).map { abort ?=> identity =>

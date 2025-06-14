@@ -17,15 +17,15 @@ object JsoniterCodecs {
     override def decodeKey(in: JsonReader): PublicIdentity               = PublicIdentity(in.readKeyAsString())
     override def encodeKey(pubId: PublicIdentity, out: JsonWriter): Unit = out.writeKey(pubId.id)
 
-  given signatureCodec: JsonValueCodec[Signature] = new JsonValueCodec[Signature]:
-    override def decodeValue(in: JsonReader, default: Signature): Signature =
+  given signatureCodec: JsonValueCodec[Signature | Null] = new JsonValueCodec[Signature | Null]:
+    override def decodeValue(in: JsonReader, default: Signature | Null): Signature | Null =
       val sigArray = in.readBase64AsBytes(Array.empty)
       if sigArray.isEmpty then null
       else Signature(sigArray)
-    override def encodeValue(sig: Signature, out: JsonWriter): Unit =
+    override def encodeValue(sig: Signature | Null, out: JsonWriter): Unit =
       if sig == null then out.writeVal("")
       else out.writeBase64Val(sig.sig, true)
-    override def nullValue: Signature = null
+    override def nullValue: Signature | Null = null
 
   given dotsCodec: JsonValueCodec[Dots] = JsonCodecMaker.make
 

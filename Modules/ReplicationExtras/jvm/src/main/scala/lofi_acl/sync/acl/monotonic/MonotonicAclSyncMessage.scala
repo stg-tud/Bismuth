@@ -17,7 +17,7 @@ enum MonotonicAclSyncMessage[RDT]:
       operation: Operation,
       dot: Dot, // Also indicates authorship
       cc: Dots,
-      signature: MonotonicAclSyncMessage.Signature
+      signature: MonotonicAclSyncMessage.Signature | Null
   )
   case Delta(delta: RDT, dot: Dot /* dot.place is the author */, aclCC: Dots)
   case RequestMissing(rdtDots: Dots, aclDots: Dots)
