@@ -56,7 +56,6 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .settings(
     Settings.scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.safeInit(Compile / compile),
     Dependencies.slips,
     Dependencies.munit,
     Dependencies.munitCheck,
@@ -76,7 +75,6 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
   .dependsOn(rdts.jvm)
   .settings(
     scala3defaults,
-    Settings.safeInit(Compile / compile),
     Dependencies.munit,
     Dependencies.scalatest,
   )
@@ -86,7 +84,6 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
   .dependsOn(reactives, rdts, channels)
   .settings(
     scala3defaults,
-    Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     Dependencies.sttpCore,
     Dependencies.borer
@@ -113,7 +110,6 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
   .dependsOn(replicationExtras.js, dtn.js, lore.js)
   .settings(
     scala3defaults,
-    Settings.safeInit(Compile / compile),
     Settings.resolverJitpack,
     Dependencies.scalatags(),
     Dependencies.jsoniterScala,
@@ -175,7 +171,6 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .dependsOn(replicationExtras.jvm)
   .settings(
     scala3defaults,
-    Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     Settings.jolSettings,
     Dependencies.tink,
@@ -188,7 +183,6 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
     Dependencies.munit,
@@ -204,7 +198,6 @@ lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.safeInit(Compile / compile),
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
@@ -217,7 +210,6 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.safeInit(Compile / compile),
     // scaladoc
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
@@ -244,7 +236,6 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
   .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
   .settings(
     scala3defaults,
-    Settings.safeInit(Compile / compile),
     Dependencies.munit,
     Dependencies.munitCheck,
     Dependencies.slips,
@@ -268,7 +259,6 @@ lazy val webview = project.in(file("Modules/Webview"))
   .dependsOn(channels.native)
   .settings(
     Settings.scala3defaults,
-    Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     FetchResources.fetchedResources += FetchResources.ResourceDescription(
       (Compile / unmanagedResourceDirectories).value.head.toPath.resolve("scala-native/webview.h"),
@@ -294,7 +284,6 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.safeInit(Compile / compile),
     Dependencies.scalajsDom,
     libraryDependencies ++= Seq(
       "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.1",
@@ -311,6 +300,5 @@ lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.safeInit(Compile / compile),
     Dependencies.munit,
   )

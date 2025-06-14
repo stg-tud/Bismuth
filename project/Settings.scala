@@ -31,8 +31,9 @@ object Settings {
 
   val scala3defaults = Def.settings(
     scala3NonStrictDefaults,
-    unstableInlineAccessors(Compile / compile),
     explicitNulls(Compile / compile),
+    safeInit(Compile / compile),
+    unstableInlineAccessors(Compile / compile),
   )
 
   // enabled to see what breaks and maybe play around with
@@ -74,10 +75,7 @@ object Settings {
   def privateShadow(conf: TaskKey[?]*) = taskSpecificScalacOption("-Wshadow:private-shadow", conf*)
 
   // this is -Ysafe-init for scala 3.4 and below, but we don’t use that because seems to produce compiler crashes in those versions
-  def safeInit(conf: TaskKey[?]*) =
-    if (scala3VersionString.startsWith("3.5"))
-      taskSpecificScalacOption("-Wsafe-init", conf*)
-    else Seq()
+  def safeInit(conf: TaskKey[?]*) = taskSpecificScalacOption("-Wsafe-init", conf*)
 
   // makes Null no longer be a sub type of all subtypes of AnyRef
   // but is super annoying with java interop.

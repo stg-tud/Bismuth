@@ -108,7 +108,7 @@ class P2PTls(private val identity: PrivateIdentity) {
   ) extends Connection[MessageBuffer] {
     private val outputStream                             = DataOutputStream(socket.getOutputStream)
     private val inputStream                              = DataInputStream(socket.getInputStream)
-    private val receivedMessageCallback                  = receiver.messageHandler(this)
+    private lazy val receivedMessageCallback             = receiver.messageHandler(this)
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     try
