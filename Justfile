@@ -32,7 +32,6 @@ webappsBundle:
 
 webappsWebview sbtOpts="": webappsBundle
 	sbt {{sbtOpts}} 'webview / fetchResources'
-	# make sure the following packages are installed: pkg-config libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev
 	sbt {{sbtOpts}} 'webview / run "Modules/Examples Web/target/dist/index.html"'
 
 selectScheduler scheduler="levelled":
