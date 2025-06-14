@@ -8,7 +8,6 @@ import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI,
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.nio.file.Files
 
-
 class EchoServerTestUDP extends EchoCommunicationTest(
       ec => {
         // don’t do this normally, but we need a free random socket

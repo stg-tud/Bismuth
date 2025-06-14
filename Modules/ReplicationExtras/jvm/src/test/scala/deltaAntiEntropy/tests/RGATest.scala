@@ -49,7 +49,9 @@ class RGATest extends munit.ScalaCheckSuite {
       val inserted = rga.mod(_.insert(insertIdx, insertValue)(using rga.replicaID))
 
       assert(
-        insertIdx < 0 || insertIdx > rga.data.sizeIncludingDeadElements || inserted.data.read(insertIdx).contains(insertValue),
+        insertIdx < 0 || insertIdx > rga.data.sizeIncludingDeadElements || inserted.data.read(
+          insertIdx
+        ).contains(insertValue),
         s"After inserting a value at a valid index, reading the rga at that index should return the inserted value but ${inserted.data.read(
             insertIdx
           )} does not contain $insertValue\n  $rga\n  $inserted"
@@ -93,7 +95,9 @@ class RGATest extends munit.ScalaCheckSuite {
       )
       assertEquals(rga.data.sizeIncludingDeadElements, rga.data.toList.size)
       assert(
-        updateIdx < 0 || updateIdx >= rga.data.sizeIncludingDeadElements || updated.data.read(updateIdx).contains(updateValue),
+        updateIdx < 0 || updateIdx >= rga.data.sizeIncludingDeadElements || updated.data.read(
+          updateIdx
+        ).contains(updateValue),
         s"After updating a valid index reading the rga at that index should return the updated value, but ${updated.data.read(
             updateIdx
           )} does not contain $updateValue ($updateIdx) \n  ${rga.data.toList}\n  $rllist\n  ${initiallist}\n  ${updated.state}\n  $rl"
@@ -156,7 +160,8 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
+      val idx =
+        if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
       val la1 = la0.mod(_.delete(idx))
       val lb1 = lb0.mod(_.delete(idx))
@@ -210,7 +215,8 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
+      val idx =
+        if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
       val la1 = la0.mod(_.insert(idx, e1)(using la0.replicaID))
       lb0.mod(_.update(idx, e2))
@@ -240,7 +246,8 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
+      val idx =
+        if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
       val la1 = la0.mod(_.insert(idx + 1, e)(using la0.replicaID))
       lb0.mod(_.delete(idx))
@@ -270,7 +277,8 @@ class RGATest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val lb0 = AntiEntropyContainer[ReplicatedList[Int]](aeb).processReceivedDeltas()
 
-      val idx = if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
+      val idx =
+        if la0.data.sizeIncludingDeadElements == 0 then 0 else math.floorMod(n, la0.data.sizeIncludingDeadElements)
 
       val la1 = la0.mod(_.delete(idx))
       lb0.mod(_.update(idx, e))

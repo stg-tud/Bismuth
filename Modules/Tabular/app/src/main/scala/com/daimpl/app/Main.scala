@@ -20,10 +20,10 @@ object Main {
     def addSpreadsheet(): Callback = {
       $.modState { state =>
         val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
-        given LocalUid = LocalUid.gen()
+        given LocalUid         = LocalUid.gen()
 
         val newAggregator =
-          if (onlineSpreadsheets.isEmpty) {
+          if onlineSpreadsheets.isEmpty then {
             SpreadsheetComponent.createSampleSpreadsheet()
           } else {
             val mergedObrem = onlineSpreadsheets
@@ -47,12 +47,12 @@ object Main {
       $.modState { state =>
         state.spreadsheets.find(_.id == id) match {
           case Some(sheet) if sheet.isOnline => // Is online -> turn offline
-            val updatedSpreadsheets = state.spreadsheets.map(s => if (s.id == id) s.copy(isOnline = false) else s)
+            val updatedSpreadsheets = state.spreadsheets.map(s => if s.id == id then s.copy(isOnline = false) else s)
             state.copy(spreadsheets = updatedSpreadsheets)
 
           case Some(sheet) => // Is offline -> turn online and sync
             val otherOnlineSheets = state.spreadsheets.filter(s => s.id != id && s.isOnline)
-            val sheetToSyncObrem = sheet.aggregator.current
+            val sheetToSyncObrem  = sheet.aggregator.current
 
             val updatedSpreadsheets = state.spreadsheets.map {
               case s if s.id == id => // The sheet that is coming online
@@ -76,7 +76,7 @@ object Main {
     def handleDelta(sourceSheetId: Int, delta: Spreadsheet): Callback = {
       $.modState { state =>
         val updatedSpreadsheets = state.spreadsheets.map { sheet =>
-          if (sheet.id != sourceSheetId && sheet.isOnline) {
+          if sheet.id != sourceSheetId && sheet.isOnline then {
             sheet.copy(aggregator = sheet.aggregator.merge(delta))
           } else {
             sheet
@@ -98,7 +98,7 @@ object Main {
     }
     .backend(new Backend(_))
     .render { $ =>
-      val state = $.state
+      val state   = $.state
       val backend = $.backend
 
       <.div(
@@ -115,7 +115,7 @@ object Main {
           ^.className := "grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-full",
           state.spreadsheets.map { sheetData =>
             <.div(
-              ^.key := s"spreadsheet-${sheetData.id}",
+              ^.key       := s"spreadsheet-${sheetData.id}",
               ^.className := "bg-white rounded-lg shadow-2xl p-8 max-w-4xl mx-auto",
               SpreadsheetControls.Component(
                 SpreadsheetControls.Props(
@@ -129,7 +129,7 @@ object Main {
                 SpreadsheetComponent.Props(
                   spreadsheetAggregator = sheetData.aggregator,
                   onDelta =
-                    if (sheetData.isOnline) delta => backend.handleDelta(sheetData.id, delta)
+                    if sheetData.isOnline then delta => backend.handleDelta(sheetData.id, delta)
                     else _ => Callback.empty,
                   replicaId = sheetData.replicaId
                 )

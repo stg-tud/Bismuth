@@ -1,8 +1,8 @@
 package com.daimpl.lib
 
-import rdts.base.{Bottom, DecoratedLattice, Lattice, LocalUid}
+import rdts.base.{DecoratedLattice, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
-import rdts.time.{CausalTime, Dot, Dots}
+import rdts.time.{Dot, Dots}
 
 import scala.util.chaining.scalaUtilChainingOps
 
@@ -46,7 +46,6 @@ case class Spreadsheet(
   def editCell(rowIdx: Int, colIdx: Int, cellContent: String | Null)(using LocalUid): Spreadsheet = {
     val rowId = rowIds.read(rowIdx).get
     val colId = colIds.read(colIdx).get
-    println(s"editCell($rowIdx, $colIdx, $cellContent)")
     Spreadsheet(content = content.transform((rowId, colId)) {
       case None      => Some(LastWriterWins.now(cellContent))
       case Some(lww) => Some(lww.write(cellContent))

@@ -6,7 +6,6 @@ import rdts.datatypes.LastWriterWins
 import rdts.protocols.paper.MultiPaxos
 import rdts.protocols.Participants
 
-
 enum KVOperation[Key, Value] {
   def key: Key
 
