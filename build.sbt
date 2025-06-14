@@ -1,4 +1,4 @@
-import Settings.scala3defaults
+import Settings.{scala3NonStrictDefaults, scala3defaults}
 import org.scalajs.linker.interface.ModuleSplitStyle
 
 import java.net.URI
@@ -56,7 +56,6 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .settings(
     Settings.scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.slips,
     Dependencies.munit,
@@ -77,7 +76,6 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
   .dependsOn(rdts.jvm)
   .settings(
     scala3defaults,
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.munit,
     Dependencies.scalatest,
@@ -88,7 +86,6 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
   .dependsOn(reactives, rdts, channels)
   .settings(
     scala3defaults,
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     Dependencies.sttpCore,
@@ -99,7 +96,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(deltalens, replicationExtras.jvm)
   .settings(
-    scala3defaults,
+    scala3NonStrictDefaults,
     fork := true,
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
@@ -116,7 +113,6 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
   .dependsOn(replicationExtras.js, dtn.js, lore.js)
   .settings(
     scala3defaults,
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Settings.resolverJitpack,
     Dependencies.scalatags(),
@@ -139,7 +135,7 @@ lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).
   .dependsOn(reactives)
   .settings(
     // unstable variant does not enable an inline binary check, because the LoRe DLS has A LOT of private but public members
-    Settings.scala3defaultsUnstable,
+    scala3NonStrictDefaults,
     Settings.javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     Dependencies.jsoniterScala,
@@ -154,7 +150,7 @@ lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).
 lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .dependsOn(lore.jvm)
   .settings(
-    scala3defaults,
+    scala3NonStrictDefaults,
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     Dependencies.osLib,
     Dependencies.upickle,
@@ -165,7 +161,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
   .dependsOn(lore.jvm)
   .dependsOn(loreCompilerPlugin)
   .settings(
-    scala3defaults,
+    scala3NonStrictDefaults,
     Dependencies.munit,
     scalacOptions += {
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
@@ -179,7 +175,6 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .dependsOn(replicationExtras.jvm)
   .settings(
     scala3defaults,
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     Settings.jolSettings,
@@ -193,7 +188,6 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
@@ -211,7 +205,6 @@ lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(
     scala3defaults,
     Settings.javaOutputVersion(17),
     Settings.safeInit(Compile / compile),
-    Settings.explicitNulls(Compile / compile),
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
@@ -224,7 +217,6 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     // scaladoc
     autoAPIMappings := true,
@@ -252,7 +244,6 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
   .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
   .settings(
     scala3defaults,
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.munit,
     Dependencies.munitCheck,
@@ -277,7 +268,6 @@ lazy val webview = project.in(file("Modules/Webview"))
   .dependsOn(channels.native)
   .settings(
     Settings.scala3defaults,
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.jsoniterScala,
     FetchResources.fetchedResources += FetchResources.ResourceDescription(
@@ -304,7 +294,6 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.scalajsDom,
     libraryDependencies ++= Seq(
@@ -316,15 +305,12 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
     Compile / fullOptJS / crossTarget := target.value
   )
 
-
 lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(channels.js, rdts.js)
   .settings(
     scala3defaults,
     Settings.javaOutputVersion(17),
-    Settings.explicitNulls(Compile / compile),
     Settings.safeInit(Compile / compile),
     Dependencies.munit,
   )
-

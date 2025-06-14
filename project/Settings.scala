@@ -19,7 +19,7 @@ object Settings {
   // and https://www.scala-lang.org/api/current/scala/language$.html
   // and run: cs launch scala3-compiler -- -help
 
-  val scala3defaultsUnstable = Def.settings(
+  val scala3NonStrictDefaults = Def.settings(
     scalaVersion := scala3VersionString,
     fullFeatureDeprecationWarnings,
     scalaSourceLevel(scala3VersionMinor),
@@ -30,8 +30,9 @@ object Settings {
   )
 
   val scala3defaults = Def.settings(
-    scala3defaultsUnstable,
-    unstableInlineAccessors(Compile / compile)
+    scala3NonStrictDefaults,
+    unstableInlineAccessors(Compile / compile),
+    explicitNulls(Compile / compile),
   )
 
   // enabled to see what breaks and maybe play around with
