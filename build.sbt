@@ -109,10 +109,8 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
   .dependsOn(replicationExtras.js, dtn.js, lore.js)
   .settings(
     scala3defaults,
-    Settings.resolverJitpack,
     Dependencies.scalatags(),
     Dependencies.jsoniterScala,
-    SettingsLocal.deployTask,
     Dependencies.pprint,
     scalaJSLinkerConfig := {
       scalaJSLinkerConfig.value

@@ -1,23 +1,9 @@
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{fastLinkJS, scalaJSLinkerOutputDirectory}
 import sbt.*
 import sbt.Keys.*
 
 import scala.scalanative.build.{LTO, NativeConfig}
 
 object SettingsLocal {
-
-  val deployTask = TaskKey[File]("deploy", "generates a correct index.template.html") := {
-    val fastlink   = (Compile / fastLinkJS).value
-    val jspath     = (Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value
-    val bp         = baseDirectory.value.toPath
-    val tp         = target.value.toPath
-    val template   = IO.read(bp.resolve("index.template.html").toFile)
-    val targetpath = tp.resolve("index.html")
-    val jsrel      = targetpath.getParent.relativize(jspath.toPath)
-    IO.write(targetpath.toFile, template.replace("JSPATH", s"./${jsrel}/main.js"))
-    IO.copyFile(bp.resolve("style.css").toFile, tp.resolve("style.css").toFile)
-    targetpath.toFile
-  }
 
   def osSpecificWebviewConfig(nativeConfig: NativeConfig): NativeConfig = {
 
@@ -30,7 +16,7 @@ object SettingsLocal {
 
     val osname = sys.props.get("os.name").map(_.toLowerCase)
     osname match {
-      case Some(win) if win.contains("win") => nativeConfig
+      case Some(win) if win.contains("win")                           => nativeConfig
       case Some(mac) if mac.contains("mac") || mac.contains("darwin") =>
         nativeConfig.withLTO(LTO.none)
           .withLinkingOptions(nativeConfig.linkingOptions ++ Seq("-framework", "WebKit"))
@@ -47,7 +33,6 @@ object SettingsLocal {
     }
   }
 
-
   // publishSigned: to generate bundle to be published into a local staging repo
   // sonaUpload: upload to sonatype and publish and verify manually
   // sonaRelease: to (upload?) and release the bundle automatically
@@ -57,7 +42,7 @@ object SettingsLocal {
     organizationHomepage := Some(url("https://www.stg.tu-darmstadt.de/")),
     homepage             := Some(url("https://github.com/stg-tud/Bismuth")),
     licenses             := List("Apache 2" -> new URI("http://www.apache.org/licenses/LICENSE-2.0.txt").toURL),
-    scmInfo := Some(
+    scmInfo              := Some(
       ScmInfo(
         url("https://github.com/stg-tud/Bismuth"),
         "scm:git@github.com:stg-tud/Bismuth.git"
@@ -82,8 +67,8 @@ object SettingsLocal {
     // Remove all additional repository other than Maven Central from POM
     pomIncludeRepository := { _ => false },
     // change to sonatypePublishTo to not use the bundle feature
-    publishTo            := localStaging.value,
-    publishMavenStyle    := true
+    publishTo         := localStaging.value,
+    publishMavenStyle := true
   )
 
   // old publishing documentation for legacy purposes
