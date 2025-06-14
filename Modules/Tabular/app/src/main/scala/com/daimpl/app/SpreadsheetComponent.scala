@@ -8,8 +8,8 @@ import rdts.time.Dots
 
 object SpreadsheetComponent {
 
-  def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet] = {
-    new SpreadsheetDeltaAggregator(Spreadsheet())
+  def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet[String]] = {
+    new SpreadsheetDeltaAggregator(Spreadsheet[String]())
       .edit(_.addRow())
       .edit(_.addRow())
       .edit(_.addRow())
@@ -19,8 +19,8 @@ object SpreadsheetComponent {
   }
 
   case class Props(
-      spreadsheetAggregator: SpreadsheetDeltaAggregator[Spreadsheet],
-      onDelta: Spreadsheet => Callback,
+      spreadsheetAggregator: SpreadsheetDeltaAggregator[Spreadsheet[String]],
+      onDelta: Spreadsheet[String] => Callback,
       replicaId: LocalUid
   )
 
@@ -33,7 +33,7 @@ object SpreadsheetComponent {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet => Spreadsheet)): Callback = {
+    private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet[String] => Spreadsheet[String])): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta(f)

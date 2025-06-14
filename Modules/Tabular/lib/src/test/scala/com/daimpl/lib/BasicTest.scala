@@ -6,7 +6,7 @@ class BasicTest extends munit.FunSuite {
 
   test("basic test") {
     given LocalUid = LocalUid.predefined("a")
-    val agg        = SpreadsheetDeltaAggregator(Spreadsheet())
+    val agg        = SpreadsheetDeltaAggregator(Spreadsheet[String]())
       .edit(_.addRow())
       .edit(_.addColumn())
 

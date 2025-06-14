@@ -11,7 +11,7 @@ object Main {
   case class SpreadsheetData(
       id: Int,
       isOnline: Boolean,
-      aggregator: SpreadsheetDeltaAggregator[Spreadsheet],
+      aggregator: SpreadsheetDeltaAggregator[Spreadsheet[String]],
       replicaId: LocalUid
   )
   case class State(spreadsheets: List[SpreadsheetData], nextId: Int)
@@ -73,7 +73,7 @@ object Main {
       }
     }
 
-    def handleDelta(sourceSheetId: Int, delta: Spreadsheet): Callback = {
+    def handleDelta(sourceSheetId: Int, delta: Spreadsheet[String]): Callback = {
       $.modState { state =>
         val updatedSpreadsheets = state.spreadsheets.map { sheet =>
           if sheet.id != sourceSheetId && sheet.isOnline then {
