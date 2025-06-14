@@ -14,6 +14,11 @@ class BasicTest extends munit.FunSuite {
 
     assertEquals(agg.current.read(0, 0), Some("test"))
 
+    agg.edit(_.removeColumn(0))
+
+    assertEquals(agg.current.content.queryAllEntries, Iterable())
+
+
   }
 
 }

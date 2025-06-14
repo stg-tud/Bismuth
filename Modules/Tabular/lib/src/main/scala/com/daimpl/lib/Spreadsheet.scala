@@ -24,11 +24,13 @@ case class Spreadsheet[A](
   }
 
   def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(rowIds = rowIds.delete(rowIdx))
+    val removed = rowIds.read(rowIdx)
+    Spreadsheet(rowIds = rowIds.delete(rowIdx), content = content.removeBy((row, col) => removed.contains(row)))
   }
 
   def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(colIds = colIds.delete(colIdx))
+    val removed = colIds.read(colIdx)
+    Spreadsheet(colIds = colIds.delete(colIdx), content = content.removeBy((row, col) => removed.contains(col)))
   }
 
   def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
@@ -100,14 +102,10 @@ case class Spreadsheet[A](
       colId <- colIds.read(visibleColIdx)
       elem  <- content.get((rowId, colId))
     yield elem.payload
+
 }
 
 object Spreadsheet {
 
-  given lattice[A]: Lattice[Spreadsheet[A]] =
-    DecoratedLattice.compact[Spreadsheet[A]](Lattice.derived[Spreadsheet[A]]) { merged =>
-      val rows = Dots.from(merged.rowIds.toList)
-      val cols = Dots.from(merged.colIds.toList)
-      merged.copy(content = merged.content.removeBy((row, col) => !(rows.contains(row) && cols.contains(col))))
-    }
+  given lattice[A]: Lattice[Spreadsheet[A]] = Lattice.derived
 }
