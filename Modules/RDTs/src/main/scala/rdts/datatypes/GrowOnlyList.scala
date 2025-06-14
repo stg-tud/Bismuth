@@ -107,20 +107,15 @@ object GrowOnlyList {
 
   def empty[E]: GrowOnlyList[E] = GrowOnlyList(Map.empty)
 
-  given bottomInstance[E]: Bottom[GrowOnlyList[E]] = Bottom.derived
+  given bottomInstance[E]: Bottom[GrowOnlyList[E]] = Bottom.provide(empty[E])
 
-  given lattice[E]: Lattice[GrowOnlyList[E]] with Decompose[GrowOnlyList[E]] with {
-    override def subsumption(
-        left: GrowOnlyList[E],
-        right: GrowOnlyList[E]
-    ): Boolean =
-      left.inner.keys.forall { k =>
-        right.inner.get(k).contains(left.inner(k))
-      } || super.subsumption(left, right)
+  given decompose[E]: Decompose[GrowOnlyList[E]] = {
+    given Decompose[Node[LastWriterWins[E]]] = Decompose.atomic
+    given Decompose[Elem[LastWriterWins[E]]] = Decompose.atomic
+    Decompose.derived
+  }
 
-    extension (a: GrowOnlyList[E])
-      override def decomposed: Iterable[GrowOnlyList[E]] =
-        a.inner.toList.map(edge => GrowOnlyList(Map(edge)))
+  given lattice[E]: Lattice[GrowOnlyList[E]] with {
 
     @tailrec
     private def insertEdge(
