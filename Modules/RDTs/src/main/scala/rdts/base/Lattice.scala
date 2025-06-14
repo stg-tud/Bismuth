@@ -3,7 +3,7 @@ package rdts.base
 import scala.annotation.targetName
 import scala.collection.IterableOps
 import scala.collection.immutable.MapOps
-import scala.compiletime.{erasedValue, summonAll, summonFrom}
+import scala.compiletime.summonAll
 import scala.deriving.Mirror
 
 /** A lattice describes a set of values where we always can [[merge]] two values and get a “consistent” result.
@@ -105,8 +105,7 @@ object Lattice {
     override def subsumption(left: Set[A], right: Set[A]): Boolean = left subsetOf right
 
   given optionLattice[A: Lattice]: Lattice[Option[A]] =
-    given Lattice[None.type] = Lattice.derived
-    given Lattice[Some[A]]   = Lattice.derived
+    given Lattice[Some[A]] = Lattice.derived
     Lattice.sumLattice
 
   given mapLattice[K, V: Lattice, Mp[K1, +V1] <: MapOps[K1, V1, Mp, Mp[K1, V1]]]: Lattice[Mp[K, V]] =
@@ -142,6 +141,8 @@ object Lattice {
 
   given functionLattice[K, V: Lattice]: Lattice[K => V] = (left, right) => k => left(k) `merge` right(k)
 
+  given singletonLattice[A <: Singleton](using A <:< Singleton): Lattice[A] = Lattice.assertEquals
+
   /** This causes tuple lattices to be generally derivable implicitly,
     * without making all products derivable implicitly.
     */
@@ -150,12 +151,12 @@ object Lattice {
   inline def derived[T <: Product: Mirror.ProductOf]: Lattice[T] = productLattice
 
   /** Sum Lattice merges considers later defined (those with larger ordinals) constructors as larger.
-    * Notably, this implies `None < Some` for Option and `Left < Right` for Either.
+    * Notably, this implies `None < Some` for Option and `Left < Right` for [[Either]].
     * For an `enum E { case A, B, C }` it will be `A < B < C`
     */
-  inline def sumLattice[T](using sm: Mirror.SumOf[T]): Lattice[T] =
+  inline def sumLattice[T](using ordering: Ordering[Int])(using sm: Mirror.SumOf[T]): Lattice[T] =
     val lattices: Tuple = summonAll[Tuple.Map[sm.MirroredElemTypes, Lattice]]
-    new Derivation.SumLattice[T](Derivation.MirrorOrdinal(sm, lattices))
+    new Derivation.SumLattice[T](Derivation.MirrorOrdinal(sm, lattices, ordering))
 
   inline def productLattice[T <: Product](using pm: Mirror.ProductOf[T]): Lattice[T] = {
     val lattices: Tuple = summonAll[Tuple.Map[pm.MirroredElemTypes, Lattice]]
@@ -169,8 +170,9 @@ object Lattice {
 
   object Derivation {
 
-    case class MirrorOrdinal[T](sm: Mirror.SumOf[T], lattices: Tuple) extends OrdinalLattices[T] {
-      def compare(left: T, right: T): Int       = Integer.compare(sm.ordinal(left), sm.ordinal(right))
+    case class MirrorOrdinal[T](sm: Mirror.SumOf[T], lattices: Tuple, ordering: Ordering[Int])
+        extends OrdinalLattices[T] {
+      def compare(left: T, right: T): Int       = ordering.compare(sm.ordinal(left), sm.ordinal(right))
       override def lattice(elem: T): Lattice[T] = lattices.productElement(sm.ordinal(elem)).asInstanceOf[Lattice[T]]
     }
 
@@ -187,17 +189,6 @@ object Lattice {
           case 0     => ol.lattice(left).subsumption(left, right)
           case other => other < 0
     }
-
-    inline def summonAllMaybe[T <: Tuple]: T =
-      val res =
-        inline erasedValue[T] match
-          case _: EmptyTuple => EmptyTuple
-          case _: (τ *: τs)  => summonFrom {
-              case b: τ => b
-              case _    => null
-            } *: summonAllMaybe[τs]
-        end match
-      res.asInstanceOf[T]
 
     class ProductLattice[T <: Product](
         lattices: Tuple,

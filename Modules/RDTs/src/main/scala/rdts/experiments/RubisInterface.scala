@@ -2,7 +2,6 @@ package rdts.experiments
 
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import AuctionInterface.Bid.User
 
 import scala.util.chaining.scalaUtilChainingOps
 
@@ -18,6 +17,7 @@ import scala.util.chaining.scalaUtilChainingOps
   */
 object RubisInterface {
   type AID = String
+  type User = String
 
   case class State(current: (ReplicatedSet[(User, Uid)], Map[User, Uid], Map[AID, AuctionInterface.AuctionData])) {
 

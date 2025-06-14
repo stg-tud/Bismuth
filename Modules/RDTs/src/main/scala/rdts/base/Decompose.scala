@@ -1,7 +1,7 @@
 package rdts.base
 
 import scala.collection.immutable.MapOps
-import scala.compiletime.summonAll
+import scala.compiletime.{erasedValue, summonAll, summonFrom}
 import scala.deriving.Mirror
 
 @FunctionalInterface
@@ -49,8 +49,20 @@ object Decompose {
 
   inline def derived[T <: Product](using pm: Mirror.ProductOf[T]): Decompose[T] = {
     val lattices: Tuple = summonAll[Tuple.Map[pm.MirroredElemTypes, Decompose]]
-    val bottoms: Tuple  = Lattice.Derivation.summonAllMaybe[Tuple.Map[pm.MirroredElemTypes, Bottom]]
+    val bottoms: Tuple  = summonAllMaybe[Tuple.Map[pm.MirroredElemTypes, Bottom]]
     new Derivation.ProductDecompose[T](lattices, bottoms, pm, valueOf[pm.MirroredLabel])
+  }
+
+  inline def summonAllMaybe[T <: Tuple]: T = {
+    val res =
+      inline erasedValue[T] match
+        case _: EmptyTuple => EmptyTuple
+        case _: (τ *: τs)  => summonFrom {
+            case b: τ => b
+            case _    => null
+          } *: summonAllMaybe[τs]
+      end match
+    res.asInstanceOf[T]
   }
 
   object Derivation {
