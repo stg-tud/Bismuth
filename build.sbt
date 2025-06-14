@@ -55,7 +55,6 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   .dependsOn(rdts)
   .settings(
     Settings.scala3defaults,
-    Settings.javaOutputVersion(17),
     Dependencies.slips,
     Dependencies.munit,
     Dependencies.munitCheck,
@@ -132,7 +131,6 @@ lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).
   .settings(
     // unstable variant does not enable an inline binary check, because the LoRe DLS has A LOT of private but public members
     scala3NonStrictDefaults,
-    Settings.javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     Dependencies.jsoniterScala,
     Dependencies.decline,
@@ -182,7 +180,6 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .enablePlugins(JavaAppPackaging)
   .settings(
     scala3defaults,
-    Settings.javaOutputVersion(17),
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
     Dependencies.munit,
@@ -197,19 +194,14 @@ lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(
   .in(file("Modules/RDTs"))
   .settings(
     scala3defaults,
-    Settings.javaOutputVersion(17),
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
-  )
-  .jsSettings(
-    Settings.sourcemapFromEnv()
   )
 
 lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(file("Modules/Reactives"))
   .settings(
     scala3defaults,
-    Settings.javaOutputVersion(17),
     // scaladoc
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
@@ -224,7 +216,6 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Dependencies.scalajsDom,
     Dependencies.scalatags(Test),
     Settings.jsEnvDom,
-    Settings.sourcemapFromEnv(),
   )
 
 lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modules/ReplicationExtras"))
@@ -283,7 +274,6 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
     scala3defaults,
-    Settings.javaOutputVersion(17),
     Dependencies.scalajsDom,
     libraryDependencies ++= Seq(
       "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.1",
@@ -299,6 +289,5 @@ lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
   .dependsOn(channels.js, rdts.js)
   .settings(
     scala3defaults,
-    Settings.javaOutputVersion(17),
     Dependencies.munit,
   )

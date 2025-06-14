@@ -21,6 +21,7 @@ object Settings {
 
   val scala3NonStrictDefaults = Def.settings(
     scalaVersion := scala3VersionString,
+    javaOutputVersion(17),
     fullFeatureDeprecationWarnings,
     scalaSourceLevel(scala3VersionMinor),
     warningsAreErrors(Compile / compile, Test / compile),
@@ -139,23 +140,4 @@ object Settings {
   // TLDR: enables the dom API when running on nodejs for the tests
   val jsEnvDom = jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
 
-  // allows to specify a source map prefix, in case you want to have source maps refer to some online source
-  // 2024-05-30: Seems to be meant for jitpack publishing
-  // Example:
-  // CUSTOM_SCALAJS_SOURCE_MAP_PREFIX="https://raw.githubusercontent.com/rescala-lang/REScala/" sbt -Dsbt.log.noformat=true 'publishM2'
-  def sourcemapFromEnv() = {
-    scala.sys.env.get("CUSTOM_SCALAJS_SOURCE_MAP_PREFIX") match {
-      case Some(customSourcePrefix) if !customSourcePrefix.isEmpty =>
-        Def.settings(
-          scalacOptions += {
-
-            def gitHash: String = sys.process.Process("git rev-parse HEAD").lineStream_!.head
-            def baseUrl: String = (LocalRootProject / baseDirectory).value.toURI.toString
-
-            s"-scalajs-mapSourceURI:$baseUrl->$customSourcePrefix$gitHash/"
-          }
-        )
-      case _ => Def.settings()
-    }
-  }
 }
