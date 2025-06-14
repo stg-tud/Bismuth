@@ -104,10 +104,10 @@ case class Spreadsheet[A](
 
 object Spreadsheet {
 
-  given lattice[A]: Lattice[Spreadsheet[A]] = DecoratedLattice.compact[Spreadsheet[A]](Lattice.derived[Spreadsheet[A]]) { merged =>
-    val rows = Dots.from(merged.rowIds.toList)
-    val cols = Dots.from(merged.colIds.toList)
-    merged.copy(content = merged.content.removeBy((row, col) => !(rows.contains(row) && cols.contains(col))))
-    merged
-  }
+  given lattice[A]: Lattice[Spreadsheet[A]] =
+    DecoratedLattice.compact[Spreadsheet[A]](Lattice.derived[Spreadsheet[A]]) { merged =>
+      val rows = Dots.from(merged.rowIds.toList)
+      val cols = Dots.from(merged.colIds.toList)
+      merged.copy(content = merged.content.removeBy((row, col) => !(rows.contains(row) && cols.contains(col))))
+    }
 }
