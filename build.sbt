@@ -296,14 +296,15 @@ lazy val webview = project.in(file("Modules/Webview"))
     }
   )
 
-lazy val tabularLib = (project in file("Modules/Tabular/lib"))
+lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(channels.js, rdts.js)
   .settings(
-    scala3defaults
+    scala3defaults,
+    Dependencies.munit,
   )
 
-lazy val tabularApp = (project in file("Modules/Tabular/app"))
+lazy val tabularApp = project.in(file("Modules/Tabular/app"))
   .dependsOn(tabularLib)
   .enablePlugins(ScalaJSPlugin)
   .settings(

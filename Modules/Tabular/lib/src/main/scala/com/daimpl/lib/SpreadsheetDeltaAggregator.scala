@@ -1,23 +1,22 @@
 package com.daimpl.lib
 
-import rdts.base.{Lattice, LocalUid}
-import rdts.time.Dots
+import rdts.base.Lattice
 
-class SpreadsheetDeltaAggregator[S](
+class SpreadsheetDeltaAggregator[S: Lattice](
     private var spreadsheet: S
 ) {
-  def editAndGetDelta(fn: S => S)(using LocalUid, Lattice[S]): S = {
+  def editAndGetDelta(fn: S => S): S = {
     val delta = fn(spreadsheet)
     spreadsheet = spreadsheet.merge(delta)
     delta
   }
 
-  def edit(fn: S => S)(using LocalUid, Lattice[S]): SpreadsheetDeltaAggregator[S] = {
+  def edit(fn: S => S): SpreadsheetDeltaAggregator[S] = {
     editAndGetDelta(fn)
     this
   }
 
-  def merge(delta: S)(using Lattice[S]): SpreadsheetDeltaAggregator[S] = {
+  def merge(delta: S): SpreadsheetDeltaAggregator[S] = {
     spreadsheet = spreadsheet.merge(delta)
     this
   }
@@ -29,5 +28,4 @@ class SpreadsheetDeltaAggregator[S](
 
   def current: S = spreadsheet
 
-  def getObrem: S = spreadsheet
 }

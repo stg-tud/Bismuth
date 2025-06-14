@@ -36,7 +36,7 @@ object SpreadsheetComponent {
     private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet => Spreadsheet)): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
-        val delta = props.spreadsheetAggregator.editAndGetDelta(f)
+        val delta      = props.spreadsheetAggregator.editAndGetDelta(f)
         props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)
       }
@@ -79,7 +79,8 @@ object SpreadsheetComponent {
         state.editingCell
           .map { case (rowIdx, colIdx) =>
             val value = state.editingValue.trim
-            modSpreadsheet(_.editCell(rowIdx, colIdx, if (value.isEmpty) null else value)) >> cancelEdit()
+            println(s"value $value")
+            modSpreadsheet(_.editCell(rowIdx, colIdx, if value.isEmpty then null else value)) >> cancelEdit()
           }
           .getOrElse(Callback.empty)
       }
@@ -103,8 +104,8 @@ object SpreadsheetComponent {
     def insertRowBelow(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
-        val action =
-          if (rowIdx == spreadsheet.numRows - 1) modSpreadsheet(_.addRow())
+        val action      =
+          if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
           else modSpreadsheet(_.insertRow(rowIdx + 1))
         action >> $.modState(_.copy(selectedRow = None))
       }
@@ -122,8 +123,8 @@ object SpreadsheetComponent {
     def insertColumnRight(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
-        val action =
-          if (colIdx == spreadsheet.numColumns - 1) modSpreadsheet(_.addColumn())
+        val action      =
+          if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
           else modSpreadsheet(_.insertColumn(colIdx + 1))
         action >> $.modState(_.copy(selectedColumn = None))
       }
@@ -147,11 +148,11 @@ object SpreadsheetComponent {
     .initialState(State(None, "", None, None))
     .backend(new Backend(_))
     .render { $ =>
-      val props = $.props
-      val state = $.state
-      val backend = $.backend
+      val props       = $.props
+      val state       = $.state
+      val backend     = $.backend
       val spreadsheet = props.spreadsheetAggregator.current
-      val data = spreadsheet.toList
+      val data        = spreadsheet.toList
 
       <.div(
         <.div(
@@ -216,11 +217,11 @@ object SpreadsheetComponent {
                 (0 until spreadsheet.numColumns)
                   .map(i =>
                     <.th(
-                      ^.key := s"header-$i",
+                      ^.key       := s"header-$i",
                       ^.className := {
                         val baseClass =
                           "border border-gray-300 px-4 py-2 font-semibold w-32 max-w-32 cursor-pointer hover:bg-gray-200"
-                        if (state.selectedColumn.contains(i)) baseClass + " bg-blue-200"
+                        if state.selectedColumn.contains(i) then baseClass + " bg-blue-200"
                         else baseClass + " bg-gray-100"
                       },
                       ^.onClick --> backend.selectColumn(i),
@@ -239,7 +240,7 @@ object SpreadsheetComponent {
                     ^.className := {
                       val baseClass =
                         "border border-gray-300 px-4 py-2 font-medium text-center cursor-pointer hover:bg-gray-200"
-                      if (state.selectedRow.contains(rowIdx)) baseClass + " bg-blue-200"
+                      if state.selectedRow.contains(rowIdx) then baseClass + " bg-blue-200"
                       else baseClass + " bg-gray-50"
                     },
                     ^.onClick --> backend.selectRow(rowIdx),
@@ -248,14 +249,14 @@ object SpreadsheetComponent {
                   ),
                   row.zipWithIndex.map { case (cell, colIdx) =>
                     <.td(
-                      ^.key := s"cell-$rowIdx-$colIdx",
+                      ^.key       := s"cell-$rowIdx-$colIdx",
                       ^.className := "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32",
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
                       state.editingCell match {
                         case Some((editRow, editCol)) if editRow == rowIdx && editCol == colIdx =>
                           <.input(
                             ^.`type` := "text",
-                            ^.value := state.editingValue,
+                            ^.value  := state.editingValue,
                             ^.onChange ==> backend.handleInputChange,
                             ^.onKeyPress ==> backend.handleKeyPress,
                             ^.className := "w-full h-full border-none outline-none px-2 py-1 max-w-full",

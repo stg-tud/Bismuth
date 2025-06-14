@@ -27,7 +27,7 @@ object Main {
             SpreadsheetComponent.createSampleSpreadsheet()
           } else {
             val mergedObrem = onlineSpreadsheets
-              .map(_.aggregator.getObrem)
+              .map(_.aggregator.current)
               .reduce((s1, s2) => Lattice.merge(s1, s2))
             new SpreadsheetDeltaAggregator(mergedObrem)
           }
@@ -52,12 +52,12 @@ object Main {
 
           case Some(sheet) => // Is offline -> turn online and sync
             val otherOnlineSheets = state.spreadsheets.filter(s => s.id != id && s.isOnline)
-            val sheetToSyncObrem = sheet.aggregator.getObrem
+            val sheetToSyncObrem = sheet.aggregator.current
 
             val updatedSpreadsheets = state.spreadsheets.map {
               case s if s.id == id => // The sheet that is coming online
                 val mergedAggregator = otherOnlineSheets.foldLeft(s.aggregator) { (agg, other) =>
-                  agg.merge(other.aggregator.getObrem)
+                  agg.merge(other.aggregator.current)
                 }
                 s.copy(isOnline = true, aggregator = mergedAggregator)
 
