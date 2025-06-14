@@ -49,7 +49,7 @@ case class Spreadsheet[A](
     Spreadsheet(content = content.transform((rowId, colId)) {
       case None      => Some(LastWriterWins.now(cellContent))
       case Some(lww) => Some(lww.write(cellContent))
-    }).tap(println)
+    })
 
   }
 
