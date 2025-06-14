@@ -21,13 +21,21 @@ class RescalatagsTest extends FunSuite {
     val rendered = div().render.reattach(v)
     assertEquals(rendered.textContent, "", "empty var gives empty frag")
 
-    assertEquals(rendered.innerHTML, "", "empty var into dom is empty")
+    assertEquals(rendered.innerHTML, "<!--reattach start--><!--reattach end-->", "empty var into dom is empty")
 
     v.set(span("hallo welt").render)
-    assertEquals(rendered.innerHTML, "<span>hallo welt</span>", "setting var changes rendered outer tag")
+    assertEquals(
+      rendered.innerHTML,
+      "<!--reattach start--><span>hallo welt</span><!--reattach end-->",
+      "setting var changes rendered outer tag"
+    )
 
     v.set(div("hallo div").render)
-    assertEquals(rendered.innerHTML, "<div>hallo div</div>", "resetting var changes rendered outer tag")
+    assertEquals(
+      rendered.innerHTML,
+      "<!--reattach start--><div>hallo div</div><!--reattach end-->",
+      "resetting var changes rendered outer tag"
+    )
 
   }
 
@@ -57,13 +65,21 @@ class RescalatagsTest extends FunSuite {
 
     val ourTag = a().render.reattach(v.map(href := _))
 
-    assertEquals(ourTag.outerHTML, a.render.outerHTML, "empty href does not render")
+    assertEquals(ourTag.outerHTML, "<a><!--reattach start--><!--reattach end--></a>", "empty href does not render")
 
     v.set("www.rescala-lang.com")
-    assertEquals(ourTag.outerHTML, a(href := "www.rescala-lang.com").render.outerHTML, "changing var changes href")
+    assertEquals(
+      ourTag.outerHTML,
+      "<a href=\"www.rescala-lang.com\"><!--reattach start--><!--reattach end--></a>",
+      "changing var changes href"
+    )
 
     v.set("index.html")
-    assertEquals(ourTag.outerHTML, a(href := "index.html").render.outerHTML, "changing var changes href again")
+    assertEquals(
+      ourTag.outerHTML,
+      "<a href=\"index.html\"><!--reattach start--><!--reattach end--></a>",
+      "changing var changes href again"
+    )
 
   }
 
@@ -76,26 +92,38 @@ class RescalatagsTest extends FunSuite {
     val outerR                 = div().render.reattach(vrend)
     val outerWithOtherChildren = div(span("before")).render.reattach(vrend).tap(_.append(span("after").render))
 
-    assertEquals(outerR.innerHTML, "<span>hey</span><span>ho</span>", "render fragments")
+    assertEquals(
+      outerR.innerHTML,
+      "<!--reattach start--><span>hey</span><span>ho</span><!--reattach end-->",
+      "render fragments"
+    )
     assertEquals(
       outerWithOtherChildren.innerHTML,
-      "<span>before</span><span>hey</span><span>ho</span><span>after</span>",
+      "<span>before</span><!--reattach start--><span>hey</span><span>ho</span><!--reattach end--><span>after</span>",
       "render fragments2"
     )
 
     v.set(Seq(span("hallo welt")))
-    assertEquals(outerR.innerHTML, "<span>hallo welt</span>", "setting to less elements works")
+    assertEquals(
+      outerR.innerHTML,
+      "<!--reattach start--><span>hallo welt</span><!--reattach end-->",
+      "setting to less elements works"
+    )
     assertEquals(
       outerWithOtherChildren.innerHTML,
-      "<span>before</span><span>hallo welt</span><span>after</span>",
+      "<span>before</span><!--reattach start--><span>hallo welt</span><!--reattach end--><span>after</span>",
       "setting to less elements works2"
     )
 
     v.set(Seq(span("hey2"), span("ho2")))
-    assertEquals(outerR.innerHTML, "<span>hey2</span><span>ho2</span>", "increasing works")
+    assertEquals(
+      outerR.innerHTML,
+      "<!--reattach start--><span>hey2</span><span>ho2</span><!--reattach end-->",
+      "increasing works"
+    )
     assertEquals(
       outerWithOtherChildren.innerHTML,
-      "<span>before</span><span>hey2</span><span>ho2</span><span>after</span>",
+      "<span>before</span><!--reattach start--><span>hey2</span><span>ho2</span><!--reattach end--><span>after</span>",
       "increasing works2"
     )
 
