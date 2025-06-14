@@ -1,10 +1,8 @@
 package com.daimpl.lib
 
-import rdts.base.{DecoratedLattice, Lattice, LocalUid}
+import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{Dot, Dots}
-
-import scala.util.chaining.scalaUtilChainingOps
 
 case class Spreadsheet[A](
     rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
