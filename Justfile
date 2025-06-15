@@ -30,8 +30,8 @@ webappsBundle:
 	npm --prefix "Modules/Examples Web/" install
 	"Modules/Examples Web/node_modules/vite/bin/vite.js" build "Modules/Examples Web/" --outDir "target/dist"
 
-webappsWebview sbtOpts="": webappsBundle
-	sbt {{sbtOpts}} 'webview / fetchResources'
+webappsWebview sbtOpts="":
+	# REMINDER: call webappsBundle first if not done yet
 	sbt {{sbtOpts}} 'webview / run "Modules/Examples Web/target/dist/index.html"'
 
 selectScheduler scheduler="levelled":
