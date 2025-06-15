@@ -36,3 +36,18 @@ webappsWebview sbtOpts="": webappsBundle
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
+
+open-in-podman:
+	podman build --file Containerfile --tag bismuth-dev-image .
+	# largely stolen from distrobox
+	mkdir -p target/bismut-dev-container-home
+	podman run --privileged --network host --ipc host --pid host --ulimit host \
+		--volume "$(pwd)":"$(pwd)":rslave \
+		--volume "$(pwd)/target/bismut-dev-container-home":/root:rslave \
+		--env "DISPLAY=$DISPLAY" \
+		--name bismuth-dev-container --replace \
+		--workdir "$(pwd)" \
+		--rm --tty --interactive \
+		bismuth-dev-image \
+		fish
+
