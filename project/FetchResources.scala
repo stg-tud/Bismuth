@@ -27,7 +27,7 @@ object FetchResources extends sbt.AutoPlugin {
   // It is essentially the same as if this was in a `.settings()` block in the build.sbt
   override lazy val projectSettings: Seq[Setting[?]] = Seq(
     fetchedResources := Nil,
-    fetchResources := {
+    fetchResources   := {
 
       fetchedResources.value.map { dep =>
         val filepath = target.value.toPath.resolve(dep.localpath)

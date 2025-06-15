@@ -8,7 +8,7 @@ import sbt.Keys.*
 object Settings {
 
   // also consider updating the -source param below
-  val scala3VersionString = sys.env.getOrElse("SCALA_VERSION", "3.7.1")
+  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.7.1")
 
   // needs either 3.7 or 3.5 minor version in 3.6, otherwise there is a unfixable warning about changed implicit order
   // see https://github.com/scala/scala3/issues/22153
@@ -19,9 +19,8 @@ object Settings {
   // and https://www.scala-lang.org/api/current/scala/language$.html
   // and run: cs launch scala3-compiler -- -help
 
-  val scala3NonStrictDefaults = Def.settings(
+  val scala3defaults = Def.settings(
     scalaVersion := scala3VersionString,
-    javaOutputVersion(17),
     fullFeatureDeprecationWarnings,
     scalaSourceLevel(scala3VersionMinor),
     warningsAreErrors(Compile / compile, Test / compile),
@@ -30,8 +29,9 @@ object Settings {
     privateShadow(Compile / compile),
   )
 
-  val scala3defaults = Def.settings(
-    scala3NonStrictDefaults,
+  val scala3defaultsExtra = Def.settings(
+    scala3defaults,
+    javaOutputVersion(17),
     explicitNulls(Compile / compile),
     safeInit(Compile / compile),
     unstableInlineAccessors(Compile / compile),
