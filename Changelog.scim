@@ -3,6 +3,7 @@
 == v.next
 
 • remove datatypes that are supposed to be wrapped into dotted/obrem
+• fix reactive tags integration
 
 == v0.37.0
 date = 2024-12-12
