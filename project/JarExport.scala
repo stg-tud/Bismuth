@@ -1,7 +1,7 @@
 /* This file is shared between multiple projects
  * and may contain unused dependencies */
 
-import sbt.Keys.{crossTarget, fullClasspathAsJars, target}
+import sbt.Keys.{fullClasspathAsJars, target}
 import sbt.{Compile, File, IO, Setting, SettingKey, TaskKey}
 
 import java.nio.file.Path
