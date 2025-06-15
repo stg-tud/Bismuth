@@ -11,6 +11,7 @@ object SettingsLocal {
       val process = new ProcessBuilder(args*).start()
       process.waitFor()
       val res = new String(process.getInputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+      if (process.exitValue() != 0) throw new IllegalStateException(s"command failed: ${args.mkString(" ")}\n$res")
       res.split(raw"\s+").toList
     }
 
@@ -24,8 +25,11 @@ object SettingsLocal {
       case Some(linux) if linux.contains("linux") =>
         nativeConfig
           .withLinkingOptions(
+            // unfortunately gtk4 version does not work in podman :(
+            // nativeConfig.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk4", "webkitgtk-6.0")
             nativeConfig.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk+-3.0", "webkit2gtk-4.1")
           )
+          // .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk4", "webkitgtk-6.0"))
           .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk+-3.0", "webkit2gtk-4.1"))
       case other =>
         println(s"unknown OS: $other")
