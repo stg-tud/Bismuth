@@ -7,7 +7,7 @@ import rdts.base.Uid
   */
 case class Dot(place: Uid, time: Time) {
   def advance: Dot = Dot(place, time + 1)
-  def dots: Dots = Dots.single(this)
+  def dots: Dots   = Dots.single(this)
 }
 
 object Dot {

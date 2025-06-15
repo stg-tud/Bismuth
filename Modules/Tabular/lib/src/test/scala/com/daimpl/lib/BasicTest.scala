@@ -18,7 +18,6 @@ class BasicTest extends munit.FunSuite {
 
     assertEquals(agg.current.content.queryAllEntries, Iterable())
 
-
   }
 
 }

@@ -16,7 +16,7 @@ import scala.util.chaining.scalaUtilChainingOps
   * "Performance and Scalability of EJB Applications", see [[https://www.researchgate.net/publication/2534515_Performance_and_Scalability_of_EJB_Applications here]]
   */
 object RubisInterface {
-  type AID = String
+  type AID  = String
   type User = String
 
   case class State(current: (ReplicatedSet[(User, Uid)], Map[User, Uid], Map[AID, AuctionInterface.AuctionData])) {
