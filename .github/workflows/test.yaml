@@ -17,9 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macOS 13/14 uses different CPU architectures, older ubuntu because 24.04 is well tested outside of CI
-        os: [macOS-13, macOS-14, ubuntu-22.04, windows-2022]
-        java-version: [17, 21, 24]
+        # older ubuntu to test compat
+        os: [macOS-15, ubuntu-22.04, windows-2025, windows-11-arm, ubuntu-24.04-arm]
+        java-version: [17]
 
     env:
       JAVA_OPTS: -Xmx4g
@@ -34,12 +34,10 @@ jobs:
           distribution: "zulu"
 
       - uses: sbt/setup-sbt@v1
-        with:
-          sbt-runner-version: 1.11.2
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
 
       - name: install jsdom
         run: npm install jsdom
