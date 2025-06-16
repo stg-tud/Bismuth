@@ -116,6 +116,8 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     scalaJSLinkerConfig := {
       scalaJSLinkerConfig.value
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
+        // vite also seems to not really work with WASM – it kinda does in dev mode, but not when bundling
+        // also disable module splitting when working with wasm
         .withExperimentalUseWebAssembly(false) // use the Wasm backend
         .withModuleKind(ModuleKind.ESModule)   // required by the Wasm backend
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
