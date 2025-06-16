@@ -118,9 +118,10 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
         // vite also seems to not really work with WASM – it kinda does in dev mode, but not when bundling
         // also disable module splitting when working with wasm
-        .withExperimentalUseWebAssembly(false) // use the Wasm backend
-        .withModuleKind(ModuleKind.ESModule)   // required by the Wasm backend
+        .withExperimentalUseWebAssembly(false)
+        .withModuleKind(ModuleKind.ESModule)
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
+        .withESFeatures(_.withESVersion(ESVersion.ES2015))
     },
     // todolist does not have tests, but still fails to execute them with Wasm backend
     test      := {},
