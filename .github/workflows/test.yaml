@@ -47,8 +47,9 @@ jobs:
       - name: compile
         run: sbt compile
 
-      # - name: documentation
-      #   run: sbt doc
+      - name: documentation
+        run: sbt doc
+        continue-on-error: true
 
       - name: compile tests
         run: sbt Test/compile
