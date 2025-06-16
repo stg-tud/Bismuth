@@ -42,23 +42,23 @@ jobs:
         run: npm install jsdom
 
       - name: start sbt
-        run: sbt exit
+        run: sbt --client update
 
       - name: compile
-        run: sbt compile
+        run: sbt --client compile
 
       - name: documentation
-        run: sbt doc
+        run: sbt --client doc
         continue-on-error: true
 
       - name: compile tests
-        run: sbt Test/compile
+        run: sbt --client Test/compile
 
       - name: compile tests js
-        run: sbt Test/fastLinkJS
+        run: sbt --client Test/fastLinkJS
 
       - name: compile tests native
-        run: sbt Test/nativeLink
+        run: sbt --client Test/nativeLink
 
       - name: test
-        run: sbt test
+        run: sbt --client test
