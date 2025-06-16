@@ -1,12 +1,24 @@
-# Chat
+# Contributing
 
-For TUDa members (with TU-ID) you should be able to directly join:
+By contributing code to this repository, you agree to publish it under the Apache 2.0 License and confirm that you have the necessary rights to do so.
+
+This repository is a monorepo, with various independent modules. It is recommended to commit directly to the `main` branch to ensure everything remains integrated. However, please ensure your changes compile and pass tests without errors.
+
+# Contact
+
+For TUDa members (with TU-ID) you should be able to directly join our matrix channel:
 https://element.matrix.tu-darmstadt.de/#/room/#difosys:matrix.tu-darmstadt.de
 
 Everyone else may join using any matrix connection:
 https://matrix.to/#/#difosys:matrix.tu-darmstadt.de
 
-# This Repository
+Feel free to use the chat in case you encounter any technical issues with contributing to this repository.
+
+The channel is “public” in the sense that anyone may join, but “private” in the sense that messages are only visible to current members of the channel.
+
+
+
+# About this Repository
 
 This repository contains research software related to Programming Foundations for Distributed Systems at the [Software Technology Group](http://www.stg.tu-darmstadt.de/).
 
