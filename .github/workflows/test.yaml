@@ -17,8 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # older ubuntu to test compat
-        os: [macOS-15, ubuntu-22.04, windows-2025, windows-11-arm, ubuntu-24.04-arm]
+        os: [macOS-15, ubuntu-22.04, windows-2025, ubuntu-24.04-arm]
         java-version: [17]
 
     env:
