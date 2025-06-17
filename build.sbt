@@ -1,5 +1,5 @@
 import Settings.{javaOutputVersion, scala3defaults, scala3defaultsExtra}
-import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle}
+import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle, OutputPatterns}
 
 import scala.scalanative.build.{LTO, Mode}
 
@@ -230,7 +230,6 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
     rdts     % "compile->compile;test->test",
     reactives,
   )
-  .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
@@ -244,11 +243,12 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
     Dependencies.tink,
     libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
     Dependencies.slf4jSimple,
-  )
-  .jsSettings(
-    Compile / npmDependencies ++= Seq(
-      "libsodium-wrappers" -> "0.7.13",
-    ),
+  ).jsSettings(
+    // commonjs module allows tests to find libsodium-wrappers installed in the root project
+    Test / scalaJSLinkerConfig := {
+      (Test / scalaJSLinkerConfig).value
+        .withModuleKind(ModuleKind.CommonJSModule)
+    },
   )
 
 lazy val webview = project.in(file("Modules/Webview"))

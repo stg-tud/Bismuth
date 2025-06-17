@@ -22,5 +22,3 @@ addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.1")
 
 // tooling
 addSbtPlugin("pl.project13.scala" % "sbt-jmh"             % "0.4.7")
-addSbtPlugin("ch.epfl.scala"      % "sbt-scalajs-bundler" % "0.21.1")
-//addSbtPlugin("org.scalablytyped.converter" % "sbt-converter" % "1.0.0-beta44")

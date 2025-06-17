@@ -7,6 +7,7 @@ authors:
 	git shortlog -sn
 
 test sbtOpts="":
+	npm install
 	sbt {{sbtOpts}} test
 
 publishM2 sbtOpts="":
