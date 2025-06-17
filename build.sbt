@@ -1,7 +1,6 @@
 import Settings.{javaOutputVersion, scala3defaults, scala3defaultsExtra}
 import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle}
 
-import java.net.URI
 import scala.scalanative.build.{LTO, Mode}
 
 lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
