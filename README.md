@@ -29,9 +29,10 @@ All code in this repository is written in Scala and organized as a single [sbt](
 The simplest way to get started is to install [coursier](https://get-coursier.io/docs/cli-installation) – a single binary called `cs` – and then run `cs launch sbt` in the project root directory. This provides you with the sbt shell, where you can type `compile` or `test` to ensure that everything is working correctly. If you get strange errors you may be using a too new/old java version, try `cs launch --jvm=21 sbt` to force the use of Java 21 (will be downloaded).
 
 > [!NOTE]
-> Some JS tests require the `jsdom` npm package to be installed. Install it via `npm install jsdom` if you run into errors.
+> Some JS tests require npm package to be installed. Install it via `npm install` in the root folder if you run into errors.
 
-Type `projects` into the sbt shell to get an overview of the available modules. Many modules have a JVM/JS/Native/Aggregate suffix, indicating that this module is cross compiled to different backends. You can select a specific module in the sbt shell by running, for example, `project reactivesJVM`. Then the `compile` or `test` commands will only happen in the selected module. See below for an overview of the modules.
+Type `projects` into the sbt shell to get an overview of the available modules. Many modules have a JVM/JS/Native/Aggregate suffix, indicating that this module is cross compiled to different backends. You can select a specific module in the sbt shell by running, for example, `project reactivesJVM`. Then the `compile` or `test` commands will only happen in the selected module.
+Also take a look at the `Justfile`, which contains various useful command invocations.
 
 ## IDE Setup
 
