@@ -133,7 +133,6 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
-    // unstable variant does not enable an inline binary check, because the LoRe DLS has A LOT of private but public members
     scala3defaults,
     javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
