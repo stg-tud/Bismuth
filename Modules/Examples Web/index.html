@@ -1,57 +1,69 @@
 <!doctype html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>WebApp Examples</title>
 	<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<section id="app">
-	<noscript>
-		<div style="padding:2em;text-align:center;font-size:2em">
-			Please enable JavaScript!
-		</div>
-	</noscript>
-</section>
+	<section id="app">
+		<noscript>
+			<div style="padding:2em;text-align:center;font-size:2em">
+				Please enable JavaScript!
+			</div>
+		</noscript>
+	</section>
 
 
-<footer class="info">
-	<button id="todolist-btn">Show Todo List</button>
-	<button id="calendar-btn">Show Calendar</button>
-	<button id="unit-conversion-btn">Show Unit Conversion</button>
-	<p>Created by the <a href="https://www.rescala-lang.com/">REScala Team</a></p>
-	<p>Todolist based on <a href="https://todomvc.com">TodoMVC</a></p>
-</footer>
+	<footer class="info">
+		<button id="todolist-btn">Show Todo List</button>
+		<button id="calendar-btn">Show Calendar</button>
+		<button id="unit-conversion-btn">Show Unit Conversion</button>
+		<p>Created by the <a href="https://www.rescala-lang.com/">REScala Team</a></p>
+		<p>Todolist based on <a href="https://todomvc.com">TodoMVC</a></p>
+	</footer>
 
-<script type="text/javascript" src=""></script>
-<script type="text/javascript">
+	<script type="text/javascript" src=""></script>
+	<script type="text/javascript">
 
-</script>
+	</script>
 
-<script type="module">
-	import { Todolist, Calendar, UnitConversion, DebugAdapterSetListener } from 'scalajs:main.js';
+	<script type="module">
+		// the meta env will be set by a bundler (vite) when building a distributable file, thus using the fullopt.js
+		// when running this file directly in the browser without bundling, we fall back to using the fastopt variant
+		const useFullopt = import.meta.env?.PROD;
+		const modulePromise = (useFullopt) ?
+			import('./target/generated_js/examplesweb-opt/main.js') :
+			import('./target/generated_js/examplesweb-fastopt/main.js');
 
-	// Add event listeners
-	document.getElementById('todolist-btn').addEventListener('click', Todolist);
-	document.getElementById('calendar-btn').addEventListener('click', Calendar);
-	document.getElementById('unit-conversion-btn').addEventListener('click', UnitConversion);
+		// the dynamic import above returns the module object, which is destructured into the components we care about below.
+		modulePromise.then(({ Todolist, Calendar, UnitConversion, DebugAdapterSetListener }) => {
 
-	window.reScalaEvents = [];
-	window.reScalaId = Math.random();
-	window.domAssocations = new Map();
+			// Add event listeners
+			document.getElementById('todolist-btn').addEventListener('click', Todolist);
+			document.getElementById('calendar-btn').addEventListener('click', Calendar);
+			document.getElementById('unit-conversion-btn').addEventListener('click', UnitConversion);
 
-	DebugAdapterSetListener(data => {
-		if (data.type === 'DomAssociation') {
-			window.domAssocations.set(JSON.parse(data.reSource).idCounter, data.node);
-		} else if (typeof data === 'string') {
-			window.reScalaEvents.push(JSON.parse(data));
-		}
-	});
+			window.reScalaEvents = [];
+			window.reScalaId = Math.random();
+			window.domAssocations = new Map();
 
-	// default open todolist
-	Todolist();
-</script>
+			DebugAdapterSetListener(data => {
+				if (data.type === 'DomAssociation') {
+					window.domAssocations.set(JSON.parse(data.reSource).idCounter, data.node);
+				} else if (typeof data === 'string') {
+					window.reScalaEvents.push(JSON.parse(data));
+				}
+			});
+
+			// default open todolist
+			Todolist();
+		});
+	</script>
 
 </body>
+
 </html>

@@ -123,7 +123,10 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
         .withESFeatures(_.withESVersion(ESVersion.ES2015))
     },
-    // todolist does not have tests, but still fails to execute them with Wasm backend
+    // fix the output directory to make it “guessable” by JS import
+    fastLinkJS / crossTarget := target.value / "generated_js",
+    fullLinkJS / crossTarget := target.value / "generated_js",
+    // examples do not have tests, but still fail to execute them with WASM backend
     test      := {},
     testQuick := {},
   )
