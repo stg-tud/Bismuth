@@ -7,7 +7,7 @@ authors:
 	git shortlog -sn
 
 test sbtOpts="":
-	npm install
+	npm install --no-package-lock
 	sbt {{sbtOpts}} test
 
 publishM2 sbtOpts="":
