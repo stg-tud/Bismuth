@@ -28,6 +28,7 @@ webappsServe:
 
 webappsBundle:
 	npm --prefix "Modules/Examples Web/" install
+	sbt --client examplesWeb/fullLinkJS
 	"Modules/Examples Web/node_modules/vite/bin/vite.js" build "Modules/Examples Web/" --outDir "target/dist"
 
 webappsWebview sbtOpts="":
@@ -37,25 +38,12 @@ webappsWebview sbtOpts="":
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
 
-update-webview:
-	#!/usr/bin/env fish
-	cd target
-	pwd
-	rm -rf webview
-	git clone https://github.com/webview/webview.git
-	cd webview
-	pwd
-	git switch --detached f1a9d6b6fb8bcc2e266057224887a3d628f30f90
-	python3 scripts/amalgamate/amalgamate.py --base core --search include --output ../../Modules/Webview/src/main/resources/scala-native/webview.h src
-	cd ..
-	rm -rf webview
-
-update-webview-in-podman: (open-in-podman "just update-webview")
+update-webview-in-podman: (open-in-podman "fish ./scripts/update-webview.fish")
 
 open-in-podman command="fish":
 	podman build --file Containerfile --tag bismuth-dev-image .
-	# largely stolen from distrobox
 	mkdir -p target/bismut-dev-container-home
+	# largely stolen from distrobox
 	podman run --privileged --network host --ipc host --pid host --ulimit host \
 		--volume "$(pwd)":"$(pwd)":rslave \
 		--volume "$(pwd)/target/bismut-dev-container-home":/root:rslave \
