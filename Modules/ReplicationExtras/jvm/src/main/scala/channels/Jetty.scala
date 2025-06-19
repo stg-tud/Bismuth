@@ -48,7 +48,6 @@ class JettyWsListener(val server: Server) {
             server,
             context,
             (wsContainer: ServerWebSocketContainer) => {
-              println(s"adding mapping")
               wsContainer.addMapping(
                 pathSpec,
                 webSocketCreator(incomingHandler, Async.handler)
@@ -72,7 +71,6 @@ class JettyWsListener(val server: Server) {
           // callback has to be ignored if a handler is returned (great design jetty!)
           callback: JettyUtilCallback
       ): AnyRef = {
-        println(s"creating ws handler")
         new JettyWsHandler(incoming, delayCallback)
       }
     }
@@ -86,14 +84,12 @@ object JettyWsConnection {
 
         val client = new WebSocketClient()
         client.start()
-        println(s"client started")
         // this returns a future
         client.connect(
           new JettyWsHandler(incomingHandler, Async.handler[Connection[MessageBuffer]]),
           uri
         ).toAsync.run(using ()) {
           sess =>
-            println(s"connect returned $sess")
         }
       }
   }
@@ -132,8 +128,6 @@ class JettyWsHandler(
 
   override def onWebSocketBinary(buffer: ByteBuffer, callback: JettyCallback): Unit = {
 
-    println(s"received binary data")
-
     val data = new Array[Byte](buffer.remaining())
     buffer.get(data)
 
@@ -144,19 +138,15 @@ class JettyWsHandler(
   }
 
   override def onWebSocketText(message: String): Unit = {
-    println(s"received unexpected text data: $message")
     getSession.demand()
   }
 
-  override def onWebSocketClose(statusCode: Int, reason: String): Unit = {
-    println(s"closing message because $reason")
-  }
+  override def onWebSocketClose(statusCode: Int, reason: String): Unit = {}
 
   override def onWebSocketError(cause: Throwable): Unit = {
-    println(s"received explicit error $cause")
     internalCallback.fail(cause)
   }
 
   override def onWebSocketPing(payload: ByteBuffer): Unit =
-    getSession.sendPong(payload, JettyCallback.from(() => getSession.demand(), println))
+    getSession.sendPong(payload, JettyCallback.from(() => getSession.demand(), _ => ()))
 }

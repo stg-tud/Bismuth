@@ -13,10 +13,14 @@ import scala.util.{Failure, Success}
 
 class ConnectionManager[MSG](
     privateIdentity: PrivateIdentity,
-    messageHandler: MessageReceiver[MSG]
+    messageHandler: MessageReceiver[MSG],
+    disableLogging: Boolean = false
 )(using msgCodec: MessageSerialization[MSG]) {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
-  private given ec: ExecutionContext    = ExecutionContext.fromExecutor(executor)
+  private given ec: ExecutionContext    =
+    if disableLogging
+    then ExecutionContext.fromExecutor(executor, _ => ())
+    else ExecutionContext.fromExecutor(executor)
 
   private val connector = P2PTlsTcpConnector(privateIdentity)
 

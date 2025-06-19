@@ -204,8 +204,6 @@ lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
-  ).jsSettings(
-    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(NodeJSEnv.Config().withExecutable("bun-node"))
   )
 
 lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(file("Modules/Reactives"))
@@ -245,7 +243,7 @@ lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modu
     Dependencies.sslcontextKickstart,
     Dependencies.tink,
     libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
-    Dependencies.slf4jSimple,
+    Dependencies.slf4jnop,
   ).jsSettings(
     // commonjs module allows tests to find libsodium-wrappers installed in the root project
     Test / scalaJSLinkerConfig := {

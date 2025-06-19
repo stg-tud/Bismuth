@@ -4,7 +4,6 @@ import munit.FunSuite
 import org.bouncycastle.crypto.params.{Ed25519PrivateKeyParameters, Ed25519PublicKeyParameters}
 import org.bouncycastle.crypto.signers.Ed25519Signer
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.junit.Assert
 import org.junit.Assert.assertArrayEquals
 
 import java.security.*
