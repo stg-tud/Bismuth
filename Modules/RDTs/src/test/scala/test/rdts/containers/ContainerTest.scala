@@ -102,8 +102,6 @@ class ContainerTest extends munit.FunSuite {
 
     assertEquals(lww.state.read, "")
 
-    println(lww)
-
     val added = lww.mod(_.write("First"))
     assertEquals(added.state.read, "First")
 

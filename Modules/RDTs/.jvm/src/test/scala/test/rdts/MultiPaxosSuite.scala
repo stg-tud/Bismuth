@@ -1,6 +1,7 @@
 package test.rdts
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
+import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
 import rdts.protocols.MultipaxosPhase.LeaderElection
@@ -12,13 +13,8 @@ extension [A](s1: Seq[A])
   def isPrefix(s2: Seq[A]): Boolean = s1.indexOfSlice(s2) == 0
 
 class MultiPaxosSuite extends munit.ScalaCheckSuite {
-  // override def scalaCheckInitialSeed = "UyoN51e59jSOQrryl2a6RnndAVJ0m290IRZ8JjXL9rJ="
 
-  override def scalaCheckTestParameters =
-    super.scalaCheckTestParameters
-      .withMinSuccessfulTests(1000)
-      .withMinSize(30)
-      .withMaxSize(500)
+  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters)
 
   property("Multipaxos")(MultiPaxosSpec[Int](
     logging = false,

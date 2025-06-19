@@ -2,6 +2,7 @@ package test.rdts
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
+import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.LocalUid
 import rdts.protocols.old.simplified.Paxos
@@ -10,13 +11,7 @@ import scala.util.Try
 
 class SimplePaxosSuite extends munit.ScalaCheckSuite {
 
-  //  override def scalaCheckInitialSeed = "yL7jhVAhl4I5iCmRP_WmL07-3jaoICgGS7X0-zv54LD="
-
-  //  override def scalaCheckTestParameters =
-  //    super.scalaCheckTestParameters
-  //      .withMinSuccessfulTests(500)
-  //      .withMinSize(30)
-  //      .withMaxSize(200)
+  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters)
 
   property("Paxos simplified")(SimplePaxosSpec[Int](
     logging = false,

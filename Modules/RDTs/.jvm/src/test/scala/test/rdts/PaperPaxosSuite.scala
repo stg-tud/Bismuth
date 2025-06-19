@@ -1,17 +1,12 @@
 package test.rdts
 
+import org.scalacheck.Test.Parameters
 import rdts.protocols.Paxos
 import rdts.protocols.paper.Paxos as PaperPaxos
 
 class PaperPaxosSuite extends munit.ScalaCheckSuite:
 
-  //  override def scalaCheckInitialSeed = "ZcBq5Oa3t8-hWG0Snkx22h6nivxFRCvp27NO4tFKzbN="
-
-  override def scalaCheckTestParameters =
-    super.scalaCheckTestParameters
-      .withMinSuccessfulTests(200)
-      .withMinSize(60)
-      .withMaxSize(200)
+  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters)
 
   property("Paxos")(ConsensusPropertySpec[Int, Paxos](
     logging = false,

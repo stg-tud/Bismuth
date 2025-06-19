@@ -2,6 +2,7 @@ package test.rdts
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
+import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
 import rdts.protocols.old.simplified.GeneralizedPaxos
@@ -9,20 +10,8 @@ import rdts.protocols.{Consensus, Membership, Paxos}
 
 import scala.util.Try
 class MembershipSuite extends munit.ScalaCheckSuite {
-//  override def scalaCheckInitialSeed = "6Y9lv63LraBdJTHwHFLm3ItFEF7sm6Ok2D3S22VQcTO="
 
-  override def munitIgnore: Boolean = isGithubCi
-
-  // TODO: failing seed
-  // override def scalaCheckInitialSeed = "sw9ZNlZ9x0YrVuK2jCaUjc2Im3gi9os7yJbRCA1n8eP="
-  // override def scalaCheckInitialSeed = "tuRJ9FeHxNhcTdcocDyhBEuXIokYg0Jyp6Rk9E-KGGF="
-  // override def scalaCheckInitialSeed = "JxUkfCJH212GD2NHRYliPeBttGpBvXSqoxX8CP8yhiG="
-
-  override def scalaCheckTestParameters =
-    super.scalaCheckTestParameters
-      .withMinSuccessfulTests(1000)
-      .withMinSize(100)
-      .withMaxSize(500)
+  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters)
 
   property("Membership with simplepaxos")(MembershipSpec[Int, Paxos, Paxos](
     logging = false,
