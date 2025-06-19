@@ -14,7 +14,7 @@ import scala.language.postfixOps
 
 class ConnectionManagerTest extends FunSuite {
 
-  override def munitFlakyOK: Boolean = isGithubCi
+  override def munitIgnore: Boolean = isGithubCi
 
   private val idA = IdentityFactory.createNewIdentity
   private val idB = IdentityFactory.createNewIdentity
@@ -281,7 +281,7 @@ class ConnectionManagerTest extends FunSuite {
     connManD.shutdown()
   }
 
-  test("end-to-end test".flaky) {
+  test("end-to-end test") {
     val receiverA = QueueAppendingMessageReceiver(idA.getPublic)
     val connManA  = ConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
