@@ -614,9 +614,9 @@ object LoReGen {
           logRhsInfo(indentLevel, operandSide, s"conditional expression", "")
         }
 
-        val condTerm: Term         = buildLoReRhsTerm(cond, termList, indentLevel, operandSide)  // if x
-        val thenTerm: Term         = buildLoReRhsTerm(_then, termList, indentLevel, operandSide) // then y
-        val elseTerm: Option[Term] = _else match                                                 // else z
+        val condTerm: Term = buildLoReRhsTerm(cond, termList, indentLevel, operandSide)  // if x
+        val thenTerm: Term = buildLoReRhsTerm(_then, termList, indentLevel, operandSide) // then y
+        val elseTerm: Option[Term] = _else match // else z
           case Literal(Constant(_: Unit)) => None // No else exists
           case _ => Some(buildLoReRhsTerm(_else, termList, indentLevel, operandSide)) // Else exists
 
@@ -680,34 +680,49 @@ object LoReGen {
       methodParamTerm: Term,
       methodName: String
   )(using @unused logLevel: LogLevel, ctx: Context): TInteraction = {
+    // To add a method to an interaction term, copy the existing term and add the method term to the respective field.
+    // Also update the source position of the interaction term with that of the supplied tree - this is important if
+    // the interaction term being added to is a reference (i.e. an interaction is being defined that is an existing
+    // interaction, plus an extra method call), otherwise any verification errors relating to it would be reported at
+    // the referenced interaction in Scala/LoRe, not at the definition of the interaction which has the reference.
+
     methodName match
       // modifies is handled specifically in above case due to different structure
       case "modifies" =>
         methodParamTerm match
-          case TVar(modVar, _, _) => interaction.copy(modifies = interaction.modifies.prepended(modVar))
-          case _                  =>
+          case TVar(modVar, _, _) => interaction.copy(
+              modifies = interaction.modifies.prepended(modVar),
+              scalaSourcePos = Some(tree.sourcePos)
+            )
+          case _ =>
             report.error(
               s"Error building RHS term for Interaction modifies call",
               tree.sourcePos
             )
             interaction
       case "requires" =>
-        interaction.copy(requires = interaction.requires.prepended(methodParamTerm))
+        interaction.copy(
+          requires = interaction.requires.prepended(methodParamTerm),
+          scalaSourcePos = Some(tree.sourcePos)
+        )
       case "ensures" =>
-        interaction.copy(ensures = interaction.ensures.prepended(methodParamTerm))
+        interaction.copy(
+          ensures = interaction.ensures.prepended(methodParamTerm),
+          scalaSourcePos = Some(tree.sourcePos)
+        )
       case "executes" =>
         // executes can only have one value due to being an Option, so simply replace the value
         interaction.executes match
-          case None            => interaction.copy(executes = Some(methodParamTerm))
+          case None => interaction.copy(executes = Some(methodParamTerm), scalaSourcePos = Some(tree.sourcePos))
           case Some(seq: TSeq) =>
             // Sequence already exists, so append to it
             val newSeq: TSeq = seq.copy(body = seq.body.append(methodParamTerm))
-            interaction.copy(executes = Some(newSeq))
+            interaction.copy(executes = Some(newSeq), scalaSourcePos = Some(tree.sourcePos))
           case Some(term: Term) =>
             // Executes is currently a single term, so form sequence
             val seqBody: NonEmptyList[Term] = NonEmptyList.of(term, methodParamTerm)
             val seq: TSeq                   = TSeq(seqBody, scalaSourcePos = Some(tree.sourcePos))
-            interaction.copy(executes = Some(seq))
+            interaction.copy(executes = Some(seq), scalaSourcePos = Some(tree.sourcePos))
   }
 
   // See the two arrowTree cases in buildLoReRhsTerm, code extracted to avoid duplication
