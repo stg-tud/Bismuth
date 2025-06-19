@@ -7,6 +7,8 @@ import java.time.{Clock, LocalDate as Date}
 
 class PaperExampleSharedCalendar extends munit.FunSuite {
 
+  def println(msg: String): Unit = ()
+
   object Date { def today(): Date = java.time.LocalDate.now(Clock.systemUTC()) }
   object Week {
 

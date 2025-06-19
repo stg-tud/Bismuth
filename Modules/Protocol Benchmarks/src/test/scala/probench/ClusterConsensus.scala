@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import probench.clients.ProBenchClient
 import probench.data.{ClientState, ClusterState, KVOperation}
 import rdts.base.{LocalUid, Uid}
-import rdts.protocols.{MultiPaxos, Participants}
+import rdts.protocols.Participants
 import replication.ProtocolMessage
 
 class ClusterConsensus extends munit.FunSuite {
@@ -36,6 +36,8 @@ class ClusterConsensus extends munit.FunSuite {
     val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
     client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
 
+    client.printResults = false
+
     client.write("test", "Hi")
     client.read("test")
 
@@ -52,7 +54,6 @@ class ClusterConsensus extends munit.FunSuite {
 
     def runUpkeep() = while {
       nodes.filter(_.cluster.needsUpkeep()).exists { n =>
-        println(s"forcing upkeep on $n")
         investigateUpkeep(n.cluster.state)(using n.localUid)
         n.cluster.forceUpkeep()
         true
@@ -81,6 +82,8 @@ class ClusterConsensus extends munit.FunSuite {
     // simulate crash
 
     secondaries.last.cluster.dataManager.globalAbort.closeRequest = true
+
+    client.printResults = false
 
     client.write("test2", "Hi")
     client.read("test2")
