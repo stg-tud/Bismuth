@@ -239,7 +239,6 @@ object PaperPhilosophers {
     val threadCount = if args.length >= 2 then Integer.parseInt(args(1)) else tableSize
     val duration    = if args.length >= 3 then Integer.parseInt(args(2)) else 0
 
-    object engine extends reactives.fullmv.FullMVEngine(Duration.Zero, s"PaperPhilosophers($tableSize,$threadCount)")
     val table =
       new PaperPhilosophers(tableSize, reactives.default, Dynamicity.Dynamic) with SignalPyramidTopper
 //    given engine = rescala.levelbased.LevelBasedPropagationEngines.unmanaged

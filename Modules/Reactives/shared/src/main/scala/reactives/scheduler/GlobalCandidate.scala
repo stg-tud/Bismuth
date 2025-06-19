@@ -17,7 +17,6 @@ object GlobalCandidate {
       case "sidup"    => sidup
       case "levelled" => levelled
       case "parrp"    => PlatformCandidates.parrp
-      case "fullmv"   => PlatformCandidates.fullmv
       case other      => levelled
 
   // the type of selected might be expressible with a match type,
