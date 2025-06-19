@@ -41,24 +41,5 @@ jobs:
       - name: install npm dependencies
         run: npm install
 
-      - name: start sbt
-        run: sbt update
-
-      - name: compile
-        run: sbt compile
-
-      - name: documentation
-        run: sbt doc
-        continue-on-error: true
-
-      - name: compile tests
-        run: sbt Test/compile
-
-      - name: compile tests js
-        run: sbt Test/fastLinkJS
-
-      - name: compile tests native
-        run: sbt Test/nativeLink
-
       - name: test
         run: sbt test
