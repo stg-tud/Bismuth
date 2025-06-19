@@ -4,7 +4,7 @@ readme:
 	pager README.md
 
 authors:
-	git shortlog -sn
+	git shortlog --summary --numbered
 
 test sbtOpts="":
 	npm install --no-package-lock
