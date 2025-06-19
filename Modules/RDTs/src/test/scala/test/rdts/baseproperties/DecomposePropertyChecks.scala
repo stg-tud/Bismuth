@@ -41,21 +41,9 @@ abstract class DecomposePropertyChecks[A](
 
   override def munitIgnore: Boolean = expensive && isGithubCi
 
-  override def munitTestTransforms: List[TestTransform] = super.munitTestTransforms ++ List(
-    new TestTransform(
-      "flakyTestGenarators",
-      { t =>
-        if !(flaky && isGithubCi) then t
-        else
-          t.withBodyMap(_.transformCompat {
-            case Failure(exception) => Success(new TestValues.FlakyFailure(exception))
-            case succ               => succ
-          }(using munitExecutionContext))
-      }
-    )
-  )
+  override def munitFlakyOK: Boolean = flaky && isGithubCi
 
-  property("decomposition") {
+  property("decomposition".flaky) {
     forAll { (theValue: A) =>
 
       val decomposed = theValue.decomposed

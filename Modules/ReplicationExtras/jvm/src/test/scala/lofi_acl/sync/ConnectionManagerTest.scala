@@ -14,7 +14,7 @@ import scala.language.postfixOps
 
 class ConnectionManagerTest extends FunSuite {
 
-  override def munitFlakyOK: Boolean = true
+  override def munitFlakyOK: Boolean = isGithubCi
 
   private val idA = IdentityFactory.createNewIdentity
   private val idB = IdentityFactory.createNewIdentity
