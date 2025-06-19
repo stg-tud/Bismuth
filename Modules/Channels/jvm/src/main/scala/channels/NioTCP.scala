@@ -1,21 +1,27 @@
 package channels
 
+import channels.NioTCP.{AcceptAttachment, EndOfChannelException, ReceiveAttachment}
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import java.io.IOException
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
-import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
+import java.nio.channels.{ClosedChannelException, SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import scala.util.control.NonFatal
 
-case class AcceptAttachment(
+
+object NioTCP {
+  case class AcceptAttachment(
     callback: Callback[Connection[MessageBuffer]],
     incoming: Receive[MessageBuffer],
-)
+  )
 
-case class ReceiveAttachment(
+  case class ReceiveAttachment(
     callback: Callback[MessageBuffer]
-)
+  )
+
+  class EndOfChannelException(msg: String) extends Exception(msg)
+}
 
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
@@ -119,7 +125,7 @@ class NioTCP {
     while bytesRead < n do {
       val result = clientChannel.read(buffer)
       if result == -1 then {
-        throw IOException("nothing read???")
+        throw NoMoreDataException("remaining channel is empty")
       }
       bytesRead += result
     }
@@ -156,11 +162,7 @@ class NioTCP {
     try
       channel.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch
-      case _: UnsupportedOperationException =>
-        println(s"TCP nodelay not supported on this socket")
-    // channel.setOption(StandardSocketOptions.SO_REUSEADDR, true)
-    // channel.setOption(StandardSocketOptions.SO_RCVBUF, tcpBufferSizes)
-    // channel.setOption(StandardSocketOptions.SO_SNDBUF, tcpBufferSizes)
+      case _: UnsupportedOperationException => // fine
   }
 
   def defaultServerSocketChannel(socketAddress: SocketAddress): () => ServerSocketChannel = () => {

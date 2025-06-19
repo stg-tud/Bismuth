@@ -35,8 +35,7 @@ object JavaHttp {
         exchange.getResponseHeaders.add("Access-Control-Allow-Headers", "x-replica-id")
         val uid = Option(requestHeaders.get(replicaIdHeader)).flatMap(_.asScala.headOption) match
           case None =>
-            println(s"no replica ID on request?")
-            Uid.zero
+            throw IllegalStateException(s"no replica ID in x-replica-id header")
           case Some(rid) =>
             Uid.predefined(rid)
 
@@ -55,7 +54,6 @@ object JavaHttp {
           val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
 
           SSEServer.this.synchronized {
-            println(s"made connection for $uid")
             connections = connections.updated(uid, receiver.messageHandler(conn))
           }
 
@@ -66,7 +64,6 @@ object JavaHttp {
             connections.get(uid)
           } match
             case None =>
-              println(s"received message without connection …")
               Async.handler.fail(IncorrectSetupException())
             case Some(cb) =>
               cb.succeed(ArrayMessageBuffer(exchange.getRequestBody.readAllBytes()))
@@ -106,18 +103,12 @@ object JavaHttp {
         .setHeader("Accept", "text/event-stream")
         .build()
 
-      println(s"sending client request")
-
       val res = client.sendAsync(sseRequest, BodyHandlers.ofInputStream()).toAsync.bind
       val rec = res.body()
-
-      println(s"acquired body")
 
       val conn = SSEClientConnection(client, uri, replicaId)
 
       ec.execute(() => JioInputStreamAdapter(rec).loopReceive(receiver.messageHandler(conn)))
-
-      println(s"succeeding client")
 
       conn
 

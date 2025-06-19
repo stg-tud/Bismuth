@@ -22,7 +22,6 @@ object BroadcastChannelConnector {
       val handler = incomingHandler.messageHandler(connection)
 
       bc.onmessage = (event: dom.MessageEvent) =>
-        println(js.typeOf(event.data))
         event.data match
           case data: ArrayBuffer =>
             handler.succeed(JsArrayBufferMessageBuffer(data))

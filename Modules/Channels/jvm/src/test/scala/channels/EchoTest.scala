@@ -31,8 +31,6 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest(
         server.start()
         val port = server.getAddress.getPort
 
-        println(s"server started")
-
         (port, handler)
 
       },
@@ -64,8 +62,6 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
         socket.bind(socketPath)
 
         // val port = socket.socket().getLocalPort
-
-        println(s"server listening at")
 
         val nioTCP = new NioTCP
 

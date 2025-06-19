@@ -1,9 +1,9 @@
 package channels
 
 import java.net.StandardProtocolFamily
-import java.nio.channels.{ServerSocketChannel, SocketChannel}
+import java.nio.channels.{ClosedChannelException, ServerSocketChannel, SocketChannel}
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class DisconnectTest extends munit.FunSuite {
 
@@ -28,18 +28,23 @@ class DisconnectTest extends munit.FunSuite {
 
     val serverAbort = Abort()
 
-    ec.execute(() => serverNioTCP.loopSelection(serverAbort))
+    ec.execute(() => {
+      TestUtil.printErrors(_ => ()).complete(
+        Try(
+          serverNioTCP.loopSelection(serverAbort)
+        )
+      )
+    })
 
     val listen = serverNioTCP.listen(() => socket)
 
     listen.prepare(conn =>
       TestUtil.printErrors { mb =>
-        println(s"server pong received: ${new String(mb.asArray)}")
         conn.send(mb).run(using ())(TestUtil.printErrors(mb => ()))
       }
     ).run(using Abort()) {
-      case Success(_) => println("connection successful")
-      case Failure(_) => println("connection failed")
+      case Success(_)  =>
+      case Failure(ex) => throw ex
     }
 
     def socketChannel: SocketChannel = {
@@ -55,13 +60,11 @@ class DisconnectTest extends munit.FunSuite {
 
     connect.prepare { conn =>
       {
-        case Success(mb) => println(s"client pong received: ${new String(mb.asArray)}")
-        case Failure(ex) =>
-          assertEquals(ex.getMessage, "nothing read???")
+        case Success(mb) =>
+        case Failure(ex) => assert(ex.isInstanceOf[NoMoreDataException])
       }
     }.run(using Abort()) {
       case Success(conn) =>
-        println(s"client connected successfully, sending")
         conn.send(ArrayMessageBuffer("Hi!".getBytes())).run(using Abort()) { TestUtil.printErrors(mb => ()) }
         Thread.sleep(10)
         serverNioTCP.selector.keys().forEach(_.channel().close())

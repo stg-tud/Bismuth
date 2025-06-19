@@ -5,6 +5,8 @@ import rdts.base.Uid
 
 import java.nio.charset.StandardCharsets
 
+class NoMoreDataException(msg: String) extends Exception(msg)
+
 trait MessageBuffer {
   def asArray: Array[Byte]
   def show: String = asArray.mkString("[", ", ", "]")

@@ -31,10 +31,9 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
           reader.readAsArrayBuffer(data)
 
         case other =>
-          println(s"--------------------")
-          println(s"received some message that is neither an array buffer nor a blob, but printlns to:")
-          println(other)
-          println(s"--------------------")
+          throw IllegalStateException(
+            s"received some message that is neither an array buffer nor a blob, but throw to\n$other"
+          )
       }
     }
 
@@ -101,10 +100,9 @@ object WebRTCConnection {
               reader.readAsArrayBuffer(data)
 
             case other =>
-              println(s"--------------------")
-              println(s"received some message that is neither an array buffer nor a blob, but printlns to:")
-              println(other)
-              println(s"--------------------")
+              throw IllegalStateException(
+                s"received some message that is neither an array buffer nor a blob, but throw to\n$other"
+              )
           }
         }
 

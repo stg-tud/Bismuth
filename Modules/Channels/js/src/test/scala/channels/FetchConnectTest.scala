@@ -1,3 +1,5 @@
+package channels
+
 import channels.{Abort, JSHttpPseudoChannel}
 import rdts.base.LocalUid
 

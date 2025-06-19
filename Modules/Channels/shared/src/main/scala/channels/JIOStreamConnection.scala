@@ -52,7 +52,6 @@ class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Uni
   // connection interface
 
   def send(data: MessageBuffer): Async[Any, Unit] = Async {
-    // println(s"sending data on jio stream")
     outputStream.send(data)
   }
 

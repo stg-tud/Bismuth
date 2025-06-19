@@ -30,13 +30,9 @@ object WebsocketConnect {
     override def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = {
       Async.fromCallback {
 
-        println(s"preparing connection")
-
         val socket = new dom.WebSocket(url)
 
         socket.onopen = (_: dom.Event) => {
-
-          println(s"connection opened")
 
           val connect  = new WebsocketConnect(socket)
           val callback = incomingHandler.messageHandler(connect)

@@ -85,18 +85,14 @@ class Replica[S: {Lattice, JsonValueCodec}](
 
   def receive(data: ByteBuffer): Unit = {
     val receieved = readFromByteBuffer[WsRecvData](data)
-    println(s"received: $receieved")
     val delta = readFromArray[S](receieved.data.payload)
-    println(s"applying $delta")
     applyRemoteDelta(delta)
-    println(s"value is now ${this.data}")
   }
 
   def connectOn(uri: URI): Async[Any, Unit] =
     Async {
       val listener      = ReplicaListener(this)
       val ws: WebSocket = client.newWebSocketBuilder().buildAsync(uri, listener).toAsync.bind
-      println(s"starting ws handler")
       // select json communication
       ws.sendText("/json", true).toAsync.bind
       // ask to receive messages on the the given path
@@ -120,7 +116,6 @@ class ReplicaListener[S](replica: Replica[S]) extends Listener {
   override def onOpen(webSocket: WebSocket): Unit                                                  = ()
   override def onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage[?] =
     if CharSequence.compare(data, "200 tx mode: JSON") == 0 then modeSwitched.succeed(true)
-    println(data)
     super.onText(webSocket, data, last)
   override def onBinary(webSocket: WebSocket, data: ByteBuffer, last: Boolean): CompletionStage[?] = {
     replica.receive(data)
@@ -156,8 +151,6 @@ def run(): Unit =
     val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
       bget(URI.create(s"$api/download?$id"))
     }).bind
-
-    bundles.foreach(b => println(new String(b)))
 
     replica.connectOn(URI.create(s"${api(using "ws")}/ws")).bind
 

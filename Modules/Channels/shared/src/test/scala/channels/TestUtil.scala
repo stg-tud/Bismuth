@@ -13,5 +13,6 @@ object TestUtil {
     case Failure(ex) => ex match
         case ex: IOException if ex.getCause.isInstanceOf[InterruptedException] =>
         case ex: ClosedChannelException                                        =>
+        case ex: NoMoreDataException                                           =>
         case ex                                                                => ex.printStackTrace()
 }

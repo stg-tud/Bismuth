@@ -140,9 +140,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
 
 def errorReporter: Callback[Any] =
   case Success(_)  =>
-  case Failure(ex) =>
-    println(s"creating offer failed weirdly?")
-    ex.printStackTrace()
+  case Failure(ex) => throw ex
 
 class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
 
@@ -164,11 +162,10 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
         oninput     := { (ev: UIEvent) =>
           try
             val cs = readFromString(ev.target.asInstanceOf[dom.html.TextArea].value)(using codec)
-            println(s"pending resolved, setting connector")
             peer.updateRemoteDescription(cs).run(using ())(errorReporter)
           catch
-            case _: JsonReaderException =>
-              println(s"input is not a valid session description")
+            case ex: JsonReaderException =>
+              throw IllegalStateException(s"input is not a valid session description", ex)
         }
       ).render
 

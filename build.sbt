@@ -1,4 +1,5 @@
 import Settings.{javaOutputVersion, scala3defaults, scala3defaultsExtra}
+import org.scalajs.jsenv.nodejs.NodeJSEnv
 import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle, OutputPatterns}
 
 import scala.scalanative.build.{LTO, Mode}
@@ -203,6 +204,8 @@ lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
+  ).jsSettings(
+    jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(NodeJSEnv.Config().withExecutable("bun-node"))
   )
 
 lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(file("Modules/Reactives"))

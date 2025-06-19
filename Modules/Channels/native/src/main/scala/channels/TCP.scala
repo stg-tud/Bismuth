@@ -18,11 +18,9 @@ object TCP {
       incoming: Receive[MessageBuffer],
       executionContext: ExecutionContext
   ): JIOStreamConnection = {
-    println(s"handling new connection")
     socket.setTcpNoDelay(true)
     val conn = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
     executionContext.execute: () =>
-      println(s"executing task")
       conn.loopHandler(incoming)
     conn
   }
@@ -34,7 +32,6 @@ object TCP {
     new LatentConnection {
       override def prepare(incoming: Receive[MessageBuffer]): Async[Any, Connection[MessageBuffer]] =
         TCP.syncAttempt {
-          println(s"tcp sync attempt")
           TCP.handleConnection(bindsocket(), incoming, executionContext)
         }
     }
