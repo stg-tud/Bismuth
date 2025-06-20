@@ -1,5 +1,10 @@
 = Changelog
 
+== Known issues
+
+• warning: classpath set repeatedly during doc:
+	:link{https://github.com/scala/scala3/issues/22875}
+
 == v.next
 
 • remove datatypes that are supposed to be wrapped into dotted/obrem
