@@ -7,16 +7,16 @@ import rdts.time.Dots
 
 import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 import java.time.{Duration, ZoneId, ZonedDateTime}
 import scala.util.Using
 
 class MonitoringPaths(base_dir: String = "/shared/monitoring") {
-  val monitoring_dir                = Paths.get(base_dir)
-  val received_data_fp              = monitoring_dir.resolve("received.data")
-  val forwarded_data_fp             = monitoring_dir.resolve("forwarded.data")
-  val created_and_delivered_data_fp = monitoring_dir.resolve("created_and_delivered.data")
-  val ratios_fp                     = monitoring_dir.resolve("ratios.data")
+  val monitoring_dir: Path                = Paths.get(base_dir)
+  val received_data_fp: Path              = monitoring_dir.resolve("received.data")
+  val forwarded_data_fp: Path             = monitoring_dir.resolve("forwarded.data")
+  val created_and_delivered_data_fp: Path = monitoring_dir.resolve("created_and_delivered.data")
+  val ratios_fp: Path                     = monitoring_dir.resolve("ratios.data")
 }
 
 class MonitoringServer(server: TCPReadonlyServer, paths: MonitoringPaths = MonitoringPaths()) {
