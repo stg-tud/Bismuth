@@ -2,7 +2,7 @@ package channels
 
 import channels.MesageBufferExtensions.asArrayBuffer
 import de.rmgk.delay.{Async, Callback, toAsync}
-import org.scalajs.dom.{Headers, HttpMethod, ReadableStreamReader, RequestInit, fetch}
+import org.scalajs.dom.{Headers, HttpMethod, ReadableStreamReader, RequestInit, Response, fetch}
 import rdts.base.LocalUid
 
 import java.nio.ByteBuffer
@@ -12,7 +12,13 @@ import scala.util.chaining.scalaUtilChainingOps
 
 object JSHttpPseudoChannel {
 
-  class SSEPseudoConnection(uri: String, rid: LocalUid) extends Connection[MessageBuffer] {
+  class SSEPseudoConnection(uri: String, rid: LocalUid, receiver: Receive[MessageBuffer])
+      extends Connection[MessageBuffer] {
+
+    lazy val resultCallback: Callback[MessageBuffer] = receiver.messageHandler(this)
+
+    var currentConsumer: StreamConsumer | Null = null
+
     override def send(message: MessageBuffer): Async[Any, Unit] = Async {
 
       val requestInit = new RequestInit {}.tap: ri =>
@@ -20,14 +26,45 @@ object JSHttpPseudoChannel {
         ri.body = message.asArrayBuffer
         ri.headers = Headers().tap: hi =>
           hi.set("x-replica-id", rid.uid.delegate)
+          hi.set("Accept", "text/event-stream")
 
       val res = fetch(uri, requestInit).toFuture.toAsync.bind
+      handleResponses(res).bind
+
     }
+
+    def handleResponses(res: Response): Async[Any, Unit] = Async {
+
+      val reader = res.body.getReader()
+
+      val priorConsumer = currentConsumer
+      currentConsumer = StreamConsumer(reader, resultCallback)
+      // if priorConsumer != null then priorConsumer.close()
+
+      // this starts the receive loop, but does not integrate it into the current async flow, which means it’s essentially unmanaged
+      val loopingConsumer = currentConsumer
+      loopingConsumer.nn.loop().recover { err =>
+        if loopingConsumer == currentConsumer
+        then
+          println(s"error in stream consumer, reconnecting: $err")
+          send(ArrayMessageBuffer(Array.emptyByteArray))
+        else Async(()) // consumer was swapped, don’t restart
+      }.run(using ())(_ => ())
+    }
+
     override def close(): Unit = ()
   }
 
   class StreamConsumer(reader: ReadableStreamReader[Uint8Array], cb: Callback[MessageBuffer]) {
     var buffer: Array[Byte] = Array.empty
+
+    var closed = false
+
+    def close(): Unit = {
+      closed = true
+      reader.cancel()
+      ()
+    }
 
     def loop(): Async[Any, Unit] = Async {
       val chunk = reader.read().toFuture.toAsync.bind
@@ -50,23 +87,12 @@ object JSHttpPseudoChannel {
   def connect(uri: String, rid: LocalUid): LatentConnection[MessageBuffer] = new LatentConnection[MessageBuffer] {
     def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
 
-      val conn = new SSEPseudoConnection(uri, rid)
-      val cb   = receiver.messageHandler(conn)
+      val conn = new SSEPseudoConnection(uri, rid, receiver)
 
-      val requestInit = new RequestInit {}.tap: ri =>
-        ri.method = HttpMethod.GET
-        ri.headers = Headers().tap: hi =>
-          hi.set("x-replica-id", rid.uid.delegate)
-          hi.set("Accept", "text/event-stream")
-
-      val res = fetch(uri, requestInit).toFuture.toAsync.bind
-
-      val reader = res.body.getReader()
-
-      StreamConsumer(reader, cb).loop().run(using ())(_ => ())
+      // send empty message that allows server to answer immediately
+      conn.send(ArrayMessageBuffer(Array.emptyByteArray)).bind
 
       conn
-
     }
 
   }

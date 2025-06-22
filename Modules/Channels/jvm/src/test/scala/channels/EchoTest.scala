@@ -37,7 +37,7 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest(
       ec =>
         port => {
           val client = HttpClient.newHttpClient()
-          JavaHttp.SSEClient(client, new URI(s"http://localhost:$port/path"), LocalUid.gen(), ec)
+          JavaHttp.SSEClient(client, new URI(s"http://localhost:$port/path"), ec)
         }
     )
 

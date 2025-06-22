@@ -4,10 +4,10 @@ import de.rmgk.delay.{Async, Callback}
 
 import java.io.*
 
-class SendingClosedException extends IOException
-
 class JioInputStreamAdapter(in: InputStream) {
   val inputStream = new DataInputStream(new BufferedInputStream(in))
+
+  @volatile var closed = false
 
   def readNext(): MessageBuffer = {
     val size = inputStream.readInt()
@@ -20,12 +20,15 @@ class JioInputStreamAdapter(in: InputStream) {
 
   def loopReceive(handler: Callback[MessageBuffer]): Unit = {
     try
-      while true do
+      while !closed do
         handler.succeed(readNext())
     catch
       case ioe: IOException =>
         handler.fail(ioe)
   }
+
+  def close(): Unit =
+    closed = true
 
 }
 

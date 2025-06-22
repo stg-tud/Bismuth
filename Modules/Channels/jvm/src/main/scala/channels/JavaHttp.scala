@@ -2,116 +2,102 @@ package channels
 
 import com.sun.net.httpserver.{HttpExchange, HttpHandler}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
-import rdts.base.{LocalUid, Uid}
 
+import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
 import java.net.http.{HttpClient, HttpRequest}
 import scala.concurrent.ExecutionContext
-import scala.jdk.CollectionConverters.given
+import scala.util.{Failure, Success}
 
 object JavaHttp {
-
-  class IncorrectSetupException extends Exception
 
   class SSEServerConnection(out: JioOutputStreamAdapter) extends Connection[MessageBuffer] {
     override def send(message: MessageBuffer): Async[Any, Unit] = Async { out.send(message) }
     override def close(): Unit                                  = out.outputStream.close()
   }
 
-  val replicaIdHeader = "x-replica-id"
-
   class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection[MessageBuffer] {
 
-    var connections: Map[Uid, Callback[MessageBuffer]] = Map.empty
-
     def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async.fromCallback {
-
       addHandler { (exchange: HttpExchange) =>
-        val requestHeaders = exchange.getRequestHeaders
-        exchange.getResponseHeaders.add("Access-Control-Allow-Origin", "*")
-        exchange.getResponseHeaders.add("Access-Control-Allow-Methods", "POST, GET")
-        exchange.getResponseHeaders.add("Access-Control-Allow-Headers", "x-replica-id")
-        val uid = Option(requestHeaders.get(replicaIdHeader)).flatMap(_.asScala.headOption) match
-          case None =>
-            throw IllegalStateException(s"no replica ID in x-replica-id header")
-          case Some(rid) =>
-            Uid.predefined(rid)
+        val responseHeaders = exchange.getResponseHeaders
+        responseHeaders.add("Content-Type", "text/event-stream")
+        responseHeaders.add("Connection", "keep-alive")
 
-        if Option(requestHeaders.get("Accept")).flatMap(_.asScala.headOption).contains("text/event-stream")
-        then
-          val responseHeaders = exchange.getResponseHeaders
-          responseHeaders.add("Content-Type", "text/event-stream")
-          responseHeaders.add("Connection", "keep-alive")
+        exchange.sendResponseHeaders(200, 0)
+        val outstream = exchange.getResponseBody
 
-          exchange.sendResponseHeaders(200, 0)
-          val outstream = exchange.getResponseBody
+        // force sending of response headers
+        outstream.flush()
 
-          // force sending of response headers
-          outstream.flush()
+        val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
 
-          val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
+        val cb = receiver.messageHandler(conn)
 
-          SSEServer.this.synchronized {
-            connections = connections.updated(uid, receiver.messageHandler(conn))
-          }
-
-          Async.handler.succeed(conn)
-        else if exchange.getRequestMethod == "POST"
-        then
-          SSEServer.this.synchronized {
-            connections.get(uid)
-          } match
-            case None =>
-              Async.handler.fail(IncorrectSetupException())
-            case Some(cb) =>
-              cb.succeed(ArrayMessageBuffer(exchange.getRequestBody.readAllBytes()))
-              exchange.sendResponseHeaders(200, 0)
-              exchange.close()
-        else
-          exchange.sendResponseHeaders(200, 0)
-          exchange.close()
+        val amb = ArrayMessageBuffer(exchange.getRequestBody.readAllBytes())
+        if amb.inner.nonEmpty then cb.succeed(amb)
+        Async.handler.succeed(conn)
       }
     }
   }
 
-  class SSEClientConnection(client: HttpClient, uri: URI, localUid: LocalUid) extends Connection[MessageBuffer] {
+  class SSEClientConnection(client: HttpClient, uri: URI, receiver: Receive[MessageBuffer], ec: ExecutionContext)
+      extends Connection[MessageBuffer] {
+
+    lazy val handler = receiver.messageHandler(this)
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Async {
       val sseRequest = HttpRequest.newBuilder()
         .POST(BodyPublishers.ofByteArray(message.asArray))
-        .setHeader(replicaIdHeader, localUid.uid.delegate)
         .uri(uri)
         .build()
 
-      val res = client.sendAsync(sseRequest, BodyHandlers.discarding()).toAsync.bind
+      val res = client.sendAsync(sseRequest, BodyHandlers.ofInputStream()).toAsync.bind
 
+      handleReceive(res.body())
+    }
+
+    var currentReceive: JioInputStreamAdapter | Null = null
+
+    def handleReceive(rec: InputStream): Unit = synchronized {
+
+      val adapter = JioInputStreamAdapter(rec)
+
+//      if currentReceive != null then {
+//        println(s"closing old receiver")
+//        currentReceive.nn.close()
+//      }
+      currentReceive = adapter
+
+      ec.execute(() =>
+        adapter.loopReceive {
+          case Success(value) =>
+            handler.succeed(value)
+          case Failure(ex) =>
+            if SSEClientConnection.this.synchronized(currentReceive == adapter)
+            then
+              // if this fails again, then we give up
+              send(ArrayMessageBuffer(Array.emptyByteArray)).run(using ())(_ => ())
+              ()
+            else {
+              // accept close because another stream seems to be open
+              ()
+            }
+        }
+      )
     }
     override def close(): Unit = ()
   }
 
-  class SSEClient(client: HttpClient, uri: URI, replicaId: LocalUid, ec: ExecutionContext)
+  class SSEClient(client: HttpClient, uri: URI, ec: ExecutionContext)
       extends LatentConnection[MessageBuffer] {
 
     def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
-
-      val sseRequest = HttpRequest.newBuilder()
-        .GET()
-        .uri(uri)
-        .setHeader(replicaIdHeader, replicaId.uid.delegate)
-        .setHeader("Accept", "text/event-stream")
-        .build()
-
-      val res = client.sendAsync(sseRequest, BodyHandlers.ofInputStream()).toAsync.bind
-      val rec = res.body()
-
-      val conn = SSEClientConnection(client, uri, replicaId)
-
-      ec.execute(() => JioInputStreamAdapter(rec).loopReceive(receiver.messageHandler(conn)))
-
+      val conn = SSEClientConnection(client, uri, receiver, ec)
+      conn.send(ArrayMessageBuffer(Array.emptyByteArray)).bind
       conn
-
     }
   }
 
