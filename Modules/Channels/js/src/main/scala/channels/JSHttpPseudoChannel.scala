@@ -41,15 +41,7 @@ object JSHttpPseudoChannel {
       if priorConsumer != null
       then priorConsumer.close()
 
-      // this starts the receive loop, but does not integrate it into the current async flow, which means it’s essentially unmanaged
-      val loopingConsumer = currentConsumer
-      loopingConsumer.nn.loop().recover { err =>
-        if loopingConsumer == currentConsumer
-        then
-          println(s"error in stream consumer, reconnecting: $err")
-          send(ArrayMessageBuffer(Array.emptyByteArray))
-        else Async(()) // consumer was swapped, don’t restart
-      }.run(using ())(_ => ())
+      currentConsumer.nn.loop().run(using ())(_ => ())
     }
 
     override def close(): Unit = ()
@@ -88,9 +80,6 @@ object JSHttpPseudoChannel {
     def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
 
       val conn = new SSEPseudoConnection(uri, receiver)
-
-      // send empty message that allows server to answer immediately
-      conn.send(ArrayMessageBuffer(Array.emptyByteArray)).bind
 
       conn
     }
