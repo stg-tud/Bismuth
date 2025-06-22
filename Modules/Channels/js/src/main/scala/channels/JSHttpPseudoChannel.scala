@@ -3,7 +3,6 @@ package channels
 import channels.MesageBufferExtensions.asArrayBuffer
 import de.rmgk.delay.{Async, Callback, toAsync}
 import org.scalajs.dom.{Headers, HttpMethod, ReadableStreamReader, RequestInit, Response, fetch}
-import rdts.base.LocalUid
 
 import java.nio.ByteBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,7 +11,7 @@ import scala.util.chaining.scalaUtilChainingOps
 
 object JSHttpPseudoChannel {
 
-  class SSEPseudoConnection(uri: String, rid: LocalUid, receiver: Receive[MessageBuffer])
+  class SSEPseudoConnection(uri: String, receiver: Receive[MessageBuffer])
       extends Connection[MessageBuffer] {
 
     lazy val resultCallback: Callback[MessageBuffer] = receiver.messageHandler(this)
@@ -25,10 +24,10 @@ object JSHttpPseudoChannel {
         ri.method = HttpMethod.POST
         ri.body = message.asArrayBuffer
         ri.headers = Headers().tap: hi =>
-          hi.set("x-replica-id", rid.uid.delegate)
           hi.set("Accept", "text/event-stream")
 
       val res = fetch(uri, requestInit).toFuture.toAsync.bind
+
       handleResponses(res).bind
 
     }
@@ -39,7 +38,8 @@ object JSHttpPseudoChannel {
 
       val priorConsumer = currentConsumer
       currentConsumer = StreamConsumer(reader, resultCallback)
-      // if priorConsumer != null then priorConsumer.close()
+      if priorConsumer != null
+      then priorConsumer.close()
 
       // this starts the receive loop, but does not integrate it into the current async flow, which means it’s essentially unmanaged
       val loopingConsumer = currentConsumer
@@ -84,10 +84,10 @@ object JSHttpPseudoChannel {
 
   }
 
-  def connect(uri: String, rid: LocalUid): LatentConnection[MessageBuffer] = new LatentConnection[MessageBuffer] {
+  def connect(uri: String): LatentConnection[MessageBuffer] = new LatentConnection[MessageBuffer] {
     def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
 
-      val conn = new SSEPseudoConnection(uri, rid, receiver)
+      val conn = new SSEPseudoConnection(uri, receiver)
 
       // send empty message that allows server to answer immediately
       conn.send(ArrayMessageBuffer(Array.emptyByteArray)).bind
