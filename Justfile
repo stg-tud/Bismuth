@@ -10,8 +10,8 @@ test sbtOpts="":
 	npm install --no-package-lock
 	sbt {{sbtOpts}} test
 
-publishM2 sbtOpts="":
-	sbt {{sbtOpts}} 'publishedProjects / publishM2'
+publishLocal sbtOpts="":
+	sbt {{sbtOpts}} 'publishedProjects / publishLocal'
 
 publishSigned sbtOpts="":
 	rm -rf "target/sona-staging"
