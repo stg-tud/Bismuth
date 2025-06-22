@@ -21,7 +21,7 @@ sonaRelease sbtOpts="":
 	sbt {{sbtOpts}} 'sonaRelease'
 
 runSimpleCaseStudy sbtOpts="":
-	sbt {{sbtOpts}} 'examplesMiscJVM / run'
+	sbt {{sbtOpts}} 'examplesJVM / run'
 
 webappsServe:
 	npm --prefix "Modules/Examples Web/" install
