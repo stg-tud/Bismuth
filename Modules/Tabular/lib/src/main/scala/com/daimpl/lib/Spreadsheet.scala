@@ -1,13 +1,13 @@
 package com.daimpl.lib
 
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
+import rdts.datatypes.{ObserveRemoveMap, ReplicatedList, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
     rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
     colIds: ReplicatedList[Dot] = ReplicatedList.empty,
-    content: ObserveRemoveMap[(Dot, Dot), LastWriterWins[A]] = ObserveRemoveMap.empty[(Dot, Dot), LastWriterWins[A]],
+    content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
 ) {
 
   lazy val observed: Dots =
@@ -43,38 +43,45 @@ case class Spreadsheet[A](
     )
   }
 
-  def editCell(rowIdx: Int, colIdx: Int, cellContent: A)(using LocalUid): Spreadsheet[A] = {
+  def editCell(rowIdx: Int, colIdx: Int, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId = rowIds.read(rowIdx).get
     val colId = colIds.read(colIdx).get
+    if (value == null) {
+      return Spreadsheet(content = content.transform((rowId, colId)) {
+        case None => None
+        case Some(set) => Some(set.clear())
+      })
+    }
     Spreadsheet(content = content.transform((rowId, colId)) {
-      case None      => Some(LastWriterWins.now(cellContent))
-      case Some(lww) => Some(lww.write(cellContent))
+      case None      => Some(ReplicatedSet.empty.add(value))
+      case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
     })
-
   }
 
   def printToConsole(): Unit = {
     println(rowIds.toList)
     println(colIds.toList)
-    println(content.queryAllEntries.map(_.value).mkString(", "))
 
-    val maxStringLength =
-      content.queryAllEntries.map(_.value).filterNot(_ == null).map(_.toString.length()).maxOption.getOrElse(1)
+    val maxLen = content.queryAllEntries.map { rs =>
+      rs.elements.mkString("/")
+    }.map(_.length).maxOption.getOrElse(1)
 
     println(s"${colIds.size}x${rowIds.size}")
-    val res = rowIds.toList.map(rowId => {
-      val line = colIds.toList
-        .map(colId =>
-          ("%" + maxStringLength + "s").format(
-            content
-              .get((colId, rowId))
-              .map(_.payload)
-              .getOrElse("·")
-          )
-        ).mkString(s"${rowId} | ", " | ", " |")
-      line
-    }).mkString(" \n")
-    println(s"${colIds.toList.mkString(s"| ", " | ", " |")}\n$res")
+
+    val sheetStr = rowIds.toList.map { rowId =>
+      colIds.toList
+        .map { colId =>
+          val cellStr = content
+            .get((rowId, colId))
+            .map(_.elements.mkString("/"))
+            .filter(_.nonEmpty)
+            .getOrElse("·")
+          ("%" + maxLen + "s").format(cellStr)
+        }
+        .mkString(s"${rowId} | ", " | ", " |")
+    }.mkString(" \n")
+
+    println(s"${colIds.toList.mkString("| ", " | ", " |")}\n$sheetStr")
   }
 
   def purgeTombstones()(using LocalUid): Spreadsheet[A] = {
@@ -88,18 +95,18 @@ case class Spreadsheet[A](
 
   def numColumns: Int = colIds.size
 
-  def getRow(visibleRowIdx: Int): List[Option[A]] =
+  def getRow(visibleRowIdx: Int): List[Set[A]] =
     (0 until numColumns).map(visibleColIdx => read(visibleColIdx, visibleRowIdx)).toList
 
-  def toList: List[List[Option[A]]] =
+  def toList: List[List[Set[A]]] =
     (0 until numRows).map(getRow).toList
 
-  def read(visibleColIdx: Int, visibleRowIdx: Int): Option[A] =
-    for
+  def read(visibleColIdx: Int, visibleRowIdx: Int): Set[A] =
+    (for
       rowId <- rowIds.read(visibleRowIdx)
       colId <- colIds.read(visibleColIdx)
-      elem  <- content.get((rowId, colId))
-    yield elem.payload
+      cell  <- content.get((rowId, colId))
+    yield cell.elements).getOrElse(Set.empty)
 
 }
 
