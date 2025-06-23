@@ -16,7 +16,7 @@ CRDTs for simple data types like sets or lists are well understood, however, mod
 ## Building the webapp
 
 ```
-sbt "project app" fastOptJS
+sbt "project tabularApp" fastOptJS
 ```
 You may now open [index.html](app/index.html) in your favorite browser
 
