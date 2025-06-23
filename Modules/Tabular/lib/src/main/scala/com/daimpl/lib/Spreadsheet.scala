@@ -5,9 +5,9 @@ import rdts.datatypes.{ObserveRemoveMap, ReplicatedList, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
-    rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
-    colIds: ReplicatedList[Dot] = ReplicatedList.empty,
-    content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
+    private val rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    private val colIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
 ) {
 
   lazy val observed: Dots =

@@ -16,7 +16,7 @@ class BasicTest extends munit.FunSuite {
 
     agg.edit(_.removeColumn(0))
 
-    assertEquals(agg.current.content.queryAllEntries, Iterable())
+    assert(agg.current.toList.flatten.isEmpty)
 
   }
 
