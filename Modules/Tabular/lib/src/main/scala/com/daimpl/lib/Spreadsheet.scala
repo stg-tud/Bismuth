@@ -62,9 +62,11 @@ case class Spreadsheet[A](
     println(rowIds.toList)
     println(colIds.toList)
 
-    val maxLen = content.queryAllEntries.map { rs =>
-      rs.elements.mkString("/")
-    }.map(_.length).maxOption.getOrElse(1)
+    val maxLen = content.queryAllEntries
+      .map { rs => rs.elements.mkString("/")}
+      .map(_.length)
+      .maxOption.getOrElse(1)
+      .max(1)
 
     println(s"${colIds.size}x${rowIds.size}")
 
