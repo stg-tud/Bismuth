@@ -29,7 +29,7 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
       }
     }
 
-    (Iterable(GrowOnlyList.headDot) ++ order.keys).foreach(_toposort)
+    (Iterable(GrowOnlyList.headDot) ++ order.keys.toSeq.sorted).foreach(_toposort)
     sorted.toSeq.reverse
   }
 
