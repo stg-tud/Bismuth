@@ -3,8 +3,7 @@ package com.daimpl.app
 import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
-import rdts.base.{Lattice, LocalUid}
-import rdts.time.Dots
+import rdts.base.LocalUid
 
 object SpreadsheetComponent {
 
@@ -28,7 +27,8 @@ object SpreadsheetComponent {
       editingCell: Option[(Int, Int)],
       editingValue: String,
       selectedRow: Option[Int],
-      selectedColumn: Option[Int]
+      selectedColumn: Option[Int],
+      conflictPopup: Option[(Int, Int)]
   )
 
   class Backend($ : BackendScope[Props, State]) {
@@ -54,15 +54,25 @@ object SpreadsheetComponent {
     private def withSelectedColumnAndProps(f: (Int, Props) => Callback): Callback =
       withSelectedColumn(colIdx => $.props.flatMap(props => f(colIdx, props)))
 
-    def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
+    def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
       $.props.flatMap { props =>
-        val currentValue = props.spreadsheetAggregator.current.read(colIdx, rowIdx).getOrElse("")
-        $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = currentValue))
+        val currentSet = props.spreadsheetAggregator.current.read(colIdx, rowIdx)
+        val firstValue = currentSet.headOption.getOrElse("") // ★ changed
+        $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
       }
-    }
+
+    def openConflict(row: Int, col: Int): Callback =
+      $.modState(_.copy(conflictPopup = Some((row, col))))
+
+    def closeConflict(): Callback =
+      $.modState(_.copy(conflictPopup = None))
+
+    def keepValue(row: Int, col: Int, v: String): Callback =
+      modSpreadsheet(_.editCell(row, col, v)) >> closeConflict()
 
     def handleInputChange(e: ReactEventFromInput): Callback = {
       val value = e.target.value
+      println(value)
       $.modState(_.copy(editingValue = value))
     }
 
@@ -78,8 +88,8 @@ object SpreadsheetComponent {
       $.state.flatMap { state =>
         state.editingCell
           .map { case (rowIdx, colIdx) =>
-            val value = state.editingValue.trim
-            println(s"value $value")
+            var value = state.editingValue.trim
+            if (value.isBlank) value = null
             modSpreadsheet(_.editCell(rowIdx, colIdx, value)) >> cancelEdit()
           }
           .getOrElse(Callback.empty)
@@ -145,7 +155,7 @@ object SpreadsheetComponent {
 
   val Component = ScalaComponent
     .builder[Props]("Spreadsheet")
-    .initialState(State(None, "", None, None))
+    .initialState(State(None, "", None, None, None))
     .backend(new Backend(_))
     .render { $ =>
       val props       = $.props
@@ -252,6 +262,14 @@ object SpreadsheetComponent {
                       ^.key       := s"cell-$rowIdx-$colIdx",
                       ^.className := "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32",
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
+                      if cell.size > 1 then
+                        <.span(
+                          ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
+                          ^.title := "Resolve conflict",
+                          "!",
+                          ^.onClick --> backend.openConflict(rowIdx, colIdx)
+                        )
+                      else EmptyVdom,
                       state.editingCell match {
                         case Some((editRow, editCol)) if editRow == rowIdx && editCol == colIdx =>
                           <.input(
@@ -265,8 +283,8 @@ object SpreadsheetComponent {
                         case _ =>
                           <.span(
                             ^.className := "block cursor-pointer min-h-[1.5rem] overflow-hidden text-ellipsis whitespace-nowrap",
-                            ^.title := cell.getOrElse(""),
-                            cell.getOrElse("")
+                            ^.title := cell.mkString("/"),
+                            cell.mkString("/")
                           )
                       }
                     )
@@ -283,6 +301,43 @@ object SpreadsheetComponent {
             ^.onClick --> backend.purgeTombstones(),
             "Purge Tombstones"
           )
+        )
+        (state.conflictPopup match
+          case Some((r, c)) =>
+            val vals = props.spreadsheetAggregator.current.read(c, r).toList
+            <.div(
+              ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
+              ^.onClick --> backend.closeConflict(),
+              <.div(
+                ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
+                ^.onClick ==> {
+                  _.stopPropagationCB
+                },
+                <.button(
+                  ^.className := "absolute top-4 right-4 text-gray-400 hover:text-gray-600",
+                  ^.aria.label := "Close",
+                  ^.onClick --> backend.closeConflict(),
+                  "✕"
+                ),
+                <.h3(^.className := "text-lg font-semibold text-gray-800 mb-4", "Resolve conflict"),
+                <.p(
+                  ^.className := "text-sm text-gray-600 mb-3",
+                  s"Choose the value you want to keep for cell ${(c + 'A').toChar}${r + 1}:"
+                ),
+                <.div(
+                  ^.className := "flex flex-col gap-2",
+                  vals.map { v =>
+                    <.button(
+                      ^.key := v,
+                      ^.className := "w-full px-4 py-2 rounded-lg text-left bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400",
+                      ^.onClick --> backend.keepValue(r, c, v),
+                      v
+                    )
+                  }.toVdomArray
+                )
+              )
+            )
+          case None => EmptyVdom
         )
       )
     }

@@ -12,11 +12,11 @@ class BasicTest extends munit.FunSuite {
 
     agg.edit(_.editCell(0, 0, "test"))
 
-    assertEquals(agg.current.read(0, 0), Some("test"))
+    assertEquals(agg.current.read(0, 0), Set("test"))
 
     agg.edit(_.removeColumn(0))
 
-    assertEquals(agg.current.content.queryAllEntries, Iterable())
+    assert(agg.current.toList.flatten.isEmpty)
 
   }
 
