@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.time.CausalTime
 
 import scala.collection.mutable.ArrayBuffer
