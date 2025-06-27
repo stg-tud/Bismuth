@@ -145,8 +145,8 @@ class GListTest extends munit.ScalaCheckSuite {
       network.endReliablePhase()
       val lb0 = AntiEntropyContainer[GrowOnlyList[Int]](aeb).processReceivedDeltas()
 
-      val la1 = insertedA.foldLeft(la0) { (l, e) => l.mod(_.insertGL(e, e)) }
-      val lb1 = insertedB.foldLeft(lb0) { (l, e) => l.mod(_.insertGL(e, e)) }
+      val la1 = insertedA.foldLeft(la0) { (l, e) => l.mod(_.insertGL(math.min(math.max(0, e), l.data.size), e)) }
+      val lb1 = insertedB.foldLeft(lb0) { (l, e) => l.mod(_.insertGL(math.min(math.max(0, e), l.data.size), e)) }
 
       AntiEntropy.sync(aea, aeb)
       network.startReliablePhase()

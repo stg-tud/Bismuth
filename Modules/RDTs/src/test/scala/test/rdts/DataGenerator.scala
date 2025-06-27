@@ -3,7 +3,6 @@ package test.rdts
 import org.scalacheck.{Arbitrary, Gen, Shrink}
 import rdts.base.*
 import rdts.datatypes.*
-import rdts.datatypes.GrowOnlyList.Node
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.experiments.CausalStore
 import rdts.experiments.CausalStore.CausalDelta
@@ -108,15 +107,6 @@ object DataGenerator {
     Gen.listOf(arb.arbitrary).map: list =>
       GrowOnlyList.empty.insertAllGL(0, list)
 
-  def badInternalGrowOnlyList[E](using arb: Arbitrary[E]): Arbitrary[GrowOnlyList[E]] = Arbitrary:
-    Gen.listOf(arbLww(using arb).arbitrary).map: list =>
-      val elems: List[Node.Elem[LastWriterWins[E]]] = list.map(GrowOnlyList.Node.Elem.apply)
-      val pairs                                     = elems.distinct.sortBy(_.value.timestamp).sliding(2).flatMap:
-        case Seq(l, r) => Some(l -> r)
-        case _         => None // filters out uneven numbers of elements
-      val all =
-        elems.headOption.map(GrowOnlyList.Node.Head -> _) concat pairs
-      GrowOnlyList(all.toMap)
 
   given arbDotmap[K, V](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =
     Arbitrary:

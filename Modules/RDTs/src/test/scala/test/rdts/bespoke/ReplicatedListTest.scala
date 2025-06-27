@@ -1,4 +1,5 @@
 package test.rdts.bespoke
+import rdts.base.Lattice.syntax.merge
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
 import rdts.time.Dot
@@ -24,8 +25,9 @@ class ReplicatedListTest extends munit.FunSuite {
     assertEquals(v2.toList, List("00", "01"))
 
     val v3 = v2 `merge` v2.insertGL(0, "02")
+    assertEquals(v3.toList, List("02", "00", "01"))
     val v4 = v3 `merge` v3.insertGL(1, "10")
-    assertEquals(v4.toList, List("02", "10", "00", "01"))
+    assertEquals(v4.toList, List("02", "10", "00", "01"), s"data $v4")
 
     val recomposed = v4.decomposed.foldLeft(GrowOnlyList.empty[String])(_ `merge` _)
     assertEquals(v4, recomposed)
@@ -48,10 +50,6 @@ class ReplicatedListTest extends munit.FunSuite {
     val mergedLists: ReplicatedList[String] = v3d `merge` v2
     val v3                                  = v2 `merge` v3d
 
-    assertEquals(
-      v3.order.value.inner.get(GrowOnlyList.Node.Head),
-      mergedLists.order.value.inner.get(GrowOnlyList.Node.Head)
-    )
 
     assertEquals(v3, mergedLists)
 
@@ -95,6 +93,15 @@ class ReplicatedListTest extends munit.FunSuite {
       m
     }
     assertEquals(withPurging.toList, withoutPurging.toList)
+  }
+
+  test("new grow list") {
+    given LocalUid = LocalUid.gen()
+    val ten        = GrowOnlyList.empty.insertAfter(GrowOnlyList.headDot, "ten")
+    val twenty     = ten `merge` ten.insertAfter(ten.dotList(1), "twenty")
+    assertEquals(twenty.toList, List("ten", "twenty"), twenty)
+    val fifteen    = twenty `merge` twenty.insertAfter(ten.dotList(1), "fifteen")
+    assertEquals((fifteen).toList, List("ten", "fifteen", "twenty"), fifteen)
   }
 
 }
