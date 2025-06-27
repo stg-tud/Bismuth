@@ -14,7 +14,7 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
     GrowOnlyList(order = Map(predecessor -> Set(next)), elements = Map(next -> value))
   }
 
-  def toposort(): Seq[CausalTime] = {
+  lazy val toposort: Seq[CausalTime] = {
     val sorted                      = ArrayBuffer[CausalTime]()
     var discovered: Set[CausalTime] = Set.empty
 
@@ -33,9 +33,9 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
     sorted.toSeq.reverse
   }
 
-  def dotList: Seq[CausalTime] = toposort()
+  lazy val dotList: Seq[CausalTime] = toposort
 
-  def toList: List[E] = dotList.flatMap(elements.get).toList
+  lazy val toList: List[E] = dotList.flatMap(elements.get).toList
 
   def toLazyList: LazyList[E] = toList.to(LazyList)
 
