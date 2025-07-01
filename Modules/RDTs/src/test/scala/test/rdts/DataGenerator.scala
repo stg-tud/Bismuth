@@ -105,7 +105,7 @@ object DataGenerator {
 
   given arbGrowOnlyList[E](using arb: Arbitrary[E]): Arbitrary[GrowOnlyList[E]] = Arbitrary:
     Gen.listOf(arb.arbitrary).map: list =>
-      GrowOnlyList.empty.insertAllGL(0, list)
+      GrowOnlyList.empty.insertAllAt(0, list)
 
 
   given arbDotmap[K, V](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =

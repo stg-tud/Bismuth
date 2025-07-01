@@ -10,23 +10,23 @@ class ReplicatedListTest extends munit.FunSuite {
 
   test("insert into grow only list") {
     val v0 = GrowOnlyList.empty[String]
-    val v1 = v0.insertGL(0, "00")
+    val v1 = v0.insertAt(0, "00")
 
     assertEquals(v1.toList, List("00"))
 
-    val vr = v0.insertGL(0, "0r")
+    val vr = v0.insertAt(0, "0r")
     assertEquals(vr.toList, List("0r"))
 
     val vmerged = v1 `merge` vr
     assertEquals(vmerged.toList, List("0r", "00"))
 
-    val v2 = v1 `merge` v1.insertGL(1, "01")
+    val v2 = v1 `merge` v1.insertAt(1, "01")
 
     assertEquals(v2.toList, List("00", "01"))
 
-    val v3 = v2 `merge` v2.insertGL(0, "02")
+    val v3 = v2 `merge` v2.insertAt(0, "02")
     assertEquals(v3.toList, List("02", "00", "01"))
-    val v4 = v3 `merge` v3.insertGL(1, "10")
+    val v4 = v3 `merge` v3.insertAt(1, "10")
     assertEquals(v4.toList, List("02", "10", "00", "01"), s"data $v4")
 
     val recomposed = v4.decomposed.foldLeft(GrowOnlyList.empty[String])(_ `merge` _)

@@ -60,7 +60,7 @@ case class ReplicatedList[E](
       case None                   => ReplicatedList.empty[E]
       case Some(glistInsertIndex) =>
         val glistDelta = order.map { gl =>
-          gl.insertGL(glistInsertIndex, nextDot)
+          gl.insertAt(glistInsertIndex, nextDot)
         }
         val dfDelta = Map(nextDot -> LastWriterWins.now(e))
 
@@ -83,7 +83,7 @@ case class ReplicatedList[E](
       case Some(glistInsertIndex) =>
         val glistDelta =
           order.map { gl =>
-            gl.insertAllGL(glistInsertIndex, nextDots)
+            gl.insertAllAt(glistInsertIndex, nextDots)
           }
         val dfDelta = Map.empty[Dot, LastWriterWins[E]] ++ (nextDots zip elems.map(e => LastWriterWins.now(e)))
 

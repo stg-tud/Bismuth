@@ -17,7 +17,7 @@ object GListGenerators {
       elems <- Gen.listOfN(20, e.arbitrary)
     yield {
       elems.foldLeft(GrowOnlyList.empty[E]) {
-        case (list, el) => list `merge` list.insertGL(0, el)
+        case (list, el) => list `merge` list.insertAt(0, el)
       }
     }
 
@@ -62,7 +62,7 @@ class GListTest extends munit.ScalaCheckSuite {
 
       val n = if szeBefore == 0 then 0 else (insertIndex % szeBefore).abs
 
-      list.mod(_.insertGL(n, e))
+      list.mod(_.insertAt(n, e))
 
       val inserted =
         val (b, a) = l.splitAt(n)
@@ -100,7 +100,7 @@ class GListTest extends munit.ScalaCheckSuite {
       val aeb = new AntiEntropy[GrowOnlyList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = base.reverse.foldLeft(AntiEntropyContainer[GrowOnlyList[Int]](aea)) {
-        case (l, e) => l.mod(_.insertGL(0, e))
+        case (l, e) => l.mod(_.insertAt(0, e))
       }
 
       AntiEntropy.sync(aea, aeb)
@@ -110,8 +110,8 @@ class GListTest extends munit.ScalaCheckSuite {
       val idx1 = if size == 0 then 0 else math.floorMod(n1, size)
       val idx2 = if size == 0 then 0 else Math.floorMod(n2, size)
 
-      val la1 = la0.mod(_.insertGL(idx1, e1))
-      lb0.mod(_.insertGL(idx2, e2))
+      val la1 = la0.mod(_.insertAt(idx1, e1))
+      lb0.mod(_.insertAt(idx2, e2))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -138,15 +138,15 @@ class GListTest extends munit.ScalaCheckSuite {
       val aeb     = new AntiEntropy[GrowOnlyList[Int]]("b", network, mutable.Buffer("a"))
 
       val la0 = base.reverse.foldLeft(AntiEntropyContainer[GrowOnlyList[Int]](aea)) {
-        case (l, e) => l.mod(_.insertGL(0, e))
+        case (l, e) => l.mod(_.insertAt(0, e))
       }
       network.startReliablePhase()
       AntiEntropy.sync(aea, aeb)
       network.endReliablePhase()
       val lb0 = AntiEntropyContainer[GrowOnlyList[Int]](aeb).processReceivedDeltas()
 
-      val la1 = insertedA.foldLeft(la0) { (l, e) => l.mod(_.insertGL(math.min(math.max(0, e), l.data.size), e)) }
-      val lb1 = insertedB.foldLeft(lb0) { (l, e) => l.mod(_.insertGL(math.min(math.max(0, e), l.data.size), e)) }
+      val la1 = insertedA.foldLeft(la0) { (l, e) => l.mod(_.insertAt(math.min(math.max(0, e), l.data.size), e)) }
+      val lb1 = insertedB.foldLeft(lb0) { (l, e) => l.mod(_.insertAt(math.min(math.max(0, e), l.data.size), e)) }
 
       AntiEntropy.sync(aea, aeb)
       network.startReliablePhase()

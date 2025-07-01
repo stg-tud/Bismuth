@@ -41,11 +41,11 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
 
   def read(i: Int): Option[E] = toList.lift(i)
 
-  def insertGL(index: Int, elem: E): GrowOnlyList[E] = {
+  def insertAt(index: Int, elem: E): GrowOnlyList[E] = {
     val pos = dotList(index)
     insertAfter(pos, elem)
   }
-  def insertAllGL(index: Int, elems: List[E]): GrowOnlyList[E] = {
+  def insertAllAt(index: Int, elems: List[E]): GrowOnlyList[E] = {
     val pos = dotList(index)
     val res = elems.scanLeft(this)((gl, d) => gl.insertAfter(pos, d))
     res.drop(1).reduceOption(_.merge(_)).getOrElse(GrowOnlyList.empty)
@@ -53,6 +53,10 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
 
   def size: Int = elements.size
 
+  /**
+   * Returns a copy with some elements removed.
+   * DOES NOT WORK WHEN MERGING. This is only meant to be used when wrapped into another structure, such as an Epoch.
+   */
   def without(elems: Set[E]): GrowOnlyList[E] = GrowOnlyList(order, elements.filter((_, e) => !elems.contains(e)))
 }
 

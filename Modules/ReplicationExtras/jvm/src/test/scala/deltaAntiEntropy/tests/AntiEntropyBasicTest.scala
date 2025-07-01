@@ -54,23 +54,23 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     val aec = AntiEntropyContainer(ae)
 
-    aec.mod(_.insertGL(0, "00"))
+    aec.mod(_.insertAt(0, "00"))
 
     assertEquals(aec.data.toList, List("00"))
 
-    aec.mod(_.insertGL(1, "100"))
+    aec.mod(_.insertAt(1, "100"))
 
     assertEquals(aec.data.toList, List("00", "100"), aec.state)
 
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-      aec.mod(_.insertGL(0, elem))
+      aec.mod(_.insertAt(0, elem))
     // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("00", "100"))
 
-    aec.mod(_.insertGL(1, "b00"))
+    aec.mod(_.insertAt(1, "b00"))
 
     assertEquals(aec.data.read(1), Some("b00"))
 

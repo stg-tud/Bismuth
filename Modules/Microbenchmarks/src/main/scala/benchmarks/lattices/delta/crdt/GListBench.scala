@@ -24,7 +24,7 @@ class GListBench {
   def setup(): Unit = {
     list = (0 until listSize).foldLeft(NamedDeltaBuffer("a".asId, GrowOnlyList.empty[Int])) {
       case (c, i) =>
-        c.mod(_.insertGL(0, i))
+        c.mod(_.insertAt(0, i))
     }
   }
 
@@ -41,8 +41,8 @@ class GListBench {
   def readLast(): Option[Int] = list.state.read(listSize - 1)
 
   @Benchmark
-  def insertStart(): NamedDeltaBuffer[GrowOnlyList[Int]] = list.mod(_.insertGL(0, -1))
+  def insertStart(): NamedDeltaBuffer[GrowOnlyList[Int]] = list.mod(_.insertAt(0, -1))
 
   @Benchmark
-  def insertEnd(): NamedDeltaBuffer[GrowOnlyList[Int]] = list.mod(_.insertGL(listSize, -1))
+  def insertEnd(): NamedDeltaBuffer[GrowOnlyList[Int]] = list.mod(_.insertAt(listSize, -1))
 }
