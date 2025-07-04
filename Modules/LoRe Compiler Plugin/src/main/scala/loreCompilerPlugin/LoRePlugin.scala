@@ -141,23 +141,23 @@ class LoRePhase extends PluginPhase {
     var programsWithErrors: List[String] = List()
 
     // Iterate through all term lists and generate Dafny code for them + verify it
-    for ((file, method), terms) <- loreTerms do {
+    for ((file, programName), terms) <- loreTerms do {
       if logLevel.isLevelOrHigher(LogLevel.Essential) then {
-        println(s"\nGenerating Dafny code from LoRe AST of $method...")
+        println(s"\nGenerating Dafny code from LoRe AST of $programName...")
       }
 
       // Turn the filepath into an URI and then sneakily change the file extension the LSP gets to see
       // Also append the name of the current method being processed to the filepath
-      val filePath: String = File(file.path).toURI.toString.replace(".scala", s"_$method.dfy")
+      val filePath: String = File(file.path).toURI.toString.replace(".scala", s"_$programName.dfy")
       val fileName: String = filePath.substring(filePath.lastIndexOf("/") + 1)
 
       // Generate Dafny code from term list
-      val dafnyCode: String        = generateDafnyCode(terms, method)
+      val dafnyCode: String        = generateDafnyCode(terms, programName)
       val dafnyLines: List[String] = dafnyCode.linesIterator.toList
 
       if logLevel.isLevelOrHigher(LogLevel.Essential) then {
-        println(s"Dafny code generation for $method completed.")
-        println(s"Compiling and verifying Dafny code for $method...")
+        println(s"Dafny code generation for $programName completed.")
+        println(s"Compiling and verifying Dafny code for $programName...")
       }
 
       // Send the generated code "file" to the language server to verify
@@ -183,11 +183,11 @@ class LoRePhase extends PluginPhase {
 
       // If the wait for verification results was halted prematurely, a critical Dafny compilation error occurred.
       if verificationResult.params == null then {
-        programsWithErrors = programsWithErrors :+ method
+        programsWithErrors = programsWithErrors :+ programName
 
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
-          case None       => report.error("An unknown critical Dafny compilation error occurred.")
+          case None => report.error("An unknown critical Dafny compilation error occurred.")
           case Some(diag) =>
             val errors: List[Diagnostic] = diag.params.diagnostics.filter(d => {
               d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
@@ -208,10 +208,10 @@ class LoRePhase extends PluginPhase {
         // Process potential verification errors
         if erroneousVerifiables.isEmpty then {
           if logLevel.isLevelOrHigher(LogLevel.Essential) then {
-            println(s"All verifiables in $method were verified successfully.")
+            println(s"All verifiables in $programName were verified successfully.")
           }
         } else {
-          programsWithErrors = programsWithErrors :+ method
+          programsWithErrors = programsWithErrors :+ programName
 
           val unverifiableNames: List[String] = erroneousVerifiables.map(verifiable => {
             // The names of verifiables (e.g. method names) will be on one line, so no need to check across
@@ -224,7 +224,7 @@ class LoRePhase extends PluginPhase {
             case None =>
               // No diagnostics received, so no error details known
               report.error(
-                s"""The following verifiables in $method could not be verified:
+                s"""The following verifiables in $programName could not be verified:
                   |${unverifiableNames.mkString("\n")}""".stripMargin
               )
             case Some(diag) =>
