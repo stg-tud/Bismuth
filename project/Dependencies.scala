@@ -20,8 +20,8 @@ object Dependencies {
   val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"               % "slf4j-nop"              % "2.0.17" % Test
   val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.8"
-  val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.17.0"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.9"
+  val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.18.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.2.1"
 
   val sslcontextKickstart = libraryDependencies ++= List(
@@ -41,7 +41,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.0.22"
+    val jettyVersion = "12.0.23"
     Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
@@ -51,8 +51,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.36.5",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.36.5" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.36.7",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.36.7" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.0-R35"
