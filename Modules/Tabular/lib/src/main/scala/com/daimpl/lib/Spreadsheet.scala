@@ -97,18 +97,18 @@ case class Spreadsheet[A](
 
   def numColumns: Int = colIds.size
 
-  def getRow(visibleRowIdx: Int): List[Set[A]] =
+  def getRow(visibleRowIdx: Int): List[ConflictableValue[A]] =
     (0 until numColumns).map(visibleColIdx => read(visibleColIdx, visibleRowIdx)).toList
 
-  def toList: List[List[Set[A]]] =
+  def toList: List[List[ConflictableValue[A]]] =
     (0 until numRows).map(getRow).toList
 
-  def read(visibleColIdx: Int, visibleRowIdx: Int): Set[A] =
+  def read(visibleColIdx: Int, visibleRowIdx: Int): ConflictableValue[A] =
     (for
       rowId <- rowIds.read(visibleRowIdx)
       colId <- colIds.read(visibleColIdx)
       cell  <- content.get((rowId, colId))
-    yield cell.elements).getOrElse(Set.empty)
+    yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty)
 
 }
 

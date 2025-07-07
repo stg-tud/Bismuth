@@ -57,7 +57,7 @@ object SpreadsheetComponent {
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
       $.props.flatMap { props =>
         val currentSet = props.spreadsheetAggregator.current.read(colIdx, rowIdx)
-        val firstValue = currentSet.headOption.getOrElse("") // ★ changed
+        val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
         $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
       }
 
@@ -262,7 +262,7 @@ object SpreadsheetComponent {
                       ^.key       := s"cell-$rowIdx-$colIdx",
                       ^.className := "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32",
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
-                      if cell.size > 1 then
+                      if cell.hasConflicts then
                         <.span(
                           ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
                           ^.title := "Resolve conflict",
@@ -283,8 +283,8 @@ object SpreadsheetComponent {
                         case _ =>
                           <.span(
                             ^.className := "block cursor-pointer min-h-[1.5rem] overflow-hidden text-ellipsis whitespace-nowrap",
-                            ^.title := cell.mkString("/"),
-                            cell.mkString("/")
+                            ^.title := cell.formatConflicts(),
+                            cell.formatConflicts()
                           )
                       }
                     )
