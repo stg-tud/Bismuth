@@ -30,11 +30,12 @@ webappsServe:
 webappsBundle:
 	npm --prefix "Modules/Examples Web/" install
 	sbt --client examplesWeb/fullLinkJS
+	mkdir -p "Modules/Examples Web/target/generated_js/examplesweb-fastopt/"
+	touch "Modules/Examples Web/target/generated_js/examplesweb-fastopt/main.js"
 	"Modules/Examples Web/node_modules/vite/bin/vite.js" build "Modules/Examples Web/" --outDir "target/dist"
 
-webappsWebview sbtOpts="":
-	# REMINDER: call webappsBundle first if not done yet
-	sbt {{sbtOpts}} 'webview / run "Modules/Examples Web/target/dist/index.html"'
+webappsWebview: webappsBundle
+	sbt --client 'webview / run "Modules/Examples Web/target/dist/index.html"'
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
