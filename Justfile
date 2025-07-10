@@ -24,11 +24,11 @@ runSimpleCaseStudy sbtOpts="":
 	sbt {{sbtOpts}} 'examplesJVM / run'
 
 webappsServe:
-	npm --prefix "Modules/Examples Web/" install
+	npm --prefix "Modules/Examples Web/" install --no-package-lock
 	"Modules/Examples Web/node_modules/vite/bin/vite.js" "Modules/Examples Web/"
 
 webappsBundle:
-	npm --prefix "Modules/Examples Web/" install
+	npm --prefix "Modules/Examples Web/" install --no-package-lock
 	sbt --client examplesWeb/fullLinkJS
 	mkdir -p "Modules/Examples Web/target/generated_js/examplesweb-fastopt/"
 	touch "Modules/Examples Web/target/generated_js/examplesweb-fastopt/main.js"
