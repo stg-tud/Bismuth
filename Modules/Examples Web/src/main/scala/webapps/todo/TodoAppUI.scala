@@ -8,13 +8,13 @@ import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.*
-import replication.Storing
 import scalatags.JsDom
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
 import Codecs.given
 import TodoDataManager.TodoRepState
 import Todolist.replicaId
+import webapps.Storing
 
 class TodoAppUI(val storagePrefix: String) {
 

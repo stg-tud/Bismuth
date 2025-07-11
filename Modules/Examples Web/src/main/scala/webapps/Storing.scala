@@ -1,4 +1,4 @@
-package replication
+package webapps
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import org.scalajs.dom

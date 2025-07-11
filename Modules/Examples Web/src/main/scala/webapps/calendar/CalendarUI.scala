@@ -10,8 +10,8 @@ import reactives.core.CreationTicket
 import reactives.default.*
 import reactives.extra.Tags.*
 import reactives.operator.Event.CBR
-import replication.Storing
 import scalatags.JsDom.all.*
+import webapps.Storing
 
 class NewAppointment(private val typeName: String) {
 
