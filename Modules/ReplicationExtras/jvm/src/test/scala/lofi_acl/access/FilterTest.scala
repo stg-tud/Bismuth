@@ -34,7 +34,7 @@ class FilterTest extends FunSuite {
 
   test("ProductTypeFilter with nested product") {
     given Filter[TestSingle] = Filter.derived
-    import rdts.filters.Filters.OptionLattice.filter
+    import rdts.filters.Filters.optionFilter
     given filter: Filter[TestNested] = Filter.derived
     val testValue = TestNested(TestSingle(LastWriterWins.now("Test a")), Some(LastWriterWins.now("Test b")))
     assertEquals(filter.filter(testValue, allow), testValue)
@@ -55,7 +55,7 @@ class FilterTest extends FunSuite {
 
   test("wildcard with nested product") {
     given Filter[TestSingle] = Filter.derived
-    import rdts.filters.Filters.OptionLattice.filter
+    import rdts.filters.Filters.optionFilter
     given Filter[TestNested]              = Filter.derived
     given filter: Filter[TestForWildcard] = Filter.derived
 

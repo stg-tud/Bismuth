@@ -1,6 +1,5 @@
 package rdts.filters
 
-
 import PermissionTree.allow
 import Permission.*
 import rdts.base.Bottom
@@ -10,7 +9,7 @@ import scala.annotation.unused
 import scala.compiletime.{constValue, erasedValue, summonAll}
 import scala.deriving.Mirror
 
-trait Filter[T]:
+trait Filter[T] {
   def filter(delta: T, permission: PermissionTree): T
 
   /** Checks whether the permission tree is valid.
@@ -24,7 +23,10 @@ trait Filter[T]:
 
   def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree
 
-object Filter:
+}
+
+
+object Filter {
   inline def apply[T](using filter: Filter[T]): Filter[T] = filter
 
   // From https://blog.philipp-martini.de/blog/magic-mirror-scala3/
@@ -214,3 +216,4 @@ object Filter:
         case PermissionTree(PARTIAL, _) => PermissionTree.empty
 
   def ofTerminalValue[T: Bottom]: Filter[T] = TerminalFilter[T]()
+}
