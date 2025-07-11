@@ -3,7 +3,6 @@ package lofi_acl.access
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.ardt.datatypes.LWW
 import munit.FunSuite
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.LastWriterWins
@@ -19,13 +18,9 @@ class KeyHierarchyTest extends FunSuite {
 
   private given lwwSurgeon: DeltaSurgeon[LastWriterWins[Option[String]]] = {
     import DeltaSurgeon.given
-    LWW.deltaSurgeon[Option[String]]
+    DeltaSurgeon.lwwDeltaSurgeon[Option[String]]
   }
 
-  private given DeltaSurgeon[CompoundTest] = {
-    given compoundTestBottom: Bottom[CompoundTest] = Bottom.derived
-    DeltaSurgeon.derived
-  }
 
   private val replicaId        = PublicIdentity.fromPublicKey(Ed25519Util.generateNewKeyPair.getPublic)
   private val fullKeyHierarchy = FullKeyHierarchy(KeyDerivationKey())

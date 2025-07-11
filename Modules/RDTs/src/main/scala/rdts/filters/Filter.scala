@@ -3,6 +3,7 @@ package rdts.filters
 import PermissionTree.allow
 import Permission.*
 import rdts.base.Bottom
+import rdts.datatypes.LastWriterWins
 import rdts.filters.FilterDerivation.TerminalFilter
 import rdts.time.{ArrayRanges, Dots}
 
@@ -36,7 +37,7 @@ object Filter {
     case _: EmptyTuple => Nil
     case _: (t *: ts)  => constValue[t].toString :: getElementNames[ts]
   }
-  
+
   inline def derived[T](using m: Mirror.Of[T], productBottom: Bottom[T]): Filter[T] = {
     // Element is either a factor of a product or an element in a sum
     val elementBottoms = summonAll[Tuple.Map[m.MirroredElemTypes, Bottom]].toIArray.map(_.asInstanceOf[Bottom[Any]])
@@ -202,5 +203,32 @@ object Filter {
       if minimized.children.contains("*")
       then PermissionTree.lattice.normalizeWildcards(minimized)
       else minimized
+  }
+
+  given lwwFilter[V: {Filter}]: Filter[LastWriterWins[V]] with {
+    override def filter(delta: LastWriterWins[V], permission: PermissionTree): LastWriterWins[V] = permission match
+      case PermissionTree(ALLOW, _)   => delta
+      case PermissionTree(PARTIAL, _) => delta.copy(payload = Filter[V].filter(delta.read, permission))
+
+    override def validatePermissionTree(permissionTree: PermissionTree): Unit = permissionTree match
+      case PermissionTree(ALLOW, _)   =>
+      case PermissionTree(PARTIAL, _) => Filter[V].validatePermissionTree(permissionTree)
+
+    override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree =
+      Filter[V].minimizePermissionTree(permissionTree)
+  }
+
+  def terminalLwwFilter[V: Bottom]: Filter[LastWriterWins[V]] = new {
+    override def filter(delta: LastWriterWins[V], permission: PermissionTree): LastWriterWins[V] = permission match
+      case PermissionTree(ALLOW, _)                 => delta
+      case PermissionTree(PARTIAL, valuePermission) =>
+        // This is actually never reached, if using normalized permission trees
+        require(valuePermission.isEmpty)
+        LastWriterWins.bottom[V].empty
+
+    override def validatePermissionTree(permissionTree: PermissionTree): Unit =
+      if permissionTree.children.nonEmpty then throw InvalidPathException(permissionTree.children.keys.head :: Nil)
+
+    override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree = permissionTree
   }
 }

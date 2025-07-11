@@ -100,8 +100,8 @@ object TravelPlan {
 
   type Title = String
   given Bottom[Title]                                                 = Bottom.provide("")
-  given titleFilter: Filter[LastWriterWins[Title]]                    = LWW.terminalFilter
-  given lwwOptionStringFilter: Filter[LastWriterWins[Option[String]]] = LWW.terminalFilter
+  given titleFilter: Filter[LastWriterWins[Title]]                    = Filter.terminalLwwFilter
+  given lwwOptionStringFilter: Filter[LastWriterWins[Option[String]]] = Filter.terminalLwwFilter
   type UniqueId = String
   val empty: TravelPlan = Bottom[TravelPlan].empty
 

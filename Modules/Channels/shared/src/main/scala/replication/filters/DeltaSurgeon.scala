@@ -3,8 +3,9 @@ package replication.filters
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Bottom
+import rdts.datatypes.LastWriterWins
 import rdts.filters.{Permission, PermissionTree}
-import rdts.time.Dots
+import rdts.time.{CausalTime, Dots}
 
 import scala.compiletime.*
 import scala.deriving.Mirror
@@ -49,6 +50,16 @@ trait DeltaSurgeon[T] {
 
 object DeltaSurgeon {
   inline def apply[T](using deltaSurgeon: DeltaSurgeon[T]): DeltaSurgeon[T] = deltaSurgeon
+
+
+
+    given lwwDeltaSurgeon[V: {Bottom, DeltaSurgeon}]: DeltaSurgeon[LastWriterWins[V]] =
+      given causalTimeDeltaSurgeon: DeltaSurgeon[CausalTime] = {
+        given codec: JsonValueCodec[CausalTime] = JsonCodecMaker.make[CausalTime]
+        DeltaSurgeon.ofTerminalValue
+      }
+      DeltaSurgeon.derived
+
 
   // From https://blog.philipp-martini.de/blog/magic-mirror-scala3/
   private inline def getLabels[A <: Tuple]: List[String] = inline erasedValue[A] match {
