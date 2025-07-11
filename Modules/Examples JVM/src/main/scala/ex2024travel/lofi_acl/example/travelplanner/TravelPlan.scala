@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.softwaremill.quicklens.*
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.{*, given}
-import lofi_acl.collections.ORMap.stringKeyORMapFilter
+import rdts.filters.Filter.stringKeyORMapFilter
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.Filter
