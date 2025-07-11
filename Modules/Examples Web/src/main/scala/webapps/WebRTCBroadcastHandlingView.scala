@@ -1,4 +1,4 @@
-package replication
+package webapps
 
 import channels.broadcastchannel.BroadcastChannelConnector
 import channels.webrtc.{ConnectorOverview, SessionDescription, WebRTCConnection, WebRTCConnector}
@@ -10,7 +10,7 @@ import org.scalajs.dom
 import org.scalajs.dom.*
 import org.scalajs.dom.html.Table
 import replication.DeltaDissemination
-import scalatags.JsDom.all.*
+import scalatags.JsDom.all.{s, *}
 import scalatags.JsDom.tags2.section
 
 import scala.concurrent.ExecutionContext

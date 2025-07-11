@@ -5,9 +5,9 @@ import org.scalajs.dom.html.Div
 import org.scalajs.dom.{document, window}
 import rdts.base.{Lattice, LocalUid}
 import reactives.extra.Tags.reattach
-import replication.WebRTCConnectionView
 import scalatags.JsDom.all
 import scalatags.JsDom.all.given
+import webapps.WebRTCConnectionView
 import webapps.todo.TodoDataManager.TodoRepState
 
 import java.util.{Timer, TimerTask}
