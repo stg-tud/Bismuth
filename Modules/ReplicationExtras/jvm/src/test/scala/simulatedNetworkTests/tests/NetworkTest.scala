@@ -1,6 +1,7 @@
 package simulatedNetworkTests.tests
 
-import simulatedNetworkTests.tools.Network
+import simulatedNetworkTests.tools.{Network, SimulatedMessage}
+import NetworkGenerators.given
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 
@@ -17,12 +18,20 @@ object NetworkGenerators {
     yield new NetworkGenerator(lossChance, duplicateChance, delayChance)
 
   given arbNetwork: Arbitrary[NetworkGenerator] = Arbitrary(genNetwork)
+
+  given arbSimulatedMessage: Arbitrary[SimulatedMessage] = Arbitrary(
+    Gen.choose(0, 255).map(SimulatedMessage.apply)
+  )
+
+  given arbSimulatedMessageList: Arbitrary[List[SimulatedMessage]] = Arbitrary(
+    Gen.listOf(arbSimulatedMessage.arbitrary)
+  )
 }
 
 class NetworkTest extends munit.ScalaCheckSuite {
   import NetworkGenerators.*
   property("sendMessage/receiveMessages") {
-    forAll { (msgs: List[Array[Byte]], replicaID: String) =>
+    forAll { (msgs: List[SimulatedMessage], replicaID: String) =>
       val network = new Network(0, 0, 0)
       msgs.foreach(network.sendMessage("a", _))
 
@@ -38,11 +47,7 @@ class NetworkTest extends munit.ScalaCheckSuite {
       msgs.foreach { msg =>
         assert(
           rcvd.contains(msg),
-          s"""For id "a" the sent messages should be received, but $rcvd does not contain ${msg.mkString(
-              "Array(",
-              ", ",
-              ")"
-            )}"""
+          s"""For id "a" the sent messages should be received, but $rcvd does not contain ${msg}"""
         )
       }
 
@@ -55,7 +60,7 @@ class NetworkTest extends munit.ScalaCheckSuite {
     }
   }
   property("loss") {
-    forAll { (msg: Array[Byte]) =>
+    forAll { (msg: SimulatedMessage) =>
       val network = new Network(1, 0, 0)
 
       network.sendMessage("a", msg)
@@ -69,7 +74,7 @@ class NetworkTest extends munit.ScalaCheckSuite {
     }
   }
   property("duplicate") {
-    forAll { (msg: Array[Byte]) =>
+    forAll { (msg: SimulatedMessage) =>
       val network = new Network(0, 1, 0)
 
       network.sendMessage("a", msg)
@@ -82,28 +87,28 @@ class NetworkTest extends munit.ScalaCheckSuite {
 
       assert(
         rcvd1.contains(msg),
-        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 1 time $rcvd1 does not contain ${msg.mkString("Array(", ", ", ")")}"
+        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 1 time $rcvd1 does not contain ${msg}"
       )
       assert(
         rcvd2.contains(msg),
-        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 2 time $rcvd1 does not contain ${msg.mkString("Array(", ", ", ")")}"
+        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 2 time $rcvd1 does not contain ${msg}"
       )
       assert(
         rcvd3.contains(msg),
-        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 3 time $rcvd1 does not contain ${msg.mkString("Array(", ", ", ")")}"
+        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 3 time $rcvd1 does not contain ${msg}"
       )
       assert(
         rcvd4.contains(msg),
-        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 4 time $rcvd1 does not contain ${msg.mkString("Array(", ", ", ")")}"
+        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 4 time $rcvd1 does not contain ${msg}"
       )
       assert(
         rcvd5.contains(msg),
-        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 5 time $rcvd1 does not contain ${msg.mkString("Array(", ", ", ")")}"
+        s"In a network with 100% duplicate chance a message should be able to be received infinitely often, but after receiving 5 time $rcvd1 does not contain ${msg}"
       )
     }
   }
   property("delay") {
-    forAll { (msg: Array[Byte]) =>
+    forAll { (msg: SimulatedMessage) =>
       val network = new Network(0, 0, 1)
 
       network.sendMessage("a", msg)
@@ -116,7 +121,7 @@ class NetworkTest extends munit.ScalaCheckSuite {
     }
   }
   property("reliablePhase") {
-    forAll { (msg: Array[Byte], networkGen: NetworkGenerator) =>
+    forAll { (msg: SimulatedMessage, networkGen: NetworkGenerator) =>
       val network = networkGen.make()
       network.startReliablePhase()
       network.sendMessage("a", msg)
@@ -125,7 +130,7 @@ class NetworkTest extends munit.ScalaCheckSuite {
 
       assert(
         rcvd.contains(msg),
-        s"When the network is in a reliable phase all sent messages should be received, but $rcvd does not contain ${msg.mkString("Array(", ", ", ")")}"
+        s"When the network is in a reliable phase all sent messages should be received, but $rcvd does not contain ${msg}"
       )
     }
   }

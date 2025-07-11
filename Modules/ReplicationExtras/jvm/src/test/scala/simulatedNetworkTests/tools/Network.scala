@@ -3,6 +3,8 @@ package simulatedNetworkTests.tools
 import scala.collection.mutable
 import scala.util.Random
 
+case class SimulatedMessage(content: Any)
+
 /** This class simulates an unreliable network that may lose, duplicate or delay messages. It was made together with [[IAntiEntropy]]
   * to locally test the correctness of Delta CRDTs in unreliable networks. The network can be made reliable for certain
   * phases only by using the startReliablePhase and endReliablePhase methods.
@@ -27,10 +29,10 @@ import scala.util.Random
 class Network(val lossChance: Double, val duplicateChance: Double, val delayChance: Double) {
   private var reliablePhase: Boolean = false
 
-  private val reliablyTransferred: mutable.Map.WithDefault[String, List[Array[Byte]]] =
+  private val reliablyTransferred: mutable.Map.WithDefault[String, List[SimulatedMessage]] =
     new mutable.Map.WithDefault(mutable.Map(), _ => List())
 
-  private val inTransfer: mutable.Map.WithDefault[String, List[Array[Byte]]] =
+  private val inTransfer: mutable.Map.WithDefault[String, List[SimulatedMessage]] =
     new mutable.Map.WithDefault(mutable.Map(), _ => List())
 
   def startReliablePhase(): Unit = {
@@ -41,12 +43,12 @@ class Network(val lossChance: Double, val duplicateChance: Double, val delayChan
     reliablePhase = false
   }
 
-  private def selectRandom(l: List[Array[Byte]], removeChance: Double): List[Array[Byte]] =
+  private def selectRandom(l: List[SimulatedMessage], removeChance: Double): List[SimulatedMessage] =
     l.zip(List.fill(l.length)(Random.between(0.0, 1.0))).collect {
       case (msg, ran) if ran > removeChance => msg
     }
 
-  def receiveMessages(recipient: String): List[Array[Byte]] = {
+  def receiveMessages(recipient: String): List[SimulatedMessage] = {
     val l = inTransfer(recipient)
 
     val transferred = selectRandom(l, delayChance)
@@ -64,13 +66,13 @@ class Network(val lossChance: Double, val duplicateChance: Double, val delayChan
 
   private def insertMessage(
       recipient: String,
-      message: Array[Byte],
-      into: mutable.Map[String, List[Array[Byte]]]
+      message: SimulatedMessage,
+      into: mutable.Map[String, List[SimulatedMessage]]
   ): Unit = {
     into.update(recipient, into(recipient) :+ message)
   }
 
-  def sendMessage(recipient: String, message: Array[Byte]): Unit = {
+  def sendMessage(recipient: String, message: SimulatedMessage): Unit = {
     if reliablePhase then {
       insertMessage(recipient, message, reliablyTransferred)
       return

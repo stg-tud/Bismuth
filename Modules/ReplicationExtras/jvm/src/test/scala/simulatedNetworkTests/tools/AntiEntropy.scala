@@ -28,7 +28,7 @@ class AntiEntropy[A](
     val replicaID: String,
     network: Network,
     neighbors: mutable.Buffer[String] = mutable.Buffer()
-)(using Bottom[A], JsonValueCodec[A], Lattice[A]) {
+)(using Bottom[A], Lattice[A]) {
 
   def state: A = fullState
 
@@ -44,13 +44,7 @@ class AntiEntropy[A](
 
   private var fullState: A = Bottom.empty
 
-  given AckMsgCodec: JsonValueCodec[AckMsg] = JsonCodecMaker.make
-
-  given DeltaMsgCodec: JsonValueCodec[DeltaMsg[A]] = JsonCodecMaker.make
-
   type Message = Either[AckMsg, DeltaMsg[A]]
-
-  given EitherCodec: JsonValueCodec[Message] = JsonCodecMaker.make
 
   def addNeighbor(newNeighbor: String): Unit = {
     neighbors.append(newNeighbor)
@@ -73,7 +67,7 @@ class AntiEntropy[A](
     case DeltaMsg(delta, seqNum) =>
       deltaBufferIn = deltaBufferIn :+ delta
       val msg: Message = Left(AckMsg(replicaID, seqNum))
-      network.sendMessage(rdts.base.Uid.unwrap(delta.replicaId), writeToArray(msg))
+      network.sendMessage(rdts.base.Uid.unwrap(delta.replicaId), SimulatedMessage(msg))
   }
 
   private def receiveAck(msg: AckMsg): Unit = msg match {
@@ -84,7 +78,7 @@ class AntiEntropy[A](
 
   def receiveFromNetwork(): Unit = {
     try {
-      network.receiveMessages(replicaID).map(readFromArray[Message](_)).foreach {
+      network.receiveMessages(replicaID).map(_.content.asInstanceOf[Message]).foreach {
         case Left(ackMsg)    => receiveAck(ackMsg)
         case Right(deltaMsg) => receiveDelta(deltaMsg)
       }
@@ -115,7 +109,7 @@ class AntiEntropy[A](
         case None      =>
         case Some(msg) =>
           val eitherMsg: Message = Right(msg)
-          network.sendMessage(id, writeToArray(eitherMsg))
+          network.sendMessage(id, SimulatedMessage(eitherMsg))
       }
     }
   }
