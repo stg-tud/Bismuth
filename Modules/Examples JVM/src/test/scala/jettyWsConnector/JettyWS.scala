@@ -1,4 +1,4 @@
-package channels.jettywebsockets
+package jettyWsConnector
 
 import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive as ChannelHandler}
 import de.rmgk.delay.{Async, toAsync, Callback as DelayCallback}

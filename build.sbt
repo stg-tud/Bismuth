@@ -89,7 +89,6 @@ lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"
     Dependencies.bouncyCastle,
     Dependencies.sslcontextKickstart,
     Dependencies.tink,
-    libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
     Dependencies.slf4jnop,
   ).jsSettings(
     // commonjs module allows tests to find libsodium-wrappers installed in the root project
@@ -98,7 +97,6 @@ lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"
         .withModuleKind(ModuleKind.CommonJSModule)
     },
   )
-
 
 lazy val deltalens = project.in(file("Modules/Deltalens"))
   .dependsOn(rdts.jvm)
@@ -120,7 +118,7 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
 
 lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, crypto.jvm, integration.jvm)
+  .dependsOn(deltalens, crypto.jvm, integration.jvm, channels.jvm % "compile->compile;test->test")
   .settings(
     scala3defaults,
     javaOutputVersion(17),
@@ -132,6 +130,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.scalaXml,
     Dependencies.scalaSwing,
     Dependencies.conscript,
+    Dependencies.jetty,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
   )
 
@@ -178,7 +177,6 @@ lazy val integration = crossProject(JSPlatform, JVMPlatform).in(file("Modules/In
     Dependencies.bouncyCastle,
     Dependencies.sslcontextKickstart,
     Dependencies.tink,
-    libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
     Dependencies.slf4jnop,
   ).jsSettings(
     // commonjs module allows tests to find libsodium-wrappers installed in the root project

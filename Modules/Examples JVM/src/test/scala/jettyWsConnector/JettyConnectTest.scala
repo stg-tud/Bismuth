@@ -1,7 +1,6 @@
-package channels
+package jettyWsConnector
 
-import channels.Abort
-import channels.jettywebsockets.{JettyWsConnection, JettyWsListener}
+import channels.{Abort, ArrayMessageBuffer, EchoCommunicationTest}
 import de.rmgk.delay.*
 import org.eclipse.jetty.http.pathmap.PathSpec
 import org.eclipse.jetty.server.ServerConnector
