@@ -2,6 +2,7 @@ package lofi_acl.access
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import rdts.time.Dot
+import replication.filters.IsolatedDeltaParts
 
 import scala.annotation.tailrec
 

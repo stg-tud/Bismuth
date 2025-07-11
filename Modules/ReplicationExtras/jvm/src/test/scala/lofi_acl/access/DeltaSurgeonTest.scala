@@ -2,7 +2,7 @@ package lofi_acl.access
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import lofi_acl.access.DeltaSurgeon.getLabels
+import replication.filters.DeltaSurgeon.getLabels
 import lofi_acl.access.DeltaSurgeonTest.{optionSurgeon, given}
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree.{allow, empty}
@@ -11,6 +11,7 @@ import org.junit.Assert
 import rdts.base
 import rdts.base.Bottom
 import rdts.filters.PermissionTree
+import replication.filters.{DeltaSurgeon, IsolatedDeltaParts}
 
 import scala.compiletime.{constValue, constValueTuple, erasedValue, summonAll}
 
@@ -18,7 +19,7 @@ case class A(a: String, b: B)
 case class B(c: String)
 
 object DeltaSurgeonTest {
-  import DeltaSurgeon.given
+  import replication.filters.DeltaSurgeon.given
   given Bottom[A]       = Bottom.provide(A("", B("")))
   given Bottom[B]       = Bottom.provide(B(""))
   given DeltaSurgeon[B] = DeltaSurgeon.derived

@@ -1,6 +1,7 @@
-package lofi_acl.access
+package replication.filters
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Bottom
 import rdts.filters.{Permission, PermissionTree}
 import rdts.time.Dots
@@ -19,8 +20,9 @@ object IsolatedDeltaParts {
 }
 
 /** Splits a delta into individual pieces represented as a map of path elements.
- * This seems to be a variant on decompose, should unify.
- * TODO: this couples splitting into pieces with serialization … not happy about this. */
+  * This seems to be a variant on decompose, should unify.
+  * TODO: this couples splitting into pieces with serialization … not happy about this.
+  */
 trait DeltaSurgeon[T] {
   def isolate(delta: T): IsolatedDeltaParts
 
@@ -154,9 +156,10 @@ object DeltaSurgeon {
       case serializedValue: Array[Byte] => readFromArray(serializedValue)
   }
 
-  import lofi_acl.sync.JsoniterCodecs.dotsCodec
+  given dotsDeltaSurgeon: DeltaSurgeon[Dots] =
+    given dotsCodec: JsonValueCodec[Dots] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+    ofTerminalValue[Dots]
 
-  given dotsDeltaSurgeon: DeltaSurgeon[Dots]                              = ofTerminalValue[Dots]
   given optionSurgeon[T: {Bottom, DeltaSurgeon}]: DeltaSurgeon[Option[T]] = {
     given noneBottom: Bottom[None.type] = Bottom.provide(None) // TODO: Bottom for singletons should be derivable
     given noneDeltaSurgeon: DeltaSurgeon[None.type] = DeltaSurgeon.derived

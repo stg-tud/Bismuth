@@ -8,6 +8,7 @@ import munit.FunSuite
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.time.Dot
+import replication.filters.DeltaSurgeon
 
 case class CompoundTest(a: LastWriterWins[Option[String]], b: String)
 

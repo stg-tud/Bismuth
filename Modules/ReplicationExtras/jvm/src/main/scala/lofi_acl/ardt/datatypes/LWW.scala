@@ -8,6 +8,7 @@ import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
 import rdts.filters.{Filter, InvalidPathException, PermissionTree}
 import rdts.time.CausalTime
+import replication.filters.DeltaSurgeon
 
 type LWW[V] = LastWriterWins[V]
 
