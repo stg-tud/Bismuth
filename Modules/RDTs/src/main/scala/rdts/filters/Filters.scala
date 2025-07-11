@@ -1,11 +1,10 @@
-package lofi_acl.ardt.base
+package rdts.filters
 
-import lofi_acl.access.*
-import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.base.Lattice
+import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.{Filter, InvalidPathException, PermissionTree}
 
-object StandardLibrary:
+object Filters {
 
   // Option[T] with Some > None
   object OptionLattice:
@@ -110,3 +109,4 @@ object StandardLibrary:
         if minimized.children.contains("*")
         then PermissionTree.lattice.normalizeWildcards(minimized)
         else minimized
+}
