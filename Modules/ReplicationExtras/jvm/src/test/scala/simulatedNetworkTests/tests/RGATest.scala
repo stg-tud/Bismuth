@@ -1,9 +1,9 @@
-package deltaAntiEntropy.tests
+package simulatedNetworkTests.tests
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import deltaAntiEntropy.tests.NetworkGenerators.*
-import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
+import simulatedNetworkTests.tests.NetworkGenerators.*
+import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
 import rdts.base.{Bottom, Lattice, Uid}

@@ -1,7 +1,7 @@
-package deltaAntiEntropy.tests
+package simulatedNetworkTests.tests
 
-import deltaAntiEntropy.tests.NetworkGenerators.*
-import deltaAntiEntropy.tools.{AntiEntropy, AntiEntropyContainer, Network}
+import simulatedNetworkTests.tests.NetworkGenerators.*
+import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.GrowOnlyCounter

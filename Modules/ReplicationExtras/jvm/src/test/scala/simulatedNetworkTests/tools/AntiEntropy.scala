@@ -1,8 +1,8 @@
-package deltaAntiEntropy.tools
+package simulatedNetworkTests.tools
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReaderException, JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import deltaAntiEntropy.tools.AntiEntropy.{AckMsg, DeltaMsg}
+import simulatedNetworkTests.tools.AntiEntropy.{AckMsg, DeltaMsg}
 import rdts.base.Uid.asId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import replication.JsoniterCodecs.given
@@ -28,7 +28,7 @@ class AntiEntropy[A](
     val replicaID: String,
     network: Network,
     neighbors: mutable.Buffer[String] = mutable.Buffer()
-)(using bottom: Bottom[A], codec: JsonValueCodec[A], withContextLattice: Lattice[A]) {
+)(using Bottom[A], JsonValueCodec[A], Lattice[A]) {
 
   def state: A = fullState
 

@@ -1,6 +1,6 @@
-package deltaAntiEntropy.tests
+package simulatedNetworkTests.tests
 
-import deltaAntiEntropy.tools.Network
+import simulatedNetworkTests.tools.Network
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 

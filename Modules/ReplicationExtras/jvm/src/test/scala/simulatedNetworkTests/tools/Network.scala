@@ -1,4 +1,4 @@
-package deltaAntiEntropy.tools
+package simulatedNetworkTests.tools
 
 import scala.collection.mutable
 import scala.util.Random

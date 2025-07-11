@@ -1,4 +1,4 @@
-package deltaAntiEntropy.tools
+package simulatedNetworkTests.tools
 
 import rdts.base.{Decompose, Lattice, LocalUid}
 
