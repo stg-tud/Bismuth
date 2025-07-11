@@ -12,6 +12,8 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   dtn.jvm,
   examplesJVM,
   examplesWeb,
+  integration.js,
+  integration.jvm,
   lore.js,
   lore.jvm,
   loreCompilerPlugin,
@@ -23,8 +25,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   reactives.js,
   reactives.jvm,
   reactives.native,
-  replicationExtras.js,
-  replicationExtras.jvm,
   tabularApp,
   tabularLib,
 )
@@ -90,7 +90,7 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
 
 lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, replicationExtras.jvm)
+  .dependsOn(deltalens, integration.jvm)
   .settings(
     scala3defaults,
     javaOutputVersion(17),
@@ -107,7 +107,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
 
 lazy val examplesWeb = project.in(file("Modules/Examples Web"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(replicationExtras.js, dtn.js, lore.js)
+  .dependsOn(integration.js, dtn.js, lore.js)
   .settings(
     scala3defaultsExtra,
     Dependencies.scalatags(),
@@ -129,6 +129,33 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     // examples do not have tests, but still fail to execute them with WASM backend
     test      := {},
     testQuick := {},
+  )
+
+lazy val integration = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Integration"))
+  .dependsOn(
+    channels % "compile->compile;test->test",
+    rdts     % "compile->compile;test->test",
+    reactives,
+  )
+  .settings(
+    scala3defaultsExtra,
+    Dependencies.munit,
+    Dependencies.munitCheck,
+    Dependencies.slips,
+    Dependencies.jsoniterScala,
+  )
+  .jvmSettings(
+    Dependencies.bouncyCastle,
+    Dependencies.sslcontextKickstart,
+    Dependencies.tink,
+    libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
+    Dependencies.slf4jnop,
+  ).jsSettings(
+    // commonjs module allows tests to find libsodium-wrappers installed in the root project
+    Test / scalaJSLinkerConfig := {
+      (Test / scalaJSLinkerConfig).value
+        .withModuleKind(ModuleKind.CommonJSModule)
+    },
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
@@ -173,7 +200,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(replicationExtras.jvm)
+  .dependsOn(integration.jvm)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,
@@ -223,33 +250,6 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Dependencies.scalajsDom,
     Dependencies.scalatags(Test),
     Settings.jsEnvDom,
-  )
-
-lazy val replicationExtras = crossProject(JSPlatform, JVMPlatform).in(file("Modules/ReplicationExtras"))
-  .dependsOn(
-    channels % "compile->compile;test->test",
-    rdts     % "compile->compile;test->test",
-    reactives,
-  )
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.munit,
-    Dependencies.munitCheck,
-    Dependencies.slips,
-    Dependencies.jsoniterScala,
-  )
-  .jvmSettings(
-    Dependencies.bouncyCastle,
-    Dependencies.sslcontextKickstart,
-    Dependencies.tink,
-    libraryDependencies ++= Dependencies.jetty.map(_ % Provided),
-    Dependencies.slf4jnop,
-  ).jsSettings(
-    // commonjs module allows tests to find libsodium-wrappers installed in the root project
-    Test / scalaJSLinkerConfig := {
-      (Test / scalaJSLinkerConfig).value
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
   )
 
 lazy val webview = project.in(file("Modules/Webview"))
