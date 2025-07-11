@@ -1,13 +1,12 @@
-package lofi_acl.access
+package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import replication.filters.DeltaSurgeon.getLabels
-import lofi_acl.access.DeltaSurgeonTest.{optionSurgeon, given}
+import DeltaSurgeonTest.{optionSurgeon, given}
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree.{allow, empty}
 import munit.FunSuite
-import org.junit.Assert
 import rdts.base
 import rdts.base.Bottom
 import rdts.filters.PermissionTree
@@ -35,16 +34,16 @@ class DeltaSurgeonTest extends FunSuite {
   test("isolate") {
     val isolated = DeltaSurgeon[A].isolate(A("a string", B("b string")))
 
-    Assert.assertArrayEquals(
-      writeToArray("a string"),
-      isolated.inner.asInstanceOf[Map[String, IsolatedDeltaParts]]("a").inner.asInstanceOf[Array[Byte]]
+    assertEquals(
+      writeToArray("a string").toSeq,
+      isolated.inner.asInstanceOf[Map[String, IsolatedDeltaParts]]("a").inner.asInstanceOf[Array[Byte]].toSeq
     )
 
-    Assert.assertArrayEquals(
-      writeToArray("b string"),
+    assertEquals(
+      writeToArray("b string").toSeq,
       isolated.inner.asInstanceOf[Map[String, IsolatedDeltaParts]]("b")
         .inner.asInstanceOf[Map[String, IsolatedDeltaParts]]("c")
-        .inner.asInstanceOf[Array[Byte]]
+        .inner.asInstanceOf[Array[Byte]].toSeq
     )
   }
 
