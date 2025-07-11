@@ -1,4 +1,4 @@
-package lofi_acl.access
+package test.rdts.filters
 
 import rdts.filters.Permission.PARTIAL
 import rdts.filters.PermissionTree.allow
