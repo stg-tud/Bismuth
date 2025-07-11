@@ -2,7 +2,6 @@ package lofi_acl.access
 
 import rdts.filters.Permission.PARTIAL
 import rdts.filters.PermissionTree.allow
-import lofi_acl.ardt.datatypes.LWW.given
 import munit.FunSuite
 import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
