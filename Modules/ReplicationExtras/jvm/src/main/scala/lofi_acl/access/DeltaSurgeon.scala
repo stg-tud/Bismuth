@@ -18,6 +18,9 @@ object IsolatedDeltaParts {
   val empty: IsolatedDeltaParts = IsolatedDeltaParts(Map.empty)
 }
 
+/** Splits a delta into individual pieces represented as a map of path elements.
+ * This seems to be a variant on decompose, should unify.
+ * TODO: this couples splitting into pieces with serialization … not happy about this. */
 trait DeltaSurgeon[T] {
   def isolate(delta: T): IsolatedDeltaParts
 
