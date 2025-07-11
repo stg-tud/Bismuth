@@ -5,11 +5,10 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.access
-import lofi_acl.collections.DeltaMapWithPrefix
 import BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
 import BftFilteringAntiEntropy.SyncMsg
 import BftFilteringAntiEntropy.SyncMsg.*
-import ex2024travel.lofi_acl.example.sync.{ConnectionManager, MessageReceiver, MessageSerialization}
+import ex2024travel.lofi_acl.example.sync.{ConnectionManager, DeltaMapWithPrefix, MessageReceiver, MessageSerialization}
 import ex2024travel.lofi_acl.example.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
 import ex2024travel.lofi_acl.example.sync.acl.monotonic.PartialReplicationPeerSubsetSolver
 import rdts.base.{Bottom, Lattice, Uid}

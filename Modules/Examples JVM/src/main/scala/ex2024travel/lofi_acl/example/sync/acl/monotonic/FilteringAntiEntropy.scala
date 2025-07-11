@@ -5,10 +5,9 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.access
 import rdts.filters.Operation.WRITE
-import lofi_acl.collections.DeltaMapWithPrefix
 import FilteringAntiEntropy.PartialDelta
 import MonotonicAclSyncMessage.*
-import ex2024travel.lofi_acl.example.sync.{ConnectionManager, MessageReceiver}
+import ex2024travel.lofi_acl.example.sync.{ConnectionManager, DeltaMapWithPrefix, MessageReceiver}
 import ex2024travel.lofi_acl.example.sync.acl.Sync
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}

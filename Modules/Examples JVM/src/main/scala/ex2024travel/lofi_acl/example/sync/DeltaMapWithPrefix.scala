@@ -1,4 +1,4 @@
-package lofi_acl.collections
+package ex2024travel.lofi_acl.example.sync
 
 import rdts.base.Bottom
 import rdts.time.{Dot, Dots}

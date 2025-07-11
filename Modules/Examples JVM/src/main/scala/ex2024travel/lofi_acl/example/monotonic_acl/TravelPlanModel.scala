@@ -2,10 +2,10 @@ package ex2024travel.lofi_acl.example.monotonic_acl
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Ed25519Util, PublicIdentity}
+import ex2024travel.lofi_acl.example.sync.DeltaMapWithPrefix
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.given
 import rdts.filters.Operation.{READ, WRITE}
-import lofi_acl.collections.DeltaMapWithPrefix
 import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.messageJsonCodec
 import ex2024travel.lofi_acl.example.sync.acl.monotonic.{MonotonicAcl, SyncWithMonotonicAcl}
 import ex2024travel.lofi_acl.example.sync.acl.monotonic.MonotonicAclSyncMessage.AclDelta
