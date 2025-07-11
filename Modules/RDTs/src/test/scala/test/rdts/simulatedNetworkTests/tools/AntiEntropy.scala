@@ -1,11 +1,8 @@
-package simulatedNetworkTests.tools
+package test.rdts.simulatedNetworkTests.tools
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReaderException, JsonValueCodec, readFromArray, writeToArray}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tools.AntiEntropy.{AckMsg, DeltaMsg}
+import AntiEntropy.{AckMsg, DeltaMsg}
 import rdts.base.Uid.asId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import replication.JsoniterCodecs.given
 
 import scala.collection.mutable
 
@@ -77,15 +74,9 @@ class AntiEntropy[A](
   }
 
   def receiveFromNetwork(): Unit = {
-    try {
-      network.receiveMessages(replicaID).map(_.content.asInstanceOf[Message]).foreach {
-        case Left(ackMsg)    => receiveAck(ackMsg)
-        case Right(deltaMsg) => receiveDelta(deltaMsg)
-      }
-    } catch {
-      case e: JsonReaderException =>
-        println("Couldn't parse message:")
-        e.printStackTrace()
+    network.receiveMessages(replicaID).map(_.content.asInstanceOf[Message]).foreach {
+      case Left(ackMsg)    => receiveAck(ackMsg)
+      case Right(deltaMsg) => receiveDelta(deltaMsg)
     }
 
     gc()

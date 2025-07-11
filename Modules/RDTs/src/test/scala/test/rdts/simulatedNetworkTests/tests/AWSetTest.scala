@@ -1,19 +1,16 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
+import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import replication.JsoniterCodecs.given
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
 
 object AWSetGenerators {
-  def genAWSet[A: JsonValueCodec](using a: Arbitrary[A]): Gen[AntiEntropyContainer[ReplicatedSet[A]]] =
+  def genAWSet[A](using a: Arbitrary[A]): Gen[AntiEntropyContainer[ReplicatedSet[A]]] =
     for
       added   <- Gen.containerOf[List, A](a.arbitrary)
       n       <- Gen.choose(0, added.size)
@@ -32,7 +29,7 @@ object AWSetGenerators {
       }
     }
 
-  given arbAWSet[A: JsonValueCodec](using
+  given arbAWSet[A](using
       a: Arbitrary[A]
   ): Arbitrary[AntiEntropyContainer[ReplicatedSet[A]]] =
     Arbitrary(genAWSet[A])
@@ -41,7 +38,6 @@ object AWSetGenerators {
 class AWSetTest extends munit.ScalaCheckSuite {
   import AWSetGenerators.{*, given}
 
-  given IntCodec: JsonValueCodec[Int] = JsonCodecMaker.make
   property("add") {
     forAll { (set: AntiEntropyContainer[ReplicatedSet[Int]], e: Int) =>
       given LocalUid                                      = set.replicaID

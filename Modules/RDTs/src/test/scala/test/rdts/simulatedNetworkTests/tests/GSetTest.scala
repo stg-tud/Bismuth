@@ -1,17 +1,14 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
+import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
-import replication.JsoniterCodecs.{*, given}
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
 
 object GSetGenerators {
-  def genGSet[E: JsonValueCodec](using e: Arbitrary[E]): Gen[AntiEntropyContainer[Set[E]]] =
+  def genGSet[E](using e: Arbitrary[E]): Gen[AntiEntropyContainer[Set[E]]] =
     for
       elements <- Gen.containerOf[List, E](e.arbitrary)
     yield {
@@ -23,14 +20,13 @@ object GSetGenerators {
       }
     }
 
-  given arbGSet[E: JsonValueCodec](using e: Arbitrary[E]): Arbitrary[AntiEntropyContainer[Set[E]]] =
+  given arbGSet[E](using e: Arbitrary[E]): Arbitrary[AntiEntropyContainer[Set[E]]] =
     Arbitrary(genGSet)
 }
 
 class GSetTest extends munit.ScalaCheckSuite {
   import GSetGenerators.{*, given}
 
-  given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
   property("insert") {
     forAll { (set: AntiEntropyContainer[Set[Int]], e: Int) =>
       val setInserted = set.mod(_ => Set(e))

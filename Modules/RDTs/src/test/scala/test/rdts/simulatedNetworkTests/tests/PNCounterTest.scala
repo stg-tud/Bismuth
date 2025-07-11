@@ -1,11 +1,10 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
+import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.PosNegCounter
-import replication.JsoniterCodecs.given
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
 

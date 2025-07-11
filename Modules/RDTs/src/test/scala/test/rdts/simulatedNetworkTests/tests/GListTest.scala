@@ -1,13 +1,10 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
+import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.GrowOnlyList
-import replication.JsoniterCodecs.given
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 
 import scala.collection.mutable
 
@@ -21,12 +18,12 @@ object GListGenerators {
       }
     }
 
-  given arbGList[E: {JsonValueCodec}](using
+  given arbGList[E](using
       e: Arbitrary[E]
   ): Arbitrary[GrowOnlyList[E]] =
     Arbitrary(genGList)
 
-  def makeNet[E: {JsonValueCodec}](v: GrowOnlyList[E]) =
+  def makeNet[E](v: GrowOnlyList[E]) =
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[GrowOnlyList[E]]("a", network, mutable.Buffer())
     val aec     = AntiEntropyContainer[GrowOnlyList[E]](ae)
@@ -36,8 +33,6 @@ object GListGenerators {
 
 class GListTest extends munit.ScalaCheckSuite {
   import GListGenerators.{*, given}
-
-  given IntCodec: JsonValueCodec[Int] = JsonCodecMaker.make
 
   property("size, toList, read") {
     forAll { (gol: GrowOnlyList[Int], readIdx: Int) =>

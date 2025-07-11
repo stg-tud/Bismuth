@@ -1,19 +1,14 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
+import NetworkGenerators.*
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
-import replication.JsoniterCodecs.given
 import test.rdts.DataGenerator.RGAGen.makeRGA
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 
 import scala.collection.mutable
 
 class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
-
-  given IntCodec: JsonValueCodec[String] = JsonCodecMaker.make
 
   test("basic") {
 
@@ -77,8 +72,6 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
   }
 
   test("specific property example") {
-
-    given IntCodec: JsonValueCodec[Int] = JsonCodecMaker.make
 
     val inserted: List[(Int, Int)]                       = List((0, 100))
     val removed: List[Int]                               = Nil

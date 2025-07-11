@@ -1,4 +1,4 @@
-package simulatedNetworkTests.tools
+package test.rdts.simulatedNetworkTests.tools
 
 import scala.collection.mutable
 import scala.util.Random

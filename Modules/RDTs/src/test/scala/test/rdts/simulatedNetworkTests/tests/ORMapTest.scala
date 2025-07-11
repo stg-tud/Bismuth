@@ -1,20 +1,15 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 import org.scalacheck.Prop.*
 import rdts.base
 import rdts.base.{Bottom, Decompose, LocalUid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
-import replication.JsoniterCodecs.given
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
 import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
-  given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
-
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
   property("contains") {

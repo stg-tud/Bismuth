@@ -1,21 +1,18 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
+import NetworkGenerators.*
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.ReplicatedList
-import replication.JsoniterCodecs.given
 import test.rdts.DataGenerator.RGAGen.{makeRGA, given}
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 
 import scala.collection.mutable
 
 object RGAGenerators {
 
-  def makeNet[E: JsonValueCodec](rl: ReplicatedList[E]) =
+  def makeNet[E](rl: ReplicatedList[E]) =
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[ReplicatedList[E]]("a", network, mutable.Buffer())
     val aec     = AntiEntropyContainer[ReplicatedList[E]](ae)
@@ -25,8 +22,6 @@ object RGAGenerators {
 
 class RGATest extends munit.ScalaCheckSuite {
   import RGAGenerators.{*, given}
-
-  given IntCodec: JsonValueCodec[Int] = JsonCodecMaker.make
 
   property("size, toList, read") {
     forAll { (rl: ReplicatedList[Int], readIdx: Int) =>

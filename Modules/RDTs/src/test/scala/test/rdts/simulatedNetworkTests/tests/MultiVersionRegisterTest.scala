@@ -1,14 +1,11 @@
-package simulatedNetworkTests.tests
+package test.rdts.simulatedNetworkTests.tests
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import simulatedNetworkTests.tests.NetworkGenerators.*
-import simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
+import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
 import rdts.datatypes.MultiVersionRegister
-import replication.JsoniterCodecs.given
+import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
 import scala.util.Random
@@ -17,7 +14,6 @@ object MVRegisterGenerators {
 
   def genMVRegister[A: Lattice](using
       a: Arbitrary[A],
-      cA: JsonValueCodec[A],
   ): Gen[AntiEntropyContainer[MultiVersionRegister[A]]] =
     for
       values <- Gen.containerOf[List, A](a.arbitrary)
@@ -36,7 +32,6 @@ object MVRegisterGenerators {
 
   given arbMVRegister[A: Lattice](using
       a: Arbitrary[A],
-      cA: JsonValueCodec[A],
   ): Arbitrary[AntiEntropyContainer[MultiVersionRegister[A]]] =
     Arbitrary(genMVRegister)
 }
@@ -44,8 +39,7 @@ object MVRegisterGenerators {
 class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
   import MVRegisterGenerators.{*, given}
 
-  given Lattice[Int]                  = math.max
-  given intCodec: JsonValueCodec[Int] = JsonCodecMaker.make
+  given Lattice[Int] = math.max
 
   property("write") {
     forAll { (reg: AntiEntropyContainer[MultiVersionRegister[Int]], v: Int) =>
