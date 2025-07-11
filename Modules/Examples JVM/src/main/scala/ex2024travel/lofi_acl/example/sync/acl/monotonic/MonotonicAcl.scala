@@ -1,10 +1,10 @@
-package lofi_acl.sync.acl.monotonic
+package ex2024travel.lofi_acl.example.sync.acl.monotonic
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import rdts.filters.Operation.WRITE
-import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.{AclDelta, Signature}
+import MonotonicAclSyncMessage.{AclDelta, Signature}
 import rdts.base.Uid
 import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}

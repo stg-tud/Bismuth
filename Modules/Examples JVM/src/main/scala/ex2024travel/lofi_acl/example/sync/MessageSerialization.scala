@@ -1,4 +1,4 @@
-package lofi_acl.sync
+package ex2024travel.lofi_acl.example.sync
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 

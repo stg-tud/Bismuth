@@ -1,10 +1,10 @@
-package lofi_acl.sync.acl.bft
+package ex2024travel.lofi_acl.example.sync.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.sync.acl.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature, opCodec}
+import BftAclOpGraph.{Delegation, EncodedDelegation, Signature, opCodec}
 import rdts.filters.PermissionTree
 
 import java.security.PrivateKey

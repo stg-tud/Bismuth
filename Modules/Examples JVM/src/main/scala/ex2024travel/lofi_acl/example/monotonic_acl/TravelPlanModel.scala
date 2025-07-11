@@ -6,9 +6,9 @@ import ex2024travel.lofi_acl.example.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.given
 import rdts.filters.Operation.{READ, WRITE}
 import lofi_acl.collections.DeltaMapWithPrefix
-import lofi_acl.sync.JsoniterCodecs.messageJsonCodec
-import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.AclDelta
-import lofi_acl.sync.acl.monotonic.{MonotonicAcl, SyncWithMonotonicAcl}
+import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.messageJsonCodec
+import ex2024travel.lofi_acl.example.sync.acl.monotonic.{MonotonicAcl, SyncWithMonotonicAcl}
+import ex2024travel.lofi_acl.example.sync.acl.monotonic.MonotonicAclSyncMessage.AclDelta
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree

@@ -1,4 +1,4 @@
-package lofi_acl.sync.acl
+package ex2024travel.lofi_acl.example.sync.acl
 
 import crypto.PublicIdentity
 import rdts.time.Dot

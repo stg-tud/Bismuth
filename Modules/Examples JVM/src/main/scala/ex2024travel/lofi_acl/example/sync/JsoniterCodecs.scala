@@ -1,10 +1,10 @@
-package lofi_acl.sync
+package ex2024travel.lofi_acl.example.sync
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
-import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage
-import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.Signature
+import ex2024travel.lofi_acl.example.sync.acl.monotonic.MonotonicAclSyncMessage
+import MonotonicAclSyncMessage.Signature
 import rdts.base.Uid
 import rdts.time.Dots
 

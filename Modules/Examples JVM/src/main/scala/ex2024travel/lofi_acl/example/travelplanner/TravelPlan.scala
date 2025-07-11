@@ -106,7 +106,7 @@ object TravelPlan {
 
   type Delta = TravelPlan
 
-  import lofi_acl.sync.JsoniterCodecs.uidKeyCodec
+  import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.uidKeyCodec
   given jsonCodec: JsonValueCodec[TravelPlan] = JsonCodecMaker.make[TravelPlan]
 }
 

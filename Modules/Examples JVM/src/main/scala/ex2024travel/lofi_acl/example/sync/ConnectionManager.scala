@@ -1,4 +1,4 @@
-package lofi_acl.sync
+package ex2024travel.lofi_acl.example.sync
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity

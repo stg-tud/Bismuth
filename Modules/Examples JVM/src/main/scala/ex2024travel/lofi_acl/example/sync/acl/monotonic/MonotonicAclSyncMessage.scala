@@ -1,4 +1,4 @@
-package lofi_acl.sync.acl.monotonic
+package ex2024travel.lofi_acl.example.sync.acl.monotonic
 
 import crypto.PublicIdentity
 import rdts.filters.{Operation, PermissionTree}

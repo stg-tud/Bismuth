@@ -1,4 +1,4 @@
-package lofi_acl.sync.acl.bft
+package ex2024travel.lofi_acl.example.sync.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -6,12 +6,12 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.access
 import lofi_acl.collections.DeltaMapWithPrefix
-import lofi_acl.sync.acl.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
-import lofi_acl.sync.acl.bft.BftFilteringAntiEntropy.SyncMsg
-import lofi_acl.sync.acl.bft.BftFilteringAntiEntropy.SyncMsg.*
-import lofi_acl.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
-import lofi_acl.sync.acl.monotonic.PartialReplicationPeerSubsetSolver
-import lofi_acl.sync.{ConnectionManager, MessageReceiver, MessageSerialization}
+import BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
+import BftFilteringAntiEntropy.SyncMsg
+import BftFilteringAntiEntropy.SyncMsg.*
+import ex2024travel.lofi_acl.example.sync.{ConnectionManager, MessageReceiver, MessageSerialization}
+import ex2024travel.lofi_acl.example.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
+import ex2024travel.lofi_acl.example.sync.acl.monotonic.PartialReplicationPeerSubsetSolver
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -340,7 +340,7 @@ object BftFilteringAntiEntropy {
 
   object SyncMsg {
     given codec[RDT](using JsonValueCodec[RDT]): JsonValueCodec[SyncMsg[RDT]] = {
-      import lofi_acl.sync.JsoniterCodecs.uidKeyCodec
+      import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.uidKeyCodec
       JsonCodecMaker.make
     }
   }

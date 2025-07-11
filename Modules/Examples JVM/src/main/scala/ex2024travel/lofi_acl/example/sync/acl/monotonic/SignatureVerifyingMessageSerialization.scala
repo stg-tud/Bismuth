@@ -1,9 +1,9 @@
-package lofi_acl.sync.acl.monotonic
+package ex2024travel.lofi_acl.example.sync.acl.monotonic
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.{AclDelta, Signature}
-import lofi_acl.sync.{InvalidMessageException, MessageSerialization}
+import MonotonicAclSyncMessage.{AclDelta, Signature}
+import ex2024travel.lofi_acl.example.sync.{InvalidMessageException, MessageSerialization}
 import rdts.time.Dot
 
 import java.io.{DataInputStream, DataOutputStream}
