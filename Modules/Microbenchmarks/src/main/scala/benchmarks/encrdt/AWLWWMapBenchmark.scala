@@ -4,9 +4,9 @@ import benchmarks.encrdt.Codecs.given
 import benchmarks.encrdt.statebased.DecryptedState.vectorClockJsonCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import com.google.crypto.tink.Aead
-import lofi_acl.collections.DeltaAWLWWMContainer
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.VectorClock
 
 import java.util.concurrent.TimeUnit

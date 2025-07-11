@@ -4,8 +4,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2021encfxtodo.SyncedTodoListCrdt.StateType
 import ex2021encfxtodo.sync.ConnectionManager
-import lofi_acl.collections.DeltaAWLWWMContainer
 import rdts.base.LocalUid
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import scalafx.application.Platform
 
 import java.net.URI

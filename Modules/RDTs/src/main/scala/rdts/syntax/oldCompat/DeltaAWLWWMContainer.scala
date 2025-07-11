@@ -1,8 +1,8 @@
-package lofi_acl.collections
+package rdts.syntax.oldCompat
 
-import lofi_acl.collections.DeltaAWLWWMContainer.State
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
 import rdts.time.Dots
 
 /** This is used for the encrypted todolist and associated benchmark */
