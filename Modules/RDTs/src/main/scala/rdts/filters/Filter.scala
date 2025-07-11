@@ -1,7 +1,8 @@
-package lofi_acl.access
+package rdts.filters
 
-import lofi_acl.access.Permission.{ALLOW, PARTIAL}
-import lofi_acl.access.PermissionTree.allow
+
+import PermissionTree.allow
+import Permission.*
 import rdts.base.Bottom
 import rdts.time.{ArrayRanges, Dots}
 

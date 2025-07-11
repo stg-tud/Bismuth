@@ -1,8 +1,9 @@
 package lofi_acl.access
 
-import lofi_acl.access.Operation.{READ, WRITE}
+import rdts.filters.Operation.{READ, WRITE}
 import lofi_acl.access.PermissionManager.{mergePermissionIntoPermissionMap, rulesToGroupedPermissionTrees}
 import rdts.base.Uid
+import rdts.filters.{Group, Operation, PermissionTree, Rule}
 
 import scala.annotation.tailrec
 

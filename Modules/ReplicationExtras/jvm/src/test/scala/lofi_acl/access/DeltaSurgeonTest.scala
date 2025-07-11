@@ -4,12 +4,13 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import lofi_acl.access.DeltaSurgeon.getLabels
 import lofi_acl.access.DeltaSurgeonTest.{optionSurgeon, given}
-import lofi_acl.access.Permission.{ALLOW, PARTIAL}
-import lofi_acl.access.PermissionTree.{allow, empty}
+import rdts.filters.Permission.{ALLOW, PARTIAL}
+import rdts.filters.PermissionTree.{allow, empty}
 import munit.FunSuite
 import org.junit.Assert
 import rdts.base
 import rdts.base.Bottom
+import rdts.filters.PermissionTree
 
 import scala.compiletime.{constValue, constValueTuple, erasedValue, summonAll}
 

@@ -4,14 +4,14 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.access
-import lofi_acl.access.Operation.WRITE
-import lofi_acl.access.{Filter, Operation, PermissionTree}
+import rdts.filters.Operation.WRITE
 import lofi_acl.collections.DeltaMapWithPrefix
 import lofi_acl.sync.acl.Sync
 import lofi_acl.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
 import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.*
 import lofi_acl.sync.{ConnectionManager, MessageReceiver}
 import rdts.base.{Bottom, Lattice, Uid}
+import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.LinkedBlockingQueue

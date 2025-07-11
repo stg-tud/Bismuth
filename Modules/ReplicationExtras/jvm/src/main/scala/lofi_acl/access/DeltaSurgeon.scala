@@ -2,6 +2,7 @@ package lofi_acl.access
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import rdts.base.Bottom
+import rdts.filters.{Permission, PermissionTree}
 import rdts.time.Dots
 
 import scala.compiletime.*

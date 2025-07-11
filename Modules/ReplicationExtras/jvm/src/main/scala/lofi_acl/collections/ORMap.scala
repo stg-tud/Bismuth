@@ -1,10 +1,10 @@
 package lofi_acl.collections
 
-import lofi_acl.access.Permission.*
-import lofi_acl.access.{Filter, InvalidPathException, PermissionTree}
+import rdts.filters.Permission.*
 import rdts.base.Bottom
 import rdts.datatypes.ObserveRemoveMap
 import rdts.datatypes.ObserveRemoveMap.Entry
+import rdts.filters.{Filter, InvalidPathException, PermissionTree}
 import rdts.time.Dots
 
 object ORMap {

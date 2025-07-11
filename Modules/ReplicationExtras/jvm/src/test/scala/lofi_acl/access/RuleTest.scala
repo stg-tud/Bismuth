@@ -1,7 +1,8 @@
 package lofi_acl.access
 
-import lofi_acl.access.Operation.{READ, WRITE}
+import rdts.filters.Operation.{READ, WRITE}
 import munit.FunSuite
+import rdts.filters.{Group, Operation, Rule}
 
 class RuleTest extends FunSuite {
   test("Rule.toAccessiblePath") {

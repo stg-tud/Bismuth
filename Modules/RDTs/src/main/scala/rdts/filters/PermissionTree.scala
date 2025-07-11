@@ -1,8 +1,8 @@
-package lofi_acl.access
+package rdts.filters
 
-import lofi_acl.access.Permission.{ALLOW, PARTIAL}
-import lofi_acl.access.PermissionTree.{allow, lattice}
 import rdts.base.{Bottom, Lattice}
+import Permission.*
+import rdts.filters.PermissionTree.{allow, lattice}
 
 import scala.annotation.{tailrec, targetName}
 import scala.collection.immutable.Queue

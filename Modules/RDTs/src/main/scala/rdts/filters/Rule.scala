@@ -1,4 +1,4 @@
-package lofi_acl.access
+package rdts.filters
 
 case class Rule(group: Group, operation: Operation, path: String):
   def toPathIfAllowed(groupsOfUser: Set[Group], forOperation: Operation): Option[String] =

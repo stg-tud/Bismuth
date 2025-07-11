@@ -1,7 +1,7 @@
 package lofi_acl.sync.acl.monotonic
 
 import crypto.PublicIdentity
-import lofi_acl.access.PermissionTree
+import rdts.filters.PermissionTree
 
 import scala.annotation.tailrec
 import scala.util.Random

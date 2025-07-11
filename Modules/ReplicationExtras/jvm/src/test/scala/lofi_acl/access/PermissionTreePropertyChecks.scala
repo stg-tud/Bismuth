@@ -1,11 +1,12 @@
 package lofi_acl.access
 
-import lofi_acl.access.Permission.{ALLOW, PARTIAL}
-import lofi_acl.access.PermissionTree.allow
+import rdts.filters.Permission.{ALLOW, PARTIAL}
+import rdts.filters.PermissionTree.allow
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
 import rdts.base.Lattice.syntax.merge
+import rdts.filters.{Permission, PermissionTree}
 import test.rdts.baseproperties.LatticePropertyChecks
 
 val labelGen: Gen[String] = Gen.oneOf(Gen.oneOf('a' to 'e').map(_.toString), Gen.const("*"))

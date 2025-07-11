@@ -3,12 +3,12 @@ package lofi_acl.sync.acl.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.access.{Filter, Operation, PermissionTree}
 import lofi_acl.sync
 import lofi_acl.sync.*
 import lofi_acl.sync.acl.Sync
 import lofi_acl.sync.acl.bft.BftAclOpGraph.{EncodedDelegation, Signature}
 import rdts.base.{Bottom, Lattice, Uid}
+import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.AtomicReference
@@ -46,8 +46,8 @@ class SyncWithBftMonotonicAcl[RDT](
 
   def grantPermissions(affectedUser: PublicIdentity, realm: PermissionTree, typeOfPermission: Operation): Unit = {
     val (read, write) = typeOfPermission match
-      case lofi_acl.access.Operation.READ  => (realm, PermissionTree.empty)
-      case lofi_acl.access.Operation.WRITE => (realm, realm)
+      case rdts.filters.Operation.READ  => (realm, PermissionTree.empty)
+      case rdts.filters.Operation.WRITE => (realm, realm)
 
     localAcl.synchronized {
       val old @ (opGraph, acl) = localAcl.get()

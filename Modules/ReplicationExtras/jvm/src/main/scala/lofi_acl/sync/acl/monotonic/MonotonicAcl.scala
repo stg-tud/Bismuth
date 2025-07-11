@@ -3,10 +3,10 @@ package lofi_acl.sync.acl.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.access.Operation.WRITE
-import lofi_acl.access.{Filter, Operation, PermissionTree}
+import rdts.filters.Operation.WRITE
 import lofi_acl.sync.acl.monotonic.MonotonicAclSyncMessage.{AclDelta, Signature}
 import rdts.base.Uid
+import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 case class MonotonicAcl[RDT](

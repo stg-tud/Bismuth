@@ -1,9 +1,10 @@
 package lofi_acl.access
 
-import lofi_acl.access.Permission.{ALLOW, PARTIAL}
-import lofi_acl.access.PermissionTree.{allow, empty}
+import rdts.filters.Permission.{ALLOW, PARTIAL}
+import rdts.filters.PermissionTree.{allow, empty}
 import munit.FunSuite
 import rdts.base.{Bottom, Lattice}
+import rdts.filters.PermissionTree
 
 class PermissionTreeTest extends FunSuite {
   def partial(labelsWithTree: (String, PermissionTree)*): PermissionTree =

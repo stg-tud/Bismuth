@@ -1,11 +1,12 @@
 package lofi_acl.access
 
-import lofi_acl.access.Permission.PARTIAL
-import lofi_acl.access.PermissionTree.allow
+import rdts.filters.Permission.PARTIAL
+import rdts.filters.PermissionTree.allow
 import lofi_acl.ardt.datatypes.LWW.given
 import munit.FunSuite
 import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
+import rdts.filters.{Filter, PermissionTree}
 
 given stringBottom: Bottom[String] = Bottom.provide("")
 

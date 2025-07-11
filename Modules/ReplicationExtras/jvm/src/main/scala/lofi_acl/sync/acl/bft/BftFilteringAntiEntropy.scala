@@ -5,7 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.access
-import lofi_acl.access.{Filter, PermissionTree}
 import lofi_acl.collections.DeltaMapWithPrefix
 import lofi_acl.sync.acl.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
 import lofi_acl.sync.acl.bft.BftFilteringAntiEntropy.SyncMsg
@@ -14,6 +13,7 @@ import lofi_acl.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
 import lofi_acl.sync.acl.monotonic.PartialReplicationPeerSubsetSolver
 import lofi_acl.sync.{ConnectionManager, MessageReceiver, MessageSerialization}
 import rdts.base.{Bottom, Lattice, Uid}
+import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.LinkedBlockingQueue
