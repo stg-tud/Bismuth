@@ -14,8 +14,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   dtn.jvm,
   examplesJVM,
   examplesWeb,
-  integration.js,
-  integration.jvm,
   lore.js,
   lore.jvm,
   loreCompilerPlugin,
@@ -74,9 +72,8 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
 
 lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"))
   .dependsOn(
+    rdts,
     channels % "compile->compile;test->test",
-    rdts     % "compile->compile;test->test",
-    reactives,
   )
   .settings(
     scala3defaultsExtra,
@@ -89,7 +86,6 @@ lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"
     Dependencies.bouncyCastle,
     Dependencies.sslcontextKickstart,
     Dependencies.tink,
-    Dependencies.slf4jnop,
   ).jsSettings(
     // commonjs module allows tests to find libsodium-wrappers installed in the root project
     Test / scalaJSLinkerConfig := {
@@ -118,7 +114,7 @@ lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
 
 lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, crypto.jvm, integration.jvm, channels.jvm % "compile->compile;test->test")
+  .dependsOn(deltalens, reactives.jvm, crypto.jvm, channels.jvm % "compile->compile;test->test")
   .settings(
     scala3defaults,
     javaOutputVersion(17),
@@ -131,6 +127,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.scalaSwing,
     Dependencies.conscript,
     Dependencies.jetty,
+    Dependencies.slf4jnop, // for jetty
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
   )
 
@@ -158,32 +155,6 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     // examples do not have tests, but still fail to execute them with WASM backend
     test      := {},
     testQuick := {},
-  )
-
-lazy val integration = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Integration"))
-  .dependsOn(
-    channels % "compile->compile;test->test",
-    rdts     % "compile->compile;test->test",
-    reactives,
-  )
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.munit,
-    Dependencies.munitCheck,
-    Dependencies.slips,
-    Dependencies.jsoniterScala,
-  )
-  .jvmSettings(
-    Dependencies.bouncyCastle,
-    Dependencies.sslcontextKickstart,
-    Dependencies.tink,
-    Dependencies.slf4jnop,
-  ).jsSettings(
-    // commonjs module allows tests to find libsodium-wrappers installed in the root project
-    Test / scalaJSLinkerConfig := {
-      (Test / scalaJSLinkerConfig).value
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
@@ -228,7 +199,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(integration.jvm, crypto.jvm)
+  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,
