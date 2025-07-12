@@ -60,6 +60,15 @@ case class KeepRemoveList[E] private (
       if activeKeeps.isEmpty then flag else flag.removeSeen(activeKeeps)
     }
 
+  def purgeTombstones(): C =
+    val dead = flags.collect { case (d, f) if !f.isAlive => d }.toSet
+    if dead.isEmpty then KeepRemoveList.empty
+    else
+      val nOrder = order.map(_.without(dead))
+      val nPayloads = payloads -- dead
+      val nFlags = flags -- dead
+      KeepRemoveList(order = nOrder, payloads = nPayloads, flags = nFlags)
+
   private def isAlive(d: Dot): Boolean = flags.get(d).forall(_.isAlive)
 
   private def sizeIncludingDead: Int = payloads.size

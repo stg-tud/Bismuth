@@ -1,7 +1,7 @@
 package com.daimpl.lib
 
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedList, ReplicatedSet}
+import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
@@ -93,7 +93,13 @@ case class Spreadsheet[A](
   }
 
   def purgeTombstones()(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet()
+    val rows = colIds.toList
+    val cols = colIds.toList
+    Spreadsheet(
+      rowIds = rowIds.purgeTombstones(),
+      colIds = colIds.purgeTombstones(),
+      content = content.removeBy((row, col) => !rows.contains(row) || !cols.contains(col))
+    )
   }
 
   def numRows: Int = rowIds.size
