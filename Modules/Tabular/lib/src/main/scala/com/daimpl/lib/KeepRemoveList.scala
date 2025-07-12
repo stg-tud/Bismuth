@@ -5,6 +5,17 @@ import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{Epoch, GrowOnlyList, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
+/** KeepRemoveList — a list CRDT with **keep‑wins** semantics.
+ *
+ * A delete is effective *only* if the replica had already observed every keep
+ * it is about to invalidate.  Technically this is realised with an
+ * OR‑Flag (see below):
+ *   • every **keep** adds a fresh dot to a `keeps` set
+ *   • **remove** adds *all* currently seen keep‑dots into a `removed` set
+ * The element is visible iff `keeps \ removed` is non‑empty.  Hence a
+ * concurrent remove (that hasn’t seen a newer keep‑dot) cannot erase that
+ * dot, while a causally‑after remove *can*.
+ */
 case class KeepRemoveList[E] private (
                                        order: Epoch[GrowOnlyList[Dot]] = empty.order,
                                        payloads: Map[Dot, LastWriterWins[E]] = Map.empty,
