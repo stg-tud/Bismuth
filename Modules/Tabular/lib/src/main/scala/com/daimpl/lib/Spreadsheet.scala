@@ -5,14 +5,14 @@ import rdts.datatypes.{ObserveRemoveMap, ReplicatedList, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
-    private val rowIds: ReplicatedList[Dot] = ReplicatedList.empty,
-    private val colIds: ReplicatedList[Dot] = ReplicatedList.empty,
+    private val rowIds: KeepRemoveList[Dot] = KeepRemoveList.empty,
+    private val colIds: KeepRemoveList[Dot] = KeepRemoveList.empty,
     private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
 ) {
 
   lazy val observed: Dots =
-    Dots.from(rowIds.elements.values.map(_.read)) `union`
-    Dots.from(colIds.elements.values.map(_.read))
+    Dots.from(rowIds.payloads.values.map(_.read)) `union`
+    Dots.from(colIds.payloads.values.map(_.read))
 
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
@@ -23,39 +23,45 @@ case class Spreadsheet[A](
 
   def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
     val removed = rowIds.read(rowIdx)
-    Spreadsheet(rowIds = rowIds.delete(rowIdx), content = content.removeBy((row, col) => removed.contains(row)))
+    Spreadsheet(rowIds = rowIds.remove(rowIdx))
   }
 
   def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
     val removed = colIds.read(colIdx)
-    Spreadsheet(colIds = colIds.delete(colIdx), content = content.removeBy((row, col) => removed.contains(col)))
+    Spreadsheet(colIds = colIds.remove(colIdx))
   }
 
   def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
     Spreadsheet(
-      rowIds = rowIds.insert(rowIdx, observed.nextDot),
+      rowIds = rowIds.insertAt(rowIdx, observed.nextDot),
     )
   }
 
   def insertColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
     Spreadsheet(
-      colIds = colIds.insert(colIdx, observed.nextDot),
+      colIds = colIds.insertAt(colIdx, observed.nextDot),
     )
   }
 
   def editCell(rowIdx: Int, colIdx: Int, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId = rowIds.read(rowIdx).get
     val colId = colIds.read(colIdx).get
-    if (value == null) {
-      return Spreadsheet(content = content.transform((rowId, colId)) {
-        case None => None
-        case Some(set) => Some(set.clear())
-      })
-    }
-    Spreadsheet(content = content.transform((rowId, colId)) {
-      case None      => Some(ReplicatedSet.empty.add(value))
-      case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
-    })
+    val newContent =
+      if value == null then
+        content.transform((rowId, colId)) {
+          case None => None
+          case Some(set) => Some(set.clear())
+        }
+      else
+        content.transform((rowId, colId)) {
+          case None => Some(ReplicatedSet.empty.add(value))
+          case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
+        }
+    Spreadsheet(
+      rowIds = rowIds.keep(rowIdx),
+      colIds = colIds.keep(colIdx),
+      content = newContent
+    )
   }
 
   def printToConsole(): Unit = {
@@ -87,10 +93,7 @@ case class Spreadsheet[A](
   }
 
   def purgeTombstones()(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(
-      rowIds = rowIds.purgeTombstones(),
-      colIds = colIds.purgeTombstones(),
-    )
+    Spreadsheet()
   }
 
   def numRows: Int = rowIds.size
@@ -113,6 +116,5 @@ case class Spreadsheet[A](
 }
 
 object Spreadsheet {
-
   given lattice[A]: Lattice[Spreadsheet[A]] = Lattice.derived
 }
