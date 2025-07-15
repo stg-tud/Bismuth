@@ -141,6 +141,7 @@ class DeltaDissemination[State](
   val lock: AnyRef = new {}
 
   private var contexts: Map[Uid, Dots] = Map.empty
+  private val context: DeltaTreeContext[State] = DeltaTreeContext[State](replicaId.uid)
 
   def selfContext: Dots = contexts.getOrElse(replicaId.uid, Dots.empty)
 
@@ -171,6 +172,7 @@ class DeltaDissemination[State](
         // println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
       case Request(uid, knows) =>
         val (relevant, context) = lock.synchronized {
+          // TODO revisit
           val relevant     = allPayloads.filterNot { dt => dt.payload.dots <= knows }
           val newknowledge =
             knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
@@ -185,15 +187,13 @@ class DeltaDissemination[State](
         relevant.foreach: msg =>
           send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
         updateContext(uid, context `merge` knows)
-      case payload @ Payload(uid, context, data) =>
-        if context <= selfContext then return
+      case payload @ Payload(uid, dots, data) =>
         lock.synchronized {
-          uid.foreach { uid =>
-            updateContext(uid, context)
-          }
-          updateContext(replicaId.uid, context)
+          val nonRedundantDots = context.getNonRedundant(dots)
+          if nonRedundantDots.isEmpty then return
           rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
         }
+
         receiveCallback(data)
         if immediateForward then
           disseminate(msg, Set(from))
