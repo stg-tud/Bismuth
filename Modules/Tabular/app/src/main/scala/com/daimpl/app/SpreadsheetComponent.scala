@@ -72,7 +72,7 @@ object SpreadsheetComponent {
 
     def handleInputChange(e: ReactEventFromInput): Callback = {
       val value = e.target.value
-      println(value)
+      println(s"Edit value: ${value}")
       $.modState(_.copy(editingValue = value))
     }
 

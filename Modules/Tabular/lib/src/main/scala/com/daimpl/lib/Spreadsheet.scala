@@ -64,17 +64,30 @@ case class Spreadsheet[A](
     )
   }
 
-  def printToConsole(): Unit = {
-    println(rowIds.toList)
-    println(colIds.toList)
+  def printToConsole()(using LocalUid): Unit = {
+    println("\nSpreadsheet Data Structure Print:")
+
+    println(
+      s"""|Replica Id: ${LocalUid.replicaId}
+          |Size: ${rowIds.size}x${colIds.size}"""
+      .stripMargin
+    )
+
+    val legend = "Row\\Col Id"
+
+    val rowIdTimes = rowIds.toList.map(_.time)
+    val colIdTimes = colIds.toList.map(_.time)
 
     val maxLen = content.queryAllEntries
-      .map { rs => rs.elements.mkString("/")}
+      .map { rs => rs.elements.mkString("/") }
+      .concat(rowIdTimes.map(_.toString))
+      .concat(colIdTimes.map(_.toString))
+      .concat(Array(legend))
       .map(_.length)
       .maxOption.getOrElse(1)
       .max(1)
 
-    println(s"${colIds.size}x${rowIds.size}")
+    val maxLenFmtStr = ("%" + maxLen + "s")
 
     val sheetStr = rowIds.toList.map { rowId =>
       colIds.toList
@@ -84,12 +97,18 @@ case class Spreadsheet[A](
             .map(_.elements.mkString("/"))
             .filter(_.nonEmpty)
             .getOrElse("·")
-          ("%" + maxLen + "s").format(cellStr)
+          maxLenFmtStr.format(cellStr)
         }
-        .mkString(s"${rowId} | ", " | ", " |")
+        .mkString(
+          s"${maxLenFmtStr.format(rowId.time)} | ", " | ", " |"
+        )
     }.mkString(" \n")
 
-    println(s"${colIds.toList.mkString("| ", " | ", " |")}\n$sheetStr")
+    println(
+      s"""|${maxLenFmtStr.format(legend)}${colIdTimes.map(maxLenFmtStr.format(_)).mkString(" | ", " | ", " |")}
+          |${sheetStr}\n"""
+      .stripMargin
+    )
   }
 
   def purgeTombstones()(using LocalUid): Spreadsheet[A] = {
