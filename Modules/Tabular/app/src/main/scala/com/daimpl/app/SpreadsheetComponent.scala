@@ -109,7 +109,10 @@ object SpreadsheetComponent {
     }
 
     def insertRowAbove(): Callback =
-      withSelectedRow(rowIdx => modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(_.copy(selectedRow = None)))
+      withSelectedRow(rowIdx =>
+        println(s"Inserting Row Before ${rowIdx}")
+        modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get - 1)))
+      )
 
     def insertRowBelow(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
@@ -117,18 +120,23 @@ object SpreadsheetComponent {
         val action      =
           if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
           else modSpreadsheet(_.insertRow(rowIdx + 1))
-        action >> $.modState(_.copy(selectedRow = None))
+        println(s"Inserting Row After ${rowIdx}")
+        action >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
       }
 
     def removeRow(): Callback =
       withSelectedRow(rowIdx =>
+        println(s"Removing Column ${rowIdx}")
         modSpreadsheet(_.removeRow(rowIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
           _.copy(selectedRow = None)
         )
       )
 
     def insertColumnLeft(): Callback =
-      withSelectedColumn(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
+      withSelectedColumn(colIdx =>
+        println(s"Inserting Column Before ${colIdx}")
+        modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get - 1)))
+      )
 
     def insertColumnRight(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
@@ -136,11 +144,13 @@ object SpreadsheetComponent {
         val action      =
           if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
           else modSpreadsheet(_.insertColumn(colIdx + 1))
-        action >> $.modState(_.copy(selectedColumn = None))
+        println(s"Inserting Column After ${colIdx}")
+        action >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
       }
 
     def removeColumn(): Callback =
       withSelectedColumn(colIdx =>
+        println(s"Removing Column ${colIdx}")
         modSpreadsheet(_.removeColumn(colIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
           _.copy(selectedColumn = None)
         )
