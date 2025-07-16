@@ -188,7 +188,18 @@ object SpreadsheetComponent {
                   "Remove Row"
                 )
               )
-            case None => <.span()
+            case None =>
+              if spreadsheet.numRows == 0 then
+                <.div(
+                  ^.className := "flex gap-2 items-center",
+                  <.span(^.className := "text-sm text-gray-600", s"No rows present."),
+                  <.button(
+                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                    ^.onClick --> backend.addRow(),
+                    "Insert"
+                  )
+                )
+              else <.span()
           },
           state.selectedColumn match {
             case Some(colIdx) =>
@@ -211,7 +222,18 @@ object SpreadsheetComponent {
                   "Remove Column"
                 )
               )
-            case None => <.span()
+            case None =>
+              if spreadsheet.numColumns == 0 then
+                <.div(
+                  ^.className := "flex gap-2 items-center",
+                  <.span(^.className := "text-sm text-gray-600", s"No columns present."),
+                  <.button(
+                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                    ^.onClick --> backend.addColumn(),
+                    "Insert"
+                  )
+                )
+              else <.span()
           }
         ),
         <.div(
