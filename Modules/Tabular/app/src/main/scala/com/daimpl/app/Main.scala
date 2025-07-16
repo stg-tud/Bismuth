@@ -23,8 +23,10 @@ object Main {
         given LocalUid         = LocalUid.gen()
 
         val newAggregator =
-          if onlineSpreadsheets.isEmpty then {
+          if state.spreadsheets.isEmpty then {
             SpreadsheetComponent.createSampleSpreadsheet()
+          } else if onlineSpreadsheets.isEmpty then {
+            new SpreadsheetDeltaAggregator(Spreadsheet[String]())
           } else {
             val mergedObrem = onlineSpreadsheets
               .map(_.aggregator.current)
