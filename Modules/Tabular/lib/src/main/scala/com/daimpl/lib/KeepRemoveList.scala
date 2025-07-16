@@ -83,7 +83,7 @@ case class KeepRemoveList[E] private (
 
   private def findRealIndex(n: Int): Option[Int] =
     order.value.toLazyList.zip(LazyList.from(0))
-      .filter((d, _) => payloads.contains(d))
+      .filter((d, _) => isAlive(d))
       .map(_._2).lift(n)
 
   private def updateFlag(idx: Int)(f: (ORFlag, Dot) => ORFlag)(using LocalUid): C =
