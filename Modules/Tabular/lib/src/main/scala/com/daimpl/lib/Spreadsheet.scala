@@ -22,12 +22,10 @@ case class Spreadsheet[A](
   }
 
   def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    val removed = rowIds.read(rowIdx)
     Spreadsheet(rowIds = rowIds.remove(rowIdx))
   }
 
   def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    val removed = colIds.read(colIdx)
     Spreadsheet(colIds = colIds.remove(colIdx))
   }
 
