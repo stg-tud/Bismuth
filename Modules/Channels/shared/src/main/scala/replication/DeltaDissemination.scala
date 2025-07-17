@@ -28,6 +28,7 @@ object DeltaDissemination {
 
   def pmscodec[State: JsonValueCodec, T <: ProtocolMessage[State]]: JsonValueCodec[T] = {
     val pmscodecInv: JsonValueCodec[ProtocolMessage[State]] = JsonCodecMaker.make
+    // we use the supertype codec here, this has the consequence of adding the type discriminators even for concrete subtypes of ProtocolMessage, which is generally what we want.
     pmscodecInv.asInstanceOf[JsonValueCodec[T]]
   }
 }
