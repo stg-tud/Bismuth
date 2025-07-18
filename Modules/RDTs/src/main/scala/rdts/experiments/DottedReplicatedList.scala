@@ -54,7 +54,10 @@ case class DottedReplicatedList[E](
       if discovered.contains(rem) then ()
       else {
         discovered = discovered + rem
-        val next = causalOrder.getOrElse(rem, Dots.empty).iterator.toSeq.sortBy(d => times(d)).reverse
+        val next =
+          causalOrder.getOrElse(rem, Dots.empty).iterator.flatMap { d =>
+            times.get(d).map(t => (d -> t))
+          }.toSeq.sortBy((d, t) => t).map(_._1)
         next.foreach(_toposort)
         sorted += rem
         ()
@@ -110,8 +113,8 @@ case class DottedReplicatedList[E](
   }
 
   def prependAll(e: Iterable[E])(using LocalUid) = insertAfter(headDot, e)
-  def prepend(e: E)(using LocalUid) = insertAfter(headDot, List(e))
-  def append(e: E)(using LocalUid) =
+  def prepend(e: E)(using LocalUid)              = insertAfter(headDot, List(e))
+  def append(e: E)(using LocalUid)               =
     val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(DottedReplicatedList.headDot))
     insertAfter(pos, List(e))
 

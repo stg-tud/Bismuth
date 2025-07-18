@@ -7,7 +7,7 @@ import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList}
 import rdts.time.{Dot, Dots}
-import test.rdts.DataGenerator.RGAGen.given
+import test.rdts.DataGenerator.ReplicatedListGen.given
 import test.rdts.DataGenerator.{*, given}
 import test.rdts.isGithubCi
 

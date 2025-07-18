@@ -3,7 +3,7 @@ package test.rdts.simulatedNetworkTests.tests
 import NetworkGenerators.*
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
-import test.rdts.DataGenerator.RGAGen.makeRGA
+import test.rdts.DataGenerator.ReplicatedListGen.makeRGA
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 
 import scala.collection.mutable
