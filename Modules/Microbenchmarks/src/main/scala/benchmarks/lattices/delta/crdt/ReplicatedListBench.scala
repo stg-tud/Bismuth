@@ -21,12 +21,10 @@ class ReplicatedListBench {
   type SUT = NamedDeltaBuffer[ReplicatedList[Int]]
 
   var rga: SUT        = scala.compiletime.uninitialized
-  var rgaCleared: SUT = scala.compiletime.uninitialized
 
   @Setup
   def setup(): Unit = {
-    rga = NamedDeltaBuffer("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(using "".asId)(0 until listSize))
-    rgaCleared = rga.mod(_.clear())
+    rga = NamedDeltaBuffer("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(0 until listSize)(using "".asId))
   }
 
   @Benchmark
@@ -36,38 +34,27 @@ class ReplicatedListBench {
   def readLast(): Option[Int] = rga.state.read(listSize - 1)
 
   @Benchmark
-  def size(): Int = rga.state.sizeIncludingDeadElements
+  def size(): Int = rga.state.size
 
   @Benchmark
   def toList: List[Int] = rga.state.toList
 
   @Benchmark
-  def prepend(): SUT = rga.mod(_.prepend(using rga.replicaID)(-1))
+  def prepend(): SUT = rga.mod(_.prepend(-1)(using rga.replicaID))
 
   @Benchmark
-  def append(): SUT = rga.mod(_.append(using rga.replicaID)(listSize))
+  def append(): SUT = rga.mod(_.append(listSize)(using rga.replicaID))
 
   @Benchmark
-  def prependTen(): SUT = rga.mod(_.prependAll(using rga.replicaID)(-10 to -1))
+  def prependTen(): SUT = rga.mod(_.prependAll(-10 to -1))
 
   @Benchmark
-  def appendTen(): SUT = rga.mod(_.appendAll(using rga.replicaID)(listSize until listSize + 10))
+  def appendTen(): SUT = rga.mod(_.appendAll(listSize until listSize + 10))
 
   @Benchmark
-  def updateFirst(): SUT = rga.mod(_.update(0, -1))
+  def deleteFirst(): SUT = rga.mod(_.removeIndex(0))
 
   @Benchmark
-  def updateLast(): SUT = rga.mod(_.update(listSize - 1, -1))
+  def deleteLast(): SUT = rga.mod(_.removeIndex(listSize - 1))
 
-  @Benchmark
-  def deleteFirst(): SUT = rga.mod(_.delete(0))
-
-  @Benchmark
-  def deleteLast(): SUT = rga.mod(_.delete(listSize - 1))
-
-  @Benchmark
-  def clear(): SUT = rga.mod(_.clear())
-
-  @Benchmark
-  def purgeTombstones(): SUT = rgaCleared.mod(_.purgeTombstones())
 }

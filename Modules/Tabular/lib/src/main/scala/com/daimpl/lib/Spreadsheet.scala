@@ -11,8 +11,8 @@ case class Spreadsheet[A](
 ) {
 
   lazy val observed: Dots =
-    Dots.from(rowIds.elements.values.map(_.read)) `union`
-    Dots.from(colIds.elements.values.map(_.read))
+    Dots.from(rowIds.elements.values) `union`
+    Dots.from(colIds.elements.values)
 
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
@@ -75,13 +75,6 @@ case class Spreadsheet[A](
       line
     }).mkString(" \n")
     println(s"${colIds.toList.mkString(s"| ", " | ", " |")}\n$res")
-  }
-
-  def purgeTombstones()(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(
-      rowIds = rowIds.purgeTombstones(),
-      colIds = colIds.purgeTombstones(),
-    )
   }
 
   def numRows: Int = rowIds.size

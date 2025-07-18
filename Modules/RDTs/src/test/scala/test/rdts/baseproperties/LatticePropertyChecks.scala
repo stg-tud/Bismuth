@@ -5,9 +5,8 @@ import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, Lattice}
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.experiments.{CausalStore, DottedReplicatedList}
+import rdts.experiments.CausalStore
 import rdts.time.{Dot, VectorClock}
-import test.rdts.DataGenerator.DottedReplicatedListGen.given
 import test.rdts.DataGenerator.ReplicatedListGen.given
 import test.rdts.DataGenerator.{*, given}
 import test.rdts.isGithubCi
@@ -35,7 +34,6 @@ class TupleChecks                extends LatticePropertyChecks[(Set[Int], GrowOn
 class VectorClockChecks          extends LatticePropertyChecks[VectorClock]
 class GrowOnlyListChecks         extends LatticePropertyChecks[GrowOnlyList[Int]](expensive = true)
 class ReplicatedListChecks       extends LatticePropertyChecks[ReplicatedList[ExampleData]](expensive = true)
-class DottedReplicatedListChecks extends LatticePropertyChecks[DottedReplicatedList[ExampleData]](expensive = true)
 class ListAsVectorChecks         extends LatticePropertyChecks[List[Int]]
 class LWWTupleChecks
     extends LatticePropertyChecks[(Option[LastWriterWins[Int]], Option[LastWriterWins[Int]])]

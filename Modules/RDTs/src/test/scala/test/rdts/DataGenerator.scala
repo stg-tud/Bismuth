@@ -4,7 +4,7 @@ import org.scalacheck.{Arbitrary, Gen, Shrink}
 import rdts.base.*
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.experiments.{CausalStore, DottedReplicatedList}
+import rdts.experiments.CausalStore
 import rdts.experiments.CausalStore.CausalDelta
 import rdts.time.*
 
@@ -143,56 +143,24 @@ object DataGenerator {
 
   object ReplicatedListGen {
     def makeRGA[E](
-        inserted: List[(Int, E)],
-        removed: List[Int],
-        rid: LocalUid
-    ): ReplicatedList[E] = {
-      val afterInsert = inserted.foldLeft(ReplicatedList.empty[E]) {
-        case (rga, (i, e)) => rga `merge` rga.insert(i, e)(using rid)
-      }
-
-      removed.foldLeft(afterInsert) {
-        case (rga, i) => rga `merge` rga.delete(i)
-      }
-    }
-
-    def genRGA[E](using e: Arbitrary[E]): Gen[ReplicatedList[E]] =
-      for
-        nInserted       <- Gen.choose(0, 20)
-        insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
-        insertedValues  <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
-        removed         <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
-        id              <- Gen.oneOf('a' to 'g')
-      yield {
-        makeRGA(insertedIndices zip insertedValues, removed, Uid.predefined(id.toString).convert)
-      }
-
-    given arbRGA[E](using
-        e: Arbitrary[E],
-    ): Arbitrary[ReplicatedList[E]] =
-      Arbitrary(genRGA)
-
-  }
-
-  object DottedReplicatedListGen {
-    def makeRGA[E](
       inserted: List[(Int, E)],
       removed: List[Int],
       rid: LocalUid
-    ): DottedReplicatedList[E] = {
+    ): ReplicatedList[E] = {
 
       def clamp(v: Int, max: Int): Int = math.max(0, math.min(v, max))
 
-      val afterInsert = inserted.foldLeft(DottedReplicatedList.empty[E]) {
+      val afterInsert = inserted.foldLeft(ReplicatedList.empty[E]) {
         case (rga, (i, e)) => rga `merge` rga.insertAt(clamp(i, rga.size), e)(using rid)
       }
 
       removed.foldLeft(afterInsert) {
-        case (rga, i) => rga `merge` rga.removeIndex(clamp(i, rga.size))
+        case (rga, i) =>
+          if rga.size <= 0 then rga else rga `merge` rga.removeIndex(clamp(i, rga.size - 1))
       }
     }
 
-    def genRGA[E](using e: Arbitrary[E]): Gen[DottedReplicatedList[E]] =
+    def genRGA[E](using e: Arbitrary[E]): Gen[ReplicatedList[E]] =
       for
         nInserted <- Gen.choose(0, 20)
           insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
@@ -205,7 +173,7 @@ object DataGenerator {
 
     given arbRGA[E](using
       e: Arbitrary[E],
-    ): Arbitrary[DottedReplicatedList[E]] =
+    ): Arbitrary[ReplicatedList[E]] =
       Arbitrary(genRGA)
 
   }

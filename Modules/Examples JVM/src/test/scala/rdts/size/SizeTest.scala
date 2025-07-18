@@ -4,8 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.ObserveRemoveMap
-import rdts.experiments.DottedReplicatedList
+import rdts.datatypes.{ReplicatedList, ObserveRemoveMap}
 import replication.JsoniterCodecs.given
 
 import scala.util.Random
