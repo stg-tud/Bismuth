@@ -83,7 +83,7 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
       rangeAt(k) `disjunct` other.rangeAt(k)
     }
 
-  def union(other: Dots): Dots = Dots.contextLattice.merge(this, other)
+  def union(other: Dots): Dots = Dots.lattice.merge(this, other)
 
   def contains(d: Dot): Boolean = internal.get(d.place).exists(_.contains(d.time))
 
@@ -113,7 +113,7 @@ object Dots {
 
   def single(dot: Dot): Dots = empty.add(dot.place, dot.time)
 
-  given contextLattice: Lattice[Dots] = Lattice.derived
+  given lattice: Lattice[Dots] = Lattice.derived
 
   given decomposable: Decompose[Dots] = Decompose.derived
 
