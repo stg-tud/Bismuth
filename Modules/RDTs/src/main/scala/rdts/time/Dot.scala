@@ -8,6 +8,11 @@ import rdts.base.Uid
 case class Dot(place: Uid, time: Time) {
   def advance: Dot = Dot(place, time + 1)
   def dots: Dots   = Dots.single(this)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case Dot(p, t) => p == place && t == time
+    case _ => super.equals(obj)
+  }
 }
 
 object Dot {

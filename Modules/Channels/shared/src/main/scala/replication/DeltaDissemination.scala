@@ -4,7 +4,6 @@ import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
-import rdts.base.Lattice.optionLattice
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.time.Dots
 import replication.DeltaDissemination.pmscodec
@@ -69,7 +68,7 @@ class DeltaDissemination[State](
       exception.printStackTrace()
 
   def requestData(): Unit = {
-    val msg = SentCachedMessage(Request(replicaId.uid, selfContext))(using pmscodec)
+    val msg = SentCachedMessage(Request(replicaId.uid, treeContext.getSelfContext))(using pmscodec)
     connections.foreach: con =>
       send(con, msg)
   }
@@ -133,7 +132,7 @@ class DeltaDissemination[State](
       conn,
       SentCachedMessage(Request(
         replicaId.uid,
-        selfContext
+        treeContext.getSelfContext
       ))(using pmscodec)
     )
   }
@@ -141,28 +140,19 @@ class DeltaDissemination[State](
   // note that deltas are not guaranteed to be ordered the same in the buffers
   val lock: AnyRef = new {}
 
-  private var contexts: Map[Uid, Dots] = Map.empty
-  private val context: DeltaTreeContext[State] = DeltaTreeContext[State](replicaId.uid)
-
-  def selfContext: Dots = contexts.getOrElse(replicaId.uid, Dots.empty)
+  val treeContext: DeltaTreeContext[State] = DeltaTreeContext[State](replicaId.uid)
 
   def applyDelta(delta: State): Unit =
     val message = lock.synchronized {
-      val nextDot = selfContext.nextDot(replicaId.uid)
+      val nextDot = treeContext.getNextDot
       val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
-      updateContext(replicaId.uid, payload.dots)
       val message = SentCachedMessage(payload)(using pmscodec)
-      rememberPayload(message)
+      treeContext.storeOutgoingMessage(nextDot, message)
       message
     }
     disseminate(message)
 
-  def updateContext(rr: Uid, dots: Dots): Unit = lock.synchronized {
-    contexts = contexts.updatedWith(rr)(curr => curr `merge` Some(dots))
-  }
-
-  def allPayloads                                             = lock.synchronized(deltaStorage.getHistory)
-  def rememberPayload(message: CachedMessage[Payload[State]]) = lock.synchronized(deltaStorage.remember(message))
+  def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(treeContext.getAllPayloads)
 
   def handleMessage(msg: Message, from: ConnectionContext): Unit = {
     if globalAbort.closeRequest then return
@@ -177,22 +167,21 @@ class DeltaDissemination[State](
           val relevant     = allPayloads.filterNot { dt => dt.payload.dots <= knows }
           val newknowledge =
             knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
-          val context = selfContext
+          val context = treeContext.getSelfContext
           val diff    = context `subtract` newknowledge
           if !diff.isEmpty then
             throw IllegalStateException(
-              s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${selfContext}}"
+              s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${context}}"
             )
           (relevant, context)
         }
         relevant.foreach: msg =>
           send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
-        updateContext(uid, context `merge` knows)
       case payload @ Payload(uid, dots, data) =>
         lock.synchronized {
-          val nonRedundantDots = context.getNonRedundant(dots)
+          val nonRedundantDots = treeContext.getNonRedundant(dots)
           if nonRedundantDots.isEmpty then return
-          rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
+          treeContext.storeMessage(dots, msg.asInstanceOf[CachedMessage[Payload[State]]])
         }
 
         receiveCallback(data)
