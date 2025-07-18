@@ -25,12 +25,10 @@ import rdts.time.{Dot, Dots}
   * However, since then the implementation was changed significantly, thus it may be a different or even a novel strategy by now.
   */
 case class ReplicatedList[E](
-    order: Epoch[GrowOnlyList[Dot]],
-    elements: Map[Dot, LastWriterWins[E]],
-    deleted: Dots
+    order: Epoch[GrowOnlyList[Dot]] = Epoch.empty,
+    elements: Map[Dot, LastWriterWins[E]] = Map.empty,
+    deleted: Dots = Dots.empty
 ) {
-
-  type C = ReplicatedList[E]
 
   def read(i: Int): Option[E] = {
     order.value.toLazyList.flatMap(elements.get).map(_.payload).lift(i)
@@ -53,7 +51,7 @@ case class ReplicatedList[E](
   lazy val observed: Dots = deleted.union(Dots.from(elements.keys))
 
   /** Inserts at list index `i` */
-  def insert(i: Int, e: E)(using LocalUid): C = {
+  def insert(i: Int, e: E)(using LocalUid): ReplicatedList[E] = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
 
     findInsertIndex(i) match {
@@ -64,14 +62,14 @@ case class ReplicatedList[E](
         }
         val dfDelta = Map(nextDot -> LastWriterWins.now(e))
 
-        ReplicatedList.make(
-          epoche = glistDelta,
-          df = dfDelta,
+        ReplicatedList(
+          order = glistDelta,
+          elements = dfDelta,
         )
     }
   }
 
-  def insertAll(i: Int, elems: Iterable[E])(using LocalUid): C = {
+  def insertAll(i: Int, elems: Iterable[E])(using LocalUid): ReplicatedList[E] = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
 
     val nextDots = List.iterate(nextDot, elems.size) {
@@ -87,9 +85,9 @@ case class ReplicatedList[E](
           }
         val dfDelta = Map.empty[Dot, LastWriterWins[E]] ++ (nextDots zip elems.map(e => LastWriterWins.now(e)))
 
-        ReplicatedList.make(
-          epoche = glistDelta,
-          df = dfDelta,
+        ReplicatedList(
+          order = glistDelta,
+          elements = dfDelta,
         )
     }
   }
@@ -102,15 +100,15 @@ case class ReplicatedList[E](
           case None          => ReplicatedList.empty
           case Some(current) =>
             newNode match
-              case None        => ReplicatedList.make(delete = Dots.single(d))
+              case None        => ReplicatedList(deleted = Dots.single(d))
               case Some(value) =>
-                ReplicatedList.make(df = Map(d -> current.write(value)))
+                ReplicatedList(elements = Map(d -> current.write(value)))
     }
   }
 
-  def update(i: Int, e: E): C = setAtIndex(i, Some(e))
+  def update(i: Int, e: E): ReplicatedList[E] = setAtIndex(i, Some(e))
 
-  def delete(i: Int): C = setAtIndex(i, None)
+  def delete(i: Int): ReplicatedList[E] = setAtIndex(i, None)
 
   def findUpdateIndex(n: Int): Option[Int] = {
     order.value.toLazyList.zip(LazyList.from(0)).filter {
@@ -118,7 +116,7 @@ case class ReplicatedList[E](
     }.map(_._2).lift(n)
   }
 
-  def setAtIndex(i: Int, e: Option[E]): C = {
+  def setAtIndex(i: Int, e: Option[E]): ReplicatedList[E] = {
     findUpdateIndex(i) match {
       case Some(index) => updateRGANode(this, index, e)
       case None        => ReplicatedList.empty[E]
@@ -139,41 +137,41 @@ case class ReplicatedList[E](
         transform(value).map(nv => dot -> nv)
       .toMap
 
-    ReplicatedList.make(df = updates, delete = Dots.from(touched).subtract(Dots.from(updates.keys)))
+    ReplicatedList(elements = updates, deleted = Dots.from(touched).subtract(Dots.from(updates.keys)))
   }
 
-  def updateBy(cond: E => Boolean, e: E): C =
+  def updateBy(cond: E => Boolean, e: E): ReplicatedList[E] =
     updateRGANodeBy(this, cond, old => Some(old.write(e)))
 
-  def deleteBy(cond: E => Boolean): C =
+  def deleteBy(cond: E => Boolean): ReplicatedList[E] =
     updateRGANodeBy(this, cond, _ => None)
 
   /** Note: this operation may drop concurrent additions to removed items. */
-  def purgeTombstones(): C = {
+  def purgeTombstones(): ReplicatedList[E] = {
     val known: List[Dot] = order.value.toList
 
     val removed = known.filter(dot => !observed.contains(dot))
 
     val golistPurged = order.value.without(removed.toSet)
 
-    ReplicatedList.make(
-      epoche = order.epocheWrite(golistPurged),
+    ReplicatedList(
+      order = order.epocheWrite(golistPurged),
     )
   }
 
-  def clear(): C = {
-    ReplicatedList.make(
-      delete = Dots.from(elements.keys)
+  def clear(): ReplicatedList[E] = {
+    ReplicatedList(
+      deleted = Dots.from(elements.keys)
     )
   }
 
-  def prepend(using LocalUid)(e: E): C = insert(0, e)
+  def prepend(using LocalUid)(e: E): ReplicatedList[E] = insert(0, e)
 
-  def append(using LocalUid)(e: E): C = insert(sizeIncludingDeadElements, e)
+  def append(using LocalUid)(e: E): ReplicatedList[E] = insert(sizeIncludingDeadElements, e)
 
-  def prependAll(using LocalUid)(elems: Iterable[E]): C = insertAll(0, elems)
+  def prependAll(using LocalUid)(elems: Iterable[E]): ReplicatedList[E] = insertAll(0, elems)
 
-  def appendAll(using LocalUid)(elems: Iterable[E]): C = insertAll(sizeIncludingDeadElements, elems)
+  def appendAll(using LocalUid)(elems: Iterable[E]): ReplicatedList[E] = insertAll(sizeIncludingDeadElements, elems)
 
 }
 object ReplicatedList {
@@ -190,13 +188,5 @@ object ReplicatedList {
 
   given bottom[E]: Bottom[ReplicatedList[E]] = new:
     override def empty: ReplicatedList[E] = ReplicatedList.empty
-
-  def make[E](
-      epoche: Epoch[GrowOnlyList[Dot]] = empty._1,
-      df: Map[Dot, LastWriterWins[E]] = Map.empty,
-      delete: Dots = Dots.empty
-  ): ReplicatedList[E] = {
-    ReplicatedList(epoche, df, delete)
-  }
 
 }
