@@ -4,7 +4,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Uid
 import rdts.datatypes.*
-import rdts.experiments.AuctionInterface.AuctionData
 import rdts.time.{ArrayRanges, Dot, Dots, Time}
 
 object JsoniterCodecs {
@@ -26,6 +25,14 @@ object JsoniterCodecs {
   given uidKeyCodec: JsonKeyCodec[rdts.base.Uid] = new JsonKeyCodec[Uid]:
     override def decodeKey(in: JsonReader): Uid           = Uid.predefined(in.readKeyAsString())
     override def encodeKey(x: Uid, out: JsonWriter): Unit = out.writeKey(Uid.unwrap(x))
+
+  given dotKeyCodec: JsonKeyCodec[Dot] = new JsonKeyCodec[Dot]:
+    override def decodeKey(in: JsonReader): Dot           = {
+      val Seq(uid, time) = in.readKeyAsString().split(":").toSeq
+      Dot(Uid.predefined(uid), time.toLong)
+    }
+    override def encodeKey(x: Dot, out: JsonWriter): Unit = out.writeKey(s"${x.place.delegate}:${x.time}")
+
   given CausalContextCodec: JsonValueCodec[Dots] = JsonCodecMaker.make
 
   /** AddWinsSet */

@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit
 @Fork(3)
 @Threads(1)
 @State(Scope.Thread)
-class RGABench {
+class ReplicatedListBench {
 
   @Param(Array("0", "1", "10", "100", "1000"))
-  var rgaSize: Int = scala.compiletime.uninitialized
+  var listSize: Int = scala.compiletime.uninitialized
 
   type SUT = NamedDeltaBuffer[ReplicatedList[Int]]
 
@@ -25,7 +25,7 @@ class RGABench {
 
   @Setup
   def setup(): Unit = {
-    rga = NamedDeltaBuffer("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(using "".asId)(0 until rgaSize))
+    rga = NamedDeltaBuffer("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(using "".asId)(0 until listSize))
     rgaCleared = rga.mod(_.clear())
   }
 
@@ -33,7 +33,7 @@ class RGABench {
   def readFirst(): Option[Int] = rga.state.read(0)
 
   @Benchmark
-  def readLast(): Option[Int] = rga.state.read(rgaSize - 1)
+  def readLast(): Option[Int] = rga.state.read(listSize - 1)
 
   @Benchmark
   def size(): Int = rga.state.sizeIncludingDeadElements
@@ -45,25 +45,25 @@ class RGABench {
   def prepend(): SUT = rga.mod(_.prepend(using rga.replicaID)(-1))
 
   @Benchmark
-  def append(): SUT = rga.mod(_.append(using rga.replicaID)(rgaSize))
+  def append(): SUT = rga.mod(_.append(using rga.replicaID)(listSize))
 
   @Benchmark
   def prependTen(): SUT = rga.mod(_.prependAll(using rga.replicaID)(-10 to -1))
 
   @Benchmark
-  def appendTen(): SUT = rga.mod(_.appendAll(using rga.replicaID)(rgaSize until rgaSize + 10))
+  def appendTen(): SUT = rga.mod(_.appendAll(using rga.replicaID)(listSize until listSize + 10))
 
   @Benchmark
   def updateFirst(): SUT = rga.mod(_.update(0, -1))
 
   @Benchmark
-  def updateLast(): SUT = rga.mod(_.update(rgaSize - 1, -1))
+  def updateLast(): SUT = rga.mod(_.update(listSize - 1, -1))
 
   @Benchmark
   def deleteFirst(): SUT = rga.mod(_.delete(0))
 
   @Benchmark
-  def deleteLast(): SUT = rga.mod(_.delete(rgaSize - 1))
+  def deleteLast(): SUT = rga.mod(_.delete(listSize - 1))
 
   @Benchmark
   def clear(): SUT = rga.mod(_.clear())
