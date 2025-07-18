@@ -31,6 +31,9 @@ class SizeTest extends munit.FunSuite {
     val oneThousandJson = core.writeToArray(oneThousand)
     val twoThousandJson = core.writeToArray(twoThousand)
 
+    assertEquals(oneThousand.removed.size, 1000L)
+    assertEquals(twoThousand.removed.size, 2000L)
+
     assertEquals(oneThousandJson.length, twoThousandJson.length)
   }
 
