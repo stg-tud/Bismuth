@@ -1,6 +1,5 @@
 package com.daimpl.lib
 
-import munit.Assertions.assertEquals
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
 import rdts.base.{LocalUid, Uid}
@@ -33,8 +32,7 @@ final class KeepRemoveListSuite extends FunSuite:
     ("remove" , "remove" , false)
   ).foreach { case (opA, opB, shouldBeAlive) =>
     test(s"concurrent $opA and $opB on the same element (${if shouldBeAlive then "alive" else "tombstoned"})") {
-
-      val base = withUid("A") { KeepRemoveList.empty[String] + KeepRemoveList.empty.append("x") }
+      val base = withUid("A") { fromElements("x") }
 
       var rA = base
       var rB = base
@@ -60,7 +58,7 @@ final class KeepRemoveListSuite extends FunSuite:
   }
 
   test("remove after keep (same replica) erases element") {
-    var rA = withUid("A") { KeepRemoveList.empty[String] + KeepRemoveList.empty.append("x") }
+    var rA = withUid("A") { fromElements("x") }
     val rB = rA
     withUid("A") {
       rA = rA + rA.keep(0)
@@ -84,7 +82,7 @@ final class KeepRemoveListSuite extends FunSuite:
   }
 
   test("concurrent prepend and append keeps order") {
-    var rA = withUid("A") {  KeepRemoveList.empty[String] + KeepRemoveList.empty[String].append("initial") }
+    var rA = withUid("A") { fromElements("initial") }
     var rB = rA
 
     withUid("A") { rA = rA + rA.insertAt(0, "head") }
@@ -94,13 +92,37 @@ final class KeepRemoveListSuite extends FunSuite:
     assertEqualsList(merged, List("head", "initial", "tail"))
   }
 
-def assertEqualsList[E](actual: KeepRemoveList[E], expected: List[E]): Unit =
-  assertEquals(actual.size, expected.size)
-  assertEquals(actual.toList, expected)
-
-  expected.zipWithIndex.foreach { case (elem, idx) =>
-    assertEquals(actual.read(idx), Some(elem))
+  test("concurrent insertAt(1) and remove(0) preserves correct order") {
+    val base = withUid("A") { fromElements("x", "y") }
+    var rA = base
+    var rB = base
+    withUid("A") { rA = rA + rA.insertAt(1, "z") }
+    withUid("B") { rB = rB + rB.remove(0) }
+    val merged = rA + rB
+    assertEqualsList(merged, List("y", "z"))
   }
 
-  assertEquals(actual.read(expected.size), None)
-  assertEquals(actual.read(expected.size + 1), None)
+  test("insertAt after remote remove keeps consistent index") {
+    var rA = withUid("A") { fromElements("x", "y") }
+    var rB = rA
+
+    withUid("A") { rA = rA + rA.insertAt(1, "a") }
+    withUid("B") { rB = rB + rB.remove(0) }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("y", "a"))
+  }
+
+  private def fromElements[E](elems: E*)(using uid: LocalUid): KeepRemoveList[E] =
+    elems.foldLeft(KeepRemoveList.empty[E]) { (state, e) => state + state.append(e) }
+
+  private def assertEqualsList[E](actual: KeepRemoveList[E], expected: List[E]): Unit =
+    assertEquals(actual.size, expected.size)
+    assertEquals(actual.toList, expected)
+
+    expected.zipWithIndex.foreach { case (elem, idx) =>
+      assertEquals(actual.read(idx), Some(elem))
+    }
+
+    assertEquals(actual.read(expected.size), None)
+    assertEquals(actual.read(expected.size + 1), None)
