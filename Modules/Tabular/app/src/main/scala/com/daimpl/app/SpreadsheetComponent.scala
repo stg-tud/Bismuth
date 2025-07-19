@@ -33,6 +33,8 @@ object SpreadsheetComponent {
 
   class Backend($ : BackendScope[Props, State]) {
 
+    val replicaEventPrint: (LocalUid, String) => Callback = (replicaId, msg) => Callback(println(s"[${replicaId.show}]: ${msg}"))
+
     private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet[String] => Spreadsheet[String])): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
@@ -109,51 +111,59 @@ object SpreadsheetComponent {
     }
 
     def insertRowAbove(): Callback =
-      withSelectedRow(rowIdx =>
+      withSelectedRowAndProps((rowIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
+        >>
         println(s"Inserting Row Before ${rowIdx}")
-        modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get - 1)))
+        modSpreadsheet(_.insertRow(rowIdx))
+        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get - 1)))
       )
 
     def insertRowBelow(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
-        val action      =
-          if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
+        val action =
+          if (rowIdx == spreadsheet.numRows - 1) then modSpreadsheet(_.addRow())
           else modSpreadsheet(_.insertRow(rowIdx + 1))
-        println(s"Inserting Row After ${rowIdx}")
-        action >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
+        replicaEventPrint(props.replicaId, s"Inserting Row After ${rowIdx + 1}")
+        >> action
+        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
       }
 
     def removeRow(): Callback =
-      withSelectedRow(rowIdx =>
-        println(s"Removing Column ${rowIdx}")
-        modSpreadsheet(_.removeRow(rowIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
-          _.copy(selectedRow = None)
-        )
+      withSelectedRowAndProps((rowIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
+        >> modSpreadsheet(_.removeRow(rowIdx))
+        //>> modSpreadsheet(_.purgeTombstones())
+        >> $.modState(_.copy(selectedRow = None))
       )
 
     def insertColumnLeft(): Callback =
-      withSelectedColumn(colIdx =>
+      withSelectedColumnAndProps((colIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
+        >>
         println(s"Inserting Column Before ${colIdx}")
-        modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get - 1)))
+        modSpreadsheet(_.insertColumn(colIdx))
+        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get - 1)))
       )
 
     def insertColumnRight(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
-        val action      =
-          if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
+        val action =
+          if (colIdx == spreadsheet.numColumns - 1) then modSpreadsheet(_.addColumn())
           else modSpreadsheet(_.insertColumn(colIdx + 1))
-        println(s"Inserting Column After ${colIdx}")
-        action >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
+        replicaEventPrint(props.replicaId, s"Inserting Column After ${colIdx + 1}")
+        >> action
+        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
       }
 
     def removeColumn(): Callback =
-      withSelectedColumn(colIdx =>
-        println(s"Removing Column ${colIdx}")
-        modSpreadsheet(_.removeColumn(colIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
-          _.copy(selectedColumn = None)
-        )
+      withSelectedColumnAndProps((colIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Removing Column ${colIdx + 1}")
+        >> modSpreadsheet(_.removeColumn(colIdx))
+        //>> modSpreadsheet(_.purgeTombstones())
+        >> $.modState(_.copy(selectedColumn = None))
       )
 
     def addRow(): Callback = modSpreadsheet(_.addRow())
