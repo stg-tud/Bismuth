@@ -2,14 +2,16 @@ package com.daimpl.app
 
 import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
+import japgolly.scalajs.react.CtorType.Summoner.Aux
+import japgolly.scalajs.react.component.Scala.Component
+import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
-import rdts.base.{Lattice, LocalUid}
-import rdts.time.Dots
+import rdts.base.LocalUid
 
 object SpreadsheetComponent {
 
   def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet[String]] = {
-    new SpreadsheetDeltaAggregator(Spreadsheet[String]())
+    new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
       .edit(_.addRow())
       .edit(_.addRow())
       .edit(_.addRow())
@@ -28,12 +30,15 @@ object SpreadsheetComponent {
       editingCell: Option[(Int, Int)],
       editingValue: String,
       selectedRow: Option[Int],
-      selectedColumn: Option[Int]
+      selectedColumn: Option[Int],
+      conflictPopup: Option[(Int, Int)]
   )
 
   class Backend($ : BackendScope[Props, State]) {
 
-    private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet[String] => Spreadsheet[String])): Callback = {
+    val replicaEventPrint: (LocalUid, String) => Callback = (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
+
+    private def modSpreadsheet(f: LocalUid ?=> Spreadsheet[String] => Spreadsheet[String]): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta(f)
@@ -54,15 +59,26 @@ object SpreadsheetComponent {
     private def withSelectedColumnAndProps(f: (Int, Props) => Callback): Callback =
       withSelectedColumn(colIdx => $.props.flatMap(props => f(colIdx, props)))
 
-    def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback = {
+    def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
       $.props.flatMap { props =>
-        val currentValue = props.spreadsheetAggregator.current.read(colIdx, rowIdx).getOrElse("")
-        $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = currentValue))
+        val currentSet = props.spreadsheetAggregator.current.read(colIdx, rowIdx)
+        val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
+        cancelEdit()
+        >> $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
       }
-    }
+
+    def openConflict(row: Int, col: Int): Callback =
+      $.modState(_.copy(conflictPopup = Some((row, col))))
+
+    def closeConflict(): Callback =
+      $.modState(_.copy(conflictPopup = None))
+
+    def keepValue(row: Int, col: Int, v: String): Callback =
+      modSpreadsheet(_.editCell(row, col, v)) >> closeConflict()
 
     def handleInputChange(e: ReactEventFromInput): Callback = {
       val value = e.target.value
+      println(s"Edit value: $value")
       $.modState(_.copy(editingValue = value))
     }
 
@@ -78,15 +94,17 @@ object SpreadsheetComponent {
       $.state.flatMap { state =>
         state.editingCell
           .map { case (rowIdx, colIdx) =>
-            val value = state.editingValue.trim
-            println(s"value $value")
-            modSpreadsheet(_.editCell(rowIdx, colIdx, value)) >> cancelEdit()
+            var value = state.editingValue.trim
+            if (value.isBlank) value = null
+            modSpreadsheet(_.editCell(rowIdx, colIdx, value))
+            >> cancelEdit()
           }
           .getOrElse(Callback.empty)
       }
     }
 
-    def cancelEdit(): Callback = {
+    private def cancelEdit(): Callback = {
+      println(s"Edit has concluded")
       $.modState(_.copy(editingCell = None, editingValue = ""))
     }
 
@@ -99,54 +117,78 @@ object SpreadsheetComponent {
     }
 
     def insertRowAbove(): Callback =
-      withSelectedRow(rowIdx => modSpreadsheet(_.insertRow(rowIdx)) >> $.modState(_.copy(selectedRow = None)))
+      withSelectedRowAndProps((rowIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
+        >> cancelEdit()
+        >> modSpreadsheet(_.insertRow(rowIdx))
+        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get)))
+      )
 
     def insertRowBelow(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
-        val action      =
+        val action =
           if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
           else modSpreadsheet(_.insertRow(rowIdx + 1))
-        action >> $.modState(_.copy(selectedRow = None))
+        replicaEventPrint(props.replicaId, s"Inserting Row After ${rowIdx + 1}")
+        >> cancelEdit()
+        >> action
+        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
       }
 
     def removeRow(): Callback =
-      withSelectedRow(rowIdx =>
-        modSpreadsheet(_.removeRow(rowIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
-          _.copy(selectedRow = None)
-        )
+      withSelectedRowAndProps((rowIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
+        >> cancelEdit()
+        >> modSpreadsheet(_.removeRow(rowIdx))
+        //>> modSpreadsheet(_.purgeTombstones())
+        >> $.modState(_.copy(selectedRow = None))
       )
 
     def insertColumnLeft(): Callback =
-      withSelectedColumn(colIdx => modSpreadsheet(_.insertColumn(colIdx)) >> $.modState(_.copy(selectedColumn = None)))
+      withSelectedColumnAndProps((colIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
+        >> cancelEdit()
+        >> modSpreadsheet(_.insertColumn(colIdx))
+        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get)))
+      )
 
     def insertColumnRight(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
-        val action      =
+        val action =
           if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
           else modSpreadsheet(_.insertColumn(colIdx + 1))
-        action >> $.modState(_.copy(selectedColumn = None))
+        replicaEventPrint(props.replicaId, s"Inserting Column After ${colIdx + 1}")
+        >> cancelEdit()
+        >> action
+        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
       }
 
     def removeColumn(): Callback =
-      withSelectedColumn(colIdx =>
-        modSpreadsheet(_.removeColumn(colIdx)) >> /*modSpreadsheet(_.purgeTombstones()) >>*/ $.modState(
-          _.copy(selectedColumn = None)
-        )
+      withSelectedColumnAndProps((colIdx, props) =>
+        replicaEventPrint(props.replicaId, s"Removing Column ${colIdx + 1}")
+        >> cancelEdit()
+        >> modSpreadsheet(_.removeColumn(colIdx))
+        //>> modSpreadsheet(_.purgeTombstones())
+        >> $.modState(_.copy(selectedColumn = None))
       )
 
-    def addRow(): Callback = modSpreadsheet(_.addRow())
+    def addRow(): Callback =
+      cancelEdit()
+      >> modSpreadsheet(_.addRow())
 
-    def addColumn(): Callback = modSpreadsheet(_.addColumn())
+    def addColumn(): Callback =
+      cancelEdit()
+      >> modSpreadsheet(_.addColumn())
 
     // TODO: current replicated list does not allow purging
     def purgeTombstones(): Callback = modSpreadsheet(identity)
   }
 
-  val Component = ScalaComponent
+  val Component: Component[Props, State, Backend, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("Spreadsheet")
-    .initialState(State(None, "", None, None))
+    .initialState(State(None, "", None, None, None))
     .backend(new Backend(_))
     .render { $ =>
       val props       = $.props
@@ -179,7 +221,18 @@ object SpreadsheetComponent {
                   "Remove Row"
                 )
               )
-            case None => <.span()
+            case None =>
+              if spreadsheet.numRows == 0 then
+                <.div(
+                  ^.className := "flex gap-2 items-center",
+                  <.span(^.className := "text-sm text-gray-600", s"No rows present."),
+                  <.button(
+                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                    ^.onClick --> backend.addRow(),
+                    "Insert"
+                  )
+                )
+              else <.span()
           },
           state.selectedColumn match {
             case Some(colIdx) =>
@@ -202,7 +255,18 @@ object SpreadsheetComponent {
                   "Remove Column"
                 )
               )
-            case None => <.span()
+            case None =>
+              if spreadsheet.numColumns == 0 then
+                <.div(
+                  ^.className := "flex gap-2 items-center",
+                  <.span(^.className := "text-sm text-gray-600", s"No columns present."),
+                  <.button(
+                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                    ^.onClick --> backend.addColumn(),
+                    "Insert"
+                  )
+                )
+              else <.span()
           }
         ),
         <.div(
@@ -253,6 +317,14 @@ object SpreadsheetComponent {
                       ^.key       := s"cell-$rowIdx-$colIdx",
                       ^.className := "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32",
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
+                      if cell.hasConflicts then
+                        <.span(
+                          ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
+                          ^.title := "Resolve conflict",
+                          "!",
+                          ^.onClick --> backend.openConflict(rowIdx, colIdx)
+                        )
+                      else EmptyVdom,
                       state.editingCell match {
                         case Some((editRow, editCol)) if editRow == rowIdx && editCol == colIdx =>
                           <.input(
@@ -266,8 +338,8 @@ object SpreadsheetComponent {
                         case _ =>
                           <.span(
                             ^.className := "block cursor-pointer min-h-[1.5rem] overflow-hidden text-ellipsis whitespace-nowrap",
-                            ^.title := cell.getOrElse(""),
-                            cell.getOrElse("")
+                            ^.title := cell.formatConflicts(),
+                            cell.formatConflicts()
                           )
                       }
                     )
@@ -284,6 +356,43 @@ object SpreadsheetComponent {
             ^.onClick --> backend.purgeTombstones(),
             "Purge Tombstones"
           )
+        )
+        (state.conflictPopup match
+          case Some((r, c)) =>
+            val vals = props.spreadsheetAggregator.current.read(c, r).toList
+            <.div(
+              ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
+              ^.onClick --> backend.closeConflict(),
+              <.div(
+                ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
+                ^.onClick ==> {
+                  _.stopPropagationCB
+                },
+                <.button(
+                  ^.className := "absolute top-4 right-4 text-gray-400 hover:text-gray-600",
+                  ^.aria.label := "Close",
+                  ^.onClick --> backend.closeConflict(),
+                  "✕"
+                ),
+                <.h3(^.className := "text-lg font-semibold text-gray-800 mb-4", "Resolve conflict"),
+                <.p(
+                  ^.className := "text-sm text-gray-600 mb-3",
+                  s"Choose the value you want to keep for cell ${(c + 'A').toChar}${r + 1}:"
+                ),
+                <.div(
+                  ^.className := "flex flex-col gap-2",
+                  vals.map { v =>
+                    <.button(
+                      ^.key := v,
+                      ^.className := "w-full px-4 py-2 rounded-lg text-left bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400",
+                      ^.onClick --> backend.keepValue(r, c, v),
+                      v
+                    )
+                  }.toVdomArray
+                )
+              )
+            )
+          case None => EmptyVdom
         )
       )
     }
