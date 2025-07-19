@@ -5,14 +5,14 @@ import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
-    private val rowIds: KeepRemoveList[Dot] = KeepRemoveList.empty,
-    private val colIds: KeepRemoveList[Dot] = KeepRemoveList.empty,
+    private val rowIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
+    private val colIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
     private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
 ) {
 
   lazy val observed: Dots =
-    Dots.from(rowIds.payloads.values.map(_.read)) `union`
-      Dots.from(colIds.payloads.values.map(_.read))
+    Dots.from(rowIds.toList)
+    `union` Dots.from(colIds.toList)
 
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
@@ -22,11 +22,11 @@ case class Spreadsheet[A](
   }
 
   def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(rowIds = rowIds.remove(rowIdx))
+    Spreadsheet(rowIds = rowIds.removeIndex(rowIdx))
   }
 
   def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(colIds = colIds.remove(colIdx))
+    Spreadsheet(colIds = colIds.removeIndex(colIdx))
   }
 
   def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
@@ -56,8 +56,8 @@ case class Spreadsheet[A](
           case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
         }
     Spreadsheet(
-      rowIds = rowIds.keep(rowIdx),
-      colIds = colIds.keep(colIdx),
+      rowIds = rowIds.update(rowIdx, rowId),
+      colIds = colIds.update(colIdx, colId),
       content = newContent
     )
   }
@@ -85,7 +85,7 @@ case class Spreadsheet[A](
       .maxOption.getOrElse(1)
       .max(1)
 
-    val maxLenFmtStr = ("%" + maxLen + "s")
+    val maxLenFmtStr = "%" + maxLen + "s"
 
     val sheetStr = rowIds.toList.map { rowId =>
       colIds.toList
@@ -104,7 +104,7 @@ case class Spreadsheet[A](
 
     println(
       s"""|${maxLenFmtStr.format(legend)}${colIdTimes.map(maxLenFmtStr.format(_)).mkString(" | ", " | ", " |")}
-          |${sheetStr}\n"""
+          |$sheetStr\n"""
       .stripMargin
     )
   }
@@ -113,8 +113,6 @@ case class Spreadsheet[A](
     val rows = rowIds.toList
     val cols = colIds.toList
     Spreadsheet(
-      rowIds = rowIds.purgeTombstones(),
-      colIds = colIds.purgeTombstones(),
       content = content.removeBy((row, col) => !rows.contains(row) || !cols.contains(col))
     )
   }
