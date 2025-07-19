@@ -45,7 +45,6 @@ case class KeepRemoveList[E] private (
         KeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
-  def prepend(using LocalUid)(e: E): C = insertAt(0, e)
   def append(using LocalUid)(e: E): C  = insertAt(sizeIncludingDead, e)
 
   def keep(idx: Int)(using LocalUid): C =
