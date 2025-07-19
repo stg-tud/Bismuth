@@ -2,6 +2,9 @@ package com.daimpl.app
 
 import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
+import japgolly.scalajs.react.CtorType.Summoner.Aux
+import japgolly.scalajs.react.component.Scala.Component
+import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
 import rdts.base.LocalUid
 
@@ -33,9 +36,9 @@ object SpreadsheetComponent {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    val replicaEventPrint: (LocalUid, String) => Callback = (replicaId, msg) => Callback(println(s"[${replicaId.show}]: ${msg}"))
+    val replicaEventPrint: (LocalUid, String) => Callback = (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
-    private def modSpreadsheet(f: (LocalUid) ?=> (Spreadsheet[String] => Spreadsheet[String])): Callback = {
+    private def modSpreadsheet(f: LocalUid ?=> Spreadsheet[String] => Spreadsheet[String]): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta(f)
@@ -60,7 +63,8 @@ object SpreadsheetComponent {
       $.props.flatMap { props =>
         val currentSet = props.spreadsheetAggregator.current.read(colIdx, rowIdx)
         val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
-        $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
+        cancelEdit()
+        >> $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
       }
 
     def openConflict(row: Int, col: Int): Callback =
@@ -74,7 +78,7 @@ object SpreadsheetComponent {
 
     def handleInputChange(e: ReactEventFromInput): Callback = {
       val value = e.target.value
-      println(s"Edit value: ${value}")
+      println(s"Edit value: $value")
       $.modState(_.copy(editingValue = value))
     }
 
@@ -92,13 +96,15 @@ object SpreadsheetComponent {
           .map { case (rowIdx, colIdx) =>
             var value = state.editingValue.trim
             if (value.isBlank) value = null
-            modSpreadsheet(_.editCell(rowIdx, colIdx, value)) >> cancelEdit()
+            modSpreadsheet(_.editCell(rowIdx, colIdx, value))
+            >> cancelEdit()
           }
           .getOrElse(Callback.empty)
       }
     }
 
-    def cancelEdit(): Callback = {
+    private def cancelEdit(): Callback = {
+      println(s"Edit has concluded")
       $.modState(_.copy(editingCell = None, editingValue = ""))
     }
 
@@ -113,18 +119,19 @@ object SpreadsheetComponent {
     def insertRowAbove(): Callback =
       withSelectedRowAndProps((rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
-        >>
-        modSpreadsheet(_.insertRow(rowIdx))
-        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get - 1)))
+        >> cancelEdit()
+        >> modSpreadsheet(_.insertRow(rowIdx))
+        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get)))
       )
 
     def insertRowBelow(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
         val action =
-          if (rowIdx == spreadsheet.numRows - 1) then modSpreadsheet(_.addRow())
+          if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
           else modSpreadsheet(_.insertRow(rowIdx + 1))
         replicaEventPrint(props.replicaId, s"Inserting Row After ${rowIdx + 1}")
+        >> cancelEdit()
         >> action
         >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
       }
@@ -132,6 +139,7 @@ object SpreadsheetComponent {
     def removeRow(): Callback =
       withSelectedRowAndProps((rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
+        >> cancelEdit()
         >> modSpreadsheet(_.removeRow(rowIdx))
         //>> modSpreadsheet(_.purgeTombstones())
         >> $.modState(_.copy(selectedRow = None))
@@ -140,17 +148,19 @@ object SpreadsheetComponent {
     def insertColumnLeft(): Callback =
       withSelectedColumnAndProps((colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
+        >> cancelEdit()
         >> modSpreadsheet(_.insertColumn(colIdx))
-        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get - 1)))
+        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get)))
       )
 
     def insertColumnRight(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
         val action =
-          if (colIdx == spreadsheet.numColumns - 1) then modSpreadsheet(_.addColumn())
+          if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
           else modSpreadsheet(_.insertColumn(colIdx + 1))
         replicaEventPrint(props.replicaId, s"Inserting Column After ${colIdx + 1}")
+        >> cancelEdit()
         >> action
         >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
       }
@@ -158,20 +168,25 @@ object SpreadsheetComponent {
     def removeColumn(): Callback =
       withSelectedColumnAndProps((colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Removing Column ${colIdx + 1}")
+        >> cancelEdit()
         >> modSpreadsheet(_.removeColumn(colIdx))
         //>> modSpreadsheet(_.purgeTombstones())
         >> $.modState(_.copy(selectedColumn = None))
       )
 
-    def addRow(): Callback = modSpreadsheet(_.addRow())
+    def addRow(): Callback =
+      cancelEdit()
+      >> modSpreadsheet(_.addRow())
 
-    def addColumn(): Callback = modSpreadsheet(_.addColumn())
+    def addColumn(): Callback =
+      cancelEdit()
+      >> modSpreadsheet(_.addColumn())
 
     // TODO: current replicated list does not allow purging
     def purgeTombstones(): Callback = modSpreadsheet(identity)
   }
 
-  val Component = ScalaComponent
+  val Component: Component[Props, State, Backend, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("Spreadsheet")
     .initialState(State(None, "", None, None, None))
     .backend(new Backend(_))
