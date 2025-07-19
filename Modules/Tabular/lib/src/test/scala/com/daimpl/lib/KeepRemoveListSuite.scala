@@ -1,6 +1,5 @@
 package com.daimpl.lib
 
-import munit.Assertions.assertEquals
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
 import rdts.base.{LocalUid, Uid}
@@ -94,13 +93,39 @@ final class KeepRemoveListSuite extends FunSuite:
     assertEqualsList(merged, List("head", "initial", "tail"))
   }
 
-def assertEqualsList[E](actual: KeepRemoveList[E], expected: List[E]): Unit =
-  assertEquals(actual.size, expected.size)
-  assertEquals(actual.toList, expected)
-
-  expected.zipWithIndex.foreach { case (elem, idx) =>
-    assertEquals(actual.read(idx), Some(elem))
+  test("concurrent insertAt(1) and remove(0) preserves correct order") {
+    val base = withUid("A") {
+      KeepRemoveList.empty[String] + KeepRemoveList.empty.append("x") + KeepRemoveList.empty.append("y")
+    }
+    var rA = base
+    var rB = base
+    withUid("A") { rA = rA + rA.insertAt(1, "z") }
+    withUid("B") { rB = rB + rB.remove(0) }
+    val merged = rA + rB
+    assertEqualsList(merged, List("y", "z"))
   }
 
-  assertEquals(actual.read(expected.size), None)
-  assertEquals(actual.read(expected.size + 1), None)
+  test("insertAt after remote remove keeps consistent index") {
+    val base = withUid("A") {
+      KeepRemoveList.empty[String] + KeepRemoveList.empty.append("x") + KeepRemoveList.empty.append("y")
+    }
+    var rA = base
+    var rB = base
+
+    withUid("A") { rA = rA + rA.insertAt(1, "a") }
+    withUid("B") { rB = rB + rB.remove(0) }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("y", "a"))
+  }
+
+  private def assertEqualsList[E](actual: KeepRemoveList[E], expected: List[E]): Unit =
+    assertEquals(actual.size, expected.size)
+    assertEquals(actual.toList, expected)
+
+    expected.zipWithIndex.foreach { case (elem, idx) =>
+      assertEquals(actual.read(idx), Some(elem))
+    }
+
+    assertEquals(actual.read(expected.size), None)
+    assertEquals(actual.read(expected.size + 1), None)
