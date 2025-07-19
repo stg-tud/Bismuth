@@ -39,7 +39,7 @@ case class KeepRemoveList[E] private (
     findInsertIndex(i) match
       case None => KeepRemoveList.empty
       case Some(glIdx) =>
-        val nOrder = order.map(_.insertGL(glIdx, newDot))
+        val nOrder = order.map(_.insertAt(glIdx, newDot))
         val nPayload = Map(newDot -> LastWriterWins.now(e))
         val nFlag    = Map(newDot -> ORFlag(Dots.single(newDot), Dots.empty))
         KeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)

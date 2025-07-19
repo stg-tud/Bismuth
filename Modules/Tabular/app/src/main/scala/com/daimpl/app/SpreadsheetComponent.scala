@@ -114,7 +114,6 @@ object SpreadsheetComponent {
       withSelectedRowAndProps((rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
         >>
-        println(s"Inserting Row Before ${rowIdx}")
         modSpreadsheet(_.insertRow(rowIdx))
         >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get - 1)))
       )
@@ -141,9 +140,7 @@ object SpreadsheetComponent {
     def insertColumnLeft(): Callback =
       withSelectedColumnAndProps((colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
-        >>
-        println(s"Inserting Column Before ${colIdx}")
-        modSpreadsheet(_.insertColumn(colIdx))
+        >> modSpreadsheet(_.insertColumn(colIdx))
         >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get - 1)))
       )
 
