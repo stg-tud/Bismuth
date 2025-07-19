@@ -1,17 +1,18 @@
 package com.daimpl.lib
 
-import rdts.base.Lattice
+import rdts.base.{Lattice, LocalUid, Uid}
 
 class SpreadsheetDeltaAggregator[S: Lattice](
-    private var spreadsheet: S
+    private var spreadsheet: S,
+    private var replicaId: LocalUid
 ) {
-  def editAndGetDelta(fn: S => S): S = {
-    val delta = fn(spreadsheet)
+  def editAndGetDelta(fn: LocalUid ?=> S => S): S = {
+    val delta = fn(using replicaId)(spreadsheet)
     spreadsheet = spreadsheet.merge(delta)
     delta
   }
 
-  def edit(fn: S => S): SpreadsheetDeltaAggregator[S] = {
+  def edit(fn: LocalUid ?=> S => S): SpreadsheetDeltaAggregator[S] = {
     editAndGetDelta(fn)
     this
   }

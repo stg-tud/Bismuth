@@ -8,7 +8,7 @@ import rdts.base.LocalUid
 object SpreadsheetComponent {
 
   def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet[String]] = {
-    new SpreadsheetDeltaAggregator(Spreadsheet[String]())
+    new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
       .edit(_.addRow())
       .edit(_.addRow())
       .edit(_.addRow())

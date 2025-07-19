@@ -20,22 +20,22 @@ object Main {
     def addSpreadsheet(): Callback = {
       $.modState { state =>
         val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
-        given LocalUid         = LocalUid.gen()
+        val replicaId = LocalUid.gen()
 
         val newAggregator =
           if state.spreadsheets.isEmpty then {
-            SpreadsheetComponent.createSampleSpreadsheet()
+            SpreadsheetComponent.createSampleSpreadsheet()(using replicaId)
           } else if onlineSpreadsheets.isEmpty then {
-            new SpreadsheetDeltaAggregator(Spreadsheet[String]())
+            SpreadsheetDeltaAggregator(Spreadsheet[String](), replicaId)
           } else {
             val mergedObrem = onlineSpreadsheets
               .map(_.aggregator.current)
               .reduce((s1, s2) => Lattice.merge(s1, s2))
-            new SpreadsheetDeltaAggregator(mergedObrem)
+            SpreadsheetDeltaAggregator(mergedObrem, replicaId)
           }
 
         state.copy(
-          spreadsheets = state.spreadsheets :+ SpreadsheetData(state.nextId, isOnline = true, newAggregator, summon),
+          spreadsheets = state.spreadsheets :+ SpreadsheetData(state.nextId, isOnline = true, newAggregator, replicaId),
           nextId = state.nextId + 1
         )
       }
