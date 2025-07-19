@@ -11,8 +11,8 @@ case class Spreadsheet[A](
 ) {
 
   lazy val observed: Dots =
-    Dots.from(rowIds.payloads.values) `union`
-    Dots.from(colIds.payloads.values)
+    Dots.from(rowIds.payloads.values.map(_.read)) `union`
+      Dots.from(colIds.payloads.values.map(_.read))
 
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
