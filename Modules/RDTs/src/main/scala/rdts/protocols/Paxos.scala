@@ -4,9 +4,8 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import Paxos.given
 
-case class PaxosRound[A](leaderElection: LeaderElection = Voting(), proposals: Voting[A] = Voting[A]())
 type LeaderElection = Voting[Uid]
-type Proposal
+case class PaxosRound[A](leaderElection: LeaderElection = Voting(), proposals: Voting[A] = Voting[A]())
 
 case class Paxos[A](
     rounds: Map[BallotNum, PaxosRound[A]] =

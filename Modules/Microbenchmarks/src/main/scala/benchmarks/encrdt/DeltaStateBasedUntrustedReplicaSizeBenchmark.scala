@@ -5,7 +5,7 @@ import benchmarks.encrdt.deltabased.DecryptedDeltaGroup
 import benchmarks.encrdt.mock.UntrustedDeltaBasedReplicaMock
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import com.google.crypto.tink.Aead
-import lofi_acl.collections.DeltaAWLWWMContainer
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.{Dot, Dots}
 
 import java.io.PrintWriter

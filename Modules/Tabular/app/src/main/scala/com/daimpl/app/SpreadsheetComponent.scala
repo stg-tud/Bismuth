@@ -170,7 +170,8 @@ object SpreadsheetComponent {
 
     def addColumn(): Callback = modSpreadsheet(_.addColumn())
 
-    def purgeTombstones(): Callback = modSpreadsheet(_.purgeTombstones())
+    // TODO: current replicated list does not allow purging
+    def purgeTombstones(): Callback = modSpreadsheet(identity)
   }
 
   val Component = ScalaComponent

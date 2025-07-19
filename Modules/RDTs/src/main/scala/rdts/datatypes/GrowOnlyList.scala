@@ -1,164 +1,79 @@
 package rdts.datatypes
 
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.datatypes.GrowOnlyList.Node
-import rdts.datatypes.GrowOnlyList.Node.*
+import rdts.time.CausalTime
 
-import scala.annotation.tailrec
-import scala.math.Ordering.Implicits.infixOrderingOps
+import scala.collection.mutable.ArrayBuffer
 
-/** A GrowOnlyList is a Delta CRDT modeling a grow-only list where list elements can neither be removed nor modified.
-  *
-  * Concurrent inserts at the same index i are resolved by the timestamps of the insert operations: the later insert
-  * will be at index i while the earlier insert will be pushed to index i+1.
-  *
-  * Note: GrowOnlyList is implemented as a linked list, thus the time needed to execute operations at the end of the list will
-  * scale linearly with the length of the list. Similarly, toList always has to iterate the whole list, so for applications
-  * that don't always need the whole list you should consider using toLazyList instead.
-  */
-case class GrowOnlyList[E](inner: Map[Node[LastWriterWins[E]], Elem[LastWriterWins[E]]]) {
+case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Map[CausalTime, E]) {
+  lazy val now: Option[CausalTime] = order.values.flatten.reduceOption(Lattice.merge)
+  def nextTime: CausalTime         = now.map(_.advance).getOrElse(CausalTime.now())
 
-  type Delta = GrowOnlyList[E]
-
-  @tailrec
-  private def findNth(
-      state: GrowOnlyList[E],
-      current: Node[LastWriterWins[E]],
-      i: Int
-  ): Option[Node[LastWriterWins[E]]] = {
-    if i == 0 then Some(current)
-    else
-      state.inner.get(current) match {
-        case None       => None
-        case Some(elem) => findNth(state, elem, i - 1)
-      }
+  def insertAfter(predecessor: CausalTime, value: E) = {
+    val next = nextTime
+    GrowOnlyList(order = Map(predecessor -> Set(next)), elements = Map(next -> value))
   }
 
-  def read(i: Int): Option[E] =
-    findNth(this, Head, i + 1).flatMap {
-      case Head    => None
-      case Elem(e) => Some(e.payload)
-    }
+  lazy val toposort: Seq[CausalTime] = {
+    val sorted                      = ArrayBuffer[CausalTime]()
+    var discovered: Set[CausalTime] = Set.empty
 
-  def toList: List[E] =
-    val state = this
-
-    @tailrec
-    def toListRec(current: Node[LastWriterWins[E]], acc: List[E]): List[E] =
-      state.inner.get(current) match {
-        case None                  => acc.reverse
-        case Some(next @ Elem(tv)) => toListRec(next, tv.payload :: acc)
-      }
-
-    toListRec(Head, Nil)
-
-  def toLazyList: LazyList[E] =
-    LazyList.unfold[E, Node[LastWriterWins[E]]](Head) { node =>
-      inner.get(node) match {
-        case None                  => None
-        case Some(next @ Elem(tv)) => Some((tv.payload, next))
+    def _toposort(rem: CausalTime): Unit = {
+      if discovered.contains(rem) then ()
+      else {
+        discovered = discovered + rem
+        val next = order.get(rem).iterator.flatten.toSeq.sorted
+        next.foreach(_toposort)
+        sorted += rem
+        ()
       }
     }
 
-  def size: Int = inner.size
-
-  def insertGL(i: Int, e: E): Delta = {
-    GrowOnlyList(findNth(this, Head, i) match {
-      case None       => Map.empty
-      case Some(pred) =>
-        Map(pred -> Elem(LastWriterWins.now(e)))
-    })
+    (Iterable(GrowOnlyList.headDot) ++ order.keys.toSeq.sorted).foreach(_toposort)
+    sorted.toSeq.reverse
   }
 
-  def insertAllGL(i: Int, elems: Iterable[E]): Delta = {
-    if elems.isEmpty then
-      GrowOnlyList.empty[E]
-    else
-      GrowOnlyList(findNth(this, Head, i) match {
-        case None        => Map.empty
-        case Some(after) =>
-          val order = elems.map(e => Elem(LastWriterWins.now(e)): Elem[LastWriterWins[E]])
-          Map((List(after) ++ order.init) zip order*)
-      })
+  lazy val dotList: Seq[CausalTime] = toposort
+
+  lazy val toList: List[E] = dotList.flatMap(elements.get).toList
+
+  def toLazyList: LazyList[E] = toList.to(LazyList)
+
+  def read(i: Int): Option[E] = toList.lift(i)
+
+  def insertAt(index: Int, elem: E): GrowOnlyList[E] = {
+    val pos = dotList(index)
+    insertAfter(pos, elem)
+  }
+  def insertAllAt(index: Int, elems: List[E]): GrowOnlyList[E] = {
+    val pos = dotList(index)
+    val res = elems.scanLeft(this)((gl, d) => gl.insertAfter(pos, d))
+    res.drop(1).reduceOption(_.merge(_)).getOrElse(GrowOnlyList.empty)
   }
 
-  @tailrec
-  private def withoutRec(state: GrowOnlyList[E], current: Node[LastWriterWins[E]], elems: Set[E]): GrowOnlyList[E] =
-    state.inner.get(current) match {
-      case None                                                => state
-      case Some(next @ Elem(tv)) if elems.contains(tv.payload) =>
-        val edgeRemoved = state.inner.get(next) match {
-          case Some(nextnext) => state.inner.removed(current).removed(next) + (current -> nextnext)
-          case None           => state.inner.removed(current).removed(next)
-        }
+  def size: Int = elements.size
 
-        withoutRec(GrowOnlyList(edgeRemoved), current, elems)
-      case Some(next) => withoutRec(state, next, elems)
-    }
-
-  def without(elems: Set[E]): Delta = withoutRec(this, Head, elems)
+  /**
+   * Returns a copy with some elements removed.
+   * DOES NOT WORK WHEN MERGING. This is only meant to be used when wrapped into another structure, such as an Epoch.
+   */
+  def without(elems: Set[E]): GrowOnlyList[E] = GrowOnlyList(order, elements.filter((_, e) => !elems.contains(e)))
 }
 
 object GrowOnlyList {
-  enum Node[+E]:
-    case Head
-    case Elem(value: E)
-  import Node.Elem
-
-  def empty[E]: GrowOnlyList[E] = GrowOnlyList(Map.empty)
-
-  given bottomInstance[E]: Bottom[GrowOnlyList[E]] = Bottom.provide(empty[E])
+  val headDot = CausalTime.empty
 
   given decompose[E]: Decompose[GrowOnlyList[E]] = {
-    given Decompose[Node[LastWriterWins[E]]] = Decompose.atomic
-    given Decompose[Elem[LastWriterWins[E]]] = Decompose.atomic
+    given Decompose[E] = Decompose.atomic
     Decompose.derived
   }
 
-  given lattice[E]: Lattice[GrowOnlyList[E]] with {
+  given bottom[E]: Bottom[GrowOnlyList[E]]   = Bottom.derived
+  def empty[E]: GrowOnlyList[E]              = bottom.empty
+  given lattice[E]: Lattice[GrowOnlyList[E]] = {
+    given Lattice[E] = Lattice.assertEquals
 
-    @tailrec
-    private def insertEdge(
-        state: GrowOnlyList[E],
-        edge: (Node[LastWriterWins[E]], Elem[LastWriterWins[E]])
-    ): GrowOnlyList[E] =
-      edge match {
-        case (l, r @ Elem(e1)) =>
-          state.inner.get(l) match {
-            case None                  => GrowOnlyList(state.inner + edge)
-            case Some(next @ Elem(e2)) =>
-              if e1.timestamp > e2.timestamp
-              then GrowOnlyList(state.inner + edge + (r -> next))
-              else
-                insertEdge(state, next -> r)
-          }
-      }
-
-    @tailrec
-    private def insertRec(
-        left: GrowOnlyList[E],
-        right: GrowOnlyList[E],
-        current: Node[LastWriterWins[E]]
-    ): GrowOnlyList[E] =
-      right.inner.get(current) match {
-        case None       => left
-        case Some(next) =>
-          val leftMerged =
-            if left.inner.contains(current) && left.inner.exists { case (_, r) => r == next }
-            then left
-            else insertEdge(left, (current, next))
-
-          insertRec(leftMerged, right, next)
-      }
-
-    /** By assumption: associative, commutative, idempotent. */
-    override def merge(
-        left: GrowOnlyList[E],
-        right: GrowOnlyList[E]
-    ): GrowOnlyList[E] =
-      (right.inner.keySet -- right.inner.values).foldLeft(left) { (state, startNode) =>
-        insertRec(state, right, startNode)
-      }
+    Lattice.derived
   }
 
 }

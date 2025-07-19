@@ -8,6 +8,11 @@
 			"plugins": [
 				"org.intellij.scala"
 			]
+		},
+		"vscode": {
+			"extensions": [
+				"scalameta.metals"
+			]
 		}
 	}
 }

@@ -8,9 +8,16 @@ import rdts.base.Uid
 case class Dot(place: Uid, time: Time) {
   def advance: Dot = Dot(place, time + 1)
   def dots: Dots   = Dots.single(this)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case Dot(p, t) => p == place && t == time
+    case _ => super.equals(obj)
+  }
 }
 
 object Dot {
+
+  def zero = Dot(Uid.zero, 0)
 
   /** While this seems plausible, it might, in general, be better to treat all dots as incomparable, we assume them to increase monotonically, but that is for optimization purposes, not because we use it anywhere else */
   @deprecated("probably not a good idea")

@@ -4,7 +4,7 @@ import benchmarks.encrdt.Codecs.{*, given}
 import benchmarks.encrdt.mock.insecure.{AlternativeInsecureToDoListClient, AlternativeInsecureToDoListIntermediary}
 import benchmarks.encrdt.mock.{DisseminationStats, IntermediarySizeInfo, SecureToDoListClient, ToDoListClient, ToDoListIntermediary}
 import benchmarks.encrdt.todolist.{AddToDoItem, CompleteToDoItem, RemoveToDoItems, ToDoEntry, ToDoListInteraction, ToDoListInteractionGenerator}
-import lofi_acl.collections.DeltaAWLWWMContainer
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}

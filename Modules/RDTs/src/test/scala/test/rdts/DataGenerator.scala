@@ -3,7 +3,6 @@ package test.rdts
 import org.scalacheck.{Arbitrary, Gen, Shrink}
 import rdts.base.*
 import rdts.datatypes.*
-import rdts.datatypes.GrowOnlyList.Node
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.experiments.CausalStore
 import rdts.experiments.CausalStore.CausalDelta
@@ -106,17 +105,8 @@ object DataGenerator {
 
   given arbGrowOnlyList[E](using arb: Arbitrary[E]): Arbitrary[GrowOnlyList[E]] = Arbitrary:
     Gen.listOf(arb.arbitrary).map: list =>
-      GrowOnlyList.empty.insertAllGL(0, list)
+      GrowOnlyList.empty.insertAllAt(0, list)
 
-  def badInternalGrowOnlyList[E](using arb: Arbitrary[E]): Arbitrary[GrowOnlyList[E]] = Arbitrary:
-    Gen.listOf(arbLww(using arb).arbitrary).map: list =>
-      val elems: List[Node.Elem[LastWriterWins[E]]] = list.map(GrowOnlyList.Node.Elem.apply)
-      val pairs                                     = elems.distinct.sortBy(_.value.timestamp).sliding(2).flatMap:
-        case Seq(l, r) => Some(l -> r)
-        case _         => None // filters out uneven numbers of elements
-      val all =
-        elems.headOption.map(GrowOnlyList.Node.Head -> _) concat pairs
-      GrowOnlyList(all.toMap)
 
   given arbDotmap[K, V](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =
     Arbitrary:
@@ -151,34 +141,38 @@ object DataGenerator {
       dots   <- arbDots.arbitrary
     yield Lattice.normalize(CausalStore(predec.toSet, dots, Some(value)))
 
-  object RGAGen {
+  object ReplicatedListGen {
     def makeRGA[E](
-        inserted: List[(Int, E)],
-        removed: List[Int],
-        rid: LocalUid
+      inserted: List[(Int, E)],
+      removed: List[Int],
+      rid: LocalUid
     ): ReplicatedList[E] = {
+
+      def clamp(v: Int, max: Int): Int = math.max(0, math.min(v, max))
+
       val afterInsert = inserted.foldLeft(ReplicatedList.empty[E]) {
-        case (rga, (i, e)) => rga `merge` rga.insert(i, e)(using rid)
+        case (rga, (i, e)) => rga `merge` rga.insertAt(clamp(i, rga.size), e)(using rid)
       }
 
       removed.foldLeft(afterInsert) {
-        case (rga, i) => rga `merge` rga.delete(i)
+        case (rga, i) =>
+          if rga.size <= 0 then rga else rga `merge` rga.removeIndex(clamp(i, rga.size - 1))
       }
     }
 
     def genRGA[E](using e: Arbitrary[E]): Gen[ReplicatedList[E]] =
       for
-        nInserted       <- Gen.choose(0, 20)
-        insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
-        insertedValues  <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
-        removed         <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
-        id              <- Gen.oneOf('a' to 'g')
+        nInserted <- Gen.choose(0, 20)
+          insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
+          insertedValues <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
+          removed <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
+          id <- Gen.stringOfN(10, Gen.alphaChar)
       yield {
         makeRGA(insertedIndices zip insertedValues, removed, Uid.predefined(id.toString).convert)
       }
 
     given arbRGA[E](using
-        e: Arbitrary[E],
+      e: Arbitrary[E],
     ): Arbitrary[ReplicatedList[E]] =
       Arbitrary(genRGA)
 

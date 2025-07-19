@@ -4,11 +4,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.softwaremill.quicklens.*
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.{*, given}
-import lofi_acl.access.Filter
-import lofi_acl.ardt.datatypes.LWW
-import lofi_acl.collections.ORMap.stringKeyORMapFilter
+import rdts.filters.Filter.stringKeyORMapFilter
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.filters.Filter
 import rdts.time.Dots
 
 import java.util.Base64
@@ -100,14 +99,14 @@ object TravelPlan {
 
   type Title = String
   given Bottom[Title]                                                 = Bottom.provide("")
-  given titleFilter: Filter[LastWriterWins[Title]]                    = LWW.terminalFilter
-  given lwwOptionStringFilter: Filter[LastWriterWins[Option[String]]] = LWW.terminalFilter
+  given titleFilter: Filter[LastWriterWins[Title]]                    = Filter.terminalLwwFilter
+  given lwwOptionStringFilter: Filter[LastWriterWins[Option[String]]] = Filter.terminalLwwFilter
   type UniqueId = String
   val empty: TravelPlan = Bottom[TravelPlan].empty
 
   type Delta = TravelPlan
 
-  import lofi_acl.sync.JsoniterCodecs.uidKeyCodec
+  import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.uidKeyCodec
   given jsonCodec: JsonValueCodec[TravelPlan] = JsonCodecMaker.make[TravelPlan]
 }
 

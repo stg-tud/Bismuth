@@ -54,19 +54,19 @@ object DafnyGen {
 
     val refs: Set[String] = node match
       case t: (TViperImport | TArgT | TTypeAl | TNum | TTrue | TFalse | TString) => Set.empty // No references here
-      case TVar(name, _, _)                                                      =>
+      case TVar(name, _, _) =>
         if !ctx.isDefinedAt(name) then Set.empty // Skip non-top-level definition references (e.g. arrow func params)
-        else Set(name) // Regular reference to a top-level definition
-      case TAbs(_, _, body, _, _)        => usedReferences(body, ctx)
-      case TTuple(factors, _, _)         => factors.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+        else Set(name)                           // Regular reference to a top-level definition
+      case TAbs(_, _, body, _, _) => usedReferences(body, ctx)
+      case TTuple(factors, _, _)  => factors.flatMap((n: Term) => usedReferences(n, ctx)).toSet
       case TIf(cond, _then, _else, _, _) =>
         val refs: Set[String] = usedReferences(cond, ctx) ++ usedReferences(_then, ctx)
         if _else.isDefined then refs ++ usedReferences(_else.get, ctx) else refs
       case TSeq(body, _, _) => body.toList.flatMap((n: Term) => usedReferences(n, ctx)).toSet
       case t: BinaryOp => usedReferences(t.left, ctx) ++ usedReferences(t.right, ctx) // Arith., Bool expr, Arrow func
-      case TAssert(body, _, _)                   => usedReferences(body, ctx)
-      case TAssume(body, _, _)                   => usedReferences(body, ctx)
-      case t: TReactive                          => usedReferences(t.body, ctx)
+      case TAssert(body, _, _) => usedReferences(body, ctx)
+      case TAssume(body, _, _) => usedReferences(body, ctx)
+      case t: TReactive        => usedReferences(t.body, ctx)
       case TInteraction(_, _, m, r, e, ex, _, _) =>
         val reqs: Set[String] = r.flatMap((n: Term) => usedReferences(n, ctx)).toSet
         val ens: Set[String]  = e.flatMap((n: Term) => usedReferences(n, ctx)).toSet
@@ -79,7 +79,7 @@ object DafnyGen {
         // vars are new definitions of TArgTs, they do not contain references, so skip those.
         // triggers should not contain any references that don't also appear in the body already, so skip too.
         usedReferences(t.body, ctx)
-      case TParens(inner, _, _)          => usedReferences(inner, ctx)
+      case TParens(inner, _, _) => usedReferences(inner, ctx)
       case TFCall(parent, _, args, _, _) =>
         val refs: Set[String] = usedReferences(parent, ctx)
         // The called field/method is not a standalone reference, so don't include it.
@@ -292,7 +292,7 @@ object DafnyGen {
     // constructor. The shape of the generated code for Sources is "var foo: bar := baz;", whereas declarations are
     // of the shape "var foo: bar" (no semicolon) and definitions are of the shape "foo := baz;" (with semicolon).
     // Additionally, ensures conditions are attached to the constructor for verifying their initial values.
-    val sourceRegex: Regex                          = """var (.*): (.*) := (.*);""".r
+    val sourceRegex: Regex = """var (.*): (.*) := (.*);""".r
     val sourceParts: List[(String, String, String)] = dafnyCode.getOrElse("sourceDefs", List()).map {
       case sourceRegex(name, _type, value) => (name, _type, value)
       case _                               => ("", "", "")
@@ -665,7 +665,7 @@ object DafnyGen {
         // a condition specifying the not-mentioned Sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
         // for every Source that is not included in the modifies list, where obj is the main object of the program.
         val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
-        val modifies: List[String]            = "modifies LoReFields" :: unmodifiedSources.map(source => {
+        val modifies: List[String] = "modifies LoReFields" :: unmodifiedSources.map(source => {
           // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
           val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
             case None =>
@@ -1404,18 +1404,20 @@ object DafnyGen {
         val items: Seq[String] = node.args.map(i => generate(i, ctx))
         s"[${items.mkString(", ")}]"
       case "println" =>
-        // Dafny does not have a "println" function, so turn it into a sequence of two print calls.
-        // The first print call prints the intended string, and the second prints a newline character.
-        val printlnCall: TSeq = TSeq(
-          NonEmptyList.of(
-            node.copy(name = "print"), // Just replace the function name for the original call
-            node.copy(name = "print", args = List(TString("\\n", node.sourcePos, node.scalaSourcePos))), // print a "\n"
-          ),
-          node.sourcePos,
-          node.scalaSourcePos
+        // Dafny does not have a "println" function, so change the name of the function being called to "print", which
+        // does exist in Dafny, and append a second parameter to the parameter list, that being the newline character.
+        val printlnCall: TFunC = node.copy(
+          name = "print",            // Change function name from "println" to "print"
+          args = node.args.appended( // Add on a "\n" as last parameter for the print call
+            if node.args.isEmpty
+            then TString("\\n", node.sourcePos, node.scalaSourcePos)
+            else TString("\\n", node.args.last.sourcePos, node.args.last.scalaSourcePos)
+          )
         )
 
-        generate(printlnCall, ctx)
+        val args: Seq[String] = printlnCall.args.map(arg => generate(arg, ctx))
+        // The Dafny "print" function doesn't use parens when multiple parameters are supplied
+        s"${printlnCall.name} ${args.mkString(", ")}"
       case _ =>
         val args: Seq[String] = node.args.map(arg => generate(arg, ctx))
         s"${node.name}(${args.mkString(", ")})"

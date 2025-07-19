@@ -8,10 +8,10 @@ import rdts.datatypes.LastWriterWins
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.*
-import replication.Storing
 import scalatags.JsDom.all.*
 import TodoDataManager.TodoRepState
 import Todolist.replicaId
+import webapps.Storing
 
 import scala.Function.const
 import scala.collection.mutable

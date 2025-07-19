@@ -3,8 +3,8 @@ package benchmarks.encrdt
 import benchmarks.encrdt.Codecs.deltaAwlwwmapJsonCodec
 import benchmarks.encrdt.statebased.{DecryptedState, EncryptedState, UntrustedReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import lofi_acl.collections.DeltaAWLWWMContainer
-import lofi_acl.collections.DeltaAWLWWMContainer.State
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
 import rdts.time.VectorClock
 
 import java.io.PrintWriter
