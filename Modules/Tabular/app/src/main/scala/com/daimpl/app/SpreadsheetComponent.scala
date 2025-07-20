@@ -35,7 +35,9 @@ object SpreadsheetComponent {
       selectedColumn: Option[Int],
       conflictPopup: Option[(Int, Int)],
       draggingRow: Option[Int],
-      draggingColumn: Option[Int]
+      draggingColumn: Option[Int],
+      previewRow: Option[Int],
+      previewColumn: Option[Int]
   )
 
   class Backend($ : BackendScope[Props, State]) {
@@ -190,15 +192,11 @@ object SpreadsheetComponent {
     def purgeTombstones(): Callback = modSpreadsheet(identity)
 
     def handleRowDragStart(rowIdx: Int): Callback =
-      $.modState(_.copy(draggingRow = Some(rowIdx)))
+      $.modState(_.copy(draggingRow = Some(rowIdx), previewRow = None))
 
     def handleRowDrop(targetIdx: Int)(e: ReactDragEvent): Callback = {
-      val elem  = e.currentTarget.asInstanceOf[dom.html.Element]
-      val rect  = elem.getBoundingClientRect()
-      val isAbove = e.clientY < (rect.top + rect.height / 2)
-      val insertionIdx = if isAbove then targetIdx else targetIdx + 1
-
       $.state.flatMap { st =>
+        val insertionIdx = st.previewRow.get
         st.draggingRow
           .map { srcIdx =>
             $.props.flatMap(props =>
@@ -208,19 +206,23 @@ object SpreadsheetComponent {
             )
           }
           .getOrElse(Callback.empty)
-      } >> $.modState(_.copy(draggingRow = None))
+      } >> $.modState(_.copy(draggingRow = None, previewRow = None))
+    }
+
+    def handleRowDragOver(targetIdx: Int)(e: ReactDragEvent): Callback = {
+      val elem  = e.currentTarget.asInstanceOf[dom.html.Element]
+      val rect  = elem.getBoundingClientRect()
+      val isAbove = e.clientY < (rect.top + rect.height / 2)
+      val insertionIdx = if isAbove then targetIdx else targetIdx + 1
+      Callback(e.preventDefault()) >> $.modState(_.copy(previewRow = Some(insertionIdx)))
     }
 
     def handleColumnDragStart(colIdx: Int): Callback =
-      $.modState(_.copy(draggingColumn = Some(colIdx)))
+      $.modState(_.copy(draggingColumn = Some(colIdx), previewColumn = None))
 
     def handleColumnDrop(targetIdx: Int)(e: ReactDragEvent): Callback = {
-      val elem  = e.currentTarget.asInstanceOf[dom.html.Element]
-      val rect  = elem.getBoundingClientRect()
-      val isLeft = e.clientX < (rect.left + rect.width / 2)
-      val insertionIdx = if isLeft then targetIdx else targetIdx + 1
-
       $.state.flatMap { st =>
+        val insertionIdx = st.previewColumn.get
         st.draggingColumn
           .map { srcIdx =>
             $.props.flatMap(props =>
@@ -230,7 +232,15 @@ object SpreadsheetComponent {
             )
           }
           .getOrElse(Callback.empty)
-      } >> $.modState(_.copy(draggingColumn = None))
+      } >> $.modState(_.copy(draggingColumn = None, previewColumn = None))
+    }
+
+    def handleColumnDragOver(targetIdx: Int)(e: ReactDragEvent): Callback = {
+      val elem  = e.currentTarget.asInstanceOf[dom.html.Element]
+      val rect  = elem.getBoundingClientRect()
+      val isLeft = e.clientX < (rect.left + rect.width / 2)
+      val insertionIdx = if isLeft then targetIdx else targetIdx + 1
+      Callback(e.preventDefault()) >> $.modState(_.copy(previewColumn = Some(insertionIdx)))
     }
 
     def handleDragOver(e: ReactDragEvent): Callback = Callback(e.preventDefault())
@@ -238,7 +248,7 @@ object SpreadsheetComponent {
 
   val Component: Component[Props, State, Backend, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("Spreadsheet")
-    .initialState(State(None, "", None, None, None, None, None))
+    .initialState(State(None, "", None, None, None, None, None, None, None))
     .backend(new Backend(_))
     .render { $ =>
       val props       = $.props
@@ -328,7 +338,7 @@ object SpreadsheetComponent {
                 <.th(
                   ^.className := "border border-gray-300 px-4 py-2 bg-gray-50 font-semibold w-16",
                   "#",
-                  ^.onDragOver ==> backend.handleDragOver,
+                  ^.onDragOver ==> backend.handleColumnDragOver(-1),
                   ^.onDrop ==> backend.handleColumnDrop(-1)
                 ),
                 (0 until spreadsheet.numColumns)
@@ -338,13 +348,15 @@ object SpreadsheetComponent {
                       ^.className := {
                         val baseClass =
                           "border border-gray-300 px-4 py-2 font-semibold w-32 max-w-32 cursor-pointer hover:bg-gray-200"
-                        if state.selectedColumn.contains(i) then baseClass + " bg-blue-200"
-                        else baseClass + " bg-gray-100"
+                        val selectedClass = if state.selectedColumn.contains(i) then " bg-blue-200" else " bg-gray-100"
+                        val previewLeft  = if state.previewColumn.contains(i) then " border-l-4 border-blue-400" else ""
+                        val previewRight = if state.previewColumn.contains(i + 1) && i == spreadsheet.numColumns - 1 then " border-r-4 border-blue-400" else ""
+                        baseClass + selectedClass + previewLeft + previewRight
                       },
                       ^.onClick --> backend.selectColumn(i),
                       ^.draggable := true,
                       ^.onDragStart --> backend.handleColumnDragStart(i),
-                      ^.onDragOver ==> backend.handleDragOver,
+                      ^.onDragOver ==> backend.handleColumnDragOver(i),
                       ^.onDrop ==> backend.handleColumnDrop(i),
                       ^.title := "Click to select column",
                       (i + 'A').toChar.toString
@@ -361,13 +373,15 @@ object SpreadsheetComponent {
                     ^.className := {
                       val baseClass =
                         "border border-gray-300 px-4 py-2 font-medium text-center cursor-pointer hover:bg-gray-200"
-                      if state.selectedRow.contains(rowIdx) then baseClass + " bg-blue-200"
-                      else baseClass + " bg-gray-50"
+                      val selectedClass = if state.selectedRow.contains(rowIdx) then " bg-blue-200" else " bg-gray-50"
+                      val previewTop    = if state.previewRow.contains(rowIdx) then " border-t-4 border-blue-400" else ""
+                      val previewBottom = if state.previewRow.contains(rowIdx + 1) && rowIdx == spreadsheet.numRows - 1 then " border-b-4 border-blue-400" else ""
+                      baseClass + selectedClass + previewTop + previewBottom
                     },
                     ^.onClick --> backend.selectRow(rowIdx),
                     ^.draggable := true,
                     ^.onDragStart --> backend.handleRowDragStart(rowIdx),
-                    ^.onDragOver ==> backend.handleDragOver,
+                    ^.onDragOver ==> backend.handleRowDragOver(rowIdx),
                     ^.onDrop ==> backend.handleRowDrop(rowIdx),
                     ^.title := "Click to select row",
                     (rowIdx + 1).toString
