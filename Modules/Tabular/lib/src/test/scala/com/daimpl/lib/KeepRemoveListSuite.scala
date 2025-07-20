@@ -117,8 +117,8 @@ final class KeepRemoveListSuite extends FunSuite:
     elems.foldLeft(KeepRemoveList.empty[E]) { (state, e) => state + state.append(e) }
 
   private def assertEqualsList[E](actual: KeepRemoveList[E], expected: List[E]): Unit =
-    assertEquals(actual.size, expected.size)
     assertEquals(actual.toList, expected)
+    assertEquals(actual.size, expected.size)
 
     expected.zipWithIndex.foreach { case (elem, idx) =>
       assertEquals(actual.read(idx), Some(elem))
