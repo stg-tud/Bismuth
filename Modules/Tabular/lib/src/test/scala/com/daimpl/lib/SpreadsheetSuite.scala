@@ -2,7 +2,7 @@ package com.daimpl.lib
 
 import rdts.base.LocalUid
 
-class BasicTest extends munit.FunSuite {
+class SpreadsheetSuite extends munit.FunSuite {
 
   test("basic test") {
     val replica = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("replicaId"))

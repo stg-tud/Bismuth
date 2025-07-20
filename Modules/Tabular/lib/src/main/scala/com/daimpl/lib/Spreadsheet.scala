@@ -17,25 +17,25 @@ case class Spreadsheet[A](
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
 
-  def addColumn()(using LocalUid): Spreadsheet[A] = 
+  def addColumn()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(colIds = colIds.append(observed.nextDot))
 
-  def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = 
+  def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.removeIndex(rowIdx))
 
-  def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = 
+  def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(colIds = colIds.removeIndex(colIdx))
 
-  def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = 
+  def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.insertAt(rowIdx, observed.nextDot))
 
-  def insertColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = 
+  def insertColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(colIds = colIds.insertAt(colIdx, observed.nextDot))
 
-  def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] = 
+  def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.move(sourceIdx, targetIdx))
 
-  def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] = 
+  def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(colIds = colIds.move(sourceIdx, targetIdx))
 
   def editCell(rowIdx: Int, colIdx: Int, value: A)(using LocalUid): Spreadsheet[A] = {
@@ -68,15 +68,15 @@ case class Spreadsheet[A](
       .stripMargin
     )
 
-    val legend = "Row\\Col Id"
+    val legend = "Row\\Col (Idx,Id)"
 
-    val rowIdTimes = rowIds.toList.map(_.time)
-    val colIdTimes = colIds.toList.map(_.time)
+    val rowIdxAndId = rowIds.toList.zipWithIndex.map((dot, idx) => (idx, dot.time))
+    val colIdxAndId = colIds.toList.zipWithIndex.map((dot, idx) => (idx, dot.time))
 
-    val maxLen = content.queryAllEntries
-      .map { rs => rs.elements.mkString("/") }
-      .concat(rowIdTimes.map(_.toString))
-      .concat(colIdTimes.map(_.toString))
+    val maxLen =
+      content.queryAllEntries.map{ rs => rs.elements.mkString("/") }
+      .concat(rowIdxAndId.map(_.toString))
+      .concat(colIdxAndId.map(_.toString))
       .concat(Array(legend))
       .map(_.length)
       .maxOption.getOrElse(1)
@@ -84,7 +84,7 @@ case class Spreadsheet[A](
 
     val maxLenFmtStr = "%" + maxLen + "s"
 
-    val sheetStr = rowIds.toList.map { rowId =>
+    val sheetStr = rowIds.toList.zipWithIndex.map{ (rowId, rowIdx) =>
       colIds.toList
         .map { colId =>
           val cellStr = content
@@ -95,12 +95,12 @@ case class Spreadsheet[A](
           maxLenFmtStr.format(cellStr)
         }
         .mkString(
-          s"${maxLenFmtStr.format(rowId.time)} | ", " | ", " |"
+          s"${maxLenFmtStr.format(rowIdxAndId(rowIdx))} | ", " | ", " |"
         )
     }.mkString(" \n")
 
     println(
-      s"""|${maxLenFmtStr.format(legend)}${colIdTimes.map(maxLenFmtStr.format(_)).mkString(" | ", " | ", " |")}
+      s"""|${maxLenFmtStr.format(legend)}${colIdxAndId.map(maxLenFmtStr.format(_)).mkString(" | ", " | ", " |")}
           |$sheetStr\n"""
       .stripMargin
     )
