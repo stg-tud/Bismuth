@@ -120,7 +120,7 @@ case class Spreadsheet[A](
   def numColumns: Int = colIds.size
 
   def getRow(rowIdx: Int): List[ConflictableValue[A]] =
-    (0 until numColumns).map(colIdx => read(SpreadsheetCoordinate(colIdx, rowIdx))).toList
+    (0 until numColumns).map(colIdx => read(SpreadsheetCoordinate(rowIdx, colIdx))).toList
 
   def toList: List[List[ConflictableValue[A]]] =
     (0 until numRows).map(getRow).toList

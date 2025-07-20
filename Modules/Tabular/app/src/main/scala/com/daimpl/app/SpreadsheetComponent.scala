@@ -68,7 +68,7 @@ object SpreadsheetComponent {
 
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
       $.props.flatMap { props =>
-        val currentSet = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(colIdx, rowIdx))
+        val currentSet = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(rowIdx, colIdx))
         val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
         cancelEdit()
         >> $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
@@ -103,6 +103,7 @@ object SpreadsheetComponent {
           .map { case (rowIdx, colIdx) =>
             var value = state.editingValue.trim
             if (value.isBlank) value = null
+            println(s"$rowIdx $colIdx")
             modSpreadsheet(_.editCell(SpreadsheetCoordinate(rowIdx, colIdx), value))
             >> cancelEdit()
           }
@@ -434,7 +435,7 @@ object SpreadsheetComponent {
         )
         (state.conflictPopup match
           case Some((r, c)) =>
-            val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(c, r)).toList
+            val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(r, c)).toList
             <.div(
               ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
               ^.onClick --> backend.closeConflict(),
