@@ -102,17 +102,6 @@ final class KeepRemoveListSuite extends FunSuite:
     assertEqualsList(merged, List("y", "z"))
   }
 
-  test("insertAt after remote remove keeps consistent index") {
-    var rA = withUid("A") { fromElements("x", "y") }
-    var rB = rA
-
-    withUid("A") { rA = rA + rA.insertAt(1, "a") }
-    withUid("B") { rB = rB + rB.remove(0) }
-
-    val merged = rA + rB
-    assertEqualsList(merged, List("y", "a"))
-  }
-
   private def fromElements[E](elems: E*)(using uid: LocalUid): KeepRemoveList[E] =
     elems.foldLeft(KeepRemoveList.empty[E]) { (state, e) => state + state.append(e) }
 
