@@ -5,7 +5,9 @@ import japgolly.scalajs.react.*
 import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
 import japgolly.scalajs.react.internal.Box
+import japgolly.scalajs.react.ReactDragEvent
 import japgolly.scalajs.react.vdom.html_<^.*
+import org.scalajs.dom
 import rdts.base.LocalUid
 
 object SpreadsheetComponent {
@@ -31,7 +33,9 @@ object SpreadsheetComponent {
       editingValue: String,
       selectedRow: Option[Int],
       selectedColumn: Option[Int],
-      conflictPopup: Option[(Int, Int)]
+      conflictPopup: Option[(Int, Int)],
+      draggingRow: Option[Int],
+      draggingColumn: Option[Int]
   )
 
   class Backend($ : BackendScope[Props, State]) {
@@ -184,11 +188,53 @@ object SpreadsheetComponent {
 
     // TODO: current replicated list does not allow purging
     def purgeTombstones(): Callback = modSpreadsheet(identity)
+
+    def handleRowDragStart(rowIdx: Int): Callback =
+      $.modState(_.copy(draggingRow = Some(rowIdx)))
+
+    def handleRowDrop(targetIdx: Int)(e: ReactDragEvent): Callback = {
+      val elem  = e.currentTarget.asInstanceOf[dom.html.Element]
+      val rect  = elem.getBoundingClientRect()
+      val isAbove = e.clientY < (rect.top + rect.height / 2)
+      val insertionIdx = if isAbove then targetIdx else targetIdx + 1
+
+      $.state.flatMap { st =>
+        st.draggingRow
+          .map { srcIdx =>
+            $.props.flatMap(props =>
+              replicaEventPrint(props.replicaId, s"Dragged row $srcIdx to index $insertionIdx")
+            )
+          }
+          .getOrElse(Callback.empty)
+      } >> $.modState(_.copy(draggingRow = None))
+    }
+
+    def handleColumnDragStart(colIdx: Int): Callback =
+      $.modState(_.copy(draggingColumn = Some(colIdx)))
+
+    def handleColumnDrop(targetIdx: Int)(e: ReactDragEvent): Callback = {
+      val elem  = e.currentTarget.asInstanceOf[dom.html.Element]
+      val rect  = elem.getBoundingClientRect()
+      val isLeft = e.clientX < (rect.left + rect.width / 2)
+      val insertionIdx = if isLeft then targetIdx else targetIdx + 1
+
+      $.state.flatMap { st =>
+        st.draggingColumn
+          .map { srcIdx =>
+            $.props.flatMap(props =>
+              replicaEventPrint(props.replicaId, s"Dragged column $srcIdx to index $insertionIdx")
+            )
+          }
+          .getOrElse(Callback.empty)
+      } >> $.modState(_.copy(draggingColumn = None))
+    }
+
+    def handleDragOver(e: ReactDragEvent): Callback = Callback(e.preventDefault())
   }
 
   val Component: Component[Props, State, Backend, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("Spreadsheet")
-    .initialState(State(None, "", None, None, None))
+    .initialState(State(None, "", None, None, None, None, None))
     .backend(new Backend(_))
     .render { $ =>
       val props       = $.props
@@ -277,7 +323,9 @@ object SpreadsheetComponent {
               <.tr(
                 <.th(
                   ^.className := "border border-gray-300 px-4 py-2 bg-gray-50 font-semibold w-16",
-                  "#"
+                  "#",
+                  ^.onDragOver ==> backend.handleDragOver,
+                  ^.onDrop ==> backend.handleColumnDrop(-1)
                 ),
                 (0 until spreadsheet.numColumns)
                   .map(i =>
@@ -290,6 +338,10 @@ object SpreadsheetComponent {
                         else baseClass + " bg-gray-100"
                       },
                       ^.onClick --> backend.selectColumn(i),
+                      ^.draggable := true,
+                      ^.onDragStart --> backend.handleColumnDragStart(i),
+                      ^.onDragOver ==> backend.handleDragOver,
+                      ^.onDrop ==> backend.handleColumnDrop(i),
                       ^.title := "Click to select column",
                       (i + 'A').toChar.toString
                     )
@@ -309,6 +361,10 @@ object SpreadsheetComponent {
                       else baseClass + " bg-gray-50"
                     },
                     ^.onClick --> backend.selectRow(rowIdx),
+                    ^.draggable := true,
+                    ^.onDragStart --> backend.handleRowDragStart(rowIdx),
+                    ^.onDragOver ==> backend.handleDragOver,
+                    ^.onDrop ==> backend.handleRowDrop(rowIdx),
                     ^.title := "Click to select row",
                     (rowIdx + 1).toString
                   ),
