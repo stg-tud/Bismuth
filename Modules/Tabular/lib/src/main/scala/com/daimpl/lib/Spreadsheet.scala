@@ -8,7 +8,8 @@ import rdts.time.{Dot, Dots}
 case class Spreadsheet[A](
    private val rowIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
    private val colIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
-   private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
+   private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]],
+   private val ranges: ReplicatedSet[Uid] = ReplicatedSet.empty
 ){
 
   lazy val observed: Dots =
@@ -140,6 +141,7 @@ case class Spreadsheet[A](
         `merge` rowIds.addMarker(idTo  , to.rowIdx),
       colIds  = colIds.addMarker(idFrom, from.colIdx)
         `merge` colIds.addMarker(idTo  , to.colIdx),
+      ranges = ranges.add(id)
     )
 
   def removeRange(id: Uid): Spreadsheet[A] =
@@ -150,6 +152,7 @@ case class Spreadsheet[A](
         `merge` rowIds.removeMarker(idTo),
       colIds  = colIds.removeMarker(idFrom)
         `merge` colIds.removeMarker(idTo),
+      ranges = ranges.remove(id)
     )
 
   def getRange(id: Uid): Option[Range] =
@@ -162,6 +165,8 @@ case class Spreadsheet[A](
       x2 <- rowIds.getMarker(idTo)
       y2 <- colIds.getMarker(idTo)
     } yield Range(SpreadsheetCoordinate(x1,y1), SpreadsheetCoordinate(x2,y2))
+
+  def listRanges(id: Uid): List[Range] = ranges.elements.toList.map(getRange).map(_.get)
 }
 
 object Spreadsheet {
