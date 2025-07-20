@@ -203,6 +203,8 @@ object SpreadsheetComponent {
           .map { srcIdx =>
             $.props.flatMap(props =>
               replicaEventPrint(props.replicaId, s"Dragged row $srcIdx to index $insertionIdx")
+              >> cancelEdit()
+              >> modSpreadsheet(_.moveRow(srcIdx, insertionIdx))
             )
           }
           .getOrElse(Callback.empty)
@@ -223,6 +225,8 @@ object SpreadsheetComponent {
           .map { srcIdx =>
             $.props.flatMap(props =>
               replicaEventPrint(props.replicaId, s"Dragged column $srcIdx to index $insertionIdx")
+              >> cancelEdit()
+              >> modSpreadsheet(_.moveColumn(srcIdx, insertionIdx))
             )
           }
           .getOrElse(Callback.empty)

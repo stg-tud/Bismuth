@@ -103,6 +103,18 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     assertEqualsList(merged, List("a", "y"))
   }
 
+  test("move element forward within same replica") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    withUid("A") { rA = rA + rA.move(0, 2) }
+    assertEqualsList(rA, List("b", "a", "c"))
+  }
+
+  test("move element backward within same replica") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    withUid("A") { rA = rA + rA.move(2, 0) }
+    assertEqualsList(rA, List("c", "a", "b"))
+  }
+
   private def fromElements[E](elems: E*)(using uid: LocalUid): ReplicatedUniqueList[E] =
     elems.foldLeft(ReplicatedUniqueList.empty[E]) { (state, e) => state + state.append(e) }
 

@@ -24,8 +24,9 @@ case class ReplicatedUniqueList[E](
   def read(i: Int): Option[E] =
     inner.read(i)
 
-  def insert(index: Int, elem: E)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.insert(index, elem))
+  def move(fromIndex: Int, toIndex: Int)(using LocalUid): ReplicatedUniqueList[E] =
+    val element = read(fromIndex).get
+    copy(inner = inner.removeIndex(fromIndex) `merge` inner.insertAt(toIndex, element))
 
   def insertAt(index: Int, elem: E)(using LocalUid): ReplicatedUniqueList[E] =
     copy(inner = inner.insertAt(index, elem))

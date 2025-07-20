@@ -17,29 +17,26 @@ case class Spreadsheet[A](
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
 
-  def addColumn()(using LocalUid): Spreadsheet[A] = {
+  def addColumn()(using LocalUid): Spreadsheet[A] = 
     Spreadsheet(colIds = colIds.append(observed.nextDot))
-  }
 
-  def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
+  def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = 
     Spreadsheet(rowIds = rowIds.removeIndex(rowIdx))
-  }
 
-  def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
+  def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = 
     Spreadsheet(colIds = colIds.removeIndex(colIdx))
-  }
 
-  def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(
-      rowIds = rowIds.insertAt(rowIdx, observed.nextDot),
-    )
-  }
+  def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] = 
+    Spreadsheet(rowIds = rowIds.insertAt(rowIdx, observed.nextDot))
 
-  def insertColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = {
-    Spreadsheet(
-      colIds = colIds.insertAt(colIdx, observed.nextDot),
-    )
-  }
+  def insertColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] = 
+    Spreadsheet(colIds = colIds.insertAt(colIdx, observed.nextDot))
+
+  def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] = 
+    Spreadsheet(rowIds = rowIds.move(sourceIdx, targetIdx))
+
+  def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] = 
+    Spreadsheet(colIds = colIds.move(sourceIdx, targetIdx))
 
   def editCell(rowIdx: Int, colIdx: Int, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId = rowIds.read(rowIdx).get
