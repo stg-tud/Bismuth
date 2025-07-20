@@ -192,7 +192,7 @@ object SpreadsheetComponent {
     def purgeTombstones(): Callback = modSpreadsheet(identity)
 
     def handleRowDragStart(rowIdx: Int): Callback =
-      $.modState(_.copy(draggingRow = Some(rowIdx), previewRow = None))
+      $.modState(_.copy(draggingRow = Some(rowIdx), previewRow = None, previewColumn = None))
 
     def handleRowDrop(targetIdx: Int)(e: ReactDragEvent): Callback = {
       $.state.flatMap { st =>
@@ -218,7 +218,7 @@ object SpreadsheetComponent {
     }
 
     def handleColumnDragStart(colIdx: Int): Callback =
-      $.modState(_.copy(draggingColumn = Some(colIdx), previewColumn = None))
+      $.modState(_.copy(draggingColumn = Some(colIdx), previewColumn = None, previewRow = None))
 
     def handleColumnDrop(targetIdx: Int)(e: ReactDragEvent): Callback = {
       $.state.flatMap { st =>
