@@ -1,6 +1,7 @@
 package com.daimpl.app
 
 import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
+import com.daimpl.lib.Spreadsheet.SpreadsheetCoordinate
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
@@ -67,7 +68,7 @@ object SpreadsheetComponent {
 
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
       $.props.flatMap { props =>
-        val currentSet = props.spreadsheetAggregator.current.read(colIdx, rowIdx)
+        val currentSet = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(colIdx, rowIdx))
         val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
         cancelEdit()
         >> $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
@@ -80,7 +81,7 @@ object SpreadsheetComponent {
       $.modState(_.copy(conflictPopup = None))
 
     def keepValue(row: Int, col: Int, v: String): Callback =
-      modSpreadsheet(_.editCell(row, col, v)) >> closeConflict()
+      modSpreadsheet(_.editCell(SpreadsheetCoordinate(row, col), v)) >> closeConflict()
 
     def handleInputChange(e: ReactEventFromInput): Callback = {
       val value = e.target.value
@@ -102,7 +103,7 @@ object SpreadsheetComponent {
           .map { case (rowIdx, colIdx) =>
             var value = state.editingValue.trim
             if (value.isBlank) value = null
-            modSpreadsheet(_.editCell(rowIdx, colIdx, value))
+            modSpreadsheet(_.editCell(SpreadsheetCoordinate(rowIdx, colIdx), value))
             >> cancelEdit()
           }
           .getOrElse(Callback.empty)
@@ -433,7 +434,7 @@ object SpreadsheetComponent {
         )
         (state.conflictPopup match
           case Some((r, c)) =>
-            val vals = props.spreadsheetAggregator.current.read(c, r).toList
+            val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(c, r)).toList
             <.div(
               ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
               ^.onClick --> backend.closeConflict(),

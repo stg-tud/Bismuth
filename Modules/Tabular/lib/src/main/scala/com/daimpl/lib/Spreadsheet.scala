@@ -1,18 +1,19 @@
 package com.daimpl.lib
 
-import rdts.base.{Lattice, LocalUid}
+import com.daimpl.lib.Spreadsheet.{SpreadsheetCoordinate, Range, empty}
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
-    private val rowIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
-    private val colIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
-    private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
-) {
+   private val rowIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
+   private val colIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
+   private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]]
+){
 
   lazy val observed: Dots =
     Dots.from(rowIds.toList)
-    `union` Dots.from(colIds.toList)
+      `union` Dots.from(colIds.toList)
 
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.append(observed.nextDot))
@@ -21,10 +22,10 @@ case class Spreadsheet[A](
     Spreadsheet(colIds = colIds.append(observed.nextDot))
 
   def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] =
-    Spreadsheet(rowIds = rowIds.removeIndex(rowIdx))
+    Spreadsheet(rowIds = rowIds.removeAt(rowIdx))
 
   def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[A] =
-    Spreadsheet(colIds = colIds.removeIndex(colIdx))
+    Spreadsheet(colIds = colIds.removeAt(colIdx))
 
   def insertRow(rowIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(rowIds = rowIds.insertAt(rowIdx, observed.nextDot))
@@ -38,9 +39,9 @@ case class Spreadsheet[A](
   def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
     Spreadsheet(colIds = colIds.move(sourceIdx, targetIdx))
 
-  def editCell(rowIdx: Int, colIdx: Int, value: A)(using LocalUid): Spreadsheet[A] = {
-    val rowId = rowIds.read(rowIdx).get
-    val colId = colIds.read(colIdx).get
+  def editCell(coordinate: SpreadsheetCoordinate, value: A)(using LocalUid): Spreadsheet[A] = {
+    val rowId = rowIds.read(coordinate.rowIdx).get
+    val colId = colIds.read(coordinate.colIdx).get
     val newContent =
       if value == null then
         content.transform((rowId, colId)) {
@@ -53,8 +54,8 @@ case class Spreadsheet[A](
           case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
         }
     Spreadsheet(
-      rowIds = rowIds.update(rowIdx, rowId),
-      colIds = colIds.update(colIdx, colId),
+      rowIds = rowIds.update(coordinate.rowIdx, rowId),
+      colIds = colIds.update(coordinate.colIdx, colId),
       content = newContent
     )
   }
@@ -118,21 +119,59 @@ case class Spreadsheet[A](
 
   def numColumns: Int = colIds.size
 
-  def getRow(visibleRowIdx: Int): List[ConflictableValue[A]] =
-    (0 until numColumns).map(visibleColIdx => read(visibleColIdx, visibleRowIdx)).toList
+  def getRow(rowIdx: Int): List[ConflictableValue[A]] =
+    (0 until numColumns).map(colIdx => read(SpreadsheetCoordinate(colIdx, rowIdx))).toList
 
   def toList: List[List[ConflictableValue[A]]] =
     (0 until numRows).map(getRow).toList
 
-  def read(visibleColIdx: Int, visibleRowIdx: Int): ConflictableValue[A] =
+  def read(coordinate: SpreadsheetCoordinate): ConflictableValue[A] =
     (for
-      rowId <- rowIds.read(visibleRowIdx)
-      colId <- colIds.read(visibleColIdx)
+      rowId <- rowIds.read(coordinate.rowIdx)
+      colId <- colIds.read(coordinate.colIdx)
       cell  <- content.get((rowId, colId))
     yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty)
 
+  def addRange(id: Uid, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
+    val idFrom = Uid(id.show + ":from")
+    val idTo   = Uid(id.show + ":to")
+    Spreadsheet(
+      rowIds  = rowIds.addMarker(idFrom, from.rowIdx)
+        `merge` rowIds.addMarker(idTo  , to.rowIdx),
+      colIds  = colIds.addMarker(idFrom, from.colIdx)
+        `merge` colIds.addMarker(idTo  , to.colIdx),
+    )
+
+  def removeRange(id: Uid): Spreadsheet[A] =
+    val idFrom = Uid(id.show + ":from")
+    val idTo   = Uid(id.show + ":to")
+    Spreadsheet(
+      rowIds  = rowIds.removeMarker(idFrom)
+        `merge` rowIds.removeMarker(idTo),
+      colIds  = colIds.removeMarker(idFrom)
+        `merge` colIds.removeMarker(idTo),
+    )
+
+  def getRange(id: Uid): Option[Range] =
+    val idFrom = Uid(id.show + ":from")
+    val idTo   = Uid(id.show + ":to")
+
+    for {
+      x1 <- rowIds.getMarker(idFrom)
+      y1 <- colIds.getMarker(idFrom)
+      x2 <- rowIds.getMarker(idTo)
+      y2 <- colIds.getMarker(idTo)
+    } yield Range(SpreadsheetCoordinate(x1,y1), SpreadsheetCoordinate(x2,y2))
 }
 
 object Spreadsheet {
+
+  def empty[A]: Spreadsheet[A] = Spreadsheet[A]()
+
+  case class SpreadsheetCoordinate(rowIdx: Int, colIdx: Int)
+
+  case class Range(from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)
+
+  given bottom[A]: Bottom[Spreadsheet[A]] = Bottom.provide(empty)
   given lattice[A]: Lattice[Spreadsheet[A]] = Lattice.derived
 }
