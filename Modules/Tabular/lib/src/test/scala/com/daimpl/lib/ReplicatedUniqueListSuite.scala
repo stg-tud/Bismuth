@@ -115,6 +115,75 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     assertEqualsList(rA, List("c", "a", "b"))
   }
 
+  test("add and get marker") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    val markerId = Uid("marker1")
+
+    withUid("A") { rA = rA + rA.addMarker(markerId, 1) }
+
+    assertEquals(rA.getMarker(markerId), Some(1))
+  }
+
+  test("remove marker") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    val markerId = Uid("marker1")
+
+    withUid("A") {
+      rA = rA + rA.addMarker(markerId, 1)
+      assertEquals(rA.getMarker(markerId), Some(1))
+
+      rA = rA + rA.removeMarker(markerId)
+      assertEquals(rA.getMarker(markerId), None)
+    }
+  }
+
+  test("concurrent add marker operations") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    var rB = rA
+    val markerId1 = Uid("marker1")
+    val markerId2 = Uid("marker2")
+
+    withUid("A") { rA = rA + rA.addMarker(markerId1, 0) }
+    withUid("B") { rB = rB + rB.addMarker(markerId2, 2) }
+
+    val merged = rA + rB
+
+    assertEquals(merged.getMarker(markerId1), Some(0))
+    assertEquals(merged.getMarker(markerId2), Some(2))
+  }
+
+  test("marker survives element removal") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    var rB = rA
+    val markerId = Uid("marker1")
+
+    withUid("A") {
+      rA = rA + rA.addMarker(markerId, 1)
+      assertEquals(rA.getMarker(markerId), Some(1))
+    }
+
+    withUid("B") {
+      rB = rB + rB.removeAt(0)
+    }
+
+    val merged = rA + rB
+
+    assertEquals(merged.getMarker(markerId), Some(0))
+    assertEqualsList(merged, List("b", "c"))
+  }
+
+  test("concurrent add and remove marker") {
+    var rA = withUid("A") { fromElements("a", "b", "c") }
+    var rB = rA
+    val markerId = Uid("marker1")
+
+    withUid("A") { rA = rA + rA.addMarker(markerId, 1) }
+    withUid("B") { rB = rB + rB.removeMarker(markerId) }
+
+    val merged = rA + rB
+    assertEquals(merged.getMarker(markerId), Some(1))
+  }
+
   private def fromElements[E](elems: E*)(using uid: LocalUid): ReplicatedUniqueList[E] =
     elems.foldLeft(ReplicatedUniqueList.empty[E]) { (state, e) => state + state.append(e) }
 
