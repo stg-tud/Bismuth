@@ -66,8 +66,10 @@ case class ReplicatedUniqueList[E](
     copy(markers = markers.remove(id))
 
   def getMarker(id: Uid): Option[Int] = {
-    val idx = inner.dotList.indexOf(markers.get(id).get.value)
-    if idx == -1 then None else Some(idx - 1)
+    markers.get(id).flatMap { marker =>
+      val idx = inner.dotList.indexOf(marker.value)
+      if idx == -1 then None else Some(idx - 1)
+    }
   }
 
   def filter(other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
