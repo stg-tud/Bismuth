@@ -1,7 +1,7 @@
 package com.daimpl.lib
 
-import com.daimpl.lib.Spreadsheet.{SpreadsheetCoordinate, Range, empty}
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import com.daimpl.lib.Spreadsheet.{Range, SpreadsheetCoordinate, empty}
+import rdts.base.{Bottom, Decompose, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
@@ -184,4 +184,5 @@ object Spreadsheet {
 
   given bottom[A]: Bottom[Spreadsheet[A]] = Bottom.provide(empty)
   given lattice[A]: Lattice[Spreadsheet[A]] = Lattice.derived
+  given decompose[A]: Decompose[Spreadsheet[A]] = Decompose.derived
 }
