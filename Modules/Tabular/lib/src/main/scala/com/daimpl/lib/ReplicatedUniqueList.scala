@@ -1,12 +1,13 @@
 package com.daimpl.lib
 
+import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
 import rdts.base.*
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedList, LastWriterWins}
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}
 
 case class ReplicatedUniqueList[E](
   inner: ReplicatedList[E],
-  markers: ObserveRemoveMap[Uid, LastWriterWins[Dot]]
+  markers: ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]],
 ){
   lazy val now: Option[CausalTime] =
     inner.now
@@ -35,8 +36,34 @@ case class ReplicatedUniqueList[E](
   def insertAll(index: Int, elems: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
     copy(inner = inner.insertAll(index, elems))
 
-  def removeAt(index: Int): ReplicatedUniqueList[E] =
-    copy(inner = inner.removeIndex(index))
+  def removeAt(index: Int)(using LocalUid): ReplicatedUniqueList[E] = {
+    val internalIdx = index + 1
+    val element = inner.dotList(internalIdx)
+
+    val impactedMarkers = markers.entries.filter{ (_, marker) => marker.value._1 == element }.toList
+
+    val intermediate = copy(inner = inner.removeIndex(index))
+
+    impactedMarkers.map(
+      marker =>
+        val behaviorOfMarker = marker._2.value._2
+        (
+          marker._1,
+          behaviorOfMarker match
+            case MarkerRemovalBehavior.Predecessor => Some(index - 1)
+            case MarkerRemovalBehavior.Successor   => Some(index + 1)
+            case MarkerRemovalBehavior.None        => None,
+          behaviorOfMarker
+        )
+    )
+    .map(
+      (id, optIdx, behavior) =>
+        optIdx match
+          case Some(newIdx) => addMarker(id, newIdx, behavior)
+          case None         => removeMarker(id)
+    )
+    .foldLeft(intermediate)((b, o) => b.merge(o))
+  }
 
   def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
     copy(inner = inner.appendAll(elements))
@@ -56,18 +83,22 @@ case class ReplicatedUniqueList[E](
   def deleteBy(test: E => Boolean): ReplicatedUniqueList[E] =
     copy(inner = inner.deleteBy(test))
 
-  def addMarker(id: Uid, index: Int)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(markers = markers.update(
-      id,
-      LastWriterWins(CausalTime.now(), inner.dotList(index + 1)))
+  def addMarker(id: Uid, index: Int, removalBehavior: MarkerRemovalBehavior)(using LocalUid): ReplicatedUniqueList[E] =
+    copy(
+      markers = markers.update(
+        id,
+        LastWriterWins(CausalTime.now(), (inner.dotList(index + 1), removalBehavior))
+      ),
     )
 
   def removeMarker(id: Uid): ReplicatedUniqueList[E] =
-    copy(markers = markers.remove(id))
+    copy(
+      markers = markers.remove(id),
+    )
 
   def getMarker(id: Uid): Option[Int] = {
     markers.get(id).flatMap { marker =>
-      val idx = inner.dotList.indexOf(marker.value)
+      val idx = inner.dotList.indexOf(marker.value._1)
       if idx == -1 then None else Some(idx - 1)
     }
   }
@@ -100,9 +131,12 @@ case class ReplicatedUniqueList[E](
 
 object ReplicatedUniqueList {
   given decompose[E]: Decompose[ReplicatedUniqueList[E]] = {
-    given Decompose[ObserveRemoveMap[Uid, LastWriterWins[Dot]]] = Decompose.atomic
+    given Decompose[ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]]] = Decompose.atomic
     Decompose.derived
   }
+
+  enum MarkerRemovalBehavior:
+    case Predecessor, Successor, None
 
   given bottom[E]: Bottom[ReplicatedUniqueList[E]] = Bottom.derived
   def empty[E]: ReplicatedUniqueList[E] = bottom.empty

@@ -1,6 +1,7 @@
 package com.daimpl.lib
 
-import com.daimpl.lib.Spreadsheet.{SpreadsheetCoordinate, Range, empty}
+import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
+import com.daimpl.lib.Spreadsheet.{Range, SpreadsheetCoordinate, empty}
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
@@ -137,10 +138,10 @@ case class Spreadsheet[A](
     val idFrom = Uid(id.show + ":from")
     val idTo   = Uid(id.show + ":to")
     Spreadsheet(
-      rowIds  = rowIds.addMarker(idFrom, from.rowIdx)
-        `merge` rowIds.addMarker(idTo  , to.rowIdx),
-      colIds  = colIds.addMarker(idFrom, from.colIdx)
-        `merge` colIds.addMarker(idTo  , to.colIdx),
+      rowIds  = rowIds.addMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
+        `merge` rowIds.addMarker(idTo  , to.rowIdx  , MarkerRemovalBehavior.Predecessor),
+      colIds  = colIds.addMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
+        `merge` colIds.addMarker(idTo  , to.colIdx  , MarkerRemovalBehavior.Predecessor),
       ranges = ranges.add(id)
     )
 
