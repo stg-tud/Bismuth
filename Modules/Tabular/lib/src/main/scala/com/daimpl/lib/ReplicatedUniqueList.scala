@@ -38,22 +38,22 @@ case class ReplicatedUniqueList[E](
 
   def removeAt(index: Int)(using LocalUid): ReplicatedUniqueList[E] = {
     val internalIdx = index + 1
-    val element = inner.dotList(internalIdx)
+    val elementId = inner.dotList(internalIdx)
 
-    val impactedMarkers = markers.entries.filter{ (_, marker) => marker.value._1 == element }.toList
+    val impactedMarkers = markers.entries.filter{ (_, marker) => marker.value._1 == elementId }.toList
 
-    val intermediate = copy(inner = inner.removeIndex(index))
+    val innerDelta = copy(inner = inner.removeIndex(index))
 
     impactedMarkers.map(
-      marker =>
-        val behaviorOfMarker = marker._2.value._2
+      (id, content) =>
+        val behavior = content.value._2
         (
-          marker._1,
-          behaviorOfMarker match
+          id,
+          behavior match
             case MarkerRemovalBehavior.Predecessor => Some(index - 1)
             case MarkerRemovalBehavior.Successor   => Some(index + 1)
             case MarkerRemovalBehavior.None        => None,
-          behaviorOfMarker
+          behavior
         )
     )
     .map(
@@ -62,7 +62,7 @@ case class ReplicatedUniqueList[E](
           case Some(newIdx) => addMarker(id, newIdx, behavior)
           case None         => removeMarker(id)
     )
-    .foldLeft(intermediate)((b, o) => b.merge(o))
+    .foldLeft(innerDelta)((accumulator, other) => accumulator.merge(other))
   }
 
   def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
