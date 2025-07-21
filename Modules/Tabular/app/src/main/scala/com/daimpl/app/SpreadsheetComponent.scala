@@ -6,10 +6,10 @@ import japgolly.scalajs.react.*
 import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
 import japgolly.scalajs.react.internal.Box
-import japgolly.scalajs.react.ReactDragEvent
+import japgolly.scalajs.react.{ReactDragEvent, ReactMouseEvent}
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
-import rdts.base.LocalUid
+import rdts.base.{LocalUid, Uid}
 
 object SpreadsheetComponent {
 
@@ -38,7 +38,9 @@ object SpreadsheetComponent {
       draggingRow: Option[Int],
       draggingColumn: Option[Int],
       previewRow: Option[Int],
-      previewColumn: Option[Int]
+      previewColumn: Option[Int],
+      rangeDragStart: Option[(Int, Int)],
+      rangePreviewEnd: Option[(Int, Int)]
   )
 
   class Backend($ : BackendScope[Props, State]) {
@@ -114,6 +116,35 @@ object SpreadsheetComponent {
     private def cancelEdit(): Callback = {
       println(s"Edit has concluded")
       $.modState(_.copy(editingCell = None, editingValue = ""))
+    }
+
+    def handleRangeMouseDown(rowIdx: Int, colIdx: Int): Callback =
+      $.modState(_.copy(rangeDragStart = Some((rowIdx, colIdx)), rangePreviewEnd = Some((rowIdx, colIdx))))
+
+    def handleRangeMouseOver(rowIdx: Int, colIdx: Int): Callback =
+      $.state.flatMap { st =>
+        st.rangeDragStart
+          .map(_ => $.modState(_.copy(rangePreviewEnd = Some((rowIdx, colIdx)))))
+          .getOrElse(Callback.empty)
+      }
+
+    def handleRangeMouseUp(): Callback = {
+      $.state.flatMap { st =>
+        (for {
+          start <- st.rangeDragStart
+          end   <- st.rangePreviewEnd
+        } yield (start, end))
+          .map { case ((r1, c1), (r2, c2)) =>
+            $.props.flatMap { props =>
+              given LocalUid = props.replicaId
+              val from       = SpreadsheetCoordinate(math.min(r1, r2), math.min(c1, c2))
+              val to         = SpreadsheetCoordinate(math.max(r1, r2), math.max(c1, c2))
+              val rangeId    = Uid.gen()
+              modSpreadsheet(_.addRange(rangeId, from, to))
+            }
+          }
+          .getOrElse(Callback.empty)
+      } >> $.modState(_.copy(rangeDragStart = None, rangePreviewEnd = None))
     }
 
     def selectRow(rowIdx: Int): Callback = {
@@ -246,11 +277,15 @@ object SpreadsheetComponent {
     }
 
     def handleDragOver(e: ReactDragEvent): Callback = Callback(e.preventDefault())
+
+    // Delete a range by its id
+    def deleteRange(rangeId: Uid): Callback =
+      cancelEdit() >> modSpreadsheet(_.removeRange(rangeId))
   }
 
   val Component: Component[Props, State, Backend, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("Spreadsheet")
-    .initialState(State(None, "", None, None, None, None, None, None, None))
+    .initialState(State(None, "", None, None, None, None, None, None, None, None, None))
     .backend(new Backend(_))
     .render { $ =>
       val props       = $.props
@@ -259,7 +294,77 @@ object SpreadsheetComponent {
       val spreadsheet = props.spreadsheetAggregator.current
       val data        = spreadsheet.toList
 
+      val allRangesWithIds = spreadsheet.listRangesWithIds
+
+      val palette = List("red", "orange", "yellow", "lime", "green", "teal", "cyan", "sky", "blue", "indigo", "purple", "pink")
+      def bgClass(idx: Int): String     = s"bg-${palette(idx % palette.length)}-100"
+      def borderClass(idx: Int): String = s"border-${palette(idx % palette.length)}-500"
+
+      def colorIndexForId(id: Uid): Int = id.show.hashCode.abs % palette.length
+
+      val previewRangeOpt = for {
+        start <- state.rangeDragStart
+        end   <- state.rangePreviewEnd
+      } yield (start, end)
+
+      def inside(range: com.daimpl.lib.Spreadsheet.Range, r: Int, c: Int): Boolean =
+        val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
+        val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
+        val minCol = math.min(range.from.colIdx, range.to.colIdx)
+        val maxCol = math.max(range.from.colIdx, range.to.colIdx)
+        r >= minRow && r <= maxRow && c >= minCol && c <= maxCol
+
+      def onBoundary(range: com.daimpl.lib.Spreadsheet.Range, r: Int, c: Int): (Boolean, Boolean, Boolean, Boolean) = {
+        val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
+        val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
+        val minCol = math.min(range.from.colIdx, range.to.colIdx)
+        val maxCol = math.max(range.from.colIdx, range.to.colIdx)
+        (
+          r == minRow && c >= minCol && c <= maxCol, // top
+          r == maxRow && c >= minCol && c <= maxCol, // bottom
+          c == minCol && r >= minRow && r <= maxRow, // left
+          c == maxCol && r >= minRow && r <= maxRow  // right
+        )
+      }
+
+      def cellStyleClasses(rIdx: Int, cIdx: Int): String = {
+        var background  = ""
+        var borderT     = ""
+        var borderB     = ""
+        var borderL     = ""
+        var borderR     = ""
+
+        allRangesWithIds.foreach { case (rid, rng) =>
+          val idx = colorIndexForId(rid)
+          if inside(rng, rIdx, cIdx) then
+            if background.isEmpty then background = s" ${bgClass(idx)}"
+
+            val (isTop, isBottom, isLeft, isRight) = onBoundary(rng, rIdx, cIdx)
+            val colCls = borderClass(idx)
+            if isTop    then borderT = s" border-t-2 $colCls"
+            if isBottom then borderB = s" border-b-2 $colCls"
+            if isLeft   then borderL = s" border-l-2 $colCls"
+            if isRight  then borderR = s" border-r-2 $colCls"
+        }
+
+        previewRangeOpt.foreach { case ((r1, c1), (r2, c2)) =>
+          val minRow = math.min(r1, r2)
+          val maxRow = math.max(r1, r2)
+          val minCol = math.min(c1, c2)
+          val maxCol = math.max(c1, c2)
+          if rIdx >= minRow && rIdx <= maxRow && cIdx >= minCol && cIdx <= maxCol then
+            background = " bg-yellow-50"
+            if rIdx == minRow then borderT = " border-t-2 border-yellow-400 border-dashed"
+            if rIdx == maxRow then borderB = " border-b-2 border-yellow-400 border-dashed"
+            if cIdx == minCol then borderL = " border-l-2 border-yellow-400 border-dashed"
+            if cIdx == maxCol then borderR = " border-r-2 border-yellow-400 border-dashed"
+        }
+
+        background + borderT + borderB + borderL + borderR
+      }
+
       <.div(
+        ^.onMouseUp --> backend.handleRangeMouseUp(),
         <.div(
           ^.className := "mb-4 flex flex-wrap gap-2",
           state.selectedRow match {
@@ -391,8 +496,13 @@ object SpreadsheetComponent {
                   row.zipWithIndex.map { case (cell, colIdx) =>
                     <.td(
                       ^.key       := s"cell-$rowIdx-$colIdx",
-                      ^.className := "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32",
+                      ^.className := {
+                        val baseClass = "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32"
+                        baseClass + cellStyleClasses(rowIdx, colIdx)
+                      },
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
+                      ^.onMouseDown --> backend.handleRangeMouseDown(rowIdx, colIdx),
+                      ^.onMouseOver --> backend.handleRangeMouseOver(rowIdx, colIdx),
                       if cell.hasConflicts then
                         <.span(
                           ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
@@ -417,6 +527,24 @@ object SpreadsheetComponent {
                             ^.title := cell.formatConflicts(),
                             cell.formatConflicts()
                           )
+                      },
+                      {
+                        val startingRanges = allRangesWithIds.filter { case (_, rng) =>
+                          val minRow = math.min(rng.from.rowIdx, rng.to.rowIdx)
+                          val minCol = math.min(rng.from.colIdx, rng.to.colIdx)
+                          minRow == rowIdx && minCol == colIdx
+                        }
+                        startingRanges.zipWithIndex.map { case ((rid, rng), btnIdx) =>
+                          val idxColor = colorIndexForId(rid)
+                          <.span(
+                            ^.key := s"del-${rid.show}",
+                            ^.className := s"absolute top-${btnIdx * 1.25} right-0 mr-0.5 mt-0.5 text-${palette(idxColor % palette.length)}-600 cursor-pointer text-xs select-none",
+                            ^.title := "Delete range",
+                            "✕",
+                            ^.onMouseDown ==> ((e: ReactMouseEvent) => e.stopPropagationCB),
+                            ^.onClick ==> ((e: ReactMouseEvent) => e.stopPropagationCB >> backend.deleteRange(rid))
+                          )
+                        }.toVdomArray
                       }
                     )
                   }.toVdomArray
