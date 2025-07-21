@@ -166,7 +166,12 @@ case class Spreadsheet[A](
       y2 <- colIds.getMarker(idTo)
     } yield Range(SpreadsheetCoordinate(x1,y1), SpreadsheetCoordinate(x2,y2))
 
-  def listRanges(id: Uid): List[Range] = ranges.elements.toList.map(getRange).map(_.get)
+  def listRanges(): List[Range] = ranges.elements.toList.map(getRange).map(_.get)
+
+  def listRangesWithIds: List[(Uid, Range)] =
+    ranges.elements.toList.flatMap { rid =>
+      getRange(rid).map(rng => (rid, rng))
+    }
 }
 
 object Spreadsheet {
