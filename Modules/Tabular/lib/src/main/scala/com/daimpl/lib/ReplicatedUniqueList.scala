@@ -90,7 +90,8 @@ case class ReplicatedUniqueList[E](
     copy(
       inner.copy(
         removed = dotsForDuplicateElements `union` inner.removed
-      )
+      ),
+      markers.copy(inner = markers.inner.filter((_, e) => !other.markers.removed.subsumes(e.dots)))
     )
   }
 }
