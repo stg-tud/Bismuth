@@ -8,6 +8,9 @@ import japgolly.scalajs.react.component.Scala.Component
 import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.{ReactDragEvent, ReactMouseEvent}
 import japgolly.scalajs.react.vdom.html_<^.*
+
+import scala.scalajs.js.timers
+import scala.scalajs.js.timers.SetTimeoutHandle
 import org.scalajs.dom
 import rdts.base.{LocalUid, Uid}
 
@@ -283,6 +286,27 @@ object SpreadsheetComponent {
       cancelEdit() >> modSpreadsheet(_.removeRange(rangeId))
   }
 
+  private def onHold(ms: Int)(cb: Callback): TagMod =
+  {
+    var timerActive: Option[SetTimeoutHandle] = None
+    TagMod(
+      ^.onMouseDown --> Callback {
+        timerActive.foreach(timers.clearTimeout)
+        timerActive =
+          Some(timers.setTimeout(ms){
+              cb.runNow()
+              timerActive = None
+          })
+      },
+      ^.onMouseUp --> Callback {
+        timerActive.foreach(timers.clearTimeout); timerActive = None
+      },
+      ^.onMouseLeave --> Callback {
+        timerActive.foreach(timers.clearTimeout); timerActive = None
+      }
+    )
+  }
+
   val Component: Component[Props, State, Backend, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("Spreadsheet")
     .initialState(State(None, "", None, None, None, None, None, None, None, None, None))
@@ -501,7 +525,7 @@ object SpreadsheetComponent {
                         baseClass + cellStyleClasses(rowIdx, colIdx)
                       },
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
-                      ^.onMouseDown --> backend.handleRangeMouseDown(rowIdx, colIdx),
+                      onHold(200)(backend.handleRangeMouseDown(rowIdx, colIdx)),
                       ^.onMouseOver --> backend.handleRangeMouseOver(rowIdx, colIdx),
                       if cell.hasConflicts then
                         <.span(
