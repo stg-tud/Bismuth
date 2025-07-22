@@ -6,8 +6,8 @@ import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}
 
 case class ReplicatedUniqueList[E](
-  inner: ReplicatedList[E],
-  markers: ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]],
+  inner: ReplicatedList[E] = ReplicatedList.empty[E],
+  markers: ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]] = ObserveRemoveMap.empty,
 ){
   lazy val now: Option[CausalTime] =
     inner.now
@@ -44,14 +44,16 @@ case class ReplicatedUniqueList[E](
 
     val innerDelta = copy(inner = inner.removeIndex(index))
 
+    val inRange = (i: Int) => if (0 until inner.size) contains i then Some(i) else None
+
     impactedMarkers.map(
       (id, content) =>
         val behavior = content.value._2
         (
           id,
           behavior match
-            case MarkerRemovalBehavior.Predecessor => Some(index - 1)
-            case MarkerRemovalBehavior.Successor   => Some(index + 1)
+            case MarkerRemovalBehavior.Predecessor => inRange(index - 1)
+            case MarkerRemovalBehavior.Successor   => inRange(index + 1)
             case MarkerRemovalBehavior.None        => None,
           behavior
         )
@@ -62,7 +64,10 @@ case class ReplicatedUniqueList[E](
           case Some(newIdx) => addMarker(id, newIdx, behavior)
           case None         => removeMarker(id)
     )
-    .foldLeft(innerDelta)((accumulator, other) => accumulator.merge(other))
+    .foldLeft(innerDelta)(
+      (accumulator, other)
+      => accumulator.merge(ReplicatedUniqueList[E](markers = other.markers))
+    )
   }
 
   def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
@@ -78,10 +83,27 @@ case class ReplicatedUniqueList[E](
     copy(inner = inner.append(e))
 
   def update(index: Int, elem: E)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.update(index, elem))
+  {
+    val internalIdx = index + 1
+    val elementId = inner.dotList(internalIdx)
 
-  def deleteBy(test: E => Boolean): ReplicatedUniqueList[E] =
-    copy(inner = inner.deleteBy(test))
+    val impactedMarkers = markers.entries.filter{ (_, marker) => marker.value._1 == elementId }.toList
+
+    val innerDelta = copy(inner = inner.update(index, elem))
+
+    impactedMarkers.map(
+        (id, content) =>
+          val behavior = content.value._2
+          (this `merge` innerDelta).addMarker(id, index, behavior).copy(inner = ReplicatedList.empty[E])
+      )
+      .foldLeft(innerDelta)(
+        (accumulator, other)
+        => accumulator.merge(ReplicatedUniqueList[E](markers = other.markers))
+      )
+  }
+
+  //def deleteBy(test: E => Boolean): ReplicatedUniqueList[E] =
+  //  copy(inner = inner.deleteBy(test))
 
   def addMarker(id: Uid, index: Int, removalBehavior: MarkerRemovalBehavior)(using LocalUid): ReplicatedUniqueList[E] =
     copy(
@@ -121,10 +143,8 @@ case class ReplicatedUniqueList[E](
     val dotsForDuplicateElements = localDots.diff(latestDotPerUniqueValue)
 
     copy(
-      inner.copy(
-        removed = dotsForDuplicateElements `union` inner.removed
-      ),
-      markers.copy(inner = markers.inner.filter((_, e) => !other.markers.removed.subsumes(e.dots)))
+      inner.copy(removed = dotsForDuplicateElements `union` inner.removed),
+      markers.copy(inner = markers.inner.filterNot((_, e) => other.markers.removed.subsumes(e.dots)))
     )
   }
 }
