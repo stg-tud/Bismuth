@@ -105,7 +105,7 @@ case class ReplicatedUniqueList[E](
   //def deleteBy(test: E => Boolean): ReplicatedUniqueList[E] =
   //  copy(inner = inner.deleteBy(test))
 
-  def addMarker(id: Uid, index: Int, removalBehavior: MarkerRemovalBehavior)(using LocalUid): ReplicatedUniqueList[E] =
+  def addMarker(id: Uid, index: Int, removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.Successor)(using LocalUid): ReplicatedUniqueList[E] =
     copy(
       markers = markers.update(
         id,
