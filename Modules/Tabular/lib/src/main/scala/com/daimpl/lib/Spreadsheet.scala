@@ -165,6 +165,7 @@ case class Spreadsheet[A](
       y1 <- colIds.getMarker(idFrom)
       x2 <- rowIds.getMarker(idTo)
       y2 <- colIds.getMarker(idTo)
+      if x1 <= x2 && y1 <= y2
     } yield Range(SpreadsheetCoordinate(x1,y1), SpreadsheetCoordinate(x2,y2))
 
   def listRanges(): List[Range] = ranges.elements.toList.map(getRange).map(_.get)
