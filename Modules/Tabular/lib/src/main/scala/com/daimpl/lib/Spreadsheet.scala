@@ -36,10 +36,16 @@ case class Spreadsheet[A](
     Spreadsheet(colIds = colIds.insertAt(colIdx, observed.nextDot))
 
   def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
-    Spreadsheet(rowIds = rowIds.move(sourceIdx, targetIdx))
+    val newlyInvalidRanges = listRangesWithIds.filterNot( _._2.validAfterSwapping(sourceIdx, targetIdx) ).map(_._1)
+    newlyInvalidRanges.foldLeft(
+      Spreadsheet(rowIds = rowIds.move(sourceIdx, targetIdx))
+    )((accumulator, rangeId) => accumulator.merge(removeRange(rangeId)))
 
   def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
-    Spreadsheet(colIds = colIds.move(sourceIdx, targetIdx))
+    val newlyInvalidRanges = listRangesWithIds.filterNot( _._2.validAfterSwapping(sourceIdx, targetIdx) ).map(_._1)
+    newlyInvalidRanges.foldLeft(
+      Spreadsheet(colIds = colIds.move(sourceIdx, targetIdx))
+    )((accumulator, rangeId) => accumulator.merge(removeRange(rangeId)))
 
   def editCell(coordinate: SpreadsheetCoordinate, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId = rowIds.read(coordinate.rowIdx).get
@@ -183,6 +189,18 @@ object Spreadsheet {
   case class SpreadsheetCoordinate(rowIdx: Int, colIdx: Int)
 
   case class Range(from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)
+  {
+    def validAfterSwapping(source: Int, target: Int): Boolean =
+      val newFrom =
+        if from.rowIdx == source then (target, from.colIdx)
+        else if from.colIdx == source then (from.rowIdx, target)
+        else (from.rowIdx, from.colIdx)
+      val newTo =
+        if to.rowIdx == source then (target, to.colIdx)
+        else if to.colIdx == source then (to.rowIdx, target)
+        else (to.rowIdx, to.colIdx)
+      newFrom._1 <= newTo._1 && newFrom._2 <= newTo._2
+  }
 
   given bottom[A]: Bottom[Spreadsheet[A]] = Bottom.provide(empty)
   given lattice[A]: Lattice[Spreadsheet[A]] = Lattice.derived
