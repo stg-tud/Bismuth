@@ -21,6 +21,10 @@ object SpreadsheetComponent {
       .edit(_.addRow())
       .edit(_.addRow())
       .edit(_.addRow())
+      .edit(_.addRow())
+      .edit(_.addRow())
+      .edit(_.addColumn())
+      .edit(_.addColumn())
       .edit(_.addColumn())
       .edit(_.addColumn())
       .edit(_.addColumn())
@@ -48,10 +52,10 @@ object SpreadsheetComponent {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    val replicaEventPrint: (LocalUid, String) => Callback = (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
+    private val replicaEventPrint: (LocalUid, String) => Callback = (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
     private def modSpreadsheet(f: LocalUid ?=> Spreadsheet[String] => Spreadsheet[String]): Callback = {
-      $.props.flatMap { props =>
+      $.props.flatMap{ props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta(f)
         props.spreadsheetAggregator.visit(_.printToConsole())
@@ -65,18 +69,29 @@ object SpreadsheetComponent {
     private def withSelectedColumn(f: Int => Callback): Callback =
       $.state.flatMap(_.selectedColumn.map(f).getOrElse(Callback.empty))
 
+    private def withEditingCell(f: (coordinate: SpreadsheetCoordinate, content: String) => Callback): Callback =
+      $.state.flatMap(state => ( 
+        for{
+          (rowIdx, colIdx) <- state.editingCell
+        } yield SpreadsheetCoordinate(rowIdx, colIdx)
+      ).map(f(_, state.editingValue)).getOrElse(Callback.empty))
+
     private def withSelectedRowAndProps(f: (Int, Props) => Callback): Callback =
       withSelectedRow(rowIdx => $.props.flatMap(props => f(rowIdx, props)))
 
     private def withSelectedColumnAndProps(f: (Int, Props) => Callback): Callback =
       withSelectedColumn(colIdx => $.props.flatMap(props => f(colIdx, props)))
 
+    private def withEditAndProps(f: (SpreadsheetCoordinate, String, Props) => Callback): Callback =
+      withEditingCell((coordinate, content) => $.props.flatMap(props => f(SpreadsheetCoordinate(coordinate.rowIdx, coordinate.colIdx), content, props)))
+
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
-      $.props.flatMap { props =>
+      concludeEdit()
+      >> $.props.flatMap{ props =>
         val currentSet = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(rowIdx, colIdx))
         val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
-        cancelEdit()
-        >> $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
+        $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
+        >> modSpreadsheet(_.addRange(props.replicaId.uid, SpreadsheetCoordinate(rowIdx, colIdx), SpreadsheetCoordinate(rowIdx, colIdx)))
       }
 
     def openConflict(row: Int, col: Int): Callback =
@@ -94,48 +109,43 @@ object SpreadsheetComponent {
       $.modState(_.copy(editingValue = value))
     }
 
-    def handleKeyPress(e: ReactKeyboardEvent): Callback = {
-      e.key match {
+    def handleKeyPress(e: ReactKeyboardEventFromInput): Callback = {
+      e.key match{
         case "Enter"  => commitEdit()
-        case "Escape" => cancelEdit()
+        case "Escape" => concludeEdit()
         case _        => Callback.empty
       }
     }
 
-    def commitEdit(): Callback = {
-      $.state.flatMap { state =>
-        state.editingCell
-          .map { case (rowIdx, colIdx) =>
-            var value = state.editingValue.trim
-            if (value.isBlank) value = null
-            println(s"$rowIdx $colIdx")
-            modSpreadsheet(_.editCell(SpreadsheetCoordinate(rowIdx, colIdx), value))
-            >> cancelEdit()
-          }
-          .getOrElse(Callback.empty)
-      }
+    private def commitEdit(): Callback = {
+      withEditAndProps{(coordinate, content, _) =>
+        var value = content.trim
+        if (value.isBlank) value = null
+        modSpreadsheet(_.editCell(coordinate, value))
+      } >> concludeEdit(successful = true)
     }
 
-    private def cancelEdit(): Callback = {
-      println(s"Edit has concluded")
-      $.modState(_.copy(editingCell = None, editingValue = ""))
-    }
+    private def concludeEdit(successful: Boolean = false): Callback =
+      withEditAndProps{(coordinate, content, props) =>
+        replicaEventPrint(props.replicaId, s"Edit at (${coordinate.rowIdx + 1}, ${coordinate.colIdx + 1}) was ${if successful then "committed" else "aborted"}: \"$content\"")
+        >> modSpreadsheet(_.removeRange(props.replicaId.uid))
+      } >> $.modState(_.copy(editingCell = None, editingValue = ""))
 
     def handleRangeMouseDown(rowIdx: Int, colIdx: Int): Callback =
       $.modState(_.copy(rangeDragStart = Some((rowIdx, colIdx)), rangePreviewEnd = Some((rowIdx, colIdx))))
 
     def handleRangeMouseOver(rowIdx: Int, colIdx: Int): Callback =
-      $.state.flatMap { st =>
-        st.rangeDragStart
+      $.state.flatMap{ state =>
+        state.rangeDragStart
           .map(_ => $.modState(_.copy(rangePreviewEnd = Some((rowIdx, colIdx)))))
           .getOrElse(Callback.empty)
       }
 
     def handleRangeMouseUp(): Callback = {
-      $.state.flatMap { st =>
+      $.state.flatMap{ state =>
         (for {
-          start <- st.rangeDragStart
-          end   <- st.rangePreviewEnd
+          start <- state.rangeDragStart
+          end   <- state.rangePreviewEnd
         } yield (start, end))
           .map { case ((r1, c1), (r2, c2)) =>
             $.props.flatMap { props =>
@@ -159,69 +169,64 @@ object SpreadsheetComponent {
     }
 
     def insertRowAbove(): Callback =
-      withSelectedRowAndProps((rowIdx, props) =>
+      withSelectedRowAndProps{(rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
-        >> cancelEdit()
+        >> concludeEdit()
         >> modSpreadsheet(_.insertRow(rowIdx))
-        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get)))
-      )
+      } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get)))
 
     def insertRowBelow(): Callback =
-      withSelectedRowAndProps { (rowIdx, props) =>
+      withSelectedRowAndProps{(rowIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
         val action =
           if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
           else modSpreadsheet(_.insertRow(rowIdx + 1))
         replicaEventPrint(props.replicaId, s"Inserting Row After ${rowIdx + 1}")
-        >> cancelEdit()
+        >> concludeEdit()
         >> action
-        >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
-      }
+      } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
 
     def removeRow(): Callback =
-      withSelectedRowAndProps((rowIdx, props) =>
+      withSelectedRowAndProps{(rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
-        >> cancelEdit()
+        >> concludeEdit()
         >> modSpreadsheet(_.removeRow(rowIdx))
         //>> modSpreadsheet(_.purgeTombstones())
-        >> $.modState(_.copy(selectedRow = None))
-      )
+      } >> $.modState(_.copy(selectedRow = None))
 
     def insertColumnLeft(): Callback =
-      withSelectedColumnAndProps((colIdx, props) =>
+      withSelectedColumnAndProps{(colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
-        >> cancelEdit()
+        >> concludeEdit()
         >> modSpreadsheet(_.insertColumn(colIdx))
-        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get)))
-      )
+      } >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get)))
 
     def insertColumnRight(): Callback =
-      withSelectedColumnAndProps { (colIdx, props) =>
+      withSelectedColumnAndProps{(colIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
         val action =
           if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
           else modSpreadsheet(_.insertColumn(colIdx + 1))
         replicaEventPrint(props.replicaId, s"Inserting Column After ${colIdx + 1}")
-        >> cancelEdit()
+        >> concludeEdit()
         >> action
-        >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
-      }
+      } >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
+
 
     def removeColumn(): Callback =
-      withSelectedColumnAndProps((colIdx, props) =>
+      withSelectedColumnAndProps{(colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Removing Column ${colIdx + 1}")
-        >> cancelEdit()
+        >> concludeEdit()
         >> modSpreadsheet(_.removeColumn(colIdx))
         //>> modSpreadsheet(_.purgeTombstones())
-        >> $.modState(_.copy(selectedColumn = None))
-      )
+      } >> $.modState(_.copy(selectedColumn = None))
 
     def addRow(): Callback =
-      cancelEdit()
+      concludeEdit()
       >> modSpreadsheet(_.addRow())
 
     def addColumn(): Callback =
-      cancelEdit()
+      concludeEdit()
       >> modSpreadsheet(_.addColumn())
 
     // TODO: current replicated list does not allow purging
@@ -237,7 +242,7 @@ object SpreadsheetComponent {
           .map { srcIdx =>
             $.props.flatMap(props =>
               replicaEventPrint(props.replicaId, s"Dragged row $srcIdx to index $insertionIdx")
-              >> cancelEdit()
+              >> concludeEdit()
               >> modSpreadsheet(_.moveRow(srcIdx, insertionIdx))
             )
           }
@@ -263,7 +268,7 @@ object SpreadsheetComponent {
           .map { srcIdx =>
             $.props.flatMap(props =>
               replicaEventPrint(props.replicaId, s"Dragged column $srcIdx to index $insertionIdx")
-              >> cancelEdit()
+              >> concludeEdit()
               >> modSpreadsheet(_.moveColumn(srcIdx, insertionIdx))
             )
           }
@@ -283,7 +288,7 @@ object SpreadsheetComponent {
 
     // Delete a range by its id
     def deleteRange(rangeId: Uid): Callback =
-      cancelEdit() >> modSpreadsheet(_.removeRange(rangeId))
+      concludeEdit() >> modSpreadsheet(_.removeRange(rangeId))
   }
 
   private def onHold(ms: Int)(cb: Callback): TagMod =
@@ -541,7 +546,7 @@ object SpreadsheetComponent {
                             ^.`type` := "text",
                             ^.value  := state.editingValue,
                             ^.onChange ==> backend.handleInputChange,
-                            ^.onKeyPress ==> backend.handleKeyPress,
+                            ^.onKeyDown ==> backend.handleKeyPress,
                             ^.className := "w-full h-full border-none outline-none px-2 py-1 max-w-full",
                             ^.autoFocus := true
                           )
