@@ -70,7 +70,7 @@ object SpreadsheetComponent {
       $.state.flatMap(_.selectedColumn.map(f).getOrElse(Callback.empty))
 
     private def withEditingCell(f: (coordinate: SpreadsheetCoordinate, content: String) => Callback): Callback =
-      $.state.flatMap(state => ( 
+      $.state.flatMap(state => (
         for{
           (rowIdx, colIdx) <- state.editingCell
         } yield SpreadsheetCoordinate(rowIdx, colIdx)
@@ -560,8 +560,8 @@ object SpreadsheetComponent {
                       {
                         val startingRanges = allRangesWithIds.filter { case (_, rng) =>
                           val minRow = math.min(rng.from.rowIdx, rng.to.rowIdx)
-                          val minCol = math.min(rng.from.colIdx, rng.to.colIdx)
-                          minRow == rowIdx && minCol == colIdx
+                          val maxCol = math.max(rng.from.colIdx, rng.to.colIdx)
+                          minRow == rowIdx && maxCol == colIdx
                         }
                         startingRanges.zipWithIndex.map { case ((rid, rng), btnIdx) =>
                           val idxColor = colorIndexForId(rid)
