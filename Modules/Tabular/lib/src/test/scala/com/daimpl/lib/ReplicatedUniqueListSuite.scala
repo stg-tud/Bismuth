@@ -40,14 +40,14 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       withUid("A") {
         val deltaA =
           opA match
-            case "keep"   => rA.insertAt(0, rA.read(0).get)
+            case "keep"   => rA.update(0, rA.read(0).get)
             case "remove" => rA.removeAt(0)
         rA = rA + deltaA
       }
       withUid("B") {
         val deltaB =
           opB match
-            case "keep"   => rB.insertAt(0, rB.read(0).get)
+            case "keep"   => rB.update(0, rB.read(0).get)
             case "remove" => rB.removeAt(0)
         rB = rB + deltaB
       }
@@ -61,7 +61,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rA = withUid("A") { fromElements("x") }
     val rB = rA
     withUid("A") {
-      rA = rA + rA.insertAt(0, rA.read(0).get)
+      rA = rA + rA.update(0, rA.read(0).get)
       rA = rA + rA.removeAt(0)
     }
     val merged = rA + rB

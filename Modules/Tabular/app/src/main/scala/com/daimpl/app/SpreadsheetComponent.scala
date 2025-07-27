@@ -187,12 +187,14 @@ object SpreadsheetComponent {
       } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
 
     def removeRow(): Callback =
+      var numRows: Int = 0
       withSelectedRowAndProps{(rowIdx, props) =>
+        numRows = props.spreadsheetAggregator.current.numRows
         replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
         >> concludeEdit()
         >> modSpreadsheet(_.removeRow(rowIdx))
         //>> modSpreadsheet(_.purgeTombstones())
-      } >> $.modState(_.copy(selectedRow = None))
+      } >> $.modState(st => st.copy(selectedRow = for {o <- Some(numRows-2); if o >= 0} yield o min st.selectedRow.get max 0))
 
     def insertColumnLeft(): Callback =
       withSelectedColumnAndProps{(colIdx, props) =>
@@ -213,13 +215,16 @@ object SpreadsheetComponent {
       } >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get + 1)))
 
 
-    def removeColumn(): Callback =
+    def removeColumn(): Callback = {
+      var numCols: Int = 0
       withSelectedColumnAndProps{(colIdx, props) =>
+        numCols = props.spreadsheetAggregator.current.numColumns
         replicaEventPrint(props.replicaId, s"Removing Column ${colIdx + 1}")
         >> concludeEdit()
         >> modSpreadsheet(_.removeColumn(colIdx))
         //>> modSpreadsheet(_.purgeTombstones())
-      } >> $.modState(_.copy(selectedColumn = None))
+      } >> $.modState(st => st.copy(selectedColumn = for {o <- Some(numCols-2); if o >= 0} yield o min st.selectedColumn.get max 0))
+    }
 
     def addRow(): Callback =
       concludeEdit()
@@ -365,15 +370,16 @@ object SpreadsheetComponent {
 
         allRangesWithIds.foreach { case (rid, rng) =>
           val idx = colorIndexForId(rid)
-          if inside(rng, rIdx, cIdx) then
+          if inside(rng, rIdx, cIdx) then {
             if background.isEmpty then background = s" ${bgClass(idx)}"
 
             val (isTop, isBottom, isLeft, isRight) = onBoundary(rng, rIdx, cIdx)
             val colCls = borderClass(idx)
-            if isTop    then borderT = s" border-t-2 $colCls"
-            if isBottom then borderB = s" border-b-2 $colCls"
-            if isLeft   then borderL = s" border-l-2 $colCls"
-            if isRight  then borderR = s" border-r-2 $colCls"
+            borderT = s" border-t-${if isTop    then 2 else 1} $colCls"
+            borderB = s" border-b-${if isBottom then 2 else 1} $colCls"
+            borderL = s" border-l-${if isLeft   then 2 else 1} $colCls"
+            borderR = s" border-r-${if isRight  then 2 else 1} $colCls"
+          }
         }
 
         previewRangeOpt.foreach { case ((r1, c1), (r2, c2)) =>
@@ -381,12 +387,13 @@ object SpreadsheetComponent {
           val maxRow = math.max(r1, r2)
           val minCol = math.min(c1, c2)
           val maxCol = math.max(c1, c2)
-          if rIdx >= minRow && rIdx <= maxRow && cIdx >= minCol && cIdx <= maxCol then
+          if rIdx >= minRow && rIdx <= maxRow && cIdx >= minCol && cIdx <= maxCol then {
             background = " bg-yellow-50"
-            if rIdx == minRow then borderT = " border-t-2 border-yellow-400 border-dashed"
-            if rIdx == maxRow then borderB = " border-b-2 border-yellow-400 border-dashed"
-            if cIdx == minCol then borderL = " border-l-2 border-yellow-400 border-dashed"
-            if cIdx == maxCol then borderR = " border-r-2 border-yellow-400 border-dashed"
+            borderT = s" border-t-${if rIdx == minRow then 2 else 1} border-yellow-400 border-dashed"
+            borderB = s" border-b-${if rIdx == maxRow then 2 else 1} border-yellow-400 border-dashed"
+            borderL = s" border-l-${if cIdx == minCol then 2 else 1} border-yellow-400 border-dashed"
+            borderR = s" border-r-${if cIdx == maxCol then 2 else 1} border-yellow-400 border-dashed"
+          }
         }
 
         background + borderT + borderB + borderL + borderR
