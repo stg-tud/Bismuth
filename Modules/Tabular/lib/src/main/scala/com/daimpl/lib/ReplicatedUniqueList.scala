@@ -1,68 +1,81 @@
 package com.daimpl.lib
 
-import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
+import com.daimpl.lib.ReplicatedUniqueList.{ElementId, MarkerId, MarkerRemovalBehavior, OpPrecedence}
 import rdts.base.*
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}
 
 case class ReplicatedUniqueList[E](
-  inner: ReplicatedList[E] = ReplicatedList.empty[E],
-  markers: ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]] = ObserveRemoveMap.empty,
+  elementIdsAndLastOperation: ReplicatedList[(elementId: ElementId, positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)] =
+    ReplicatedList.empty[(elementId: ElementId, positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)],
+  elementIdToValue: ObserveRemoveMap[ElementId, LastWriterWins[E]] =
+    ObserveRemoveMap.empty[ElementId, LastWriterWins[E]],
+  markerIdToElementIdAndBehavior: ObserveRemoveMap[MarkerId, LastWriterWins[(elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)]] =
+    ObserveRemoveMap.empty[MarkerId, LastWriterWins[(elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)]]
 ){
   lazy val now: Option[CausalTime] =
-    inner.now
+    elementIdsAndLastOperation.now
 
   lazy val observed: Dots =
-    inner.observed
+    elementIdsAndLastOperation.observed
 
   lazy val toList: List[E] =
-    inner.toList
+    elementIdsAndLastOperation.toList.map(x => elementIdToValue.get(x.elementId).get.value)
 
-  private def extToIntIdx(externalIndex: Int): Int = externalIndex + 1
-
-  private def intToExtIdx(internalIndex: Int): Int = internalIndex - 1
-
-  def size: Int = inner.size
+  def size: Int = elementIdsAndLastOperation.size
 
   def toLazyList: LazyList[E] =
-    inner.toLazyList
+    elementIdsAndLastOperation.toLazyList.map(x => elementIdToValue.get(x.elementId).get.value)
+
+  private def markersImpactedByChangeAt(index: Int) =
+    val elementId = elementIdsAndLastOperation.read(index).get.elementId
+    val impactedMarkers = markerIdToElementIdAndBehavior.entries.filter { (_, marker) => marker.value.elementId == elementId }.toList
+    impactedMarkers
 
   def read(i: Int): Option[E] =
-    inner.read(i)
+    elementIdsAndLastOperation.read(i).map(x => elementIdToValue.get(x.elementId).get.value)
 
   def move(fromIndex: Int, toIndex: Int)(using LocalUid): ReplicatedUniqueList[E] =
-    val elementToMove = read(fromIndex).get
-    val oldDot = inner.dotList(extToIntIdx(fromIndex))
-    val insertionDelta = inner.insertAt(toIndex, elementToMove)
-    val newDot = insertionDelta.elements.find(_._2 == elementToMove).get._1
+    println(s"[${LocalUid.replicaId}] moving $fromIndex to $toIndex\n")
 
-    copy(
-      inner = inner.removeIndex(fromIndex) `merge` insertionDelta,
-      markers =
-        markers.entries.map(
-          (markerId, _) => markers.transform(markerId)(_.map(
-              current =>
-                val (dot, behavior) = current.value
-                if dot == oldDot then LastWriterWins(CausalTime.now(), (newDot, behavior)) else current
-          ))
-        ).foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]])((accumulator, other) => accumulator.merge(other))
+    val elementToMove = elementIdsAndLastOperation.read(fromIndex).get
+
+    val payloadDelta = copy(
+      elementIdsAndLastOperation =
+        elementIdsAndLastOperation.removeIndex(fromIndex)
+          `merge` elementIdsAndLastOperation.insertAt(toIndex, (elementToMove.elementId, OpPrecedence.Positional.Move, OpPrecedence.Textual.None))
     )
 
-  def insertAt(index: Int, elem: E)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.insertAt(index, elem))
+    markersImpactedByChangeAt(fromIndex).map((id, lww) => addMarker(id, fromIndex, lww.value.markerRemovalBehavior))
+      .foldLeft(payloadDelta)(
+        (accumulator, other)
+        => accumulator.merge(ReplicatedUniqueList[E](markerIdToElementIdAndBehavior = other.markerIdToElementIdAndBehavior))
+      )
 
-  def insertAll(index: Int, elems: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.insertAll(index, elems))
+  def insertAt(index: Int, element: E)(using LocalUid): ReplicatedUniqueList[E] = {
+    println(s"[${LocalUid.replicaId}] inserting at $index\n")
+
+    val elementId = elementIdsAndLastOperation.observed.nextDot(LocalUid.replicaId)
+    copy(
+      elementIdsAndLastOperation = elementIdsAndLastOperation.insertAt(index, (elementId, OpPrecedence.Positional.None, OpPrecedence.Textual.Insert)),
+      elementIdToValue = elementIdToValue.update(elementId, LastWriterWins(CausalTime.now(), element))
+    )
+  }
 
   def removeAt(index: Int)(using LocalUid): ReplicatedUniqueList[E] =
   {
-    val innerDelta = copy(inner = inner.removeIndex(index))
+    println(s"[${LocalUid.replicaId}] removing at $index\n")
 
-    val inRange = (i: Int) => if (0 until inner.size) contains i then Some(i) else None
+    val payloadDelta = copy(
+      elementIdsAndLastOperation = elementIdsAndLastOperation.removeIndex(index),
+      elementIdToValue = elementIdToValue.remove(elementIdsAndLastOperation.read(index).get.elementId)
+    )
+
+    val inRange = (i: Int) => if (0 until elementIdsAndLastOperation.size) contains i then Some(i) else None
 
     markersImpactedByChangeAt(index).map(
       (id, content) =>
-        val behavior = content.value._2
+        val behavior = content.value.markerRemovalBehavior
         (
           id,
           behavior match
@@ -78,95 +91,109 @@ case class ReplicatedUniqueList[E](
           case Some(newIdx) => addMarker(id, newIdx, behavior)
           case None         => removeMarker(id)
     )
-    .foldLeft(innerDelta)(
+    .foldLeft(payloadDelta)(
       (accumulator, other)
-      => accumulator.merge(ReplicatedUniqueList[E](markers = other.markers))
+      => accumulator.merge(ReplicatedUniqueList[E](markerIdToElementIdAndBehavior = other.markerIdToElementIdAndBehavior))
     )
   }
 
-  private def markersImpactedByChangeAt(index: Int) =
-  {
-    val elementId = inner.dotList(extToIntIdx(index))
-
-    val impactedMarkers = markers.entries.filter { (_, marker) => marker.value._1 == elementId }.toList
-    impactedMarkers
-  }
-
-  def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.appendAll(elements))
-
-  def prependAll(e: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.prependAll(e))
-
-  def prepend(e: E)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.prepend(e))
-
   def append(e: E)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.append(e))
+    insertAt(size, e)
 
-  def update(index: Int, elem: E)(using LocalUid): ReplicatedUniqueList[E] =
-  {
-    val innerDelta = copy(inner = inner.update(index, elem))
+  def update(index: Int, elementValue: E)(using LocalUid): ReplicatedUniqueList[E] = {
+    println(s"[${LocalUid.replicaId}] updating at $index to $elementValue\n")
 
-    markersImpactedByChangeAt(index).map(
-        (id, content) =>
-          val behavior = content.value._2
-          (this `merge` innerDelta).addMarker(id, index, behavior).copy(inner = ReplicatedList.empty[E])
-      )
-      .foldLeft(innerDelta)(
-        (accumulator, other)
-        => accumulator.merge(ReplicatedUniqueList[E](markers = other.markers))
-      )
+    val elementMetadata = elementIdsAndLastOperation.read(index).get
+    copy(
+      elementIdsAndLastOperation = elementIdsAndLastOperation.update(index, (elementMetadata.elementId, OpPrecedence.Positional.Update, OpPrecedence.Textual.Update)),
+      elementIdToValue = elementIdToValue.transform(elementMetadata.elementId)(_.map(_.write(elementValue)))
+    )
   }
 
-  def addMarker(id: Uid, index: Int, removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.Successor)(using LocalUid): ReplicatedUniqueList[E] =
+  def addMarker(id: MarkerId, index: Int, removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None)(using LocalUid): ReplicatedUniqueList[E] =
     copy(
-      markers = markers.update(
+      markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.update(
         id,
-        LastWriterWins(CausalTime.now(), (inner.dotList(extToIntIdx(index)), removalBehavior))
+        LastWriterWins(CausalTime.now(), (elementIdsAndLastOperation.read(index).get.elementId, removalBehavior))
       ),
     )
 
-  def removeMarker(id: Uid): ReplicatedUniqueList[E] =
-    copy(
-      markers = markers.remove(id),
-    )
+  def removeMarker(id: MarkerId): ReplicatedUniqueList[E] =
+    copy(markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.remove(id))
 
-  def getMarker(id: Uid): Option[Int] = {
-    markers.get(id).flatMap { marker =>
-      val index = inner.dotList.indexOf(marker.value._1)
-      if index == -1 then None else Some(intToExtIdx(index))
+  def getMarker(id: MarkerId): Option[Int] = {
+    markerIdToElementIdAndBehavior.get(id).flatMap { marker =>
+      val elementId = marker.value.elementId
+      val index = elementIdsAndLastOperation.toList.indexWhere(_.elementId == elementId)
+      if index == -1 then None else Some(index)
     }
   }
 
   def filter(other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
   {
-    val combinedElements = inner.elements.toList ++ other.inner.elements.toList
-    val combinedTimes = (inner.times.toList ++ other.inner.times.toList).toMap
+    val combinedElementsIds = elementIdsAndLastOperation.elements.toList ++ other.elementIdsAndLastOperation.elements.toList
+    val combinedTimes = (elementIdsAndLastOperation.times.toList ++ other.elementIdsAndLastOperation.times.toList).toMap
+    val combinedRemoved = elementIdsAndLastOperation.removed `union` other.elementIdsAndLastOperation.removed
 
-    val latestDotPerUniqueValue =
+    def latestMostPrivilegedDotPerUniqueValue[P: Ordering](
+      precedenceSelector: ((positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)) => P
+    ): Dots =
+    {
       Dots.from(
-        combinedElements
-          .groupBy(_._2)
+        combinedElementsIds
+          .groupBy{_._2.elementId}
           .flatMap{
-            (_, entries) => Option(entries.maxBy{ (dot, _) => combinedTimes(dot) }._1)
-          }
+            (_, entries) => entries
+              .filterNot{   (dot, _) => combinedRemoved.contains(dot) }
+              .maxByOption{ (dot, elementMetadata) => (
+                precedenceSelector((elementMetadata.positionOpPrecedence, elementMetadata.contentOpPrecedence)),
+                combinedTimes(dot)
+              )}
+          }.keys
       )
+    }
 
-    val localDots = Dots.from(inner.elements.keys)
-    val dotsForDuplicateElements = localDots.diff(latestDotPerUniqueValue)
+    val localDots = Dots.from(elementIdsAndLastOperation.elements.keys)
+    val dotsForLocalDuplicateElementIds    = localDots.diff(latestMostPrivilegedDotPerUniqueValue{_.positionOpPrecedence})
+    val dotsForLocalDuplicateElementValues = localDots.diff(latestMostPrivilegedDotPerUniqueValue{_.contentOpPrecedence})
 
     copy(
-      inner.copy(removed = dotsForDuplicateElements `union` inner.removed),
-      markers.copy(inner = markers.inner.filterNot((_, e) => other.markers.removed.subsumes(e.dots)))
+      elementIdsAndLastOperation = elementIdsAndLastOperation.copy(
+        elements = elementIdsAndLastOperation.elements.filterNot{ (e, _) =>
+          dotsForLocalDuplicateElementIds.contains(e)
+        },
+        removed = elementIdsAndLastOperation.removed `union` dotsForLocalDuplicateElementIds
+      ),
+      elementIdToValue = elementIdToValue.copy(
+        inner = elementIdToValue.inner.filterNot{ (_, e) =>
+          dotsForLocalDuplicateElementValues.subsumes(e.dots)
+        }
+      ),
+      markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.copy(
+        inner = markerIdToElementIdAndBehavior.inner.filterNot{ (_, e) =>
+          other.markerIdToElementIdAndBehavior.removed.subsumes(e.dots)
+        }
+      )
     )
   }
 }
 
-object ReplicatedUniqueList {
-  given decompose[E]: Decompose[ReplicatedUniqueList[E]] = {
-    given Decompose[ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]]] = Decompose.atomic
-    Decompose.derived
+object ReplicatedUniqueList
+{
+  type ElementId = Dot
+  type MarkerId = Uid
+
+  given decompose[E]: Decompose[ReplicatedUniqueList[E]] = Decompose.derived
+
+  object OpPrecedence {
+    given enumOrdinalOrdering[E <: scala.reflect.Enum]: Ordering[E] =
+      Ordering.by[E, Int](_.ordinal)
+
+    enum Positional:
+      case None, Update, Move
+
+    enum Textual:
+      case None, Insert, Update
   }
 
   enum MarkerRemovalBehavior:
@@ -179,6 +206,6 @@ object ReplicatedUniqueList {
 
   given lattice[E]: DecoratedLattice[ReplicatedUniqueList[E]](undecoratedLattice) with {
     override def filter(base: ReplicatedUniqueList[E], other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] = base.filter(other)
-    override def compact(merged: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] = merged.copy(inner = merged.inner.compact)
+    override def compact(merged: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] = merged.copy(elementIdsAndLastOperation = merged.elementIdsAndLastOperation.compact)
   }
 }

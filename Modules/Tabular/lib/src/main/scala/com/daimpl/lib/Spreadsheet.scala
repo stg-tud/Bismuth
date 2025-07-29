@@ -1,18 +1,18 @@
 package com.daimpl.lib
 
 import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
-import com.daimpl.lib.Spreadsheet.{Range, SpreadsheetCoordinate, empty}
+import com.daimpl.lib.Spreadsheet.{Range, RangeId, SpreadsheetCoordinate, empty}
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 
 case class Spreadsheet[A](
-   private val rowIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
-   private val colIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty,
-   private val content: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] = ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]],
-   private val ranges: ReplicatedSet[Uid] = ReplicatedSet.empty
+  private val rowIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty[Dot],
+  private val colIds: ReplicatedUniqueList[Dot] = ReplicatedUniqueList.empty[Dot],
+  private val rowAndColIdPairToContent: ObserveRemoveMap[(Dot, Dot), ReplicatedSet[A]] =
+    ObserveRemoveMap.empty[(Dot, Dot), ReplicatedSet[A]],
+  private val rangeIds: ReplicatedSet[RangeId] = ReplicatedSet.empty[RangeId]
 ){
-
   lazy val observed: Dots =
     Dots.from(rowIds.toList)
       `union` Dots.from(colIds.toList)
@@ -36,35 +36,46 @@ case class Spreadsheet[A](
     Spreadsheet(colIds = colIds.insertAt(colIdx, observed.nextDot))
 
   def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
-    val newlyInvalidRanges = listRangesWithIds.filterNot( _._2.validAfterSwapping(sourceIdx, targetIdx) ).map(_._1)
-    newlyInvalidRanges.foldLeft(
+    val touchedRanges = listRangesWithIds.filter(_._2.touchedRows(sourceIdx))
+    touchedRanges.foldLeft(
       Spreadsheet(rowIds = rowIds.move(sourceIdx, targetIdx))
-    )((accumulator, rangeId) => accumulator.merge(removeRange(rangeId)))
+    )((accumulator, rangeAndId) => accumulator.merge{ Spreadsheet(rangeIds =
+      {
+        val (rangeId, range) = rangeAndId
+        if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
+        else removeRange(rangeId)
+      }.rangeIds
+    )})
 
   def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
-    val newlyInvalidRanges = listRangesWithIds.filterNot( _._2.validAfterSwapping(sourceIdx, targetIdx) ).map(_._1)
-    newlyInvalidRanges.foldLeft(
+    val touchedRanges = listRangesWithIds.filter(_._2.touchedCols(sourceIdx))
+    touchedRanges.foldLeft(
       Spreadsheet(colIds = colIds.move(sourceIdx, targetIdx))
-    )((accumulator, rangeId) => accumulator.merge(removeRange(rangeId)))
+    )((accumulator, rangeAndId) => accumulator.merge{ Spreadsheet(rangeIds =
+      { val (rangeId, range) = rangeAndId
+        if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
+        else removeRange(rangeId)
+      }.rangeIds
+    )})
 
   def editCell(coordinate: SpreadsheetCoordinate, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId = rowIds.read(coordinate.rowIdx).get
     val colId = colIds.read(coordinate.colIdx).get
     val newContent =
       if value == null then
-        content.transform((rowId, colId)) {
+        rowAndColIdPairToContent.transform((rowId, colId)) {
           case None => None
           case Some(set) => Some(set.clear())
         }
       else
-        content.transform((rowId, colId)) {
+        rowAndColIdPairToContent.transform((rowId, colId)) {
           case None => Some(ReplicatedSet.empty.add(value))
           case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
         }
     Spreadsheet(
       rowIds = rowIds.update(coordinate.rowIdx, rowId),
       colIds = colIds.update(coordinate.colIdx, colId),
-      content = newContent
+      rowAndColIdPairToContent = newContent
     )
   }
 
@@ -83,7 +94,7 @@ case class Spreadsheet[A](
     val colIdxAndId = colIds.toList.zipWithIndex.map((dot, idx) => (idx, dot.time))
 
     val maxLen =
-      content.queryAllEntries.map{ rs => rs.elements.mkString("/") }
+      rowAndColIdPairToContent.queryAllEntries.map{ rs => rs.elements.mkString("/") }
       .concat(rowIdxAndId.map(_.toString))
       .concat(colIdxAndId.map(_.toString))
       .concat(Array(legend))
@@ -96,7 +107,7 @@ case class Spreadsheet[A](
     val sheetStr = rowIds.toList.zipWithIndex.map{ (rowId, rowIdx) =>
       colIds.toList
         .map { colId =>
-          val cellStr = content
+          val cellStr = rowAndColIdPairToContent
             .get((rowId, colId))
             .map(_.elements.mkString("/"))
             .filter(_.nonEmpty)
@@ -119,7 +130,7 @@ case class Spreadsheet[A](
     val rows = rowIds.toList
     val cols = colIds.toList
     Spreadsheet(
-      content = content.removeBy((row, col) => !rows.contains(row) || !cols.contains(col))
+      rowAndColIdPairToContent = rowAndColIdPairToContent.removeBy((row, col) => !rows.contains(row) || !cols.contains(col))
     )
   }
 
@@ -137,10 +148,10 @@ case class Spreadsheet[A](
     (for
       rowId <- rowIds.read(coordinate.rowIdx)
       colId <- colIds.read(coordinate.colIdx)
-      cell  <- content.get((rowId, colId))
+      cell  <- rowAndColIdPairToContent.get((rowId, colId))
     yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty)
 
-  def addRange(id: Uid, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
+  def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
     val idFrom = Uid(id.show + ":from")
     val idTo   = Uid(id.show + ":to")
     Spreadsheet(
@@ -148,10 +159,13 @@ case class Spreadsheet[A](
         `merge` rowIds.addMarker(idTo  , to.rowIdx  , MarkerRemovalBehavior.Predecessor),
       colIds  = colIds.addMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
         `merge` colIds.addMarker(idTo  , to.colIdx  , MarkerRemovalBehavior.Predecessor),
-      ranges = ranges.add(id)
+      rangeIds = rangeIds.add(id)
     )
 
-  def removeRange(id: Uid): Spreadsheet[A] =
+  def keepRange(id: RangeId)(using LocalUid): Spreadsheet[A] =
+    Spreadsheet(rangeIds = rangeIds.add(id))
+
+  def removeRange(id: RangeId): Spreadsheet[A] =
     val idFrom = Uid(id.show + ":from")
     val idTo   = Uid(id.show + ":to")
     Spreadsheet(
@@ -159,10 +173,10 @@ case class Spreadsheet[A](
         `merge` rowIds.removeMarker(idTo),
       colIds  = colIds.removeMarker(idFrom)
         `merge` colIds.removeMarker(idTo),
-      ranges = ranges.remove(id)
+      rangeIds = rangeIds.remove(id)
     )
 
-  def getRange(id: Uid): Option[Range] =
+  def getRange(id: RangeId): Option[Range] =
     val idFrom = Uid(id.show + ":from")
     val idTo   = Uid(id.show + ":to")
 
@@ -174,15 +188,17 @@ case class Spreadsheet[A](
       if x1 <= x2 && y1 <= y2
     } yield Range(SpreadsheetCoordinate(x1,y1), SpreadsheetCoordinate(x2,y2))
 
-  def listRanges(): List[Range] = ranges.elements.toList.map(getRange).map(_.get)
+  def listRanges(): List[Range] = rangeIds.elements.toList.map(getRange).map(_.get)
 
-  def listRangesWithIds: List[(Uid, Range)] =
-    ranges.elements.toList.flatMap { rid =>
+  def listRangesWithIds: List[(RangeId, Range)] =
+    rangeIds.elements.toList.flatMap { rid =>
       getRange(rid).map(rng => (rid, rng))
     }
 }
 
 object Spreadsheet {
+  type ElementId = Dot
+  type RangeId = Uid
 
   def empty[A]: Spreadsheet[A] = Spreadsheet[A]()
 
@@ -190,16 +206,18 @@ object Spreadsheet {
 
   case class Range(from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)
   {
+    def touchedRows(index: Int): Boolean = from.rowIdx == index || to.rowIdx == index
+    def touchedCols(index: Int): Boolean = from.colIdx == index || to.colIdx == index
+
     def validAfterSwapping(source: Int, target: Int): Boolean =
-      val newFrom =
-        if from.rowIdx == source then (target, from.colIdx)
-        else if from.colIdx == source then (from.rowIdx, target)
-        else (from.rowIdx, from.colIdx)
-      val newTo =
-        if to.rowIdx == source then (target, to.colIdx)
-        else if to.colIdx == source then (to.rowIdx, target)
-        else (to.rowIdx, to.colIdx)
-      newFrom._1 <= newTo._1 && newFrom._2 <= newTo._2
+      val plugInTarget =
+        (coord: SpreadsheetCoordinate) =>
+          if coord.rowIdx == source then (target, coord.colIdx)
+          else if coord.colIdx == source then (coord.rowIdx, target)
+          else (coord.rowIdx, from.colIdx)
+      val newFrom = plugInTarget(from)
+      val newTo   = plugInTarget(to)
+      (newFrom._1 <= newTo._1) && (newFrom._2 <= newTo._2)
   }
 
   given bottom[A]: Bottom[Spreadsheet[A]] = Bottom.provide(empty)

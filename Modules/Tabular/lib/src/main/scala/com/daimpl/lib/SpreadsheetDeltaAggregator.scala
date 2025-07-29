@@ -17,6 +17,11 @@ class SpreadsheetDeltaAggregator[S: Lattice](
     this
   }
 
+  def repeatEdit(times: Int, fn: LocalUid ?=> S => S): SpreadsheetDeltaAggregator[S] = {
+    (0 until times) foreach { _ => editAndGetDelta(fn) }
+    this
+  }
+
   def merge(delta: S): SpreadsheetDeltaAggregator[S] = {
     spreadsheet = spreadsheet.merge(delta)
     this
