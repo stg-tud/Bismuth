@@ -9,9 +9,6 @@ case class ReplicatedUniqueList[E](
   inner: ReplicatedList[E] = ReplicatedList.empty[E],
   markers: ObserveRemoveMap[Uid, LastWriterWins[(Dot, MarkerRemovalBehavior)]] = ObserveRemoveMap.empty,
 ){
-  lazy val now: Option[CausalTime] =
-    inner.now
-
   lazy val observed: Dots =
     inner.observed
 
@@ -23,9 +20,6 @@ case class ReplicatedUniqueList[E](
   private def intToExtIdx(internalIndex: Int): Int = internalIndex - 1
 
   def size: Int = inner.size
-
-  def toLazyList: LazyList[E] =
-    inner.toLazyList
 
   def read(i: Int): Option[E] =
     inner.read(i)
@@ -50,9 +44,6 @@ case class ReplicatedUniqueList[E](
 
   def insertAt(index: Int, elem: E)(using LocalUid): ReplicatedUniqueList[E] =
     copy(inner = inner.insertAt(index, elem))
-
-  def insertAll(index: Int, elems: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.insertAll(index, elems))
 
   def removeAt(index: Int)(using LocalUid): ReplicatedUniqueList[E] =
   {
@@ -91,15 +82,6 @@ case class ReplicatedUniqueList[E](
     val impactedMarkers = markers.entries.filter { (_, marker) => marker.value._1 == elementId }.toList
     impactedMarkers
   }
-
-  def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.appendAll(elements))
-
-  def prependAll(e: Iterable[E])(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.prependAll(e))
-
-  def prepend(e: E)(using LocalUid): ReplicatedUniqueList[E] =
-    copy(inner = inner.prepend(e))
 
   def append(e: E)(using LocalUid): ReplicatedUniqueList[E] =
     copy(inner = inner.append(e))
