@@ -1,7 +1,7 @@
 package ex2024socialMedia
 
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.{GrowOnlyCounter as Counter, LastWriterWins as LWW}
+import rdts.datatypes.{ReplicatedList, GrowOnlyCounter as Counter, LastWriterWins as LWW}
 import reactives.default.*
 
 type ID = String
@@ -33,7 +33,7 @@ case class SocialMedia(sm: Map[ID, SocialPost] = Map.empty):
 
 case class SocialPost(
     message: Option[LWW[String]] = None,
-    comments: Set[LWW[String]] = Set.empty,
+    comments: ReplicatedList[String] = ReplicatedList.empty,
     likes: Counter = Counter.zero,
     dislikes: Counter = Counter.zero
 )
