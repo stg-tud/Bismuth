@@ -1,5 +1,6 @@
 package com.daimpl.lib
 
+import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
 import rdts.base.{LocalUid, Uid}
@@ -24,6 +25,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
         clue = "merge is not idempotent"
       )
       ab
+
 
   Seq(
     ("keep"   , "keep"   , true ),
@@ -182,6 +184,119 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
     val merged = rA + rB
     assertEquals(merged.getMarker(markerId), Some(1))
+  }
+
+  test("concurrent move and remove") {
+    val base = withUid("A")(fromElements("a", "b"))
+    var rA = base
+    var rB = base
+
+    withUid("A") {
+      rA = rA + rA.move(0, 2)
+    }
+    withUid("B") {
+      rB = rB + rB.removeAt(0)
+    }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("b", "a"))
+  }
+
+  test("concurrent move and update") {
+    val base = withUid("A")(fromElements("a", "b"))
+    var rA = base
+    var rB = base
+
+    withUid("A") {
+      rA = rA + rA.move(0, 2)
+    }
+    withUid("B") {
+      rB = rB + rB.update(0, "A")
+    }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("A", "b", "a"))
+  }
+
+  test("marker follows move of its element") {
+    var rA = withUid("A")(fromElements("a", "b", "c"))
+    val markerId = Uid("m1")
+
+    withUid("A") {
+      rA = rA + rA.addMarker(markerId, 0)
+      rA = rA + rA.move(0, 2)
+    }
+
+    assertEquals(rA.getMarker(markerId), Some(1))
+    assertEqualsList(rA, List("b", "a", "c"))
+  }
+
+  Seq(
+    (MarkerRemovalBehavior.Predecessor, Some(0), "moves to predecessor"),
+    (MarkerRemovalBehavior.Successor, Some(1), "moves to successor"),
+    (MarkerRemovalBehavior.None, None, "is removed")
+  ).foreach { case (behaviour, expectedIdx, title) =>
+    test(s"marker with behaviour $behaviour $title when element is removed") {
+      var rA = withUid("A")(fromElements("a", "b", "c"))
+      val id = Uid("m-$behaviour")
+
+      withUid("A") {
+        rA = rA + rA.addMarker(id, 1, behaviour)
+      }
+      withUid("A") {
+        rA = rA + rA.removeAt(1)
+      }
+
+      assertEquals(rA.getMarker(id), expectedIdx)
+    }
+  }
+
+  test("move vs move of same element converges") {
+    val base = withUid("A")(fromElements("a", "b", "c"))
+    var rA = base
+    var rB = base
+
+    withUid("A") {
+      rA = rA + rA.move(0, 2)
+    }
+    withUid("B") {
+      rB = rB + rB.move(0, 1)
+    }
+
+    val merged = rA + rB
+    assertEquals(merged.toList.toSet, Set("a", "b", "c"))
+  }
+
+  test("crossing moves") {
+    val base = withUid("A")(fromElements("a", "b", "c", "d"))
+    var rA = base;
+    var rB = base
+
+    withUid("A") {
+      rA = rA + rA.move(0, 3)
+    }
+    withUid("B") {
+      rB = rB + rB.move(3, 0)
+    }
+
+    val merged = rA + rB
+    assertEquals(merged.toList.toSet, Set("a", "b", "c", "d"))
+  }
+
+  test("concurrent move and insert at destination slot") {
+    val base = withUid("A")(fromElements("x", "y"))
+    var rA = base;
+    var rB = base
+
+    withUid("A") {
+      rA = rA + rA.move(0, 2)
+    }
+    withUid("B") {
+      rB = rB + rB.insertAt(2, "z")
+    }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("y", "z", "x"))
   }
 
   private def fromElements[E](elems: E*)(using uid: LocalUid): ReplicatedUniqueList[E] =
