@@ -184,6 +184,96 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     assertEquals(merged.getMarker(markerId), Some(1))
   }
 
+  test("concurrent (move) and (update): update and move are kept") {
+    var rA = withUid("A")(fromElements("a", "b", "c"))
+    var rB = rA
+
+    withUid("A") {
+      val deltaA = rA.move(1, 3)
+      rA = rA + deltaA
+    }
+
+    withUid("B") {
+      val old = rB.read(1).get
+      val deltaUpdate = rB.update(1, old + "_updated")
+      rB = rB + deltaUpdate
+    }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("a", "c", "b_updated"))
+  }
+
+  test("concurrent (move, update) and (delete): update wins, move is kept") {
+    var rA = withUid("A")(fromElements("a", "b", "c"))
+    var rB = rA
+
+    withUid("A") {
+      rA = rA + rA.removeAt(1)
+    }
+
+    withUid("B") {
+      val deltaMove = rB.move(1, 3)
+      rB = rB + deltaMove
+      val old = rB.read(2).get
+      val deltaUpdate = rB.update(2, old + "_revived")
+      rB = rB + deltaUpdate
+    }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("a", "c", "b_revived"))
+  }
+
+  test("concurrent (marker insert) and (move, update)") {
+    var rA = withUid("A")(fromElements("a", "b", "c"))
+    var rB = rA
+    val markerId = Uid("markerX")
+
+    withUid("A") {
+      rA = rA + rA.addMarker(markerId, 1)
+    }
+
+    withUid("B") {
+      val deltaMove = rB.move(1, 0)
+      rB = rB + deltaMove
+      val old = rB.read(0).get
+      val deltaUpdate = rB.update(0, old + "_updated")
+      rB = rB + deltaUpdate
+    }
+
+    val merged = rA + rB
+    assertEqualsList(merged, List("b_updated", "a", "c"))
+    assertEquals(merged.getMarker(markerId), Some(0))
+  }
+
+  test("concurrent (move) at range border and (move, update): update and more recent move are kept") {
+    val markerId = Uid("b_marker")
+
+    var rA = withUid("A") { fromElements("a", "b", "c", "d") }
+    withUid("A") {
+      rA = rA + rA.addMarker(markerId, 1)
+    }
+    var rB = rA
+
+    withUid("A") {
+      val deltaMove = rA.move(1, 3)
+      rA = rA + deltaMove
+    }
+
+    withUid("B") {
+      val deltaMove = rB.move(1, 4)
+      rB = rB + deltaMove
+
+      val old = rB.read(3).get
+      val deltaUpdate = rB.update(3, old + "_updated")
+      rB = rB + deltaUpdate
+    }
+
+    val merged = rA + rB
+
+    assertEqualsList(merged, List("a", "c", "d", "b_updated"))
+    assertEquals(merged.getMarker(markerId), Some(3))
+  }
+
   private def fromElements[E](elems: E*)(using uid: LocalUid): ReplicatedUniqueList[E] =
     elems.foldLeft(ReplicatedUniqueList.empty[E]) { (state, e) => state + state.append(e) }
 

@@ -43,7 +43,7 @@ case class ReplicatedUniqueList[E](
     val payloadDelta = copy(
       elementIdsAndLastOperation =
         elementIdsAndLastOperation.removeIndex(fromIndex)
-          `merge` elementIdsAndLastOperation.insertAt(toIndex, (elementToMove.elementId, OpPrecedence.Positional.Move, OpPrecedence.Textual.None))
+        `merge` elementIdsAndLastOperation.insertAt(toIndex, (elementToMove.elementId, OpPrecedence.Positional.Move, OpPrecedence.Textual.None))
     )
 
     markersImpactedByChangeAt(fromIndex).map((id, lww) => addMarker(id, fromIndex, lww.value.markerRemovalBehavior))
@@ -131,22 +131,46 @@ case class ReplicatedUniqueList[E](
 
   def filter(other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
   {
-    val combinedElementsIds = elementIdsAndLastOperation.elements.toList ++ other.elementIdsAndLastOperation.elements.toList
+    val combinedElementMetadata = elementIdsAndLastOperation.elements.toList ++ other.elementIdsAndLastOperation.elements.toList
+    val combinedDotToElementMetadata = combinedElementMetadata.toMap
     val combinedTimes = (elementIdsAndLastOperation.times.toList ++ other.elementIdsAndLastOperation.times.toList).toMap
     val combinedRemoved = elementIdsAndLastOperation.removed `union` other.elementIdsAndLastOperation.removed
+
+    val updatedDots = Dots.from(
+      combinedRemoved.toSet.filter{ removedDot =>
+        combinedDotToElementMetadata.get(removedDot) match
+        {
+          case None => false
+          case Some(candidateMetadata) =>
+            combinedElementMetadata.exists{ (candidateDot, elementMetadata) =>
+              elementMetadata.elementId == candidateMetadata.elementId
+              && elementMetadata.positionOpPrecedence == OpPrecedence.Positional.Update
+              && candidateDot != removedDot
+              && {
+                val otherDotTimestamp = combinedTimes(candidateDot)
+                (otherDotTimestamp `merge` combinedTimes(removedDot)) == otherDotTimestamp // timestampOther > timestampThis
+              }
+            }
+        }
+        // returns whether there is another dot for this element, caused by an update with a more recent timestamp
+      }
+    )
+
+    val localTrulyRemovedExclUpdated = elementIdsAndLastOperation.removed `diff` updatedDots
+    val combinedTrulyRemovedExclUpdated = combinedRemoved `diff` updatedDots
 
     def latestMostPrivilegedDotPerUniqueValue[P: Ordering](
       precedenceSelector: ((positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)) => P
     ): Dots =
     {
       Dots.from(
-        combinedElementsIds
+        combinedElementMetadata
           .groupBy{_._2.elementId}
           .flatMap{
             (_, entries) => entries
-              .filterNot{   (dot, _) => combinedRemoved.contains(dot) }
+              .filterNot{   (dot, _) => combinedTrulyRemovedExclUpdated.contains(dot) }
               .maxByOption{ (dot, elementMetadata) => (
-                precedenceSelector((elementMetadata.positionOpPrecedence, elementMetadata.contentOpPrecedence)),
+                precedenceSelector(elementMetadata.positionOpPrecedence, elementMetadata.contentOpPrecedence),
                 combinedTimes(dot)
               )}
           }.keys
@@ -159,19 +183,16 @@ case class ReplicatedUniqueList[E](
 
     copy(
       elementIdsAndLastOperation = elementIdsAndLastOperation.copy(
-        elements = elementIdsAndLastOperation.elements.filterNot{ (e, _) =>
-          dotsForLocalDuplicateElementIds.contains(e)
-        },
-        removed = elementIdsAndLastOperation.removed `union` dotsForLocalDuplicateElementIds
+        removed = localTrulyRemovedExclUpdated `union` dotsForLocalDuplicateElementIds
       ),
       elementIdToValue = elementIdToValue.copy(
-        inner = elementIdToValue.inner.filterNot{ (_, e) =>
-          dotsForLocalDuplicateElementValues.subsumes(e.dots)
+        inner = elementIdToValue.inner.filterNot{ (_, mapEntry) =>
+          dotsForLocalDuplicateElementValues.subsumes(mapEntry.dots)
         }
       ),
       markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.copy(
-        inner = markerIdToElementIdAndBehavior.inner.filterNot{ (_, e) =>
-          other.markerIdToElementIdAndBehavior.removed.subsumes(e.dots)
+        inner = markerIdToElementIdAndBehavior.inner.filterNot{ (_, mapEntry) =>
+          other.markerIdToElementIdAndBehavior.removed.subsumes(mapEntry.dots)
         }
       )
     )
