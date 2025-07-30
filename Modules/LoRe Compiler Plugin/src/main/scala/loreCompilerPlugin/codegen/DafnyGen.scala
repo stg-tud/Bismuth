@@ -579,7 +579,7 @@ object DafnyGen {
             val args: List[String] = term.left match
               case TTuple(arguments, _, _) =>
                 // Index count is to swap in names for Scala args left blank
-                var argIdx: Int = 1
+                var argIdx: Int = 0
 
                 arguments.collect(arg => {
                   val argName: String = arg match
