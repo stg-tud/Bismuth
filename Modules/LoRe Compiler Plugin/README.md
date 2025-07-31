@@ -138,6 +138,7 @@ The plugin itself implements the following features:
 
 ## Examples
 
-- The `sourceExamples` file contains around 50 example definitions using various syntax with Sources across integers, strings and booleans
-- The `derivedExamples` file contains around 17 example definitions for function/method/property calls and Derived instantiations
-- The `interactionExamples` file contains around 14 definitions for types (List, Map), arrow functions, and Interactions with various method calls on them
+- The `sourceExamples` file contains example definitions using various syntax with Sources across integers, strings and booleans
+- The `derivedExamples` file contains example definitions for function/method/property calls and Derived instantiations
+- The `interactionExamples` file contains example definitions for types (List, Map), arrow functions, and Interactions with various method calls on them
+- The `test` file contains the test program outlined in the thesis accompanying this compiler plugin.
