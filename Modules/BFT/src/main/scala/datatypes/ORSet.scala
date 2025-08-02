@@ -44,20 +44,21 @@ case class ORSet[T] private(
 
   private def removeOpHappenedAfterAddOp(event: Event[Op[T]], element: T): Boolean =
     val parents = getParents(event)
-    
+
     var res = false
     for parent <- parents do
-      if parent.content.get.opType == OpType.Add && parent.content.get.element == element then
-        res = true
-      else 
-        var result = Set.empty[Boolean]
-        for parent <- parents do
-          result = result + removeOpHappenedAfterAddOp(parent, element)
+      if parent.id != "0" then
+        if parent.content.get.opType == OpType.Add && parent.content.get.element == element then
+          res = true
+        else
+          var result = Set.empty[Boolean]
+          for parent <- parents do
+            result = result + removeOpHappenedAfterAddOp(parent, element)
 
-        res = result.contains(true)
-    
+          res = result.contains(true)
+
     res
-    
+
   private def getParents(event: Event[Op[T]]): Set[Event[Op[T]]] =
     var result = Set.empty[Event[Op[T]]]
 
