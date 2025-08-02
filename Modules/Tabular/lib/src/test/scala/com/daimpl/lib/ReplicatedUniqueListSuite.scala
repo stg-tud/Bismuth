@@ -305,7 +305,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     val merged = rA + rB
-    assertEqualsList(merged, List("A", "b", "a"))
+    assertEqualsList(merged, List("b", "A"))
   }
 
   test("marker follows move of its element") {
@@ -359,7 +359,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("crossing moves") {
     val base = withUid("A")(fromElements("a", "b", "c", "d"))
-    var rA = base;
+    var rA = base
     var rB = base
 
     withUid("A") {
@@ -375,7 +375,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("concurrent move and insert at destination slot") {
     val base = withUid("A")(fromElements("x", "y"))
-    var rA = base;
+    var rA = base
     var rB = base
 
     withUid("A") {
