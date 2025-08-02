@@ -34,7 +34,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     ("remove" , "remove" , false)
   ).foreach { case (opA, opB, shouldBeAlive) =>
     test(s"concurrent $opA and $opB on the same element (${if shouldBeAlive then "alive" else "tombstoned"})") {
-      val base = withUid("A") { fromElements("x") }
+      val base = withUid("shared initial state") { fromElements("x") }
 
       var rA = base
       var rB = base
@@ -55,6 +55,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       }
 
       val merged = rA + rB
+
       assertEqualsList(merged, if shouldBeAlive then List("x") else List())
     }
   }
@@ -62,11 +63,14 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   test("remove after keep (same replica) erases element") {
     var rA = withUid("A") { fromElements("x") }
     val rB = rA
+
     withUid("A") {
       rA = rA + rA.update(0, rA.read(0).get)
       rA = rA + rA.removeAt(0)
     }
+
     val merged = rA + rB
+
     assertEqualsList(merged, List())
   }
 
@@ -91,6 +95,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     withUid("B") { rB = rB + rB.append("tail") }
 
     val merged = rA + rB
+
     assertEqualsList(merged, List("head", "initial", "tail"))
   }
 
@@ -102,6 +107,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     withUid("B") { rB = rB + rB.removeAt(0) }
 
     val merged = rA + rB
+
     assertEqualsList(merged, List("a", "y"))
   }
 
@@ -183,6 +189,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     withUid("B") { rB = rB + rB.removeMarker(markerId) }
 
     val merged = rA + rB
+
     assertEquals(merged.getMarker(markerId), Some(1))
   }
 
@@ -202,6 +209,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     val merged = rA + rB
+
     assertEqualsList(merged, List("a", "c", "b_updated"))
   }
 
@@ -222,6 +230,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     val merged = rA + rB
+
     assertEqualsList(merged, List("a", "c", "b_revived"))
   }
 
@@ -243,6 +252,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     val merged = rA + rB
+
     assertEqualsList(merged, List("b_updated", "a", "c"))
     assertEquals(merged.getMarker(markerId), Some(0))
   }
@@ -250,11 +260,12 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   test("concurrent (move) at range border and (move, update): update and more recent move are kept") {
     val markerId = Uid("b_marker")
 
-    var rA = withUid("A") { fromElements("a", "b", "c", "d") }
+    var base = withUid("shared initial state") { fromElements("a", "b", "c", "d") }
     withUid("A") {
-      rA = rA + rA.addMarker(markerId, 1)
+      base = base + base.addMarker(markerId, 1)
     }
-    var rB = rA
+    var rA = base
+    var rB = base
 
     withUid("A") {
       val deltaMove = rA.move(1, 3)
@@ -276,8 +287,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     assertEquals(merged.getMarker(markerId), Some(3))
   }
 
-  test("concurrent move and remove") {
-    val base = withUid("A")(fromElements("a", "b"))
+  test("concurrent move and remove 1: move wins, element is retained") {
+    val base = withUid("shared initial state")(fromElements("a", "b"))
     var rA = base
     var rB = base
 
@@ -289,11 +300,31 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     val merged = rA + rB
+
     assertEqualsList(merged, List("b", "a"))
   }
 
-  test("concurrent move and update") {
-    val base = withUid("A")(fromElements("a", "b"))
+  test("concurrent move and remove 2: move wins, element is retained") {
+    val base = withUid("shared initial state") {
+      fromElements("m", "n", "o")
+    }
+    var r1 = base
+    var r2 = base
+
+    withUid("A") {
+      r1 = r1 + r1.move(1, 3)
+    }
+    withUid("B") {
+      r2 = r2 + r2.removeAt(1)
+    }
+
+    val merged = r1 + r2
+
+    assertEqualsList(merged, List("m", "o", "n"))
+  }
+
+  test("concurrent move and update: move wins, element is retained") {
+    val base = withUid("shared initial state")(fromElements("a", "b"))
     var rA = base
     var rB = base
 
@@ -301,11 +332,30 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       rA = rA + rA.move(0, 2)
     }
     withUid("B") {
-      rB = rB + rB.update(0, "A")
+      rB = rB + rB.update(0, "a_updated")
     }
 
     val merged = rA + rB
-    assertEqualsList(merged, List("b", "A"))
+    assertEqualsList(merged, List("b", "a_updated"))
+  }
+
+  test("concurrent update and delete: update wins") {
+    val base = withUid("shared initial state") {
+      fromElements("r1", "r2", "r3")
+    }
+    var r1 = base
+    var r2 = base
+
+    withUid("A") {
+      r1 = r1 + r1.update(1, "r2_edited")
+    }
+    withUid("B") {
+      r2 = r2 + r2.removeAt(1)
+    }
+
+    val merged = r1 + r2
+
+    assertEquals(merged.read(1), Some("r2_edited"))
   }
 
   test("marker follows move of its element") {
@@ -342,7 +392,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("move vs move of same element converges") {
-    val base = withUid("A")(fromElements("a", "b", "c"))
+    val base = withUid("shared initial state")(fromElements("a", "b", "c"))
     var rA = base
     var rB = base
 
@@ -358,7 +408,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("crossing moves") {
-    val base = withUid("A")(fromElements("a", "b", "c", "d"))
+    val base = withUid("shared initial state")(fromElements("a", "b", "c", "d"))
     var rA = base
     var rB = base
 
@@ -374,7 +424,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("concurrent move and insert at destination slot") {
-    val base = withUid("A")(fromElements("x", "y"))
+    val base = withUid("shared initial state")(fromElements("x", "y"))
     var rA = base
     var rB = base
 

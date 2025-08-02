@@ -23,7 +23,7 @@ case class ReplicatedUniqueList[E](
 
   lazy val observed: Dots = elementIdsAndOperations.observed
 
-  lazy val toList: List[E] = elementIdsAndOperations.toList.map(x => elementIdToValue.get(x.elementId).get.value)
+  lazy val toList: List[E] = {println(elementIdsAndOperations.toList); elementIdsAndOperations.toList.map(x => elementIdToValue.get(x.elementId)).map(_.get.value)}
 
   def size: Int = elementIdsAndOperations.size
 
@@ -31,7 +31,7 @@ case class ReplicatedUniqueList[E](
 
   private def markersImpactedByChangeAt(index: Int) =
     val elementId       = elementIdsAndOperations.read(index).get.elementId
-    val impactedMarkers = markerIdToElementIdAndBehavior.entries.filter { (_, marker) => marker.value.elementId == elementId }.toList
+    val impactedMarkers = markerIdToElementIdAndBehavior.entries.filter{ (_, marker) => marker.value.elementId == elementId }.toList
     impactedMarkers
 
   def read(i: Int): Option[E] = elementIdsAndOperations.read(i).map(elemIdAndOp => elementIdToValue.get(elemIdAndOp.elementId).get.value)
@@ -45,7 +45,9 @@ case class ReplicatedUniqueList[E](
       elementIdsAndOperations =
         elementIdsAndOperations.removeIndex(fromIndex)
         `merge`
-        elementIdsAndOperations.insertAt(toIndex, (elementIdToMove.elementId, OpPrecedence.Move))
+        elementIdsAndOperations.insertAt(toIndex, (elementIdToMove.elementId, OpPrecedence.Move)),
+      elementIdToValue =
+        elementIdToValue.transform(elementIdToMove.elementId)(_.map(identity))
     )
 
     markersImpactedByChangeAt(fromIndex).map((id, lww) => addMarker(id, fromIndex, lww.value.markerRemovalBehavior))
