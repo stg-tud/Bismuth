@@ -1,16 +1,20 @@
 package com.daimpl.lib
 
+import com.daimpl.lib.ReplicatedUniqueList.OpPrecedence.{Positional, Textual}
 import com.daimpl.lib.ReplicatedUniqueList.{ElementId, MarkerId, MarkerRemovalBehavior, OpPrecedence}
 import rdts.base.*
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}
 
 case class ReplicatedUniqueList[E](
-  elementIdsAndLastOperation: ReplicatedList[(elementId: ElementId, positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)] =
-    ReplicatedList.empty[(elementId: ElementId, positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)],
-  elementIdToValue: ObserveRemoveMap[ElementId, LastWriterWins[E]] =
+  elementIdsAndLastOperation:
+          ReplicatedList[(elementId: ElementId, opPrecedence: OpPrecedence)] =
+    ReplicatedList.empty[(elementId: ElementId, opPrecedence: OpPrecedence)],
+  elementIdToValue:
+          ObserveRemoveMap[ElementId, LastWriterWins[E]] =
     ObserveRemoveMap.empty[ElementId, LastWriterWins[E]],
-  markerIdToElementIdAndBehavior: ObserveRemoveMap[MarkerId, LastWriterWins[(elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)]] =
+  markerIdToElementIdAndBehavior:
+          ObserveRemoveMap[MarkerId, LastWriterWins[(elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)]] =
     ObserveRemoveMap.empty[MarkerId, LastWriterWins[(elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)]]
 ){
   lazy val now: Option[CausalTime] =
@@ -43,7 +47,7 @@ case class ReplicatedUniqueList[E](
     val payloadDelta = copy(
       elementIdsAndLastOperation =
         elementIdsAndLastOperation.removeIndex(fromIndex)
-        `merge` elementIdsAndLastOperation.insertAt(toIndex, (elementToMove.elementId, OpPrecedence.Positional.Move, OpPrecedence.Textual.None))
+        `merge` elementIdsAndLastOperation.insertAt(toIndex, (elementToMove.elementId, OpPrecedence.Move))
     )
 
     markersImpactedByChangeAt(fromIndex).map((id, lww) => addMarker(id, fromIndex, lww.value.markerRemovalBehavior))
@@ -55,9 +59,9 @@ case class ReplicatedUniqueList[E](
   def insertAt(index: Int, element: E)(using LocalUid): ReplicatedUniqueList[E] = {
     println(s"[${LocalUid.replicaId}] inserting at $index\n")
 
-    val elementId = elementIdsAndLastOperation.observed.nextDot(LocalUid.replicaId)
+    val elementId = elementIdToValue.observed.nextDot
     copy(
-      elementIdsAndLastOperation = elementIdsAndLastOperation.insertAt(index, (elementId, OpPrecedence.Positional.None, OpPrecedence.Textual.Insert)),
+      elementIdsAndLastOperation = elementIdsAndLastOperation.insertAt(index, (elementId, OpPrecedence.Generic)),
       elementIdToValue = elementIdToValue.update(elementId, LastWriterWins(CausalTime.now(), element))
     )
   }
@@ -105,7 +109,7 @@ case class ReplicatedUniqueList[E](
 
     val elementMetadata = elementIdsAndLastOperation.read(index).get
     copy(
-      elementIdsAndLastOperation = elementIdsAndLastOperation.update(index, (elementMetadata.elementId, OpPrecedence.Positional.Update, OpPrecedence.Textual.Update)),
+      elementIdsAndLastOperation = elementIdsAndLastOperation.update(index, (elementMetadata.elementId, OpPrecedence.Update)),
       elementIdToValue = elementIdToValue.transform(elementMetadata.elementId)(_.map(_.write(elementValue)))
     )
   }
@@ -144,11 +148,11 @@ case class ReplicatedUniqueList[E](
           case Some(candidateMetadata) =>
             combinedElementMetadata.exists{ (candidateDot, elementMetadata) =>
               elementMetadata.elementId == candidateMetadata.elementId
-              && elementMetadata.positionOpPrecedence == OpPrecedence.Positional.Update
+              && elementMetadata.opPrecedence.detail.positional == Positional.Update
               && candidateDot != removedDot
               && {
                 val otherDotTimestamp = combinedTimes(candidateDot)
-                (otherDotTimestamp `merge` combinedTimes(removedDot)) == otherDotTimestamp // timestampOther > timestampThis
+                Iterator(otherDotTimestamp, combinedTimes(removedDot)).max == otherDotTimestamp
               }
             }
         }
@@ -160,7 +164,7 @@ case class ReplicatedUniqueList[E](
     val combinedTrulyRemovedExclUpdated = combinedRemoved `diff` updatedDots
 
     def latestMostPrivilegedDotPerUniqueValue[P: Ordering](
-      precedenceSelector: ((positionOpPrecedence: OpPrecedence.Positional, contentOpPrecedence: OpPrecedence.Textual)) => P
+      precedenceSelector: OpPrecedence => P
     ): Dots =
     {
       Dots.from(
@@ -170,7 +174,7 @@ case class ReplicatedUniqueList[E](
             (_, entries) => entries
               .filterNot{   (dot, _) => combinedTrulyRemovedExclUpdated.contains(dot) }
               .maxByOption{ (dot, elementMetadata) => (
-                precedenceSelector(elementMetadata.positionOpPrecedence, elementMetadata.contentOpPrecedence),
+                precedenceSelector(elementMetadata.opPrecedence),
                 combinedTimes(dot)
               )}
           }.keys
@@ -178,8 +182,8 @@ case class ReplicatedUniqueList[E](
     }
 
     val localDots = Dots.from(elementIdsAndLastOperation.elements.keys)
-    val dotsForLocalDuplicateElementIds    = localDots.diff(latestMostPrivilegedDotPerUniqueValue{_.positionOpPrecedence})
-    val dotsForLocalDuplicateElementValues = localDots.diff(latestMostPrivilegedDotPerUniqueValue{_.contentOpPrecedence})
+    val dotsForLocalDuplicateElementIds    = localDots.diff(latestMostPrivilegedDotPerUniqueValue{_.detail.positional})
+    val dotsForLocalDuplicateElementValues = localDots.diff(latestMostPrivilegedDotPerUniqueValue{_.detail.textual})
 
     copy(
       elementIdsAndLastOperation = elementIdsAndLastOperation.copy(
@@ -190,11 +194,6 @@ case class ReplicatedUniqueList[E](
           dotsForLocalDuplicateElementValues.subsumes(mapEntry.dots)
         }
       ),
-      markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.copy(
-        inner = markerIdToElementIdAndBehavior.inner.filterNot{ (_, mapEntry) =>
-          other.markerIdToElementIdAndBehavior.removed.subsumes(mapEntry.dots)
-        }
-      )
     )
   }
 }
@@ -206,15 +205,26 @@ object ReplicatedUniqueList
 
   given decompose[E]: Decompose[ReplicatedUniqueList[E]] = Decompose.derived
 
-  object OpPrecedence {
-    given enumOrdinalOrdering[E <: scala.reflect.Enum]: Ordering[E] =
-      Ordering.by[E, Int](_.ordinal)
+  enum OpPrecedence
+  {
+    case Update, Move, Generic
 
+    def detail: (positional: Positional, textual: Textual) = this match {
+      case Update   => (Positional.Update , Textual.Update )
+      case Move     => (Positional.Move   , Textual.Generic)
+      case Generic  => (Positional.Generic, Textual.Insert )
+    }
+  }
+
+  object OpPrecedence {
     enum Positional:
-      case None, Update, Move
+      case Generic, Update, Move
 
     enum Textual:
-      case None, Insert, Update
+      case Generic, Insert, Update
+
+    given enumOrdinalOrdering[E <: scala.reflect.Enum]: Ordering[E] =
+      Ordering.by[E, Int](_.ordinal)
   }
 
   enum MarkerRemovalBehavior:
@@ -225,8 +235,12 @@ object ReplicatedUniqueList
 
   private given undecoratedLattice[E]: Lattice[ReplicatedUniqueList[E]] = Lattice.derived
 
-  given lattice[E]: DecoratedLattice[ReplicatedUniqueList[E]](undecoratedLattice) with {
-    override def filter(base: ReplicatedUniqueList[E], other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] = base.filter(other)
-    override def compact(merged: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] = merged.copy(elementIdsAndLastOperation = merged.elementIdsAndLastOperation.compact)
+  given lattice[E]: DecoratedLattice[ReplicatedUniqueList[E]](undecoratedLattice) with
+  {
+    override def filter(base: ReplicatedUniqueList[E], other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
+      base.filter(other)
+
+    override def compact(merged: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
+      merged.copy(elementIdsAndLastOperation = merged.elementIdsAndLastOperation.compact)
   }
 }
