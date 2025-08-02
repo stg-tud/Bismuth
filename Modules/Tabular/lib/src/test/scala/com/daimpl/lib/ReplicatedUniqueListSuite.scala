@@ -42,16 +42,16 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       withUid("A") {
         val deltaA =
           opA match
-            case "keep"   => rA.update(0, rA.read(0).get)
+            case "keep"   => rA.updateAt(0, rA.readAt(0).get)
             case "remove" => rA.removeAt(0)
-        rA = rA + deltaA
+        rA += deltaA
       }
       withUid("B") {
         val deltaB =
           opB match
-            case "keep"   => rB.update(0, rB.read(0).get)
+            case "keep"   => rB.updateAt(0, rB.readAt(0).get)
             case "remove" => rB.removeAt(0)
-        rB = rB + deltaB
+        rB += deltaB
       }
 
       val merged = rA + rB
@@ -65,8 +65,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val rB = rA
 
     withUid("A") {
-      rA = rA + rA.update(0, rA.read(0).get)
-      rA = rA + rA.removeAt(0)
+      rA += rA.updateAt(0, rA.readAt(0).get)
+      rA += rA.removeAt(0)
     }
 
     val merged = rA + rB
@@ -78,8 +78,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rA = ReplicatedUniqueList.empty[String]
     var rB = ReplicatedUniqueList.empty[String]
 
-    withUid("A") { rA = rA + rA.insertAt(0, "a") }
-    withUid("B") { rB = rB + rB.insertAt(0, "b") }
+    withUid("A") { rA += rA.insertAt(0, "a") }
+    withUid("B") { rB += rB.insertAt(0, "b") }
 
     val merged = rA + rB
 
@@ -91,8 +91,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rA = withUid("A") { fromElements("initial") }
     var rB = rA
 
-    withUid("A") { rA = rA + rA.insertAt(0, "head") }
-    withUid("B") { rB = rB + rB.append("tail") }
+    withUid("A") { rA += rA.insertAt(0, "head") }
+    withUid("B") { rB += rB.append("tail") }
 
     val merged = rA + rB
 
@@ -103,8 +103,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rA = withUid("A") { fromElements("x", "y") }
     var rB = rA
 
-    withUid("A") { rA = rA + rA.insertAt(1, "a") }
-    withUid("B") { rB = rB + rB.removeAt(0) }
+    withUid("A") { rA += rA.insertAt(1, "a") }
+    withUid("B") { rB += rB.removeAt(0) }
 
     val merged = rA + rB
 
@@ -113,13 +113,13 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("move element forward within same replica") {
     var rA = withUid("A") { fromElements("a", "b", "c") }
-    withUid("A") { rA = rA + rA.move(0, 2) }
+    withUid("A") { rA += rA.move(0, 2) }
     assertEqualsList(rA, List("b", "a", "c"))
   }
 
   test("move element backward within same replica") {
     var rA = withUid("A") { fromElements("a", "b", "c") }
-    withUid("A") { rA = rA + rA.move(2, 0) }
+    withUid("A") { rA += rA.move(2, 0) }
     assertEqualsList(rA, List("c", "a", "b"))
   }
 
@@ -127,7 +127,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rA = withUid("A") { fromElements("a", "b", "c") }
     val markerId = Uid("marker1")
 
-    withUid("A") { rA = rA + rA.addMarker(markerId, 1) }
+    withUid("A") { rA += rA.addMarker(markerId, 1) }
 
     assertEquals(rA.getMarker(markerId), Some(1))
   }
@@ -137,10 +137,10 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("marker1")
 
     withUid("A") {
-      rA = rA + rA.addMarker(markerId, 1)
+      rA += rA.addMarker(markerId, 1)
       assertEquals(rA.getMarker(markerId), Some(1))
 
-      rA = rA + rA.removeMarker(markerId)
+      rA += rA.removeMarker(markerId)
       assertEquals(rA.getMarker(markerId), None)
     }
   }
@@ -151,8 +151,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId1 = Uid("marker1")
     val markerId2 = Uid("marker2")
 
-    withUid("A") { rA = rA + rA.addMarker(markerId1, 0) }
-    withUid("B") { rB = rB + rB.addMarker(markerId2, 2) }
+    withUid("A") { rA += rA.addMarker(markerId1, 0) }
+    withUid("B") { rB += rB.addMarker(markerId2, 2) }
 
     val merged = rA + rB
 
@@ -166,12 +166,12 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("marker1")
 
     withUid("A") {
-      rA = rA + rA.addMarker(markerId, 1)
+      rA += rA.addMarker(markerId, 1)
       assertEquals(rA.getMarker(markerId), Some(1))
     }
 
     withUid("B") {
-      rB = rB + rB.removeAt(0)
+      rB += rB.removeAt(0)
     }
 
     val merged = rA + rB
@@ -185,8 +185,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = rA
     val markerId = Uid("marker1")
 
-    withUid("A") { rA = rA + rA.addMarker(markerId, 1) }
-    withUid("B") { rB = rB + rB.removeMarker(markerId) }
+    withUid("A") { rA += rA.addMarker(markerId, 1) }
+    withUid("B") { rB += rB.removeMarker(markerId) }
 
     val merged = rA + rB
 
@@ -199,13 +199,13 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
     withUid("A") {
       val deltaA = rA.move(1, 3)
-      rA = rA + deltaA
+      rA += deltaA
     }
 
     withUid("B") {
-      val old = rB.read(1).get
-      val deltaUpdate = rB.update(1, old + "_updated")
-      rB = rB + deltaUpdate
+      val old = rB.readAt(1).get
+      val deltaUpdate = rB.updateAt(1, old + "_updated")
+      rB += deltaUpdate
     }
 
     val merged = rA + rB
@@ -218,15 +218,15 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = rA
 
     withUid("A") {
-      rA = rA + rA.removeAt(1)
+      rA += rA.removeAt(1)
     }
 
     withUid("B") {
       val deltaMove = rB.move(1, 3)
-      rB = rB + deltaMove
-      val old = rB.read(2).get
-      val deltaUpdate = rB.update(2, old + "_revived")
-      rB = rB + deltaUpdate
+      rB += deltaMove
+      val old = rB.readAt(2).get
+      val deltaUpdate = rB.updateAt(2, old + "_revived")
+      rB += deltaUpdate
     }
 
     val merged = rA + rB
@@ -240,15 +240,15 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("markerX")
 
     withUid("A") {
-      rA = rA + rA.addMarker(markerId, 1)
+      rA += rA.addMarker(markerId, 1)
     }
 
     withUid("B") {
       val deltaMove = rB.move(1, 0)
-      rB = rB + deltaMove
-      val old = rB.read(0).get
-      val deltaUpdate = rB.update(0, old + "_updated")
-      rB = rB + deltaUpdate
+      rB += deltaMove
+      val old = rB.readAt(0).get
+      val deltaUpdate = rB.updateAt(0, old + "_updated")
+      rB += deltaUpdate
     }
 
     val merged = rA + rB
@@ -269,16 +269,16 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
     withUid("A") {
       val deltaMove = rA.move(1, 3)
-      rA = rA + deltaMove
+      rA += deltaMove
     }
 
     withUid("B") {
       val deltaMove = rB.move(1, 4)
-      rB = rB + deltaMove
+      rB += deltaMove
 
-      val old = rB.read(3).get
-      val deltaUpdate = rB.update(3, old + "_updated")
-      rB = rB + deltaUpdate
+      val old = rB.readAt(3).get
+      val deltaUpdate = rB.updateAt(3, old + "_updated")
+      rB += deltaUpdate
     }
 
     val merged = rA + rB
@@ -293,10 +293,10 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = base
 
     withUid("A") {
-      rA = rA + rA.move(0, 2)
+      rA += rA.move(0, 2)
     }
     withUid("B") {
-      rB = rB + rB.removeAt(0)
+      rB += rB.removeAt(0)
     }
 
     val merged = rA + rB
@@ -308,17 +308,17 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val base = withUid("shared initial state") {
       fromElements("m", "n", "o")
     }
-    var r1 = base
-    var r2 = base
+    var rA = base
+    var rB = base
 
     withUid("A") {
-      r1 = r1 + r1.move(1, 3)
+      rA += rA.move(1, 3)
     }
     withUid("B") {
-      r2 = r2 + r2.removeAt(1)
+      rB += rB.removeAt(1)
     }
 
-    val merged = r1 + r2
+    val merged = rA + rB
 
     assertEqualsList(merged, List("m", "o", "n"))
   }
@@ -329,10 +329,10 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = base
 
     withUid("A") {
-      rA = rA + rA.move(0, 2)
+      rA += rA.move(0, 2)
     }
     withUid("B") {
-      rB = rB + rB.update(0, "a_updated")
+      rB += rB.updateAt(0, "a_updated")
     }
 
     val merged = rA + rB
@@ -343,19 +343,19 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val base = withUid("shared initial state") {
       fromElements("r1", "r2", "r3")
     }
-    var r1 = base
-    var r2 = base
+    var rA = base
+    var rB = base
 
     withUid("A") {
-      r1 = r1 + r1.update(1, "r2_edited")
+      rA += rA.updateAt(1, "r2_edited")
     }
     withUid("B") {
-      r2 = r2 + r2.removeAt(1)
+      rB += rB.removeAt(1)
     }
 
-    val merged = r1 + r2
+    val merged = rA + rB
 
-    assertEquals(merged.read(1), Some("r2_edited"))
+    assertEquals(merged.readAt(1), Some("r2_edited"))
   }
 
   test("marker follows move of its element") {
@@ -363,8 +363,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("m1")
 
     withUid("A") {
-      rA = rA + rA.addMarker(markerId, 0)
-      rA = rA + rA.move(0, 2)
+      rA += rA.addMarker(markerId, 0)
+      rA += rA.move(0, 2)
     }
 
     assertEquals(rA.getMarker(markerId), Some(1))
@@ -381,10 +381,10 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       val id = Uid("m-$behaviour")
 
       withUid("A") {
-        rA = rA + rA.addMarker(id, 1, behaviour)
+        rA += rA.addMarker(id, 1, behaviour)
       }
       withUid("A") {
-        rA = rA + rA.removeAt(1)
+        rA += rA.removeAt(1)
       }
 
       assertEquals(rA.getMarker(id), expectedIdx)
@@ -397,10 +397,10 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = base
 
     withUid("A") {
-      rA = rA + rA.move(0, 2)
+      rA += rA.move(0, 2)
     }
     withUid("B") {
-      rB = rB + rB.move(0, 1)
+      rB += rB.move(0, 1)
     }
 
     val merged = rA + rB
@@ -413,10 +413,10 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = base
 
     withUid("A") {
-      rA = rA + rA.move(0, 3)
+      rA += rA.move(0, 3)
     }
     withUid("B") {
-      rB = rB + rB.move(3, 0)
+      rB += rB.move(3, 0)
     }
 
     val merged = rA + rB
@@ -424,19 +424,142 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("concurrent move and insert at destination slot") {
-    val base = withUid("shared initial state")(fromElements("x", "y"))
+    val base = withUid("shared initial state")(fromElements("a", "b"))
     var rA = base
     var rB = base
 
     withUid("A") {
-      rA = rA + rA.move(0, 2)
+      rA += rA.move(0, 2)
     }
     withUid("B") {
-      rB = rB + rB.insertAt(2, "z")
+      rB += rB.insertAt(2, "c")
     }
 
     val merged = rA + rB
-    assertEqualsList(merged, List("y", "z", "x"))
+    assertEqualsList(merged, List("b", "c", "a"))
+  }
+
+  test("associative merge across three replicas") {
+    val base = withUid("shared initial state") {
+      fromElements("a", "b")
+    }
+    var rA = base
+    var rB = base
+    var rC = base
+
+    withUid("A") {
+      rA += rA.insertAt(1, "c")
+    }
+    withUid("B") {
+      rB += rB.removeAt(0)
+    }
+    withUid("C") {
+      rC += rC.move(1, 2)
+    }
+
+    val ab_c = (rA + rB) + rC
+    val a_bc = rA + (rB + rC)
+    assertEqualsList(ab_c, a_bc.toList)
+  }
+
+  test("concurrent moves of same element do not duplicate: later move wins") {
+    val base = withUid("shared initial state") {
+      fromElements("a", "b", "c")
+    }
+    var r1 = base
+    var r2 = base
+
+    withUid("A") {
+      r1 = r1 + r1.move(1, 0)
+    }
+    withUid("B") {
+      r2 = r2 + r2.move(1, 3)
+    }
+
+    val merged = r1 + r2
+    assertEqualsList(merged, List("a", "c", "b"))
+  }
+
+  test("cross moves break cycles deterministically: later move wins") {
+    val base = withUid("shared initial state") {
+      fromElements("a", "b")
+    }
+    var r1 = base
+    var r2 = base
+
+    withUid("A") {
+      r1 = r1 + r1.move(0, 2)
+    }
+    withUid("B") {
+      r2 = r2 + r2.move(1, 0)
+    }
+
+    val merged = r1 + r2
+
+    assertEquals(merged.size, 2)
+    assertEqualsList(merged, List("b", "a"))
+  }
+
+  test("two concurrent inserts at same index") {
+    var r1 = ReplicatedUniqueList.empty[String]
+    var r2 = r1
+
+    withUid("A") {
+      r1 = r1 + r1.insertAt(0, "insert1")
+    }
+    withUid("B") {
+      r2 = r2 + r2.insertAt(0, "insert2")
+    }
+
+    val merged = r1 + r2
+    assertEquals(merged.toList, List("insert2", "insert1"))
+  }
+
+  test("concurrent (insert) and (delete) adjust indices correctly") {
+    val base = withUid("shared initial state") {
+      fromElements("a", "b", "c")
+    }
+    var r1 = base
+    var r2 = base
+
+    withUid("A") {
+      r1 = r1 + r1.insertAt(1, "new")
+    }
+    withUid("B") {
+      r2 = r2 + r2.removeAt(0)
+    }
+
+    val merged = r1 + r2
+    assertEqualsList(merged, List("new", "b", "c"))
+  }
+
+  test("many concurrent operations converge to a valid state") {
+    val base = withUid("shared initial state") {
+      fromElements((1 to 5).map(_.toString)*)
+    }
+    var rA = base
+    var rB = base
+    var rC = base
+
+    withUid("A") {
+      rA += rA.insertAt(2, "a")
+      rA += rA.move(0, 4)
+    }
+    withUid("B") {
+      rB += rB.removeAt(3)
+      rB += rB.insertAt(1, "b")
+      rB += rB.updateAt(0, "a_updated")
+    }
+    withUid("C") {
+      rC += rC.move(4, 1)
+      rC += rC.removeAt(0)
+    }
+
+    val merged = rA + rB + rC
+
+    println(merged)
+
+    assertEquals(merged.toList.size, merged.size)
   }
 
   private def fromElements[E](elems: E*)(using uid: LocalUid): ReplicatedUniqueList[E] =
@@ -447,8 +570,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     assertEquals(actual.size, expected.size)
 
     expected.zipWithIndex.foreach { case (elem, idx) =>
-      assertEquals(actual.read(idx), Some(elem))
+      assertEquals(actual.readAt(idx), Some(elem))
     }
 
-    assertEquals(actual.read(expected.size), None)
-    assertEquals(actual.read(expected.size + 1), None)
+    assertEquals(actual.readAt(expected.size), None)
+    assertEquals(actual.readAt(expected.size + 1), None)

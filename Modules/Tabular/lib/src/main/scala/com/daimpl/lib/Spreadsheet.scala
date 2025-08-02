@@ -59,8 +59,8 @@ case class Spreadsheet[A](
     )})
 
   def editCell(coordinate: SpreadsheetCoordinate, value: A)(using LocalUid): Spreadsheet[A] = {
-    val rowId = rowIds.read(coordinate.rowIdx).get
-    val colId = colIds.read(coordinate.colIdx).get
+    val rowId = rowIds.readAt(coordinate.rowIdx).get
+    val colId = colIds.readAt(coordinate.colIdx).get
     val newContent =
       if value == null then
         rowAndColIdPairToContent.transform((rowId, colId)) {
@@ -73,8 +73,8 @@ case class Spreadsheet[A](
           case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
         }
     Spreadsheet(
-      rowIds = rowIds.update(coordinate.rowIdx, rowId),
-      colIds = colIds.update(coordinate.colIdx, colId),
+      rowIds = rowIds.updateAt(coordinate.rowIdx, rowId),
+      colIds = colIds.updateAt(coordinate.colIdx, colId),
       rowAndColIdPairToContent = newContent
     )
   }
@@ -146,8 +146,8 @@ case class Spreadsheet[A](
 
   def read(coordinate: SpreadsheetCoordinate): ConflictableValue[A] =
     (for
-      rowId <- rowIds.read(coordinate.rowIdx)
-      colId <- colIds.read(coordinate.colIdx)
+      rowId <- rowIds.readAt(coordinate.rowIdx)
+      colId <- colIds.readAt(coordinate.colIdx)
       cell  <- rowAndColIdPairToContent.get((rowId, colId))
     yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty)
 

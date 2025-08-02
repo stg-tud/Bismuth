@@ -34,7 +34,7 @@ case class ReplicatedUniqueList[E](
     val impactedMarkers = markerIdToElementIdAndBehavior.entries.filter{ (_, marker) => marker.value.elementId == elementId }.toList
     impactedMarkers
 
-  def read(i: Int): Option[E] = elementIdsAndOperations.read(i).map(elemIdAndOp => elementIdToValue.get(elemIdAndOp.elementId).get.value)
+  def readAt(i: Int): Option[E] = elementIdsAndOperations.read(i).map(elemIdAndOp => elementIdToValue.get(elemIdAndOp.elementId).get.value)
 
   def move(fromIndex: Int, toIndex: Int)(using LocalUid): ReplicatedUniqueList[E] =
     println(s"[${LocalUid.replicaId}] moving $fromIndex to $toIndex\n")
@@ -104,7 +104,7 @@ case class ReplicatedUniqueList[E](
   def append(e: E)(using LocalUid): ReplicatedUniqueList[E] =
     insertAt(size, e)
 
-  def update(index: Int, elementValue: E)(using LocalUid): ReplicatedUniqueList[E] = {
+  def updateAt(index: Int, elementValue: E)(using LocalUid): ReplicatedUniqueList[E] = {
     println(s"[${LocalUid.replicaId}] updating at $index to $elementValue\n")
 
     val elementMetadata = elementIdsAndOperations.read(index).get
