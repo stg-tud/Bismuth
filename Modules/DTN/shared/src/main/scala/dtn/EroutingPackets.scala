@@ -106,5 +106,5 @@ given Decoder[PeerAddress] = Decoder { reader =>
     case "Generic" => peerAddress = PeerAddress.Generic(reader.readString())
     case s: Any    => throw Exception(s"unknown PeerAddress type: $s")
 
-  reader.readMapClose(unbounded, peerAddress.nn)
+  reader.readMapClose(unbounded, peerAddress)
 }
