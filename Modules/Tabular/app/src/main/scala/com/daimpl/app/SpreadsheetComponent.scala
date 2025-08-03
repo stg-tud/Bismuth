@@ -16,7 +16,7 @@ import rdts.base.{LocalUid, Uid}
 
 object SpreadsheetComponent {
 
-  def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[Spreadsheet[String]] = {
+  def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[String] = {
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
       .edit(_.addRow())
       .edit(_.addRow())
@@ -31,7 +31,7 @@ object SpreadsheetComponent {
   }
 
   case class Props(
-      spreadsheetAggregator: SpreadsheetDeltaAggregator[Spreadsheet[String]],
+      spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
       onDelta: Spreadsheet[String] => Callback,
       replicaId: LocalUid
   )
@@ -57,7 +57,7 @@ object SpreadsheetComponent {
     private def modSpreadsheet(f: LocalUid ?=> Spreadsheet[String] => Spreadsheet[String]): Callback = {
       $.props.flatMap{ props =>
         given LocalUid = props.replicaId
-        val delta      = props.spreadsheetAggregator.editAndGetDelta(f)
+        val delta      = props.spreadsheetAggregator.editAndGetDelta()(f)
         props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)
       }

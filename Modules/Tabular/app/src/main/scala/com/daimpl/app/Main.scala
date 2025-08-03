@@ -11,7 +11,7 @@ object Main {
   case class SpreadsheetData(
       id: Int,
       isOnline: Boolean,
-      aggregator: SpreadsheetDeltaAggregator[Spreadsheet[String]],
+      aggregator: SpreadsheetDeltaAggregator[String],
       replicaId: LocalUid
   )
   case class State(spreadsheets: List[SpreadsheetData], nextId: Int)
@@ -59,12 +59,12 @@ object Main {
             val updatedSpreadsheets = state.spreadsheets.map {
               case s if s.id == id => // The sheet that is coming online
                 val mergedAggregator = otherOnlineSheets.foldLeft(s.aggregator) { (agg, other) =>
-                  agg.merge(other.aggregator.current)
+                  agg.accumulate(other.aggregator.current)
                 }
                 s.copy(isOnline = true, aggregator = mergedAggregator)
 
               case s if s.isOnline => // An already online sheet
-                s.copy(aggregator = s.aggregator.merge(sheetToSyncObrem))
+                s.copy(aggregator = s.aggregator.accumulate(sheetToSyncObrem))
 
               case s => s // An offline sheet
             }
@@ -79,7 +79,7 @@ object Main {
       $.modState { state =>
         val updatedSpreadsheets = state.spreadsheets.map { sheet =>
           if sheet.id != sourceSheetId && sheet.isOnline then {
-            sheet.copy(aggregator = sheet.aggregator.merge(delta))
+            sheet.copy(aggregator = sheet.aggregator.accumulate(delta))
           } else {
             sheet
           }
@@ -89,7 +89,7 @@ object Main {
     }
   }
 
-  val App = ScalaComponent
+  private val App = ScalaComponent
     .builder[Unit]("App")
     .initialState {
       given LocalUid = LocalUid.gen()

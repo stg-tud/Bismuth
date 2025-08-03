@@ -23,7 +23,7 @@ case class ReplicatedUniqueList[E](
 
   lazy val observed: Dots = elementIdsAndOperations.observed
 
-  lazy val toList: List[E] = {println(elementIdsAndOperations.toList); elementIdsAndOperations.toList.map(x => elementIdToValue.get(x.elementId)).map(_.get.value)}
+  lazy val toList: List[E] = elementIdsAndOperations.toList.map(x => elementIdToValue.get(x.elementId)).map(_.get.value)
 
   def size: Int = elementIdsAndOperations.size
 
@@ -41,7 +41,7 @@ case class ReplicatedUniqueList[E](
 
     val elementIdToMove = elementIdsAndOperations.read(fromIndex).get
 
-    val payloadDelta = copy(
+    val payloadDelta = ReplicatedUniqueList[E](
       elementIdsAndOperations =
         elementIdsAndOperations.removeIndex(fromIndex)
         `merge`
@@ -60,7 +60,7 @@ case class ReplicatedUniqueList[E](
     println(s"[${LocalUid.replicaId}] inserting at $index\n")
 
     val elementId = elementIdToValue.observed.nextDot
-    copy(
+    ReplicatedUniqueList[E](
       elementIdsAndOperations = elementIdsAndOperations.insertAt(index, (elementId, OpPrecedence.Generic)),
       elementIdToValue        = elementIdToValue.update(elementId, LastWriterWins(CausalTime.now(), element))
     )
@@ -70,7 +70,7 @@ case class ReplicatedUniqueList[E](
   {
     println(s"[${LocalUid.replicaId}] removing at $index\n")
 
-    val payloadDelta = copy(
+    val payloadDelta = ReplicatedUniqueList[E](
       elementIdsAndOperations = elementIdsAndOperations.removeIndex(index),
       elementIdToValue        = elementIdToValue.remove(elementIdsAndOperations.read(index).get.elementId)
     )
@@ -108,33 +108,39 @@ case class ReplicatedUniqueList[E](
     println(s"[${LocalUid.replicaId}] updating at $index to $elementValue\n")
 
     val elementMetadata = elementIdsAndOperations.read(index).get
-    copy(
+    ReplicatedUniqueList[E](
       elementIdsAndOperations = elementIdsAndOperations.update(index, (elementMetadata.elementId, OpPrecedence.Update)),
       elementIdToValue        = elementIdToValue.transform(elementMetadata.elementId)(_.map(_.write(elementValue)))
     )
   }
 
   def addMarker(
-    markerId: MarkerId, index: Int,
-    removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None
-  )
-  (using LocalUid): ReplicatedUniqueList[E] =
-    copy(
+      markerId: MarkerId,
+      index: Int,
+      removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None
+    )
+    (using LocalUid)
+  : ReplicatedUniqueList[E] =
+  {
+    val markedElementId = elementIdsAndOperations.read(index).get.elementId
+    ReplicatedUniqueList[E](
       markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.update(
         markerId,
-        LastWriterWins(CausalTime.now(), (elementIdsAndOperations.read(index).get.elementId, removalBehavior))
+        LastWriterWins(CausalTime.now(), (markedElementId, removalBehavior))
       ),
     )
+  }
 
-  def removeMarker(id: MarkerId): ReplicatedUniqueList[E] =
-    copy(markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.remove(id))
+  def removeMarker(markerId: MarkerId): ReplicatedUniqueList[E] =
+    ReplicatedUniqueList[E](markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.remove(markerId))
 
-  def getMarker(id: MarkerId): Option[Int] =
-    markerIdToElementIdAndBehavior.get(id).flatMap { marker =>
+  def getMarker(markerId: MarkerId): Option[Int] = {
+    markerIdToElementIdAndBehavior.get(markerId).flatMap { marker =>
       val elementId = marker.value.elementId
       val index = elementIdsAndOperations.toList.indexWhere(_.elementId == elementId)
       if index == -1 then None else Some(index)
     }
+  }
 
   def filter(other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
   {

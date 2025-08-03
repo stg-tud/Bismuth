@@ -423,6 +423,26 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     assertEquals(merged.toList.toSet, Set("a", "b", "c", "d"))
   }
 
+  test("crossing moves break cycles deterministically: later move wins") {
+    val base = withUid("shared initial state") {
+      fromElements("a", "b")
+    }
+    var r1 = base
+    var r2 = base
+
+    withUid("A") {
+      r1 = r1 + r1.move(0, 2)
+    }
+    withUid("B") {
+      r2 = r2 + r2.move(1, 0)
+    }
+
+    val merged = r1 + r2
+
+    assertEquals(merged.size, 2)
+    assertEqualsList(merged, List("b", "a"))
+  }
+
   test("concurrent move and insert at destination slot") {
     val base = withUid("shared initial state")(fromElements("a", "b"))
     var rA = base
@@ -478,26 +498,6 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
     val merged = r1 + r2
     assertEqualsList(merged, List("a", "c", "b"))
-  }
-
-  test("cross moves break cycles deterministically: later move wins") {
-    val base = withUid("shared initial state") {
-      fromElements("a", "b")
-    }
-    var r1 = base
-    var r2 = base
-
-    withUid("A") {
-      r1 = r1 + r1.move(0, 2)
-    }
-    withUid("B") {
-      r2 = r2 + r2.move(1, 0)
-    }
-
-    val merged = r1 + r2
-
-    assertEquals(merged.size, 2)
-    assertEqualsList(merged, List("b", "a"))
   }
 
   test("two concurrent inserts at same index") {
