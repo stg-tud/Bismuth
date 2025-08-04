@@ -4,6 +4,10 @@ By contributing code to this repository, you agree to publish it under the Apach
 
 This repository is a monorepo, with various independent modules. It is recommended to commit directly to the `main` branch to ensure everything remains integrated. However, please ensure your changes compile and pass tests without errors.
 
+The preferred working mode is to push small incremental, individually compiling changes directly to main. This allows us to keep everything integrated. Use `git config set pull.rebase true` for that.
+Using merge commits to group a series of changes is acceptable.
+
+
 # Contact
 
 For TUDa members (with TU-ID) you should be able to directly join our matrix channel:
