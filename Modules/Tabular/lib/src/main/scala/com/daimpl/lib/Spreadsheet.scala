@@ -15,8 +15,10 @@ case class Spreadsheet[A](
   private val rangeIds: ReplicatedSet[RangeId] = ReplicatedSet.empty[RangeId]
 ){
   lazy val observed: Dots =
-    Dots.from(rowIds.toList)
-    `union` Dots.from(colIds.toList)
+    rowIds.observed
+    `union` colIds.observed
+    `union` rowAndColIdPairToContent.observed
+    `union` rangeIds.observed
 
   private def newRowOrColId(using LocalUid): Dot = observed.nextDot
 
@@ -40,27 +42,33 @@ case class Spreadsheet[A](
 
   def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
     val touchedRanges = listRangesWithIds.filter(_._2.touchedRows(sourceIdx))
-    touchedRanges.foldLeft(
-      Spreadsheet[A](rowIds = rowIds.move(sourceIdx, targetIdx))
-    ){ (accumulator, rangeAndId) => accumulator.merge{
-      Spreadsheet[A](rangeIds = {
-          val (rangeId, range) = rangeAndId
-          if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
-          else removeRange(rangeId)
-        }.rangeIds
-    )}}
+    val rangeIds =
+      touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]){ (accumulator, rangeAndId) =>
+        accumulator.merge({
+            val (rangeId, range) = rangeAndId
+            if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
+            else removeRange(rangeId)
+        }.rangeIds)
+      }
+    Spreadsheet[A](
+      rowIds = rowIds.move(sourceIdx, targetIdx),
+      rangeIds = rangeIds
+    )
 
   def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
     val touchedRanges = listRangesWithIds.filter(_._2.touchedCols(sourceIdx))
-    touchedRanges.foldLeft(
-      Spreadsheet[A](colIds = colIds.move(sourceIdx, targetIdx))
-    ){ (accumulator, rangeAndId) => accumulator.merge{
-      Spreadsheet[A](rangeIds = {
-          val (rangeId, range) = rangeAndId
-          if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
-          else removeRange(rangeId)
-        }.rangeIds
-    )}}
+    val rangeIds =
+      touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]){ (accumulator, rangeAndId) =>
+        accumulator.merge({
+            val (rangeId, range) = rangeAndId
+            if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
+            else removeRange(rangeId)
+        }.rangeIds)
+      }
+    Spreadsheet[A](
+      colIds = colIds.move(sourceIdx, targetIdx),
+      rangeIds = rangeIds
+    )
 
   def editCell(coordinate: SpreadsheetCoordinate, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId = rowIds.readAt(coordinate.rowIdx).get
@@ -68,10 +76,10 @@ case class Spreadsheet[A](
     val newContent =
       rowAndColIdPairToContent.transform(rowId, colId){
         if value == null then
-          case None => None
+          case None      => None
           case Some(set) => Some(set.clear())
         else
-          case None => Some(ReplicatedSet.empty.add(value))
+          case None      => Some(ReplicatedSet.empty.add(value))
           case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
       }
     Spreadsheet[A](
@@ -89,8 +97,7 @@ case class Spreadsheet[A](
     })
   }
 
-  def numRows: Int = rowIds.size
-
+  def numRows   : Int = rowIds.size
   def numColumns: Int = colIds.size
 
   def getRow(rowIdx: Int): List[ConflictableValue[A]] =
@@ -103,7 +110,7 @@ case class Spreadsheet[A](
     (for
       rowId <- rowIds.readAt(coordinate.rowIdx)
       colId <- colIds.readAt(coordinate.colIdx)
-      cell  <- rowAndColIdPairToContent.get((rowId, colId))
+      cell  <- rowAndColIdPairToContent.get(rowId, colId)
     yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty[A])
 
   def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
@@ -149,6 +156,8 @@ case class Spreadsheet[A](
     rangeIds.elements.toList.flatMap { rid =>
       getRange(rid).map(rng => (rid, rng))
     }
+
+  override def toString: String = pprint.apply(this).toString
 
   def printToConsole()(using LocalUid): Unit = {
     println("\nSpreadsheet Data Structure Print:")
@@ -198,9 +207,10 @@ case class Spreadsheet[A](
   }
 }
 
-object Spreadsheet {
+object Spreadsheet
+{
   type ElementId = Dot
-  type RangeId = Uid
+  type   RangeId = Uid
 
   def empty[A]: Spreadsheet[A] = Spreadsheet[A]()
 
@@ -224,5 +234,4 @@ object Spreadsheet {
 
   given bottom[A]:       Bottom[Spreadsheet[A]] = Bottom.provide(empty)
   given lattice[A]:     Lattice[Spreadsheet[A]] = Lattice.derived
-  given decompose[A]: Decompose[Spreadsheet[A]] = Decompose.derived
 }

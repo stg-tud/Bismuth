@@ -288,4 +288,7 @@ lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %%% "pprint" % "0.9.0",
+    ),
   )

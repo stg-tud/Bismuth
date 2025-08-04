@@ -405,6 +405,43 @@ class SpreadsheetSuite extends munit.FunSuite {
     assertEquals(replica1.current.getRange(rangeId), None)
   }
 
+  test("three-way merge with mixed operations 3") {
+
+    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("mix0"))
+      .repeatEdit(4, _.addRow())
+      .repeatEdit(4, _.addColumn())
+      .current
+
+    val cellCoord = SpreadsheetCoordinate(2, 2)
+    val cellText = "X"
+
+    val replica1 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("a"))
+    val replica2 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("b"))
+    val replica3 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("c"))
+
+    val replica1Delta = replica1.multiEditAndGetDelta()(
+      _.removeRow(1),
+      _.editCell(cellCoord, cellText)
+    )
+    val replica2Delta = replica2.multiEditAndGetDelta()(
+      _.moveColumn(2, 0),
+      _.removeColumn(3)
+    )
+    val replica3Delta = replica3.multiEditAndGetDelta()(
+      _.removeRow(1),
+      _.moveColumn(2, 0)
+    )
+
+    replica1.accumulate(replica2Delta).accumulate(replica3Delta)
+    replica2.accumulate(replica3Delta).accumulate(replica1Delta)
+    replica3.accumulate(replica1Delta).accumulate(replica2Delta)
+
+    assertEquals(replica1.current, replica2.current)
+    assertEquals(replica2.current, replica3.current)
+
+    assertEquals(replica1.current.read(SpreadsheetCoordinate(2, 0)).toList, List(cellText))
+  }
+
   test("concurrent creation of overlapping ranges") {
 
     val numRows = 5
