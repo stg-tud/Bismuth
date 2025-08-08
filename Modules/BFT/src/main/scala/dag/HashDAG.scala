@@ -1,7 +1,8 @@
 package dag
 
-import scala.collection.immutable.{HashMap, Map, Set}
-import scala.collection.mutable
+import scala.collection.immutable.{HashMap, Map, Set, List}
+import java.security.KeyPair
+import crypto.Ed25519Util
 
 // a hash directed acyclic graph
 case class HashDAG[T] private(
@@ -10,6 +11,7 @@ case class HashDAG[T] private(
                                // a better way to solve this is by mapping each vertex to the set of its children
                                graph: Map[Event[T], Set[Event[T]]],
                                authorKeys: KeyPair,
+                               queue: Set[Event[T]]
                              ):
 
   // checks if an event is contained in the graph
@@ -25,20 +27,21 @@ case class HashDAG[T] private(
     graph(event).nonEmpty
 
   // returns the current forward extremities (aka Heads)
-  def getCurrentHeads: Set[Event[T]] =
+  private def getCurrentHeads: Set[Event[T]] =
     Set.from(graph.filter((_, set) => set.isEmpty).map((event, _) => event))
 
   def generator(content: T): Event[T] = {
     val currentHeads = getCurrentHeads
     val currentHeadsIDs = currentHeads.map(event => event.id)
-    Event(Some(content), authorKeys.privateKey, currentHeadsIDs)
+    val signature = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
+    
+    Event(Some(content), authorKeys.getPublic, currentHeadsIDs, signature)
   }
 
   def effector(event: Event[T]): HashDAG[T] =
     assume(!contains(event), "Event already in HashDAG!")
 
-    val i = event.calculateHash
-    if event.calculateHash != event.id then
+    if event.calculateHash != event.id || !event.signatureIsValid then
       return this
 
     val dependencies = event.dependencies
@@ -47,11 +50,10 @@ case class HashDAG[T] private(
       for (d <- dependencies)
         val e = g.find((e, _) => e.id == d).get._1
         g = g.updated(e, g(e) + event)
-
-      HashDAG(g + (event -> Set.empty), this.authorKeys)
+        
+      HashDAG(g + (event -> Set.empty), this.authorKeys, this.queue - event)
     else
-      // TODO: add the event to waiting list and process it as soon as all its dependencies are received
-      this
+      HashDAG(this.graph, this.authorKeys, this.queue + event)
 
 
   def addEvent(content: T): HashDAG[T] =
@@ -61,20 +63,18 @@ case class HashDAG[T] private(
 
     // apply the event
     effector(event)
+    
+  def processQueue(): HashDAG[T] =
+    var hashDAG = this
+    for (event <- this.queue) 
+      hashDAG = effector(event)
+      
+    hashDAG
 
 
 object HashDAG:
   def apply[T](authorKeys: KeyPair): HashDAG[T] =
     val graph = new HashMap[Event[T], Set[Event[T]]]()
-    val root = new Event("0", None, authorKeys.publicKey, Set.empty, "").asInstanceOf[Event[T]]
+    val root = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
 
-    new HashDAG[T](graph.updated(root, Set.empty), authorKeys)
-
-
-
-
-case class KeyPair(
-                    publicKey: Array[Byte],
-                    privateKey: Array[Byte],
-                  )
-
+    new HashDAG[T](graph.updated(root, Set.empty), authorKeys, Set.empty)

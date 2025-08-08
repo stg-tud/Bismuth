@@ -52,10 +52,14 @@ lazy val publishedProjects =
 // projects in alphabetical order
 
 lazy val bft = project.in(file("Modules/BFT"))
+  .dependsOn(
+    crypto.jvm
+  )
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
-    Dependencies.jsoniterScala
+    Dependencies.jsoniterScala,
+    Dependencies.bouncyCastle
   )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)

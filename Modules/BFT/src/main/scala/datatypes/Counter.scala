@@ -1,6 +1,7 @@
 package datatypes
 
-import dag.{Event, HashDAG, KeyPair}
+import dag.{Event, HashDAG}
+import crypto.Ed25519Util
 
 /** Op-based CRDT*/
 case class Counter private(
@@ -30,8 +31,7 @@ case class Counter private(
 
 object Counter:
   def apply(): Counter =
-    val authorKeyPair = KeyPair(Array.empty, Array.empty)
-    new Counter(HashDAG[Int](authorKeyPair))
+    new Counter(HashDAG[Int](Ed25519Util.generateNewKeyPair))
 
 
 

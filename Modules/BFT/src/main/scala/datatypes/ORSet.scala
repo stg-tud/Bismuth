@@ -1,6 +1,7 @@
 package datatypes
 
-import dag.{Event, HashDAG, KeyPair}
+import dag.{Event, HashDAG}
+import crypto.Ed25519Util
 
 case class ORSet[T] private(
                              hashDAG: HashDAG[Op[T]]
@@ -73,8 +74,7 @@ case class ORSet[T] private(
 
 object ORSet:
   def apply[T](): ORSet[T] =
-    val authorKeyPair = KeyPair(Array.empty, Array.empty)
-    new ORSet[T](HashDAG[Op[T]](authorKeyPair))
+    new ORSet[T](HashDAG[Op[T]](Ed25519Util.generateNewKeyPair))
 
 
 
