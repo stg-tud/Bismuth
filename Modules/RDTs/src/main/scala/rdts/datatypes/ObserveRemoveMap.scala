@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, DecoratedLattice, Lattice, LocalUid}
+import rdts.base.{Bottom, DecoratedLattice, Decompose, Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap.Entry
 import rdts.time.Dots
 
@@ -75,6 +75,7 @@ object ObserveRemoveMap {
   object Entry {
     given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
     given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
+    given decompose[V: Decompose]: Decompose[Entry[V]] = Decompose.derived
   }
 
   def empty[K, V]: ObserveRemoveMap[K, V] = ObserveRemoveMap(Map.empty, Dots.empty)
@@ -85,4 +86,6 @@ object ObserveRemoveMap {
     DecoratedLattice.filter[ObserveRemoveMap[K, V]](Lattice.derived) { (base, other) =>
       base.copy(inner = base.inner.filter((_, e) => !other.removed.subsumes(e.dots)))
     }
+
+  given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 }
