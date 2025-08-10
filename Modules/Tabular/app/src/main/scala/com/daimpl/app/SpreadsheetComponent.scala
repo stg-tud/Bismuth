@@ -18,16 +18,8 @@ object SpreadsheetComponent {
 
   def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[String] = {
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
-      .edit(_.addRow())
-      .edit(_.addRow())
-      .edit(_.addRow())
-      .edit(_.addRow())
-      .edit(_.addRow())
-      .edit(_.addColumn())
-      .edit(_.addColumn())
-      .edit(_.addColumn())
-      .edit(_.addColumn())
-      .edit(_.addColumn())
+      .repeatEdit(6, _.addRow())
+      .repeatEdit(6, _.addColumn())
   }
 
   case class Props(

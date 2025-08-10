@@ -15,12 +15,10 @@ case class Spreadsheet[A](
   private val rangeIds: ReplicatedSet[RangeId] = ReplicatedSet.empty[RangeId]
 ){
   lazy val observed: Dots =
-    rowIds.observed
-    `union` colIds.observed
-    `union` rowAndColIdPairToContent.observed
-    `union` rangeIds.observed
+            Dots.from(rowIds.toList)
+    `union` Dots.from(colIds.toList)
 
-  private def newRowOrColId(using LocalUid): Dot = observed.nextDot
+  private def newRowOrColId(using LocalUid): Dot = observed.nextDot(LocalUid.replicaId)
 
   def addRow()(using LocalUid): Spreadsheet[A] =
     Spreadsheet[A](rowIds = rowIds.append(newRowOrColId))
@@ -80,7 +78,7 @@ case class Spreadsheet[A](
           case Some(set) => Some(set.clear())
         else
           case None      => Some(ReplicatedSet.empty.add(value))
-          case Some(set) => Some(Lattice.merge(set.removeBy(_ != value), set.add(value)))
+          case Some(set) => Some(set.removeBy(_ != value) `merge` set.add(value))
       }
     Spreadsheet[A](
       rowIds = rowIds.updateAt(coordinate.rowIdx, rowId),
@@ -100,7 +98,7 @@ case class Spreadsheet[A](
   def numRows   : Int = rowIds.size
   def numColumns: Int = colIds.size
 
-  def getRow(rowIdx: Int): List[ConflictableValue[A]] =
+  private def getRow(rowIdx: Int): List[ConflictableValue[A]] =
     (0 until numColumns).map(colIdx => read(SpreadsheetCoordinate(rowIdx, colIdx))).toList
 
   def toList: List[List[ConflictableValue[A]]] =
@@ -117,10 +115,10 @@ case class Spreadsheet[A](
     val idFrom = Uid(id.show + ":from")
     val idTo   = Uid(id.show + ":to")
     Spreadsheet[A](
-      rowIds  = rowIds.addMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
-        `merge` rowIds.addMarker(idTo  , to.rowIdx  , MarkerRemovalBehavior.Predecessor),
-      colIds  = colIds.addMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
-        `merge` colIds.addMarker(idTo  , to.colIdx  , MarkerRemovalBehavior.Predecessor),
+      rowIds  = rowIds.addOrUpdateMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
+        `merge` rowIds.addOrUpdateMarker(idTo  , to.rowIdx  , MarkerRemovalBehavior.Predecessor),
+      colIds  = colIds.addOrUpdateMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
+        `merge` colIds.addOrUpdateMarker(idTo  , to.colIdx  , MarkerRemovalBehavior.Predecessor),
       rangeIds = rangeIds.add(id)
     )
 
@@ -223,15 +221,16 @@ object Spreadsheet
 
     def validAfterSwapping(source: Int, target: Int): Boolean =
       val plugInTarget =
-        (coord: SpreadsheetCoordinate) =>
-          if coord.rowIdx == source then (target, coord.colIdx)
-          else if coord.colIdx == source then (coord.rowIdx, target)
-          else (coord.rowIdx, from.colIdx)
+        (coord: SpreadsheetCoordinate) => source match {
+          case coord.rowIdx => (target      , coord.colIdx)
+          case coord.colIdx => (coord.rowIdx,       target)
+          case _            => (coord.rowIdx,  from.colIdx)
+        }
       val newFrom = plugInTarget(from)
       val newTo   = plugInTarget(to)
       (newFrom._1 <= newTo._1) && (newFrom._2 <= newTo._2)
   }
 
-  given bottom[A]:       Bottom[Spreadsheet[A]] = Bottom.provide(empty)
+  given  bottom[A]:      Bottom[Spreadsheet[A]] = Bottom.provide(empty)
   given lattice[A]:     Lattice[Spreadsheet[A]] = Lattice.derived
 }

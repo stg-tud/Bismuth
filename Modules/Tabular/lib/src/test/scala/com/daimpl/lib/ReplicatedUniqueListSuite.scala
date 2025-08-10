@@ -127,7 +127,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rA = withUid("A") { fromElements("a", "b", "c") }
     val markerId = Uid("marker1")
 
-    withUid("A") { rA += rA.addMarker(markerId, 1) }
+    withUid("A") { rA += rA.addOrUpdateMarker(markerId, 1) }
 
     assertEquals(rA.getMarker(markerId), Some(1))
   }
@@ -137,7 +137,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("marker1")
 
     withUid("A") {
-      rA += rA.addMarker(markerId, 1)
+      rA += rA.addOrUpdateMarker(markerId, 1)
       assertEquals(rA.getMarker(markerId), Some(1))
 
       rA += rA.removeMarker(markerId)
@@ -151,8 +151,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId1 = Uid("marker1")
     val markerId2 = Uid("marker2")
 
-    withUid("A") { rA += rA.addMarker(markerId1, 0) }
-    withUid("B") { rB += rB.addMarker(markerId2, 2) }
+    withUid("A") { rA += rA.addOrUpdateMarker(markerId1, 0) }
+    withUid("B") { rB += rB.addOrUpdateMarker(markerId2, 2) }
 
     val merged = rA + rB
 
@@ -166,7 +166,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("marker1")
 
     withUid("A") {
-      rA += rA.addMarker(markerId, 1)
+      rA += rA.addOrUpdateMarker(markerId, 1)
       assertEquals(rA.getMarker(markerId), Some(1))
     }
 
@@ -185,7 +185,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     var rB = rA
     val markerId = Uid("marker1")
 
-    withUid("A") { rA += rA.addMarker(markerId, 1) }
+    withUid("A") { rA += rA.addOrUpdateMarker(markerId, 1) }
     withUid("B") { rB += rB.removeMarker(markerId) }
 
     val merged = rA + rB
@@ -240,7 +240,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("markerX")
 
     withUid("A") {
-      rA += rA.addMarker(markerId, 1)
+      rA += rA.addOrUpdateMarker(markerId, 1)
     }
 
     withUid("B") {
@@ -263,7 +263,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val base =
       withUid("shared initial state") {
         var r = fromElements("a", "b", "c", "d")
-        r += r.addMarker(markerId, 1)
+        r += r.addOrUpdateMarker(markerId, 1)
         r
       }
     var rA = base
@@ -332,7 +332,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val base =
       withUid("shared initial state") {
         var r = fromElements("a", "b", "c")
-        r += r.addMarker(markerId, markerPos)
+        r += r.addOrUpdateMarker(markerId, markerPos)
         r
       }
     var rA = base
@@ -391,7 +391,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     val markerId = Uid("m1")
 
     withUid("A") {
-      rA += rA.addMarker(markerId, 0)
+      rA += rA.addOrUpdateMarker(markerId, 0)
       rA += rA.move(0, 2)
     }
 
@@ -409,7 +409,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       val id = Uid("m-$behaviour")
 
       withUid("A") {
-        rA += rA.addMarker(id, 1, behaviour)
+        rA += rA.addOrUpdateMarker(id, 1, behaviour)
       }
       withUid("A") {
         rA += rA.removeAt(1)
@@ -584,8 +584,6 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     val merged = rA + rB + rC
-
-    println(merged)
 
     assertEquals(merged.toList.size, merged.size)
   }
