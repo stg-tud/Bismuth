@@ -470,6 +470,31 @@ class SpreadsheetSuite extends munit.FunSuite {
     assertEquals(replica1.current, replica2.current)
   }
 
+  test("create, delete, re-create range") {
+
+    val numRows = 5
+    val numCols = 5
+
+    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("sharedInitialState2"))
+      .repeatEdit(numRows, _.addRow())
+      .repeatEdit(numCols, _.addColumn())
+
+    val replica1 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("a"))
+
+    val rangeId = Uid("range")
+    val range1 = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
+    val range2 = Range(SpreadsheetCoordinate(2, 2), SpreadsheetCoordinate(4, 4))
+
+    replica1.multiEditAndGetDelta()(
+      _.addRange(rangeId, range1.from, range1.to),
+      _.removeRange(rangeId),
+      _.addRange(rangeId, range2.from, range2.to)
+    )
+
+    assertEquals(replica1.current.getRange(rangeId), Some(range2))
+  }
+
+
   test("concurrent row insertion and cell edit at same row index") {
     val numRows = 2
     val numCols = 3

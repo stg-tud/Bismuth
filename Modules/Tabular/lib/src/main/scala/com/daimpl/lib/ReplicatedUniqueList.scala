@@ -48,7 +48,7 @@ case class ReplicatedUniqueList[E](
     val updatedMarkers =
       markersImpactedByChangeAt(fromIndex)
         .map{ (id, lww) =>
-          val newMarkerValue = (lww.opPrecedence, CausalTime.now(), elementIdToMove.elementId, lww.markerRemovalBehavior)
+          val newMarkerValue = (lww.counter, lww.opPrecedence, CausalTime.now(), elementIdToMove.elementId, lww.markerRemovalBehavior)
           updateMarkerEntry(markerIdToElementIdAndBehavior, id, newMarkerValue)
         }
         .foldLeft(ObserveRemoveMap.empty[MarkerId, MarkerValue])(_ `merge` _)
@@ -86,6 +86,7 @@ case class ReplicatedUniqueList[E](
       .map{ (id, content) =>
         val behavior = content.markerRemovalBehavior
         (
+          content.counter,
           id,
           behavior match
             case MarkerRemovalBehavior.Predecessor => inRange(index - 1)
@@ -94,13 +95,14 @@ case class ReplicatedUniqueList[E](
           behavior
         )
       }
-      .map{
-        case (id, Some(newIdx), behavior) =>
-          val markedElementId = elementIdsAndOperations.read(newIdx).get.elementId
-          val newMarkerValue = (OpPrecedence.Generic, CausalTime.now(), markedElementId, behavior)
-          updateMarkerEntry(markerIdToElementIdAndBehavior, id, newMarkerValue)
-        case (id, None, _) =>
-          markerIdToElementIdAndBehavior.remove(id)
+      .map{ (counter, id, newIdxOpt, behavior) =>
+        newIdxOpt match
+          case Some(newIdx) =>
+            val markedElementId = elementIdsAndOperations.read(newIdx).get.elementId
+            val newMarkerValue = (counter, OpPrecedence.Generic, CausalTime.now(), markedElementId, behavior)
+            updateMarkerEntry(markerIdToElementIdAndBehavior, id, newMarkerValue)
+          case None =>
+            markerIdToElementIdAndBehavior.remove(id)
       }
       .foldLeft(ObserveRemoveMap.empty[MarkerId, MarkerValue])(_ `merge` _)
 
@@ -123,7 +125,7 @@ case class ReplicatedUniqueList[E](
     val updatedMarkers =
       markersImpactedByChangeAt(index)
         .map{ (markerId, markerInfo) =>
-          val newMarkerValue = (OpPrecedence.Update, CausalTime.now(), elementMetadata.elementId, markerInfo.markerRemovalBehavior)
+          val newMarkerValue = (markerInfo.counter, OpPrecedence.Update, CausalTime.now(), elementMetadata.elementId, markerInfo.markerRemovalBehavior)
           updateMarkerEntry(markerIdToElementIdAndBehavior, markerId, newMarkerValue)
         }
         .foldLeft(ObserveRemoveMap.empty[MarkerId, MarkerValue])(_ `merge` _)
@@ -143,19 +145,17 @@ case class ReplicatedUniqueList[E](
   (using LocalUid)
   : ObserveRemoveMap[MarkerId, MarkerValue] =
   {
-    val empty = ObserveRemoveMap.empty[MarkerId, MarkerValue]
-
-    val updatedMapEntry = empty.update(markerId, newMarkerValue).inner(markerId)
+    val updatedMapEntry = base.update(markerId, newMarkerValue).inner(markerId)
 
     val mergedMapEntry =
       base.inner.get(markerId) match
         case Some(oldInternal) => oldInternal `merge` updatedMapEntry
         case None => updatedMapEntry
 
-    empty.copy(inner = Map(markerId -> mergedMapEntry))
+    ObserveRemoveMap.empty[MarkerId, MarkerValue].copy(inner = Map(markerId -> mergedMapEntry))
   }
 
-  def addOrUpdateMarker(
+  def addMarker(
     markerId: MarkerId,
     index: Int,
     removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None,
@@ -165,7 +165,26 @@ case class ReplicatedUniqueList[E](
   : ReplicatedUniqueList[E] =
   {
     val markedElementId = elementIdsAndOperations.read(index).get.elementId
-    val newMarkerValue = (opPrecedence, CausalTime.now(), markedElementId, removalBehavior)
+    val newCounter = markerIdToElementIdAndBehavior.inner.get(markerId).map(_.value.counter) match {
+      case Some(counter) => counter + 1
+      case None => 0
+    }
+    val newMarkerValue = (newCounter, opPrecedence, CausalTime.now(), markedElementId, removalBehavior)
+    copy(markerIdToElementIdAndBehavior = updateMarkerEntry(markerIdToElementIdAndBehavior, markerId, newMarkerValue))
+  }
+
+  def updateMarker(
+    markerId: MarkerId,
+    index: Int,
+    removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None,
+    opPrecedence: OpPrecedence = OpPrecedence.Generic
+  )
+  (using LocalUid)
+  : ReplicatedUniqueList[E] =
+  {
+    val markedElementId = elementIdsAndOperations.read(index).get.elementId
+    val oldMarkerValue = markerIdToElementIdAndBehavior.inner(markerId).value
+    val newMarkerValue = (oldMarkerValue.counter, opPrecedence, CausalTime.now(), markedElementId, removalBehavior)
     copy(markerIdToElementIdAndBehavior = updateMarkerEntry(markerIdToElementIdAndBehavior, markerId, newMarkerValue))
   }
 
@@ -267,7 +286,7 @@ object ReplicatedUniqueList
 {
   type   ElementId = Dot
   type    MarkerId = Uid
-  type MarkerValue = (opPrecedence: OpPrecedence, opTimestamp: CausalTime, elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)
+  type MarkerValue = (counter: Int, opPrecedence: OpPrecedence, opTimestamp: CausalTime, elementId: ElementId, markerRemovalBehavior: MarkerRemovalBehavior)
 
   enum OpPrecedence
   {
@@ -280,7 +299,8 @@ object ReplicatedUniqueList
     }
   }
 
-  object OpPrecedence {
+  object OpPrecedence
+  {
     enum Positional:
       case Generic, Update, Move
 
@@ -298,13 +318,9 @@ object ReplicatedUniqueList
   def empty[E]: ReplicatedUniqueList[E] = bottom.empty
 
   private given Lattice[MarkerValue] =
-    given Ordering[OpPrecedence.Positional] = OpPrecedence.enumOrdinalOrdering
-    given Ordering[OpPrecedence.Textual]    = OpPrecedence.enumOrdinalOrdering
-    Lattice.fromOrdering(
-      using Ordering.by{
-        tuple => (tuple.opPrecedence.detail.positional, tuple.opPrecedence.detail.textual, tuple.opTimestamp)
-      }
-    )
+    Lattice.fromOrdering(using Ordering.by{ tuple =>
+      (tuple.counter, tuple.opPrecedence.detail.positional, tuple.opPrecedence.detail.textual, tuple.opTimestamp)
+    })
 
   private given undecoratedLattice[E]: Lattice[ReplicatedUniqueList[E]] = Lattice.derived
 

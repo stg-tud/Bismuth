@@ -115,10 +115,10 @@ case class Spreadsheet[A](
     val idFrom = Uid(id.show + ":from")
     val idTo   = Uid(id.show + ":to")
     Spreadsheet[A](
-      rowIds  = rowIds.addOrUpdateMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
-        `merge` rowIds.addOrUpdateMarker(idTo  , to.rowIdx  , MarkerRemovalBehavior.Predecessor),
-      colIds  = colIds.addOrUpdateMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
-        `merge` colIds.addOrUpdateMarker(idTo  , to.colIdx  , MarkerRemovalBehavior.Predecessor),
+      rowIds  = rowIds.addMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
+        `merge` rowIds.addMarker(idTo  , to.rowIdx  , MarkerRemovalBehavior.Predecessor),
+      colIds  = colIds.addMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
+        `merge` colIds.addMarker(idTo  , to.colIdx  , MarkerRemovalBehavior.Predecessor),
       rangeIds = rangeIds.add(id)
     )
 
