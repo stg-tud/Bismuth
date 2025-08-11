@@ -70,6 +70,19 @@ case class HashDAG[T] private(
       hashDAG = effector(event)
       
     hashDAG
+    
+  def getEventByID(id: String): Event[T] =
+    graph.find((e, _) => e.id == id).get._1
+    
+  def pathExists(from: Event[T], to: Event[T], visited: Set[Event[T]] = Set()): Boolean = 
+    def dfs(current: Event[T], visited: Set[Event[T]]): Boolean = 
+      if (current == to) true
+      else if (visited.contains(current)) false
+      else 
+        val neighbours = graph.getOrElse(current, Nil)
+        neighbours.exists(neighbor => dfs(neighbor, visited + current))
+
+    dfs(from, Set())
 
 
 object HashDAG:

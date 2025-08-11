@@ -18,9 +18,12 @@ case class Event[T](
   private val HashAlgorithm = "SHA3-512"
 
   def calculateHash: String =
-    val bytes = s"${content.toString}${author.toString}${dependencies.toString}${signature.mkString("Array(", ", ", ")")}".getBytes
-    MessageDigest.getInstance(HashAlgorithm).digest(bytes).mkString("Array(", ", ", ")")
+    val bytes = 
+      s"${content.toString}${author.toString}${dependencies.toString}${signature.mkString("signature(", ", ", ")")}"
+        .getBytes
     
+    MessageDigest.getInstance(HashAlgorithm).digest(bytes).mkString("id(", ", ", ")")
+
   def signatureIsValid: Boolean =
     Ed25519Util.checkEd25519Signature(content.get.toString.getBytes, signature, author)
 
