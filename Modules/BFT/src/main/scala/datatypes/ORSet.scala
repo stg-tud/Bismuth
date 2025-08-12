@@ -45,15 +45,13 @@ case class ORSet[T] private(
         case Remove =>
           if !elements.contains(op.element)then
             ORSet(graph, elements)
-          else {
-            val lastAddEvent = hashDAG.getEventByID(elements(op.element))
-            if hashDAG.pathExists(lastAddEvent, event) then
+          else
+            val lastAddEvent = graph.getEventByID(elements(op.element))
+            if graph.pathExists(lastAddEvent, event) then
               ORSet(graph, elements - op.element)
             else
               ORSet(graph, elements)
-
-          }
-          else
+    else
       this
 
 

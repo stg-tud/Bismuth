@@ -65,8 +65,8 @@ class ORSetTest extends munit.FunSuite:
     val setA7 = setA6.receiveEvent(event6)
     val setB7 = setB6.receiveEvent(event5)
 
-    //assertEquals(setA7.getElements, Set.empty)
-    //assertEquals(setA7.getElements, setB7.getElements)
+    assertEquals(setA7.getElements, Set.empty)
+    assertEquals(setA7.getElements, setB7.getElements)
   }
 
 
