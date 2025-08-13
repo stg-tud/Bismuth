@@ -134,13 +134,13 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
 
     val editAppointment = Interaction[Calendar, (Appointment, Appointment)]
       .requires { (_: Calendar, aps) => aps._2.start <= aps._2.end }
-      .requires { (cal: Calendar, aps) => cal.state.elements.contains(aps._1) }
-      .requires { (cal: Calendar, aps) => !cal.state.elements.contains(aps._2) }
+      .requires { (cal: Calendar, aps) => cal.state.contains(aps._1) }
+      .requires { (cal: Calendar, aps) => !cal.state.contains(aps._2) }
       .executes { (cal: Calendar, aps) => cal.clearDeltas().mod(_.remove(aps._1)).mod(_.add(aps._2)) }
-      .ensures { (cal: Calendar, aps) => cal.state.elements.contains(aps._2) }
+      .ensures { (cal: Calendar, aps) => cal.state.contains(aps._2) }
       // .ensures { (cal: Calendar, aps) => cal.toSet == old(cal.toSet.setminus(Set(oldApp)).union(Set(newApp))) }
-      .ensures { (cal: Calendar, aps) => !cal.state.elements.contains(aps._1) }
-      .ensures { (cal: Calendar, aps) => cal.state.elements contains aps._2 }
+      .ensures { (cal: Calendar, aps) => !cal.state.contains(aps._1) }
+      .ensures { (cal: Calendar, aps) => cal.state.contains(aps._2) }
     // .ensures { (cal: Calendar, aps) => size(cal.toSet) == old(size(cal.toSet)) }
 
     val editEvents = (cal: Signal[Calendar]) =>
