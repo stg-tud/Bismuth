@@ -5,15 +5,16 @@ import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import rdts.filters.Operation.WRITE
 import MonotonicAclSyncMessage.{AclDelta, Signature}
+import ex2024travel.lofi_acl.example.sync.acl.Acl
 import rdts.base.Uid
 import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 case class MonotonicAcl[RDT](
     root: PublicIdentity,
-    read: Map[PublicIdentity, PermissionTree],
-    write: Map[PublicIdentity, PermissionTree]
-) {
+    override val read: Map[PublicIdentity, PermissionTree],
+    override val write: Map[PublicIdentity, PermissionTree]
+) extends Acl(read, write) {
   def addReadPermissionIfAllowed(
       forPrincipal: PublicIdentity,
       delegatingFrom: PublicIdentity,

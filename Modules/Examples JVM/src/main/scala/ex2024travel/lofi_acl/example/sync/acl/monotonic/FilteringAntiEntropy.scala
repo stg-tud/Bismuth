@@ -8,7 +8,7 @@ import rdts.filters.Operation.WRITE
 import FilteringAntiEntropy.PartialDelta
 import MonotonicAclSyncMessage.*
 import ex2024travel.lofi_acl.example.sync.{ConnectionManager, DeltaMapWithPrefix, MessageReceiver}
-import ex2024travel.lofi_acl.example.sync.acl.Sync
+import ex2024travel.lofi_acl.example.sync.acl.RDTSync
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -24,7 +24,7 @@ class FilteringAntiEntropy[RDT](
     rootOfTrust: PublicIdentity,
     initialAclDeltas: List[AclDelta[RDT]], // Signatures are assumed to have been validated already
     initialRdtDeltas: DeltaMapWithPrefix[RDT],
-    syncInstance: Sync[RDT]
+    syncInstance: RDTSync[RDT]
 )(using
     filter: Filter[RDT],
     rdtLattice: Lattice[RDT],

@@ -4,10 +4,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.access
 import BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
 import BftFilteringAntiEntropy.SyncMsg
 import BftFilteringAntiEntropy.SyncMsg.*
+import ex2024travel.lofi_acl.example.sync.acl.Acl
 import ex2024travel.lofi_acl.example.sync.{ConnectionManager, DeltaMapWithPrefix, MessageReceiver, MessageSerialization}
 import ex2024travel.lofi_acl.example.sync.acl.monotonic.FilteringAntiEntropy.PartialDelta
 import ex2024travel.lofi_acl.example.sync.acl.monotonic.PartialReplicationPeerSubsetSolver
@@ -58,7 +58,7 @@ class BftFilteringAntiEntropy[RDT](
 
   // Executed in thread from ConnectionManager
   override def connectionEstablished(remote: PublicIdentity): Unit = {
-    val (aclOpGraph, acl) = syncInstance.currentAcl
+    val (aclOpGraph, acl) = syncInstance.currentBftAcl
     // TODO: It might make sense to tell the other side which document we're talking about. Otherwise they might try to
     //  sync unrelated op graphs
     val _ = connectionManager.send(remote, RequestMissingAcl(aclOpGraph.heads, Set.empty))
@@ -76,7 +76,7 @@ class BftFilteringAntiEntropy[RDT](
 
   def mutateRdt(dot: Dot, delta: RDT): Unit = {
     require(!rdtDeltas.allDots.contains(dot))
-    val (aclOpGraph, acl) = syncInstance.currentAcl
+    val (aclOpGraph, acl) = syncInstance.currentBftAcl
     val localWritePerms   = acl.write.get(localPublicId)
     if localWritePerms.isEmpty
     then
@@ -132,14 +132,14 @@ class BftFilteringAntiEntropy[RDT](
       case AclDelta(encodedDelegation) =>
         val missing = syncInstance.applyAclIfPossible(encodedDelegation)
         if missing.nonEmpty then {
-          val _ = connectionManager.send(sender, RequestMissingAcl(syncInstance.currentAcl._1.heads, missing))
+          val _ = connectionManager.send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missing))
         } else {
           // TODO: Apply ACL deltas from backlog that can be handled after applying the received ACL delta
         }
 
       case RequestMissingAcl(heads: Set[Signature], knownMissing: Set[Signature]) =>
         // TODO: Save ACL peer state
-        val opGraph = syncInstance.currentAcl._1
+        val opGraph = syncInstance.currentBftAcl._1
         val msgs    = knownMissing
           .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.encode(sig)) }
           .map[AclDelta[RDT]](delegation => AclDelta(delegation))
@@ -148,12 +148,12 @@ class BftFilteringAntiEntropy[RDT](
         val missingLocally = heads.filterNot(opGraph.ops.contains)
         // TODO: Requesting should be deferred until after message queue is empty (+ some delay).
         if missingLocally.nonEmpty then {
-          val _ = connectionManager.send(sender, RequestMissingAcl(syncInstance.currentAcl._1.heads, missingLocally))
+          val _ = connectionManager.send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missingLocally))
         }
 
       case RequestMissingRdt(remoteRdtDots) =>
         // TODO: avoid possibility of interleaving with acl change
-        val (aclOpGraph, acl) = syncInstance.currentAcl
+        val (aclOpGraph, acl) = syncInstance.currentBftAcl
         val rdtDeltaCopy      = rdtDeltas
 
         val rdtDots          = rdtDeltas.deltaDots
@@ -183,7 +183,7 @@ class BftFilteringAntiEntropy[RDT](
 
   private def processBacklog(): Unit = {
     // Process backlogged rdt deltas
-    val aclOpGraph                               = syncInstance.currentAcl._1
+    val aclOpGraph                               = syncInstance.currentBftAcl._1
     val partialDeltaStoreBeforeProcessing        = partialDeltaStore
     val (processableDeltas, unprocessableDeltas) = deltaMessageBacklog.partition((delta, _) =>
       delta.authorAclContext.union(delta.senderAclContext).forall(aclOpGraph.ops.contains)
@@ -200,7 +200,7 @@ class BftFilteringAntiEntropy[RDT](
   private def handlePartialDelta(unfilteredDelta: RdtDelta[RDT], sender: PublicIdentity): Boolean = {
     unfilteredDelta match
       case RdtDelta(dot, _, authorAclHeads, senderAclHeads) =>
-        val (aclOpGraph, localAcl) = syncInstance.currentAcl
+        val (aclOpGraph, localAcl) = syncInstance.currentBftAcl
         if !authorAclHeads.union(senderAclHeads).forall(aclOpGraph.ops.contains) then return false
 
         val authorAcl =
@@ -286,7 +286,7 @@ class BftFilteringAntiEntropy[RDT](
         // If no partial deltas are stored locally, pick a random peer and request from them.
         // If there are partial deltas, use PartialReplicationPeerSubsetSolver to choose replicas to request from.
         val peers             = connectionManager.connectedUsers.toArray
-        val (aclOpGraph, acl) = syncInstance.currentAcl
+        val (aclOpGraph, acl) = syncInstance.currentBftAcl
         if peers.nonEmpty
         then
           if partialDeltaStore.isEmpty

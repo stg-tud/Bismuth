@@ -2,15 +2,14 @@ package ex2024travel.lofi_acl.example.monotonic_acl
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Ed25519Util, PublicIdentity}
-import ex2024travel.lofi_acl.example.sync.DeltaMapWithPrefix
+import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.messageJsonCodec
+import ex2024travel.lofi_acl.example.sync.acl.monotonic.SyncWithMonotonicAcl
+import ex2024travel.lofi_acl.example.sync.acl.{Acl, RDTSync}
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.example.travelplanner.TravelPlan.given
-import rdts.filters.Operation.{READ, WRITE}
-import ex2024travel.lofi_acl.example.sync.JsoniterCodecs.messageJsonCodec
-import ex2024travel.lofi_acl.example.sync.acl.monotonic.{MonotonicAcl, SyncWithMonotonicAcl}
-import ex2024travel.lofi_acl.example.sync.acl.monotonic.MonotonicAclSyncMessage.AclDelta
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
+import rdts.filters.Operation.{READ, WRITE}
 import rdts.filters.PermissionTree
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
@@ -19,35 +18,29 @@ import scalafx.collections.ObservableBuffer
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext.global
 
-class TravelPlanModel(
-    private val localIdentity: PrivateIdentity,
-    rootOfTrust: PublicIdentity,
-    initialAclDeltas: List[AclDelta[TravelPlan]] = List.empty
-) {
-  val publicId: PublicIdentity     = localIdentity.getPublic
+class TravelPlanModel(private val localIdentity: PrivateIdentity,
+                      rootOfTrust: PublicIdentity,
+                      syncProvider: (TravelPlan => Unit) => RDTSync[TravelPlan]
+                     ) {
+  val publicId: PublicIdentity = localIdentity.getPublic
+
   private given localUid: LocalUid = LocalUid(Uid(publicId.id))
 
-  def state: TravelPlan                    = sync.state
-  def currentAcl: MonotonicAcl[TravelPlan] = sync.currentAcl
+  def state: TravelPlan = sync.currentState
 
-  private val sync = SyncWithMonotonicAcl[TravelPlan](
-    localIdentity,
-    rootOfTrust,
-    initialAclDeltas,
-    DeltaMapWithPrefix.empty,
-    delta => Platform.runLater(deltaReceived(delta))
-  )
+  def currentAcl: Acl = sync.currentAcl
+
+  private val sync: RDTSync[TravelPlan] = syncProvider(stateChanged)
   sync.start()
   Runtime.getRuntime.addShutdownHook(new Thread(() => sync.stop()))
 
   def createInvitation: Invitation =
     Invitation(rootOfTrust, Ed25519Util.generateNewKeyPair, publicId, sync.connectionString)
 
-  def grantPermission(
-      affectedUser: PublicIdentity,
-      readPermissions: PermissionTree,
-      writePermissions: PermissionTree
-  ): Unit = {
+  def grantPermission(affectedUser: PublicIdentity,
+                      readPermissions: PermissionTree,
+                      writePermissions: PermissionTree
+                     ): Unit = {
     sync.grantPermissions(affectedUser, readPermissions, READ)
     if !writePermissions.isEmpty
     then sync.grantPermissions(affectedUser, writePermissions, WRITE)
@@ -87,17 +80,17 @@ class TravelPlanModel(
 
   private def mutateRdt(mutator: TravelPlan => TravelPlan): Unit = {
     global.execute { () =>
-      sync.mutateRdt(mutator)
+      sync.mutateState(mutator)
     }
   }
 
-  val title: StringProperty                      = StringProperty(state.title.read)
+  val title: StringProperty = StringProperty(state.title.read)
   val bucketListIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
-  private var bucketListIdSet: Set[String]       = bucketListIdList.toSet
+  private var bucketListIdSet: Set[String] = bucketListIdList.toSet
   val bucketListProperties: AtomicReference[Map[String, StringProperty]] =
     AtomicReference(state.bucketList.inner.map((id, lww) => id -> StringProperty(lww.value.read)))
   val expenseIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
-  private var expenseIdSet: Set[String]       = expenseIdList.toSet
+  private var expenseIdSet: Set[String] = expenseIdList.toSet
   val expenseListProperties: AtomicReference[Map[String, (StringProperty, StringProperty, StringProperty)]] =
     AtomicReference(state.expenses.inner.map((id, orMapEntry) => {
       val expense = orMapEntry.value
@@ -108,7 +101,7 @@ class TravelPlanModel(
       )
     }))
 
-  private def deltaReceived(delta: TravelPlan): Unit = {
+  private def stateChanged(delta: TravelPlan): Unit = Platform.runLater {
     val newTravelPlan = state
     // Title
     if !delta.title.isEmpty then
@@ -118,7 +111,7 @@ class TravelPlanModel(
     val bucketListEntriesInDelta = delta.bucketList.inner
     if bucketListEntriesInDelta.nonEmpty then
       val newIds = bucketListEntriesInDelta.keySet.diff(bucketListIdSet)
-      val props  = bucketListProperties.updateAndGet(oldProps =>
+      val props = bucketListProperties.updateAndGet(oldProps =>
         oldProps ++ newIds.map(id => id -> StringProperty(""))
       )
       bucketListEntriesInDelta.foreach { (id, entry) =>
@@ -131,7 +124,7 @@ class TravelPlanModel(
     val expenseEntriesInDelta = delta.expenses.inner
     if expenseEntriesInDelta.nonEmpty then
       val newIds = expenseEntriesInDelta.keySet.diff(expenseIdSet)
-      val props  = expenseListProperties.updateAndGet(oldProps =>
+      val props = expenseListProperties.updateAndGet(oldProps =>
         oldProps ++ newIds.map(id =>
           id -> (StringProperty(""), StringProperty("0.00 €"), StringProperty(""))
         )
@@ -153,8 +146,8 @@ class TravelPlanModel(
 object TravelPlanModel {
   def createNewDocument: TravelPlanModel = {
     val privateId = IdentityFactory.createNewIdentity
-    val aclDelta  = MonotonicAcl.createRootOfTrust[TravelPlan](privateId)
-    val model     = TravelPlanModel(privateId, privateId.getPublic, List(aclDelta))
+    val syncProvider = SyncWithMonotonicAcl.createAsRootOfTrust[TravelPlan].curried(privateId)
+    val model = TravelPlanModel(privateId, privateId.getPublic, syncProvider)
 
     model.changeTitle("Portugal Trip")
     model.addBucketListEntry("Porto")
@@ -166,9 +159,10 @@ object TravelPlanModel {
   }
 
   def joinDocument(inviteString: String): TravelPlanModel = {
-    val invite          = Invitation.decode(inviteString)
-    val identity        = IdentityFactory.fromIdentityKey(invite.identityKey)
-    val travelPlanModel = TravelPlanModel(identity, invite.rootOfTrust, List.empty)
+    val invite = Invitation.decode(inviteString)
+    val identity = IdentityFactory.fromIdentityKey(invite.identityKey)
+    val syncProvider = SyncWithMonotonicAcl.create[TravelPlan].curried(identity)(invite.rootOfTrust)(List.empty)
+    val travelPlanModel = TravelPlanModel(identity, invite.rootOfTrust, syncProvider)
     travelPlanModel.addConnection(invite.inviter, invite.joinAddress)
     travelPlanModel
   }

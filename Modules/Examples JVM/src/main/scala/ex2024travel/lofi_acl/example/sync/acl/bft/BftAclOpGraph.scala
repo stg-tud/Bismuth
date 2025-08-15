@@ -5,25 +5,13 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import BftAclOpGraph.{Delegation, EncodedDelegation, Signature, opCodec}
+import ex2024travel.lofi_acl.example.sync.acl.Acl
 import rdts.filters.PermissionTree
 
 import java.security.PrivateKey
 import java.util.Base64
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
-
-case class Acl(read: Map[PublicIdentity, PermissionTree], write: Map[PublicIdentity, PermissionTree]):
-  def addPermissions(user: PublicIdentity, read: PermissionTree, write: PermissionTree): Acl =
-    Acl(
-      this.read.updatedWith(user) {
-        case Some(oldRead) => Some(oldRead.merge(read))
-        case None          => Some(read)
-      },
-      this.write.updatedWith(user) {
-        case Some(oldWrite) => Some(oldWrite.merge(write))
-        case None           => Some(write)
-      }
-    )
 
 case class BftAclOpGraph(ops: Map[Signature, Delegation], heads: Set[Signature]) {
   def delegateAccess(
