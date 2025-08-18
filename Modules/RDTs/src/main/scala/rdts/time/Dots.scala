@@ -104,6 +104,8 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
   def <=(other: Dots): Boolean = internal.forall {
     case (id, leftRange) => leftRange <= other.rangeAt(id)
   }
+
+  def peers: Set[Uid] = internal.keySet
 }
 
 object Dots {

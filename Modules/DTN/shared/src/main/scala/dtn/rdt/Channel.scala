@@ -30,10 +30,10 @@ class ClientContext[T: JsonValueCodec](
         operationMode match
           case ClientOperationMode.PushAll      => Sync { () }
           case ClientOperationMode.RequestLater =>
-            connection.send(RdtMessageType.Request, Array(), dots).toAsync(using executionContext)
+            connection.send(RdtMessageType.Request, Array(), dots, Dots.empty).toAsync(using executionContext)
         Sync { () }
-      case Payload(sender, dots, data) =>
-        connection.send(RdtMessageType.Payload, writeToArray[T](data), dots).toAsync(using executionContext)
+      case Payload(sender, dots, data, causalPredecessors, _) =>
+        connection.send(RdtMessageType.Payload, writeToArray[T](data), dots, causalPredecessors).toAsync(using executionContext)
       case Ping(_) | Pong(_) => Async {}
 
   override def close(): Unit = connection.close().onComplete {

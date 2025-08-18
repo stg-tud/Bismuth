@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.{Lattice, LocalUid, Uid}
-import rdts.time.Dots
+import rdts.time.{Dot, Dots}
 import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
@@ -145,12 +145,12 @@ class DeltaDissemination[State](
   def applyDelta(delta: State): Unit =
     val message = lock.synchronized {
       val nextDot = treeContext.getNextDot
-      val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
+      val payload = Payload(replicaId.uid, Dots.single(nextDot), delta, treeContext.getSelfKnowledge)
       val message = SentCachedMessage(payload)(using pmscodec)
       treeContext.storeOutgoingMessage(nextDot, message)
       message
     }
-    disseminate(message)
+    disseminatePayload(message)
 
   def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(treeContext.getAllPayloads)
 
@@ -176,17 +176,21 @@ class DeltaDissemination[State](
           (relevant, context)
         }
         relevant.foreach: msg =>
-          send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
-      case payload @ Payload(uid, dots, data) =>
+          val newMsg = augmentPayloadWithLastKnownDot(msg.payload.addSender(replicaId.uid), uid)
+          send(from, newMsg)
+      case payload@Payload(uid, dots, data, causalPredecessors, lastKnownDots) =>
         lock.synchronized {
-          val nonRedundantDots = treeContext.getNonRedundant(dots)
+          // TODO sent unknown dots back to peer?
+          // TODO what to do when there are multiple senders?
+          treeContext.updateKnowledgeOfPeer(uid, lastKnownDots)
+          val nonRedundantDots = treeContext.addNonRedundant(dots, causalPredecessors)
           if nonRedundantDots.isEmpty then return
           treeContext.storeMessage(dots, msg.asInstanceOf[CachedMessage[Payload[State]]])
         }
 
         receiveCallback(data)
         if immediateForward then
-          disseminate(msg, Set(from))
+          disseminatePayload(msg.asInstanceOf[CachedMessage[Payload[State]]], Set(from))
 
   }
 
@@ -203,5 +207,21 @@ class DeltaDissemination[State](
       send(con, payload)
 
   }
+
+  def disseminatePayload(payload: CachedMessage[Payload[State]], except: Set[ConnectionContext] = Set.empty): Unit = {
+    val cons = lock.synchronized(connections)
+    cons.filterNot(con => except.contains(con)).foreach(con => {
+      val p = con.authenticatedPeerReplicaId match {
+        case Some(receiver) => augmentPayloadWithLastKnownDot(payload.payload, receiver)
+        case _ => payload
+      }
+      send(con, p)
+    })
+  }
+
+  private def augmentPayloadWithLastKnownDot(payload: Payload[State], receiver: Uid): Message = SentCachedMessage(treeContext.getLeaf(receiver) match {
+    case Some(leaf) => payload.addLastKnownDot(leaf)
+    case None => payload
+  })(using pmscodec)
 
 }
