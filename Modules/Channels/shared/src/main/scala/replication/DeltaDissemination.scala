@@ -181,8 +181,9 @@ class DeltaDissemination[State](
       case payload@Payload(uid, dots, data, causalPredecessors, lastKnownDots) =>
         lock.synchronized {
           // TODO sent unknown dots back to peer?
-          // TODO what to do when there are multiple senders?
-          treeContext.updateKnowledgeOfPeer(uid, lastKnownDots)
+          if uid.size == 1 && uid.head != replicaId.uid then treeContext.updateKnowledgeOfPeer(uid.head, lastKnownDots)
+          else if uid.size == 1 && uid.head == replicaId.uid then println(s"cannot update knowledge of peer, received message from self: $uid")
+          else println(s"cannot update knowledge of peer, received message from ambiguous peers: $uid")
           val nonRedundantDots = treeContext.addNonRedundant(dots, causalPredecessors)
           if nonRedundantDots.isEmpty then return
           treeContext.storeMessage(dots, msg.asInstanceOf[CachedMessage[Payload[State]]])

@@ -212,6 +212,84 @@ class DeltaTreeContextTest extends munit.FunSuite {
     assertEquals(tree.getUnknownDotsForPeer(peer, known), unknown)
     assertEquals(tree.getUnknownDotsForPeer(peer, unknown), Dots.empty)
   }
+  
+  test("knowledge of peers simple") {
+    val uid = Uid.gen()
+    val tree = DotTree()
+    var dots = Dots.empty
+    var prevDot = dots.nextDot(uid)
+    tree.addNode(prevDot, prevDot)
+    dots = dots.add(prevDot)
+    for (i <- (0 until 9)) {
+      val dot = dots.nextDot(uid)
+      tree.addNode(dot, prevDot)
+      dots = dots.add(dot)
+      prevDot = dot
+    }
+    
+    val peerUid = Uid.gen()
+    var peerPrevDot = dots.nextDot(peerUid)
+    tree.addNode(peerPrevDot, peerPrevDot)
+    dots = dots.add(peerPrevDot)
+    
+    dots.peers.foreach(peer => {
+      tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
+    })
+    tree.collapseGeneralKnowledge()
+    
+    assertEquals(tree.leaves.values.toSet, tree.rootNode.successors)
+  }
+
+  test("knowledge of peers with missing knowledge") {
+    val uid = Uid.gen()
+    val tree = DotTree()
+    var dots = Dots.empty
+    var prevDot = dots.nextDot(uid)
+    tree.addNode(prevDot, prevDot)
+    dots = dots.add(prevDot)
+    for (i <- (0 until 9)) {
+      val dot = dots.nextDot(uid)
+      if (i % 2) == 0 then tree.addNode(dot, prevDot)
+      dots = dots.add(dot)
+      prevDot = dot
+    }
+
+    val peerUid = Uid.gen()
+    var peerPrevDot = dots.nextDot(peerUid)
+    tree.addNode(peerPrevDot, peerPrevDot)
+    dots = dots.add(peerPrevDot)
+    
+    dots.peers.foreach(peer => {
+      tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
+    })
+    tree.collapseGeneralKnowledge()
+
+    assertEquals(tree.leaves.values.toDots, Dots.empty.add(prevDot).add(peerPrevDot))
+    assertEquals(tree.rootNode.successors.toDots, Dots.empty.add(Dot(uid, 1)).add(peerPrevDot))
+  }
+
+  test("add dots with missing knowledge") {
+    val uid = Uid.gen()
+    val tree = DotTree()
+    var dots = Dots.empty
+    var expected = Dots.empty
+    var prevDot = dots.nextDot(uid)
+    tree.addNode(prevDot, prevDot)
+    dots = dots.add(prevDot)
+    expected = expected.add(prevDot)
+    for (i <- (0 until 9)) {
+      val dot = dots.nextDot(uid)
+      if (i % 2) == 0 then {
+        tree.addNode(dot, prevDot)
+        expected = expected.add(dot)
+      }
+      dots = dots.add(dot)
+      prevDot = dot
+    }
+
+    assertEquals(tree.collapse, expected)
+    assertEquals(tree.leaves.values.map(node => node.dot).toSet, Set(prevDot))
+  }
 
   // TODO: test for duplicates
 }
