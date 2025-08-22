@@ -87,7 +87,7 @@ case class Spreadsheet[A](
     )
   }
 
-  def purgeTombstones()(using LocalUid): Spreadsheet[A] = {
+  def purgeTombstones(using LocalUid): Spreadsheet[A] = {
     val rows = rowIds.toList
     val cols = colIds.toList
     Spreadsheet[A](rowAndColIdPairToContent = rowAndColIdPairToContent.removeBy{

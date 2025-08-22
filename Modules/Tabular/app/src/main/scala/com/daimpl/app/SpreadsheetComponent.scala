@@ -226,8 +226,7 @@ object SpreadsheetComponent {
       concludeEdit()
       >> modSpreadsheet(_.addColumn())
 
-    // TODO: current replicated list does not allow purging
-    def purgeTombstones(): Callback = modSpreadsheet(identity)
+    def purgeTombstones(): Callback = modSpreadsheet(_.purgeTombstones)
 
     def handleRowDragStart(rowIdx: Int): Callback =
       $.modState(_.copy(draggingRow = Some(rowIdx), previewRow = None, previewColumn = None))
