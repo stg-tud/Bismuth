@@ -301,7 +301,7 @@ class SpreadsheetSuite extends munit.FunSuite {
 
     var replica1Delta = replica1.editAndGetDelta()(_.editCell(cell1Coord, edit1Text))
     var replica2Delta = replica2.editAndGetDelta()(_.editCell(cell2Coord, edit1Text))
-    Thread.sleep(1)
+
     replica2Delta = replica2.editAndGetDelta(replica2Delta)(_.editCell(cell1Coord, edit2Text))
     replica1Delta = replica1.editAndGetDelta(replica1Delta)(_.editCell(cell2Coord, edit2Text))
 
