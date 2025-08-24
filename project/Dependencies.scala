@@ -7,13 +7,13 @@ object Dependencies {
   val catsParse   = libraryDependencies += "org.typelevel"         %%% "cats-parse"             % "1.1.0"
   val conscript   = libraryDependencies += "org.conscrypt"           % "conscrypt-openjdk-uber" % "2.5.2"
   val decline     = libraryDependencies += "com.monovore"          %%% "decline"                % "2.5.0"
-  val fansi       = libraryDependencies += "com.lihaoyi"           %%% "fansi"                  % "0.5.0"
+  val fansi       = libraryDependencies += "com.lihaoyi"           %%% "fansi"                  % "0.5.1"
   val jetcd       = libraryDependencies += "io.etcd"                 % "jetcd-core"             % "0.8.5"
   val monocleCore = libraryDependencies += "dev.optics"            %%% "monocle-core"           % "3.3.0"
   val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.1.1"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.1.0"  % Test
-  val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.4"
-  val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.1"
+  val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.5"
+  val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.3"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules" %% "scala-swing"            % "3.0.0"
   val scalaXml    = libraryDependencies += "org.scala-lang.modules" %% "scala-xml"              % "2.4.0"
   val scalajsDom  = libraryDependencies += "org.scala-js"          %%% "scalajs-dom"            % "2.8.1"
@@ -41,7 +41,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.0.23"
+    val jettyVersion = "12.0.25"
     libraryDependencies ++= Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
@@ -51,8 +51,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.37.0",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.37.0" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.37.6",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.37.6" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.2-R36"

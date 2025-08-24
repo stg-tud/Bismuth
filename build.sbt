@@ -5,6 +5,7 @@ import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle, OutputPatterns
 import scala.scalanative.build.{LTO, Mode}
 
 lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
+  bft,
   channels.js,
   channels.jvm,
   crypto.js,
@@ -49,6 +50,17 @@ lazy val publishedProjects =
     .settings(SettingsLocal.publishSonatype, publish / skip := true)
 
 // projects in alphabetical order
+
+lazy val bft = project.in(file("Modules/BFT"))
+  .dependsOn(
+    crypto.jvm
+  )
+  .settings(
+    scala3defaultsExtra,
+    Dependencies.munit,
+    Dependencies.jsoniterScala,
+    Dependencies.bouncyCastle
+  )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
   .in(file("Modules/Channels"))
