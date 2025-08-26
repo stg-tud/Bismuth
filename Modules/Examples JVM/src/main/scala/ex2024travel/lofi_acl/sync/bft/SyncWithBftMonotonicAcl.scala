@@ -71,7 +71,8 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
           val updatedAcl = updatedOpGraph.reconstruct(updatedOpGraph.heads).get
           assert {
             val delegation = encodedDelegation.decode.get._2
-            updatedAcl == acl.addPermissions(delegation.delegatee, delegation.read, delegation.write)
+            val expectedAcl = acl.addPermissions(delegation.delegatee, delegation.read, delegation.write)
+            updatedAcl.read == expectedAcl.read && updatedAcl.write == expectedAcl.write
           }
           require(localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl)))
           Set.empty

@@ -275,4 +275,14 @@ class PermissionTreeTest extends FunSuite {
       partial("*" -> partial("b" -> partial("c" -> allow)))
     )
   }
+
+  test("lteq") {
+    assert(empty <= allow)
+    assert(!(allow <= empty))
+    assert(partial("a" -> allow) <= partial("a" -> allow))
+    assert(partial("a" -> allow) <= partial("a" -> allow, "b" -> allow))
+    assert(!(partial("a" -> allow, "c" -> allow) <= partial("a" -> allow, "b" -> allow)))
+    assert(partial("a" -> partial("b" -> allow)) <= partial("a" -> allow))
+    assert(!(partial("a" -> allow) <= partial("a" -> partial("b" -> allow))))
+  }
 }

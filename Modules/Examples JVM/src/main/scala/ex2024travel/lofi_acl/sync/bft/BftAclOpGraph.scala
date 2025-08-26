@@ -22,7 +22,7 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, Delegation], heads
       read: PermissionTree,
       write: PermissionTree
   ): (BftAclOpGraph, EncodedDelegation) =
-    require(read <= write) // Write access implies read access! (Not really enforced)
+    require(write <= read) // Write access implies read access! (Not really enforced)
     val op = Delegation(delegator, delegatee, read, write, parents = heads)
     require(isDelegationLegal(op))
     val opBytes     = writeToArray(op)
@@ -42,7 +42,7 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, Delegation], heads
       case delegation @ Delegation(delegator, delegatee, read, write, parents) =>
         if !Ed25519Util.checkEd25519Signature(encodedOp, signature, delegator) then throw InvalidSignatureException
         // Write access implies read access!
-        require(read <= write)
+        require(write <= read)
         // Check preceding ops are already applied
         val missing = parents.filterNot(ops.contains)
         if missing.nonEmpty then return Left(missing)
