@@ -68,7 +68,7 @@ class DeltaDissemination[State](
       exception.printStackTrace()
 
   def requestData(): Unit = {
-    val msg = SentCachedMessage(Request(replicaId.uid, treeContext.getSelfContext))(using pmscodec)
+    val msg = SentCachedMessage(Request(replicaId.uid, treeContext.getSelfKnowledge))(using pmscodec)
     connections.foreach: con =>
       send(con, msg)
   }
@@ -132,7 +132,7 @@ class DeltaDissemination[State](
       conn,
       SentCachedMessage(Request(
         replicaId.uid,
-        treeContext.getSelfContext
+        treeContext.getSelfKnowledge
       ))(using pmscodec)
     )
   }
@@ -160,20 +160,12 @@ class DeltaDissemination[State](
       case Ping(time) =>
         send(from, SentCachedMessage(Pong(time))(using pmscodec))
       case Pong(time) =>
-        // println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
+      // println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
       case Request(uid, knows) =>
         val (relevant, context) = lock.synchronized {
-          // TODO revisit
-          val relevant     = allPayloads.filterNot { dt => dt.payload.dots <= knows }
-          val newknowledge =
-            knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
-          val context = treeContext.getSelfContext
-          val diff    = context `subtract` newknowledge
-          if !diff.isEmpty then
-            throw IllegalStateException(
-              s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${context}}"
-            )
-          (relevant, context)
+          val unknownDots = treeContext.getUnknownDotsForPeer(uid, knows)
+          val payloads = treeContext.getPayloads(unknownDots)
+          (payloads, unknownDots)
         }
         relevant.foreach: msg =>
           val newMsg = augmentPayloadWithLastKnownDot(msg.payload.addSender(replicaId.uid), uid)

@@ -55,7 +55,7 @@ object DotTreeNode {
 
 class DotTree {
   val rootNode: RootNode = RootNode(Dots.empty)
-  private var causalBarriers: Map[Uid, DotTreeNode.Node] = Map.empty
+  var causalBarriers: Map[Uid, DotTreeNode.Node] = Map.empty
   var leaves: Map[Uid, DotTreeNode.Node] = Map.empty
 
   def getLeafDot(uid: Uid): Option[Dot] = leaves.get(uid) match {
@@ -100,6 +100,7 @@ class DotTree {
         val node = DotTreeNode.Node(dot, rootNode, causalPredecessor, Some(leafNode))
         rootNode.successors += node
         leafNode.predecessorNode = node
+        causalBarriers += (dot.place -> leafNode)
         true
       } else false
     } else if dot == causalPredecessor || dot.time == 0 then return false
@@ -113,6 +114,7 @@ class DotTree {
         causalPredecessorNode.successorNode = Some(node)
         successorNode.predecessorNode = node
         // TODO: causal barrier might need to be shifted
+        shiftCausalBarrier(dot.place)
         true
       }
       case Some(causalPredecessorNode@DotTreeNode.Node(_, _, _, None, _)) => {
@@ -120,6 +122,7 @@ class DotTree {
         val node = DotTreeNode.Node(dot, causalPredecessorNode, causalPredecessor, None)
         causalPredecessorNode.successorNode = Some(node)
         leaves += (dot.place -> node)
+        shiftCausalBarrier(dot.place)
         true
       }
       case Some(causalPredecessorNode@RootNode(dots, _)) if dots.contains(dot) => false // duplicate
@@ -136,6 +139,7 @@ class DotTree {
             leaves += (dot.place -> node)
           }
         }
+        shiftCausalBarrier(dot.place)
         true
       }
       case None if leafNodeOption.exists(leaf => leaf.dot.time < dot.time) => {
@@ -175,12 +179,27 @@ class DotTree {
     }
   }
 
+  def shiftCausalBarrier(branch: Uid): Unit = {
+    var currentNode = causalBarriers(branch)
+    while currentNode.successorNode.exists(successor => successor.causalPredecessor == currentNode.dot) do {
+      currentNode = currentNode.successorNode.get
+    }
+    causalBarriers += (branch -> currentNode)
+  }
+
+  /**
+   * add new leaf to branch of this peer
+   * @param newLeaf the new dot of the new leaf
+   * @param uid     the uid of this peer
+   */
   def addNewLeaf(newLeaf: Dot, uid: Uid): Unit = {
     val (predecessorDot, predecessorNode) = getLeaf(uid) match {
       case Some(leaf) => (leaf.dot, leaf)
       case None => (rootNode.dots.clockOf(uid).getOrElse(Dot(uid, 0)), rootNode)
     }
-    leaves += (uid -> DotTreeNode.Node(newLeaf, predecessorNode, predecessorDot, None))
+    val node = DotTreeNode.Node(newLeaf, predecessorNode, predecessorDot, None)
+    leaves += (uid -> node)
+    causalBarriers += (uid -> node)
   }
 
   @tailrec
@@ -192,6 +211,8 @@ class DotTree {
   def collapse: Dots = leaves.foldLeft(rootNode.dots)((dots, leaf) => collectBranch(dots, leaf._2))
 
   def getLeavesAsDots: Dots = leaves.foldLeft(Dots.empty)((dots, leaf) => dots.add(leaf._2.dot))
+
+  def getCausalBarriersAsDots: Dots = causalBarriers.foldLeft(Dots.empty)((dots, causalBarrier) => dots.add(causalBarrier._2.dot))
 
   override def toString: String = {
     var string = "leaves:\n"
@@ -244,9 +265,9 @@ class DotTree {
     val knownPeersOfPeer = known.peers
 
     // the other peer is aware of more peers than this
-    val diffSet = knownPeersOfPeer.diff(knownPeers)
-    if diffSet.nonEmpty then
-      throw IllegalStateException(s"Peer is aware of more peers than this replica: $diffSet")
+//    val diffSet = knownPeersOfPeer.diff(knownPeers)
+//    if diffSet.nonEmpty then
+//      throw IllegalStateException(s"Peer is aware of more peers than this replica: $diffSet")
 
     var leavesOfPeer: Map[Uid, DotTreeNode.Node] = Map.empty
     var unknownPeersByPeer: Set[Uid] = Set.empty
@@ -309,7 +330,7 @@ class DotTree {
 
 class DeltaTreeContext[State](selfUid: Uid) {
 
-  private val tree: DotTree = DotTree()
+  val tree: DotTree = DotTree()
 
   private var payloads: List[CachedMessage[Payload[State]]] = List.empty
   // look up table to index of cached messages
@@ -339,7 +360,7 @@ class DeltaTreeContext[State](selfUid: Uid) {
         currentPeer = dot.place
         causalPredecessor = initialCausalPredecessors.max(currentPeer) match {
           case Some(value) => value
-          case None => throw IllegalStateException(s"No causal predecessor given for dot $dot, initial causal predecessors: $initialCausalPredecessors")
+          case None => throw IllegalStateException(s"$selfUid: No causal predecessor given for dot $dot, initial causal predecessors: $initialCausalPredecessors")
         }
       } else if dot.place != currentPeer then {
         // special case of the first dot that does not have a predecessor
@@ -416,7 +437,7 @@ class DeltaTreeContext[State](selfUid: Uid) {
     if updatedKnowledge then tree.collapseGeneralKnowledge()
   }
 
-  def getSelfKnowledge: Dots = tree.getLeavesAsDots
+  def getSelfKnowledge: Dots = tree.getCausalBarriersAsDots
 
   def getPredecessors(dot: Dot): List[Dot] = tree.getNodeOfDot(dot) match {
     case Some(node: DotTreeNode.Node) => tree.getPredecessors(node.predecessorNode, List.empty)

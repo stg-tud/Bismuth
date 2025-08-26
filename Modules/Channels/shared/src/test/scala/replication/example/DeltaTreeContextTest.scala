@@ -121,6 +121,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     assertEquals(treeContext.getPredecessors(uid1), List(dot12, dot11, dot10))
     assertEquals(treeContext.getPredecessors(uid2), List(dot21))
     assertEquals(treeContext.getPredecessors(uid3), List(dot32, dot31, dot30))
+    assertEquals(treeContext.tree.causalBarriers.values.map(_.dot).toSet, Set(dot12, dot32))
 
     treeContext.addNode(dot20, dot20)
 
@@ -130,6 +131,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     assertEquals(treeContext.getPredecessors(uid1), List(dot12, dot11, dot10))
     assertEquals(treeContext.getPredecessors(uid2), List(dot21, dot20))
     assertEquals(treeContext.getPredecessors(uid3), List(dot32, dot31, dot30))
+    assertEquals(treeContext.tree.causalBarriers.values.map(_.dot).toSet, Set(dot12, dot21, dot32))
   }
 
   test("get unknown dots for peer with empty knowledge") {
@@ -273,6 +275,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     val tree = DotTree()
     var dots = Dots.empty
     var expected = Dots.empty
+    var expectedCausalBarriers = Dots.empty
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
@@ -283,12 +286,14 @@ class DeltaTreeContextTest extends munit.FunSuite {
         tree.addNode(dot, prevDot)
         expected = expected.add(dot)
       }
+      if i == 0 then expectedCausalBarriers = expectedCausalBarriers.add(dot)
       dots = dots.add(dot)
       prevDot = dot
     }
 
     assertEquals(tree.collapse, expected)
     assertEquals(tree.leaves.values.map(node => node.dot).toSet, Set(prevDot))
+    assertEquals(tree.causalBarriers.values.foldLeft(Dots.empty)((dots, node) => dots.add(node.dot)), expectedCausalBarriers)
   }
 
   // TODO: test for duplicates
