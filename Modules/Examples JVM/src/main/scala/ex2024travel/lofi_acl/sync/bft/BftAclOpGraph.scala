@@ -11,9 +11,10 @@ import rdts.filters.PermissionTree
 import java.security.PrivateKey
 import java.util.Base64
 import scala.collection.mutable
+import scala.runtime.Arrays
 import scala.util.{Failure, Success, Try}
 
-case class BftAclOpGraph(ops: Map[Signature, Delegation], heads: Set[Signature]) {
+case class BftAclOpGraph(root: Signature, ops: Map[Signature, Delegation], heads: Set[Signature]) {
   def delegateAccess(
       delegator: PublicIdentity,
       delegatorKey: PrivateKey,
@@ -27,7 +28,7 @@ case class BftAclOpGraph(ops: Map[Signature, Delegation], heads: Set[Signature])
     val opBytes     = writeToArray(op)
     val sig         = Ed25519Util.sign(opBytes, delegatorKey)
     val sigAsString = Base64.getEncoder.encodeToString(sig)
-    (BftAclOpGraph(ops + (sigAsString -> op), Set(sigAsString)), EncodedDelegation(sig, opBytes))
+    (BftAclOpGraph(root, ops + (sigAsString -> op), Set(sigAsString)), EncodedDelegation(sig, opBytes))
 
   def isDelegationLegal(op: Delegation): Boolean =
     val referenceVersion = reconstruct(op.parents).get
@@ -46,7 +47,7 @@ case class BftAclOpGraph(ops: Map[Signature, Delegation], heads: Set[Signature])
         val missing = parents.filterNot(ops.contains)
         if missing.nonEmpty then return Left(missing)
         // Track new op, remove heads that op references as predecessors and add new op as head
-        Right(BftAclOpGraph(ops + (signatureAsString -> delegation), (heads -- parents) + signatureAsString))
+        Right(BftAclOpGraph(root, ops + (signatureAsString -> delegation), (heads -- parents) + signatureAsString))
 
   def reconstruct(heads: Set[Signature]): Option[Acl] =
     require(heads.forall(ops.contains))

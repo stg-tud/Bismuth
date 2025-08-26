@@ -1,10 +1,10 @@
 package ex2024travel.lofi_acl.sync.monotonic
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
-import MonotonicAclSyncMessage.*
+import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
 import ex2024travel.lofi_acl.sync.{DeltaMapWithPrefix, RDTSync}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicReference
 class SyncWithMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
                                 rootOfTrust: PublicIdentity,
                                 initialAclDeltas: List[AclDelta[RDT]],
-                                initialRdt: DeltaMapWithPrefix[RDT], // Assumed to correspond with ACL!
                                 onDeltaReceive: RDT => Unit
                                )(using
                                  lattice: Lattice[RDT],
@@ -24,19 +23,15 @@ class SyncWithMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
                                  filter: Filter[RDT]
                                ) extends RDTSync[RDT] {
 
-  private val antiEntropy = FilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, initialRdt, this)
+  private val antiEntropy = FilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, DeltaMapWithPrefix.empty, this)
   @volatile private var antiEntropyThread: Option[Thread] = None
 
   private val localPublicId = localIdentity.getPublic
 
   def currentState: RDT = rdtReference.get()._2
 
-  private val rdtReference: AtomicReference[(Dots, RDT)] = AtomicReference(
-    initialRdt.allDots ->
-      initialRdt.prefix.merge(initialRdt.deltas.foldLeft(bottom.empty) { case (l, (_, r)) => l.merge(r) })
-  )
-  private val lastLocalRdtDot: AtomicReference[Dot] =
-    AtomicReference(initialRdt._1.max(Uid(localPublicId.id)).getOrElse(Dot(Uid(localPublicId.id), -1)))
+  private val rdtReference: AtomicReference[(Dots, RDT)] = AtomicReference((Dots.empty, bottom.empty))
+  private val lastLocalRdtDot: AtomicReference[Dot] = AtomicReference(Dot(Uid(localPublicId.id), -1))
 
   private val lastLocalAclDot: AtomicReference[Dot] = {
     val localId = localIdentity.getPublic.id
@@ -61,8 +56,9 @@ class SyncWithMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
     antiEntropy.mutateRdt(dot, deltaMutator(rdtReference.get()._2))
   }
 
-  def connectionString: String = {
-    s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
+  override def createInvitation: MonotonicInvitation = {
+    val connectionString = s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
+    MonotonicInvitation(rootOfTrust, Ed25519Util.generateNewKeyPair, localIdentity.getPublic, connectionString)
   }
 
   def connect(remoteUser: PublicIdentity, remoteAddress: String): Unit = {
@@ -89,38 +85,5 @@ class SyncWithMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
       antiEntropyThread.get.interrupt()
       antiEntropyThread = None
     }
-  }
-}
-
-object SyncWithMonotonicAcl {
-  def createAsRootOfTrust[RDT](rootIdentity: PrivateIdentity, onDeltaReceive: RDT => Unit)(using
-                                                                                           lattice: Lattice[RDT],
-                                                                                           bottom: Bottom[RDT],
-                                                                                           rdtJsonCode: JsonValueCodec[RDT],
-                                                                                           filter: Filter[RDT],
-                                                                                           msgJsonCodec: JsonValueCodec[MonotonicAclSyncMessage[RDT]]
-  ): SyncWithMonotonicAcl[RDT] = {
-    val selfSignedAclDelta: AclDelta[RDT] = MonotonicAcl.createRootOfTrust[RDT](rootIdentity)
-    create(
-      rootIdentity,
-      rootIdentity.getPublic,
-      List(selfSignedAclDelta),
-      onDeltaReceive
-    )
-  }
-
-  def create[RDT](
-                   myIdentity: PrivateIdentity,
-                   rootIdentity: PublicIdentity,
-                   initialAclOps: List[AclDelta[RDT]],
-                   onDeltaReceive: RDT => Unit
-                 )(using
-                   lattice: Lattice[RDT],
-                   bottom: Bottom[RDT],
-                   rdtJsonCode: JsonValueCodec[RDT],
-                   filter: Filter[RDT],
-                   msgJsonCodec: JsonValueCodec[MonotonicAclSyncMessage[RDT]]
-                 ): SyncWithMonotonicAcl[RDT] = {
-    SyncWithMonotonicAcl(myIdentity, rootIdentity, initialAclOps, DeltaMapWithPrefix.empty, onDeltaReceive)
   }
 }

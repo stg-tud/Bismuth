@@ -1,5 +1,6 @@
 package ex2024travel.lofi_acl.travelplanner
 
+import ex2024travel.lofi_acl.sync.TravelPlanModelFactory
 import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
 import ex2024travel.lofi_acl.travelplanner.view.TravelPlanView
 import ex2024travel.lofi_acl.travelplanner.viewmodel.TravelPlanViewModel
@@ -14,7 +15,7 @@ import scalafx.scene.layout.{BorderPane, HBox, Priority, VBox}
 import scala.concurrent.ExecutionContext.global
 
 // Initial screen with creation / join functionality
-class MainScene extends Scene {
+class MainScene(travelPlanModelFactory: TravelPlanModelFactory) extends Scene {
   private val rootPane = new BorderPane()
 
   val documentIsOpen: BooleanProperty = new BooleanProperty()
@@ -47,9 +48,8 @@ class MainScene extends Scene {
 
   private def createNewDocumentButtonPressed(): Unit = {
     documentIsOpen.value = true
-    // TODO: Check if running this directly on the GUI Thread has better UX (glitches). Same on join.
     global.execute { () =>
-      init(TravelPlanModel.createNewDocument)
+      init(travelPlanModelFactory.createAsRootOfTrustWithExampleData)
     }
   }
 
@@ -57,7 +57,7 @@ class MainScene extends Scene {
     documentIsOpen.value = true
     val inviteString = invitationTextField.getText
     global.execute { () =>
-      init(TravelPlanModel.joinDocument(inviteString))
+      init(travelPlanModelFactory.createByJoining(inviteString))
     }
   }
 

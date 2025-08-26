@@ -1,9 +1,9 @@
 package ex2024travel.lofi_acl.travelplanner.view
 
 import crypto.PublicIdentity
-import ex2024travel.lofi_acl.sync.Acl
+import ex2024travel.lofi_acl.sync.{Acl, Invitation}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
-import ex2024travel.lofi_acl.travelplanner.model.{Invitation, TravelPlanModel}
+import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
 import rdts.filters.PermissionTree
 import scalafx.application.Platform
 import scalafx.scene.Scene

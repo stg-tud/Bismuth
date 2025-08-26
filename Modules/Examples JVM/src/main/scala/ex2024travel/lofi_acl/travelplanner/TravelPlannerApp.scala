@@ -1,5 +1,11 @@
 package ex2024travel.lofi_acl.travelplanner
 
+import crypto.channels.IdentityFactory
+import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
+import ex2024travel.lofi_acl.sync.TravelPlanModelFactory
+import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.AclDelta
+import ex2024travel.lofi_acl.sync.monotonic.{MonotonicInvitation, MonotonicAcl, SyncWithMonotonicAcl}
+import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
 import scalafx.application.{JFXApp3, Platform}
 
 object TravelPlannerApp extends JFXApp3 {
@@ -7,7 +13,7 @@ object TravelPlannerApp extends JFXApp3 {
     Platform.implicitExit = true
     stage = new JFXApp3.PrimaryStage {
       title = s"Travel Planner"
-      scene = new MainScene()
+      scene = new MainScene(MonotonicTpmFactory)
       resizable = true
     }
   }
@@ -15,4 +21,24 @@ object TravelPlannerApp extends JFXApp3 {
   override def stopApp(): Unit = {
     System.exit(0) // Workaround to ensure that Runtime shutdown hooks are executed
   }
+
+  private object MonotonicTpmFactory extends TravelPlanModelFactory {
+    def createAsRootOfTrust: TravelPlanModel = {
+      val identity = IdentityFactory.createNewIdentity
+      val rootAclDelta: AclDelta[TravelPlan] = MonotonicAcl.createRootOfTrust[TravelPlan](identity)
+      val syncProvider =
+        (new SyncWithMonotonicAcl[TravelPlan](_, _, _, _)).curried(identity)(identity.getPublic)(List(rootAclDelta))
+      TravelPlanModel(identity, syncProvider)
+    }
+
+    def createByJoining(inviteString: String): TravelPlanModel = {
+      val invite = MonotonicInvitation.decode(inviteString)
+      val identity = IdentityFactory.fromIdentityKey(invite.identityKey)
+      val syncProvider = (new SyncWithMonotonicAcl[TravelPlan](_, _, _, _)).curried(identity)(invite.rootOfTrust)(List.empty)
+      val travelPlanModel = TravelPlanModel(identity, syncProvider)
+      travelPlanModel.addConnection(invite.inviter, invite.joinAddress)
+      travelPlanModel
+    }
+  }
 }
+

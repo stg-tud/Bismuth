@@ -3,10 +3,11 @@ package ex2024travel.lofi_acl.travelplanner.model
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
-import ex2024travel.lofi_acl.sync.{Acl, RDTSync}
-import ex2024travel.lofi_acl.travelplanner.TravelPlan.given
-import ex2024travel.lofi_acl.sync.monotonic.SyncWithMonotonicAcl
+import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.AclDelta
+import ex2024travel.lofi_acl.sync.monotonic.{MonotonicAcl, MonotonicInvitation, SyncWithMonotonicAcl}
+import ex2024travel.lofi_acl.sync.{Acl, Invitation, RDTSync, TravelPlanModelFactory}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
+import ex2024travel.lofi_acl.travelplanner.TravelPlan.given
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.Operation.{READ, WRITE}
@@ -19,9 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext.global
 
 class TravelPlanModel(private val localIdentity: PrivateIdentity,
-                      rootOfTrust: PublicIdentity,
-                      syncProvider: (TravelPlan => Unit) => RDTSync[TravelPlan]
-                     ) {
+                      syncProvider: (TravelPlan => Unit) => RDTSync[TravelPlan]) {
   val publicId: PublicIdentity = localIdentity.getPublic
 
   private given localUid: LocalUid = LocalUid(Uid(publicId.id))
@@ -34,9 +33,6 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
   sync.start()
   Runtime.getRuntime.addShutdownHook(new Thread(() => sync.stop()))
 
-  def createInvitation: Invitation =
-    Invitation(rootOfTrust, Ed25519Util.generateNewKeyPair, publicId, sync.connectionString)
-
   def grantPermission(affectedUser: PublicIdentity,
                       readPermissions: PermissionTree,
                       writePermissions: PermissionTree
@@ -44,6 +40,10 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
     sync.grantPermissions(affectedUser, readPermissions, READ)
     if !writePermissions.isEmpty
     then sync.grantPermissions(affectedUser, writePermissions, WRITE)
+  }
+  
+  def createInvitation: Invitation = {
+    sync.createInvitation
   }
 
   def addConnection(remoteUser: PublicIdentity, address: String): Unit = {
@@ -143,27 +143,3 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
   }
 }
 
-object TravelPlanModel {
-  def createNewDocument: TravelPlanModel = {
-    val privateId = IdentityFactory.createNewIdentity
-    val syncProvider = SyncWithMonotonicAcl.createAsRootOfTrust[TravelPlan].curried(privateId)
-    val model = TravelPlanModel(privateId, privateId.getPublic, syncProvider)
-
-    model.changeTitle("Portugal Trip")
-    model.addBucketListEntry("Porto")
-    model.addBucketListEntry("Lisbon")
-    model.addBucketListEntry("Faro")
-    model.addExpense("Ice Cream", "3.14 €")
-
-    model
-  }
-
-  def joinDocument(inviteString: String): TravelPlanModel = {
-    val invite = Invitation.decode(inviteString)
-    val identity = IdentityFactory.fromIdentityKey(invite.identityKey)
-    val syncProvider = SyncWithMonotonicAcl.create[TravelPlan].curried(identity)(invite.rootOfTrust)(List.empty)
-    val travelPlanModel = TravelPlanModel(identity, invite.rootOfTrust, syncProvider)
-    travelPlanModel.addConnection(invite.inviter, invite.joinAddress)
-    travelPlanModel
-  }
-}

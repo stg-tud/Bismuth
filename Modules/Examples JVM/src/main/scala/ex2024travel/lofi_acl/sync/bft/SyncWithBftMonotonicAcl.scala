@@ -1,9 +1,9 @@
 package ex2024travel.lofi_acl.sync.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import crypto.PublicIdentity
+import crypto.{Ed25519Util, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import BftAclOpGraph.{EncodedDelegation, Signature}
+import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.{EncodedDelegation, Signature}
 import ex2024travel.lofi_acl.sync.{Acl, RDTSync}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
@@ -41,7 +41,7 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
     aclRoot.decode match
       case Failure(exception) => throw exception
       case Success((sig, delegation)) =>
-        val opGraph = BftAclOpGraph(Map(sig -> delegation), Set(sig))
+        val opGraph = BftAclOpGraph(sig, Map(sig -> delegation), Set(sig))
         AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
   }
 
@@ -83,8 +83,9 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
     antiEntropy.mutateRdt(dot, deltaMutator(rdtReference.get()._2))
   }
 
-  def connectionString: String = {
-    s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
+  override def createInvitation: BftInvitation = {
+    val connectionString = s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
+    BftInvitation(aclRoot, Ed25519Util.generateNewKeyPair, localIdentity.getPublic, connectionString)
   }
 
   def connect(remoteUser: PublicIdentity, remoteAddress: String): Unit = {
@@ -111,18 +112,5 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
       antiEntropyThread.get.interrupt()
       antiEntropyThread = None
     }
-  }
-}
-
-object SyncWithBftMonotonicAcl {
-  def createAsRootOfTrust[RDT](rootIdentity: PrivateIdentity
-                              )(using
-                                lattice: Lattice[RDT],
-                                bottom: Bottom[RDT],
-                                rdtJsonCodec: JsonValueCodec[RDT],
-                                filter: Filter[RDT],
-                              ): SyncWithBftMonotonicAcl[RDT] = {
-    val aclRoot = BftAclOpGraph.createSelfSignedRoot(rootIdentity)
-    SyncWithBftMonotonicAcl(rootIdentity, aclRoot)
   }
 }
