@@ -44,7 +44,7 @@ case class HashDAG[T] private(
 
   def effector(event: Event[T]): HashDAG[T] =
     assume(!contains(event), "Event already in HashDAG!")
-    
+
     if event.calculateHash != event.id || !event.signatureIsValid || event.authorIsByzantine then
       this
     else if isByzantine(event) then
@@ -105,10 +105,18 @@ case class HashDAG[T] private(
           isByz = true
 
       isByz
-      
-  
-  def markEventsFromByzantineNode(author: PublicKey): HashDAG[T] = ???
-    
+
+  def markEventsFromByzantineNode(author: PublicKey): HashDAG[T] = {
+    var g = this.graph
+
+    for event <- graph.keys do
+      if event.author == author then
+        val v = graph(event)
+        g = g - event
+        g = g + (event.copy(authorIsByzantine = true) -> v)
+
+    HashDAG(g, this.authorKeys, this.queue, this.byzantineNodes + author)
+  }
 
 
 object HashDAG:
