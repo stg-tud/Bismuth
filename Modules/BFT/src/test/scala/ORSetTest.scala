@@ -16,23 +16,6 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(setA2.getElements, Set.empty)
   }
 
-  test("test") {
-    val setA1 = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
-    val (setA3, event2) = setA2.remove("x")
-
-    val setB1 = ORSet[String]()
-    val (setB2, event3) = setB1.add("x")
-
-    val setB3 = setB2.receiveEvent(event1)
-    val setB4 = setB3.receiveEvent(event2)
-
-    val setA4 = setA3.receiveEvent(event3)
-
-    assertEquals(setA4.getElements, Set("x"))
-    assertEquals(setA4.getElements, setB4.getElements)
-  }
-
   test("remove existing element") {
     val setA1 = ORSet[String]()
     val (setA2, event1) = setA1.add("x")
@@ -117,5 +100,22 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(setA9.getElements, Set("x", "y"))
     assertEquals(setA9.getElements, setB5.getElements)
 
+  }
+
+  test("synchronise 2 sets: example 4") {
+    val setA1 = ORSet[String]()
+    val (setA2, event1) = setA1.add("x")
+    val (setA3, event2) = setA2.remove("x")
+
+    val setB1 = ORSet[String]()
+    val (setB2, event3) = setB1.add("x")
+
+    val setB3 = setB2.receiveEvent(event1)
+    val setB4 = setB3.receiveEvent(event2)
+
+    val setA4 = setA3.receiveEvent(event3)
+
+    assertEquals(setA4.getElements, Set("x"))
+    assertEquals(setA4.getElements, setB4.getElements)
   }
 
