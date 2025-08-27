@@ -12,7 +12,8 @@ case class Event[T](
                      content: Option[T],
                      author: PublicKey,
                      dependencies: Set[String],
-                     signature: Array[Byte]
+                     signature: Array[Byte],
+                     authorIsByzantine: Boolean = false
                    ):
 
   private val HashAlgorithm = "SHA3-512"
