@@ -57,19 +57,7 @@ Applications may use ranges to reliably track things like:
 | `getRange(id)`                               | Retrieves the current coordinates of a named range.                                               |
 | `listRanges()`                               | Returns a list of all defined ranges.                                                             |
 
-## Design
-- Rows and columns: identified by stable ids in an ordered list
-- Cell contents: map of row/column id pair to cell content. Deleted rows/columns may leave tombstoned cell entries; these can de deleted by `purgeTombstones()`. This does change semantics as these cells then cannot be revived.
-- Ranges: implemented with markers—named anchors in the 1-D lists of row/column ids. A marker points to a concrete element id and therefore follows moves/updates. On deletion of its element it reacts according to its `MarkerRemovalBehavior`: Successor → jump to next element; Predecessor → jump to previous; None → marker is removed.
-
-### Ordered list implementation
-- `ReplicatedUniqueList`: wrapper around `ReplicatedList`
-- Structure prompted by desire for concurrent cell edits and row/column moves in conjunction with update-wins behavior in the case of concurrent deletion:
-  - Pre-merge bidirectional filter step uses separate textual and positional operation precedences as well as an operation timestamp to determine the most privileged changes and drop all others
-  - Position and content can be changed independently, as they are separated into `ReplicatedList` for position and `ObserveRemoveMap` for content through indirection over an element id
-  - Markers (endpoints of ranges in 1D in the row/column id lists) use the same criteria for privilege; they are stored as a map from id to marker information → merge selects winner automatically
-
-# Semantics
+## Semantics
 - **Update-wins semantics**
 	- When a cell edit conflicts with row/column deletion, the cell edit is preserved and the full row/column brought back, since an edit indicates the relevance of the affected row/column.
 	- Similarly, moving of a row/column preempts concurrent deletion.
@@ -91,6 +79,18 @@ Applications may use ranges to reliably track things like:
 	- If the end border is moved ahead of the beginning or vice versa, the range is removed.
 	- Ranges may overlap.
 	- Ranges may be created, deleted, and re-created.
+
+## Design
+- Rows and columns: identified by stable ids in an ordered list
+- Cell contents: map of row/column id pair to cell content. Deleted rows/columns may leave tombstoned cell entries; these can de deleted by `purgeTombstones()`. This does change semantics as these cells then cannot be revived.
+- Ranges: implemented with markers—named anchors in the 1-D lists of row/column ids. A marker points to a concrete element id and therefore follows moves/updates. On deletion of its element it reacts according to its `MarkerRemovalBehavior`: Successor → jump to next element; Predecessor → jump to previous; None → marker is removed.
+
+### Ordered list implementation
+- `ReplicatedUniqueList`: wrapper around `ReplicatedList`
+- Structure prompted by desire for concurrent cell edits and row/column moves in conjunction with update-wins behavior in the case of concurrent deletion:
+	- Pre-merge bidirectional filter step uses separate textual and positional operation precedences as well as an operation timestamp to determine the most privileged changes and drop all others
+	- Position and content can be changed independently, as they are separated into `ReplicatedList` for position and `ObserveRemoveMap` for content through indirection over an element id
+	- Markers (endpoints of ranges in 1D in the row/column id lists) use the same criteria for privilege; they are stored as a map from id to marker information → merge selects winner automatically
 
 ## Earlier attempts
 - We initially built an operation-based CRDT from scratch in Kotlin
