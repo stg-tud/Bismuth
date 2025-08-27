@@ -27,7 +27,7 @@ case class ORSet[T] private(
       case Add =>
         elements + (op.element -> (elements.getOrElse(op.element, Set.empty) + event.id))
       case Remove =>
-        elements - op.element 
+        elements - op.element
 
     (
       ORSet(hashDAG.effector(event), newElements),
@@ -35,7 +35,6 @@ case class ORSet[T] private(
     )
 
   def receiveEvent(event: Event[Op[T]]): ORSet[T] =
-    // TODO: fix this
     val graph = hashDAG.effector(event)
 
     if graph.contains(event) then
@@ -48,11 +47,11 @@ case class ORSet[T] private(
           for id <- ids do
             if graph.pathExists(id, event.id) then
               ids = ids - id
-          
+
           ORSet(graph, elements + (op.element -> ids))
     else
       this
-    
+
   def getElements: Set[T] =
     Set.from(elements.filter((k, v) => v.nonEmpty).map((k, v) => k))
 
