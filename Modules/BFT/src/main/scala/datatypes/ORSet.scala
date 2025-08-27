@@ -7,7 +7,7 @@ import datatypes.OpType.{Add, Remove}
 
 case class ORSet[T] private(
                              hashDAG: HashDAG[Op[T]],
-                             elements: Map[T, String]
+                             elements: Map[T, Set[String]]
                            ):
 
   def add(element: T): (ORSet[T], Event[Op[T]]) =
@@ -25,9 +25,9 @@ case class ORSet[T] private(
 
     val newElements = op.opType match
       case Add =>
-        elements + (op.element -> event.id)
+        elements + (op.element -> (elements.getOrElse(op.element, Set.empty) + event.id))
       case Remove =>
-        elements - op.element
+        elements - op.element 
 
     (
       ORSet(hashDAG.effector(event), newElements),
@@ -35,70 +35,26 @@ case class ORSet[T] private(
     )
 
   def receiveEvent(event: Event[Op[T]]): ORSet[T] =
+    // TODO: fix this
     val graph = hashDAG.effector(event)
 
     if graph.contains(event) then
       val op = event.content.get
       op.opType match
         case Add =>
-          ORSet(graph, elements + (op.element -> event.id))
+          ORSet(graph, elements + (op.element -> (elements.getOrElse(op.element, Set.empty) + event.id)))
         case Remove =>
-          if !elements.contains(op.element)then
-            ORSet(graph, elements)
-          else
-            val lastAddEvent = graph.getEventByID(elements(op.element))
-            if graph.pathExists(lastAddEvent, event) then
-              ORSet(graph, elements - op.element)
-            else
-              ORSet(graph, elements)
+          var ids = elements.getOrElse(op.element, Set.empty)
+          for id <- ids do
+            if graph.pathExists(id, event.id) then
+              ids = ids - id
+          
+          ORSet(graph, elements + (op.element -> ids))
     else
       this
-
-
-  private def getElements(event: Event[Op[T]], acc: Set[T]): Set[T] =
-    var result = acc
-
-    if event.id != "0" then
-      event.content.get.opType match
-        case OpType.Add =>
-          for child <- hashDAG.graph(event) do
-            result = result ++ getElements(child, result)
-        case OpType.Remove =>
-          for child <- hashDAG.graph(event) do
-            result = result ++ getElements(child, result)
-
-    result
-
-  private def removeOpHappenedAfterAddOp(event: Event[Op[T]], element: T): Boolean =
-    val parents = getParents(event)
-
-    var res = false
-    for parent <- parents do
-      if parent.id != "0" then
-        if parent.content.get.opType == OpType.Add && parent.content.get.element == element then
-          res = true
-        else
-          var result = Set.empty[Boolean]
-          for parent <- parents do
-            result = result + removeOpHappenedAfterAddOp(parent, element)
-
-          res = result.contains(true)
-
-    res
-
-  private def getParents(event: Event[Op[T]]): Set[Event[Op[T]]] =
-    var result = Set.empty[Event[Op[T]]]
-
-    hashDAG.graph.foreach((key, value) =>
-      if (value.contains(event)) {
-        result = result + key
-      }
-    )
-
-    result
     
   def getElements: Set[T] =
-    Set.from(elements.keys)
+    Set.from(elements.filter((k, v) => v.nonEmpty).map((k, v) => k))
 
 
 object ORSet:
