@@ -14,10 +14,11 @@ This screenshot depicts a spreadsheet containing a range and a conflict (in cell
 Replicated data types (RDTs) such as CRDTs are becoming increasingly popular as a simplified way for programming distributed systems. RDTs are local data structures with a familiar interface (such as sets, lists, trees) that can automatically synchronize data between multiple devices in the background. For more background on CRDTs, see https://crdt.tech/.
 
 CRDTs for simple data types like sets or lists are well understood, however, modern collaborative applications such as Notion or Google Docs also include more complicated application specific data structures such as tables/spreadsheets. In a spreadsheet, we have certain dependencies between rows and columns and a spreadsheet CRDT algorithm has to decide what happens if multiple devices edit them concurrently and potentially produce conflicts.
-The state of the art of CRDT spreadsheets, which served as the starting point of our implementation, is described in the paper '[A CRDT for formulas in spreadsheets](https://dlnext.acm.org/doi/10.1145/3578358.3591324)'.
+The state of the art of CRDT spreadsheets, which served as the starting point of our implementation, is described in the paper '[A Study of Semantics for CRDT-based Collaborative Spreadsheets
+](https://dlnext.acm.org/doi/10.1145/3578358.3591324)'.
 
 ## Project Structure
-* `lib`: Provides the CRDT and the underlying data structures based on [REScala](https://www.rescala-lang.com/).
+* `lib`: Provides the CRDT and the underlying data structures, built on the [RDT module](../RDTs))
   * `lib/src/test`: Comprehensive test suites (amounts to over 60 tests) for `Spreadsheet`, `ReplicatedUniqueList`, and `KeepRemoveList`
 * `app`: A spreadsheet web application built with [scalajs-react](https://japgolly.github.io/scalajs-react/) to test the synchronization of the CRDT.
 
@@ -28,18 +29,18 @@ sbt "project tabularApp" fastOptJS
 You may now open [index.html](app/index.html) in your favorite browser
 
 ## Operations
-| Operation                        | Description                                                                                                                                                            |
-|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `addRow()`                       | Appends a new row to the end of the sheet.                                                                                                                             |
-| `addColumn()`                    | Appends a new column to the end of the sheet.                                                                                                                          |
-| `insertRow(index)`               | Insert empty row before i; rows with index ≥ i receive index += 1                                                                                                      |
-| `insertColumn(index)`            | Insert empty column before i; columns with index ≥ i receive index += 1                                                                                                |
-| `removeRow(index)`               | Delete row i; rows with index > i receive index -= 1                                                                                                                   |
-| `removeColumn(index)`            | Deletes the column at the specified index.                                                                                                                             |
-| `moveRow(fromIndex, toIndex)`    | Moves a row from a source index to a target index.                                                                                                                     |
-| `moveColumn(fromIndex, toIndex)` | Moves a column from a source index to a target index.                                                                                                                  |
+| Operation                        | Description                                                                                                                                                           |
+|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `addRow()`                       | Appends a new row to the end of the sheet.                                                                                                                            |
+| `addColumn()`                    | Appends a new column to the end of the sheet.                                                                                                                         |
+| `insertRow(index)`               | Insert empty row before i; rows with index ≥ i receive index += 1                                                                                                     |
+| `insertColumn(index)`            | Insert empty column before i; columns with index ≥ i receive index += 1                                                                                               |
+| `removeRow(index)`               | Delete row i; rows with index > i receive index -= 1                                                                                                                  |
+| `removeColumn(index)`            | Deletes the column at the specified index.                                                                                                                            |
+| `moveRow(fromIndex, toIndex)`    | Moves a row from a source index to a target index.                                                                                                                    |
+| `moveColumn(fromIndex, toIndex)` | Moves a column from a source index to a target index.                                                                                                                 |
 | `editCell(coordinate, value)`    | Sets the content of the cell at the given coordinate. If concurrent edits occur, the cell will hold all conflicting values. Passing null as the value clears the cell. |
-| `purgeTombstones()`              | An internal maintenance function to clean up content left by deleted rows and columns.                                                                                 |
+| `purgeTombstones()`              | A maintenance function to clean up content left by deleted rows and columns.                                                                                          |
 
 ### Ranges
 Ranges are used to store specific rectangular selections (e.g. \$A1:C5\$) within the spreadsheet data structure.
@@ -58,8 +59,8 @@ Applications may use ranges to reliably track things like:
 
 ## Design
 - Rows and columns: identified by stable ids in an ordered list
-- Cell contents: map of row/column id pair to cell content
-- Ranges: modeled on markers&mdash;for beginning and end per dimension in the `ReplicatedUniqueList`s of row/column ids.
+- Cell contents: map of row/column id pair to cell content. Deleted rows/columns may leave tombstoned cell entries; these can de deleted by `purgeTombstones()`. This does change semantics as these cells then cannot be revived.
+- Ranges: implemented with markers—named anchors in the 1-D lists of row/column ids. A marker points to a concrete element id and therefore follows moves/updates. On deletion of its element it reacts according to its `MarkerRemovalBehavior`: Successor → jump to next element; Predecessor → jump to previous; None → marker is removed.
 
 ### Ordered list implementation
 - `ReplicatedUniqueList`: wrapper around `ReplicatedList`
@@ -76,7 +77,7 @@ Applications may use ranges to reliably track things like:
 
 - **Conflicts in one cell**
 	- Concurrent content changes at the same cell are recorded as a conflict.
-      - The conflict is visualized in the GUI and resolved by a user selecting the desired value.
+      - The conflict is visualized in the GUI (see screenshot at the top, conflict in cell B3) and resolved by a user selecting the desired value.
 
 - **Concurrent structural and textual changes**
 	- Moving rows/columns concurrently with cell edits therein preserves the effects of both.
