@@ -87,26 +87,26 @@ Applications may use ranges to reliably track things like:
 
 ### Ordered list implementation
 
-The `ReplicatedUniqueList` is a **generic, ordered, unique CRDT list**, designed with the purpose of tracking identifiers for movable rows/columns in a spreadsheet in mind.
+The `ReplicatedUniqueList` is a **generic, ordered, unique CRDT list**, designed with the purpose of tracking identifiers for movable rows/columns of a spreadsheet in mind.
 Movability of rows/column implies an order of list elements which is modifiable to the user's content, as is common in spreadsheet software.
 
 The `ReplicatedUniqueList` is a wrapper around `ReplicatedList`, in which:
 
 #### Position and content are decoupled using indirection over element IDs
-- The wrapped `ReplicatedList` only manages the *ordering* of element IDs.
-- An `ObserveRemoveMap` maps each element ID to its actual value (here a row/column ID).
+- The wrapped `ReplicatedList` manages the ordering of element IDs.
+- An `ObserveRemoveMap` maps each element ID to the element value (here a row/column ID).
 
-Using separate content-wise and positional operation precedences as well as an operation timestamp, this allows us to employ a pre-merge bidirectional filter step to select one position and one value for every element such that:
+Since the `ReplicatedList` will only merge values per element as identified by a position in the order of the list, a move—implemented as a deletion at one position and an insertion at another—will create multiple elements with the same value.
+We use a pre-merge bidirectional filter step to identify and narrow down to the element with the highest positional precedence and most recent timestamp across both merge operands.
+
+Expanding on this idea using separate content-wise and positional operation precedences as well as the operation timestamp allows us to employ the filter step to select one position and one value for every element such that:
 - an element which is subject to a move and a concurrent update takes on the timestamp and value from the update, regardless of the chronological order of the two.
 	- Thus, a positional change does not affect the winning value for an element in a merge.
 - Conversely, the element takes on the position dictated by the move rather than the one reinforced by the update (e.g., the row/column id update triggered by a cell edit to keep the row/column alive in case of its concurrent deletion).
 	- A value change does not affect the winning position of an element in a merge.
 
 Consequently, as the user would expect, the concurrent content-wise and positional changes are kept no matter which occurred first.
-In the context of the complete spreadsheet, the outlined structure was prompted by the desire for concurrent cell edits and row/column moves in conjunction with update-wins behavior in the case of concurrent deletion.
-
-Since the `ReplicatedList` will only merge values for one element as identified by its position in the order of the list, a move of a row/column id—implemented as a deletion at one position and an insertion at another—will create multiple elements with the same value.
-The aforementioned bidirectional filter step is responsible for identifying and narrowing down to the element with the highest positional precedence and most recent timestamp across both merge operands.
+In the context of the complete spreadsheet, this enables concurrent cell edits and row/column moves in conjunction with update-wins behavior in the case of concurrent deletion.
 
 Markers use the same criteria to select the winner of a merge.
 Since markers are stored as a map—with unique keys—from marker id to the set of precedences and timestamps of the modifying operations and the competing IDs of the pointed-to element, the winner is selected automatically by the merge without any filtering.
