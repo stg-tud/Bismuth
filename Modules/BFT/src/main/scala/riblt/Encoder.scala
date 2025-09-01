@@ -4,7 +4,7 @@ import scala.collection.mutable
 import scala.collection.mutable.PriorityQueue
 import java.security.MessageDigest
 
-given ord: Ordering[SymbolMapping] = Ordering.by(_.codedIndex)
+//given ord: Ordering[SymbolMapping] = Ordering.by(_.codedIndex)
 
 class Encoder[T] (
                         var symbols: List[HashedSymbol[T]],
