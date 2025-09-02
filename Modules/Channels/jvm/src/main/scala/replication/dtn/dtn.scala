@@ -85,7 +85,7 @@ class Replica[S: {Lattice, JsonValueCodec}](
 
   def receive(data: ByteBuffer): Unit = {
     val receieved = readFromByteBuffer[WsRecvData](data)
-    val delta = readFromArray[S](receieved.data.payload)
+    val delta     = readFromArray[S](receieved.data.payload)
     applyRemoteDelta(delta)
   }
 

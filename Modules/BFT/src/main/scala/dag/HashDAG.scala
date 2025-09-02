@@ -5,15 +5,15 @@ import java.security.{KeyPair, PublicKey}
 import crypto.Ed25519Util
 
 // a hash directed acyclic graph
-case class HashDAG[T] private(
-                               // the state S of a HashDAG consists of the vertices and edges contained in the HashDAG, S = (V, E)
-                               // but separately saving the vertices and edges is redundant,
-                               // a better way to solve this is by mapping each vertex to the set of its children
-                               graph: Map[Event[T], Set[String]],
-                               authorKeys: KeyPair,
-                               queue: Set[Event[T]] = Set.empty[Event[T]],
-                               byzantineNodes: Set[PublicKey] = Set.empty
-                             ):
+case class HashDAG[T] private (
+    // the state S of a HashDAG consists of the vertices and edges contained in the HashDAG, S = (V, E)
+    // but separately saving the vertices and edges is redundant,
+    // a better way to solve this is by mapping each vertex to the set of its children
+    graph: Map[Event[T], Set[String]],
+    authorKeys: KeyPair,
+    queue: Set[Event[T]] = Set.empty[Event[T]],
+    byzantineNodes: Set[PublicKey] = Set.empty
+):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean = graph.contains(event)
@@ -35,9 +35,9 @@ case class HashDAG[T] private(
     Set.from(graph.filter((_, set) => set.isEmpty).map((event, _) => event))
 
   def generator(content: T): Event[T] = {
-    val currentHeads = getCurrentHeads
+    val currentHeads    = getCurrentHeads
     val currentHeadsIDs = currentHeads.map(event => event.id)
-    val signature = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
+    val signature       = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
 
     Event(Some(content), authorKeys.getPublic, currentHeadsIDs, signature)
   }
@@ -53,7 +53,7 @@ case class HashDAG[T] private(
       val dependencies = event.dependencies
       if dependencies.forall(e => contains(e)) then
         var g = this.graph
-        for (d <- dependencies)
+        for d <- dependencies do
           val e = g.find((e, _) => e.id == d).get._1
           g = g.updated(e, g(e) + event.id)
 
@@ -61,20 +61,19 @@ case class HashDAG[T] private(
       else
         HashDAG(this.graph, this.authorKeys, this.queue + event)
 
-
   def addEvent(content: T): HashDAG[T] =
     // generate the event
     val currentHeads = getCurrentHeads
-    val event = generator(content)
+    val event        = generator(content)
 
     // apply the event
     effector(event)
 
   def processQueue(): HashDAG[T] =
     var hashDAG = this
-    var events = Set.empty[Event[T]]
+    var events  = Set.empty[Event[T]]
 
-    for (event <- this.queue) {
+    for event <- this.queue do {
       val tmp = hashDAG.effector(event)
       hashDAG = tmp
     }
@@ -86,8 +85,8 @@ case class HashDAG[T] private(
 
   def pathExists(from: String, to: String, visited: Set[String] = Set()): Boolean =
     def dfs(current: String, visited: Set[String]): Boolean =
-      if (current == to) true
-      else if (visited.contains(current)) false
+      if current == to then true
+      else if visited.contains(current) then false
       else
         val neighbours = graph.getOrElse(getEventByID(current), Nil)
         neighbours.exists(neighbor => dfs(neighbor, visited + current))
@@ -100,7 +99,7 @@ case class HashDAG[T] private(
     else
       // detect equivocation
       var isByz = false
-      for (otherEvent <- graph.keys)
+      for otherEvent <- graph.keys do
         if otherEvent.author == event.author && event.dependencies.intersect(otherEvent.dependencies).nonEmpty then
           isByz = true
 
@@ -118,10 +117,9 @@ case class HashDAG[T] private(
     HashDAG(g, this.authorKeys, this.queue, this.byzantineNodes + author)
   }
 
-
 object HashDAG:
   def apply[T](authorKeys: KeyPair): HashDAG[T] =
     val graph = new HashMap[Event[T], Set[String]]()
-    val root = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
+    val root  = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
 
     new HashDAG[T](graph.updated(root, Set.empty), authorKeys)

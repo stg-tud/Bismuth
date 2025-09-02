@@ -5,7 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import rdts.base.{Lattice, Uid}
 import rdts.time.{Dot, Dots}
 
-
 object ProtocolMessage {
 
   /** `knows` has to be a subset of the dots known at the sender.
@@ -16,15 +15,19 @@ object ProtocolMessage {
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T
     */
-  case class Payload[+T](senders: Set[Uid], dots: Dots, data: T, causalPredecessors: Dots, lastKnownDots: Dots) extends ProtocolMessage[T] {
+  case class Payload[+T](senders: Set[Uid], dots: Dots, data: T, causalPredecessors: Dots, lastKnownDots: Dots)
+      extends ProtocolMessage[T] {
     def addSender(s: Uid) = copy(senders = senders + s)
 
     def addLastKnownDot(lastKnownDot: Dot) = copy(lastKnownDots = lastKnownDots.add(lastKnownDot))
   }
   object Payload {
-    def apply[T](sender: Uid, dots: Dots, data: T): Payload[T] = Payload(Set(sender), dots, data, Dots.empty, Dots.empty)
-    def apply[T](sender: Uid, dots: Dots, data: T, causalPredecessors: Dots): Payload[T] = Payload(Set(sender), dots, data, causalPredecessors, Dots.empty)
-    def apply[T](senders: Set[Uid], dots: Dots, data: T): Payload[T] = Payload(senders, dots, data, Dots.empty, Dots.empty)
+    def apply[T](sender: Uid, dots: Dots, data: T): Payload[T] =
+      Payload(Set(sender), dots, data, Dots.empty, Dots.empty)
+    def apply[T](sender: Uid, dots: Dots, data: T, causalPredecessors: Dots): Payload[T] =
+      Payload(Set(sender), dots, data, causalPredecessors, Dots.empty)
+    def apply[T](senders: Set[Uid], dots: Dots, data: T): Payload[T] =
+      Payload(senders, dots, data, Dots.empty, Dots.empty)
 
     // this kinda makes sense, but kinda does not
     // given [T: Lattice]: Lattice[Payload[T]] = Lattice.derived

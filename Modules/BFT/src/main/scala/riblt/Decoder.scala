@@ -6,23 +6,23 @@ import java.security.MessageDigest
 
 given ord: Ordering[SymbolMapping] = Ordering.by(_.codedIndex)
 
-class Decoder[T] (
-                   var codedSymbol: List[CodedSymbol[T]],
-                   var local: CodingWindow[T],
-                   var window: CodingWindow[T],
-                   var remote: CodingWindow[T],
-                   var decodable: List[Int],
-                   var decoded: Int
-                 ):
+class Decoder[T](
+    var codedSymbol: List[CodedSymbol[T]],
+    var local: CodingWindow[T],
+    var window: CodingWindow[T],
+    var remote: CodingWindow[T],
+    var decodable: List[Int],
+    var decoded: Int
+):
 
   private val HashAlgorithm = "SHA3-512"
-  
+
   def isDecoded: Boolean =
     decoded == codedSymbol.length
-    
+
   def localSymbols: List[HashedSymbol[T]] =
     local.symbols
-    
+
   def remoteSymbols: List[HashedSymbol[T]] =
     remote.symbols
 
@@ -35,4 +35,3 @@ class Decoder[T] (
 
   def addCodedSymbol(codedSymbol: CodedSymbol[T]): Unit =
     ???
-

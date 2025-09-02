@@ -26,5 +26,6 @@ case class NamedDeltaBuffer[State](
       case None => this
     }
 
-  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]) = applyDelta(replicaID.uid, f(using replicaID)(state))
+  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]) =
+    applyDelta(replicaID.uid, f(using replicaID)(state))
 }

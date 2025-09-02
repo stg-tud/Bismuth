@@ -9,7 +9,13 @@ import scala.concurrent.Future
 class Client(ws: WSEndpointClient, appName: String, monitoringClient: MonitoringClientInterface) {
   val full_source_uri: String = s"${ws.nodeId}rdt/$appName"
 
-  def send(message_type: RdtMessageType, payload: Array[Byte], dots: Dots, causalPredecessors: Dots, lastKnownDots: Dots): Future[Unit] = {
+  def send(
+      message_type: RdtMessageType,
+      payload: Array[Byte],
+      dots: Dots,
+      causalPredecessors: Dots,
+      lastKnownDots: Dots
+  ): Future[Unit] = {
     val bundle: Bundle = BundleCreation.createBundleRdt(
       message_type = message_type,
       data = payload,

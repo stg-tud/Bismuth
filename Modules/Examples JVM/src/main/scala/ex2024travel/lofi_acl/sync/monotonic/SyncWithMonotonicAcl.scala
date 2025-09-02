@@ -12,18 +12,20 @@ import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.AtomicReference
 
-class SyncWithMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
-                                rootOfTrust: PublicIdentity,
-                                initialAclDeltas: List[AclDelta[RDT]],
-                                onDeltaReceive: RDT => Unit
-                               )(using
-                                 lattice: Lattice[RDT],
-                                 bottom: Bottom[RDT],
-                                 rdtJsonCode: JsonValueCodec[RDT],
-                                 filter: Filter[RDT]
-                               ) extends RDTSync[RDT] {
+class SyncWithMonotonicAcl[RDT](
+    private val localIdentity: PrivateIdentity,
+    rootOfTrust: PublicIdentity,
+    initialAclDeltas: List[AclDelta[RDT]],
+    onDeltaReceive: RDT => Unit
+)(using
+    lattice: Lattice[RDT],
+    bottom: Bottom[RDT],
+    rdtJsonCode: JsonValueCodec[RDT],
+    filter: Filter[RDT]
+) extends RDTSync[RDT] {
 
-  private val antiEntropy = FilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, DeltaMapWithPrefix.empty, this)
+  private val antiEntropy =
+    FilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, DeltaMapWithPrefix.empty, this)
   @volatile private var antiEntropyThread: Option[Thread] = None
 
   private val localPublicId = localIdentity.getPublic
@@ -31,7 +33,7 @@ class SyncWithMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
   def currentState: RDT = rdtReference.get()._2
 
   private val rdtReference: AtomicReference[(Dots, RDT)] = AtomicReference((Dots.empty, bottom.empty))
-  private val lastLocalRdtDot: AtomicReference[Dot] = AtomicReference(Dot(Uid(localPublicId.id), -1))
+  private val lastLocalRdtDot: AtomicReference[Dot]      = AtomicReference(Dot(Uid(localPublicId.id), -1))
 
   private val lastLocalAclDot: AtomicReference[Dot] = {
     val localId = localIdentity.getPublic.id

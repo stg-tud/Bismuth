@@ -107,7 +107,6 @@ object DataGenerator {
     Gen.listOf(arb.arbitrary).map: list =>
       GrowOnlyList.empty.insertAllAt(0, list)
 
-
   given arbDotmap[K, V](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =
     Arbitrary:
       Gen.listOf(Gen.zip[K, V](arbElem.arbitrary, arbKey.arbitrary)).map: pairs =>
@@ -143,9 +142,9 @@ object DataGenerator {
 
   object ReplicatedListGen {
     def makeRGA[E](
-      inserted: List[(Int, E)],
-      removed: List[Int],
-      rid: LocalUid
+        inserted: List[(Int, E)],
+        removed: List[Int],
+        rid: LocalUid
     ): ReplicatedList[E] = {
 
       def clamp(v: Int, max: Int): Int = math.max(0, math.min(v, max))
@@ -162,17 +161,17 @@ object DataGenerator {
 
     def genRGA[E](using e: Arbitrary[E]): Gen[ReplicatedList[E]] =
       for
-        nInserted <- Gen.choose(0, 20)
-          insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
-          insertedValues <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
-          removed <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
-          id <- Gen.stringOfN(10, Gen.alphaChar)
+        nInserted       <- Gen.choose(0, 20)
+        insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
+        insertedValues  <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
+        removed         <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
+        id              <- Gen.stringOfN(10, Gen.alphaChar)
       yield {
         makeRGA(insertedIndices zip insertedValues, removed, Uid.predefined(id.toString).convert)
       }
 
     given arbRGA[E](using
-      e: Arbitrary[E],
+        e: Arbitrary[E],
     ): Arbitrary[ReplicatedList[E]] =
       Arbitrary(genRGA)
 

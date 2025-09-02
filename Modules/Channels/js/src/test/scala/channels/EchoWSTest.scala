@@ -12,7 +12,7 @@ class EchoWSTest extends munit.FunSuite {
     val outgoing = WebsocketConnect.connect("wss://echo.websocket.org/.ws").prepare { conn =>
       {
         case Success(msg) =>
-        case Failure(ex) => throw IllegalStateException(ex)
+        case Failure(ex)  => throw IllegalStateException(ex)
       }
     }
 

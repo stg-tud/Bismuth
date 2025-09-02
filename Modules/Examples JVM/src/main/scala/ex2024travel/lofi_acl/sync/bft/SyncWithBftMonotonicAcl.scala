@@ -12,23 +12,24 @@ import rdts.time.{Dot, Dots}
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.{Failure, Success}
 
-class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
-                                   aclRoot: EncodedDelegation,
-                                   onDeltaReceive: RDT => Unit = (_: RDT) => {} // Consumes a delta
-                                  )(using
-                                    lattice: Lattice[RDT],
-                                    bottom: Bottom[RDT],
-                                    rdtJsonCodec: JsonValueCodec[RDT],
-                                    filter: Filter[RDT]
-                                  ) extends RDTSync[RDT] {
+class SyncWithBftMonotonicAcl[RDT](
+    private val localIdentity: PrivateIdentity,
+    aclRoot: EncodedDelegation,
+    onDeltaReceive: RDT => Unit = (_: RDT) => {} // Consumes a delta
+)(using
+    lattice: Lattice[RDT],
+    bottom: Bottom[RDT],
+    rdtJsonCodec: JsonValueCodec[RDT],
+    filter: Filter[RDT]
+) extends RDTSync[RDT] {
 
-  private val antiEntropy = BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, this)
+  private val antiEntropy                                 = BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, this)
   @volatile private var antiEntropyThread: Option[Thread] = None
 
   private val localPublicId = localIdentity.getPublic
 
   private val rdtReference: AtomicReference[(Dots, RDT)] = AtomicReference(Dots.empty -> Bottom[RDT].empty)
-  private val lastLocalRdtDot: AtomicReference[Dot] = AtomicReference(Dot(Uid(localPublicId.id), -1))
+  private val lastLocalRdtDot: AtomicReference[Dot]      = AtomicReference(Dot(Uid(localPublicId.id), -1))
 
   override def currentState: RDT = rdtReference.get()._2
 
@@ -39,7 +40,7 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
   // Only change using grantPermissions!
   private val localAcl: AtomicReference[(BftAclOpGraph, Acl)] = {
     aclRoot.decode match
-      case Failure(exception) => throw exception
+      case Failure(exception)         => throw exception
       case Success((sig, delegation)) =>
         val opGraph = BftAclOpGraph(sig, Map(sig -> delegation), Set(sig))
         AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
@@ -47,15 +48,15 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
 
   def grantPermissions(affectedUser: PublicIdentity, realm: PermissionTree, typeOfPermission: Operation): Unit = {
     val (read, write) = typeOfPermission match
-      case rdts.filters.Operation.READ => (realm, PermissionTree.empty)
+      case rdts.filters.Operation.READ  => (realm, PermissionTree.empty)
       case rdts.filters.Operation.WRITE => (realm, realm)
 
     localAcl.synchronized {
-      val old@(opGraph, acl) = localAcl.get()
-      val privateKey = localIdentity.identityKey.getPrivate
+      val old @ (opGraph, acl) = localAcl.get()
+      val privateKey           = localIdentity.identityKey.getPrivate
 
       val (updatedOpGraph, aclDelta) = opGraph.delegateAccess(localPublicId, privateKey, affectedUser, read, write)
-      val updatedAcl = acl.addPermissions(affectedUser, read, write)
+      val updatedAcl                 = acl.addPermissions(affectedUser, read, write)
       require(localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl)))
 
       antiEntropy.broadcastAclDelegation(aclDelta)
@@ -64,13 +65,13 @@ class SyncWithBftMonotonicAcl[RDT](private val localIdentity: PrivateIdentity,
 
   def applyAclIfPossible(encodedDelegation: EncodedDelegation): Set[Signature] = {
     localAcl.synchronized {
-      val old@(opGraph, acl) = localAcl.get()
+      val old @ (opGraph, acl) = localAcl.get()
       opGraph.receive(encodedDelegation.sig, encodedDelegation.op) match
         case Left(missingSignatures) => return missingSignatures
-        case Right(updatedOpGraph) =>
+        case Right(updatedOpGraph)   =>
           val updatedAcl = updatedOpGraph.reconstruct(updatedOpGraph.heads).get
           assert {
-            val delegation = encodedDelegation.decode.get._2
+            val delegation  = encodedDelegation.decode.get._2
             val expectedAcl = acl.addPermissions(delegation.delegatee, delegation.read, delegation.write)
             updatedAcl.read == expectedAcl.read && updatedAcl.write == expectedAcl.write
           }

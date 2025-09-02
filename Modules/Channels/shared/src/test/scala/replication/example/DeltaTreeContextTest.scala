@@ -10,10 +10,13 @@ import rdts.base.{LocalUid, Uid}
 import rdts.time.{Dot, Dots, Time}
 import replication.DeltaDissemination.pmscodec
 
-
 class DeltaTreeContextTest extends munit.FunSuite {
 
-  private def generateMessage(treeContext: DeltaTreeContext[Set[String]], uid: Uid, delta: Set[String]): (Dot, CachedMessage[Payload[Set[String]]]) = {
+  private def generateMessage(
+      treeContext: DeltaTreeContext[Set[String]],
+      uid: Uid,
+      delta: Set[String]
+  ): (Dot, CachedMessage[Payload[Set[String]]]) = {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     val nextDot = treeContext.getNextDot
@@ -24,7 +27,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("next dot") {
-    val uid = Uid.gen()
+    val uid                                        = Uid.gen()
     val treeContext: DeltaTreeContext[Set[String]] = DeltaTreeContext[Set[String]](uid)
 
     val (dot1, _) = generateMessage(treeContext, uid, Set("a"))
@@ -34,16 +37,16 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("store outgoing message single") {
-    val uid = Uid.gen()
+    val uid                                        = Uid.gen()
     val treeContext: DeltaTreeContext[Set[String]] = DeltaTreeContext[Set[String]](uid)
-    val (nextDot, message) = generateMessage(treeContext, uid, Set("a"))
+    val (nextDot, message)                         = generateMessage(treeContext, uid, Set("a"))
 
     assertEquals(treeContext.getAllPayloads.head, message)
     assertEquals(treeContext.getSelfLeaf.get, nextDot)
   }
 
   test("store outgoing message multiple") {
-    val uid = Uid.gen()
+    val uid                                        = Uid.gen()
     val treeContext: DeltaTreeContext[Set[String]] = DeltaTreeContext[Set[String]](uid)
 
     val (dot1, message1) = generateMessage(treeContext, uid, Set("a"))
@@ -68,11 +71,11 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("add node") {
-    val uid1 = Uid.gen()
-    val uid2 = Uid.gen()
+    val uid1                                       = Uid.gen()
+    val uid2                                       = Uid.gen()
     val treeContext: DeltaTreeContext[Set[String]] = DeltaTreeContext[Set[String]](uid1)
-    val dot1 = Dot(uid2, 0)
-    val dot2 = dot1.advance
+    val dot1                                       = Dot(uid2, 0)
+    val dot2                                       = dot1.advance
 
     treeContext.addNode(dot1, dot1)
     treeContext.addNode(dot2, dot1)
@@ -83,29 +86,29 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("add node complex with missing dot") {
-    /**
-     * starting tree structure:
-     *  root -- (uid1,0) -- (uid1,1) -- (uid1,2)
-     *      \-- (uid2,1)
-     *       \- (uid3,0) -- (uid3,1) -- (uid3,2)
-     *
-     * final tree structure:
-     *  root -- (uid1,0) -- (uid1,1) -- (uid1,2)
-     *      \-- (uid2,0) -- (uid2,1)
-     *       \- (uid3,0) -- (uid3,1) -- (uid3,2)
-     */
-    val uid1 = Uid.gen()
+
+    /** starting tree structure:
+      *  root -- (uid1,0) -- (uid1,1) -- (uid1,2)
+      *      \-- (uid2,1)
+      *       \- (uid3,0) -- (uid3,1) -- (uid3,2)
+      *
+      * final tree structure:
+      *  root -- (uid1,0) -- (uid1,1) -- (uid1,2)
+      *      \-- (uid2,0) -- (uid2,1)
+      *       \- (uid3,0) -- (uid3,1) -- (uid3,2)
+      */
+    val uid1                                       = Uid.gen()
     val treeContext: DeltaTreeContext[Set[String]] = DeltaTreeContext[Set[String]](uid1)
-    val dot10 = Dot(uid1, 0)
-    val dot11 = dot10.advance
-    val dot12 = dot11.advance
-    val uid2 = Uid.gen()
-    val dot20 = Dot(uid2, 0)
-    val dot21 = dot20.advance
-    val uid3 = Uid.gen()
-    val dot30 = Dot(uid3, 0)
-    val dot31 = dot30.advance
-    val dot32 = dot31.advance
+    val dot10                                      = Dot(uid1, 0)
+    val dot11                                      = dot10.advance
+    val dot12                                      = dot11.advance
+    val uid2                                       = Uid.gen()
+    val dot20                                      = Dot(uid2, 0)
+    val dot21                                      = dot20.advance
+    val uid3                                       = Uid.gen()
+    val dot30                                      = Dot(uid3, 0)
+    val dot31                                      = dot30.advance
+    val dot32                                      = dot31.advance
 
     treeContext.addNode(dot10, dot10)
     treeContext.addNode(dot11, dot10)
@@ -135,13 +138,13 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("get unknown dots for peer with empty knowledge") {
-    val uid = Uid.gen()
-    val tree = DotTree()
-    var dots = Dots.empty
+    val uid     = Uid.gen()
+    val tree    = DotTree()
+    var dots    = Dots.empty
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for (i <- (0 until 9)) {
+    for i <- (0 until 9) do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -152,16 +155,16 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("get unknown dots for peer with knowledge") {
-    val uid = Uid.gen()
-    val peer = Uid.gen()
-    val tree = DotTree()
-    var dots = Dots.empty
-    var known = Dots.empty
-    var unknown =Dots.empty
+    val uid     = Uid.gen()
+    val peer    = Uid.gen()
+    val tree    = DotTree()
+    var dots    = Dots.empty
+    var known   = Dots.empty
+    var unknown = Dots.empty
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for (i <- (0 until 9)) {
+    for i <- (0 until 9) do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -174,14 +177,14 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("get unknown dots for peer with knowledge complex") {
-    val uid1 = Uid.gen()
-    val uid2 = Uid.gen()
-    val uid3 = Uid.gen()
-    val peer = Uid.gen()
-    val tree = DotTree()
-    var dots = Dots.empty
-    var known = Dots.empty
-    var unknown =Dots.empty
+    val uid1     = Uid.gen()
+    val uid2     = Uid.gen()
+    val uid3     = Uid.gen()
+    val peer     = Uid.gen()
+    val tree     = DotTree()
+    var dots     = Dots.empty
+    var known    = Dots.empty
+    var unknown  = Dots.empty
     var prevDot1 = dots.nextDot(uid1)
     tree.addNode(prevDot1, prevDot1)
     dots = dots.add(prevDot1)
@@ -192,7 +195,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(prevDot3, prevDot3)
     dots = dots.add(prevDot3)
     unknown = unknown.add(prevDot3)
-    for (i <- (0 until 10)) {
+    for i <- (0 until 10) do {
       val dot1 = dots.nextDot(uid1)
       tree.addNode(dot1, prevDot1)
       prevDot1 = dot1
@@ -214,53 +217,53 @@ class DeltaTreeContextTest extends munit.FunSuite {
     assertEquals(tree.getUnknownDotsForPeer(peer, known), unknown)
     assertEquals(tree.getUnknownDotsForPeer(peer, unknown), Dots.empty)
   }
-  
+
   test("knowledge of peers simple") {
-    val uid = Uid.gen()
-    val tree = DotTree()
-    var dots = Dots.empty
+    val uid     = Uid.gen()
+    val tree    = DotTree()
+    var dots    = Dots.empty
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for (i <- (0 until 9)) {
+    for i <- (0 until 9) do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
       prevDot = dot
     }
-    
-    val peerUid = Uid.gen()
+
+    val peerUid     = Uid.gen()
     var peerPrevDot = dots.nextDot(peerUid)
     tree.addNode(peerPrevDot, peerPrevDot)
     dots = dots.add(peerPrevDot)
-    
+
     dots.peers.foreach(peer => {
       tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
     })
     tree.collapseGeneralKnowledge()
-    
+
     assertEquals(tree.leaves.values.toSet, tree.rootNode.successors)
   }
 
   test("knowledge of peers with missing knowledge") {
-    val uid = Uid.gen()
-    val tree = DotTree()
-    var dots = Dots.empty
+    val uid     = Uid.gen()
+    val tree    = DotTree()
+    var dots    = Dots.empty
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for (i <- (0 until 9)) {
+    for i <- (0 until 9) do {
       val dot = dots.nextDot(uid)
       if (i % 2) == 0 then tree.addNode(dot, prevDot)
       dots = dots.add(dot)
       prevDot = dot
     }
 
-    val peerUid = Uid.gen()
+    val peerUid     = Uid.gen()
     var peerPrevDot = dots.nextDot(peerUid)
     tree.addNode(peerPrevDot, peerPrevDot)
     dots = dots.add(peerPrevDot)
-    
+
     dots.peers.foreach(peer => {
       tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
     })
@@ -271,16 +274,16 @@ class DeltaTreeContextTest extends munit.FunSuite {
   }
 
   test("add dots with missing knowledge") {
-    val uid = Uid.gen()
-    val tree = DotTree()
-    var dots = Dots.empty
-    var expected = Dots.empty
+    val uid                    = Uid.gen()
+    val tree                   = DotTree()
+    var dots                   = Dots.empty
+    var expected               = Dots.empty
     var expectedCausalBarriers = Dots.empty
-    var prevDot = dots.nextDot(uid)
+    var prevDot                = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
     expected = expected.add(prevDot)
-    for (i <- (0 until 9)) {
+    for i <- (0 until 9) do {
       val dot = dots.nextDot(uid)
       if (i % 2) == 0 then {
         tree.addNode(dot, prevDot)
@@ -293,7 +296,10 @@ class DeltaTreeContextTest extends munit.FunSuite {
 
     assertEquals(tree.collapse, expected)
     assertEquals(tree.leaves.values.map(node => node.dot).toSet, Set(prevDot))
-    assertEquals(tree.causalBarriers.values.foldLeft(Dots.empty)((dots, node) => dots.add(node.dot)), expectedCausalBarriers)
+    assertEquals(
+      tree.causalBarriers.values.foldLeft(Dots.empty)((dots, node) => dots.add(node.dot)),
+      expectedCausalBarriers
+    )
   }
 
   // TODO: test for duplicates

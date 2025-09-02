@@ -10,16 +10,15 @@ import scala.deriving.Mirror
 
 object FilterDerivation {
 
-
   protected abstract class AlgebraicFilter[T](
-    elementLabels: Map[String, Int],
-    elementFilters: IArray[Filter[Any]],
+      elementLabels: Map[String, Int],
+      elementFilters: IArray[Filter[Any]],
   ) extends Filter[T] {
 
     /** Checks whether all children labels are the field/type names of this product and validates the filters for the children.
-     *
-     * @param permissionTree The tree to check
-     */
+      *
+      * @param permissionTree The tree to check
+      */
     override def validatePermissionTree(permissionTree: PermissionTree): Unit = {
       permissionTree.children.foreach { case (factorLabel, childPermissionTree) =>
         elementLabels.get(factorLabel) match
@@ -57,11 +56,11 @@ object FilterDerivation {
   }
 
   class ProductTypeFilter[T](
-    pm: Mirror.ProductOf[T],
-    productBottom: Bottom[T],           // The bottom of the product (derivable as the product of bottoms)
-    factorLabels: Map[String, Int],     // Maps the factor label to the factor index
-    factorBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each factor
-    factorFilters: IArray[Filter[Any]]  // The Filter TypeClass instance for each factor
+      pm: Mirror.ProductOf[T],
+      productBottom: Bottom[T],           // The bottom of the product (derivable as the product of bottoms)
+      factorLabels: Map[String, Int],     // Maps the factor label to the factor index
+      factorBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each factor
+      factorFilters: IArray[Filter[Any]]  // The Filter TypeClass instance for each factor
   ) extends AlgebraicFilter[T](factorLabels, factorFilters):
     override def filter(delta: T, permissionTree: PermissionTree): T = {
       permissionTree match
@@ -100,11 +99,11 @@ object FilterDerivation {
     }
 
   class SumTypeFilter[T](
-    sm: Mirror.SumOf[T],
-    bottom: Bottom[T],                           // The bottom of the sum
-    elementNames: Array[String],                 // The names of the types
-    @unused elementBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each element
-    elementFilters: IArray[Filter[Any]]          // The Filter TypeClass instance for each element
+      sm: Mirror.SumOf[T],
+      bottom: Bottom[T],                           // The bottom of the sum
+      elementNames: Array[String],                 // The names of the types
+      @unused elementBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each element
+      elementFilters: IArray[Filter[Any]]          // The Filter TypeClass instance for each element
   ) extends AlgebraicFilter[T](elementNames.zipWithIndex.toMap, elementFilters):
     override def filter(delta: T, permission: PermissionTree): T =
       permission match
@@ -119,8 +118,6 @@ object FilterDerivation {
             case childPerm @ PermissionTree(PARTIAL, children)         =>
               elementFilters(ordinal).filter(delta, childPerm).asInstanceOf[T]
 
-
-
   class TerminalFilter[T: Bottom] extends Filter[T]:
     override def filter(delta: T, permission: PermissionTree): T =
       permission match
@@ -132,7 +129,5 @@ object FilterDerivation {
       permissionTree match
         case PermissionTree(ALLOW, _)   => PermissionTree.allow
         case PermissionTree(PARTIAL, _) => PermissionTree.empty
-
-
 
 }

@@ -53,10 +53,9 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
 
   def size: Int = elements.size
 
-  /**
-   * Returns a copy with some elements removed.
-   * DOES NOT WORK WHEN MERGING. This is only meant to be used when wrapped into another structure, such as an Epoch.
-   */
+  /** Returns a copy with some elements removed.
+    * DOES NOT WORK WHEN MERGING. This is only meant to be used when wrapped into another structure, such as an Epoch.
+    */
   def without(elems: Set[E]): GrowOnlyList[E] = GrowOnlyList(order, elements.filter((_, e) => !elems.contains(e)))
 }
 

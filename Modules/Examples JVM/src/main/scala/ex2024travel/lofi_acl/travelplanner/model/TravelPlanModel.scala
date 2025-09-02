@@ -19,8 +19,10 @@ import scalafx.collections.ObservableBuffer
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext.global
 
-class TravelPlanModel(private val localIdentity: PrivateIdentity,
-                      syncProvider: (TravelPlan => Unit) => RDTSync[TravelPlan]) {
+class TravelPlanModel(
+    private val localIdentity: PrivateIdentity,
+    syncProvider: (TravelPlan => Unit) => RDTSync[TravelPlan]
+) {
   val publicId: PublicIdentity = localIdentity.getPublic
 
   private given localUid: LocalUid = LocalUid(Uid(publicId.id))
@@ -33,15 +35,16 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
   sync.start()
   Runtime.getRuntime.addShutdownHook(new Thread(() => sync.stop()))
 
-  def grantPermission(affectedUser: PublicIdentity,
-                      readPermissions: PermissionTree,
-                      writePermissions: PermissionTree
-                     ): Unit = {
+  def grantPermission(
+      affectedUser: PublicIdentity,
+      readPermissions: PermissionTree,
+      writePermissions: PermissionTree
+  ): Unit = {
     sync.grantPermissions(affectedUser, readPermissions, READ)
     if !writePermissions.isEmpty
     then sync.grantPermissions(affectedUser, writePermissions, WRITE)
   }
-  
+
   def createInvitation: Invitation = {
     sync.createInvitation
   }
@@ -84,13 +87,13 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
     }
   }
 
-  val title: StringProperty = StringProperty(state.title.read)
+  val title: StringProperty                      = StringProperty(state.title.read)
   val bucketListIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
-  private var bucketListIdSet: Set[String] = bucketListIdList.toSet
+  private var bucketListIdSet: Set[String]       = bucketListIdList.toSet
   val bucketListProperties: AtomicReference[Map[String, StringProperty]] =
     AtomicReference(state.bucketList.inner.map((id, lww) => id -> StringProperty(lww.value.read)))
   val expenseIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
-  private var expenseIdSet: Set[String] = expenseIdList.toSet
+  private var expenseIdSet: Set[String]       = expenseIdList.toSet
   val expenseListProperties: AtomicReference[Map[String, (StringProperty, StringProperty, StringProperty)]] =
     AtomicReference(state.expenses.inner.map((id, orMapEntry) => {
       val expense = orMapEntry.value
@@ -111,7 +114,7 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
     val bucketListEntriesInDelta = delta.bucketList.inner
     if bucketListEntriesInDelta.nonEmpty then
       val newIds = bucketListEntriesInDelta.keySet.diff(bucketListIdSet)
-      val props = bucketListProperties.updateAndGet(oldProps =>
+      val props  = bucketListProperties.updateAndGet(oldProps =>
         oldProps ++ newIds.map(id => id -> StringProperty(""))
       )
       bucketListEntriesInDelta.foreach { (id, entry) =>
@@ -124,7 +127,7 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
     val expenseEntriesInDelta = delta.expenses.inner
     if expenseEntriesInDelta.nonEmpty then
       val newIds = expenseEntriesInDelta.keySet.diff(expenseIdSet)
-      val props = expenseListProperties.updateAndGet(oldProps =>
+      val props  = expenseListProperties.updateAndGet(oldProps =>
         oldProps ++ newIds.map(id =>
           id -> (StringProperty(""), StringProperty("0.00 €"), StringProperty(""))
         )
@@ -142,4 +145,3 @@ class TravelPlanModel(private val localIdentity: PrivateIdentity,
       expenseIdSet = expenseIdSet ++ newIds
   }
 }
-

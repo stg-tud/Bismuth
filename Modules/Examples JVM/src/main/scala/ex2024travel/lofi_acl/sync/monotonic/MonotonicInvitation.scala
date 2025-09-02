@@ -7,10 +7,12 @@ import ex2024travel.lofi_acl.sync.monotonic.MonotonicInvitation.base64Encoder
 import java.security.KeyPair
 import java.util.Base64
 
-case class MonotonicInvitation(rootOfTrust: PublicIdentity,
-                               identityKey: KeyPair,
-                               inviter: PublicIdentity,
-                               joinAddress: String) extends Invitation {
+case class MonotonicInvitation(
+    rootOfTrust: PublicIdentity,
+    identityKey: KeyPair,
+    inviter: PublicIdentity,
+    joinAddress: String
+) extends Invitation {
   def encode: String =
     val privateKeyBytes = Ed25519Util.privateKeyToRawPrivateKeyBytes(identityKey.getPrivate)
     s"${rootOfTrust.id}|${base64Encoder.encodeToString(privateKeyBytes)}|${inviter.id}|$joinAddress"
@@ -20,12 +22,13 @@ object MonotonicInvitation {
   private val base64Decoder = Base64.getDecoder
   private val base64Encoder = Base64.getEncoder
 
-  def createInvite(rootOfTrust: PublicIdentity,
-                   inviter: PublicIdentity,
-                   joinAddress: String
-                  ): (PublicIdentity, MonotonicInvitation) = {
+  def createInvite(
+      rootOfTrust: PublicIdentity,
+      inviter: PublicIdentity,
+      joinAddress: String
+  ): (PublicIdentity, MonotonicInvitation) = {
     val createdPrincipalId = Ed25519Util.generateNewKeyPair
-    val publicIdentity =
+    val publicIdentity     =
       PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(createdPrincipalId.getPublic))
     (publicIdentity, MonotonicInvitation(rootOfTrust, createdPrincipalId, inviter, joinAddress))
   }

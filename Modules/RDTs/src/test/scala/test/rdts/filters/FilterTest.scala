@@ -26,16 +26,16 @@ class FilterTest extends FunSuite {
 
   test("ProductTypeFilter with simple product") {
     given Filter[LastWriterWins[String]] = Filter.terminalLwwFilter
-    given filter: Filter[TestSingle] = Filter.derived
-    val testValue                    = TestSingle(LastWriterWins.now("Test"))
+    given filter: Filter[TestSingle]     = Filter.derived
+    val testValue                        = TestSingle(LastWriterWins.now("Test"))
     assertEquals(filter.filter(testValue, allow), testValue)
     assertEquals(filter.filter(testValue, PermissionTree.empty), TestSingle(LastWriterWins.empty))
   }
 
   test("ProductTypeFilter with nested product") {
     given Filter[LastWriterWins[String]] = Filter.terminalLwwFilter
-    given Filter[TestSingle] = Filter.derived
-    given filter: Filter[TestNested] = Filter.derived
+    given Filter[TestSingle]             = Filter.derived
+    given filter: Filter[TestNested]     = Filter.derived
     val testValue = TestNested(TestSingle(LastWriterWins.now("Test a")), Some(LastWriterWins.now("Test b")))
     assertEquals(filter.filter(testValue, allow), testValue)
     assertEquals(
@@ -54,8 +54,8 @@ class FilterTest extends FunSuite {
   }
 
   test("wildcard with nested product") {
-    given Filter[LastWriterWins[String]] = Filter.terminalLwwFilter
-    given Filter[TestSingle] = Filter.derived
+    given Filter[LastWriterWins[String]]  = Filter.terminalLwwFilter
+    given Filter[TestSingle]              = Filter.derived
     given Filter[TestNested]              = Filter.derived
     given filter: Filter[TestForWildcard] = Filter.derived
 

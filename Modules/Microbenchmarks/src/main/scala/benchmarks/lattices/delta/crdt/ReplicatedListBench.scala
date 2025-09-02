@@ -20,7 +20,7 @@ class ReplicatedListBench {
 
   type SUT = NamedDeltaBuffer[ReplicatedList[Int]]
 
-  var rga: SUT        = scala.compiletime.uninitialized
+  var rga: SUT = scala.compiletime.uninitialized
 
   @Setup
   def setup(): Unit = {

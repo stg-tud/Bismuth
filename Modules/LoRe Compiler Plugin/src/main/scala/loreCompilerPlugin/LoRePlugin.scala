@@ -187,7 +187,7 @@ class LoRePhase extends PluginPhase {
 
         diagnosticsNotification match
           // No diagnostics were read before the error occurred: No error info known.
-          case None => report.error("An unknown critical Dafny compilation error occurred.")
+          case None       => report.error("An unknown critical Dafny compilation error occurred.")
           case Some(diag) =>
             val errors: List[Diagnostic] = diag.params.diagnostics.filter(d => {
               d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error

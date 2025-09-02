@@ -24,21 +24,21 @@ object TravelPlannerApp extends JFXApp3 {
 
   private object MonotonicTpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {
-      val identity = IdentityFactory.createNewIdentity
+      val identity                           = IdentityFactory.createNewIdentity
       val rootAclDelta: AclDelta[TravelPlan] = MonotonicAcl.createRootOfTrust[TravelPlan](identity)
-      val syncProvider =
+      val syncProvider                       =
         (new SyncWithMonotonicAcl[TravelPlan](_, _, _, _)).curried(identity)(identity.getPublic)(List(rootAclDelta))
       TravelPlanModel(identity, syncProvider)
     }
 
     def createByJoining(inviteString: String): TravelPlanModel = {
-      val invite = MonotonicInvitation.decode(inviteString)
-      val identity = IdentityFactory.fromIdentityKey(invite.identityKey)
-      val syncProvider = (new SyncWithMonotonicAcl[TravelPlan](_, _, _, _)).curried(identity)(invite.rootOfTrust)(List.empty)
+      val invite       = MonotonicInvitation.decode(inviteString)
+      val identity     = IdentityFactory.fromIdentityKey(invite.identityKey)
+      val syncProvider =
+        (new SyncWithMonotonicAcl[TravelPlan](_, _, _, _)).curried(identity)(invite.rootOfTrust)(List.empty)
       val travelPlanModel = TravelPlanModel(identity, syncProvider)
       travelPlanModel.addConnection(invite.inviter, invite.joinAddress)
       travelPlanModel
     }
   }
 }
-

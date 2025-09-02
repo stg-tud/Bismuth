@@ -6,9 +6,9 @@ import munit.FunSuite
 class BftInvitationTest extends FunSuite {
   test("decode(encode(a)) = a") {
     val identity: PrivateIdentity = IdentityFactory.createNewIdentity
-    val aclRoot = BftAclOpGraph.createSelfSignedRoot(identity)
-    val invitation = BftInvitation(aclRoot, identity.identityKey, identity.getPublic, "localhost:4242")
-    val decoded = BftInvitation.decode(invitation.encode)
+    val aclRoot                   = BftAclOpGraph.createSelfSignedRoot(identity)
+    val invitation                = BftInvitation(aclRoot, identity.identityKey, identity.getPublic, "localhost:4242")
+    val decoded                   = BftInvitation.decode(invitation.encode)
 
     println(decoded.aclRootOp.decode)
     assertEquals(decoded.aclRootOp.decode, invitation.aclRootOp.decode)

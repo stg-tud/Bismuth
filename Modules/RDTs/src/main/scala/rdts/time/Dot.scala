@@ -11,7 +11,7 @@ case class Dot(place: Uid, time: Time) {
 
   override def equals(obj: Any): Boolean = obj match {
     case Dot(p, t) => p == place && t == time
-    case _ => super.equals(obj)
+    case _         => super.equals(obj)
   }
 }
 

@@ -10,10 +10,11 @@ import scalafx.scene.control.{CheckBox, ContentDisplay, Label}
 import scalafx.scene.layout.GridPane
 import scalafx.scene.text.Text
 
-class PermissionTreePane(rdt: TravelPlan,
-                         localReadPerm: PermissionTree,
-                         localWritePerm: PermissionTree
-                        ) extends GridPane {
+class PermissionTreePane(
+    rdt: TravelPlan,
+    localReadPerm: PermissionTree,
+    localWritePerm: PermissionTree
+) extends GridPane {
 
   private var curRowIdx = 0
   vgap = 5
@@ -21,7 +22,7 @@ class PermissionTreePane(rdt: TravelPlan,
   padding = Insets(10)
   alignment = Pos.Center
 
-  private val globalReadCheckBox = CheckBox()
+  private val globalReadCheckBox  = CheckBox()
   private val globalWriteCheckBox = CheckBox()
   globalWriteCheckBox.selected.onChange((_, prev, cur) =>
     globalReadCheckBox.selected = cur
@@ -108,27 +109,29 @@ class PermissionTreePane(rdt: TravelPlan,
     addLabeled("WRITE:", writeCheckBox, 3, rowIdx)
   }
 
-  private def addLabeled(labelString: String,
-                         checkBox: CheckBox,
-                         colIdx: Int,
-                         rowIdx: Int,
-                         colSpan: Int = 1,
-                         rowSpan: Int = 1
-                        ): Unit = {
+  private def addLabeled(
+      labelString: String,
+      checkBox: CheckBox,
+      colIdx: Int,
+      rowIdx: Int,
+      colSpan: Int = 1,
+      rowSpan: Int = 1
+  ): Unit = {
     val lbl = Label(labelString, checkBox)
     lbl.contentDisplay = ContentDisplay.Right
     add(lbl, colIdx, rowIdx)
   }
 
-  private def disableCheckBoxesWithInsufficientPermissions(readPerm: PermissionTree,
-                                                           writePerm: PermissionTree
-                                                          ): Unit = {
+  private def disableCheckBoxesWithInsufficientPermissions(
+      readPerm: PermissionTree,
+      writePerm: PermissionTree
+  ): Unit = {
     if readPerm.permission != ALLOW then globalReadCheckBox.disable = true
     if writePerm.permission != ALLOW then globalWriteCheckBox.disable = true
 
-    val title = PermissionTree.fromPath("title")
+    val title      = PermissionTree.fromPath("title")
     val bucketList = PermissionTree.fromPath("bucketList")
-    val expenses = PermissionTree.fromPath("expenses")
+    val expenses   = PermissionTree.fromPath("expenses")
 
     if !(title <= writePerm) then titleWriteCheckBox.disable = true
     if !(title <= readPerm) then titleReadCheckBox.disable = true
@@ -187,7 +190,7 @@ class PermissionTreePane(rdt: TravelPlan,
         if checkBox.isSelected then permissionTree.merge(PermissionTree.fromPathSet(paths.toSet))
         else permissionTree
 
-    var read = if globalReadCheckBox.isSelected then PermissionTree.allow else PermissionTree.empty
+    var read  = if globalReadCheckBox.isSelected then PermissionTree.allow else PermissionTree.empty
     var write = if globalWriteCheckBox.isSelected then PermissionTree.allow else PermissionTree.empty
 
     read = read
@@ -207,7 +210,7 @@ class PermissionTreePane(rdt: TravelPlan,
         Map("bucketList" -> PermissionTree(
           PARTIAL,
           Map(
-            "inner" -> PermissionTree(PARTIAL, bucketListReadEntries),
+            "inner"   -> PermissionTree(PARTIAL, bucketListReadEntries),
             "removed" -> PermissionTree.allow,
           )
         ))
@@ -223,7 +226,7 @@ class PermissionTreePane(rdt: TravelPlan,
           Map("bucketList" -> PermissionTree(
             PARTIAL,
             Map(
-              "inner" -> PermissionTree(PARTIAL, entries),
+              "inner"   -> PermissionTree(PARTIAL, entries),
               "removed" -> PermissionTree.allow
             )
           ))
@@ -237,15 +240,15 @@ class PermissionTreePane(rdt: TravelPlan,
     // Expenses wildcard
     read = read
       .allowIfSelected(expensesParentCheckBoxes.read, "expenses")
-      .allowIfSelected(expensesParentCheckBoxes.descriptionRead, expenseWildcardSubPermissionTree("description") *)
-      .allowIfSelected(expensesParentCheckBoxes.amountRead, expenseWildcardSubPermissionTree("amount") *)
-      .allowIfSelected(expensesParentCheckBoxes.commentRead, expenseWildcardSubPermissionTree("comment") *)
+      .allowIfSelected(expensesParentCheckBoxes.descriptionRead, expenseWildcardSubPermissionTree("description")*)
+      .allowIfSelected(expensesParentCheckBoxes.amountRead, expenseWildcardSubPermissionTree("amount")*)
+      .allowIfSelected(expensesParentCheckBoxes.commentRead, expenseWildcardSubPermissionTree("comment")*)
 
     write = write
       .allowIfSelected(expensesParentCheckBoxes.write, "expenses")
-      .allowIfSelected(expensesParentCheckBoxes.descriptionWrite, expenseWildcardSubPermissionTree("description") *)
-      .allowIfSelected(expensesParentCheckBoxes.amountWrite, expenseWildcardSubPermissionTree("amount") *)
-      .allowIfSelected(expensesParentCheckBoxes.commentWrite, expenseWildcardSubPermissionTree("comment") *)
+      .allowIfSelected(expensesParentCheckBoxes.descriptionWrite, expenseWildcardSubPermissionTree("description")*)
+      .allowIfSelected(expensesParentCheckBoxes.amountWrite, expenseWildcardSubPermissionTree("amount")*)
+      .allowIfSelected(expensesParentCheckBoxes.commentWrite, expenseWildcardSubPermissionTree("comment")*)
 
     // Specific expense entries
     val expenseEntryReadPerms = expenseEntryCheckBoxes.map { case (id, boxes) =>
@@ -260,7 +263,7 @@ class PermissionTreePane(rdt: TravelPlan,
         Map("expenses" -> PermissionTree(
           PARTIAL,
           Map(
-            "data" -> PermissionTree(PARTIAL, expenseEntryReadPerms),
+            "data"     -> PermissionTree(PARTIAL, expenseEntryReadPerms),
             "observed" -> PermissionTree.allow
           )
         ))
@@ -278,7 +281,7 @@ class PermissionTreePane(rdt: TravelPlan,
         Map("expenses" -> PermissionTree(
           PARTIAL,
           Map(
-            "data" -> PermissionTree(PARTIAL, expenseEntryWritePerms),
+            "data"     -> PermissionTree(PARTIAL, expenseEntryWritePerms),
             "observed" -> PermissionTree.allow
           )
         ))
@@ -296,16 +299,18 @@ class PermissionTreePane(rdt: TravelPlan,
 
 object PermissionTreePane {
   // TODO: Add override for existing permission of user to grant permissions to
-  private class ExpensePermEntryCheckBoxes(val description: String,
-                                           parentRead: BooleanProperty,
-                                           parentWrite: BooleanProperty,
-                                           parentDescriptionRead: BooleanProperty,
-                                           parentDescriptionWrite: BooleanProperty,
-                                           parentAmountRead: BooleanProperty,
-                                           parentAmountWrite: BooleanProperty,
-                                           parentCommentRead: BooleanProperty,
-                                           parentCommentWrite: BooleanProperty) {
-    val (read, write) = wiredReadWriteCheckboxes(parentRead, parentWrite)
+  private class ExpensePermEntryCheckBoxes(
+      val description: String,
+      parentRead: BooleanProperty,
+      parentWrite: BooleanProperty,
+      parentDescriptionRead: BooleanProperty,
+      parentDescriptionWrite: BooleanProperty,
+      parentAmountRead: BooleanProperty,
+      parentAmountWrite: BooleanProperty,
+      parentCommentRead: BooleanProperty,
+      parentCommentWrite: BooleanProperty
+  ) {
+    val (read, write)                       = wiredReadWriteCheckboxes(parentRead, parentWrite)
     val (descriptionRead, descriptionWrite) =
       wiredReadWriteCheckboxes(read.selected, write.selected, parentDescriptionRead, parentDescriptionWrite)
     val (amountRead, amountWrite) =
@@ -317,8 +322,10 @@ object PermissionTreePane {
       _.alignmentInParent = Pos.CenterRight
     }
 
-    def disableCheckBoxesIfInsufficientPermissions(entryReadPerm: PermissionTree,
-                                                   entryWritePerm: PermissionTree): Unit = {
+    def disableCheckBoxesIfInsufficientPermissions(
+        entryReadPerm: PermissionTree,
+        entryWritePerm: PermissionTree
+    ): Unit = {
       if !(PermissionTree.fromPath("value.description") <= entryReadPerm) then descriptionRead.disable = true
       if !(PermissionTree.fromPath("value.amount") <= entryReadPerm) then amountRead.disable = true
       if !(PermissionTree.fromPath("value.comment") <= entryReadPerm) then commentRead.disable = true
@@ -330,17 +337,18 @@ object PermissionTreePane {
   }
 
   private class ExpensePermCheckBoxes(parentRead: BooleanProperty, parentWrite: BooleanProperty) {
-    val (read, write) = wiredReadWriteCheckboxes(parentRead, parentWrite)
+    val (read, write)                       = wiredReadWriteCheckboxes(parentRead, parentWrite)
     val (descriptionRead, descriptionWrite) = wiredReadWriteCheckboxes(read.selected, write.selected)
-    val (amountRead, amountWrite) = wiredReadWriteCheckboxes(read.selected, write.selected)
-    val (commentRead, commentWrite) = wiredReadWriteCheckboxes(read.selected, write.selected)
+    val (amountRead, amountWrite)           = wiredReadWriteCheckboxes(read.selected, write.selected)
+    val (commentRead, commentWrite)         = wiredReadWriteCheckboxes(read.selected, write.selected)
   }
 
   // TODO: Add override from previous permission / max inheritable permission
-  private def wiredReadWriteCheckboxes(parentRead: BooleanProperty,
-                                       parentWrite: BooleanProperty
-                                      ): (CheckBox, CheckBox) = {
-    val read = CheckBox()
+  private def wiredReadWriteCheckboxes(
+      parentRead: BooleanProperty,
+      parentWrite: BooleanProperty
+  ): (CheckBox, CheckBox) = {
+    val read  = CheckBox()
     val write = CheckBox()
 
     parentWrite.onChange((_, prev, cur) =>
@@ -361,12 +369,13 @@ object PermissionTreePane {
     (read, write)
   }
 
-  private def wiredReadWriteCheckboxes(parent1Read: BooleanProperty,
-                                       parent1Write: BooleanProperty,
-                                       parent2Read: BooleanProperty,
-                                       parent2Write: BooleanProperty
-                                      ): (CheckBox, CheckBox) = {
-    val read = CheckBox()
+  private def wiredReadWriteCheckboxes(
+      parent1Read: BooleanProperty,
+      parent1Write: BooleanProperty,
+      parent2Read: BooleanProperty,
+      parent2Write: BooleanProperty
+  ): (CheckBox, CheckBox) = {
+    val read  = CheckBox()
     val write = CheckBox()
 
     parent1Write.onChange((_, prev, cur) =>

@@ -8,11 +8,12 @@ import ex2024travel.lofi_acl.sync.bft.BftInvitation.base64Encoder
 import java.security.KeyPair
 import java.util.Base64
 
-case class BftInvitation(aclRootOp: EncodedDelegation,
-                         identityKey: KeyPair,
-                         inviter: PublicIdentity,
-                         joinAddress: String
-                        ) extends Invitation {
+case class BftInvitation(
+    aclRootOp: EncodedDelegation,
+    identityKey: KeyPair,
+    inviter: PublicIdentity,
+    joinAddress: String
+) extends Invitation {
   def encode: String = "%s|%s|%s|%s|%s".format(
     base64Encoder.encodeToString(aclRootOp.sig),
     base64Encoder.encodeToString(aclRootOp.op),
@@ -26,13 +27,14 @@ object BftInvitation {
   private val base64Decoder = Base64.getDecoder
   private val base64Encoder = Base64.getEncoder
 
-  def createInvite(bftAclOpGraph: BftAclOpGraph,
-                   inviter: PublicIdentity,
-                   joinAddress: String
-                  ): (PublicIdentity, BftInvitation) = {
-    val rootOp = bftAclOpGraph.ops(bftAclOpGraph.root).encode(bftAclOpGraph.root)
+  def createInvite(
+      bftAclOpGraph: BftAclOpGraph,
+      inviter: PublicIdentity,
+      joinAddress: String
+  ): (PublicIdentity, BftInvitation) = {
+    val rootOp             = bftAclOpGraph.ops(bftAclOpGraph.root).encode(bftAclOpGraph.root)
     val createdPrincipalId = Ed25519Util.generateNewKeyPair
-    val publicIdentity =
+    val publicIdentity     =
       PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(createdPrincipalId.getPublic))
     (publicIdentity, BftInvitation(rootOp, createdPrincipalId, inviter, joinAddress))
   }

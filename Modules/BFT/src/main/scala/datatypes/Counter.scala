@@ -3,16 +3,16 @@ package datatypes
 import dag.{Event, HashDAG}
 import crypto.Ed25519Util
 
-/** Op-based CRDT*/
-case class Counter private(
-                            hashDAG: HashDAG[Int]
-                          ):
-  lazy val value: Int = hashDAG.graph.map(
-    (k, _) => k.content match {
+/** Op-based CRDT */
+case class Counter private (
+    hashDAG: HashDAG[Int]
+):
+  lazy val value: Int = hashDAG.graph.map((k, _) =>
+    k.content match {
       case Some(c) =>
         if c.isInstanceOf[Int] then c
         else 0
-      case _   => 0
+      case _ => 0
     }
   ).sum
 
@@ -28,12 +28,6 @@ case class Counter private(
   def receiveEvent(event: Event[Int]): Counter =
     Counter(hashDAG.effector(event))
 
-
 object Counter:
   def apply(): Counter =
     new Counter(HashDAG[Int](Ed25519Util.generateNewKeyPair))
-
-
-
-
-

@@ -21,7 +21,6 @@ class KeyHierarchyTest extends FunSuite {
     DeltaSurgeon.lwwDeltaSurgeon[Option[String]]
   }
 
-
   private val replicaId        = PublicIdentity.fromPublicKey(Ed25519Util.generateNewKeyPair.getPublic)
   private val fullKeyHierarchy = FullKeyHierarchy(KeyDerivationKey())
 

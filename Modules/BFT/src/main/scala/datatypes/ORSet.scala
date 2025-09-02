@@ -5,10 +5,10 @@ import dag.{Event, HashDAG}
 import crypto.Ed25519Util
 import datatypes.OpType.{Add, Remove}
 
-case class ORSet[T] private(
-                             hashDAG: HashDAG[Op[T]],
-                             elements: Map[T, Set[String]]
-                           ):
+case class ORSet[T] private (
+    hashDAG: HashDAG[Op[T]],
+    elements: Map[T, Set[String]]
+):
 
   def add(element: T): (ORSet[T], Event[Op[T]]) =
     val op = Op(element, OpType.Add)
@@ -55,18 +55,14 @@ case class ORSet[T] private(
   def getElements: Set[T] =
     Set.from(elements.filter((k, v) => v.nonEmpty).map((k, v) => k))
 
-
 object ORSet:
   def apply[T](): ORSet[T] =
     new ORSet[T](HashDAG[Op[T]](Ed25519Util.generateNewKeyPair), new HashMap())
 
-
-
 case class Op[T](
-                  element: T,
-                  opType: OpType
-                )
+    element: T,
+    opType: OpType
+)
 
 enum OpType:
   case Add, Remove
-

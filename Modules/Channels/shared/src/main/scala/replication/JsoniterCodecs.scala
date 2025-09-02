@@ -27,7 +27,7 @@ object JsoniterCodecs {
     override def encodeKey(x: Uid, out: JsonWriter): Unit = out.writeKey(Uid.unwrap(x))
 
   given dotKeyCodec: JsonKeyCodec[Dot] = new JsonKeyCodec[Dot]:
-    override def decodeKey(in: JsonReader): Dot           = {
+    override def decodeKey(in: JsonReader): Dot = {
       val Seq(uid, time) = in.readKeyAsString().split(":").toSeq
       Dot(Uid.predefined(uid), time.toLong)
     }

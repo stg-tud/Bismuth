@@ -16,7 +16,7 @@ object FetchConnectTest {
       case Success(conn) =>
         println(s"established")
         conn.send(ArrayMessageBuffer("Test".getBytes()))
-      case Failure(ex)   => ex.printStackTrace()
+      case Failure(ex) => ex.printStackTrace()
     }
 
     Thread.sleep(1000)

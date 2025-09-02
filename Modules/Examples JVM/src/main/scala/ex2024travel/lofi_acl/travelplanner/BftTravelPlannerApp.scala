@@ -22,15 +22,15 @@ object BftTravelPlannerApp extends JFXApp3 {
 
   private object BftTpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {
-      val identity = IdentityFactory.createNewIdentity
-      val aclRoot = BftAclOpGraph.createSelfSignedRoot(identity)
+      val identity     = IdentityFactory.createNewIdentity
+      val aclRoot      = BftAclOpGraph.createSelfSignedRoot(identity)
       val syncProvider = (new SyncWithBftMonotonicAcl[TravelPlan](_, _, _)).curried(identity)(aclRoot)
       TravelPlanModel(identity, syncProvider)
     }
 
     override def createByJoining(invitationString: String): TravelPlanModel = {
-      val invitation = BftInvitation.decode(invitationString)
-      val identity = IdentityFactory.fromIdentityKey(invitation.identityKey)
+      val invitation   = BftInvitation.decode(invitationString)
+      val identity     = IdentityFactory.fromIdentityKey(invitation.identityKey)
       val syncProvider =
         (new SyncWithBftMonotonicAcl[TravelPlan](_, _, _)).curried(identity)(invitation.aclRootOp)
       val travelPlanModel = TravelPlanModel(identity, syncProvider)

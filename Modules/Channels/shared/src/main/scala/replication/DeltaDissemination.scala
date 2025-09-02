@@ -164,17 +164,18 @@ class DeltaDissemination[State](
       case Request(uid, knows) =>
         val (relevant, context) = lock.synchronized {
           val unknownDots = treeContext.getUnknownDotsForPeer(uid, knows)
-          val payloads = treeContext.getPayloads(unknownDots)
+          val payloads    = treeContext.getPayloads(unknownDots)
           (payloads, unknownDots)
         }
         relevant.foreach: msg =>
           val newMsg = augmentPayloadWithLastKnownDot(msg.payload.addSender(replicaId.uid), uid)
           send(from, newMsg)
-      case payload@Payload(uid, dots, data, causalPredecessors, lastKnownDots) =>
+      case payload @ Payload(uid, dots, data, causalPredecessors, lastKnownDots) =>
         lock.synchronized {
           // TODO sent unknown dots back to peer?
           if uid.size == 1 && uid.head != replicaId.uid then treeContext.updateKnowledgeOfPeer(uid.head, lastKnownDots)
-          else if uid.size == 1 && uid.head == replicaId.uid then println(s"cannot update knowledge of peer, received message from self: $uid")
+          else if uid.size == 1 && uid.head == replicaId.uid then
+            println(s"cannot update knowledge of peer, received message from self: $uid")
           else println(s"cannot update knowledge of peer, received message from ambiguous peers: $uid")
           val nonRedundantDots = treeContext.addNonRedundant(dots, causalPredecessors)
           if nonRedundantDots.isEmpty then return
@@ -206,15 +207,16 @@ class DeltaDissemination[State](
     cons.filterNot(con => except.contains(con)).foreach(con => {
       val p = con.authenticatedPeerReplicaId match {
         case Some(receiver) => augmentPayloadWithLastKnownDot(payload.payload, receiver)
-        case _ => payload
+        case _              => payload
       }
       send(con, p)
     })
   }
 
-  private def augmentPayloadWithLastKnownDot(payload: Payload[State], receiver: Uid): Message = SentCachedMessage(treeContext.getLeaf(receiver) match {
-    case Some(leaf) => payload.addLastKnownDot(leaf)
-    case None => payload
-  })(using pmscodec)
+  private def augmentPayloadWithLastKnownDot(payload: Payload[State], receiver: Uid): Message =
+    SentCachedMessage(treeContext.getLeaf(receiver) match {
+      case Some(leaf) => payload.addLastKnownDot(leaf)
+      case None       => payload
+    })(using pmscodec)
 
 }

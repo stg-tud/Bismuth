@@ -9,15 +9,14 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ClosedChannelException, SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import scala.util.control.NonFatal
 
-
 object NioTCP {
   case class AcceptAttachment(
-    callback: Callback[Connection[MessageBuffer]],
-    incoming: Receive[MessageBuffer],
+      callback: Callback[Connection[MessageBuffer]],
+      incoming: Receive[MessageBuffer],
   )
 
   case class ReceiveAttachment(
-    callback: Callback[MessageBuffer]
+      callback: Callback[MessageBuffer]
   )
 
   class EndOfChannelException(msg: String) extends Exception(msg)

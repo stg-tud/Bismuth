@@ -3,12 +3,12 @@ package riblt
 import scala.collection.mutable
 import java.security.MessageDigest
 
-class CodingWindow[T] (
-                     var symbols: List[HashedSymbol[T]],
-                     var mappings: List[Mapping],
-                     var queue: mutable.PriorityQueue[SymbolMapping] = mutable.PriorityQueue()(using ord.reverse),
-                     var nextIndex: Int = 0
-                   ):
+class CodingWindow[T](
+    var symbols: List[HashedSymbol[T]],
+    var mappings: List[Mapping],
+    var queue: mutable.PriorityQueue[SymbolMapping] = mutable.PriorityQueue()(using ord.reverse),
+    var nextIndex: Int = 0
+):
 
   private val HashAlgorithm = "SHA3-512"
 
