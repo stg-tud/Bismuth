@@ -1,7 +1,6 @@
 package riblt
 
 import scala.collection.mutable
-import java.security.MessageDigest
 
 class CodingWindow[T](
     var symbols: List[HashedSymbol[T]],
@@ -9,12 +8,9 @@ class CodingWindow[T](
     var queue: mutable.PriorityQueue[SymbolMapping] = mutable.PriorityQueue()(using ord.reverse),
     var nextIndex: Int = 0
 ):
-
-  private val HashAlgorithm = "SHA3-512"
-
-  def addSymbol(symbol: T): Unit =
-    val hash = MessageDigest.getInstance(HashAlgorithm).digest(symbol.toString.getBytes)
-    addHashedSymbol(HashedSymbol(symbol, BigInt(1, hash)))
+  
+  def addSymbol(symbol: T)(using Hashable[T]): Unit =
+    addHashedSymbol(HashedSymbol(symbol, symbol.hash))
 
   def addHashedSymbol(hashedSymbol: HashedSymbol[T]): Unit =
     addHashedSymbolWithMapping(hashedSymbol, new Mapping(hashedSymbol.hash))

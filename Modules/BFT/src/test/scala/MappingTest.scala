@@ -3,7 +3,13 @@ import java.security.MessageDigest
 
 class MappingTest extends munit.FunSuite:
   test("test mapping") {
-    val e = MessageDigest.getInstance("SHA3-512").digest("a".getBytes)
-    val m = Mapping(e)
+    val m = Mapping("hello".getBytes)
+    var i = 0
+    while i < 100 do {
+      i = i + 1
+      print(s"$i: ")
+      print(m.nextIndex)
+      print("\n")
+    }
 
   }

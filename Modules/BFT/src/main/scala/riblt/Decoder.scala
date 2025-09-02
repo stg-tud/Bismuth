@@ -1,9 +1,5 @@
 package riblt
 
-import scala.collection.mutable
-import scala.collection.mutable.PriorityQueue
-import java.security.MessageDigest
-
 given ord: Ordering[SymbolMapping] = Ordering.by(_.codedIndex)
 
 class Decoder[T](
@@ -14,9 +10,7 @@ class Decoder[T](
     var decodable: List[Int],
     var decoded: Int
 ):
-
-  private val HashAlgorithm = "SHA3-512"
-
+  
   def isDecoded: Boolean =
     decoded == codedSymbol.length
 
@@ -26,9 +20,8 @@ class Decoder[T](
   def remoteSymbols: List[HashedSymbol[T]] =
     remote.symbols
 
-  def addSymbol(symbol: T): Unit =
-    val hash = MessageDigest.getInstance(HashAlgorithm).digest(symbol.toString.getBytes)
-    addHashedSymbol(HashedSymbol(symbol, BigInt(1, hash)))
+  def addSymbol(symbol: T)(using Hashable[T]): Unit =
+    addHashedSymbol(HashedSymbol(symbol, symbol.hash))
 
   def addHashedSymbol(hashedSymbol: HashedSymbol[T]): Unit =
     window.addHashedSymbol(hashedSymbol)
