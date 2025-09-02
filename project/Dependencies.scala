@@ -22,7 +22,7 @@ object Dependencies {
   val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
   val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.9"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.18.0"
-  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.2.1"
+  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.3.0"
 
   val sslcontextKickstart = libraryDependencies ++= List(
     "io.github.hakky54" % "sslcontext-kickstart"         % "9.1.0",
@@ -41,7 +41,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.0.25"
+    val jettyVersion = "12.1.0"
     libraryDependencies ++= Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
