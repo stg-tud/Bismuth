@@ -21,4 +21,4 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp"             % "2.3.1")
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.3")
 
 // tooling
-addSbtPlugin("pl.project13.scala" % "sbt-jmh"             % "0.4.7")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.7")

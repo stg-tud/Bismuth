@@ -139,7 +139,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.scalaSwing,
     Dependencies.conscript,
     Dependencies.jetty,
-    Dependencies.slf4jnop, // for jetty
+    Dependencies.slf4jnop,          // for jetty
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
   )
 
