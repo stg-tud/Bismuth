@@ -1,7 +1,5 @@
 package riblt
 
-given ord: Ordering[SymbolMapping] = Ordering.by(_.codedIndex)
-
 class Decoder[T](
     var codedSymbol: List[CodedSymbol[T]],
     var local: CodingWindow[T],
