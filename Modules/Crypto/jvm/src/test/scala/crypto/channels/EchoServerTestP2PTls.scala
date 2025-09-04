@@ -14,6 +14,6 @@ class EchoServerTestP2PTls extends EchoCommunicationTest(
 object EchoServerTestP2PTls {
   val id1: PrivateIdentity = IdentityFactory.createNewIdentity
   val id2: PrivateIdentity = IdentityFactory.createNewIdentity
-  val p2pTls1              = P2PTls(id1)
-  val p2pTls2              = P2PTls(id2)
+  val p2pTls1              = P2PTls(id1.tlsKeyPem, id1.tlsCertPem)
+  val p2pTls2              = P2PTls(id2.tlsKeyPem, id2.tlsCertPem)
 }

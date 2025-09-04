@@ -1,8 +1,8 @@
 package crypto.channels
 
 import channels.*
-import crypto.channels.{P2PX509TrustManager, PrivateIdentity, X509Util}
-import crypto.PublicIdentity
+import crypto.channels.{P2PX509TrustManager, X509Util}
+import crypto.{CertificatePem, PrivateKeyPem, PublicIdentity}
 import de.rmgk.delay.{Async, Sync}
 import nl.altindag.ssl.SSLFactory
 import nl.altindag.ssl.pem.util.PemUtils
@@ -14,11 +14,11 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
 
-class P2PTls(private val identity: PrivateIdentity) {
+class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePem) {
   private val sslFactory = {
     val keyManager = {
-      val certPemFile = new ByteArrayInputStream(identity.tlsCertPem.getBytes)
-      val keyPemFile  = new ByteArrayInputStream(identity.tlsKeyPem.getBytes)
+      val certPemFile = new ByteArrayInputStream(tlsCertPem.getBytes)
+      val keyPemFile  = new ByteArrayInputStream(tlsKeyPem.getBytes)
       PemUtils.loadIdentityMaterial(certPemFile, keyPemFile)
     }
     val trustManager = new P2PX509TrustManager()
@@ -73,6 +73,7 @@ class P2PTls(private val identity: PrivateIdentity) {
       .asInstanceOf[SSLServerSocket]
 
     /** Bind socket if not already bound and query local port.
+      *
       * @return The bound local port
       */
     def listenPort: Int = serverSocket.getLocalPort

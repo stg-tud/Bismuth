@@ -1,15 +1,16 @@
 package ex2024travel.lofi_acl.sync.bft
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import channels.{ArrayMessageBuffer, MessageBuffer}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import ex2024travel.lofi_acl.sync.*
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
 import ex2024travel.lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg
 import ex2024travel.lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg.*
 import ex2024travel.lofi_acl.sync.monotonic.FilteringAntiEntropy.PartialDelta
 import ex2024travel.lofi_acl.sync.monotonic.PartialReplicationPeerSubsetSolver
-import ex2024travel.lofi_acl.sync.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -31,9 +32,31 @@ class BftFilteringAntiEntropy[RDT](
     rdtLattice: Lattice[RDT],
     rdtBottom: Bottom[RDT],
 ) extends MessageReceiver[SyncMsg[RDT]] {
-  private val connectionManager =
-    ConnectionManager[SyncMsg[RDT]](localIdentity, this)(using MessageSerialization.derived[SyncMsg[RDT]])
-  private val localPublicId = localIdentity.getPublic
+  private val localPublicId     = localIdentity.getPublic
+  private val connectionManager = ChannelConnectionManager(
+    localIdentity.tlsKeyPem,
+    localIdentity.tlsCertPem,
+    localPublicId,
+    MessageReceiver.wrap(this, mb => readFromArray[SyncMsg[RDT]](mb.asArray))
+  )
+
+  private def send(destination: PublicIdentity, syncMsg: SyncMsg[RDT]): Unit = {
+    println(s"sending $syncMsg to $destination")
+    val buffer = ArrayMessageBuffer(writeToArray(syncMsg))
+    connectionManager.send(destination, buffer): Unit
+  }
+
+  private def sendMultiple(destination: PublicIdentity, syncMsgs: SyncMsg[RDT]*): Unit = {
+    connectionManager.sendMultiple(
+      destination,
+      syncMsgs.map(msg => ArrayMessageBuffer(writeToArray(msg))).toArray*
+    ): Unit
+  }
+
+  private def broadcast(syncMsg: SyncMsg[RDT]): Unit = {
+    val buffer = ArrayMessageBuffer(writeToArray(syncMsg))
+    connectionManager.broadcast(buffer): Unit
+  }
 
   // Only updated in message queue thread
   private val peerAddressCache = AtomicReference(Set.empty[(PublicIdentity, (String, Int))])
@@ -60,8 +83,8 @@ class BftFilteringAntiEntropy[RDT](
     val (aclOpGraph, acl) = syncInstance.currentBftAcl
     // TODO: It might make sense to tell the other side which document we're talking about. Otherwise they might try to
     //  sync unrelated op graphs
-    val _ = connectionManager.send(remote, RequestMissingAcl(aclOpGraph.heads, Set.empty))
-    val _ = connectionManager.broadcast(AnnouncePeers(peerAddressCache.get()))
+    send(remote, RequestMissingAcl(aclOpGraph.heads, Set.empty))
+    broadcast(AnnouncePeers(peerAddressCache.get()))
   }
 
   // Executed in thread from ConnectionManager
@@ -88,7 +111,7 @@ class BftFilteringAntiEntropy[RDT](
   }
 
   def broadcastAclDelegation(delegation: EncodedDelegation): Unit = {
-    val _ = connectionManager.broadcast(AclDelta(delegation))
+    broadcast(AclDelta(delegation))
   }
 
   @volatile private var stopped = false
@@ -132,7 +155,7 @@ class BftFilteringAntiEntropy[RDT](
       case AclDelta(encodedDelegation) =>
         val missing = syncInstance.applyAclIfPossible(encodedDelegation)
         if missing.nonEmpty then {
-          val _ = connectionManager.send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missing))
+          send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missing))
         } else {
           // TODO: Apply ACL deltas from backlog that can be handled after applying the received ACL delta
         }
@@ -143,12 +166,12 @@ class BftFilteringAntiEntropy[RDT](
         val msgs    = knownMissing
           .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.encode(sig)) }
           .map[AclDelta[RDT]](delegation => AclDelta(delegation))
-        val _ = connectionManager.sendMultiple(sender, msgs.toArray*)
+        sendMultiple(sender, msgs.toArray*)
 
         val missingLocally = heads.filterNot(opGraph.ops.contains)
         // TODO: Requesting should be deferred until after message queue is empty (+ some delay).
         if missingLocally.nonEmpty then {
-          val _ = connectionManager.send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missingLocally))
+          send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missingLocally))
         }
 
       case RequestMissingRdt(remoteRdtDots) =>
@@ -162,23 +185,26 @@ class BftFilteringAntiEntropy[RDT](
           rdtDeltaCopy.retrieveDeltas(missingRdtDeltas).map[RdtDelta[RDT]] { case (dot, (delta, authorAcl)) =>
             RdtDelta(dot, delta, authorAcl, aclOpGraph.heads)
           }.toArray
-        val _ = sendFiltered(sender, acl, deltas*)
+        sendFiltered(sender, acl, deltas*)
 
         // Check if we're missing anything that the remote has
         if !rdtDeltas.deltaDots.contains(remoteRdtDots)
         then
           // TODO: We could also request deltas from those replicas that can write missing RDT deltas
-          val _ = connectionManager.send(sender, RequestMissingRdt(rdtDots))
+          send(sender, RequestMissingRdt(rdtDots))
 
       case AnnouncePeers(peers) =>
         val newPeers      = peers.diff(peerAddressCache.get())
         val peerAddresses = peerAddressCache.updateAndGet(cache => cache ++ peers)
         if newPeers.nonEmpty then {
-          val _ = connectionManager.broadcast(AnnouncePeers(peerAddresses))
+          broadcast(AnnouncePeers(peerAddresses))
         }
-        newPeers.foreach { case (user, (host, port)) =>
-          connectionManager.connectToExpectingUserIfNoConnectionExists(host, port, user)
-        }
+        val connectedPeers = connectionManager.connectedPeers
+        newPeers
+          .filterNot((publicId, _) => connectedPeers.contains(publicId))
+          .foreach { case (user, (host, port)) =>
+            connectionManager.connectTo(host, port)
+          }
   }
 
   private def processBacklog(): Unit = {
@@ -253,19 +279,19 @@ class BftFilteringAntiEntropy[RDT](
   private def sendFiltered(receiver: PublicIdentity, acl: Acl, deltas: RdtDelta[RDT]*): Unit = {
     val permissions = acl.read(receiver).intersect(acl.write(localPublicId))
     if permissions.isEmpty then return
-    val _ = connectionManager.sendMultiple(
+    sendMultiple(
       receiver,
       deltas.map(delta => delta.copy(delta = filter.filter(delta.delta, permissions)))*
     )
   }
 
   private def broadcastFiltered(acl: Acl, delta: RdtDelta[RDT]): Unit = {
-    connectionManager.connectedUsers.foreach { receiver =>
+    connectionManager.connectedPeers.foreach { receiver =>
       val permissions = acl.write.getOrElse(localPublicId, PermissionTree.empty).intersect(
         acl.read.getOrElse(receiver, PermissionTree.empty)
       )
       if !permissions.isEmpty then {
-        val _ = connectionManager.send(receiver, delta.copy(delta = filter.filter(delta.delta, permissions)))
+        send(receiver, delta.copy(delta = filter.filter(delta.delta, permissions)))
       }
     }
   }
@@ -286,13 +312,13 @@ class BftFilteringAntiEntropy[RDT](
 
         // If no partial deltas are stored locally, pick a random peer and request from them.
         // If there are partial deltas, use PartialReplicationPeerSubsetSolver to choose replicas to request from.
-        val peers             = connectionManager.connectedUsers.toArray
+        val peers             = connectionManager.connectedPeers.toArray
         val (aclOpGraph, acl) = syncInstance.currentBftAcl
         if peers.nonEmpty
         then
           if partialDeltaStore.isEmpty
           then
-            val _ = connectionManager.sendMultiple(
+            sendMultiple(
               peers(rand.nextInt(peers.length)),
               RequestMissingRdt(rdtDeltas.allDots),
               RequestMissingAcl(aclOpGraph.heads, Set.empty)
@@ -316,7 +342,7 @@ class BftFilteringAntiEntropy[RDT](
               requiredPerms
             )
             replicasToRequestFrom.foreach { remote =>
-              val _ = connectionManager.sendMultiple(
+              sendMultiple(
                 remote,
                 RequestMissingRdt[RDT](rdtDeltas.allDots),
                 RequestMissingAcl(aclOpGraph.heads, Set.empty)
