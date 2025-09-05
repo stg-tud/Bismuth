@@ -5,6 +5,11 @@ class HashedSymbol[T](
     var hash: Long
 )
 
+object HashedSymbol:
+  def identity[T](using Xorable[T])(using t: T): HashedSymbol[T] =
+    HashedSymbol(t.zero, 0L)
+
+
 class CodedSymbol[T](
     var hashedSymbol: HashedSymbol[T],
     var count: Long
@@ -14,3 +19,7 @@ class CodedSymbol[T](
     hashedSymbol.hash ^= sourceSymbol.hash
     count += direction
     this
+
+object CodedSymbol:
+  def identity[T](using Xorable[T])(using T): CodedSymbol[T] =
+    CodedSymbol(HashedSymbol.identity, 0)

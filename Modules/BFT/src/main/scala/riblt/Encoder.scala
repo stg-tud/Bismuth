@@ -11,7 +11,7 @@ class Encoder[T](
     var queue: mutable.PriorityQueue[SymbolMapping] = mutable.PriorityQueue()(using ord.reverse),
     var nextIndex: Int = 0
 ):
-  
+
   def addSymbol(symbol: T)(using Hashable[T]): Unit =
     addHashedSymbol(HashedSymbol(symbol, symbol.hash))
 
@@ -23,10 +23,10 @@ class Encoder[T](
     mappings = mappings :+ mapping
     queue.enqueue(SymbolMapping(symbols.length - 1, mapping.lastIndex.toInt))
 
-  def produceNextCodedSymbol(t: T)(using Xorable[T]): CodedSymbol[T] =
+  def produceNextCodedSymbol()(using Xorable[T])(using T): CodedSymbol[T] =
     assert(queue.nonEmpty, "you have to add source symbols first")
 
-    var codedSymbol = CodedSymbol[T](HashedSymbol[T](t, 0), 0)
+    var codedSymbol = CodedSymbol.identity
 
     queue.foreach(element => {
       if element.codedIndex == nextIndex then
