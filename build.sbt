@@ -131,15 +131,17 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     scala3defaults,
     javaOutputVersion(17),
     fork := true,
-    Dependencies.jsoniterScala,
-    Dependencies.munitCheck,
-    Dependencies.tink,
-    libraryDependencies += Dependencies.scalafx,
-    Dependencies.scalaXml,
-    Dependencies.scalaSwing,
     Dependencies.conscript,
     Dependencies.jetty,
-    Dependencies.slf4jnop,          // for jetty
+    Dependencies.jsoniterScala,
+    Dependencies.munitCheck,
+    Dependencies.pprint,
+    Dependencies.scalaSwing,
+    Dependencies.scalaXml,
+    Dependencies.slf4jnop, // for jetty
+    Dependencies.slips,
+    Dependencies.tink,
+    libraryDependencies += Dependencies.scalafx,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
   )
 
