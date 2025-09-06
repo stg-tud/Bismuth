@@ -23,8 +23,6 @@ case class DeltaBuffer[A](
 
   def mutable: DeltaBufferContainer[A] = new DeltaBufferContainer(this)
 
-  def transform(f: A => A)(using Lattice[A]): DeltaBuffer[A] = applyDelta(f(state))
-
   inline def mod(f: A => A)(using Lattice[A]): DeltaBuffer[A] = {
     applyDelta(f(state))
   }
@@ -35,7 +33,7 @@ class DeltaBufferContainer[A](var result: DeltaBuffer[A]) {
   def applyDelta(delta: A)(using Lattice[A]): Unit =
     result = result.applyDelta(delta)
 
-  inline def mod(f: A => A)(using Lattice[A]): DeltaBufferContainer[A] = {
+  inline def mod(f: A => A)(using Lattice[A]): this.type = {
     applyDelta(f(result.state))
     this
   }

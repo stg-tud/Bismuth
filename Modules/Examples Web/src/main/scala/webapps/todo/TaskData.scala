@@ -101,7 +101,7 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
 
     extension (db: DeltaBuffer[LastWriterWins[Option[TaskData]]])
       def modTask(f: TaskData => TaskData): DeltaBuffer[LastWriterWins[Option[TaskData]]] =
-        db.transform(_.map(f))
+        db.mod(_.map(f))
 
     val crdt: Signal[DeltaBuffer[LastWriterWins[Option[TaskData]]]] =
       Storing.storedAs(s"$storePrefix$taskID", lww) { init =>
