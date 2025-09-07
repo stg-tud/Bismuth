@@ -11,15 +11,25 @@ object HashedSymbol:
 
 
 class CodedSymbol[T](
-    var hashedSymbol: HashedSymbol[T],
+    var sum: T,
+    var hash: Long,
     var count: Long
 ):
-  def add(sourceSymbol: HashedSymbol[T], direction: Int = 1)(using Xorable[T]): CodedSymbol[T] =
-    hashedSymbol.symbol = hashedSymbol.symbol.xor(sourceSymbol.symbol)
-    hashedSymbol.hash ^= sourceSymbol.hash
-    count += direction
+  
+  def add(sourceSymbol: HashedSymbol[T])(using Xorable[T]): CodedSymbol[T] =
+    apply(sourceSymbol)
+    count += 1
     this
 
+  def remove(sourceSymbol: HashedSymbol[T])(using Xorable[T]): CodedSymbol[T] =
+    apply(sourceSymbol)
+    count -= 1
+    this
+
+  def apply(sourceSymbol: HashedSymbol[T])(using Xorable[T]): Unit =
+    sum = sum.xor(sourceSymbol.symbol)
+    hash ^= sourceSymbol.hash
+
 object CodedSymbol:
-  def identity[T](using Xorable[T])(using T): CodedSymbol[T] =
-    CodedSymbol(HashedSymbol.identity, 0)
+  def identity[T](using Xorable[T])(using t: T): CodedSymbol[T] =
+    CodedSymbol(t.zero, 0L, 0L)
