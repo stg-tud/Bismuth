@@ -1,5 +1,4 @@
 import riblt.Mapping
-import java.security.MessageDigest
 
 class MappingTest extends munit.FunSuite:
   test("test mapping") {
