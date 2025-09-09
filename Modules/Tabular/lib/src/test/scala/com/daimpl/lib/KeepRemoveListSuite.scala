@@ -26,10 +26,10 @@ final class KeepRemoveListSuite extends FunSuite:
       ab
 
   Seq(
-    ("keep"   , "keep"   , true ),
-    ("keep"   , "remove" , true ),
-    ("remove" , "keep"   , true ),
-    ("remove" , "remove" , false)
+    ("keep", "keep", true),
+    ("keep", "remove", true),
+    ("remove", "keep", true),
+    ("remove", "remove", false)
   ).foreach { case (opA, opB, shouldBeAlive) =>
     test(s"concurrent $opA and $opB on the same element (${if shouldBeAlive then "alive" else "tombstoned"})") {
       val base = withUid("A") { fromElements("x") }
@@ -94,11 +94,11 @@ final class KeepRemoveListSuite extends FunSuite:
 
   test("concurrent insertAt(1) and remove(0) preserves correct order") {
     val base = withUid("A") { fromElements("x", "y") }
-    var rA = base
-    var rB = base
+    var rA   = base
+    var rB   = base
     withUid("A") { rA = rA + rA.insertAt(1, "z") }
     withUid("B") { rB = rB + rB.remove(0) }
-    // todo 
+    // todo
     /*val merged = rA + rB
     assertEqualsList(merged, List("y", "z"))*/
   }

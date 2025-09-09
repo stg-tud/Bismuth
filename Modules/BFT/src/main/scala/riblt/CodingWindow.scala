@@ -28,7 +28,6 @@ class CodingWindow[T](
     assert(queue.nonEmpty, "you have to add source symbols first")
     applyCodedSymbol(CodedSymbol.identity, Add)
 
-
   def applyCodedSymbol(codedSymbol: CodedSymbol[T], op: Operation)(using Xorable[T]): CodedSymbol[T] =
     if queue.isEmpty then {
       nextIndex += 1
@@ -37,10 +36,10 @@ class CodingWindow[T](
       var tmp = codedSymbol
 
       val list = queue.toList
-      for (element <- list) {
-        if (element.codedIndex == nextIndex) {
+      for element <- list do {
+        if element.codedIndex == nextIndex then {
           tmp = op match {
-            case Add => tmp.add(symbols(element.sourceIndex))
+            case Add    => tmp.add(symbols(element.sourceIndex))
             case Remove => tmp.remove(symbols(element.sourceIndex))
           }
           element.codedIndex = mappings(element.sourceIndex).nextIndex.toInt
@@ -51,8 +50,6 @@ class CodingWindow[T](
       tmp
     }
 
-
-
 enum Operation:
- case Add
- case Remove
+  case Add
+  case Remove

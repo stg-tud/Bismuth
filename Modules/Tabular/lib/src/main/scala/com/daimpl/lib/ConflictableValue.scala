@@ -7,7 +7,7 @@ case class ConflictableValue[A](elements: Set[A]) {
   def hasConflicts: Boolean = elements.size > 1
 
   def getIfNoConflicts: Option[A] =
-    if (hasNoConflicts) elements.headOption
+    if hasNoConflicts then elements.headOption
     else None
 
   def formatConflicts(separator: String = "/"): String =

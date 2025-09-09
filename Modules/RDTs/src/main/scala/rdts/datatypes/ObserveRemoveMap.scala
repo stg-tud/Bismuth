@@ -73,8 +73,8 @@ object ObserveRemoveMap {
 
   case class Entry[V](dots: Dots, value: V)
   object Entry {
-    given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
-    given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
+    given bottom[V: Bottom]: Bottom[Entry[V]]          = Bottom.derived
+    given lattice[V: Lattice]: Lattice[Entry[V]]       = Lattice.derived
     given decompose[V: Decompose]: Decompose[Entry[V]] = Decompose.derived
   }
 

@@ -20,7 +20,7 @@ object Main {
     def addSpreadsheet(): Callback = {
       $.modState { state =>
         val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
-        val replicaId = LocalUid.gen()
+        val replicaId          = LocalUid.gen()
 
         val newAggregator =
           if state.spreadsheets.isEmpty then {

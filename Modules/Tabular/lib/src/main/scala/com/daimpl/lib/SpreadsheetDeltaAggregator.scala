@@ -9,20 +9,17 @@ class SpreadsheetDeltaAggregator[S](
 
   private type EditFunction = LocalUid ?=> Spreadsheet[S] => Spreadsheet[S]
 
-  def editAndGetDelta
-    (initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])
-    (fn: EditFunction)
-  : Spreadsheet[S] = {
+  def editAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])(fn: EditFunction)
+      : Spreadsheet[S] = {
     val delta = fn(using replicaId)(spreadsheet)
     accumulate(delta)
     initialDelta.merge(delta)
   }
 
-  def multiEditAndGetDelta
-    (initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])
-    (sequentiallyAppliedEditFns: EditFunction*)
-  : Spreadsheet[S] =
-    sequentiallyAppliedEditFns.foldLeft(initialDelta){ editAndGetDelta(_)(_) }
+  def multiEditAndGetDelta(initialDelta: Spreadsheet[S] =
+    Spreadsheet.empty[S])(sequentiallyAppliedEditFns: EditFunction*)
+      : Spreadsheet[S] =
+    sequentiallyAppliedEditFns.foldLeft(initialDelta) { editAndGetDelta(_)(_) }
 
   def edit(fn: EditFunction): SpreadsheetDeltaAggregator[S] = {
     editAndGetDelta()(fn)

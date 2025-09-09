@@ -68,7 +68,6 @@ object MiniSocial {
   given Lattice[MiniSocial] = Lattice.derived
 }
 
-
 /** The main objct, serving as kinda tests to play around with. */
 object Dare {
 

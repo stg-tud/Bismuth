@@ -26,7 +26,7 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 3
 
     val cellCoord = SpreadsheetCoordinate(1, 1)
-    val cellText = "some text"
+    val cellText  = "some text"
 
     val sharedInitialState =
       SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
@@ -56,7 +56,7 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 3
 
     val cellCoord = SpreadsheetCoordinate(1, 1)
-    val cellText = "some text"
+    val cellText  = "some text"
 
     val sharedInitialState =
       SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
@@ -86,7 +86,7 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 3
 
     val rangeId = Uid("range")
-    val range = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(2, 2))
+    val range   = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(2, 2))
 
     val removeRowIdx = 1
 
@@ -118,7 +118,7 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 3
 
     val rangeId = Uid("range")
-    val range = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 2))
+    val range   = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 2))
 
     val removeRowIdx = 2
 
@@ -139,7 +139,10 @@ class SpreadsheetSuite extends munit.FunSuite {
 
     assertEquals(replica1.current, replica2.current)
 
-    assertEquals(replica1.current.getRange(rangeId), Some(Range(range.from, range.to.copy(rowIdx = range.to.rowIdx - 1))))
+    assertEquals(
+      replica1.current.getRange(rangeId),
+      Some(Range(range.from, range.to.copy(rowIdx = range.to.rowIdx - 1)))
+    )
     assert(replica1.current.numRows == numRows - 1)
     assert(replica1.current.numColumns == numCols)
   }
@@ -150,7 +153,7 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 5
 
     val rangeId = Uid("range")
-    val range = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
+    val range   = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
 
     val sharedInitialState =
       SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
@@ -170,7 +173,10 @@ class SpreadsheetSuite extends munit.FunSuite {
 
     assertEquals(replica1.current, replica2.current)
 
-    assertEquals(replica1.current.getRange(rangeId), Some(Range(range.from, range.to.copy(colIdx = range.to.colIdx + 1))))
+    assertEquals(
+      replica1.current.getRange(rangeId),
+      Some(Range(range.from, range.to.copy(colIdx = range.to.colIdx + 1)))
+    )
     assert(replica1.current.numRows == numRows)
     assert(replica1.current.numColumns == numCols)
   }
@@ -181,17 +187,18 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 6
 
     val range1Id = Uid("enclosing range")
-    val range1 = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(4, 5))
+    val range1   = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(4, 5))
 
     val range2Id = Uid("inner range")
-    val range2 = Range(SpreadsheetCoordinate(2, 2), SpreadsheetCoordinate(3, 3))
+    val range2   = Range(SpreadsheetCoordinate(2, 2), SpreadsheetCoordinate(3, 3))
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
-      .edit(_.addRange(range1Id, range1.from, range1.to))
-      .edit(_.addRange(range2Id, range2.from, range2.to))
-      .current
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
+        .edit(_.addRange(range1Id, range1.from, range1.to))
+        .edit(_.addRange(range2Id, range2.from, range2.to))
+        .current
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("r1"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("r2"))
@@ -221,10 +228,10 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numCols = 5
 
     val rangeId = Uid("range")
-    val range = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
+    val range   = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
 
     val cellCoord = SpreadsheetCoordinate((range.from.rowIdx + range.to.rowIdx) / 2, range.to.colIdx)
-    val cellText = "some text"
+    val cellText  = "some text"
 
     val sharedInitialState =
       SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
@@ -244,7 +251,10 @@ class SpreadsheetSuite extends munit.FunSuite {
 
     assertEquals(replica1.current, replica2.current)
 
-    assertEquals(replica1.current.getRange(rangeId), Some(Range(range.from, range.to.copy(colIdx = range.to.colIdx - 1))))
+    assertEquals(
+      replica1.current.getRange(rangeId),
+      Some(Range(range.from, range.to.copy(colIdx = range.to.colIdx - 1)))
+    )
     assertEquals(replica1.current.read(cellCoord.copy(colIdx = cellCoord.colIdx - 1)).toList, List(cellText))
     assert(replica1.current.numRows == numRows)
     assert(replica1.current.numColumns == numCols)
@@ -252,18 +262,19 @@ class SpreadsheetSuite extends munit.FunSuite {
 
   test("concurrent column move and column removal: column is kept") {
 
-    val numRows = 2
-    val numCols = 3
-    val cellCoord = SpreadsheetCoordinate(1, 1)
-    val cellText = "some text"
-    val movedCol = cellCoord.colIdx
+    val numRows        = 2
+    val numCols        = 3
+    val cellCoord      = SpreadsheetCoordinate(1, 1)
+    val cellText       = "some text"
+    val movedCol       = cellCoord.colIdx
     val movedColTarget = cellCoord.colIdx + 1
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
-      .edit(_.editCell(cellCoord, cellText))
-      .current
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
+        .edit(_.editCell(cellCoord, cellText))
+        .current
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("replica 1"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("replica 2"))
@@ -291,10 +302,11 @@ class SpreadsheetSuite extends munit.FunSuite {
     val edit1Text = "write 1"
     val edit2Text = "write 2"
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
-      .current
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
+        .current
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("s1"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("s2"))
@@ -317,14 +329,15 @@ class SpreadsheetSuite extends munit.FunSuite {
 
   test("three-way merge with mixed operations 1") {
 
-    val numRows = 4
-    val numCols = 4
+    val numRows    = 4
+    val numCols    = 4
     val coordinate = SpreadsheetCoordinate(2, 2)
-    val text = "some text"
+    val text       = "some text"
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("r1"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("r2"))
@@ -335,9 +348,9 @@ class SpreadsheetSuite extends munit.FunSuite {
     val replica2Delta = replica2.editAndGetDelta()(_.removeRow(coordinate.rowIdx))
 
     val replica3Delta = replica3.multiEditAndGetDelta()(
-        _.moveColumn(coordinate.colIdx, 0),
-        _.removeColumn(coordinate.colIdx + 1)
-      )
+      _.moveColumn(coordinate.colIdx, 0),
+      _.removeColumn(coordinate.colIdx + 1)
+    )
 
     replica1.accumulate(replica2Delta).accumulate(replica3Delta)
     replica2.accumulate(replica3Delta).accumulate(replica1Delta)
@@ -353,14 +366,14 @@ class SpreadsheetSuite extends munit.FunSuite {
 
   test("three-way merge with mixed operations 2") {
 
-    val numRows = 6
-    val numCols = 6
+    val numRows       = 6
+    val numCols       = 6
     val editCellCoord = SpreadsheetCoordinate(2, 1)
     val moveCellCoord = SpreadsheetCoordinate(5, 4)
-    val editCellText = "some text by replica 1"
-    val moveCellText = "some text by replica 2"
-    val rangeId = Uid("range")
-    val range = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
+    val editCellText  = "some text by replica 1"
+    val moveCellText  = "some text by replica 2"
+    val rangeId       = Uid("range")
+    val range         = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
 
     val sharedInitialState =
       SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
@@ -398,7 +411,10 @@ class SpreadsheetSuite extends munit.FunSuite {
     assert(replica1.current.numRows == numRows + 1)
     assert(replica1.current.numColumns == numCols)
 
-    assertEquals(replica1.current.read(SpreadsheetCoordinate(editCellCoord.rowIdx + 1, editCellCoord.colIdx + 1)).toList, List(editCellText))
+    assertEquals(
+      replica1.current.read(SpreadsheetCoordinate(editCellCoord.rowIdx + 1, editCellCoord.colIdx + 1)).toList,
+      List(editCellText)
+    )
 
     assertEquals(replica1.current.read(SpreadsheetCoordinate(moveCellCoord.rowIdx + 1, 0)).toList, List(moveCellText))
 
@@ -413,7 +429,7 @@ class SpreadsheetSuite extends munit.FunSuite {
       .current
 
     val cellCoord = SpreadsheetCoordinate(2, 2)
-    val cellText = "X"
+    val cellText  = "X"
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("a"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState, LocalUid.predefined("b"))
@@ -447,9 +463,10 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numRows = 5
     val numCols = 5
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("sharedInitialState2"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("sharedInitialState2"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("a"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("b"))
@@ -475,15 +492,16 @@ class SpreadsheetSuite extends munit.FunSuite {
     val numRows = 5
     val numCols = 5
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("sharedInitialState2"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("sharedInitialState2"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("a"))
 
     val rangeId = Uid("range")
-    val range1 = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
-    val range2 = Range(SpreadsheetCoordinate(2, 2), SpreadsheetCoordinate(4, 4))
+    val range1  = Range(SpreadsheetCoordinate(1, 1), SpreadsheetCoordinate(3, 3))
+    val range2  = Range(SpreadsheetCoordinate(2, 2), SpreadsheetCoordinate(4, 4))
 
     replica1.multiEditAndGetDelta()(
       _.addRange(rangeId, range1.from, range1.to),
@@ -494,16 +512,16 @@ class SpreadsheetSuite extends munit.FunSuite {
     assertEquals(replica1.current.getRange(rangeId), Some(range2))
   }
 
-
   test("concurrent row insertion and cell edit at same row index") {
-    val numRows = 2
-    val numCols = 3
+    val numRows   = 2
+    val numCols   = 3
     val cellCoord = SpreadsheetCoordinate(1, 0)
-    val cellText = "some text"
+    val cellText  = "some text"
 
-    val sharedInitialState = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
-      .repeatEdit(numRows, _.addRow())
-      .repeatEdit(numCols, _.addColumn())
+    val sharedInitialState =
+      SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("shared initial state"))
+        .repeatEdit(numRows, _.addRow())
+        .repeatEdit(numCols, _.addColumn())
 
     val replica1 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("x"))
     val replica2 = SpreadsheetDeltaAggregator(sharedInitialState.current, LocalUid.predefined("y"))

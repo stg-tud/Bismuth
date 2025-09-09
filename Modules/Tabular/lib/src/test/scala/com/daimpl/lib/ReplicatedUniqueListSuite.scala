@@ -26,12 +26,11 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       )
       ab
 
-
   Seq(
-    ("keep"   , "keep"   , true ),
-    ("keep"   , "remove" , true ),
-    ("remove" , "keep"   , true ),
-    ("remove" , "remove" , false)
+    ("keep", "keep", true),
+    ("keep", "remove", true),
+    ("remove", "keep", true),
+    ("remove", "remove", false)
   ).foreach { case (opA, opB, shouldBeAlive) =>
     test(s"concurrent $opA and $opB on the same element (${if shouldBeAlive then "alive" else "tombstoned"})") {
       val base = withUid("shared initial state") { fromElements("x") }
@@ -124,7 +123,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("add and get marker") {
-    var rA = withUid("A") { fromElements("a", "b", "c") }
+    var rA       = withUid("A") { fromElements("a", "b", "c") }
     val markerId = Uid("marker1")
 
     withUid("A") { rA += rA.addMarker(markerId, 1) }
@@ -133,7 +132,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("remove marker") {
-    var rA = withUid("A") { fromElements("a", "b", "c") }
+    var rA       = withUid("A") { fromElements("a", "b", "c") }
     val markerId = Uid("marker1")
 
     withUid("A") {
@@ -146,8 +145,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("concurrent add marker operations") {
-    var rA = withUid("A") { fromElements("a", "b", "c") }
-    var rB = rA
+    var rA        = withUid("A") { fromElements("a", "b", "c") }
+    var rB        = rA
     val markerId1 = Uid("marker1")
     val markerId2 = Uid("marker2")
 
@@ -161,8 +160,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("marker survives element removal") {
-    var rA = withUid("A") { fromElements("a", "b", "c") }
-    var rB = rA
+    var rA       = withUid("A") { fromElements("a", "b", "c") }
+    var rB       = rA
     val markerId = Uid("marker1")
 
     withUid("A") {
@@ -181,8 +180,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("concurrent add and remove marker") {
-    var rA = withUid("A") { fromElements("a", "b", "c") }
-    var rB = rA
+    var rA       = withUid("A") { fromElements("a", "b", "c") }
+    var rB       = rA
     val markerId = Uid("marker1")
 
     withUid("A") { rA += rA.addMarker(markerId, 1) }
@@ -203,7 +202,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     }
 
     withUid("B") {
-      val old = rB.readAt(1).get
+      val old         = rB.readAt(1).get
       val deltaUpdate = rB.updateAt(1, old + "_updated")
       rB += deltaUpdate
     }
@@ -224,7 +223,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     withUid("B") {
       val deltaMove = rB.move(1, 3)
       rB += deltaMove
-      val old = rB.readAt(2).get
+      val old         = rB.readAt(2).get
       val deltaUpdate = rB.updateAt(2, old + "_revived")
       rB += deltaUpdate
     }
@@ -235,8 +234,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("concurrent (marker insert) and (move, update)") {
-    var rA = withUid("A")(fromElements("a", "b", "c"))
-    var rB = rA
+    var rA       = withUid("A")(fromElements("a", "b", "c"))
+    var rB       = rA
     val markerId = Uid("markerX")
 
     withUid("A") {
@@ -246,7 +245,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
     withUid("B") {
       val deltaMove = rB.move(1, 0)
       rB += deltaMove
-      val old = rB.readAt(0).get
+      val old         = rB.readAt(0).get
       val deltaUpdate = rB.updateAt(0, old + "_updated")
       rB += deltaUpdate
     }
@@ -278,7 +277,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       val deltaMove = rB.move(1, 4)
       rB += deltaMove
 
-      val old = rB.readAt(3).get
+      val old         = rB.readAt(3).get
       val deltaUpdate = rB.updateAt(3, old + "_updated")
       rB += deltaUpdate
     }
@@ -291,8 +290,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("concurrent move and remove 1: move wins, element is retained") {
     val base = withUid("shared initial state")(fromElements("a", "b"))
-    var rA = base
-    var rB = base
+    var rA   = base
+    var rB   = base
 
     withUid("A") {
       rA += rA.move(0, 2)
@@ -326,7 +325,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("concurrent deletion and edit: marker is kept and not moved") {
-    val markerId = Uid("marker")
+    val markerId  = Uid("marker")
     val markerPos = 1
 
     val base =
@@ -353,8 +352,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("concurrent move and update: move wins, element is retained") {
     val base = withUid("shared initial state")(fromElements("a", "b"))
-    var rA = base
-    var rB = base
+    var rA   = base
+    var rB   = base
 
     withUid("A") {
       rA += rA.move(0, 2)
@@ -387,7 +386,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
   }
 
   test("marker follows move of its element") {
-    var rA = withUid("A")(fromElements("a", "b", "c"))
+    var rA       = withUid("A")(fromElements("a", "b", "c"))
     val markerId = Uid("m1")
 
     withUid("A") {
@@ -421,8 +420,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("move vs move of same element converges") {
     val base = withUid("shared initial state")(fromElements("a", "b", "c"))
-    var rA = base
-    var rB = base
+    var rA   = base
+    var rB   = base
 
     withUid("A") {
       rA += rA.move(0, 2)
@@ -437,8 +436,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("crossing moves") {
     val base = withUid("shared initial state")(fromElements("a", "b", "c", "d"))
-    var rA = base
-    var rB = base
+    var rA   = base
+    var rB   = base
 
     withUid("A") {
       rA += rA.move(0, 3)
@@ -473,8 +472,8 @@ final class ReplicatedUniqueListSuite extends FunSuite:
 
   test("concurrent move and insert at destination slot") {
     val base = withUid("shared initial state")(fromElements("a", "b"))
-    var rA = base
-    var rB = base
+    var rA   = base
+    var rB   = base
 
     withUid("A") {
       rA += rA.move(0, 2)

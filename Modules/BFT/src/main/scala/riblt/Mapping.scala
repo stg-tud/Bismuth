@@ -34,8 +34,8 @@ object Mapping:
     val seed = 0x9747b28c
 
     val hash1x32 = MurmurHash3.bytesHash(bytes, seed)
-    val hash1 = hash1x32.toLong & 0xFFFFFFFFL
-    val hash2 = MurmurHash3.bytesHash(bytes, hash1x32).toLong & 0xFFFFFFFFL
+    val hash1    = hash1x32.toLong & 0xffffffffL
+    val hash2    = MurmurHash3.bytesHash(bytes, hash1x32).toLong & 0xffffffffL
 
     (hash1 << 32) | hash2
 

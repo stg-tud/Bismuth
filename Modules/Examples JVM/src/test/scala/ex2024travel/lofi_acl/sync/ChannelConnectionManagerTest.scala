@@ -20,14 +20,16 @@ object ChannelConnectionManagerTest {
 class ChannelConnectionManagerTest extends FunSuite {
   private val idA = IdentityFactory.createNewIdentity
   private val idB = IdentityFactory.createNewIdentity
-  //private val idC = IdentityFactory.createNewIdentity
-  //private val idD = IdentityFactory.createNewIdentity
+  // private val idC = IdentityFactory.createNewIdentity
+  // private val idD = IdentityFactory.createNewIdentity
 
   test("Two replicas") {
     val receiverA = QueueAppendingMessageReceiver()
     val receiverB = QueueAppendingMessageReceiver()
-    val connManA  = ChannelConnectionManager(idA.tlsKeyPem, idA.tlsCertPem, idA.getPublic, receiverA, disableLogging = !DEBUG)
-    val connManB  = ChannelConnectionManager(idB.tlsKeyPem, idB.tlsCertPem, idB.getPublic, receiverB, disableLogging = !DEBUG)
+    val connManA  =
+      ChannelConnectionManager(idA.tlsKeyPem, idA.tlsCertPem, idA.getPublic, receiverA, disableLogging = !DEBUG)
+    val connManB =
+      ChannelConnectionManager(idB.tlsKeyPem, idB.tlsCertPem, idB.getPublic, receiverB, disableLogging = !DEBUG)
     connManA.acceptIncomingConnections()
     connManB.connectTo("localhost", connManA.listenPort.get) // B -> A
 
@@ -36,7 +38,6 @@ class ChannelConnectionManagerTest extends FunSuite {
 
     connManA.send(idB.getPublic, buf("Hello"))
     assertEquals(receiverB.messageQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS).unbuf, ("Hello", idA.getPublic))
-
 
     connManB.send(idB.getPublic, buf("World"))
 
