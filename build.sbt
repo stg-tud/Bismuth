@@ -1,6 +1,5 @@
 import Settings.{javaOutputVersion, scala3defaults, scala3defaultsExtra}
-import org.scalajs.jsenv.nodejs.NodeJSEnv
-import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle, OutputPatterns}
+import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle}
 
 import scala.scalanative.build.{LTO, Mode}
 
@@ -288,8 +287,8 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
     scala3defaultsExtra,
     Dependencies.scalajsDom,
     libraryDependencies ++= Seq(
-      "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.2",
-      "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.2",
+      "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.3",
+      "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.3",
     ),
     scalaJSUseMainModuleInitializer   := true,
     Compile / fastOptJS / crossTarget := target.value,
@@ -302,7 +301,5 @@ lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "pprint" % "0.9.0",
-    ),
+    Dependencies.pprint,
   )

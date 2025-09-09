@@ -8,7 +8,7 @@ import sbt.Keys.*
 object Settings {
 
   // also consider updating the -source param below
-  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.7.2")
+  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.7.3")
 
   // needs either 3.7 or 3.5 minor version in 3.6, otherwise there is a unfixable warning about changed implicit order
   // see https://github.com/scala/scala3/issues/22153
@@ -27,6 +27,7 @@ object Settings {
     valueDiscard(Compile / compile),
     typeParameterShadow(Compile / compile),
     privateShadow(Compile / compile),
+    recurseWithDefault(Compile / compile, Test / compile),
   )
 
   val scala3defaultsExtra = Def.settings(
@@ -76,6 +77,10 @@ object Settings {
   // is kinda likely to cause strange compiler crashes, disable if something is strange
   // (was -Ysafe-init for scala 3.4 and below)
   def safeInit(conf: TaskKey[?]*) = taskSpecificScalacOption("-Wsafe-init", conf*)
+
+  // this prevents recursive calls that use any of the default parameters.
+  // the hope is, that this allows to have some accumulater default to empty, but then not forget to update it during recursion
+  def recurseWithDefault(conf: TaskKey[?]*) = taskSpecificScalacOption("-Wrecurse-with-default", conf*)
 
   // makes Null no longer be a sub type of all subtypes of AnyRef
   // since Scala 3.5 uses special return types for Java methods, see https://github.com/scala/scala3/pull/17369
