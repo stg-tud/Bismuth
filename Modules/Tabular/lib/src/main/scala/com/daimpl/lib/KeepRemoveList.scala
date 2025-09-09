@@ -1,8 +1,7 @@
 package com.daimpl.lib
 
-import com.daimpl.lib.KeepRemoveList.ORFlag
 import rdts.base.{Bottom, Lattice, LocalUid}
-import rdts.datatypes.{Epoch, GrowOnlyList, LastWriterWins}
+import rdts.datatypes.{EnableWinsFlag, Epoch, GrowOnlyList, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
 /** KeepRemoveList — a list CRDT with **keep‑wins** semantics.
@@ -19,7 +18,7 @@ import rdts.time.{Dot, Dots}
 case class KeepRemoveList[E] private (
                                        order: Epoch[GrowOnlyList[Dot]] = empty.order,
                                        payloads: Map[Dot, LastWriterWins[E]] = Map.empty,
-                                       flags: Map[Dot, ORFlag] = Map.empty
+                                       flags: Map[Dot, EnableWinsFlag] = Map.empty
                                      ) {
   private type C = KeepRemoveList[E]
 
@@ -41,26 +40,24 @@ case class KeepRemoveList[E] private (
       case Some(glIdx) =>
         val nOrder = order.map(_.insertAt(glIdx, newDot))
         val nPayload = Map(newDot -> LastWriterWins.now(e))
-        val nFlag    = Map(newDot -> ORFlag(Dots.single(newDot), Dots.empty))
+        val nFlag    = Map(newDot -> EnableWinsFlag(Dots.single(newDot), Dots.empty))
         KeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
   def append(using LocalUid)(e: E): C  = insertAt(sizeIncludingDead, e)
 
   def keep(idx: Int)(using LocalUid): C =
-    updateFlag(idx) { case (flag, d) =>
-      val k = observed.nextDot(LocalUid.replicaId)
-      flag.addKeep(k)
+    updateFlag(idx) { case (flag) =>
+      flag.enable()
     }
 
   def remove(idx: Int)(using LocalUid): C =
-    updateFlag(idx) { case (flag, _) =>
-      val activeKeeps = flag.keeps.subtract(flag.removed)
-      if activeKeeps.isEmpty then flag else flag.removeSeen(activeKeeps)
+    updateFlag(idx) { case (flag) =>
+      flag.disable()
     }
 
   def purgeTombstones(): C =
-    val dead = flags.collect { case (d, f) if !f.isAlive => d }.toSet
+    val dead = flags.collect { case (d, f) if !f.read => d }.toSet
     if dead.isEmpty then KeepRemoveList.empty
     else
       val nOrder = order.map(_.without(dead))
@@ -68,12 +65,12 @@ case class KeepRemoveList[E] private (
       val nFlags = flags -- dead
       KeepRemoveList(order = nOrder, payloads = nPayloads, flags = nFlags)
 
-  private def isAlive(d: Dot): Boolean = flags.get(d).forall(_.isAlive)
+  private def isAlive(d: Dot): Boolean = flags.get(d).forall(_.read)
 
   private def sizeIncludingDead: Int = payloads.size
 
   private def observed: Dots =
-    Dots.from(payloads.keys).union(flags.values.foldLeft(Dots.empty)((s, f) => s.union(f.keeps).union(f.removed)))
+    Dots.from(payloads.keys).union(flags.values.foldLeft(Dots.empty)((s, f) => s.union(f.set).union(f.unset)))
 
   private def findInsertIndex(n: Int): Option[Int] =
     order.value.toLazyList.zip(LazyList.from(1))
@@ -85,15 +82,15 @@ case class KeepRemoveList[E] private (
       .filter((d, _) => isAlive(d))
       .map(_._2).lift(n)
 
-  private def updateFlag(idx: Int)(f: (ORFlag, Dot) => ORFlag)(using LocalUid): C =
+  private def updateFlag(idx: Int)(f: (EnableWinsFlag) => EnableWinsFlag)(using LocalUid): C =
     findRealIndex(idx) match
       case None => KeepRemoveList.empty
       case Some(realIdx) =>
         order.value.toLazyList.lift(realIdx) match
           case None => KeepRemoveList.empty
           case Some(d) =>
-            val cur  = flags.getOrElse(d, ORFlag.empty)
-            val next = f(cur, d)
+            val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
+            val next = f(cur)
             if cur == next then KeepRemoveList.empty else KeepRemoveList(flags = Map(d -> next))
 }
 
@@ -104,21 +101,4 @@ object KeepRemoveList {
     def empty: KeepRemoveList[E] = KeepRemoveList.empty
 
   given lattice[E]: Lattice[KeepRemoveList[E]] = Lattice.derived
-
-  case class ORFlag(keeps: Dots, removed: Dots) {
-    def isAlive: Boolean = !keeps.subtract(removed).isEmpty
-
-    def addKeep(k: Dot): ORFlag = copy(keeps = keeps.union(Dots.single(k)))
-
-    def removeSeen(active: Dots): ORFlag =
-      copy(removed = removed.union(active))
-  }
-
-  object ORFlag {
-    val empty: ORFlag = ORFlag(Dots.empty, Dots.empty)
-
-    given bottom: Bottom[ORFlag] = Bottom.derived
-
-    given lattice: Lattice[ORFlag] = Lattice.derived
-  }
 }
