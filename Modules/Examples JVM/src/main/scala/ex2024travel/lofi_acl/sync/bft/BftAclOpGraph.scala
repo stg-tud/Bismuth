@@ -4,8 +4,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import BftAclOpGraph.{Delegation, EncodedDelegation, Signature, opCodec}
 import ex2024travel.lofi_acl.sync.Acl
+import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature, opCodec}
 import rdts.filters.PermissionTree
 
 import java.security.PrivateKey

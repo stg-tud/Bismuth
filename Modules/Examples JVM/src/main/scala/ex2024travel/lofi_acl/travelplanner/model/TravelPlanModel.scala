@@ -5,7 +5,7 @@ import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
 import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.AclDelta
 import ex2024travel.lofi_acl.sync.monotonic.{MonotonicAcl, MonotonicInvitation, SyncWithMonotonicAcl}
-import ex2024travel.lofi_acl.sync.{Acl, Invitation, RDTSync, TravelPlanModelFactory}
+import ex2024travel.lofi_acl.sync.{Acl, Invitation, RDTSync}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.given
 import rdts.base.{LocalUid, Uid}

@@ -1,4 +1,4 @@
-package ex2024travel.lofi_acl.sync
+package ex2024travel.lofi_acl.travelplanner.model
 
 import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
 

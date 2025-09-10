@@ -1,7 +1,8 @@
-package ex2024travel.lofi_acl.sync
+package ex2024travel.lofi_acl.sync.monotonic
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import ex2024travel.lofi_acl.sync.MessageReceiver
 import lofi_acl.transport.P2PTlsTcpConnector
 
 import java.io.{DataInputStream, DataOutputStream, IOException}

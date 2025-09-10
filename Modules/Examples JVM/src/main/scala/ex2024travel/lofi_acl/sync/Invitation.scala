@@ -1,7 +1,6 @@
 package ex2024travel.lofi_acl.sync
 
 import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
 
 import java.security.KeyPair
 

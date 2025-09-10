@@ -2,10 +2,9 @@ package ex2024travel.lofi_acl.travelplanner
 
 import crypto.channels.IdentityFactory
 import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
-import ex2024travel.lofi_acl.sync.TravelPlanModelFactory
 import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.AclDelta
-import ex2024travel.lofi_acl.sync.monotonic.{MonotonicInvitation, MonotonicAcl, SyncWithMonotonicAcl}
-import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
+import ex2024travel.lofi_acl.sync.monotonic.{MonotonicAcl, MonotonicInvitation, SyncWithMonotonicAcl}
+import ex2024travel.lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}
 
 object TravelPlannerApp extends JFXApp3 {

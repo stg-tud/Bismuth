@@ -1,7 +1,7 @@
 package ex2024travel.lofi_acl.travelplanner.view
 
-import ExpenseListEntryListCell.amountTextFilter
 import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
+import ex2024travel.lofi_acl.travelplanner.view.ExpenseListEntryListCell.amountTextFilter
 import javafx.scene.control.ListCell
 import javafx.scene.layout.HBox
 import scalafx.beans.property.StringProperty

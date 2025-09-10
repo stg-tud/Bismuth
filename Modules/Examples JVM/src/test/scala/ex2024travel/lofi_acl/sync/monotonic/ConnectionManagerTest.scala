@@ -1,11 +1,12 @@
-package ex2024travel.lofi_acl.sync
+package ex2024travel.lofi_acl.sync.monotonic
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
-import ex2024travel.lofi_acl.sync.ConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
-import ex2024travel.lofi_acl.sync.{ConnectionManager, MessageReceiver, MessageSerialization}
+import ConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
+import ex2024travel.lofi_acl.sync.monotonic.ConnectionManager
+import ex2024travel.lofi_acl.sync.MessageReceiver
 import munit.FunSuite
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeoutException}

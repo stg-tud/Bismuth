@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
 import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage
-import MonotonicAclSyncMessage.Signature
+import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.Signature
 import rdts.base.Uid
 import rdts.time.Dots
 

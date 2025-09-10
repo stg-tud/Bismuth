@@ -3,8 +3,8 @@ package ex2024travel.lofi_acl.sync.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import MonotonicAclSyncMessage.{AclDelta, Signature}
 import ex2024travel.lofi_acl.sync.Acl
+import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.{AclDelta, Signature}
 import rdts.base.Uid
 import rdts.filters.Operation.WRITE
 import rdts.filters.{Filter, Operation, PermissionTree}

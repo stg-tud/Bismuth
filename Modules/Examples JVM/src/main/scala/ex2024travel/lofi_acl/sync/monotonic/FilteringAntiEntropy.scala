@@ -3,10 +3,9 @@ package ex2024travel.lofi_acl.sync.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import FilteringAntiEntropy.PartialDelta
-import MonotonicAclSyncMessage.*
-import ex2024travel.lofi_acl.sync.{ConnectionManager, DeltaMapWithPrefix, MessageReceiver, RDTSync}
-import lofi_acl.access
+import ex2024travel.lofi_acl.sync.monotonic.FilteringAntiEntropy.PartialDelta
+import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
+import ex2024travel.lofi_acl.sync.{DeltaMapWithPrefix, MessageReceiver, RDTSync}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.Operation.WRITE
 import rdts.filters.{Filter, Operation, PermissionTree}

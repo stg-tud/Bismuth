@@ -1,7 +1,6 @@
 package ex2024travel.lofi_acl.travelplanner
 
-import ex2024travel.lofi_acl.sync.TravelPlanModelFactory
-import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
+import ex2024travel.lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import ex2024travel.lofi_acl.travelplanner.view.TravelPlanView
 import ex2024travel.lofi_acl.travelplanner.viewmodel.TravelPlanViewModel
 import javafx.stage.Stage

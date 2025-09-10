@@ -1,9 +1,8 @@
 package ex2024travel.lofi_acl.travelplanner
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import ex2024travel.lofi_acl.sync.TravelPlanModelFactory
 import ex2024travel.lofi_acl.sync.bft.{BftAclOpGraph, BftInvitation, SyncWithBftMonotonicAcl}
-import ex2024travel.lofi_acl.travelplanner.model.TravelPlanModel
+import ex2024travel.lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}
 
 object BftTravelPlannerApp extends JFXApp3 {

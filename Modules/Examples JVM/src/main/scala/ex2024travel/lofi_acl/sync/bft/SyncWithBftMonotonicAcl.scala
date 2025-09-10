@@ -1,8 +1,8 @@
 package ex2024travel.lofi_acl.sync.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import crypto.{Ed25519Util, PublicIdentity}
 import crypto.channels.PrivateIdentity
+import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.{EncodedDelegation, Signature}
 import ex2024travel.lofi_acl.sync.{Acl, RDTSync}
 import rdts.base.{Bottom, Lattice, Uid}
