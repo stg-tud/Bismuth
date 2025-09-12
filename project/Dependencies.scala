@@ -25,8 +25,8 @@ object Dependencies {
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.3.0"
 
   val sslcontextKickstart = libraryDependencies ++= List(
-    "io.github.hakky54" % "sslcontext-kickstart"         % "9.2.1",
-    "io.github.hakky54" % "sslcontext-kickstart-for-pem" % "9.2.1",
+    "io.github.hakky54" % "ayza"         % "10.0.0",
+    "io.github.hakky54" % "ayza-for-pem" % "10.0.0",
   )
   val bouncyCastle = libraryDependencies ++=
     List(
