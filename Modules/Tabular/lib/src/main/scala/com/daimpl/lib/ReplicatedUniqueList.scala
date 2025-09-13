@@ -40,7 +40,7 @@ case class ReplicatedUniqueList[E](
     elementIdsAndOperations.read(i).map(elemIdAndOp => elementIdToValue.get(elemIdAndOp.elementId).get.value)
 
   def move(fromIndex: Int, toIndex: Int)(using LocalUid): ReplicatedUniqueList[E] = {
-    println(s"[${LocalUid.replicaId}] moving $fromIndex to $toIndex\n")
+    // println(s"[${LocalUid.replicaId}] moving $fromIndex to $toIndex\n")
 
     val elementIdToMove = elementIdsAndOperations.read(fromIndex).get
 
@@ -65,7 +65,7 @@ case class ReplicatedUniqueList[E](
   }
 
   def insertAt(index: Int, element: E)(using LocalUid): ReplicatedUniqueList[E] = {
-    println(s"[${LocalUid.replicaId}] inserting at $index\n")
+    // println(s"[${LocalUid.replicaId}] inserting at $index\n")
 
     val elementId = elementIdToValue.observed.nextDot
     ReplicatedUniqueList[E](
@@ -75,7 +75,7 @@ case class ReplicatedUniqueList[E](
   }
 
   def removeAt(index: Int)(using LocalUid): ReplicatedUniqueList[E] = {
-    println(s"[${LocalUid.replicaId}] removing at $index\n")
+    // println(s"[${LocalUid.replicaId}] removing at $index\n")
 
     val inRange = (i: Int) => if (0 until elementIdsAndOperations.size) contains i then Some(i) else None
 
@@ -115,7 +115,7 @@ case class ReplicatedUniqueList[E](
     insertAt(size, elementValue)
 
   def updateAt(index: Int, elementValue: E)(using LocalUid): ReplicatedUniqueList[E] = {
-    println(s"[${LocalUid.replicaId}] updating at $index to $elementValue\n")
+    // println(s"[${LocalUid.replicaId}] updating at $index to $elementValue\n")
 
     val elementMetadata = elementIdsAndOperations.read(index).get
 
