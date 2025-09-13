@@ -24,10 +24,11 @@ object Dependencies {
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.18.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.3.0"
 
-  val sslcontextKickstart = libraryDependencies ++= List(
+  val ayza = libraryDependencies ++= List(
     "io.github.hakky54" % "ayza"         % "10.0.0",
     "io.github.hakky54" % "ayza-for-pem" % "10.0.0",
   )
+
   val bouncyCastle = libraryDependencies ++=
     List(
       // Note, jdk18 means JDK 1.8
@@ -56,6 +57,11 @@ object Dependencies {
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.2-R36"
+
+  def scalajsReact = libraryDependencies ++= Seq(
+    "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.3",
+    "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.3",
+  )
 
   def scalatags(conf: Configuration = Compile) = libraryDependencies += "com.lihaoyi" %%% "scalatags" % "0.13.1" % conf
 

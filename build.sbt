@@ -95,7 +95,7 @@ lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"
   )
   .jvmSettings(
     Dependencies.bouncyCastle,
-    Dependencies.sslcontextKickstart,
+    Dependencies.ayza,
     Dependencies.tink,
   ).jsSettings(
     // commonjs module allows tests to find libsodium-wrappers installed in the root project
@@ -286,10 +286,7 @@ lazy val tabularApp = project.in(file("Modules/Tabular/app"))
   .settings(
     scala3defaultsExtra,
     Dependencies.scalajsDom,
-    libraryDependencies ++= Seq(
-      "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.3",
-      "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.3",
-    ),
+    Dependencies.scalajsReact,
     scalaJSUseMainModuleInitializer   := true,
     Compile / fastOptJS / crossTarget := target.value,
     Compile / fullOptJS / crossTarget := target.value
