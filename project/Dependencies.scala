@@ -10,8 +10,8 @@ object Dependencies {
   val fansi       = libraryDependencies += "com.lihaoyi"           %%% "fansi"                  % "0.5.1"
   val jetcd       = libraryDependencies += "io.etcd"                 % "jetcd-core"             % "0.8.5"
   val monocleCore = libraryDependencies += "dev.optics"            %%% "monocle-core"           % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.1.1"  % Test
-  val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.1.0"  % Test
+  val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.2.0"  % Test
+  val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.2.0"  % Test
   val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.5"
   val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.3"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules" %% "scala-swing"            % "3.0.0"
@@ -20,9 +20,9 @@ object Dependencies {
   val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"               % "slf4j-nop"              % "2.0.17" % Test
   val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.10"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.11"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.18.0"
-  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.3.0"
+  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.3.2"
 
   val ayza = libraryDependencies ++= List(
     "io.github.hakky54" % "ayza"         % "10.0.0",
