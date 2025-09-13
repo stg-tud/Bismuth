@@ -1,7 +1,6 @@
 package test.rdts.baseproperties
 
 import munit.TestValues
-import munit.internal.FutureCompat.ExtensionFuture
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
