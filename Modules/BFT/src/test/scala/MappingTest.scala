@@ -6,9 +6,9 @@ class MappingTest extends munit.FunSuite:
     var i = 0
     while i < 100 do {
       i = i + 1
-      print(s"$i: ")
-      print(m.nextIndex)
-      print("\n")
+      // print(s"$i: ")
+      // print(m.nextIndex)
+      // print("\n")
     }
 
   }

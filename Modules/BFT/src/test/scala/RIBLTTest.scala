@@ -41,7 +41,7 @@ class RIBLTTest extends munit.FunSuite:
       if dec.isDecoded then
         d = false
 
-    print(s"${dec.remoteSymbols.head.symbol} is exclusive to Alice")
-    print(s"\n${dec.localSymbols.head.symbol} is exclusive to Bob")
-    print(s"\n$i coded symbols sent")
+    // print(s"${dec.remoteSymbols.head.symbol} is exclusive to Alice")
+    // print(s"\n${dec.localSymbols.head.symbol} is exclusive to Bob")
+    // print(s"\n$i coded symbols sent")
   }
