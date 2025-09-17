@@ -6,8 +6,8 @@ class HashedSymbol[T](
 )
 
 object HashedSymbol:
-  def identity[T](using Xorable[T])(using t: T): HashedSymbol[T] =
-    HashedSymbol(t.zero, 0L)
+  def identity[T](using x: Xorable[T]): HashedSymbol[T] =
+    HashedSymbol(x.zero, 0L)
 
 class CodedSymbol[T](
     var sum: T,
@@ -30,5 +30,5 @@ class CodedSymbol[T](
     hash ^= sourceSymbol.hash
 
 object CodedSymbol:
-  def identity[T](using Xorable[T])(using t: T): CodedSymbol[T] =
-    CodedSymbol(t.zero, 0L, 0L)
+  def identity[T](using x: Xorable[T]): CodedSymbol[T] =
+    CodedSymbol(x.zero, 0L, 0L)

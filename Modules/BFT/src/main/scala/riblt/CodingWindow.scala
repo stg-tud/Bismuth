@@ -24,7 +24,7 @@ class CodingWindow[T](
     mappings = mappings :+ mapping
     queue.enqueue(SymbolMapping(symbols.length - 1, mapping.lastIndex.toInt))
 
-  def produceNextCodedSymbol(using Xorable[T])(using T): CodedSymbol[T] =
+  def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
     assert(queue.nonEmpty, "you have to add source symbols first")
     applyCodedSymbol(CodedSymbol.identity, Add)
 

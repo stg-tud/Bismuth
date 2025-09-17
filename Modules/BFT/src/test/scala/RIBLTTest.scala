@@ -1,22 +1,4 @@
-import riblt.{CodedSymbol, CodingWindow, Decoder, Encoder, Hashable, HashedSymbol, Mapping, Xorable, ord}
-
-import scala.collection.mutable
-import scala.util.control.Breaks.break
-import scala.util.hashing.MurmurHash3
-
-given Hashable[Int]:
-  extension (a: Int)
-    override def hash: Long =
-      MurmurHash3.stringHash(a.toString) // + "add some salt to the mix")
-
-given Xorable[Int]:
-  extension (a1: Int)
-    override def xor(a2: Int): Int =
-      a1 ^ a2
-
-  extension (a: Int) override def zero: Int = 0
-
-given Int = 0
+import riblt.{Decoder, Encoder, given_Hashable_Int, given_Xorable_Int}
 
 class RIBLTTest extends munit.FunSuite:
   test("test") {
