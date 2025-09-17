@@ -1,6 +1,6 @@
-package datatypes
+package OpBased.datatypes
 
-import dag.{Event, HashDAG}
+import OpBased.dag.{Event, HashDAG}
 import crypto.Ed25519Util
 
 /** Op-based CRDT */

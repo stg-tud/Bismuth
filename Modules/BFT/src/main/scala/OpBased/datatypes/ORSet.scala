@@ -1,9 +1,9 @@
-package datatypes
+package OpBased.datatypes
 
+import OpBased.dag.{Event, HashDAG}
 import scala.collection.immutable.HashMap
-import dag.{Event, HashDAG}
 import crypto.Ed25519Util
-import datatypes.OpType.{Add, Remove}
+import OpType.{Add, Remove}
 
 case class ORSet[T] private (
     hashDAG: HashDAG[Op[T]],
