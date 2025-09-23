@@ -27,13 +27,18 @@ case class GSet[T] (
       signature
     )
 
-    Delta(Map(element -> newDot), Map(authorKeys.getPublic -> newDot))
+    Delta(Map(element -> HashedDots(Set(newDot))), Map(authorKeys.getPublic -> HashedDots(Set(newDot))))
 
-  // def merge(delta: Delta[T]): GSet[T]  = ???
-
+  /*def merge(delta: Delta[T]): GSet[T] = 
+    // verify signatures
+    if delta.causalContext.map((key, hashedDots) => hashedDots.verifySignatures).exists(s => !s) then
+      this
+    else
+      Gset(authorKeys, dotStore.filter((_, dots) => ))*/
+        
 
 
 case class Delta[T] (
-                     dotStore: Map[T, HashedDot],
-                     causalContext: Map[PublicKey, HashedDot]
+                     dotStore: Map[T, HashedDots],
+                     causalContext: Map[PublicKey, HashedDots]
                    )
