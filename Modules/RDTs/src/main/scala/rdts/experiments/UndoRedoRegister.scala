@@ -10,17 +10,17 @@ enum OperationType[+T]:
   case restore(anchor: Id)
   case delete
 
-  def is_terminal(): Boolean = this match
+  def isTerminal: Boolean = this match
     case set(_)     => true
     case restore(_) => false
     case delete     => true
 
-  def get_anchor(): Option[Id] = this match
+  def getAnchor: Option[Id] = this match
     case restore(anchor) => Some(anchor)
     case set(_)          => None
     case delete          => None
 
-  def get_value(): Option[T] = this match
+  def getValue: Option[T] = this match
     case set(value) => Some(value)
     case restore(_) => None
     case delete     => None
@@ -28,46 +28,46 @@ enum OperationType[+T]:
 case class Operation[T](id: Id, predecessors: Set[Dot], ty: OperationType[T])
 
 case class UndoRedoRegister[T](
-    op_id: Id,
+    opId: Id,
     operations: Map[Id, Operation[T]],
-    head_ids: Set[Id],
-    undo_stack: List[Operation[T]],
-    redo_stack: List[Operation[T]]
+    headIds: Set[Id],
+    undoStack: List[Operation[T]],
+    redoStack: List[Operation[T]]
 ) {
-  def heads(): List[Id] = head_ids.toList.sorted
+  def heads(): List[Id] = headIds.toList.sorted
 
   def values(): List[T] = {
-    terminal_heads().sortBy(_._1).flatMap { case (_, operation) =>
-      operation.ty.get_value()
+    terminalHeads().sortBy(_._1).flatMap { case (_, operation) =>
+      operation.ty.getValue
     }
   }
 
-  private def terminal_heads(): List[(Id, Operation[T])] = {
-    var todo: List[(Operation[T], List[Dot])] = head_ids.toList.map { head_id =>
-      val operation = operations(head_id)
+  private def terminalHeads(): List[(Id, Operation[T])] = {
+    var todo: List[(Operation[T], List[Dot])] = headIds.toList.map { headId =>
+      val operation = operations(headId)
       (operation, List.empty[Dot])
     }
 
-    var term_heads = List.empty[(Id, Operation[T])]
+    var termHeads = List.empty[(Id, Operation[T])]
 
     while todo.nonEmpty do {
-      val (next_op, op_id_trace) = todo.head
+      val (nextOp, opIdTrace) = todo.head
       todo = todo.tail
-      val new_op_id_trace = op_id_trace :+ next_op.id
+      val newOpIdTrace = opIdTrace :+ nextOp.id
 
-      if next_op.ty.is_terminal() then {
-        term_heads = term_heads :+ (next_op.id, next_op)
+      if nextOp.ty.isTerminal then {
+        termHeads = termHeads :+ (nextOp.id, nextOp)
       } else {
-        val anchor           = next_op.ty.get_anchor().get
-        val anchor_operation = operations(anchor)
-        for predecessor <- anchor_operation.predecessors do {
-          val predecessor_operation = operations(predecessor)
-          todo = (predecessor_operation, new_op_id_trace) :: todo
+        val anchor          = nextOp.ty.getAnchor.get
+        val anchorOperation = operations(anchor)
+        for predecessor <- anchorOperation.predecessors do {
+          val predecessorOperation = operations(predecessor)
+          todo = (predecessorOperation, newOpIdTrace) :: todo
         }
       }
     }
 
-    term_heads
+    termHeads
   }
 
   given dotOrdering: Ordering[Dot] {
@@ -79,54 +79,54 @@ case class UndoRedoRegister[T](
   }
 
   def set(value: T): (UndoRedoRegister[T], Operation[T]) = {
-    apply_local_operation(OperationType.set(value))
+    applyLocalOperation(OperationType.set(value))
   }
 
   def delete(): (UndoRedoRegister[T], Operation[T]) = {
-    apply_local_operation(OperationType.delete)
+    applyLocalOperation(OperationType.delete)
   }
 
   def undo(): (UndoRedoRegister[T], Option[Operation[T]]) = {
-    if undo_stack.isEmpty then return (this, None)
+    if undoStack.isEmpty then return (this, None)
 
-    val last_op               = undo_stack.head
-    val (register, operation) = apply_local_operation(OperationType.restore(last_op.id))
+    val lastOp                = undoStack.head
+    val (register, operation) = applyLocalOperation(OperationType.restore(lastOp.id))
     (
       register.copy(
-        undo_stack = undo_stack.tail,
-        redo_stack = operation :: redo_stack
+        undoStack = undoStack.tail,
+        redoStack = operation :: redoStack
       ),
       Some(operation)
     )
   }
 
   def redo(): (UndoRedoRegister[T], Option[Operation[T]]) = {
-    if redo_stack.isEmpty then return (this, None)
+    if redoStack.isEmpty then return (this, None)
 
-    val last_op = redo_stack.head
+    val lastOp = redoStack.head
 
-    val last_anchor = last_op.ty match
+    val lastAnchor = lastOp.ty match
       case OperationType.restore(anchor) => anchor
-      case _ => throw new Exception(s"Redo stack contains non restore operation ${last_op.id}")
+      case _ => throw new Exception(s"Redo stack contains non restore operation ${lastOp.id}")
 
-    val (register, operation) = apply_local_operation(OperationType.restore(last_op.id))
+    val (register, operation) = applyLocalOperation(OperationType.restore(lastOp.id))
     (
       register.copy(
-        undo_stack = operations(last_anchor) :: undo_stack,
-        redo_stack = redo_stack.tail
+        undoStack = operations(lastAnchor) :: undoStack,
+        redoStack = redoStack.tail
       ),
       Some(operation)
     )
   }
 
-  private def apply_local_operation(operation_ty: OperationType[T]): (UndoRedoRegister[T], Operation[T]) =
-    val operation = Operation(op_id, head_ids, operation_ty)
-    val register  = apply(operation).copy(op_id = op_id.advance)
-    if operation_ty.is_terminal() then {
+  private def applyLocalOperation(operationType: OperationType[T]): (UndoRedoRegister[T], Operation[T]) =
+    val operation = Operation(opId, headIds, operationType)
+    val register  = apply(operation).copy(opId = opId.advance)
+    if operationType.isTerminal then {
       (
         register.copy(
-          undo_stack = operation :: undo_stack,
-          redo_stack = List.empty
+          undoStack = operation :: undoStack,
+          redoStack = List.empty
         ),
         operation
       )
@@ -134,7 +134,7 @@ case class UndoRedoRegister[T](
       (register, operation)
     }
 
-  def apply_remote_operation(operation: Operation[T]): UndoRedoRegister[T] = {
+  def applyRemoteOperation(operation: Operation[T]): UndoRedoRegister[T] = {
     for pred <- operation.predecessors do
       if !operations.contains(pred) then
         throw new Exception(s"Missing predecessor $pred for operation ${operation.id}")
@@ -145,31 +145,31 @@ case class UndoRedoRegister[T](
   private def apply(operation: Operation[T]): UndoRedoRegister[T] = {
     if operations.contains(operation.id) then return this
 
-    val new_operations = operations + (operation.id -> operation)
-    val new_head_ids   = (head_ids -- operation.predecessors) + operation.id
+    val newOperations = operations + (operation.id -> operation)
+    val newHeadIds    = (headIds -- operation.predecessors) + operation.id
 
     UndoRedoRegister(
-      op_id = op_id,
-      operations = new_operations,
-      head_ids = new_head_ids,
-      undo_stack,
-      redo_stack
+      opId = opId,
+      operations = newOperations,
+      headIds = newHeadIds,
+      undoStack,
+      redoStack
     )
   }
 }
 
 object UndoRedoRegister {
-  def for_replica[T](replica_id: Uid): UndoRedoRegister[T] = UndoRedoRegister(
-    op_id = Dot(replica_id, 0),
+  def forReplica[T](replicaId: Uid): UndoRedoRegister[T] = UndoRedoRegister(
+    opId = Dot(replicaId, 0),
     operations = Map.empty,
-    head_ids = Set.empty,
-    undo_stack = List.empty,
-    redo_stack = List.empty
+    headIds = Set.empty,
+    undoStack = List.empty,
+    redoStack = List.empty
   )
 
   def test[T](n: Int): Array[UndoRedoRegister[T]] = {
     Array.tabulate(n) { i =>
-      UndoRedoRegister.for_replica[T](Uid(s"R${i + 1}"))
+      UndoRedoRegister.forReplica[T](Uid(s"R${i + 1}"))
     }
   }
 }

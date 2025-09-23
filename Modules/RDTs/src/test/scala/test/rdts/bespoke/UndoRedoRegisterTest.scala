@@ -23,8 +23,8 @@ class UndoRedoTest extends munit.FunSuite {
     val (replica1a, op1)          = replica1.set(1)
     val (replica2a, op2)          = replica2.set(2)
 
-    val replica1b = replica1a.apply_remote_operation(op2)
-    val replica2b = replica2a.apply_remote_operation(op1)
+    val replica1b = replica1a.applyRemoteOperation(op2)
+    val replica2b = replica2a.applyRemoteOperation(op1)
 
     assertEquals(replica1b.values(), List(1, 2))
     assertEquals(replica2b.values(), List(1, 2))
@@ -36,9 +36,9 @@ class UndoRedoTest extends munit.FunSuite {
     val (replica2a, op2)                    = replica2.set(2)
     val (replica3a, op3)                    = replica3.set(3)
 
-    val replica1b = replica1a.apply_remote_operation(op2).apply_remote_operation(op3)
-    val replica2b = replica2a.apply_remote_operation(op1).apply_remote_operation(op3)
-    val replica3b = replica3a.apply_remote_operation(op1).apply_remote_operation(op2)
+    val replica1b = replica1a.applyRemoteOperation(op2).applyRemoteOperation(op3)
+    val replica2b = replica2a.applyRemoteOperation(op1).applyRemoteOperation(op3)
+    val replica3b = replica3a.applyRemoteOperation(op1).applyRemoteOperation(op2)
 
     assertEquals(replica1b.values(), List(1, 2, 3))
     assertEquals(replica2b.values(), List(1, 2, 3))
@@ -50,13 +50,13 @@ class UndoRedoTest extends munit.FunSuite {
 
     // Sequential: op1 → op2
     val (replica1a, op1) = replica1.set(1)
-    val replica2a        = replica2.apply_remote_operation(op1)
+    val replica2a        = replica2.applyRemoteOperation(op1)
 
     assertEquals(replica1a.values(), List(1))
     assertEquals(replica2a.values(), List(1))
 
     val (replica2b, op2) = replica2a.set(2)
-    val replica1b        = replica1a.apply_remote_operation(op2)
+    val replica1b        = replica1a.applyRemoteOperation(op2)
 
     assertEquals(replica1b.values(), List(2))
     assertEquals(replica2b.values(), List(2))
@@ -72,13 +72,13 @@ class UndoRedoTest extends munit.FunSuite {
   test("delete with concurrent set") {
     val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
     val (replica1a, opInit)       = replica1.set(1)
-    val replica2a                 = replica2.apply_remote_operation(opInit)
+    val replica2a                 = replica2.applyRemoteOperation(opInit)
 
     val (replica1b, opDelete) = replica1a.delete()
     val (replica2b, opSet)    = replica2a.set(2)
 
-    val replica1c = replica1b.apply_remote_operation(opSet)
-    val replica2c = replica2b.apply_remote_operation(opDelete)
+    val replica1c = replica1b.applyRemoteOperation(opSet)
+    val replica2c = replica2b.applyRemoteOperation(opDelete)
 
     assertEquals(replica1c.values(), List(2))
     assertEquals(replica2c.values(), List(2))
@@ -87,13 +87,13 @@ class UndoRedoTest extends munit.FunSuite {
   test("concurrent deletes") {
     val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
     val (replica1a, opInit)       = replica1.set(1)
-    val replica2a                 = replica2.apply_remote_operation(opInit)
+    val replica2a                 = replica2.applyRemoteOperation(opInit)
 
     val (replica1b, opDelete1) = replica1a.delete()
     val (replica2b, opDelete2) = replica2a.delete()
 
-    val replica1c = replica1b.apply_remote_operation(opDelete2)
-    val replica2c = replica2b.apply_remote_operation(opDelete1)
+    val replica1c = replica1b.applyRemoteOperation(opDelete2)
+    val replica2c = replica2b.applyRemoteOperation(opDelete1)
 
     assertEquals(replica1c.values(), List())
     assertEquals(replica2c.values(), List())
@@ -104,7 +104,7 @@ class UndoRedoTest extends munit.FunSuite {
     val (register1, op) = register.set(42)
     val initialLen      = register1.values().length
 
-    val register2 = register1.apply_remote_operation(op)
+    val register2 = register1.applyRemoteOperation(op)
     assertEquals(register2.values().length, initialLen)
     assertEquals(register2.values(), List(42))
   }
@@ -113,16 +113,16 @@ class UndoRedoTest extends munit.FunSuite {
     val Array(replica1, replica2, replica3) = UndoRedoRegister.test[Int](3)
 
     val (replica1a, opInit) = replica1.set(0)
-    val replica2a           = replica2.apply_remote_operation(opInit)
-    val replica3a           = replica3.apply_remote_operation(opInit)
+    val replica2a           = replica2.applyRemoteOperation(opInit)
+    val replica3a           = replica3.applyRemoteOperation(opInit)
 
     val (replica1b, opSet1)   = replica1a.set(1)
     val (replica2b, opDelete) = replica2a.delete()
     val (replica3b, opSet3)   = replica3a.set(3)
 
-    val replica1c = replica1b.apply_remote_operation(opDelete).apply_remote_operation(opSet3)
-    val replica2c = replica2b.apply_remote_operation(opSet1).apply_remote_operation(opSet3)
-    val replica3c = replica3b.apply_remote_operation(opSet1).apply_remote_operation(opDelete)
+    val replica1c = replica1b.applyRemoteOperation(opDelete).applyRemoteOperation(opSet3)
+    val replica2c = replica2b.applyRemoteOperation(opSet1).applyRemoteOperation(opSet3)
+    val replica3c = replica3b.applyRemoteOperation(opSet1).applyRemoteOperation(opDelete)
 
     val expected = List(3, 1)
     assertEquals(replica1c.values(), expected)
@@ -138,7 +138,7 @@ class UndoRedoTest extends munit.FunSuite {
     val (replica1a, opDelete) = replica1.delete()
     assert(replica1a.values().isEmpty)
 
-    val replica2a = replica2.apply_remote_operation(opDelete)
+    val replica2a = replica2.applyRemoteOperation(opDelete)
     assert(replica2a.values().isEmpty)
   }
 
@@ -147,14 +147,14 @@ class UndoRedoTest extends munit.FunSuite {
 
     // op_1
     val (replica1a, op1) = replica1.set(1)
-    val replica2a        = replica2.apply_remote_operation(op1)
+    val replica2a        = replica2.applyRemoteOperation(op1)
 
     assertEquals(replica1a.heads(), List(op1.id))
     assertEquals(replica2a.heads(), List(op1.id))
 
     // op_2
     val (replica2b, op2) = replica2a.set(2)
-    val replica1b        = replica1a.apply_remote_operation(op2)
+    val replica1b        = replica1a.applyRemoteOperation(op2)
 
     assertEquals(replica1b.heads(), List(op2.id))
     assertEquals(replica2b.heads(), List(op2.id))
@@ -171,15 +171,15 @@ class UndoRedoTest extends munit.FunSuite {
     assert(op3_2.predecessors.contains(op2.id))
 
     // Exchange op_3_1 and op_3_2
-    val replica2d = replica2c.apply_remote_operation(op3_1)
-    val replica1d = replica1c.apply_remote_operation(op3_2)
+    val replica2d = replica2c.applyRemoteOperation(op3_1)
+    val replica1d = replica1c.applyRemoteOperation(op3_2)
 
     assertEquals(replica1d.heads().toSet, Set(op3_1.id, op3_2.id))
     assertEquals(replica2d.heads().toSet, Set(op3_1.id, op3_2.id))
 
     // op_4
     val (replica2e, op4) = replica2d.set(5)
-    val replica1e        = replica1d.apply_remote_operation(op4)
+    val replica1e        = replica1d.applyRemoteOperation(op4)
 
     assertEquals(replica1e.heads(), List(op4.id))
     assertEquals(replica2e.heads(), List(op4.id))
@@ -194,21 +194,21 @@ class UndoRedoTest extends munit.FunSuite {
 
     // op_1
     val (replicaA1, op1) = replicaA.set(1)
-    val replicaB1        = replicaB.apply_remote_operation(op1)
+    val replicaB1        = replicaB.applyRemoteOperation(op1)
 
     // op_2
     val (replicaB2, op2) = replicaB1.set(2)
-    val replicaA2        = replicaA1.apply_remote_operation(op2)
+    val replicaA2        = replicaA1.applyRemoteOperation(op2)
 
     // op_3_a and op_3_b
     val (replicaA3, op3a) = replicaA2.set(4)
     val (replicaB3, op3b) = replicaB2.set(3)
-    val replicaB4         = replicaB3.apply_remote_operation(op3a)
-    val replicaA4         = replicaA3.apply_remote_operation(op3b)
+    val replicaB4         = replicaB3.applyRemoteOperation(op3a)
+    val replicaA4         = replicaA3.applyRemoteOperation(op3b)
 
     // op_4
     val (replicaB5, op4) = replicaB4.set(5)
-    val replicaA5        = replicaA4.apply_remote_operation(op4)
+    val replicaA5        = replicaA4.applyRemoteOperation(op4)
 
     // (1)
     assertEquals(undoValues(replicaA5), List(1, 4))
@@ -231,8 +231,8 @@ class UndoRedoTest extends munit.FunSuite {
     assertEquals(replicaB6.values(), List(4, 3))
 
     // Exchange undo ops
-    val replicaA7 = replicaA6.apply_remote_operation(op5b.get)
-    val replicaB7 = replicaB6.apply_remote_operation(op5a.get)
+    val replicaA7 = replicaA6.applyRemoteOperation(op5b.get)
+    val replicaB7 = replicaB6.applyRemoteOperation(op5a.get)
 
     // (2b)
     assertEquals(undoValues(replicaA7), List(1))
@@ -244,7 +244,7 @@ class UndoRedoTest extends munit.FunSuite {
 
     // op_6 (undo)
     val (replicaB8, op6) = replicaB7.undo()
-    val replicaA8        = replicaA7.apply_remote_operation(op6.get)
+    val replicaA8        = replicaA7.applyRemoteOperation(op6.get)
 
     // (3)
     assertEquals(undoValues(replicaA8), List(1))
@@ -257,8 +257,8 @@ class UndoRedoTest extends munit.FunSuite {
     // op_7_a (set) and op_7_b (undo)
     val (replicaA9, op7a) = replicaA8.set(6)
     val (replicaB9, op7b) = replicaB8.undo()
-    val replicaB10        = replicaB9.apply_remote_operation(op7a)
-    val replicaA10        = replicaA9.apply_remote_operation(op7b.get)
+    val replicaB10        = replicaB9.applyRemoteOperation(op7a)
+    val replicaA10        = replicaA9.applyRemoteOperation(op7b.get)
 
     // (4)
     assertEquals(undoValues(replicaA10), List(1, 6))
@@ -270,7 +270,7 @@ class UndoRedoTest extends munit.FunSuite {
 
     // op_8 (redo)
     val (replicaB11, op8) = replicaB10.redo()
-    val replicaA11        = replicaA10.apply_remote_operation(op8.get)
+    val replicaA11        = replicaA10.applyRemoteOperation(op8.get)
 
     // (5)
     assertEquals(undoValues(replicaA11), List(1, 6))
@@ -282,7 +282,7 @@ class UndoRedoTest extends munit.FunSuite {
 
     // op_9 (redo)
     val (replicaB12, op9) = replicaB11.redo()
-    val replicaA12        = replicaA11.apply_remote_operation(op9.get)
+    val replicaA12        = replicaA11.applyRemoteOperation(op9.get)
 
     // (6)
     assertEquals(undoValues(replicaA12), List(1, 6))
@@ -294,7 +294,7 @@ class UndoRedoTest extends munit.FunSuite {
 
     // op_10 (redo)
     val (replicaB13, op10) = replicaB12.redo()
-    val replicaA13         = replicaA12.apply_remote_operation(op10.get)
+    val replicaA13         = replicaA12.applyRemoteOperation(op10.get)
 
     // (7)
     assertEquals(undoValues(replicaA13), List(1, 6))
@@ -307,13 +307,13 @@ class UndoRedoTest extends munit.FunSuite {
 }
 
 def undoValues[T](register: UndoRedoRegister[T]): List[T] = {
-  register.undo_stack
-    .flatMap(_.ty.get_value())
+  register.undoStack
+    .flatMap(_.ty.getValue)
     .reverse
 }
 
 def redoAnchors[T](register: UndoRedoRegister[T]): List[Dot] = {
-  register.redo_stack
-    .flatMap(_.ty.get_anchor())
+  register.redoStack
+    .flatMap(_.ty.getAnchor)
     .reverse
 }
