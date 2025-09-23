@@ -27,7 +27,7 @@ enum OperationType[+T]:
 
 case class Operation[T](id: Id, predecessors: Set[Dot], ty: OperationType[T])
 
-case class UndoRedoRegister[T](
+case class UndoRedoOpBasedMVR[T](
     opId: Id,
     operations: Map[Id, Operation[T]],
     headIds: Set[Id],
@@ -78,15 +78,15 @@ case class UndoRedoRegister[T](
     }
   }
 
-  def set(value: T): (UndoRedoRegister[T], Operation[T]) = {
+  def set(value: T): (UndoRedoOpBasedMVR[T], Operation[T]) = {
     applyLocalOperation(OperationType.set(value))
   }
 
-  def delete(): (UndoRedoRegister[T], Operation[T]) = {
+  def delete(): (UndoRedoOpBasedMVR[T], Operation[T]) = {
     applyLocalOperation(OperationType.delete)
   }
 
-  def undo(): (UndoRedoRegister[T], Option[Operation[T]]) = {
+  def undo(): (UndoRedoOpBasedMVR[T], Option[Operation[T]]) = {
     if undoStack.isEmpty then return (this, None)
 
     val lastOp                = undoStack.head
@@ -100,7 +100,7 @@ case class UndoRedoRegister[T](
     )
   }
 
-  def redo(): (UndoRedoRegister[T], Option[Operation[T]]) = {
+  def redo(): (UndoRedoOpBasedMVR[T], Option[Operation[T]]) = {
     if redoStack.isEmpty then return (this, None)
 
     val lastOp = redoStack.head
@@ -119,7 +119,7 @@ case class UndoRedoRegister[T](
     )
   }
 
-  private def applyLocalOperation(operationType: OperationType[T]): (UndoRedoRegister[T], Operation[T]) =
+  private def applyLocalOperation(operationType: OperationType[T]): (UndoRedoOpBasedMVR[T], Operation[T]) =
     val operation = Operation(opId, headIds, operationType)
     val register  = apply(operation).copy(opId = opId.advance)
     if operationType.isTerminal then {
@@ -134,7 +134,7 @@ case class UndoRedoRegister[T](
       (register, operation)
     }
 
-  def applyRemoteOperation(operation: Operation[T]): UndoRedoRegister[T] = {
+  def applyRemoteOperation(operation: Operation[T]): UndoRedoOpBasedMVR[T] = {
     for pred <- operation.predecessors do
       if !operations.contains(pred) then
         throw new Exception(s"Missing predecessor $pred for operation ${operation.id}")
@@ -142,13 +142,13 @@ case class UndoRedoRegister[T](
     apply(operation)
   }
 
-  private def apply(operation: Operation[T]): UndoRedoRegister[T] = {
+  private def apply(operation: Operation[T]): UndoRedoOpBasedMVR[T] = {
     if operations.contains(operation.id) then return this
 
     val newOperations = operations + (operation.id -> operation)
     val newHeadIds    = (headIds -- operation.predecessors) + operation.id
 
-    UndoRedoRegister(
+    UndoRedoOpBasedMVR(
       opId = opId,
       operations = newOperations,
       headIds = newHeadIds,
@@ -158,8 +158,8 @@ case class UndoRedoRegister[T](
   }
 }
 
-object UndoRedoRegister {
-  def forReplica[T](replicaId: Uid): UndoRedoRegister[T] = UndoRedoRegister(
+object UndoRedoOpBasedMVR {
+  def forReplica[T](replicaId: Uid): UndoRedoOpBasedMVR[T] = UndoRedoOpBasedMVR(
     opId = Dot(replicaId, 0),
     operations = Map.empty,
     headIds = Set.empty,
@@ -167,9 +167,9 @@ object UndoRedoRegister {
     redoStack = List.empty
   )
 
-  def test[T](n: Int): Array[UndoRedoRegister[T]] = {
+  def createReplicas[T](n: Int): Array[UndoRedoOpBasedMVR[T]] = {
     Array.tabulate(n) { i =>
-      UndoRedoRegister.forReplica[T](Uid(s"R${i + 1}"))
+      UndoRedoOpBasedMVR.forReplica[T](Uid(s"R${i + 1}"))
     }
   }
 }

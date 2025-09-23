@@ -1,25 +1,25 @@
 package test.rdts.bespoke
 
-import rdts.experiments.UndoRedoRegister
+import rdts.experiments.UndoRedoOpBasedMVR
 import rdts.base.Uid
 import rdts.time.Dot
 
-class UndoRedoTest extends munit.FunSuite {
+class UndoRedoOpBasedMVRTest extends munit.FunSuite {
   test("single set operation") {
-    val Array(register)      = UndoRedoRegister.test[Int](1)
+    val Array(register)      = UndoRedoOpBasedMVR.createReplicas[Int](1)
     val (updatedRegister, _) = register.set(42)
     assertEquals(updatedRegister.values(), List(42))
   }
 
   test("sequential set operations same replica") {
-    val Array(register) = UndoRedoRegister.test[Int](1)
+    val Array(register) = UndoRedoOpBasedMVR.createReplicas[Int](1)
     val (register1, _)  = register.set(1)
     val (register2, _)  = register1.set(2)
     assertEquals(register2.values(), List(2))
   }
 
   test("concurrent set operations") {
-    val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
+    val Array(replica1, replica2) = UndoRedoOpBasedMVR.createReplicas[Int](2)
     val (replica1a, op1)          = replica1.set(1)
     val (replica2a, op2)          = replica2.set(2)
 
@@ -31,7 +31,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("three way concurrent sets") {
-    val Array(replica1, replica2, replica3) = UndoRedoRegister.test[Int](3)
+    val Array(replica1, replica2, replica3) = UndoRedoOpBasedMVR.createReplicas[Int](3)
     val (replica1a, op1)                    = replica1.set(1)
     val (replica2a, op2)                    = replica2.set(2)
     val (replica3a, op3)                    = replica3.set(3)
@@ -46,7 +46,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("causal dependency resolution") {
-    val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
+    val Array(replica1, replica2) = UndoRedoOpBasedMVR.createReplicas[Int](2)
 
     // Sequential: op1 → op2
     val (replica1a, op1) = replica1.set(1)
@@ -63,14 +63,14 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("delete operation") {
-    val Array(register) = UndoRedoRegister.test[Int](1)
+    val Array(register) = UndoRedoOpBasedMVR.createReplicas[Int](1)
     val (register1, _)  = register.set(42)
     val (register2, _)  = register1.delete()
     assertEquals(register2.values(), List())
   }
 
   test("delete with concurrent set") {
-    val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
+    val Array(replica1, replica2) = UndoRedoOpBasedMVR.createReplicas[Int](2)
     val (replica1a, opInit)       = replica1.set(1)
     val replica2a                 = replica2.applyRemoteOperation(opInit)
 
@@ -85,7 +85,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("concurrent deletes") {
-    val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
+    val Array(replica1, replica2) = UndoRedoOpBasedMVR.createReplicas[Int](2)
     val (replica1a, opInit)       = replica1.set(1)
     val replica2a                 = replica2.applyRemoteOperation(opInit)
 
@@ -100,7 +100,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("apply same operation twice") {
-    val Array(register) = UndoRedoRegister.test[Int](1)
+    val Array(register) = UndoRedoOpBasedMVR.createReplicas[Int](1)
     val (register1, op) = register.set(42)
     val initialLen      = register1.values().length
 
@@ -110,7 +110,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("complex concurrent scenario") {
-    val Array(replica1, replica2, replica3) = UndoRedoRegister.test[Int](3)
+    val Array(replica1, replica2, replica3) = UndoRedoOpBasedMVR.createReplicas[Int](3)
 
     val (replica1a, opInit) = replica1.set(0)
     val replica2a           = replica2.applyRemoteOperation(opInit)
@@ -131,7 +131,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("empty register operations") {
-    val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
+    val Array(replica1, replica2) = UndoRedoOpBasedMVR.createReplicas[Int](2)
 
     assert(replica1.values().isEmpty)
 
@@ -143,7 +143,7 @@ class UndoRedoTest extends munit.FunSuite {
   }
 
   test("heads tracking") {
-    val Array(replica1, replica2) = UndoRedoRegister.test[Int](2)
+    val Array(replica1, replica2) = UndoRedoOpBasedMVR.createReplicas[Int](2)
 
     // op_1
     val (replica1a, op1) = replica1.set(1)
@@ -190,7 +190,7 @@ class UndoRedoTest extends munit.FunSuite {
 
   // This test replicates the example from Figure 2 in the paper
   test("undo/redo paper example") {
-    val Array(replicaA, replicaB) = UndoRedoRegister.test[Int](2)
+    val Array(replicaA, replicaB) = UndoRedoOpBasedMVR.createReplicas[Int](2)
 
     // op_1
     val (replicaA1, op1) = replicaA.set(1)
@@ -306,13 +306,13 @@ class UndoRedoTest extends munit.FunSuite {
   }
 }
 
-def undoValues[T](register: UndoRedoRegister[T]): List[T] = {
+def undoValues[T](register: UndoRedoOpBasedMVR[T]): List[T] = {
   register.undoStack
     .flatMap(_.ty.getValue)
     .reverse
 }
 
-def redoAnchors[T](register: UndoRedoRegister[T]): List[Dot] = {
+def redoAnchors[T](register: UndoRedoOpBasedMVR[T]): List[Dot] = {
   register.redoStack
     .flatMap(_.ty.getAnchor)
     .reverse
