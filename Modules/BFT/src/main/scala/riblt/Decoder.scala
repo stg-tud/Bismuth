@@ -38,14 +38,14 @@ class Decoder[T](
     else if c.count == 0 && c.hash == 0 then
       decodable = decodable :+ (codedSymbols.length - 1)
 
-  def applyNewSymbol(hashedSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): Mapping =
-    val m = new Mapping(hashedSymbol.hash)
+  def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): Mapping =
+    val m = new Mapping(sourceSymbol.hash)
 
     while m.lastIndex.toInt < codedSymbols.length do
       val i   = m.lastIndex.toInt
       val tmp = op match
-        case Add    => codedSymbols(i).add(hashedSymbol)
-        case Remove => codedSymbols(i).remove(hashedSymbol)
+        case Add    => codedSymbols(i).add(sourceSymbol)
+        case Remove => codedSymbols(i).remove(sourceSymbol)
 
       codedSymbols = codedSymbols.updated(i, tmp)
 
@@ -70,12 +70,12 @@ class Decoder[T](
         case 1 =>
           val newSymbol = SourceSymbol[T](c.sum, c.hash)
           val m         = applyNewSymbol(newSymbol, Remove)
-          remote.addHashedSymbolWithMapping(newSymbol, m)
+          remote.addSourceSymbolWithMapping(newSymbol, m)
           decoded += 1
         case -1 =>
           val newSymbol = SourceSymbol[T](c.sum, c.hash)
           val m         = applyNewSymbol(newSymbol, Add)
-          local.addHashedSymbolWithMapping(newSymbol, m)
+          local.addSourceSymbolWithMapping(newSymbol, m)
           decoded += 1
         case 0 =>
           decoded += 1

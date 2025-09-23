@@ -14,13 +14,13 @@ class CodingWindow[T](
 ):
 
   def addSymbol(symbol: T)(using Hashable[T]): Unit =
-    addHashedSymbol(SourceSymbol(symbol, symbol.hash))
+    addSourceSymbol(SourceSymbol(symbol, symbol.hash))
 
-  def addHashedSymbol(hashedSymbol: SourceSymbol[T]): Unit =
-    addHashedSymbolWithMapping(hashedSymbol, new Mapping(hashedSymbol.hash))
+  def addSourceSymbol(sourceSymbol: SourceSymbol[T]): Unit =
+    addSourceSymbolWithMapping(sourceSymbol, new Mapping(sourceSymbol.hash))
 
-  def addHashedSymbolWithMapping(hashedSymbol: SourceSymbol[T], mapping: Mapping): Unit =
-    symbols = symbols :+ hashedSymbol
+  def addSourceSymbolWithMapping(sourceSymbol: SourceSymbol[T], mapping: Mapping): Unit =
+    symbols = symbols :+ sourceSymbol
     mappings = mappings :+ mapping
     queue.enqueue(SymbolMapping(symbols.length - 1, mapping.lastIndex.toInt))
 
