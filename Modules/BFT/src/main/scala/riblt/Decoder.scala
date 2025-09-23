@@ -30,6 +30,9 @@ class Decoder[T](
 
     codedSymbols = codedSymbols :+ c
 
+    if (c.count == 1 || c.count == -1) then
+      c.sum = c.sum.removeTrailingZeros()
+
     if (c.count == 1 || c.count == -1) && (c.hash == c.sum.hash) then
       decodable = decodable :+ (codedSymbols.length - 1)
     else if c.count == 0 && c.hash == 0 then
@@ -45,6 +48,9 @@ class Decoder[T](
         case Remove => codedSymbols(i).remove(hashedSymbol)
 
       codedSymbols = codedSymbols.updated(i, tmp)
+
+      if (codedSymbols(i).count == -1 || codedSymbols(i).count == 1) then
+        codedSymbols(i).sum = codedSymbols(i).sum.removeTrailingZeros()
 
       if (codedSymbols(i).count == -1 || codedSymbols(i).count == 1) && codedSymbols(i).hash == codedSymbols(i).sum.hash
       then
