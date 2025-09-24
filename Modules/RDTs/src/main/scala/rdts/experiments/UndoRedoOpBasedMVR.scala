@@ -3,6 +3,8 @@ package rdts.experiments
 import rdts.time.Dot
 import rdts.base.{Uid, Lattice}
 
+/// An operation-based Multi-Version Register (MVR) with undo/redo functionality as described in
+/// "Undo and Redo Support for Replicated Registers" by Stewen et al
 object UndoRedoOpBased {
   type Id = Dot
 

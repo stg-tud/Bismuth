@@ -106,6 +106,15 @@ case class ReplicatedList[E](
       )
   }
 
+  def clear(): ReplicatedList[E] = {
+    ReplicatedList(
+      causalOrder = Map.empty,
+      elements = Map.empty,
+      times = Map.empty,
+      removed = observed
+    )
+  }
+
   def size: Int = elements.size
 
   def compact: ReplicatedList[E] = {

@@ -102,10 +102,8 @@ class UndoRedoOpBasedMVRTest extends munit.FunSuite {
   test("apply same operation twice") {
     val Array(register) = UndoRedoOpBased.MVR.createReplicas[Int](1)
     val (register1, op) = register.set(42)
-    val initialLen      = register1.values().length
 
     val register2 = register1.applyRemoteOperation(op)
-    assertEquals(register2.values().length, initialLen)
     assertEquals(register2.values(), List(42))
   }
 
@@ -124,10 +122,9 @@ class UndoRedoOpBasedMVRTest extends munit.FunSuite {
     val replica2c = replica2b.applyRemoteOperation(opSet1).applyRemoteOperation(opSet3)
     val replica3c = replica3b.applyRemoteOperation(opSet1).applyRemoteOperation(opDelete)
 
-    val expected = List(3, 1)
-    assertEquals(replica1c.values(), expected)
-    assertEquals(replica2c.values(), expected)
-    assertEquals(replica3c.values(), expected)
+    assertEquals(replica1c.values(), List(3, 1))
+    assertEquals(replica2c.values(), List(3, 1))
+    assertEquals(replica3c.values(), List(3, 1))
   }
 
   test("empty register operations") {
@@ -136,9 +133,9 @@ class UndoRedoOpBasedMVRTest extends munit.FunSuite {
     assert(replica1.values().isEmpty)
 
     val (replica1a, opDelete) = replica1.delete()
-    assert(replica1a.values().isEmpty)
+    val replica2a             = replica2.applyRemoteOperation(opDelete)
 
-    val replica2a = replica2.applyRemoteOperation(opDelete)
+    assert(replica1a.values().isEmpty)
     assert(replica2a.values().isEmpty)
   }
 
