@@ -130,9 +130,9 @@ object UndoRedoDeltaBased {
     private def applyLocalOperation(operationType: OperationType[T]): Delta =
       given LocalUid = LocalUid(dot.place)
 
-      val operation = Operation(dot, headIds.elements, operationType)
+      if operations.contains(dot) then return this
 
-      if operations.contains(operation.id) then return this
+      val operation = Operation(dot, headIds.elements, operationType)
 
       val newOperations = operations + (operation.id -> operation)
 
