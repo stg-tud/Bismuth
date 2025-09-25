@@ -142,6 +142,10 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.tink,
     libraryDependencies += Dependencies.scalafx,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
+    javaOptions ++= Seq(
+      "--sun-misc-unsafe-memory-access=allow",
+      "--enable-native-access=ALL-UNNAMED"
+    ), // Reduce warnings for JavaFX application
   )
 
 lazy val examplesWeb = project.in(file("Modules/Examples Web"))
