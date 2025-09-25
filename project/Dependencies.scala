@@ -32,8 +32,8 @@ object Dependencies {
   val bouncyCastle = libraryDependencies ++=
     List(
       // Note, jdk18 means JDK 1.8
-      "org.bouncycastle" % "bcprov-jdk18on" % "1.81",
-      "org.bouncycastle" % "bcpkix-jdk18on" % "1.81",
+      "org.bouncycastle" % "bcprov-jdk18on" % "1.82",
+      "org.bouncycastle" % "bcpkix-jdk18on" % "1.82",
     )
 
   def borer = libraryDependencies ++= Seq(
