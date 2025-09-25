@@ -33,7 +33,7 @@ object UndoRedoDeltaBased {
   case class Operation[T](id: Id, predecessors: Set[Dot], ty: OperationType[T])
 
   case class MVR[T](
-      dots: Dots,
+      dot: Dot,
       operations: Map[Id, Operation[T]],
       headIds: ReplicatedSet[Id],
       undoStack: ReplicatedList[Operation[T]],
@@ -81,25 +81,27 @@ object UndoRedoDeltaBased {
 
     given dotOrdering: Ordering[Dot] {
       def compare(x: Dot, y: Dot): Int = {
-        val counterComparison = x.time.compare(y.time)
-        if counterComparison != 0 then counterComparison
+        val timeComparison = x.time.compare(y.time)
+        if timeComparison != 0 then timeComparison
         else x.place.delegate.compare(y.place.delegate)
       }
     }
 
-    def set(value: T)(using LocalUid): Delta = {
+    def set(value: T): Delta = {
       applyLocalOperation(OperationType.set(value))
     }
 
-    def delete()(using LocalUid): Delta = {
+    def delete(): Delta = {
       applyLocalOperation(OperationType.delete)
     }
 
-    def undo()(using LocalUid): Delta = {
-      if undoStack.isEmpty then return MVR.empty
+    def undo(): Delta = {
+      given LocalUid = LocalUid(dot.place)
+
+      if undoStack.isEmpty then return MVR.forReplica(dot.place)
 
       val lastOp = undoStack.read(0).get
-      val opId   = dots.nextDot
+      val opId   = dot
       val delta  = applyLocalOperation(OperationType.restore(lastOp.id))
       delta.copy(
         undoStack = undoStack.delete(0),
@@ -107,8 +109,10 @@ object UndoRedoDeltaBased {
       )
     }
 
-    def redo()(using LocalUid): Delta = {
-      if redoStack.isEmpty then return MVR.empty
+    def redo(): Delta = {
+      given LocalUid = LocalUid(dot.place)
+
+      if redoStack.isEmpty then return return MVR.forReplica(dot.place)
 
       val lastOp = redoStack.read(0).get
 
@@ -123,18 +127,20 @@ object UndoRedoDeltaBased {
         )
     }
 
-    private def applyLocalOperation(operationType: OperationType[T])(using LocalUid): Delta =
-      val operation = Operation(dots.nextDot, headIds.elements, operationType)
+    private def applyLocalOperation(operationType: OperationType[T]): Delta =
+      given LocalUid = LocalUid(dot.place)
+
+      val operation = Operation(dot, headIds.elements, operationType)
 
       if operations.contains(operation.id) then return this
 
-      val newOperations  = operations + (operation.id -> operation)
-      val removedHeadIds =
-        headIds `merge` headIds.removeAll(operation.predecessors)
-      val newHeadIds = removedHeadIds `merge` removedHeadIds.add(operation.id)
+      val newOperations = operations + (operation.id -> operation)
+
+      val newRemovedHeadIds = headIds `merge` headIds.removeAll(operation.predecessors)
+      val newHeadIds        = newRemovedHeadIds `merge` newRemovedHeadIds.add(operation.id)
 
       val delta = this.copy(
-        dots = dots.advanced(LocalUid.replicaId),
+        dot = dot.advance,
         operations = newOperations,
         headIds = newHeadIds,
       )
@@ -149,11 +155,35 @@ object UndoRedoDeltaBased {
   }
 
   object MVR {
-    given bottom[T]: Bottom[MVR[T]] = Bottom.derived
-    def empty[T]: MVR[T]            = bottom.empty
+    def forReplica[T](id: Uid): MVR[T] = MVR(
+      dot = Dot(id, 0),
+      operations = Map.empty,
+      headIds = ReplicatedSet.empty,
+      undoStack = ReplicatedList.empty,
+      redoStack = ReplicatedList.empty,
+    )
 
-    given lattice[T]: Lattice[MVR[T]] =
-      given Lattice[Operation[T]] = Lattice.assertEquals
-      Lattice.derived[MVR[T]]
+    given lattice[T]: Lattice[MVR[T]] = new Lattice[MVR[T]] {
+      def merge(left: MVR[T], right: MVR[T]): MVR[T] = {
+        val dot = if left.dot.place == right.dot.place then
+          Dot(left.dot.place, scala.math.max(left.dot.time, right.dot.time))
+        else left.dot
+        val headIds    = left.headIds.merge(right.headIds)
+        val operations = left.operations ++ right.operations
+
+        val (undoStack, redoStack) = if left.dot.place == right.dot.place then
+          (left.undoStack `merge` right.undoStack, left.redoStack `merge` right.redoStack)
+        else
+          (left.undoStack, left.redoStack)
+
+        MVR(
+          dot,
+          operations,
+          headIds,
+          undoStack,
+          redoStack
+        )
+      }
+    }
   }
 }
