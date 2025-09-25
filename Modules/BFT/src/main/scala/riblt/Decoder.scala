@@ -30,7 +30,7 @@ class Decoder[T](
 
     codedSymbols = codedSymbols :+ c
 
-    if (c.count == 1 || c.count == -1) then
+    if c.count == 1 || c.count == -1 then
       c.sum = c.sum.removeTrailingZeros()
 
     if (c.count == 1 || c.count == -1) && (c.hash == c.sum.hash) then
@@ -49,7 +49,7 @@ class Decoder[T](
 
       codedSymbols = codedSymbols.updated(i, tmp)
 
-      if (codedSymbols(i).count == -1 || codedSymbols(i).count == 1) then
+      if codedSymbols(i).count == -1 || codedSymbols(i).count == 1 then
         codedSymbols(i).sum = codedSymbols(i).sum.removeTrailingZeros()
 
       if (codedSymbols(i).count == -1 || codedSymbols(i).count == 1) && codedSymbols(i).hash == codedSymbols(i).sum.hash
@@ -89,4 +89,4 @@ class Decoder[T](
 
   }
   
-  def restart: Unit = ???
+  def restart(): Unit = ???
