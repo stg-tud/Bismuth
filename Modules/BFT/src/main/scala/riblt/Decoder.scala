@@ -88,3 +88,5 @@ class Decoder[T](
     decodable = List.empty[Int]
 
   }
+  
+  def restart: Unit = ???

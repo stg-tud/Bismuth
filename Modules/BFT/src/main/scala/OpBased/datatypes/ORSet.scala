@@ -1,9 +1,11 @@
 package OpBased.datatypes
 
 import OpBased.dag.{Event, HashDAG}
+
 import scala.collection.immutable.HashMap
 import crypto.Ed25519Util
 import OpType.{Add, Remove}
+import riblt.CodedSymbol
 
 case class ORSet[T] private (
     hashDAG: HashDAG[Op[T]],
@@ -52,9 +54,60 @@ case class ORSet[T] private (
     else
       this
 
+  def receiveEvents(events: Iterable[Event[Op[T]]]): ORSet[T] = 
+    var tmp = this
+    for (event <- events)
+      tmp = tmp.receiveEvent(event)
+      
+    tmp
+    
   def getElements: Set[T] =
     Set.from(elements.filter((k, v) => v.nonEmpty).map((k, v) => k))
 
+  def produceNextCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
+    this.hashDAG.produceNextCodedSymbols(count)
+
+  def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): (ORSet[T], Boolean) = 
+    val res = this.hashDAG.addCodedSymbols(codedSymbols)
+    (
+      this.copy(hashDAG = res._1),
+      res._2
+    )
+  
+
+  def sendDiff: (Set[Event[Op[T]]], Set[String]) =
+    this.hashDAG.sendDiff
+
+  def receiveDiff(response: Set[Event[Op[T]]], request: Set[String]): (ORSet[T], Set[Event[Op[T]]]) =
+    val res = this.hashDAG.receiveDiff(response, request)
+    (
+      this.copy(hashDAG = res._1),
+      res._2
+    )
+    
+  def processQueue: ORSet[T] =
+    var i = hashDAG.queue.size
+    var j = 0
+    var tmp = hashDAG
+    var b = true
+    while b do {
+      tmp = hashDAG.processQueue()
+      j = tmp.queue.size
+      if i == j then
+        b = false
+      else
+        i = j
+    }
+    
+    var tmp2 = this.copy(hashDAG = tmp) 
+    val processedEvents  = this.hashDAG.queue -- tmp.queue
+    for e <- processedEvents do 
+      tmp2 = tmp2.receiveEvent(e)
+      
+    tmp2
+    
+    
+    
 object ORSet:
   def apply[T](): ORSet[T] =
     new ORSet[T](HashDAG[Op[T]](Ed25519Util.generateNewKeyPair), new HashMap())

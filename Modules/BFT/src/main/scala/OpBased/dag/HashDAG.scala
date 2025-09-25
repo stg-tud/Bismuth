@@ -1,8 +1,9 @@
 package OpBased.dag
 
-import scala.collection.immutable.{HashMap, Map, Set, List}
+import scala.collection.immutable.{HashMap, List, Map, Set}
 import java.security.{KeyPair, PublicKey}
 import crypto.Ed25519Util
+import riblt.{CodedSymbol, Decoder, Encoder, given_Hashable_String, given_Xorable_String}
 
 // a hash directed acyclic graph
 case class HashDAG[T] private (
@@ -12,7 +13,9 @@ case class HashDAG[T] private (
     graph: Map[Event[T], Set[String]],
     authorKeys: KeyPair,
     queue: Set[Event[T]] = Set.empty[Event[T]],
-    byzantineNodes: Set[PublicKey] = Set.empty
+    byzantineNodes: Set[PublicKey] = Set.empty,
+    riblt_enc: Encoder[String] = Encoder(),
+    riblt_dec: Decoder[String] = Decoder()
 ):
 
   // checks if an event is contained in the graph
@@ -43,23 +46,34 @@ case class HashDAG[T] private (
   }
 
   def effector(event: Event[T]): HashDAG[T] =
-    assume(!contains(event), "Event already in HashDAG!")
-
-    if event.calculateHash != event.id || !event.signatureIsValid || event.authorIsByzantine then
+    if contains(event) then
       this
-    else if isByzantine(event) then
-      markEventsFromByzantineNode(event.author)
     else
-      val dependencies = event.dependencies
-      if dependencies.forall(e => contains(e)) then
-        var g = this.graph
-        for d <- dependencies do
-          val e = g.find((e, _) => e.id == d).get._1
-          g = g.updated(e, g(e) + event.id)
-
-        HashDAG(g + (event -> Set.empty), this.authorKeys, this.queue - event)
+      if event.calculateHash != event.id || !event.signatureIsValid || event.authorIsByzantine then
+        this
+      else if isByzantine(event) then
+        markEventsFromByzantineNode(event.author)
       else
-        HashDAG(this.graph, this.authorKeys, this.queue + event)
+        val dependencies = event.dependencies
+        if dependencies.forall(e => contains(e)) then
+          var g = this.graph
+          for d <- dependencies do
+            val e = g.find((e, _) => e.id == d).get._1
+            g = g.updated(e, g(e) + event.id)
+
+          this.riblt_enc.addSymbol(event.id)
+          this.riblt_dec.addSymbol(event.id)
+          //this.riblt_enc.restart
+
+          HashDAG(
+            g + (event -> Set.empty),
+            this.authorKeys,
+            this.queue - event,
+            this.byzantineNodes,
+            this.riblt_enc, this.riblt_dec
+          )
+        else
+          HashDAG(this.graph, this.authorKeys, this.queue + event, this.byzantineNodes, this.riblt_enc, this.riblt_dec)
 
   def addEvent(content: T): HashDAG[T] =
     // generate the event
@@ -114,8 +128,51 @@ case class HashDAG[T] private (
         g = g - event
         g = g + (event.copy(authorIsByzantine = true) -> v)
 
-    HashDAG(g, this.authorKeys, this.queue, this.byzantineNodes + author)
+    HashDAG(g, this.authorKeys, this.queue, this.byzantineNodes + author, this.riblt_enc, this.riblt_dec)
   }
+
+  def produceNextCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
+    var codedSymbols = List.empty[CodedSymbol[String]]
+
+    for (i <- 0 to count)
+      codedSymbols = codedSymbols :+ riblt_enc.produceNextCodedSymbol
+
+    codedSymbols
+
+  def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): (HashDAG[T], Boolean) =
+    if riblt_dec.codedSymbols.nonEmpty && riblt_dec.isDecoded then
+      (this, true)
+    else
+      for codedSymbol <- codedSymbols do
+        riblt_dec.addCodedSymbol(codedSymbol)
+
+      riblt_dec.tryDecode
+      (this.copy(riblt_dec = this.riblt_dec), riblt_dec.isDecoded)
+
+  def sendDiff: (Set[Event[T]], Set[String]) =
+    if riblt_dec.isDecoded then
+      val ids = riblt_dec.localSymbols.map(s => s.symbol)
+      (
+        graph.filter((k, v) => ids.contains(k.id)).keySet,
+        riblt_dec.remoteSymbols.map(s => s.symbol).toSet
+      )
+    else
+      (Set.empty, Set.empty)
+
+  def receiveDiff(response: Set[Event[T]], request: Set[String]): (HashDAG[T], Set[Event[T]]) =
+    var tmp = this
+
+    for e <- response do
+      tmp = tmp.effector(e)
+
+    (
+      tmp,
+      this.graph.filter((k, v) => request.contains(k.id)).keySet
+    )
+
+  def decRestart: HashDAG[T] = ???
+
+
 
 object HashDAG:
   def apply[T](authorKeys: KeyPair): HashDAG[T] =

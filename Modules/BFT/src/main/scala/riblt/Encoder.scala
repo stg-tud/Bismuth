@@ -9,3 +9,5 @@ class Encoder[T](
 
   def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
     window.produceNextCodedSymbol
+    
+  def restart: Unit = ???

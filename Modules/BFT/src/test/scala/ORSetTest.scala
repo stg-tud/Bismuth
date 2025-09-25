@@ -117,3 +117,39 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(setA4.getElements, Set("x"))
     assertEquals(setA4.getElements, setB4.getElements)
   }
+
+  /*test("synchronise with riblt") {
+    val setA1 = ORSet[String]()
+    val (setA2, event1) = setA1.add("a")
+    val (setA3, event2) = setA2.add("b")
+
+    val setB1 = ORSet[String]()
+    val (setB2, event3) = setB1.add("a")
+    val (setB3, event4) = setB2.add("c")
+
+    //val setB4 = setB3.decRestart()
+    val c = setA3.produceNextCodedSymbols()
+    var (setB4, isDecoded) = setB3.addCodedSymbols(c)
+    while !isDecoded do
+      val res = setB4.addCodedSymbols(setA3.produceNextCodedSymbols())
+      setB4 = res._1
+      isDecoded = res._2
+
+    val diff = setB4.sendDiff
+    val (setA4, response) = setA3.receiveDiff(diff._1, diff._2)
+    val setB5 = setB4.receiveEvents(response)
+
+    val setB6 = setB5.processQueue
+    val setA5 = setA4.processQueue
+
+    println(setA5.getElements)
+    println(setA4.hashDAG.queue.map(e => e.content.get.element))
+    println(setA5.hashDAG.queue.map(e => e.content.get.element))
+    println(setB6.getElements)
+    println(setB5.hashDAG.queue.map(e => e.content.get.element))
+    println(setB6.hashDAG.queue.map(e => e.content.get.element))
+
+
+    assertEquals(setA5.getElements, setB6.getElements)
+  }*/
+
