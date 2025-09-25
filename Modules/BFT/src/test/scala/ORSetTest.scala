@@ -1,7 +1,9 @@
 import OpBased.datatypes.ORSet
 
-class ORSetTest extends munit.FunSuite:
+import scala.concurrent.duration._
 
+class ORSetTest extends munit.FunSuite:
+  override def munitTimeout: Duration = 5.minute
   test("add element to empty set") {
     val setA1           = ORSet[String]()
     val (setA2, event1) = setA1.add("x")
@@ -118,7 +120,7 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(setA4.getElements, setB4.getElements)
   }
 
-  /*test("synchronise with riblt") {
+  test("synchronise with riblt") {
     val setA1 = ORSet[String]()
     val (setA2, event1) = setA1.add("a")
     val (setA3, event2) = setA2.add("b")
@@ -142,14 +144,8 @@ class ORSetTest extends munit.FunSuite:
     val setB6 = setB5.processQueue
     val setA5 = setA4.processQueue
 
-    println(setA5.getElements)
-    println(setA4.hashDAG.queue.map(e => e.content.get.element))
-    println(setA5.hashDAG.queue.map(e => e.content.get.element))
-    println(setB6.getElements)
-    println(setB5.hashDAG.queue.map(e => e.content.get.element))
-    println(setB6.hashDAG.queue.map(e => e.content.get.element))
 
 
     assertEquals(setA5.getElements, setB6.getElements)
-  }*/
+  }
 
