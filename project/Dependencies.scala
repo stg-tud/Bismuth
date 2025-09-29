@@ -32,8 +32,8 @@ object Dependencies {
   val bouncyCastle = libraryDependencies ++=
     List(
       // Note, jdk18 means JDK 1.8
-      "org.bouncycastle" % "bcprov-jdk18on" % "1.81",
-      "org.bouncycastle" % "bcpkix-jdk18on" % "1.81",
+      "org.bouncycastle" % "bcprov-jdk18on" % "1.82",
+      "org.bouncycastle" % "bcpkix-jdk18on" % "1.82",
     )
 
   def borer = libraryDependencies ++= Seq(
@@ -52,8 +52,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.37.10",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.37.10" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.38.2",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.38.2" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.2-R36"

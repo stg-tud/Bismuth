@@ -2,15 +2,14 @@ package ex2025blockchain
 
 import rdts.base.{Bottom, Lattice}
 
-
 object BlockchainApp {
 
-  given Lattice[String] = (a, b) => { if a.compareTo(b) >= 0 then a else b }
+  given Lattice[String] = Lattice.fromOrdering
 
   given Bottom[String] = Bottom.provide("")
 
   def main(args: Array[String]): Unit = {
-    val a, b, c = Replica(Blockchain.empty[String, String])
+    val a, b, c = Replica(Blockchain(Block("", None, "")))
 
     a.mod(_.addBlock("a", "Welcome To DARE"))
     b.mod(_.addBlock("b", "Hello World"))

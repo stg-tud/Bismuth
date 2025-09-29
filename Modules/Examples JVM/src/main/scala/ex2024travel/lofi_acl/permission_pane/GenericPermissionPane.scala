@@ -5,8 +5,9 @@ import javafx.util as jfxu
 import scalafx.Includes.jfxTreeItem2sfx
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.beans.BeanIncludes.jfxObservableValue2sfx
+import scalafx.geometry.Pos.Center
 import scalafx.scene.control.*
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{GridPane, VBox}
 import scalafx.scene.{Group, Scene}
 
 class GenericPermissionPane extends GridPane {}
@@ -59,6 +60,7 @@ object TreeTableViewExample extends JFXApp3 {
     labelColumn.cellValueFactory = { paneItem => paneItem.value.value.map(_.uiText) }
 
     val readPermColumn = TreeTableColumn[PermissionSelectionViewModel, PermissionSelectionViewModel]("read")
+    readPermColumn.resizable = false
     readPermColumn.cellValueFactory = { paneItem => paneItem.value.value }
     readPermColumn.cellFactory = new jfxu.Callback[
       jfxsc.TreeTableColumn[PermissionSelectionViewModel, PermissionSelectionViewModel],
@@ -68,8 +70,10 @@ object TreeTableViewExample extends JFXApp3 {
           : jfxsc.TreeTableCell[PermissionSelectionViewModel, PermissionSelectionViewModel] =
         new CustomCheckBoxTreeTableCell(_.readCheckbox)
     }
+    readPermColumn.setPrefWidth(50)
 
     val writePermColumn = TreeTableColumn[PermissionSelectionViewModel, PermissionSelectionViewModel]("write")
+    writePermColumn.resizable = false
     writePermColumn.cellValueFactory = { paneItem => paneItem.value.value }
     writePermColumn.cellFactory = new jfxu.Callback[
       jfxsc.TreeTableColumn[PermissionSelectionViewModel, PermissionSelectionViewModel],
@@ -79,10 +83,10 @@ object TreeTableViewExample extends JFXApp3 {
           : jfxsc.TreeTableCell[PermissionSelectionViewModel, PermissionSelectionViewModel] =
         new CustomCheckBoxTreeTableCell(_.writeCheckbox)
     }
+    writePermColumn.setPrefWidth(50)
 
     val view = TreeTableView(populateTreeItem(rootSelector))
     view.columns ++= Seq(labelColumn, readPermColumn, writePermColumn)
-    // view.setPrefWidth(152)
     view.setShowRoot(true)
     sceneRoot.getChildren.add(view)
     stage.scene = scene
@@ -93,9 +97,12 @@ object TreeTableViewExample extends JFXApp3 {
 class CustomCheckBoxTreeTableCell(checkBoxSource: PermissionSelectionViewModel => CheckBox)
     extends jfxsc.TreeTableCell[PermissionSelectionViewModel, PermissionSelectionViewModel] {
   override def updateItem(viewModel: PermissionSelectionViewModel, empty: Boolean): Unit = {
-    if empty || viewModel == null then
+    if empty || viewModel == null then {
       setGraphic(null)
-    else
-      setGraphic(checkBoxSource(viewModel))
+    } else {
+      val box = VBox(checkBoxSource(viewModel))
+      box.alignment = Center
+      setGraphic(box)
+    }
   }
 }
