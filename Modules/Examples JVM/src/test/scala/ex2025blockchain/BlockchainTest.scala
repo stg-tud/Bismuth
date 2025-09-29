@@ -9,7 +9,8 @@ class BlockchainTest extends FunSuite {
     given Lattice[String] = Lattice.fromOrdering
     given Bottom[String] = Bottom.provide("")
 
-    val a, b, c = Replica(Blockchain(Block("", None, "")))
+    val genesisBlock = Blockchain(Block("", None, ""))
+    val a, b, c = Replica(genesisBlock)
 
     a.mod(_.addBlock("a", "Welcome To DARE"))
     b.mod(_.addBlock("b", "Hello World"))
@@ -65,6 +66,52 @@ class BlockchainTest extends FunSuite {
   }
 
   test("orphan outgrows valid branch") {
+    given Lattice[String] = Lattice.fromOrdering
 
+    given Bottom[String] = Bottom.provide("")
+
+    val genesisBlock: Block[String, String] = Block("", None, "")
+    var a, b = Blockchain(genesisBlock)
+
+    val block1 = Block("a", a.validHead, "Welcome To DARE")
+    val amod1 = a.addBlock(block1)
+    a = a `merge` amod1
+    b = b `merge` amod1
+
+    val block3 = Block("c", a.validHead, "Welcome to Lisbon")
+    val amod2 = a.addBlock(block3)
+    a = a `merge` amod2
+
+    val block4 = Block("d", b.validHead, "Welcome to NOVA")
+    val bmod2 = b.addBlock(block4)
+    b = b `merge` bmod2
+    val block5 = Block("e", b.validHead, "Welcome to Costa da Caparica")
+    val bmod3 = b.addBlock(block5)
+    b = b `merge` bmod3
+
+    val block6 = Block("f", a.validHead, "I hope you enjoyed the summer school")
+    val amod3 = a.addBlock(block6)
+    a = a `merge` amod3
+
+    assertEquals(a.validHead, block6.hash)
+    assertEquals(b.validHead, block5.hash)
+
+    val block7 = Block("g", a.validHead, "We love CRDTs here at DARE")
+    val amod4 = a.addBlock(block7)
+    a = a `merge` amod4
+    b = b `merge` amod2
+    b = b `merge` amod3
+    b = b `merge` amod4
+
+    assert(b `subsumes` a)
+    assertEquals(a.validHead, block7.hash)
+    assertEquals(b.validHead, block7.hash)
+
+    a = a `merge` bmod2
+    a = a `merge` bmod3
+
+    assert(b `subsumes` a)
+    assertEquals(a.validHead, block7.hash)
+    assertEquals(b.validHead, block7.hash)
   }
 }

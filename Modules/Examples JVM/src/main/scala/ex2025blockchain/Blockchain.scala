@@ -9,13 +9,21 @@ import scala.annotation.tailrec
 /** The implementation ignores the cryptographic concepts used in blockchains and focuses instead on the replication of the blocks
   *
   * @param inner  a map where the key is the hash value of the block
-  * @param heads  a set of hashes that do not have a successor, one of the hashes is the head of the valid chain
   * @tparam H The type of the hash
   * @tparam T The type of the data in the block
   */
-case class Blockchain[H, T](inner: Map[H, Block[H, T]], heads: Set[H]) {
+case class Blockchain[H, T](inner: Map[H, Block[H, T]]) {
 
   type delta = Blockchain[H, T]
+
+  /** heads are all hashes that do not have a succeeding block
+    * all hashes - hashes that are referenced as previous hash in a block - genesis block
+    * the genesis is only subtracted if there is more than one block in the blockchain, otherwise it is the head
+    */
+  def heads: Set[H] =
+    inner.keySet
+      -- inner.values.filter(_.previousHash.isDefined).map(_.previousHash.get)
+      -- (if inner.size > 1 then inner.values.filter(_.previousHash.isEmpty).map(_.hash) else Set.empty)
 
   /** the head of the longest chain should be the validHead
     * in case two chains have the same length, the head with the latest timestamp should be the validHead
@@ -34,7 +42,7 @@ case class Blockchain[H, T](inner: Map[H, Block[H, T]], heads: Set[H]) {
   def addBlock(newBlock: Block[H, T]): Blockchain[H, T] = {
     var newHeads = heads - newBlock.previousHash.get
     newHeads += newBlock.hash
-    Blockchain(Map(newBlock.hash -> newBlock), newHeads)
+    Blockchain(Map(newBlock.hash -> newBlock))
   }
 
   /** adds a new block to the blockchain by appending it to the end of the chain
@@ -83,7 +91,7 @@ case class Blockchain[H, T](inner: Map[H, Block[H, T]], heads: Set[H]) {
     }
 
     val branches = heads.map { head => getBranchString(head) }.toList
-    branches.sortBy(_.length).map(_.reverse.map(a => f"($a)").mkString(" <- ")).mkString("\n")
+    f"---\n${branches.sortBy(_.length).map(_.reverse.map(a => f"($a)").mkString(" <- ")).mkString(" \n")}"
   }
 
 }
@@ -91,44 +99,13 @@ case class Blockchain[H, T](inner: Map[H, Block[H, T]], heads: Set[H]) {
 object Blockchain {
 
   def apply[H, T](genesisBlock: Block[H, T]): Blockchain[H, T] =
-    Blockchain(Map(genesisBlock.hash -> genesisBlock), Set(genesisBlock.hash))
+    Blockchain(Map(genesisBlock.hash -> genesisBlock))
 
   given [H: Bottom, T]: Bottom[Blockchain[H, T]] = Bottom.derived
 
-  given [H: Lattice, T]: Lattice[Blockchain[H, T]] = (a: Blockchain[H, T], b: Blockchain[H, T]) => {
-
-    /** the merge function keeps orphan branches since one orphan branch can still grow and outgrow the current valid chain
-      *
-      * if both chains have the same length, there is no deterministic behavior for selecting the valid chain
-      * this implementation relies on the latest block to select a winner
-      */
-
-    val newInner = a.inner ++ b.inner
-
-    def getNewChainLength(start: H): Int = newInner.get(start) match {
-      case Some(startBlock) => startBlock.previousHash match {
-          case Some(value) => getNewChainLength(value) + 1
-          case None        => 1
-        }
-      case None => 0
-    }
-
-    @tailrec
-    def blockIsInChain(blockHash: H, chainHead: H): Boolean = {
-      val headBlock = newInner(chainHead)
-      if headBlock.hash == blockHash then return true
-      headBlock.previousHash match {
-        case Some(value) => blockIsInChain(blockHash, value)
-        case None        => false
-      }
-    }
-
-    def subtractHeads(a: Set[H], b: Set[H]): Set[H] = {
-      a.filterNot(ahead => b.filter(bhead => ahead != bhead).exists(bhead => blockIsInChain(ahead, bhead)))
-    }
-
-    val newHeads = subtractHeads(a.heads, b.heads) ++ subtractHeads(b.heads, a.heads)
-
-    Blockchain(newInner, newHeads)
+  given [H, T]: Lattice[Blockchain[H, T]] = {
+    given Lattice[Block[H, T]] = Lattice.assertEquals
+    Lattice.derived
   }
+
 }
