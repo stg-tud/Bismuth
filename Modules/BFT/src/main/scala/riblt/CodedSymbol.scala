@@ -3,7 +3,8 @@ package riblt
 class CodedSymbol[T](
                       var sum: T,
                       var hash: Long,
-                      var count: Long
+                      var count: Long,
+                      var decoded: Boolean = false
                     ):
 
   def add(sourceSymbol: SourceSymbol[T])(using Xorable[T]): CodedSymbol[T] =

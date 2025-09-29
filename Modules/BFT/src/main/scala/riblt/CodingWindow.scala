@@ -2,53 +2,48 @@ package riblt
 
 import riblt.Operation.{Add, Remove}
 
-import scala.collection.mutable
-
-given ord: Ordering[SymbolMapping] = Ordering.by(_.codedIndex)
-
+/**
+ * a CodingWindow is a collection of a source Symbols, that can produce the next coded Symbol based on the these
+ * source symbols
+ * @param symbols
+ * @param nextIndex
+ * @tparam T
+ */
 class CodingWindow[T](
                        var symbols: List[SourceSymbol[T]] = List.empty[SourceSymbol[T]],
-                       var mappings: List[Mapping] = List.empty[Mapping],
-                       var queue: mutable.PriorityQueue[SymbolMapping] = mutable.PriorityQueue()(using ord.reverse),
                        var nextIndex: Int = 0
 ):
 
-  def addSymbol(symbol: T)(using Hashable[T]): Unit =
-    addSourceSymbol(SourceSymbol(symbol, symbol.hash))
+  def addSourceSymbol(symbol: T)(using Hashable[T]): Unit =
+    addSourceSymbol(SourceSymbol(symbol))
 
   def addSourceSymbol(sourceSymbol: SourceSymbol[T]): Unit =
-    addSourceSymbolWithMapping(sourceSymbol, new Mapping(sourceSymbol.hash))
+    symbols = symbols :+ sourceSymbol
 
   def addSourceSymbolWithMapping(sourceSymbol: SourceSymbol[T], mapping: Mapping): Unit =
-    symbols = symbols :+ sourceSymbol
-    mappings = mappings :+ mapping
-    queue.enqueue(SymbolMapping(symbols.length - 1, mapping.lastIndex.toInt))
+    val result = sourceSymbol
+    result.mapping = mapping
+
+    symbols = symbols :+ result
 
   def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
-    assert(queue.nonEmpty, "you have to add source symbols first")
+    assert(symbols.nonEmpty, "you have to add source symbols first")
     applyCodedSymbol(CodedSymbol.identity, Add)
 
   def applyCodedSymbol(codedSymbol: CodedSymbol[T], op: Operation)(using Xorable[T]): CodedSymbol[T] =
-    if queue.isEmpty then {
-      nextIndex += 1
-      codedSymbol
-    } else {
-      var tmp = codedSymbol
+    var result = codedSymbol
 
-      val list = queue.toList
-      for element <- list do {
-        if element.codedIndex == nextIndex then {
-          tmp = op match {
-            case Add    => tmp.add(symbols(element.sourceIndex))
-            case Remove => tmp.remove(symbols(element.sourceIndex))
-          }
-          element.codedIndex = mappings(element.sourceIndex).nextIndex.toInt
-        }
-      }
+    for element <- symbols do
+      if element.mapping.lastIndex == nextIndex then
+        result = op match
+          case Add    => result.add(element)
+          case Remove => result.remove(element)
 
-      nextIndex = nextIndex + 1
-      tmp
-    }
+        element.mapping.nextIndex: Unit
+    
+    nextIndex = nextIndex + 1
+    result
+
 
 enum Operation:
   case Add

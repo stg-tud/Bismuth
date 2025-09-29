@@ -3,7 +3,7 @@ package OpBased.dag
 import scala.collection.immutable.{HashMap, List, Map, Set}
 import java.security.{KeyPair, PublicKey}
 import crypto.Ed25519Util
-import riblt.{CodedSymbol, Decoder, Encoder, given_Hashable_String, given_Xorable_String}
+import riblt.{CodedSymbol, RIBLT, given_Hashable_String, given_Xorable_String}
 
 // a hash directed acyclic graph
 case class HashDAG[T] private (
@@ -14,8 +14,7 @@ case class HashDAG[T] private (
     authorKeys: KeyPair,
     queue: Set[Event[T]] = Set.empty[Event[T]],
     byzantineNodes: Set[PublicKey] = Set.empty,
-    riblt_enc: Encoder[String] = Encoder(),
-    riblt_dec: Decoder[String] = Decoder()
+    riblt: RIBLT[String] = RIBLT()
 ):
 
   // checks if an event is contained in the graph
@@ -61,8 +60,8 @@ case class HashDAG[T] private (
             val e = g.find((e, _) => e.id == d).get._1
             g = g.updated(e, g(e) + event.id)
 
-          this.riblt_enc.addSymbol(event.id)
-          this.riblt_dec.addSymbol(event.id)
+          this.riblt.addSymbol(event.id)
+       
           //this.riblt_enc.restart
 
           HashDAG(
@@ -70,10 +69,10 @@ case class HashDAG[T] private (
             this.authorKeys,
             this.queue - event,
             this.byzantineNodes,
-            this.riblt_enc, this.riblt_dec
+            this.riblt
           )
         else
-          HashDAG(this.graph, this.authorKeys, this.queue + event, this.byzantineNodes, this.riblt_enc, this.riblt_dec)
+          HashDAG(this.graph, this.authorKeys, this.queue + event, this.byzantineNodes, this.riblt)
 
   def addEvent(content: T): HashDAG[T] =
     // generate the event
@@ -128,33 +127,33 @@ case class HashDAG[T] private (
         g = g - event
         g = g + (event.copy(authorIsByzantine = true) -> v)
 
-    HashDAG(g, this.authorKeys, this.queue, this.byzantineNodes + author, this.riblt_enc, this.riblt_dec)
+    HashDAG(g, this.authorKeys, this.queue, this.byzantineNodes + author, this.riblt)
   }
 
   def produceNextCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
     var codedSymbols = List.empty[CodedSymbol[String]]
 
     for (i <- 0 to count)
-      codedSymbols = codedSymbols :+ riblt_enc.produceNextCodedSymbol
+      codedSymbols = codedSymbols :+ riblt.produceNextCodedSymbol
 
     codedSymbols
 
   def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): (HashDAG[T], Boolean) =
-    if riblt_dec.codedSymbols.nonEmpty && riblt_dec.isDecoded then
+    if riblt.codedSymbols.nonEmpty && riblt.isDecoded then
       (this, true)
     else
       for codedSymbol <- codedSymbols do
-        riblt_dec.addCodedSymbol(codedSymbol)
+        riblt.addCodedSymbol(codedSymbol)
 
-      riblt_dec.tryDecode
-      (this.copy(riblt_dec = this.riblt_dec), riblt_dec.isDecoded)
+      riblt.tryDecode
+      (this.copy(riblt = this.riblt), riblt.isDecoded)
 
   def sendDiff: (Set[Event[T]], Set[String]) =
-    if riblt_dec.isDecoded then
-      val ids = riblt_dec.localSymbols.map(s => s.symbol)
+    if riblt.isDecoded then
+      val ids = riblt.localSymbols.map(s => s.symbol)
       (
         graph.filter((k, v) => ids.contains(k.id)).keySet,
-        riblt_dec.remoteSymbols.map(s => s.symbol).toSet
+        riblt.remoteSymbols.map(s => s.symbol).toSet
       )
     else
       (Set.empty, Set.empty)

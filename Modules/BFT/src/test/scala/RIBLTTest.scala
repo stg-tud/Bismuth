@@ -1,6 +1,6 @@
-import riblt.{Decoder, Encoder, given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
+import riblt.{RIBLT, given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Random
 
 class RIBLTTest extends munit.FunSuite:
@@ -9,11 +9,11 @@ class RIBLTTest extends munit.FunSuite:
     val alice = List[Int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     val bob   = List[Int](1, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
-    val enc = Encoder[Int]()
+    val enc = RIBLT[Int]()
     for s <- alice do
       enc.addSymbol(s)
 
-    val dec = Decoder[Int]()
+    val dec = RIBLT[Int]()
     for s <- bob do
       dec.addSymbol(s)
 
@@ -30,9 +30,9 @@ class RIBLTTest extends munit.FunSuite:
     assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.symbol).toSet)
     assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.symbol).toSet)
 
-    // print(s"${dec.remoteSymbols.head.symbol} is exclusive to Alice")
-    // print(s"\n${dec.localSymbols.head.symbol} is exclusive to Bob")
-    // print(s"\n$i coded symbols sent")
+    //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
+    //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
+    //print(s"\n$i coded symbols sent")
   }
 
   test("test riblt with strings") {
@@ -54,11 +54,11 @@ class RIBLTTest extends munit.FunSuite:
           bob = bob :+ i.toString
 
 
-    val enc = Encoder[String]()
+    val enc = RIBLT[String]()
     for s <- alice do
       enc.addSymbol(s)
 
-    val dec = Decoder[String]()
+    val dec = RIBLT[String]()
     for s <- bob do
       dec.addSymbol(s)
 

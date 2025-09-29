@@ -2,17 +2,16 @@ package riblt
 
 import riblt.Operation.{Add, Remove}
 
-class Decoder[T](
+class RIBLT[T](
     var codedSymbols: List[CodedSymbol[T]] = List.empty[CodedSymbol[T]],
     var local: CodingWindow[T] = new CodingWindow[T](),
     var window: CodingWindow[T] = new CodingWindow[T](),
     var remote: CodingWindow[T] = new CodingWindow[T](),
-    var decodable: List[Int] = List.empty[Int],
-    var decoded: Int = 0
+    var decodable: List[CodedSymbol[T]] = List.empty[CodedSymbol[T]],
 ):
 
   def isDecoded: Boolean =
-    decoded == codedSymbols.length
+    codedSymbols.forall(c => c.decoded)
 
   def localSymbols: List[SourceSymbol[T]] =
     local.symbols
@@ -21,7 +20,10 @@ class Decoder[T](
     remote.symbols
 
   def addSymbol(symbol: T)(using Hashable[T]): Unit =
-    window.addSymbol(symbol)
+    window.addSourceSymbol(symbol)
+
+  def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
+    window.produceNextCodedSymbol
 
   def addCodedSymbol(codedSymbol: CodedSymbol[T])(using Xorable[T])(using Hashable[T]): Unit =
     var c = window.applyCodedSymbol(codedSymbol, Remove)
@@ -34,59 +36,50 @@ class Decoder[T](
       c.sum = c.sum.removeTrailingZeros()
 
     if (c.count == 1 || c.count == -1) && (c.hash == c.sum.hash) then
-      decodable = decodable :+ (codedSymbols.length - 1)
+      decodable = decodable :+ c
     else if c.count == 0 && c.hash == 0 then
-      decodable = decodable :+ (codedSymbols.length - 1)
+      decodable = decodable :+ c
 
-  def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): Mapping =
-    val m = new Mapping(sourceSymbol.hash)
-
-    while m.lastIndex.toInt < codedSymbols.length do
-      val i   = m.lastIndex.toInt
+  def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): SourceSymbol[T] =
+    var i = sourceSymbol.mapping.lastIndex.toInt
+    while i < codedSymbols.length do
       val tmp = op match
-        case Add    => codedSymbols(i).add(sourceSymbol)
+        case Add => codedSymbols(i).add(sourceSymbol)
         case Remove => codedSymbols(i).remove(sourceSymbol)
 
       codedSymbols = codedSymbols.updated(i, tmp)
 
       if codedSymbols(i).count == -1 || codedSymbols(i).count == 1 then
         codedSymbols(i).sum = codedSymbols(i).sum.removeTrailingZeros()
+        if codedSymbols(i).hash == codedSymbols(i).sum.hash then
+          decodable = decodable :+ codedSymbols(i)
 
-      if (codedSymbols(i).count == -1 || codedSymbols(i).count == 1) && codedSymbols(i).hash == codedSymbols(i).sum.hash
-      then
-        decodable = decodable :+ i
+      i = sourceSymbol.mapping.nextIndex.toInt
 
-      val q = m.nextIndex
+    sourceSymbol
 
-    m
-
-  def tryDecode(using Hashable[T])(using Xorable[T]): Unit = {
+  def tryDecode(using Hashable[T])(using Xorable[T]): Unit =
     var i = 0
-    while i < decodable.length do {
-      val codedIndex = decodable(i)
-      val c          = codedSymbols(codedIndex)
+    while i < decodable.length do
+      val c = decodable(i)
 
       c.count match
         case 1 =>
-          val newSymbol = SourceSymbol[T](c.sum, c.hash)
-          val m         = applyNewSymbol(newSymbol, Remove)
-          remote.addSourceSymbolWithMapping(newSymbol, m)
-          decoded += 1
+          val newSymbol = applyNewSymbol(SourceSymbol[T](c.sum), Remove)
+          remote.addSourceSymbol(newSymbol)
+          c.decoded = true
         case -1 =>
-          val newSymbol = SourceSymbol[T](c.sum, c.hash)
-          val m         = applyNewSymbol(newSymbol, Add)
-          local.addSourceSymbolWithMapping(newSymbol, m)
-          decoded += 1
+          val newSymbol = applyNewSymbol(SourceSymbol[T](c.sum), Add)
+          local.addSourceSymbol(newSymbol)
+          c.decoded = true
         case 0 =>
-          decoded += 1
+          c.decoded = true
         case _ =>
           throw new Exception("Invalid degree of decodable coded Symbol")
 
       i += 1
-    }
 
-    decodable = List.empty[Int]
+    decodable = List.empty[CodedSymbol[T]]
 
-  }
-  
+
   def restart(): Unit = ???
