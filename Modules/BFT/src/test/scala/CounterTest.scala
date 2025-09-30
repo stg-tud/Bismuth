@@ -1,4 +1,4 @@
-import OpBased.datatypes.Counter
+import OpBased.Counter
 
 class CounterTest extends munit.FunSuite:
 

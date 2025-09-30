@@ -1,5 +1,5 @@
-import OpBased.datatypes.ORSet
 
+import OpBased.ORSet
 import scala.concurrent.duration._
 
 class ORSetTest extends munit.FunSuite:

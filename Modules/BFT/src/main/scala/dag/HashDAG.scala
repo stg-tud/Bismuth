@@ -1,4 +1,4 @@
-package OpBased.dag
+package dag
 
 import scala.collection.immutable.{HashMap, List, Map, Set}
 import java.security.{KeyPair, PublicKey}
@@ -61,7 +61,7 @@ case class HashDAG[T] private (
             g = g.updated(e, g(e) + event.id)
 
           this.riblt.addSymbol(event.id)
-       
+
           //this.riblt_enc.restart
 
           HashDAG(

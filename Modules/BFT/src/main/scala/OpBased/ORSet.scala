@@ -1,11 +1,11 @@
-package OpBased.datatypes
+package OpBased
 
-import OpBased.dag.{Event, HashDAG}
+import OpBased.OpType.{Add, Remove}
+import crypto.Ed25519Util
+import dag.{Event, HashDAG}
+import riblt.CodedSymbol
 
 import scala.collection.immutable.HashMap
-import crypto.Ed25519Util
-import OpType.{Add, Remove}
-import riblt.CodedSymbol
 
 case class ORSet[T] private (
     hashDAG: HashDAG[Op[T]],

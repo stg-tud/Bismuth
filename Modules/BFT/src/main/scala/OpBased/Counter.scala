@@ -1,7 +1,7 @@
-package OpBased.datatypes
+package OpBased
 
-import OpBased.dag.{Event, HashDAG}
 import crypto.Ed25519Util
+import dag.{Event, HashDAG}
 
 /** Op-based CRDT */
 case class Counter private (
