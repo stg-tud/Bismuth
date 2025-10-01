@@ -36,8 +36,8 @@ class RIBLTTest extends munit.FunSuite:
   }
 
   test("test riblt with strings") {
-    var alice = List[String]("a", "b", "c", "d", "e", "f", "g", "h")
-    var bob = List[String]("i", "b", "j", "d", "k", "f", "l", "h")
+    var alice = List[String]()
+    var bob = List[String]()
 
     var j = 0
     for i <- 0 to 10000 do
@@ -67,7 +67,7 @@ class RIBLTTest extends munit.FunSuite:
     while d do
       val s = enc.produceNextCodedSymbol
       i += 1
-      //print(i)
+      //println(i)
       //print("\n")
       dec.addCodedSymbol(s)
       dec.tryDecode
@@ -114,7 +114,7 @@ class RIBLTTest extends munit.FunSuite:
     while d do
       val s = enc.produceNextCodedSymbol
       i += 1
-      println(i)
+      //println(i)
       dec.addCodedSymbol(s)
       dec.tryDecode
       if dec.isDecoded then
