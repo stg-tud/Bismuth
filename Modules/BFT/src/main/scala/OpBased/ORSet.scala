@@ -79,10 +79,10 @@ case class ORSet[T] private (
     this.hashDAG.sendDiff
 
   def receiveDiff(response: Set[Event[Op[T]]], request: Set[String]): (ORSet[T], Set[Event[Op[T]]]) = {
-
+    val res = hashDAG.receiveDiff(response, request)
     (
       receiveEvents(response),
-      hashDAG.graph.filter((k, v) => request.contains(k.id)).keySet
+      res._2
     )
   }
 

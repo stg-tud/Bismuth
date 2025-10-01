@@ -8,7 +8,7 @@ case class Counter private (
     hashDAG: HashDAG[Int]
 ):
   lazy val value: Int = hashDAG.graph.map((k, _) =>
-    k.content match {
+    hashDAG.events(k).content match {
       case Some(c) =>
         if c.isInstanceOf[Int] then c
         else 0
