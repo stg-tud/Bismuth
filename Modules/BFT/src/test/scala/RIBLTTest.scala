@@ -83,3 +83,50 @@ class RIBLTTest extends munit.FunSuite:
     //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
     //print(s"\n$i coded symbols sent")
   }
+
+  test("test riblt with strings 2 ") {
+    var alice = List[String]()
+    var bob = List[String]()
+
+    var j = 0
+    for i <- 0 to 10000 do
+      if i % 2 == 0 then {
+        alice = alice :+ i.toString
+        bob = bob :+ i.toString
+      } else {
+        if i % 3 == 0 then
+          alice = alice :+ i.toString
+        else
+          bob = bob :+ i.toString
+      }
+
+
+    val enc = RIBLT[String]()
+    for s <- alice do
+      enc.addSymbol(s)
+
+    val dec = RIBLT[String]()
+    for s <- bob do
+      dec.addSymbol(s)
+
+    var i = 0
+    var d = true
+    while d do
+      val s = enc.produceNextCodedSymbol
+      i += 1
+      println(i)
+      dec.addCodedSymbol(s)
+      dec.tryDecode
+      if dec.isDecoded then
+        d = false
+
+    //println(s"diff = $j")
+
+    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.symbol).toSet)
+    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.symbol).toSet)
+
+    //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
+    //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
+    //print(s"\n$i coded symbols sent")
+  }
+
