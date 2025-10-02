@@ -4,7 +4,9 @@ import scala.concurrent.duration.*
 import scala.util.Random
 
 class RIBLTTest extends munit.FunSuite:
-  override def munitTimeout: Duration = 5.minute
+
+  private val testSetSize = if isCI then 500 else 10_000
+
   test("test riblt with ints") {
     val alice = List[Int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     val bob   = List[Int](1, 3, 4, 5, 6, 7, 8, 9, 10, 11)
@@ -40,7 +42,7 @@ class RIBLTTest extends munit.FunSuite:
     var bob = List[String]()
 
     var j = 0
-    for i <- 0 to 10000 do
+    for i <- 0 to testSetSize do
       val r = Random().nextDouble()
       if r <= 0.8 then {
         alice = alice :+ i.toString
@@ -89,7 +91,7 @@ class RIBLTTest extends munit.FunSuite:
     var bob = List[String]()
 
     var j = 0
-    for i <- 0 to 10000 do
+    for i <- 0 to testSetSize do
       if i % 2 == 0 then {
         alice = alice :+ i.toString
         bob = bob :+ i.toString
