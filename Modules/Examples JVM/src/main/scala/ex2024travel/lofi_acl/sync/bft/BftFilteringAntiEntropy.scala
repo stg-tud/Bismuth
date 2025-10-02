@@ -1,6 +1,6 @@
 package ex2024travel.lofi_acl.sync.bft
 
-import channels.{ArrayMessageBuffer, MessageBuffer}
+import channels.ArrayMessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
@@ -361,7 +361,7 @@ object BftFilteringAntiEntropy {
     case AclDelta(encodedDelegation: EncodedDelegation)
     case AnnouncePeers(peers: Set[(PublicIdentity, (String, Int))])
     case RequestMissingRdt(rdtDots: Dots)
-    // TODO: Improve anti entropy of ACL with bloom filter based sync
+    // TODO: Improve anti entropy of ACL with bloom filter/riblt based sync
     case RequestMissingAcl(aclVersion: Set[Signature], knownMissing: Set[Signature])
 
   object SyncMsg {

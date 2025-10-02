@@ -11,7 +11,6 @@ import rdts.filters.PermissionTree
 import java.security.PrivateKey
 import java.util.Base64
 import scala.collection.mutable
-import scala.runtime.Arrays
 import scala.util.{Failure, Success, Try}
 
 case class BftAclOpGraph(root: Signature, ops: Map[Signature, Delegation], heads: Set[Signature]) {

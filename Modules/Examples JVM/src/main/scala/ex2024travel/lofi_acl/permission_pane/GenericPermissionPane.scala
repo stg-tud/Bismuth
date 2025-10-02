@@ -6,13 +6,11 @@ import scalafx.Includes.jfxTreeItem2sfx
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.beans.BeanIncludes.jfxObservableValue2sfx
 import scalafx.geometry.Pos.Center
-import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, VBox}
 import scalafx.scene.{Group, Scene}
+import scalafx.scene.control.*
+import scalafx.scene.layout.VBox
 
-class GenericPermissionPane extends GridPane {}
-
-object TreeTableViewExample extends JFXApp3 {
+object GenericPermissionPane {
 
   private def populateTreeItem(rootSelector: ArdtPermissionSelector[?]): TreeItem[PermissionSelectionViewModel] = {
     val model = PermissionSelectionViewModel.fromSelector(rootSelector)
@@ -29,32 +27,8 @@ object TreeTableViewExample extends JFXApp3 {
     root
   }
 
-  override def start(): Unit = {
-    val sceneRoot = Group()
-    val scene     = Scene(sceneRoot) // , 200, 400)
-    Platform.implicitExit = true
-
-    stage = new JFXApp3.PrimaryStage {
-      title = s"Permission Pane"
-      resizable = true
-    }
-    stage.setTitle("Permission Selection")
-
-    val rootSelector = ArdtPermissionSelector(
-      "*",
-      Map(
-        "test" -> ArdtPermissionSelector("test"),
-        "abc"  -> ArdtPermissionSelector(
-          "abc",
-          Map(
-            "*"  -> ArdtPermissionSelector("*", Map("a" -> ArdtPermissionSelector("a"))),
-            "42" -> ArdtPermissionSelector("42", Map("a" -> ArdtPermissionSelector("a"))),
-            "21" -> ArdtPermissionSelector("21", Map("a" -> ArdtPermissionSelector("a"))),
-          ),
-        )
-      )
-    )
-
+  def createTreeTableView[RDT](rootSelector: ArdtPermissionSelector[RDT])
+      : TreeTableView[PermissionSelectionViewModel] = {
     val labelColumn = TreeTableColumn[PermissionSelectionViewModel, String]("Label")
     labelColumn.setPrefWidth(150)
     labelColumn.cellValueFactory = { paneItem => paneItem.value.value.map(_.uiText) }
@@ -88,21 +62,55 @@ object TreeTableViewExample extends JFXApp3 {
     val view = TreeTableView(populateTreeItem(rootSelector))
     view.columns ++= Seq(labelColumn, readPermColumn, writePermColumn)
     view.setShowRoot(true)
-    sceneRoot.getChildren.add(view)
-    stage.scene = scene
-    stage.show()
+
+    view
+  }
+
+  class CustomCheckBoxTreeTableCell(checkBoxSource: PermissionSelectionViewModel => CheckBox)
+      extends jfxsc.TreeTableCell[PermissionSelectionViewModel, PermissionSelectionViewModel] {
+    override def updateItem(viewModel: PermissionSelectionViewModel, empty: Boolean): Unit = {
+      if empty || viewModel == null then {
+        setGraphic(null)
+      } else {
+        val box = VBox(checkBoxSource(viewModel))
+        box.setVisible(viewModel.uiText != "*")
+        box.alignment = Center
+        setGraphic(box)
+      }
+    }
   }
 }
 
-class CustomCheckBoxTreeTableCell(checkBoxSource: PermissionSelectionViewModel => CheckBox)
-    extends jfxsc.TreeTableCell[PermissionSelectionViewModel, PermissionSelectionViewModel] {
-  override def updateItem(viewModel: PermissionSelectionViewModel, empty: Boolean): Unit = {
-    if empty || viewModel == null then {
-      setGraphic(null)
-    } else {
-      val box = VBox(checkBoxSource(viewModel))
-      box.alignment = Center
-      setGraphic(box)
+object TreeTableViewExample extends JFXApp3 {
+
+  override def start(): Unit = {
+    val sceneRoot = Group()
+    val scene     = Scene(sceneRoot)
+    Platform.implicitExit = true
+
+    stage = new JFXApp3.PrimaryStage {
+      title = s"Permission Pane"
+      resizable = true
     }
+    stage.setTitle("Permission Selection")
+    
+    val rootSelector = ArdtPermissionSelector(
+      "",
+      Map(
+        "test" -> ArdtPermissionSelector("test"),
+        "abc"  -> ArdtPermissionSelector(
+          "abc",
+          Map(
+            "*"  -> ArdtPermissionSelector("*", Map("a" -> ArdtPermissionSelector("a"))),
+            "42" -> ArdtPermissionSelector("42", Map("a" -> ArdtPermissionSelector("a"))),
+            "21" -> ArdtPermissionSelector("21", Map("a" -> ArdtPermissionSelector("a"))),
+          ),
+        )
+      )
+    )
+
+    sceneRoot.getChildren.add(GenericPermissionPane.createTreeTableView(rootSelector))
+    stage.scene = scene
+    stage.show()
   }
 }

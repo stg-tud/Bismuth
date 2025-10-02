@@ -5,7 +5,6 @@ import scalafx.scene.control.CheckBox
 
 class PermissionSelectionViewModel private (
     val children: Map[String, PermissionSelectionViewModel],
-    val wildcard: Option[PermissionSelectionViewModel],
     val uiText: String,
     val hardcodedReadSelected: Boolean = false,
     val hardcodedWriteSelected: Boolean = false,
@@ -95,12 +94,8 @@ class PermissionSelectionViewModel private (
 object PermissionSelectionViewModel {
   def fromSelector(selector: ArdtPermissionSelector[?]): PermissionSelectionViewModel = {
     def rec(selector: ArdtPermissionSelector[?]): PermissionSelectionViewModel = {
-      val (wildcard, children) = selector.children.partition(_._2.isWildcard)
-      require(wildcard.size <= 1)
       val model = new PermissionSelectionViewModel(
-        //children.map((label, selector) => label -> rec(selector)),
         selector.children.map((label, selector) => label -> rec(selector)),
-        wildcard.get("*").map(selector => rec(selector)),
         selector.uiText
       )
       model
