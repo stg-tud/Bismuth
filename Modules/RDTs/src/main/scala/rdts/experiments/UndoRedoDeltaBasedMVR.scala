@@ -199,6 +199,8 @@ object UndoRedoDeltaBased {
       headIds = ReplicatedSet.empty,
     )
 
+    def of[T](value: T)(using LocalUid): MVR[T] = empty[T].set(value)
+
     given lattice[T]: Lattice[MVR[T]] = new Lattice[MVR[T]] {
       def merge(left: MVR[T], right: MVR[T]): MVR[T] = {
         val headIds    = left.headIds.merge(right.headIds)

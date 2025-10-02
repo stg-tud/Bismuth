@@ -337,4 +337,81 @@ class UndoRedoDeltaBasedMVRTest extends munit.FunSuite {
     assertEquals(replicaB.redoAnchors, List())
     assertEquals(replicaB.state.values(), List(5))
   }
+
+  // test("drawing example") {
+  //   import rdts.experiments.UndoRedoDeltaBased.MVR
+  //   import rdts.datatypes.ObserveRemoveMap
+
+  //   case class Document(nodes: ObserveRemoveMap[NodeId, Node]) {
+  //     type Delta = Document
+
+  //     def insert(id: NodeId, node: Node)(using LocalUid): Delta = {
+  //       Document(nodes = nodes.update(id, node))
+  //     }
+
+  //     def update(id: NodeId, f: Node => Node)(using LocalUid): Delta = {
+  //       nodes.inner.get(id) match {
+  //         case Some(existing) => Document(nodes = nodes.update(id, f(existing.value)))
+  //         case None           => Document(nodes = ObserveRemoveMap.empty)
+  //       }
+  //     }
+  //   }
+
+  //   object Document {
+  //     given Lattice[Document] = Lattice.derived
+
+  //     def empty: Document = Document(ObserveRemoveMap.empty)
+  //   }
+
+  //   case class NodeId(id: String)
+
+  //   case class Point(x: Float, y: Float)
+  //   case class Size(width: Float, height: Float)
+
+  //   enum Color:
+  //     case Red
+  //     case Green
+  //     case Blue
+
+  //   case class Node(
+  //       position: MVR[Point] = MVR.empty,
+  //       color: MVR[Color] = MVR.empty,
+  //       kind: NodeKind,
+  //   ) {
+  //     def setPosition(p: Point)(using LocalUid): Node = this.copy(position = position.set(p))
+  //     def setColor(c: Color)(using LocalUid): Node    = this.copy(color = color.set(c))
+  //     def setKind(k: NodeKind)(using LocalUid): Node  = this.copy(kind = k)
+  //   }
+
+  //   enum NodeKind:
+  //     case Rectangle(size: MVR[Size])
+  //     case Circle(radius: MVR[Size])
+
+  //   val replica1 = TestReplica(Uid.predefined("R1"), Document.empty)
+  //   val replica2 = TestReplica(Uid.predefined("R2"), Document.empty)
+
+  //   // Insert a rectangle on replica 1
+  //   val delta1 = replica1.mod(_.insert(
+  //     NodeId("n1"),
+  //     Node(MVR.of(Point(0, 0)), MVR.of(Color.Red), NodeKind.Rectangle(MVR.of(Size(100, 100))))
+  //   ))
+  //   replica2.apply(delta1.anon)
+
+  //   // Move the rectangle on replica 1
+  //   val delta2 = replica1.mod(_.update(NodeId("n1"), n => n.setPosition(Point(50, 50))))
+  //   replica2.apply(delta2.anon)
+
+  //   // Change the rectangle color on replica 2
+  //   val delta3 =
+  //     replica2.mod(_.update(NodeId("n1"), n => n.setColor(Color.Green)))
+  //   replica1.apply(delta3.anon)
+
+  //   // Reset the position of the rectangle on replica 1
+  //   val delta4 = replica1.undo()
+  //   replica2.apply(delta4.anon)
+
+  //   // // Reset the color of the rectangle on replica 2
+  //   // val delta5 = replica2.undo()
+  //   // replica1.apply(delta5.anon)
+  // }
 }
