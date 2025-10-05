@@ -52,7 +52,8 @@ lazy val publishedProjects =
 
 lazy val bft = project.in(file("Modules/BFT"))
   .dependsOn(
-    crypto.jvm
+    crypto.jvm,
+    examplesJVM
   )
   .settings(
     scala3defaultsExtra,
