@@ -3,7 +3,8 @@ package dag
 import scala.collection.immutable.{HashMap, List, Map, Set}
 import java.security.{KeyPair, PublicKey}
 import crypto.Ed25519Util
-import riblt.{CodedSymbol, RIBLT, given_Hashable_String, given_Xorable_String}
+import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
+import riblt.{CodedSymbol, RIBLT}
 
 // a hash directed acyclic graph
 case class HashDAG[T] private (
@@ -43,7 +44,7 @@ case class HashDAG[T] private (
 
   private def getCurrentHeadsIDs: Set[String] =
     graph.filter((_, set) => set.isEmpty).keySet
-    
+
   def generator(content: T): Event[T] = {
     val signature       = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
 
@@ -58,7 +59,7 @@ case class HashDAG[T] private (
 
     for event <- delta.events.values do
       result = result.effector(event)
-      
+
     for event <- delta.queue do
       result = result.effector(event)
 
@@ -172,10 +173,10 @@ case class HashDAG[T] private (
 
   def sendDiff: (Set[Event[T]], Set[String]) =
     if riblt.isDecoded then
-      val ids = riblt.localSymbols.map(s => s.symbol)
+      val ids = riblt.localSymbols.map(s => s.value)
       (
         ids.map(id => events(id)).toSet,
-        riblt.remoteSymbols.map(s => s.symbol).toSet
+        riblt.remoteSymbols.map(s => s.value).toSet
       )
     else
       (Set.empty, Set.empty)

@@ -1,6 +1,7 @@
 package riblt
 
 import riblt.Operation.{Add, Remove}
+import scala.util.hashing.MurmurHash3
 
 class RIBLT[T](
     var codedSymbols: List[CodedSymbol[T]] = List.empty[CodedSymbol[T]],
@@ -11,7 +12,7 @@ class RIBLT[T](
 ):
 
   def isDecoded: Boolean =
-    codedSymbols.forall(c => c.decoded)
+    codedSymbols.nonEmpty && codedSymbols.forall(c => c.decoded)
 
   def localSymbols: List[SourceSymbol[T]] =
     local.symbols
@@ -39,6 +40,8 @@ class RIBLT[T](
       decodable = decodable :+ c
     else if c.count == 0 && c.hash == 0 then
       decodable = decodable :+ c
+
+    tryDecode
 
   def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): SourceSymbol[T] =
     var i = sourceSymbol.mapping.lastIndex.toInt
@@ -83,3 +86,75 @@ class RIBLT[T](
 
 
   def restart(): Unit = ???
+
+
+object RIBLT:
+  given Hashable[Int]:
+    extension (a: Int) override def hash: Long =
+      MurmurHash3.stringHash(a.toString)
+
+  given Hashable[Long]:
+    extension (a: Long) override def hash: Long =
+      MurmurHash3.stringHash(a.toString)
+
+  given Hashable[String]:
+    extension (a: String) override def hash: Long =
+      MurmurHash3.stringHash(a)
+
+  given Hashable[Array[Byte]]:
+    extension (a: Array[Byte]) override def hash: Long =
+      MurmurHash3.bytesHash(a)
+
+  given Xorable[Int]:
+    extension (i1: Int) override def xor(i2: Int): Int =
+      i1 ^ i2
+    extension (a: Int) override def removeTrailingZeros(): Int = a
+
+    override def zero: Int = 0
+
+  given Xorable[Long]:
+    extension (i1: Long) override def xor(i2: Long): Long =
+      i1 ^ i2
+    extension (a: Long) override def removeTrailingZeros(): Long = a
+
+    override def zero: Long = 0
+
+  given Xorable[String]:
+    extension (str1: String) override def xor(str2: String): String =
+      val byteArray1 = str1.getBytes
+      val byteArray2 = str2.getBytes
+
+      // Ensure both byte arrays are of the same length
+      val maxLength = math.max(byteArray1.length, byteArray2.length)
+      val paddedByteArray1 = byteArray1.padTo(maxLength, 0.toByte)
+      val paddedByteArray2 = byteArray2.padTo(maxLength, 0.toByte)
+
+      val resultBytes = paddedByteArray1.zip(paddedByteArray2).map { case (b1, b2) => (b1 ^ b2).toByte }
+
+      String(resultBytes)
+
+    extension (a: String) override def removeTrailingZeros(): String =
+      val bytes = a.getBytes
+      val lastNonZeroIndex = bytes.lastIndexWhere(_ != 0)
+      if (lastNonZeroIndex == -1) a
+      else String(bytes.slice(0, lastNonZeroIndex + 1))
+
+    override def zero: String = String(Array.fill(1)(0.toByte))
+
+  given Xorable[Array[Byte]]:
+    extension (b1: Array[Byte]) override def xor(b2: Array[Byte]): Array[Byte] =
+      // Ensure both byte arrays are of the same length
+      val maxLength = math.max(b1.length, b2.length)
+      val paddedByteArray1 = b1.padTo(maxLength, 0.toByte)
+      val paddedByteArray2 = b2.padTo(maxLength, 0.toByte)
+
+      val resultBytes = paddedByteArray1.zip(paddedByteArray2).map { case (b1, b2) => (b1 ^ b2).toByte }
+
+      resultBytes
+
+    extension (b: Array[Byte]) override def removeTrailingZeros(): Array[Byte] =
+      val lastNonZeroIndex = b.lastIndexWhere(_ != 0)
+      if (lastNonZeroIndex == -1) b
+      else b.slice(0, lastNonZeroIndex + 1)
+
+    override def zero: Array[Byte] = Array.fill(1)(0.toByte)

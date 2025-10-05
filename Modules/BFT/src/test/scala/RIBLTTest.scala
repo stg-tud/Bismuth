@@ -1,6 +1,6 @@
-import riblt.{RIBLT, given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
+import riblt.RIBLT
+import riblt.RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
 
-import scala.concurrent.duration.*
 import scala.util.Random
 
 class RIBLTTest extends munit.FunSuite:
@@ -29,8 +29,8 @@ class RIBLTTest extends munit.FunSuite:
       if dec.isDecoded then
         d = false
 
-    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.symbol).toSet)
-    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.symbol).toSet)
+    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.value).toSet)
+    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.value).toSet)
 
     //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
     //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
@@ -78,8 +78,8 @@ class RIBLTTest extends munit.FunSuite:
 
     //println(s"diff = $j")
 
-    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.symbol).toSet)
-    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.symbol).toSet)
+    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.value).toSet)
+    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.value).toSet)
 
     //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
     //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
@@ -124,8 +124,8 @@ class RIBLTTest extends munit.FunSuite:
 
     //println(s"diff = $j")
 
-    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.symbol).toSet)
-    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.symbol).toSet)
+    assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.value).toSet)
+    assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.value).toSet)
 
     //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
     //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")

@@ -18,7 +18,7 @@ class CodedSymbol[T](
     this
 
   def apply(sourceSymbol: SourceSymbol[T])(using Xorable[T]): Unit =
-    sum = sum.xor(sourceSymbol.symbol)
+    sum = sum.xor(sourceSymbol.value)
     hash ^= sourceSymbol.hash
 
 object CodedSymbol:

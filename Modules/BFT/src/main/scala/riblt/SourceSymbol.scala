@@ -1,9 +1,9 @@
 package riblt
 
 class SourceSymbol[T](
-    var symbol: T,
-    var hash: Long,
-    var mapping: Mapping
+                       var value: T,
+                       var hash: Long,
+                       var mapping: Mapping
 )
 
 object SourceSymbol:

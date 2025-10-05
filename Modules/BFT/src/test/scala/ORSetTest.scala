@@ -1,9 +1,6 @@
-
 import OpBased.ORSet
-import scala.concurrent.duration._
 
 class ORSetTest extends munit.FunSuite:
-  override def munitTimeout: Duration = 5.minute
   test("add element to empty set") {
     val setA1           = ORSet[String]()
     val (setA2, event1) = setA1.add("x")
