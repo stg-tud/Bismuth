@@ -3,11 +3,12 @@ package test.rdts.bespoke
 import rdts.experiments.UndoRedoReplica
 import rdts.base.{Uid, LocalUid, Lattice, Bottom}
 
-def createTestReplicas[A](n: Int): Array[UndoRedoReplica[A]] = {
-  (1 to n).map(i => Uid.predefined(s"R$i")).map(uid =>
-    UndoRedoReplica.empty(using LocalUid(uid))
-  ).toArray
-}
+object UndoRedoReplicaTest:
+  def createReplicas[A](n: Int): Array[UndoRedoReplica[A]] = {
+    (1 to n).map(i => Uid.predefined(s"R$i")).map(uid =>
+      UndoRedoReplica.empty(using LocalUid(uid))
+    ).toArray
+  }
 
 class UndoRedoReplicaTest extends munit.FunSuite {
   test("simple undo redo") {
@@ -22,7 +23,7 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       given bottom: Bottom[State] = Bottom.provide(State(value = 0))
     }
 
-    val Array(replica) = createTestReplicas[State](1)
+    val Array(replica) = UndoRedoReplicaTest.createReplicas[State](1)
 
     replica.mod(_.setValue(1))
     assertEquals(replica.state, State(value = 1))
@@ -43,156 +44,239 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     assertEquals(replica.state, State(value = 2))
   }
 
-  test("social media example") {
+  test("drawing example") {
     import rdts.datatypes.{ReplicatedList, GrowOnlyCounter as Counter, LastWriterWins as LWW, ObserveRemoveMap}
 
     type ID = String
 
-    case class SocialMedia(sm: ObserveRemoveMap[ID, SocialPost] = ObserveRemoveMap.empty):
-      def post_views: Map[ID, SocialPostView] =
-        sm.inner.view.mapValues(post => SocialPostView.from(post.value)).toMap
+    case class Document(nodes: ObserveRemoveMap[ID, Node] = ObserveRemoveMap.empty):
+      def node_views: Map[ID, NodeView] =
+        nodes.inner.view.mapValues(post => NodeView.from(post.value)).toMap
 
-      def like(post: ID)(using replicaId: LocalUid): SocialMedia =
-        val increment = sm.inner(post).value.likes.inc()
-        SocialMedia(sm.update(post, SocialPost(likes = increment)))
+      def add(nodeId: ID, node: Node)(using replicaId: LocalUid): Document =
+        Document(nodes.update(nodeId, node))
 
-      def comment(post: ID, text: String)(using replicaId: LocalUid): SocialMedia =
-        val comments = sm.inner(post).value.comments.append(text)
-        SocialMedia(sm.update(post, SocialPost(comments = comments)))
+      def setPosition(nodeId: ID, position: Position)(using replicaId: LocalUid): Document =
+        nodes.get(nodeId) match {
+          case Some(n) => Document(nodes.update(nodeId, n.copy(position = LWW.now(position))))
+          case None    => Document.bottom.empty
+        }
 
-      def post(id: String, text: String)(using replicaId: LocalUid): SocialMedia =
-        SocialMedia(sm.update(id, SocialPost(message = Some(LWW.now(text)))))
+      def setColor(nodeId: ID, color: Color)(using replicaId: LocalUid): Document =
+        nodes.get(nodeId) match {
+          case Some(n) => Document(nodes.update(nodeId, n.copy(color = LWW.now(color))))
+          case None    => Document.bottom.empty
+        }
 
-    case class SocialPost(
-        message: Option[LWW[String]] = None,
-        comments: ReplicatedList[String] = ReplicatedList.empty,
-        likes: Counter = Counter.zero,
-        dislikes: Counter = Counter.zero
+    enum Color:
+      case Red, Green, Blue, Yellow, Black, White
+
+    case class Position(x: Double, y: Double)
+
+    case class Node(
+        position: LWW[Position],
+        color: LWW[Color],
+        kind: LWW[NodeKind]
     )
 
-    case class SocialPostView(
-        message: Option[String] = None,
-        comments: List[String] = List.empty,
-        likes: Int = 0,
-        dislikes: Int = 0
+    enum NodeKind:
+      case Circle(radius: Double)
+      case Rectangle(width: Double, height: Double)
+
+    case class NodeView(
+        position: Position,
+        color: Color,
+        kind: NodeKind
     )
 
-    object SocialPostView {
-      def from(post: SocialPost): SocialPostView =
-        SocialPostView(
-          message = post.message.map(_.value),
-          comments = post.comments.toList,
-          likes = post.likes.value,
-          dislikes = post.dislikes.value
+    object NodeView {
+      def from(node: Node): NodeView =
+        NodeView(
+          position = node.position.value,
+          color = node.color.value,
+          kind = node.kind.value
         )
     }
 
-    object SocialMedia {
-      given lattice: Lattice[SocialMedia] = Lattice.derived
-      given bottom: Bottom[SocialMedia]   = Bottom.derived
+    object Document {
+      given lattice: Lattice[Document] = Lattice.derived
+      given bottom: Bottom[Document]   = Bottom.derived
     }
 
-    object SocialPost {
-      given lattice: Lattice[SocialPost] = Lattice.derived
-      given bottom: Bottom[SocialPost]   = Bottom.derived
+    object Node {
+      given lattice: Lattice[Node] = Lattice.derived
+      given bottom: Bottom[Node]   = Bottom.derived
     }
 
-    val Array(replica1, replica2) = createTestReplicas[SocialMedia](2)
+    object NodeKind {
+      given bottom: Bottom[NodeKind] = Bottom.provide(NodeKind.Rectangle(0.0, 0.0))
+    }
 
-    val post1 = "post1"
-    val post2 = "post2"
+    object Position {
+      given bottom: Bottom[Position] = Bottom.provide(Position(0.0, 0.0))
+    }
 
-    val delta1 = replica1.mod(_.post(post1, "Post from Replica 1!"))
-    val delta2 = replica2.mod(_.post(post2, "Post from Replica 2!"))
+    object Color {
+      given bottom: Bottom[Color] = Bottom.provide(Color.White)
+    }
 
-    assertEquals(replica1.state.post_views, Map(post1 -> SocialPostView(message = Some("Post from Replica 1!"))))
-    assertEquals(replica2.state.post_views, Map(post2 -> SocialPostView(message = Some("Post from Replica 2!"))))
+    val Array(replica1, replica2) = UndoRedoReplicaTest.createReplicas[Document](2)
+
+    val node1 = "node1"
+    val node2 = "node2"
+
+    val delta1 = replica1.mod(_.add(
+      node1,
+      Node(LWW.now(Position(0, 0)), LWW.now(Color.Red), LWW.now(NodeKind.Rectangle(width = 50.0, height = 100.0)))
+    ))
+    val delta2 = replica2.mod(_.add(
+      node2,
+      Node(LWW.now(Position(100, 100)), LWW.now(Color.Blue), LWW.now(NodeKind.Circle(radius = 25.0)))
+    ))
+
+    assertEquals(
+      replica1.state.node_views,
+      Map(node1 -> NodeView(
+        position = Position(0, 0),
+        color = Color.Red,
+        kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+      ))
+    )
+    assertEquals(
+      replica2.state.node_views,
+      Map(node2 -> NodeView(
+        position = Position(100, 100),
+        color = Color.Blue,
+        kind = NodeKind.Circle(radius = 25.0)
+      ))
+    )
 
     replica1.receive(delta2)
     replica2.receive(delta1)
 
     assertEquals(
-      replica1.state.post_views,
+      replica1.state.node_views,
       Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!")),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!"))
+        node1 -> NodeView(
+          position = Position(0, 0),
+          color = Color.Red,
+          kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+        ),
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Blue,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
       )
     )
     assertEquals(
-      replica2.state.post_views,
+      replica2.state.node_views,
       Map(
-        post2 -> SocialPostView(message = Some("Post from Replica 2!")),
-        post1 -> SocialPostView(message = Some("Post from Replica 1!"))
+        node1 -> NodeView(
+          position = Position(0, 0),
+          color = Color.Red,
+          kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+        ),
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Blue,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
       )
     )
 
-    val delta3 = replica1.mod(_.like(post1))
+    val delta3 = replica1.mod(_.setColor(node2, Color.Green))
+    val delta4 = replica2.mod(_.setPosition(node1, Position(50, 50)))
+    replica1.receive(delta4)
     replica2.receive(delta3)
 
     assertEquals(
-      replica1.state.post_views,
+      replica1.state.node_views,
       Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!"), likes = 1),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!"))
+        node1 -> NodeView(
+          position = Position(50, 50),
+          color = Color.Red,
+          kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+        ),
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Green,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
       )
     )
     assertEquals(
-      replica2.state.post_views,
+      replica2.state.node_views,
       Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!"), likes = 1),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!")),
-      )
-    )
-
-    val delta4 = replica1.undo()
-    val delta5 = replica2.mod(_.like(post1))
-
-    assertEquals(
-      replica1.state.post_views,
-      Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!")),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!"))
-      )
-    )
-    assertEquals(
-      replica2.state.post_views,
-      Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!"), likes = 2),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!")),
-      )
-    )
-
-    replica1.receive(delta5)
-    replica2.receive(delta4)
-
-    assertEquals(
-      replica1.state.post_views,
-      Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!"), likes = 1),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!"))
-      )
-    )
-    assertEquals(
-      replica2.state.post_views,
-      Map(
-        post1 -> SocialPostView(message = Some("Post from Replica 1!"), likes = 1),
-        post2 -> SocialPostView(message = Some("Post from Replica 2!")),
+        node1 -> NodeView(
+          position = Position(50, 50),
+          color = Color.Red,
+          kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+        ),
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Green,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
       )
     )
 
-    val delta6 = replica1.undo()
-    replica2.receive(delta6)
+    val delta5 = replica1.undo()
+    val delta6 = replica2.undo()
+    replica1.receive(delta6)
+    replica2.receive(delta5)
 
     assertEquals(
-      replica1.state.post_views,
+      replica1.state.node_views,
       Map(
-        post2 -> SocialPostView(message = Some("Post from Replica 2!"))
+        node1 -> NodeView(
+          position = Position(0, 0),
+          color = Color.Red,
+          kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+        ),
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Blue,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
       )
     )
     assertEquals(
-      replica2.state.post_views,
+      replica2.state.node_views,
       Map(
-        post2 -> SocialPostView(message = Some("Post from Replica 2!")),
+        node1 -> NodeView(
+          position = Position(0, 0),
+          color = Color.Red,
+          kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
+        ),
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Blue,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
+      )
+    )
+
+    val delta7 = replica1.undo()
+    replica2.receive(delta7)
+    assertEquals(
+      replica1.state.node_views,
+      Map(
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Blue,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
+      )
+    )
+    assertEquals(
+      replica2.state.node_views,
+      Map(
+        node2 -> NodeView(
+          position = Position(100, 100),
+          color = Color.Blue,
+          kind = NodeKind.Circle(radius = 25.0)
+        )
       )
     )
   }
