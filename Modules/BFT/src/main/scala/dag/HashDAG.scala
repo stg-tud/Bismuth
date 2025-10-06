@@ -39,10 +39,10 @@ case class HashDAG[T] private (
     graph(id).nonEmpty
 
   // returns the current forward extremities (aka Heads)
-  private def getCurrentHeads: Set[Event[T]] =
+  def getCurrentHeads: Set[Event[T]] =
     getCurrentHeadsIDs.map(id => events(id))
 
-  private def getCurrentHeadsIDs: Set[String] =
+  def getCurrentHeadsIDs: Set[String] =
     graph.filter((_, set) => set.isEmpty).keySet
 
   def generator(content: T): Event[T] = {
