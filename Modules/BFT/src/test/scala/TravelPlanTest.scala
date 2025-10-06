@@ -3,20 +3,26 @@ import rdts.base.{LocalUid, Uid}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_Array, given_Xorable_Array}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+import scala.util.Random
 
 class TravelPlanTest extends munit.FunSuite:
 
-  test("Synchronise TravelPlan's deltas using RIBLT") {
-    type Delta = TravelPlan
+  type Delta = TravelPlan
+  private val replica1Uid = LocalUid(Uid("replica 1"))
+  private val replica2Uid = LocalUid(Uid("replica 2"))
+  private val replica3Uid = LocalUid(Uid("replica 3"))
+  private val testSetSize = if isCI then 500 else 10_000
+
+  test("Example 1: Synchronise TravelPlan's deltas using RIBLT") {
 
     // create the first replica and add merge it with 3 deltas
     // Replica1 = (delta1, delta2, delta3)
     var replica1 = TravelPlan.empty
-    val delta1 = replica1.addBucketListEntry("entry 1")(using LocalUid(Uid("replica 1")))
+    val delta1 = replica1.addBucketListEntry("entry 1")(using replica1Uid)
     replica1 = replica1.merge(delta1)
-    val delta2 = replica1.addBucketListEntry("entry 2")(using LocalUid(Uid("replica 1")))
+    val delta2 = replica1.addBucketListEntry("entry 2")(using replica1Uid)
     replica1 = replica1.merge(delta2)
-    val delta3 = replica1.addBucketListEntry("entry 3")(using LocalUid(Uid("replica 1")))
+    val delta3 = replica1.addBucketListEntry("entry 3")(using replica1Uid)
     replica1 = replica1.merge(delta3)
 
     // create the second replica and merge it with 3 deltas, 2 of those deltas (delta1 & delta2) are the same deltas
@@ -26,7 +32,7 @@ class TravelPlanTest extends munit.FunSuite:
     var replica2 = TravelPlan.empty
     replica2 = replica2.merge(delta1)
     replica2 = replica2.merge(delta2)
-    val delta4 = replica2.addBucketListEntry("entry 4")(using LocalUid(Uid("replica 2")))
+    val delta4 = replica2.addBucketListEntry("entry 4")(using replica2Uid)
     replica2 = replica2.merge(delta4)
 
     val lstDelta1 = List[Delta](delta1, delta2, delta3)  // deltas already merged to replica1
@@ -71,41 +77,66 @@ class TravelPlanTest extends munit.FunSuite:
 
     assertEquals(replica1, replica2)
 
-    /*given Hashable[Delta]:
-      extension (d: Delta) override def hash: Long =
-        MurmurHash3.stringHash(s"${d.hashCode()}${d.bucketList.hashCode()}${d.expenses.hashCode()}")
+  }
 
+  test("Example 2: Synchronise TravelPlan's deltas using RIBLT") {
+    /**
+     * Same as the above test, only with a lot more deltas
+     */
 
-    given Xorable[Delta]:
-      extension (d1: Delta) override def xor(d2: Delta): Delta =
-        TravelPlan(
-          title = d1.title.xor(d2.title),
-          bucketList = d1.bucketList.xor(d2.bucketList),
-          expenses = d1.expenses.xor(d2.expenses)
-        )
+    var replica1 = TravelPlan.empty
+    var replica2 = TravelPlan.empty
+    var lstDelta1 = List[Delta]()
+    var lstDelta2 = List[Delta]()
 
-      extension (a: Delta) override def removeTrailingZeros(): Delta = a
+    var j = 0
+    for i <- 0 to testSetSize do
+      val r = Random().nextDouble()
+      if r <= 0.8 then {
+        val d = TravelPlan.empty.addBucketListEntry(i.toString)(using if r <= 0.4 then replica1Uid else replica2Uid)
+        lstDelta1 = lstDelta1 :+ d
+        lstDelta2 = lstDelta2 :+ d
+        replica1 = replica1.merge(d)
+        replica2 = replica2.merge(d)
+      } else {
+        j += 1
+        val d = TravelPlan.empty.addBucketListEntry(i.toString)(using replica3Uid)
+        if r <= 0.9 then {
+          lstDelta1 = lstDelta1 :+ d
+          replica1 = replica1.merge(d)
+        } else {
+          lstDelta2 = lstDelta2 :+ d
+          replica2 = replica2.merge(d)
+        }
 
-      override def zero: Delta = TravelPlan.empty
+      }
 
-    given Xorable[LastWriterWins[String]]:
-      extension (lww1: LastWriterWins[String]) override def xor(lww2: LastWriterWins[String]): LastWriterWins[String] =
-        LastWriterWins[String](
-          timestamp = CausalTime(
-            time = lww1.timestamp.time.xor(lww2.timestamp.time),
-            causal = lww1.timestamp.causal.xor(lww2.timestamp.causal),
-            random = lww1.timestamp.random.xor(lww2.timestamp.random)
-          ),
-          payload = lww1.payload.xor(lww2.payload)
-        )
+    val ribltReplica1 = RIBLT[Array[Byte]]()
+    val ribltReplica2 = RIBLT[Array[Byte]]()
 
-      extension (a: LastWriterWins[String]) override def removeTrailingZeros(): LastWriterWins[String] = a
+    for (item <- lstDelta1)
+      ribltReplica1.addSymbol(writeToArray(item))
 
-      override def zero: LastWriterWins[String] = LastWriterWins.empty[String]
+    for (item <- lstDelta2)
+      ribltReplica2.addSymbol(writeToArray(item))
 
-    given Xorable[ObserveRemoveMap[UniqueId, LastWriterWins[String]]]:*/
+    var i = 0
+    while !ribltReplica2.isDecoded do
+      ribltReplica2.addCodedSymbol(ribltReplica1.produceNextCodedSymbol)
+      i += 1
 
+    for (d <- ribltReplica2.localSymbols) {
+      val delta = readFromArray[Delta](d.value)
+      println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
+      replica1 = replica1.merge(delta)
+    }
 
+    for (d <- ribltReplica2.remoteSymbols)
+      val delta = readFromArray[Delta](d.value)
+      println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
+      replica2 = replica2.merge(delta)
+
+    assertEquals(replica1, replica2)
 
   }
 
