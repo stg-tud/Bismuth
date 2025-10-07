@@ -1,8 +1,10 @@
+import bfttravelplanner.BFTTravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_Array, given_Xorable_Array}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+
 import scala.util.Random
 
 class TravelPlanTest extends munit.FunSuite:
@@ -137,6 +139,31 @@ class TravelPlanTest extends munit.FunSuite:
       replica2 = replica2.merge(delta)
 
     assertEquals(replica1, replica2)
+
+  }
+
+  test("TravelPlan + HashDAG + RIBLT") {
+
+    var r1 = BFTTravelPlan()
+    r1 = r1.merge(r1.addBucketListEntry("entry 1")(using replica1Uid))
+    r1 = r1.merge(r1.addBucketListEntry("entry 3")(using replica1Uid))
+
+    var r2 = BFTTravelPlan()
+    r2 = r2.merge(r2.addBucketListEntry("entry 1")(using replica2Uid))
+    r2 = r2.merge(r2.addBucketListEntry("entry 2")(using replica2Uid))
+
+    while !r1.syncDone do
+      r1.receiveCodedSymbols(r2.sendCodedSymbols())
+
+    val syncReq = r1.sendSyncRequest
+    val response = r2.receiveSyncRequest(syncReq)
+    r2 = response._1
+    r1 = r1.mergeEevents(response._2)
+
+    println(r1.state.bucketList.queryAllEntries.map(lww => lww.payload))
+
+    assertEquals(r1.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet,
+      r2.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet)
 
   }
 

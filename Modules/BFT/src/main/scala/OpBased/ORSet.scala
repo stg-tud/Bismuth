@@ -2,7 +2,7 @@ package OpBased
 
 import OpBased.OpType.{Add, Remove}
 import crypto.Ed25519Util
-import dag.{Event, HashDAG}
+import dag.{Event, HashDAG, SyncRequest}
 import riblt.CodedSymbol
 
 import scala.collection.immutable.HashMap
@@ -65,24 +65,18 @@ case class ORSet[T] private (
     Set.from(elements.filter((k, v) => v.nonEmpty).map((k, v) => k))
 
   def produceNextCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
-    this.hashDAG.produceNextCodedSymbols(count)
+    this.hashDAG.sendCodedSymbols(count)
 
-  def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): (ORSet[T], Boolean) =
-    val res = this.hashDAG.addCodedSymbols(codedSymbols)
+  def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): ORSet[T] =
+    this.copy(hashDAG = this.hashDAG.receiveCodedSymbols(codedSymbols))
+
+  def sendSyncRequest: SyncRequest[Op[T]] =
+    this.hashDAG.sendSyncRequest
+
+  def receiveSyncRequest(syncRequest: SyncRequest[Op[T]]): (ORSet[T], Set[Event[Op[T]]]) = {
     (
-      this.copy(hashDAG = res._1),
-      res._2
-    )
-
-
-  def sendDiff: (Set[Event[Op[T]]], Set[String]) =
-    this.hashDAG.sendDiff
-
-  def receiveDiff(response: Set[Event[Op[T]]], request: Set[String]): (ORSet[T], Set[Event[Op[T]]]) = {
-    val res = hashDAG.receiveDiff(response, request)
-    (
-      receiveEvents(response),
-      res._2
+      receiveEvents(syncRequest.events),
+      syncRequest.requestedEvents.map(id => hashDAG.events(id))
     )
   }
 

@@ -128,14 +128,13 @@ class ORSetTest extends munit.FunSuite:
 
     //val setB4 = setB3.decRestart()
     val c = setA3.produceNextCodedSymbols()
-    var (setB4, isDecoded) = setB3.addCodedSymbols(c)
-    while !isDecoded do
-      val res = setB4.addCodedSymbols(setA3.produceNextCodedSymbols())
-      setB4 = res._1
-      isDecoded = res._2
+    var setB4 = setB3.addCodedSymbols(c)
+    while !setB4.hashDAG.riblt.isDecoded do
+      setB4 = setB4.addCodedSymbols(setA3.produceNextCodedSymbols())
+      
 
-    val diff = setB4.sendDiff
-    val (setA4, response) = setA3.receiveDiff(diff._1, diff._2)
+    val synReq = setB4.sendSyncRequest
+    val (setA4, response) = setA3.receiveSyncRequest(synReq)
     val setB5 = setB4.receiveEvents(response)
 
     val setB6 = setB5.processQueue

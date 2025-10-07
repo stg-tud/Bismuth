@@ -51,9 +51,6 @@ case class HashDAG[T] private (
     Event(Some(content), authorKeys.getPublic, getCurrentHeadsIDs, signature)
   }
 
-  def generateDelta(content: T): HashDAG[T] =
-    HashDAG.apply[T](this.authorKeys).addEvent(content)
-
   def merge(delta: HashDAG[T]): HashDAG[T] =
     var result = this
 
@@ -105,6 +102,14 @@ case class HashDAG[T] private (
     // apply the event
     effector(event)
 
+  def addDelta(content: T): HashDAG[T] =
+    // generate the event
+    val currentHeads = getCurrentHeads
+    val event = generator(content)
+
+    // apply the event
+    HashDAG(this.authorKeys).effector(event)
+
   def processQueue(): HashDAG[T] =
     var hashDAG = this
     var events  = Set.empty[Event[T]]
@@ -153,7 +158,7 @@ case class HashDAG[T] private (
     this.copy(events = e, byzantineNodes = this.byzantineNodes + author)
   }
 
-  def produceNextCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
+  def sendCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
     var codedSymbols = List.empty[CodedSymbol[String]]
 
     for (i <- 0 to count)
@@ -161,39 +166,42 @@ case class HashDAG[T] private (
 
     codedSymbols
 
-  def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): (HashDAG[T], Boolean) =
+  def receiveCodedSymbols(codedSymbols: List[CodedSymbol[String]]): HashDAG[T] =
     if riblt.codedSymbols.nonEmpty && riblt.isDecoded then
-      (this, true)
+      this
     else
       for codedSymbol <- codedSymbols do
         riblt.addCodedSymbol(codedSymbol)
 
-      riblt.tryDecode
-      (this.copy(riblt = this.riblt), riblt.isDecoded)
+      this.copy(riblt = this.riblt)
 
-  def sendDiff: (Set[Event[T]], Set[String]) =
+  def sendSyncRequest: SyncRequest[T] =
     if riblt.isDecoded then
       val ids = riblt.localSymbols.map(s => s.value)
-      (
+      
+      SyncRequest(
         ids.map(id => events(id)).toSet,
         riblt.remoteSymbols.map(s => s.value).toSet
       )
     else
-      (Set.empty, Set.empty)
+      SyncRequest(Set.empty, Set.empty)
 
-  def receiveDiff(response: Set[Event[T]], request: Set[String]): (HashDAG[T], Set[Event[T]]) =
+  def receiveSyncRequest(syncRequest: SyncRequest[T]): (HashDAG[T], Set[Event[T]]) =
     var tmp = this
 
-    for e <- response do
+    for e <- syncRequest.events do
       tmp = tmp.effector(e)
 
     (
       tmp,
-      request.map(id => events(id))
+      syncRequest.requestedEvents.map(id => events(id))
     )
 
   def resetRiblt: HashDAG[T] =
     this.copy(riblt = RIBLT[String]())
+    
+  def empty: HashDAG[T] =
+    HashDAG(this.authorKeys)
 
 
 object HashDAG:
@@ -202,3 +210,6 @@ object HashDAG:
     val root  = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
 
     new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), authorKeys)
+    
+    
+case class SyncRequest[T](events: Set[Event[T]], requestedEvents: Set[String])
