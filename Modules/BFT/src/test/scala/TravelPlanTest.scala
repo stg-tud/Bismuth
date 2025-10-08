@@ -146,11 +146,15 @@ class TravelPlanTest extends munit.FunSuite:
 
     var r1 = BFTTravelPlan()
     r1 = r1.merge(r1.addBucketListEntry("entry 1")(using replica1Uid))
-    r1 = r1.merge(r1.addBucketListEntry("entry 3")(using replica1Uid))
+    r1 = r1.merge(r1.addBucketListEntry("entry 11")(using replica1Uid))
+
+    println(r1.state.bucketList.queryAllEntries)
 
     var r2 = BFTTravelPlan()
-    r2 = r2.merge(r2.addBucketListEntry("entry 1")(using replica2Uid))
     r2 = r2.merge(r2.addBucketListEntry("entry 2")(using replica2Uid))
+    r2 = r2.merge(r2.addBucketListEntry("entry 22")(using replica2Uid))
+
+    println(r2.state.bucketList.queryAllEntries)
 
     while !r1.syncDone do
       r1.receiveCodedSymbols(r2.sendCodedSymbols())
@@ -160,7 +164,11 @@ class TravelPlanTest extends munit.FunSuite:
     r2 = response._1
     r1 = r1.mergeEevents(response._2)
 
+    r1 = r1.processQueue
+    r2 = r2.processQueue
+
     println(r1.state.bucketList.queryAllEntries.map(lww => lww.payload))
+    println(r2.state.bucketList.queryAllEntries.map(lww => lww.payload))
 
     assertEquals(r1.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet,
       r2.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet)
