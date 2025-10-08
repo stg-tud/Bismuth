@@ -20,15 +20,12 @@ case class UndoRedoReplica[A](
   }
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
-    given LocalUid = id
-    applyLocal(f(state))
+    applyLocal(f(using id)(state))
     UndoRedoReplica(deltas = deltas, removed = removed)
   }
 
   def undo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
-    given LocalUid = id
-
-    if undoStack.isEmpty then return UndoRedoReplica.empty[A]
+    if undoStack.isEmpty then return UndoRedoReplica.empty[A](using id)
 
     val lastDot = undoStack.head
     undoStack = undoStack.tail
@@ -39,9 +36,7 @@ case class UndoRedoReplica[A](
   }
 
   def redo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
-    given LocalUid = id
-
-    if redoStack.isEmpty then return UndoRedoReplica.empty[A]
+    if redoStack.isEmpty then return UndoRedoReplica.empty[A](using id)
 
     val dot = redoStack.head
 
