@@ -16,7 +16,7 @@ case class UndoRedoReplica[A](
 
   def receive(other: UndoRedoReplica[A]) = {
     deltas = deltas.union(other.deltas)
-    removed = removed `merge` other.removed
+    removed = removed.union(other.removed)
   }
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
