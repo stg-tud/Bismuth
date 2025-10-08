@@ -42,7 +42,7 @@ case class BFTTravelPlan(state: TravelPlan, causalContext: HashDAG[TravelPlan]):
     // BFTTravelPlan(this.state.merge(other.state), this.causalContext.merge(other.causalContext))
     val newCausalContext = this.causalContext.merge(other.causalContext)
     var state = this.state
-    for event <- (other.causalContext.events.values ++ other.causalContext.queue) do
+    for event <- other.causalContext.events.values ++ other.causalContext.queue do
       val delta = event.content
       if newCausalContext.contains(event) && delta.nonEmpty then
         state = state.merge(delta.get)
@@ -68,7 +68,7 @@ case class BFTTravelPlan(state: TravelPlan, causalContext: HashDAG[TravelPlan]):
       i = 0
       val q = newCausalContext.queue
       newCausalContext = newCausalContext.processQueue()
-      for event <- (q -- newCausalContext.queue) do {
+      for event <- q -- newCausalContext.queue do {
         if event.content.nonEmpty then
           i = i + 0
           newState = newState.merge(event.content.get)
