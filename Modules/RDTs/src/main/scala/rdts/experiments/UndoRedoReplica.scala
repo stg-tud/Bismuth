@@ -6,7 +6,7 @@ import rdts.base.Lattice
 import rdts.base.Bottom
 
 case class UndoRedoReplica[A](
-    private var deltas: Set[UndoRedoReplica.Delta[A]] = Set.empty,
+    private var deltas: Set[UndoRedoReplica.ElementDelta[A]] = Set.empty,
     private var removed: Dots = Dots.empty,
     private var nextLocalDot: Dot = Dot.zero,
     private var undoStack: List[Dot] = List.empty,
@@ -14,44 +14,53 @@ case class UndoRedoReplica[A](
 ) {
   def id: LocalUid = LocalUid(nextLocalDot.place)
 
-  def receive(other: UndoRedoReplica[A]) = {
+  def receive(other: UndoRedoReplica.Delta[A]) = {
     deltas = deltas.union(other.deltas)
     removed = removed.union(other.removed)
   }
 
-  def mod(f: LocalUid ?=> A => A)(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
-    applyLocal(f(using id)(state))
-    UndoRedoReplica(deltas = deltas, removed = removed)
+  def mod(f: LocalUid ?=> A => A)(using Lattice[A])(using Bottom[A]): UndoRedoReplica.Delta[A] = {
+    val delta = f(using id)(state)
+    val dot   = nextLocalDot
+
+    val operationDelta = UndoRedoReplica.ElementDelta(dot, delta)
+    deltas = deltas + operationDelta
+    undoStack = dot :: undoStack
+    redoStack = List.empty
+
+    nextLocalDot = nextLocalDot.advance
+
+    UndoRedoReplica.Delta(deltas = Set(operationDelta), removed = Dots.empty)
   }
 
-  def undo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
-    if undoStack.isEmpty then return UndoRedoReplica.empty[A](using id)
+  def undo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica.Delta[A] = {
+    if undoStack.isEmpty then return UndoRedoReplica.Delta.empty
 
     val lastDot = undoStack.head
     undoStack = undoStack.tail
     redoStack = lastDot :: redoStack
     removed = removed.add(lastDot)
 
-    UndoRedoReplica(deltas = deltas, removed = removed)
+    UndoRedoReplica.Delta.removed(lastDot)
   }
 
-  def redo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
-    if redoStack.isEmpty then return UndoRedoReplica.empty[A](using id)
+  def redo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica.Delta[A] = {
+    if redoStack.isEmpty then return UndoRedoReplica.Delta.empty
 
     val dot = redoStack.head
 
     deltas.find(_.dot == dot) match
       case Some(value) => {
-        val dot = nextLocalDot
-        deltas = deltas + UndoRedoReplica.Delta(dot, value.delta)
+        val dot   = nextLocalDot
+        val delta = UndoRedoReplica.ElementDelta(dot, value.delta)
+        deltas = deltas + delta
         undoStack = dot :: undoStack
         redoStack = redoStack.tail
         nextLocalDot = nextLocalDot.advance
+        UndoRedoReplica.Delta.added(delta)
       }
       case None =>
         throw new Exception(s"Redo stack contains unknown operation ${dot}")
-
-    UndoRedoReplica(deltas = deltas, removed = removed)
   }
 
   def state(using Lattice[A])(using Bottom[A]) = {
@@ -60,27 +69,25 @@ case class UndoRedoReplica[A](
       .map(_.delta)
       .foldLeft(Bottom.empty[A])(Lattice.merge)
   }
-
-  private def applyLocal(delta: A) = {
-    val dot = nextLocalDot
-
-    deltas = deltas + UndoRedoReplica.Delta(dot, delta)
-    undoStack = dot :: undoStack
-    redoStack = List.empty
-
-    nextLocalDot = nextLocalDot.advance
-  }
 }
 
 object UndoRedoReplica {
-  case class Delta[A](dot: Dot, delta: A)
+  case class ElementDelta[A](dot: Dot, delta: A)
+
+  case class Delta[A](deltas: Set[ElementDelta[A]], removed: Dots)
+
+  object Delta {
+    def empty[A]: Delta[A]                         = Delta(deltas = Set.empty, removed = Dots.empty)
+    def added[A](delta: ElementDelta[A]): Delta[A] = Delta(deltas = Set(delta), removed = Dots.empty)
+    def removed[A](dot: Dot): Delta[A]             = Delta(deltas = Set.empty, removed = Dots.single(dot))
+  }
 
   def empty[A](using LocalUid): UndoRedoReplica[A] =
-    UndoRedoReplica[A](deltas = Set.empty[UndoRedoReplica.Delta[A]], nextLocalDot = Dot(LocalUid.replicaId, 0))
+    UndoRedoReplica[A](deltas = Set.empty[UndoRedoReplica.ElementDelta[A]], nextLocalDot = Dot(LocalUid.replicaId, 0))
 
   def of[A](state: A)(using LocalUid): UndoRedoReplica[A] =
     UndoRedoReplica(
-      deltas = Set(Delta(Dot(LocalUid.replicaId, 0), state)),
+      deltas = Set(ElementDelta(Dot(LocalUid.replicaId, 0), state)),
       nextLocalDot = Dot(LocalUid.replicaId, 1),
     )
 }
