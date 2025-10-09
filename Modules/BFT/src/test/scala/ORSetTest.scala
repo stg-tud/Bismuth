@@ -1,4 +1,4 @@
-import OpBased.ORSet
+import datatypes.ORSet
 
 class ORSetTest extends munit.FunSuite:
   test("add element to empty set") {

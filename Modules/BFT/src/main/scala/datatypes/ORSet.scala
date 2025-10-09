@@ -1,6 +1,6 @@
-package OpBased
+package datatypes
 
-import OpBased.OpType.{Add, Remove}
+import datatypes.OpType.{Add, Remove}
 import crypto.Ed25519Util
 import dag.{Event, HashDAG, SyncRequest}
 import riblt.CodedSymbol

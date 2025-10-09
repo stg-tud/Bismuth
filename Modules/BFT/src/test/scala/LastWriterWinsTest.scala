@@ -1,4 +1,4 @@
-import OpBased.LastWriterWins
+import datatypes.LastWriterWins
 
 class LastWriterWinsTest extends munit.FunSuite:
 

@@ -1,4 +1,4 @@
-package OpBased
+package datatypes
 
 import crypto.Ed25519Util
 import dag.{Event, HashDAG}
