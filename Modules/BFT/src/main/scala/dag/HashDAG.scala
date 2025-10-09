@@ -56,10 +56,17 @@ case class HashDAG[T] private (
 
     for event <- delta.events.values do
       result = result.effector(event)
-
+    
     for event <- delta.queue do
       result = result.effector(event)
-
+    
+    var i = result.queue.size
+    while i != 0 do 
+      i = 0
+      for event <- result.queue do
+        result = result.effector(event)
+        if result.contains(event) then i += 1
+    
     result
 
 
@@ -102,13 +109,13 @@ case class HashDAG[T] private (
     // apply the event
     effector(event)
 
-  def addDelta(content: T): HashDAG[T] =
+  def getDelta(content: T): HashDAG[T] =
     // generate the event
     val currentHeads = getCurrentHeads
     val event = generator(content)
 
     // apply the event
-    HashDAG(this.authorKeys).effector(event)
+    this.empty.effector(event)
 
   def processQueue(): HashDAG[T] =
     var hashDAG = this

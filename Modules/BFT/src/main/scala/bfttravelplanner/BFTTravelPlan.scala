@@ -11,32 +11,32 @@ type Delta = BFTTravelPlan
 case class BFTTravelPlan(state: TravelPlan, causalContext: HashDAG[TravelPlan]):
   def changeTitle(newTitle: String): Delta = {
     val delta = state.changeTitle(newTitle)
-    BFTTravelPlan(delta, causalContext.empty.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.empty.getDelta(delta))
   }
 
   def addBucketListEntry(text: String)(using localUid: LocalUid): Delta =
     val delta = state.addBucketListEntry(text)
-    BFTTravelPlan(delta, causalContext.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.getDelta(delta))
 
   def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta =
     val delta = state.setBucketListEntryText(bucketListId, text)
-    BFTTravelPlan(delta, causalContext.empty.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.empty.getDelta(delta))
 
   def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta =
     val delta = state.addExpense(description, amount)
-    BFTTravelPlan(delta, causalContext.empty.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.empty.getDelta(delta))
 
   def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta =
     val delta = state.setExpenseAmount(expenseId, amount)
-    BFTTravelPlan(delta, causalContext.empty.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.empty.getDelta(delta))
 
   def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta =
     val delta = state.setExpenseDescription(expenseId, description)
-    BFTTravelPlan(delta, causalContext.empty.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.empty.getDelta(delta))
 
   def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta =
     val delta = state.setExpenseComment(expenseId, comment)
-    BFTTravelPlan(delta, causalContext.empty.addDelta(delta))
+    BFTTravelPlan(delta, causalContext.empty.getDelta(delta))
 
   def merge(other: BFTTravelPlan): BFTTravelPlan =
     // BFTTravelPlan(this.state.merge(other.state), this.causalContext.merge(other.causalContext))
