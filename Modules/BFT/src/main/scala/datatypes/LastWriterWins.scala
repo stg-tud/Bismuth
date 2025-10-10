@@ -10,7 +10,7 @@ case class LastWriterWins[T] (
                              ):
 
   def write(value: T): LastWriterWins[T] =
-    LastWriterWins(state.getDelta(value))
+    LastWriterWins(state.generateDelta(value))
 
   def read: Option[T] =
     val heads = state.getCurrentHeads

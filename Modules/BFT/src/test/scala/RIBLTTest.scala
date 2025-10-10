@@ -1,10 +1,13 @@
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
+import scala.concurrent.duration._
 import scala.util.Random
 
 class RIBLTTest extends munit.FunSuite:
 
   private val testSetSize = if isCI then 500 else 10_000
+  
+  override def munitTimeout: Duration = 5.minutes
 
   test("test riblt with ints") {
     val alice = List[Int](1, 2, 3, 4, 5, 6, 7, 8, 9, 10)

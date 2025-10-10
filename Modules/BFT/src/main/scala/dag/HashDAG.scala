@@ -109,7 +109,7 @@ case class HashDAG[T] private (
     // apply the event
     effector(event)
 
-  def getDelta(content: T): HashDAG[T] =
+  def generateDelta(content: T): HashDAG[T] =
     // generate the event
     val currentHeads = getCurrentHeads
     val event = generator(content)
