@@ -2,146 +2,129 @@ import datatypes.ORSet
 
 class ORSetTest extends munit.FunSuite:
   test("add element to empty set") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
+    var set = ORSet[String]()
+    set     = set.merge(set.add("x"))
 
-    assertEquals(setA2.getElements, Set("x"))
+    assertEquals(set.getElements, Set("x"))
   }
 
   test("remove element from empty set") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.remove("x")
+    var set = ORSet[String]()
+    set     = set.merge(set.remove("x"))
 
-    assertEquals(setA2.getElements, Set.empty)
+    assertEquals(set.getElements, Set.empty)
   }
 
   test("remove existing element") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
+    var set = ORSet[String]()
+    set     = set.merge(set.add("x"))
+    set     = set.merge(set.remove("x"))
 
-    val (setA3, event2) = setA1.remove("x")
-
-    assertEquals(setA3.getElements, Set.empty)
+    assertEquals(set.getElements, Set.empty)
   }
 
   test("synchronise 2 sets: example 1") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
-    val (setA3, event2) = setA2.remove("y")
+    var set1 = ORSet[String]()
+    set1     = set1.merge(set1.add("x"))
+    set1     = set1.merge(set1.remove("y"))
 
-    val setB1           = ORSet[String]()
-    val (setB2, event3) = setB1.add("y")
-    val (setB3, event4) = setB2.remove("x")
+    var set2 = ORSet[String]()
+    set2     = set2.merge(set2.add("y"))
+    set2     = set2.merge(set2.remove("x"))
 
-    val setA4 = setA3.receiveEvent(event3)
-    val setA5 = setA4.receiveEvent(event4)
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setB4 = setB3.receiveEvent(event1)
-    val setB5 = setB4.receiveEvent(event2)
-
-    assertEquals(setA5.getElements, Set("x", "y"))
-    assertEquals(setA5.getElements, setB5.getElements)
+    assertEquals(set1.getElements, Set("x", "y"))
+    assertEquals(set1.getElements, set2.getElements)
   }
 
   test("synchronise 2 sets: example 2") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
-    val (setA3, event2) = setA2.remove("y")
+    var set1 = ORSet[String]()
+    set1     = set1.merge(set1.add("x"))
+    set1     = set1.merge(set1.remove("y"))
 
-    val setB1           = ORSet[String]()
-    val (setB2, event3) = setB1.add("y")
-    val (setB3, event4) = setB2.remove("x")
+    var set2 = ORSet[String]()
+    set2     = set2.merge(set2.add("y"))
+    set2     = set2.merge(set2.remove("x"))
 
-    val setA4 = setA3.receiveEvent(event3)
-    val setA5 = setA4.receiveEvent(event4)
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setB4 = setB3.receiveEvent(event1)
-    val setB5 = setB4.receiveEvent(event2)
+    set1 = set1.merge(set1.remove("y"))
+    set2 = set2.merge(set2.remove("x"))
 
-    val (setA6, event5) = setA5.remove("y")
-    val (setB6, event6) = setB5.remove("x")
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setA7 = setA6.receiveEvent(event6)
-    val setB7 = setB6.receiveEvent(event5)
-
-    assertEquals(setA7.getElements, Set.empty)
-    assertEquals(setA7.getElements, setB7.getElements)
+    assertEquals(set1.getElements, Set.empty)
+    assertEquals(set1.getElements, set2.getElements)
   }
 
   test("synchronise 2 sets: example 3") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
-    val (setA3, event2) = setA2.remove("y")
+    var set1 = ORSet[String]()
+    set1 = set1.merge(set1.add("x"))
+    set1 = set1.merge(set1.remove("y"))
 
-    val setB1           = ORSet[String]()
-    val (setB2, event3) = setB1.add("y")
-    val (setB3, event4) = setB2.remove("x")
+    var set2 = ORSet[String]()
+    set2 = set2.merge(set2.add("y"))
+    set2 = set2.merge(set2.remove("x"))
 
-    val setA4 = setA3.receiveEvent(event3)
-    val setA5 = setA4.receiveEvent(event4)
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setB4 = setB3.receiveEvent(event1)
-    val setB5 = setB4.receiveEvent(event2)
+    set1 = set1.merge(set1.remove("y"))
+    set2 = set2.merge(set2.remove("x"))
 
-    val (setA6, event5) = setA5.remove("y")
-    val (setB6, event6) = setB5.remove("x")
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setA7 = setA6.receiveEvent(event6)
-    val setB7 = setB6.receiveEvent(event5)
+    set1 = set1.merge(set1.add("y"))
+    set2 = set2.merge(set2.add("x"))
 
-    val (setA8, event7) = setA7.add("y")
-    val (setB8, event8) = setB7.add("x")
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setA9 = setA8.receiveEvent(event8)
-    val setB9 = setB8.receiveEvent(event7)
-
-    assertEquals(setA9.getElements, Set("x", "y"))
-    assertEquals(setA9.getElements, setB5.getElements)
+    assertEquals(set1.getElements, Set("x", "y"))
+    assertEquals(set1.getElements, set2.getElements)
 
   }
 
   test("synchronise 2 sets: example 4") {
-    val setA1           = ORSet[String]()
-    val (setA2, event1) = setA1.add("x")
-    val (setA3, event2) = setA2.remove("x")
+    var set1 = ORSet[String]()
+    set1 = set1.merge(set1.add("x"))
+    set1 = set1.merge(set1.remove("x"))
 
-    val setB1           = ORSet[String]()
-    val (setB2, event3) = setB1.add("x")
+    var set2 = ORSet[String]()
+    set2 = set2.merge(set2.add("x"))
 
-    val setB3 = setB2.receiveEvent(event1)
-    val setB4 = setB3.receiveEvent(event2)
+    set1 = set1.merge(set2)
+    set2 = set2.merge(set1)
 
-    val setA4 = setA3.receiveEvent(event3)
-
-    assertEquals(setA4.getElements, Set("x"))
-    assertEquals(setA4.getElements, setB4.getElements)
+    assertEquals(set1.getElements, Set("x"))
+    assertEquals(set1.getElements, set2.getElements)
   }
 
   test("synchronise with riblt") {
-    val setA1 = ORSet[String]()
-    val (setA2, event1) = setA1.add("a")
-    val (setA3, event2) = setA2.add("b")
+    var set1 = ORSet[String]()
+    set1 = set1.merge(set1.add("a"))
+    set1 = set1.merge(set1.remove("b"))
 
-    val setB1 = ORSet[String]()
-    val (setB2, event3) = setB1.add("a")
-    val (setB3, event4) = setB2.add("c")
-
-    //val setB4 = setB3.decRestart()
-    val c = setA3.produceNextCodedSymbols()
-    var setB4 = setB3.addCodedSymbols(c)
-    while !setB4.hashDAG.riblt.isDecoded do
-      setB4 = setB4.addCodedSymbols(setA3.produceNextCodedSymbols())
-      
-
-    val synReq = setB4.sendSyncRequest
-    val (setA4, response) = setA3.receiveSyncRequest(synReq)
-    val setB5 = setB4.receiveEvents(response)
-
-    val setB6 = setB5.processQueue
-    val setA5 = setA4.processQueue
+    var set2 = ORSet[String]()
+    set2 = set2.merge(set2.add("a"))
+    set2 = set2.merge(set2.remove("c"))
+    
+    val c = set1.produceNextCodedSymbols()
+    set2 = set2.addCodedSymbols(c)
+    while !set2.causalContext.riblt.isDecoded do
+      set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
 
 
+    val synReq = set2.sendSyncRequest
+    val response = set1.receiveSyncRequest(synReq)
+    set1 = response._1
+    set2 = set2.merge(response._2)
 
-    assertEquals(setA5.getElements, setB6.getElements)
+    assertEquals(set1.getElements, set2.getElements)
   }
 

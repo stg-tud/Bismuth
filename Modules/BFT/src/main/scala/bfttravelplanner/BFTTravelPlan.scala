@@ -89,17 +89,17 @@ case class BFTTravelPlan(state: TravelPlan, causalContext: HashDAG[TravelPlan]):
   def sendSyncRequest: SyncRequest[TravelPlan] =
     causalContext.sendSyncRequest
 
-  def receiveSyncRequest(syncRequest: SyncRequest[TravelPlan]): (BFTTravelPlan, Set[Event[TravelPlan]]) = {
+  def receiveSyncRequest(syncRequest: SyncRequest[TravelPlan]): (BFTTravelPlan, BFTTravelPlan) = {
     val (newCausalContext, missingEvents) = causalContext.receiveSyncRequest(syncRequest)
     var state = this.state
-    for event <- syncRequest.events do
+    for event <- syncRequest.causalContext.events.values ++ syncRequest.causalContext.queue do
       val delta = event.content
       if newCausalContext.contains(event) && delta.nonEmpty then
         state = state.merge(delta.get)
 
     (
       BFTTravelPlan(state, newCausalContext),
-      missingEvents
+      BFTTravelPlan(TravelPlan.empty, missingEvents)
     )
   }
 

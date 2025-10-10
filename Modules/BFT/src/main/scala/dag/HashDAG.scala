@@ -8,9 +8,6 @@ import riblt.{CodedSymbol, RIBLT}
 
 // a hash directed acyclic graph
 case class HashDAG[T] private (
-    // the state S of a HashDAG consists of the vertices and edges contained in the HashDAG, S = (V, E)
-    // but separately saving the vertices and edges is redundant,
-    // a better way to solve this is by mapping each vertex to the set of its children
     graph: Map[String, Set[String]],
     events: Map[String, Event[T]],
     authorKeys: KeyPair,
@@ -187,21 +184,16 @@ case class HashDAG[T] private (
       val ids = riblt.localSymbols.map(s => s.value)
       
       SyncRequest(
-        ids.map(id => events(id)).toSet,
+        this.empty.copy(queue = ids.map(id => events(id)).toSet),
         riblt.remoteSymbols.map(s => s.value).toSet
       )
     else
-      SyncRequest(Set.empty, Set.empty)
+      SyncRequest(this.empty, Set.empty)
 
-  def receiveSyncRequest(syncRequest: SyncRequest[T]): (HashDAG[T], Set[Event[T]]) =
-    var tmp = this
-
-    for e <- syncRequest.events do
-      tmp = tmp.effector(e)
-
+  def receiveSyncRequest(syncRequest: SyncRequest[T]): (HashDAG[T], HashDAG[T]) =
     (
-      tmp,
-      syncRequest.requestedEvents.map(id => events(id))
+      this.merge(syncRequest.causalContext),
+      this.empty.copy(queue = syncRequest.requestedEvents.map(id => events(id)))
     )
 
   def resetRiblt: HashDAG[T] =
@@ -209,6 +201,9 @@ case class HashDAG[T] private (
     
   def empty: HashDAG[T] =
     HashDAG(this.authorKeys)
+    
+  def withQueue(events: Set[Event[T]]): HashDAG[T] =
+    this.copy(queue = events)
 
 
 object HashDAG:
@@ -219,4 +214,4 @@ object HashDAG:
     new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), authorKeys)
     
     
-case class SyncRequest[T](events: Set[Event[T]], requestedEvents: Set[String])
+case class SyncRequest[T](causalContext: HashDAG[T], requestedEvents: Set[String])

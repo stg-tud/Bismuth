@@ -162,7 +162,7 @@ class TravelPlanTest extends munit.FunSuite:
     val syncReq = r1.sendSyncRequest
     val response = r2.receiveSyncRequest(syncReq)
     r2 = response._1
-    r1 = r1.mergeEevents(response._2)
+    r1 = r1.merge(response._2)
 
     r1 = r1.processQueue
     r2 = r2.processQueue
