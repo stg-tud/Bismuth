@@ -2,23 +2,20 @@ package ex2025blockchain
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
+import rdts.time.{Dot, Dots}
 
+/** Copied from 'package ex2025protocols.dare' */
 
-/**
- * Copied from 'package ex2025protocols.dare'
- */
-
-
-/**
- * For this lecuter/exercise, we are going to explore an executable model of a distributed system,
- * consisting of many of these replicas. Each replica has its own current state, and a replica ID.
- * There is no actual network involved, and it is just a helper
- * to make exploring possible behaviour of a distributed system possible.
- * It has no value in a real program.
- */
+/** For this lecuter/exercise, we are going to explore an executable model of a distributed system,
+  * consisting of many of these replicas. Each replica has its own current state, and a replica ID.
+  * There is no actual network involved, and it is just a helper
+  * to make exploring possible behaviour of a distributed system possible.
+  * It has no value in a real program.
+  */
 class Replica[A](init: A) {
   val replicaId: LocalUid             = LocalUid.gen()
   val buffer: DeltaBufferContainer[A] = DeltaBuffer(init).mutable
+  val dots: Dots                      = Dots.empty
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A]): this.type = {
     buffer.mod(f(using replicaId))
@@ -34,6 +31,8 @@ class Replica[A](init: A) {
     print(s"$replicaId: ")
     pprint.pprintln(select(buffer.result.state))
   }
+
+  def nextDot: Dot = dots.nextDot(using replicaId)
 
 }
 
