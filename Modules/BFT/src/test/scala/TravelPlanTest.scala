@@ -156,8 +156,8 @@ class TravelPlanTest extends munit.FunSuite:
 
     //println(r2.state.bucketList.queryAllEntries)
 
-    while !r1.syncDone do
-      r1.receiveCodedSymbols(r2.sendCodedSymbols())
+    while !r1.riblt.isDecoded do
+      r1.addCodedSymbols(r2.produceNextCodedSymbols())
 
     val syncReq = r1.sendSyncRequest
     val response = r2.receiveSyncRequest(syncReq)

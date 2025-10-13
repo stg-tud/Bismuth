@@ -12,9 +12,8 @@ case class HashDAG[T] private (
     events: Map[String, Event[T]],
     authorKeys: KeyPair,
     queue: Set[Event[T]] = Set.empty[Event[T]],
-    byzantineNodes: Set[PublicKey] = Set.empty,
-    riblt: RIBLT[String] = RIBLT()
-):
+    byzantineNodes: Set[PublicKey] = Set.empty
+                              ):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean =
@@ -53,17 +52,17 @@ case class HashDAG[T] private (
 
     for event <- delta.events.values do
       result = result.effector(event)
-    
+
     for event <- delta.queue do
       result = result.effector(event)
-    
+
     var i = result.queue.size
-    while i != 0 do 
+    while i != 0 do
       i = 0
       for event <- result.queue do
         result = result.effector(event)
         if result.contains(event) then i += 1
-    
+
     result
 
 
@@ -83,20 +82,15 @@ case class HashDAG[T] private (
             val e = events(d)
             g = g.updated(d, g(d) + event.id)
 
-          this.riblt.addSymbol(event.id)
-
-          //this.riblt_enc.restart
-
           HashDAG(
             g + (event.id -> Set.empty),
             this.events + (event.id -> event),
             this.authorKeys,
             this.queue - event,
             this.byzantineNodes,
-            this.riblt
           )
         else
-          HashDAG(this.graph, this.events, this.authorKeys, this.queue + event, this.byzantineNodes, this.riblt)
+          HashDAG(this.graph, this.events, this.authorKeys, this.queue + event, this.byzantineNodes)
 
   def addEvent(content: T): HashDAG[T] =
     // generate the event
@@ -162,48 +156,11 @@ case class HashDAG[T] private (
     this.copy(events = e, byzantineNodes = this.byzantineNodes + author)
   }
 
-  def sendCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
-    var codedSymbols = List.empty[CodedSymbol[String]]
-
-    for (i <- 0 to count)
-      codedSymbols = codedSymbols :+ riblt.produceNextCodedSymbol
-
-    codedSymbols
-
-  def receiveCodedSymbols(codedSymbols: List[CodedSymbol[String]]): HashDAG[T] =
-    if riblt.codedSymbols.nonEmpty && riblt.isDecoded then
-      this
-    else
-      for codedSymbol <- codedSymbols do
-        riblt.addCodedSymbol(codedSymbol)
-
-      this.copy(riblt = this.riblt)
-
-  def sendSyncRequest: SyncRequest[T] =
-    if riblt.isDecoded then
-      val ids = riblt.localSymbols.map(s => s.value)
-      
-      SyncRequest(
-        this.empty.copy(queue = ids.map(id => events(id)).toSet),
-        riblt.remoteSymbols.map(s => s.value).toSet
-      )
-    else
-      SyncRequest(this.empty, Set.empty)
-
-  def receiveSyncRequest(syncRequest: SyncRequest[T]): (HashDAG[T], HashDAG[T]) =
-    (
-      this.merge(syncRequest.causalContext),
-      this.empty.copy(queue = syncRequest.requestedEvents.map(id => events(id)))
-    )
-
-  def resetRiblt: HashDAG[T] =
-    this.copy(riblt = RIBLT[String]())
-    
   def empty: HashDAG[T] =
     HashDAG(this.authorKeys)
-    
+
   def withQueue(events: Set[Event[T]]): HashDAG[T] =
-    this.copy(queue = events)
+    this.empty.copy(queue = events)
 
 
 object HashDAG:
@@ -212,6 +169,6 @@ object HashDAG:
     val root  = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
 
     new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), authorKeys)
-    
-    
-case class SyncRequest[T](causalContext: HashDAG[T], requestedEvents: Set[String])
+
+
+case class SyncRequest[T](hashDAG: HashDAG[T], requestedEvents: Set[String])

@@ -116,7 +116,7 @@ class ORSetTest extends munit.FunSuite:
     
     val c = set1.produceNextCodedSymbols()
     set2 = set2.addCodedSymbols(c)
-    while !set2.causalContext.riblt.isDecoded do
+    while !set2.riblt.isDecoded do
       set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
 
 

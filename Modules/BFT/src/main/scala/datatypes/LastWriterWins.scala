@@ -6,21 +6,21 @@ import dag.HashDAG
 import scala.util.hashing.MurmurHash3
 
 case class LastWriterWins[T] (
-                               state: HashDAG[T]
+                               hashDAG: HashDAG[T]
                              ):
 
   def write(value: T): LastWriterWins[T] =
-    LastWriterWins(state.generateDelta(value))
+    LastWriterWins(hashDAG.generateDelta(value))
 
   def read: Option[T] =
-    val heads = state.getCurrentHeads
+    val heads = hashDAG.getCurrentHeads
     if heads.size == 1 then
       heads.head.content
     else
       heads.toList.sortWith((x, y) => MurmurHash3.stringHash(x.id) > MurmurHash3.stringHash(y.id)).head.content
       
   def merge(lww: LastWriterWins[T]): LastWriterWins[T] =
-    LastWriterWins(state.merge(lww.state))
+    LastWriterWins(hashDAG.merge(lww.hashDAG))
     
   
 object LastWriterWins:

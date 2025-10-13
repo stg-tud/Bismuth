@@ -26,6 +26,14 @@ class RIBLT[T](
   def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
     window.produceNextCodedSymbol
 
+  def produceNextCodedSymbols(count: Int = 1)(using Xorable[T]): List[CodedSymbol[T]]=
+    var result = List.empty[CodedSymbol[T]]
+    
+    for i <- 0 to count do
+      result = result :+ produceNextCodedSymbol
+      
+    result
+    
   def addCodedSymbol(codedSymbol: CodedSymbol[T])(using Xorable[T])(using Hashable[T]): Unit =
     var c = window.applyCodedSymbol(codedSymbol, Remove)
     c = remote.applyCodedSymbol(c, Remove)
@@ -42,6 +50,10 @@ class RIBLT[T](
       decodable = decodable :+ c
 
     tryDecode
+
+  def addCodedSymbols(codedSymbol: List[CodedSymbol[T]])(using Xorable[T])(using Hashable[T]): Unit =
+    for codedSymbol <- codedSymbols do
+      addCodedSymbol(codedSymbol)
 
   def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): SourceSymbol[T] =
     var i = sourceSymbol.mapping.lastIndex.toInt
@@ -89,6 +101,8 @@ class RIBLT[T](
 
 
 object RIBLT:
+  def empty[T]: RIBLT[T] = RIBLT() 
+  
   given Hashable[Int]:
     extension (a: Int) override def hash: Long =
       MurmurHash3.stringHash(a.toString)

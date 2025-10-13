@@ -3,68 +3,57 @@ package datatypes
 import datatypes.OpType.{Add, Remove}
 import crypto.Ed25519Util
 import dag.{Event, HashDAG, SyncRequest}
-import riblt.CodedSymbol
-
+import riblt.{CodedSymbol, RIBLT}
+import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 import scala.collection.immutable.HashMap
 import scala.collection.{immutable, mutable}
 
 case class ORSet[T] private (
+                              hashDAG: HashDAG[Op[T]],
+                              riblt: RIBLT[String],
                               elements: Map[T, Set[String]],
-                              causalContext: HashDAG[Op[T]],
-                            ):
+                            ) extends Replica[Op[T], ORSet[T]]:
 
   def add(element: T): ORSet[T] =
     val op = Op(element, OpType.Add)
 
-    ORSet(Map.empty, causalContext.generateDelta(op))
+    ORSet(hashDAG.generateDelta(op), RIBLT.empty, Map.empty)
 
   def remove(element: T): ORSet[T] =
     val op = Op(element, OpType.Remove)
 
-    ORSet(Map.empty, causalContext.generateDelta(op))
-    
-  def merge(other: ORSet[T]): ORSet[T] =
-    var newElements = this.elements
-    val newCausalContext = this.causalContext.merge(other.causalContext)
+    ORSet(hashDAG.generateDelta(op), RIBLT.empty, Map.empty)
 
-    for event <- this.causalContext.queue ++ other.causalContext.events.values ++ other.causalContext.queue do
-      if newCausalContext.contains(event) && !this.causalContext.contains(event) then 
+  override def merge(other: ORSet[T]): ORSet[T] =
+    var newElements = this.elements
+    val newHashDAG = this.hashDAG.merge(other.hashDAG)
+
+    for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
+      if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
+        this.riblt.addSymbol(event.id)
         val op = event.content.get
-        op.opType match 
+        op.opType match
           case Add =>
             newElements = newElements + (op.element -> (elements.getOrElse(op.element, Set.empty) + event.id))
           case Remove =>
             var ids = elements.getOrElse(op.element, Set.empty)
             for id <- ids do
-              if newCausalContext.pathExists(id, event.id) then
+              if newHashDAG.pathExists(id, event.id) then
                 ids = ids - id
             newElements = newElements + (op.element -> ids)
 
-    ORSet(newElements, newCausalContext)
+    ORSet(newHashDAG, this.riblt, newElements)
 
   def getElements: Set[T] =
     elements.filter((k, v) => v.nonEmpty).keySet
 
-  def produceNextCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
-    this.causalContext.sendCodedSymbols(count)
+  override def empty: ORSet[T] = ORSet()
 
-  def addCodedSymbols(codedSymbols: List[CodedSymbol[String]]): ORSet[T] =
-    this.copy(causalContext = this.causalContext.receiveCodedSymbols(codedSymbols))
-
-  def sendSyncRequest: SyncRequest[Op[T]] =
-    this.causalContext.sendSyncRequest
-
-  def receiveSyncRequest(syncRequest: SyncRequest[Op[T]]): (ORSet[T], ORSet[T]) = {
-    (
-      this.merge(ORSet(new HashMap(), syncRequest.causalContext)),
-      ORSet(new HashMap(),
-        causalContext.empty.withQueue(syncRequest.requestedEvents.map(id => causalContext.events(id))))
-    )
-  }
+  override def withHashDAG(hashDAG: HashDAG[Op[T]]): ORSet[T] = this.copy(hashDAG = hashDAG)
 
 object ORSet:
   def apply[T](): ORSet[T] =
-    new ORSet[T](new HashMap(), HashDAG[Op[T]](Ed25519Util.generateNewKeyPair))
+    new ORSet[T](HashDAG[Op[T]](Ed25519Util.generateNewKeyPair), RIBLT.empty, new HashMap())
 
 case class Op[T](
     element: T,

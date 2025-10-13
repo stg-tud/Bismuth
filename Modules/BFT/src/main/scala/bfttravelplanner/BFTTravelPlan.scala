@@ -1,108 +1,97 @@
 package bfttravelplanner
 import crypto.Ed25519Util
-import dag.{HashDAG, SyncRequest, Event}
+import dag.{Event, HashDAG, SyncRequest}
+import datatypes.Replica
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.UniqueId
 import rdts.base.LocalUid
-import riblt.CodedSymbol
+import riblt.{CodedSymbol, RIBLT}
+import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 
 type Delta = BFTTravelPlan
 
-case class BFTTravelPlan(state: TravelPlan, causalContext: HashDAG[TravelPlan]):
+case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan], riblt: RIBLT[String])
+  extends Replica[TravelPlan, BFTTravelPlan]:
+  
   def changeTitle(newTitle: String): Delta = {
     val delta = state.changeTitle(newTitle)
-    BFTTravelPlan(delta, causalContext.empty.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
   }
 
   def addBucketListEntry(text: String)(using localUid: LocalUid): Delta =
     val delta = state.addBucketListEntry(text)
-    BFTTravelPlan(delta, causalContext.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.generateDelta(delta), RIBLT.empty)
 
   def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta =
     val delta = state.setBucketListEntryText(bucketListId, text)
-    BFTTravelPlan(delta, causalContext.empty.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
 
   def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta =
     val delta = state.addExpense(description, amount)
-    BFTTravelPlan(delta, causalContext.empty.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
 
   def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta =
     val delta = state.setExpenseAmount(expenseId, amount)
-    BFTTravelPlan(delta, causalContext.empty.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
 
   def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta =
     val delta = state.setExpenseDescription(expenseId, description)
-    BFTTravelPlan(delta, causalContext.empty.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
 
   def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta =
     val delta = state.setExpenseComment(expenseId, comment)
-    BFTTravelPlan(delta, causalContext.empty.generateDelta(delta))
+    BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
 
   def merge(other: BFTTravelPlan): BFTTravelPlan =
     // BFTTravelPlan(this.state.merge(other.state), this.causalContext.merge(other.causalContext))
-    val newCausalContext = this.causalContext.merge(other.causalContext)
+    val newHashDAG = this.hashDAG.merge(other.hashDAG)
     var state = this.state
-    for event <- other.causalContext.events.values ++ other.causalContext.queue do
+    for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
       val delta = event.content
-      if newCausalContext.contains(event) && delta.nonEmpty then
+      if newHashDAG.contains(event) && !this.hashDAG.contains(event) && delta.nonEmpty then {
         state = state.merge(delta.get)
+        this.riblt.addSymbol(event.id)
+      }
 
-    BFTTravelPlan(state, newCausalContext)
+    BFTTravelPlan(state, newHashDAG, riblt)
 
   def mergeEevents(events: Set[Event[TravelPlan]]): BFTTravelPlan =
     var state = this.state
-    var cc = this.causalContext
+    var newHashDAG = this.hashDAG
     for event <- events do
       val delta = event.content
-      cc = cc.effector(event)
-      if cc.contains(event) && delta.nonEmpty then
+      newHashDAG = newHashDAG.effector(event)
+      if newHashDAG.contains(event) && !this.hashDAG.contains(event) && delta.nonEmpty then {
         state = state.merge(delta.get)
+        this.riblt.addSymbol(event.id)
+      }
 
-    BFTTravelPlan(state, cc)
+    BFTTravelPlan(state, newHashDAG, this.riblt)
     
   def processQueue: BFTTravelPlan =
-    var newCausalContext = this.causalContext
+    var newHashDAG = this.hashDAG
     var newState = this.state
-    var i = newCausalContext.queue.size
+    var i = newHashDAG.queue.size
     while i != 0 do {
       i = 0
-      val q = newCausalContext.queue
-      newCausalContext = newCausalContext.processQueue()
-      for event <- q -- newCausalContext.queue do {
+      val q = newHashDAG.queue
+      newHashDAG = newHashDAG.processQueue()
+      for event <- q -- newHashDAG.queue do {
         if event.content.nonEmpty then
           i = i + 0
           newState = newState.merge(event.content.get)
+          this.riblt.addSymbol(event.id)
       }
     }
     
-    BFTTravelPlan(newState, newCausalContext)
+    BFTTravelPlan(newState, newHashDAG, this.riblt)
 
-  def syncDone: Boolean =
-    this.causalContext.riblt.isDecoded
+  override def empty: Delta = BFTTravelPlan()
 
-  def sendCodedSymbols(count: Int = 1): List[CodedSymbol[String]] =
-    this.causalContext.sendCodedSymbols(count)
+  override def withHashDAG(hashDAG: HashDAG[TravelPlan]): Delta =
+    this.copy(hashDAG = hashDAG)
 
-  def receiveCodedSymbols(codedSymbols: List[CodedSymbol[String]]): BFTTravelPlan =
-    this.copy(causalContext = causalContext.receiveCodedSymbols(codedSymbols))
-
-  def sendSyncRequest: SyncRequest[TravelPlan] =
-    causalContext.sendSyncRequest
-
-  def receiveSyncRequest(syncRequest: SyncRequest[TravelPlan]): (BFTTravelPlan, BFTTravelPlan) = {
-    val (newCausalContext, missingEvents) = causalContext.receiveSyncRequest(syncRequest)
-    var state = this.state
-    for event <- syncRequest.causalContext.events.values ++ syncRequest.causalContext.queue do
-      val delta = event.content
-      if newCausalContext.contains(event) && delta.nonEmpty then
-        state = state.merge(delta.get)
-
-    (
-      BFTTravelPlan(state, newCausalContext),
-      BFTTravelPlan(TravelPlan.empty, missingEvents)
-    )
-  }
 
 object BFTTravelPlan:
   def apply(): BFTTravelPlan =
-    BFTTravelPlan(TravelPlan.empty, HashDAG(Ed25519Util.generateNewKeyPair))
+    BFTTravelPlan(TravelPlan.empty, HashDAG(Ed25519Util.generateNewKeyPair), RIBLT())

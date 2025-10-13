@@ -4,18 +4,18 @@ import crypto.Ed25519Util
 import dag.HashDAG
 
 case class MultiValueRegister[T](
-                              state: HashDAG[T]
+                                  hashDAG: HashDAG[T]
                             ):
 
   def write(value: T): MultiValueRegister[T] =
-    MultiValueRegister(state.addEvent(value))
+    MultiValueRegister(hashDAG.addEvent(value))
 
   def read: Set[Option[T]] =
-    val heads = state.getCurrentHeads
+    val heads = hashDAG.getCurrentHeads
     heads.map(event => event.content)
     
   def merge(other: MultiValueRegister[T]): MultiValueRegister[T] =
-    MultiValueRegister[T](this.state.merge(other.state))
+    MultiValueRegister[T](this.hashDAG.merge(other.hashDAG))
 
 
 object MultiValueRegister:
