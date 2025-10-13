@@ -50,8 +50,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     type ID = String
 
     case class Document(nodes: ObserveRemoveMap[ID, Node] = ObserveRemoveMap.empty):
-      def node_views: Map[ID, NodeView] =
-        nodes.inner.view.mapValues(post => NodeView.from(post.value)).toMap
+      def materialized_nodes: Map[ID, MaterializedNode] =
+        nodes.inner.view.mapValues(post => MaterializedNode.from(post.value)).toMap
 
       def add(nodeId: ID, node: Node)(using replicaId: LocalUid): Document =
         Document(nodes.update(nodeId, node))
@@ -83,15 +83,15 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       case Circle(radius: Double)
       case Rectangle(width: Double, height: Double)
 
-    case class NodeView(
+    case class MaterializedNode(
         position: Position,
         color: Color,
         kind: NodeKind
     )
 
-    object NodeView {
-      def from(node: Node): NodeView =
-        NodeView(
+    object MaterializedNode {
+      def from(node: Node): MaterializedNode =
+        MaterializedNode(
           position = node.position.value,
           color = node.color.value,
           kind = node.kind.value
@@ -135,16 +135,16 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     ))
 
     assertEquals(
-      replica1.state.node_views,
-      Map(node1 -> NodeView(
+      replica1.state.materialized_nodes,
+      Map(node1 -> MaterializedNode(
         position = Position(0, 0),
         color = Color.Red,
         kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
       ))
     )
     assertEquals(
-      replica2.state.node_views,
-      Map(node2 -> NodeView(
+      replica2.state.materialized_nodes,
+      Map(node2 -> MaterializedNode(
         position = Position(100, 100),
         color = Color.Blue,
         kind = NodeKind.Circle(radius = 25.0)
@@ -155,14 +155,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     replica2.receive(delta1)
 
     assertEquals(
-      replica1.state.node_views,
+      replica1.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(0, 0),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -170,14 +170,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
     assertEquals(
-      replica2.state.node_views,
+      replica2.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(0, 0),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -191,14 +191,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     replica2.receive(delta3)
 
     assertEquals(
-      replica1.state.node_views,
+      replica1.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(50, 50),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Green,
           kind = NodeKind.Circle(radius = 25.0)
@@ -206,14 +206,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
     assertEquals(
-      replica2.state.node_views,
+      replica2.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(50, 50),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Green,
           kind = NodeKind.Circle(radius = 25.0)
@@ -221,21 +221,21 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
 
+    // Undo should reset the position of node1 to (0, 0) and the color of node2 to Blue
     val delta5 = replica1.undo()
     val delta6 = replica2.undo()
     replica1.receive(delta6)
     replica2.receive(delta5)
 
-    // Undo should reset the position of node1 to (0, 0) and the color of node2 to Blue
     assertEquals(
-      replica1.state.node_views,
+      replica1.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(0, 0),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -243,14 +243,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
     assertEquals(
-      replica2.state.node_views,
+      replica2.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(0, 0),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -261,10 +261,11 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     // Undo on replica1 should remove node1
     val delta7 = replica1.undo()
     replica2.receive(delta7)
+
     assertEquals(
-      replica1.state.node_views,
+      replica1.state.materialized_nodes,
       Map(
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -272,9 +273,9 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
     assertEquals(
-      replica2.state.node_views,
+      replica2.state.materialized_nodes,
       Map(
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -285,15 +286,16 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     // Redo should reset the position of node1 to (50, 50)
     val delta8 = replica2.redo()
     replica1.receive(delta8)
+
     assertEquals(
-      replica1.state.node_views,
+      replica1.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(50, 50),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -301,14 +303,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
     assertEquals(
-      replica2.state.node_views,
+      replica2.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(50, 50),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -319,15 +321,16 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     // Redo should be a no-op, since there is nothing on the undo stack
     val delta9 = replica2.redo()
     replica1.receive(delta9)
+
     assertEquals(
-      replica1.state.node_views,
+      replica1.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(50, 50),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
@@ -335,14 +338,14 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
     assertEquals(
-      replica2.state.node_views,
+      replica2.state.materialized_nodes,
       Map(
-        node1 -> NodeView(
+        node1 -> MaterializedNode(
           position = Position(50, 50),
           color = Color.Red,
           kind = NodeKind.Rectangle(width = 50.0, height = 100.0)
         ),
-        node2 -> NodeView(
+        node2 -> MaterializedNode(
           position = Position(100, 100),
           color = Color.Blue,
           kind = NodeKind.Circle(radius = 25.0)
