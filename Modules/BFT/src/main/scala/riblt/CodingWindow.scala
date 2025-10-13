@@ -2,16 +2,15 @@ package riblt
 
 import riblt.Operation.{Add, Remove}
 
-/**
- * a CodingWindow is a collection of a source Symbols, that can produce the next coded Symbol based on the these
- * source symbols
- * @param symbols
- * @param nextIndex
- * @tparam T
- */
+/** a CodingWindow is a collection of a source Symbols, that can produce the next coded Symbol based on the these
+  * source symbols
+  * @param symbols
+  * @param nextIndex
+  * @tparam T
+  */
 class CodingWindow[T](
-                       var symbols: List[SourceSymbol[T]] = List.empty[SourceSymbol[T]],
-                       var nextIndex: Int = 0
+    var symbols: List[SourceSymbol[T]] = List.empty[SourceSymbol[T]],
+    var nextIndex: Int = 0
 ):
 
   def addSourceSymbol(symbol: T)(using Hashable[T]): Unit =
@@ -40,10 +39,9 @@ class CodingWindow[T](
           case Remove => result.remove(element)
 
         element.mapping.nextIndex: Unit
-    
+
     nextIndex = nextIndex + 1
     result
-
 
 enum Operation:
   case Add

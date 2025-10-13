@@ -27,5 +27,3 @@ class MultiValueRegisterTest extends munit.FunSuite:
     assertEquals(r1.read, r2.read)
 
   }
-
-

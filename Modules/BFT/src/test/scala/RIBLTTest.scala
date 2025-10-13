@@ -1,12 +1,12 @@
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Random
 
 class RIBLTTest extends munit.FunSuite:
 
   private val testSetSize = if isCI then 500 else 10_000
-  
+
   override def munitTimeout: Duration = 5.minutes
 
   test("test riblt with ints") {
@@ -34,14 +34,14 @@ class RIBLTTest extends munit.FunSuite:
     assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.value).toSet)
     assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.value).toSet)
 
-    //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
-    //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
-    //print(s"\n$i coded symbols sent")
+    // print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
+    // print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
+    // print(s"\n$i coded symbols sent")
   }
 
   test("test riblt with strings") {
     var alice = List[String]()
-    var bob = List[String]()
+    var bob   = List[String]()
 
     var j = 0
     for i <- 0 to testSetSize do
@@ -57,7 +57,6 @@ class RIBLTTest extends munit.FunSuite:
         else
           bob = bob :+ i.toString
 
-
     val enc = RIBLT[String]()
     for s <- alice do
       enc.addSymbol(s)
@@ -71,26 +70,26 @@ class RIBLTTest extends munit.FunSuite:
     while d do
       val s = enc.produceNextCodedSymbol
       i += 1
-      //println(i)
-      //print("\n")
+      // println(i)
+      // print("\n")
       dec.addCodedSymbol(s)
       dec.tryDecode
       if dec.isDecoded then
         d = false
 
-    //println(s"diff = $j")
+    // println(s"diff = $j")
 
     assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.value).toSet)
     assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.value).toSet)
 
-    //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
-    //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
-    //print(s"\n$i coded symbols sent")
+    // print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
+    // print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
+    // print(s"\n$i coded symbols sent")
   }
 
   test("test riblt with strings 2 ") {
     var alice = List[String]()
-    var bob = List[String]()
+    var bob   = List[String]()
 
     var j = 0
     for i <- 0 to testSetSize do
@@ -104,7 +103,6 @@ class RIBLTTest extends munit.FunSuite:
           bob = bob :+ i.toString
       }
 
-
     val enc = RIBLT[String]()
     for s <- alice do
       enc.addSymbol(s)
@@ -118,19 +116,18 @@ class RIBLTTest extends munit.FunSuite:
     while d do
       val s = enc.produceNextCodedSymbol
       i += 1
-      //println(i)
+      // println(i)
       dec.addCodedSymbol(s)
       dec.tryDecode
       if dec.isDecoded then
         d = false
 
-    //println(s"diff = $j")
+    // println(s"diff = $j")
 
     assertEquals(alice.toSet -- bob.toSet, dec.remoteSymbols.map(s => s.value).toSet)
     assertEquals(bob.toSet -- alice.toSet, dec.localSymbols.map(s => s.value).toSet)
 
-    //print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
-    //print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
-    //print(s"\n$i coded symbols sent")
+    // print(s"${dec.remoteSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Alice")
+    // print(s"${dec.localSymbols.map(s => s.symbol).fold("")((s1, s2) => s"$s1, $s2")} is exclusive to Bob")
+    // print(s"\n$i coded symbols sent")
   }
-

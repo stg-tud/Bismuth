@@ -93,7 +93,7 @@ object TreeTableViewExample extends JFXApp3 {
       resizable = true
     }
     stage.setTitle("Permission Selection")
-    
+
     val rootSelector = ArdtPermissionSelector(
       "",
       Map(

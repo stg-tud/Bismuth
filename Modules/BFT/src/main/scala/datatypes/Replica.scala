@@ -41,4 +41,4 @@ trait Replica[T, R <: Replica[T, R]] { self: R =>
       this.empty.withHashDAG(hashDAG.empty.withQueue(syncRequest.requestedEvents.map(id => hashDAG.events(id))))
     )
 
-}  
+}

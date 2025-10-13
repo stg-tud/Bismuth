@@ -11,8 +11,8 @@ import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 type Delta = BFTTravelPlan
 
 case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan], riblt: RIBLT[String])
-  extends Replica[TravelPlan, BFTTravelPlan]:
-  
+    extends Replica[TravelPlan, BFTTravelPlan]:
+
   def changeTitle(newTitle: String): Delta = {
     val delta = state.changeTitle(newTitle)
     BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta), RIBLT.empty)
@@ -45,7 +45,7 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan], riblt:
   def merge(other: BFTTravelPlan): BFTTravelPlan =
     // BFTTravelPlan(this.state.merge(other.state), this.causalContext.merge(other.causalContext))
     val newHashDAG = this.hashDAG.merge(other.hashDAG)
-    var state = this.state
+    var state      = this.state
     for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
       val delta = event.content
       if newHashDAG.contains(event) && !this.hashDAG.contains(event) && delta.nonEmpty then {
@@ -56,7 +56,7 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan], riblt:
     BFTTravelPlan(state, newHashDAG, riblt)
 
   def mergeEevents(events: Set[Event[TravelPlan]]): BFTTravelPlan =
-    var state = this.state
+    var state      = this.state
     var newHashDAG = this.hashDAG
     for event <- events do
       val delta = event.content
@@ -67,11 +67,11 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan], riblt:
       }
 
     BFTTravelPlan(state, newHashDAG, this.riblt)
-    
+
   def processQueue: BFTTravelPlan =
     var newHashDAG = this.hashDAG
-    var newState = this.state
-    var i = newHashDAG.queue.size
+    var newState   = this.state
+    var i          = newHashDAG.queue.size
     while i != 0 do {
       i = 0
       val q = newHashDAG.queue
@@ -83,14 +83,13 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan], riblt:
           this.riblt.addSymbol(event.id)
       }
     }
-    
+
     BFTTravelPlan(newState, newHashDAG, this.riblt)
 
   override def empty: Delta = BFTTravelPlan()
 
   override def withHashDAG(hashDAG: HashDAG[TravelPlan]): Delta =
     this.copy(hashDAG = hashDAG)
-
 
 object BFTTravelPlan:
   def apply(): BFTTravelPlan =

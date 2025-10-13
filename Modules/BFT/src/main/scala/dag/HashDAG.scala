@@ -13,7 +13,7 @@ case class HashDAG[T] private (
     authorKeys: KeyPair,
     queue: Set[Event[T]] = Set.empty[Event[T]],
     byzantineNodes: Set[PublicKey] = Set.empty
-                              ):
+):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean =
@@ -42,7 +42,7 @@ case class HashDAG[T] private (
     graph.filter((_, set) => set.isEmpty).keySet
 
   def generator(content: T): Event[T] = {
-    val signature       = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
+    val signature = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
 
     Event(Some(content), authorKeys.getPublic, getCurrentHeadsIDs, signature)
   }
@@ -65,7 +65,6 @@ case class HashDAG[T] private (
 
     result
 
-
   def effector(event: Event[T]): HashDAG[T] =
     if contains(event) then
       this
@@ -83,7 +82,7 @@ case class HashDAG[T] private (
             g = g.updated(d, g(d) + event.id)
 
           HashDAG(
-            g + (event.id -> Set.empty),
+            g + (event.id           -> Set.empty),
             this.events + (event.id -> event),
             this.authorKeys,
             this.queue - event,
@@ -103,7 +102,7 @@ case class HashDAG[T] private (
   def generateDelta(content: T): HashDAG[T] =
     // generate the event
     val currentHeads = getCurrentHeads
-    val event = generator(content)
+    val event        = generator(content)
 
     // apply the event
     this.empty.effector(event)
@@ -162,13 +161,11 @@ case class HashDAG[T] private (
   def withQueue(events: Set[Event[T]]): HashDAG[T] =
     this.empty.copy(queue = events)
 
-
 object HashDAG:
   def apply[T](authorKeys: KeyPair): HashDAG[T] =
     val graph = new HashMap[String, Set[String]]()
     val root  = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
 
     new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), authorKeys)
-
 
 case class SyncRequest[T](hashDAG: HashDAG[T], requestedEvents: Set[String])

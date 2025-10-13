@@ -12,5 +12,4 @@ object Block {
 //  def apply[H, T](hash: H, previousHash: Option[H], data: T, dot: Dot): Block[H, T] =
 //    Block(hash, previousHash, data, dot)
 
-
 }

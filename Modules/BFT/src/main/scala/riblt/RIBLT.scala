@@ -26,14 +26,14 @@ class RIBLT[T](
   def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
     window.produceNextCodedSymbol
 
-  def produceNextCodedSymbols(count: Int = 1)(using Xorable[T]): List[CodedSymbol[T]]=
+  def produceNextCodedSymbols(count: Int = 1)(using Xorable[T]): List[CodedSymbol[T]] =
     var result = List.empty[CodedSymbol[T]]
-    
+
     for i <- 0 to count do
       result = result :+ produceNextCodedSymbol
-      
+
     result
-    
+
   def addCodedSymbol(codedSymbol: CodedSymbol[T])(using Xorable[T])(using Hashable[T]): Unit =
     var c = window.applyCodedSymbol(codedSymbol, Remove)
     c = remote.applyCodedSymbol(c, Remove)
@@ -55,11 +55,13 @@ class RIBLT[T](
     for codedSymbol <- codedSymbols do
       addCodedSymbol(codedSymbol)
 
-  def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using Hashable[T])(using Xorable[T]): SourceSymbol[T] =
+  def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using
+      Hashable[T]
+  )(using Xorable[T]): SourceSymbol[T] =
     var i = sourceSymbol.mapping.lastIndex.toInt
     while i < codedSymbols.length do
       val tmp = op match
-        case Add => codedSymbols(i).add(sourceSymbol)
+        case Add    => codedSymbols(i).add(sourceSymbol)
         case Remove => codedSymbols(i).remove(sourceSymbol)
 
       codedSymbols = codedSymbols.updated(i, tmp)
@@ -96,79 +98,87 @@ class RIBLT[T](
 
     decodable = List.empty[CodedSymbol[T]]
 
-
   def restart(): Unit = ???
 
-
 object RIBLT:
-  def empty[T]: RIBLT[T] = RIBLT() 
-  
+  def empty[T]: RIBLT[T] = RIBLT()
+
   given Hashable[Int]:
-    extension (a: Int) override def hash: Long =
-      MurmurHash3.stringHash(a.toString)
+    extension (a: Int)
+      override def hash: Long =
+        MurmurHash3.stringHash(a.toString)
 
   given Hashable[Long]:
-    extension (a: Long) override def hash: Long =
-      MurmurHash3.stringHash(a.toString)
+    extension (a: Long)
+      override def hash: Long =
+        MurmurHash3.stringHash(a.toString)
 
   given Hashable[String]:
-    extension (a: String) override def hash: Long =
-      MurmurHash3.stringHash(a)
+    extension (a: String)
+      override def hash: Long =
+        MurmurHash3.stringHash(a)
 
   given Hashable[Array[Byte]]:
-    extension (a: Array[Byte]) override def hash: Long =
-      MurmurHash3.bytesHash(a)
+    extension (a: Array[Byte])
+      override def hash: Long =
+        MurmurHash3.bytesHash(a)
 
   given Xorable[Int]:
-    extension (i1: Int) override def xor(i2: Int): Int =
-      i1 ^ i2
+    extension (i1: Int)
+      override def xor(i2: Int): Int =
+        i1 ^ i2
     extension (a: Int) override def removeTrailingZeros(): Int = a
 
     override def zero: Int = 0
 
   given Xorable[Long]:
-    extension (i1: Long) override def xor(i2: Long): Long =
-      i1 ^ i2
+    extension (i1: Long)
+      override def xor(i2: Long): Long =
+        i1 ^ i2
     extension (a: Long) override def removeTrailingZeros(): Long = a
 
     override def zero: Long = 0
 
   given Xorable[String]:
-    extension (str1: String) override def xor(str2: String): String =
-      val byteArray1 = str1.getBytes
-      val byteArray2 = str2.getBytes
+    extension (str1: String)
+      override def xor(str2: String): String =
+        val byteArray1 = str1.getBytes
+        val byteArray2 = str2.getBytes
 
-      // Ensure both byte arrays are of the same length
-      val maxLength = math.max(byteArray1.length, byteArray2.length)
-      val paddedByteArray1 = byteArray1.padTo(maxLength, 0.toByte)
-      val paddedByteArray2 = byteArray2.padTo(maxLength, 0.toByte)
+        // Ensure both byte arrays are of the same length
+        val maxLength        = math.max(byteArray1.length, byteArray2.length)
+        val paddedByteArray1 = byteArray1.padTo(maxLength, 0.toByte)
+        val paddedByteArray2 = byteArray2.padTo(maxLength, 0.toByte)
 
-      val resultBytes = paddedByteArray1.zip(paddedByteArray2).map { case (b1, b2) => (b1 ^ b2).toByte }
+        val resultBytes = paddedByteArray1.zip(paddedByteArray2).map { case (b1, b2) => (b1 ^ b2).toByte }
 
-      String(resultBytes)
+        String(resultBytes)
 
-    extension (a: String) override def removeTrailingZeros(): String =
-      val bytes = a.getBytes
-      val lastNonZeroIndex = bytes.lastIndexWhere(_ != 0)
-      if (lastNonZeroIndex == -1) a
-      else String(bytes.slice(0, lastNonZeroIndex + 1))
+    extension (a: String)
+      override def removeTrailingZeros(): String =
+        val bytes            = a.getBytes
+        val lastNonZeroIndex = bytes.lastIndexWhere(_ != 0)
+        if lastNonZeroIndex == -1 then a
+        else String(bytes.slice(0, lastNonZeroIndex + 1))
 
     override def zero: String = String(Array.fill(1)(0.toByte))
 
   given Xorable[Array[Byte]]:
-    extension (b1: Array[Byte]) override def xor(b2: Array[Byte]): Array[Byte] =
-      // Ensure both byte arrays are of the same length
-      val maxLength = math.max(b1.length, b2.length)
-      val paddedByteArray1 = b1.padTo(maxLength, 0.toByte)
-      val paddedByteArray2 = b2.padTo(maxLength, 0.toByte)
+    extension (b1: Array[Byte])
+      override def xor(b2: Array[Byte]): Array[Byte] =
+        // Ensure both byte arrays are of the same length
+        val maxLength        = math.max(b1.length, b2.length)
+        val paddedByteArray1 = b1.padTo(maxLength, 0.toByte)
+        val paddedByteArray2 = b2.padTo(maxLength, 0.toByte)
 
-      val resultBytes = paddedByteArray1.zip(paddedByteArray2).map { case (b1, b2) => (b1 ^ b2).toByte }
+        val resultBytes = paddedByteArray1.zip(paddedByteArray2).map { case (b1, b2) => (b1 ^ b2).toByte }
 
-      resultBytes
+        resultBytes
 
-    extension (b: Array[Byte]) override def removeTrailingZeros(): Array[Byte] =
-      val lastNonZeroIndex = b.lastIndexWhere(_ != 0)
-      if (lastNonZeroIndex == -1) b
-      else b.slice(0, lastNonZeroIndex + 1)
+    extension (b: Array[Byte])
+      override def removeTrailingZeros(): Array[Byte] =
+        val lastNonZeroIndex = b.lastIndexWhere(_ != 0)
+        if lastNonZeroIndex == -1 then b
+        else b.slice(0, lastNonZeroIndex + 1)
 
     override def zero: Array[Byte] = Array.fill(1)(0.toByte)

@@ -9,10 +9,10 @@ import scala.collection.immutable.HashMap
 import scala.collection.{immutable, mutable}
 
 case class ORSet[T] private (
-                              hashDAG: HashDAG[Op[T]],
-                              riblt: RIBLT[String],
-                              elements: Map[T, Set[String]],
-                            ) extends Replica[Op[T], ORSet[T]]:
+    hashDAG: HashDAG[Op[T]],
+    riblt: RIBLT[String],
+    elements: Map[T, Set[String]],
+) extends Replica[Op[T], ORSet[T]]:
 
   def add(element: T): ORSet[T] =
     val op = Op(element, OpType.Add)
@@ -26,7 +26,7 @@ case class ORSet[T] private (
 
   override def merge(other: ORSet[T]): ORSet[T] =
     var newElements = this.elements
-    val newHashDAG = this.hashDAG.merge(other.hashDAG)
+    val newHashDAG  = this.hashDAG.merge(other.hashDAG)
 
     for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
       if newHashDAG.contains(event) && !this.hashDAG.contains(event) then

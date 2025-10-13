@@ -5,9 +5,9 @@ import dag.HashDAG
 
 import scala.util.hashing.MurmurHash3
 
-case class LastWriterWins[T] (
-                               hashDAG: HashDAG[T]
-                             ):
+case class LastWriterWins[T](
+    hashDAG: HashDAG[T]
+):
 
   def write(value: T): LastWriterWins[T] =
     LastWriterWins(hashDAG.generateDelta(value))
@@ -18,11 +18,10 @@ case class LastWriterWins[T] (
       heads.head.content
     else
       heads.toList.sortWith((x, y) => MurmurHash3.stringHash(x.id) > MurmurHash3.stringHash(y.id)).head.content
-      
+
   def merge(lww: LastWriterWins[T]): LastWriterWins[T] =
     LastWriterWins(hashDAG.merge(lww.hashDAG))
-    
-  
+
 object LastWriterWins:
   def apply[T](): LastWriterWins[T] =
     LastWriterWins(HashDAG(Ed25519Util.generateNewKeyPair))

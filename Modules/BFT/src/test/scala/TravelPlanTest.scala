@@ -20,7 +20,7 @@ class TravelPlanTest extends munit.FunSuite:
     // create the first replica and add merge it with 3 deltas
     // Replica1 = (delta1, delta2, delta3)
     var replica1 = TravelPlan.empty
-    val delta1 = replica1.addBucketListEntry("entry 1")(using replica1Uid)
+    val delta1   = replica1.addBucketListEntry("entry 1")(using replica1Uid)
     replica1 = replica1.merge(delta1)
     val delta2 = replica1.addBucketListEntry("entry 2")(using replica1Uid)
     replica1 = replica1.merge(delta2)
@@ -37,20 +37,19 @@ class TravelPlanTest extends munit.FunSuite:
     val delta4 = replica2.addBucketListEntry("entry 4")(using replica2Uid)
     replica2 = replica2.merge(delta4)
 
-    val lstDelta1 = List[Delta](delta1, delta2, delta3)  // deltas already merged to replica1
-    val lstDelta2 = List[Delta](delta1, delta2, delta4)  // deltas already merged to replica2
+    val lstDelta1 = List[Delta](delta1, delta2, delta3) // deltas already merged to replica1
+    val lstDelta2 = List[Delta](delta1, delta2, delta4) // deltas already merged to replica2
 
-    val ribltReplica1 = RIBLT[Array[Byte]]()            // riblt instance of replica1
-    val ribltReplica2 = RIBLT[Array[Byte]]()            // riblt instance of replica2
+    val ribltReplica1 = RIBLT[Array[Byte]]() // riblt instance of replica1
+    val ribltReplica2 = RIBLT[Array[Byte]]() // riblt instance of replica2
 
     // add the deltas of replica1 to its riblt instance
-    for (item <- lstDelta1)
+    for item <- lstDelta1 do
       ribltReplica1.addSymbol(writeToArray(item))
 
     // add the deltas of replica2 to its riblt instance
-    for (item <- lstDelta2)
+    for item <- lstDelta2 do
       ribltReplica2.addSymbol(writeToArray(item))
-
 
     // to start the sync process, the 2 nodes that want to synchronise should agree on who is going to produce the
     // codedSymbols (sender) and who is going to apply these codedSymbol to its local RIBLT (receiver) and try to decode
@@ -65,16 +64,16 @@ class TravelPlanTest extends munit.FunSuite:
       i += 1
 
     // once all the codedSymbols are decoded, send all the exclusive local deltas (of replica2) to replica1
-    for (d <- ribltReplica2.localSymbols) {
+    for d <- ribltReplica2.localSymbols do {
       val delta = readFromArray[Delta](d.value)
-      //println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
+      // println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica1 = replica1.merge(delta)
     }
 
     // merge all the exclusive remote deltas (of replica2) locally
-    for (d <- ribltReplica2.remoteSymbols)
+    for d <- ribltReplica2.remoteSymbols do
       val delta = readFromArray[Delta](d.value)
-      //println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
+      // println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica2 = replica2.merge(delta)
 
     assertEquals(replica1, replica2)
@@ -82,12 +81,11 @@ class TravelPlanTest extends munit.FunSuite:
   }
 
   test("Example 2: Synchronise TravelPlan's deltas using RIBLT") {
-    /**
-     * Same as the above test, only with a lot more deltas
-     */
 
-    var replica1 = TravelPlan.empty
-    var replica2 = TravelPlan.empty
+    /** Same as the above test, only with a lot more deltas */
+
+    var replica1  = TravelPlan.empty
+    var replica2  = TravelPlan.empty
     var lstDelta1 = List[Delta]()
     var lstDelta2 = List[Delta]()
 
@@ -116,10 +114,10 @@ class TravelPlanTest extends munit.FunSuite:
     val ribltReplica1 = RIBLT[Array[Byte]]()
     val ribltReplica2 = RIBLT[Array[Byte]]()
 
-    for (item <- lstDelta1)
+    for item <- lstDelta1 do
       ribltReplica1.addSymbol(writeToArray(item))
 
-    for (item <- lstDelta2)
+    for item <- lstDelta2 do
       ribltReplica2.addSymbol(writeToArray(item))
 
     var i = 0
@@ -127,15 +125,15 @@ class TravelPlanTest extends munit.FunSuite:
       ribltReplica2.addCodedSymbol(ribltReplica1.produceNextCodedSymbol)
       i += 1
 
-    for (d <- ribltReplica2.localSymbols) {
+    for d <- ribltReplica2.localSymbols do {
       val delta = readFromArray[Delta](d.value)
-      //println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
+      // println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica1 = replica1.merge(delta)
     }
 
-    for (d <- ribltReplica2.remoteSymbols)
+    for d <- ribltReplica2.remoteSymbols do
       val delta = readFromArray[Delta](d.value)
-      //println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
+      // println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica2 = replica2.merge(delta)
 
     assertEquals(replica1, replica2)
@@ -148,18 +146,18 @@ class TravelPlanTest extends munit.FunSuite:
     r1 = r1.merge(r1.addBucketListEntry("entry 1")(using replica1Uid))
     r1 = r1.merge(r1.addBucketListEntry("entry 11")(using replica1Uid))
 
-    //println(r1.state.bucketList.queryAllEntries)
+    // println(r1.state.bucketList.queryAllEntries)
 
     var r2 = BFTTravelPlan()
     r2 = r2.merge(r2.addBucketListEntry("entry 2")(using replica2Uid))
     r2 = r2.merge(r2.addBucketListEntry("entry 22")(using replica2Uid))
 
-    //println(r2.state.bucketList.queryAllEntries)
+    // println(r2.state.bucketList.queryAllEntries)
 
     while !r1.riblt.isDecoded do
       r1.addCodedSymbols(r2.produceNextCodedSymbols())
 
-    val syncReq = r1.sendSyncRequest
+    val syncReq  = r1.sendSyncRequest
     val response = r2.receiveSyncRequest(syncReq)
     r2 = response._1
     r1 = r1.merge(response._2)
@@ -167,11 +165,12 @@ class TravelPlanTest extends munit.FunSuite:
     r1 = r1.processQueue
     r2 = r2.processQueue
 
-    //println(r1.state.bucketList.queryAllEntries.map(lww => lww.payload))
-    //println(r2.state.bucketList.queryAllEntries.map(lww => lww.payload))
+    // println(r1.state.bucketList.queryAllEntries.map(lww => lww.payload))
+    // println(r2.state.bucketList.queryAllEntries.map(lww => lww.payload))
 
-    assertEquals(r1.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet,
-      r2.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet)
+    assertEquals(
+      r1.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet,
+      r2.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet
+    )
 
   }
-

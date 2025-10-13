@@ -1,5 +1,5 @@
 import datatypes.Counter
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class CounterTest extends munit.FunSuite:
 
@@ -7,10 +7,9 @@ class CounterTest extends munit.FunSuite:
 
   override def munitTimeout: Duration = 5.minutes
 
-
   test("create an event") {
     var counter = Counter()
-    counter     = counter.merge(counter.add(1))
+    counter = counter.merge(counter.add(1))
 
     assertEquals(counter.value, 1)
 
@@ -18,8 +17,8 @@ class CounterTest extends munit.FunSuite:
 
   test("create more than one event") {
     var counter = Counter()
-    counter     = counter.merge(counter.add(1))
-    counter     = counter.merge(counter.add(2))
+    counter = counter.merge(counter.add(1))
+    counter = counter.merge(counter.add(2))
 
     assertEquals(counter.value, 3)
 
@@ -30,10 +29,10 @@ class CounterTest extends munit.FunSuite:
     var counter2 = Counter()
 
     val delta1 = counter1.add(1)
-    counter1   = counter1.merge(delta1)
+    counter1 = counter1.merge(delta1)
 
     val delta2 = counter2.add(2)
-    counter2   = counter2.merge(delta2)
+    counter2 = counter2.merge(delta2)
 
     counter1 = counter1.merge(delta2)
     counter2 = counter2.merge(delta1)
@@ -62,7 +61,6 @@ class CounterTest extends munit.FunSuite:
         delta = counter1.add(i)
         counter1 = counter1.merge(delta)
 
-
       deltas = deltas :+ delta
 
     for delta <- deltas do
@@ -87,7 +85,6 @@ class CounterTest extends munit.FunSuite:
         deltaGroup = deltaGroup.merge(d)
 
       counter4 = counter4.merge(deltaGroup)
-
 
     assertEquals(counter1.value, counter2.value)
     assertEquals(counter3.value, counter4.value)
