@@ -28,7 +28,6 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
   property("mutateKey/queryKey") {
     forAll { (add: List[Int], remove: List[Int], k: Int) =>
-
       val network = new Network(0, 0, 0)
       val aea     = new AntiEntropy[ObserveRemoveMap[Int, ReplicatedSet[Int]]]("a", network, mutable.Buffer())
       val aeb     = new AntiEntropy[ReplicatedSet[Int]]("b", network, mutable.Buffer())

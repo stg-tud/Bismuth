@@ -44,7 +44,6 @@ abstract class DecomposePropertyChecks[A](
 
   property("decomposition".flaky) {
     forAll { (theValue: A) =>
-
       val decomposed = theValue.decomposed
       val normalized = Lattice.normalize(theValue)
 
