@@ -140,7 +140,7 @@ class TravelPlanTest extends munit.FunSuite:
 
   }
 
-  /*test("TravelPlan + HashDAG + RIBLT") {
+  test("TravelPlan + HashDAG + RIBLT") {
 
     var r1 = BFTTravelPlan()
     r1 = r1.merge(r1.addBucketListEntry("entry 1")(using replica1Uid))
@@ -158,9 +158,8 @@ class TravelPlanTest extends munit.FunSuite:
       r1.addCodedSymbols(r2.produceNextCodedSymbols())
 
     val syncReq  = r1.sendSyncRequest
-    val response = r2.receiveSyncRequest(syncReq)
-    r2 = response._1
-    r1 = r1.merge(response._2)
+    r2 = r2.merge(syncReq.delta)
+    r1 = r1.merge(r2.sendSyncResponse(syncReq.requestedEvents))
 
     r1 = r1.processQueue
     r2 = r2.processQueue
@@ -173,4 +172,4 @@ class TravelPlanTest extends munit.FunSuite:
       r2.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet
     )
 
-  }*/
+  }
