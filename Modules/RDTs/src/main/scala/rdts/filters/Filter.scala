@@ -171,15 +171,13 @@ object Filter {
       )
   }
 
-  given mapFilter[K, V: Filter]: Filter[Map[K, V]] with {
+  given mapFilter[K: KeyAsString, V: Filter]: Filter[Map[K, V]] with {
     override def filter(delta: Map[K, V], permission: PermissionTree): Map[K, V] =
       permission match
         case PermissionTree(ALLOW, _)                       => delta
         case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
-          // TODO: Add MapLikeFilter typeclass that extracts this and makes equality check of key explicit
           delta.flatMap { case key -> value =>
-            // TODO: Replace key.toString based lookup with typeclass based equality
-            mapOfEntryPermissions.get(key.toString) match
+            mapOfEntryPermissions.get(KeyAsString[K].encode(key)) match
               case None /* No rule for key -> discard entry */ => None
               case Some(entryPermission)                       => Some(key -> Filter[V].filter(value, entryPermission))
           }
@@ -233,5 +231,5 @@ object Filter {
 
   given observeRemoveMapEntryFilter[A: {Filter, Bottom}]: Filter[Entry[A]] = Filter.derived
 
-  given observeRemoveMapFilter[K, V: {Filter, Bottom}]: Filter[ObserveRemoveMap[K, V]] = Filter.derived
+  given observeRemoveMapFilter[K: KeyAsString, V: {Filter, Bottom}]: Filter[ObserveRemoveMap[K, V]] = Filter.derived
 }

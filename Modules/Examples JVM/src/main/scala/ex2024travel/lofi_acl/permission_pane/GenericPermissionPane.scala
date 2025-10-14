@@ -1,18 +1,19 @@
 package ex2024travel.lofi_acl.permission_pane
 
+import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import javafx.scene.control as jfxsc
 import javafx.util as jfxu
 import scalafx.Includes.jfxTreeItem2sfx
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.beans.BeanIncludes.jfxObservableValue2sfx
 import scalafx.geometry.Pos.Center
-import scalafx.scene.{Group, Scene}
 import scalafx.scene.control.*
 import scalafx.scene.layout.VBox
+import scalafx.scene.{Group, Scene}
 
 object GenericPermissionPane {
 
-  private def populateTreeItem(rootSelector: ArdtPermissionSelector[?]): TreeItem[PermissionSelectionViewModel] = {
+  private def populateTreeItem(rootSelector: Selector[?]): TreeItem[PermissionSelectionViewModel] = {
     val model = PermissionSelectionViewModel.fromSelector(rootSelector)
     val root  = TreeItem(model)
     root.expanded = true
@@ -27,7 +28,7 @@ object GenericPermissionPane {
     root
   }
 
-  def createTreeTableView[RDT](rootSelector: ArdtPermissionSelector[RDT])
+  def createTreeTableView[RDT](rootSelector: Selector[RDT])
       : TreeTableView[PermissionSelectionViewModel] = {
     val labelColumn = TreeTableColumn[PermissionSelectionViewModel, String]("Label")
     labelColumn.setPrefWidth(150)
@@ -94,20 +95,8 @@ object TreeTableViewExample extends JFXApp3 {
     }
     stage.setTitle("Permission Selection")
 
-    val rootSelector = ArdtPermissionSelector(
-      "",
-      Map(
-        "test" -> ArdtPermissionSelector("test"),
-        "abc"  -> ArdtPermissionSelector(
-          "abc",
-          Map(
-            "*"  -> ArdtPermissionSelector("*", Map("a" -> ArdtPermissionSelector("a"))),
-            "42" -> ArdtPermissionSelector("42", Map("a" -> ArdtPermissionSelector("a"))),
-            "21" -> ArdtPermissionSelector("21", Map("a" -> ArdtPermissionSelector("a"))),
-          ),
-        )
-      )
-    )
+    val exampleRdt   = TravelPlan.empty
+    val rootSelector = SelectorFactory[TravelPlan].create(exampleRdt)
 
     sceneRoot.getChildren.add(GenericPermissionPane.createTreeTableView(rootSelector))
     stage.scene = scene

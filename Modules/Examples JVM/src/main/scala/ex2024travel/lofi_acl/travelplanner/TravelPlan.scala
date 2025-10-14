@@ -3,6 +3,7 @@ package ex2024travel.lofi_acl.travelplanner
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.softwaremill.quicklens.*
+import ex2024travel.lofi_acl.permission_pane.{Selector, SelectorFactory}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.{*, given}
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
@@ -102,6 +103,14 @@ object TravelPlan {
   given lwwOptionStringFilter: Filter[LastWriterWins[Option[String]]] = Filter.terminalLwwFilter
   type UniqueId = String
   val empty: TravelPlan = Bottom[TravelPlan].empty
+
+  given TravelPlanSelectorFactory: SelectorFactory[TravelPlan] = {
+    import SelectorFactory.given
+    given SelectorFactory[Option[String]] = SelectorFactory.OptionSelectorFactory
+    given SelectorFactory[LastWriterWins[Option[String]]] = SelectorFactory.LwwSelectorFactory
+    given SelectorFactory[Expense] = SelectorFactory.derived
+    SelectorFactory.derived
+  }
 
   type Delta = TravelPlan
 

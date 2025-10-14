@@ -48,6 +48,9 @@ case class PermissionTree(permission: Permission, children: Map[String, Permissi
 
     this.pathStringsRec(Queue.empty)
   }
+
+  def descend(label: String): PermissionTree =
+    children.getOrElse(label, copy(children = Map.empty))
 }
 
 object PermissionTree {
