@@ -11,7 +11,6 @@ class PermissionSelectionViewModel private (
     val hardcodedReadDisabled: Boolean = false,
     val hardcodedWriteDisabled: Boolean = false
 ) {
-  // TODO: Special treatment for wildcards (?)
   private var parent: Option[PermissionSelectionViewModel] = None
   val (
     readCheckbox: CheckBox,
@@ -92,16 +91,15 @@ class PermissionSelectionViewModel private (
 }
 
 object PermissionSelectionViewModel {
-  def fromSelector(selector: ArdtPermissionSelector[?]): PermissionSelectionViewModel = {
-    def rec(selector: ArdtPermissionSelector[?]): PermissionSelectionViewModel = {
+  def fromSelector(selector: Selector[?]): PermissionSelectionViewModel = {
+    def rec(label: String, selector: Selector[?]): PermissionSelectionViewModel = {
       val model = new PermissionSelectionViewModel(
-        selector.children.map((label, selector) => label -> rec(selector)),
-        selector.uiText
+        selector.children.map((childLabel, selector) => childLabel -> rec(childLabel, selector)), label
       )
       model
     }
 
-    val model = rec(selector)
+    val model = rec("", selector)
     model.bindParentsRecursively(None)
     model
   }
