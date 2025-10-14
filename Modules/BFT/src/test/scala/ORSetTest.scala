@@ -118,30 +118,54 @@ class ORSetTest extends munit.FunSuite:
       set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
 
     val synReq   = set2.sendSyncRequest
-    val response = set1.receiveSyncRequest(synReq)
-    set1 = response._1
-    set2 = set2.merge(response._2)
+    set1 = set1.merge(synReq.delta)
+    set2 = set2.merge(set1.sendSyncResponse(synReq.requestedEvents))
 
     assertEquals(set1.getElements, set2.getElements)
   }
 
   test("synchronise 3 sets with riblt") {
     var set1 = ORSet[String]()
-    set1 = set1.merge(set1.add("a")).merge(set1.remove("b"))
+    set1 = set1.merge(set1.add("a"))
+    set1 = set1.merge(set1.remove("b"))
+
+    print(set1.getElements)
 
     var set2 = ORSet[String]()
-    set2 = set2.merge(set2.add("a")).merge(set2.remove("c"))
+    set2 = set2.merge(set2.add("a"))
+    set2 = set2.merge(set2.remove("c"))
+
+    print(set2.getElements)
+
 
     var set3 = ORSet[String]()
-    set3 = set3.merge(set3.add("d")).merge(set3.remove("e"))
+    set3 = set3.merge(set3.add("d"))
+    set3 = set3.merge(set3.remove("e"))
 
-    while !set2.riblt.isDecoded do
-      set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
+    print(set3.getElements)
 
-    val synReq = set2.sendSyncRequest
-    val response = set1.receiveSyncRequest(synReq)
-    set1 = response._1
-    set2 = set2.merge(response._2)
 
-    assertEquals(set1.getElements, set2.getElements)
+    while !set2.riblt.isDecoded || !set3.riblt.isDecoded do {
+      val codedSymbol = set1.produceNextCodedSymbols()
+      if !set2.riblt.isDecoded then {
+        set2 = set2.addCodedSymbols(codedSymbol)
+      }
+      if !set3.riblt.isDecoded then
+        set3 = set3.addCodedSymbols(codedSymbol)
+    }
+
+    val synReq1 = set2.sendSyncRequest
+    set1 = set1.merge(synReq1.delta)
+    set2 = set2.merge(set1.sendSyncResponse(synReq1.requestedEvents))
+
+    val synReq2 = set3.sendSyncRequest
+    set1 = set1.merge(synReq2.delta)
+    set3 = set3.merge(set1.sendSyncResponse(synReq2.requestedEvents))
+
+    print(set1.getElements)
+    print(set2.getElements)
+    print(set3.getElements)
+
+
+    assertEquals(set1.getElements, set2.getElements ++ set3.getElements)
   }

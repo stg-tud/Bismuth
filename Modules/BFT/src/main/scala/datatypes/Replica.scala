@@ -37,10 +37,7 @@ trait Replica[T, R <: Replica[T, R]] {
     else
       SyncRequest(this.empty, Set.empty)
 
-  def receiveSyncRequest(syncRequest: SyncRequest[T, R]): (R, R) =
-    (
-      this.merge(syncRequest.delta),
-      this.empty.withHashDAG(hashDAG.empty.withQueue(syncRequest.requestedEvents.map(id => hashDAG.events(id))))
-    )
+  def sendSyncResponse(requestedEvents: Set[String]): R =
+    this.empty.withHashDAG(hashDAG.empty.withQueue(requestedEvents.map(id => hashDAG.events(id))))
 
 }
