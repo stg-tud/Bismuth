@@ -4,15 +4,15 @@ import riblt.Operation.{Add, Remove}
 import scala.util.hashing.MurmurHash3
 
 class RIBLT[T](
-    var codedSymbols: List[CodedSymbol[T]] = List.empty[CodedSymbol[T]],
-    var local: CodingWindow[T] = new CodingWindow[T](),
-    var window: CodingWindow[T] = new CodingWindow[T](),
-    var remote: CodingWindow[T] = new CodingWindow[T](),
-    var decodable: List[CodedSymbol[T]] = List.empty[CodedSymbol[T]],
+    var receivedCodedSymbols: List[CodedSymbol[T]],
+    var local: CodingWindow[T],
+    var window: CodingWindow[T],
+    var remote: CodingWindow[T],
+    var decodable: List[CodedSymbol[T]],
 ):
 
   def isDecoded: Boolean =
-    codedSymbols.nonEmpty && codedSymbols.forall(c => c.decoded)
+    receivedCodedSymbols.nonEmpty && receivedCodedSymbols.forall(c => c.decoded)
 
   def localSymbols: List[SourceSymbol[T]] =
     local.symbols
@@ -39,7 +39,7 @@ class RIBLT[T](
     c = remote.applyCodedSymbol(c, Remove)
     c = local.applyCodedSymbol(c, Add)
 
-    codedSymbols = codedSymbols :+ c
+    receivedCodedSymbols = receivedCodedSymbols :+ c
 
     if c.count == 1 || c.count == -1 then
       c.sum = c.sum.removeTrailingZeros()
@@ -52,24 +52,24 @@ class RIBLT[T](
     tryDecode
 
   def addCodedSymbols(codedSymbol: List[CodedSymbol[T]])(using Xorable[T])(using Hashable[T]): Unit =
-    for codedSymbol <- codedSymbols do
+    for codedSymbol <- receivedCodedSymbols do
       addCodedSymbol(codedSymbol)
 
   def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using
       Hashable[T]
   )(using Xorable[T]): SourceSymbol[T] =
     var i = sourceSymbol.mapping.lastIndex.toInt
-    while i < codedSymbols.length do
+    while i < receivedCodedSymbols.length do
       val tmp = op match
-        case Add    => codedSymbols(i).add(sourceSymbol)
-        case Remove => codedSymbols(i).remove(sourceSymbol)
+        case Add    => receivedCodedSymbols(i).add(sourceSymbol)
+        case Remove => receivedCodedSymbols(i).remove(sourceSymbol)
 
-      codedSymbols = codedSymbols.updated(i, tmp)
+      receivedCodedSymbols = receivedCodedSymbols.updated(i, tmp)
 
-      if codedSymbols(i).count == -1 || codedSymbols(i).count == 1 then
-        codedSymbols(i).sum = codedSymbols(i).sum.removeTrailingZeros()
-        if codedSymbols(i).hash == codedSymbols(i).sum.hash then
-          decodable = decodable :+ codedSymbols(i)
+      if receivedCodedSymbols(i).count == -1 || receivedCodedSymbols(i).count == 1 then
+        receivedCodedSymbols(i).sum = receivedCodedSymbols(i).sum.removeTrailingZeros()
+        if receivedCodedSymbols(i).hash == receivedCodedSymbols(i).sum.hash then
+          decodable = decodable :+ receivedCodedSymbols(i)
 
       i = sourceSymbol.mapping.nextIndex.toInt
 
@@ -101,6 +101,9 @@ class RIBLT[T](
   def restart(): Unit = ???
 
 object RIBLT:
+  def apply[T](): RIBLT[T] =
+    new RIBLT(List.empty, CodingWindow(), CodingWindow(), CodingWindow(), List.empty)
+
   def empty[T]: RIBLT[T] = RIBLT()
 
   given Hashable[Int]:

@@ -105,7 +105,7 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(set1.getElements, set2.getElements)
   }
 
-  test("synchronise with riblt") {
+  test("synchronise 2 sets with riblt") {
     var set1 = ORSet[String]()
     set1 = set1.merge(set1.add("a"))
     set1 = set1.merge(set1.remove("b"))
@@ -114,12 +114,31 @@ class ORSetTest extends munit.FunSuite:
     set2 = set2.merge(set2.add("a"))
     set2 = set2.merge(set2.remove("c"))
 
-    val c = set1.produceNextCodedSymbols()
-    set2 = set2.addCodedSymbols(c)
     while !set2.riblt.isDecoded do
       set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
 
     val synReq   = set2.sendSyncRequest
+    val response = set1.receiveSyncRequest(synReq)
+    set1 = response._1
+    set2 = set2.merge(response._2)
+
+    assertEquals(set1.getElements, set2.getElements)
+  }
+
+  test("synchronise 3 sets with riblt") {
+    var set1 = ORSet[String]()
+    set1 = set1.merge(set1.add("a")).merge(set1.remove("b"))
+
+    var set2 = ORSet[String]()
+    set2 = set2.merge(set2.add("a")).merge(set2.remove("c"))
+
+    var set3 = ORSet[String]()
+    set3 = set3.merge(set3.add("d")).merge(set3.remove("e"))
+
+    while !set2.riblt.isDecoded do
+      set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
+
+    val synReq = set2.sendSyncRequest
     val response = set1.receiveSyncRequest(synReq)
     set1 = response._1
     set2 = set2.merge(response._2)

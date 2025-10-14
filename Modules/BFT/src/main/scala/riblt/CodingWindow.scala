@@ -9,8 +9,8 @@ import riblt.Operation.{Add, Remove}
   * @tparam T
   */
 class CodingWindow[T](
-    var symbols: List[SourceSymbol[T]] = List.empty[SourceSymbol[T]],
-    var nextIndex: Int = 0
+    var symbols: List[SourceSymbol[T]],
+    var nextIndex: Int
 ):
 
   def addSourceSymbol(symbol: T)(using Hashable[T]): Unit =
@@ -42,6 +42,10 @@ class CodingWindow[T](
 
     nextIndex = nextIndex + 1
     result
+    
+object CodingWindow:
+  def apply[T](): CodingWindow[T] =
+    new CodingWindow(List.empty, 0)
 
 enum Operation:
   case Add

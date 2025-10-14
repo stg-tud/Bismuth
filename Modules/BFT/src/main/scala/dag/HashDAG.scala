@@ -3,6 +3,7 @@ package dag
 import scala.collection.immutable.{HashMap, List, Map, Set}
 import java.security.{KeyPair, PublicKey}
 import crypto.Ed25519Util
+import datatypes.Replica
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 import riblt.{CodedSymbol, RIBLT}
 
@@ -168,4 +169,4 @@ object HashDAG:
 
     new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), authorKeys)
 
-case class SyncRequest[T](hashDAG: HashDAG[T], requestedEvents: Set[String])
+case class SyncRequest[T, R <: Replica[T, R]](delta: R, requestedEvents: Set[String])
