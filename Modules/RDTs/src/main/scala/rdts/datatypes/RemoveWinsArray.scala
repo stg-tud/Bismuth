@@ -117,7 +117,6 @@ object RemoveWinsArray {
   }
 }
 
-// An LSEQ position identifier is an ordered list of components.
 type LSeq = List[LSeq.Component]
 
 object LSeq {
@@ -127,39 +126,17 @@ object LSeq {
   def max: LSeq = List(Component(Int.MaxValue, Uid.predefined("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"))) // TODO
 
   def between(left: LSeq, right: LSeq, place: Uid): LSeq = {
-    val commonPrefix = left.zip(right).takeWhile { case (l, r) => l.position == r.position }
-    val prefixLength = commonPrefix.length
+    val commonPrefix           = left.zip(right).takeWhile { case (l, r) => l.position == r.position }
+    val commonPrefixComponents = commonPrefix.map(_._1)
 
-    val leftComponent  = left.drop(prefixLength).headOption
-    val rightComponent = right.drop(prefixLength).headOption
+    val lowerBound = left.drop(commonPrefix.length).headOption.map(_.position).getOrElse(0)
+    val upperBound = right.drop(commonPrefix.length).headOption.map(_.position).getOrElse(Int.MaxValue)
 
-    val lowerBound = leftComponent.map(_.position).getOrElse(0)
-    val upperBound = rightComponent.map(_.position).getOrElse(Int.MaxValue)
-
-    // Try to insert a new position *at the current depth* (LSEQ's core optimization).
     if upperBound - lowerBound > 1 then {
-      // There is integer space at the current depth.
-      // Choose a value in the middle to leave gaps for future insertions.
-      val newPosition  = lowerBound + ((upperBound - lowerBound) / 2)
-      val newComponent = LSeq.Component(newPosition, place)
-
-      commonPrefix.map(_._1) ++ List(newComponent)
+      val newPosition = lowerBound + ((upperBound - lowerBound) / 2)
+      commonPrefixComponents ++ List(LSeq.Component(newPosition, place))
     } else {
-      // No integer space left. We must increase the depth (Logoot-like splitting).
-      // This means the new position will be a new component appended to the 'left' ID.
-      // The new position is generated in the gap between the last component of 'left'
-      // and the start of the next depth.
-
-      // Use the entire left ID as the new prefix.
-      val newPrefix = left
-
-      // Choose a new position (e.g., a constant value like 5, or use a more
-      // sophisticated LSEQ allocation strategy to create a new gap at this new depth).
-      // Let's use 5 as a simplistic new position at the next depth.
-      val newComponent = LSeq.Component(5, place)
-
-      // The new ID is the entire left ID + the new component.
-      newPrefix ++ List(newComponent)
+      left ++ List(LSeq.Component(5, place))
     }
   }
 
