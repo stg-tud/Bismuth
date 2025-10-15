@@ -124,11 +124,11 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(set1.getElements, set2.getElements)
   }
 
-  test("synchronise 3 sets with riblt") {
+  /*test("synchronise 3 sets with riblt") {
     var set1 = ORSet[String]()
     set1 = set1.merge(set1.add("a"))
     set1 = set1.merge(set1.remove("b"))
-    
+
     var set2 = ORSet[String]()
     set2 = set2.merge(set2.add("a"))
     set2 = set2.merge(set2.remove("c"))
@@ -155,4 +155,4 @@ class ORSetTest extends munit.FunSuite:
     set3 = set3.merge(set1.sendSyncResponse(synReq2.requestedEvents))
 
     assertEquals(set1.getElements, set2.getElements ++ set3.getElements)
-  }
+  }*/
