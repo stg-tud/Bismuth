@@ -128,22 +128,14 @@ class ORSetTest extends munit.FunSuite:
     var set1 = ORSet[String]()
     set1 = set1.merge(set1.add("a"))
     set1 = set1.merge(set1.remove("b"))
-
-    print(set1.getElements)
-
+    
     var set2 = ORSet[String]()
     set2 = set2.merge(set2.add("a"))
     set2 = set2.merge(set2.remove("c"))
 
-    print(set2.getElements)
-
-
     var set3 = ORSet[String]()
     set3 = set3.merge(set3.add("d"))
     set3 = set3.merge(set3.remove("e"))
-
-    print(set3.getElements)
-
 
     while !set2.riblt.isDecoded || !set3.riblt.isDecoded do {
       val codedSymbol = set1.produceNextCodedSymbols()
@@ -161,11 +153,6 @@ class ORSetTest extends munit.FunSuite:
     val synReq2 = set3.sendSyncRequest
     set1 = set1.merge(synReq2.delta)
     set3 = set3.merge(set1.sendSyncResponse(synReq2.requestedEvents))
-
-    print(set1.getElements)
-    print(set2.getElements)
-    print(set3.getElements)
-
 
     assertEquals(set1.getElements, set2.getElements ++ set3.getElements)
   }

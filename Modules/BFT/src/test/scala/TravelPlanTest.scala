@@ -141,7 +141,6 @@ class TravelPlanTest extends munit.FunSuite:
   }
 
   test("TravelPlan + HashDAG + RIBLT") {
-
     var r1 = BFTTravelPlan()
     r1 = r1.merge(r1.addBucketListEntry("entry 1")(using replica1Uid))
     r1 = r1.merge(r1.addBucketListEntry("entry 11")(using replica1Uid))
