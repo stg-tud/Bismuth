@@ -1,13 +1,12 @@
 package webapps.filesystem
 
 import org.scalajs.dom.{document, window}
-import rdts.base.Uid
-
 import scala.scalajs.js.annotation.JSExportTopLevel
+import rdts.base.LocalUid
 
-object Calendar {
+object Filesystem {
 
-  given replicaId: Uid = Uid.gen()
+  given replicaId: LocalUid = LocalUid.gen()
 
   @JSExportTopLevel("Filesystem")
   def run(): Unit = {

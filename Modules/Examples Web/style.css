@@ -378,6 +378,10 @@ html .clear-completed:active {
   text-decoration: underline;
 }
 
+.drag-over {
+  border-bottom: 2px dashed #1ac11a !important;
+}
+
 /*
 	Hack to remove background from Mobile Safari.
 	Can't use it globally since it destroys checkboxes in Firefox

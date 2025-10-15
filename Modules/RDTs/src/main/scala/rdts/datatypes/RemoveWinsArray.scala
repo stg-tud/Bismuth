@@ -7,6 +7,7 @@ import rdts.base.LocalUid
 import rdts.base.Lattice
 import rdts.base.DecoratedLattice
 import rdts.base.Uid
+import rdts.base.Bottom
 
 case class RemoveWinsArray[E](
     elements: Map[Dot, RemoveWinsArray.Entry[E]],
@@ -115,6 +116,8 @@ object RemoveWinsArray {
     }
     DecoratedLattice.compact(base) { _.compact }
   }
+
+  given bottom[E]: Bottom[RemoveWinsArray[E]] = Bottom.provide(empty)
 }
 
 type LSeq = List[LSeq.Component]
