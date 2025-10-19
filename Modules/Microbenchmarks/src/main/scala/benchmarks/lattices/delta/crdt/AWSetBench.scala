@@ -26,9 +26,8 @@ class AWSetBench {
     }
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     set = createBySize(size)
-  }
 
   @Benchmark
   def elements(): Set[Int] = set.state.elements

@@ -15,9 +15,8 @@ object BftTravelPlannerApp extends JFXApp3 {
     }
   }
 
-  override def stopApp(): Unit = {
+  override def stopApp(): Unit =
     System.exit(0) // Workaround to ensure that Runtime shutdown hooks are executed
-  }
 
   private object BftTpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {

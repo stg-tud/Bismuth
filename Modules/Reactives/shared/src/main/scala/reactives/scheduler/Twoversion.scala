@@ -24,7 +24,7 @@ trait Twoversion {
       owner = token
     }
     def base(token: Token | Null): V = current
-    def get(token: Token): V         = { if token eq owner then update else current }
+    def get(token: Token): V         = if token eq owner then update else current
 
     def commit(r: V => V): Unit = {
       if update != null then current = r(update)

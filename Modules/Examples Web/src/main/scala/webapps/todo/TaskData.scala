@@ -51,9 +51,8 @@ object TaskReferences {
 
   var taskrefObj: TaskReferences = scala.compiletime.uninitialized
 
-  def lookupOrCreateTaskRef(id: String, task: Option[TaskData]): TaskRefData = {
-    TaskReferences.taskRefMap.getOrElseUpdate(id, { taskrefObj.createTaskRef(id, task) })
-  }
+  def lookupOrCreateTaskRef(id: String, task: Option[TaskData]): TaskRefData =
+    TaskReferences.taskRefMap.getOrElseUpdate(id, taskrefObj.createTaskRef(id, task))
 
   def apply(toggleAll: Event[dom.Event], storePrefix: String): TaskReferences = {
     val taskrefs = new TaskReferences(toggleAll, storePrefix)

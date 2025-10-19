@@ -10,9 +10,8 @@ object Helper {
 
   def dummyKeyValuePairs(size: Int): Array[(String, String)] = {
     val arr = new Array[(String, String)](size)
-    for i <- arr.indices do {
+    for i <- arr.indices do
       arr(i) = scala.util.Random.nextString(10) -> scala.util.Random.nextString(10)
-    }
     arr
   }
 

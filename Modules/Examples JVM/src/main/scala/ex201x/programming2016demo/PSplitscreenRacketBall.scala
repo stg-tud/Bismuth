@@ -49,7 +49,6 @@ object PSplitscreenRacketBall extends Main {
   opponent.main(Array())
   val racket2 = new Racket(playingField.width, false, playingField.height, opponent.panel2.Mouse.y)
   shapes.transform(racket2.shape :: _)
-  for bouncingBall <- balls do {
+  for bouncingBall <- balls do
     bouncingBall.horizontalBounceSources.transform(racket2.collisionWith(bouncingBall.shape) :: _)
-  }
 }

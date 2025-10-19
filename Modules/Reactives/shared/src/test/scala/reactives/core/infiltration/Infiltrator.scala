@@ -17,12 +17,11 @@ class Infiltrator {
   )(using maybe: Scheduler[?]) =
     if (api.isInstanceOf[Levelbased] && reactive.state.isInstanceOf[LevelState[?]]): @nowarn then {
       reactive.state match {
-        case rb: LevelState[?] => {
+        case rb: LevelState[?] =>
           val rblevel = maybe.forceNewTransaction() { _ =>
             rb.level()
           }
           assert(rblevel == level, s"$text, $reactive level was $rblevel but expected $level")
-        }
       }
     }
 }

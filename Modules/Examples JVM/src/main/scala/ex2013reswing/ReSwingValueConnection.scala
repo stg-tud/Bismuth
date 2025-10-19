@@ -94,7 +94,7 @@ private[ex2013reswing] trait ReSwingValueConnection {
               val set = setter.get
               value use { v =>
                 if updatingSwingNotification then
-                  Swing onEDT { set(v) }
+                  Swing onEDT set(v)
                 else
                   inSyncEDT { set(v) }
               }
@@ -151,7 +151,7 @@ private[ex2013reswing] trait ReSwingValueConnection {
       if value != null && value.fixed then
         inSyncEDT {
           setter(forcedValue)
-          enforcedProperties += name -> { () => Swing onEDT { setter(forcedValue) } }
+          enforcedProperties += name -> { () => Swing onEDT setter(forcedValue) }
           ()
         }
       value

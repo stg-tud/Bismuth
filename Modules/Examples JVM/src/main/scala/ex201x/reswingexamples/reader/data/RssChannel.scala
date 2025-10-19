@@ -21,7 +21,7 @@ case class RSSChannel(title: String, link: Option[URL], description: String, pub
       for
         thisDate <- this.pubDate
         thatDate <- that.pubDate
-      yield { thisDate `compareTo` thatDate }
+      yield thisDate `compareTo` thatDate
 
     result getOrElse 0
   }

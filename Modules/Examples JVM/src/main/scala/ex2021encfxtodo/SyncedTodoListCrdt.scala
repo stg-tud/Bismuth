@@ -44,12 +44,12 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
   }
 
   protected def handleStateReceived(state: StateType): Unit = {
-    runInCrdtExecContext(() => {
+    runInCrdtExecContext { () =>
       val before = crdt.values
       crdt.merge(state)
       val after = crdt.values
       TodoListController.handleUpdated(before, after)
-    })
+    }
   }
 
   protected def queryCrdtState(): StateType = runInCrdtExecContext(() => crdt.state)
@@ -72,10 +72,10 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
     runInCrdtExecContext(() => crdt.get(key))
 
   def put(key: UUID, value: TodoEntry): Unit = {
-    val newState = runInCrdtExecContext(() => {
+    val newState = runInCrdtExecContext { () =>
       crdt.put(key, value)
       crdt.state
-    })
+    }
     Platform.runLater {
       connectionManager.stateChanged(
         newState
@@ -84,10 +84,10 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
   }
 
   def remove(key: UUID): Unit = {
-    runInCrdtExecContext(() => {
+    runInCrdtExecContext { () =>
       crdt.remove(key)
       connectionManager.stateChanged(crdt.state)
-    })
+    }
   }
 
   def values: Map[UUID, TodoEntry] =

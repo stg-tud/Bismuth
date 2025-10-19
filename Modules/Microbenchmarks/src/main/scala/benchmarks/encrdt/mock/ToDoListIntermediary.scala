@@ -9,13 +9,11 @@ class ToDoListIntermediary extends UntrustedReplica with DeltaPruning with Inter
     }.sum
   }
 
-  def encDeltaCausalityInfoSizeInBytes: Long = {
+  def encDeltaCausalityInfoSizeInBytes: Long =
     encryptedDeltaGroupStore.iterator.map(_.serialDottedVersionVector.length.toLong).sum
-  }
 
-  def rawDeltasSizeInBytes: Long = {
+  def rawDeltasSizeInBytes: Long =
     encryptedDeltaGroupStore.iterator.map(_.stateCiphertext.length.toLong).sum
-  }
 
   def numberStoredDeltas: Int = encryptedDeltaGroupStore.size
 

@@ -125,9 +125,8 @@ object CreationTimestamp {
     while old_now.isDefined && bundle_creation_time.isEqual(
         old_now.get.bundle_creation_time
       ) && sequence_number <= old_now.get.sequence_number
-    do {
+    do
       sequence_number += 1
-    }
 
     val now = CreationTimestamp(bundle_creation_time, sequence_number)
     old_now = Option(now)
@@ -300,9 +299,8 @@ private def readBytes(reader: Reader): Array[Byte] = {
     val buffer: ArrayBuffer[Byte] = ArrayBuffer[Byte]()
 
     reader.readArrayStart()
-    while !reader.hasBreak do {
+    while !reader.hasBreak do
       buffer += reader.readInt().toByte
-    }
     reader.readArrayClose(unbounded = true, buffer.toArray)
   }
 }
@@ -620,9 +618,8 @@ given Encoder[Bundle] = Encoder { (writer, bundle) =>
     .writeArrayOpen(length)
     .write[PrimaryBlock](bundle.primary_block)
 
-  for block <- bundle.other_blocks do {
+  for block <- bundle.other_blocks do
     writer.write[CanonicalBlock](block)
-  }
 
   writer.writeArrayClose()
 }
@@ -639,9 +636,8 @@ given Decoder[Bundle] = Decoder { reader =>
 
   val canonicalBlocks: ListBuffer[CanonicalBlock] = ListBuffer()
 
-  while reader.hasArrayHeader || reader.hasArrayStart do {
+  while reader.hasArrayHeader || reader.hasArrayStart do
     canonicalBlocks.addOne(reader.read[CanonicalBlock]())
-  }
 
   reader.readArrayClose(unbounded, Bundle(primaryBlock, canonicalBlocks.toList))
 }

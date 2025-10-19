@@ -61,9 +61,8 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
 
   override val localReplicaId: String = replicaId.toString
 
-  override def stateChanged(newState: State): Unit = {
+  override def stateChanged(newState: State): Unit =
     dataManager.applyDelta(newState)
-  }
 
   override def connectToReplica(remoteReplicaId: String, uri: URI): Unit = {
     dataManager.addBinaryConnection(niotcp.connect(niotcp.defaultSocketChannel(new InetSocketAddress(

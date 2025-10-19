@@ -24,17 +24,14 @@ class EpidemicRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
     epidemicStrategy.onRequestSenderForBundle(peers, services, packet)
   }
 
-  override def onError(packet: Packet.Error): Unit = {
+  override def onError(packet: Packet.Error): Unit =
     println(s"received error from dtnd: ${packet.reason}")
-  }
 
-  override def onTimeout(packet: Packet.Timeout): Unit = {
+  override def onTimeout(packet: Packet.Timeout): Unit =
     println(s"sending ran into timeout for bundle-forward-response ${packet.bp}")
-  }
 
-  override def onSendingFailed(packet: Packet.SendingFailed): Unit = {
+  override def onSendingFailed(packet: Packet.SendingFailed): Unit =
     println(s"sending failed for bundle ${packet.bid} on cla ${packet.cla_sender}")
-  }
 
   override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit = {
     epidemicStrategy.onSendingSucceeded(packet)
@@ -48,9 +45,8 @@ class EpidemicRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
     println("received incoming bundle. information not used for routing. ignoring.")
   }
 
-  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit = {
+  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit =
     println("received incoming bundle without previous node. information not used for routing. ignoring.")
-  }
 }
 object EpidemicRouter {
   def apply(
@@ -71,13 +67,13 @@ class EpidemicStrategy {
   ): Option[Packet.ResponseSenderForBundle] = {
     val selected_clas = peers.asScala
       .filter((peer_name, peer) => !delivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
-      .map((peer_name, peer) => {
+      .map { (peer_name, peer) =>
         peer.cla_list
           .filter((agent, port_option) => packet.clas.contains(agent))
           .map((agent, port_option) =>
             Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
           )
-      })
+      }
       .flatten
       .toList
 
@@ -101,7 +97,7 @@ class EpidemicStrategy {
       case x: PreviousNodeBlock => x
     } match {
       case None                      => println("received incoming bundle without previous node block. ignoring")
-      case Some(previous_node_block) => {
+      case Some(previous_node_block) =>
         delivered.get(packet.bndl.id) match {
           case null =>
             delivered.put(packet.bndl.id, Set(previous_node_block.previous_node_id.extract_node_name()))
@@ -110,7 +106,6 @@ class EpidemicStrategy {
             delivered.put(packet.bndl.id, x + previous_node_block.previous_node_id.extract_node_name())
             ()
         }
-      }
     }
   }
 }

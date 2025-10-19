@@ -93,9 +93,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: UnboundInteraction[Tuple1[T], A]) {
-    def modifies(source: Var[T]): InteractionWithModifies[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): InteractionWithModifies[Tuple1[T], Tuple1[Var[T]], A] =
       InteractionWithModifies(m.requires, m.ensures, Tuple1(source))
-    }
   }
 
   extension [T1, T2, A](m: UnboundInteraction[(T1, T2), A]) {
@@ -137,9 +136,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: InteractionWithExecutes[Tuple1[T], A]) {
-    def modifies(source: Var[T]): InteractionWithExecutesAndModifies[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): InteractionWithExecutesAndModifies[Tuple1[T], Tuple1[Var[T]], A] =
       InteractionWithExecutesAndModifies(m.requires, m.ensures, m.executes, Tuple1(source))
-    }
   }
 
   extension [T1, T2, A](m: InteractionWithExecutes[(T1, T2), A]) {
@@ -186,9 +184,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: InteractionWithActs[Tuple1[T], A]) {
-    def modifies(source: Var[T]): InteractionWithModifiesAndActs[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): InteractionWithModifiesAndActs[Tuple1[T], Tuple1[Var[T]], A] =
       InteractionWithModifiesAndActs(m.requires, m.ensures, Tuple1(source), m.event)
-    }
   }
 
   extension [T1, T2, A](m: InteractionWithActs[(T1, T2), A]) {
@@ -227,9 +224,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: InteractionWithExecutesAndActs[Tuple1[T], A]) {
-    def modifies(source: Var[T]): BoundInteraction[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): BoundInteraction[Tuple1[T], Tuple1[Var[T]], A] =
       BoundInteraction(m.requires, m.ensures, m.executes, Tuple1(source), m.event)
-    }
   }
 
   extension [T1, T2, A](m: InteractionWithExecutesAndActs[(T1, T2), A]) {

@@ -36,5 +36,5 @@ class Fetcher(val urls: Signal[Set[URL]]) {
 
   /** Fetch the channels from the list of urls */
 
-  def fetchAll() = { urls.now foreach (fetch(_)) }
+  def fetchAll() = urls.now foreach (fetch(_))
 }

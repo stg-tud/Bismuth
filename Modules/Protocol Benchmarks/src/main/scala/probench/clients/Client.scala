@@ -202,8 +202,7 @@ trait Client(name: Uid, logTimings: Boolean) {
 
   def handleOpImpl(op: KVOperation[String, String]): Unit
 
-  def onResultValue(result: String): Unit = {
+  def onResultValue(result: String): Unit =
     if printResults then println(result)
-  }
 
 }

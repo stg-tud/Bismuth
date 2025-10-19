@@ -43,9 +43,8 @@ object Sourcecode {
 
   object Util {
     def isSynthetic(using Quotes)(s: quotes.reflect.Symbol) = isSyntheticName(getName(s))
-    def isSyntheticName(name: String)                       = {
+    def isSyntheticName(name: String)                       =
       name == "<init>" || (name.startsWith("<local ") && name.endsWith(">")) || name == "$anonfun" || name == "macro"
-    }
     def getName(using Quotes)(s: quotes.reflect.Symbol) = {
       s.name.trim
         .stripSuffix("$") // meh
@@ -74,7 +73,7 @@ object Sourcecode {
       * such a synthetic variable.
       */
     def nonMacroOwner(using Quotes)(owner: quotes.reflect.Symbol): quotes.reflect.Symbol =
-      findOwner(owner, owner0 => { owner0.flags.is(quotes.reflect.Flags.Macro) && Util.getName(owner0) == "macro" })
+      findOwner(owner, owner0 => owner0.flags.is(quotes.reflect.Flags.Macro) && Util.getName(owner0) == "macro")
 
     private def adjustName(s: String): String =
       // Required to get the same name from dotty

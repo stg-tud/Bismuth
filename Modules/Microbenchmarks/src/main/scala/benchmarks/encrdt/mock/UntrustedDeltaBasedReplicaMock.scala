@@ -26,14 +26,14 @@ class UntrustedDeltaBasedReplicaMock extends UntrustedReplica {
   def decryptAndWriteRawDeltasToFile(aead: Aead, outFilepath: Path): Unit = {
     val os          = Files.newOutputStream(outFilepath)
     val printWriter = new PrintWriter(os)
-    encryptedDeltaGroupStore.foreach(encDeltaGroup => {
+    encryptedDeltaGroupStore.foreach { encDeltaGroup =>
       printWriter.print(new String(aead.decrypt(
         encDeltaGroup.stateCiphertext,
         encDeltaGroup.serialDottedVersionVector
       )))
       printWriter.print('|')
       printWriter.println(new String(encDeltaGroup.serialDottedVersionVector))
-    })
+    }
     printWriter.close()
   }
 

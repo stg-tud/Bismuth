@@ -34,9 +34,8 @@ class DeltaAWLWWMContainer[K, V](
   def remove(key: K): Unit = { removeDelta(key); () }
 
   def removeDelta(key: K): State[K, V] = {
-    val delta = {
+    val delta =
       _state.remove(key)
-    }
     mutate(delta)
     delta
   }
@@ -50,13 +49,11 @@ class DeltaAWLWWMContainer[K, V](
   def values: Map[K, V] =
     _state.entries.map((k, v) => (k, v.value)).toMap
 
-  def merge(other: State[K, V]): Unit = {
+  def merge(other: State[K, V]): Unit =
     mutate(other)
-  }
 
-  private def mutate(delta: State[K, V]): Unit = {
+  private def mutate(delta: State[K, V]): Unit =
     _state = _state `merge` delta
-  }
 }
 
 object DeltaAWLWWMContainer {

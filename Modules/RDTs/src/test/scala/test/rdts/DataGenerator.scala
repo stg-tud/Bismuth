@@ -166,9 +166,7 @@ object DataGenerator {
         insertedValues  <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
         removed         <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
         id              <- Gen.stringOfN(10, Gen.alphaChar)
-      yield {
-        makeRGA(insertedIndices zip insertedValues, removed, Uid.predefined(id.toString).convert)
-      }
+      yield makeRGA(insertedIndices zip insertedValues, removed, Uid.predefined(id.toString).convert)
 
     given arbRGA[E](using
         e: Arbitrary[E],

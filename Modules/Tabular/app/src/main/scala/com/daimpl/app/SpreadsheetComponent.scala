@@ -166,13 +166,11 @@ object SpreadsheetComponent {
       } >> $.modState(_.copy(rangeDragStart = None, rangePreviewEnd = None))
     }
 
-    def selectRow(rowIdx: Int): Callback = {
+    def selectRow(rowIdx: Int): Callback =
       $.modState(_.copy(selectedRow = Some(rowIdx), selectedColumn = None))
-    }
 
-    def selectColumn(colIdx: Int): Callback = {
+    def selectColumn(colIdx: Int): Callback =
       $.modState(_.copy(selectedColumn = Some(colIdx), selectedRow = None))
-    }
 
     def insertRowAbove(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>

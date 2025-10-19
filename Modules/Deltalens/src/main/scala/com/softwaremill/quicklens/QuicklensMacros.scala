@@ -183,9 +183,8 @@ object QuicklensMacros {
         .getOrElse(report.errorAndAbort(noSuchMember(sym.name, name)))
     }
 
-    def termMethodByNameUnsafe(term: Term, name: String): Symbol = {
+    def termMethodByNameUnsafe(term: Term, name: String): Symbol =
       symbolMethodByNameUnsafe(term.tpe.widenAll.typeSymbol, name)
-    }
 
     def termAccessorMethodByNameUnsafe(term: Term, name: String): (Symbol, Int) = {
       val typeSymbol     = term.tpe.widenAll.matchingTypeSymbol
@@ -195,9 +194,8 @@ object QuicklensMacros {
       -> (idx + 1)
     }
 
-    def isProduct(sym: Symbol): Boolean = {
+    def isProduct(sym: Symbol): Boolean =
       sym.flags.is(Flags.Case)
-    }
 
     def isSum(sym: Symbol): Boolean = {
       sym.flags.is(Flags.Enum) ||

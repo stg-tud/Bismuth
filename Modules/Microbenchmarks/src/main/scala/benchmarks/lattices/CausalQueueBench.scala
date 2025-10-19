@@ -26,9 +26,8 @@ class CausalQueueBenchWithRGA {
   given LocalUid = LocalUid.predefined("a")
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     lca = (1 to size).foldLeft(ReplicatedList.empty[Int]) { (q, e) => q.prepend(e) }
-  }
 
   def make(base: ReplicatedList[Int], ops: Int) = {
     val s     = ops / 2

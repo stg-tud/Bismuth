@@ -46,9 +46,8 @@ class TCPConnection(socket: Socket) {
   }
 }
 object TCPConnection {
-  def apply(host: String, port: Int): TCPConnection = {
+  def apply(host: String, port: Int): TCPConnection =
     new TCPConnection(new Socket(host, port))
-  }
 }
 
 class TCPReadonlyServer(socket: ServerSocket) {
@@ -97,10 +96,9 @@ class TCPReadonlyServer(socket: ServerSocket) {
           println(s"added new connection: ${connection.remoteHostName}")
         }
       } catch {
-        case e: SocketException => {
+        case e: SocketException =>
           println("server socket accept failed:")
           e.printStackTrace()
-        }
       }
     }
   }
@@ -110,18 +108,15 @@ class TCPReadonlyServer(socket: ServerSocket) {
 
     override def run(): Unit = {
       try {
-        while keepRunning do {
+        while keepRunning do
           queue.put((connection, connection.receive))
-        }
       } catch {
-        case e: IOException => {
+        case e: IOException =>
           println(s"read attempted on closed socket (conn: ${connection}):")
           e.printStackTrace()
-        }
-        case e: EOFException => {
+        case e: EOFException =>
           println(s"socket closed down while reading (conn: ${connection}):")
           e.printStackTrace()
-        }
       }
       println("closing socket")
       connection.close()

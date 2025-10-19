@@ -44,13 +44,13 @@ class TravelPlanViewModel(model: TravelPlanModel) extends GridPane {
   def createInviteButtonPressed(): Unit = {
     global.execute { () =>
       val invitation = model.createInvitation
-      Platform.runLater(() => {
+      Platform.runLater { () =>
         val scene = InvitationDialogScene(invitation, model)
         val stage = new Stage()
         stage.setTitle("Create Invite or Delegate Permissions")
         stage.scene = scene
         stage.show()
-      })
+      }
     }
   }
 

@@ -23,15 +23,15 @@ object FilterDerivation {
       permissionTree.children.foreach { case (factorLabel, childPermissionTree) =>
         elementLabels.get(factorLabel) match
           case Some(factorIdx) =>
-            try {
+            try
               elementFilters(factorIdx).validatePermissionTree(childPermissionTree)
-            } catch {
+            catch {
               case InvalidPathException(path) => throw InvalidPathException(factorLabel :: path)
             }
           case None if factorLabel == "*" =>
-            try {
+            try
               elementFilters.foreach(_.validatePermissionTree(childPermissionTree))
-            } catch {
+            catch {
               case InvalidPathException(labels) => throw InvalidPathException("*" :: labels)
             }
           case None => throw InvalidPathException(List(factorLabel))

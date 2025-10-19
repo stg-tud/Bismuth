@@ -154,18 +154,16 @@ trait TopoBundle {
               if admissionTicket.wrapUp != null then admissionTicket.wrapUp.nn(transaction)
               admissionResult
             }
-          } finally {
+          } finally
             idle = true
-          }
         }
         afterCommitObservers.foreach(_.execute())
         res
       }
     }
 
-    override private[reactives] def singleReadValueOnce[A](reactive: ReadAs.of[State, A]): A = {
+    override private[reactives] def singleReadValueOnce[A](reactive: ReadAs.of[State, A]): A =
       reactive.read(reactive.state.value)
-    }
   }
 
   object Util {

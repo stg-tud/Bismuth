@@ -18,6 +18,5 @@ case class Ensures[S, A](
     representation: String
 )
 
-def showPredicateCode(expr: Expr[(?, ?) => Boolean])(using Quotes): Expr[String] = {
+def showPredicateCode(expr: Expr[(?, ?) => Boolean])(using Quotes): Expr[String] =
   Expr(expr.show)
-}

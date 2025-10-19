@@ -85,7 +85,6 @@ class TodoListApp extends JFXApp3 {
     }
   }
 
-  override def stopApp(): Unit = {
+  override def stopApp(): Unit =
     TodoListController.stop()
-  }
 }

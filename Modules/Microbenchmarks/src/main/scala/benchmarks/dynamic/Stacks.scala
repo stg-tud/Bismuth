@@ -32,8 +32,8 @@ class StackState {
     sources = Range(0, threads).map(_ => Var(0)).toArray
     results = sources.map { source =>
       var cur: Signal[Int] = source
-      for _ <- Range(0, size.size) do { cur = cur.map(1.+) }
-      cur.map { x => { work.consume(); x } }
+      for _ <- Range(0, size.size) do cur = cur.map(1.+)
+      cur.map { x => work.consume(); x }
     }
 
     dynamics = results.zipWithIndex.map {

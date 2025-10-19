@@ -48,9 +48,8 @@ class FullKeyHierarchy(private val kdk: KeyDerivationKey) extends KeyHierarchy {
         )
   }
 
-  override def decryptDelta(dot: Dot, encryptedDeltaParts: EncryptedDeltaParts): IsolatedDeltaParts = {
+  override def decryptDelta(dot: Dot, encryptedDeltaParts: EncryptedDeltaParts): IsolatedDeltaParts =
     decryptDeltaRec(kdk, dot, encryptedDeltaParts)
-  }
 
   private def decryptDeltaRec(
       kdk: KeyDerivationKey,
@@ -108,9 +107,8 @@ class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
         )
   }
 
-  override def decryptDelta(dot: Dot, encryptedDeltaParts: EncryptedDeltaParts): IsolatedDeltaParts = {
+  override def decryptDelta(dot: Dot, encryptedDeltaParts: EncryptedDeltaParts): IsolatedDeltaParts =
     decryptDeltaRec(keys, dot, encryptedDeltaParts)
-  }
 
   private def decryptDeltaRec(
       keyMap: KeyMap,
@@ -136,9 +134,8 @@ class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
 }
 
 private case class KeyMap(inner: Map[String, KeyMap | KeyDerivationKey]) {
-  def lookup(path: Array[String]): Option[(Array[String], KeyDerivationKey)] = {
+  def lookup(path: Array[String]): Option[(Array[String], KeyDerivationKey)] =
     lookupRec(path, 0)
-  }
 
   @tailrec
   private def lookupRec(path: Array[String], index: Int): Option[(Array[String], KeyDerivationKey)] = {

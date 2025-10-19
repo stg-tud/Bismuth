@@ -66,7 +66,6 @@ object MathUtil {
     * | a b |
     * | c d |
     */
-  def determinant(a: Int, b: Int, c: Int, d: Int): Int = {
+  def determinant(a: Int, b: Int, c: Int, d: Int): Int =
     a * d - b * c
-  }
 }

@@ -75,9 +75,8 @@ class CounterTest extends munit.FunSuite:
 
     deltas = deltas.reverse
 
-    for delta <- deltas do {
+    for delta <- deltas do
       counter3 = counter3.merge(delta)
-    }
 
     for window <- deltas.sliding(20, 10) do
       var deltaGroup = Counter()

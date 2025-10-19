@@ -11,9 +11,9 @@ object Storing {
     if item == null then default
     else {
       val res =
-        try {
+        try
           readFromString[A](item)
-        } catch {
+        catch {
           case cause: Throwable =>
             println(s"could not restore $key: $cause")
             cause.printStackTrace()

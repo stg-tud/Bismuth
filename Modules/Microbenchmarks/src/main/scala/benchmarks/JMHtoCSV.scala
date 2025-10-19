@@ -45,9 +45,8 @@ object JMHtoCSV {
           }
         }
       }
-    } finally {
+    } finally
       for writer <- outfiles.values do writer.close()
-    }
     println("done, written files:\n" + outfiles.keySet.mkString(".txt\n") + ".txt")
   }
 }

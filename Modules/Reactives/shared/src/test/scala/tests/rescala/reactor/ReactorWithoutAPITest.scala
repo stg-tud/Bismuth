@@ -183,12 +183,10 @@ class ReactorWithoutAPITest extends munit.FunSuite {
       val reactor = Reactor.once("Initial Value") {
         S.until(
           e1,
-          body = {
-            S.set("Body value")
-          },
-          interruptHandler = {
+          body =
+            S.set("Body value"),
+          interruptHandler =
             S.set("Interrupt value")
-          }
         )
       }
 
@@ -202,9 +200,8 @@ class ReactorWithoutAPITest extends munit.FunSuite {
       val reactor = Reactor.once("Initial Value") {
         S.until(
           e1,
-          body = {
-            S.set("Body value")
-          },
+          body =
+            S.set("Body value"),
           interruptHandler = { (e: String) =>
             S.set(e)
           }
@@ -229,9 +226,8 @@ class ReactorWithoutAPITest extends munit.FunSuite {
               }
             }
           },
-          interruptHandler = {
+          interruptHandler =
             S.set("Interrupted")
-          }
         )
       }
 

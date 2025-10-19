@@ -42,7 +42,7 @@ case class PoSBlockchain[H, T](
   @tailrec
   private def stakeWeightsOfChain(head: H, accumulatedStakeWeights: Map[Uid, Long] = Map.empty): Map[Uid, Long] =
     inner.get(head) match {
-      case Some(block) => {
+      case Some(block) =>
         val newStakeWeight = accumulatedStakeWeights.get(block.dot.place) match {
           case Some(value) => value + block.data.toString.length
           case None        => 0L
@@ -52,7 +52,6 @@ case class PoSBlockchain[H, T](
             stakeWeightsOfChain(predecessor, accumulatedStakeWeights + (block.dot.place -> newStakeWeight))
           case None => accumulatedStakeWeights + (block.dot.place -> newStakeWeight)
         }
-      }
       case None => accumulatedStakeWeights
     }
 

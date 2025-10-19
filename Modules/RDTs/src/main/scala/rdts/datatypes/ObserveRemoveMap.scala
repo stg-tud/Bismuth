@@ -37,9 +37,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     }
   }
 
-  def remove(k: K): Delta = {
+  def remove(k: K): Delta =
     ObserveRemoveMap(Map.empty, inner.get(k).map(_.dots).getOrElse(Dots.empty))
-  }
 
   def removeAll(keys: Iterable[K]): Delta = {
     val rem = keys.flatMap(inner.get).map(_.dots).foldLeft(Dots.empty)(_ `union` _)
@@ -64,9 +63,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     )
   }
 
-  def clear(): Delta = {
+  def clear(): Delta =
     ObserveRemoveMap(Map.empty, inner.values.map(_.dots).foldLeft(Dots.empty)(_ `union` _))
-  }
 }
 
 object ObserveRemoveMap {

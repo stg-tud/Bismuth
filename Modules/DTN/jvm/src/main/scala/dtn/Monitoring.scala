@@ -59,9 +59,8 @@ class MonitoringServer(server: TCPReadonlyServer, paths: MonitoringPaths = Monit
         case e: Exception =>
           println("monitoring server ran into exception:")
           e.printStackTrace()
-      } finally {
+      } finally
         server.stop()
-      }
     }.recoverAndLog()
     ()
   }
@@ -76,14 +75,12 @@ object MonitoringServer {
 }
 
 class MonitoringClient(connection: TCPConnection) extends MonitoringClientInterface {
-  override def send(message: MonitoringMessage): Unit = {
+  override def send(message: MonitoringMessage): Unit =
     connection.send(Json.encode[MonitoringMessage](message).toByteArray)
-  }
 }
 object MonitoringClient {
-  def apply(host: String, port: Int): MonitoringClient = {
+  def apply(host: String, port: Int): MonitoringClient =
     new MonitoringClient(TCPConnection(host, port))
-  }
 }
 
 class MonitoringBundlesReceivedPrinter(paths: MonitoringPaths = MonitoringPaths()) {
@@ -102,7 +99,7 @@ class MonitoringBundlesReceivedPrinter(paths: MonitoringPaths = MonitoringPaths(
             case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => ()
             case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => ()
             case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time)   => ()
-            case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => {
+            case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          =>
               if oldTime.isEmpty then oldTime = time
 
               if Duration.between(time.get, oldTime.get).toSeconds() >= 1 then {
@@ -114,7 +111,6 @@ class MonitoringBundlesReceivedPrinter(paths: MonitoringPaths = MonitoringPaths(
               } else {
                 messageCount += 1
               }
-            }
         }
       }
     }.recoverAndLog()
@@ -138,7 +134,7 @@ class MonitoringBundlesForwardedPrinter(paths: MonitoringPaths = MonitoringPaths
             case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => ()
             case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time)   => ()
             case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => ()
-            case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => {
+            case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         =>
               if oldTime.isEmpty then oldTime = time
 
               if Duration.between(time.get, oldTime.get).toSeconds() >= 1 then {
@@ -150,7 +146,6 @@ class MonitoringBundlesForwardedPrinter(paths: MonitoringPaths = MonitoringPaths
               } else {
                 messageCount += 1
               }
-            }
         }
       }
     }.recoverAndLog()
@@ -180,22 +175,20 @@ class MonitoringStateDevelopmentPrinter(creationClientId: String, paths: Monitor
           Json.decode(line.getBytes()).to[MonitoringMessage].value match
             case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => ()
             case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => ()
-            case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => {
+            case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) =>
               if clientId == creationClientId then {
                 bundlesDeliveredAtCreationCounter += 1
               } else {
                 deliveredStates = deliveredStates.merge(Map(clientId -> dots))
               }
               newestTime = time
-            }
-            case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time) => {
+            case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time) =>
               if clientId != creationClientId then {
                 bundlesCreatedAtOtherNodesCounter += 1
               } else {
                 creationState = creationState.merge(dots)
               }
               newestTime = time
-            }
 
           val creationStateNum: Double = creationState.size.toDouble
 
@@ -235,7 +228,7 @@ class MonitoringStateDevelopmentToRatioConverter(creationClientId: String, paths
         Json.decode(line.getBytes()).to[MonitoringMessage].value match
           case MonitoringMessage.BundleReceivedAtRouter(nodeId, bundleId, time)          => ()
           case MonitoringMessage.BundleForwardedAtRouter(nodeId, bundleId, time)         => ()
-          case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) => {
+          case MonitoringMessage.BundleDeliveredAtClient(clientId, bundleId, dots, time) =>
             if clientId == creationClientId then {
               bundlesDeliveredAtCreationCounter += 1
             } else {
@@ -243,44 +236,40 @@ class MonitoringStateDevelopmentToRatioConverter(creationClientId: String, paths
 
               val ratio = deliveredStates(clientId).size.toDouble / creationState.size.toDouble
 
-              data = data.updatedWith(clientId)(option => {
+              data = data.updatedWith(clientId) { option =>
                 option match
                   case None        => Option((List(time.get), List(ratio)))
                   case Some(tuple) => Option((tuple._1 :+ time.get, tuple._2 :+ ratio))
-              })
+              }
             }
-          }
-          case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time) => {
+          case MonitoringMessage.BundleCreatedAtClient(clientId, bundleId, dots, time) =>
             if clientId != creationClientId then {
               bundlesCreatedAtOtherNodesCounter += 1
             } else {
               creationState = creationState.merge(dots)
 
-              deliveredStates.foreach((cId, d) => {
+              deliveredStates.foreach { (cId, d) =>
                 val ratio = d.size.toDouble / creationState.size.toDouble
 
-                data = data.updatedWith(cId)(option => {
+                data = data.updatedWith(cId) { option =>
                   option match
                     case None        => Option((List(time.get), List(ratio)))
                     case Some(tuple) => Option((tuple._1 :+ time.get, tuple._2 :+ ratio))
-                })
-              })
+                }
+              }
             }
-          }
 
         line = in.readLine()
       }
     }.recoverAndLog()
 
     Using(BufferedOutputStream(Files.newOutputStream(paths.ratios_fp))) { out =>
-      {
-        data.foreach((clientId, tuple) => {
-          val message = RatioMessage(clientId, tuple._1, tuple._2)
+      data.foreach { (clientId, tuple) =>
+        val message = RatioMessage(clientId, tuple._1, tuple._2)
 
-          out.write(Json.encode[RatioMessage](message).toByteArray)
-          out.write("\n".getBytes())
-          out.flush()
-        })
+        out.write(Json.encode[RatioMessage](message).toByteArray)
+        out.write("\n".getBytes())
+        out.flush()
       }
     }.recoverAndLog()
     ()

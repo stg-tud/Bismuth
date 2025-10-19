@@ -26,9 +26,9 @@ class ChatBench {
       val room2 = math.max(ti % locks.length, (ti + locks.length / 2) % locks.length)
       locks(room1).lock()
       locks(room2).lock()
-      try {
+      try
         benchState.clients(threadParams.getThreadIndex).fire("hello")
-      } finally {
+      finally {
         locks(room2).unlock()
         locks(room1).unlock()
       }

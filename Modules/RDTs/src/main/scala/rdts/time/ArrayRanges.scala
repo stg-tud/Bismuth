@@ -28,9 +28,8 @@ class ArrayRanges(
     case other => false
   }
 
-  override def hashCode(): Int = {
+  override def hashCode(): Int =
     inner.iterator.take(used).hashCode()
-  }
 
   override def toString: String = inner.iterator.take(used).grouped(2).map {
     case (Seq(s, e)) =>
@@ -318,9 +317,8 @@ class ArrayRanges(
     new ArrayRanges(newInner, newInnerNextIndex)
   }
 
-  def decomposed: Iterable[ArrayRanges] = {
+  def decomposed: Iterable[ArrayRanges] =
     inner.view.slice(0, used).sliding(2, 2).map(r => new ArrayRanges(r.toArray, 2)).to(Iterable)
-  }
 
 }
 

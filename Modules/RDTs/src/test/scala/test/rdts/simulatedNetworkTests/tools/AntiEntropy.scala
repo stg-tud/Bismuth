@@ -43,9 +43,8 @@ class AntiEntropy[A](
 
   type Message = Either[AckMsg, DeltaMsg[A]]
 
-  def addNeighbor(newNeighbor: String): Unit = {
+  def addNeighbor(newNeighbor: String): Unit =
     neighbors.append(newNeighbor)
-  }
 
   def recordChange(delta: Named[A], state: A): Unit = {
     fullState = state

@@ -15,7 +15,7 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
 
   override def size = count
 
-  def hasNext = { c < count }
+  def hasNext = c < count
   def next()  = {
     if b == caret then
       b += buf.length - count
@@ -78,10 +78,9 @@ class GapBuffer {
     size.transform(_ + str.length)
   }
 
-  def remove(count: Int): Unit = {
+  def remove(count: Int): Unit =
     // remove text by increasing the gap between the two text segments
     size.transform(_ - math.min(count, size.now - caret.now))
-  }
 
   private def expand(minsize: Int): Unit = {
     // the text does not fit into the buffer

@@ -25,13 +25,11 @@ class ReComboBox[A](
   private var model: javax.swing.ListModel[A] = scala.compiletime.uninitialized
 
   private val modelListener = new javax.swing.event.ListDataListener {
-    def contentsChanged(e: javax.swing.event.ListDataEvent): Unit = { peer publish ListChanged(null) }
-    def intervalRemoved(e: javax.swing.event.ListDataEvent): Unit = {
+    def contentsChanged(e: javax.swing.event.ListDataEvent): Unit = peer publish ListChanged(null)
+    def intervalRemoved(e: javax.swing.event.ListDataEvent): Unit =
       peer publish ListElementsRemoved(null, e.getIndex0 to e.getIndex1)
-    }
-    def intervalAdded(e: javax.swing.event.ListDataEvent): Unit = {
+    def intervalAdded(e: javax.swing.event.ListDataEvent): Unit =
       peer publish ListElementsAdded(null, e.getIndex0 to e.getIndex1)
-    }
   }
 
   def modelChanged() = {
@@ -72,10 +70,10 @@ class ReComboBox[A](
   ) {
     protected[ReComboBox] val peer: ReComboBox.this.peer.selection.type = ReComboBox.this.peer.selection
 
-    index.using({ () => peer.index }, peer.index = _, (peer, classOf[SelectionChanged]))
+    index.using(() => peer.index, peer.index = _, (peer, classOf[SelectionChanged]))
     item.using(
-      { () => Option(peer.item) },
-      { item => peer.item = item getOrElse null.asInstanceOf[A] },
+      () => Option(peer.item),
+      item => peer.item = item getOrElse null.asInstanceOf[A],
       (peer, classOf[SelectionChanged])
     )
 

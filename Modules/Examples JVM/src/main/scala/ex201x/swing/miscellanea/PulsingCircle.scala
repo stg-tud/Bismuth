@@ -41,7 +41,7 @@ class PulsingCircle {
   type Delta = Point
 
   class Oval(center: Signal[Point], radius: Signal[Int]) {
-    toDraw += ((g: Graphics2D) => { g.fillOval(center.now.x, center.now.y, radius.now, radius.now) })
+    toDraw += ((g: Graphics2D) => g.fillOval(center.now.x, center.now.y, radius.now, radius.now))
 
     override def toString = "Circle(" + center + "," + radius + ")"
   }
@@ -63,9 +63,8 @@ class PulsingCircle {
   val frame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
-      override def paintComponent(g: Graphics2D): Unit = {
+      override def paintComponent(g: Graphics2D): Unit =
         toDraw.foreach(x => x(g))
-      }
     }
   }
 

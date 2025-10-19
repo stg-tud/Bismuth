@@ -16,9 +16,8 @@ import scala.util.Try
 object AeadHelper {
 
   /** Checks that libsodium.js is loaded. */
-  def ready(): Future[Unit] = {
+  def ready(): Future[Unit] =
     sodium.ready.toFuture
-  }
 
   def toBase64(bytes: Uint8Array): String = sodium.to_base64(bytes, base64Variants.ORIGINAL)
 
@@ -29,18 +28,16 @@ object AeadHelper {
     * @return
     *   An AeadKey instance with newly generated key material.
     */
-  def generateKey: LibsodiumJsAeadKey = {
+  def generateKey: LibsodiumJsAeadKey =
     LibsodiumJsAeadKey(generateRawKey)
-  }
 
   /** Generates a new XChaCha20-Poly1305 key.
     *
     * @return
     *   The new key
     */
-  def generateRawKey: Uint8Array = {
+  def generateRawKey: Uint8Array =
     sodium.crypto_aead_xchacha20poly1305_ietf_keygen()
-  }
 
   /** Instantiates an AeadKey instance for the provided raw key material
     *
@@ -49,9 +46,8 @@ object AeadHelper {
     * @return
     *   the AeadKey instance
     */
-  def aeadKeyFromBytes(rawKey: Uint8Array): LibsodiumJsAeadKey = {
+  def aeadKeyFromBytes(rawKey: Uint8Array): LibsodiumJsAeadKey =
     LibsodiumJsAeadKey(rawKey)
-  }
 
   /** Instantiates an AeadKey instance for the provided raw key material
     *
@@ -71,9 +67,8 @@ object AeadHelper {
     * @return
     *   A random nonce
     */
-  private inline def generateRandomNonce(): Uint8Array = {
+  private inline def generateRandomNonce(): Uint8Array =
     sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES)
-  }
 
   /** Encrypts and authenticates a message along the authenticated non-confidential associated data.
     *

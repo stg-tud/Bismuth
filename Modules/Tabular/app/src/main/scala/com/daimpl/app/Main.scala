@@ -41,9 +41,8 @@ object Main {
       }
     }
 
-    def removeSpreadsheet(id: Int): Callback = {
+    def removeSpreadsheet(id: Int): Callback =
       $.modState(state => state.copy(spreadsheets = state.spreadsheets.filter(_.id != id)))
-    }
 
     def toggleOnlineStatus(id: Int): Callback = {
       $.modState { state =>

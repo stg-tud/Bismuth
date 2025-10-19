@@ -41,9 +41,9 @@ class PaperGlitchTest extends munit.FunSuite {
       latch.countDown()
       latch.await()
       while !cancelled do {
-        try {
+        try
           price.set(3 * 2 << Random.nextInt(8))
-        } catch {
+        catch {
           // occurs because of invalid buffer
           case e: AssertionError => glitches.add(-42)
           // can occur because of missing sync barriers
@@ -55,9 +55,9 @@ class PaperGlitchTest extends munit.FunSuite {
       latch.countDown()
       latch.await()
       while !cancelled do {
-        try {
+        try
           quantity.set(2 << Random.nextInt(8))
-        } catch {
+        catch {
           // occurs because of invalid buffer
           case e: AssertionError => glitches.add(-42)
           // can occur because of missing sync barriers

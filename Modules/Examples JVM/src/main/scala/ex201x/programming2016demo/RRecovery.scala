@@ -71,9 +71,8 @@ object RRecovery extends Main {
       }
     )
 
-    for bouncingBall <- balls do {
+    for bouncingBall <- balls do
       bouncingBall.horizontalBounceSources.transform(racket2.collisionWith(bouncingBall.shape) :: _)
-    }
   }
 
   panel.Keyboard.released.map(_.getKeyChar).observe {

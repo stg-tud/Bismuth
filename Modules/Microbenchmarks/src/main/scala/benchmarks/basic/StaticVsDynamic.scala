@@ -52,11 +52,9 @@ class StaticVsDynamic {
   }
 
   @Benchmark
-  def aOnly(step: Step): Unit = {
+  def aOnly(step: Step): Unit =
     a.set(step.run())
-  }
   @Benchmark
-  def bOnly(step: Step): Unit = {
+  def bOnly(step: Step): Unit =
     b.set(step.run())
-  }
 }

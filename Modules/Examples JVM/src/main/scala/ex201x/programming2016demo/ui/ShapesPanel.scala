@@ -22,9 +22,9 @@ class ShapesPanel(val shapes: Signal[Iterable[Shape]]) extends Panel {
       g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
       g.translate(size.width / 2, size.height / 2)
       for shape <- turn.now(shapes) do {
-        try {
+        try
           shape.drawSnapshot(g)
-        } catch {
+        catch {
           case _: NoSuchElementException => // ignore
           case _: IllegalStateException  => // ignore
         }
@@ -62,9 +62,8 @@ class ShapesPanel(val shapes: Signal[Iterable[Shape]]) extends Panel {
     val middleButton                 = button(2)
     val rightButton                  = button(3)
 
-    def translatePoint(from: java.awt.Point): Point = {
+    def translatePoint(from: java.awt.Point): Point =
       Point(from.x - size.width / 2, from.y - size.height / 2)
-    }
     val listener = new MouseAdapter {
       override def mousePressed(e: MouseEvent)  = button(e.getButton()).pressed.fire(translatePoint(e.getPoint))
       override def mouseReleased(e: MouseEvent) = button(e.getButton()).released.fire(translatePoint(e.getPoint))

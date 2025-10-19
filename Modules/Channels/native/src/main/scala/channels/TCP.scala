@@ -39,9 +39,9 @@ object TCP {
   def defaultServerSocket(socketAddress: InetSocketAddress): () => ServerSocket = () => {
     val socket = new ServerSocket
 
-    try {
+    try
       socket.setReuseAddress(true)
-    } catch {
+    catch {
       case _: SocketException =>
       // some implementations may not allow SO_REUSEADDR to be set
     }

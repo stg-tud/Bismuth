@@ -19,28 +19,23 @@ class Creation {
   import stableEngine.*
 
   @Setup
-  def setup(engineParam: EngineParam) = {
+  def setup(engineParam: EngineParam) =
     engine = engineParam.engine
-  }
 
   @Benchmark
-  def `var`(): Var[String] = {
+  def `var`(): Var[String] =
     Var("")
-  }
 
   @Benchmark
-  def `evt`(): Evt[String] = {
+  def `evt`(): Evt[String] =
     Evt[String]()
-  }
 
   @Benchmark
-  def `derived signal`(): Signal[String] = {
+  def `derived signal`(): Signal[String] =
     Var("").map(identity)
-  }
 
   @Benchmark
-  def `derived event`(): Event[String] = {
+  def `derived event`(): Event[String] =
     Evt[String]().map(identity)
-  }
 
 }

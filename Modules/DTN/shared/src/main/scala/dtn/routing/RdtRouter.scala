@@ -95,13 +95,11 @@ class RdtRouter(
     val rdt_meta_info: RdtMetaInfo = tempRdtMetaInfoStore.get(packet.bp.id)
 
     rdt_meta_info.message_type match
-      case RdtMessageType.Request => {
+      case RdtMessageType.Request =>
         println("got rdt request bundle. routing with epidemic strategy")
         return epidemicStrategy.onRequestSenderForBundle(peers, services, packet)
-      }
-      case RdtMessageType.Payload => {
+      case RdtMessageType.Payload =>
         println("got rdt payload bundle. routing with rdt strategy")
-      }
 
     // if we already successfully forwarded this package to enough clas we can 'safely' delete it.
     if delivered.getOrDefault(packet.bp.id, 0) >= nTotalNodes then {
@@ -159,13 +157,13 @@ class RdtRouter(
     }
 
     // use peer-info and available clas' to build a list of cla-connections to forward the bundle over
-    val selected_clas: List[Sender] = targets.flatMap(target => {
+    val selected_clas: List[Sender] = targets.flatMap { target =>
       target.cla_list
         .filter((agent, port_option) => packet.clas.contains(agent))
         .map((agent, port_option) =>
           Sender(remote = target.addr, port = port_option, agent = agent, next_hop = target.eid)
         )
-    })
+    }
     println(s"selected clas: $selected_clas")
 
     println(s"time: ${ZonedDateTime.now()}")
@@ -177,17 +175,14 @@ class RdtRouter(
     ))
   }
 
-  override def onError(packet: Packet.Error): Unit = {
+  override def onError(packet: Packet.Error): Unit =
     println(s"received error from dtnd: ${packet.reason}")
-  }
 
-  override def onTimeout(packet: Packet.Timeout): Unit = {
+  override def onTimeout(packet: Packet.Timeout): Unit =
     println(s"sending ran into timeout for bundle-forward-response ${packet.bp.id}.")
-  }
 
-  override def onSendingFailed(packet: Packet.SendingFailed): Unit = {
+  override def onSendingFailed(packet: Packet.SendingFailed): Unit =
     println(s"sending failed for bundle ${packet.bid} on cla ${packet.cla_sender}.")
-  }
 
   override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit = {
     val rdt_meta_info = tempRdtMetaInfoStore.get(packet.bid)
@@ -199,15 +194,13 @@ class RdtRouter(
       println("no rdt-meta-information are available. ignoring")
     } else {
       rdt_meta_info.message_type match
-        case RdtMessageType.Request => {
+        case RdtMessageType.Request =>
           println("rdt-request-message. feeding epidemic strat")
           epidemicStrategy.onSendingSucceeded(packet)
-        }
-        case RdtMessageType.Payload => {
+        case RdtMessageType.Payload =>
           delivered.merge(packet.bid, 1, (x1, x2) => x1 + x2)
           println("rdt-payload-message. merging dots for next hop")
           dotState.mergeDots(Endpoint.createFromName(packet.cla_sender), rdt_id, rdt_meta_info.dots)
-        }
 
     }
   }
@@ -239,15 +232,13 @@ class RdtRouter(
       likelihoodState.update_score(neighbour_node = previous_node.get, destination_node = source_node)
 
       rdt_meta_info.get.message_type match
-        case RdtMessageType.Request => {
+        case RdtMessageType.Request =>
           println("rdt-request-message. merging only source")
           dotState.mergeDots(source_node, rdt_id, rdt_meta_info.get.dots)
-        }
-        case RdtMessageType.Payload => {
+        case RdtMessageType.Payload =>
           println("rdt-payload-message. merging source and previous node")
           dotState.mergeDots(source_node, rdt_id, rdt_meta_info.get.dots)
           dotState.mergeDots(previous_node.get, rdt_id, rdt_meta_info.get.dots)
-        }
 
       tempRdtMetaInfoStore.put(packet.bndl.id, rdt_meta_info.get)
       tempRdtIdStore.put(packet.bndl.id, rdt_id)
@@ -255,11 +246,10 @@ class RdtRouter(
     }
   }
 
-  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit = {
+  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit =
     // todo: if bundle on IncomingBundle is stored temporarily, then use that info to increase the score
     // currently irrelevant, as this message is never sent by the dtnd
     println("received incoming bundle without previous node. information not used for routing. ignoring.")
-  }
 }
 object RdtRouter {
   val N_TOTAL_NODES    = 10
@@ -339,25 +329,25 @@ class DotState {
     return all neighbours for which the provided dots are not already known to them
    */
   def filterNeighbourNodes(neighbour_node_endpoints: Set[Endpoint], rdt_id: String, dots: Dots): Set[Endpoint] = {
-    neighbour_node_endpoints.filter(endpoint => {
+    neighbour_node_endpoints.filter { endpoint =>
       val d = map.get(rdt_id) match
         case null                                        => Dots.empty
         case node_map: ConcurrentHashMap[Endpoint, Dots] => node_map.getOrDefault(endpoint, Dots.empty)
 
       !(dots <= d) || dots.isEmpty
-    })
+    }
   }
 
   /*
     return all peers for which the provided dots are not already known to them
    */
   def filterPeers(peers: Iterable[DtnPeer], rdt_id: String, dots: Dots): Iterable[DtnPeer] = {
-    peers.filter(peer => {
+    peers.filter { peer =>
       val d = map.get(rdt_id) match
         case null                                        => Dots.empty
         case node_map: ConcurrentHashMap[Endpoint, Dots] => node_map.getOrDefault(peer.eid, Dots.empty)
 
       !(dots <= d) || dots.isEmpty
-    })
+    }
   }
 }

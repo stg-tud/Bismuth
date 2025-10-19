@@ -29,9 +29,8 @@ trait CreationScope[State[_]] {
     }
   }
 
-  private[reactives] def createSource[V, T <: ReSource.of[State]](intv: V)(instantiateReactive: State[V] => T): T = {
+  private[reactives] def createSource[V, T <: ReSource.of[State]](intv: V)(instantiateReactive: State[V] => T): T =
     embedCreation(tx ?=> tx.initializer.createSource(intv)(instantiateReactive))
-  }
 }
 
 object CreationScope {

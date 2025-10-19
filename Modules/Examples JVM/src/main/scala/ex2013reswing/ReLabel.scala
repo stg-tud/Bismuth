@@ -23,19 +23,19 @@ class ReLabel(
 ) extends ReComponent(background, foreground, font, enabled, minimumSize, maximumSize, preferredSize) {
   override protected lazy val peer: Label & ComponentMixin = new Label with ComponentMixin
 
-  text.using({ () => peer.text }, peer.text_=, "text")
+  text.using(() => peer.text, peer.text_=, "text")
 
-  horizontalAlignment.using({ () => peer.horizontalAlignment }, peer.horizontalAlignment = _, "horizontalAlignment")
-  verticalAlignment.using({ () => peer.verticalAlignment }, peer.verticalAlignment = _, "verticalAlignment")
+  horizontalAlignment.using(() => peer.horizontalAlignment, peer.horizontalAlignment = _, "horizontalAlignment")
+  verticalAlignment.using(() => peer.verticalAlignment, peer.verticalAlignment = _, "verticalAlignment")
   horizontalTextPosition.using(
-    { () => peer.horizontalTextPosition },
+    () => peer.horizontalTextPosition,
     peer.horizontalTextPosition = _,
     "horizontalTextPosition"
   )
-  verticalTextPosition.using({ () => peer.verticalTextPosition }, peer.verticalTextPosition_=, "verticalTextPosition")
+  verticalTextPosition.using(() => peer.verticalTextPosition, peer.verticalTextPosition_=, "verticalTextPosition")
 
-  icon.using({ () => peer.icon }, peer.icon_=, "icon")
-  disabledIcon.using({ () => peer.disabledIcon }, peer.disabledIcon_=, "disabledIcon")
+  icon.using(() => peer.icon, peer.icon_=, "icon")
+  disabledIcon.using(() => peer.disabledIcon, peer.disabledIcon_=, "disabledIcon")
 }
 
 object ReLabel {

@@ -22,12 +22,10 @@ class SecureRandomBench {
   }
 
   @Benchmark
-  def generate256BytesStrong(): Unit = {
+  def generate256BytesStrong(): Unit =
     secureRandomStrong.nextBytes(Array.ofDim[Byte](32))
-  }
 
   @Benchmark
-  def generate256BytesNormal(): Unit = {
+  def generate256BytesNormal(): Unit =
     secureRandomNormal.nextBytes(Array.ofDim[Byte](32))
-  }
 }

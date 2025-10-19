@@ -38,9 +38,8 @@ case class RaftTokens(
     } else this
   }
 
-  def free(value: String): RaftTokens = {
+  def free(value: String): RaftTokens =
     copy(tokenFreed = tokenFreed.mod(_.addAll(owned(value))))
-  }
 
   def update(): RaftTokens = {
     val generalDuties = tokenAgreement.supportLeader(replicaID).supportProposal(replicaID)
@@ -55,17 +54,14 @@ case class RaftTokens(
     } else copy(tokenAgreement = generalDuties)
   }
 
-  def applyWant(state: ReplicatedSet[RaftToken]): RaftTokens = {
+  def applyWant(state: ReplicatedSet[RaftToken]): RaftTokens =
     copy(want = want.applyDelta(state))
-  }
 
-  def applyFree(state: ReplicatedSet[RaftToken]): RaftTokens = {
+  def applyFree(state: ReplicatedSet[RaftToken]): RaftTokens =
     copy(tokenFreed = tokenFreed.applyDelta(state))
-  }
 
-  def applyRaft(state: RaftState[RaftToken]): RaftTokens = {
+  def applyRaft(state: RaftState[RaftToken]): RaftTokens =
     copy(tokenAgreement = Lattice.merge(tokenAgreement, state))
-  }
 
   def lead(): RaftTokens =
     copy(tokenAgreement = tokenAgreement.becomeCandidate(replicaID))

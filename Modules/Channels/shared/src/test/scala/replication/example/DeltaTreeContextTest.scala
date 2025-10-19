@@ -237,9 +237,9 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(peerPrevDot, peerPrevDot)
     dots = dots.add(peerPrevDot)
 
-    dots.peers.foreach(peer => {
+    dots.peers.foreach { peer =>
       tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
-    })
+    }
     tree.collapseGeneralKnowledge()
 
     assertEquals(tree.leaves.values.toSet, tree.rootNode.successors)
@@ -264,9 +264,9 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(peerPrevDot, peerPrevDot)
     dots = dots.add(peerPrevDot)
 
-    dots.peers.foreach(peer => {
+    dots.peers.foreach { peer =>
       tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
-    })
+    }
     tree.collapseGeneralKnowledge()
 
     assertEquals(tree.leaves.values.toDots, Dots.empty.add(prevDot).add(peerPrevDot))

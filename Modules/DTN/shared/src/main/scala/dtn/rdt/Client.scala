@@ -34,7 +34,7 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
   def registerOnReceive(callback: (RdtMessageType, Array[Byte], Dots) => Unit): Unit = {
     // flush receive forever and call callback
     def flush_receive(): Future[Bundle] = {
-      ws.receiveBundle().flatMap(bundle => {
+      ws.receiveBundle().flatMap { bundle =>
         println(s"received bundle: ${bundle.id}")
 
         val payload: Option[Array[Byte]]       = bundle.other_blocks.collectFirst { case x: PayloadBlock => x.data }
@@ -52,7 +52,7 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
         }
 
         flush_receive()
-      })
+      }
     }
     flush_receive().recoverAndLog()
     ()

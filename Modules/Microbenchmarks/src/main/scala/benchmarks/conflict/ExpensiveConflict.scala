@@ -57,9 +57,8 @@ class ExpensiveConflict {
   @Benchmark
   @Group("g")
   @GroupThreads(1)
-  def cheap() = {
+  def cheap() =
     cheapSource.set(input.incrementAndGet())
-  }
 
   @Benchmark
   @Group("g")

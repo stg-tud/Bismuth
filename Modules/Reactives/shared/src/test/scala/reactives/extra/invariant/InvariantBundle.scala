@@ -74,9 +74,8 @@ trait InvariantBundle extends TopoBundle {
           inv.map(inv => new Invariant[signal.Value](inv.description, (invp: Pulse[T]) => inv.inv(invp.get: T)))
       }
 
-      def setValueGenerator(gen: Gen[T]): Unit = {
+      def setValueGenerator(gen: Gen[T]): Unit =
         this.signal.state.gen = gen
-      }
 
       def test(): Unit = {
         val result = Test.check(

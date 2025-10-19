@@ -37,9 +37,8 @@ object Ed25519Util {
     * @return
     *   the newly generated KeyPair.
     */
-  def generateNewKeyPair: KeyPair = {
+  def generateNewKeyPair: KeyPair =
     keyPairGenerator.generateKeyPair()
-  }
 
   def generateNewKeyParameters: (Ed25519PublicKeyParameters, Ed25519PrivateKeyParameters) = {
     val key = keyParamGenerator.generateKeyPair()
@@ -60,9 +59,8 @@ object Ed25519Util {
     (new Ed25519PublicKeyParameters(pubKeyBytes), new Ed25519PrivateKeyParameters(privateKeyBytes))
   }
 
-  def base64PublicKeyBytesToPublicKey(publicKeyBytesInBase64: String): PublicKey = {
+  def base64PublicKeyBytesToPublicKey(publicKeyBytesInBase64: String): PublicKey =
     rawPublicKeyBytesToPublicKey(Base64.getDecoder.decode(publicKeyBytesInBase64))
-  }
 
   def rawPublicKeyBytesToPublicKey(ed25519Bytes: Array[Byte]): PublicKey = {
     val encodedPubKey = new SubjectPublicKeyInfo(ed25519AlgoIdentifier, ed25519Bytes)
@@ -70,9 +68,8 @@ object Ed25519Util {
     KeyFactory.getInstance("Ed25519", "BC").generatePublic(publicKeySpec)
   }
 
-  def publicKeyToPublicKeyBytesBase64Encoded(publicKey: PublicKey): String = {
+  def publicKeyToPublicKeyBytesBase64Encoded(publicKey: PublicKey): String =
     Base64.getEncoder.encodeToString(publicKeyToRawPublicKeyBytes(publicKey))
-  }
 
   def publicKeyToRawPublicKeyBytes(publicKey: PublicKey): Array[Byte] = {
     if "Ed25519" != publicKey.getAlgorithm && "EdDSA" != publicKey.getAlgorithm then {
@@ -98,12 +95,11 @@ object Ed25519Util {
     bytes
   }
 
-  def rawPrivateKeyBytesToPrivateKey(ed25519Bytes: Array[Byte]): PrivateKey = {
+  def rawPrivateKeyBytesToPrivateKey(ed25519Bytes: Array[Byte]): PrivateKey =
     // Alternative implementation using SunEC Provider:
     // val keySpec = EdECPrivateKeySpec(NamedParameterSpec.ED25519, ed25519Bytes)
     // KeyFactory.getInstance("Ed25519", "SunEC").generatePrivate(keySpec)
     rawPrivateKeyBytesToKeyPair(ed25519Bytes).getPrivate
-  }
 
   def rawPrivateKeyBytesToKeyPair(ed25519Bytes: Array[Byte]): KeyPair = {
     val algId                        = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)

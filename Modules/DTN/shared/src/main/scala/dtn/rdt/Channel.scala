@@ -79,7 +79,7 @@ class Channel[T: JsonValueCodec](
       // It makes any requests unnecessary.
       operationMode match
         case ClientOperationMode.PushAll      => cb.succeed(ProtocolMessage.Request(dtnid, Dots.empty))
-        case ClientOperationMode.RequestLater => {}
+        case ClientOperationMode.RequestLater =>
 
       conn
     }

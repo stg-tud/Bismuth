@@ -81,7 +81,7 @@ class PhilosopherTable(philosopherCount: Int)(val interface: reactives.default.t
 
   def eatOnce(seating: Seating): Unit = {
     val bo = new Backoff()
-    while !tryEat(seating) do { bo.backoff() }
+    while !tryEat(seating) do bo.backoff()
 
     seating.philosopher.set(Thinking)
     // engine.transactionWithWrapup(seating.philosopher){ turn =>

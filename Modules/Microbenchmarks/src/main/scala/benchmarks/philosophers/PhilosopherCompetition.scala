@@ -31,7 +31,7 @@ class PhilosopherCompetition {
         manualLocking(comp)(seating)
       else
         tryUpdateCycle(comp)(seating)
-    } do { bo.backoff() }
+    } do bo.backoff()
 
   }
 
@@ -57,22 +57,22 @@ class PhilosopherCompetition {
         secondLock.lock()
         try {
           thirdLock.lock()
-          try {
+          try
             comp.stableTable.tryEat(seating)
-          } finally { thirdLock.unlock() }
-        } finally { secondLock.unlock() }
-      } finally { firstLock.unlock() }
+          finally thirdLock.unlock()
+        } finally secondLock.unlock()
+      } finally firstLock.unlock()
     if res then {
       firstLock.lock()
       try {
         secondLock.lock()
         try {
           thirdLock.lock()
-          try {
+          try
             seating.philosopher.set(Thinking)
-          } finally { thirdLock.unlock() }
-        } finally { secondLock.unlock() }
-      } finally { firstLock.unlock() }
+          finally thirdLock.unlock()
+        } finally secondLock.unlock()
+      } finally firstLock.unlock()
     }
     !res
   }

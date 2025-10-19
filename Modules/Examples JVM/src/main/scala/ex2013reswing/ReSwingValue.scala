@@ -24,10 +24,9 @@ sealed abstract class ReSwingValue[T] {
   final private[ex2013reswing] def update(value: T): Unit = {
     latestValue = value; if event.isDefined then event().fire(value)
   }
-  final private[ex2013reswing] def initLazily(initLazily: ReSwingValue[T] => Unit): Unit = {
+  final private[ex2013reswing] def initLazily(initLazily: ReSwingValue[T] => Unit): Unit =
     if signal.isDefined then initLazily(this) else init = initLazily
-  }
-  final private[ex2013reswing] def initPerform(): Unit = { if init != null then { init(this); init = null } }
+  final private[ex2013reswing] def initPerform(): Unit = if init != null then { init(this); init = null }
 }
 
 final case class ReSwingNoValue[T]() extends ReSwingValue[T] {

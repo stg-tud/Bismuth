@@ -65,12 +65,10 @@ object interactionExamples:
     .requires { (a: Int, b: Int) => 5 + 2 == 1 }
     .modifies { integerReferenceBinaryOpSource1 }
     .executes { (a: Int, b: Int) =>
-      {
-        print("aaa")
-        if 1 > 2 then print("bbb") else print("123")
-        print("ccc")
-        a + b
-      }
+      print("aaa")
+      if 1 > 2 then print("bbb") else print("123")
+      print("ccc")
+      a + b
     }
     .ensures { (a: Int, b: Int) => false }
 

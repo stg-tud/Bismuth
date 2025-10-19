@@ -10,7 +10,7 @@ object ImperativeVersion extends SimpleSwingApplication {
   override def main(args: Array[String]): Unit = {
     super.main(args)
     while true do {
-      Swing onEDTWait { application.tick() }
+      Swing onEDTWait application.tick()
       Thread `sleep` 20
     }
   }
@@ -35,9 +35,8 @@ class ImperativeVersion {
   val frame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
-      override def paintComponent(g: Graphics2D): Unit = {
+      override def paintComponent(g: Graphics2D): Unit =
         g.fillOval(position.x, position.y, Size, Size)
-      }
     }
   }
 }

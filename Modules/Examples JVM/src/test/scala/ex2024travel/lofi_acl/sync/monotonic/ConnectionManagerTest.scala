@@ -350,9 +350,8 @@ object ConnectionManagerTest {
 
     // Repeated loop ensures that assertion is stable (length depends on how whether test is run in CI)
     while System.currentTimeMillis() < stopTime && !assertion do {
-      while System.currentTimeMillis() < stopTime && !assertion do {
+      while System.currentTimeMillis() < stopTime && !assertion do
         Thread.`yield`()
-      }
       Thread.sleep(assertionStabilityTime)
     }
 
@@ -366,9 +365,8 @@ object ConnectionManagerTest {
 
     val queue: LinkedBlockingQueue[(String, PublicIdentity)] = LinkedBlockingQueue[(String, PublicIdentity)]()
 
-    override def receivedMessage(msg: String, fromUser: PublicIdentity): Unit = {
+    override def receivedMessage(msg: String, fromUser: PublicIdentity): Unit =
       queue.put((msg, fromUser))
-    }
 
     override def connectionEstablished(publicIdentity: PublicIdentity): Unit =
       if false then println(s"${localId.map(_.id).getOrElse("Replica")} is now connected to ${publicIdentity.id}")

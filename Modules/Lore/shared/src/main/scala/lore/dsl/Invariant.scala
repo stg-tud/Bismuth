@@ -11,9 +11,8 @@ trait Invariant {
 
 }
 
-def showInvariantCode(expr: Expr[() => Boolean])(using Quotes): Expr[String] = {
+def showInvariantCode(expr: Expr[() => Boolean])(using Quotes): Expr[String] =
   Expr(expr.show)
-}
 
 case class DefaultInvariant(override val representation: String) extends Invariant
 

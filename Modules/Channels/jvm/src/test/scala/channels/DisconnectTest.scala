@@ -28,13 +28,13 @@ class DisconnectTest extends munit.FunSuite {
 
     val serverAbort = Abort()
 
-    ec.execute(() => {
+    ec.execute { () =>
       TestUtil.printErrors(_ => ()).complete(
         Try(
           serverNioTCP.loopSelection(serverAbort)
         )
       )
-    })
+    }
 
     val listen = serverNioTCP.listen(() => socket)
 

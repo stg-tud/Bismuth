@@ -32,9 +32,8 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
       delta
     }
 
-    for _ <- 0 to 100 do {
+    for _ <- 0 to 100 do
       assertEquals(Random.shuffle(deltas).foldLeft(empty)(Lattice.merge), queue)
-    }
   }
 
   test("respond to single request") {
@@ -69,9 +68,8 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
 
     val allDeltas = reqDeltas ++ resDeltas
 
-    for _ <- 0 to 100 do {
+    for _ <- 0 to 100 do
       assertEquals(Random.shuffle(allDeltas).foldLeft(empty)(Lattice.merge), queue)
-    }
   }
 
   test("one uncompleted, one completed") {

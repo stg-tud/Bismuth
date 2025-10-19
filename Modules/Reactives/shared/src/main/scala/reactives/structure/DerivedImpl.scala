@@ -36,9 +36,8 @@ abstract class SignalImpl[T](
     isDynamicWithStaticDeps: Option[Set[ReSource.of[State]]]
 ) extends DerivedImpl[T](initial, name, isDynamicWithStaticDeps) {
 
-  protected def computePulse(rein: ReevTicket[State, Pulse[T]]): Pulse[T] = {
+  protected def computePulse(rein: ReevTicket[State, Pulse[T]]): Pulse[T] =
     Pulse.tryCatch(Pulse.diffPulse(expr(rein, () => rein.before.get), rein.before))
-  }
 }
 
 /** @param isDynamicWithStaticDeps If this is None, the event is static. Else, it is dynamic with the set of static dependencies */

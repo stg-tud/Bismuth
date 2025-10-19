@@ -51,9 +51,9 @@ class SingleVar {
       source.readValueOnce
     } else {
       lock.readLock().lock()
-      try {
+      try
         source.readValueOnce
-      } finally lock.readLock().unlock()
+      finally lock.readLock().unlock()
     }
   }
 

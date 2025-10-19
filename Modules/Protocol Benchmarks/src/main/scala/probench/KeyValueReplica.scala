@@ -43,11 +43,11 @@ class KeyValueReplica(
 
   val sendingActor: ExecutionContext = {
     if offloadSending then
-      val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor(r => {
+      val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
         val thread = new Thread(r)
         thread.setDaemon(true)
         thread
-      })
+      }
 
       ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
@@ -83,7 +83,7 @@ class KeyValueReplica(
       handleIncoming,
       immediateForward = true,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, { () => lock.synchronized(state) })
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
     )
 
     override def handleIncoming(delta: ClusterState): Unit = lock.synchronized {
@@ -189,7 +189,7 @@ class KeyValueReplica(
       handleIncoming,
       immediateForward = true,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, { () => lock.synchronized(state) })
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
     )
 
     override def handleIncoming(delta: ClientState): Unit = {
@@ -238,7 +238,7 @@ class KeyValueReplica(
       handleIncoming,
       immediateForward = false,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, { () => lock.synchronized(state) })
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
     )
 
     override def handleIncoming(delta: ConnInformation): Unit = {

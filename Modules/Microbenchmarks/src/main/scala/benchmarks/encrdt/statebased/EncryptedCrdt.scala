@@ -37,7 +37,6 @@ case class DecryptedState[T](state: T, versionVector: VectorClock) {
 object DecryptedState {
   given vectorClockJsonCodec: JsonValueCodec[VectorClock] = JsonCodecMaker.make
 
-  given lattice[T](using tLattice: Lattice[T]): Lattice[DecryptedState[T]] = (left, right) => {
+  given lattice[T](using tLattice: Lattice[T]): Lattice[DecryptedState[T]] = (left, right) =>
     DecryptedState(Lattice.merge(left.state, right.state), left.versionVector.merge(right.versionVector))
-  }
 }

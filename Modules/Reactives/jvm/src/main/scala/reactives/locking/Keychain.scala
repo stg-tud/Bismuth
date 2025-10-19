@@ -37,9 +37,8 @@ class Keychain[InterTurn](val id: Long) {
     assert(Thread.holdsLock(this), s"tried to append $this and $other without holding lock on $this")
     assert(Thread.holdsLock(other), s"tried to append $this and $other without holding lock on $other")
     val it = other.keys.iterator()
-    while it.hasNext() do {
+    while it.hasNext() do
       it.next().keychain = this
-    }
     other.fallthrough.foreach { case (k, a) => addFallthrough(k, a) }
     keys.addAll(other.keys)
     ()

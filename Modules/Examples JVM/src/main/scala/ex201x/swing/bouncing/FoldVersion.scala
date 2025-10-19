@@ -12,7 +12,7 @@ object FoldVersion extends SimpleSwingApplication {
   override def main(args: Array[String]): Unit = {
     super.main(args)
     while true do {
-      Swing onEDTWait { application.tick.fire() }
+      Swing onEDTWait application.tick.fire()
       Thread `sleep` 20
     }
   }

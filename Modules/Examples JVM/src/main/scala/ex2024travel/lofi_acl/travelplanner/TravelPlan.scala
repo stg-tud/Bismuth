@@ -18,9 +18,8 @@ case class TravelPlan(
     bucketList: ObserveRemoveMap[UniqueId, LastWriterWins[String]],
     expenses: ObserveRemoveMap[UniqueId, Expense]
 ) derives Lattice, Bottom, Filter {
-  def changeTitle(newTitle: String): Delta = {
+  def changeTitle(newTitle: String): Delta =
     this.deltaModify(_.title).using(_.write(newTitle))
-  }
 
   def addBucketListEntry(text: String)(using localUid: LocalUid): Delta = {
     val key = randomKey

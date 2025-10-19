@@ -59,9 +59,8 @@ class SignalTestSuite extends munit.ScalaCheckSuite {
 
   test("level Is Correctly Computed") {
     forAll { (signals: List[Signal[Int]]) =>
-      for signal <- signals do {
+      for signal <- signals do
         assertLevel(signal, signal.readValueOnce)
-      }
     }
   }
 

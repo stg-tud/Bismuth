@@ -16,9 +16,8 @@ class KeyDerivationKey /* private constructor to make sure that ikm is not modif
 ) {
   require(inputKeyMaterial.length == IKM_LENGTH)
 
-  def encryptionKey(dot: Dot): Array[Byte] = {
+  def encryptionKey(dot: Dot): Array[Byte] =
     derive256BitsOutputKeyMaterial(inputKeyMaterial, contextForEncryptionKeys(dot))
-  }
 
   // It would probably be a good idea to separate encryptionKey and signingKey into two different classes, since the
   // type should indicate the use of the KeyDerivationKey (i.e., AeadKeyDerivationKey and SigningKeyDerivationKey).
@@ -29,9 +28,8 @@ class KeyDerivationKey /* private constructor to make sure that ikm is not modif
     )
   }
 
-  def childKeyDerivationKey(realm: String): KeyDerivationKey = {
+  def childKeyDerivationKey(realm: String): KeyDerivationKey =
     KeyDerivationKey(generateChildKeyDerivationKeyMaterial(inputKeyMaterial, realm))
-  }
 
   def recursiveChildKeyDerivationKey(path: Array[String]): KeyDerivationKey = {
     val outputKeyMaterial = path.foldLeft(inputKeyMaterial) { (_, pathElement) =>
@@ -68,9 +66,8 @@ object KeyDerivationKey {
     KeyDerivationKey(ikm)
   }
 
-  def apply(inputKeyMaterial: Array[Byte]): KeyDerivationKey = {
+  def apply(inputKeyMaterial: Array[Byte]): KeyDerivationKey =
     new KeyDerivationKey(inputKeyMaterial.clone())
-  }
 
   // WARNING: Only use on uniformly distributed input keying material
   private def derive256BitsOutputKeyMaterial(inputKeyMaterial: Array[Byte], info: Array[Byte]): Array[Byte] = {

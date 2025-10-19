@@ -38,9 +38,8 @@ class ChannelConnectionManager(
     * @param msg The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  def send(user: PublicIdentity, msg: MessageBuffer): Boolean = {
+  def send(user: PublicIdentity, msg: MessageBuffer): Boolean =
     sendMultiple(user, msg)
-  }
 
   def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean = {
     if abort.closeRequest then return false

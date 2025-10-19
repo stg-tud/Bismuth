@@ -233,9 +233,8 @@ class PermissionTreePane(
         ))
       case _ =>
 
-    inline def expenseWildcardSubPermissionTree(field: String): IArray[String] = {
+    inline def expenseWildcardSubPermissionTree(field: String): IArray[String] =
       IArray(s"expenses.data.*.value.$field", "expenses.data.*.dots", "expenses.observed", "expenses.deletions")
-    }
 
     // Expenses wildcard
     read = read

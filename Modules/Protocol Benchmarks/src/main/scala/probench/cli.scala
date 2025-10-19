@@ -160,14 +160,13 @@ object cli {
     given [T](using avp: ArgumentValueParser[T]): ArgumentValueParser[(T, T)] =
       TupleArgumentValueParser[T](arg => !arg.startsWith("--"))
 
-    def socketPath(host: String, port: Int) = {
+    def socketPath(host: String, port: Int) =
 //      val p = Path.of(s"target/sockets/$name")
 //      Files.createDirectories(p.getParent)
 //      p.toFile.deleteOnExit()
 //      UnixDomainSocketAddress.of(p)
 
       InetSocketAddress(host, port)
-    }
 
     val cluster           = named[List[(String, Int)]]("--cluster", "")
     val initialClusterIds = named[List[Uid]]("--initial-cluster-ids", "")

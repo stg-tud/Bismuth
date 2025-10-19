@@ -20,9 +20,8 @@ trait Initializer[S[_]] {
   }
 
   /** hook for schedulers to globally collect all created resources, usually does nothing */
-  protected def register[V](reactive: ReSource.of[S], inputs: Set[ReSource.of[S]], initValue: V): Unit = {
+  protected def register[V](reactive: ReSource.of[S], inputs: Set[ReSource.of[S]], initValue: V): Unit =
     Tracing.observe(Tracing.Create(reactive, inputs.toSet, Tracing.ValueWrapper(initValue)))
-  }
 
   /** Correctly initializes [[ReSource]]s */
   final private[reactives] def createSource[V, T <: ReSource.of[S]](initialValue: V)(instantiateReactive: S[V] => T)

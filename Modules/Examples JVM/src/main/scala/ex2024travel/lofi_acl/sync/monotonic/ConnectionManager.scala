@@ -43,9 +43,8 @@ class ConnectionManager[MSG](
     * @param msg The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  def send(user: PublicIdentity, msg: MSG): Boolean = {
+  def send(user: PublicIdentity, msg: MSG): Boolean =
     sendMultiple(user, msg)
-  }
 
   def sendMultiple(user: PublicIdentity, msgs: MSG*): Boolean = {
     if stopped then return false
@@ -82,9 +81,9 @@ class ConnectionManager[MSG](
           case Success((socket, peerIdentity)) =>
             if peerIdentity == localPublicId
             then // We don't want to connect to ourselves.
-              try { socket.close() }
+              try socket.close()
               catch
-                case e: IOException => {}
+                case e: IOException =>
             else connectionEstablished(socket, peerIdentity, establishedByRemote = true)
 
             acceptConnection()
@@ -121,9 +120,9 @@ class ConnectionManager[MSG](
       case Success((socket, peerId)) =>
         if peerId == localPublicId
         then // We don't want to connect to ourselves.
-          try { socket.close() }
+          try socket.close()
           catch
-            case e: IOException => {}
+            case e: IOException =>
         else connectionEstablished(socket, peerId, establishedByRemote = false)
     }
   }
@@ -143,17 +142,16 @@ class ConnectionManager[MSG](
         else {
           if false then
             Console.err.println(s"Expecting $expectedUser at $host:$port but connected to $peerId. Closing socket.")
-          try {
+          try
             socket.close()
-          } catch
+          catch
             case e: IOException => e.printStackTrace()
         }
     }
   }
 
-  def connectedUsers: Set[PublicIdentity] = {
+  def connectedUsers: Set[PublicIdentity] =
     connections.keySet
-  }
 
   private def connectionEstablished(
       socket: SSLSocket,
@@ -181,9 +179,9 @@ class ConnectionManager[MSG](
             receiveFrom(peerIdentity, socket)
             messageHandler.connectionEstablished(peerIdentity)
           else
-            try {
+            try
               socket.close()
-            } catch { case e: IOException => }
+            catch { case e: IOException => }
         case None =>
           connections = connections.updated(peerIdentity, socket)
           outputStreams = outputStreams.updated(peerIdentity, DataOutputStream(socket.getOutputStream))
@@ -208,7 +206,7 @@ class ConnectionManager[MSG](
               messageHandler.receivedMessage(msg, peerIdentity)
             } catch {
               case e: IOException =>
-                try { socket.close() }
+                try socket.close()
                 catch { case e: IOException => }
                 this.synchronized {
                   // Only remove socket from map, if it hasn't been replaced already
@@ -223,7 +221,7 @@ class ConnectionManager[MSG](
                 }
                 return
               case e: InterruptedException =>
-                try { socket.close() }
+                try socket.close()
                 catch { case e: IOException => }
               case runtimeException: RuntimeException =>
                 // TODO: Close socket here as well?

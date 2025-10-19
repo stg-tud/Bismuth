@@ -31,11 +31,11 @@ commandline options:
     """)
     } else {
       var keyword_args: Map[String, String] = Map()
-      args.sliding(2, 2).foreach(pair => {
+      args.sliding(2, 2).foreach { pair =>
         if !pair.head.startsWith("-") then
           throw Exception(s"could not parse commandline. ${pair.head} is not a key. (corresponding value: ${pair(1)}")
         keyword_args += (pair.head -> pair(1))
-      })
+      }
 
       val method: String       = keyword_args("-m")
       val host_address: String =
@@ -54,7 +54,7 @@ commandline options:
 
       method match
         case "monitoring" => start_monitoring_server(host_address, host_port)
-        case "routing"    => {
+        case "routing"    =>
           _route_forever(
             routing_strategy match
               case "direct" =>
@@ -86,8 +86,7 @@ commandline options:
               case s =>
                 throw Exception(s"unknown routing strategy (-rs): ${s}")
           )
-        }
-        case "client" => {
+        case "client" =>
           val mode: ClientOperationMode = client_operation_mode match
             case "pushall"      => ClientOperationMode.PushAll
             case "requestlater" => ClientOperationMode.RequestLater
@@ -129,7 +128,6 @@ commandline options:
             case "lastwriterwins.listen" => throw Exception("lastwriterwins.listen not implemented yet")
             case "lastwriterwins.active" => throw Exception("lastwriterwins.active not implemented yet")
             case s                       => throw Exception(s"unknown client rdt: $s")
-        }
         case "print.received" =>
           MonitoringBundlesReceivedPrinter().run()
         case "print.forwarded" =>
@@ -182,13 +180,12 @@ def start_monitoring_server(interface_address: String, port: Int): Unit = {
 }
 
 def _route_forever(router: Future[BaseRouter]): Unit = {
-  router.flatMap(router => {
+  router.flatMap { router =>
     router.start_receiving()
-  }).recoverAndLog()
+  }.recoverAndLog()
 
-  while true do {
+  while true do
     Thread.sleep(1000)
-  }
 }
 
 def case_study_listen(
@@ -213,6 +210,5 @@ def case_study_active(
   rdt.caseStudyActive()
 }
 
-@main def test(): Unit = {
+@main def test(): Unit =
   rdt_tool("-m", "client")
-}

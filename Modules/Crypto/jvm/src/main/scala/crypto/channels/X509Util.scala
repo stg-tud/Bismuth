@@ -26,9 +26,8 @@ object X509Util {
 
   private val algoIdEd25519 = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
 
-  def generateCustomP2PX509Certificate(privateIdentity: PrivateIdentity): X509CertificateHolder = {
+  def generateCustomP2PX509Certificate(privateIdentity: PrivateIdentity): X509CertificateHolder =
     generateCustomP2PX509Certificate(privateIdentity.identityKey, privateIdentity.tlsKey)
-  }
 
   /** Generates a new X.509 Certificate using the certificateKeyPair that is signed using the identityKeyPair. For the
     * subject of the generated certificate, the public key of the identityKeyPair is used as the UNIQUE_IDENTIFIER RDN.
@@ -107,9 +106,9 @@ object X509Util {
     val pubKey                  = Ed25519Util.rawPublicKeyBytesToPublicKey(pubKeyBytes)
 
     // Verify cert instead of blindly returning identity
-    try {
+    try
       certificate.verify(pubKey)
-    } catch {
+    catch {
       case e: Exception => throw CertificateException(e)
     }
 
@@ -126,7 +125,6 @@ object X509Util {
       CertificatePem(writer.toString)
     }
 
-    def toJavaCertificate: X509Certificate = {
+    def toJavaCertificate: X509Certificate =
       new JcaX509CertificateConverter().getCertificate(certHolder)
-    }
 }

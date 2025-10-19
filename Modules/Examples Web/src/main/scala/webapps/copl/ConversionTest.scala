@@ -85,10 +85,10 @@ object ConversionTest {
 
   /** Returns the double represented by the string or 0 if no double is represented */
   def toDoubleOr0(str: String): Double = {
-    try {
-      { str.toDouble }
-    } catch {
-      case _ => { 0.0 }
+    try
+      str.toDouble
+    catch {
+      case _ => 0.0
     }
   }
 

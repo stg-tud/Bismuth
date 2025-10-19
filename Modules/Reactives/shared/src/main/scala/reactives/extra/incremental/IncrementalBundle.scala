@@ -184,7 +184,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
   def contains(element: T)(using
       ticket: CreationTicket[State],
       ord: Ordering[T]
-  ): Signal[Boolean] = { exists { (seqElement: T) => ord.equiv(element, seqElement) } }
+  ): Signal[Boolean] = exists { (seqElement: T) => ord.equiv(element, seqElement) }
 
   /** To check if elements fulfilling the condition exists
     *
@@ -206,9 +206,9 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     * @return Signal holding the optional minimum (as it could be None if the seqeunce is empty)
     */
   def min(using ticket: CreationTicket[State], ord: Ordering[T]): Signal[Option[T]] = {
-    val minimum = foldUndo(mutable.IndexedSeq.empty[(T, T)])(
+    val minimum = foldUndo(mutable.IndexedSeq.empty[(T, T)]) {
       // fold operation
-      (trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) => {
+      (trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) =>
         if trackingSequence.isEmpty then {
           (delta.value, delta.value) +: trackingSequence
         } else {
@@ -217,10 +217,9 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
             min = delta.value
           (delta.value, min) +: trackingSequence // prepend to the tracking-sequence
         }
-      }
-    )(
+    } {
       // unfold operation
-      (trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) => {
+      (trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) =>
         // index of element, being removed
         val deletionIndex = trackingSequence.indexWhere(element => ord.compare(element._1, delta.value) == 0)
         if deletionIndex < 0 then
@@ -245,8 +244,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
           }
         }
         trackingSequence.take(deletionIndex) ++ trackingSequence.drop(deletionIndex + 1)
-      }
-    )
+    }
     Signal.static(minimum)(_.dependStatic(minimum).headOption.map(_._2))
   }
 
@@ -256,7 +254,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     * @return Signal holding the optional minimum (as it could be None if the seqeunce is empty)
     */
   def max(using ticket: CreationTicket[State], ord: Ordering[T]): Signal[Option[T]] = {
-    val seqMaximum = foldUndo(mutable.IndexedSeq.empty[(T, T)])((seq: mutable.IndexedSeq[(T, T)], delta: Delta[T]) => {
+    val seqMaximum = foldUndo(mutable.IndexedSeq.empty[(T, T)]) { (seq: mutable.IndexedSeq[(T, T)], delta: Delta[T]) =>
       if seq.isEmpty then {
         (delta.value, delta.value) +: seq
       } else {
@@ -265,7 +263,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
           max = delta.value
         (delta.value, max) +: seq
       }
-    })((trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) => {
+    } { (trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) =>
       val deletionIndex = trackingSequence.indexWhere(element => ord.equiv(element._1, delta.value))
       if deletionIndex < 0 then
         throw new Exception("max: Element not found in the sequence")
@@ -288,7 +286,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
         }
       }
       trackingSequence.take(deletionIndex) ++ trackingSequence.drop(deletionIndex + 1)
-    })
+    }
 
     Signal.static(seqMaximum)(_.dependStatic(seqMaximum).headOption.map(tuple => tuple._2))
   }
@@ -430,14 +428,13 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
 
   def addInTx(delta: Delta[T])(using ticket: AdmissionTicket[State]): Unit = {
     (delta: @unchecked) match {
-      case Addition(value) => {
+      case Addition(value) =>
         val counter = elements.getOrElse(value, 0)
         if counter == 0 then
           elements.put(value, 1)
         else
           elements.put(value, counter + 1)
-      }
-      case Removal(value) => {
+      case Removal(value) =>
         val counter = elements.getOrElse(value, 0)
         if counter > 1 then
           elements.put(value, counter - 1)
@@ -445,7 +442,6 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
           elements.remove(value)
         else
           throw new Exception(s"Cannot remove element as it cannot be found")
-      }
     }
     ticket.recordChange(new InitialChange[State] {
       override val source: IncSeq.this.type                              = IncSeq.this
@@ -456,9 +452,8 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
     })
   }
 
-  def printMap(): Unit = {
+  def printMap(): Unit =
     elements.foreach(t => print(s"${t._1}, "))
-  }
 
 }
 

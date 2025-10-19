@@ -45,41 +45,32 @@ class TravelPlanModel(
     then sync.grantPermissions(affectedUser, writePermissions, WRITE)
   }
 
-  def createInvitation: Invitation = {
+  def createInvitation: Invitation =
     sync.createInvitation
-  }
 
-  def addConnection(remoteUser: PublicIdentity, address: String): Unit = {
+  def addConnection(remoteUser: PublicIdentity, address: String): Unit =
     sync.connect(remoteUser, address)
-  }
 
-  def changeTitle(newTitle: String): Unit = {
+  def changeTitle(newTitle: String): Unit =
     mutateRdt(_.changeTitle(newTitle))
-  }
 
-  def addBucketListEntry(text: String): Unit = {
+  def addBucketListEntry(text: String): Unit =
     mutateRdt(_.addBucketListEntry(text))
-  }
 
-  def setBucketListEntryText(bucketListId: String, text: String): Unit = {
+  def setBucketListEntryText(bucketListId: String, text: String): Unit =
     mutateRdt(_.setBucketListEntryText(bucketListId, text))
-  }
 
-  def addExpense(description: String, amount: String): Unit = {
+  def addExpense(description: String, amount: String): Unit =
     mutateRdt(_.addExpense(description, amount))
-  }
 
-  def setExpenseAmount(expenseId: String, amount: String): Unit = {
+  def setExpenseAmount(expenseId: String, amount: String): Unit =
     mutateRdt(_.setExpenseAmount(expenseId, amount))
-  }
 
-  def setExpenseDescription(expenseId: String, description: String): Unit = {
+  def setExpenseDescription(expenseId: String, description: String): Unit =
     mutateRdt(_.setExpenseDescription(expenseId, description))
-  }
 
-  def setExpenseComment(expenseId: String, comment: String): Unit = {
+  def setExpenseComment(expenseId: String, comment: String): Unit =
     mutateRdt(_.setExpenseComment(expenseId, comment))
-  }
 
   private def mutateRdt(mutator: TravelPlan => TravelPlan): Unit = {
     global.execute { () =>
@@ -95,14 +86,14 @@ class TravelPlanModel(
   val expenseIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
   private var expenseIdSet: Set[String]       = expenseIdList.toSet
   val expenseListProperties: AtomicReference[Map[String, (StringProperty, StringProperty, StringProperty)]] =
-    AtomicReference(state.expenses.inner.map((id, orMapEntry) => {
+    AtomicReference(state.expenses.inner.map { (id, orMapEntry) =>
       val expense = orMapEntry.value
       id -> (
         StringProperty(expense.description.read.getOrElse("")),
         StringProperty(expense.amount.read.getOrElse("0.00 €")),
         StringProperty(expense.comment.read.getOrElse(""))
       )
-    }))
+    })
 
   private def stateChanged(delta: TravelPlan): Unit = Platform.runLater {
     val newTravelPlan = state

@@ -9,7 +9,7 @@ trait ReRootPanel extends ReUIElement {
   def contents: ReSwingValue[Component]
 
   contents.using(
-    { () => peer.contents.headOption getOrElse null },
+    () => peer.contents.headOption getOrElse null,
     peer.contents_=,
     classOf[ComponentAdded],
     classOf[ComponentRemoved]

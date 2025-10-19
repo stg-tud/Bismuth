@@ -28,11 +28,11 @@ class ReTextComponent(
   override protected lazy val peer: TextComponent & ComponentMixin = new TextComponent with ComponentMixin
   final lazy val localPeer: TextComponent & ComponentMixin         = peer
 
-  val selected = ReSwingValue.using({ () => peer.selected }, (caret.peer, classOf[CaretUpdate]))
+  val selected = ReSwingValue.using(() => peer.selected, (caret.peer, classOf[CaretUpdate]))
 
-  text.using({ () => peer.text }, peer.text_=, classOf[ValueChanged]).force("editable", peer.editable_=, false)
+  text.using(() => peer.text, peer.text_=, classOf[ValueChanged]).force("editable", peer.editable_=, false)
 
-  editable.using({ () => peer.editable }, peer.editable_=, "editable")
+  editable.using(() => peer.editable, peer.editable_=, "editable")
 
   cut.using(() => peer.cut())
   copy.using(() => peer.copy())
@@ -50,21 +50,21 @@ class ReTextComponent(
     protected[ReTextComponent] val peer: ReTextComponent.this.localPeer.caret.type =
       ReTextComponent.this.localPeer.caret
 
-    val dot  = ReSwingValue.using({ () => peer.dot }, (peer, classOf[CaretUpdate]))
-    val mark = ReSwingValue.using({ () => peer.mark }, (peer, classOf[CaretUpdate]))
+    val dot  = ReSwingValue.using(() => peer.dot, (peer, classOf[CaretUpdate]))
+    val mark = ReSwingValue.using(() => peer.mark, (peer, classOf[CaretUpdate]))
 
-    position.using({ () => peer.position }, peer.position_=, (peer, classOf[CaretUpdate]))
+    position.using(() => peer.position, peer.position_=, (peer, classOf[CaretUpdate]))
 
     markDot.using(
-      { () => (peer.mark, peer.dot) },
-      { _ match { case (mark, dot) => peer.position = mark; peer.moveDot(dot) } },
+      () => (peer.mark, peer.dot),
+      _ match { case (mark, dot) => peer.position = mark; peer.moveDot(dot) },
       (peer, classOf[CaretUpdate])
     )
 
-    visible.using({ () => peer.visible }, peer.visible_=)
-    selectionVisible.using({ () => peer.selectionVisible }, peer.selectionVisible_=)
-    blinkRate.using({ () => peer.blinkRate }, peer.blinkRate_=)
-    color.using({ () => peer.color }, peer.color_=)
+    visible.using(() => peer.visible, peer.visible_=)
+    selectionVisible.using(() => peer.selectionVisible, peer.selectionVisible_=)
+    blinkRate.using(() => peer.blinkRate, peer.blinkRate_=)
+    color.using(() => peer.color, peer.color_=)
   }
 
   object ReCaret {

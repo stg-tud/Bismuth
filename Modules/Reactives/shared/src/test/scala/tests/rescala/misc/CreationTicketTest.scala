@@ -66,9 +66,8 @@ class CreationTicketTest extends FunSuite {
 
     def otherScope = () => implicitly[CreationTicket[State]]
 
-    val closure: () => CreationTicket[State] = {
+    val closure: () => CreationTicket[State] =
       transaction() { otherScope }
-    }
     transaction() { dynamic ?=>
       assert(closure().scope.isInstanceOf[DynamicCreationScope[State]])
       assertEquals(dynamic.tx, closure().scope.embedCreation(x ?=> x))

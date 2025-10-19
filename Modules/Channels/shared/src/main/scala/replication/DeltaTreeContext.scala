@@ -12,9 +12,8 @@ sealed trait DotTreeNode
 object DotTreeNode {
 
   case class RootNode(var dots: Dots, var successors: Set[DotTreeNode.Node] = Set.empty) extends DotTreeNode {
-    def addDot(dot: Dot): Unit = {
+    def addDot(dot: Dot): Unit =
       RootNode.this.dots = RootNode.this.dots.add(dot)
-    }
   }
 
   /** @param dot              The timestamp of the dot
@@ -120,7 +119,7 @@ class DotTree {
       case Some(causalPredecessorNode @ DotTreeNode.Node(_, _, _, Some(successorNode), _))
           if successorNode.dot == dot => false // duplicate
       case Some(causalPredecessorNode @ DotTreeNode.Node(_, _, _, Some(successorNode), _))
-          if successorNode.dot != dot => {
+          if successorNode.dot != dot =>
         // dot is the missing link between causalPredecessorNode and its successorNode
         val node = DotTreeNode.Node(dot, causalPredecessorNode, causalPredecessor, Some(successorNode))
         causalPredecessorNode.successorNode = Some(node)
@@ -128,75 +127,64 @@ class DotTree {
         // TODO: causal barrier might need to be shifted
         shiftCausalBarrier(dot.place)
         true
-      }
-      case Some(causalPredecessorNode @ DotTreeNode.Node(_, _, _, None, _)) => {
+      case Some(causalPredecessorNode @ DotTreeNode.Node(_, _, _, None, _)) =>
         // causal predecessor node must be a leaf, otherwise it would have a successor
         val node = DotTreeNode.Node(dot, causalPredecessorNode, causalPredecessor, None)
         causalPredecessorNode.successorNode = Some(node)
         leaves += (dot.place -> node)
         shiftCausalBarrier(dot.place)
         true
-      }
       case Some(causalPredecessorNode @ RootNode(dots, _)) if dots.contains(dot)  => false // duplicate
-      case Some(causalPredecessorNode @ RootNode(dots, _)) if !dots.contains(dot) => {
+      case Some(causalPredecessorNode @ RootNode(dots, _)) if !dots.contains(dot) =>
         leafNodeOption match {
-          case Some(leafNode) => {
+          case Some(leafNode) =>
             // dot must be a predecessor of the leaf
             val node = DotTreeNode.Node(dot, causalPredecessorNode, causalPredecessor, Some(leafNode))
             leafNode.predecessorNode = node
-          }
-          case None => {
+          case None =>
             // dot is the new leaf
             val node = DotTreeNode.Node(dot, causalPredecessorNode, causalPredecessor, None)
             leaves += (dot.place -> node)
-          }
         }
         shiftCausalBarrier(dot.place)
         true
-      }
-      case None if leafNodeOption.exists(leaf => leaf.dot.time < dot.time) => {
+      case None if leafNodeOption.exists(leaf => leaf.dot.time < dot.time) =>
         // dot is the new leaf
         val leaf = leafNodeOption.get
         val node = DotTreeNode.Node(dot, leaf, causalPredecessor, None)
         leaf.successorNode = Option(node)
         leaves += (dot.place -> node)
         true
-      }
-      case None if leafNodeOption.exists(leaf => leaf.dot.time > dot.time) => {
+      case None if leafNodeOption.exists(leaf => leaf.dot.time > dot.time) =>
         var startNode: Option[DotTreeNode] = leafNodeOption
         while startNode.isDefined do {
           startNode match {
             case Some(node @ DotTreeNode.Node(currentDot, _, _, Some(successorNode), _))
-                if currentDot.time < dot.time => {
+                if currentDot.time < dot.time =>
               val newNode = DotTreeNode.Node(dot, node, causalPredecessor, Option(successorNode))
               node.successorNode = Some(newNode)
               successorNode.predecessorNode = newNode
               startNode = None
-            }
-            case Some(DotTreeNode.Node(currentDot, causalPredecessorNode, _, _, _)) if currentDot.time > dot.time => {
+            case Some(DotTreeNode.Node(currentDot, causalPredecessorNode, _, _, _)) if currentDot.time > dot.time =>
               startNode = Option(causalPredecessorNode)
-            }
             case _ => return false
           }
         }
         true
-      }
-      case None => {
+      case None =>
         // dot is the new leaf
         val node = DotTreeNode.Node(dot, rootNode, causalPredecessor, None)
         rootNode.successors += node
         leaves += (dot.place -> node)
         true
-      }
       case _ => false
     }
   }
 
   def shiftCausalBarrier(branch: Uid): Unit = {
     var currentNode = causalBarriers(branch)
-    while currentNode.successorNode.exists(successor => successor.causalPredecessor == currentNode.dot) do {
+    while currentNode.successorNode.exists(successor => successor.causalPredecessor == currentNode.dot) do
       currentNode = currentNode.successorNode.get
-    }
     causalBarriers += (branch -> currentNode)
   }
 
@@ -265,10 +253,9 @@ class DotTree {
 
   @tailrec
   private def getSliceOfBranch(startNode: DotTreeNode, stop: Dot, slice: Dots): Dots = startNode match {
-    case RootNode(dots, _) => {
+    case RootNode(dots, _) =>
       if dots.contains(stop) then slice.merge(dots)
       else throw IllegalStateException(s"Dot $stop not yet known to this replica")
-    }
     case DotTreeNode.Node(dot, predecessor, _, _, _) if dot == stop => slice
     case DotTreeNode.Node(dot, predecessor, _, _, _) => getSliceOfBranch(predecessor, stop, slice.add(dot))
   }
@@ -286,7 +273,7 @@ class DotTree {
     var unknownPeersByPeer: Set[Uid]             = Set.empty
     var unknownDotsByPeer: Dots                  = Dots.empty
 
-    leaves.foreach((uid, leaf) => {
+    leaves.foreach { (uid, leaf) =>
       known.clockOf(uid) match {
         case Some(leafKnownPeer) if leaf.dot.time < leafKnownPeer.time =>
           throw IllegalStateException(
@@ -297,13 +284,13 @@ class DotTree {
         case Some(leafKnownPeer) => // knowledge of peer is up to date with this
         case None                => unknownPeersByPeer += uid
       }
-    })
+    }
 
     var addRoot = false
-    unknownPeersByPeer.foreach(peer => {
+    unknownPeersByPeer.foreach { peer =>
       addRoot = rootNode.dots.max(peer).isDefined
       unknownDotsByPeer = getCompleteBranchWithoutRoot(getLeaf(peer).get, unknownDotsByPeer)
-    })
+    }
     if addRoot then unknownDotsByPeer = unknownDotsByPeer.merge(rootNode.dots)
 
     unknownDotsByPeer
@@ -313,7 +300,7 @@ class DotTree {
 
   def updateKnowledgeOfPeer(peerUid: Uid, lastKnownDot: Dot): Boolean = {
     getNodeOfDot(lastKnownDot) match {
-      case Some(node @ DotTreeNode.Node(_, _, _, _, _)) => {
+      case Some(node @ DotTreeNode.Node(_, _, _, _, _)) =>
         node.knownBy += peerUid
         var predecessor = node.predecessorNode
         while predecessor != rootNode do {
@@ -321,7 +308,6 @@ class DotTree {
           predecessor = predecessor.asInstanceOf[replication.DotTreeNode.Node].predecessorNode
         }
         true
-      }
       case _ => false
     }
   }
@@ -329,7 +315,7 @@ class DotTree {
   /** Collapse all dots that are known by all peers, as well as their predecessors, into the root node */
   def collapseGeneralKnowledge(): Unit = {
     val numberOfKnownPeers = leaves.keySet.size - 1 // all nodes in the tree are known by itself
-    rootNode.successors.foreach(startNode => {
+    rootNode.successors.foreach { startNode =>
       var currentNode = Option(startNode)
       while currentNode.exists(node =>
           node.knownBy.size == numberOfKnownPeers && node.successorNode.exists(successorNode =>
@@ -344,7 +330,7 @@ class DotTree {
         nextNode.get.predecessorNode = rootNode
         currentNode = nextNode
       }
-    })
+    }
   }
 }
 
@@ -450,10 +436,10 @@ class DeltaTreeContext[State](selfUid: Uid) {
     */
   def updateKnowledgeOfPeer(peerUid: Uid, lastKnownDots: Dots): Unit = {
     var updatedKnowledge = false
-    lastKnownDots.peers.foreach(knownPeerUid => {
+    lastKnownDots.peers.foreach { knownPeerUid =>
       val lastKnownDot = lastKnownDots.clockOf(knownPeerUid)
       if tree.updateKnowledgeOfPeer(peerUid, lastKnownDot.get) then updatedKnowledge = true
-    })
+    }
 
     if updatedKnowledge then tree.collapseGeneralKnowledge()
   }

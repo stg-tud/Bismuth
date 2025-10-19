@@ -42,14 +42,12 @@ class AWSetDeltaMergeBench {
   }
 
   @Benchmark
-  def fullMerge: ReplicatedSet[Long] = {
+  def fullMerge: ReplicatedSet[Long] =
     Lattice.merge(fullState, plusOneState)
-  }
 
   @Benchmark
-  def fullDiff: Option[ReplicatedSet[Long]] = {
+  def fullDiff: Option[ReplicatedSet[Long]] =
     Lattice.diff(fullState, plusOneState)
-  }
 
   @Benchmark
   def deltaMerge: ReplicatedSet[Long] = {
@@ -61,7 +59,6 @@ class AWSetDeltaMergeBench {
   }
 
   @Benchmark
-  def deltaMergeNoDiff: ReplicatedSet[Long] = {
+  def deltaMergeNoDiff: ReplicatedSet[Long] =
     Lattice.merge(fullState, plusOneDeltaState)
-  }
 }

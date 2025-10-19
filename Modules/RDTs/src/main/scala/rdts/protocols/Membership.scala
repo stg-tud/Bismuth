@@ -50,9 +50,8 @@ case class Membership[A, C[_], D[_]](
   def innerConsensus: D[A]          = rounds.value.innerConsensus
   def membersConsensus: C[Set[Uid]] = rounds.value.membersConsensus
 
-  def writeRound(membershipRound: MembershipRound[A, C, D]): Membership[A, C, D] = {
+  def writeRound(membershipRound: MembershipRound[A, C, D]): Membership[A, C, D] =
     Membership(rounds.write(membershipRound))
-  }
 
   def addMember(id: Uid)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if isMember then

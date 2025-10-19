@@ -144,27 +144,27 @@ class ReTable[A <: AnyRef](
     classOf[TableStructureChanged]
   )
 
-  rowHeight.using({ () => peer.rowHeight }, peer.rowHeight = _, "rowHeight")
-  autoResizeMode.using({ () => peer.autoResizeMode }, peer.autoResizeMode = _, "autoResizeMode")
+  rowHeight.using(() => peer.rowHeight, peer.rowHeight = _, "rowHeight")
+  autoResizeMode.using(() => peer.autoResizeMode, peer.autoResizeMode = _, "autoResizeMode")
 
   showHorizontalLines.using(
     () => peer.peer.getShowHorizontalLines(),
-    { peer.peer.setShowHorizontalLines(_) },
+    peer.peer.setShowHorizontalLines(_),
     "showHorizontalLines"
   )
   showVerticalLines.using(
     () => peer.peer.getShowVerticalLines(),
-    { peer.peer.setShowVerticalLines(_) },
+    peer.peer.setShowVerticalLines(_),
     "showVerticalLines"
   )
-  gridColor.using({ () => peer.gridColor }, peer.gridColor = _, "gridColor")
+  gridColor.using(() => peer.gridColor, peer.gridColor = _, "gridColor")
   fillsViewportHeight.using(
     () => peer.peer.getFillsViewportHeight(),
-    { peer.peer.setFillsViewportHeight(_) },
+    peer.peer.setFillsViewportHeight(_),
     "fillsViewportHeight"
   )
   selectionForeground.using(() => peer.selectionForeground, peer.selectionForeground = _, "selectionForeground")
-  selectionBackground.using({ () => peer.selectionBackground }, peer.selectionBackground = _, "selectionBackground")
+  selectionBackground.using(() => peer.selectionBackground, peer.selectionBackground = _, "selectionBackground")
 
   selectColumnInterval using { range =>
     if range._1 == -1 || range._2 == -1 then
@@ -194,39 +194,39 @@ class ReTable[A <: AnyRef](
     protected[ReTable] val peer = ReTable.this.peer.selection
 
     val columnLeadIndex = ReSwingValue.using(
-      { () => peer.columns.leadIndex },
+      () => peer.columns.leadIndex,
       (peer, classOf[TableColumnsSelected])
     )
     val columnAnchorIndex = ReSwingValue.using(
-      { () => peer.columns.anchorIndex },
+      () => peer.columns.anchorIndex,
       (peer, classOf[TableColumnsSelected])
     )
     val rowLeadIndex = ReSwingValue.using(
-      { () => peer.rows.leadIndex },
+      () => peer.rows.leadIndex,
       (peer, classOf[TableRowsSelected])
     )
     val rowAnchorIndex = ReSwingValue.using(
-      { () => peer.rows.anchorIndex },
+      () => peer.rows.anchorIndex,
       (peer, classOf[TableRowsSelected])
     )
 
     val columns = ReSwingValue.using(
-      { () => peer.columns.toSet },
+      () => peer.columns.toSet,
       (peer, classOf[TableColumnsSelected])
     )
     val rows = ReSwingValue.using(
-      { () => peer.rows.toSet },
+      () => peer.rows.toSet,
       (peer, classOf[TableRowsSelected])
     )
     val cells = ReSwingValue.using(
-      { () => peer.cells.toSet },
+      () => peer.cells.toSet,
       (peer, classOf[TableColumnsSelected]),
       (peer, classOf[TableRowsSelected])
     )
 
-    intervalMode.using({ () => peer.intervalMode }, peer.intervalMode_=)
+    intervalMode.using(() => peer.intervalMode, peer.intervalMode_=)
     elementMode.using(
-      { () => peer.elementMode },
+      () => peer.elementMode,
       peer.elementMode = _,
       "columnSelectionAllowed",
       "rowSelectionAllowed",
@@ -269,9 +269,8 @@ object ReTable {
       }
     }
 
-    def setCellEditable(cellEditable: Editable): Unit = {
+    def setCellEditable(cellEditable: Editable): Unit =
       editable = cellEditable
-    }
 
     def getRowData      = rowData
     def getColumnNames  = columnNames

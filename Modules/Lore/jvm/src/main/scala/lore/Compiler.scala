@@ -18,7 +18,7 @@ object Compiler {
     Files.writeString(path, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
     ()
 
-  def toScala(ast: NonEmptyList[Term], options: Options): Unit = {
+  def toScala(ast: NonEmptyList[Term], options: Options): Unit =
     ???
     // for
     //   result <- IO(ScalaBackend.toAmm(ast))
@@ -26,7 +26,6 @@ object Compiler {
     //     case None       => IO.println(result)
     //     case Some(path) => writeFile(path, result)
     // yield result
-  }
 
   def toViper(ast: NonEmptyList[Term], options: Options): Unit = {
     ViperBackend.compileAsSingleFile(ast.toList)

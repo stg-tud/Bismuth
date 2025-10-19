@@ -153,9 +153,8 @@ class MembershipTest extends munit.FunSuite {
       r2.trans(_.upkeep())
       r1.trans(_.upkeep())
       o1 != r1.mem && o2 != r2.mem && o3 != r3.mem
-    } do {
+    } do
       iterations += 1
-    }
 
     assertEquals(iterations, 2)
     assertEquals(r3.mem.log.get(0), Some(10))

@@ -66,7 +66,7 @@ class MillBoard {
 
   def remove(slot: SlotIndex) = this(slot) = Empty
 
-  def move(from: SlotIndex, to: SlotIndex) = {
+  def move(from: SlotIndex, to: SlotIndex) =
     // / NOTE: this is an interesting detail in the signal version
     // / If we delete the new stone FIRST, we might have < 3 stones,
     // / which gets propagated and triggers the end of the game!
@@ -78,7 +78,6 @@ class MillBoard {
     // / multiple updates atomically.
 
     this() = Map(from -> Empty, to -> this(from))
-  }
 
   val possibleMoves: Signal[Seq[(SlotIndex, SlotIndex)]] = Signal { // #SIG
     MillBoardRenamed.indices flatMap { from =>

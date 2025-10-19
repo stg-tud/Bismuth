@@ -14,7 +14,7 @@ object CatchUp extends SimpleSwingApplication {
   override def main(args: Array[String]): Unit = {
     super.main(args)
     while true do {
-      Swing onEDTWait { application.tick.fire() }
+      Swing onEDTWait application.tick.fire()
       Thread `sleep` 50
     }
   }
@@ -78,9 +78,9 @@ class CatchUp {
         * Should be replaced once reactive GUI lib is complete
         */
       reactions += {
-        case e: MouseMoved    => { CatchUp.this.mouse.mouseMovedE.fire(e.point) }
+        case e: MouseMoved    => CatchUp.this.mouse.mouseMovedE.fire(e.point)
         case e: MousePressed  => CatchUp.this.mouse.mousePressedE.fire(e.point)
-        case e: MouseDragged  => { CatchUp.this.mouse.mouseDraggedE.fire(e.point) }
+        case e: MouseDragged  => CatchUp.this.mouse.mouseDraggedE.fire(e.point)
         case e: MouseReleased => CatchUp.this.mouse.mouseReleasedE.fire(e.point)
       }
 

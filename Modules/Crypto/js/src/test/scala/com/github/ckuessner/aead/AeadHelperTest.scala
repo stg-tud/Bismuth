@@ -41,25 +41,25 @@ class AeadHelperTest extends munit.FunSuite {
   test("generateKey should not fail") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         assert(key.length == sodium.crypto_aead_xchacha20poly1305_ietf_KEYBYTES)
-      })
+      }
   }
 
   test("generateKey should generate different keys") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         assert(!uint8ArrayEquals(key, otherKey))
-      })
+      }
   }
 
   test("encrypt should produce ciphertext of correct length for strings with associated data") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         AeadHelper.encrypt(testMessage, associatedData, key)
-      })
+      }
       .map {
         case Success(cipherText) => assert(cipherText.length == expectedCiphertextLength)
         case Failure(exception)  => fail("fail", exception)
@@ -69,9 +69,9 @@ class AeadHelperTest extends munit.FunSuite {
   test("encrypt should produce ciphertext of correct length for strings with empty associated data") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         AeadHelper.encrypt(testMessage, associatedData, key)
-      })
+      }
       .map {
         case Success(cipherText) => assert(cipherText.length == expectedCiphertextLength)
         case Failure(exception)  => fail("fail", exception)
@@ -81,12 +81,12 @@ class AeadHelperTest extends munit.FunSuite {
   test("encrypt should use different nonces each time") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         (
           AeadHelper.encrypt(testMessage, associatedData, key),
           AeadHelper.encrypt(testMessage, associatedData, key)
         )
-      })
+      }
       .map {
         case (Success(l), Success(r)) => (l, r)
         case _                        => fail("fail")
@@ -99,10 +99,10 @@ class AeadHelperTest extends munit.FunSuite {
   test("decrypt should produce original string given same associated data and correct key") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         val encryptedMessage = AeadHelper.encrypt(testMessage, associatedData, key).get
         AeadHelper.decrypt(encryptedMessage, associatedData, key)
-      })
+      }
       .map {
         case Success(decrypted) => assert(decrypted.equals(testMessage))
         case _                  => fail("fail")
@@ -112,10 +112,10 @@ class AeadHelperTest extends munit.FunSuite {
   test("decrypt should fail with wrong key") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         val encryptedMessage = AeadHelper.encrypt(testMessage, associatedData, key)
         AeadHelper.decrypt(encryptedMessage.get, associatedData, otherKey)
-      })
+      }
       .map {
         case Failure(_) => ()
         case Success(_) => fail("")
@@ -125,10 +125,10 @@ class AeadHelperTest extends munit.FunSuite {
   test("decrypt should fail with wrong associated data") {
     AeadHelper
       .ready()
-      .map(_ => {
+      .map { _ =>
         val encryptedMessage = AeadHelper.encrypt(testMessage, associatedData, key)
         AeadHelper.decrypt(encryptedMessage.get, "Not the associated data", otherKey)
-      })
+      }
       .map {
         case Failure(_) =>
         case Success(_) => fail("")

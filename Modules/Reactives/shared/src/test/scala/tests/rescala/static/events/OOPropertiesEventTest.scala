@@ -14,7 +14,7 @@ class OOPropertiesEventTest extends munit.FunSuite {
 
       class A {
         val e1 = Evt[Int]()
-        e1 `observe` ((_: Int) => { test += 1 })
+        e1 `observe` ((_: Int) => test += 1)
       }
       class B extends A {
         e1.fire(10)
@@ -31,7 +31,7 @@ class OOPropertiesEventTest extends munit.FunSuite {
         val e1 = Evt[Int]()
       }
       class B extends A {
-        e1 `observe` ((_: Int) => { test += 1 })
+        e1 `observe` ((_: Int) => test += 1)
         e1.fire(10)
       }
       new B()
@@ -52,7 +52,7 @@ class OOPropertiesEventTest extends munit.FunSuite {
         val e2                    = Evt[Y]()
         val e3                    = Evt[Y]()
         override val e1: Event[X] = e2 || e3
-        e1 `observe` ((_: X) => { test += 1 })
+        e1 `observe` ((_: X) => test += 1)
         e2.fire(new Y)
       }
       new B()

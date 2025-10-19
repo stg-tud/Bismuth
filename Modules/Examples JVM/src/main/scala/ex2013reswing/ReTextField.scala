@@ -50,7 +50,7 @@ class ReTextField(
   override protected lazy val peer: TextField & ComponentMixin =
     new TextField(null, columns) with ComponentMixin
 
-  horizontalAlignment.using({ () => peer.horizontalAlignment }, peer.horizontalAlignment = _, "horizontalAlignment")
+  horizontalAlignment.using(() => peer.horizontalAlignment, peer.horizontalAlignment = _, "horizontalAlignment")
 
   val editDone = ReSwingEvent `using` classOf[EditDone]
 }

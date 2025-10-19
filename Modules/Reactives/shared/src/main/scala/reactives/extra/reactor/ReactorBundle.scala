@@ -28,9 +28,8 @@ class Reactor[T](
     var progressedNextAction = false
 
     def processActions[A](currentState: ReactorState[T]): ReactorState[T] = {
-      def setAction(value: T, remainingActions: List[ReactorAction[T]]): ReactorState[T] = {
+      def setAction(value: T, remainingActions: List[ReactorAction[T]]): ReactorState[T] =
         processActions(currentState.copy(currentValue = value, currentStage = Stage(remainingActions)))
-      }
 
       def nextAction[E](event: Event[E], handler: E => Stage[T]): ReactorState[T] = {
         if progressedNextAction then {
@@ -116,9 +115,8 @@ object Reactor {
     */
   def once[T](
       initialValue: T
-  )(initialStage: Stage[T])(using creationTicket: CreationTicket[State]) = {
+  )(initialStage: Stage[T])(using creationTicket: CreationTicket[State]) =
     createReactor(initialValue, initialStage)
-  }
 
   /** Creates a new Reactor, which starts from the beginning, once it's finished.
     *
@@ -169,27 +167,24 @@ case class ReactorState[T](currentValue: T, currentStage: Stage[T]) {}
 
 case class Stage[T](actions: List[ReactorAction[T]] = Nil) {
 
-  private def addAction(newValue: ReactorAction[T]): Stage[T] = {
+  private def addAction(newValue: ReactorAction[T]): Stage[T] =
     copy(actions = actions :+ newValue)
-  }
 
   /** Sets the value of the Reactor.
     *
     * @param newValue The new value of the Reactor.
     * @return A StageBuilder describing the Reactor behaviour.
     */
-  def set(newValue: T): Stage[T] = {
+  def set(newValue: T): Stage[T] =
     addAction(ReactorAction.SetAction(newValue))
-  }
 
   /** Modifies the value of the Reactor.
     *
     * @param modifier A function that has the old Reactor value as input and returns a new Reactor value.
     * @return A StageBuilder describing the Reactor behaviour.
     */
-  def modify(modifier: T => T): Stage[T] = {
+  def modify(modifier: T => T): Stage[T] =
     addAction(ReactorAction.ModifyAction(modifier))
-  }
 
   /** Waits until the event is triggered.
     *
@@ -200,9 +195,8 @@ case class Stage[T](actions: List[ReactorAction[T]] = Nil) {
     * @param body  the code to execute when the event is triggered.
     * @tparam E the event's type.
     */
-  def next[E](event: Event[E])(body: E => Stage[T]): Stage[T] = {
+  def next[E](event: Event[E])(body: E => Stage[T]): Stage[T] =
     addAction(ReactorAction.NextAction(event, body))
-  }
 
   /** Waits until the event is triggered.
     *
@@ -212,9 +206,8 @@ case class Stage[T](actions: List[ReactorAction[T]] = Nil) {
     * @param event the event to wait for.
     * @param body  the code to execute when the event is triggered.
     */
-  def next(event: Event[Unit])(body: => Stage[T]): Stage[T] = {
+  def next(event: Event[Unit])(body: => Stage[T]): Stage[T] =
     addAction(ReactorAction.NextAction(event, (_: Unit) => body))
-  }
 
   /** Reads the current reactor value.
     *
@@ -226,17 +219,15 @@ case class Stage[T](actions: List[ReactorAction[T]] = Nil) {
     *
     * @param body The function building the resulting [[Stage]]
     */
-  def read(body: T => Stage[T]): Stage[T] = {
+  def read(body: T => Stage[T]): Stage[T] =
     addAction(ReactorAction.ReadAction(body))
-  }
 
   /** Executes the body in a loop.
     *
     * @param body The [[Stage]] to be executes repeatedly
     */
-  def loop(body: => Stage[T]): Stage[T] = {
+  def loop(body: => Stage[T]): Stage[T] =
     addAction(ReactorAction.LoopAction(body, body))
-  }
 
   /** Executes it's body until an event is fired.
     *
@@ -250,9 +241,8 @@ case class Stage[T](actions: List[ReactorAction[T]] = Nil) {
     *                         It is executed when the interrupt is fired.
     * @tparam E The type of the event value.
     */
-  def until[E](event: Event[E], body: => Stage[T], interruptHandler: E => Stage[T]): Stage[T] = {
+  def until[E](event: Event[E], body: => Stage[T], interruptHandler: E => Stage[T]): Stage[T] =
     addAction(ReactorAction.UntilAction(event, body, interruptHandler))
-  }
 
   /** Executes it's body until an event is fired.
     *
@@ -285,43 +275,33 @@ case class Stage[T](actions: List[ReactorAction[T]] = Nil) {
 }
 
 object S {
-  def set[T](newValue: T): Stage[T] = {
+  def set[T](newValue: T): Stage[T] =
     Stage().set(newValue)
-  }
 
-  def modify[T](modifier: T => T): Stage[T] = {
+  def modify[T](modifier: T => T): Stage[T] =
     Stage().modify(modifier)
-  }
 
-  def next[T, E](event: Event[E])(body: E => Stage[T]): Stage[T] = {
+  def next[T, E](event: Event[E])(body: E => Stage[T]): Stage[T] =
     Stage().next(event)(body)
-  }
 
-  def next[T](event: Event[Unit])(body: => Stage[T]): Stage[T] = {
+  def next[T](event: Event[Unit])(body: => Stage[T]): Stage[T] =
     Stage().next(event)(body)
-  }
 
-  def read[T](body: T => Stage[T]): Stage[T] = {
+  def read[T](body: T => Stage[T]): Stage[T] =
     Stage().read(body)
-  }
 
-  def loop[T](body: => Stage[T]): Stage[T] = {
+  def loop[T](body: => Stage[T]): Stage[T] =
     Stage().loop(body)
-  }
 
-  def until[T, E](event: Event[E], body: => Stage[T], interruptHandler: E => Stage[T]): Stage[T] = {
+  def until[T, E](event: Event[E], body: => Stage[T], interruptHandler: E => Stage[T]): Stage[T] =
     Stage().until(event, body, interruptHandler)
-  }
 
-  def until[T](event: Event[Unit], body: => Stage[T], interruptHandler: Stage[T]): Stage[T] = {
+  def until[T](event: Event[Unit], body: => Stage[T], interruptHandler: Stage[T]): Stage[T] =
     Stage().until(event, body, interruptHandler)
-  }
 
-  def until[T](event: Event[Any], body: => Stage[T]): Stage[T] = {
+  def until[T](event: Event[Any], body: => Stage[T]): Stage[T] =
     Stage().until(event, body)
-  }
 
-  def end[T]: Stage[T] = {
+  def end[T]: Stage[T] =
     Stage()
-  }
 }

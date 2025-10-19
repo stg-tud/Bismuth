@@ -27,9 +27,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
   case object Thinking extends Philosopher
 
   val phils =
-    for idx <- 0 until size yield {
-      Var[Philosopher](Thinking)(using CreationTicket.fromName(s"phil(${idx + 1})"))
-    }
+    for idx <- 0 until size yield Var[Philosopher](Thinking)(using CreationTicket.fromName(s"phil(${idx + 1})"))
 
   sealed trait Fork
 
@@ -124,12 +122,10 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
       if t.now(sights(idx)) == Ready then phils(idx).admit(Eating)
     }
   }
-  def hasEaten(idx: Int): Boolean = {
+  def hasEaten(idx: Int): Boolean =
     sights(idx).readValueOnce == Done
-  }
-  def rest(idx: Int): Unit = {
+  def rest(idx: Int): Unit =
     phils(idx).set(Thinking)
-  }
 
   def eatRandomOnce(threadIndex: Int, threadCount: Int): Unit = {
     val seatsServed  = size / threadCount + (if threadIndex < size % threadCount then 1 else 0)
@@ -169,9 +165,9 @@ trait IndividualCounts {
   import engine.*
 
   val individualCounts: Seq[Signal[Int]] =
-    for idx <- 0 until size yield {
-      successes(idx).fold(0) { (acc, _) => acc + 1 }(using CreationTicket.fromName(s"count(${idx + 1})"))
-    }
+    for idx <- 0 until size yield successes(idx).fold(0) { (acc, _) =>
+      acc + 1
+    }(using CreationTicket.fromName(s"count(${idx + 1})"))
 }
 
 trait NoTopper extends IndividualCounts {
@@ -188,9 +184,9 @@ trait NoTopper extends IndividualCounts {
         (locks(idx - 1), locks(idx), locks(idx + 1))
       }
     lock1.lock(); lock2.lock(); lock3.lock()
-    try {
+    try
       f
-    } finally {
+    finally {
       lock1.unlock(); lock2.unlock(); lock3.unlock()
     }
   }
@@ -204,9 +200,7 @@ trait SignalPyramidTopper extends IndividualCounts {
 
   val successCount: Signal[Int] =
     individualCounts.reduce { (a, b) =>
-      {
-        Signal { a.value + b.value }(using CreationTicket.fromName(s"sumUpTo($b)"))
-      }
+      Signal { a.value + b.value }(using CreationTicket.fromName(s"sumUpTo($b)"))
     }
   override def total: Int = successCount.readValueOnce
 }
@@ -277,7 +271,7 @@ object PaperPhilosophers {
     val execContext = scala.concurrent.ExecutionContext.fromExecutor(executor)
     val threads     = for i <- 0 until threadCount yield Future { driver(i) }(using execContext)
 
-    while threads.exists(!_.isCompleted) && !abort && continue() do { Thread.sleep(10) }
+    while threads.exists(!_.isCompleted) && !abort && continue() do Thread.sleep(10)
     val timeout = System.currentTimeMillis() + 3000
     val scores  = threads.map { t =>
       Try { Await.result(t, (timeout - System.currentTimeMillis()).millis) }

@@ -50,9 +50,8 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
   }
 
   def caseStudyListen(): Unit = {
-    while true do {
+    while true do
       Thread.sleep(1000)
-    }
   }
 
   def caseStudyActive(): Unit = {
@@ -68,9 +67,8 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
     println("finshed adding changes")
 
-    while true do {
+    while true do
       Thread.sleep(1000)
-    }
   }
 }
 
@@ -116,9 +114,8 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
   }
 
   def caseStudyListen(): Unit = {
-    while true do {
+    while true do
       Thread.sleep(1000)
-    }
   }
 
   def caseStudyActive(): Unit = {
@@ -152,9 +149,8 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
     println("finshed adding changes")
 
-    while true do {
+    while true do
       Thread.sleep(1000)
-    }
   }
 }
 
@@ -172,10 +168,8 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   var state = LastWriterWins.empty[Set[String]]
 
-  private def writeStringGetDeltaInfo(s: String): RdtType = {
+  private def writeStringGetDeltaInfo(s: String): RdtType =
     state.write(Set(s)) // advances a total ordering internally
-
-  }
 
   def connect(
       host: String,
@@ -194,9 +188,8 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
   }
 
   def caseStudyListen(): Unit = {
-    while true do {
+    while true do
       Thread.sleep(1000)
-    }
   }
 
   def caseStudyActive(): Unit = {
@@ -213,8 +206,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
       dataManager.applyDelta(state)
     }
 
-    while true do {
+    while true do
       Thread.sleep(1000)
-    }
   }
 }

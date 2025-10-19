@@ -74,9 +74,8 @@ class BftFilteringAntiEntropy[RDT](
   private var deltaMessageBacklog                           = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
 
   // Executed in threads from ConnectionManager, thread safe
-  override def receivedMessage(msg: SyncMsg[RDT], fromUser: PublicIdentity): Unit = {
+  override def receivedMessage(msg: SyncMsg[RDT], fromUser: PublicIdentity): Unit =
     msgQueue.put(msg, fromUser)
-  }
 
   // Executed in thread from ConnectionManager
   override def connectionEstablished(remote: PublicIdentity): Unit = {
@@ -88,13 +87,11 @@ class BftFilteringAntiEntropy[RDT](
   }
 
   // Executed in thread from ConnectionManager
-  override def connectionShutdown(remote: PublicIdentity): Unit = {
+  override def connectionShutdown(remote: PublicIdentity): Unit =
     println(s"Disconnected from $remote")
-  }
 
-  def newPeers(peers: Set[(PublicIdentity, (String, Int))]): Unit = {
+  def newPeers(peers: Set[(PublicIdentity, (String, Int))]): Unit =
     receivedMessage(AnnouncePeers(peers), localPublicId)
-  }
 
   def mutateRdt(dot: Dot, delta: RDT): Unit = {
     require(!rdtDeltas.allDots.contains(dot))
@@ -110,9 +107,8 @@ class BftFilteringAntiEntropy[RDT](
     broadcastFiltered(acl, deltaMsg)
   }
 
-  def broadcastAclDelegation(delegation: EncodedDelegation): Unit = {
+  def broadcastAclDelegation(delegation: EncodedDelegation): Unit =
     broadcast(AclDelta(delegation))
-  }
 
   @volatile private var stopped = false
 

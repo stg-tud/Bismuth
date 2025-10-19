@@ -18,7 +18,7 @@ final class ReSwingEventOut[T] private[ex2013reswing] (initLazily: ReSwingEventO
 }
 
 final class ReSwingEventIn[T] private[ex2013reswing] (event: Lazy[Event[T]]) extends ReSwingEvent[T] {
-  private[ex2013reswing] def toEvent = { event() }
+  private[ex2013reswing] def toEvent = event()
 }
 
 final class ReSwingEventNone[T] private[ex2013reswing] extends ReSwingEvent[T] {

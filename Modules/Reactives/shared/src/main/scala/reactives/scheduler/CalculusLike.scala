@@ -223,17 +223,14 @@ object CalculusLike {
       }
     }
 
-    def isReady(r: ReSource.of[State]): Boolean = {
+    def isReady(r: ReSource.of[State]): Boolean =
       r.state.inputs.intersect(knownReactives).subsetOf(processed + r)
-    }
 
     /** Compute outdated reactives. Logic is identical to the paper. */
-    lazy val outdated: Set[ReSource.of[State]] = {
+    lazy val outdated: Set[ReSource.of[State]] =
       knownReactives.filter(isOutdated)
-    }
-    def isOutdated(r: ReSource.of[State]): Boolean = {
+    def isOutdated(r: ReSource.of[State]): Boolean =
       r.state.inputs.exists(active.contains)
-    }
   }
 
   object Reevaluate {

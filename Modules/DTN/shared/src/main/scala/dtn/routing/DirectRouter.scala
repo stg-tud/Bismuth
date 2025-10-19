@@ -28,11 +28,10 @@ class DirectRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInter
     val target_node_name: String = packet.bp.destination.extract_node_name()
 
     peers.get(target_node_name) match
-      case null => {
+      case null =>
         println(s"peer $target_node_name not directly known. not routing.")
         Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = List(), delete_afterwards = false))
-      }
-      case peer: DtnPeer => {
+      case peer: DtnPeer =>
         val selected_clas = peer.cla_list
           .filter((agent, port_option) => packet.clas.contains(agent))
           .map((agent, port_option) =>
@@ -42,20 +41,16 @@ class DirectRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInter
 
         println(s"selected clas: ${selected_clas}")
         Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = selected_clas, delete_afterwards = true))
-      }
   }
 
-  override def onError(packet: Packet.Error): Unit = {
+  override def onError(packet: Packet.Error): Unit =
     println(s"received error from dtnd: ${packet.reason}")
-  }
 
-  override def onTimeout(packet: Packet.Timeout): Unit = {
+  override def onTimeout(packet: Packet.Timeout): Unit =
     println(s"sending ran into timeout for bundle-forward-response ${packet.bp}.")
-  }
 
-  override def onSendingFailed(packet: Packet.SendingFailed): Unit = {
+  override def onSendingFailed(packet: Packet.SendingFailed): Unit =
     println(s"sending failed for bundle ${packet.bid} on cla ${packet.cla_sender}.")
-  }
 
   override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit = {
     println(s"sending succeeded for bundle ${packet.bid} on cla ${packet.cla_sender}.")
@@ -63,13 +58,11 @@ class DirectRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInter
     ()
   }
 
-  override def onIncomingBundle(packet: Packet.IncomingBundle): Unit = {
+  override def onIncomingBundle(packet: Packet.IncomingBundle): Unit =
     println("received incoming bundle. information not used for routing. ignoring.")
-  }
 
-  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit = {
+  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit =
     println("received incoming bundle without previous node. information not used for routing. ignoring.")
-  }
 }
 object DirectRouter {
   def apply(

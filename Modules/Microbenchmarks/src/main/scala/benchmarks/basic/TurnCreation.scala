@@ -18,13 +18,11 @@ class TurnCreation {
   final lazy val stableEngine        = engine
 
   @Setup
-  def setup(engineParam: EngineParam) = {
+  def setup(engineParam: EngineParam) =
     engine = engineParam.engine
-  }
 
   @Benchmark
-  def run(): Any = {
+  def run(): Any =
     engine.transaction()(identity)
-  }
 
 }

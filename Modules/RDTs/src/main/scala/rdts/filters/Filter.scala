@@ -185,9 +185,9 @@ object Filter {
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
       permissionTree.children.foreach {
         case keyPath -> pt =>
-          try {
+          try
             Filter[V].validatePermissionTree(pt)
-          } catch
+          catch
             case e @ InvalidPathException(subPath) => InvalidPathException(keyPath :: subPath)
       }
 

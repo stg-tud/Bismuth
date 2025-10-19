@@ -22,9 +22,8 @@ class KeyDerivationKeyBench {
   var pathLength: Int = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     path = (0 until pathLength).toArray map { idx => s"path-element-$idx" }
-  }
 
   @Benchmark
   def derivePath(): Unit = {

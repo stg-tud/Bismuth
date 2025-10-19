@@ -42,14 +42,12 @@ class DeltaMergeBench {
   }
 
   @Benchmark
-  def fullMerge: ReplicatedList[Long] = {
+  def fullMerge: ReplicatedList[Long] =
     Lattice.merge(fullState, plusOneState)
-  }
 
   @Benchmark
-  def fullDiff: Option[ReplicatedList[Long]] = {
+  def fullDiff: Option[ReplicatedList[Long]] =
     Lattice.diff(fullState, plusOneState)
-  }
 
   @Benchmark
   def deltaMerge: ReplicatedList[Long] = {
@@ -61,7 +59,6 @@ class DeltaMergeBench {
   }
 
   @Benchmark
-  def deltaMergeNoDiff: ReplicatedList[Long] = {
+  def deltaMergeNoDiff: ReplicatedList[Long] =
     Lattice.merge(fullState, plusOneDeltaState)
-  }
 }

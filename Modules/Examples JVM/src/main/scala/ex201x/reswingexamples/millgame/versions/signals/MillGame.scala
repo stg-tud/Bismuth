@@ -90,9 +90,8 @@ class MillGame {
     else if board.numStones.now.apply(player) == 3 then JumpStoneSelect(player)
     else MoveStoneSelect(player)
 
-  private def decrementCount(player: Slot): Unit = {
+  private def decrementCount(player: Slot): Unit =
     remainCount.transform(currentCount => currentCount.updated(player, currentCount(player) - 1))
-  }
 
   def playerInput(i: SlotIndex): Boolean = {
     state match {

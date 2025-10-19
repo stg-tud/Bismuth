@@ -62,7 +62,7 @@ class UDPPseudoConnection(
 
                 receiveCallback.succeed(ArrayMessageBuffer(packet.getData.slice(packet.getOffset, packet.getLength)))
               catch case _: SocketTimeoutException => ()
-          } finally { datagramSocket.close() }
+          } finally datagramSocket.close()
         } catch
           case NonFatal(e) =>
             connections.values.foreach: (_, cb) =>

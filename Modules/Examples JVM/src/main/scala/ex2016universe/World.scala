@@ -43,9 +43,8 @@ class World(val width: Int = 100, val height: Int = 100) {
   }
 
   /** spawns the given Board element at a free random position in the world */
-  def spawn(element: BoardElement): Unit = {
+  def spawn(element: BoardElement): Unit =
     spawn(element, board.randomFreePosition(randomness))
-  }
 
   // each day, spawn a new plant
   time.day.changed observe { _ => // #HDL //#IF
@@ -62,9 +61,9 @@ class World(val width: Int = 100, val height: Int = 100) {
   def plan(f: => Unit)                       = synchronized(updates ::= (() => f))
   def runPlan()                              = {
     updates.foreach { u =>
-      try {
+      try
         u()
-      } catch {
+      catch {
         case e: Throwable => e.printStackTrace()
       }
     }

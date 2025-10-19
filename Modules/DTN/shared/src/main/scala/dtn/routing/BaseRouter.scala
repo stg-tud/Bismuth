@@ -29,32 +29,29 @@ abstract class BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClie
   val services: ConcurrentHashMap[Int, String]  = ConcurrentHashMap()
 
   def start_receiving(): Future[Unit] = {
-    ws.receivePacket().flatMap(packet => {
-      on_packet_received(packet).flatMap(_ => {
+    ws.receivePacket().flatMap { packet =>
+      on_packet_received(packet).flatMap { _ =>
         start_receiving()
-      })
-    }).recoverAndLog()
+      }
+    }.recoverAndLog()
   }
 
   def on_packet_received(packet: Packet): Future[Unit] = {
     packet match
-      case p: Packet.RequestSenderForBundle => {
+      case p: Packet.RequestSenderForBundle =>
         onRequestSenderForBundle(p) match {
           case None           => Future() // nothing to send
           case Some(response) => ws.sendPacket(response)
         }
-      }
       case p: Packet.Error            => Future(onError(p))
       case p: Packet.Timeout          => Future(onTimeout(p))
       case p: Packet.SendingFailed    => Future(onSendingFailed(p))
-      case p: Packet.SendingSucceeded => {
+      case p: Packet.SendingSucceeded =>
         monitoringClient.send(MonitoringMessage.BundleForwardedAtRouter(ws.nodeId, p.bid))
         Future(onSendingSucceeded(p))
-      }
-      case p: Packet.IncomingBundle => {
+      case p: Packet.IncomingBundle =>
         monitoringClient.send(MonitoringMessage.BundleReceivedAtRouter(ws.nodeId, p.bndl.id))
         Future(onIncomingBundle(p))
-      }
       case p: Packet.IncomingBundleWithoutPreviousNode => Future(onIncomingBundleWithoutPreviousNode(p))
       case p: Packet.EncounteredPeer                   => Future(onEncounteredPeer(p))
       case p: Packet.DroppedPeer                       => Future(onDroppedPeer(p))

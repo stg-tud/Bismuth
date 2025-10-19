@@ -73,9 +73,8 @@ class KeepAllHistory[State] extends DeltaStorage[State] {
 
   override def getHistory: List[CachedMessage[Payload[State]]] = history
 
-  override def remember(message: CachedMessage[Payload[State]]): Unit = {
+  override def remember(message: CachedMessage[Payload[State]]): Unit =
     history = message :: history
-  }
 
 }
 

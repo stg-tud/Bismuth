@@ -27,7 +27,7 @@ class ReverseFan {
   def setup(step: Step, engineParam: EngineParam, work: Workload) = {
     engine = engineParam.engine
     sources = Array.fill(16)(Var(step.get()))
-    val intermediate = sources.map(_.map { v => { work.consume(); v + 1 } })
+    val intermediate = sources.map(_.map { v => work.consume(); v + 1 })
     result = Signal.lift(intermediate.toSeq) { values =>
       work.consumeSecondary(); values.sum
     }

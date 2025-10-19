@@ -33,7 +33,7 @@ class MultiReverseFan {
     sources = Array.fill(threads)(Var(step.get()))
     groupSize = if threads > size.size then threads / size.size else 1
 
-    val intermediate = sources.map(_.map { v => { work.consume(); v + 1 } }).grouped(groupSize)
+    val intermediate = sources.map(_.map { v => work.consume(); v + 1 }).grouped(groupSize)
     results = intermediate.map { sigs =>
       Signal.lift(sigs.toSeq) { values =>
         work.consumeSecondary(); values.sum
@@ -50,9 +50,9 @@ class MultiReverseFan {
     if locks eq null then sources(index).set(step.run())
     else {
       locks.nn(index / groupSize).lock()
-      try {
+      try
         sources(index).set(step.run())
-      } finally locks.nn(index / groupSize).unlock()
+      finally locks.nn(index / groupSize).unlock()
     }
   }
 }

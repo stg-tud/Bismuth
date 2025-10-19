@@ -16,9 +16,8 @@ trait EchoCommunicationTest[Info](
   val executor             = Executors.newCachedThreadPool()
   val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  override def afterAll(): Unit = {
+  override def afterAll(): Unit =
     executor.shutdownNow()
-  }
 
   test("sample communication") {
 

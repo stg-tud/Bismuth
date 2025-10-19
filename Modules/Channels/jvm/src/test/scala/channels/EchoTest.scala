@@ -24,9 +24,9 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest(
 
         server.bind(InetSocketAddress("0", 58004), 0)
 
-        val handler = JavaHttp.SSEServer(handler => {
+        val handler = JavaHttp.SSEServer { handler =>
           server.createContext("/path", handler)
-        })
+        }
 
         server.start()
         val port = server.getAddress.getPort

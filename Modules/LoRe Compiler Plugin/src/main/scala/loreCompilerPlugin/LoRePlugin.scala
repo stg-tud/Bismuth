@@ -29,9 +29,8 @@ enum LogLevel(val level: Int) {
     * @param level The log level to compare to
     * @return Whether this log level is equal to or higher than the given log levl.
     */
-  def isLevelOrHigher(level: LogLevel): Boolean = {
+  def isLevelOrHigher(level: LogLevel): Boolean =
     this.level >= level.level
-  }
 }
 
 /** The bridging data structure for reporting Dafny verification errors at the correct LoRe source code positions.
@@ -84,13 +83,13 @@ class LoRePhase extends PluginPhase {
         case Template(_, _, _, objectContents: List[Tree[?]]) =>
           // Process each individual part of this LoRe program
           // First entry is some internal compiler entry, so drop it
-          objectContents.drop(1).foreach((t: Tree[?]) => {
+          objectContents.drop(1).foreach { (t: Tree[?]) =>
             // Generate LoRe term for this tree
             val loreTerm: List[Term] = createLoReTermFromTree(t, programTermList)
 
             // Add generated LoRe term to this LoreProgram's term list
             programTermList = programTermList :++ loreTerm
-          })
+          }
         case _ => ()
 
       // Add the finalized term list for this LoreProgram to the phase's overall term list
@@ -130,9 +129,9 @@ class LoRePhase extends PluginPhase {
     // Take the first half of the split, then add the split off separator back on and get the path as an URI string
     val folderPath: String = File(unitPath.split(rootPatternEscaped).head.concat(rootPattern)).toURI.toString
 
-    try {
+    try
       lspClient.initializeLSP(folderPath)
-    } catch {
+    catch {
       case _: IOException =>
         report.inform(s"could not starty dafny lsp, make sure dafny is on the path")
         return units
@@ -189,9 +188,9 @@ class LoRePhase extends PluginPhase {
           // No diagnostics were read before the error occurred: No error info known.
           case None       => report.error("An unknown critical Dafny compilation error occurred.")
           case Some(diag) =>
-            val errors: List[Diagnostic] = diag.params.diagnostics.filter(d => {
+            val errors: List[Diagnostic] = diag.params.diagnostics.filter { d =>
               d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
-            })
+            }
 
             val errorPlural: String = if errors.size > 1 then "errors" else "error"
 
@@ -213,12 +212,12 @@ class LoRePhase extends PluginPhase {
         } else {
           programsWithErrors = programsWithErrors :+ programName
 
-          val unverifiableNames: List[String] = erroneousVerifiables.map(verifiable => {
+          val unverifiableNames: List[String] = erroneousVerifiables.map { verifiable =>
             // The names of verifiables (e.g. method names) will be on one line, so no need to check across
             val startChar: Int = verifiable.nameRange.start.character
             val endChar: Int   = verifiable.nameRange.end.character
             dafnyLines(verifiable.nameRange.start.line).substring(startChar, endChar)
-          })
+          }
 
           diagnosticsNotification match
             case None =>
@@ -229,13 +228,13 @@ class LoRePhase extends PluginPhase {
               )
             case Some(diag) =>
               // Order of diagnostics and named verifiables lists is the same so we can associate by zipping
-              diag.params.diagnostics.zip(unverifiableNames).foreach((d, n) => {
+              diag.params.diagnostics.zip(unverifiableNames).foreach { (d, n) =>
                 d.relatedInformation match
                   case None =>
                     // No direct Scala position known
                     report.error(s"A verification error occurred in $n:\n${d.message}")
                   case Some(info) =>
-                    info.foreach(i => {
+                    info.foreach { i =>
                       // If the message doesn't start with an opening bracket, it's not an embedded error,
                       // but a different error output by the Dafny verifier, so take the string as it is.
                       // If it does, however, then the message has to be de-escaped to be parsed properly.
@@ -251,8 +250,8 @@ class LoRePhase extends PluginPhase {
                         case Some(pos) =>
                           val sourcePos: SourcePosition = SourcePosition(file, new Span(pos))
                           report.error(embeddedError.message, sourcePos)
-                    })
-              })
+                    }
+              }
         }
       }
 

@@ -287,9 +287,8 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     var msg: LSPMessage = readMessage()
 
     while !msg.isInstanceOf[LSPNotification] || msg.asInstanceOf[LSPNotification].method != method
-    do {
+    do
       msg = readMessage()
-    }
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
       println(s"Message using method $method found:\n${upickleWrite(msg)}")
@@ -308,9 +307,8 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     var msg: LSPMessage = readMessage()
 
     while !msg.isInstanceOf[LSPResponse] || msg.asInstanceOf[LSPResponse].id != id
-    do {
+    do
       msg = readMessage()
-    }
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Response with id $id found:\n${upickleWrite(msg)}")
     msg.asInstanceOf[LSPResponse] // Cast is safe because of above check

@@ -82,10 +82,9 @@ object LoReGen {
   private def createLoReTermFromApply(tree: tpd.Apply, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
-  ): Term = {
+  ): Term =
     // Apply statements are covered as part of RHS term building for ValDefs
     buildLoReRhsTerm(tree, termList)
-  }
 
   /** Creates a LoRe Term from a Scala Ident Tree.
     *
@@ -96,10 +95,9 @@ object LoReGen {
   private def createLoReTermFromIdent(tree: tpd.Ident, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
-  ): Term = {
+  ): Term =
     // Ident statements are covered as part of RHS term building for ValDefs
     buildLoReRhsTerm(tree, termList)
-  }
 
   /** Creates a LoRe Term from a Scala If Tree.
     *
@@ -110,10 +108,9 @@ object LoReGen {
   private def createLoReTermFromIf(tree: tpd.If, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
-  ): Term = {
+  ): Term =
     // If statements are covered as part of RHS term building for ValDefs
     buildLoReRhsTerm(tree, termList)
-  }
 
   /** Creates a LoRe Term from a Scala Literal Tree.
     *
@@ -124,10 +121,9 @@ object LoReGen {
   private def createLoReTermFromLiteral(tree: tpd.Literal, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
-  ): Term = {
+  ): Term =
     // Literal statements are covered as part of RHS term building for ValDefs
     buildLoReRhsTerm(tree, termList)
-  }
 
   /** Creates a LoRe Term from a Scala Select Tree.
     *
@@ -138,10 +134,9 @@ object LoReGen {
   private def createLoReTermFromSelect(tree: tpd.Select, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
-  ): Term = {
+  ): Term =
     // Select statements are covered as part of RHS term building for ValDefs
     buildLoReRhsTerm(tree, termList)
-  }
 
   /** Creates a LoRe Term from a Scala ValDef Tree.
     *
@@ -194,9 +189,9 @@ object LoReGen {
                   name.toString,
                   loreTypeNode,
                   TTuple(
-                    tupleContents.map(tupleElement => {
+                    tupleContents.map { tupleElement =>
                       buildLoReRhsTerm(tupleElement, termList, 1)
-                    }),
+                    },
                     scalaSourcePos = Some(tupleDef.sourcePos)
                   ),
                   scalaSourcePos = Some(tree.sourcePos)

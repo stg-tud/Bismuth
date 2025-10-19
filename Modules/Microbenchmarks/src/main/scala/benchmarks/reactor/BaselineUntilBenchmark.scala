@@ -29,12 +29,10 @@ class BaselineUntilBenchmark {
     reactor = Reactor.loop(0) {
       S.until(
         trigger,
-        body = {
-          S.end
-        }: Stage[Int],
-        interruptHandler = {
-          S.end
-        }: Stage[Int]
+        body =
+          S.end: Stage[Int],
+        interruptHandler =
+          S.end: Stage[Int]
       )
     }
   }

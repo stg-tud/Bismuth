@@ -59,9 +59,8 @@ class ChannelConnectionManagerTest extends FunSuite {
 
     val connectionQueue: LinkedBlockingQueue[PublicIdentity] = LinkedBlockingQueue()
 
-    override def receivedMessage(msg: MessageBuffer, fromUser: PublicIdentity): Unit = {
+    override def receivedMessage(msg: MessageBuffer, fromUser: PublicIdentity): Unit =
       messageQueue.put((msg, fromUser))
-    }
 
     override def connectionEstablished(publicIdentity: PublicIdentity): Unit = {
       if DEBUG then println(s"${localId.map(_.id).getOrElse("Replica")} is now connected to ${publicIdentity.id}")

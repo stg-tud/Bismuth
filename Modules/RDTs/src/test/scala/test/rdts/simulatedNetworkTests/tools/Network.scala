@@ -35,13 +35,11 @@ class Network(val lossChance: Double, val duplicateChance: Double, val delayChan
   private val inTransfer: mutable.Map.WithDefault[String, List[SimulatedMessage]] =
     new mutable.Map.WithDefault(mutable.Map(), _ => List())
 
-  def startReliablePhase(): Unit = {
+  def startReliablePhase(): Unit =
     reliablePhase = true
-  }
 
-  def endReliablePhase(): Unit = {
+  def endReliablePhase(): Unit =
     reliablePhase = false
-  }
 
   private def selectRandom(l: List[SimulatedMessage], removeChance: Double): List[SimulatedMessage] =
     l.zip(List.fill(l.length)(Random.between(0.0, 1.0))).collect {
@@ -68,9 +66,8 @@ class Network(val lossChance: Double, val duplicateChance: Double, val delayChan
       recipient: String,
       message: SimulatedMessage,
       into: mutable.Map[String, List[SimulatedMessage]]
-  ): Unit = {
+  ): Unit =
     into.update(recipient, into(recipient) :+ message)
-  }
 
   def sendMessage(recipient: String, message: SimulatedMessage): Unit = {
     if reliablePhase then {

@@ -56,9 +56,8 @@ class AWLWWMapBenchmark {
   }
 
   @Benchmark
-  def putOnceNoSerialization(benchState: SerializeOnlyBenchmarkState): Unit = {
+  def putOnceNoSerialization(benchState: SerializeOnlyBenchmarkState): Unit =
     benchState.crdt.put("This is a String", "And so this is too")
-  }
 
   @Benchmark
   @Fork(2)
@@ -110,9 +109,8 @@ class AeadState {
   var aead: Aead = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
-  def setupAead(): Unit = {
+  def setupAead(): Unit =
     aead = Helper.setupAead(keyTemplateString)
-  }
 }
 
 @State(Scope.Thread)
@@ -161,7 +159,6 @@ class PutManyBenchmarkState {
   var crdtSizeInElements: Int = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
-  def setupTestData(): Unit = {
+  def setupTestData(): Unit =
     dummyKeyValuePairs = Helper.dummyKeyValuePairs(crdtSizeInElements)
-  }
 }

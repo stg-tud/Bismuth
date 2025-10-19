@@ -66,9 +66,9 @@ class P2PTlsTcpConnector(private val identity: PrivateIdentity, _listenPort: Int
       identityPromise.success(peerIdentity)
     }
 
-    try {
+    try
       socket.startHandshake()
-    } catch {
+    catch {
       case e: IOException => identityPromise.failure(e)
     }
 

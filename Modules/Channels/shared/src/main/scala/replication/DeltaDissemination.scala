@@ -86,18 +86,15 @@ class DeltaDissemination[State](
       ex.printStackTrace()
     case Success(_) => ()
 
-  def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit = {
+  def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit =
     prepareBinaryConnection(latentConnection).run(using ())(printExceptionHandler)
-  }
 
-  def addObjectConnection(latentConnection: LatentConnection[ProtocolMessage[State]]): Unit = {
+  def addObjectConnection(latentConnection: LatentConnection[ProtocolMessage[State]]): Unit =
     prepareObjectConnection(latentConnection).run(using ())(printExceptionHandler)
-  }
 
   /** prepare a connection that serializes to some binary format. Primary means of network communication. Adds a serialization and caching layer */
-  def prepareBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Async[Any, Unit] = {
+  def prepareBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Async[Any, Unit] =
     prepareLatentConnection(cachedMessages(latentConnection))
-  }
 
   /** prepare a connection that passes objects around somewhere in memory. For in prozess communication or custom serialization. */
   def prepareObjectConnection(latentConnection: LatentConnection[ProtocolMessage[State]]): Async[Any, Unit] = {
@@ -204,13 +201,13 @@ class DeltaDissemination[State](
 
   def disseminatePayload(payload: CachedMessage[Payload[State]], except: Set[ConnectionContext] = Set.empty): Unit = {
     val cons = lock.synchronized(connections)
-    cons.filterNot(con => except.contains(con)).foreach(con => {
+    cons.filterNot(con => except.contains(con)).foreach { con =>
       val p = con.authenticatedPeerReplicaId match {
         case Some(receiver) => augmentPayloadWithLastKnownDot(payload.payload, receiver)
         case _              => payload
       }
       send(con, p)
-    })
+    }
   }
 
   private def augmentPayloadWithLastKnownDot(payload: Payload[State], receiver: Uid): Message =

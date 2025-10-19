@@ -21,7 +21,7 @@ trait ReLayoutContainer[Constraints] extends ReUIElement {
 
   def contents: ReSwingValue[Map[Component, Constraints]]
 
-  contents.using({ () => peerContents }, peerContents_=, classOf[ComponentAdded], classOf[ComponentRemoved])
+  contents.using(() => peerContents, peerContents_=, classOf[ComponentAdded], classOf[ComponentRemoved])
 
   object layout {
     def update(component: Component, constraints: Constraints) =

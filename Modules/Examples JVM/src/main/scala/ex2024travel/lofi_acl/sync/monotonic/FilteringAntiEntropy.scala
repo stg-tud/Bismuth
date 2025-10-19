@@ -42,9 +42,8 @@ class FilteringAntiEntropy[RDT](
   private val peerAddressCache = AtomicReference(Set.empty[(PublicIdentity, (String, Int))])
 
   // Access Control List ------
-  private val aclReference: AtomicReference[(Dots, MonotonicAcl[RDT])] = {
+  private val aclReference: AtomicReference[(Dots, MonotonicAcl[RDT])] =
     AtomicReference((Dots.empty, MonotonicAcl[RDT](rootOfTrust, Map.empty, Map.empty)))
-  }
   @volatile private var receivedAclDots: Dots = // received != applied
     initialAclDeltas.foldLeft(Dots.empty)((dots, msg) => dots.add(msg.dot))
   @volatile private var aclDeltas: Map[Dot, AclDelta[RDT]] = initialAclDeltas.map(msg => msg.dot -> msg).toMap
@@ -82,9 +81,8 @@ class FilteringAntiEntropy[RDT](
   private var deltaMessageBacklog = Queue.empty[(Delta[RDT], PublicIdentity, PermissionTree)]
 
   // Executed in threads from ConnectionManager, thread safe
-  override def receivedMessage(msg: MonotonicAclSyncMessage[RDT], fromUser: PublicIdentity): Unit = {
+  override def receivedMessage(msg: MonotonicAclSyncMessage[RDT], fromUser: PublicIdentity): Unit =
     msgQueue.put(msg, fromUser)
-  }
 
   // Executed in thread from ConnectionManager
   override def connectionEstablished(remote: PublicIdentity): Unit = {
@@ -112,9 +110,8 @@ class FilteringAntiEntropy[RDT](
     }
   }
 
-  def newPeers(peers: Set[(PublicIdentity, (String, Int))]): Unit = {
+  def newPeers(peers: Set[(PublicIdentity, (String, Int))]): Unit =
     receivedMessage(AnnouncePeers(peers), localPublicId)
-  }
 
   def mutateRdt(dot: Dot, delta: RDT): Unit = {
     require(!rdtDeltas.allDots.contains(dot))
@@ -310,7 +307,7 @@ class FilteringAntiEntropy[RDT](
           }
 
   private def updateAcl(aclDelta: AclDelta[RDT]): Unit = aclDelta match
-    case AclDelta(principal, realm, operation, dot, _, _) => {
+    case AclDelta(principal, realm, operation, dot, _, _) =>
       var updateValidAndNew = false
       // Update ACL
       val (_, oldAcl) = aclReference.getAndUpdate {
@@ -385,7 +382,6 @@ class FilteringAntiEntropy[RDT](
             localSendPermissions = localSendPermissions + (principal -> newSendPermissions)
             val _ = connectionManager.send(principal, PermissionsInUse(aclDots, newSendPermissions))
         }
-    }
 
   private def updateLocalSendPermissions(): Unit = {
     val (aclDots, acl) = aclReference.get()

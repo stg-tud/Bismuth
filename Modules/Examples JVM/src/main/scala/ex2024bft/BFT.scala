@@ -29,9 +29,8 @@ case class Hash(content: Array[Byte]) {
 
 case class BFTDelta[V](value: V, predecessors: Set[Hash], hash: Hash) {
 
-  def hashCorrect(using Byteable[V]): Boolean = {
+  def hashCorrect(using Byteable[V]): Boolean =
     BFT.hash(value, predecessors) == hash
-  }
 
 }
 
@@ -86,9 +85,8 @@ case class BFT[V](deltas: Set[BFTDelta[V]]) {
   def reverseGraph(): Map[Option[Hash], Set[BFTDelta[V]]] = {
     val reverseGraph = mutable.Map[Option[Hash], Set[BFTDelta[V]]]()
 
-    def addToGraph(from: Option[Hash], to: BFTDelta[V]) = {
+    def addToGraph(from: Option[Hash], to: BFTDelta[V]) =
       reverseGraph.updateWith(from)(_.fold(Some(Set(to)))(it => Some(it + to)))
-    }
 
     for delta <- deltas do {
       if delta.predecessors.isEmpty then addToGraph(None, delta)
@@ -108,9 +106,7 @@ object BFT {
 
   def lattice[V](using Byteable[V]): Lattice[BFT[V]] = {
     (left: BFT[V], right: BFT[V]) =>
-      {
-        BFT((left.deltas ++ right.deltas).filter(_.hashCorrect))
-      }
+      BFT((left.deltas ++ right.deltas).filter(_.hashCorrect))
   }
 
   def hash[V](value: V, heads: Set[Hash])(using ch: Byteable[V]): Hash =

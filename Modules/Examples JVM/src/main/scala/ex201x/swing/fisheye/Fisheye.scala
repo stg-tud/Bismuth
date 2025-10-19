@@ -49,9 +49,8 @@ class Fisheye {
   given mouse: Mouse = new Mouse
 
   var boxes: List[Box]                    = Nil
-  def addBox(color: java.awt.Color): Unit = {
+  def addBox(color: java.awt.Color): Unit =
     boxes ::= new Box(color, if boxes.isEmpty then initPoint else boxes.head.rightmostPoint)
-  }
 
   addBox(Color.BLUE)
   addBox(Color.CYAN)

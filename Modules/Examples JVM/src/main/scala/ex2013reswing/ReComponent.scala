@@ -17,12 +17,12 @@ abstract class ReComponent(
 
   override protected lazy val peer: CompItem & ComponentMixin = new Component with ComponentMixin
 
-  val hasFocus = ReSwingValue.using({ () => peer.hasFocus }, classOf[FocusGained], classOf[FocusLost])
+  val hasFocus = ReSwingValue.using(() => peer.hasFocus, classOf[FocusGained], classOf[FocusLost])
 
-  background.using({ () => peer.background }, peer.background_=, "background")
-  foreground.using({ () => peer.foreground }, peer.foreground_=, "foreground")
-  font.using({ () => peer.font }, peer.font_=, "font")
-  enabled.using({ () => peer.enabled }, peer.enabled_=, "enabled")
+  background.using(() => peer.background, peer.background_=, "background")
+  foreground.using(() => peer.foreground, peer.foreground_=, "foreground")
+  font.using(() => peer.font, peer.font_=, "font")
+  enabled.using(() => peer.enabled, peer.enabled_=, "enabled")
 
   object mouse {
     object clicks {

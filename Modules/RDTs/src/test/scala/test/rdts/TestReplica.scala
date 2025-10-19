@@ -7,9 +7,8 @@ class TestReplica[A](val replicaId: LocalUid, var anon: A) {
     anon = anon `merge` delta
     this
 
-  def mod(f: A => LocalUid ?=> A)(using Lattice[A]) = {
+  def mod(f: A => LocalUid ?=> A)(using Lattice[A]) =
     apply(f(anon)(using replicaId))
-  }
 }
 
 object TestReplica {

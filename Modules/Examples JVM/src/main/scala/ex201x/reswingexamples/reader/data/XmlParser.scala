@@ -38,11 +38,10 @@ class XmlParser {
     *  None if the xml could not be parsed
     *  Some(RssChannel) otherwise
     */
-  def parseChannelWithoutURL(xmlNode: NodeSeq): Option[RSSChannel] = {
+  def parseChannelWithoutURL(xmlNode: NodeSeq): Option[RSSChannel] =
     // version of parseChannel without URL because it is not
     // always guaranteed that we know the URL
     parseChannel((xmlNode, None))
-  }
 
   /** Parses a RSSChannel from the given xml NodeSeq and sets the source url
     *
@@ -53,9 +52,8 @@ class XmlParser {
     *  None if the xml could not be parsed
     *  Some(RssChannel) otherwise
     */
-  def parseChannelWithURL(xmlNode: NodeSeq, url: URL): Option[RSSChannel] = {
+  def parseChannelWithURL(xmlNode: NodeSeq, url: URL): Option[RSSChannel] =
     parseChannel((xmlNode, Some(url)))
-  }
 
   private val parseChannel = Observable { // #EVT //#EVT
     (args: (NodeSeq, Option[URL])) =>

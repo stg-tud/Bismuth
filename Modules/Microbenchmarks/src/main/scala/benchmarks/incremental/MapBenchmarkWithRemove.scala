@@ -30,13 +30,13 @@ class MapBenchmarkWithRemove {
   @Setup(Level.Invocation)
   def prepare(): Unit = {
     removeEvent = Evt[Int]()
-    val seq = removeEvent.fold((1 to arg).toList)((s, x) => {
+    val seq = removeEvent.fold((1 to arg).toList) { (s, x) =>
       s `diff` Seq(x)
-    })
+    }
     mappedSeq = Signal {
-      seq.value.map(x => {
+      seq.value.map { x =>
         x * x
-      })
+      }
     }
 
     reactSeq = IncSeq.empty[Int]

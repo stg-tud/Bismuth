@@ -99,7 +99,7 @@ object DafnyGen {
     // "otherRef", "anotherRef" and "someRef" instead of the refs being "bar" itself in addition to "someRef".
     // Therefore, these "deep" references have to be resolved down into their bare components and replaced in the list.
     val deepRefs: Set[String] =
-      refs.filter((ref: String) => {
+      refs.filter { (ref: String) =>
         // This check is for skipping non-top-level definition references (e.g. arrow func parameters)
         if ctx.isDefinedAt(ref) then {
           val tp: Type = ctx(ref).loreType
@@ -112,7 +112,7 @@ object DafnyGen {
               // to happen within other expressions, so this case is unreachable as long as that is unchanged.
               false
         } else false
-      })
+      }
 
     if deepRefs.isEmpty then refs
     else {
@@ -239,24 +239,24 @@ object DafnyGen {
 
     // Record compilation context info of all definitions (name, lore term, lore + dafny type) before generation
     if logLevel.isLevelOrHigher(LogLevel.Sparse) then println("Recording definitions in context...")
-    termGroups.values.foreach(termList => {
+    termGroups.values.foreach { termList =>
       termList.foreach {
         case term @ TAbs(name, _type, body, _, _) =>
           val tp: String = generate(_type, compilationContext)
           compilationContext = compilationContext.updated(name, NodeInfo(name, term, _type, tp))
         case _ => ()
       }
-    })
+    }
 
     // Generate Dafny code for all term groups
     // Also check for forward references in terms, and report an error for offending terms
-    val dafnyCode: Map[String, List[String]] = termGroups.map((termType, termList) => {
+    val dafnyCode: Map[String, List[String]] = termGroups.map { (termType, termList) =>
       if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Generating Dafny code for $termType...")
 
-      val generated: List[String] = termList.map(term => {
+      val generated: List[String] = termList.map { term =>
         // Check for forward references
         val refs: Set[String] = usedReferences(term, compilationContext)
-        refs.foreach((ref: String) => {
+        refs.foreach { (ref: String) =>
           // Find the definition of the reference from context (should always be present because it was built above)
           val refDef: Option[NodeInfo] = compilationContext.get(ref)
           refDef match
@@ -269,11 +269,11 @@ object DafnyGen {
                   report.error("Forward references are not allowed.", term.scalaSourcePos.orNull)
                 }
               }
-        })
+        }
 
         // Map to generation result of term
         generate(term, compilationContext)
-      })
+      }
 
       if termType == "statements" then {
         // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
@@ -285,7 +285,7 @@ object DafnyGen {
         // All other term types are taken as generated
         (termType, generated.filter(l => !l.isBlank))
       }
-    })
+    }
 
     // Sources have to first be split into their components (name, type and value), since they're modelled as
     // Dafny class fields. Class fields can't be initialized immediately, only declared, and must be defined in a
@@ -581,7 +581,7 @@ object DafnyGen {
                 // Index count is to swap in names for Scala args left blank
                 var argIdx: Int = 0
 
-                arguments.collect(arg => {
+                arguments.collect { arg =>
                   val argName: String = arg match
                     // Replace any arguments left as blanks in Scala with a name that's valid in Dafny
                     case TArgT(name, _, _, _) if name.startsWith("_") => s"arg$argIdx"
@@ -591,18 +591,18 @@ object DafnyGen {
 
                   argIdx += 1
                   argName
-                })
+                }
               case _ => List()
 
             // Reactives aren't arguments, so remove those
             args.drop(reactiveTypes.length)
           case Some(term) => List() // Irrelevant body: non-arrow func
 
-        val definedSources: List[NodeInfo] = ctx.values.filter(definition => {
+        val definedSources: List[NodeInfo] = ctx.values.filter { definition =>
           definition.loreNode match
             case TAbs(name, _, body: TSource, _, _) => true
             case _                                  => false
-        }).toList
+        }.toList
 
         val preconditions: List[String] = n.requires.map {
           case t: TArrow =>
@@ -665,7 +665,7 @@ object DafnyGen {
         // a condition specifying the not-mentioned Sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
         // for every Source that is not included in the modifies list, where obj is the main object of the program.
         val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
-        val modifies: List[String]            = "modifies LoReFields" :: unmodifiedSources.map(source => {
+        val modifies: List[String]            = "modifies LoReFields" :: unmodifiedSources.map { source =>
           // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
           val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
             case None =>
@@ -680,24 +680,24 @@ object DafnyGen {
           val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
 
           s"ensures {:error \"$embeddedErrorEsc\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
-        })
+        }
 
-        val definedInvariants: List[NodeInfo] = ctx.values.filter(definition => {
+        val definedInvariants: List[NodeInfo] = ctx.values.filter { definition =>
           definition.loreNode match
             case TAbs(name, _, body: TInvariant, _, _) => true
             case _                                     => false
-        }).toList
+        }.toList
 
         // Get any Invariants which includes references to any of the Sources modified by this Interaction
-        val relevantInvariants: List[NodeInfo] = definedInvariants.filter(inv => {
+        val relevantInvariants: List[NodeInfo] = definedInvariants.filter { inv =>
           inv.loreNode match
             case TAbs(_, _, TInvariant(cond, _, _), _, _) =>
               val invRefs: Set[String] = usedReferences(cond, ctx)
               reactiveNames.exists(s => invRefs.contains(s))
             case _ => false
-        })
+        }
 
-        val invariants: List[String] = relevantInvariants.map(inv => {
+        val invariants: List[String] = relevantInvariants.map { inv =>
           // No Invariant-specific position is available, since the Invariants aren't specifically
           // called for individual Interactions, but checked through other means in Scala execution.
           val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
@@ -728,14 +728,14 @@ object DafnyGen {
 
           // Assemble list of parameters for Invariant call:
           // Any calls to definitions that exist are turned into field calls on the main object.
-          val refs: Set[String] = usedReferences(inv.loreNode, ctx).map(ref => {
+          val refs: Set[String] = usedReferences(inv.loreNode, ctx).map { ref =>
             if ctx.exists((name, node) => name == ref) then s"LoReFields.$ref" else ref
-          })
+          }
 
           // Call the Invariant both before execution and after execution of the Interaction
           s"""requires {:error \"${embeddedErrorsEsc._1}\"} ${inv.name}(${refs.mkString(", ")})
              |ensures {:error \"${embeddedErrorsEsc._2}\"} ${inv.name}(${refs.mkString(", ")})""".stripMargin
-        })
+        }
 
         // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
         // block is. Instead, return values are named and appear similar to local variables, and must be assigned to in
@@ -758,9 +758,9 @@ object DafnyGen {
                 val bodyAssignment: String       = getInteractionAssignment(seq.body.last, reactiveNames, ctx)
 
                 // All statements included in the method body have to end with either a closing brace or a semicolon
-                (bodyStatements :+ bodyAssignment).map(l => {
+                (bodyStatements :+ bodyAssignment).map { l =>
                   if l.endsWith("}") || l.endsWith(";") then l else s"$l;"
-                }).mkString("\n")
+                }.mkString("\n")
               case b: Term =>
                 // Body is a single expression, so turn that into the assignment(s).
                 getInteractionAssignment(b, reactiveNames, ctx)
@@ -841,14 +841,14 @@ object DafnyGen {
   ): String = {
     // TSeq terms are not "sequences" as in collections of values, they're blocks of statements.
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-block-statement
-    node.body.map(t => {
+    node.body.map { t =>
       val gen: String = generate(t, ctx)
       // Statements end with a curly brace or a semicolon: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-statements
       // Therefore, if this statement doesn't end with a curly brace or semi already, it has to end with a semicolon.
       // This semicolon isn't already added in generation as it is not appropriate in all situations.
       // The curly brace however would always already have been added as part of always-required syntax.
       if gen.endsWith("}") || gen.endsWith(";") then gen else s"$gen;"
-    }).toList.mkString("\n")
+    }.toList.mkString("\n")
   }
 
   /** Generates Dafny code for the given LoRe TArrow.
@@ -877,10 +877,9 @@ object DafnyGen {
   private def generateFromTAssert(node: TAssert, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-assert-statement
     s"assert ${generate(node.body, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TAssume.
     *
@@ -890,10 +889,9 @@ object DafnyGen {
   private def generateFromTAssume(node: TAssume, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-assume-statement
     s"assume ${generate(node.body, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TReactive.
     *
@@ -1014,11 +1012,10 @@ object DafnyGen {
   private def generateFromTNum(node: TNum, @unused ctx: Map[String, NodeInfo])(using
       @unused logLevel: LogLevel,
       @unused scalaCtx: Context
-  ): String = {
+  ): String =
     // Transforming an integer into a string to output a number may seem odd,
     // but in reality it'll be a number in code as it's not surrounded by quotes.
     node.value.toString
-  }
 
   /** Generates Dafny code for the given LoRe TDiv.
     *
@@ -1028,9 +1025,8 @@ object DafnyGen {
   private def generateFromTDiv(node: TDiv, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} / ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TMul.
     *
@@ -1040,9 +1036,8 @@ object DafnyGen {
   private def generateFromTMul(node: TMul, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} * ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TAdd.
     *
@@ -1052,9 +1047,8 @@ object DafnyGen {
   private def generateFromTAdd(node: TAdd, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} + ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TSub.
     *
@@ -1064,9 +1058,8 @@ object DafnyGen {
   private def generateFromTSub(node: TSub, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} - ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TBoolean.
     *
@@ -1108,9 +1101,8 @@ object DafnyGen {
   private def generateFromTTrue(node: TTrue, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     "true"
-  }
 
   /** Generates Dafny code for the given LoRe TFalse.
     *
@@ -1120,9 +1112,8 @@ object DafnyGen {
   private def generateFromTFalse(node: TFalse, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     "false"
-  }
 
   /** Generates Dafny code for the given LoRe TNeg.
     *
@@ -1132,9 +1123,8 @@ object DafnyGen {
   private def generateFromTNeg(node: TNeg, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"!${generate(node.body, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TLt.
     *
@@ -1144,9 +1134,8 @@ object DafnyGen {
   private def generateFromTLt(node: TLt, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} < ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TGt.
     *
@@ -1156,9 +1145,8 @@ object DafnyGen {
   private def generateFromTGt(node: TGt, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} > ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TLeq.
     *
@@ -1168,9 +1156,8 @@ object DafnyGen {
   private def generateFromTLeq(node: TLeq, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} <= ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TGeq.
     *
@@ -1180,9 +1167,8 @@ object DafnyGen {
   private def generateFromTGeq(node: TGeq, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} >= ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TEq.
     *
@@ -1192,9 +1178,8 @@ object DafnyGen {
   private def generateFromTEq(node: TEq, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} == ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TIneq.
     *
@@ -1204,9 +1189,8 @@ object DafnyGen {
   private def generateFromTIneq(node: TIneq, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} != ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TDisj.
     *
@@ -1216,9 +1200,8 @@ object DafnyGen {
   private def generateFromTDisj(node: TDisj, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} || ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TConj.
     *
@@ -1228,9 +1211,8 @@ object DafnyGen {
   private def generateFromTConj(node: TConj, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} && ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TImpl.
     *
@@ -1240,10 +1222,9 @@ object DafnyGen {
   private def generateFromTImpl(node: TImpl, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // FYI: Dafny also supports a "reverse implication", i.e. right implies left, but this doesn't exist in LoRe.
     s"${generate(node.left, ctx)} ==> ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TBImpl.
     *
@@ -1253,9 +1234,8 @@ object DafnyGen {
   private def generateFromTBImpl(node: TBImpl, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     s"${generate(node.left, ctx)} <==> ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TInSet.
     *
@@ -1265,10 +1245,9 @@ object DafnyGen {
   private def generateFromTInSet(node: TInSet, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // FYI: Dafny has a syntactic shorthand for in-set negation: "x !in y". This does not exist in LoRe.
     s"${generate(node.left, ctx)} in ${generate(node.right, ctx)}"
-  }
 
   /** Generates Dafny code for the given LoRe TQuantifier.
     *
@@ -1295,10 +1274,9 @@ object DafnyGen {
   private def generateFromTParens(node: TParens, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // This node simply surrounds the contained expression with parens.
     s"(${generate(node.inner, ctx)})"
-  }
 
   /** Generates Dafny code for the given LoRe TString.
     *
@@ -1308,12 +1286,11 @@ object DafnyGen {
   private def generateFromTString(node: TString, @unused ctx: Map[String, NodeInfo])(using
       @unused logLevel: LogLevel,
       @unused scalaCtx: Context
-  ): String = {
+  ): String =
     // Surround by quotes so it's an actual string within the resulting Dafny code.
     // Could technically also be output as a sequence of chars, if this was desired.
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-strings
     s"\"${node.value}\""
-  }
 
   /** Generates Dafny code for the given LoRe TFAcc.
     *
@@ -1390,14 +1367,14 @@ object DafnyGen {
       case "Map" =>
         // Map instantiations differ from regular function calls.
         // Each map pair is a 2-tuple (i.e. length 2 TTuple in LoRe).
-        val mapKeyValues: Seq[String] = node.args.map(kv => {
+        val mapKeyValues: Seq[String] = node.args.map { kv =>
           // Simply throwing these TTuples to generate would give us tuple syntax, not map syntax.
           // Therefore, generate key and value separately and combine them with appropriate Dafny syntax.
           val keyValueTuple: TTuple = kv.asInstanceOf[TTuple]
           val key: String           = generate(keyValueTuple.factors.head, ctx)
           val value: String         = generate(keyValueTuple.factors.last, ctx)
           s"$key := $value"
-        })
+        }
         s"map[${mapKeyValues.mkString(", ")}]"
       case "List" =>
         // List instantiations also differ, these are turned into Dafny sequences.
@@ -1433,10 +1410,9 @@ object DafnyGen {
   private def generateFromTViperImport(node: TViperImport, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // Viper-specific (by name at least). Leave out for now, maybe reused for Dafny imports in later work.
     throw new Error("Term type not implemented")
-  }
 
   /** Generates Dafny code for the given LoRe TTypeAl.
     *
@@ -1446,10 +1422,9 @@ object DafnyGen {
   private def generateFromTTypeAl(node: TTypeAl, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // Leave out for now. Maybe in later work.
     throw new Error("Term type not implemented")
-  }
 
   /** Generates Dafny code for the given LoRe TForall.
     *
@@ -1459,10 +1434,9 @@ object DafnyGen {
   private def generateFromTForall(node: TForall, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // To be implemented later, but out of scope for the current project.
     throw new Error("Term type not implemented")
-  }
 
   /** Generates Dafny code for the given LoRe TExists.
     *
@@ -1472,10 +1446,9 @@ object DafnyGen {
   private def generateFromTExists(node: TExists, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // To be implemented later, but out of scope for the current project.
     throw new Error("Term type not implemented")
-  }
 
   /** Generates Dafny code for the given LoRe TFCurly.
     *
@@ -1485,8 +1458,7 @@ object DafnyGen {
   private def generateFromTFCurly(node: TFCurly, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // Probably not needed for Dafny. Leave out for now, maybe revisited in later work.
     throw new Error("Term type not implemented")
-  }
 }

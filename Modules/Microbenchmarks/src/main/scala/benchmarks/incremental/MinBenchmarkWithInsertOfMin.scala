@@ -30,9 +30,9 @@ class MinBenchmarkWithInsertOfMin {
   @Setup(Level.Invocation)
   def prepare(): Unit = {
     addEvent = Evt[Int]()
-    val seq = addEvent.fold((2 to arg).toList)((s, x) => {
+    val seq = addEvent.fold((2 to arg).toList) { (s, x) =>
       s :+ x
-    })
+    }
 
     minOfSeq = Signal {
       seq.value.min

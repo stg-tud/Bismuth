@@ -57,9 +57,9 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
         Async.handler.succeed(peerIdentity)
       }
 
-      try {
+      try
         socket.startHandshake()
-      } catch {
+      catch {
         case e: IOException => Async.handler.fail(e)
       }
     }
