@@ -77,8 +77,8 @@ class ReListView[A](
   selectionForeground.using(() => peer.selectionForeground, peer.selectionForeground_=, "selectionForeground")
   selectionBackground.using(() => peer.selectionBackground, peer.selectionBackground_=, "selectionBackground")
 
-  selectIndices using { () => peer.selectIndices() }
-  ensureIndexIsVisible using peer.ensureIndexIsVisible
+  selectIndices.using { () => peer.selectIndices() }
+  ensureIndexIsVisible.using(peer.ensureIndexIsVisible)
 
   val contentsChanged = ReSwingEvent `using` classOf[ListChanged[A]]
   val intervalRemoved = ReSwingEvent `using` classOf[ListElementsRemoved[A]]
