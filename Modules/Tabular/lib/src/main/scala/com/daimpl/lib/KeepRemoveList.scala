@@ -47,12 +47,12 @@ case class KeepRemoveList[E] private (
   def append(using LocalUid)(e: E): C = insertAt(sizeIncludingDead, e)
 
   def keep(idx: Int)(using LocalUid): C =
-    updateFlag(idx) { case (flag) =>
+    updateFlag(idx) { case flag =>
       flag.enable()
     }
 
   def remove(idx: Int)(using LocalUid): C =
-    updateFlag(idx) { case (flag) =>
+    updateFlag(idx) { case flag =>
       flag.disable()
     }
 

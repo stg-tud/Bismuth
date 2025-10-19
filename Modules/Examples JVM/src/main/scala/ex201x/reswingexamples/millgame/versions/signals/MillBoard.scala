@@ -34,9 +34,9 @@ class MillBoard {
   def update(slot: SlotIndex, color: Slot): Unit =
     stonesVar.transform(_.updated(slot.index, color))
   def update(indexColor: Map[SlotIndex, Slot]): Unit =
-    stonesVar.set(stonesVar.now.zipWithIndex.map({
+    stonesVar.set(stonesVar.now.zipWithIndex.map {
       case (color, i) => indexColor.getOrElse(SlotIndex(i), color)
-    }))
+    })
 
   val color: Signal[SlotIndex => Slot] = Signal { // #SIG
     val stones = stonesVar.value

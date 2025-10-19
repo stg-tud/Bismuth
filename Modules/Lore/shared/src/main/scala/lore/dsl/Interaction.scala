@@ -14,12 +14,12 @@ trait Interaction[S <: Tuple, A] {
   inline def requires(inline pred: (S, A) => Boolean): T[S, A]
 
   inline def requires[B](inline pred: (B, A) => Boolean)(using S =:= Tuple1[B]): T[S, A] =
-    requires({ (s, a) => pred(s._1, a) })
+    requires { (s, a) => pred(s._1, a) }
 
   inline def ensures(inline pred: (S, A) => Boolean): T[S, A]
 
   inline def ensures[B](inline pred: (B, A) => Boolean)(using S =:= Tuple1[B]): T[S, A] =
-    ensures({ (s, a) => pred(s._1, a) })
+    ensures { (s, a) => pred(s._1, a) }
 }
 
 object Interaction {
@@ -57,7 +57,7 @@ trait CanExecute[S <: Tuple, A] {
   def executes(fun: (S, A) => S): E[S, A]
 
   inline def executes[B](inline fun: (B, A) => B)(using ev: S =:= Tuple1[B]): E[S, A] =
-    executes({ (s, a) => ev.flip(Tuple1(fun(s._1, a))) })
+    executes { (s, a) => ev.flip(Tuple1(fun(s._1, a))) }
 
 }
 

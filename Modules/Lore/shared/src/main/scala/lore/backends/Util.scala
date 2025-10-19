@@ -19,9 +19,9 @@ private case class CompilationContext(
   val derived: Graph[TDerived] = graph.collect {
     case (name: String, (d: TDerived, t: Type)) => (name, (d, t))
   }
-  val invariants: Seq[TInvariant] = ast.collect({ case i: TInvariant =>
+  val invariants: Seq[TInvariant] = ast.collect { case i: TInvariant =>
     i
-  })
+  }
   val interactions: Map[String, TInteraction] = allInteractions(ast)
   val typeAliases: Map[String, Type]          = ast.collect {
     case TTypeAl(name, _type, _, _) =>

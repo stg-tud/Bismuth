@@ -17,7 +17,7 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
   def write(v: A)(using LocalUid): MultiVersionRegister[A] = {
 
     val containedDots = Dots.from(repr.keys)
-    val nextDot       = (removed.union(containedDots)).nextDot(LocalUid.replicaId)
+    val nextDot       = removed.union(containedDots).nextDot(LocalUid.replicaId)
 
     MultiVersionRegister(
       Map(nextDot -> v),

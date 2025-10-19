@@ -91,7 +91,7 @@ class EpidemicStrategy {
         delivered.put(packet.bid, Set(packet.cla_sender))
         ()
       case x: Set[String] =>
-        delivered.put(packet.bid, (x + packet.cla_sender))
+        delivered.put(packet.bid, x + packet.cla_sender)
         ()
     }
   }
@@ -107,7 +107,7 @@ class EpidemicStrategy {
             delivered.put(packet.bndl.id, Set(previous_node_block.previous_node_id.extract_node_name()))
             ()
           case x: Set[String] =>
-            delivered.put(packet.bndl.id, (x + previous_node_block.previous_node_id.extract_node_name()))
+            delivered.put(packet.bndl.id, x + previous_node_block.previous_node_id.extract_node_name())
             ()
         }
       }

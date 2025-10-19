@@ -30,7 +30,7 @@ class MinBenchmarkWithRemoveWorstCase {
   @Setup(Level.Invocation)
   def prepare(): Unit = {
     removeEvent = Evt[Int]()
-    val seq = removeEvent.fold(((1 to arg).toList).reverse)((s, x) => {
+    val seq = removeEvent.fold((1 to arg).toList.reverse)((s, x) => {
       s `diff` Seq(x)
     })
     minOfSeq = Signal {

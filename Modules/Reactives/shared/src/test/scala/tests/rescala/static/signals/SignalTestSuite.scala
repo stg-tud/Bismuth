@@ -18,7 +18,7 @@ class SignalTestSuite extends FunSuite {
     val v2   = Var(2)
 
     val s1 = Signal.lift(v1, v2) { _ + _ }
-    s1.changed observe { (_) => test += 1 }
+    s1.changed observe { _ => test += 1 }
 
     assertEquals(s1.readValueOnce, 3)
     assertEquals(test, 0)
@@ -152,13 +152,13 @@ class SignalTestSuite extends FunSuite {
     val s2 = v.map { 3 * _ }
     val s3 = Signal.lift(s1, s2) { _ + _ }
 
-    s1.changed observe { (_) =>
+    s1.changed observe { _ =>
       test.incrementAndGet(); ()
     }
-    s2.changed observe { (_) =>
+    s2.changed observe { _ =>
       test.incrementAndGet(); ()
     }
-    s3.changed observe { (_) =>
+    s3.changed observe { _ =>
       test.incrementAndGet(); ()
     }
 

@@ -144,7 +144,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -164,7 +164,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -195,7 +195,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(prevDot3, prevDot3)
     dots = dots.add(prevDot3)
     unknown = unknown.add(prevDot3)
-    for i <- (0 until 10) do {
+    for i <- 0 until 10 do {
       val dot1 = dots.nextDot(uid1)
       tree.addNode(dot1, prevDot1)
       prevDot1 = dot1
@@ -225,7 +225,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -252,7 +252,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       if (i % 2) == 0 then tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -283,7 +283,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
     expected = expected.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       if (i % 2) == 0 then {
         tree.addNode(dot, prevDot)

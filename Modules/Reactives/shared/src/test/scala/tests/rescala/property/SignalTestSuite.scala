@@ -113,8 +113,8 @@ class SignalTestSuite extends munit.ScalaCheckSuite {
         values.indices foreach {
           i =>
             evt.fire(values(i))
-            assertEquals((initial + i), t)
-            assertEquals((initial + 1 + i), sig.now)
+            assertEquals(initial + i, t)
+            assertEquals(initial + 1 + i, sig.now)
         }
     }
   }

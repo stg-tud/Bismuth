@@ -32,7 +32,7 @@ object Uid {
     * Encoded as a string using 9 bytes + 1 byte per 6 bits of the counter value.
     */
   def gen(): Uid = synchronized {
-    idCounter = (idCounter + 1)
+    idCounter = idCounter + 1
 
     if idCounter != 0 then Uid(s"${UidEncoding.encode(idCounter)}.$jvmID")
     else Uid(s"$jvmID")

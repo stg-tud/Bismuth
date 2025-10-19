@@ -39,7 +39,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
   val forks =
     for idx <- 0 until size yield {
-      given ct: CreationTicket[BundleState] = (CreationTicket.fromName(s"fork(${idx + 1})"))
+      given ct: CreationTicket[BundleState] = CreationTicket.fromName(s"fork(${idx + 1})")
       Signal.dynamic[Fork] {
         val nextIdx = (idx + 1) % size
         (phils(idx).value, phils(nextIdx).value) match {
@@ -205,7 +205,7 @@ trait SignalPyramidTopper extends IndividualCounts {
   val successCount: Signal[Int] =
     individualCounts.reduce { (a, b) =>
       {
-        Signal { a.value + b.value }(using (CreationTicket.fromName(s"sumUpTo($b)")))
+        Signal { a.value + b.value }(using CreationTicket.fromName(s"sumUpTo($b)"))
       }
     }
   override def total: Int = successCount.readValueOnce

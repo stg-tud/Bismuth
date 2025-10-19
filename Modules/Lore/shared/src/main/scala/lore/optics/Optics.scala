@@ -186,7 +186,7 @@ val children: Fold[Term, Term] = {
             (vars.toList ++ triggers.map(_.toList).flatten :+ body).map(f)
           )
         case TExists(vars, body, sourcePos, _) =>
-          Monoid[M].combineAll(((vars.toList :+ body).map(f)))
+          Monoid[M].combineAll((vars.toList :+ body).map(f))
         case TParens(inner, sourcePos, _)              => f(inner)
         case TFCall(parent, field, args, sourcePos, _) =>
           Monoid[M].combineAll((List(parent) ++ args.getOrElse(List())).map(f))

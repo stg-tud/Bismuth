@@ -57,7 +57,7 @@ case class ReplicatedList[E](
         discovered = discovered + rem
         val next =
           causalOrder.getOrElse(rem, Dots.empty).iterator.flatMap { d =>
-            times.get(d).map(t => (d -> t))
+            times.get(d).map(t => d -> t)
           }.toSeq.sortBy((d, t) => t).map(_._1)
         next.foreach(_toposort)
         sorted += rem

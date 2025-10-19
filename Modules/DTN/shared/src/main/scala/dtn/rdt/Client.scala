@@ -37,8 +37,8 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
       ws.receiveBundle().flatMap(bundle => {
         println(s"received bundle: ${bundle.id}")
 
-        val payload: Option[Array[Byte]]       = bundle.other_blocks.collectFirst({ case x: PayloadBlock => x.data })
-        val rdt_meta_info: Option[RdtMetaInfo] = bundle.other_blocks.collectFirst({ case x: RdtMetaBlock => x.info })
+        val payload: Option[Array[Byte]]       = bundle.other_blocks.collectFirst { case x: PayloadBlock => x.data }
+        val rdt_meta_info: Option[RdtMetaInfo] = bundle.other_blocks.collectFirst { case x: RdtMetaBlock => x.info }
 
         if payload.isEmpty || rdt_meta_info.isEmpty then {
           println("did not contain dots or payload. bundle is no rdt bundle. ignoring bundle.")

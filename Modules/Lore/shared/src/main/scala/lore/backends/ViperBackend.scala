@@ -187,7 +187,7 @@ object ViperBackend {
             inputs = ctx
               .reactivesPerInvariant(inv)
               .map(name => (name, ctx.graph(name)))
-              .collect({ case (name: ID, (_: TSource, _: Type)) => name }),
+              .collect { case (name: ID, (_: TSource, _: Type)) => name },
             id = id.toString
           )
         )

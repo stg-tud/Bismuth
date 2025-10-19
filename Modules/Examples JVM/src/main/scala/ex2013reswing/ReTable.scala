@@ -78,7 +78,7 @@ class ReTable[A <: AnyRef](
           for r <- 0 to model.getRowCount()
           yield {
             for c <- 0 to model.getColumnCount()
-            yield (model.getValueAt(r, c)).asInstanceOf[A]
+            yield model.getValueAt(r, c).asInstanceOf[A]
           }
       }
     },

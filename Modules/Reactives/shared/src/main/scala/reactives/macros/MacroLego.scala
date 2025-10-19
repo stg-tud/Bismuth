@@ -119,7 +119,7 @@ object MacroLegos {
         val containsSymbol = ContainsSymbol(definitions.diff(defInside))
         containsSymbol.foldTree(false, fa)(Symbol.spliceOwner)
       }
-      val isStatic = (foundStatic && found == foundAbstractions)
+      val isStatic = foundStatic && found == foundAbstractions
       if forceStatic && !isStatic then {
         report.error(
           "dynamic access in static reactive",

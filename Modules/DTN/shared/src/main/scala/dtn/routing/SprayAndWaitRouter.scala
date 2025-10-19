@@ -97,7 +97,7 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
           sprayDelivered.put(packet.bid, Set(packet.cla_sender))
           ()
         case x: Set[String] =>
-          sprayDelivered.put(packet.bid, (x + packet.cla_sender))
+          sprayDelivered.put(packet.bid, x + packet.cla_sender)
           ()
       }
     }

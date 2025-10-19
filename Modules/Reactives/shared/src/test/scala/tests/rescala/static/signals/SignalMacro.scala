@@ -218,7 +218,7 @@ class SignalMacro extends FunSuite {
 
       val s = Signal { wantsTicket }
 
-      assertEquals(s.readValueOnce, ((true, true, true)))
+      assertEquals(s.readValueOnce, (true, true, true))
 
     }
 
@@ -230,7 +230,7 @@ class SignalMacro extends FunSuite {
       }
 
       val greeting = Signal {
-        (myMap.ms).value
+        myMap.ms.value
       }
 
       assertEquals(greeting.readValueOnce, source.readValueOnce)
@@ -249,7 +249,7 @@ class SignalMacro extends FunSuite {
       }
 
       val greeting = Signal {
-        (myMap.ms).value
+        myMap.ms.value
       }
 
       assertEquals(greeting.readValueOnce, source.readValueOnce)

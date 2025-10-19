@@ -96,7 +96,7 @@ object Compiler {
       case e: ParsingException =>
         println(
           fansi.Color
-            .Red((s"Parsing error!\n${e.getMessage()}"))
+            .Red(s"Parsing error!\n${e.getMessage()}")
             .overlay(fansi.Bold.On, 0, 14)
         )
       case e: Throwable =>

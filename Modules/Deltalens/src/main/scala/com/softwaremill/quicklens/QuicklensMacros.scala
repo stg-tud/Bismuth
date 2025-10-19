@@ -316,9 +316,8 @@ object QuicklensMacros {
       )
       val defdefStatements = DefDef(
         defdefSymbol,
-        ((_: @unchecked) match
+        (_: @unchecked) match
           case List(List(x)) => Some(mapToCopy(defdefSymbol, mod, x.asExpr.asTerm, tree))
-        )
       )
       val closure = Closure(Ref(defdefSymbol), None)
       val block   = Block(List(defdefStatements), closure)

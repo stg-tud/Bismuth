@@ -104,7 +104,7 @@ class ReplicatedListTest extends munit.FunSuite {
     val twenty     = ten `merge` ten.insertAfter(ten.dotList(1), "twenty")
     assertEquals(twenty.toList, List("ten", "twenty"), twenty)
     val fifteen = twenty `merge` twenty.insertAfter(ten.dotList(1), "fifteen")
-    assertEquals((fifteen).toList, List("ten", "fifteen", "twenty"), fifteen)
+    assertEquals(fifteen.toList, List("ten", "fifteen", "twenty"), fifteen)
   }
 
 }

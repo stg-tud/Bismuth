@@ -146,7 +146,7 @@ class ReactorWithoutAPITest extends FunSuite {
   test("Reactor waits for event when using next") {
     val e1      = Evt[Unit]()
     val reactor = Reactor.once(42, Set(e1)) {
-      StageBuilder().next(e1) { (_) =>
+      StageBuilder().next(e1) { _ =>
         StageBuilder().set(1)
       }
     }
@@ -160,7 +160,7 @@ class ReactorWithoutAPITest extends FunSuite {
     val e1 = Evt[Int]()
 
     val reactor = Reactor.once(0, Set(e1)) {
-      StageBuilder().next(e1) { (e) =>
+      StageBuilder().next(e1) { e =>
         StageBuilder().set(e)
       }
     }
@@ -174,9 +174,9 @@ class ReactorWithoutAPITest extends FunSuite {
     val e1 = Evt[Unit]()
 
     val reactor = Reactor.once(0, Set(e1)) {
-      StageBuilder().next(e1) { (_) =>
+      StageBuilder().next(e1) { _ =>
         StageBuilder().set(1)
-          .next(e1) { (_) =>
+          .next(e1) { _ =>
             StageBuilder().set(2)
           }
       }
@@ -194,7 +194,7 @@ class ReactorWithoutAPITest extends FunSuite {
 
     val reactor: Reactor[String] = Reactor.once("Initial Value", Set(e1)) {
       StageBuilder().set("Not Reacted")
-        .next(e1) { (_) =>
+        .next(e1) { _ =>
           StageBuilder().set("Reacted")
         }
     }
@@ -202,12 +202,12 @@ class ReactorWithoutAPITest extends FunSuite {
     val tuple   = Signal { (e1.hold("Init").value, reactor.value) }
     val history = tuple.changed.list(5)
 
-    assertEquals(tuple.now, (("Init", "Not Reacted")))
+    assertEquals(tuple.now, ("Init", "Not Reacted"))
     assertEquals(history.now, Nil)
 
     e1.fire("Fire")
 
-    assertEquals(tuple.now, (("Fire", "Reacted")))
+    assertEquals(tuple.now, ("Fire", "Reacted"))
     assertEquals(history.now, List(("Fire", "Reacted")))
   }
 }

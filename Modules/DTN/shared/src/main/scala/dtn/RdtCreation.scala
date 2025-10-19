@@ -85,8 +85,8 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
     replicaId,
-    (_ =>
-      println("replica received new state information")),
+    _ =>
+      println("replica received new state information"),
     // we ignore state updates as there will be only one active rdt
   )
 
@@ -208,7 +208,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
     for i <- 0 to number_of_changes do {
       Thread.sleep(sleep_time_milliseconds)
 
-      val (state) = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.replicaId}")
+      val state = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.replicaId}")
 
       dataManager.applyDelta(state)
     }

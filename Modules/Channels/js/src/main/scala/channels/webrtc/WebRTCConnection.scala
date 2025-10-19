@@ -21,7 +21,7 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
 
         case data: dom.Blob =>
           val reader = new dom.FileReader
-          reader.onerror = { (event) =>
+          reader.onerror = { event =>
             Async.handler.fail(WebRTCReceiveFailed(s"reading message from blob returned error, event: $event"))
           }
           reader.onload = { (event: dom.Event) =>
@@ -90,7 +90,7 @@ object WebRTCConnection {
 
             case data: dom.Blob =>
               val reader = new dom.FileReader
-              reader.onerror = { (event) =>
+              reader.onerror = { event =>
                 handler.fail(WebRTCReceiveFailed(s"reading message from blob returned error, event: $event"))
               }
               reader.onload = { (event: dom.Event) =>

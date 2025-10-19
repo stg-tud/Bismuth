@@ -30,7 +30,7 @@ class ReTextComponent(
 
   val selected = ReSwingValue.using({ () => peer.selected }, (caret.peer, classOf[CaretUpdate]))
 
-  (text.using({ () => peer.text }, peer.text_=, classOf[ValueChanged]).force("editable", peer.editable_=, false))
+  text.using({ () => peer.text }, peer.text_=, classOf[ValueChanged]).force("editable", peer.editable_=, false)
 
   editable.using({ () => peer.editable }, peer.editable_=, "editable")
 

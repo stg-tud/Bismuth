@@ -80,12 +80,12 @@ class ReactorWithoutAPITest extends munit.FunSuite {
       val tuple   = Signal { (e1.hold("Init").value, reactor.value) }
       val history = tuple.changed.list(5)
 
-      assertEquals(tuple.now, (("Init", "Not Reacted")))
+      assertEquals(tuple.now, ("Init", "Not Reacted"))
       assertEquals(history.now, Nil)
 
       e1.fire("Fire")
 
-      assertEquals(tuple.now, (("Fire", "Reacted")))
+      assertEquals(tuple.now, ("Fire", "Reacted"))
       assertEquals(history.now, List(("Fire", "Reacted")))
     }
 

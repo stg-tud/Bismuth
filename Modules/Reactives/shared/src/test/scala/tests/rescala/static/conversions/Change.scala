@@ -60,7 +60,7 @@ class Change extends FunSuite {
     val v1   = Var(1)
     val s1   = v1.map { _ + 1 }
     val e    = s1.changed.filter(_ == 3)
-    e `observe` ((_) => { test += 1 })
+    e `observe` (_ => { test += 1 })
 
     v1 `set` 2
     assertEquals(test, 1)
@@ -104,9 +104,9 @@ class Change extends FunSuite {
     e `observe` { x => test = x.pair }
 
     v1 `set` 2
-    assertEquals(test, ((2, 3)))
+    assertEquals(test, (2, 3))
     v1 `set` 3
-    assertEquals(test, ((3, 4)))
+    assertEquals(test, (3, 4))
   }
 
   /* with empty signals */

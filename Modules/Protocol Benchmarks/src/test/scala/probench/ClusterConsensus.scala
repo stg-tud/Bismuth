@@ -47,7 +47,7 @@ class ClusterConsensus extends munit.FunSuite {
 
     def investigateUpkeep(state: ClusterState)(using LocalUid) = {
       val delta  = state.upkeep
-      val merged = (state `merge` delta)
+      val merged = state `merge` delta
       assert(state != merged)
       assert(delta `inflates` state, delta)
     }

@@ -68,11 +68,11 @@ class ExceptionPropagationTestSuite extends FunSuite {
 
       input.fire("10")
       assertEquals(folded.readValueOnce, 10, "successful fold")
-      assertEquals(res.pair, (100 -> 10), "successful changed")
+      assertEquals(res.pair, 100 -> 10, "successful changed")
 
       input.fire(" 2  ")
       assertEquals(folded.readValueOnce, 5, "successful fold 2")
-      assertEquals(res.pair, (10 -> 5), "successful changed 2")
+      assertEquals(res.pair, 10 -> 5, "successful changed 2")
 
       input.fire(" 0  ")
       intercept[ObservedException](folded.readValueOnce)
@@ -102,15 +102,15 @@ class ExceptionPropagationTestSuite extends FunSuite {
 
       input.set("10")
       assertEquals(folded.readValueOnce, 10, "successful fold")
-      assertEquals(res.pair, (100 -> 10), "successful changed")
+      assertEquals(res.pair, 100 -> 10, "successful changed")
 
       input.set(" 2  ")
       assertEquals(folded.readValueOnce, 2, "successful fold 2")
-      assertEquals(res.pair, (10 -> 2), "successful changed2")
+      assertEquals(res.pair, 10 -> 2, "successful changed2")
 
       input.set(" 0  ")
       assertEquals(folded.readValueOnce, 0, "successful fold 3")
-      assertEquals(res.pair, (2 -> 0), "successful changed3")
+      assertEquals(res.pair, 2 -> 0, "successful changed3")
 
       input.set(" aet ")
       intercept[ObservedException](folded.readValueOnce)
@@ -121,7 +121,7 @@ class ExceptionPropagationTestSuite extends FunSuite {
       intercept[NumberFormatException](res.pair) // TODO: should maybe change?
 
       input.set("200")
-      assertEquals(res.pair, (100 -> 200), "successful changed3")
+      assertEquals(res.pair, 100 -> 200, "successful changed3")
 
     }
 

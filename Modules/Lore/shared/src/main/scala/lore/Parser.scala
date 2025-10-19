@@ -28,9 +28,9 @@ object Parser {
     yield sl.copy(end = sr.end)
   // helper definition for parsing sequences of expressions with operators as strings
   private def parseSeq(factor: P[Term], separator: P[String]) =
-    (factor ~
-    (((wsOrNl.with1.soft *> separator <* wsOrNl))
-    ~ factor).rep0)
+    factor ~
+    ((wsOrNl.with1.soft *> separator <* wsOrNl)
+    ~ factor).rep0
   // helper for boolean expressions with two sides
   private def boolTpl(factor: P[Term], separator: P[Unit]) =
     factor ~ ((wsOrNl.soft ~ separator.backtrack ~ wsOrNl) *> factor).?
@@ -59,7 +59,7 @@ object Parser {
       }
   }
   lazy val innerType = (t: P[Type]) =>
-    (ws.with1 *> t.repSep(P.char(',') ~ ws) <* ws)
+    ws.with1 *> t.repSep(P.char(',') ~ ws) <* ws
   lazy val tupleType =
     (t: P[Type]) => P.char('(') *> innerType(t) <* P.char(')')
   // val underscore: P[ID] = P.char('_').as("_")
@@ -257,7 +257,7 @@ object Parser {
 
   // quantifiers
   private val quantifierVars: P[NonEmptyList[TArgT]] =
-    (argT).repSep(ws.soft ~ P.char(',') ~ wsOrNl)
+    argT.repSep(ws.soft ~ P.char(',') ~ wsOrNl)
   val trigger: P[NonEmptyList[Term]] =
     P.char('{') ~ wsOrNl *> inSetFactor.repSep(
       wsOrNl ~ P.char(',') ~ wsOrNl
@@ -326,7 +326,7 @@ object Parser {
 
   // bindings
   private[lore] val bindingLeftSide: P[TArgT] =
-    (P.string("val") ~ ws *> P.defer(argT))
+    P.string("val") ~ ws *> P.defer(argT)
   val binding: P[TAbs] =
     withSourcePos(
       P.defer((bindingLeftSide <* ws ~ P.char('=') ~ wsOrNl) ~ term)

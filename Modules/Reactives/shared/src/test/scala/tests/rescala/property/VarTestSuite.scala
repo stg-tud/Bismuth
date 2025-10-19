@@ -21,7 +21,7 @@ class VarTestSuite extends munit.ScalaCheckSuite {
 
       list.foreach { n =>
         v.set(n)
-        assertEquals((n), s.now)
+        assertEquals(n, s.now)
       }
     }
   }
