@@ -226,11 +226,11 @@ trait Twoversion {
       node.state.updateIncoming(updated)
     }
 
-    private[reactives] override def discover(source: ReSource, sink: Derived): Unit = {
+    override private[reactives] def discover(source: ReSource, sink: Derived): Unit = {
       super.discover(source, sink)
       source.state.discoveredBy(sink)
     }
-    private[reactives] override def drop(source: ReSource, sink: Derived): Unit = {
+    override private[reactives] def drop(source: ReSource, sink: Derived): Unit = {
       super.drop(source, sink)
       source.state.droppedBy(sink)
     }

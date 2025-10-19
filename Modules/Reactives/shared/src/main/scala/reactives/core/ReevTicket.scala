@@ -14,12 +14,12 @@ final class ReevTicket[State[_], V](
   private var collectedDependencies: Set[ReSource.of[State]] | Null = null
 
   // dependency tracking accesses
-  private[reactives] override def collectStatic(reactive: ReSource.of[State]): reactive.Value = {
+  override private[reactives] def collectStatic(reactive: ReSource.of[State]): reactive.Value = {
     assert(collectedDependencies == null || collectedDependencies.nn.contains(reactive))
     accessHandler.staticAccess(reactive)
   }
 
-  private[reactives] override def collectDynamic(reactive: ReSource.of[State]): reactive.Value = {
+  override private[reactives] def collectDynamic(reactive: ReSource.of[State]): reactive.Value = {
     assert(collectedDependencies != null, "may not access dynamic dependencies without tracking dependencies")
     val updatedDeps = collectedDependencies.nn + reactive
     if updatedDeps eq collectedDependencies then {

@@ -38,7 +38,7 @@ import scala.swing.{Publisher, Reactor, UIElement}
 private[ex2013reswing] trait ReSwingEventConnection {
   protected def peer: UIElement
 
-  final protected implicit class EventConnector[T] private[ReSwingEventConnection] (value: ReSwingEvent[T]) {
+  implicit final protected class EventConnector[T] private[ReSwingEventConnection] (value: ReSwingEvent[T]) {
     def using(setter: T => Unit): ReSwingEvent[T] = {
       if value.isInstanceOf[ReSwingEventIn[?]] then
         delayedInitEvents += { () =>

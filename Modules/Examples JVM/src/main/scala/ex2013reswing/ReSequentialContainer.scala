@@ -20,7 +20,7 @@ trait ReSequentialContainer extends ReUIElement {
 
   contents.using(() => peerContents, peerContents_=, classOf[ComponentAdded], classOf[ComponentRemoved])
 
-  protected implicit class AddContent(@unused contents: ReSwingValue[CompList]) {
+  implicit protected class AddContent(@unused contents: ReSwingValue[CompList]) {
     def +=(component: Component): Unit = peerContents :+= component
   }
 }

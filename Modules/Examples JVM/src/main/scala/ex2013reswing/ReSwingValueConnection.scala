@@ -42,16 +42,16 @@ import scala.swing.{Publisher, Reactor, Swing, UIElement}
 private[ex2013reswing] trait ReSwingValueConnection {
   protected def peer: UIElement
 
-  protected implicit def toReSwingValueConnector[T](signal: ReSwingValue[T]): ReSwingValueConnector[T] =
+  implicit protected def toReSwingValueConnector[T](signal: ReSwingValue[T]): ReSwingValueConnector[T] =
     new ReSwingValueConnector(signal)
 
-  protected implicit def toChangingProperty(name: String): ChangingProperty =
+  implicit protected def toChangingProperty(name: String): ChangingProperty =
     Left(name): ChangingProperty
 
-  protected implicit def toChangingProperty(reaction: (Publisher, Class[?])): ChangingProperty =
+  implicit protected def toChangingProperty(reaction: (Publisher, Class[?])): ChangingProperty =
     Right(reaction): ChangingProperty
 
-  protected implicit def toChangingProperty(reaction: Class[?]): ChangingProperty =
+  implicit protected def toChangingProperty(reaction: Class[?]): ChangingProperty =
     Right((peer, reaction)): ChangingProperty
 
   protected def ReSwingValue[T]: ReSwingValue[T] = (): ReSwingValue[T]

@@ -10,7 +10,7 @@ import scala.deriving.Mirror
 
 object FilterDerivation {
 
-  protected abstract class AlgebraicFilter[T](
+  abstract protected class AlgebraicFilter[T](
       elementLabels: Map[String, Int],
       elementFilters: IArray[Filter[Any]],
   ) extends Filter[T] {
