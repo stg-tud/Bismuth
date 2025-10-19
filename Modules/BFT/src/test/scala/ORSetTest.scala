@@ -117,7 +117,7 @@ class ORSetTest extends munit.FunSuite:
     while !set2.riblt.isDecoded do
       set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
 
-    val synReq   = set2.sendSyncRequest
+    val synReq = set2.sendSyncRequest
     set1 = set1.merge(synReq.delta)
     set2 = set2.merge(set1.sendSyncResponse(synReq.requestedEvents))
 

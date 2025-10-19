@@ -106,9 +106,9 @@ object TravelPlan {
 
   given TravelPlanSelectorFactory: SelectorFactory[TravelPlan] = {
     import SelectorFactory.given
-    given SelectorFactory[Option[String]] = SelectorFactory.OptionSelectorFactory
+    given SelectorFactory[Option[String]]                 = SelectorFactory.OptionSelectorFactory
     given SelectorFactory[LastWriterWins[Option[String]]] = SelectorFactory.LwwSelectorFactory
-    given SelectorFactory[Expense] = SelectorFactory.derived
+    given SelectorFactory[Expense]                        = SelectorFactory.derived
     SelectorFactory.derived
   }
 

@@ -5,7 +5,6 @@ import dag.HashDAG
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 
-
 case class Counter private (
     value: Int,
     hashDAG: HashDAG[Int],
@@ -31,7 +30,7 @@ case class Counter private (
       }
 
     Counter(newValue, newCausalContext, this.riblt)
-  
+
   override def empty: Counter = Counter()
 
   override def withHashDAG(hashDAG: HashDAG[Int]): Counter = this.copy(hashDAG = hashDAG)

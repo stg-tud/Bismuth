@@ -94,7 +94,8 @@ object PermissionSelectionViewModel {
   def fromSelector(selector: Selector[?]): PermissionSelectionViewModel = {
     def rec(label: String, selector: Selector[?]): PermissionSelectionViewModel = {
       val model = new PermissionSelectionViewModel(
-        selector.children.map((childLabel, selector) => childLabel -> rec(childLabel, selector)), label
+        selector.children.map((childLabel, selector) => childLabel -> rec(childLabel, selector)),
+        label
       )
       model
     }

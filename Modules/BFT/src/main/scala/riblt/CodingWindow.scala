@@ -42,7 +42,7 @@ class CodingWindow[T](
 
     nextIndex = nextIndex + 1
     result
-    
+
 object CodingWindow:
   def apply[T](): CodingWindow[T] =
     new CodingWindow(List.empty, 0)

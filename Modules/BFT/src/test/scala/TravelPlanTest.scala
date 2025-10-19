@@ -156,7 +156,7 @@ class TravelPlanTest extends munit.FunSuite:
     while !r1.riblt.isDecoded do
       r1.addCodedSymbols(r2.produceNextCodedSymbols())
 
-    val syncReq  = r1.sendSyncRequest
+    val syncReq = r1.sendSyncRequest
     r2 = r2.merge(syncReq.delta)
     r1 = r1.merge(r2.sendSyncResponse(syncReq.requestedEvents))
 
