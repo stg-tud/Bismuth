@@ -40,7 +40,7 @@ abstract class BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClie
     packet match
       case p: Packet.RequestSenderForBundle =>
         onRequestSenderForBundle(p) match {
-          case None           => Future() // nothing to send
+          case None           => Future(()) // nothing to send
           case Some(response) => ws.sendPacket(response)
         }
       case p: Packet.Error            => Future(onError(p))
