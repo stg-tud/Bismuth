@@ -2,50 +2,63 @@ package ex2025blockchain
 
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
+import rdts.time.Dot
 
+import java.security.MessageDigest
 import scala.annotation.tailrec
 
 /** proof of stake consensus
   * the stake of a replica is its contributed data size to the valid chain
   * @param inner
   * @param proposedBlocks
-  * @tparam H
   * @tparam T
   */
-case class PoSBlockchain[H, T](
-    inner: Map[H, Block[H, T]],
-    proposedBlocks: ReplicatedSet[Block[H, T]], // should we use a remove wins set instead?
-) extends Blockchain[H, T, PoSBlockchain[H, T]](inner) {
+case class PoSBlockchain[T](
+    inner: Map[String, Block[T]],
+    proposedBlocks: ReplicatedSet[Block[T]], // should we use a remove wins set instead?
+) extends Blockchain[T, PoSBlockchain[T]](inner) {
 
-  given headOrdering: Ordering[H] = Ordering.by[H, (Long, Uid)] { hash =>
-    (stakeWeightOfChain(hash), inner(hash).dot.place)
+  private final val randomPrime = 2147483647
+  
+  given headOrdering: Ordering[String] = Ordering.by[String, (Long, String)] { hash =>
+    (stakeWeightOfChain(hash), hash)
   }
 
-  override def validHead: H = heads.max
+  override def validHead: String = heads.max
 
-  override def addBlock(newBlock: Block[H, T]): PoSBlockchain[H, T] = {
-    given LocalUid(newBlock.dot.place)
-    PoSBlockchain(inner, proposedBlocks.add(newBlock))
+  override def addBlock(newBlock: Block[T]): PoSBlockchain[T] = {
+    val proposerUid = getProposer()
+    if proposerUid == Uid.zero || proposerUid == newBlock.dot.place then {
+      PoSBlockchain(inner + (newBlock.hash -> newBlock), ReplicatedSet.empty)
+    } else {
+      println(
+        f"tried to add block $newBlock with proposer $proposerUid but origin is not proposer ${newBlock.dot.place}"
+      )
+      PoSBlockchain(Map.empty, ReplicatedSet.empty)
+    }
   }
 
-  def commit: PoSBlockchain[H, T] = {
-    val currentValidHead    = validHead
-    val currentStakeWeights = stakeWeightsOfChain(currentValidHead)
-    // choose the block from the replica with the highest stake weight
-    val selectedBlock: Block[H, T] = proposedBlocks.elements
-      .filter(_.previousHash.exists(_ == currentValidHead))
-      .maxBy(block => currentStakeWeights.getOrElse(block.dot.place, 0L))
-
-    PoSBlockchain(inner + (selectedBlock.hash -> selectedBlock), ReplicatedSet.empty)
+  /** get the proposer for a given block
+    * @param blockHash the hash of the block
+    * @return the uid of the proposer
+    */
+  private def getProposer(blockHash: String = validHead): Uid = {
+    val stakeList: List[Uid] = stakeListOfBranch(blockHash)
+    val stakeHolders         = stakeList.toSet.size
+    val roundNumber          = stakeList.length
+    if roundNumber > 1 then
+      val index = (stakeHolders * randomPrime) % roundNumber
+      stakeList(index)
+    else Uid.zero // roundNumber == 1 => blockchain only contains genesis block
   }
 
   @tailrec
-  private def stakeWeightsOfChain(head: H, accumulatedStakeWeights: Map[Uid, Long] = Map.empty): Map[Uid, Long] =
+  private def stakeWeightsOfChain(head: String, accumulatedStakeWeights: Map[Uid, Long] = Map.empty): Map[Uid, Long] =
     inner.get(head) match {
       case Some(block) =>
         val newStakeWeight = accumulatedStakeWeights.get(block.dot.place) match {
           case Some(value) => value + block.data.toString.length
-          case None        => 0L
+          case None        => block.data.toString.length.toLong
         }
         block.previousHash match {
           case Some(predecessor) =>
@@ -55,19 +68,34 @@ case class PoSBlockchain[H, T](
       case None => accumulatedStakeWeights
     }
 
-  def stakeWeightOfChain(head: H): Long = stakeWeightsOfChain(head).values.sum
+  def stakeWeightOfChain(head: String): Long = stakeWeightsOfChain(head).values.sum
+
+  @tailrec
+  private def stakeListOfBranch(currentHash: String, stakeList: List[Uid] = List.empty): List[Uid] =
+    inner.get(currentHash) match {
+      case Some(currentBlock) => currentBlock.previousHash match {
+          case Some(previousH) => stakeListOfBranch(previousH, currentBlock.dot.place :: stakeList)
+          case None            => stakeList // current block = genesis block
+        }
+      case None => ???
+    }
+
+  override def validate(): Boolean = inner.values.forall { block =>
+    val proposer = getProposer(block.hash)
+    if proposer == Uid.zero then true else block.dot.place == proposer
+  }
 
 }
 
 object PoSBlockchain {
 
-  def apply[H, T](genesisBlock: Block[H, T]): PoSBlockchain[H, T] =
+  def apply[T](genesisBlock: Block[T]): PoSBlockchain[T] =
     PoSBlockchain(Map(genesisBlock.hash -> genesisBlock), ReplicatedSet.empty)
 
-  given [H: Bottom, T]: Bottom[PoSBlockchain[H, T]] = Bottom.derived
+  given [T]: Bottom[PoSBlockchain[T]] = Bottom.derived
 
-  given [H, T]: Lattice[PoSBlockchain[H, T]] = {
-    given Lattice[Block[H, T]] = Lattice.assertEquals
+  given [T]: Lattice[PoSBlockchain[T]] = {
+    given Lattice[Block[T]] = Lattice.assertEquals
     Lattice.derived
   }
 

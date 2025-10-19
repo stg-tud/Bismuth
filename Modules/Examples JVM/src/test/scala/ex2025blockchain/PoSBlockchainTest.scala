@@ -11,46 +11,51 @@ class PoSBlockchainTest extends FunSuite {
 
     given Bottom[String] = Bottom.provide("")
 
+    val difficulty = 0
     val genesisBlock = PoSBlockchain(Block("", None, "", Dot.zero))
-    val a            = Replica(genesisBlock)
+    val replicaA            = Replica(genesisBlock)
 
-    a.mod(_.addBlock("a", "Welcome To DARE", a.nextDot))
-    a.mod(_.commit)
-    a.mod(_.addBlock("b", "Hello World", a.nextDot))
-    a.mod(_.commit)
-    a.mod(_.addBlock("c", "Goodbye World", a.nextDot))
-    a.mod(_.commit)
+    val block0 = Block(replicaA.buffer.result.state.validHead, "Welcome to DARE", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block0))
+    val block1 = Block(replicaA.buffer.result.state.validHead, "Hello World", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block1))
+    val block2 = Block(replicaA.buffer.result.state.validHead, "Goodbye World", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block2))
 
     println("--- replica a")
-    println(a.buffer.result.state.toTreeString)
+    println(replicaA.buffer.result.state.toTreeString)
 
-    assertEquals(a.buffer.result.state.validHead, "c")
+    assertEquals(replicaA.buffer.result.state.validHead, block2.hash)
+    assert(replicaA.buffer.result.state.validate())
   }
 
   test("two replicas simple chain") {
     given Lattice[String] = Lattice.fromOrdering
     given Bottom[String]  = Bottom.provide("")
 
+    val difficulty = 0
     val genesisBlock = PoSBlockchain(Block("", None, "", Dot.zero))
-    val a, b         = Replica(genesisBlock)
+    val replicaA, replicaB         = Replica(genesisBlock)
 
-    a.mod(_.addBlock("a", "Welcome To DARE", a.nextDot))
-    a.mod(_.commit)
-    Replica.quiescence(a, b)
-    b.mod(_.addBlock("b", "Hello World", a.nextDot))
-    b.mod(_.commit)
-    Replica.quiescence(a, b)
-    a.mod(_.addBlock("c", "Goodbye World", a.nextDot))
-    a.mod(_.commit)
-    Replica.quiescence(a, b)
+    val block0 = Block(replicaA.buffer.result.state.validHead, "Welcome to DARE", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block0))
+    Replica.quiescence(replicaA, replicaB)
+    val block1 = Block(replicaB.buffer.result.state.validHead, "Hello World", replicaB.nextDot, difficulty)
+    replicaB.mod(_.addBlock(block1))
+    Replica.quiescence(replicaA, replicaB)
+    val block2 = Block(replicaA.buffer.result.state.validHead, "Goodbye World", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block2))
+    Replica.quiescence(replicaA, replicaB)
 
     println("--- replica a")
-    println(a.buffer.result.state.toTreeString)
+    println(replicaA.buffer.result.state.toTreeString)
     println("--- replica b")
-    println(b.buffer.result.state.toTreeString)
+    println(replicaB.buffer.result.state.toTreeString)
 
-    assertEquals(a.buffer.result.state.validHead, "c")
-    assertEquals(b.buffer.result.state.validHead, "c")
+    assertEquals(replicaA.buffer.result.state.validHead, block2.hash)
+    assertEquals(replicaB.buffer.result.state.validHead, block2.hash)
+    assert(replicaA.buffer.result.state.validate())
+    assert(replicaB.buffer.result.state.validate())
   }
 
   test("two replicas concurrent add to genesis chain") {
@@ -58,67 +63,67 @@ class PoSBlockchainTest extends FunSuite {
 
     given Bottom[String] = Bottom.provide("")
 
+    val difficulty = 0
     val genesisBlock = PoSBlockchain(Block("", None, "", Dot.zero))
-    val a, b         = Replica(genesisBlock)
+    val replicaA, replicaB         = Replica(genesisBlock)
 
-    a.mod(_.addBlock("a", "Welcome To DARE", a.nextDot))
-    Replica.quiescence(a, b)
-    b.mod(_.addBlock("b", "Hello World", a.nextDot))
-    Replica.quiescence(a, b)
-    a.mod(_.commit)
-    Replica.quiescence(a, b)
+    val block0 = Block(replicaA.buffer.result.state.validHead, "Welcome to DARE", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block0))
+
+    val block1 = Block(replicaB.buffer.result.state.validHead, "Hello World", replicaB.nextDot, difficulty)
+    replicaB.mod(_.addBlock(block1))
+    Replica.quiescence(replicaA, replicaB)
 
     println("--- replica a")
-    println(a.buffer.result.state.toTreeString)
+    println(replicaA.buffer.result.state.toTreeString)
     println("--- replica b")
-    println(b.buffer.result.state.toTreeString)
+    println(replicaB.buffer.result.state.toTreeString)
 
-    assertEquals(a.buffer.result.state.validHead, "a")
-    assertEquals(b.buffer.result.state.validHead, "a")
+    assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
+    assert(replicaA.buffer.result.state.validate())
+    assert(replicaB.buffer.result.state.validate())
   }
 
   test("three replicas with orphan branch") {
     given Lattice[String] = Lattice.fromOrdering
     given Bottom[String]  = Bottom.provide("")
 
-    val a, b = Replica(PoSBlockchain(Block("", None, "", Dot.zero)))
+    val difficulty = 0
+    val replicaA, replicaB = Replica(PoSBlockchain(Block("", None, "", Dot.zero)))
 
-    val block1 = Block("a", a.buffer.result.state.validHead, "Welcome To DARE", a.nextDot)
-    a.mod(_.addBlock(block1))
-    a.mod(_.commit)
-    Replica.quiescence(a, b)
+    val block1 = Block(replicaA.buffer.result.state.validHead, "Welcome To DARE", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block1))
+//    Replica.quiescence(replicaA, replicaB)
 
-    val block3 = Block("c", a.buffer.result.state.validHead, "Welcome to Lisbon", a.nextDot)
-    a.mod(_.addBlock(block3))
-    a.mod(_.commit)
+    val block3 = Block(replicaA.buffer.result.state.validHead, "Welcome to Lisbon", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block3))
 
-    val block4 = Block("d", b.buffer.result.state.validHead, "Welcome to NOVA", b.nextDot)
-    b.mod(_.addBlock(block4))
-    b.mod(_.commit)
-    val block5 = Block("e", b.buffer.result.state.validHead, "Welcome to Costa da Caparica", b.nextDot)
-    b.mod(_.addBlock(block5))
-    b.mod(_.commit)
+    val block4 = Block(replicaB.buffer.result.state.validHead, "Welcome to NOVA", replicaB.nextDot, difficulty)
+    replicaB.mod(_.addBlock(block4))
+    val block5 = Block(replicaB.buffer.result.state.validHead, "Welcome to Costa da Caparica", replicaB.nextDot, difficulty)
+    replicaB.mod(_.addBlock(block5))
 
-    val block6 = Block("f", a.buffer.result.state.validHead, "I hope you enjoyed the summer school", a.nextDot)
-    a.mod(_.addBlock(block6))
-    a.mod(_.commit)
+    val block6 = Block(replicaA.buffer.result.state.validHead, "I hope you enjoyed the summer school", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block6))
 
-    assertEquals(a.buffer.result.state.validHead, block6.hash)
-    assertEquals(b.buffer.result.state.validHead, block5.hash)
+    assertEquals(replicaA.buffer.result.state.validHead, block6.hash)
+    assertEquals(replicaB.buffer.result.state.validHead, block5.hash)
 
-    val block7 = Block("g", a.buffer.result.state.validHead, "We love CRDTs here at DARE", a.nextDot)
-    a.mod(_.addBlock(block7))
-    a.mod(_.commit)
-    Replica.quiescence(a, b)
+    val block7 = Block(replicaA.buffer.result.state.validHead, "We love CRDTs here at DARE", replicaA.nextDot, difficulty)
+    replicaA.mod(_.addBlock(block7))
+    Replica.quiescence(replicaA, replicaB)
 
-    assert(b.buffer.result.state `subsumes` a.buffer.result.state)
-    assertEquals(a.buffer.result.state.validHead, block7.hash)
-    assertEquals(b.buffer.result.state.validHead, block7.hash)
+    assert(replicaB.buffer.result.state `subsumes` replicaA.buffer.result.state)
+    assertEquals(replicaA.buffer.result.state.validHead, block7.hash)
+    assertEquals(replicaB.buffer.result.state.validHead, block7.hash)
 
     println("--- blockchain a")
-    println(a.buffer.result.state.toTreeString)
+    println(replicaA.buffer.result.state.toTreeString)
     println("--- blockchain b")
-    println(b.buffer.result.state.toTreeString)
+    println(replicaB.buffer.result.state.toTreeString)
+
+    assert(replicaA.buffer.result.state.validate())
+    assert(replicaB.buffer.result.state.validate())
   }
 
 }

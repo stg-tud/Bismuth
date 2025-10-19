@@ -1,15 +1,32 @@
 package ex2025blockchain
 
-import rdts.base.{Lattice, LocalUid}
-import rdts.time.{CausalTime, Dot}
+import rdts.time.Dot
 
-case class Block[H, T](hash: H, previousHash: Option[H], data: T, dot: Dot)
+import java.security.MessageDigest
+import scala.annotation.tailrec
+
+case class Block[T](hash: String, previousHash: Option[String], data: T, dot: Dot, timestamp: Long)
 
 object Block {
 
-  def apply[H, T](hash: H, previousHash: H, data: T, dot: Dot): Block[H, T] =
-    Block(hash, Option(previousHash), data, dot)
-//  def apply[H, T](hash: H, previousHash: Option[H], data: T, dot: Dot): Block[H, T] =
-//    Block(hash, previousHash, data, dot)
+  private val target = "0"
 
+  def apply[T](hash: String, previousHash: Option[String], data: T, dot: Dot): Block[T] =
+    Block(hash, previousHash, data, dot, 0L)
+
+  def apply[T](previousHash: String, data: T, dot: Dot, difficulty: Int): Block[T] = {
+    val hash = mineHash(previousHash, data, dot, System.currentTimeMillis(), difficulty)
+    Block(hash._1, Option(previousHash), data, dot, hash._2)
+  }
+
+  @tailrec
+  final def mineHash[T](previousHash: String, data: T, dot: Dot, now: Long, difficulty: Int): (String, Long) = {
+    val input     = s"$now$previousHash$data${dot.place}${dot.time}"
+    val digest    = MessageDigest.getInstance("SHA-256")
+    val hashBytes = digest.digest(input.getBytes("UTF-8"))
+    val hash      = hashBytes.map("%02x".format(_)).mkString
+
+    if hash.startsWith(target * difficulty) then (hash, now)
+    else mineHash(previousHash, data, dot, System.currentTimeMillis(), difficulty)
+  }
 }

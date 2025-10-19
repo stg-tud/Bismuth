@@ -1,23 +1,21 @@
 package ex2025blockchain
 
-import rdts.time.Dot
-
 import scala.annotation.tailrec
 
-abstract class Blockchain[H, T, Self <: Blockchain[H, T, Self]](inner: Map[H, Block[H, T]]) {
+abstract class Blockchain[T, Self <: Blockchain[T, Self]](inner: Map[String, Block[T]], difficulty: Int = 0) {
 
   /** heads are all hashes that do not have a succeeding block
     * all hashes - hashes that are referenced as previous hash in a block - genesis block
     * the genesis block is only subtracted if there is more than one block in the blockchain, otherwise it is the head
     */
-  def heads: Set[H] =
+  def heads: Set[String] =
     inner.keySet
     -- inner.values.filter(_.previousHash.isDefined).map(_.previousHash.get)
     -- (if inner.size > 1 then inner.values.filter(_.previousHash.isEmpty).map(_.hash) else Set.empty)
 
-  def validHead: H
+  def validHead: String
 
-  def addBlock(newBlock: Block[H, T]): Self
+  def addBlock(newBlock: Block[T]): Self
 
   /** adds a new block to the blockchain by appending it to the end of the chain
     *
@@ -25,14 +23,14 @@ abstract class Blockchain[H, T, Self <: Blockchain[H, T, Self]](inner: Map[H, Bl
     * @param data the data in the block
     * @return the resulting blockchain
     */
-  def addBlock(hash: H, data: T, dot: Dot): Self = addBlock(Block(hash, validHead, data, dot))
+//  def addBlock(hash: H, data: T, dot: Dot): Self = addBlock(Block(hash, validHead, data, dot))
 
   /** verify that a given block is part of the current valid blockchain
     *
     * @param block the block to validate
     * @return true if the block is part of the valid blockchain
     */
-  def verify(block: Block[H, T]): Boolean = {
+  def verify(block: Block[T]): Boolean = {
     var currentBlock = inner.get(validHead)
     while currentBlock.isDefined do {
       if currentBlock.get == block then return true
@@ -44,13 +42,13 @@ abstract class Blockchain[H, T, Self <: Blockchain[H, T, Self]](inner: Map[H, Bl
     false
   }
 
-  def contains(hash: H): Boolean = inner.contains(hash)
+  def contains(hash: String): Boolean = inner.contains(hash)
 
-  def contains(block: Block[H, T]): Boolean = contains(block.hash)
+  def contains(block: Block[T]): Boolean = contains(block.hash)
 
-  def toTreeString(using Ordering[H]): String = {
+  def toTreeString(using Ordering[String]): String = {
     @tailrec
-    def getBranchString(h: H, list: List[String] = List.empty): List[String] = {
+    def getBranchString(h: String, list: List[String] = List.empty): List[String] = {
       val block = inner(h)
       block.previousHash match {
         case Some(value) => getBranchString(value, list :+ block.data.toString)
@@ -64,5 +62,7 @@ abstract class Blockchain[H, T, Self <: Blockchain[H, T, Self]](inner: Map[H, Bl
       .map(_.reverse.map(a => f"($a)").mkString(" <- "))
     f"---\n${branchesString.mkString(" \n")}\nvalid head: (${inner(validHead).data.toString})"
   }
+
+  def validate(): Boolean
 
 }
