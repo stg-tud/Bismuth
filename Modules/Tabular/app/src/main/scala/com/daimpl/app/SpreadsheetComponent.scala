@@ -199,7 +199,7 @@ object SpreadsheetComponent {
         >> modSpreadsheet(_.removeRow(rowIdx))
         // >> modSpreadsheet(_.purgeTombstones())
       } >> $.modState(st =>
-        st.copy(selectedRow = for { o <- Some(numRows - 2); if o >= 0 } yield o min st.selectedRow.get max 0)
+        st.copy(selectedRow = for { o <- Some(numRows - 2) if o >= 0 } yield o min st.selectedRow.get max 0)
       )
 
     def insertColumnLeft(): Callback =
@@ -229,7 +229,7 @@ object SpreadsheetComponent {
         >> modSpreadsheet(_.removeColumn(colIdx))
         // >> modSpreadsheet(_.purgeTombstones())
       } >> $.modState(st =>
-        st.copy(selectedColumn = for { o <- Some(numCols - 2); if o >= 0 } yield o min st.selectedColumn.get max 0)
+        st.copy(selectedColumn = for { o <- Some(numCols - 2) if o >= 0 } yield o min st.selectedColumn.get max 0)
       )
     }
 
