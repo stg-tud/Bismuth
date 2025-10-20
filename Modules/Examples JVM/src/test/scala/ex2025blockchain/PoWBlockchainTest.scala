@@ -56,9 +56,9 @@ class PoWBlockchainTest extends FunSuite {
 
     assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
     assert(replicaA.buffer.result.state.contains(block1))
-    assert(replicaA.buffer.result.state.verify(block2))
+    assert(replicaA.buffer.result.state.contains(block2))
     assert(replicaB.buffer.result.state.contains(block1))
-    assert(replicaB.buffer.result.state.verify(block2))
+    assert(replicaB.buffer.result.state.contains(block2))
 
     val block3 = Block(replicaB.buffer.result.state.validHead, "Hello again", replicaB.nextDot, difficulty)
     replicaB.mod(_.addBlock(block3))

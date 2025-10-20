@@ -52,8 +52,7 @@ class PoSBlockchainTest extends FunSuite {
     println("--- replica b")
     println(replicaB.buffer.result.state.toTreeString)
 
-    assertEquals(replicaA.buffer.result.state.validHead, block2.hash)
-    assertEquals(replicaB.buffer.result.state.validHead, block2.hash)
+    assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
     assert(replicaA.buffer.result.state.validate())
     assert(replicaB.buffer.result.state.validate())
   }

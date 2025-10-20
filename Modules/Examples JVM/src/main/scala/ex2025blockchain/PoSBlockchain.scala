@@ -18,8 +18,8 @@ case class PoSBlockchain[T](
     proposedBlocks: ReplicatedSet[Block[T]], // should we use a remove wins set instead?
 ) extends Blockchain[T, PoSBlockchain[T]](inner) {
 
-  private final val randomPrime = 2147483647
-  
+  private final val randomPrime: Long = 2147483647
+
   given headOrdering: Ordering[String] = Ordering.by[String, (Long, String)] { hash =>
     (stakeWeightOfChain(hash), hash)
   }
@@ -27,7 +27,7 @@ case class PoSBlockchain[T](
   override def validHead: String = heads.max
 
   override def addBlock(newBlock: Block[T]): PoSBlockchain[T] = {
-    val proposerUid = getProposer()
+    val proposerUid = getProposer(newBlock.dot.place)
     if proposerUid == Uid.zero || proposerUid == newBlock.dot.place then {
       PoSBlockchain(inner + (newBlock.hash -> newBlock), ReplicatedSet.empty)
     } else {
@@ -42,13 +42,14 @@ case class PoSBlockchain[T](
     * @param blockHash the hash of the block
     * @return the uid of the proposer
     */
-  private def getProposer(blockHash: String = validHead): Uid = {
-    val stakeList: List[Uid] = stakeListOfBranch(blockHash)
+  private def getProposer(origin: Uid, blockHash: String = validHead): Uid = {
+    val stakeList: List[Uid] = origin :: stakeListOfBranch(blockHash)
     val stakeHolders         = stakeList.toSet.size
     val roundNumber          = stakeList.length
-    if roundNumber > 1 then
+
+    if roundNumber > 0 then
       val index = (stakeHolders * randomPrime) % roundNumber
-      stakeList(index)
+      stakeList(index.toInt)
     else Uid.zero // roundNumber == 1 => blockchain only contains genesis block
   }
 
@@ -81,7 +82,7 @@ case class PoSBlockchain[T](
     }
 
   override def validate(): Boolean = inner.values.forall { block =>
-    val proposer = getProposer(block.hash)
+    val proposer = getProposer(block.dot.place, block.hash)
     if proposer == Uid.zero then true else block.dot.place == proposer
   }
 
