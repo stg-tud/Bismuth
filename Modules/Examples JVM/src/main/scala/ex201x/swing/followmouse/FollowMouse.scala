@@ -28,10 +28,10 @@ class FollowMouse {
 
   // The whole logic
 
-  val tick: Evt[Unit] = Evt[Unit]()
+  val tick: Evt[Unit]      = Evt[Unit]()
   val time: Signal[Double] = tick.iterate(0.0) { (acc: Double) => (acc + 0.1) % (math.Pi * 2) }
 
-  val mouse  = new Mouse
+  val mouse               = new Mouse
   val mouseX: Signal[Int] = Signal { mouse.position.value.getX.toInt - Size / 2 }
   val mouseY: Signal[Int] = Signal { mouse.position.value.getY.toInt - Size / 2 }
 

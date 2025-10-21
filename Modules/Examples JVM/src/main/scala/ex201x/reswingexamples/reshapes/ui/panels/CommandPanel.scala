@@ -12,7 +12,8 @@ import scala.swing.{BoxPanel, Component, Orientation, ScrollPane}
 class CommandPanel extends BoxPanel(Orientation.Vertical) {
   def state = ReShapes.drawingSpaceState
 
-  val commands: Signal[List[Command]] = Signal.dynamic { if state.value != null then state.value.commands.value else List.empty } // #SIG
+  val commands: Signal[List[Command]] =
+    Signal.dynamic { if state.value != null then state.value.commands.value else List.empty } // #SIG
 
   val buttonsEvents: Signal[List[(Component, Event[Command])]] = Signal { // #SIG
     commands.value map { command =>

@@ -31,11 +31,11 @@ class CatchUp {
   val SizeUp    = 40
   val SizeY     = 32
 
-  val tick: Evt[Unit] = Evt[Unit]()
+  val tick: Evt[Unit]      = Evt[Unit]()
   val time: Signal[Double] = tick.iterate(0.0) { (acc: Double) => (acc + 0.1) % (math.Pi * 2) }
 
   // Mouse position
-  val mouse  = new Mouse
+  val mouse               = new Mouse
   val mouseX: Signal[Int] = Signal { mouse.position.value.getX.toInt }
   val mouseY: Signal[Int] = Signal { mouse.position.value.getY.toInt }
 
@@ -58,8 +58,8 @@ class CatchUp {
   val catchBox: Signal[Rectangle] = Signal { new Rectangle(x.value, y.value, SizeCatch, SizeY) }
   val upBox: Signal[Rectangle]    = Signal { new Rectangle(delayedX.value, delayedY.value, SizeUp, SizeY) }
 
-  val caught: Signal[Boolean]       = Signal { catchBox.value.intersects(upBox.value) }
-  val hits: Event[Boolean]         = caught.changed.filter(_ == true)
+  val caught: Signal[Boolean]   = Signal { catchBox.value.intersects(upBox.value) }
+  val hits: Event[Boolean]      = caught.changed.filter(_ == true)
   val numberOfHits: Signal[Int] = hits.count()
 
   val scoreString: Signal[String] = Signal { "You caught up " + numberOfHits.value + " times." }

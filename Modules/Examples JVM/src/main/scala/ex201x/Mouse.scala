@@ -14,10 +14,10 @@ class Mouse {
   val mouseDraggedE: Evt[Point]  = Evt[Point]()
   val mouseReleasedE: Evt[Point] = Evt[Point]()
   /* Compose reactive values */
-  val mouseChangePosition: Event[Point]      = mouseMovedE || mouseDraggedE
-  val mousePressedOrReleased: Event[Point]   = mousePressedE || mouseReleasedE
-  val position: Signal[Point]  = mouseChangePosition.hold(new Point(0, 0))
-  val pressed: Signal[Boolean] =
+  val mouseChangePosition: Event[Point]    = mouseMovedE || mouseDraggedE
+  val mousePressedOrReleased: Event[Point] = mousePressedE || mouseReleasedE
+  val position: Signal[Point]              = mouseChangePosition.hold(new Point(0, 0))
+  val pressed: Signal[Boolean]             =
     mousePressedOrReleased.toggle(Signal { false }, Signal { true }) // TODO: solve this more robust
 
   /* Scala swing reaction */

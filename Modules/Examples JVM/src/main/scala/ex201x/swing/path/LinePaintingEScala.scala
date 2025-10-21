@@ -20,8 +20,8 @@ object LinePaintingEScala extends SimpleSwingApplication {
     val mousePressed: Evt[Point]  = Evt[Point]()
     val mouseDragged: Evt[Point]  = Evt[Point]()
     val mouseReleased: Evt[Point] = Evt[Point]()
-    val cKeyTyped: Evt[Unit]     = Evt[Unit]()
-    val focusLost: Evt[Unit]     = Evt[Unit]()
+    val cKeyTyped: Evt[Unit]      = Evt[Unit]()
+    val focusLost: Evt[Unit]      = Evt[Unit]()
     /* Bind the EScala events to the Swing events */
     reactions += {
       case e: MousePressed        => mousePressed.fire(e.point)

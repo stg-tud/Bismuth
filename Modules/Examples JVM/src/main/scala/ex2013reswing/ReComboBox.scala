@@ -110,8 +110,8 @@ object ReComboBox {
     }
 
     def getElementAt(n: Int): A = items(n)
-    def getSize              = items.size
-    def getItems             = items
+    def getSize                 = items.size
+    def getItems                = items
 
     private var selected: AnyRef            = scala.compiletime.uninitialized
     def getSelectedItem: AnyRef             = selected

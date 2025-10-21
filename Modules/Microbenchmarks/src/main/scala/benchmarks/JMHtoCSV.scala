@@ -11,11 +11,11 @@ object JMHtoCSV {
   val MODE: Regex        = "^# Benchmark mode: (.*)$".r
   val MEASUREMENT: Regex = "^Iteration .*: (\\d+)[.,](\\d+) .*?$".r
 
-  var outfiles: Map[String, FileWriter]           = Map[String, FileWriter]()
-  var benchmark: String  = scala.compiletime.uninitialized
-  var threads: String    = scala.compiletime.uninitialized
-  var parameters: String = scala.compiletime.uninitialized
-  var mode: String       = scala.compiletime.uninitialized
+  var outfiles: Map[String, FileWriter] = Map[String, FileWriter]()
+  var benchmark: String                 = scala.compiletime.uninitialized
+  var threads: String                   = scala.compiletime.uninitialized
+  var parameters: String                = scala.compiletime.uninitialized
+  var mode: String                      = scala.compiletime.uninitialized
 
   def main(args: Array[String]): Unit = {
     try {

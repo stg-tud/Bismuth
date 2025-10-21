@@ -5,20 +5,20 @@ import reactives.default.*
 
 class Elevator(val nFloors: Int) {
   // some constants
-  val FloorHeight = 120
-  val MaxSpeed    = 10
-  val MaxAccel    = 1
-  val BreakTime: Int   = MaxSpeed / MaxAccel
+  val FloorHeight    = 120
+  val MaxSpeed       = 10
+  val MaxAccel       = 1
+  val BreakTime: Int = MaxSpeed / MaxAccel
   // number of ticks it takes to break down
-  val BreakDist: Int   = (1 to BreakTime).foldLeft(0) { _ + MaxSpeed - MaxAccel * _ }
-  val FloorStart  = 10
-  val FloorPos: List[Int]    = Iterable.iterate(FloorStart, nFloors)(_ + FloorHeight).toList
-  val WaitingTime = 10 // number of ticks to wait on each floor
+  val BreakDist: Int      = (1 to BreakTime).foldLeft(0) { _ + MaxSpeed - MaxAccel * _ }
+  val FloorStart          = 10
+  val FloorPos: List[Int] = Iterable.iterate(FloorStart, nFloors)(_ + FloorHeight).toList
+  val WaitingTime         = 10 // number of ticks to wait on each floor
 
   // expose this event to the outside
-  val tick: Evt[Unit]        = Evt[Unit]()
+  val tick: Evt[Unit]       = Evt[Unit]()
   val callToFloor: Evt[Int] = Evt[Int]()
-  val queue: SQueue[Int]       = SQueue(1)
+  val queue: SQueue[Int]    = SQueue(1)
 
   // helper function integrating values over tick (time)
   def integrate(f: => Int): Signal[Int] = tick.iterate(0) { _ + f /* *delta_t */ }
@@ -49,7 +49,7 @@ class Elevator(val nFloors: Int) {
     val p = position.value
     FloorPos.indexOf(FloorPos.minBy(f => math.abs(f - p)))
   }
-  val reached: Signal[Boolean]                  = Signal { stopped.value && position.value == destination.value }
+  val reached: Signal[Boolean] = Signal { stopped.value && position.value == destination.value }
   val reachedFloor: Event[Int] = reached.changed && { _ == true } map { (_: Boolean) => currentFloor.value }
 
   val waitingTime: Signal[Int] = Fold(0)(
@@ -57,7 +57,7 @@ class Elevator(val nFloors: Int) {
     tick branch { _ => if isWaiting.now then Fold.current - 1 else Fold.current }
   )
 
-  val stoppedWaiting: Event[Int]             = waitingTime.changed.filter(_ == 0)
+  val stoppedWaiting: Event[Int] = waitingTime.changed.filter(_ == 0)
   val isWaiting: Signal[Boolean] =
     (reachedFloor.map((_: Int) => true) || stoppedWaiting.map((_: Any) => false)).hold(false)
 

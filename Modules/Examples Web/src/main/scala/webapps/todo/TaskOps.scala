@@ -11,7 +11,8 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.unused
 
 object TaskOps {
-  def resetBuffer[T]: Branch[DeltaBuffer[T]] = Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
+  def resetBuffer[T]: Branch[DeltaBuffer[T]] =
+    Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
 }
 
 // `taskrefs` is unused as a reference, but is used indirectly so this parameter serves as a requirement

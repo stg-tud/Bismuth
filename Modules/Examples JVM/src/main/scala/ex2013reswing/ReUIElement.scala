@@ -14,9 +14,10 @@ abstract class ReUIElement(
 
   def preferredSize: ReSwingValue[Dimension] = _preferredSize
 
-  val size: ReSwingValue[Dimension]     = ReSwingValue.using(() => peer.size, classOf[UIElementResized])
-  val location: ReSwingValue[Point] = ReSwingValue.using(() => peer.location, classOf[UIElementMoved])
-  val bounds: ReSwingValue[Rectangle]   = ReSwingValue.using(() => peer.bounds, classOf[UIElementResized], classOf[UIElementMoved])
+  val size: ReSwingValue[Dimension]   = ReSwingValue.using(() => peer.size, classOf[UIElementResized])
+  val location: ReSwingValue[Point]   = ReSwingValue.using(() => peer.location, classOf[UIElementMoved])
+  val bounds: ReSwingValue[Rectangle] =
+    ReSwingValue.using(() => peer.bounds, classOf[UIElementResized], classOf[UIElementMoved])
 
   minimumSize.using(() => peer.minimumSize, peer.minimumSize_=, "minimumSize")
   maximumSize.using(() => peer.maximumSize, peer.maximumSize_=, "maximumSize")

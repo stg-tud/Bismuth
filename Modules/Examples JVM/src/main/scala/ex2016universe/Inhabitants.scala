@@ -51,8 +51,8 @@ trait Female extends Animal {
     becomePregnant branch { _ => Animal.PregnancyTime },
     world.time.hour.changed branch { _ => Fold.current - (if isPregnant.readValueOnce then 1 else 0) }
   )
-  private val giveBirth: Event[Any] = pregnancyTime.changed.filter(_ == 0)         // #EVT //#IF
-  final override val isFertile: Signal[Boolean]      = Signal.lift(isAdult, isPregnant) { _ && !_ } // #SIG
+  private val giveBirth: Event[Any]             = pregnancyTime.changed.filter(_ == 0)         // #EVT //#IF
+  final override val isFertile: Signal[Boolean] = Signal.lift(isAdult, isPregnant) { _ && !_ } // #SIG
 
   // override val energyDrain = Signal { super.energyDrain() * 2 }
   // not possible

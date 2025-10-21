@@ -5,11 +5,11 @@ import reactives.default.*
 object SignalVersion extends App {
 
   // Time and radius change over time
-  val time: Var[Int]   = Var(0)
+  val time: Var[Int]      = Var(0)
   val radius: Signal[Int] = Signal { time.value % 10 } // The circle expands periodically
 
   // Constants in uniform motion
-  val rotationPeriod  = 20
+  val rotationPeriod          = 20
   val angularVelocity: Double = 2 * 3.14 / rotationPeriod
 
   val speed: Signal[Double]        = Signal { angularVelocity * radius.value }

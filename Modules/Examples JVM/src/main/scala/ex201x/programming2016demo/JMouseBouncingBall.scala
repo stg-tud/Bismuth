@@ -18,7 +18,7 @@ import reactives.default.*
   */
 object JMouseBouncingBall extends Main {
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val velocity: Signal[Pos] = Signal {
     Pos(

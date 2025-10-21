@@ -9,38 +9,38 @@ sealed abstract class Gamestate {
 }
 
 case class PlaceStone(player: Slot) extends Gamestate {
-  def getPlayer = player
-  def text: String      = player.toString + " to PLACE a stone"
+  def getPlayer    = player
+  def text: String = player.toString + " to PLACE a stone"
 }
 
 case class RemoveStone(player: Slot) extends Gamestate {
-  def getPlayer = player
-  def color     = player.other
-  def text: String      = player.toString + " to REMOVE a " + color + " stone"
+  def getPlayer    = player
+  def color        = player.other
+  def text: String = player.toString + " to REMOVE a " + color + " stone"
 }
 
 case class MoveStoneSelect(player: Slot) extends Gamestate {
-  def getPlayer = player
-  def text: String      = player.toString + " to MOVE a stone"
+  def getPlayer    = player
+  def text: String = player.toString + " to MOVE a stone"
 }
 
 case class MoveStoneDrop(player: Slot, index: SlotIndex) extends Gamestate {
-  def getPlayer = player
-  def text: String      = player.toString + " to select destination for stone at position " + index
+  def getPlayer    = player
+  def text: String = player.toString + " to select destination for stone at position " + index
 }
 
 case class JumpStoneSelect(player: Slot) extends Gamestate {
-  def getPlayer = player
-  def text: String      = player.toString + " to JUMP with a stone"
+  def getPlayer    = player
+  def text: String = player.toString + " to JUMP with a stone"
 }
 case class JumpStoneDrop(player: Slot, index: SlotIndex) extends Gamestate {
-  def getPlayer = player
-  def text: String      = player.toString + " to select destination for stone at position " + index
+  def getPlayer    = player
+  def text: String = player.toString + " to select destination for stone at position " + index
 }
 
 case class GameOver(winner: Slot) extends Gamestate {
-  def getPlayer = Empty
-  def text: String      = "Game over. " + winner + " wins."
+  def getPlayer    = Empty
+  def text: String = "Game over. " + winner + " wins."
 }
 
 class MillGame {

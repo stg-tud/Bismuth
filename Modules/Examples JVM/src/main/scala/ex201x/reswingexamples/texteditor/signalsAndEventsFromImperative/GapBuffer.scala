@@ -16,7 +16,7 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
   override def size = count
 
   def hasNext: Boolean = c < count
-  def next(): Char  = {
+  def next(): Char     = {
     if b == caret then
       b += buf.length - count
     val ch = buf(b)

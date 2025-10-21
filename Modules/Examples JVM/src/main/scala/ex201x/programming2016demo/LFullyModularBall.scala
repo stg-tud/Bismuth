@@ -53,9 +53,9 @@ import reactives.default.*
   */
 object LFullyModularBall extends Main {
   class BouncingBall(val initVx: Double, val initVy: Double, val diameter: Signal[Int], val reset: Event[Point]) {
-    val horizontalBounceSources: Var[List[Event[Any]]] = Var(List())
-    val verticalBounceSources: Var[List[Event[Any]]]   = Var(List())
-    val filteredHorizontalBounceSources: Signal[List[Event[Any]]]                = horizontalBounceSources.map(_.map(_.recover {
+    val horizontalBounceSources: Var[List[Event[Any]]]            = Var(List())
+    val verticalBounceSources: Var[List[Event[Any]]]              = Var(List())
+    val filteredHorizontalBounceSources: Signal[List[Event[Any]]] = horizontalBounceSources.map(_.map(_.recover {
       case _: IllegalArgumentException => None
     }))
 
@@ -80,7 +80,7 @@ object LFullyModularBall extends Main {
   }
 
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val bouncingBall = new BouncingBall(200d, 150d, Var(50), panel.Mouse.middleButton.pressed)
   shapes.transform(bouncingBall.shape :: _)

@@ -154,7 +154,7 @@ trait EventPyramidTopper {
   self: PaperPhilosophers =>
   import engine.*
 
-  val anySuccess: Event[Sight]                = successes.reduce(_ || _)
+  val anySuccess: Event[Sight]  = successes.reduce(_ || _)
   val successCount: Signal[Int] =
     anySuccess.fold(0) { (acc, _) => acc + 1 }(using CreationTicket.fromName("successCount"))
   override def total: Int = successCount.readValueOnce
@@ -173,7 +173,7 @@ trait IndividualCounts {
 trait NoTopper extends IndividualCounts {
   self: PaperPhilosophers =>
 
-  val locks: Array[ReentrantLock]                                            = Array.fill(size) { new ReentrantLock() }
+  val locks: Array[ReentrantLock]                      = Array.fill(size) { new ReentrantLock() }
   override def manuallyLocked[T](idx: Int)(f: => T): T = {
     val (lock1, lock2, lock3) =
       if idx == 0 then {

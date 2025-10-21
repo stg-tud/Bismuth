@@ -46,7 +46,7 @@ class PulsingCircle {
     override def toString: String = "Circle(" + center + "," + radius + ")"
   }
 
-  val base: Var[Int] = Var(0)
+  val base: Var[Int]    = Var(0)
   val time: Signal[Int] = Signal { base.value % 200 } // time is cyclic :)
 
   val point1: Signal[Point] = Signal { new Point(20 + time.value, 20 + time.value) }
@@ -59,7 +59,7 @@ class PulsingCircle {
   new Oval(point4, time)
 
   // drawing code
-  def top   = frame
+  def top              = frame
   val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)

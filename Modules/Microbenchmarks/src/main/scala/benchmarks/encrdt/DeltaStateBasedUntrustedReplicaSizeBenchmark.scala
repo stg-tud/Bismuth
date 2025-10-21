@@ -92,7 +92,7 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmarkLinearScaling extends App
   println(csvHeader)
   csvFile.println(csvHeader)
   val crdt: DeltaAWLWWMContainer[String, String] = new DeltaAWLWWMContainer[String, String]("0")
-  var currentDot: Dot                                 = Dot("0", 0)
+  var currentDot: Dot                            = Dot("0", 0)
 
   val untrustedReplica = new UntrustedDeltaBasedReplicaMock()
 

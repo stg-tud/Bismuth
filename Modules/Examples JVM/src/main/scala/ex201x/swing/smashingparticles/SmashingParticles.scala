@@ -33,7 +33,7 @@ class SmashingParticles {
     override def toString: String = "Circle(" + center + "," + radius + ")"
   }
 
-  val base: Var[Int]       = Var(0)
+  val base: Var[Int]          = Var(0)
   val simpleTime: Signal[Int] = Signal { base.value }
   val time: Signal[Int]       = Signal { simpleTime.value % 200 } // cyclic time :)
 
@@ -47,7 +47,7 @@ class SmashingParticles {
   new Oval(point4, time)
 
   // drawing code
-  def top   = frame
+  def top              = frame
   val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)

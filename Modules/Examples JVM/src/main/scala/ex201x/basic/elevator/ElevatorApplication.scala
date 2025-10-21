@@ -42,10 +42,10 @@ class ElevatorApplication(val elevator: Elevator) {
 }
 
 class ElevatorPainter(e: Elevator) extends Panel {
-  val FloorHeight = e.FloorHeight
-  val FloorWidth: Int  = (0.9 * e.FloorHeight).toInt
-  val sizeX: Int       = FloorWidth + 50
-  val sizeY: Int       = FloorHeight * e.nFloors + 50
+  val FloorHeight     = e.FloorHeight
+  val FloorWidth: Int = (0.9 * e.FloorHeight).toInt
+  val sizeX: Int      = FloorWidth + 50
+  val sizeY: Int      = FloorHeight * e.nFloors + 50
 
   preferredSize = new Dimension(sizeX, sizeY)
 

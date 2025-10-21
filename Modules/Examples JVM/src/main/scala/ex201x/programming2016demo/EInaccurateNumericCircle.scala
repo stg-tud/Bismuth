@@ -55,12 +55,12 @@ object EInaccurateNumericCircle extends SimpleSwingApplication {
   val NanoSecond = 1000000000L
 
   val nsTime: Var[Long] = Var(System.nanoTime())
-  def tick(): Unit = nsTime.set(System.nanoTime())
+  def tick(): Unit      = nsTime.set(System.nanoTime())
 
   val ticks: Evt[Long] = Evt[Long]()
 
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val angle: Signal[Double] = nsTime.map(_.toDouble / NanoSecond * math.Pi)
 

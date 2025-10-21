@@ -21,8 +21,8 @@ class ContextBench {
   var rep1Set: Dots        = scala.compiletime.uninitialized
   var rep1SetPlusOne: Dots = scala.compiletime.uninitialized
   var rep2Set: Dots        = scala.compiletime.uninitialized
-  val rep1id: Uid               = Uid.gen()
-  val rep2id: Uid               = Uid.gen()
+  val rep1id: Uid          = Uid.gen()
+  val rep2id: Uid          = Uid.gen()
   var rep1single: Dots     = scala.compiletime.uninitialized
 
   private def makeRep(rep: Uid, mul: Long, off: Long, len: Long): Dots = {

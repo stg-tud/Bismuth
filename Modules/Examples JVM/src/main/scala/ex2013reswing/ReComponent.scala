@@ -17,7 +17,8 @@ abstract class ReComponent(
 
   override protected lazy val peer: CompItem & ComponentMixin = new Component with ComponentMixin
 
-  val hasFocus: ReSwingValue[Boolean] = ReSwingValue.using(() => peer.hasFocus, classOf[FocusGained], classOf[FocusLost])
+  val hasFocus: ReSwingValue[Boolean] =
+    ReSwingValue.using(() => peer.hasFocus, classOf[FocusGained], classOf[FocusLost])
 
   background.using(() => peer.background, peer.background_=, "background")
   foreground.using(() => peer.foreground, peer.foreground_=, "foreground")
@@ -26,16 +27,16 @@ abstract class ReComponent(
 
   object mouse {
     object clicks {
-      val clicked: ReSwingEvent[MouseClicked]  = ReSwingEvent.using(peer.mouse.clicks, classOf[MouseClicked])
-      val pressed: ReSwingEvent[MousePressed]  = ReSwingEvent.using(peer.mouse.clicks, classOf[MousePressed])
+      val clicked: ReSwingEvent[MouseClicked]   = ReSwingEvent.using(peer.mouse.clicks, classOf[MouseClicked])
+      val pressed: ReSwingEvent[MousePressed]   = ReSwingEvent.using(peer.mouse.clicks, classOf[MousePressed])
       val released: ReSwingEvent[MouseReleased] = ReSwingEvent.using(peer.mouse.clicks, classOf[MouseReleased])
     }
 
     object moves {
       val dragged: ReSwingEvent[MouseDragged] = ReSwingEvent.using(peer.mouse.moves, classOf[MouseDragged])
       val entered: ReSwingEvent[MouseEntered] = ReSwingEvent.using(peer.mouse.moves, classOf[MouseEntered])
-      val exited: ReSwingEvent[MouseExited]  = ReSwingEvent.using(peer.mouse.moves, classOf[MouseExited])
-      val moved: ReSwingEvent[MouseMoved]   = ReSwingEvent.using(peer.mouse.moves, classOf[MouseMoved])
+      val exited: ReSwingEvent[MouseExited]   = ReSwingEvent.using(peer.mouse.moves, classOf[MouseExited])
+      val moved: ReSwingEvent[MouseMoved]     = ReSwingEvent.using(peer.mouse.moves, classOf[MouseMoved])
     }
 
     object wheel {
@@ -44,9 +45,9 @@ abstract class ReComponent(
   }
 
   object keys {
-    val pressed: ReSwingEvent[KeyPressed]  = ReSwingEvent.using(peer.keys, classOf[KeyPressed])
+    val pressed: ReSwingEvent[KeyPressed]   = ReSwingEvent.using(peer.keys, classOf[KeyPressed])
     val released: ReSwingEvent[KeyReleased] = ReSwingEvent.using(peer.keys, classOf[KeyReleased])
-    val typed: ReSwingEvent[KeyTyped]    = ReSwingEvent.using(peer.keys, classOf[KeyTyped])
+    val typed: ReSwingEvent[KeyTyped]       = ReSwingEvent.using(peer.keys, classOf[KeyTyped])
   }
 
   protected trait ComponentMixin extends Component {

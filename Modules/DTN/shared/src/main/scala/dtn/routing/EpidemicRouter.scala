@@ -58,7 +58,8 @@ object EpidemicRouter {
 }
 
 class EpidemicStrategy {
-  val delivered: ConcurrentHashMap[String, Set[String]] = ConcurrentHashMap[String, Set[String]]() // will grow indefinitely as we do not garbage collect here
+  val delivered: ConcurrentHashMap[String, Set[String]] =
+    ConcurrentHashMap[String, Set[String]]() // will grow indefinitely as we do not garbage collect here
 
   def onRequestSenderForBundle(
       peers: ConcurrentHashMap[String, DtnPeer],

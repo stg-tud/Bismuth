@@ -43,7 +43,7 @@ import reactives.default.*
   */
 object INumericResettableCircle extends Main {
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val angle: Signal[Double] = Clock.nsTime.map(_.toDouble / Clock.NanoSecond * math.Pi)
 

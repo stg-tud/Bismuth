@@ -25,7 +25,7 @@ class EventVersion {
   val speed = new Point(10, 8)
 
   class Coord(private var _n: Int) {
-    val changed: Evt[Int]                = Evt[Int]()
+    val changed: Evt[Int]      = Evt[Int]()
     def n: Int                 = _n
     def n_=(newVal: Int): Unit = {
       _n = newVal

@@ -42,8 +42,8 @@ class DrawingSpaceState {
   // events that can be called imperatively
   final lazy val execute: Evt[Command] = Evt[Command]() // #EVT
   final lazy val revert: Evt[Command]  = Evt[Command]() // #EVT
-  final lazy val clear: Evt[Unit]   = Evt[Unit]()    // #EVT
-  final lazy val select: Evt[Shape]  = Evt[Shape]()   // #EVT
+  final lazy val clear: Evt[Unit]      = Evt[Unit]()    // #EVT
+  final lazy val select: Evt[Shape]    = Evt[Shape]()   // #EVT
 
   sealed abstract private class CommandType
   private case class Execute(command: Command) extends CommandType

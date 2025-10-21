@@ -111,8 +111,8 @@ class MillBoard {
     val stones = stonesVar.value
     (color: Slot) => stones.count(_ == color)
   }
-  val blackStones: Signal[Int]                          = Signal { numStones.value(Black) } // #SIG
-  val whiteStones: Signal[Int]                          = Signal { numStones.value(White) } // #SIG
+  val blackStones: Signal[Int]             = Signal { numStones.value(Black) } // #SIG
+  val whiteStones: Signal[Int]             = Signal { numStones.value(White) } // #SIG
   val numStonesChanged: Event[(Slot, Int)] =                                   // #EVT
     blackStones.changed.map((Black, _: Int)) || whiteStones.changed.map((White, _: Int)) // #IF //#EF //#IF
 }

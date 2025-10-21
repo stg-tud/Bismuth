@@ -9,7 +9,7 @@ object EventWindows extends App {
   val e: Evt[Double] = Evt[Double]()
   // val all = e.list()
   val window: Signal[LinearSeq[Double]] = e.list(5)
-  val mean: Signal[Double]   = Signal {
+  val mean: Signal[Double]              = Signal {
     window.value.sum /
     window.value.length
   }

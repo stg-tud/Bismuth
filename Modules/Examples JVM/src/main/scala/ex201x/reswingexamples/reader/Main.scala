@@ -13,12 +13,12 @@ import scala.swing.Swing.EmptyIcon
 import scala.swing.{Dialog, Swing}
 
 object Main extends App {
-  val tick: Evt[Unit]    = Evt[Unit]() // #EVT
-  val checker = new UrlChecker
-  val fetcher = new Fetcher(checker.checkedURL.fold(Set.empty[URL])(_ + _))
-  val parser  = new XmlParser
-  val store   = new FeedStore(parser.channelParsed, parser.itemParsed)
-  val app     = new GUI(
+  val tick: Evt[Unit] = Evt[Unit]() // #EVT
+  val checker         = new UrlChecker
+  val fetcher         = new Fetcher(checker.checkedURL.fold(Set.empty[URL])(_ + _))
+  val parser          = new XmlParser
+  val store           = new FeedStore(parser.channelParsed, parser.itemParsed)
+  val app             = new GUI(
     store,
     (store.itemAdded map { (x: RSSItem) => // #EF
       (x.srcChannel map (_.title) getOrElse "<unknown>") + ": " + x.title

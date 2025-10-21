@@ -26,7 +26,8 @@ class XmlParser {
     (parseChannel.after `map` discardArgument[Option[RSSChannel]]) && // #EF //#EF
     { parseSuccessfull(_) } `map` { (o: Option[RSSChannel]) => o.get } // #EF
 
-  lazy val entityParsed: Event[Ordered[? >: RSSChannel & RSSItem <: RSSChannel | RSSItem]] = channelParsed || itemParsed // #EVT //#EF //#EF
+  lazy val entityParsed: Event[Ordered[? >: RSSChannel & RSSItem <: RSSChannel | RSSItem]] =
+    channelParsed || itemParsed // #EVT //#EF //#EF
 
   val dateFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
 

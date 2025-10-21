@@ -20,7 +20,7 @@ class World(val width: Int = 100, val height: Int = 100) {
   }
   var updates: List[() => Unit] = Nil
   def status                    = statusString.readValueOnce
-  def tick(): Unit                    = {
+  def tick(): Unit              = {
     time.tick.fire()
     board.removeDead()
     board.elements.foreach { case (pos, be) => be.doStep(pos) }

@@ -23,14 +23,14 @@ object GModularClockCircle extends SimpleSwingApplication {
     val NanoSecond = 1000000000L
 
     private val _nsTime      = Var(System.nanoTime())
-    def tick(): Unit               = _nsTime.set(System.nanoTime())
+    def tick(): Unit         = _nsTime.set(System.nanoTime())
     val nsTime: Signal[Long] = _nsTime
 
     val ticks: Event[Long] = nsTime.change.map { `diff` => diff.to.get - diff.from.get }
   }
 
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val angle: Signal[Double] = Clock.nsTime.map(_.toDouble / Clock.NanoSecond * math.Pi)
 

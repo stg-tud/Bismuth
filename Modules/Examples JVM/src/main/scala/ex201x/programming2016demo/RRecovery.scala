@@ -33,8 +33,9 @@ object RRecovery extends Main {
       top.pack()
     }
   }
-  val shapes: Var[List[Shape]]         = Var[List[Shape]](List.empty)
-  val filteredShapes: Signal[List[Shape]] = Signal.dynamic { shapes.value.filter { q => Try(q.changed.value).isSuccess } }
+  val shapes: Var[List[Shape]]            = Var[List[Shape]](List.empty)
+  val filteredShapes: Signal[List[Shape]] =
+    Signal.dynamic { shapes.value.filter { q => Try(q.changed.value).isSuccess } }
   filteredShapes.observe(shapes.set)
   val panel = new ShapesPanel(filteredShapes)
 

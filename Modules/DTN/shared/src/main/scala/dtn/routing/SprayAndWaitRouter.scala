@@ -18,7 +18,8 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
 
   val sprayDelivered: ConcurrentHashMap[String, Set[String]] =
     ConcurrentHashMap[String, Set[String]]() // will grow indefinitely as we do not garbage collect here
-  val copies: ConcurrentHashMap[String, Int] = ConcurrentHashMap[String, Int]() // will grow indefinitely as we do not garbage collect here
+  val copies: ConcurrentHashMap[String, Int] =
+    ConcurrentHashMap[String, Int]() // will grow indefinitely as we do not garbage collect here
 
   override def onRequestSenderForBundle(packet: Packet.RequestSenderForBundle)
       : Option[Packet.ResponseSenderForBundle] = {

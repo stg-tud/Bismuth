@@ -46,21 +46,21 @@ class ShapesPanel(val shapes: Signal[Iterable[Shape]]) extends Panel {
 
   object Mouse {
     class MouseButton {
-      val pressed: Evt[Point]  = Evt[Point]()
-      val released: Evt[Point] = Evt[Point]()
-      val clicked: Evt[Point]  = Evt[Point]()
-      val state: Signal[Boolean]    = (pressed.map(_ => true) || released.map(_ => false)).hold(false)
+      val pressed: Evt[Point]    = Evt[Point]()
+      val released: Evt[Point]   = Evt[Point]()
+      val clicked: Evt[Point]    = Evt[Point]()
+      val state: Signal[Boolean] = (pressed.map(_ => true) || released.map(_ => false)).hold(false)
     }
-    val _position: Var[Point]                    = Var[Point](Point(0, 0))
-    val x: Signal[Int]                            = _position.map(_.x)
-    val y: Signal[Int]                            = _position.map(_.y)
-    val wheel: Evt[Int]                        = Evt[Int]()
+    val _position: Var[Point]        = Var[Point](Point(0, 0))
+    val x: Signal[Int]               = _position.map(_.x)
+    val y: Signal[Int]               = _position.map(_.y)
+    val wheel: Evt[Int]              = Evt[Int]()
     val _buttons: Array[MouseButton] = (0 until MouseInfo.getNumberOfButtons).map { _ => new MouseButton }.toArray
 
     def button(id: Int): MouseButton = _buttons(id - 1)
-    val leftButton: MouseButton                   = button(1)
-    val middleButton: MouseButton                 = button(2)
-    val rightButton: MouseButton                  = button(3)
+    val leftButton: MouseButton      = button(1)
+    val middleButton: MouseButton    = button(2)
+    val rightButton: MouseButton     = button(3)
 
     def translatePoint(from: java.awt.Point): Point =
       Point(from.x - size.width / 2, from.y - size.height / 2)
@@ -82,7 +82,7 @@ class ShapesPanel(val shapes: Signal[Iterable[Shape]]) extends Panel {
     val pressed: Evt[KeyEvent]  = Evt[KeyEvent]()
     val typed: Evt[KeyEvent]    = Evt[KeyEvent]()
     val released: Evt[KeyEvent] = Evt[KeyEvent]()
-    val listener: KeyListener = new KeyListener {
+    val listener: KeyListener   = new KeyListener {
       override def keyPressed(e: KeyEvent): Unit  = pressed.fire(e)
       override def keyTyped(e: KeyEvent): Unit    = typed.fire(e)
       override def keyReleased(e: KeyEvent): Unit = released.fire(e)

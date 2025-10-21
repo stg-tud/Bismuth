@@ -22,12 +22,12 @@ object FClockNumericCircle extends SimpleSwingApplication {
   val NanoSecond = 1000000000L
 
   val nsTime: Var[Long] = Var(System.nanoTime())
-  def tick(): Unit = nsTime.set(System.nanoTime())
+  def tick(): Unit      = nsTime.set(System.nanoTime())
 
   val ticks: Event[Long] = nsTime.change.collect { case Diff(from, to) => to - from }
 
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val angle: Signal[Double] = nsTime.map(_.toDouble / NanoSecond * math.Pi)
 

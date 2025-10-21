@@ -10,9 +10,9 @@ class PoWBlockchainTest extends FunSuite {
     given Lattice[String] = Lattice.fromOrdering
     given Bottom[String]  = Bottom.provide("")
 
-    val genesisBlock = PoWBlockchain(Block("", None, "", Dot.zero))
-    val replicaA, replicaB, replicaC      = Replica(genesisBlock)
-    val difficulty   = 1
+    val genesisBlock                 = PoWBlockchain(Block("", None, "", Dot.zero))
+    val replicaA, replicaB, replicaC = Replica(genesisBlock)
+    val difficulty                   = 1
 
     val block0 = Block(replicaA.buffer.result.state.validHead, "Welcome to DARE", replicaA.nextDot, difficulty)
     replicaA.mod(_.addBlock(block0))
@@ -41,7 +41,7 @@ class PoWBlockchainTest extends FunSuite {
     given Bottom[String]  = Bottom.provide("")
 
     val replicaA, replicaB = Replica(PoWBlockchain(Block("", None, "", Dot.zero)))
-    val difficulty = 1
+    val difficulty         = 1
 
     val block1 = Block(replicaA.buffer.result.state.validHead, "Welcome to DARE", replicaA.nextDot, difficulty)
     replicaA.mod(_.addBlock(block1))
@@ -89,7 +89,7 @@ class PoWBlockchainTest extends FunSuite {
     given Bottom[String]  = Bottom.provide("")
 
     val replicaA, replicaB = Replica(PoWBlockchain(Block("", None, "", Dot.zero)))
-    val difficulty = 1
+    val difficulty         = 1
 
     val block1 = Block(replicaA.buffer.result.state.validHead, "Welcome To DARE", replicaA.nextDot, difficulty)
     replicaA.mod(_.addBlock(block1))
@@ -100,16 +100,23 @@ class PoWBlockchainTest extends FunSuite {
 
     val block4 = Block(replicaB.buffer.result.state.validHead, "Welcome to NOVA", replicaB.nextDot, difficulty)
     replicaB.mod(_.addBlock(block4))
-    val block5 = Block(replicaB.buffer.result.state.validHead, "Welcome to Costa da Caparica", replicaB.nextDot, difficulty)
+    val block5 =
+      Block(replicaB.buffer.result.state.validHead, "Welcome to Costa da Caparica", replicaB.nextDot, difficulty)
     replicaB.mod(_.addBlock(block5))
 
-    val block6 = Block(replicaA.buffer.result.state.validHead, "I hope you enjoyed the summer school", replicaA.nextDot, difficulty)
+    val block6 = Block(
+      replicaA.buffer.result.state.validHead,
+      "I hope you enjoyed the summer school",
+      replicaA.nextDot,
+      difficulty
+    )
     replicaA.mod(_.addBlock(block6))
 
     assertEquals(replicaA.buffer.result.state.validHead, block6.hash)
     assertEquals(replicaB.buffer.result.state.validHead, block5.hash)
 
-    val block7 = Block(replicaA.buffer.result.state.validHead, "We love CRDTs here at DARE", replicaA.nextDot, difficulty)
+    val block7 =
+      Block(replicaA.buffer.result.state.validHead, "We love CRDTs here at DARE", replicaA.nextDot, difficulty)
     replicaA.mod(_.addBlock(block7))
     Replica.quiescence(replicaA, replicaB)
 

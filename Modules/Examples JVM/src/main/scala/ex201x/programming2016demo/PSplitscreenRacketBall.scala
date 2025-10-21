@@ -10,7 +10,7 @@ import scala.swing.{Dimension, Frame, MainFrame, SimpleSwingApplication}
 
 object PSplitscreenRacketBall extends Main {
   class Opponent(panelSize: Signal[Dimension], shapes: Signal[List[Shape]]) extends SimpleSwingApplication {
-    val panel2            = new ShapesPanel(shapes)
+    val panel2                   = new ShapesPanel(shapes)
     override lazy val top: Frame = new MainFrame {
       title = "Player 2"
       contents = panel2
@@ -23,7 +23,7 @@ object PSplitscreenRacketBall extends Main {
   }
 
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val playingField = new PlayingField(panel.width.map(_ - 25), panel.height.map(_ - 25))
   val racket       = new Racket(playingField.width, true, playingField.height, panel.Mouse.y)

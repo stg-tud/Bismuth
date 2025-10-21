@@ -141,7 +141,7 @@ object ReShapes extends SimpleSwingApplication {
           override lazy val nextShape: Signal[Shape] =
             Signal { ui.shapeSelectionPanel.nextShape.value.copy(this) } // #SIG
           override lazy val strokeWidth: Signal[Int] = Signal { ui.strokeInputPanel.strokeWidth.value } // #SIG
-          override lazy val color: Signal[Color]       = Signal { ui.strokeInputPanel.color.value }       // #SIG
+          override lazy val color: Signal[Color]     = Signal { ui.strokeInputPanel.color.value }       // #SIG
 
           override lazy val executed: Event[Command] =                                 // #EVT
             value(panel.drawn || ui.shapePanel.deleted || menu.merged) && (_ => isCurrentState) // #EF //#EF //#EF

@@ -13,9 +13,11 @@ import scala.swing.{BoxPanel, Color, Component, Label, Orientation, ScrollPane}
 class ShapePanel extends BoxPanel(Orientation.Vertical) {
   def state = ReShapes.drawingSpaceState
 
-  val shapes: Signal[List[Shape]] = Signal.dynamic { if state.value != null then state.value.shapes.value else List.empty } // #SIG
+  val shapes: Signal[List[Shape]] =
+    Signal.dynamic { if state.value != null then state.value.shapes.value else List.empty } // #SIG
 
-  val shapeViews: Signal[List[ShapeView]] = Signal { shapes.value map { shape => new ShapeView(shape, state.value) } } // #SIG
+  val shapeViews: Signal[List[ShapeView]] =
+    Signal { shapes.value map { shape => new ShapeView(shape, state.value) } } // #SIG
 
   val shapesPanel = new ReBoxPanel(
     orientation = Orientation.Vertical,

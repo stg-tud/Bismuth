@@ -56,7 +56,7 @@ object ORacketMultiBall extends Main {
   }
 
   val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
-  val panel  = new ShapesPanel(shapes)
+  val panel                    = new ShapesPanel(shapes)
 
   val playingField = new PlayingField(panel.width.map(_ - 25), panel.height.map(_ - 25))
   val racket       = new Racket(playingField.width, true, playingField.height, panel.Mouse.y)

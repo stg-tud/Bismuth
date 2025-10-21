@@ -7,9 +7,9 @@ class JScrollableComponent extends JComponent with Scrollable {
   setFont(UIManager.getFont("TextField.font"))
   setCursor(new Cursor(Cursor.TEXT_CURSOR))
 
-  val metrics: FontMetrics    = getFontMetrics(getFont)
-  val unitHeight = metrics.getHeight
-  val unitWidth: Int  = metrics.charWidth('m')
+  val metrics: FontMetrics = getFontMetrics(getFont)
+  val unitHeight           = metrics.getHeight
+  val unitWidth: Int       = metrics.charWidth('m')
 
   override def setPreferredSize(preferredSize: Dimension): Unit = {
     super.setPreferredSize(preferredSize)

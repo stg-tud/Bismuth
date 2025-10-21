@@ -21,7 +21,7 @@ object CClockCirclingCircle extends SimpleSwingApplication {
   val NanoSecond = 1000000000L
 
   val nsTime: Var[Long] = Var(System.nanoTime())
-  def tick(): Unit = nsTime.set(System.nanoTime())
+  def tick(): Unit      = nsTime.set(System.nanoTime())
 
   val angle: Signal[Double] = nsTime.map(_.toDouble / NanoSecond * math.Pi)
 

@@ -23,9 +23,8 @@ case class PoWBlockchain[T](inner: Map[String, Block[T]], difficulty: Int)
 
   def validHead: String = heads.max
 
-  override def addBlock(newBlock: Block[T]): PoWBlockchain[T] = {
+  override def addBlock(newBlock: Block[T]): PoWBlockchain[T] =
     PoWBlockchain(Map(newBlock.hash -> newBlock), difficulty)
-  }
 
   @tailrec
   private def chainLength(start: String, length: Int = 0): Int = inner(start).previousHash match {

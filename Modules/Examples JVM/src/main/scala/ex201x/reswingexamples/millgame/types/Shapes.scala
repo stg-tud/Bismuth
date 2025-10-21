@@ -12,7 +12,7 @@ case class Presentation[T, +S](
     width: T = 1
 )(implicit ev$1: S => Shape[T], ev$2: Numeric[T]) {
   def toDouble: Presentation[Double, Shape[Double]] = Presentation(ev$1(shape).toDouble, color, width.toDouble)
-  def toInt: Presentation[Int, Shape[Int]]    = Presentation(ev$1(shape).toInt, color, width.toInt)
+  def toInt: Presentation[Int, Shape[Int]]          = Presentation(ev$1(shape).toInt, color, width.toInt)
 }
 
 //
@@ -35,15 +35,15 @@ case class Point[@specialized(Int, Double) T: Numeric](x: T, y: T) extends Shape
   def toDouble: Point[Double] = Point(x.toDouble, y.toDouble)
   def toInt: Point[Int]       = Point(x.toInt, y.toInt)
 
-  def +(p: Point[T]): Point[T] = Point(x + p.x, y + p.y)
-  def -(p: Point[T]): Point[T] = Point(x - p.x, y - p.y)
-  def unary_- : Point[T]        = Point(-x, -y)
-  def *(d: T): Point[T]        = Point(x * d, y * d)
-  def /(d: Double): Point[Double]   = Point(x.toDouble / d, y.toDouble / d)
+  def +(p: Point[T]): Point[T]    = Point(x + p.x, y + p.y)
+  def -(p: Point[T]): Point[T]    = Point(x - p.x, y - p.y)
+  def unary_- : Point[T]          = Point(-x, -y)
+  def *(d: T): Point[T]           = Point(x * d, y * d)
+  def /(d: Double): Point[Double] = Point(x.toDouble / d, y.toDouble / d)
 
-  def euclidian: Double                = math.sqrt((x * x + y * y).toDouble)
-  def normalize: Point[? >: T & Double <: T | Double]                = if x == 0 && y == 0 then this else this / euclidian
-  def distance(p: Point[T]): Double    = (p - this).euclidian
+  def euclidian: Double                               = math.sqrt((x * x + y * y).toDouble)
+  def normalize: Point[? >: T & Double <: T | Double] = if x == 0 && y == 0 then this else this / euclidian
+  def distance(p: Point[T]): Double                   = (p - this).euclidian
   def directionTo(p: Point[T]): Point[? >: T & Double <: T | Double] = (p - this).normalize
 }
 
@@ -61,7 +61,7 @@ object Line {
 
 case class Line[T](from: Point[T], to: Point[T]) extends Shape[T] {
   def toDouble: Shape[Double] = Line(from.toDouble, to.toDouble)
-  def toInt: Shape[Int]    = Line(from.toInt, to.toInt)
+  def toInt: Shape[Int]       = Line(from.toInt, to.toInt)
 
   def length: Double = from `distance` to
 }
@@ -76,7 +76,7 @@ object Rect {
 
 case class Rect[T: Numeric](anchor: Point[T], width: T, height: T) extends Shape[T] {
   def toDouble: Shape[Double] = Rect(anchor.toDouble, width.toDouble, height.toDouble)
-  def toInt: Shape[Int]    = Rect(anchor.toInt, width.toInt, height.toInt)
+  def toInt: Shape[Int]       = Rect(anchor.toInt, width.toInt, height.toInt)
 }
 
 //
@@ -89,5 +89,5 @@ object Circle {
 
 case class Circle[T: Numeric](center: Point[T], radius: T) extends Shape[T] {
   def toDouble: Shape[Double] = Circle(center.toDouble, radius.toDouble)
-  def toInt: Shape[Int]    = Circle(center.toInt, radius.toInt)
+  def toInt: Shape[Int]       = Circle(center.toInt, radius.toInt)
 }

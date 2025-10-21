@@ -16,8 +16,8 @@ abstract class Shape(
 ) {
 
   def selected: Boolean = drawingSpaceState.selectedShape.now == this
-  def start: Point    = if path.isEmpty then null else path.head
-  def end: Point      = if path.isEmpty then null else path.last
+  def start: Point      = if path.isEmpty then null else path.head
+  def end: Point        = if path.isEmpty then null else path.last
 
   def draw(g: Graphics2D): Unit = {
     if start != null && end != null then {

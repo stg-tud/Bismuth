@@ -34,15 +34,15 @@ object DropdownSample1 extends SimpleSwingApplication {
 
       // val listOfSignals = Signal {List(val1, val2, val3, val4)}
 
-      val dropdown       = new ReDynamicComboBox(options = options, selection = -1)
-      val selectionIndex: Signal[Int] = Signal { dropdown.selection.value }
+      val dropdown                            = new ReDynamicComboBox(options = options, selection = -1)
+      val selectionIndex: Signal[Int]         = Signal { dropdown.selection.value }
       val validSelection: Signal[Option[Int]] =
         Signal { if options.value.indices.contains(selectionIndex.value) then Some(selectionIndex.value) else None }
 
       // select the currently selected item manually
       val currentSelectedItem: Signal[Option[String]] = Signal { validSelection.value.map(i => options.value(i)) }
-      val outputString: Signal[String]        = Signal { currentSelectedItem.value.getOrElse("Nothing") }
-      val outputField         = new ReTextField(text = outputString)
+      val outputString: Signal[String]                = Signal { currentSelectedItem.value.getOrElse("Nothing") }
+      val outputField                                 = new ReTextField(text = outputString)
 
       title = "Dropdown example 1"
       contents = new BoxPanel(Orientation.Vertical) {

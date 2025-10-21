@@ -8,7 +8,7 @@ import scala.annotation.unused
 sealed abstract class ReSwingValue[T] {
   protected def signal: Lazy[Signal[T]]
   protected val event: Lazy[Evt[T]] = Lazy { Evt[T]() }
-  protected var latestValue: T         = null.asInstanceOf[T]
+  protected var latestValue: T      = null.asInstanceOf[T]
 
   private var init = null: (ReSwingValue[T] => Unit)
 
@@ -30,21 +30,21 @@ sealed abstract class ReSwingValue[T] {
 }
 
 final case class ReSwingNoValue[T]() extends ReSwingValue[T] {
-  protected val signal: Lazy[Signal[T]]                                    = Lazy { event().hold(latestValue) }
+  protected val signal: Lazy[Signal[T]]                   = Lazy { event().hold(latestValue) }
   private[ex2013reswing] def fixed                        = false
   private[ex2013reswing] def get                          = latestValue
   private[ex2013reswing] def use(setter: T => Unit): Unit = {}
 }
 
 final case class ReSwingValueValue[T](private val value: T) extends ReSwingValue[T] {
-  protected val signal: Lazy[Signal[T]]                              = Lazy { event() `hold` latestValue }
+  protected val signal: Lazy[Signal[T]]             = Lazy { event() `hold` latestValue }
   private[ex2013reswing] def fixed                  = false
   private[ex2013reswing] def get                    = latestValue
   private[ex2013reswing] def use(setter: T => Unit) = setter(value)
 }
 
 final case class ReSwingEventValue[T](private val value: Lazy[Event[T]]) extends ReSwingValue[T] {
-  protected val signal: Lazy[Signal[T]]                              = Lazy { (value() || event()) `hold` latestValue }
+  protected val signal: Lazy[Signal[T]]             = Lazy { (value() || event()) `hold` latestValue }
   private[ex2013reswing] def fixed                  = false
   private[ex2013reswing] def get                    = latestValue
   private[ex2013reswing] def use(setter: T => Unit) = {
@@ -54,9 +54,9 @@ final case class ReSwingEventValue[T](private val value: Lazy[Event[T]]) extends
 }
 
 final case class ReSwingSignalValue[T](private val value: Lazy[Signal[T]]) extends ReSwingValue[T] {
-  protected val signal: Lazy[Signal[T]]             = Lazy { (value().changed || event()) `hold` value().readValueOnce }
-  private[ex2013reswing] def fixed = true
-  private[ex2013reswing] def get   = value().readValueOnce
+  protected val signal: Lazy[Signal[T]] = Lazy { (value().changed || event()) `hold` value().readValueOnce }
+  private[ex2013reswing] def fixed      = true
+  private[ex2013reswing] def get        = value().readValueOnce
   private[ex2013reswing] def use(setter: T => Unit): Unit = {
     value().changed `observe` setter; setter(value().readValueOnce)
   }

@@ -18,7 +18,7 @@ case class PoSBlockchain[T](
     proposedBlocks: ReplicatedSet[Block[T]], // should we use a remove wins set instead?
 ) extends Blockchain[T, PoSBlockchain[T]](inner) {
 
-  private final val randomPrime: Long = 2147483647
+  final private val randomPrime: Long = 2147483647
 
   given headOrdering: Ordering[String] = Ordering.by[String, (Long, String)] { hash =>
     (stakeWeightOfChain(hash), hash)

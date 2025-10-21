@@ -82,24 +82,24 @@ class TextArea extends ReComponent {
   // If there is no selection the dot and mark will be equal.
   // [same semantics as for: javax.swing.text.Caret]
   object caret {
-    def dot               = buffer.caret
+    def dot                     = buffer.caret
     def dot_=(value: Int): Unit = buffer.caretChanged.fire(value)
 
     // dot as position (row and column)
-    private val dotPosSignal      = Signal { LineOffset.position(buffer.iterable.value, dot.value) }
-    def dotPos                    = dotPosSignal
+    private val dotPosSignal            = Signal { LineOffset.position(buffer.iterable.value, dot.value) }
+    def dotPos                          = dotPosSignal
     def dotPos_=(value: Position): Unit = dot = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
     private val markVar = Var(0)
 
     // mark as offset
-    private val markSignal = Signal { markVar.value }
-    def mark               = markSignal
+    private val markSignal       = Signal { markVar.value }
+    def mark                     = markSignal
     def mark_=(value: Int): Unit = if value >= 0 && value <= buffer.length.readValueOnce then markVar `set` value
 
     // mark as position (row and column)
-    private val markPosSignal      = Signal { LineOffset.position(buffer.iterable.value, mark.value) }
-    def markPos                    = markPosSignal
+    private val markPosSignal            = Signal { LineOffset.position(buffer.iterable.value, mark.value) }
+    def markPos                          = markPosSignal
     def markPos_=(value: Position): Unit = mark = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
     // caret location as offset
@@ -110,11 +110,11 @@ class TextArea extends ReComponent {
     }
 
     // caret location as position (row and column)
-    def position                    = dotPos
+    def position                          = dotPos
     def position_=(value: Position): Unit = offset = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
-    protected[TextArea] val blink: Timer   = new Timer(500) start
-    protected[TextArea] val steady  = new Timer(500, false)
+    protected[TextArea] val blink: Timer             = new Timer(500) start
+    protected[TextArea] val steady                   = new Timer(500, false)
     protected[TextArea] val visible: Signal[Boolean] = blink.fired.toggle(
       Signal { hasFocus.value },
       Signal { hasFocus.value && steady.running.value }

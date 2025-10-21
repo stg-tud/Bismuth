@@ -2,7 +2,7 @@ package ex201x.reswingexamples.millgame.versions.signals
 
 import ex2013reswing.{ReComponent, ReLabel, ReSwingValue}
 import ex201x.reswingexamples.millgame.*
-import ex201x.reswingexamples.millgame.types.{Point, *}
+import ex201x.reswingexamples.millgame.types.*
 import reactives.default.*
 import reactives.operator.Event
 
@@ -57,10 +57,10 @@ object MainWindow extends SimpleSwingApplication {
 }
 
 class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dimension(500, 500)) {
-  val DotRadius     = 5
-  val StoneRadius   = 15
-  val ClickArea     = 50
-  val SizePercent   = 0.8
+  val DotRadius            = 5
+  val StoneRadius          = 15
+  val ClickArea            = 50
+  val SizePercent          = 0.8
   val MiddlePercent: Float = 2f / 3
   val InnerPercent: Float  = 1f / 3
 

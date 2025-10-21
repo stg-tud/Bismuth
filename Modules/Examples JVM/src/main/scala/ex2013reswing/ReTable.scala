@@ -182,11 +182,11 @@ class ReTable[A <: AnyRef](
   selectAll.using(() => peer.peer.selectAll())
   clearSelection.using(() => peer.peer.clearSelection())
 
-  val changed: ReSwingEvent[TableChanged]          = ReSwingEvent `using` classOf[TableChanged]
+  val changed: ReSwingEvent[TableChanged]                   = ReSwingEvent `using` classOf[TableChanged]
   val structureChanged: ReSwingEvent[TableStructureChanged] = ReSwingEvent `using` classOf[TableStructureChanged]
-  val updated: ReSwingEvent[TableUpdated]          = ReSwingEvent `using` classOf[TableUpdated]
-  val rowsAdded: ReSwingEvent[TableRowsAdded]        = ReSwingEvent `using` classOf[TableRowsAdded]
-  val rowsRemoved: ReSwingEvent[TableRowsRemoved]      = ReSwingEvent `using` classOf[TableRowsRemoved]
+  val updated: ReSwingEvent[TableUpdated]                   = ReSwingEvent `using` classOf[TableUpdated]
+  val rowsAdded: ReSwingEvent[TableRowsAdded]               = ReSwingEvent `using` classOf[TableRowsAdded]
+  val rowsRemoved: ReSwingEvent[TableRowsRemoved]           = ReSwingEvent `using` classOf[TableRowsRemoved]
 
   class ReSelection(
       val intervalMode: ReSwingValue[IntervalMode.Value],
@@ -235,7 +235,7 @@ class ReTable[A <: AnyRef](
     )
 
     val columnsSelected: ReSwingEvent[TableColumnsSelected] = ReSwingEvent.using(peer, classOf[TableColumnsSelected])
-    val rowsSelected: ReSwingEvent[TableRowsSelected]    = ReSwingEvent.using(peer, classOf[TableRowsSelected])
+    val rowsSelected: ReSwingEvent[TableRowsSelected]       = ReSwingEvent.using(peer, classOf[TableRowsSelected])
   }
 
   object selection
@@ -277,8 +277,8 @@ object ReTable {
     def getColumnNames  = columnNames
     def getCellEditable = editable
 
-    def getRowCount                    = rowData.length
-    def getColumnCount                 = columnNames.length
+    def getRowCount                            = rowData.length
+    def getColumnCount                         = columnNames.length
     def getValueAt(row: Int, col: Int): Object = {
       if rowData.isDefinedAt(row) then {
         val data = rowData(row)
@@ -290,7 +290,7 @@ object ReTable {
         null
     }
 
-    override def getColumnName(column: Int): String            = columnNames(column).toString
+    override def getColumnName(column: Int): String             = columnNames(column).toString
     override def isCellEditable(row: Int, column: Int): Boolean =
       if editable != null then
         editable(row, column)

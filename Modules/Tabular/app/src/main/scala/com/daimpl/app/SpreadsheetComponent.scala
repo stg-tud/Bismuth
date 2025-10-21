@@ -6,7 +6,7 @@ import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
 import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
-import japgolly.scalajs.react.{ReactDragEvent, ReactMouseEvent, *}
+import japgolly.scalajs.react.*
 import org.scalajs.dom
 import rdts.base.{LocalUid, Uid}
 

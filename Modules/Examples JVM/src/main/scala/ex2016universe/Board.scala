@@ -15,15 +15,15 @@ object Board {
   * A Board is infinite, but width and height specify the area being displayed.
   */
 class Board(val width: Int, val height: Int) {
-  val allPositions: Set[Pos]                     = (for x <- 0 to width; y <- 0 to height yield Pos(x, y)).toSet
-  val elementSpawned: Evt[BoardElement]                   = Evt[BoardElement]()
-  val elementRemoved: Evt[BoardElement]                   = Evt[BoardElement]()
-  val animalSpawned: Event[BoardElement]                    = elementSpawned && (_.isAnimal)
-  val animalRemoved: Event[BoardElement]                    = elementRemoved && (_.isAnimal)
-  val animalsBorn: Signal[Int]                      = animalSpawned.count()
-  val animalsDied: Signal[Int]                      = animalRemoved.count()
-  val animalsAlive: Signal[Int]                     = Signal.lift(animalsBorn, animalsDied) { _ - _ }
-  var elements: Map[Pos, BoardElement] = scala.collection.concurrent.TrieMap()
+  val allPositions: Set[Pos]             = (for x <- 0 to width; y <- 0 to height yield Pos(x, y)).toSet
+  val elementSpawned: Evt[BoardElement]  = Evt[BoardElement]()
+  val elementRemoved: Evt[BoardElement]  = Evt[BoardElement]()
+  val animalSpawned: Event[BoardElement] = elementSpawned && (_.isAnimal)
+  val animalRemoved: Event[BoardElement] = elementRemoved && (_.isAnimal)
+  val animalsBorn: Signal[Int]           = animalSpawned.count()
+  val animalsDied: Signal[Int]           = animalRemoved.count()
+  val animalsAlive: Signal[Int]          = Signal.lift(animalsBorn, animalsDied) { _ - _ }
+  var elements: Map[Pos, BoardElement]   = scala.collection.concurrent.TrieMap()
 
   /** adds a board element at given position */
   def add(be: BoardElement, pos: Pos): Unit = {

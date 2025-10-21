@@ -4,8 +4,8 @@ import reactives.default.*
 
 class Plant(using _world: World) extends BoardElement {
 
-  val energy: Var[Int]                     = Var(Plant.Energy)
-  val isDead: Signal[Boolean]                     = energy `map` (_ <= 0)
+  val energy: Var[Int]           = Var(Plant.Energy)
+  val isDead: Signal[Boolean]    = energy `map` (_ <= 0)
   val age: Signal[Int]           = world.time.tick.count()
   val grows: Event[Int]          = age.changed && { _ % Plant.GrowTime == 0 }
   val size: Signal[Int]          = grows.iterate(0)(acc => math.min(Plant.MaxSize, acc + 1))
