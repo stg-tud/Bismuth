@@ -28,6 +28,8 @@ object Settings {
     typeParameterShadow(Compile / compile),
     privateShadow(Compile / compile),
     recurseWithDefault(Compile / compile, Test / compile),
+    semanticdbEnabled := true,
+    unusedWarnings(Compile / compile)
   )
 
   val scala3defaultsExtra = Def.settings(
@@ -121,6 +123,8 @@ object Settings {
         "-Wunused:implicits",
         // (UNSAFE) Warn if a variable bound in a pattern is unused. This warning can generate false positive, as warning cannot be suppressed yet.
         // "-Wunused:unsafe-warn-patvars",
+        // also make unused warnings not warnings but just infos
+        "-Wconf:id=E198:info",
       )
     }
   }

@@ -22,3 +22,4 @@ addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.4")
 
 // tooling
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.4")
