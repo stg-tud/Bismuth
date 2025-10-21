@@ -3,9 +3,9 @@ package rdts.protocols.old.simplified
 import rdts.base.Lattice.mapLattice
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.protocols.Participants.participants
-import Paxos.given
 import rdts.datatypes.LastWriterWins
+import rdts.protocols.Participants.participants
+import rdts.protocols.old.simplified.Paxos.given
 import rdts.protocols.{Consensus, Participants}
 
 import scala.math.Ordering.Implicits.infixOrderingOps

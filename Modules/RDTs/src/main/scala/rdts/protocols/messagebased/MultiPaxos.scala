@@ -2,8 +2,8 @@ package rdts.protocols.messagebased
 
 import rdts.base.LocalUid
 import rdts.base.LocalUid.replicaId
-import Message.{Prepare, Promise}
 import rdts.protocols.BallotNum
+import rdts.protocols.messagebased.Message.{Prepare, Promise}
 
 enum Message:
   case Prepare(ballotNum: BallotNum)
@@ -18,11 +18,11 @@ class MultiPaxos[A](using LocalUid) extends Messaging:
   var promises: Set[Message.Promise] = Set.empty
   var receivedVal: Option[A]         = None
 
-  def phase1a =
+  def phase1a: Unit =
     currentBallot = currentBallot.copy(counter = currentBallot.counter + 1)
     broadcast(Prepare(currentBallot))
 
-  def phase1b(ballotNum: BallotNum) =
+  def phase1b(ballotNum: BallotNum): Unit =
     broadcast(Promise(ballotNum))
 
   def phase2a = ???

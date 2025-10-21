@@ -4,7 +4,7 @@ import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.Epoch
-import Consensus.given
+import rdts.protocols.Consensus.given
 import rdts.time.Time
 
 import scala.collection.immutable.NumericRange

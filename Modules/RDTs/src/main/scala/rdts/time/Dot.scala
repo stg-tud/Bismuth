@@ -17,7 +17,7 @@ case class Dot(place: Uid, time: Time) {
 
 object Dot {
 
-  def zero = Dot(Uid.zero, 0)
+  def zero: Dot = Dot(Uid.zero, 0)
 
   /** While this seems plausible, it might, in general, be better to treat all dots as incomparable, we assume them to increase monotonically, but that is for optimization purposes, not because we use it anywhere else */
   @deprecated("probably not a good idea")

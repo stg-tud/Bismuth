@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, DecoratedLattice, Decompose, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap.Entry
 import rdts.time.Dots
 

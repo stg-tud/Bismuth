@@ -134,7 +134,7 @@ trait Event[+T] extends MacroAccess[Option[T]] with Disconnectable {
     * @group conversion
     */
   final def list[A >: T](n: Int)(using ticket: CreationTicket[State]): Signal[LinearSeq[A]] = {
-    if n < 0 then throw new IllegalArgumentException(s"length must be positive")
+    if n < 0 then throw new IllegalArgumentException("length must be positive")
     else if n == 0 then Var(Nil)
     else
       fold(Queue[A]()) { (queue: Queue[A], v: T) =>

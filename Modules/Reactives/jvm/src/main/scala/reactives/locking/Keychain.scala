@@ -12,7 +12,7 @@ object Keychain {
 
 class Keychain[InterTurn](val id: Long) {
 
-  override def toString = s"Keychain($id)"
+  override def toString: String = s"Keychain($id)"
 
   /** synchronized on this */
   private val keys: util.ArrayDeque[Key[InterTurn]] = new util.ArrayDeque[Key[InterTurn]](2)
@@ -49,7 +49,7 @@ class Keychain[InterTurn](val id: Long) {
     val head = keys.poll()
     assert(head eq key, s"tried to drop $key from $this but is not head! ($keys)")
     val locks = key.grabLocks()
-    assert(locks.toSet.size == locks.size, s"duplicated locks detected")
+    assert(locks.toSet.size == locks.size, "duplicated locks detected")
     if keys.isEmpty then {
       locks.foreach(_.transfer(null, key))
     } else {

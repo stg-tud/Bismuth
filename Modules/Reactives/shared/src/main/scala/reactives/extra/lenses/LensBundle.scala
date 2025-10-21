@@ -100,7 +100,7 @@ trait BijectiveLens[M, V] extends Lens[M, V] {
   /** Override the toModel function to make the lens bijective */
   def toModel(v: V): M
 
-  override def toModel(v: V, m: M) = toModel(v)
+  override def toModel(v: V, m: M): M = toModel(v)
 
   /** Inverts the lens such that e.g. an AddLens functions like a SubLens. Note that this does not change the model-view relationship,
     * i.e. the asymmetry is not inverted.

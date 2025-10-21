@@ -34,7 +34,7 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
 
 object MultiVersionRegister {
 
-  def of[A](a: A)(using LocalUid) = empty.write(a)
+  def of[A](a: A)(using LocalUid): MultiVersionRegister[A] = empty.write(a)
 
   given bottomInstance[A]: Bottom[MultiVersionRegister[A]] = Bottom.derived
   def empty[A]: MultiVersionRegister[A]                    = Bottom.empty

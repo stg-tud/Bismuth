@@ -7,7 +7,7 @@ import rdts.time.{Dot, Dots}
 import scala.annotation.tailrec
 
 case class CausalStore[A](pending: Set[CausalDelta[A]], context: Dots, state: Option[A]) {
-  def add(delta: A)(using LocalUid) =
+  def add(delta: A)(using LocalUid): CausalStore[A] =
     val nextDot = context.nextDot
     CausalStore(Set(CausalDelta(nextDot, context, delta)), Dots.empty, None)
 

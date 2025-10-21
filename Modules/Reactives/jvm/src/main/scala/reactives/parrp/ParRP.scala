@@ -4,7 +4,7 @@ import reactives.locking.*
 import reactives.scheduler.Levelbased
 
 object ParRPDefault extends ParRP {
-  val scheduler = parrpWithBackoff(() => new Backoff())
+  val scheduler: TwoVersionScheduler[ParRPTransaction] = parrpWithBackoff(() => new Backoff())
 }
 trait ParRP extends Levelbased {
 

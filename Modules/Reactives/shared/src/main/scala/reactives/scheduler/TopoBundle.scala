@@ -97,7 +97,7 @@ trait TopoBundle {
 
     var idle = true
 
-    def reset(r: ReSource) = r.state.reset(r.commit(r.state.value))
+    def reset(r: ReSource): Unit = r.state.reset(r.commit(r.state.value))
 
     def beforeCleanupHook(all: Seq[ReSource], initialWrites: Set[ReSource]): Unit = ()
 

@@ -165,14 +165,14 @@ trait Twoversion {
 
     val token: Token = new Token()
 
-    val toCommit      = ListBuffer[ReSource]()
-    val observers     = ListBuffer[Observation]()
-    val followups     = ListBuffer[Observation]()
-    var commitStarted = false
+    val toCommit: ListBuffer[ReSource]     = ListBuffer[ReSource]()
+    val observers: ListBuffer[Observation] = ListBuffer[Observation]()
+    val followups: ListBuffer[Observation] = ListBuffer[Observation]()
+    var commitStarted                      = false
 
     override def schedule(commitable: ReSource): Unit = { toCommit += commitable; () }
 
-    def checkNotCommitted() =
+    def checkNotCommitted(): Unit =
       if commitStarted then
         throw new IllegalStateException:
           s"Added observation to transaction ($this), but it is too late in its lifecycle. This may happen due to capturing a transaction reference such that it survives outside of its dynamic scope."
@@ -196,7 +196,7 @@ trait Twoversion {
 
     override def rollbackPhase(): Unit = toCommit.foreach(r => r.state.release())
 
-    def handleObservations(observations: Iterable[Observation]) = {
+    def handleObservations(observations: Iterable[Observation]): Unit = {
       var failure: List[Exception] = Nil
 
       observations.foreach { n =>

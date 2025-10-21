@@ -3,7 +3,6 @@ package rdts.filters
 import rdts.base.Bottom
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree.allow
-import rdts.time.{ArrayRanges, Dots}
 
 import scala.annotation.unused
 import scala.deriving.Mirror

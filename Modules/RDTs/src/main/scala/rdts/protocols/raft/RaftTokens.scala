@@ -7,7 +7,7 @@ import rdts.syntax.DeltaBuffer
 import scala.util.Random
 
 case class RaftToken(id: Long, owner: Uid, value: String) derives CanEqual {
-  def same(other: RaftToken) = owner == other.owner && value == other.value
+  def same(other: RaftToken): Boolean = owner == other.owner && value == other.value
 }
 
 case class RaftTokens(

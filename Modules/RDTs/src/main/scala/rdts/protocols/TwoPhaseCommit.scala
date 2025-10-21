@@ -2,8 +2,8 @@ package rdts.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{LocalUid, Uid}
-import Participants.participants
-import PrepareAbort.{Abort, Prepare}
+import rdts.protocols.Participants.participants
+import rdts.protocols.PrepareAbort.{Abort, Prepare}
 
 enum PrepareAbort:
   case Prepare

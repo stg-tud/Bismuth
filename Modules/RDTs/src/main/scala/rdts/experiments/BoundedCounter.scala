@@ -1,14 +1,14 @@
 package rdts.experiments
 
 import rdts.base.{Lattice, LocalUid, Uid}
-import BoundedCounter.neutral
 import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
+import rdts.experiments.BoundedCounter.neutral
 
 case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCounter, participants: Set[Uid]) {
 
   type Delta = BoundedCounter
 
-  def current = this
+  def current: BoundedCounter = this
 
   def addParticipants(part: Set[Uid]): Delta = neutral.copy(participants = part)
 

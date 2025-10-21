@@ -1,7 +1,7 @@
 package rdts.filters
 
 import rdts.base.{Bottom, Lattice}
-import Permission.*
+import rdts.filters.Permission.*
 import rdts.filters.PermissionTree.{allow, lattice}
 
 import scala.annotation.{tailrec, targetName}

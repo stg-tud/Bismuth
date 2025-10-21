@@ -42,10 +42,10 @@ object Sourcecode {
   object Enclosing { inline given generate: Enclosing = ${ Macros.enclosingImpl } }
 
   object Util {
-    def isSynthetic(using Quotes)(s: quotes.reflect.Symbol) = isSyntheticName(getName(s))
-    def isSyntheticName(name: String)                       =
+    def isSynthetic(using Quotes)(s: quotes.reflect.Symbol): Boolean = isSyntheticName(getName(s))
+    def isSyntheticName(name: String): Boolean                       =
       name == "<init>" || (name.startsWith("<local ") && name.endsWith(">")) || name == "$anonfun" || name == "macro"
-    def getName(using Quotes)(s: quotes.reflect.Symbol) = {
+    def getName(using Quotes)(s: quotes.reflect.Symbol): String = {
       s.name.trim
         .stripSuffix("$") // meh
     }

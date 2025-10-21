@@ -40,11 +40,11 @@ object AutomergyOpGraphLWW {
         )
       )
 
-    def set(value: T) = applyOp(Op.set(value))
+    def set(value: T): OpGraph[T] = applyOp(Op.set(value))
 
-    def del() = applyOp(Op.del)
+    def del(): OpGraph[T] = applyOp(Op.del)
 
-    def undo(anchor: Id) = applyOp(Op.undo(anchor))
+    def undo(anchor: Id): OpGraph[T] = applyOp(Op.undo(anchor))
   }
 
   object OpGraph {

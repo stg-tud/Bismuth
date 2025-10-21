@@ -441,7 +441,7 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
         else if counter == 1 then
           elements.remove(value)
         else
-          throw new Exception(s"Cannot remove element as it cannot be found")
+          throw new Exception("Cannot remove element as it cannot be found")
     }
     ticket.recordChange(new InitialChange[State] {
       override val source: IncSeq.this.type                              = IncSeq.this

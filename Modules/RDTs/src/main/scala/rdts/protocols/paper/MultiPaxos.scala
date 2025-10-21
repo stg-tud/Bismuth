@@ -3,9 +3,8 @@ package rdts.protocols.paper
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.Epoch
-import Paxos.given
-import rdts.base.LocalUid.replicaId
 import rdts.protocols.Participants
+import rdts.protocols.paper.Paxos.given
 import rdts.time.Time
 
 import scala.collection.immutable.NumericRange

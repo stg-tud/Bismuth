@@ -15,7 +15,7 @@ case class ReplicatedSet[E](inner: Map[E, Dots], deleted: Dots) {
 
   def contains(elem: E): Boolean = inner.contains(elem)
 
-  lazy val observed = inner.values.foldLeft(deleted)(_ `union` _)
+  lazy val observed: Dots = inner.values.foldLeft(deleted)(_ `union` _)
 
   def add(using LocalUid)(e: E): Delta = {
     val nextDot = observed.nextDot(LocalUid.replicaId)

@@ -1,11 +1,11 @@
 package rdts.protocols.paper
 
-import Util.*
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
-import Util.Agreement.*
-import rdts.protocols.Participants.participants
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Participants
+import rdts.protocols.Participants.participants
+import rdts.protocols.paper.Util.*
+import rdts.protocols.paper.Util.Agreement.*
 
 case class Vote[A](voter: Uid, value: A)
 
@@ -25,7 +25,7 @@ case class Voting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
         case _                                       => Undecided
 
   // helper functions
-  def majority(using Participants) =
+  def majority(using Participants): Int =
     participants.size / 2 + 1
   def hasDuplicateVotes: Boolean =
     votes.groupBy(_.voter).values.filter(_.size > 1).nonEmpty

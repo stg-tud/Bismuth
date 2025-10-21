@@ -2,10 +2,10 @@ package rdts.protocols.paper
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.protocols.{Consensus, Participants}
 import rdts.protocols.paper.Paxos.given
 import rdts.protocols.paper.Util.*
 import rdts.protocols.paper.Util.Agreement.*
+import rdts.protocols.{Consensus, Participants}
 
 // Paxos PRDT
 type LeaderElection = Voting[Uid]

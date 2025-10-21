@@ -1,7 +1,7 @@
 package rdts.datatypes
 
 import rdts.base.*
-import ReplicatedList.headDot
+import rdts.datatypes.ReplicatedList.headDot
 import rdts.time.{CausalTime, Dot, Dots}
 
 import scala.collection.mutable.ArrayBuffer
@@ -81,8 +81,8 @@ case class ReplicatedList[E](
 
   def read(i: Int): Option[E] = toList.lift(i)
 
-  def insert(index: Int, elem: E)(using LocalUid)   = insertAt(index, elem)
-  def insertAt(index: Int, elem: E)(using LocalUid) = {
+  def insert(index: Int, elem: E)(using LocalUid): ReplicatedList[E]   = insertAt(index, elem)
+  def insertAt(index: Int, elem: E)(using LocalUid): ReplicatedList[E] = {
     val pos = findOptimizedInsertionPoint(dotList(index))
     insertAfter(pos, Iterable(elem))
   }
@@ -119,9 +119,9 @@ case class ReplicatedList[E](
     insertAfter(pos, elements)
   }
 
-  def prependAll(e: Iterable[E])(using LocalUid) = insertAfter(headDot, e)
-  def prepend(e: E)(using LocalUid)              = insertAfter(dotList(0), List(e))
-  def append(e: E)(using LocalUid)               =
+  def prependAll(e: Iterable[E])(using LocalUid): ReplicatedList[E] = insertAfter(headDot, e)
+  def prepend(e: E)(using LocalUid): ReplicatedList[E]              = insertAfter(dotList(0), List(e))
+  def append(e: E)(using LocalUid): ReplicatedList[E]               =
     val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(ReplicatedList.headDot))
     insertAfter(pos, List(e))
 

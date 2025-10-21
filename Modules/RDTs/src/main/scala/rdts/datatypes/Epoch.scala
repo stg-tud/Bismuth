@@ -2,7 +2,7 @@ package rdts.datatypes
 
 import rdts.base.Lattice.OrdinalLattices
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.time.{Dots, Time}
+import rdts.time.Time
 
 case class Epoch[E](counter: Time, value: E) {
 

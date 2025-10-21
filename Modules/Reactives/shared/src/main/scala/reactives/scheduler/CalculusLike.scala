@@ -16,7 +16,7 @@ object CalculusLike {
     */
   class StoreValue[V](var value: V) {
     var inputs: Set[ReSource.of[State]] = Set.empty
-    override def toString: String       = s""
+    override def toString: String       = ""
   }
 
   /** The main task of the initializer is to handle creation of reactives,
@@ -79,8 +79,8 @@ object CalculusLike {
 
     override def schedulerName: String = "FormalizationLike"
 
-    var allReactives                           = Set.empty[ReSource.of[State]]
-    var currentPropagation: Propagation | Null = null
+    var allReactives: Set[ReSource { type State[V] = StoreValue[V] }] = Set.empty[ReSource.of[State]]
+    var currentPropagation: Propagation | Null                        = null
 
     var idle = true
 
@@ -121,7 +121,7 @@ object CalculusLike {
             val propagation = Propagation(active = sources, processed = sources, allReactives, transaction)
             println(s"starting propagation $propagation")
             val result = propagation.run()
-            println(s"done activate")
+            println("done activate")
 
             // wrapup, this is for a rarely used rescala features, where transactions can
             // do some cleanup when they complete. Not supported in the formalization

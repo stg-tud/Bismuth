@@ -3,7 +3,6 @@ package rdts.protocols
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Orderings, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.time.Dots
 
 case class Ownership(epoch: Long, owner: Uid)
 
@@ -33,7 +32,7 @@ case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
         case Some(nextOwner) =>
           Token(Ownership(os.epoch + 1, nextOwner), ReplicatedSet.empty)
 
-  def selectFrom(wants: ReplicatedSet[Uid])(using LocalUid) =
+  def selectFrom(wants: ReplicatedSet[Uid])(using LocalUid): Option[Uid] =
     // We find the “largest” ID that wants the token.
     // This is incredibly “unfair” but does prevent deadlocks in case someone needs multiple tokens.
     wants.elements.maxOption.filter(id => id != replicaId)
@@ -51,6 +50,6 @@ case class ExampleTokens(
 )
 
 case class Exclusive[T: {Bottom}](token: Token, value: T) {
-  def transform(f: T => T)(using LocalUid) =
+  def transform(f: T => T)(using LocalUid): T =
     if token.isOwner then f(value) else Bottom.empty
 }

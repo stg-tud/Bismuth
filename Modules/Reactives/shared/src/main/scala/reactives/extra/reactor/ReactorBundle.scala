@@ -115,7 +115,7 @@ object Reactor {
     */
   def once[T](
       initialValue: T
-  )(initialStage: Stage[T])(using creationTicket: CreationTicket[State]) =
+  )(initialStage: Stage[T])(using creationTicket: CreationTicket[State]): Reactor[T] =
     createReactor(initialValue, initialStage)
 
   /** Creates a new Reactor, which starts from the beginning, once it's finished.
@@ -127,7 +127,7 @@ object Reactor {
     */
   def loop[T](
       initialValue: T
-  )(initialStage: Stage[T])(using creationTicket: CreationTicket[State]) = {
+  )(initialStage: Stage[T])(using creationTicket: CreationTicket[State]): Reactor[T] = {
     val loopingStage = initialStage.copy(List(ReactorAction.LoopAction(initialStage, initialStage)))
     createReactor(initialValue, loopingStage)
   }
