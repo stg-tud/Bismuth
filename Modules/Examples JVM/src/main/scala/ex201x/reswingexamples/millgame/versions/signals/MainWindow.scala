@@ -4,11 +4,11 @@ import ex2013reswing.{ReComponent, ReLabel, ReSwingValue}
 import ex201x.reswingexamples.millgame.*
 import ex201x.reswingexamples.millgame.types.{Point, *}
 import reactives.default.*
+import reactives.operator.Event
 
 import java.awt.{BasicStroke, Color, Dimension, Font, RenderingHints}
 import scala.swing.*
 import scala.swing.event.*
-import reactives.operator.Event
 
 object MainWindow extends SimpleSwingApplication {
 
