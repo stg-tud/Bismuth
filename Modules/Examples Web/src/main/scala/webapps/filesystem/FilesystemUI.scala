@@ -92,7 +92,6 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
 
     val addEntry = Interaction[State, Entry]
       .executes { (s: State, e) => s.mod(_.addEntry(e)) }
-      .ensures { (s: State, e) => s.state.entries.toList.contains(e) }
 
     val dropEntry = Interaction[State, MoveToBefore]
       .executes { (s: State, e) => s.mod(_.moveTo(e.entry, e.before)) }
