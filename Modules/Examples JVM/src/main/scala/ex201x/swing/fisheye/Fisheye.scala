@@ -3,9 +3,8 @@ package ex201x.swing.fisheye
 import ex201x.Mouse
 import reactives.default.*
 
-import java.awt.{Color, Dimension, Graphics2D, Rectangle}
+import java.awt.{Color, Dimension, Graphics2D, Point, Rectangle}
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
-import java.awt.Point
 
 object Fisheye extends SimpleSwingApplication {
   lazy val application = new Fisheye

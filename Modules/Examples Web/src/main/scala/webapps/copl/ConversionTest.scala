@@ -1,7 +1,7 @@
 package webapps.copl
 
-import org.scalajs.dom.document
 import org.scalajs.dom.html.{Input, Select}
+import org.scalajs.dom.{HTMLDivElement, document}
 import reactives.default.*
 import reactives.extra.lenses.*
 import scalatags.JsDom
@@ -9,7 +9,6 @@ import scalatags.JsDom.TypedTag
 import scalatags.JsDom.all.*
 
 import scala.scalajs.js.annotation.JSExportTopLevel
-import org.scalajs.dom.HTMLDivElement
 
 object ConversionTest {
 

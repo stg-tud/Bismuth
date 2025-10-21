@@ -4,8 +4,7 @@ import ex201x.programming2016demo.GModularClockCircle.Clock
 import ex201x.programming2016demo.ui.ShapesPanel
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 abstract class Main extends SimpleSwingApplication {
   val panel: ShapesPanel

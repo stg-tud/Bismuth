@@ -5,8 +5,7 @@ import reactives.default.*
 
 import scala.math.min
 import scala.swing.BorderPanel.Position
-import scala.swing.{BorderPanel, Dimension, GridPanel, MainFrame, ScrollPane, SimpleSwingApplication}
-import scala.swing.Frame
+import scala.swing.{BorderPanel, Dimension, Frame, GridPanel, MainFrame, ScrollPane, SimpleSwingApplication}
 
 object ApplicationSwingTextArea extends SimpleSwingApplication {
   // reactive components

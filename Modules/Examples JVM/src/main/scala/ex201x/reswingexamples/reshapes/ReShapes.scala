@@ -10,15 +10,14 @@ import ex201x.reswingexamples.reshapes.ui.panels.{CommandPanel, DrawingPanel, In
 import ex201x.reswingexamples.reshapes.util.ReactiveUtil.{UnionEvent, bilateralValues}
 import reactives.default.*
 
+import java.awt.Color
 import java.net.{BindException, ConnectException}
 import javax.swing.JOptionPane
 import scala.collection.mutable.HashMap
 import scala.swing.BorderPanel.Position
 import scala.swing.TabbedPane.Page
 import scala.swing.event.SelectionChanged
-import scala.swing.{Action, BorderPanel, Component, Dimension, MainFrame, Menu, MenuBar, MenuItem, Separator, SimpleSwingApplication, Swing, TabbedPane}
-import scala.swing.Frame
-import java.awt.Color
+import scala.swing.{Action, BorderPanel, Component, Dimension, Frame, MainFrame, Menu, MenuBar, MenuItem, Separator, SimpleSwingApplication, Swing, TabbedPane}
 
 object ReShapes extends SimpleSwingApplication {
   private val panelDrawingSpaceStates = new HashMap[TabbedPane.Page, (DrawingSpaceState, NetworkSpaceState)]

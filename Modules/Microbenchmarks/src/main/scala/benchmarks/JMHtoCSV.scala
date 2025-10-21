@@ -3,10 +3,6 @@ package benchmarks
 import java.io.FileWriter
 import scala.io.Source
 import scala.util.matching.Regex
-import scala.util.matching.Regex
-import scala.util.matching.Regex
-import scala.util.matching.Regex
-import scala.util.matching.Regex
 
 object JMHtoCSV {
   val BENCHMARK: Regex   = "^# Benchmark: (.*)$".r

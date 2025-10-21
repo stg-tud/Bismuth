@@ -2,12 +2,11 @@ package ex201x.swing.catchup
 
 import ex201x.Mouse
 import reactives.default.*
+import reactives.operator.Event
 
 import java.awt.*
 import scala.swing.event.*
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication, Swing}
-import reactives.operator.Event
-import reactives.operator.Event
 
 object CatchUp extends SimpleSwingApplication {
   lazy val application = new CatchUp

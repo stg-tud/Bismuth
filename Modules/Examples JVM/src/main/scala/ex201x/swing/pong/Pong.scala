@@ -3,8 +3,7 @@ package ex201x.swing.pong
 import ex201x.Mouse
 import reactives.default.*
 
-import java.awt.Point
-import java.awt.Rectangle
+import java.awt.{Point, Rectangle}
 
 object Pong {
   val Max_X = 800

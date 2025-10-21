@@ -8,9 +8,8 @@ import reactives.default.*
 import reactives.structure.Pulse
 
 import java.awt.event.KeyEvent
-import scala.swing.{Dimension, MainFrame, SimpleSwingApplication}
+import scala.swing.{Dimension, Frame, MainFrame, SimpleSwingApplication}
 import scala.util.Try
-import scala.swing.Frame
 
 object RRecovery extends Main {
   class Opponent(panelSize: Signal[Dimension], shapes: Signal[List[Shape]]) extends SimpleSwingApplication {

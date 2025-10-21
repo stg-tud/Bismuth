@@ -3,8 +3,7 @@ package ex201x.reswingexamples.dropdown
 import ex2013reswing.ReTextField
 import reactives.default.*
 
-import scala.swing.{BoxPanel, FlowPanel, Label, MainFrame, Orientation, SimpleSwingApplication}
-import scala.swing.Frame
+import scala.swing.{BoxPanel, FlowPanel, Frame, Label, MainFrame, Orientation, SimpleSwingApplication}
 
 object DropdownSample1 extends SimpleSwingApplication {
 

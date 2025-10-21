@@ -4,8 +4,7 @@ import ex201x.programming2016demo.ui.{Circle, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** We define a new Var angle. We modify the main method
   * to repeatedly assign a new value to angle. Angle changes

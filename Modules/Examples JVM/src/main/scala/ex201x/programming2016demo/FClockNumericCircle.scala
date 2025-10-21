@@ -5,8 +5,7 @@ import reactives.default.*
 import reactives.structure.Diff
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** As with the initial arithmetic trajectory, the numeric integration so far
   * is vulnerable to clock drift. To fix this, we derive integration ticks from

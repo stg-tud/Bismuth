@@ -1,11 +1,10 @@
 package ex201x
 
 import reactives.default.*
+import reactives.operator.Event
 
 import java.awt.Point
 import scala.swing.event.*
-import reactives.operator.Event
-import reactives.operator.Event
 
 class Mouse {
 

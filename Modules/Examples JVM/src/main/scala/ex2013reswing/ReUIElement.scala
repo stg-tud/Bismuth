@@ -1,9 +1,8 @@
 package ex2013reswing
 
+import java.awt.{Point, Rectangle}
 import scala.swing.event.{UIElementMoved, UIElementResized}
 import scala.swing.{Dimension, UIElement}
-import java.awt.Point
-import java.awt.Rectangle
 
 abstract class ReUIElement(
     val minimumSize: ReSwingValue[Dimension] = (),

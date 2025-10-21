@@ -1,8 +1,7 @@
 package ex201x.reswingexamples.texteditor
 
-import java.awt.{Cursor, Dimension, Rectangle}
+import java.awt.{Cursor, Dimension, FontMetrics, Rectangle}
 import javax.swing.{JComponent, JViewport, Scrollable, SwingConstants, UIManager}
-import java.awt.FontMetrics
 
 class JScrollableComponent extends JComponent with Scrollable {
   setFont(UIManager.getFont("TextField.font"))

@@ -6,8 +6,7 @@ import ex201x.programming2016demo.ORacketMultiBall.Racket
 import ex201x.programming2016demo.ui.{Shape, ShapesPanel}
 import reactives.default.*
 
-import scala.swing.{Dimension, MainFrame, SimpleSwingApplication}
-import scala.swing.Frame
+import scala.swing.{Dimension, Frame, MainFrame, SimpleSwingApplication}
 
 object PSplitscreenRacketBall extends Main {
   class Opponent(panelSize: Signal[Dimension], shapes: Signal[List[Shape]]) extends SimpleSwingApplication {

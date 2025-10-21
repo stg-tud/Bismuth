@@ -1,6 +1,7 @@
 package ex201x.basic.meanwindow
 
 import reactives.default.*
+
 import scala.collection.immutable.LinearSeq
 
 object EventWindows extends App {

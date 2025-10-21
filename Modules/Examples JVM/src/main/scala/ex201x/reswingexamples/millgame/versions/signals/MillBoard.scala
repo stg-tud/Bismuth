@@ -4,7 +4,6 @@ import ex201x.reswingexamples.millgame.*
 import ex201x.reswingexamples.millgame.types.*
 import reactives.default.*
 import reactives.structure.Diff
-import reactives.structure.Diff
 
 class MillBoard {
   /* wrap stones Var, to have the same interface as other versions */

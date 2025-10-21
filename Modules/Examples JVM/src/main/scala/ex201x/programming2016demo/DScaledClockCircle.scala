@@ -4,8 +4,7 @@ import ex201x.programming2016demo.ui.{Circle, Shape, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** So far, we showed Vars and Signals defined as a transformation
   * of one other Var or Signal. Signals can, however, also be derived

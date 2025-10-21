@@ -6,8 +6,7 @@ import java.awt.{Color, Graphics2D, Point, geom}
 import scala.annotation.unused
 import scala.swing.Swing.*
 import scala.swing.event.*
-import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, Panel, SimpleSwingApplication}
 
 object LinePaintingEScala extends SimpleSwingApplication {
 

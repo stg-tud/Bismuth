@@ -4,8 +4,7 @@ import ex201x.programming2016demo.ui.{Circle, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** In an effort to make the animation's timing more accurate,
   * we refactor the application to use the actual System's time.

@@ -1,11 +1,11 @@
 package ex2013reswing
 
+import javax.swing.JList
 import scala.annotation.nowarn
 import scala.jdk.CollectionConverters.*
 import scala.swing.ListView.IntervalMode
 import scala.swing.event.{ListChanged, ListElementsAdded, ListElementsRemoved, ListSelectionChanged}
 import scala.swing.{Color, Dimension, Font, ListView}
-import javax.swing.JList
 
 @nowarn("msg=shadows field")
 class ReListView[A](

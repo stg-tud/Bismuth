@@ -1,9 +1,9 @@
 package ex2013reswing
 
+import javax.swing.JComboBox
 import scala.annotation.nowarn
 import scala.swing.event.{ListChanged, ListElementsAdded, ListElementsRemoved, SelectionChanged}
 import scala.swing.{Color, ComboBox, Dimension, Font}
-import javax.swing.JComboBox
 
 @nowarn("msg=shadows field")
 class ReComboBox[A](

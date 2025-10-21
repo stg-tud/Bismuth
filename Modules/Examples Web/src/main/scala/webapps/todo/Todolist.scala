@@ -2,7 +2,7 @@ package webapps.todo
 
 import dtn.rdt.Channel
 import org.scalajs.dom.html.Div
-import org.scalajs.dom.{document, window}
+import org.scalajs.dom.{Element, document, window}
 import rdts.base.{Lattice, LocalUid}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
@@ -13,7 +13,6 @@ import webapps.todo.TodoDataManager.TodoRepState
 import java.util.{Timer, TimerTask}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
-import org.scalajs.dom.Element
 
 object Todolist {
 

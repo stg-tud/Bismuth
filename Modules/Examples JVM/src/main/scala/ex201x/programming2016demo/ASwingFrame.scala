@@ -4,8 +4,7 @@ import ex201x.programming2016demo.ui.{Circle, Rectangle, Shape, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
-import scala.swing.Frame
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** This is a static display of two circles and a rectangle.
   * It demonstrates, how to display Shapes using our custom
