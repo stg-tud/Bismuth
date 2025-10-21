@@ -3,6 +3,7 @@ package ex2013reswing
 import scala.swing.Table.{AutoResizeMode, ElementMode, IntervalMode}
 import scala.swing.event.{TableChanged, TableColumnsSelected, TableRowsAdded, TableRowsRemoved, TableRowsSelected, TableStructureChanged, TableUpdated}
 import scala.swing.{Color, Dimension, Font, Table}
+import javax.swing.event.TableModelListener
 
 @scala.annotation.nowarn("msg=shadows field")
 class ReTable[A <: AnyRef](
@@ -35,8 +36,8 @@ class ReTable[A <: AnyRef](
 
   private var model: javax.swing.table.TableModel = scala.compiletime.uninitialized
 
-  val modelListener = new javax.swing.event.TableModelListener {
-    def tableChanged(e: javax.swing.event.TableModelEvent) =
+  val modelListener: TableModelListener = new javax.swing.event.TableModelListener {
+    def tableChanged(e: javax.swing.event.TableModelEvent): Unit =
       peer publish (
         e.getType match {
           case javax.swing.event.TableModelEvent.UPDATE =>
@@ -181,11 +182,11 @@ class ReTable[A <: AnyRef](
   selectAll.using(() => peer.peer.selectAll())
   clearSelection.using(() => peer.peer.clearSelection())
 
-  val changed          = ReSwingEvent `using` classOf[TableChanged]
-  val structureChanged = ReSwingEvent `using` classOf[TableStructureChanged]
-  val updated          = ReSwingEvent `using` classOf[TableUpdated]
-  val rowsAdded        = ReSwingEvent `using` classOf[TableRowsAdded]
-  val rowsRemoved      = ReSwingEvent `using` classOf[TableRowsRemoved]
+  val changed: ReSwingEvent[TableChanged]          = ReSwingEvent `using` classOf[TableChanged]
+  val structureChanged: ReSwingEvent[TableStructureChanged] = ReSwingEvent `using` classOf[TableStructureChanged]
+  val updated: ReSwingEvent[TableUpdated]          = ReSwingEvent `using` classOf[TableUpdated]
+  val rowsAdded: ReSwingEvent[TableRowsAdded]        = ReSwingEvent `using` classOf[TableRowsAdded]
+  val rowsRemoved: ReSwingEvent[TableRowsRemoved]      = ReSwingEvent `using` classOf[TableRowsRemoved]
 
   class ReSelection(
       val intervalMode: ReSwingValue[IntervalMode.Value],
@@ -193,32 +194,32 @@ class ReTable[A <: AnyRef](
   ) {
     protected[ReTable] val peer = ReTable.this.peer.selection
 
-    val columnLeadIndex = ReSwingValue.using(
+    val columnLeadIndex: ReSwingValue[Int] = ReSwingValue.using(
       () => peer.columns.leadIndex,
       (peer, classOf[TableColumnsSelected])
     )
-    val columnAnchorIndex = ReSwingValue.using(
+    val columnAnchorIndex: ReSwingValue[Int] = ReSwingValue.using(
       () => peer.columns.anchorIndex,
       (peer, classOf[TableColumnsSelected])
     )
-    val rowLeadIndex = ReSwingValue.using(
+    val rowLeadIndex: ReSwingValue[Int] = ReSwingValue.using(
       () => peer.rows.leadIndex,
       (peer, classOf[TableRowsSelected])
     )
-    val rowAnchorIndex = ReSwingValue.using(
+    val rowAnchorIndex: ReSwingValue[Int] = ReSwingValue.using(
       () => peer.rows.anchorIndex,
       (peer, classOf[TableRowsSelected])
     )
 
-    val columns = ReSwingValue.using(
+    val columns: ReSwingValue[Set[Int]] = ReSwingValue.using(
       () => peer.columns.toSet,
       (peer, classOf[TableColumnsSelected])
     )
-    val rows = ReSwingValue.using(
+    val rows: ReSwingValue[Set[Int]] = ReSwingValue.using(
       () => peer.rows.toSet,
       (peer, classOf[TableRowsSelected])
     )
-    val cells = ReSwingValue.using(
+    val cells: ReSwingValue[Set[(Int, Int)]] = ReSwingValue.using(
       () => peer.cells.toSet,
       (peer, classOf[TableColumnsSelected]),
       (peer, classOf[TableRowsSelected])
@@ -233,8 +234,8 @@ class ReTable[A <: AnyRef](
       "cellSelectionEnabled"
     )
 
-    val columnsSelected = ReSwingEvent.using(peer, classOf[TableColumnsSelected])
-    val rowsSelected    = ReSwingEvent.using(peer, classOf[TableRowsSelected])
+    val columnsSelected: ReSwingEvent[TableColumnsSelected] = ReSwingEvent.using(peer, classOf[TableColumnsSelected])
+    val rowsSelected: ReSwingEvent[TableRowsSelected]    = ReSwingEvent.using(peer, classOf[TableRowsSelected])
   }
 
   object selection
@@ -278,7 +279,7 @@ object ReTable {
 
     def getRowCount                    = rowData.length
     def getColumnCount                 = columnNames.length
-    def getValueAt(row: Int, col: Int) = {
+    def getValueAt(row: Int, col: Int): Object = {
       if rowData.isDefinedAt(row) then {
         val data = rowData(row)
         if data.isDefinedAt(col) then
@@ -289,8 +290,8 @@ object ReTable {
         null
     }
 
-    override def getColumnName(column: Int)            = columnNames(column).toString
-    override def isCellEditable(row: Int, column: Int) =
+    override def getColumnName(column: Int): String            = columnNames(column).toString
+    override def isCellEditable(row: Int, column: Int): Boolean =
       if editable != null then
         editable(row, column)
       else

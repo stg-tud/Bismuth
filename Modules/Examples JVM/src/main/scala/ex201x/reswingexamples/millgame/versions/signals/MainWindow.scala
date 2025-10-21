@@ -2,18 +2,19 @@ package ex201x.reswingexamples.millgame.versions.signals
 
 import ex2013reswing.{ReComponent, ReLabel, ReSwingValue}
 import ex201x.reswingexamples.millgame.*
-import ex201x.reswingexamples.millgame.types.*
+import ex201x.reswingexamples.millgame.types.{Point, *}
 import reactives.default.*
 
 import java.awt.{BasicStroke, Color, Dimension, Font, RenderingHints}
 import scala.swing.*
 import scala.swing.event.*
+import reactives.operator.Event
 
 object MainWindow extends SimpleSwingApplication {
 
   val game = new MillGame
 
-  def top =
+  def top: Frame =
     new MainFrame {
       game.gameWon observe { winner => // #HDL
         Dialog.showMessage(ui, "Game won by " + winner, "Game ended", Dialog.Message.Info)
@@ -39,7 +40,7 @@ object MainWindow extends SimpleSwingApplication {
       font = ReSwingValue(new Font("Tahoma", Font.PLAIN, 32))
     )
 
-    val counterBar = new Label("White: 9 / Black: 9") {
+    val counterBar: Label = new Label("White: 9 / Black: 9") {
       preferredSize = new Dimension(Integer.MAX_VALUE, 32)
       font = new Font("Tahoma", Font.PLAIN, 16)
     }
@@ -60,14 +61,14 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
   val StoneRadius   = 15
   val ClickArea     = 50
   val SizePercent   = 0.8
-  val MiddlePercent = 2f / 3
-  val InnerPercent  = 1f / 3
+  val MiddlePercent: Float = 2f / 3
+  val InnerPercent: Float  = 1f / 3
 
   val squareSize: Signal[Int] = Signal { // #SIG
     (math.min(size.value.width, size.value.height) * SizePercent).toInt
   }
 
-  val coordinates = Signal { // #SIG
+  val coordinates: Signal[List[Point[Int]]] = Signal { // #SIG
     val midX     = size.value.width / 2
     val midY     = size.value.height / 2
     val xFactors = List.fill(3)(List(-1, -1, -1, 0, 1, 1, 1, 0)).flatten
@@ -84,19 +85,19 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
     }
   }
 
-  val board = Signal { // #SIG
+  val board: Signal[Rect[Int]] = Signal { // #SIG
     val offset = (2 * StoneRadius, 2 * StoneRadius)
     val size   = squareSize.value + 4 * StoneRadius
     Rect(coordinates.value(16) - offset, size, size)
   }
 
-  val lines = Signal { // #SIG
+  val lines: Signal[IndexedSeq[Line[Int]]] = Signal { // #SIG
     MillBoardRenamed.lines map { indices =>
       Line(coordinates.value(indices.head.index), coordinates.value(indices.last.index))
     }
   }
 
-  val selectedIndex = Signal { // #SIG
+  val selectedIndex: Signal[SlotIndex] = Signal { // #SIG
     game.stateVar.value match {
       case MoveStoneDrop(_, index) => index
       case JumpStoneDrop(_, index) => index
@@ -104,7 +105,7 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
     }
   }
 
-  val highlightedIndex = Signal { // #SIG
+  val highlightedIndex: Signal[SlotIndex] = Signal { // #SIG
     val index = mouse.moves.moved.holdOption().value match {
       case Some(e) => coordinates.value indexWhere {
           p => (p.distance((e.point.x, e.point.y))) < ClickArea
@@ -114,7 +115,7 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
     SlotIndex(index)
   }
 
-  val moveLines = Signal { // #SIG
+  val moveLines: Signal[Seq[Line[Int]]] = Signal { // #SIG
     val possibleMoves =
       if selectedIndex.value == SlotIndex(-1) then
         game.possibleNextMoves.value filter {
@@ -132,7 +133,7 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
     }
   }
 
-  val indexClicked =
+  val indexClicked: Event[SlotIndex] =
     (mouse.clicks.released map { (e: MouseReleased) => // #EF
       val index = coordinates.value.indexWhere {
         p => (p `distance` ((e.point.x, e.point.y))) < ClickArea
@@ -140,9 +141,9 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
       SlotIndex(index)
     }) && (_ != SlotIndex(-1)) // #EF
 
-  val backgroundRect = Signal { Rect(0, 0, bounds.value.width, bounds.value.height) } // #SIG
+  val backgroundRect: Signal[Rect[Int]] = Signal { Rect(0, 0, bounds.value.width, bounds.value.height) } // #SIG
 
-  val presentation = Signal { // #SIG
+  val presentation: Signal[Seq[Presentation[Int, Rect[Int] | Line[Int] | Circle[Int]]]] = Signal { // #SIG
     // background and board
     Seq(
       Presentation(backgroundRect.value, color = Color.GRAY),
@@ -183,7 +184,6 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
           g.setStroke(new BasicStroke(width.toFloat))
 
           shape match {
-            case Point(x, y)    => ()
             case Line(from, to) =>
               g.drawLine(from.x, from.y, to.x, to.y)
             case Rect(anchor, width, height) =>
