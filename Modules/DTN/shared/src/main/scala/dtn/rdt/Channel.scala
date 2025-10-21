@@ -61,7 +61,7 @@ class Channel[T: JsonValueCodec](
 
   // We use a local dtnid instead of a remote replica ID to signify that the local DTNd is the one providing information.
   // If the local dtnd could be stopped and restarted without loosing data, this id should remain the same for performance reasons, but it will be correct even if it changes.
-  val dtnid = Uid.gen()
+  val dtnid: Uid = Uid.gen()
 
   override def prepare(receiver: Receive[ProtocolMessage[T]]): Async[Abort, Connection[ProtocolMessage[T]]] =
     Async {

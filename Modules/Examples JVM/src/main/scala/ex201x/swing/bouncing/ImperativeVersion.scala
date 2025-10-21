@@ -32,7 +32,7 @@ class ImperativeVersion {
   }
 
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
       override def paintComponent(g: Graphics2D): Unit =

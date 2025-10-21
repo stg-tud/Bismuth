@@ -11,11 +11,11 @@ import java.util.concurrent.TimeUnit
 @Measurement(iterations = 3, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 class KeyDerivationKeyBench {
-  val ikm = Array[Byte](
+  val ikm: Array[Byte] = Array[Byte](
     99, -30, -25, -90, -76, 97, -33, 101, -109, -99, 17, 3, 73, -126, 51, 39, -107, 26, 57, 45, 104, -54, -15, -59, -2,
     84, -116, 107, 0, 18, 52, 22
   )
-  val kdk                 = KeyDerivationKey(ikm)
+  val kdk: KeyDerivationKey                 = KeyDerivationKey(ikm)
   var path: Array[String] = scala.compiletime.uninitialized
 
   @Param(Array("1", "10", "100"))

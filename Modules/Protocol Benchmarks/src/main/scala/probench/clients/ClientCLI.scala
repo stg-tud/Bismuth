@@ -46,7 +46,7 @@ class ClientCLI(name: Uid, client: Client) {
           client.write("key", "value")
       }
     }
-    println(s"ended")
+    println("ended")
   }
 
 }

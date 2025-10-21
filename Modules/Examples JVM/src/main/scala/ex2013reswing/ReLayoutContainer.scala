@@ -24,7 +24,7 @@ trait ReLayoutContainer[Constraints] extends ReUIElement {
   contents.using(() => peerContents, peerContents_=, classOf[ComponentAdded], classOf[ComponentRemoved])
 
   object layout {
-    def update(component: Component, constraints: Constraints) =
+    def update(component: Component, constraints: Constraints): Unit =
       peerContents += (component -> constraints)
   }
 }

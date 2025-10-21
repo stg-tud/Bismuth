@@ -25,7 +25,7 @@ class EventVersion {
   val speed = new Point(10, 8)
 
   class Coord(private var _n: Int) {
-    val changed                = Evt[Int]()
+    val changed: Evt[Int]                = Evt[Int]()
     def n: Int                 = _n
     def n_=(newVal: Int): Unit = {
       _n = newVal
@@ -42,11 +42,11 @@ class EventVersion {
     hasTicked.fire()
   }
 
-  val hasTicked = Evt[Unit]() // Can be afterExec
+  val hasTicked: Evt[Unit] = Evt[Unit]() // Can be afterExec
 
   // handle bouncing
-  val xBounce = x.changed.filter(x => x < 0 || x + Size > Max_X)
-  val yBounce = y.changed.filter(y => y < 0 || y + Size > Max_Y)
+  val xBounce: Event[Int] = x.changed.filter(x => x < 0 || x + Size > Max_X)
+  val yBounce: Event[Int] = y.changed.filter(y => y < 0 || y + Size > Max_Y)
   xBounce observe { _ => speed.x = -speed.x }
   yBounce observe { _ => speed.y = -speed.y }
 
@@ -54,7 +54,7 @@ class EventVersion {
   hasTicked observe { _ => frame.repaint() }
 
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
       override def paintComponent(g: Graphics2D): Unit =

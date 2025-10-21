@@ -7,21 +7,22 @@ import scala.annotation.unused
 import scala.swing.Swing.*
 import scala.swing.event.*
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
+import scala.swing.Frame
 
 object LinePaintingEScala extends SimpleSwingApplication {
 
-  lazy val ui = new Panel {
+  lazy val ui: Panel = new Panel {
     background = Color.white
     preferredSize = (1000, 500)
     focusable = true
     listenTo(mouse.clicks, mouse.moves, keys)
 
     /* EScala events */
-    val mousePressed  = Evt[Point]()
-    val mouseDragged  = Evt[Point]()
-    val mouseReleased = Evt[Point]()
-    val cKeyTyped     = Evt[Unit]()
-    val focusLost     = Evt[Unit]()
+    val mousePressed: Evt[Point]  = Evt[Point]()
+    val mouseDragged: Evt[Point]  = Evt[Point]()
+    val mouseReleased: Evt[Point] = Evt[Point]()
+    val cKeyTyped: Evt[Unit]     = Evt[Unit]()
+    val focusLost: Evt[Unit]     = Evt[Unit]()
     /* Bind the EScala events to the Swing events */
     reactions += {
       case e: MousePressed        => mousePressed.fire(e.point)
@@ -48,7 +49,7 @@ object LinePaintingEScala extends SimpleSwingApplication {
     def lineTo(p: Point): Unit = { path.lineTo(p.x.toFloat, p.y.toFloat); repaint() }
     def moveTo(p: Point): Unit = { path.moveTo(p.x.toFloat, p.y.toFloat); repaint() }
 
-    override def paintComponent(g: Graphics2D) = {
+    override def paintComponent(g: Graphics2D): Unit = {
       super.paintComponent(g)
       g.setColor(new Color(100, 100, 100))
       g.drawString(
@@ -62,7 +63,7 @@ object LinePaintingEScala extends SimpleSwingApplication {
     }
   }
 
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "Simple Line Painting Demo"
       contents = ui

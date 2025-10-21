@@ -35,12 +35,12 @@ class ArrayContextBench {
   }
 
   @Benchmark
-  def merge() = rep1Set.union(rep2Set)
+  def merge(): ArrayRanges = rep1Set.union(rep2Set)
 
   @Benchmark
-  def mergeSelf() = rep1Set `union` rep1Set
+  def mergeSelf(): ArrayRanges = rep1Set `union` rep1Set
 
   @Benchmark
-  def mergeSelfPlusOne() = rep1Set `union` rep1SetPlusOne
+  def mergeSelfPlusOne(): ArrayRanges = rep1Set `union` rep1SetPlusOne
 
 }

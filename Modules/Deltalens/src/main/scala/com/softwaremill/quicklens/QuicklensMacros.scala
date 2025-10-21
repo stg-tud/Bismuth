@@ -252,7 +252,7 @@ object QuicklensMacros {
 
         if constructorTree.termParamss.drop(1).exists(_.params.exists(!_.symbol.flags.is(Flags.Implicit))) then
           report.errorAndAbort(
-            s"Implementation limitation: Only the first parameter list of the modified case classes can be non-implicit."
+            "Implementation limitation: Only the first parameter list of the modified case classes can be non-implicit."
           )
 
         typeParams match {
@@ -266,7 +266,7 @@ object QuicklensMacros {
         obj.tpe.widenAll match {
           case AndType(_, _) =>
             report.errorAndAbort(
-              s"Implementation limitation: Cannot modify sealed hierarchies mixed with & types. Try providing a more specific type."
+              "Implementation limitation: Cannot modify sealed hierarchies mixed with & types. Try providing a more specific type."
             )
           case _ =>
         }

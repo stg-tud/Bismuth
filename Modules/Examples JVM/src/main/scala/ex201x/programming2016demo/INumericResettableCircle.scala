@@ -42,23 +42,23 @@ import reactives.default.*
   * of different Events into a single Signal.
   */
 object INumericResettableCircle extends Main {
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
-  val angle = Clock.nsTime.map(_.toDouble / Clock.NanoSecond * math.Pi)
+  val angle: Signal[Double] = Clock.nsTime.map(_.toDouble / Clock.NanoSecond * math.Pi)
 
-  val velocity = Signal {
+  val velocity: Signal[Pos] = Signal {
     Pos(
       x = (panel.width.value / 2 - 50).toDouble * math.sin(angle.value) / Clock.NanoSecond,
       y = (panel.height.value / 2 - 50).toDouble * math.cos(angle.value) / Clock.NanoSecond
     )
   }
 
-  val inc = Clock.ticks.map(tick => Right[Point, Pos](velocity.value * tick.toDouble))
+  val inc: Event[Right[Point, Pos]] = Clock.ticks.map(tick => Right[Point, Pos](velocity.value * tick.toDouble))
 
-  val reset = panel.Mouse.middleButton.pressed.map(pos => Left[Point, Pos](pos))
+  val reset: Event[Left[Point, Pos]] = panel.Mouse.middleButton.pressed.map(pos => Left[Point, Pos](pos))
 
-  val pos = (reset || inc).fold(Pos(0, 0)) {
+  val pos: Signal[Pos] = (reset || inc).fold(Pos(0, 0)) {
     case (_, Left(Point(x, y))) => Pos(x.toDouble, y.toDouble)
     case (pX, Right(inc))       => pX + inc
   }

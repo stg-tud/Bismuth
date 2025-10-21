@@ -21,7 +21,7 @@ class RandomSprayRouter(
 ) extends BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInterface) {
 
   // will grow indefinitely as we do not garbage collect here
-  val delivered = ConcurrentHashMap[String, Set[String]]()
+  val delivered: ConcurrentHashMap[String, Set[String]] = ConcurrentHashMap[String, Set[String]]()
 
   override def onRequestSenderForBundle(packet: Packet.RequestSenderForBundle)
       : Option[Packet.ResponseSenderForBundle] = {

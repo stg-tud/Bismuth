@@ -9,9 +9,9 @@ import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.*
 import scalatags.JsDom.all.*
-import TodoDataManager.TodoRepState
-import Todolist.replicaId
 import webapps.Storing
+import webapps.todo.TodoDataManager.TodoRepState
+import webapps.todo.Todolist.replicaId
 
 import scala.Function.const
 import scala.collection.mutable

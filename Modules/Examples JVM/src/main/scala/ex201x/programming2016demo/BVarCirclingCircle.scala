@@ -5,6 +5,7 @@ import reactives.default.*
 
 import java.awt.Dimension
 import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.Frame
 
 /** We define a new Var angle. We modify the main method
   * to repeatedly assign a new value to angle. Angle changes
@@ -28,11 +29,11 @@ import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
   * posY were updated, the UI is automatically redrawn, too.
   */
 object BVarCirclingCircle extends SimpleSwingApplication {
-  val angle = Var(0d)
+  val angle: Var[Double] = Var(0d)
 
-  val pos = angle.map(a => Pos(100d * math.sin(a), 100d * math.cos(a)))
+  val pos: Signal[Pos] = angle.map(a => Pos(100d * math.sin(a), 100d * math.cos(a)))
 
-  override lazy val top = {
+  override lazy val top: Frame = {
     val panel = new ShapesPanel(Var(List(
       new Circle(pos, Var(50))
     )))

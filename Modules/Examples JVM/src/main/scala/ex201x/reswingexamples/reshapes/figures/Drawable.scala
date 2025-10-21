@@ -15,11 +15,11 @@ abstract class Shape(
     val path: List[Point] = List.empty /* the mouse path while drawing this shape */
 ) {
 
-  def selected = drawingSpaceState.selectedShape.now == this
-  def start    = if path.isEmpty then null else path.head
-  def end      = if path.isEmpty then null else path.last
+  def selected: Boolean = drawingSpaceState.selectedShape.now == this
+  def start: Point    = if path.isEmpty then null else path.head
+  def end: Point      = if path.isEmpty then null else path.last
 
-  def draw(g: Graphics2D) = {
+  def draw(g: Graphics2D): Unit = {
     if start != null && end != null then {
       val stroke =
         if !selected then new BasicStroke(strokeWidth.toFloat)
@@ -129,12 +129,12 @@ object Shape {
 }
 
 trait Movable extends Shape {
-  def movedShape(from: Point, to: Point) =
+  def movedShape(from: Point, to: Point): Shape =
     copy(path = path map { p => new Point(p.x + to.x - from.x, p.y + to.y - from.y) })
 }
 
 trait Resizable extends Shape {
-  def resizedShape(from: Point, to: Point) = {
+  def resizedShape(from: Point, to: Point): Shape = {
     if MathUtil.isInCircle(start, 6, from) then
       copy(path = to :: path)
     else if MathUtil.isInCircle(end, 6, from) then
@@ -143,7 +143,7 @@ trait Resizable extends Shape {
       this: Shape
   }
 
-  override def draw(g: Graphics2D) = {
+  override def draw(g: Graphics2D): Unit = {
     super.draw(g)
     if start != null && end != null && selected then {
       val origStroke = g.getStroke

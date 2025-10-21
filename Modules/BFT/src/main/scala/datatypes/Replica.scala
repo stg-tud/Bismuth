@@ -1,8 +1,8 @@
 package datatypes
 
 import dag.{HashDAG, SyncRequest}
-import riblt.{CodedSymbol, RIBLT}
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
+import riblt.{CodedSymbol, RIBLT}
 
 trait Replica[T, R <: Replica[T, R]] {
   self: R =>

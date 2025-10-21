@@ -24,7 +24,7 @@ object DebugAdapter {
     case v: String                                => s"\"$v\""
     case v: (Boolean | Char | Short | Int | Long) => v.toString
     case o: Option[Any]                           => o.map(debugPrinter).toString
-    case s: Seq[Any]                              => s.iterator.map(debugPrinter).mkString(s"List(", ", ", ")")
+    case s: Seq[Any]                              => s.iterator.map(debugPrinter).mkString("List(", ", ", ")")
     case m: scalatags.generic.Modifier[?]         => "<some html>"
     case p: Pulse[Any]                            => p.map(debugPrinter).getOrElse("")
     case p: Product                               => Range(0, p.productArity).map(n =>
@@ -49,7 +49,7 @@ object DebugAdapter {
 
   @JSExportTopLevel("DebugAdapterSetListener")
   def setListener(obs: scalajs.js.Function1[Any, Unit]): Unit = {
-    println(s"setting listener")
+    println("setting listener")
     Tracing.observer = {
       case raw: Tracing.DomAssociation =>
         obs(js.Dictionary(

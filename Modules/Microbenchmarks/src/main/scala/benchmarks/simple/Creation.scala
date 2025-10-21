@@ -19,7 +19,7 @@ class Creation {
   import stableEngine.*
 
   @Setup
-  def setup(engineParam: EngineParam) =
+  def setup(engineParam: EngineParam): Unit =
     engine = engineParam.engine
 
   @Benchmark

@@ -3,9 +3,9 @@ package dag
 //import com.github.plokhotnyuk.jsoniter_scala.core.*
 //import com.github.plokhotnyuk.jsoniter_scala.macros.*
 
-import java.security.MessageDigest
-import java.security.PublicKey
 import crypto.Ed25519Util
+
+import java.security.{MessageDigest, PublicKey}
 
 case class Event[T](
     id: String,

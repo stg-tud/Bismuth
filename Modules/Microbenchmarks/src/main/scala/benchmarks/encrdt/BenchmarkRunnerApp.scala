@@ -12,7 +12,7 @@ import java.util.concurrent.{Callable, Executors, TimeUnit}
 object BenchmarkRunnerApp extends App {
   Paths.get("benchmarks/results/").toFile.mkdirs()
 
-  val timeBefore = System.currentTimeMillis()
+  val timeBefore: Long = System.currentTimeMillis()
 
   val jmhOptions: Options = new OptionsBuilder()
     .include("serializeOnly|encryptOnly")
@@ -38,6 +38,6 @@ object BenchmarkRunnerApp extends App {
   executorService.shutdown()
   executorService.awaitTermination(1, TimeUnit.HOURS)
 
-  val timeAfter = System.currentTimeMillis()
+  val timeAfter: Long = System.currentTimeMillis()
   println("Finished running size benchmarks (in " + (timeAfter - timeBefore) + "ms)")
 }

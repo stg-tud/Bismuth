@@ -15,11 +15,11 @@ class Triangle(
     with Movable
     with Resizable {
 
-  override def doDraw(g: Graphics2D) =
+  override def doDraw(g: Graphics2D): Unit =
     for (a, b) <- toLines() do
       g.drawLine(a.x, a.y, b.x, b.y)
 
-  override def toLines() =
+  override def toLines(): List[(Point, Point)] =
     List((start, end), (start, new Point(start.x, end.y)), (new Point(start.x, end.y), end))
 
   override def copy(

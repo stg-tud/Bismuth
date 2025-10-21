@@ -1,9 +1,8 @@
 package reactives.extra
 
 import org.scalajs.dom
-import org.scalajs.dom.console.log as println
 import org.scalajs.dom.html.Input
-import org.scalajs.dom.{Element, KeyboardEvent, Range, console, document}
+import org.scalajs.dom.{Element, KeyboardEvent, Range, document}
 import reactives.SelectedScheduler
 import reactives.core.{CreationTicket, PlanTransactionScope}
 import reactives.operator.*
@@ -16,15 +15,15 @@ object Tags {
     def splice(anchor: A, range: dom.Range, value: T): Unit
   object RangeSplice:
     given elem: RangeSplice[dom.Element, dom.Element] with {
-      override def splice(anchor: dom.Element, range: Range, value: dom.Element) =
+      override def splice(anchor: dom.Element, range: Range, value: dom.Element): Unit =
         range.insertNode(value)
     }
     given many[A <: dom.Element, T](using other: RangeSplice[A, T]): RangeSplice[A, Seq[T]] with {
-      override def splice(anchor: A, range: Range, value: Seq[T]) =
+      override def splice(anchor: A, range: Range, value: Seq[T]): Unit =
         value.reverseIterator.foreach { v => other.splice(anchor, range, v) }
     }
     given string: RangeSplice[dom.Element, String] with {
-      override def splice(anchor: dom.Element, range: Range, value: String) =
+      override def splice(anchor: dom.Element, range: Range, value: String): Unit =
         anchor.textContent = value
     }
 

@@ -22,7 +22,7 @@ class SingleNodeContentionProfiling extends BusyThreads {
   var node: Signal[Unit]       = scala.compiletime.uninitialized
 
   @Setup(Level.Iteration)
-  def setup(params: BenchmarkParams, step: Step, engineParam: EngineParam, work: Workload) = {
+  def setup(params: BenchmarkParams, step: Step, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     sources = Array.fill(params.getThreads)(Var(step.run()))
     node = Signal.static(sources.toSeq*)(_ => work.consume())

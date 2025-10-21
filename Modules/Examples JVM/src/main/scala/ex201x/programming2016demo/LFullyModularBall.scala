@@ -55,11 +55,11 @@ object LFullyModularBall extends Main {
   class BouncingBall(val initVx: Double, val initVy: Double, val diameter: Signal[Int], val reset: Event[Point]) {
     val horizontalBounceSources: Var[List[Event[Any]]] = Var(List())
     val verticalBounceSources: Var[List[Event[Any]]]   = Var(List())
-    val filteredHorizontalBounceSources                = horizontalBounceSources.map(_.map(_.recover {
+    val filteredHorizontalBounceSources: Signal[List[Event[Any]]]                = horizontalBounceSources.map(_.map(_.recover {
       case _: IllegalArgumentException => None
     }))
 
-    val velocity = Signal {
+    val velocity: Signal[Pos] = Signal {
       Pos(
         x = horizontalBounceSources.flatten[Event[Any]](using Flatten.firstFiringEvent)
           .fold(initVx / Clock.NanoSecond) { (old, _) => -old }.value,
@@ -69,9 +69,9 @@ object LFullyModularBall extends Main {
     }
 
     // TODO: using now to remove cycle …
-    val inc = Clock.ticks.map(tick => velocity.readValueOnce * tick.toDouble)
+    val inc: Event[Pos] = Clock.ticks.map(tick => velocity.readValueOnce * tick.toDouble)
 
-    val pos = Fold(Pos(0, 0))(
+    val pos: Signal[Pos] = Fold(Pos(0, 0))(
       reset branch { case Point(x, y) => Pos(x.toDouble, y.toDouble) },
       inc branch { inc => Fold.current + inc }
     )
@@ -79,7 +79,7 @@ object LFullyModularBall extends Main {
     val shape = new Circle(pos, diameter)
   }
 
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
   val bouncingBall = new BouncingBall(200d, 150d, Var(50), panel.Mouse.middleButton.pressed)

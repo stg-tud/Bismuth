@@ -5,11 +5,12 @@ import ex201x.programming2016demo.ui.ShapesPanel
 
 import java.awt.Dimension
 import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.Frame
 
 abstract class Main extends SimpleSwingApplication {
   val panel: ShapesPanel
 
-  override lazy val top = {
+  override lazy val top: Frame = {
     panel.preferredSize = new Dimension(400, 300)
     new MainFrame {
       title = "REScala Demo"

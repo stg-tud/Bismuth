@@ -18,14 +18,14 @@ class Timer(delay0: Int) {
 
   private val isRunning = Var(true)
 
-  val running                               = Signal { isRunning.value }
-  val fired                                 = Evt[Unit]()
+  val running: Signal[Boolean]                               = Signal { isRunning.value }
+  val fired: Evt[Unit]                                 = Evt[Unit]()
   def delay                                 = peer.getDelay
-  def delay_=(delay: Int)                   = peer.setDelay(delay)
+  def delay_=(delay: Int): Unit                   = peer.setDelay(delay)
   def repeating                             = peer.isRepeats
   def repeating_=(repeating: Boolean): Unit = { peer.setRepeats(repeating); isRunning `set` peer.isRunning() }
 
-  def restart = { peer.restart(); isRunning `set` peer.isRunning(); this }
-  def start   = { peer.start(); isRunning `set` peer.isRunning(); this }
-  def stop    = { peer.stop(); isRunning `set` peer.isRunning(); this }
+  def restart: Timer = { peer.restart(); isRunning `set` peer.isRunning(); this }
+  def start: Timer   = { peer.start(); isRunning `set` peer.isRunning(); this }
+  def stop: Timer    = { peer.stop(); isRunning `set` peer.isRunning(); this }
 }

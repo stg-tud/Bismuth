@@ -93,7 +93,7 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
       println(s"The message to be written is:\n$message")
     }
 
-    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Writing header to stdin...")
+    if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Writing header to stdin...")
     proc.stdin.write(msgHeader)
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Writing message to stdin...")
     proc.stdin.write(message)
@@ -249,7 +249,7 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
         case diag: PublishDiagnosticsNotification =>
           if diag.params.uri.endsWith(name) then {
             if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-              println(s"Diagnostics notification read while waiting for verification result.")
+              println("Diagnostics notification read while waiting for verification result.")
             }
             diagnosticsNotification = Some(diag)
           }

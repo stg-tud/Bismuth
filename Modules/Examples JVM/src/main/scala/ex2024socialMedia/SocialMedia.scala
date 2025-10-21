@@ -1,7 +1,7 @@
 package ex2024socialMedia
 
-import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.{ReplicatedList, GrowOnlyCounter as Counter, LastWriterWins as LWW}
+import rdts.base.LocalUid
+import rdts.datatypes.{GrowOnlyCounter as Counter, LastWriterWins as LWW, ReplicatedList}
 import reactives.default.*
 
 type ID = String

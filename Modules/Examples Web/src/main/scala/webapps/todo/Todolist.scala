@@ -13,6 +13,7 @@ import webapps.todo.TodoDataManager.TodoRepState
 import java.util.{Timer, TimerTask}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
+import org.scalajs.dom.Element
 
 object Todolist {
 
@@ -20,7 +21,7 @@ object Todolist {
 
   val timer = new Timer()
 
-  lazy val contents = {
+  lazy val contents: Div = {
     val storagePrefix = window.location.href
     println(storagePrefix)
 
@@ -30,7 +31,7 @@ object Todolist {
 
   // TodoDataManager.dataManager.addLatentConnection(WebviewAdapterChannel.listen())
 
-  lazy val webrtc = WebRTCConnectionView(TodoDataManager.dataManager).example().render
+  lazy val webrtc: Element = WebRTCConnectionView(TodoDataManager.dataManager).example().render
 
   lazy val updateTask: Unit = {
 

@@ -1,13 +1,14 @@
 package ex201x.basic.meanwindow
 
 import reactives.default.*
+import scala.collection.immutable.LinearSeq
 
 object EventWindows extends App {
 
-  val e = Evt[Double]()
+  val e: Evt[Double] = Evt[Double]()
   // val all = e.list()
-  val window = e.list(5)
-  val mean   = Signal {
+  val window: Signal[LinearSeq[Double]] = e.list(5)
+  val mean: Signal[Double]   = Signal {
     window.value.sum /
     window.value.length
   }

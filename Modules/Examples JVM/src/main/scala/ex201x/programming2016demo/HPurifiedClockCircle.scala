@@ -14,21 +14,21 @@ import reactives.default.*
   * main loop into an external superclass.
   */
 object HPurifiedClockCircle extends Main {
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
-  val angle = Clock.nsTime.map(_.toDouble / Clock.NanoSecond * math.Pi)
+  val angle: Signal[Double] = Clock.nsTime.map(_.toDouble / Clock.NanoSecond * math.Pi)
 
-  val velocity = Signal {
+  val velocity: Signal[Pos] = Signal {
     Pos(
       x = (panel.width.value / 2 - 50).toDouble * math.sin(angle.value) / Clock.NanoSecond,
       y = (panel.height.value / 2 - 50).toDouble * math.cos(angle.value) / Clock.NanoSecond
     )
   }
 
-  val inc = Clock.ticks.map(tick => velocity.value * tick.toDouble)
+  val inc: Event[Pos] = Clock.ticks.map(tick => velocity.value * tick.toDouble)
 
-  val pos = inc.fold(Pos(0, 0)) { (cur, inc) => cur + inc }
+  val pos: Signal[Pos] = inc.fold(Pos(0, 0)) { (cur, inc) => cur + inc }
 
   shapes.transform(new Circle(pos, Var(50)) :: _)
 }

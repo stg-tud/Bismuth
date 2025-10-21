@@ -48,7 +48,7 @@ class ReAbstractButton(
   rolloverIcon.using(() => peer.rolloverIcon, peer.rolloverIcon_=, "rolloverIcon")
   rolloverSelectedIcon.using(() => peer.rolloverSelectedIcon, peer.rolloverSelectedIcon_=, "rolloverSelectedIcon")
 
-  val clicked = ReSwingEvent.using(classOf[ButtonClicked])
+  val clicked: ReSwingEvent[ButtonClicked] = ReSwingEvent.using(classOf[ButtonClicked])
 }
 
 object ReAbstractButton {

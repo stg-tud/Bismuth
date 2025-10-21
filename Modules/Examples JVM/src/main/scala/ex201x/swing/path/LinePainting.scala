@@ -5,10 +5,11 @@ import scala.annotation.unused
 import scala.swing.Swing.*
 import scala.swing.event.*
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
+import scala.swing.Frame
 
 object LinePainting extends SimpleSwingApplication {
 
-  lazy val ui = new Panel {
+  lazy val ui: Panel = new Panel {
     background = Color.white
     preferredSize = (1000, 500)
     focusable = true
@@ -33,7 +34,7 @@ object LinePainting extends SimpleSwingApplication {
     def lineTo(p: Point): Unit = { path.lineTo(p.x.toFloat, p.y.toFloat); repaint() }
     def moveTo(p: Point): Unit = { path.moveTo(p.x.toFloat, p.y.toFloat); repaint() }
 
-    override def paintComponent(g: Graphics2D) = {
+    override def paintComponent(g: Graphics2D): Unit = {
       super.paintComponent(g)
       g.setColor(new Color(100, 100, 100))
       g.drawString(
@@ -47,7 +48,7 @@ object LinePainting extends SimpleSwingApplication {
     }
   }
 
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "Simple Line Painting Demo"
       contents = ui

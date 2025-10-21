@@ -16,9 +16,9 @@ import scala.jdk.CollectionConverters.*
 class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInterface)
     extends BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInterface) {
 
-  val sprayDelivered =
+  val sprayDelivered: ConcurrentHashMap[String, Set[String]] =
     ConcurrentHashMap[String, Set[String]]() // will grow indefinitely as we do not garbage collect here
-  val copies = ConcurrentHashMap[String, Int]() // will grow indefinitely as we do not garbage collect here
+  val copies: ConcurrentHashMap[String, Int] = ConcurrentHashMap[String, Int]() // will grow indefinitely as we do not garbage collect here
 
   override def onRequestSenderForBundle(packet: Packet.RequestSenderForBundle)
       : Option[Packet.ResponseSenderForBundle] = {
@@ -27,7 +27,7 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
     val num_copies_before = copies.getOrDefault(packet.bp.id, SprayAndWaitRouter.MAX_COPIES)
 
     if num_copies_before < 2 || !packet.bp.id.startsWith(ws.nodeId) then {
-      println(s"attempting direct routing")
+      println("attempting direct routing")
 
       val target_node_name: String = packet.bp.destination.extract_node_name()
 

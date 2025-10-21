@@ -1,6 +1,7 @@
 package riblt
 
 import riblt.Operation.{Add, Remove}
+
 import scala.util.hashing.MurmurHash3
 
 class RIBLT[T](

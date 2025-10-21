@@ -6,6 +6,7 @@ import reactives.default.*
 import scala.math.min
 import scala.swing.BorderPanel.Position
 import scala.swing.{BorderPanel, Dimension, GridPanel, MainFrame, ScrollPane, SimpleSwingApplication}
+import scala.swing.Frame
 
 object ApplicationSwingTextArea extends SimpleSwingApplication {
   // reactive components
@@ -42,7 +43,7 @@ object ApplicationSwingTextArea extends SimpleSwingApplication {
   }
 
   // layout
-  def top =
+  def top: Frame =
     new MainFrame {
       preferredSize = new Dimension(500, 500)
       contents = new BorderPanel {

@@ -3,6 +3,7 @@ package ex2013reswing
 import scala.annotation.nowarn
 import scala.swing.event.{ListChanged, ListElementsAdded, ListElementsRemoved, SelectionChanged}
 import scala.swing.{Color, ComboBox, Dimension, Font}
+import javax.swing.JComboBox
 
 @nowarn("msg=shadows field")
 class ReComboBox[A](
@@ -20,7 +21,7 @@ class ReComboBox[A](
   final override protected lazy val peer: ComboBox[A] & ComponentMixin =
     new ComboBox[A](Seq.empty[A]) with ComponentMixin
 
-  protected val javaPeer = peer.peer.asInstanceOf[javax.swing.JComboBox[A]]
+  protected val javaPeer: JComboBox[A] = peer.peer.asInstanceOf[javax.swing.JComboBox[A]]
 
   private var model: javax.swing.ListModel[A] = scala.compiletime.uninitialized
 
@@ -32,7 +33,7 @@ class ReComboBox[A](
       peer publish ListElementsAdded(null, e.getIndex0 to e.getIndex1)
   }
 
-  def modelChanged() = {
+  def modelChanged(): Unit = {
     if model != null then
       model `removeListDataListener` modelListener
     if javaPeer.getModel != null then
@@ -77,7 +78,7 @@ class ReComboBox[A](
       (peer, classOf[SelectionChanged])
     )
 
-    val changed = ReSwingEvent.using(peer, classOf[SelectionChanged])
+    val changed: ReSwingEvent[SelectionChanged] = ReSwingEvent.using(peer, classOf[SelectionChanged])
   }
 
   object ReSelection {
@@ -108,7 +109,7 @@ object ReComboBox {
       fireContentsChanged(this, 0, listData.size)
     }
 
-    def getElementAt(n: Int) = items(n)
+    def getElementAt(n: Int): A = items(n)
     def getSize              = items.size
     def getItems             = items
 

@@ -31,7 +31,7 @@ class DrawingPanel(val state: DrawingSpaceState) extends Panel {
         shape.draw(g)
   }
 
-  lazy val drawn = Evt[Command]() // #EVT
+  lazy val drawn: Evt[Command] = Evt[Command]() // #EVT
 
   listenTo(mouse.clicks, mouse.moves)
 
@@ -80,7 +80,7 @@ class DrawingPanel(val state: DrawingSpaceState) extends Panel {
   state.strokeWidth.changed ||                         // #IF //#EF
   state.color.changed) `observe` (_ => canvasChange()) // #IF //#HDL
 
-  def canvasChange() = repaint()
+  def canvasChange(): Unit = repaint()
 }
 
 /** This trait draws intersection points between all drawn shapes */
@@ -93,7 +93,7 @@ trait ShowIntersection extends DrawingPanel {
       g.drawOval(point.x - 3, point.y - 3, 6, 6)
   }
 
-  def getIntersectionPoints() = {
+  def getIntersectionPoints(): List[Point] = {
     val points = new ListBuffer[Point]
 
     for shape <- state.shapes.now do

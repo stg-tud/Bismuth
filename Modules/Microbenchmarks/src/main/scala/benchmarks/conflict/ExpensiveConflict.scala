@@ -13,7 +13,7 @@ class EvaluationCounter {
   var succeeded: Int = scala.compiletime.uninitialized
 
   @Setup(Level.Iteration)
-  def reset() = {
+  def reset(): Unit = {
     tried = 0
     succeeded = 0
   }
@@ -41,7 +41,7 @@ class ExpensiveConflict {
   var tried: Int                = scala.compiletime.uninitialized
 
   @Setup(Level.Iteration)
-  def setup(engineParam: EngineParam, work: Workload) = {
+  def setup(engineParam: EngineParam, work: Workload): Unit = {
     this.engine = engineParam.engine
     tried = 0
     cheapSource = Var(input.incrementAndGet())
@@ -57,13 +57,13 @@ class ExpensiveConflict {
   @Benchmark
   @Group("g")
   @GroupThreads(1)
-  def cheap() =
+  def cheap(): Unit =
     cheapSource.set(input.incrementAndGet())
 
   @Benchmark
   @Group("g")
   @GroupThreads(1)
-  def expensive(counter: EvaluationCounter) = {
+  def expensive(counter: EvaluationCounter): Unit = {
     expensiveSource.set(input.incrementAndGet())
     counter.tried += tried
     counter.succeeded += 1

@@ -90,7 +90,7 @@ object TreeTableViewExample extends JFXApp3 {
     Platform.implicitExit = true
 
     stage = new JFXApp3.PrimaryStage {
-      title = s"Permission Pane"
+      title = "Permission Pane"
       resizable = true
     }
     stage.setTitle("Permission Selection")

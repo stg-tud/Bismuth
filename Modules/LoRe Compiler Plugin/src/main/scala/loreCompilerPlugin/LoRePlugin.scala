@@ -133,7 +133,7 @@ class LoRePhase extends PluginPhase {
       lspClient.initializeLSP(folderPath)
     catch {
       case _: IOException =>
-        report.inform(s"could not starty dafny lsp, make sure dafny is on the path")
+        report.inform("could not starty dafny lsp, make sure dafny is on the path")
         return units
     }
 

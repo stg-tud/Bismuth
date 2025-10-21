@@ -14,7 +14,7 @@ import scala.language.implicitConversions
 object StateBasedUntrustedReplicaSizeBenchmark extends App {
   val minElementExponent   = 1 // 10 ** this as minimum tested total elements added to CRDT
   val maxElementExponent   = 3 // 10 ** this as maximum tested total elements added to CRDT
-  val MAX_TESTED_ELEMENTS  = Math.pow(10, maxElementExponent.toDouble).toInt
+  val MAX_TESTED_ELEMENTS: Int  = Math.pow(10, maxElementExponent.toDouble).toInt
   val MAX_PARALLEL_UPDATES = 4
 
   val outDir: Path = Paths.get("./benchmarks/results/")
@@ -25,8 +25,8 @@ object StateBasedUntrustedReplicaSizeBenchmark extends App {
   val csvHeader = "concurrentUpdates,commonElements,uniqueElements,untrustedReplicaSize,mergedSize"
   println(csvHeader)
   csvFile.println(csvHeader)
-  val dummyKeyValuePairs = Helper.dummyKeyValuePairs(MAX_TESTED_ELEMENTS)
-  val aead               = AeadTranslation(Helper.setupAead("AES128_GCM"))
+  val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(MAX_TESTED_ELEMENTS)
+  val aead: AeadTranslation               = AeadTranslation(Helper.setupAead("AES128_GCM"))
 
   for totalElements <- (minElementExponent to maxElementExponent).map(i => math.pow(10, i.toDouble).toInt) do {
     val crdt                       = new DeltaAWLWWMContainer[String, String]("0")

@@ -6,6 +6,7 @@ import reactives.structure.Diff
 
 import java.awt.Dimension
 import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.Frame
 
 /** As with the initial arithmetic trajectory, the numeric integration so far
   * is vulnerable to clock drift. To fix this, we derive integration ticks from
@@ -21,30 +22,30 @@ import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
 object FClockNumericCircle extends SimpleSwingApplication {
   val NanoSecond = 1000000000L
 
-  val nsTime = Var(System.nanoTime())
-  def tick() = nsTime.set(System.nanoTime())
+  val nsTime: Var[Long] = Var(System.nanoTime())
+  def tick(): Unit = nsTime.set(System.nanoTime())
 
-  val ticks = nsTime.change.collect { case Diff(from, to) => to - from }
+  val ticks: Event[Long] = nsTime.change.collect { case Diff(from, to) => to - from }
 
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
-  val angle = nsTime.map(_.toDouble / NanoSecond * math.Pi)
+  val angle: Signal[Double] = nsTime.map(_.toDouble / NanoSecond * math.Pi)
 
-  val velocity = Signal {
+  val velocity: Signal[Pos] = Signal {
     Pos(
       x = (panel.width.value / 2 - 50).toDouble * math.sin(angle.value) / NanoSecond,
       y = (panel.height.value / 2 - 50).toDouble * math.cos(angle.value) / NanoSecond
     )
   }
 
-  val inc = ticks.map(tick => velocity.value * tick.toDouble)
+  val inc: Event[Pos] = ticks.map(tick => velocity.value * tick.toDouble)
 
-  val pos = inc.fold(Pos(0, 0)) { (cur, inc) => cur + inc }
+  val pos: Signal[Pos] = inc.fold(Pos(0, 0)) { (cur, inc) => cur + inc }
 
   shapes.transform(new Circle(pos, Var(50)) :: _)
 
-  override lazy val top = {
+  override lazy val top: Frame = {
     panel.preferredSize = new Dimension(400, 300)
     new MainFrame {
       title = "REScala Demo"

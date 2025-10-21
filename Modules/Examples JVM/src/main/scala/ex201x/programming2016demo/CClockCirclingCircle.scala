@@ -5,6 +5,7 @@ import reactives.default.*
 
 import java.awt.Dimension
 import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.Frame
 
 /** In an effort to make the animation's timing more accurate,
   * we refactor the application to use the actual System's time.
@@ -20,14 +21,14 @@ import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
 object CClockCirclingCircle extends SimpleSwingApplication {
   val NanoSecond = 1000000000L
 
-  val nsTime = Var(System.nanoTime())
-  def tick() = nsTime.set(System.nanoTime())
+  val nsTime: Var[Long] = Var(System.nanoTime())
+  def tick(): Unit = nsTime.set(System.nanoTime())
 
-  val angle = nsTime.map(_.toDouble / NanoSecond * math.Pi)
+  val angle: Signal[Double] = nsTime.map(_.toDouble / NanoSecond * math.Pi)
 
-  val pos = angle.map(a => Pos(100d * math.sin(a), 100d * math.cos(a)))
+  val pos: Signal[Pos] = angle.map(a => Pos(100d * math.sin(a), 100d * math.cos(a)))
 
-  override lazy val top = {
+  override lazy val top: Frame = {
     val panel = new ShapesPanel(Var(List(
       new Circle(pos, Var(50))
     )))

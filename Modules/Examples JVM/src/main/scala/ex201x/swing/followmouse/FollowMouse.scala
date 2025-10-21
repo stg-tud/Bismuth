@@ -28,21 +28,21 @@ class FollowMouse {
 
   // The whole logic
 
-  val tick = Evt[Unit]()
-  val time = tick.iterate(0.0) { (acc: Double) => (acc + 0.1) % (math.Pi * 2) }
+  val tick: Evt[Unit] = Evt[Unit]()
+  val time: Signal[Double] = tick.iterate(0.0) { (acc: Double) => (acc + 0.1) % (math.Pi * 2) }
 
   val mouse  = new Mouse
-  val mouseX = Signal { mouse.position.value.getX.toInt - Size / 2 }
-  val mouseY = Signal { mouse.position.value.getY.toInt - Size / 2 }
+  val mouseX: Signal[Int] = Signal { mouse.position.value.getX.toInt - Size / 2 }
+  val mouseY: Signal[Int] = Signal { mouse.position.value.getY.toInt - Size / 2 }
 
-  val xOffset = Signal { math.sin(time.value) * Range }
-  val yOffset = Signal { math.cos(time.value) * Range }
+  val xOffset: Signal[Double] = Signal { math.sin(time.value) * Range }
+  val yOffset: Signal[Double] = Signal { math.cos(time.value) * Range }
 
-  val x = Signal { mouseX.value + xOffset.value.toInt }
-  val y = Signal { mouseY.value + yOffset.value.toInt }
+  val x: Signal[Int] = Signal { mouseX.value + xOffset.value.toInt }
+  val y: Signal[Int] = Signal { mouseY.value + yOffset.value.toInt }
 
   // redraw code
-  val stateChanged = mouse.position.changed.||[Any](tick)
+  val stateChanged: Event[Any] = mouse.position.changed.||[Any](tick)
   stateChanged observe { _ => frame.repaint() }
 
   // drawing code

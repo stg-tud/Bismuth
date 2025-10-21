@@ -7,8 +7,8 @@ import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import rdts.protocols.Participants
+import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import rdts.time.Time
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
@@ -96,8 +96,8 @@ class KeyValueReplica(
       if old != changed then {
         val upkept = changed.upkeep
         if state.subsumes(upkept)
-        then log(s"no changes")
-        else log(s"upkeep")
+        then log("no changes")
+        else log("upkeep")
         assert(changed == state)
         // else log(s"upkept: ${pprint(upkept)}")
         val newState = publish(upkept)
@@ -109,10 +109,10 @@ class KeyValueReplica(
 
     override def publish(delta: ClusterState): ClusterState = lock.synchronized {
       if delta `inflates` state then {
-        log(s"publishing")
+        log("publishing")
         state = state.merge(delta)
         dataManager.applyDelta(delta)
-      } else log(s"skip")
+      } else log("skip")
 
       state
     }
@@ -193,7 +193,7 @@ class KeyValueReplica(
     )
 
     override def handleIncoming(delta: ClientState): Unit = {
-      log(s"handling incoming from client")
+      log("handling incoming from client")
       val (old, changed) = currentStateLock.synchronized {
         val old = state
         state = state `merge` delta
@@ -208,11 +208,11 @@ class KeyValueReplica(
 
     override def publish(delta: ClientState): ClientState = currentStateLock.synchronized {
       if delta `inflates` state then {
-        log(s"publishing")
+        log("publishing")
         state = state.merge(delta)
         dataManager.applyDelta(delta)
       } else
-        log(s"skip")
+        log("skip")
 
       state
     }
@@ -242,7 +242,7 @@ class KeyValueReplica(
     )
 
     override def handleIncoming(delta: ConnInformation): Unit = {
-      log(s"handling incoming conn inf")
+      log("handling incoming conn inf")
       val (old, changed) = currentStateLock.synchronized {
         val old = state
         state = state `merge` delta
@@ -252,7 +252,7 @@ class KeyValueReplica(
 
     override def publish(delta: ConnInformation): ConnInformation = currentStateLock.synchronized {
       if delta `inflates` state then {
-        log(s"publishing conn inf")
+        log("publishing conn inf")
         state = state.merge(delta)
         dataManager.applyDelta(delta)
       } else log("skip publishing conn inf")

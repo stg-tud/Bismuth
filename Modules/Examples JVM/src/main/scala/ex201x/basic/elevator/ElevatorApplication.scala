@@ -23,7 +23,7 @@ object ElevatorApplication extends SimpleSwingApplication {
 
 class ElevatorApplication(val elevator: Elevator) {
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new GridPanel(0, 2) {
       contents += new ElevatorPainter(elevator)
       contents += new GridPanel(elevator.nFloors, 1) {
@@ -43,9 +43,9 @@ class ElevatorApplication(val elevator: Elevator) {
 
 class ElevatorPainter(e: Elevator) extends Panel {
   val FloorHeight = e.FloorHeight
-  val FloorWidth  = (0.9 * e.FloorHeight).toInt
-  val sizeX       = FloorWidth + 50
-  val sizeY       = FloorHeight * e.nFloors + 50
+  val FloorWidth: Int  = (0.9 * e.FloorHeight).toInt
+  val sizeX: Int       = FloorWidth + 50
+  val sizeY: Int       = FloorHeight * e.nFloors + 50
 
   preferredSize = new Dimension(sizeX, sizeY)
 

@@ -4,10 +4,11 @@ import ex2013reswing.ReTextField
 import reactives.default.*
 
 import scala.swing.{BoxPanel, FlowPanel, Label, MainFrame, Orientation, SimpleSwingApplication}
+import scala.swing.Frame
 
 object DropdownSample1 extends SimpleSwingApplication {
 
-  def top = {
+  def top: Frame = {
     new MainFrame {
 
       val col1 = new ReTextField(text = "Berlin", columns = 30)
@@ -15,14 +16,14 @@ object DropdownSample1 extends SimpleSwingApplication {
       val col3 = new ReTextField(text = "London", columns = 30)
       val col4 = new ReTextField(text = "Rome", columns = 30)
 
-      val val1 = Signal { col1.text.value }
-      val val2 = Signal { col2.text.value }
-      val val3 = Signal { col3.text.value }
-      val val4 = Signal { col4.text.value }
+      val val1: Signal[String] = Signal { col1.text.value }
+      val val2: Signal[String] = Signal { col2.text.value }
+      val val3: Signal[String] = Signal { col3.text.value }
+      val val4: Signal[String] = Signal { col4.text.value }
 
-      val listOfValues = Signal { List(val1.value, val2.value, val3.value, val4.value) }
+      val listOfValues: Signal[List[String]] = Signal { List(val1.value, val2.value, val3.value, val4.value) }
 
-      val options =
+      val options: Signal[List[String]] =
         Signal {
           listOfValues.value.filter { x =>
             if x != null then
@@ -35,13 +36,13 @@ object DropdownSample1 extends SimpleSwingApplication {
       // val listOfSignals = Signal {List(val1, val2, val3, val4)}
 
       val dropdown       = new ReDynamicComboBox(options = options, selection = -1)
-      val selectionIndex = Signal { dropdown.selection.value }
-      val validSelection =
+      val selectionIndex: Signal[Int] = Signal { dropdown.selection.value }
+      val validSelection: Signal[Option[Int]] =
         Signal { if options.value.indices.contains(selectionIndex.value) then Some(selectionIndex.value) else None }
 
       // select the currently selected item manually
-      val currentSelectedItem = Signal { validSelection.value.map(i => options.value(i)) }
-      val outputString        = Signal { currentSelectedItem.value.getOrElse("Nothing") }
+      val currentSelectedItem: Signal[Option[String]] = Signal { validSelection.value.map(i => options.value(i)) }
+      val outputString: Signal[String]        = Signal { currentSelectedItem.value.getOrElse("Nothing") }
       val outputField         = new ReTextField(text = outputString)
 
       title = "Dropdown example 1"

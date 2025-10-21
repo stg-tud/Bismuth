@@ -9,10 +9,10 @@ package object ex2013reswing {
 
   type CompList = Seq[CompItem]
   object CompList {
-    def apply(elems: CompItem*) = Seq(elems*)
+    def apply(elems: CompItem*): Seq[Component] = Seq(elems*)
   }
 
-  def inSyncEDT(op: => Unit) =
+  def inSyncEDT(op: => Unit): Unit =
     if SwingUtilities.isEventDispatchThread then
       op
     else

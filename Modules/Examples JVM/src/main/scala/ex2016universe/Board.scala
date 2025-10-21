@@ -15,14 +15,14 @@ object Board {
   * A Board is infinite, but width and height specify the area being displayed.
   */
 class Board(val width: Int, val height: Int) {
-  val allPositions                     = (for x <- 0 to width; y <- 0 to height yield Pos(x, y)).toSet
-  val elementSpawned                   = Evt[BoardElement]()
-  val elementRemoved                   = Evt[BoardElement]()
-  val animalSpawned                    = elementSpawned && (_.isAnimal)
-  val animalRemoved                    = elementRemoved && (_.isAnimal)
-  val animalsBorn                      = animalSpawned.count()
-  val animalsDied                      = animalRemoved.count()
-  val animalsAlive                     = Signal.lift(animalsBorn, animalsDied) { _ - _ }
+  val allPositions: Set[Pos]                     = (for x <- 0 to width; y <- 0 to height yield Pos(x, y)).toSet
+  val elementSpawned: Evt[BoardElement]                   = Evt[BoardElement]()
+  val elementRemoved: Evt[BoardElement]                   = Evt[BoardElement]()
+  val animalSpawned: Event[BoardElement]                    = elementSpawned && (_.isAnimal)
+  val animalRemoved: Event[BoardElement]                    = elementRemoved && (_.isAnimal)
+  val animalsBorn: Signal[Int]                      = animalSpawned.count()
+  val animalsDied: Signal[Int]                      = animalRemoved.count()
+  val animalsAlive: Signal[Int]                     = Signal.lift(animalsBorn, animalsDied) { _ - _ }
   var elements: Map[Pos, BoardElement] = scala.collection.concurrent.TrieMap()
 
   /** adds a board element at given position */
@@ -32,7 +32,7 @@ class Board(val width: Int, val height: Int) {
   }
 
   /** removes the board element if present in the board */
-  def removeDead() = {
+  def removeDead(): Unit = {
     elements = elements.filter {
       case (p, be) =>
         if be.isDead.readValueOnce then {
@@ -43,16 +43,16 @@ class Board(val width: Int, val height: Int) {
   }
 
   /** @return the immediate neighbors of the given position */
-  def neighbors(pos: Pos) = nearby(pos, 1)
+  def neighbors(pos: Pos): IndexedSeq[BoardElement] = nearby(pos, 1)
 
   /** @return the elements in this board nearby pos */
-  def nearby(pos: Pos, range: Int) = Board.proximity(pos, range).flatMap(elements.get)
+  def nearby(pos: Pos, range: Int): IndexedSeq[BoardElement] = Board.proximity(pos, range).flatMap(elements.get)
 
   /** @return the nearest free position to pos */
-  def nearestFree(pos: Pos) = Board.proximity(pos, 1).find(isFree)
+  def nearestFree(pos: Pos): Option[Pos] = Board.proximity(pos, 1).find(isFree)
 
   /** @return true if pos is free */
-  def isFree(pos: Pos) = !elements.contains(pos)
+  def isFree(pos: Pos): Boolean = !elements.contains(pos)
 
   /** moves pos in direction dir if possible (when target is free) */
   def moveIfPossible(pos: Pos, dir: Pos): Unit = {
@@ -68,14 +68,14 @@ class Board(val width: Int, val height: Int) {
   private def clear(pos: Pos): Option[BoardElement] = elements.remove(pos)
 
   /** @return the position of the given BoardElement. slow. */
-  def getPosition(be: BoardElement) = {
+  def getPosition(be: BoardElement): Option[Pos] = {
     elements.collectFirst {
       case (pos, b) if b == be => pos
     }
   }
 
   /** @return a random free position on this board */
-  def randomFreePosition(random: Random) = {
+  def randomFreePosition(random: Random): Pos = {
     val possiblePositions = allPositions.diff(elements.keySet).toVector
     possiblePositions(random.nextInt(possiblePositions.length))
   }

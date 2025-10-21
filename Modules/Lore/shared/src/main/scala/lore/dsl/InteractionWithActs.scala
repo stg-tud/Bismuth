@@ -4,7 +4,6 @@ import reactives.SelectedScheduler.State as BundleState
 import reactives.core.ReSource
 import reactives.operator.Event
 
-import scala.annotation.static
 import scala.quoted.{Expr, Quotes, Type}
 
 def constructIWAWithRequires[S <: Tuple, A](

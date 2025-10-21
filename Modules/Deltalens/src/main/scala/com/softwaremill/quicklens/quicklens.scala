@@ -210,8 +210,8 @@ package object quicklens {
 
   object QuicklensEitherFunctor:
     given [L, R]: QuicklensEitherFunctor[Either, L, R] with
-      override def eachLeft[A](e: Either[A, R], f: A => A)  = e.left.map(f)
-      override def eachRight[A](e: Either[L, A], f: A => A) = e.map(f)
+      override def eachLeft[A](e: Either[A, R], f: A => A): Either[A, R]  = e.left.map(f)
+      override def eachRight[A](e: Either[L, A], f: A => A): Either[L, A] = e.map(f)
 
   // Currently only used for [[Option]], but could be used for [[Right]]-biased [[Either]]s.
   trait QuicklensSingleAtFunctor[F[_]]:

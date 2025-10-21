@@ -94,7 +94,7 @@ class WebRTCConnector(configuration: dom.RTCConfiguration) {
     )
 
   /** Mostly to wrap the session descriptions, but having the rest is also convenient */
-  def readOverview =
+  def readOverview: ConnectorOverview =
     ConnectorOverview(
       SessionDescription(peerConnection.localDescription),
       SessionDescription(peerConnection.remoteDescription),

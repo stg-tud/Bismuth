@@ -1,12 +1,12 @@
 package datatypes
 
-import datatypes.OpType.{Add, Remove}
 import crypto.Ed25519Util
-import dag.{Event, HashDAG, SyncRequest}
-import riblt.{CodedSymbol, RIBLT}
+import dag.HashDAG
+import datatypes.OpType.{Add, Remove}
+import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
+
 import scala.collection.immutable.HashMap
-import scala.collection.{immutable, mutable}
 
 case class ORSet[T] private (
     hashDAG: HashDAG[Op[T]],

@@ -12,7 +12,7 @@ import scala.xml.{Node, NodeSeq}
   * internal represantation of the RSS Feed
   */
 class XmlParser {
-  val explicitItemParsed = Evt[RSSItem]() // #EVT
+  val explicitItemParsed: Evt[RSSItem] = Evt[RSSItem]() // #EVT
 
   // only for clarity in event expressions below
   private def discardArgument[A](tuple: (Any, A)): A       = tuple._2
@@ -26,7 +26,7 @@ class XmlParser {
     (parseChannel.after `map` discardArgument[Option[RSSChannel]]) && // #EF //#EF
     { parseSuccessfull(_) } `map` { (o: Option[RSSChannel]) => o.get } // #EF
 
-  lazy val entityParsed = channelParsed || itemParsed // #EVT //#EF //#EF
+  lazy val entityParsed: Event[Ordered[? >: RSSChannel & RSSItem <: RSSChannel | RSSItem]] = channelParsed || itemParsed // #EVT //#EF //#EF
 
   val dateFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
 
@@ -80,7 +80,7 @@ class XmlParser {
     *  None if the xml could not be parsed
     *  Some(RssItem) otherwise
     */
-  val parseItem = Observable { // #EVT //#EVT
+  val parseItem: Observable[Node, Option[RSSItem]] = Observable { // #EVT //#EVT
     (xmlNode: Node) => parseItemSilent(xmlNode)
   }
 

@@ -15,11 +15,11 @@ class Freedraw(
     with Movable
     with Resizable {
 
-  override def doDraw(g: Graphics2D) =
+  override def doDraw(g: Graphics2D): Unit =
     for (a, b) <- toLines() do
       g.drawLine(a.x, a.y, b.x, b.y)
 
-  override def toLines() =
+  override def toLines(): List[(Point, Point)] =
     path zip path.tail
 
   override def copy(

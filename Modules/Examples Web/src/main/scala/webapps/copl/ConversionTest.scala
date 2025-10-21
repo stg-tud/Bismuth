@@ -9,6 +9,7 @@ import scalatags.JsDom.TypedTag
 import scalatags.JsDom.all.*
 
 import scala.scalajs.js.annotation.JSExportTopLevel
+import org.scalajs.dom.HTMLDivElement
 
 object ConversionTest {
 
@@ -36,7 +37,7 @@ object ConversionTest {
     from.lens.inverse.compose(to.lens)
 
   /** A demonstration of reactive lenses using a simple unit converter for temperature units */
-  def unitConverter() = {
+  def unitConverter(): TypedTag[HTMLDivElement] = {
 
     // Create selection for units and convert selected units to  signals
     val leftUnitInput: TypedTag[Select] = select(TempConversion.values.map { unit => option(unit.toString) })

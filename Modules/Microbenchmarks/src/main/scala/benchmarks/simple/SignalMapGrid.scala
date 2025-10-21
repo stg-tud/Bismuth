@@ -26,7 +26,7 @@ class SignalMapGrid extends BusyThreads {
   var depth: Int = scala.compiletime.uninitialized
 
   @Setup(Level.Iteration)
-  def setup(engineParam: EngineParam, work: Workload) = {
+  def setup(engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     source = Var(0)
     leafs =

@@ -7,11 +7,12 @@ import ex201x.programming2016demo.ui.{Shape, ShapesPanel}
 import reactives.default.*
 
 import scala.swing.{Dimension, MainFrame, SimpleSwingApplication}
+import scala.swing.Frame
 
 object PSplitscreenRacketBall extends Main {
   class Opponent(panelSize: Signal[Dimension], shapes: Signal[List[Shape]]) extends SimpleSwingApplication {
     val panel2            = new ShapesPanel(shapes)
-    override lazy val top = new MainFrame {
+    override lazy val top: Frame = new MainFrame {
       title = "Player 2"
       contents = panel2
       resizable = false
@@ -22,14 +23,14 @@ object PSplitscreenRacketBall extends Main {
     }
   }
 
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
   val playingField = new PlayingField(panel.width.map(_ - 25), panel.height.map(_ - 25))
   val racket       = new Racket(playingField.width, true, playingField.height, panel.Mouse.y)
   shapes.transform(playingField.shape :: racket.shape :: _)
 
-  val balls = List(
+  val balls: List[BouncingBall] = List(
     new BouncingBall(200d, 150d, Var(50), panel.Mouse.middleButton.pressed),
     new BouncingBall(-200d, 100d, Var(50), panel.Mouse.middleButton.pressed)
   )

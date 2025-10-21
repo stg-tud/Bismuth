@@ -16,7 +16,7 @@ import java.util.Date
   */
 case class RSSChannel(title: String, link: Option[URL], description: String, pubDate: Option[Date], source: Option[URL])
     extends Ordered[RSSChannel] {
-  def compare(that: RSSChannel) = {
+  def compare(that: RSSChannel): Int = {
     val result =
       for
         thisDate <- this.pubDate
@@ -28,7 +28,7 @@ case class RSSChannel(title: String, link: Option[URL], description: String, pub
 }
 
 object RSSChannel {
-  def changeSource(channel: RSSChannel, src: Option[URL]) =
+  def changeSource(channel: RSSChannel, src: Option[URL]): RSSChannel =
     channel match {
       case RSSChannel(title, link, desc, date, _) => RSSChannel(title, link, desc, date, src)
     }

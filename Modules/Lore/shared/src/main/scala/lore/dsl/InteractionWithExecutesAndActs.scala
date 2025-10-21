@@ -5,7 +5,7 @@ import reactives.core.ReSource
 import reactives.operator.Fold.current
 import reactives.operator.{Event, Fold, FoldState}
 
-import scala.annotation.{static, targetName}
+import scala.annotation.targetName
 import scala.quoted.{Expr, Quotes, Type}
 
 def constructIWEAAWithRequires[S <: Tuple, A](

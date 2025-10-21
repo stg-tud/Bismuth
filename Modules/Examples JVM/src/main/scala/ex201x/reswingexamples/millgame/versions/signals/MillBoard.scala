@@ -3,6 +3,8 @@ package ex201x.reswingexamples.millgame.versions.signals
 import ex201x.reswingexamples.millgame.*
 import ex201x.reswingexamples.millgame.types.*
 import reactives.default.*
+import reactives.structure.Diff
+import reactives.structure.Diff
 
 class MillBoard {
   /* wrap stones Var, to have the same interface as other versions */
@@ -12,7 +14,7 @@ class MillBoard {
   val stonesVar: Var[Vector[Slot]] = Var(Vector.fill(24)(Empty)) // #VAR
 
   /* slots by the 16 lines of the game */
-  val lines = Signal { // #SIG
+  val lines: Signal[IndexedSeq[List[Slot]]] = Signal { // #SIG
     MillBoardRenamed.lines map { _ map { slot => stonesVar.value(slot.index) } }
   }
 
@@ -62,11 +64,11 @@ class MillBoard {
     (from, to) => jumpAllowed(from, to) && MillBoardRenamed.isConnected(from, to)
   }
 
-  def place(slot: SlotIndex, color: Slot) = this(slot) = color
+  def place(slot: SlotIndex, color: Slot): Unit = this(slot) = color
 
-  def remove(slot: SlotIndex) = this(slot) = Empty
+  def remove(slot: SlotIndex): Unit = this(slot) = Empty
 
-  def move(from: SlotIndex, to: SlotIndex) =
+  def move(from: SlotIndex, to: SlotIndex): Unit =
     // / NOTE: this is an interesting detail in the signal version
     // / If we delete the new stone FIRST, we might have < 3 stones,
     // / which gets propagated and triggers the end of the game!
@@ -92,12 +94,12 @@ class MillBoard {
   }
 
   // / NOTE: Workaround because change fires even when there is no value change
-  val lineOwnersChanged    = lineOwners.change && (c => c._2 != c._1) // #EVT //#IF
-  val lineOwnersNotChanged = lineOwners.change.except(lineOwnersChanged)
+  val lineOwnersChanged: Event[Diff[Vector[Slot]]]    = lineOwners.change && (c => c._2 != c._1) // #EVT //#IF
+  val lineOwnersNotChanged: Event[Diff[Vector[Slot]]] = lineOwners.change.except(lineOwnersChanged)
   lineOwnersNotChanged observe { x =>
     println("not changed: " + x)
   }
-  val millOpenedOrClosed = lineOwners.change.map { // #EVT //#IF
+  val millOpenedOrClosed: Event[Slot] = lineOwners.change.map { // #EVT //#IF
     change =>
       // / NOTE: Workaround because change event fires (null, new) tuple
       if change._1 eq null then change._2.find(_ != Empty).get
@@ -110,8 +112,8 @@ class MillBoard {
     val stones = stonesVar.value
     (color: Slot) => stones.count(_ == color)
   }
-  val blackStones                          = Signal { numStones.value(Black) } // #SIG
-  val whiteStones                          = Signal { numStones.value(White) } // #SIG
+  val blackStones: Signal[Int]                          = Signal { numStones.value(Black) } // #SIG
+  val whiteStones: Signal[Int]                          = Signal { numStones.value(White) } // #SIG
   val numStonesChanged: Event[(Slot, Int)] =                                   // #EVT
     blackStones.changed.map((Black, _: Int)) || whiteStones.changed.map((White, _: Int)) // #IF //#EF //#IF
 }

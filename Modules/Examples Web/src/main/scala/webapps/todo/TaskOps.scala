@@ -4,13 +4,14 @@ import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
-import TodoDataManager.TodoRepState
+import webapps.todo.TodoDataManager.TodoRepState
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.unused
+import reactives.operator.Fold.Branch
 
 object TaskOps {
-  def resetBuffer[T] = Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
+  def resetBuffer[T]: Branch[DeltaBuffer[T]] = Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
 }
 
 // `taskrefs` is unused as a reference, but is used indirectly so this parameter serves as a requirement

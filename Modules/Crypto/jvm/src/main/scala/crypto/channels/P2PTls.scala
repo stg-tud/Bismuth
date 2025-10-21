@@ -116,7 +116,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
       socket.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch
       case _: UnsupportedOperationException =>
-        println(s"TCP nodelay not supported on this socket")
+        println("TCP nodelay not supported on this socket")
 
     override def info: ConnectionInfo =
       socket.getLocalSocketAddress match

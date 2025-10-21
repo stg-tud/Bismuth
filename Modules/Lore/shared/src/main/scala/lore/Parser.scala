@@ -2,7 +2,7 @@ package lore
 
 import cats.data.NonEmptyList
 import cats.parse.Rfc5234.{alpha, crlf, digit, lf, wsp}
-import cats.parse.{Rfc5234, Parser as P, Parser0 as P0}
+import cats.parse.{Parser as P, Parser0 as P0}
 import cats.syntax.all.*
 import lore.ast.*
 
@@ -41,7 +41,7 @@ object Parser {
     Set("Interaction", "assert", "assume", "true", "false", "forall", "exists")
   val ws: P0[Unit] = wsp.rep0.void // whitespace
   // any amount of whitespace, newlines or comments
-  val wsOrNl    = (wsp | P.defer(comment) | lf | crlf).rep0
+  val wsOrNl: P0[List[Unit]]    = (wsp | P.defer(comment) | lf | crlf).rep0
   val id: P[ID] = (alpha ~ (alpha | digit | P.char('_').as('_')).rep0).string
   // types
   val typeName: P[Type] = P.recursive { rec =>
@@ -58,9 +58,9 @@ object Parser {
         case t @ TupleType(_)  => t
       }
   }
-  lazy val innerType = (t: P[Type]) =>
+  lazy val innerType: P[Type] => P[NonEmptyList[Type]] = (t: P[Type]) =>
     ws.with1 *> t.repSep(P.char(',') ~ ws) <* ws
-  lazy val tupleType =
+  lazy val tupleType: P[Type] => P[NonEmptyList[Type]] =
     (t: P[Type]) => P.char('(') *> innerType(t) <* P.char(')')
   // val underscore: P[ID] = P.char('_').as("_")
 
@@ -206,7 +206,7 @@ object Parser {
         )
     }
   // helper for boolean expressions with arbitrarily long sequences like && and ||
-  val boolSeq = (factor: P[Term], separator: String) =>
+  val boolSeq: (P[Term], String) => P[Term] = (factor: P[Term], separator: String) =>
     parseSeq(factor, P.string(separator).as(separator)).map(evalBoolSeq)
   def evalBoolSeq(seq: (Term, Seq[(String, Term)])): Term =
     seq match {
@@ -485,5 +485,5 @@ object Parser {
   val prog: P[NonEmptyList[Term]] =
     term.repSep(wsOrNl).surroundedBy(wsOrNl) <* P.end
 
-  def parse(p: String) = prog.parseAll(p)
+  def parse(p: String): Either[P.Error, NonEmptyList[Term]] = prog.parseAll(p)
 }

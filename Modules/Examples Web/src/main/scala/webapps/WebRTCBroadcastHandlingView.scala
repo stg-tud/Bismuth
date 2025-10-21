@@ -122,7 +122,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
     }
   }
 
-  def addDataChannel(handling: WebRTCHandling) = {
+  def addDataChannel(handling: WebRTCHandling): Unit = {
 
     val channel = handling.peer.peerConnection.createDataChannel(
       channelLabel,
@@ -146,7 +146,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
 
   val codec: JsonValueCodec[SessionDescription] = JsonCodecMaker.make
 
-  val peer = WebRTCConnector(new dom.RTCConfiguration {
+  val peer: WebRTCConnector = WebRTCConnector(new dom.RTCConfiguration {
     iceServers = js.Array[dom.RTCIceServer](new RTCIceServer {
       urls = js.Array[String]("stun:stun.t-online.de:3478")
     })
@@ -165,7 +165,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
             peer.updateRemoteDescription(cs).run(using ())(errorReporter)
           catch
             case ex: JsonReaderException =>
-              throw IllegalStateException(s"input is not a valid session description", ex)
+              throw IllegalStateException("input is not a valid session description", ex)
         }
       ).render
 

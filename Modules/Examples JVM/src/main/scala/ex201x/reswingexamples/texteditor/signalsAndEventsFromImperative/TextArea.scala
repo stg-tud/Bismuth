@@ -36,21 +36,21 @@ class TextArea extends ReComponent {
   }
   preferredSize.using(() => peer.preferredSize, peer.preferredSize_=, "preferredSize")
 
-  val charCount = Signal { buffer.length.value }
+  val charCount: Signal[Int] = Signal { buffer.length.value }
 
-  val lineCount = Signal { LineIterator(buffer.iterable.value).size }
+  val lineCount: Signal[Int] = Signal { LineIterator(buffer.iterable.value).size }
 
-  val wordCount = Signal {
+  val wordCount: Signal[Int] = Signal {
     buffer.iterable.value.iterator.foldLeft((0, false)) { (c, ch) =>
       val alphanum = Character.isLetterOrDigit(ch)
       (if alphanum && !c._2 then c._1 + 1 else c._1, alphanum)
     }._1
   }
 
-  val selected = Signal {
+  val selected: Signal[Iterable[Char]] = Signal {
     val (it, dot, mark) = (buffer.iterable.value, caret.dot.value, caret.mark.value)
     val (start, end)    = (min(dot, mark), max(dot, mark))
-    new Iterable[Char] { def iterator = it.iterator.slice(start, end) }: Iterable[Char]
+    new Iterable[Char] { def iterator: Iterator[Char] = it.iterator.slice(start, end) }: Iterable[Char]
   }
 
   def selectAll(): Unit = {
@@ -83,24 +83,24 @@ class TextArea extends ReComponent {
   // [same semantics as for: javax.swing.text.Caret]
   object caret {
     def dot               = buffer.caret
-    def dot_=(value: Int) = buffer.caretChanged.fire(value)
+    def dot_=(value: Int): Unit = buffer.caretChanged.fire(value)
 
     // dot as position (row and column)
     private val dotPosSignal      = Signal { LineOffset.position(buffer.iterable.value, dot.value) }
     def dotPos                    = dotPosSignal
-    def dotPos_=(value: Position) = dot = LineOffset.offset(buffer.iterable.readValueOnce, value)
+    def dotPos_=(value: Position): Unit = dot = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
     private val markVar = Var(0)
 
     // mark as offset
     private val markSignal = Signal { markVar.value }
     def mark               = markSignal
-    def mark_=(value: Int) = if value >= 0 && value <= buffer.length.readValueOnce then markVar `set` value
+    def mark_=(value: Int): Unit = if value >= 0 && value <= buffer.length.readValueOnce then markVar `set` value
 
     // mark as position (row and column)
     private val markPosSignal      = Signal { LineOffset.position(buffer.iterable.value, mark.value) }
     def markPos                    = markPosSignal
-    def markPos_=(value: Position) = mark = LineOffset.offset(buffer.iterable.readValueOnce, value)
+    def markPos_=(value: Position): Unit = mark = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
     // caret location as offset
     def offset                     = dot
@@ -111,17 +111,17 @@ class TextArea extends ReComponent {
 
     // caret location as position (row and column)
     def position                    = dotPos
-    def position_=(value: Position) = offset = LineOffset.offset(buffer.iterable.readValueOnce, value)
+    def position_=(value: Position): Unit = offset = LineOffset.offset(buffer.iterable.readValueOnce, value)
 
-    protected[TextArea] val blink   = new Timer(500) start
+    protected[TextArea] val blink: Timer   = new Timer(500) start
     protected[TextArea] val steady  = new Timer(500, false)
-    protected[TextArea] val visible = blink.fired.toggle(
+    protected[TextArea] val visible: Signal[Boolean] = blink.fired.toggle(
       Signal { hasFocus.value },
       Signal { hasFocus.value && steady.running.value }
     )
   }
 
-  protected def posInLinebreak(p: Int) =
+  protected def posInLinebreak(p: Int): Boolean =
     p > 0 && p < buffer.length.readValueOnce &&
     buffer(p - 1) == '\r' && buffer(p) == '\n'
 
@@ -132,14 +132,14 @@ class TextArea extends ReComponent {
     buffer.remove(selEnd - selStart)
   }
 
-  protected def pointFromPosition(position: Position) = {
+  protected def pointFromPosition(position: Position): Point = {
     val line = LineIterator(buffer.iterable.readValueOnce).drop(position.row).next()
     val y    = position.row * lineHeight
     val x    = stringWidth(line.substring(0, math.min(position.col, line.length)))
     new Point(x + padding, y)
   }
 
-  protected def positionFromPoint(point: Point) = {
+  protected def positionFromPoint(point: Point): Position = {
     val row = point.y / lineHeight
     val it  = LineIterator(buffer.iterable.readValueOnce).drop(row)
     val col =

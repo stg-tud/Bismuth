@@ -4,8 +4,8 @@ import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
-import rdts.base.{Lattice, LocalUid, Uid}
-import rdts.time.{Dot, Dots}
+import rdts.base.{LocalUid, Uid}
+import rdts.time.Dots
 import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
@@ -82,7 +82,7 @@ class DeltaDissemination[State](
 
   val printExceptionHandler: Callback[Any] =
     case Failure(ex) =>
-      println(s"exception during connection activation")
+      println("exception during connection activation")
       ex.printStackTrace()
     case Success(_) => ()
 
@@ -110,7 +110,7 @@ class DeltaDissemination[State](
       {
         case Success(msg)   => handleMessage(msg, from)
         case Failure(error) =>
-          println(s"exception during message handling")
+          println("exception during message handling")
           error.printStackTrace()
       }
     }

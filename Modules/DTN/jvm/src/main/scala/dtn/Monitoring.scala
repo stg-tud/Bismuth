@@ -1,7 +1,7 @@
 package dtn
 
-import io.bullet.borer.{Codec, Json}
 import io.bullet.borer.derivation.MapBasedCodecs.*
+import io.bullet.borer.{Codec, Json}
 import rdts.base.Lattice.syntax
 import rdts.time.Dots
 

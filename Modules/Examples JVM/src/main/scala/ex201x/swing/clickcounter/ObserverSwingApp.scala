@@ -5,15 +5,15 @@ import scala.swing.*
 import scala.swing.event.*
 
 object ObserverSwingApp extends SimpleSwingApplication {
-  def top =
+  def top: Frame =
     new MainFrame {
 
       /* Create the graphics */
       title = "Reactive Swing App"
-      val button = new Button {
+      val button: Button = new Button {
         text = "Click me"
       }
-      val label = new Label {
+      val label: Label = new Label {
         text = "No button clicks registered"
       }
       contents = new BoxPanel(Orientation.Vertical) {

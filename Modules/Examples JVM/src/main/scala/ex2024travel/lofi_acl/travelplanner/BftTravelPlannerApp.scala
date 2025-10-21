@@ -9,7 +9,7 @@ object BftTravelPlannerApp extends JFXApp3 {
   override def start(): Unit = {
     Platform.implicitExit = true
     stage = new JFXApp3.PrimaryStage {
-      title = s"Travel Planner"
+      title = "Travel Planner"
       scene = new MainScene(BftTpmFactory)
       resizable = true
     }

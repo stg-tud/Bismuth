@@ -25,22 +25,22 @@ class SwitchVersion {
   val initPosition = new Point(20, 10)
   val speed        = new Point(10, 8)
 
-  val tick = Evt[Unit]()
+  val tick: Evt[Unit] = Evt[Unit]()
   // Using switch
 
   val x: Signal[Int] = tick.fold(initPosition.x) { (pos, _) => pos + speedX.now }
   val y: Signal[Int] = tick.fold(initPosition.y) { (pos, _) => pos + speedY.now }
 
-  val xBounce = x.changed && (x => x < 0 || x + Size > Max_X)
-  val yBounce = y.changed && (y => y < 0 || y + Size > Max_Y)
+  val xBounce: Event[Int] = x.changed && (x => x < 0 || x + Size > Max_X)
+  val yBounce: Event[Int] = y.changed && (y => y < 0 || y + Size > Max_Y)
 
-  val speedX = xBounce.toggle(Var(speed.x), Var(-speed.x))
-  val speedY = yBounce.toggle(Var(speed.y), Var(-speed.y))
+  val speedX: Signal[Int] = xBounce.toggle(Var(speed.x), Var(-speed.x))
+  val speedY: Signal[Int] = yBounce.toggle(Var(speed.y), Var(-speed.y))
 
   tick observe { (_: Unit) => frame.repaint() }
 
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
       override def paintComponent(g: Graphics2D): Unit =

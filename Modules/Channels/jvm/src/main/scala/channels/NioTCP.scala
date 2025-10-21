@@ -1,12 +1,12 @@
 package channels
 
-import channels.NioTCP.{AcceptAttachment, EndOfChannelException, ReceiveAttachment}
+import channels.NioTCP.{AcceptAttachment, ReceiveAttachment}
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import java.io.IOException
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
-import java.nio.channels.{ClosedChannelException, SelectionKey, Selector, ServerSocketChannel, SocketChannel}
+import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import scala.util.control.NonFatal
 
 object NioTCP {
@@ -29,13 +29,13 @@ class NioTCP {
 
   val selector: Selector = Selector.open()
 
-  def loopSelection(abort: Abort) = {
+  def loopSelection(abort: Abort): Unit = {
     while !abort.closeRequest do
       selector.select()
       runSelection()
   }
 
-  def runSelection() = {
+  def runSelection(): Unit = {
 
     selector.selectedKeys().forEach {
       case key if key.isReadable =>

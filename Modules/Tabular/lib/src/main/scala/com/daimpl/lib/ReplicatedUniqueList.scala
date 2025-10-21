@@ -1,7 +1,7 @@
 package com.daimpl.lib
 
 import com.daimpl.lib.ReplicatedUniqueList.OpPrecedence.{Positional, Textual}
-import com.daimpl.lib.ReplicatedUniqueList.{ElementId, MarkerId, MarkerValue, MarkerRemovalBehavior, OpPrecedence}
+import com.daimpl.lib.ReplicatedUniqueList.{ElementId, MarkerId, MarkerRemovalBehavior, MarkerValue, OpPrecedence}
 import rdts.base.*
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}

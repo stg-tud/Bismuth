@@ -7,7 +7,7 @@ class LineIterator(it: Iterator[Char]) extends Iterator[String] {
     if ch.nonEmpty then { val c = ch.get; ch = None; c }
     else it.next()
 
-  def hasNext        = blank || !ch.isEmpty || it.hasNext
+  def hasNext: Boolean        = blank || !ch.isEmpty || it.hasNext
   def next(): String = {
     if blank then { blank = false; return "" }
 

@@ -4,8 +4,7 @@ import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
-import rdts.base.Lattice
-import rdts.base.LocalUid
+import rdts.base.{Lattice, LocalUid}
 
 object Main {
   case class SpreadsheetData(

@@ -83,15 +83,15 @@ class MapMergeBenchmark {
   }
 
   @Benchmark
-  def setMerge() = latticeSet.merge(left, right)
+  def setMerge(): Map[Int, Int] = latticeSet.merge(left, right)
 
   @Benchmark
-  def hashMerge() = latticeHash.merge(left, right)
+  def hashMerge(): Map[Int, Int] = latticeHash.merge(left, right)
 
   @Benchmark
-  def mutableMerge() = latticeMutable.merge(left, right)
+  def mutableMerge(): Map[Int, Int] = latticeMutable.merge(left, right)
 
   @Benchmark
-  def foldMerge() = latticeFold.merge(left, right)
+  def foldMerge(): Map[Int, Int] = latticeFold.merge(left, right)
 
 }

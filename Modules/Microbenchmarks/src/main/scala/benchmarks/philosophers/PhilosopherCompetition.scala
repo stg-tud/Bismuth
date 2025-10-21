@@ -101,7 +101,7 @@ class Competition extends BusyThreads {
   var locks: Array[Lock]     = scala.compiletime.uninitialized
 
   @Setup
-  def setup(params: BenchmarkParams, work: Workload, engineParam: EngineParam) = {
+  def setup(params: BenchmarkParams, work: Workload, engineParam: EngineParam): Unit = {
     manualLocking = engineParam.engineName == "unmanaged" && layout != "noconflict"
     if manualLocking then {
       locks = Array.fill(philosophers)(new ReentrantLock())

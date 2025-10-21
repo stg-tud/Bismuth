@@ -101,7 +101,7 @@ object Compiler {
       case e: Throwable =>
         println(
           fansi.Color
-            .Red(s"Unknown error!")
+            .Red("Unknown error!")
             .overlay(fansi.Bold.On)
         )
         throw e

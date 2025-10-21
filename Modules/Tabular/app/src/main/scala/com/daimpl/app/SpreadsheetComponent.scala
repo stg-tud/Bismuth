@@ -1,18 +1,17 @@
 package com.daimpl.app
 
-import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import com.daimpl.lib.Spreadsheet.SpreadsheetCoordinate
-import japgolly.scalajs.react.*
+import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
 import japgolly.scalajs.react.internal.Box
-import japgolly.scalajs.react.{ReactDragEvent, ReactMouseEvent}
 import japgolly.scalajs.react.vdom.html_<^.*
+import japgolly.scalajs.react.{ReactDragEvent, ReactMouseEvent, *}
+import org.scalajs.dom
+import rdts.base.{LocalUid, Uid}
 
 import scala.scalajs.js.timers
 import scala.scalajs.js.timers.SetTimeoutHandle
-import org.scalajs.dom
-import rdts.base.{LocalUid, Uid}
 
 object SpreadsheetComponent {
 
@@ -434,7 +433,7 @@ object SpreadsheetComponent {
               if spreadsheet.numRows == 0 then
                 <.div(
                   ^.className := "flex gap-2 items-center",
-                  <.span(^.className := "text-sm text-gray-600", s"No rows present."),
+                  <.span(^.className := "text-sm text-gray-600", "No rows present."),
                   <.button(
                     ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
                     ^.onClick --> backend.addRow(),
@@ -468,7 +467,7 @@ object SpreadsheetComponent {
               if spreadsheet.numColumns == 0 then
                 <.div(
                   ^.className := "flex gap-2 items-center",
-                  <.span(^.className := "text-sm text-gray-600", s"No columns present."),
+                  <.span(^.className := "text-sm text-gray-600", "No columns present."),
                   <.button(
                     ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
                     ^.onClick --> backend.addColumn(),

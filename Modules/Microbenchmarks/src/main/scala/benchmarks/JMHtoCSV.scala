@@ -2,15 +2,20 @@ package benchmarks
 
 import java.io.FileWriter
 import scala.io.Source
+import scala.util.matching.Regex
+import scala.util.matching.Regex
+import scala.util.matching.Regex
+import scala.util.matching.Regex
+import scala.util.matching.Regex
 
 object JMHtoCSV {
-  val BENCHMARK   = "^# Benchmark: (.*)$".r
-  val THREADS     = "^# Threads: (\\d+) thread.*$".r
-  val PARAMETERS  = "^# Parameters: \\((.*)\\)$".r
-  val MODE        = "^# Benchmark mode: (.*)$".r
-  val MEASUREMENT = "^Iteration .*: (\\d+)[.,](\\d+) .*?$".r
+  val BENCHMARK: Regex   = "^# Benchmark: (.*)$".r
+  val THREADS: Regex     = "^# Threads: (\\d+) thread.*$".r
+  val PARAMETERS: Regex  = "^# Parameters: \\((.*)\\)$".r
+  val MODE: Regex        = "^# Benchmark mode: (.*)$".r
+  val MEASUREMENT: Regex = "^Iteration .*: (\\d+)[.,](\\d+) .*?$".r
 
-  var outfiles           = Map[String, FileWriter]()
+  var outfiles: Map[String, FileWriter]           = Map[String, FileWriter]()
   var benchmark: String  = scala.compiletime.uninitialized
   var threads: String    = scala.compiletime.uninitialized
   var parameters: String = scala.compiletime.uninitialized

@@ -17,13 +17,15 @@ import scala.swing.BorderPanel.Position
 import scala.swing.TabbedPane.Page
 import scala.swing.event.SelectionChanged
 import scala.swing.{Action, BorderPanel, Component, Dimension, MainFrame, Menu, MenuBar, MenuItem, Separator, SimpleSwingApplication, Swing, TabbedPane}
+import scala.swing.Frame
+import java.awt.Color
 
 object ReShapes extends SimpleSwingApplication {
   private val panelDrawingSpaceStates = new HashMap[TabbedPane.Page, (DrawingSpaceState, NetworkSpaceState)]
 
-  val drawingSpaceState = Var[DrawingSpaceState](null) // #VAR
+  val drawingSpaceState: Var[DrawingSpaceState] = Var[DrawingSpaceState](null) // #VAR
 
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "ReShapes"
       preferredSize = new Dimension(1000, 600)
@@ -63,11 +65,11 @@ object ReShapes extends SimpleSwingApplication {
       }
     )
 
-    final lazy val merged = UnionEvent(Signal { // #SIG //#UE( //#EVT //#IF )
+    final lazy val merged: Event[Command] = UnionEvent(Signal { // #SIG //#UE( //#EVT //#IF )
       itemsEvents.value map { case (_, ev) => ev }
     })
 
-    lazy val update = Evt[Unit]() // #EVT
+    lazy val update: Evt[Unit] = Evt[Unit]() // #EVT
 
     private lazy val itemsEvents: Signal[Seq[(Component, Event[Command])]] = // #SIG
       (update map { (_: Any) => // #EF
@@ -135,12 +137,12 @@ object ReShapes extends SimpleSwingApplication {
         )
 
         lazy val state: DrawingSpaceState = new DrawingSpaceState {
-          def isCurrentState = drawingSpaceState.now == this
+          def isCurrentState: Boolean = drawingSpaceState.now == this
 
           override lazy val nextShape: Signal[Shape] =
             Signal { ui.shapeSelectionPanel.nextShape.value.copy(this) } // #SIG
-          override lazy val strokeWidth = Signal { ui.strokeInputPanel.strokeWidth.value } // #SIG
-          override lazy val color       = Signal { ui.strokeInputPanel.color.value }       // #SIG
+          override lazy val strokeWidth: Signal[Int] = Signal { ui.strokeInputPanel.strokeWidth.value } // #SIG
+          override lazy val color: Signal[Color]       = Signal { ui.strokeInputPanel.color.value }       // #SIG
 
           override lazy val executed: Event[Command] =                                 // #EVT
             value(panel.drawn || ui.shapePanel.deleted || menu.merged) && (_ => isCurrentState) // #EF //#EF //#EF

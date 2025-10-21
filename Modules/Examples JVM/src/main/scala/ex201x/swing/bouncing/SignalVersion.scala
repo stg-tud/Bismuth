@@ -25,16 +25,16 @@ class SignalVersion {
   val initPosition = new Point(20, 10)
   val speed        = new Point(10, 8)
 
-  val tick = Var(0)
+  val tick: Var[Int] = Var(0)
 
   // Signals for x and y position
   // entirely functionally dependent on time (ticks)
-  val x = Signal {
+  val x: Signal[Int] = Signal {
     val width = Max_X - Size
     val d     = speed.x * tick.value + initPosition.x
     if (d / width) % 2 == 0 then d % width else width - d % width
   }
-  val y = Signal {
+  val y: Signal[Int] = Signal {
     val width = Max_Y - Size
     val d     = speed.y * tick.value + initPosition.y
     if (d / width) % 2 == 0 then d % width else width - d % width
@@ -43,7 +43,7 @@ class SignalVersion {
   tick.changed `observe` ((_: Int) => frame.repaint())
 
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
       override def paintComponent(g: Graphics2D): Unit =

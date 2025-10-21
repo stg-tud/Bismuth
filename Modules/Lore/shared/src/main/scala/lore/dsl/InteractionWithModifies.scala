@@ -4,7 +4,6 @@ import reactives.SelectedScheduler.State as BundleState
 import reactives.core.ReSource
 import reactives.default.*
 
-import scala.annotation.targetName
 import scala.quoted.{Expr, Quotes, Type}
 
 def constructInteractionWithModifiesWithRequires[ST <: Tuple, S <: Tuple, A](

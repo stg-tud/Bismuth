@@ -57,7 +57,7 @@ class ReTextArea(
   lineWrap.using(() => peer.lineWrap, peer.lineWrap_=, "lineWrap")
   charWrap.using(() => peer.charWrap, peer.charWrap_=, "wrapStyleWord")
 
-  val lineCount = ReSwingValue.using(() => peer.lineCount, classOf[ValueChanged])
+  val lineCount: ReSwingValue[Int] = ReSwingValue.using(() => peer.lineCount, classOf[ValueChanged])
 }
 
 object ReTextArea {

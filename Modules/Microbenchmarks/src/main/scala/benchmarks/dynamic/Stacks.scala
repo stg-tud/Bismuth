@@ -23,7 +23,7 @@ class StackState {
   var isManual: Boolean            = false
 
   @Setup(Level.Iteration)
-  def setup(params: BenchmarkParams, eParam: EngineParam, work: Workload, size: Size, step: Step) = {
+  def setup(params: BenchmarkParams, eParam: EngineParam, work: Workload, size: Size, step: Step): Unit = {
     engine = eParam.engine
     val threads = params.getThreads
     if reactives.SelectedScheduler.candidate.scheduler == reactives.scheduler.LevelbasedVariants.unmanaged then {
@@ -56,7 +56,7 @@ class StackState {
 class Stacks {
 
   @Benchmark
-  def run(state: StackState, step: Step, params: ThreadParams) = {
+  def run(state: StackState, step: Step, params: ThreadParams): Int = {
     import state.stableEngine.*
     if state.isManual then
       state.synchronized {

@@ -2,7 +2,7 @@ package replication
 
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import rdts.base.{Lattice, Uid}
+import rdts.base.Uid
 import rdts.time.{Dot, Dots}
 
 object ProtocolMessage {
@@ -17,9 +17,9 @@ object ProtocolMessage {
     */
   case class Payload[+T](senders: Set[Uid], dots: Dots, data: T, causalPredecessors: Dots, lastKnownDots: Dots)
       extends ProtocolMessage[T] {
-    def addSender(s: Uid) = copy(senders = senders + s)
+    def addSender(s: Uid): Payload[T] = copy(senders = senders + s)
 
-    def addLastKnownDot(lastKnownDot: Dot) = copy(lastKnownDots = lastKnownDots.add(lastKnownDot))
+    def addLastKnownDot(lastKnownDot: Dot): Payload[T] = copy(lastKnownDots = lastKnownDots.add(lastKnownDot))
   }
   object Payload {
     def apply[T](sender: Uid, dots: Dots, data: T): Payload[T] =

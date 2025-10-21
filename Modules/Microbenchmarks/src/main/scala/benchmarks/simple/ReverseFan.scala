@@ -24,7 +24,7 @@ class ReverseFan {
   var isManual: Boolean        = false
 
   @Setup
-  def setup(step: Step, engineParam: EngineParam, work: Workload) = {
+  def setup(step: Step, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     sources = Array.fill(16)(Var(step.get()))
     val intermediate = sources.map(_.map { v => work.consume(); v + 1 })

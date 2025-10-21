@@ -46,14 +46,14 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
       crypto = Some(AeadTranslation(aead))
     )
 
-  val port = Random.nextInt(10000) + 50000
+  val port: Int = Random.nextInt(10000) + 50000
 
   val executor: ExecutorService = Executors.newCachedThreadPool((r: Runnable) =>
     Executors.defaultThreadFactory().newThread(r).tap(_.setDaemon(true))
   )
   val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  val niotcp = new NioTCP {}
+  val niotcp: NioTCP = new NioTCP {}
 
   dataManager.addBinaryConnection(niotcp.listen(
     niotcp.defaultServerSocketChannel(new InetSocketAddress("127.0.0.1", port))

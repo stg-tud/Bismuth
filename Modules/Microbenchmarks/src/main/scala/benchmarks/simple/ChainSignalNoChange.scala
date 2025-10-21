@@ -22,7 +22,7 @@ class ChainSignalNoChange {
   var result: Signal[Int] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(size: Size, engineParam: EngineParam, work: Workload) = {
+  def setup(size: Size, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     source = Var(0)
     result = source

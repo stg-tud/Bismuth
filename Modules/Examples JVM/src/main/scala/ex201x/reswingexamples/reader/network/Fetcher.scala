@@ -15,7 +15,7 @@ class Fetcher(val urls: Signal[Set[URL]]) {
     ((fetch.before map { (_: Any) => "Started fetching" }) || // #EF //#EF
       (fetch.after map { (_: Any) => "Finished fetching" })) `hold` "" // #EF //#IF
 
-  val firstFetchInitiated = collection.mutable.Set.empty[URL]
+  val firstFetchInitiated: scala.collection.mutable.Set[URL] = collection.mutable.Set.empty[URL]
 
   urls.changed observe { urls => // #IF //#HDL
     for url <- urls filterNot (firstFetchInitiated contains _) do {
@@ -24,7 +24,7 @@ class Fetcher(val urls: Signal[Set[URL]]) {
     }
   }
 
-  def loadMethod(url: URL) =
+  def loadMethod(url: URL): NodeSeq =
     try XML.load(url)
     catch {
       case _: UnknownHostException   => NodeSeq.Empty
@@ -36,5 +36,5 @@ class Fetcher(val urls: Signal[Set[URL]]) {
 
   /** Fetch the channels from the list of urls */
 
-  def fetchAll() = urls.now foreach (fetch(_))
+  def fetchAll(): Unit = urls.now foreach (fetch(_))
 }

@@ -13,13 +13,13 @@ import reactives.default.*
   * resulting in two balls bouncing around the PlayingField.
   */
 object NFieldMultiBall extends Main {
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
   val playingField = new PlayingField(panel.width.map(_ - 25), panel.height.map(_ - 25))
   shapes.transform(playingField.shape :: _)
 
-  val balls = List(
+  val balls: List[BouncingBall] = List(
     new BouncingBall(200d, 150d, Var(50), panel.Mouse.middleButton.pressed),
     new BouncingBall(-200d, 100d, Var(50), panel.Mouse.middleButton.pressed)
   )

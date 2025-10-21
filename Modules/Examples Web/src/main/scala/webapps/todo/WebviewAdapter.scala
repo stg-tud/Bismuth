@@ -11,17 +11,17 @@ object WebviewAdapterChannel {
   var receiveCallback: String => String = identity
 
   @JSExportTopLevel("webview_channel_receive")
-  def receive(msg: String) = receiveCallback(msg)
+  def receive(msg: String): String = receiveCallback(msg)
 
   object WebviewConnectionContext extends Connection[MessageBuffer] {
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val b64 = new String(java.util.Base64.getEncoder.encode(message.asArray))
       if !js.isUndefined(scala.scalajs.js.Dynamic.global.webview_channel_send) then
-        println(s"sending message to webview")
+        println("sending message to webview")
         scala.scalajs.js.Dynamic.global.webview_channel_send(b64)
         ()
       else
-        println(s"webview channel send was undefined :(")
+        println("webview channel send was undefined :(")
       // w.eval(s"""webview_channel_receive('$b64')""")
     }
     override def close(): Unit = ()

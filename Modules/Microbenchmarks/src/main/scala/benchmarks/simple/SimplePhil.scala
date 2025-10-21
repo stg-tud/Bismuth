@@ -31,7 +31,7 @@ class SimplePhil {
   }
 
   @Setup
-  def setup(engineParam: EngineParam) = {
+  def setup(engineParam: EngineParam): Unit = {
     engine = engineParam.engine
     val (p, v) = build()
     phil = p

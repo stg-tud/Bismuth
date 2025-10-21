@@ -15,13 +15,13 @@ object Codecs {
   given nelCodec[A](using
       listCodec: JsonValueCodec[List[A]]
   ): JsonValueCodec[NonEmptyList[A]] with {
-    def decodeValue(in: JsonReader, default: NonEmptyList[A]) =
+    def decodeValue(in: JsonReader, default: NonEmptyList[A]): NonEmptyList[A] =
       NonEmptyList.fromList(listCodec.decodeValue(in, List())) match {
         case Some(value) => value
         case None        => default
       }
 
-    def encodeValue(l: NonEmptyList[A], out: JsonWriter) =
+    def encodeValue(l: NonEmptyList[A], out: JsonWriter): Unit =
       listCodec.encodeValue(l.toList, out)
 
     override def nullValue: NonEmptyList[A] = null
@@ -50,14 +50,14 @@ object Codecs {
   given JsonValueCodec[NonEmptyList[TArgT]] = nelCodec[TArgT]
 
   given JsonValueCodec[Path] with {
-    def decodeValue(in: JsonReader, default: Path) = Try(
+    def decodeValue(in: JsonReader, default: Path): Path = Try(
       Path.of(in.readString(""))
     ) match {
       case Failure(exception) => default
       case Success(value)     => value
     }
 
-    def encodeValue(p: Path, out: JsonWriter) = out.writeVal(p.toString)
+    def encodeValue(p: Path, out: JsonWriter): Unit = out.writeVal(p.toString)
 
     override def nullValue: Path = null
   }

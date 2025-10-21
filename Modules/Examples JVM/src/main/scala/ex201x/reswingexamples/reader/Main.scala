@@ -13,7 +13,7 @@ import scala.swing.Swing.EmptyIcon
 import scala.swing.{Dialog, Swing}
 
 object Main extends App {
-  val tick    = Evt[Unit]() // #EVT
+  val tick: Evt[Unit]    = Evt[Unit]() // #EVT
   val checker = new UrlChecker
   val fetcher = new Fetcher(checker.checkedURL.fold(Set.empty[URL])(_ + _))
   val parser  = new XmlParser
@@ -64,7 +64,7 @@ object Main extends App {
   def defaultURLs: Seq[String] =
     Seq("http://www.faz.net/aktuell/politik/?rssview=1", "http://feeds.gawker.com/lifehacker/full")
 
-  def showInvalidUrlDialog() =
+  def showInvalidUrlDialog(): Unit =
     Dialog.showMessage(null, "This url is not valid", "Invalid url", Message.Error, EmptyIcon)
 
   private def setupGuiEvents(): Unit = {

@@ -29,21 +29,21 @@ class DrawingSpaceState {
   final lazy val commands: Signal[List[Command]] =
     Signal { commandsShapes.value match { case (commands, _) => commands } } // #SIG
   // current stroke width
-  lazy val strokeWidth = Signal { 1 } // #SIG
+  lazy val strokeWidth: Signal[Int] = Signal { 1 } // #SIG
   // current stroke color
-  lazy val color = Signal { Color.BLACK } // #SIG
+  lazy val color: Signal[Color] = Signal { Color.BLACK } // #SIG
   // filename after saving
-  val fileName = Var("unnamed") // #VAR
+  val fileName: Var[String] = Var("unnamed") // #VAR
 
   // can be overridden in order to declare events declaratively
   lazy val executed: Event[Command] = Evt[Command]() // #EVT
   lazy val reverted: Event[Command] = Evt[Command]() // #EVT
 
   // events that can be called imperatively
-  final lazy val execute = Evt[Command]() // #EVT
-  final lazy val revert  = Evt[Command]() // #EVT
-  final lazy val clear   = Evt[Unit]()    // #EVT
-  final lazy val select  = Evt[Shape]()   // #EVT
+  final lazy val execute: Evt[Command] = Evt[Command]() // #EVT
+  final lazy val revert: Evt[Command]  = Evt[Command]() // #EVT
+  final lazy val clear: Evt[Unit]   = Evt[Unit]()    // #EVT
+  final lazy val select: Evt[Shape]  = Evt[Shape]()   // #EVT
 
   sealed abstract private class CommandType
   private case class Execute(command: Command) extends CommandType

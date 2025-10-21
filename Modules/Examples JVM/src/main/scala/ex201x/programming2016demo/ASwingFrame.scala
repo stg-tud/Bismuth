@@ -5,6 +5,7 @@ import reactives.default.*
 
 import java.awt.Dimension
 import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.Frame
 
 /** This is a static display of two circles and a rectangle.
   * It demonstrates, how to display Shapes using our custom
@@ -12,7 +13,7 @@ import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
   * which we explain in the next step.
   */
 object ASwingFrame extends SimpleSwingApplication {
-  override lazy val top = {
+  override lazy val top: Frame = {
     val panel = new ShapesPanel(Var[List[Shape]](List[Shape](
       new Circle(center = Var(Pos(75, 30)), diameter = Var(25)),
       new Circle(Var(Pos(100, 100)), Var(50)),

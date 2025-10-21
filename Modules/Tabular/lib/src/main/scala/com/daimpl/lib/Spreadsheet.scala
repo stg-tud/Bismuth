@@ -1,8 +1,8 @@
 package com.daimpl.lib
 
 import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
-import com.daimpl.lib.Spreadsheet.{Range, RangeId, SpreadsheetCoordinate, empty}
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid, Uid}
+import com.daimpl.lib.Spreadsheet.{Range, RangeId, SpreadsheetCoordinate}
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 

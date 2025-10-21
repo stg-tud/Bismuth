@@ -14,7 +14,7 @@ class RssItemRenderPane(item: Signal[Option[RSSItem]]) extends EditorPane {
   super.contentType = "text/html"
 
   peer.addHyperlinkListener(new HyperlinkListener() {
-    def hyperlinkUpdate(e: HyperlinkEvent) =
+    def hyperlinkUpdate(e: HyperlinkEvent): Unit =
       if e.getEventType == HyperlinkEvent.EventType.ENTERED then
         peer.setToolTipText(e.getDescription)
       else if e.getEventType == HyperlinkEvent.EventType.EXITED then

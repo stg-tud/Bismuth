@@ -52,7 +52,7 @@ class ReTextField(
 
   horizontalAlignment.using(() => peer.horizontalAlignment, peer.horizontalAlignment = _, "horizontalAlignment")
 
-  val editDone = ReSwingEvent `using` classOf[EditDone]
+  val editDone: ReSwingEvent[EditDone] = ReSwingEvent `using` classOf[EditDone]
 }
 
 object ReTextField {

@@ -2,14 +2,15 @@ package ex201x.reswingexamples.texteditor
 
 import java.awt.{Cursor, Dimension, Rectangle}
 import javax.swing.{JComponent, JViewport, Scrollable, SwingConstants, UIManager}
+import java.awt.FontMetrics
 
 class JScrollableComponent extends JComponent with Scrollable {
   setFont(UIManager.getFont("TextField.font"))
   setCursor(new Cursor(Cursor.TEXT_CURSOR))
 
-  val metrics    = getFontMetrics(getFont)
+  val metrics: FontMetrics    = getFontMetrics(getFont)
   val unitHeight = metrics.getHeight
-  val unitWidth  = metrics.charWidth('m')
+  val unitWidth: Int  = metrics.charWidth('m')
 
   override def setPreferredSize(preferredSize: Dimension): Unit = {
     super.setPreferredSize(preferredSize)
@@ -19,14 +20,14 @@ class JScrollableComponent extends JComponent with Scrollable {
 
   def getPreferredScrollableViewportSize = getPreferredSize
 
-  def getScrollableTracksViewportHeight =
+  def getScrollableTracksViewportHeight: Boolean =
     getParent.isInstanceOf[JViewport] && getParent.asInstanceOf[JViewport].getHeight > getPreferredSize.height
-  def getScrollableTracksViewportWidth =
+  def getScrollableTracksViewportWidth: Boolean =
     getParent.isInstanceOf[JViewport] && getParent.asInstanceOf[JViewport].getWidth > getPreferredSize.width
 
-  def getScrollableBlockIncrement(visibleRect: Rectangle, orientation: Int, direction: Int) =
+  def getScrollableBlockIncrement(visibleRect: Rectangle, orientation: Int, direction: Int): Int =
     if orientation == SwingConstants.HORIZONTAL then visibleRect.width else visibleRect.height
 
-  def getScrollableUnitIncrement(visibleRect: Rectangle, orientation: Int, direction: Int) =
+  def getScrollableUnitIncrement(visibleRect: Rectangle, orientation: Int, direction: Int): Int =
     if orientation == SwingConstants.HORIZONTAL then unitWidth else unitHeight
 }

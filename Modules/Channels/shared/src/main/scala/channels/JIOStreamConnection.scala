@@ -49,8 +49,8 @@ class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Uni
 
   // socket streams
 
-  val inputStream  = JioInputStreamAdapter(in)
-  val outputStream = JioOutputStreamAdapter(out)
+  val inputStream: JioInputStreamAdapter  = JioInputStreamAdapter(in)
+  val outputStream: JioOutputStreamAdapter = JioOutputStreamAdapter(out)
 
   // connection interface
 

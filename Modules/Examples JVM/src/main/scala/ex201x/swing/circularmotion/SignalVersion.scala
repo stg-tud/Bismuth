@@ -5,17 +5,17 @@ import reactives.default.*
 object SignalVersion extends App {
 
   // Time and radius change over time
-  val time   = Var(0)
-  val radius = Signal { time.value % 10 } // The circle expands periodically
+  val time: Var[Int]   = Var(0)
+  val radius: Signal[Int] = Signal { time.value % 10 } // The circle expands periodically
 
   // Constants in uniform motion
   val rotationPeriod  = 20
-  val angularVelocity = 2 * 3.14 / rotationPeriod
+  val angularVelocity: Double = 2 * 3.14 / rotationPeriod
 
-  val speed        = Signal { angularVelocity * radius.value }
-  val angle        = Signal { ((angularVelocity * time.value / 3.14) * 180) % 360 }
-  val acceleration = Signal { angularVelocity * angularVelocity * radius.value }
-  val space        = Signal { speed.value * time.value }
+  val speed: Signal[Double]        = Signal { angularVelocity * radius.value }
+  val angle: Signal[Double]        = Signal { ((angularVelocity * time.value / 3.14) * 180) % 360 }
+  val acceleration: Signal[Double] = Signal { angularVelocity * angularVelocity * radius.value }
+  val space: Signal[Double]        = Signal { speed.value * time.value }
 
   // Print all the results.
   // Note that the order in which the items are printed is not deterministic.

@@ -166,7 +166,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
     (_ => println("replica received new state information")): @unused,
   )
 
-  var state = LastWriterWins.empty[Set[String]]
+  var state: LastWriterWins[Set[String]] = LastWriterWins.empty[Set[String]]
 
   private def writeStringGetDeltaInfo(s: String): RdtType =
     state.write(Set(s)) // advances a total ordering internally

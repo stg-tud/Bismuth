@@ -3,7 +3,7 @@ package ex2024travel.lofi_acl.travelplanner
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.softwaremill.quicklens.*
-import ex2024travel.lofi_acl.permission_pane.{Selector, SelectorFactory}
+import ex2024travel.lofi_acl.permission_pane.SelectorFactory
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.{*, given}
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}

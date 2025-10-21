@@ -21,7 +21,7 @@ object ReShapesServer {
   }
 
   /** Registers a client to the server if not already registered. */
-  def registerClient(inetAddress: InetAddress, port: Int) =
+  def registerClient(inetAddress: InetAddress, port: Int): Unit =
     if !(clients contains ((inetAddress, port))) then {
       clients ::= ((inetAddress, port))
       println("ReshapesServer register new client (%s, %d)".format(inetAddress, port))
@@ -50,7 +50,7 @@ object ReShapesServer {
   /** Sends shapes to a client.
     * returns true if shapes where successfully send, false otherwise (connection refused to client)
     */
-  def sendToClient(client: (InetAddress, Int)) = {
+  def sendToClient(client: (InetAddress, Int)): Boolean = {
     try {
       if currentShapes != null then {
         val socket = new Socket(client._1, client._2)

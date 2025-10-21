@@ -1,7 +1,7 @@
 package replication
 
 import rdts.base.Uid
-import rdts.time.{ArrayRanges, Dot, Dots}
+import rdts.time.{Dot, Dots}
 import replication.DotTreeNode.RootNode
 import replication.ProtocolMessage.Payload
 

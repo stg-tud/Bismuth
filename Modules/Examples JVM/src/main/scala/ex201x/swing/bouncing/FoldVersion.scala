@@ -25,7 +25,7 @@ class FoldVersion {
   val initPosition = new Point(20, 10)
   val speed        = new Point(10, 8)
 
-  val tick = Evt[Unit]()
+  val tick: Evt[Unit] = Evt[Unit]()
   // Implementing switch with fold
   val xx: Signal[Int] = tick.fold(initPosition.x) { (pos, _) =>
     pos + (if xSwitch.now then speed.x else -speed.x)
@@ -35,13 +35,13 @@ class FoldVersion {
     pos + (if ySwitch.now then speed.y else -speed.y)
   }
 
-  val xSwitch = (xx.changed && (x => x < 0 || x + Size > Max_X)).fold(false) { (a, _) => !a }
-  val ySwitch = (yy.changed && (y => y < 0 || y + Size > Max_Y)).fold(false) { (a, _) => !a }
+  val xSwitch: Signal[Boolean] = (xx.changed && (x => x < 0 || x + Size > Max_X)).fold(false) { (a, _) => !a }
+  val ySwitch: Signal[Boolean] = (yy.changed && (y => y < 0 || y + Size > Max_Y)).fold(false) { (a, _) => !a }
 
   tick observe { (_: Unit) => frame.repaint() }
 
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new Panel() {
       preferredSize = new Dimension(600, 600)
       override def paintComponent(g: Graphics2D): Unit =

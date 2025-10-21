@@ -42,7 +42,7 @@ object MPlayingFieldBall extends Main {
     val shape = new Rectangle(Var(0), Var(0), width, height)
   }
 
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
   val playingField = new PlayingField(panel.width.map(_ - 25), panel.height.map(_ - 25))
@@ -51,7 +51,7 @@ object MPlayingFieldBall extends Main {
   val bouncingBall = new BouncingBall(200d, 150d, Var(50), panel.Mouse.middleButton.pressed)
   shapes.transform(bouncingBall.shape :: _)
 
-  val fieldCollisions = playingField.colliders(bouncingBall.shape)
+  val fieldCollisions: playingField.Collisions = playingField.colliders(bouncingBall.shape)
   bouncingBall.horizontalBounceSources.transform(fieldCollisions.left :: fieldCollisions.right :: _)
   bouncingBall.verticalBounceSources.transform(fieldCollisions.top :: fieldCollisions.bottom :: _)
 }

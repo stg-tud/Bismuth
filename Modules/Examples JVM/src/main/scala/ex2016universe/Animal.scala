@@ -139,6 +139,6 @@ abstract class Animal(using _world: World) extends BoardElement {
         current + change
     )
 
-  final override val isDead = Signal.lift(age, energy) { (a, e) => a > Animal.MaxAge || e < 0 }
+  final override val isDead: Signal[Boolean] = Signal.lift(age, energy) { (a, e) => a > Animal.MaxAge || e < 0 }
 
 }

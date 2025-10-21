@@ -21,8 +21,8 @@ class ContextBench {
   var rep1Set: Dots        = scala.compiletime.uninitialized
   var rep1SetPlusOne: Dots = scala.compiletime.uninitialized
   var rep2Set: Dots        = scala.compiletime.uninitialized
-  val rep1id               = Uid.gen()
-  val rep2id               = Uid.gen()
+  val rep1id: Uid               = Uid.gen()
+  val rep2id: Uid               = Uid.gen()
   var rep1single: Dots     = scala.compiletime.uninitialized
 
   private def makeRep(rep: Uid, mul: Long, off: Long, len: Long): Dots = {
@@ -39,39 +39,39 @@ class ContextBench {
   }
 
   @Benchmark
-  def merge() = Lattice.merge(rep1Set, rep2Set)
+  def merge(): Dots = Lattice.merge(rep1Set, rep2Set)
 
   @Benchmark
-  def mergeSelf() = Lattice.merge(rep1Set, rep1Set)
+  def mergeSelf(): Dots = Lattice.merge(rep1Set, rep1Set)
 
   @Benchmark
-  def mergeSelfPlusOne() = Lattice.merge(rep1Set, rep1SetPlusOne)
+  def mergeSelfPlusOne(): Dots = Lattice.merge(rep1Set, rep1SetPlusOne)
 
   @Benchmark
-  def diffSelf() = rep1Set.diff(rep1Set)
+  def diffSelf(): Dots = rep1Set.diff(rep1Set)
 
   @Benchmark
-  def diffOther() = rep1Set.diff(rep2Set)
+  def diffOther(): Dots = rep1Set.diff(rep2Set)
 
   @Benchmark
-  def diffSingle() = rep1SetPlusOne.diff(rep1Set)
+  def diffSingle(): Dots = rep1SetPlusOne.diff(rep1Set)
 
   @Benchmark
-  def intersectSelf() = rep1Set.intersect(rep1Set)
+  def intersectSelf(): Dots = rep1Set.intersect(rep1Set)
 
   @Benchmark
-  def intersectOther() = rep1Set.intersect(rep2Set)
+  def intersectOther(): Dots = rep1Set.intersect(rep2Set)
 
   @Benchmark
-  def containsOther() = rep1Set.contains(rep2Set)
+  def containsOther(): Boolean = rep1Set.contains(rep2Set)
 
   @Benchmark
-  def containsSelf() = rep1Set.contains(rep1Set)
+  def containsSelf(): Boolean = rep1Set.contains(rep1Set)
 
   @Benchmark
-  def disjunctOther() = rep1Set.disjunct(rep2Set)
+  def disjunctOther(): Boolean = rep1Set.disjunct(rep2Set)
 
   @Benchmark
-  def disjunctSelf() = rep1Set.disjunct(rep1Set)
+  def disjunctSelf(): Boolean = rep1Set.disjunct(rep1Set)
 
 }

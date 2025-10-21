@@ -26,7 +26,7 @@ class MultiReverseFan {
   var groupSize: Int              = scala.compiletime.uninitialized
 
   @Setup
-  def setup(params: BenchmarkParams, size: Size, step: Step, engineParam: EngineParam, work: Workload) = {
+  def setup(params: BenchmarkParams, size: Size, step: Step, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     val threads = params.getThreads
 

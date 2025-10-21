@@ -11,14 +11,14 @@ class SQueue[T] {
   val _queue: Var[Queue[T]] = Var(Queue[T]())
 
   // some signals
-  lazy val head = Signal {
+  lazy val head: Signal[Option[T]] = Signal {
     _queue.value.headOption
   }
-  lazy val length  = Signal { _queue.value.length }
-  lazy val isEmpty = Signal { _queue.value.isEmpty }
+  lazy val length: Signal[Int]  = Signal { _queue.value.length }
+  lazy val isEmpty: Signal[Boolean] = Signal { _queue.value.isEmpty }
 
   // methods mutating the state of the SQueue
-  def enqueue(elem: T) = _queue `set` _queue.now.enqueue(elem)
+  def enqueue(elem: T): Unit = _queue `set` _queue.now.enqueue(elem)
   def dequeue(): T     = {
     val (first, tail): (T, Queue[T]) = _queue.now.dequeue
     _queue `set` tail
@@ -35,12 +35,12 @@ object SQueue {
 }
 
 class SStack[T] {
-  val _stack = Var(List[T]())
+  val _stack: Var[List[T]] = Var(List[T]())
 
   // some signals
-  lazy val top     = Signal { _stack.value.headOption }
-  lazy val length  = Signal { _stack.value.size }
-  lazy val isEmpty = Signal { _stack.value.isEmpty }
+  lazy val top: Signal[Option[T]]     = Signal { _stack.value.headOption }
+  lazy val length: Signal[Int]  = Signal { _stack.value.size }
+  lazy val isEmpty: Signal[Boolean] = Signal { _stack.value.isEmpty }
 
   // methods mutating the state of the SQueue
   def push(elem: T): Unit = _stack.transform(elem :: _)

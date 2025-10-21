@@ -14,7 +14,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   given localUid: LocalUid = LocalUid(name)
 
-  val dataManager = DeltaDissemination[State](localUid, handleIncoming, immediateForward = true)
+  val dataManager: DeltaDissemination[State] = DeltaDissemination[State](localUid, handleIncoming, immediateForward = true)
 
   inline def log(inline msg: String): Unit =
     if false then println(s"[$name] $msg")
@@ -26,11 +26,11 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   def publish(delta: State): State = currentStateLock.synchronized {
     if delta `inflates` currentState then {
-      log(s"publishing")
+      log("publishing")
       currentState = currentState.merge(delta)
       dataManager.applyDelta(delta)
     } else
-      log(s"skip")
+      log("skip")
     currentState
   }
 
@@ -39,7 +39,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
   )
 
   def handleIncoming(change: State): Unit = currentStateLock.synchronized {
-    log(s"handling incoming")
+    log("handling incoming")
     val (old, changed) = currentStateLock.synchronized {
       val old = currentState
       currentState = currentState `merge` change

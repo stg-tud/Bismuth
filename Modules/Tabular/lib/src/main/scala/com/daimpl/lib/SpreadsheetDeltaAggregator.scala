@@ -1,6 +1,6 @@
 package com.daimpl.lib
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.LocalUid
 
 class SpreadsheetDeltaAggregator[S](
     private var spreadsheet: Spreadsheet[S],

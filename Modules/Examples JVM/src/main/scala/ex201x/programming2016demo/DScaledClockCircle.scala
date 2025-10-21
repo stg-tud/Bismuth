@@ -5,6 +5,7 @@ import reactives.default.*
 
 import java.awt.Dimension
 import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.Frame
 
 /** So far, we showed Vars and Signals defined as a transformation
   * of one other Var or Signal. Signals can, however, also be derived
@@ -36,15 +37,15 @@ import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
 object DScaledClockCircle extends SimpleSwingApplication {
   val NanoSecond = 1000000000L
 
-  val nsTime = Var(System.nanoTime())
-  def tick() = nsTime.set(System.nanoTime())
+  val nsTime: Var[Long] = Var(System.nanoTime())
+  def tick(): Unit = nsTime.set(System.nanoTime())
 
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
-  val angle = nsTime.map(_.toDouble / NanoSecond * math.Pi)
+  val angle: Signal[Double] = nsTime.map(_.toDouble / NanoSecond * math.Pi)
 
-  val pos = Signal {
+  val pos: Signal[Pos] = Signal {
     Pos(
       (panel.width.value / 2 - 50).toDouble * math.sin(angle.value),
       (panel.height.value / 2 - 50).toDouble * math.cos(angle.value)
@@ -53,7 +54,7 @@ object DScaledClockCircle extends SimpleSwingApplication {
 
   shapes.transform(new Circle(pos, Var(50)) :: _)
 
-  override lazy val top = {
+  override lazy val top: Frame = {
     panel.preferredSize = new Dimension(400, 300)
     new MainFrame {
       title = "REScala Demo"

@@ -22,7 +22,7 @@ class ChainSignalHalfChange {
   var result: Signal[Int] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(size: Size, step: Step, engineParam: EngineParam, work: Workload) = {
+  def setup(size: Size, step: Step, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     source = Var(step.run())
     result = source

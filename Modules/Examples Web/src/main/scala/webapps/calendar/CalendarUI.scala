@@ -1,6 +1,5 @@
 package webapps.calendar
 
-import Codecs.given
 import lore.dsl.{Interaction, InteractionWithExecutes, Invariant}
 import org.scalajs.dom.html.{Div, Input}
 import rdts.base.{LocalUid, Uid}
@@ -12,6 +11,7 @@ import reactives.extra.Tags.*
 import reactives.operator.Event.CBR
 import scalatags.JsDom.all.*
 import webapps.Storing
+import webapps.calendar.Codecs.given
 
 class NewAppointment(private val typeName: String) {
 

@@ -1,11 +1,11 @@
 package dag
 
-import scala.collection.immutable.{HashMap, List, Map, Set}
-import java.security.{KeyPair, PublicKey}
 import crypto.Ed25519Util
 import datatypes.Replica
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
-import riblt.{CodedSymbol, RIBLT}
+
+import java.security.{KeyPair, PublicKey}
+import scala.collection.immutable.{HashMap, Map, Set}
 
 // a hash directed acyclic graph
 case class HashDAG[T] private (

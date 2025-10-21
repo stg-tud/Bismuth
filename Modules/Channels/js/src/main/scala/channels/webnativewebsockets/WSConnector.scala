@@ -19,7 +19,7 @@ class WebsocketConnect(socket: dom.WebSocket) extends Connection[MessageBuffer] 
     socket.send(data.asArrayBuffer)
   }
 
-  def close() = socket.close()
+  def close(): Unit = socket.close()
 
 }
 

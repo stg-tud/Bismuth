@@ -22,7 +22,7 @@ class ChainEvent {
   var result: Event[Int] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(size: Size, engineParam: EngineParam, work: Workload) = {
+  def setup(size: Size, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     source = Evt[Int]()
     result = source

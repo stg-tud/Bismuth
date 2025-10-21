@@ -11,7 +11,7 @@ object TravelPlannerApp extends JFXApp3 {
   override def start(): Unit = {
     Platform.implicitExit = true
     stage = new JFXApp3.PrimaryStage {
-      title = s"Travel Planner"
+      title = "Travel Planner"
       scene = new MainScene(MonotonicTpmFactory)
       resizable = true
     }

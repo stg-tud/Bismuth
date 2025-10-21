@@ -15,8 +15,8 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
 
   override def size = count
 
-  def hasNext = c < count
-  def next()  = {
+  def hasNext: Boolean = c < count
+  def next(): Char  = {
     if b == caret then
       b += buf.length - count
     val ch = buf(b)
@@ -39,7 +39,7 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
   * Moving the caret requires copying text from one segment to the other.
   */
 class GapBuffer {
-  val caretChanged = Evt[Int]() // #EVT
+  val caretChanged: Evt[Int] = Evt[Int]() // #EVT
 
   private var buf                         = new Array[Char](0)
   private val size                        = Var(0)           // #VAR
@@ -57,16 +57,16 @@ class GapBuffer {
       Array.copy(buf, src, buf, dest, dist)
   }
 
-  val caret = Signal { offsets.value._2 } // #SIG
+  val caret: Signal[Int] = Signal { offsets.value._2 } // #SIG
 
-  val iterable = Signal { // #SIG
+  val iterable: Signal[Iterable[Char]] = Signal { // #SIG
     val (b, s) = (buf, size.value)
     new Iterable[Char] { def iterator = new CharacterIterator(b, s, caret.value) }: Iterable[Char]
   }
 
   val length = size
 
-  def apply(i: Int) = buf(if i >= caret.now then i + (buf.length - size.now) else i)
+  def apply(i: Int): Char = buf(if i >= caret.now then i + (buf.length - size.now) else i)
 
   def insert(str: String): Unit = {
     // insert text into the gap between the two text segments

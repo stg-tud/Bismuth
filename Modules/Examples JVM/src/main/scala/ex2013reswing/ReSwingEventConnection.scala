@@ -81,7 +81,7 @@ private[ex2013reswing] trait ReSwingEventConnection {
   private val delayedInitEvents = ListBuffer.empty[() => Unit]
 
   peer.peer.addHierarchyListener(new HierarchyListener {
-    def hierarchyChanged(e: HierarchyEvent) =
+    def hierarchyChanged(e: HierarchyEvent): Unit =
       if (e.getChangeFlags & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 then {
         initReSwingEventConnection()
         peer.peer.removeHierarchyListener(this)

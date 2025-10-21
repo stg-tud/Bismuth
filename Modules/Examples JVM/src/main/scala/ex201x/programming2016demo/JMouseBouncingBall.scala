@@ -17,21 +17,21 @@ import reactives.default.*
   * i.e., the ball moves in a straight line at constant speed.
   */
 object JMouseBouncingBall extends Main {
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
-  val velocity = Signal {
+  val velocity: Signal[Pos] = Signal {
     Pos(
       x = panel.Mouse.leftButton.pressed.fold(200d / Clock.NanoSecond) { (old, _) => -old }.value,
       y = panel.Mouse.rightButton.pressed.fold(150d / Clock.NanoSecond) { (old, _) => -old }.value
     )
   }
 
-  val inc = Clock.ticks.map(tick => Right[Point, Pos](velocity.value * tick.toDouble))
+  val inc: Event[Right[Point, Pos]] = Clock.ticks.map(tick => Right[Point, Pos](velocity.value * tick.toDouble))
 
-  val reset = panel.Mouse.middleButton.pressed.map(pos => Left[Point, Pos](pos))
+  val reset: Event[Left[Point, Pos]] = panel.Mouse.middleButton.pressed.map(pos => Left[Point, Pos](pos))
 
-  val pos = (reset || inc).fold(Pos(0, 0)) {
+  val pos: Signal[Pos] = (reset || inc).fold(Pos(0, 0)) {
     case (_, Left(Point(x, y))) => Pos(x.toDouble, y.toDouble)
     case (pX, Right(inc))       => pX + inc
   }

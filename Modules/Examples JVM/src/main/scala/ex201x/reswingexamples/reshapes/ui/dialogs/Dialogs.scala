@@ -8,7 +8,7 @@ abstract class CustomDialog extends Dialog {
 
   modal = true;
 
-  def showDialog(position: Point = null) = {
+  def showDialog(position: Point = null): Boolean = {
     if position != null then
       location = position
     dialogResult = false
@@ -23,10 +23,10 @@ abstract class CustomDialog extends Dialog {
 }
 
 class ServerDialog extends CustomDialog {
-  val hostnameInput     = new TextField(50) { text = "localhost" }
-  val commandPortInput  = new TextField(10) { text = "9998" }
-  val exchangePortInput = new TextField(10) { text = "9999" }
-  val listenerPortInput = new TextField(10) { text = "1337" }
+  val hostnameInput: TextField     = new TextField(50) { text = "localhost" }
+  val commandPortInput: TextField  = new TextField(10) { text = "9998" }
+  val exchangePortInput: TextField = new TextField(10) { text = "9999" }
+  val listenerPortInput: TextField = new TextField(10) { text = "1337" }
 
   var hostname: String  = null
   var commandPort: Int  = -1
@@ -67,7 +67,7 @@ class ServerDialog extends CustomDialog {
     }
   }
 
-  def inputIsValid() =
+  def inputIsValid(): Boolean =
     hostname != null &&
     hostname.length > 0 &&
     commandPort > 0 &&

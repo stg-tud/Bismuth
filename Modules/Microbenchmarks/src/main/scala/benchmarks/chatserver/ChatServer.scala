@@ -16,7 +16,7 @@ class ChatServer[Api <: reactives.default.type]()(val engine: Api) {
   val rooms     = new java.util.concurrent.ConcurrentHashMap[Room, Clients]()
   val histories = new java.util.concurrent.ConcurrentHashMap[Room, History]()
 
-  def join(client: Client, room: Room) =
+  def join(client: Client, room: Room): Unit =
     rooms.get(room).transform(clients => client :: clients)
 
   def create(room: Room): Boolean = {

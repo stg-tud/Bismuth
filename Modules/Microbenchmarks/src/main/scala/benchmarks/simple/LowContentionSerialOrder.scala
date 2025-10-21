@@ -23,7 +23,7 @@ class LowContentionSerialOrder extends BusyThreads {
   var size: Int = scala.compiletime.uninitialized
 
   @Setup(Level.Iteration)
-  def setup(engineParam: EngineParam, work: Workload) = {
+  def setup(engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     sources = Array.fill(size)(Var(0))
     grid = Array.tabulate(size - 1) { t =>

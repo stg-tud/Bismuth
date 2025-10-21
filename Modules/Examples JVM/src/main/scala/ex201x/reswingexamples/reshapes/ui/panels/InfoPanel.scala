@@ -12,11 +12,11 @@ import scala.swing.FlowPanel
 class InfoPanel extends FlowPanel {
   def state = ReShapes.drawingSpaceState
 
-  val shapeCount = Signal.dynamic { // #SIG
+  val shapeCount: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null then "#elements: %d" format state.value.shapes.value.size else ""
   }
 
-  val color = Signal.dynamic { // #SIG
+  val color: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null then
       "color: %d-%d-%d".format(
         state.value.color.value.getRed,
@@ -26,15 +26,15 @@ class InfoPanel extends FlowPanel {
     else ""
   }
 
-  val strokeWidth = Signal.dynamic { // #SIG
+  val strokeWidth: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null then "stroke width: %d" format state.value.strokeWidth.value else ""
   }
 
-  val nextShape = Signal.dynamic { // #SIG
+  val nextShape: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null then "next shape: %s" format state.value.nextShape.value.toString else ""
   }
 
-  val selectedShape = Signal.dynamic { // #SIG
+  val selectedShape: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null && state.value.selectedShape.value != null then
       "selected: %s".format(state.value.selectedShape.value.toString)
     else ""

@@ -4,17 +4,19 @@ import reactives.default.*
 
 import java.awt.Point
 import scala.swing.event.*
+import reactives.operator.Event
+import reactives.operator.Event
 
 class Mouse {
 
   /* EScala events */
-  val mouseMovedE    = Evt[Point]()
-  val mousePressedE  = Evt[Point]()
-  val mouseDraggedE  = Evt[Point]()
-  val mouseReleasedE = Evt[Point]()
+  val mouseMovedE: Evt[Point]    = Evt[Point]()
+  val mousePressedE: Evt[Point]  = Evt[Point]()
+  val mouseDraggedE: Evt[Point]  = Evt[Point]()
+  val mouseReleasedE: Evt[Point] = Evt[Point]()
   /* Compose reactive values */
-  val mouseChangePosition      = mouseMovedE || mouseDraggedE
-  val mousePressedOrReleased   = mousePressedE || mouseReleasedE
+  val mouseChangePosition: Event[Point]      = mouseMovedE || mouseDraggedE
+  val mousePressedOrReleased: Event[Point]   = mousePressedE || mouseReleasedE
   val position: Signal[Point]  = mouseChangePosition.hold(new Point(0, 0))
   val pressed: Signal[Boolean] =
     mousePressedOrReleased.toggle(Signal { false }, Signal { true }) // TODO: solve this more robust

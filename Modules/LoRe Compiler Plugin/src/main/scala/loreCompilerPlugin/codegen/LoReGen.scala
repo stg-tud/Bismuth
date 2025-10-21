@@ -7,7 +7,7 @@ import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.core.StdNames.nme
-import dotty.tools.dotc.core.Types.{AppliedType, CachedTypeRef, TypeRef, Type as ScalaType}
+import dotty.tools.dotc.core.Types.{AppliedType, CachedTypeRef, Type as ScalaType, TypeRef}
 import dotty.tools.dotc.report
 import dotty.tools.dotc.util.SourcePosition
 import lore.ast.{Type as LoReType, *}
@@ -69,7 +69,7 @@ object LoReGen {
         List(createLoReTermFromValDef(vd, termList))
       // Implement other Tree types for the frontend here
       case _ =>
-        report.error(s"This syntax is not supported in LoRe.", tree.sourcePos)
+        report.error("This syntax is not supported in LoRe.", tree.sourcePos)
         List(TVar("<error>")) // Make compiler happy
   }
 
@@ -197,7 +197,7 @@ object LoReGen {
                   scalaSourcePos = Some(tree.sourcePos)
                 )
               case _ =>
-                report.error(s"Detected tuple type with non-tuple RHS:", tree.sourcePos)
+                report.error("Detected tuple type with non-tuple RHS:", tree.sourcePos)
                 TVar("<error>")
   }
 
@@ -349,7 +349,7 @@ object LoReGen {
             TInvariant(expr, scalaSourcePos = Some(invariantTree.sourcePos))
           case _ =>
             report.error(
-              s"Invariant term is not a boolean expression",
+              "Invariant term is not a boolean expression",
               invariantTree.sourcePos
             )
             TVar("<error>")
@@ -508,7 +508,7 @@ object LoReGen {
             )
           case _ =>
             report.error(
-              s"Error building RHS interaction term",
+              "Error building RHS interaction term",
               rawInteractionTree.sourcePos
             )
             TVar("<error>")
@@ -575,10 +575,10 @@ object LoReGen {
                   operandSide
                 )
               case _ =>
-                report.error(s"Error building RHS term", reactiveTree.sourcePos)
+                report.error("Error building RHS term", reactiveTree.sourcePos)
                 TVar("<error>")
           case _ =>
-            report.error(s"Error building RHS term", reactiveTree.sourcePos)
+            report.error("Error building RHS term", reactiveTree.sourcePos)
             TVar("<error>")
       case arrowTree @ Block(List(DefDef(name, List(lhs), _, rhs)), _) if name.toString == "$anonfun" =>
         // Arrow funcs: When all parameters are defined, the function is in the first parameter
@@ -590,7 +590,7 @@ object LoReGen {
         buildLoReArrowTerm(arrowTree2, lhs, rhs, termList, indentLevel, operandSide)
       case blockTree @ Block(blockBody, blockReturn) => // Blocks of statements (e.g. in arrow functions)
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-          logRhsInfo(indentLevel, operandSide, s"block of statements", "")
+          logRhsInfo(indentLevel, operandSide, "block of statements", "")
         }
 
         if blockBody.nonEmpty then {
@@ -606,7 +606,7 @@ object LoReGen {
         }
       case ifTree @ If(cond, _then, _else) => // If conditions (e.g. "if x then y else z")
         if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-          logRhsInfo(indentLevel, operandSide, s"conditional expression", "")
+          logRhsInfo(indentLevel, operandSide, "conditional expression", "")
         }
 
         val condTerm: Term         = buildLoReRhsTerm(cond, termList, indentLevel, operandSide)  // if x
@@ -617,7 +617,7 @@ object LoReGen {
 
         TIf(condTerm, thenTerm, elseTerm, scalaSourcePos = Some(ifTree.sourcePos))
       case t: Tree[?] => // Unsupported RHS forms
-        report.error(s"Unsupported RHS form used", t.sourcePos)
+        report.error("Unsupported RHS form used", t.sourcePos)
         TVar("<error>")
       case _ => // This case shouldn't be hit, but compiler warns about potentially inexhaustive matches.
         report.error(s"Unsupported RHS form used:\n$tree")
@@ -659,13 +659,13 @@ object LoReGen {
             // forward reference. If it didn't exist at all, the Scala compiler would have errored out
             // in a previous phase already, before this point would ever have been reached.
             report.error(
-              s"Could not find Interaction definition for this reference. Forward references are not allowed.",
+              "Could not find Interaction definition for this reference. Forward references are not allowed.",
               tree.sourcePos
             )
             TVar("<error>")
       // Other cases are errors
       case _ =>
-        report.error(s"Error building RHS term for Interaction", tree.sourcePos)
+        report.error("Error building RHS term for Interaction", tree.sourcePos)
         TVar("<error>")
   }
 
@@ -691,7 +691,7 @@ object LoReGen {
             )
           case _ =>
             report.error(
-              s"Error building RHS term for Interaction modifies call",
+              "Error building RHS term for Interaction modifies call",
               tree.sourcePos
             )
             interaction
@@ -743,7 +743,7 @@ object LoReGen {
           )
         case _ =>
           report.error(
-            s"Error building LHS term for arrow function",
+            "Error building LHS term for arrow function",
             tree.sourcePos
           )
           TVar("<error>")

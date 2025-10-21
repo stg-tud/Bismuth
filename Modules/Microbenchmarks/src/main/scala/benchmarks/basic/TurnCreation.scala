@@ -18,7 +18,7 @@ class TurnCreation {
   final lazy val stableEngine        = engine
 
   @Setup
-  def setup(engineParam: EngineParam) =
+  def setup(engineParam: EngineParam): Unit =
     engine = engineParam.engine
 
   @Benchmark

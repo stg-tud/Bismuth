@@ -26,7 +26,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
   case object Thinking extends Philosopher
 
-  val phils =
+  val phils: IndexedSeq[Var[Philosopher]] =
     for idx <- 0 until size yield Var[Philosopher](Thinking)(using CreationTicket.fromName(s"phil(${idx + 1})"))
 
   sealed trait Fork
@@ -35,7 +35,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
   case class Taken(by: Int) extends Fork
 
-  val forks =
+  val forks: IndexedSeq[Signal[Fork]] =
     for idx <- 0 until size yield {
       given ct: CreationTicket[BundleState] = CreationTicket.fromName(s"fork(${idx + 1})")
       Signal.dynamic[Fork] {
@@ -58,7 +58,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
   case object Ready extends Sight
 
   // Dynamic Sight
-  val sights =
+  val sights: IndexedSeq[Signal[Sight]] =
     for avoidStaticOptimization <- 0 until size yield {
       dynamicity match {
         case Dynamicity.Dynamic => Signal.dynamic[Sight] {
@@ -113,7 +113,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
   val sightChngs: Seq[Event[Sight]] =
     for i <- 0 until size yield sights(i).changed
-  val successes = for i <- 0 until size yield sightChngs(i).filter(_ == Done)
+  val successes: IndexedSeq[Event[Sight]] = for i <- 0 until size yield sightChngs(i).filter(_ == Done)
 
   def manuallyLocked[T](@unused idx: Int)(f: => T): T = synchronized { f }
 
@@ -133,7 +133,7 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
     eatOnce(seating)
   }
 
-  def eatOnce(seating: Int) = {
+  def eatOnce(seating: Int): Unit = {
     val bo                           = new Backoff()
     @tailrec def retryEating(): Unit = {
       maybeEat(seating)
@@ -154,9 +154,9 @@ trait EventPyramidTopper {
   self: PaperPhilosophers =>
   import engine.*
 
-  val anySuccess                = successes.reduce(_ || _)
+  val anySuccess: Event[Sight]                = successes.reduce(_ || _)
   val successCount: Signal[Int] =
-    anySuccess.fold(0) { (acc, _) => acc + 1 }(using CreationTicket.fromName(s"successCount"))
+    anySuccess.fold(0) { (acc, _) => acc + 1 }(using CreationTicket.fromName("successCount"))
   override def total: Int = successCount.readValueOnce
 }
 
@@ -173,7 +173,7 @@ trait IndividualCounts {
 trait NoTopper extends IndividualCounts {
   self: PaperPhilosophers =>
 
-  val locks                                            = Array.fill(size) { new ReentrantLock() }
+  val locks: Array[ReentrantLock]                                            = Array.fill(size) { new ReentrantLock() }
   override def manuallyLocked[T](idx: Int)(f: => T): T = {
     val (lock1, lock2, lock3) =
       if idx == 0 then {

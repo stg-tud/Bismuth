@@ -1,6 +1,5 @@
 package loreCompilerPlugin.codegen
 
-import cats.data.NonEmptyList
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.report
 import lore.ast.*
@@ -187,14 +186,14 @@ object DafnyGen {
           t.scalaSourcePos match
             case Some(pos) =>
               report.error(
-                s"Invalid executes in Interaction: " +
+                "Invalid executes in Interaction: " +
                 s"Number of modifies reactives (${reactiveNames.length}) " +
                 s"and number of values supplied in return value tuple (${tup.factors.length}) do not match.",
                 pos
               )
             case None =>
               report.error(
-                s"Invalid executes in Interaction: " +
+                "Invalid executes in Interaction: " +
                 s"Number of modifies reactives (${reactiveNames.length}) " +
                 s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
               )
@@ -298,7 +297,7 @@ object DafnyGen {
       case _                               => ("", "", "")
     }.filter((n, t, v) => !(n + t + v).isBlank)
 
-    if logLevel.isLevelOrHigher(LogLevel.Sparse) then println(s"Generating composed Dafny code...")
+    if logLevel.isLevelOrHigher(LogLevel.Sparse) then println("Generating composed Dafny code...")
     // Splice together generated Dafny code of all term groups appropriately.
     // Because the indent method adds a newline at the end of the string, the whole string has to be constructed
     // so that it looks as desired taking those newlines into account, particularly in the object constructor.

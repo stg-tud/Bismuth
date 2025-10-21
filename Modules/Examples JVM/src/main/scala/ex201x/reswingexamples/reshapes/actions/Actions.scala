@@ -11,7 +11,7 @@ import scala.xml.XML
 
 /** Serializes all currently drawn shapes to a chosen file */
 class SaveAction extends Action("Save") {
-  def apply() = {
+  def apply(): Unit = {
     val fileChooser = new FileChooser()
     fileChooser.selectedFile = new File(ReShapes.drawingSpaceState.now.fileName.now)
     if fileChooser.showDialog(null, "save") == FileChooser.Result.Approve then {
@@ -24,7 +24,7 @@ class SaveAction extends Action("Save") {
 
 /** Deserializes shapes from a chosen file */
 class LoadAction extends Action("Load") {
-  def apply() = {
+  def apply(): Unit = {
     val fileChooser = new FileChooser()
     if fileChooser.showDialog(null, "load") == FileChooser.Result.Approve then {
       ReShapes.drawingSpaceState.now.clear.fire()

@@ -15,10 +15,10 @@ class Line(
     with Movable
     with Resizable {
 
-  override def doDraw(g: Graphics2D) =
+  override def doDraw(g: Graphics2D): Unit =
     g.drawLine(start.x, start.y, end.x, end.y)
 
-  override def toLines() =
+  override def toLines(): List[(Point, Point)] =
     List((start, end))
 
   override def copy(

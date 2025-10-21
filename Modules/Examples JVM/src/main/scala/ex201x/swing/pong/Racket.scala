@@ -11,11 +11,11 @@ object Racket {
 
 class Racket(val xPos: Int, val yPos: Signal[Int]) {
 
-  val boundedYPos = Signal {
+  val boundedYPos: Signal[Int] = Signal {
     math.min(Pong.Max_Y - Racket.Height / 2, math.max(Racket.Height / 2, yPos.value))
   }
 
-  val area = Signal {
+  val area: Signal[Rectangle] = Signal {
     new Rectangle(xPos - Racket.Width / 2, boundedYPos.value - Racket.Height / 2, Racket.Width, Racket.Height)
   }
 }

@@ -8,7 +8,6 @@ import de.rmgk.options.Result.{Err, Ok}
 import probench.clients.{BenchmarkMode, BenchmarkOpType, ClientCLI, EtcdClient, ProBenchClient}
 import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation}
 import rdts.base.Uid
-import rdts.protocols.MultiPaxos
 import replication.{DeltaDissemination, DeltaStorage, FileConnection, ProtocolMessage}
 
 import java.net.{DatagramSocket, InetSocketAddress}

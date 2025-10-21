@@ -24,11 +24,11 @@ object ORacketMultiBall extends Main {
       val fieldHeight: Signal[Int],
       val inputY: Signal[Int]
   ) {
-    val height = Var(100)
-    val width  = Var(10)
+    val height: Var[Int] = Var(100)
+    val width: Var[Int]  = Var(10)
 
-    val posX = fieldWidth.map(w => (if isRight then 1 else -1) * (w / 2 - 25))
-    val posY = {
+    val posX: Signal[Int] = fieldWidth.map(w => (if isRight then 1 else -1) * (w / 2 - 25))
+    val posY: Signal[Int] = {
       Signal {
         math.max(
           math.min(
@@ -55,14 +55,14 @@ object ORacketMultiBall extends Main {
     val shape = new Rectangle(posX, posY, width, height, fill = Var(Some(if isRight then Color.BLUE else Color.RED)))
   }
 
-  val shapes = Var[List[Shape]](List.empty)
+  val shapes: Var[List[Shape]] = Var[List[Shape]](List.empty)
   val panel  = new ShapesPanel(shapes)
 
   val playingField = new PlayingField(panel.width.map(_ - 25), panel.height.map(_ - 25))
   val racket       = new Racket(playingField.width, true, playingField.height, panel.Mouse.y)
   shapes.transform(playingField.shape :: racket.shape :: _)
 
-  val balls = List(
+  val balls: List[BouncingBall] = List(
     new BouncingBall(200d, 150d, Var(50), panel.Mouse.middleButton.pressed),
     new BouncingBall(-200d, 100d, Var(50), panel.Mouse.middleButton.pressed)
   )
