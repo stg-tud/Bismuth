@@ -131,7 +131,7 @@ class TrueDynamicSignals extends FunSuite {
   // }
 
   test("extracting Signal Side Effects") {
-    val e1                                                              = Evt[Int]()
+    val e1                                                        = Evt[Int]()
     def newSignal()(using ct: CreationTicket[State]): Signal[Int] = e1.count()
 
     val macroRes = Signal {

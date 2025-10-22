@@ -1,7 +1,5 @@
 package reactives.core.infiltration
 
-
-
 /** Accesses private[rescala] values for some low level tests */
 object JVMInfiltrator {
   import reactives.default.*

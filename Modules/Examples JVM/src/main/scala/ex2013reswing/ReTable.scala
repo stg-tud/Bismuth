@@ -32,7 +32,7 @@ class ReTable[A <: AnyRef](
     maximumSize: ReSwingValue[Dimension] = (),
     preferredSize: ReSwingValue[Dimension] = ()
 ) extends ReComponent(background, foreground, font, enabled, minimumSize, maximumSize, preferredSize) {
-  override final lazy val peer: Table & ComponentMixin = new Table with ComponentMixin
+  final override lazy val peer: Table & ComponentMixin = new Table with ComponentMixin
 
   private var model: javax.swing.table.TableModel = scala.compiletime.uninitialized
 

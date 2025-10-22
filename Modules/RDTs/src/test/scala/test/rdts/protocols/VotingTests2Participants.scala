@@ -9,9 +9,9 @@ class VotingTests2Participants extends munit.FunSuite {
   given dots: Dots      = Dots.empty
   given Lattice[Voting] = Lattice.derived
   // create replicas for set of 2 participants
-  val id1: LocalUid = LocalUid.gen()
-  val id2: LocalUid = LocalUid.gen()
-  var voting: Voting        = Voting(
+  val id1: LocalUid  = LocalUid.gen()
+  val id2: LocalUid  = LocalUid.gen()
+  var voting: Voting = Voting(
     rounds = Epoch.empty[ReplicatedSet[Vote]],
     numParticipants = LastWriterWins.now(2)
   )

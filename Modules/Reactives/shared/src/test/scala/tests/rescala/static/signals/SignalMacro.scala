@@ -91,7 +91,7 @@ class SignalMacro extends FunSuite {
       val a = new A {
         def obj(): Unit = {
           new {
-            val evt: Evt[Int]              = Evt[Int]()
+            val evt: Evt[Int]    = Evt[Int]()
             val sig: Signal[Int] = Signal { 2 * evt.hold(0).value }
 
             e = evt

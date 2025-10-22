@@ -20,7 +20,7 @@ class WithoutAPITest extends FunSuite {
       override def read(v: Value): T                               = v
       override protected[reactives] def commit(base: Value): Value = base
 
-      def makeChange(newValue: T): InitialChange[State]{val source: CustomSource.this.type} =
+      def makeChange(newValue: T): InitialChange[State] { val source: CustomSource.this.type } =
         new InitialChange[State] {
           override val source: CustomSource.this.type                                               = outer
           override def writeValue(base: source.Value, writeCallback: source.Value => Unit): Boolean = {

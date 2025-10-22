@@ -59,16 +59,19 @@ object TestData {
 
   val l1: List[A3] =
     List(A3(A4(A5("d1"))), A3(A4(A5("d2"))), A3(A4(A5("d3"))), A3(A4(A5("d4"))))
-  val l1at2dup: List[A3]      = List(A3(A4(A5("d1"))), A3(A4(A5("d2"))), A3(A4(A5("d3d3"))), A3(A4(A5("d4"))))
-  val ll1: List[List[A5]]           = List(List(A5("d1"), A5("d2")), List(A5("d3"), A5("d4"), A5("d5")), List(A5("d6"), A5("d7")))
-  val ll1at2at1dup: List[List[A5]]  = List(List(A5("d1"), A5("d2")), List(A5("d3"), A5("d4"), A5("d5")), List(A5("d6"), A5("d7d7")))
-  val ll1at2eachdup: List[List[A5]] = List(List(A5("d1"), A5("d2")), List(A5("d3"), A5("d4"), A5("d5")), List(A5("d6d6"), A5("d7d7")))
-  val ll1eachat1dup: List[List[A5]] = List(List(A5("d1"), A5("d2d2")), List(A5("d3"), A5("d4d4"), A5("d5")), List(A5("d6"), A5("d7d7")))
+  val l1at2dup: List[A3]  = List(A3(A4(A5("d1"))), A3(A4(A5("d2"))), A3(A4(A5("d3d3"))), A3(A4(A5("d4"))))
+  val ll1: List[List[A5]] = List(List(A5("d1"), A5("d2")), List(A5("d3"), A5("d4"), A5("d5")), List(A5("d6"), A5("d7")))
+  val ll1at2at1dup: List[List[A5]] =
+    List(List(A5("d1"), A5("d2")), List(A5("d3"), A5("d4"), A5("d5")), List(A5("d6"), A5("d7d7")))
+  val ll1at2eachdup: List[List[A5]] =
+    List(List(A5("d1"), A5("d2")), List(A5("d3"), A5("d4"), A5("d5")), List(A5("d6d6"), A5("d7d7")))
+  val ll1eachat1dup: List[List[A5]] =
+    List(List(A5("d1"), A5("d2d2")), List(A5("d3"), A5("d4d4"), A5("d5")), List(A5("d6"), A5("d7d7")))
 
   val s1: Seq[A3]       = l1
   val ss1: Seq[Seq[A5]] = ll1
 
-  val is1  = l1.toIndexedSeq
+  val is1                              = l1.toIndexedSeq
   val iss1: IndexedSeq[IndexedSeq[A5]] = ss1.map(_.toIndexedSeq).toIndexedSeq
 
   val ar1: Array[A3]          = s1.toArray
@@ -77,18 +80,22 @@ object TestData {
   case class M2(m3: Map[String, A4])
 
   val m1: Map[String, A4]    = Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
-  val m2: M2    = M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
+  val m2: M2                 = M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
   val m1dup: Map[String, A4] =
     Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
   val m1missingdup: Map[String, A4] =
     Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")), "K4" -> A4(A5("d4d4")))
-  val m2missingdup: M2 = M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")), "K4" -> A4(A5("d4d4"))))
-  val m1dupEach: Map[String, A4]    =
+  val m2missingdup: M2 =
+    M2(Map("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")), "K4" -> A4(A5("d4d4"))))
+  val m1dupEach: Map[String, A4] =
     Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2d2")), "K3" -> A4(A5("d3d3")))
-  val m2dup: M2 = M2(Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
-  val ms1: SortedMap[String, A4]   = collection.immutable.SortedMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
-  val mh1: HashMap[String, A4]   = collection.immutable.HashMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
-  val ml1: ListMap[String, A4]   = collection.immutable.ListMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
+  val m2dup: M2                  = M2(Map("K1" -> A4(A5("d1d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3"))))
+  val ms1: SortedMap[String, A4] =
+    collection.immutable.SortedMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
+  val mh1: HashMap[String, A4] =
+    collection.immutable.HashMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
+  val ml1: ListMap[String, A4] =
+    collection.immutable.ListMap("K1" -> A4(A5("d1")), "K2" -> A4(A5("d2")), "K3" -> A4(A5("d3")))
 
   case class Type(name: String)
   sealed abstract class Variance {

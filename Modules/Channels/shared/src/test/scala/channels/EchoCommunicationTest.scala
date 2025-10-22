@@ -13,8 +13,8 @@ trait EchoCommunicationTest[Info](
 ) extends munit.FunSuite {
 
   // need an execution context that generates new tasks as TCP does lots of blocking
-  val executor: ExecutorService             = Executors.newCachedThreadPool()
-  val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+  val executor: ExecutorService = Executors.newCachedThreadPool()
+  val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
   override def afterAll(): Unit =
     executor.shutdownNow()

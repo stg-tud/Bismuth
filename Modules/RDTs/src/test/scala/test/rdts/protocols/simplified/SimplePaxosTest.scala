@@ -13,10 +13,10 @@ class SimplePaxosTest extends munit.FunSuite {
   given Bottom[Int] with
     override def empty: Int = Int.MinValue
 
-  given dots: Dots = Dots.empty
-  val id1: LocalUid          = LocalUid.gen()
-  val id2: LocalUid          = LocalUid.gen()
-  val id3: LocalUid          = LocalUid.gen()
+  given dots: Dots  = Dots.empty
+  val id1: LocalUid = LocalUid.gen()
+  val id2: LocalUid = LocalUid.gen()
+  val id3: LocalUid = LocalUid.gen()
 
   given Participants = Participants(Set(id1, id2, id3).map(_.uid))
 
