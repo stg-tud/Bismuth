@@ -8,7 +8,7 @@ import test.rdts.simulatedNetworkTests.tools.{Network, SimulatedMessage}
 object NetworkGenerators {
 
   case class NetworkGenerator(lossChance: Double, duplicateChance: Double, delayChance: Double):
-    def make() = Network(lossChance, duplicateChance, delayChance)
+    def make(): Network = Network(lossChance, duplicateChance, delayChance)
 
   val genNetwork: Gen[NetworkGenerator] =
     for

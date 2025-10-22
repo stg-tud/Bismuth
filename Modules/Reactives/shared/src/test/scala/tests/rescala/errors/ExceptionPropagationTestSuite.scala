@@ -1,7 +1,6 @@
 package tests.rescala.errors
 
 import munit.FunSuite
-import reactives.scheduler
 import reactives.structure.RExceptions.ObservedException
 import reactives.structure.{Diff, Pulse}
 

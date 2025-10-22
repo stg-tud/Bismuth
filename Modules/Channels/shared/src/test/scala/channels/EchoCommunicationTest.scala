@@ -3,10 +3,9 @@ package channels
 import channels.TestUtil.printErrors
 import de.rmgk.delay.{Async, Callback}
 
-import java.util.concurrent.{Executors, Semaphore}
+import java.util.concurrent.{ExecutorService, Executors, Semaphore}
 import scala.concurrent.ExecutionContext
 import scala.util.Failure
-import java.util.concurrent.ExecutorService
 
 trait EchoCommunicationTest[Info](
     serverConn: ExecutionContext => (Info, LatentConnection[MessageBuffer]),

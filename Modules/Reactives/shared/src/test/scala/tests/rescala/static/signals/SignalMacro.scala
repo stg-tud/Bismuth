@@ -1,7 +1,7 @@
 package tests.rescala.static.signals
 
 import munit.FunSuite
-import reactives.SelectedScheduler.candidate.State as BundleState
+import reactives.SelectedScheduler.candidate.State
 import reactives.core.{CreationScope, CreationTicket}
 
 class SignalMacro extends FunSuite {
@@ -206,13 +206,13 @@ class SignalMacro extends FunSuite {
     test("correctly replace ticket during macro expansion") {
 
       def wantsTicket(using
-          ct: CreationTicket[BundleState],
-          ct2: CreationTicket[BundleState]
+          ct: CreationTicket[State],
+          ct2: CreationTicket[State]
       ): (Boolean, Boolean, Boolean) = {
         (
           ct.scope == ct2.scope,
-          ct.scope.isInstanceOf[CreationScope.StaticCreationScope[BundleState]],
-          ct2.scope.isInstanceOf[CreationScope.StaticCreationScope[BundleState]]
+          ct.scope.isInstanceOf[CreationScope.StaticCreationScope[State]],
+          ct2.scope.isInstanceOf[CreationScope.StaticCreationScope[State]]
         )
       }
 

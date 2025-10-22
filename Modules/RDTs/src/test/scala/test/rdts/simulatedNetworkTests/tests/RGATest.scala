@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 object RGAGenerators {
 
-  def makeNet[E](rl: ReplicatedList[E]) =
+  def makeNet[E](rl: ReplicatedList[E]): AntiEntropyContainer[ReplicatedList[E]] =
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[ReplicatedList[E]]("a", network, mutable.Buffer())
     val aec     = AntiEntropyContainer[ReplicatedList[E]](ae)

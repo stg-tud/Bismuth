@@ -23,7 +23,7 @@ object GListGenerators {
   ): Arbitrary[GrowOnlyList[E]] =
     Arbitrary(genGList)
 
-  def makeNet[E](v: GrowOnlyList[E]) =
+  def makeNet[E](v: GrowOnlyList[E]): AntiEntropyContainer[GrowOnlyList[E]] =
     val network = new Network(0, 0, 0)
     val ae      = new AntiEntropy[GrowOnlyList[E]]("a", network, mutable.Buffer())
     val aec     = AntiEntropyContainer[GrowOnlyList[E]](ae)

@@ -1,12 +1,12 @@
 package tests.rescala.testtools
 
-import reactives.SelectedScheduler.candidate.State as BundleState
+import reactives.SelectedScheduler.candidate.State
 import reactives.core.CreationTicket
 
 class ReevaluationBundle(val api: reactives.default.type) {
   import api.*
 
-  class ReevaluationTracker[A, R[_]](reactive: R[A])(using turnSource: CreationTicket[BundleState])
+  class ReevaluationTracker[A, R[_]](reactive: R[A])(using turnSource: CreationTicket[State])
       extends munit.FunSuite {
 
     var results: List[A] = Nil

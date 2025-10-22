@@ -2,7 +2,7 @@ package reactives.core.tests
 
 import munit.FunSuite
 import reactives.SelectedScheduler.State
-import reactives.core.{CreationTicket, Derived, InitialChange, ReInfo, ReSource, ReadAs}
+import reactives.core.{CreationTicket, Derived, InitialChange, ReInfo, ReadAs}
 
 class WithoutAPITest extends FunSuite {
 

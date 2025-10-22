@@ -1,12 +1,9 @@
 package tests.rescala.concurrency
 
+import reactives.default.*
 import tests.rescala.testtools.Spawn
 
 import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch}
-
-// change here for FUN
-import reactives.default.*
-
 import scala.util.Random
 
 class PaperGlitchTest extends munit.FunSuite {

@@ -1,6 +1,6 @@
 package reactives.core.infiltration
 
-import reactives.parrp.ParRP
+
 
 /** Accesses private[rescala] values for some low level tests */
 object JVMInfiltrator {

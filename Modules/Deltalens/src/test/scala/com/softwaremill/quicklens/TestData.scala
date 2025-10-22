@@ -1,10 +1,6 @@
 package com.softwaremill.quicklens
 
-import scala.collection.immutable.SortedMap
-
-import scala.collection.immutable.HashMap
-
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{HashMap, ListMap, SortedMap}
 
 object TestData {
   def duplicate(s: String): String = s + s

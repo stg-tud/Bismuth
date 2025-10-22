@@ -6,10 +6,10 @@ import rdts.protocols.{LeaderElection, MultiRoundVoting, Participants, Voting}
 
 class SimpleVotingTests extends munit.FunSuite {
 
-  val id1 = LocalUid.gen()
-  val id2 = LocalUid.gen()
-  val id3 = LocalUid.gen()
-  val id4 = LocalUid.gen()
+  val id1: LocalUid = LocalUid.gen()
+  val id2: LocalUid = LocalUid.gen()
+  val id3: LocalUid = LocalUid.gen()
+  val id4: LocalUid = LocalUid.gen()
   given Participants(Set(id1, id2, id3, id4).map(_.uid))
 
   test("Voting for 4 participants") {

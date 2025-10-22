@@ -1,6 +1,6 @@
 package tests.rescala.misc
 
-import reactives.SelectedScheduler.candidate.State as BundleState
+import reactives.SelectedScheduler.candidate.State
 import reactives.core.{CreationTicket, DynamicTicket}
 
 import scala.language.implicitConversions
@@ -11,10 +11,10 @@ class LightImplicitSyntaxTest extends munit.FunSuite {
 
     test("experiment With Implicit Syntax") {
 
-      implicit def getSignalValueDynamic[T](s: Signal[T])(using ticket: DynamicTicket[BundleState]): T =
+      implicit def getSignalValueDynamic[T](s: Signal[T])(using ticket: DynamicTicket[State]): T =
         ticket.depend(s)
 
-      def Signal[T](f: DynamicTicket[BundleState] ?=> T)(using maybe: CreationTicket[BundleState]): Signal[T] =
+      def Signal[T](f: DynamicTicket[State] ?=> T)(using maybe: CreationTicket[State]): Signal[T] =
         reactives.default.Signal.dynamic()(f(using _))
 
       val price    = Var(3)
