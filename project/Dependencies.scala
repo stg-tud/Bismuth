@@ -20,13 +20,13 @@ object Dependencies {
   val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"               % "slf4j-nop"              % "2.0.17" % Test
   val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.11"
-  val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.18.0"
-  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.3.2"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.12"
+  val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.19.0"
+  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.0"
 
   val ayza = libraryDependencies ++= List(
-    "io.github.hakky54" % "ayza"         % "10.0.0",
-    "io.github.hakky54" % "ayza-for-pem" % "10.0.0",
+    "io.github.hakky54" % "ayza"         % "10.0.1",
+    "io.github.hakky54" % "ayza-for-pem" % "10.0.1",
   )
 
   val bouncyCastle = libraryDependencies ++=
@@ -42,7 +42,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.1.2"
+    val jettyVersion = "12.1.3"
     libraryDependencies ++= Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
