@@ -67,6 +67,19 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     assertEquals(list.toList, List("b", "c", "d"))
   }
 
+  test("appendAll") {
+    val aid = Uid.predefined("a")
+
+    var list = RemoveWinsArray.empty[String]
+
+    list = list `merge` list.prepend("a")(using aid)
+    list = list `merge` list.append("g")(using aid)
+    assertEquals(list.toList, List("a", "g"))
+
+    list = list `merge` list.insertAll(1, Iterable("b", "c", "d", "e", "f"))(using aid)
+    assertEquals(list.toList, List("a", "b", "c", "d", "e", "f", "g"))
+  }
+
   test("update") {
     val aid = Uid.predefined("a")
 

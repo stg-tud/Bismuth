@@ -8,6 +8,8 @@ import rdts.base.Lattice
 import rdts.base.DecoratedLattice
 import rdts.base.Uid
 import rdts.base.Bottom
+import rdts.time.CausalTime
+import rdts.base.Decompose
 
 case class RemoveWinsArray[E](
     elements: Map[Dot, RemoveWinsArray.Entry[E]],
@@ -34,20 +36,32 @@ case class RemoveWinsArray[E](
 
   def size: Int = compactElements.size
 
-  def append(elem: E)(using LocalUid) = insert(size, elem)
+  def prepend(value: E)(using LocalUid)               = insert(0, value)
+  def prependAll(values: Iterable[E])(using LocalUid) = insertAll(0, values)
 
-  def insert(index: Int, elem: E)(using LocalUid): RemoveWinsArray[E] = {
-    val dot = observed.nextDot
+  def append(value: E)(using LocalUid)               = insert(size, value)
+  def appendAll(values: Iterable[E])(using LocalUid) = insertAll(size, values)
+
+  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArray[E] = {
+    insertAll(index, Iterable(value))
+  }
+
+  def insertAll(index: Int, values: Iterable[E])(using LocalUid): RemoveWinsArray[E] = {
+    val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
 
     val entriesList = entries
-    val beforePos   = entriesList.lift(index - 1).map(_._2.index.value).getOrElse(LSeq.min)
+    var beforePos   = entriesList.lift(index - 1).map(_._2.index.value).getOrElse(LSeq.min)
     val afterPos    = entriesList.lift(index).map(_._2.index.value).getOrElse(LSeq.max)
 
-    val pos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+    val timestamp = CausalTime.now()
 
-    val entry = RemoveWinsArray.Entry(LWW.now(pos), elem)
+    val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
+    for (value, dot) <- values.zip(nextDots) do
+      val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+      newElements += (dot -> RemoveWinsArray.Entry(LWW(timestamp, newPos), value))
+      beforePos = newPos
 
-    RemoveWinsArray(elements + (dot -> entry), removed)
+    RemoveWinsArray(elements = newElements.toMap, removed)
   }
 
   def update(index: Int, elem: E)(using LocalUid): RemoveWinsArray[E] = {
@@ -105,9 +119,16 @@ object RemoveWinsArray {
       given Lattice[A] = Lattice.assertEquals
       Lattice.derived
     }
+
+    given decompose[E]: Decompose[Entry[E]] = {
+      given Decompose[E] = Decompose.atomic
+      Decompose.derived
+    }
   }
 
   def empty[A]: RemoveWinsArray[A] = RemoveWinsArray(Map.empty, Dots.empty)
+
+  given decompose[E]: Decompose[RemoveWinsArray[E]] = Decompose.derived
 
   given lattice[E]: Lattice[RemoveWinsArray[E]] = {
     val base: Lattice[RemoveWinsArray[E]] = {
