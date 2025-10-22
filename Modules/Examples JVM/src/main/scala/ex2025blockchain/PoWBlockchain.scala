@@ -1,10 +1,8 @@
 package ex2025blockchain
 
 import ex2025blockchain.Block
-import rdts.base.{Bottom, Lattice, Uid}
-import rdts.time.Dot
+import rdts.base.{Bottom, Lattice}
 
-import java.security.MessageDigest
 import scala.annotation.tailrec
 
 /** The implementation ignores the cryptographic concepts used in blockchains and focuses instead on the replication and consensus

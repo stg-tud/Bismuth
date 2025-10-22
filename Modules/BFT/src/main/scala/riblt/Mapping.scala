@@ -30,14 +30,14 @@ object Mapping:
   def apply(bytes: Array[Byte]): Mapping =
     new Mapping(MurmurHash3.arrayHash(bytes))
 
-  private def murmurHash64(bytes: Array[Byte]): Long =
-    val seed = 0x9747b28c
-
-    val hash1x32 = MurmurHash3.bytesHash(bytes, seed)
-    val hash1    = hash1x32.toLong & 0xffffffffL
-    val hash2    = MurmurHash3.bytesHash(bytes, hash1x32).toLong & 0xffffffffL
-
-    (hash1 << 32) | hash2
+//  private def murmurHash64(bytes: Array[Byte]): Long =
+//    val seed = 0x9747b28c
+//
+//    val hash1x32 = MurmurHash3.bytesHash(bytes, seed)
+//    val hash1    = hash1x32.toLong & 0xffffffffL
+//    val hash2    = MurmurHash3.bytesHash(bytes, hash1x32).toLong & 0xffffffffL
+//
+//    (hash1 << 32) | hash2
 
 class SymbolMapping(
     var sourceIndex: Int,

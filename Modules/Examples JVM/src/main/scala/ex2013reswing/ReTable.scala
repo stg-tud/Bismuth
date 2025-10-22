@@ -1,9 +1,9 @@
 package ex2013reswing
 
+import javax.swing.event.TableModelListener
 import scala.swing.Table.{AutoResizeMode, ElementMode, IntervalMode}
 import scala.swing.event.{TableChanged, TableColumnsSelected, TableRowsAdded, TableRowsRemoved, TableRowsSelected, TableStructureChanged, TableUpdated}
 import scala.swing.{Color, Dimension, Font, Table}
-import javax.swing.event.TableModelListener
 
 @scala.annotation.nowarn("msg=shadows field")
 class ReTable[A <: AnyRef](
@@ -32,7 +32,7 @@ class ReTable[A <: AnyRef](
     maximumSize: ReSwingValue[Dimension] = (),
     preferredSize: ReSwingValue[Dimension] = ()
 ) extends ReComponent(background, foreground, font, enabled, minimumSize, maximumSize, preferredSize) {
-  override protected lazy val peer: Table & ComponentMixin = new Table with ComponentMixin
+  override final lazy val peer: Table & ComponentMixin = new Table with ComponentMixin
 
   private var model: javax.swing.table.TableModel = scala.compiletime.uninitialized
 
@@ -192,7 +192,7 @@ class ReTable[A <: AnyRef](
       val intervalMode: ReSwingValue[IntervalMode.Value],
       val elementMode: ReSwingValue[ElementMode.Value]
   ) {
-    protected[ReTable] val peer = ReTable.this.peer.selection
+    protected[ReTable] val peer: ReTable.this.peer.selection.type = ReTable.this.peer.selection
 
     val columnLeadIndex: ReSwingValue[Int] = ReSwingValue.using(
       () => peer.columns.leadIndex,

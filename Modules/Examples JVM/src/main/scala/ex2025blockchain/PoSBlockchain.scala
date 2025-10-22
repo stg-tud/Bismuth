@@ -1,10 +1,8 @@
 package ex2025blockchain
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.time.Dot
 
-import java.security.MessageDigest
 import scala.annotation.tailrec
 
 /** proof of stake consensus

@@ -1,8 +1,12 @@
 package com.daimpl.app
 
-import scala.language.implicitConversions
 import japgolly.scalajs.react.*
+import japgolly.scalajs.react.CtorType.Summoner.Aux
+import japgolly.scalajs.react.component.Scala.Component
+import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
+
+import scala.language.implicitConversions
 
 object SpreadsheetControls {
 
@@ -13,7 +17,7 @@ object SpreadsheetControls {
       onRemove: Int => Callback
   )
 
-  val Component = ScalaComponent
+  val Component: Component[Props, Unit, Unit, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("SpreadsheetControls")
     .render_P { props =>
       <.div(

@@ -46,7 +46,7 @@ abstract class Blockchain[T, Self <: Blockchain[T, Self]](inner: Map[String, Blo
 
   def contains(block: Block[T]): Boolean = contains(block.hash)
 
-  def toTreeString(using Ordering[String]): String = {
+  def toTreeString: String = {
     @tailrec
     def getBranchString(h: String, list: List[String] = List.empty): List[String] = {
       val block = inner(h)

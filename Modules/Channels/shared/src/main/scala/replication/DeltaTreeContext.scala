@@ -342,7 +342,7 @@ class DeltaTreeContext[State](selfUid: Uid) {
   // look up table to index of cached messages
   private var dotToPayload: Map[Dot, List[Int]] = Map.empty
   // the dots (emitted by this replica) known by the peers, can be later used to remove dots
-  private var knowledgeOfPeers: Map[Uid, Dot] = Map.empty
+//  private var knowledgeOfPeers: Map[Uid, Dot] = Map.empty
 
   def addNode(dot: Dot, causalPredecessor: Dot): Boolean = tree.addNode(dot, causalPredecessor)
 
