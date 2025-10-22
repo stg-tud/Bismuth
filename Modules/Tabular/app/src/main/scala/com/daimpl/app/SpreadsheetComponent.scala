@@ -15,7 +15,7 @@ import scala.scalajs.js.timers.SetTimeoutHandle
 
 object SpreadsheetComponent {
 
-  def createSampleSpreadsheet()(using LocalUid): SpreadsheetDeltaAggregator[String] = {
+  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] = {
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
       .repeatEdit(6, _.addRow())
       .repeatEdit(6, _.addColumn())

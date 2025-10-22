@@ -34,6 +34,6 @@ object CausalStore {
 
   }
 
-  given bottom[A: Bottom]: Bottom[CausalStore[A]] = Bottom.derived
+  given bottom[A]: Bottom[CausalStore[A]] = Bottom.derived
 
 }

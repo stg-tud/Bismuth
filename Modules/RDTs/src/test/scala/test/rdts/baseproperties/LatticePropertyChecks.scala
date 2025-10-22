@@ -2,7 +2,7 @@ package test.rdts.baseproperties
 
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
-import rdts.base.{Bottom, Lattice}
+import rdts.base.Lattice
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.experiments.CausalStore

@@ -4,10 +4,13 @@ import com.softwaremill.quicklens.TestData.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import scala.annotation.nowarn
+
 class SecondParamListTest extends AnyFlatSpec with Matchers {
   it should "modify an object with second implicit param list" in {
     import com.softwaremill.quicklens.*
 
+    @nowarn("id=E198")
     case class State(inside: Boolean)(implicit d: Double)
 
     val d: Double = 1.0

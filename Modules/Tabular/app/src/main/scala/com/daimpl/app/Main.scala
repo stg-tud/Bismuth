@@ -23,7 +23,7 @@ object Main {
 
         val newAggregator =
           if state.spreadsheets.isEmpty then {
-            SpreadsheetComponent.createSampleSpreadsheet()(using replicaId)
+            SpreadsheetComponent.createSampleSpreadsheet()
           } else if onlineSpreadsheets.isEmpty then {
             SpreadsheetDeltaAggregator(Spreadsheet[String](), replicaId)
           } else {

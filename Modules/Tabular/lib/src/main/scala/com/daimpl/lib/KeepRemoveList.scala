@@ -51,7 +51,7 @@ case class KeepRemoveList[E] private (
       flag.enable()
     }
 
-  def remove(idx: Int)(using LocalUid): C =
+  def remove(idx: Int): C =
     updateFlag(idx) { case flag =>
       flag.disable()
     }
@@ -82,7 +82,7 @@ case class KeepRemoveList[E] private (
       .filter((d, _) => isAlive(d))
       .map(_._2).lift(n)
 
-  private def updateFlag(idx: Int)(f: (EnableWinsFlag) => EnableWinsFlag)(using LocalUid): C =
+  private def updateFlag(idx: Int)(f: EnableWinsFlag => EnableWinsFlag): C =
     findRealIndex(idx) match
       case None          => KeepRemoveList.empty
       case Some(realIdx) =>

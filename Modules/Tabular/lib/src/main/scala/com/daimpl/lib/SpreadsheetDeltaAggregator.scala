@@ -4,7 +4,7 @@ import rdts.base.LocalUid
 
 class SpreadsheetDeltaAggregator[S](
     private var spreadsheet: Spreadsheet[S],
-    private var replicaId: LocalUid
+    replicaId: LocalUid
 ) {
 
   private type EditFunction = LocalUid ?=> Spreadsheet[S] => Spreadsheet[S]

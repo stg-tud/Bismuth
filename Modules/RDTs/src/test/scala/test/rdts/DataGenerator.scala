@@ -133,7 +133,7 @@ object DataGenerator {
       dots   <- arbDot.arbitrary
     yield CausalDelta(dots, Dots.empty, value)
 
-  given arbCausalStore[A: {Arbitrary, Bottom, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
+  given arbCausalStore[A: {Arbitrary, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
     for
       predec <- Gen.listOf(arbCausalDelta.arbitrary)
       value  <- Arbitrary.arbitrary[A]

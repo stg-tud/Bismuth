@@ -12,7 +12,7 @@ import scala.util.Random
 
 object MVRegisterGenerators {
 
-  def genMVRegister[A: Lattice](using
+  def genMVRegister[A](using
       a: Arbitrary[A],
   ): Gen[AntiEntropyContainer[MultiVersionRegister[A]]] =
     for
@@ -30,7 +30,7 @@ object MVRegisterGenerators {
       }
     }
 
-  given arbMVRegister[A: Lattice](using
+  given arbMVRegister[A](using
       a: Arbitrary[A],
   ): Arbitrary[AntiEntropyContainer[MultiVersionRegister[A]]] =
     Arbitrary(genMVRegister)

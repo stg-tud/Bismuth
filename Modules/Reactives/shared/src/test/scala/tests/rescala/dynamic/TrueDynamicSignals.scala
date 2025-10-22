@@ -1,7 +1,7 @@
 package tests.rescala.dynamic
 
 import munit.FunSuite
-import reactives.SelectedScheduler.candidate.State as BundleState
+import reactives.SelectedScheduler.candidate.State
 import reactives.core.infiltration.Infiltrator
 import reactives.core.{CreationTicket, DynamicTicket}
 
@@ -82,7 +82,7 @@ class TrueDynamicSignals extends FunSuite {
   test("outer And Inner Values") {
     val v = Var(0)
     object obj {
-      def sig(using ct: CreationTicket[BundleState]) = Signal { v.value }
+      def sig(using ct: CreationTicket[State]) = Signal { v.value }
     }
 
     val evt     = Evt[Int]()
@@ -132,12 +132,12 @@ class TrueDynamicSignals extends FunSuite {
 
   test("extracting Signal Side Effects") {
     val e1                                                              = Evt[Int]()
-    def newSignal()(using ct: CreationTicket[BundleState]): Signal[Int] = e1.count()
+    def newSignal()(using ct: CreationTicket[State]): Signal[Int] = e1.count()
 
     val macroRes = Signal {
       newSignal().value
     }
-    val normalRes = Signal.dynamic() { implicit t: DynamicTicket[BundleState] =>
+    val normalRes = Signal.dynamic() { implicit t: DynamicTicket[State] =>
       t.depend(newSignal())
     }
     assertEquals(macroRes.readValueOnce, 0, "before, macro")
@@ -174,7 +174,7 @@ class TrueDynamicSignals extends FunSuite {
     val ifTrue        = Var(0)
     val ifFalse       = Var(10)
     var reevaluations = 0
-    val s             = Signal.dynamic(condition) { (dt: DynamicTicket[BundleState]) =>
+    val s             = Signal.dynamic(condition) { (dt: DynamicTicket[State]) =>
       reevaluations += 1
       if dt.depend(condition) then dt.depend(ifTrue) else dt.depend(ifFalse)
     }

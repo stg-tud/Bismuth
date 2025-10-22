@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
-  given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
+  given decompose[K, V]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
   property("contains") {
     given LocalUid = base.LocalUid.predefined("test")

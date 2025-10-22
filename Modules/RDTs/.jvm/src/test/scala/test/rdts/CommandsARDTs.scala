@@ -1,7 +1,7 @@
 package test.rdts
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{LocalUid}
 
 import scala.collection.mutable
 import scala.util.Try
@@ -10,7 +10,7 @@ import scala.util.Try
   * Users should use the trait `ACommand` for their commands which only needs an implementation of `nextLocalState` which is a function from a map of states to the next local state.
   * @tparam LocalState the type of the ARDT
   */
-trait CommandsARDTs[LocalState: Lattice] extends Commands:
+trait CommandsARDTs[LocalState] extends Commands:
   override type State = Map[LocalUid, LocalState]
   override type Sut   = scala.collection.mutable.Map[LocalUid, LocalState]
 

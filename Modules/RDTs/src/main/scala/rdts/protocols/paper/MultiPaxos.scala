@@ -41,7 +41,7 @@ case class MultiPaxos[A](
   def readDecisionsSince(time: Time): Iterable[A] =
     NumericRange(time, rounds.counter, 1L).view.flatMap(log.get)
 
-  def startLeaderElection(using LocalUid, Participants): MultiPaxos[A] =
+  def startLeaderElection(using LocalUid): MultiPaxos[A] =
     MultiPaxos(rounds.write(currentPaxos.phase1a)) // start new Paxos round with self proposed as leader
 
   def proposeIfLeader(value: A)(using LocalUid, Participants): MultiPaxos[A] =
