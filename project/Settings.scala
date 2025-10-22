@@ -29,7 +29,7 @@ object Settings {
     privateShadow(Compile / compile),
     recurseWithDefault(Compile / compile, Test / compile),
     semanticdbEnabled := true,
-    unusedWarnings(Compile / compile)
+    unusedWarnings(Compile / compile, Test / compile)
   )
 
   val scala3defaultsExtra = Def.settings(
