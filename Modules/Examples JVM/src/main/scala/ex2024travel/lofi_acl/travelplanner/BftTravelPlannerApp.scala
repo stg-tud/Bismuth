@@ -1,7 +1,7 @@
 package ex2024travel.lofi_acl.travelplanner
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import ex2024travel.lofi_acl.sync.bft.{BftAclOpGraph, BftInvitation, SyncWithBftMonotonicAcl}
+import ex2024travel.lofi_acl.sync.bft.{BftAclOpGraph, BftInvitation, SyncWithBftAcl}
 import ex2024travel.lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}
 
@@ -22,7 +22,7 @@ object BftTravelPlannerApp extends JFXApp3 {
     def createAsRootOfTrust: TravelPlanModel = {
       val identity     = IdentityFactory.createNewIdentity
       val aclRoot      = BftAclOpGraph.createSelfSignedRoot(identity)
-      val syncProvider = (new SyncWithBftMonotonicAcl[TravelPlan](_, _, _)).curried(identity)(aclRoot)
+      val syncProvider = (new SyncWithBftAcl[TravelPlan](_, _, _)).curried(identity)(aclRoot)
       TravelPlanModel(identity, syncProvider)
     }
 
@@ -30,7 +30,7 @@ object BftTravelPlannerApp extends JFXApp3 {
       val invitation   = BftInvitation.decode(invitationString)
       val identity     = IdentityFactory.fromIdentityKey(invitation.identityKey)
       val syncProvider =
-        (new SyncWithBftMonotonicAcl[TravelPlan](_, _, _)).curried(identity)(invitation.aclRootOp)
+        (new SyncWithBftAcl[TravelPlan](_, _, _)).curried(identity)(invitation.aclRootOp)
       val travelPlanModel = TravelPlanModel(identity, syncProvider)
       travelPlanModel.addConnection(invitation.inviter, invitation.joinAddress)
       travelPlanModel

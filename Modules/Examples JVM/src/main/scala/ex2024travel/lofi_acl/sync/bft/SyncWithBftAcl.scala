@@ -3,7 +3,7 @@ package ex2024travel.lofi_acl.sync.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.{EncodedDelegation, Signature}
+import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import ex2024travel.lofi_acl.sync.{Acl, RDTSync}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
@@ -12,9 +12,9 @@ import rdts.time.{Dot, Dots}
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.{Failure, Success}
 
-class SyncWithBftMonotonicAcl[RDT](
+class SyncWithBftAcl[RDT](
     private val localIdentity: PrivateIdentity,
-    aclRoot: EncodedDelegation,
+    aclRoot: SerializedAclOp,
     onDeltaReceive: RDT => Unit = (_: RDT) => {} // Consumes a delta
 )(using
     lattice: Lattice[RDT],
@@ -33,16 +33,16 @@ class SyncWithBftMonotonicAcl[RDT](
 
   override def currentState: RDT = rdtReference.get()._2
 
-  override def currentAcl: Acl = currentBftAcl._2
+  def currentAcl: Acl = currentBftAcl._2.asAcl
 
-  def currentBftAcl: (BftAclOpGraph, Acl) = localAcl.get()
+  def currentBftAcl: (BftAclOpGraph, BftAcl) = localAcl.get()
 
   // Only change using grantPermissions!
-  private val localAcl: AtomicReference[(BftAclOpGraph, Acl)] = {
-    aclRoot.decode match
-      case Failure(exception)         => throw exception
-      case Success((sig, delegation)) =>
-        val opGraph = BftAclOpGraph(sig, Map(sig -> delegation), Set(sig))
+  private val localAcl: AtomicReference[(BftAclOpGraph, BftAcl)] = {
+    aclRoot.deserialize match
+      case Failure(exception)    => throw exception
+      case Success((sig, aclOp)) =>
+        val opGraph = BftAclOpGraph(sig, Map(sig -> aclOp), Set(sig))
         AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
   }
 
@@ -63,19 +63,17 @@ class SyncWithBftMonotonicAcl[RDT](
     }
   }
 
-  def applyAclIfPossible(encodedDelegation: EncodedDelegation): Set[Signature] = {
+  /** Applies aclOp if dependencies are met and op is legal. Returns the missing dependencies (or Set.empty). */
+  def applyAclOpIfPossible(serializedAclOp: SerializedAclOp): Set[Signature] = {
     localAcl.synchronized {
       val old @ (opGraph, acl) = localAcl.get()
-      opGraph.receive(encodedDelegation.sig, encodedDelegation.op) match
+      opGraph.receive(serializedAclOp) match
         case Left(missingSignatures) => return missingSignatures
         case Right(updatedOpGraph)   =>
-          val updatedAcl = updatedOpGraph.reconstruct(updatedOpGraph.heads).get
-          assert {
-            val delegation  = encodedDelegation.decode.get._2
-            val expectedAcl = acl.addPermissions(delegation.delegatee, delegation.read, delegation.write)
-            updatedAcl.read == expectedAcl.read && updatedAcl.write == expectedAcl.write
-          }
-          require(localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl)))
+          val updatedAcl = updatedOpGraph.reconstruct
+          if !localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl))
+          then // Sanity check, the lock should prevent this
+            throw IllegalStateException("Could not apply update to ACL reference")
           Set.empty
     }
   }

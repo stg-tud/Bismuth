@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import ex2024travel.lofi_acl.sync.*
-import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.{Delegation, EncodedDelegation, Signature}
+import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import ex2024travel.lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg
 import ex2024travel.lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg.*
 import ex2024travel.lofi_acl.sync.monotonic.FilteringAntiEntropy.PartialDelta
@@ -24,8 +24,8 @@ import scala.util.Random
 // Responsible for enforcing ACL
 class BftFilteringAntiEntropy[RDT](
     localIdentity: PrivateIdentity,
-    @unused aclRoot: EncodedDelegation,
-    syncInstance: SyncWithBftMonotonicAcl[RDT]
+    aclRoot: SerializedAclOp,
+    syncInstance: SyncWithBftAcl[RDT]
 )(using
     rdtCodec: JsonValueCodec[RDT],
     filter: Filter[RDT],
@@ -70,8 +70,8 @@ class BftFilteringAntiEntropy[RDT](
   val msgQueue: LinkedBlockingQueue[(SyncMsg[RDT], PublicIdentity)] = LinkedBlockingQueue()
   // Stores deltas that couldn't be processed because of missing causal dependencies
   @unused
-  private var aclMessageBacklog: Map[Signature, Delegation] = Map.empty
-  private var deltaMessageBacklog                           = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
+  private var aclMessageBacklog: Map[Signature, DelegationOp] = Map.empty
+  private var deltaMessageBacklog                             = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
 
   // Executed in threads from ConnectionManager, thread safe
   override def receivedMessage(msg: SyncMsg[RDT], fromUser: PublicIdentity): Unit =
@@ -107,8 +107,7 @@ class BftFilteringAntiEntropy[RDT](
     broadcastFiltered(acl, deltaMsg)
   }
 
-  def broadcastAclDelegation(delegation: EncodedDelegation): Unit =
-    broadcast(AclDelta(delegation))
+  def broadcastAclDelegation(delegation: SerializedAclOp): Unit = broadcast(AclDelta(delegation))
 
   @volatile private var stopped = false
 
@@ -149,7 +148,7 @@ class BftFilteringAntiEntropy[RDT](
         then deltaMessageBacklog = deltaMessageBacklog.appended((deltaMsg, sender))
 
       case AclDelta(encodedDelegation) =>
-        val missing = syncInstance.applyAclIfPossible(encodedDelegation)
+        val missing = syncInstance.applyAclOpIfPossible(encodedDelegation)
         if missing.nonEmpty then {
           send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missing))
         } else {
@@ -160,7 +159,7 @@ class BftFilteringAntiEntropy[RDT](
         // TODO: Save ACL peer state
         val opGraph = syncInstance.currentBftAcl._1
         val msgs    = knownMissing
-          .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.encode(sig)) }
+          .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.serialize(sig)) }
           .map[AclDelta[RDT]](delegation => AclDelta(delegation))
         sendMultiple(sender, msgs.toArray*)
 
@@ -272,7 +271,7 @@ class BftFilteringAntiEntropy[RDT](
         true
   }
 
-  private def sendFiltered(receiver: PublicIdentity, acl: Acl, deltas: RdtDelta[RDT]*): Unit = {
+  private def sendFiltered(receiver: PublicIdentity, acl: BftAcl, deltas: RdtDelta[RDT]*): Unit = {
     val permissions = acl.read(receiver).intersect(acl.write(localPublicId))
     if permissions.isEmpty then return
     sendMultiple(
@@ -281,7 +280,7 @@ class BftFilteringAntiEntropy[RDT](
     )
   }
 
-  private def broadcastFiltered(acl: Acl, delta: RdtDelta[RDT]): Unit = {
+  private def broadcastFiltered(acl: BftAcl, delta: RdtDelta[RDT]): Unit = {
     connectionManager.connectedPeers.foreach { receiver =>
       val permissions = acl.write.getOrElse(localPublicId, PermissionTree.empty).intersect(
         acl.read.getOrElse(receiver, PermissionTree.empty)
@@ -354,7 +353,7 @@ object BftFilteringAntiEntropy {
   enum SyncMsg[RDT]:
     // TODO: Add bundle of (acl, rdt)-deltas as message type
     case RdtDelta(dot: Dot, delta: RDT, authorAclContext: Set[Signature], senderAclContext: Set[Signature])
-    case AclDelta(encodedDelegation: EncodedDelegation)
+    case AclDelta(serializedAclOp: SerializedAclOp)
     case AnnouncePeers(peers: Set[(PublicIdentity, (String, Int))])
     case RequestMissingRdt(rdtDots: Dots)
     // TODO: Improve anti entropy of ACL with bloom filter/riblt based sync

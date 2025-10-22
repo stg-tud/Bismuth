@@ -10,8 +10,8 @@ class BftInvitationTest extends FunSuite {
     val invitation                = BftInvitation(aclRoot, identity.identityKey, identity.getPublic, "localhost:4242")
     val decoded                   = BftInvitation.decode(invitation.encode)
 
-    println(decoded.aclRootOp.decode)
-    assertEquals(decoded.aclRootOp.decode, invitation.aclRootOp.decode)
+    println(decoded.aclRootOp.deserialize)
+    assertEquals(decoded.aclRootOp.deserialize, invitation.aclRootOp.deserialize)
     assertEquals(decoded.identityKey.getPublic, invitation.identityKey.getPublic)
     assertEquals(decoded.identityKey.getPrivate, invitation.identityKey.getPrivate)
     assertEquals(decoded.inviter, invitation.inviter)
