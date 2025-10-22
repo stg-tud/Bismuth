@@ -72,6 +72,12 @@ case class ReplicatedTree[A](
 
   def parent(dot: Dot): Option[Dot] = elements.get(dot).map(_.parent)
 
+  def root(): Option[ReplicatedTree.Node[A]] = {
+    val c = children(ReplicatedTree.rootDot)
+    assert(c.size <= 1)
+    c.headOption
+  }
+
   def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] = {
     elements.values.filter(_.parent == dot)
   }
@@ -140,7 +146,6 @@ object ReplicatedTree {
     def merge(left: ReplicatedTree[A], right: ReplicatedTree[A]): ReplicatedTree[A] = {
       val elements = left.elements ++ right.elements
       val deleted  = left.deleted `union` right.deleted
-      println(elements.size)
       recomputeParentChildren(ReplicatedTree(
         elements,
         deleted

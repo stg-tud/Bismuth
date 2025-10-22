@@ -147,7 +147,7 @@ object LSeq {
   case class Component(position: Int, place: Uid)
 
   def min: LSeq = List(Component(0, Uid.zero))
-  def max: LSeq = List(Component(Int.MaxValue, Uid.predefined("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"))) // TODO
+  def max: LSeq = List(Component(Int.MaxValue, Uid.predefined("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"))) // TODO
 
   def between(left: LSeq, right: LSeq, place: Uid): LSeq = {
     val commonPrefix           = left.zip(right).takeWhile { case (l, r) => l.position == r.position }
