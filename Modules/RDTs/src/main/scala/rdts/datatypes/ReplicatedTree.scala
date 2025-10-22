@@ -27,7 +27,7 @@ case class ReplicatedTree[A](
       observed.nextDot(LocalUid.replicaId)
 
     ReplicatedTree(
-      elements = Map(dot -> ReplicatedTree.Node(dot, parent, Map.empty, value)),
+      elements = Map(dot -> ReplicatedTree.Node(dot, parent, Map(parent -> ReplicatedTree.EdgeCounter(dot, 0)), value)),
     )
   }
 
@@ -72,7 +72,7 @@ case class ReplicatedTree[A](
 
   def parent(dot: Dot): Option[Dot] = elements.get(dot).map(_.parent)
 
-  def root(): Option[ReplicatedTree.Node[A]] = {
+  def root: Option[ReplicatedTree.Node[A]] = {
     val c = children(ReplicatedTree.rootDot)
     assert(c.size <= 1)
     c.headOption
@@ -82,7 +82,7 @@ case class ReplicatedTree[A](
     elements.values.filter(_.parent == dot)
   }
 
-  def isUnderOther(node: Dot, other: Dot): Boolean = {
+  def isBelowNode(node: Dot, other: Dot): Boolean = {
     if node == other then {
       return true
     }
@@ -181,7 +181,7 @@ object ReplicatedTree {
 
     val nonRootedNodes = scala.collection.mutable.Set[Dot]()
     for node <- newState.elements.values do {
-      if !nonRootedNodes.contains(node.parent) && !newState.isUnderOther(node.dot, ReplicatedTree.rootDot) then {
+      if !nonRootedNodes.contains(node.parent) && !newState.isBelowNode(node.dot, ReplicatedTree.rootDot) then {
         var nodeId: Option[Dot] = Some(node.dot)
         while nodeId.isDefined do {
           val currentNode = nodeId.get
