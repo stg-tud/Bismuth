@@ -1,7 +1,7 @@
 package test.rdts
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
-import rdts.base.{LocalUid}
+import rdts.base.LocalUid
 
 import scala.collection.mutable
 import scala.util.Try

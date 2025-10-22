@@ -82,7 +82,7 @@ class TrueDynamicSignals extends FunSuite {
   test("outer And Inner Values") {
     val v = Var(0)
     object obj {
-      def sig(using ct: CreationTicket[State]) = Signal { v.value }
+      def sig(using ct: CreationTicket[State]): Signal[Int] = Signal { v.value }
     }
 
     val evt     = Evt[Int]()
