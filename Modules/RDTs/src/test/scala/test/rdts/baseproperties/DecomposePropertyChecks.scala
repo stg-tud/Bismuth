@@ -1,16 +1,12 @@
 package test.rdts.baseproperties
 
-import munit.TestValues
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.{Bottom, BottomOpt, Decompose, Lattice}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlyList, LastWriterWins, MultiVersionRegister, PosNegCounter, ReplicatedList}
-import rdts.time.{Dot, Dots}
 import test.rdts.DataGenerator.ReplicatedListGen.given
 import test.rdts.DataGenerator.{*, given}
 import test.rdts.isGithubCi
-
-import scala.util.{Failure, Success}
 
 class EnableWinsFlagDecomposeChecks  extends DecomposePropertyChecks[EnableWinsFlag]
 class ConMultiVersionDecomposeChecks extends DecomposePropertyChecks[MultiVersionRegister[Int]]
@@ -74,7 +70,7 @@ abstract class DecomposePropertyChecks[A](
       assertEquals(
         merged.orElse(BottomOpt.explicit(_.empty)),
         Some(normalized),
-        s"decompose does not recompose (test may require a bottom instance if any component decomposes into None)"
+        "decompose does not recompose (test may require a bottom instance if any component decomposes into None)"
       )
 
     }

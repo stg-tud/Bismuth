@@ -1,8 +1,6 @@
 package test.rdts.protocols
 
-import rdts.base.Lattice.merge
 import rdts.base.{Bottom, LocalUid, Uid}
-import rdts.datatypes.GrowOnlyCounter
 import rdts.protocols.old.Paxos
 import rdts.time.Dots
 

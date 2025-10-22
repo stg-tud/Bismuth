@@ -4,12 +4,10 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.reflect.ClassTag
-
 class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
   import ModifyAllOptimizedTest.*
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     Cons.copyCount = 0
     ConsOpt.copyCount = 0
     Opt.eachCount = 0

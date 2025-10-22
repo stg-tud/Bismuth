@@ -1,8 +1,7 @@
 package test.rdts.bespoke
 
 import org.scalacheck.{Arbitrary, Gen}
-import rdts.base.{Bottom, Lattice, Uid}
-import rdts.time.VectorClock
+import rdts.base.{Bottom, Lattice}
 import test.rdts.DataGenerator.{arbId, given}
 import test.rdts.baseproperties.LatticePropertyChecks
 

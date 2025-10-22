@@ -2,7 +2,7 @@ package test.rdts.simulatedNetworkTests.tests
 
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
-import rdts.base.{Bottom, Lattice, Uid}
+import rdts.base.Uid
 import rdts.datatypes.ReplicatedList
 import test.rdts.DataGenerator.ReplicatedListGen.{makeRGA, given}
 import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*

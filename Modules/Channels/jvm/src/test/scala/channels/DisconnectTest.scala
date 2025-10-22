@@ -1,7 +1,7 @@
 package channels
 
 import java.net.StandardProtocolFamily
-import java.nio.channels.{ClosedChannelException, ServerSocketChannel, SocketChannel}
+import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 

@@ -1,10 +1,10 @@
 package test.rdts.filters
 
-import rdts.filters.Permission.PARTIAL
-import rdts.filters.PermissionTree.allow
 import munit.FunSuite
 import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
+import rdts.filters.Permission.PARTIAL
+import rdts.filters.PermissionTree.allow
 import rdts.filters.{Filter, PermissionTree}
 
 given stringBottom: Bottom[String] = Bottom.provide("")

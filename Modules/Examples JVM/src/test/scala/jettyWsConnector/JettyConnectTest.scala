@@ -22,17 +22,17 @@ object JettyConnectTest {
 
   def main(args: Array[String]): Unit = {
 
-    val prepared = JettyWsConnection.connect(URI.create(s"wss://echo.websocket.org/")).prepare: conn =>
-      println(s"established connection")
+    val prepared = JettyWsConnection.connect(URI.create("wss://echo.websocket.org/")).prepare: conn =>
+      println("established connection")
       msg =>
         println(s"received ${msg.map(_.show)}")
 
     val connect = Async[Abort] {
       val outgoing = prepared.bind
       outgoing.send(ArrayMessageBuffer("hello world".getBytes)).bind
-      println(s"send successfull")
+      println("send successfull")
     }.run(using Abort()) { res =>
-      println(s"done!")
+      println("done!")
       println(res)
     }
   }

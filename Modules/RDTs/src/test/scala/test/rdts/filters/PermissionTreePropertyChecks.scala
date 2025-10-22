@@ -1,11 +1,10 @@
 package test.rdts.filters
 
-import rdts.filters.Permission.{ALLOW, PARTIAL}
-import rdts.filters.PermissionTree.allow
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
 import rdts.base.Lattice.syntax.merge
+import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.{Permission, PermissionTree}
 import test.rdts.baseproperties.LatticePropertyChecks
 

@@ -2,8 +2,8 @@ package test.rdts.protocols.simplified
 
 import rdts.base.LocalUid
 import rdts.protocols.Participants
-import rdts.protocols.old.simplified.GeneralizedPaxos.given
 import rdts.protocols.old.simplified.GeneralizedPaxos
+import rdts.protocols.old.simplified.GeneralizedPaxos.given
 
 class GenPaxosTest extends munit.FunSuite {
 

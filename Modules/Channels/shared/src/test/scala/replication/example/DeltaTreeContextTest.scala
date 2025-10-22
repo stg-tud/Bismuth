@@ -2,13 +2,11 @@ package replication.example
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import replication.DeltaTreeContext
-import replication.DotTree
-import replication.ProtocolMessage.Payload
-import replication.{CachedMessage, SentCachedMessage}
-import rdts.base.{LocalUid, Uid}
-import rdts.time.{Dot, Dots, Time}
+import rdts.base.Uid
+import rdts.time.{Dot, Dots}
 import replication.DeltaDissemination.pmscodec
+import replication.ProtocolMessage.Payload
+import replication.{CachedMessage, DeltaTreeContext, DotTree, SentCachedMessage}
 
 class DeltaTreeContextTest extends munit.FunSuite {
 

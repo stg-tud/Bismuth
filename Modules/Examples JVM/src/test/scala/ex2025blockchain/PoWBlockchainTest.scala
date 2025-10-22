@@ -1,8 +1,8 @@
 package ex2025blockchain
 
 import munit.FunSuite
-import rdts.base.{Bottom, Lattice, LocalUid}
-import rdts.time.{Dot, Dots}
+import rdts.base.{Bottom, Lattice}
+import rdts.time.Dot
 
 class PoWBlockchainTest extends FunSuite {
 

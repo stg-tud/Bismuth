@@ -1,10 +1,10 @@
 package test.rdts.protocols.simplified
 
-import rdts.base.{Bottom, LocalUid, Uid}
-import rdts.protocols.Participants.participants
+import rdts.base.{Bottom, LocalUid}
 import rdts.protocols.Participants
-import rdts.protocols.old.simplified.Paxos.given
+import rdts.protocols.Participants.participants
 import rdts.protocols.old.simplified.Paxos
+import rdts.protocols.old.simplified.Paxos.given
 import rdts.time.Dots
 
 import scala.math.Ordering.Implicits.infixOrderingOps

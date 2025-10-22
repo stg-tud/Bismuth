@@ -1,13 +1,11 @@
 package rdts.size
 
 import com.github.plokhotnyuk.jsoniter_scala.core
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToString}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Lattice, LocalUid}
-import rdts.datatypes.{ReplicatedList, ObserveRemoveMap}
+import rdts.datatypes.ObserveRemoveMap
 import replication.JsoniterCodecs.given
-
-import scala.util.Random
 
 class SizeTest extends munit.FunSuite {
 

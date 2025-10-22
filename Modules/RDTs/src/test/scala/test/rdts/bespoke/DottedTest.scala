@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
-import rdts.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.experiments.AuctionInterface
+import rdts.experiments.AuctionInterface.{AuctionData, Bid}
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 
 class DottedTest extends munit.FunSuite {

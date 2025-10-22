@@ -102,7 +102,7 @@ object MembershipSpec extends Commands {
   case class Merge(leftIndex: Int, rightIndex: Int) extends Command:
     type Result = Membership[Int, Paxos, Paxos]
 
-    def newLocalState(states: Seq[(LocalUid, LocalState)]) =
+    def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
       val (idL, membershipL) = states(leftIndex)
       val (idR, membershipR) = states(rightIndex)
       //      println(s"merging ${states(leftIndex)} with ${states(rightIndex)}")
@@ -140,7 +140,7 @@ object MembershipSpec extends Commands {
   //      Lattice[Membership[Int, Paxos, Paxos]].lteq(state(rightIndex)._2, result.get) :| "Merge produces valid results"
 
   case class Write(index: Int, value: Int) extends UnitCommand:
-    def newLocalState(states: Seq[(LocalUid, LocalState)]) =
+    def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
       val (id, membership) = states(index)
       (id, membership.merge(membership.write(value)(using id)))
 
@@ -210,7 +210,7 @@ object MembershipSpec extends Commands {
   case class Upkeep(index: Int) extends Command:
     type Result = Sut
 
-    def newLocalState(states: Seq[(LocalUid, LocalState)]) =
+    def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
       val (id, membership) = states(index)
       (id, membership.merge(membership.upkeep()(using id)))
 

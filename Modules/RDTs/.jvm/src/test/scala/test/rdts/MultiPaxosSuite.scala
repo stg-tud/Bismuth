@@ -86,7 +86,7 @@ class MultiPaxosSpec[A: Arbitrary](
                 log1
               )) :| s"every log is a prefix of another log or vice versa, but we had:\n${multipaxos1.rounds.counter}${multipaxos1.read}\n${multipaxos2.rounds.counter}${multipaxos2.read}" &&
               // ((multipaxos1.rounds.counter != multipaxos2.rounds.counter) || multipaxos1.leader.isEmpty || multipaxos2.leader.isEmpty || (multipaxos1.leader == multipaxos2.leader)) :| s"There can only ever be one leader for a given epoch but we got:\n${multipaxos1.leader}\n${multipaxos2.leader}" &&
-              (log1.isPrefix(oldLog1) && log2.isPrefix(oldLog2)) :| s"logs never shrink" &&
+              (log1.isPrefix(oldLog1) && log2.isPrefix(oldLog2)) :| "logs never shrink" &&
               (multipaxos1.phase != LeaderElection || multipaxos1.leader.isEmpty) && (multipaxos1.phase == LeaderElection || multipaxos1.leader.nonEmpty) :| s"leader is only undefined during leader election, got ${multipaxos1.leader} in phase ${multipaxos1.phase}"
       }
 

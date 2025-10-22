@@ -15,8 +15,8 @@ object ModifyWhenTestData {
   val cat: Animal      = Cat(List(3, 12, 13))
   val olderCat: Animal = Cat(List(4, 12, 13))
 
-  val zoo      = Zoo(List(dog, cat))
-  val olderZoo = Zoo(List(olderDog, olderCat))
+  val zoo: Zoo      = Zoo(List(dog, cat))
+  val olderZoo: Zoo = Zoo(List(olderDog, olderCat))
 
   trait MyOption[+A]
   case class MySome[+A](value: A) extends MyOption[A]

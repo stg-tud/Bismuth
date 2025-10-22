@@ -40,7 +40,7 @@ trait CommandsARDTs[LocalState: Lattice] extends Commands:
       sut.update(id, nextLocalState(sut.toMap))
       sut.toMap
 
-    override def nextState(state: State) =
+    override def nextState(state: State): State =
       state.updated(id, nextLocalState(state))
 
     override def preCondition(state: Map[LocalUid, LocalState]) = true

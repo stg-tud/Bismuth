@@ -10,7 +10,7 @@ class TokensTest extends munit.FunSuite {
   given Lattice[Token]        = Lattice.derived
   val numOfReplicas           = 5
   val replicas: Seq[LocalUid] = List.tabulate(numOfReplicas)(_ => LocalUid.gen())
-  var token                   = Token(
+  var token: Token                   = Token(
     os = Ownership.unchanged,
     wants = ReplicatedSet.empty
   )

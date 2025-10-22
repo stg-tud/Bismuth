@@ -7,7 +7,6 @@ import munit.FunSuite
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.operator.bc.BcEdDSAContentVerifierProviderBuilder
-import org.junit.Assert
 import org.junit.Assert.assertArrayEquals
 
 import java.io.ByteArrayInputStream

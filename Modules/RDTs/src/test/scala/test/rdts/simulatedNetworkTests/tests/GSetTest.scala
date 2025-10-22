@@ -1,8 +1,8 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
+import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable

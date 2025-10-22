@@ -1,8 +1,7 @@
 package test.rdts.corestructs
 
 import org.scalacheck.Prop.*
-import rdts.base.Uid
-import rdts.time.{ArrayRanges, Dot, Time}
+import rdts.time.{ArrayRanges, Time}
 import test.rdts.DataGenerator.*
 
 class ArrayRangesTest extends munit.ScalaCheckSuite {

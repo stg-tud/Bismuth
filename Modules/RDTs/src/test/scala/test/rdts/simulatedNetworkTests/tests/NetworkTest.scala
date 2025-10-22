@@ -1,8 +1,8 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import NetworkGenerators.given
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
+import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.given
 import test.rdts.simulatedNetworkTests.tools.{Network, SimulatedMessage}
 
 object NetworkGenerators {

@@ -1,7 +1,6 @@
 package channels
 
 import com.sun.net.httpserver.HttpServer
-import rdts.base.LocalUid
 
 import java.net.http.HttpClient
 import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI, UnixDomainSocketAddress}

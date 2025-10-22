@@ -1,7 +1,7 @@
 package test.rdts.filters
 
-import rdts.filters.Operation.{READ, WRITE}
 import munit.FunSuite
+import rdts.filters.Operation.{READ, WRITE}
 import rdts.filters.{Group, Operation, Rule}
 
 class RuleTest extends FunSuite {

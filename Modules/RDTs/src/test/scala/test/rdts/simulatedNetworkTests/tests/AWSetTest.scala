@@ -1,10 +1,10 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedSet
+import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable

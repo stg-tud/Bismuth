@@ -43,12 +43,12 @@ class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
   class Write(writer: LocalUid, value: A) extends ACommand(writer):
     override def toString: String = s"Write($writer, $value)"
 
-    def nextLocalState(states: Map[LocalUid, C[A]]) =
+    def nextLocalState(states: Map[LocalUid, C[A]]): C[A] =
       given Participants = Participants(states.keySet.map(_.uid))
       val written        = Lattice.merge(states(writer), states(writer).propose(value)(using writer))
       Lattice.merge(written, written.upkeep()(using writer))
 
-    override def postCondition(state: Map[LocalUid, C[A]], result: Try[Map[LocalUid, C[A]]]) =
+    override def postCondition(state: Map[LocalUid, C[A]], result: Try[Map[LocalUid, C[A]]]): Prop =
       given Participants = Participants(state.keySet.map(_.uid))
       (state(writer).members == result.get(writer).members)
       :| s"Members do not change during writes.\nBefore: ${state(writer)}\nAfter:${result.get(writer)}"
@@ -56,7 +56,7 @@ class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
   class Merge(left: LocalUid, right: LocalUid) extends ACommand(left):
     override def toString: String = s"Merge($right, $left)"
 
-    def nextLocalState(states: Map[LocalUid, C[A]]) =
+    def nextLocalState(states: Map[LocalUid, C[A]]): C[A] =
       given Participants = Participants(states.keySet.map(_.uid))
       val merged: C[A]   = Lattice.merge(states(left), states(right))
       Lattice.merge(merged, merged.upkeep()(using left))
@@ -75,8 +75,8 @@ class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
           (resValue, res(index).result) match
             case (Some(v1), Some(v2)) =>
               (v1 == v2) :| s"if two devices read a value, it has to be the same, got $v1, $v2" &&
-              res(index).members.nonEmpty :| s"members are never empty" &&
-              (state(index).members == res(index).members) :| s"upkeep does not change members"
+              res(index).members.nonEmpty :| "members are never empty" &&
+              (state(index).members == res(index).members) :| "upkeep does not change members"
             case _ => Prop(true)
       }
 }

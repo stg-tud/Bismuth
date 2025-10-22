@@ -1,7 +1,7 @@
 package test.rdts.protocols
 
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{LocalUid, Uid}
 import rdts.protocols.{LeaderElection, MultiRoundVoting, Participants, Voting}
 
 class SimpleVotingTests extends munit.FunSuite {

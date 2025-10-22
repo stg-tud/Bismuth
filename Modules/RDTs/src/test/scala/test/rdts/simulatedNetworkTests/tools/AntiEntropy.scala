@@ -1,8 +1,8 @@
 package test.rdts.simulatedNetworkTests.tools
 
-import AntiEntropy.{AckMsg, DeltaMsg}
 import rdts.base.Uid.asId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import test.rdts.simulatedNetworkTests.tools.AntiEntropy.{AckMsg, DeltaMsg}
 
 import scala.collection.mutable
 

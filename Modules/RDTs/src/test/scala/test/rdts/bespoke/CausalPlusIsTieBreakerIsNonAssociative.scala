@@ -1,9 +1,8 @@
 package test.rdts.bespoke
 
 import rdts.base.{Lattice, Uid}
-import rdts.experiments.BoundedCounter
 import rdts.time.VectorClock
-import test.rdts.{TestReplica, given}
+import test.rdts.given
 
 import scala.math.Ordering.Implicits.infixOrderingOps
 

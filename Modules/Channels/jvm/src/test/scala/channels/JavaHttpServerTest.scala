@@ -25,7 +25,7 @@ object JavaHttpServerTest {
     conn.prepare(inc => msg => println(msg)).run(using Abort()):
       case Failure(ex)   => ex.printStackTrace()
       case Success(conn) =>
-        println(s"received connection, replying")
+        println("received connection, replying")
         conn.send("yay!".convert).run(using Abort())(res => println(res))
 
     server.start()
@@ -70,7 +70,7 @@ object JavaHttpServerTest2 {
 
     clientDiss.applyDelta(MultiVersionRegister.of("Hello!")(using clientId))
 
-    println(s"waiting for shutdown")
+    println("waiting for shutdown")
     Thread.sleep(1000)
     server.stop(0)
   }

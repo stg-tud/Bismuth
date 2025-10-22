@@ -5,10 +5,10 @@ import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 
 class MultiPaxosTest extends munit.FunSuite {
 
-  val id1 = LocalUid.gen()
-  val id2 = LocalUid.gen()
-  val id3 = LocalUid.gen()
-  val id4 = LocalUid.gen()
+  val id1: LocalUid = LocalUid.gen()
+  val id2: LocalUid = LocalUid.gen()
+  val id3: LocalUid = LocalUid.gen()
+  val id4: LocalUid = LocalUid.gen()
 
   given Participants = Participants(Set(id1, id2, id3).map(_.uid))
 

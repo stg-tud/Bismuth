@@ -3,8 +3,8 @@ import cats.data.NonEmptyList
 import cats.implicits.*
 import lore.Parser
 import lore.ast.*
-import lore.backends.OverlapAnalysis.*
 import lore.backends.*
+import lore.backends.OverlapAnalysis.*
 import munit.FunSuite
 
 class OverlapAnalysisTests extends FunSuite {

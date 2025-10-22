@@ -2,17 +2,13 @@ package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import replication.filters.DeltaSurgeon.getLabels
-import DeltaSurgeonTest.{optionSurgeon, given}
-import rdts.filters.Permission.{ALLOW, PARTIAL}
-import rdts.filters.PermissionTree.{allow, empty}
 import munit.FunSuite
-import rdts.base
 import rdts.base.Bottom
+import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree
+import rdts.filters.PermissionTree.{allow, empty}
+import replication.DeltaSurgeonTest.{optionSurgeon, given}
 import replication.filters.{DeltaSurgeon, IsolatedDeltaParts}
-
-import scala.compiletime.{constValue, constValueTuple, erasedValue, summonAll}
 
 case class A(a: String, b: B)
 case class B(c: String)

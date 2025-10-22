@@ -1,6 +1,6 @@
 package test.rdts
 
-import org.scalacheck.{Arbitrary, Gen, Shrink}
+import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.*
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
@@ -8,7 +8,7 @@ import rdts.experiments.CausalStore
 import rdts.experiments.CausalStore.CausalDelta
 import rdts.time.*
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 
 object DataGenerator {
 

@@ -2,7 +2,7 @@ package replication.example
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 

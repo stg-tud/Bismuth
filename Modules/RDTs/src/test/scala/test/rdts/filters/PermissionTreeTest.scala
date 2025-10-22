@@ -1,10 +1,10 @@
 package test.rdts.filters
 
-import rdts.filters.Permission.{ALLOW, PARTIAL}
-import rdts.filters.PermissionTree.{allow, empty}
 import munit.FunSuite
 import rdts.base.{Bottom, Lattice}
+import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree
+import rdts.filters.PermissionTree.{allow, empty}
 
 class PermissionTreeTest extends FunSuite {
   def partial(labelsWithTree: (String, PermissionTree)*): PermissionTree =
