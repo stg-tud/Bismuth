@@ -124,7 +124,7 @@ object Settings {
         // (UNSAFE) Warn if a variable bound in a pattern is unused. This warning can generate false positive, as warning cannot be suppressed yet.
         // "-Wunused:unsafe-warn-patvars",
         // also make unused warnings not warnings but just infos
-        "-Wconf:id=E198:info,msg=annotation does not suppress any warnings but matches a diagnostic:info",
+        "-Wconf:id=E198:info",
       )
     }
   }
