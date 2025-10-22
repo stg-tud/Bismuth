@@ -1,17 +1,14 @@
 package ex2024travel.lofi_acl.sync.bft
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import ex2024travel.lofi_acl.sync.Acl
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import rdts.filters.PermissionTree
 
 import java.security.PrivateKey
 import java.util.Base64
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 
 // TODO: Add cached lookups (maybe keep ~5 latest and/or a few last read acls)
 case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set[Signature]) {

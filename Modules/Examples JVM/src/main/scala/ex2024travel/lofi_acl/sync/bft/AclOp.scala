@@ -2,7 +2,6 @@ package ex2024travel.lofi_acl.sync.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.bft.AclOp.opCodec
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature

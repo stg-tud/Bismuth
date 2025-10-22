@@ -2,8 +2,7 @@ package ex201x.reswingexamples.millgame.versions.signals
 
 import ex2013reswing.{ReComponent, ReLabel, ReSwingValue}
 import ex201x.reswingexamples.millgame.*
-import ex201x.reswingexamples.millgame.types.*
-import ex201x.reswingexamples.millgame.types.Point
+import ex201x.reswingexamples.millgame.types.{Point, *}
 import reactives.default.*
 import reactives.operator.Event
 
