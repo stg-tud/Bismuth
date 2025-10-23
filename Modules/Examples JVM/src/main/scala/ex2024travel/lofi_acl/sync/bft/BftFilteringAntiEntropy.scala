@@ -90,6 +90,10 @@ class BftFilteringAntiEntropy[RDT](
   def newPeers(peers: Set[(PublicIdentity, (String, Int))]): Unit =
     receivedMessage(AnnouncePeers(peers), localPublicId)
 
+  def removePeer(user: PublicIdentity): Unit =
+    peerAddressCache.updateAndGet(cache => cache.filterNot(_._1 == user))
+    connectionManager.disconnect(user)
+
   def mutateRdt(dot: Dot, delta: RDT): Unit = {
     require(!rdtDeltas.allDots.contains(dot))
     val (aclOpGraph, acl) = syncInstance.currentBftAcl
@@ -122,17 +126,18 @@ class BftFilteringAntiEntropy[RDT](
         try {
           val (msg, sender) = msgQueue.take()
 
-          // Process message immediately or backlog it if not processable
-          handleMessage(msg, sender)
+          if !syncInstance.currentBftAcl._2.removed.contains(sender) // Check if user was removed -> drop message
+          then // Process message immediately or backlog it if not processable
+            handleMessage(msg, sender)
 
-          // If we processed an ACLEntry, maybe we need now can process backlogged messages
-          msg match {
-            // We ignore causal dependencies between deltas
-            case SyncMsg.AclDelta(serializedAclOp) =>
-              val aclDeltaIdentifier = serializedAclOp.signatureAsString
-              processDeltaBacklog()
-            case _ => ()
-          }
+            // If we processed an ACLEntry, maybe we need now can process backlogged messages
+            msg match {
+              // We ignore causal dependencies between deltas
+              case SyncMsg.AclDelta(serializedAclOp) =>
+                val aclDeltaIdentifier = serializedAclOp.signatureAsString
+                processDeltaBacklog()
+              case _ => ()
+            }
         } catch
           case e: InterruptedException =>
       }

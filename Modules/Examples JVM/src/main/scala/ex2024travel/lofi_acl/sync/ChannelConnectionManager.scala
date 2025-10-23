@@ -93,30 +93,30 @@ class ChannelConnectionManager(
     }
   }
 
+  def disconnect(userId: PublicIdentity): Unit = {
+    connections.get().get(userId).foreach(_.foreach(_.close()))
+  }
+
   def connectedPeers: Set[PublicIdentity] = connections.get().keySet
 
   private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
-    val remoteId = PublicIdentity(connection.authenticatedPeerReplicaId.get.delegate)
-    require(remoteId != localPublicId)
-    if !disableLogging then println(s"Connection accepted from: $remoteId at ${connection.info}")
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
       case Some(`localPublicId`) =>
         if !disableLogging then println("Refusing attempt to track connection to myself")
         connection.close()
       case None               => ??? // Should not happen
       case Some(remotePeerId) =>
-        if !disableLogging then println(remotePeerId)
+        if !disableLogging then println("Connection established with: " + remotePeerId)
         val updated = connections.updateAndGet(old =>
           old.updatedWith(remotePeerId) {
             case None              => Some(Set(connection))
-            case Some(connections) =>
-              Some(connections + connection)
+            case Some(connections) => Some(connections + connection)
           }
         )
         if !disableLogging && updated(remotePeerId).size > 1
         then println(s"duplicate connections from $remotePeerId: $connections + $connection")
 
-        messageReceiver.connectionEstablished(remoteId)
+        messageReceiver.connectionEstablished(remotePeerId)
     }
   }
 
