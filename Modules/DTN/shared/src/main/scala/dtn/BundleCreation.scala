@@ -47,8 +47,7 @@ object BundleCreation {
       message_type: RdtMessageType,
       data: Array[Byte],
       dots: Dots,
-      causalPredecessors: Dots,
-      lastKnownDots: Dots,
+      redundantDots: Dots,
       node: Endpoint,
       full_destination_uri: String,
       full_source_uri: String
@@ -65,7 +64,7 @@ object BundleCreation {
     )
 
     val rdtmeta_block: RdtMetaBlock =
-      RdtMetaBlock.createFrom(RdtMetaInfo(dots, causalPredecessors, lastKnownDots, message_type)).copy(block_number = 4)
+      RdtMetaBlock.createFrom(RdtMetaInfo(dots, redundantDots, message_type)).copy(block_number = 4)
 
     val hop_count_block: HopCountBlock =
       HopCountBlock.createFrom(HopCount(hop_limit = 32, current_count = 0)).copy(block_number = 3)

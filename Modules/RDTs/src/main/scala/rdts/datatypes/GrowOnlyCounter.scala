@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid, Uid}
 
 case class GrowOnlyCounter(inner: Map[Uid, Int]) {
   lazy val value: Int = inner.valuesIterator.sum
@@ -24,5 +24,7 @@ object GrowOnlyCounter {
   given decompose: Decompose[GrowOnlyCounter] =
     given Decompose[Int] = Decompose.atomic
     Decompose.derived
+    
+  given historized: Historized[GrowOnlyCounter] = Historized.subsumption
 
 }

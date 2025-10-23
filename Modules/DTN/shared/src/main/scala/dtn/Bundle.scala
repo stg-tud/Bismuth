@@ -138,7 +138,7 @@ case class FragmentInfo(fragment_offset: Int, total_application_data_length: Int
 
 case class HopCount(hop_limit: Int, current_count: Int)
 
-case class RdtMetaInfo(dots: Dots, causalPredecessors: Dots, lastKnownDots: Dots, message_type: RdtMessageType)
+case class RdtMetaInfo(dots: Dots, redundantDots: Dots, message_type: RdtMessageType)
 
 case class PrimaryBlock(
     version: Int,

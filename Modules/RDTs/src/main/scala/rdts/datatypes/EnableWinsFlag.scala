@@ -1,6 +1,7 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.Historized.MetaDelta
+import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid}
 import rdts.time.Dots
 
 /** An EWFlag (Enable-Wins Flag) is a Delta CRDT modeling a boolean flag.
@@ -26,5 +27,10 @@ object EnableWinsFlag {
   given decompose: Decompose[EnableWinsFlag] = Decompose.atomic
 
   val empty: EnableWinsFlag = EnableWinsFlag(Dots.empty, Dots.empty)
+
+  given historized: Historized[EnableWinsFlag] = (delta: EnableWinsFlag, buffer: Iterable[MetaDelta[EnableWinsFlag]]) =>
+    // TODO: erklären warum das funktioniert,
+    // delta.unset `subsumes` bufferedDelta.delta.unset
+    buffer.filter(bufferedDelta => delta.unset.contains(bufferedDelta.delta.set)).getAllDots
 
 }

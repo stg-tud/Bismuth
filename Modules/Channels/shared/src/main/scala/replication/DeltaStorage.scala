@@ -1,7 +1,7 @@
 package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import rdts.base.{Lattice, Uid}
+import rdts.base.{Historized, Lattice, Uid}
 import rdts.time.Dots
 import replication.DeltaDissemination.pmscodec
 import replication.DeltaStorage.Type.Discarding
@@ -94,6 +94,20 @@ class MergingHistory[State: JsonValueCodec](blockSize: Int)(using Lattice[Payloa
       mergedHistory = merged :: mergedHistory
       history = List.empty
     }
+  }
+
+}
+
+class NonRedundantHistory[State: {JsonValueCodec, Lattice, Historized}] extends DeltaStorage[State] {
+
+  private var history: List[Payload[State]] = List.empty
+
+  override def getHistory: List[CachedMessage[Payload[State]]] = history.map(SentCachedMessage(_)(using pmscodec))
+
+  override def remember(message: CachedMessage[Payload[State]]): Unit = {
+    val redundantDots: Dots = message.payload.data.getRedundantDeltas(history.toMetaDeltas)
+
+    history = message.payload.copy(redundantDots = redundantDots) :: history
   }
 
 }

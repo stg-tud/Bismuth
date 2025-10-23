@@ -13,15 +13,13 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
       message_type: RdtMessageType,
       payload: Array[Byte],
       dots: Dots,
-      causalPredecessors: Dots,
-      lastKnownDots: Dots
+      redundantDots: Dots
   ): Future[Unit] = {
     val bundle: Bundle = BundleCreation.createBundleRdt(
       message_type = message_type,
       data = payload,
       dots = dots,
-      causalPredecessors = causalPredecessors,
-      lastKnownDots = lastKnownDots,
+      redundantDots = redundantDots,
       node = Endpoint.createFrom(ws.nodeId),
       full_destination_uri = s"dtn://global/~rdt/$appName",
       full_source_uri = full_source_uri
