@@ -8,14 +8,14 @@ import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 import riblt.{CodedSymbol, RIBLT}
 
 // a hash directed acyclic graph
-case class HashDAG[T] (
-                        graph: Map[String, Set[String]],
-                        events: Map[String, Event[T]],
-                        publicKey: PublicKey,
-                        privateKey: Option[PrivateKey],
-                        queue: Set[Event[T]] = Set.empty[Event[T]],
-                        byzantineNodes: Set[PublicKey] = Set.empty
-                      ):
+case class HashDAG[T](
+    graph: Map[String, Set[String]],
+    events: Map[String, Event[T]],
+    publicKey: PublicKey,
+    privateKey: Option[PrivateKey],
+    queue: Set[Event[T]] = Set.empty[Event[T]],
+    byzantineNodes: Set[PublicKey] = Set.empty
+):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean =
@@ -158,9 +158,8 @@ case class HashDAG[T] (
     this.copy(events = e, byzantineNodes = this.byzantineNodes + author)
   }
 
-  def empty: HashDAG[T] = {
+  def empty: HashDAG[T] =
     HashDAG(this.publicKey, None)
-  }
 
   def withQueue(events: Set[Event[T]]): HashDAG[T] =
     this.empty.copy(queue = events)

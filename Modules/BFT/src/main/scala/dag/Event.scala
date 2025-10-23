@@ -8,13 +8,13 @@ import crypto.Ed25519Util
 import java.security.{MessageDigest, PublicKey}
 
 case class Event[T](
-                     id: String,
-                     content: Option[T],
-                     author: PublicKey,
-                     dependencies: Set[String],
-                     signature: Array[Byte],
-                     authorIsByzantine: Boolean = false
-                   ):
+    id: String,
+    content: Option[T],
+    author: PublicKey,
+    dependencies: Set[String],
+    signature: Array[Byte],
+    authorIsByzantine: Boolean = false
+):
 
   private val HashAlgorithm = "SHA3-512"
 

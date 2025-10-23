@@ -12,10 +12,10 @@ import network.Tag.{CODED_SYMBOLS, DELTA, REQUEST_DELTA, CODED_SYMBOLS_REQUEST, 
 import riblt.RIBLTSync.{codec1, codec2}
 
 class RIBLTSync[T, R <: Replica[T, R]](
-                                        var replica: R,
-                                        var RIBLTSessions: Map[String, Session] = Map.empty,
-                                        val replicaID: String
-                                      ):
+    var replica: R,
+    var RIBLTSessions: Map[String, Session] = Map.empty,
+    val replicaID: String
+):
 
   def startSession(id: String, sessionType: SessionType)(using JsonValueCodec[R]): Thread = {
     val riblt = RIBLT[String]()
@@ -35,7 +35,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
       }
 
       while !this.RIBLTSessions(id).isSynced do
-        //println(s"reading from ${this.replicaID.mkString("Array(", ", ", ")")}")
+        // println(s"reading from ${this.replicaID.mkString("Array(", ", ", ")")}")
         val messages = Network.get(this.replicaID)
         if messages.nonEmpty then {
           println(s"$replicaID:    has a new message")
@@ -49,7 +49,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
 
   private def handleMessages(bytes: Array[Byte])(using JsonValueCodec[R]): Unit = {
     val name = Thread.currentThread().getName
-    
+
     val message = readFromArray[Message](bytes)
 
     val sender: String = message.sender
@@ -105,7 +105,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
         val ids   = readFromArray[List[String]](message.payload)
         val delta = replica.generateDelta(ids)
         println(s"${this.replicaID}:    sending delta to $sender")
-        val msg   = Message(
+        val msg = Message(
           DELTA,
           this.replicaID,
           writeToArray(delta)
@@ -131,10 +131,10 @@ enum SessionType:
   case sender, receiver
 
 class Session(
-               var sessionType: SessionType,
-               var riblt: RIBLT[String] = RIBLT(),
-               var isDecoded: Boolean = false,
-               var isSynced: Boolean = false,
-               var deltaReceived: Boolean = false,
-               var deltaRequestReceived: Boolean = false
-             )
+    var sessionType: SessionType,
+    var riblt: RIBLT[String] = RIBLT(),
+    var isDecoded: Boolean = false,
+    var isSynced: Boolean = false,
+    var deltaReceived: Boolean = false,
+    var deltaRequestReceived: Boolean = false
+)

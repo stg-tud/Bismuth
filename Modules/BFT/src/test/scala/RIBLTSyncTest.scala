@@ -48,16 +48,15 @@ class RIBLTSyncTest extends munit.FunSuite:
     crdt3 = crdt3.merge(crdt3.add("Ni hao"))
     crdt3 = crdt3.merge(crdt3.add("Konichiwa"))
 
-
     val sync1 = RIBLTSync(crdt1, Map.empty, "replica_1")
     val sync2 = RIBLTSync(crdt2, Map.empty, "replica_2")
     val sync3 = RIBLTSync(crdt3, Map.empty, "replica_3")
 
-    val t1 = sync1.startSession(sync2.replicaID, sessionType=sender)
-    val t2 = sync2.startSession(sync1.replicaID, sessionType=receiver)
+    val t1 = sync1.startSession(sync2.replicaID, sessionType = sender)
+    val t2 = sync2.startSession(sync1.replicaID, sessionType = receiver)
 
-    val t3 = sync3.startSession(sync2.replicaID, sessionType=receiver)
-    val t4 = sync2.startSession(sync3.replicaID, sessionType=sender)
+    val t3 = sync3.startSession(sync2.replicaID, sessionType = receiver)
+    val t4 = sync2.startSession(sync3.replicaID, sessionType = sender)
 
     t2.start()
     t1.start()
@@ -73,8 +72,8 @@ class RIBLTSyncTest extends munit.FunSuite:
     crdt2 = sync2.replica
     crdt3 = sync3.replica
 
-    //sync2.startSession(sync3.id, sessionType=sender)
-    //sync3.startSession(sync2.id, sessionType=receiver)
+    // sync2.startSession(sync3.id, sessionType=sender)
+    // sync3.startSession(sync2.id, sessionType=receiver)
 
     println(crdt1.elements.keySet)
     println(crdt2.elements.keySet)

@@ -6,9 +6,9 @@ import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 
 case class Counter private (
-                             value: Int,
-                             hashDAG: HashDAG[Int]
-                           ):
+    value: Int,
+    hashDAG: HashDAG[Int]
+):
 
   def inc: Counter = add(1)
 

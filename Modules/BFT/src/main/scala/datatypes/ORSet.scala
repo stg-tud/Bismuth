@@ -8,10 +8,10 @@ import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 import scala.collection.immutable.HashMap
 import scala.collection.{immutable, mutable}
 
-case class ORSet[T] (
-                      elements: Map[T, Set[String]],
-                      hashDAG: HashDAG[Op[T]]
-                    ) extends Replica[Op[T], ORSet[T]]:
+case class ORSet[T](
+    elements: Map[T, Set[String]],
+    hashDAG: HashDAG[Op[T]]
+) extends Replica[Op[T], ORSet[T]]:
 
   override def id: Array[Byte] = hashDAG.publicKey.getEncoded
 
@@ -61,9 +61,9 @@ object ORSet:
   }
 
 case class Op[T](
-                  element: T,
-                  opType: OpType
-                )
+    element: T,
+    opType: OpType
+)
 
 enum OpType:
   case Add, Remove

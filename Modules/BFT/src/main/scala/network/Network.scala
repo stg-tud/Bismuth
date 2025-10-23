@@ -1,8 +1,6 @@
 package network
 
-import java.security.PublicKey
 import java.util.concurrent.LinkedBlockingQueue
-import scala.collection.immutable.Queue
 
 object Network:
   var channels: Map[String, LinkedBlockingQueue[Array[Byte]]] = Map.empty

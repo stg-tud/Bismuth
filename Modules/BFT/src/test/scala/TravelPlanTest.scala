@@ -26,7 +26,7 @@ class TravelPlanTest extends munit.FunSuite:
     replica1 = replica1.merge(delta2)
     val delta3 = replica1.addBucketListEntry("entry 3")(using replica1Uid)
     replica1 = replica1.merge(delta3)
-  
+
     // create the second replica and merge it with 3 deltas, 2 of those deltas (delta1 & delta2) are the same deltas
     // merged with replica1 (to simulate a previous sync), the other delta (delta4) is new and exclusive to replica2 and
     // not yet merged with replica1
@@ -36,21 +36,21 @@ class TravelPlanTest extends munit.FunSuite:
     replica2 = replica2.merge(delta2)
     val delta4 = replica2.addBucketListEntry("entry 4")(using replica2Uid)
     replica2 = replica2.merge(delta4)
-  
+
     val lstDelta1 = List[Delta](delta1, delta2, delta3) // deltas already merged to replica1
     val lstDelta2 = List[Delta](delta1, delta2, delta4) // deltas already merged to replica2
-  
+
     val ribltReplica1 = RIBLT[Array[Byte]]() // riblt instance of replica1
     val ribltReplica2 = RIBLT[Array[Byte]]() // riblt instance of replica2
-  
+
     // add the deltas of replica1 to its riblt instance
     for item <- lstDelta1 do
       ribltReplica1.addSymbol(writeToArray(item))
-  
+
     // add the deltas of replica2 to its riblt instance
     for item <- lstDelta2 do
       ribltReplica2.addSymbol(writeToArray(item))
-  
+
     // to start the sync process, the 2 nodes that want to synchronise should agree on who is going to produce the
     // codedSymbols (sender) and who is going to apply these codedSymbol to its local RIBLT (receiver) and try to decode
     // it. At the end of the process only the receiver knows the answer to the question: which symbols (deltas) are
@@ -62,33 +62,33 @@ class TravelPlanTest extends munit.FunSuite:
       // to repplica2
       ribltReplica2.addCodedSymbol(ribltReplica1.produceNextCodedSymbol)
       i += 1
-  
+
     // once all the codedSymbols are decoded, send all the exclusive local deltas (of replica2) to replica1
     for d <- ribltReplica2.localSymbols do {
       val delta = readFromArray[Delta](d.value)
       // println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica1 = replica1.merge(delta)
     }
-  
+
     // merge all the exclusive remote deltas (of replica2) locally
     for d <- ribltReplica2.remoteSymbols do
       val delta = readFromArray[Delta](d.value)
       // println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica2 = replica2.merge(delta)
-  
-    //assertEquals(replica1, replica2)
 
-}
+    // assertEquals(replica1, replica2)
+
+  }
 
   test("Example 2: Synchronise TravelPlan's deltas using RIBLT") {
 
     /** Same as the above test, only with a lot more deltas */
-  
+
     var replica1  = TravelPlan.empty
     var replica2  = TravelPlan.empty
     var lstDelta1 = List[Delta]()
     var lstDelta2 = List[Delta]()
-  
+
     var j = 0
     for i <- 0 to testSetSize do
       val r = Random().nextDouble()
@@ -108,35 +108,35 @@ class TravelPlanTest extends munit.FunSuite:
           lstDelta2 = lstDelta2 :+ d
           replica2 = replica2.merge(d)
         }
-  
+
       }
-  
+
     val ribltReplica1 = RIBLT[Array[Byte]]()
     val ribltReplica2 = RIBLT[Array[Byte]]()
-  
+
     for item <- lstDelta1 do
       ribltReplica1.addSymbol(writeToArray(item))
-  
+
     for item <- lstDelta2 do
       ribltReplica2.addSymbol(writeToArray(item))
-  
+
     var i = 0
     while !ribltReplica2.isDecoded do
       ribltReplica2.addCodedSymbol(ribltReplica1.produceNextCodedSymbol)
       i += 1
-  
+
     for d <- ribltReplica2.localSymbols do {
       val delta = readFromArray[Delta](d.value)
       // println(s"sending delta from replica2 to replica1: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica1 = replica1.merge(delta)
     }
-  
+
     for d <- ribltReplica2.remoteSymbols do
       val delta = readFromArray[Delta](d.value)
       // println(s"merging delta from replica1 into replica2: ${delta.bucketList.queryAllEntries.map(e => e.payload)}")
       replica2 = replica2.merge(delta)
-  
-    //assertEquals(replica1, replica2)
+
+    // assertEquals(replica1, replica2)
 
   }
 

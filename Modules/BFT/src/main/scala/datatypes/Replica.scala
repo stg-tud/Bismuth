@@ -1,7 +1,6 @@
 package datatypes
 
 import dag.HashDAG
-import java.security.PublicKey
 
 trait Replica[T, R <: Replica[T, R]]:
   def id: Array[Byte]
