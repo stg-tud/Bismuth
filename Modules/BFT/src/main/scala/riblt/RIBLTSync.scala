@@ -8,11 +8,6 @@ import riblt.SessionType.{receiver, sender}
 import network.Message.given_JsonValueCodec_Message
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-
-import java.security.PublicKey
-import scala.collection.immutable.Queue
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import network.Tag.{CODED_SYMBOLS, DELTA, REQUEST_DELTA, CODED_SYMBOLS_REQUEST, SYNC_DONE}
 import riblt.RIBLTSync.{codec1, codec2}
 
@@ -52,16 +47,16 @@ class RIBLTSync[T, R <: Replica[T, R]](
     thread
   }
 
-  def handleMessages(bytes: Array[Byte])(using JsonValueCodec[R]): Unit = {
+  private def handleMessages(bytes: Array[Byte])(using JsonValueCodec[R]): Unit = {
     val name = Thread.currentThread().getName
     
     val message = readFromArray[Message](bytes)
 
-    val sender: String = message.sender.toString
+    val sender: String = message.sender
 
     message.tag match {
       case CODED_SYMBOLS_REQUEST =>
-        println(s"${this.replicaID}:    ${sender} requested coded symbols")
+        println(s"${this.replicaID}:    $sender requested coded symbols")
         val msg = Message(
           CODED_SYMBOLS,
           this.replicaID,
@@ -69,7 +64,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
         )
         Network.put(message.sender, writeToArray(msg))
       case CODED_SYMBOLS =>
-        println(s"${this.replicaID}:    ${sender} sent coded symbols")
+        println(s"${this.replicaID}:    $sender sent coded symbols")
         val codedSymbols = readFromArray[List[Array[Byte]]](message.payload)
         val riblt        = this.RIBLTSessions(message.sender).riblt
         riblt.addCodedSymbolsAsBytes(codedSymbols)
@@ -83,7 +78,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
           )
           Network.put(message.sender, writeToArray(msg1))
 
-          println(s"${this.replicaID}:    is sending a delta request to ${sender}")
+          println(s"${this.replicaID}:    is sending a delta request to $sender")
           val msg2 = Message(
             REQUEST_DELTA,
             this.replicaID,
@@ -91,7 +86,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
           )
           Network.put(message.sender, writeToArray(msg2))
         } else {
-          println(s"${this.replicaID}:    is requesting coded symbols from ${sender}")
+          println(s"${this.replicaID}:    is requesting coded symbols from $sender")
           val msg = Message(
             CODED_SYMBOLS_REQUEST,
             this.replicaID,
@@ -101,15 +96,15 @@ class RIBLTSync[T, R <: Replica[T, R]](
           println(s"thread $name is requesting more coded symbols")
         }
       case DELTA =>
-        println(s"${this.replicaID}:    delta is received from ${sender}")
+        println(s"${this.replicaID}:    delta is received from $sender")
         val delta = readFromArray[R](message.payload)
         this.replica = this.replica.merge(delta)
         this.RIBLTSessions(message.sender).deltaReceived = true
       case REQUEST_DELTA =>
-        println(s"${this.replicaID}:    a delta_request is received from ${sender}")
+        println(s"${this.replicaID}:    a delta_request is received from $sender")
         val ids   = readFromArray[List[String]](message.payload)
         val delta = replica.generateDelta(ids)
-        println(s"${this.replicaID}:    sending delta to ${sender}")
+        println(s"${this.replicaID}:    sending delta to $sender")
         val msg   = Message(
           DELTA,
           this.replicaID,
