@@ -6,6 +6,7 @@ import rdts.datatypes.ReplicatedTree
 import scala.language.implicitConversions
 import rdts.time.Dot
 import rdts.base.Lattice.assertEquals
+import munit.Assertions
 
 class ReplicatedTreeTest extends munit.FunSuite {
   test("insert") {
@@ -20,8 +21,8 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
     {
       val root = treeView(v1)
-      assertEquals(root.value, "ROOT")
-      assertEquals(root.children.size, 0)
+      root.assertValue("ROOT")
+      root.assertChildren(Set.empty)
     }
 
     val parent = v1.children(ReplicatedTree.rootDot).head.dot
@@ -32,16 +33,14 @@ class ReplicatedTreeTest extends munit.FunSuite {
       assertEquals(v2.size, 3)
 
       val root = treeView(v2)
-      assertEquals(root.value, "ROOT")
-      assertEquals(root.children.size, 2)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
 
-      val n1 = root.children(0)
-      assertEquals(n1.value, "A")
-      assertEquals(n1.children.size, 0)
+      val n1 = root.child("A")
+      n1.assertChildren(Set.empty)
 
-      val n2 = root.children(1)
-      assertEquals(n2.value, "B")
-      assertEquals(n2.children.size, 0)
+      val n2 = root.child("B")
+      n2.assertChildren(Set.empty)
     }
 
     val a  = v2.children(parent).find(_.value == "A").get
@@ -52,16 +51,14 @@ class ReplicatedTreeTest extends munit.FunSuite {
       assertEquals(v3.size, 3)
 
       val root = treeView(v3)
-      assertEquals(root.value, "ROOT")
-      assertEquals(root.children.size, 1)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("B"))
 
-      val n1 = root.children(0)
-      assertEquals(n1.value, "B")
-      assertEquals(n1.children.size, 1)
+      val n1 = root.child("B")
+      n1.assertChildren(Set("A"))
 
-      val n2 = n1.children(0)
-      assertEquals(n2.value, "A")
-      assertEquals(n2.children.size, 0)
+      val n2 = n1.child("A")
+      n2.assertChildren(Set.empty)
     }
   }
 
@@ -87,24 +84,20 @@ class ReplicatedTreeTest extends munit.FunSuite {
       assertEquals(tree.size, 5)
 
       val root = treeView(tree)
-      assertEquals(root.value, "ROOT")
-      assertEquals(root.children.size, 2)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
 
-      val n1 = root.children(0)
-      assertEquals(n1.value, "A")
-      assertEquals(n1.children.size, 1)
+      val n1 = root.child("A")
+      n1.assertChildren(Set("A1"))
 
-      val n2 = root.children(1)
-      assertEquals(n2.value, "B")
-      assertEquals(n2.children.size, 1)
+      val n2 = root.child("B")
+      n2.assertChildren(Set("B1"))
 
-      val n3 = n1.children(0)
-      assertEquals(n3.value, "A1")
-      assertEquals(n3.children.size, 0)
+      val n3 = n1.child("A1")
+      n3.assertChildren(Set.empty)
 
-      val n4 = n2.children(0)
-      assertEquals(n4.value, "B1")
-      assertEquals(n4.children.size, 0)
+      val n4 = n2.child("B1")
+      n4.assertChildren(Set.empty)
     }
 
     val delta1a = tree.move(a1, b1)
@@ -132,24 +125,20 @@ class ReplicatedTreeTest extends munit.FunSuite {
       assertEquals(tree.size, 5)
 
       val root = treeView(tree)
-      assertEquals(root.value, "ROOT")
-      assertEquals(root.children.size, 2)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
 
-      val n1 = root.children(0)
-      assertEquals(n1.value, "A")
-      assertEquals(n1.children.size, 1)
+      val n1 = root.child("A")
+      n1.assertChildren(Set("A1"))
 
-      val n2 = root.children(1)
-      assertEquals(n2.value, "B")
-      assertEquals(n2.children.size, 0)
+      val n2 = root.child("B")
+      n2.assertChildren(Set.empty)
 
-      val n3 = n1.children(0)
-      assertEquals(n3.value, "A1")
-      assertEquals(n3.children.size, 1)
+      val n3 = n1.child("A1")
+      n3.assertChildren(Set("B1"))
 
-      val n4 = n3.children(0)
-      assertEquals(n4.value, "B1")
-      assertEquals(n4.children.size, 0)
+      val n4 = n3.child("B1")
+      n4.assertChildren(Set.empty)
     }
   }
 
@@ -174,60 +163,71 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
     {
       val rootA = treeView(v1a)
-      assertEquals(rootA.value, "ROOT")
-      assertEquals(rootA.children.size, 1)
-      val n1a = rootA.children(0)
-      assertEquals(n1a.value, "A")
-      assertEquals(n1a.children.size, 2)
-      val n2a = n1a.children.find(_.value == "B").get
-      assertEquals(n2a.value, "B")
-      assertEquals(n2a.children.size, 0)
-      val n3a = n1a.children.find(_.value == "C").get
-      assertEquals(n3a.value, "C")
-      assertEquals(n3a.children.size, 0)
+      rootA.assertValue("ROOT")
+      rootA.assertChildren(Set("A"))
+
+      val n1a = rootA.child("A")
+      n1a.assertChildren(Set("B", "C"))
+
+      val n2a = n1a.child("B")
+      n2a.assertChildren(Set.empty)
+
+      val n3a = n1a.child("C")
+      n3a.assertChildren(Set.empty)
 
       val rootB = treeView(v1b)
-      assertEquals(rootB.value, "ROOT")
-      assertEquals(rootB.children.size, 1)
-      val n1b = rootB.children(0)
-      assertEquals(n1b.value, "B")
-      assertEquals(n1b.children.size, 1)
-      val n2b = n1b.children(0)
-      assertEquals(n2b.value, "A")
-      assertEquals(n2b.children.size, 1)
-      val n3b = n2b.children(0)
-      assertEquals(n3b.value, "C")
-      assertEquals(n3b.children.size, 0)
+      rootB.assertValue("ROOT")
+      rootB.assertChildren(Set("B"))
+
+      val n1b = rootB.child("B")
+      n1b.assertChildren(Set("A"))
+
+      val n2b = n1b.child("A")
+      n2b.assertChildren(Set("C"))
+
+      val n3b = n2b.child("C")
+      n3b.assertChildren(Set.empty)
     }
 
     tree = tree `merge` delta1a `merge` delta1b
 
     {
       val root = treeView(tree)
-      assertEquals(root.value, "ROOT")
-      assertEquals(root.children.size, 1)
-      val n1 = root.children(0)
-      assertEquals(n1.value, "A")
-      assertEquals(n1.children.size, 2)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A"))
 
-      val n2 = n1.children.find(_.value == "B").get
-      assertEquals(n2.value, "B")
-      assertEquals(n2.children.size, 0)
+      val n1 = root.child("A")
+      n1.assertChildren(Set("B", "C"))
 
-      val n3 = n1.children.find(_.value == "C").get
-      assertEquals(n3.value, "C")
-      assertEquals(n3.children.size, 0)
+      val n2 = n1.child("B")
+      n2.assertChildren(Set.empty)
+
+      val n3 = n1.child("C")
+      n3.assertChildren(Set.empty)
     }
   }
 }
 
-case class TreeViewNode[A](value: A, children: List[TreeViewNode[A]])
+case class TreeViewNode[A](value: A, children: Set[TreeViewNode[A]]) {
+  inline def assertChildren(expected: Set[A]) = {
+    val childValues = children.map(_.value)
+    Assertions.assertEquals(childValues, expected)
+  }
+
+  inline def assertValue(expected: A) = {
+    Assertions.assertEquals(value, expected)
+  }
+
+  inline def child(value: A): TreeViewNode[A] = {
+    children.find(_.value == value).getOrElse(throw new NoSuchElementException(s"Child with value $value not found"))
+  }
+}
 
 def treeView[A](tree: ReplicatedTree[A]): TreeViewNode[A] = {
-  def treeViewChildren(tree: ReplicatedTree[A], parent: Dot): List[TreeViewNode[A]] =
+  def treeViewChildren(tree: ReplicatedTree[A], parent: Dot): Set[TreeViewNode[A]] =
     tree.children(parent).map { node =>
       TreeViewNode(node.value, treeViewChildren(tree, node.dot))
-    }.toList
+    }.toSet
 
   val node = tree.root.get
 

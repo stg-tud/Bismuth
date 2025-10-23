@@ -46,14 +46,14 @@ case class ReplicatedTree[A](
         val edits     = ensureNodeIsRooted(oldParent) :::
           ensureNodeIsRooted(newParent) ::: List((dot, newParent))
 
-        val newElements = edits.map { case (c, p) =>
-          val childNode  = node(c).get
+        val newElements = edits.map { case (childDot, parent) =>
+          val childNode  = node(childDot).get
           val maxCounter = childNode.maxCounter
           (
-            c,
+            childDot,
             childNode.copy(
-              parent = p,
-              edges = childNode.edges + (p -> ReplicatedTree.EdgeCounter(p, maxCounter + 1))
+              parent = parent,
+              edges = childNode.edges + (parent -> ReplicatedTree.EdgeCounter(parent, maxCounter + 1))
             )
           )
         }.toMap
