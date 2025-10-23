@@ -18,6 +18,8 @@ case class ReplicatedList[E](
   def nextTime: CausalTime = now.map(_.advance).getOrElse(CausalTime.now())
 
   def insertAfter(predecessor: Dot, values: Iterable[E])(using LocalUid): ReplicatedList[E] = {
+    if values.isEmpty then return ReplicatedList.empty[E]
+
     val nextDots  = Iterable.iterate(observed.nextDot, values.size)(_.advance)
     val nextTimes = Iterable.iterate(nextTime, values.size)(_.advance)
 
@@ -27,7 +29,6 @@ case class ReplicatedList[E](
       times = Map.from(nextDots `zip` nextTimes),
       removed = Dots.empty
     )
-
   }
 
   def findOptimizedInsertionPoint(predecessor: Dot): Dot = {
@@ -90,7 +91,6 @@ case class ReplicatedList[E](
   def insertAll(index: Int, elems: Iterable[E])(using LocalUid): ReplicatedList[E] = {
     val pos = findOptimizedInsertionPoint(dotList(index))
     insertAfter(pos, elems)
-
   }
 
   def delete(index: Int): ReplicatedList[E]      = removeIndex(index)
