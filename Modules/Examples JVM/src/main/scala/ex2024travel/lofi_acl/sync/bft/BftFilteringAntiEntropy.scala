@@ -10,14 +10,12 @@ import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import ex2024travel.lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg
 import ex2024travel.lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg.*
 import ex2024travel.lofi_acl.sync.monotonic.FilteringAntiEntropy.PartialDelta
-import ex2024travel.lofi_acl.sync.monotonic.PartialReplicationPeerSubsetSolver
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicReference
-import scala.annotation.unused
 import scala.collection.immutable.Queue
 import scala.util.Random
 
@@ -69,9 +67,8 @@ class BftFilteringAntiEntropy[RDT](
   // Stores inbound messages
   val msgQueue: LinkedBlockingQueue[(SyncMsg[RDT], PublicIdentity)] = LinkedBlockingQueue()
   // Stores deltas that couldn't be processed because of missing causal dependencies
-  @unused
-  private var aclMessageBacklog: Map[Signature, DelegationOp] = Map.empty
-  private var deltaMessageBacklog                             = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
+  private var aclMessageBacklog: Map[Signature, (Set[Signature], SerializedAclOp)] = Map.empty
+  private var deltaMessageBacklog = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
 
   // Executed in threads from ConnectionManager, thread safe
   override def receivedMessage(msg: SyncMsg[RDT], fromUser: PublicIdentity): Unit =
@@ -129,8 +126,13 @@ class BftFilteringAntiEntropy[RDT](
           handleMessage(msg, sender)
 
           // If we processed an ACLEntry, maybe we need now can process backlogged messages
-          if msg.isInstanceOf[AclDelta[RDT]] // We don't consider causal dependencies between deltas
-          then processBacklog()
+          msg match {
+            // We ignore causal dependencies between deltas
+            case SyncMsg.AclDelta(serializedAclOp) =>
+              val aclDeltaIdentifier = serializedAclOp.signatureAsString
+              processDeltaBacklog()
+            case _ => ()
+          }
         } catch
           case e: InterruptedException =>
       }
@@ -148,11 +150,12 @@ class BftFilteringAntiEntropy[RDT](
         then deltaMessageBacklog = deltaMessageBacklog.appended((deltaMsg, sender))
 
       case AclDelta(encodedDelegation) =>
-        val missing = syncInstance.applyAclOpIfPossible(encodedDelegation)
+        val missing = syncInstance.applyAclOpIfPossible(encodedDelegation) // throws an exception if invalid signature
         if missing.nonEmpty then {
           send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missing))
+          aclMessageBacklog = aclMessageBacklog + (encodedDelegation.signatureAsString -> (missing, encodedDelegation))
         } else {
-          // TODO: Apply ACL deltas from backlog that can be handled after applying the received ACL delta
+          processAclBacklog(Set(encodedDelegation.signatureAsString))
         }
 
       case RequestMissingAcl(heads: Set[Signature], knownMissing: Set[Signature]) =>
@@ -202,7 +205,17 @@ class BftFilteringAntiEntropy[RDT](
           }
   }
 
-  private def processBacklog(): Unit = {
+  private def processAclBacklog(appliedOps: Set[Signature]): Unit = {
+    val (ready, remaining) = aclMessageBacklog
+      .map { case (sig, (missing, op)) => sig -> (missing -- appliedOps, op) }
+      .partition { case (sig, (missing, op)) => missing.isEmpty }
+    aclMessageBacklog = remaining
+    ready.foreach { case (signature, (_, op)) =>
+      require(syncInstance.applyAclOpIfPossible(op).isEmpty)
+    }
+  }
+
+  private def processDeltaBacklog(): Unit = {
     // Process backlogged rdt deltas
     val aclOpGraph                               = syncInstance.currentBftAcl._1
     val partialDeltaStoreBeforeProcessing        = partialDeltaStore
