@@ -32,9 +32,9 @@ object Historized {
   case class MetaDelta[T](id: Dots, delta: T, redundantDots: Dots)
 
   object MetaDelta {
-    
+
     def apply[T](ids: Dots, delta: T): MetaDelta[T] = MetaDelta(ids, delta, Dots.empty)
-    
+
     extension [T](metaDeltas: Iterable[MetaDelta[T]]) {
       inline def getAllDots: Dots = metaDeltas.foldLeft(Dots.empty)((dots, metaDelta) => dots.union(metaDelta.id.union(metaDelta.redundantDots)))
 
@@ -43,11 +43,8 @@ object Historized {
     }
   }
 
-  given subsumption[T: Lattice]: Historized[T] = (delta: T, buffer: Iterable[MetaDelta[T]]) => {
-    val redundant = buffer.filter(bufferedDelta => delta `subsumes` bufferedDelta.delta).getAllDots
-    println(f"get redundant dots for subsumption:\n\tdelta: $delta\n\tbuffer: ${buffer.size} $buffer\n\tredundant: $redundant")
-    redundant
-  }
+  given subsumption[T: Lattice]: Historized[T] = (delta: T, buffer: Iterable[MetaDelta[T]]) =>
+    buffer.filter(bufferedDelta => delta `subsumes` bufferedDelta.delta).getAllDots
 
   inline def derived[T <: Product: {Mirror.ProductOf, Lattice}]: Historized[T] = productHistorized[T]
 
@@ -67,12 +64,7 @@ object Historized {
     private def hist(i: Int): Historized[Any] = historizables.productElement(i).asInstanceOf[Historized[Any]]
 
     override def getRedundantDeltas(delta: T, buffer: Iterable[MetaDelta[T]]): Dots = {
-      println(s"get redundant dots for product:\n\tdelta: $delta\n\tbuffer: ${buffer.size} $buffer")
-
-      inline def redundantDotsAtZero: Dots = hist(0).getRedundantDeltas(
-        delta.productElement(0),
-        buffer.map(bufferedDelta => bufferedDelta.copy(delta = bufferedDelta.delta.productElement(0)))
-      )
+      inline def redundantDotsAtZero: Dots = hist(0).getRedundantDeltas(delta.productElement(0), buffer.mapDeltas(_.productElement(0)))
 
       historizables.productArity match {
         case 0 => Dots.empty
@@ -84,7 +76,6 @@ object Historized {
               buffer.mapDeltas(_.productElement(i))
             ))
           }
-          println(f"-redundant: $redundant")
           redundant
       }
     }
