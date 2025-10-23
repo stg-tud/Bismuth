@@ -3,14 +3,16 @@ package riblt
 import riblt.Operation.{Add, Remove}
 
 import scala.util.hashing.MurmurHash3
+import com.github.plokhotnyuk.jsoniter_scala.core.*
+import com.github.plokhotnyuk.jsoniter_scala.macros.*
 
 class RIBLT[T](
-    var receivedCodedSymbols: List[CodedSymbol[T]],
-    var local: CodingWindow[T],
-    var window: CodingWindow[T],
-    var remote: CodingWindow[T],
-    var decodable: List[CodedSymbol[T]],
-):
+                var receivedCodedSymbols: List[CodedSymbol[T]],
+                var local: CodingWindow[T],
+                var window: CodingWindow[T],
+                var remote: CodingWindow[T],
+                var decodable: List[CodedSymbol[T]],
+              ):
 
   def isDecoded: Boolean =
     receivedCodedSymbols.nonEmpty && receivedCodedSymbols.forall(c => c.decoded)
@@ -35,6 +37,26 @@ class RIBLT[T](
 
     result
 
+  def produceNextCodedSymbolsAsBytes(count: Int = 1)(using
+                                                     Xorable[T],
+                                                     JsonValueCodec[CodedSymbol[T]]
+  ): List[Array[Byte]] =
+    val tmp    = produceNextCodedSymbols(count)
+    var result = List.empty[Array[Byte]]
+
+    for codedSymbol <- tmp do
+      result = result :+ writeToArray(codedSymbol)
+
+    result
+
+  def addCodedSymbolsAsBytes(byteArray: List[Array[Byte]])(using
+                                                           Xorable[T],
+                                                           Hashable[T],
+                                                           JsonValueCodec[CodedSymbol[T]]
+  ): Unit =
+    for item <- byteArray do
+      addCodedSymbol(readFromArray(item))
+
   def addCodedSymbol(codedSymbol: CodedSymbol[T])(using Xorable[T])(using Hashable[T]): Unit =
     var c = window.applyCodedSymbol(codedSymbol, Remove)
     c = remote.applyCodedSymbol(c, Remove)
@@ -57,7 +79,7 @@ class RIBLT[T](
       addCodedSymbol(codedSymbol)
 
   def applyNewSymbol(sourceSymbol: SourceSymbol[T], op: Operation)(using
-      Hashable[T]
+                                                                   Hashable[T]
   )(using Xorable[T]): SourceSymbol[T] =
     var i = sourceSymbol.mapping.lastIndex.toInt
     while i < receivedCodedSymbols.length do
@@ -186,3 +208,5 @@ object RIBLT:
         else b.slice(0, lastNonZeroIndex + 1)
 
     override def zero: Array[Byte] = Array.fill(1)(0.toByte)
+
+  given JsonValueCodec[CodedSymbol[String]] = JsonCodecMaker.make

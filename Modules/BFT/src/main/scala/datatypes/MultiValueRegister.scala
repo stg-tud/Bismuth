@@ -4,8 +4,8 @@ import crypto.Ed25519Util
 import dag.HashDAG
 
 case class MultiValueRegister[T](
-    hashDAG: HashDAG[T]
-):
+                                  hashDAG: HashDAG[T]
+                                ):
 
   def write(value: T): MultiValueRegister[T] =
     MultiValueRegister(hashDAG.addEvent(value))
@@ -19,4 +19,5 @@ case class MultiValueRegister[T](
 
 object MultiValueRegister:
   def apply[T](): MultiValueRegister[T] =
-    MultiValueRegister(HashDAG(Ed25519Util.generateNewKeyPair))
+    val keyPair = Ed25519Util.generateNewKeyPair
+    MultiValueRegister(HashDAG(keyPair.getPublic, Some(keyPair.getPrivate)))

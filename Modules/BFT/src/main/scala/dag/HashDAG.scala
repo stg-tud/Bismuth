@@ -1,20 +1,21 @@
 package dag
 
+import scala.collection.immutable.{HashMap, List, Map, Set}
+import java.security.{KeyPair, PublicKey, PrivateKey}
 import crypto.Ed25519Util
 import datatypes.Replica
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
-
-import java.security.{KeyPair, PublicKey}
-import scala.collection.immutable.{HashMap, Map, Set}
+import riblt.{CodedSymbol, RIBLT}
 
 // a hash directed acyclic graph
-case class HashDAG[T] private (
-    graph: Map[String, Set[String]],
-    events: Map[String, Event[T]],
-    authorKeys: KeyPair,
-    queue: Set[Event[T]] = Set.empty[Event[T]],
-    byzantineNodes: Set[PublicKey] = Set.empty
-):
+case class HashDAG[T] (
+                        graph: Map[String, Set[String]],
+                        events: Map[String, Event[T]],
+                        publicKey: PublicKey,
+                        privateKey: Option[PrivateKey],
+                        queue: Set[Event[T]] = Set.empty[Event[T]],
+                        byzantineNodes: Set[PublicKey] = Set.empty
+                      ):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean =
@@ -43,9 +44,9 @@ case class HashDAG[T] private (
     graph.filter((_, set) => set.isEmpty).keySet
 
   def generator(content: T): Event[T] = {
-    val signature = Ed25519Util.sign(content.toString.getBytes, authorKeys.getPrivate)
+    val signature = Ed25519Util.sign(content.toString.getBytes, privateKey.get)
 
-    Event(Some(content), authorKeys.getPublic, getCurrentHeadsIDs, signature)
+    Event(Some(content), publicKey, getCurrentHeadsIDs, signature)
   }
 
   def merge(delta: HashDAG[T]): HashDAG[T] =
@@ -85,12 +86,13 @@ case class HashDAG[T] private (
           HashDAG(
             g + (event.id           -> Set.empty),
             this.events + (event.id -> event),
-            this.authorKeys,
+            this.publicKey,
+            this.privateKey,
             this.queue - event,
             this.byzantineNodes,
           )
         else
-          HashDAG(this.graph, this.events, this.authorKeys, this.queue + event, this.byzantineNodes)
+          HashDAG(this.graph, this.events, this.publicKey, this.privateKey, this.queue + event, this.byzantineNodes)
 
   def addEvent(content: T): HashDAG[T] =
     // generate the event
@@ -156,17 +158,21 @@ case class HashDAG[T] private (
     this.copy(events = e, byzantineNodes = this.byzantineNodes + author)
   }
 
-  def empty: HashDAG[T] =
-    HashDAG(this.authorKeys)
+  def empty: HashDAG[T] = {
+    HashDAG(this.publicKey, None)
+  }
 
   def withQueue(events: Set[Event[T]]): HashDAG[T] =
     this.empty.copy(queue = events)
 
+  def getIDs: Set[String] = events.keySet
+
+  def getDelta(ids: List[String]): HashDAG[T] =
+    withQueue(ids.map(id => events(id)).toSet)
+
 object HashDAG:
-  def apply[T](authorKeys: KeyPair): HashDAG[T] =
+  def apply[T](publicKey: PublicKey, privateKey: Option[PrivateKey]): HashDAG[T] =
     val graph = new HashMap[String, Set[String]]()
-    val root  = new Event("0", None, authorKeys.getPublic, Set.empty, Array.empty).asInstanceOf[Event[T]]
+    val root  = new Event("0", None, publicKey, Set.empty, Array.empty).asInstanceOf[Event[T]]
 
-    new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), authorKeys)
-
-case class SyncRequest[T, R <: Replica[T, R]](delta: R, requestedEvents: Set[String])
+    new HashDAG[T](graph.updated(root.id, Set.empty), Map(root.id -> root), publicKey, privateKey)

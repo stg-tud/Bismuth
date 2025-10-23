@@ -1,4 +1,5 @@
 import datatypes.ORSet
+import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
 
 class ORSetTest extends munit.FunSuite:
   test("add element to empty set") {
@@ -105,54 +106,60 @@ class ORSetTest extends munit.FunSuite:
     assertEquals(set1.getElements, set2.getElements)
   }
 
-  test("synchronise 2 sets with riblt") {
-    var set1 = ORSet[String]()
-    set1 = set1.merge(set1.add("a"))
-    set1 = set1.merge(set1.remove("b"))
+/*test("synchronise 2 sets with riblt") {
+  var set1 = ORSet[String]()
+  set1 = set1.merge(set1.add("a"))
+  set1 = set1.merge(set1.remove("b"))
 
-    var set2 = ORSet[String]()
-    set2 = set2.merge(set2.add("a"))
-    set2 = set2.merge(set2.remove("c"))
+  var set2 = ORSet[String]()
+  set2 = set2.merge(set2.add("a"))
+  set2 = set2.merge(set2.remove("c"))
 
-    while !set2.riblt.isDecoded do
-      set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
+  while !set2.riblt.isDecoded do
+    set2 = set2.addCodedSymbols(set1.produceNextCodedSymbols())
 
-    val synReq = set2.sendSyncRequest
-    set1 = set1.merge(synReq.delta)
-    set2 = set2.merge(set1.sendSyncResponse(synReq.requestedEvents))
+  val synReq = set2.sendSyncRequest
+  set1 = set1.merge(synReq.delta)
+  set2 = set2.merge(set1.sendSyncResponse(synReq.requestedEvents))
 
-    assertEquals(set1.getElements, set2.getElements)
+  assertEquals(set1.getElements, set2.getElements)
+}
+
+test("synchronise 3 sets with riblt") {
+  var set1 = ORSet[String]()
+  set1 = set1.merge(set1.add("a"))
+  set1 = set1.merge(set1.add("b"))
+
+  var set2 = ORSet[String]()
+  set2 = set2.merge(set2.add("a"))
+  set2 = set2.merge(set2.add("c"))
+
+  var set3 = ORSet[String]()
+  set3 = set3.merge(set3.add("d"))
+  set3 = set3.merge(set3.add("e"))
+
+  while !set2.riblt.isDecoded || !set3.riblt.isDecoded do {
+    val codedSymbol = set1.riblt.produceNextCodedSymbolsAsBytes()
+    if !set2.riblt.isDecoded then {
+      set2.riblt.addCodedSymbolsAsBytes(codedSymbol)
+    }
+    if !set3.riblt.isDecoded then
+      set3.riblt.addCodedSymbolsAsBytes(codedSymbol)
   }
 
-  /*test("synchronise 3 sets with riblt") {
-    var set1 = ORSet[String]()
-    set1 = set1.merge(set1.add("a"))
-    set1 = set1.merge(set1.remove("b"))
+  val synReq1 = set2.sendSyncRequest
+  set1 = set1.merge(synReq1.delta)
+  set2 = set2.merge(set1.sendSyncResponse(synReq1.requestedEvents))
 
-    var set2 = ORSet[String]()
-    set2 = set2.merge(set2.add("a"))
-    set2 = set2.merge(set2.remove("c"))
+  assertEquals(set1.getElements, set2.getElements)
+  assertEquals(set1.getElements, Set("a", "b", "c"))
 
-    var set3 = ORSet[String]()
-    set3 = set3.merge(set3.add("d"))
-    set3 = set3.merge(set3.remove("e"))
+  val synReq2 = set3.sendSyncRequest
+  set1 = set1.merge(synReq2.delta)
+  set3 = set3.merge(set1.sendSyncResponse(synReq2.requestedEvents))
 
-    while !set2.riblt.isDecoded || !set3.riblt.isDecoded do {
-      val codedSymbol = set1.produceNextCodedSymbols()
-      if !set2.riblt.isDecoded then {
-        set2 = set2.addCodedSymbols(codedSymbol)
-      }
-      if !set3.riblt.isDecoded then
-        set3 = set3.addCodedSymbols(codedSymbol)
-    }
+  assertEquals(set1.getElements, Set("a", "b", "c", "d", "e"))
+  assertEquals(set3.getElements, Set("a", "b", "d", "e"))
 
-    val synReq1 = set2.sendSyncRequest
-    set1 = set1.merge(synReq1.delta)
-    set2 = set2.merge(set1.sendSyncResponse(synReq1.requestedEvents))
-
-    val synReq2 = set3.sendSyncRequest
-    set1 = set1.merge(synReq2.delta)
-    set3 = set3.merge(set1.sendSyncResponse(synReq2.requestedEvents))
-
-    assertEquals(set1.getElements, set2.getElements ++ set3.getElements)
-  }*/
+  assertEquals(set1.getElements, set2.getElements ++ set3.getElements)
+}*/

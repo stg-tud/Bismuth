@@ -1,28 +1,29 @@
 package datatypes
 
-import crypto.Ed25519Util
-import dag.HashDAG
 import datatypes.OpType.{Add, Remove}
-import riblt.RIBLT
+import crypto.Ed25519Util
+import dag.{Event, HashDAG}
+import riblt.{CodedSymbol, RIBLT}
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
-
 import scala.collection.immutable.HashMap
+import scala.collection.{immutable, mutable}
 
-case class ORSet[T] private (
-    hashDAG: HashDAG[Op[T]],
-    riblt: RIBLT[String],
-    elements: Map[T, Set[String]],
-) extends Replica[Op[T], ORSet[T]]:
+case class ORSet[T] (
+                      elements: Map[T, Set[String]],
+                      hashDAG: HashDAG[Op[T]]
+                    ) extends Replica[Op[T], ORSet[T]]:
+
+  override def id = hashDAG.publicKey.getEncoded
 
   def add(element: T): ORSet[T] =
     val op = Op(element, OpType.Add)
 
-    ORSet(hashDAG.generateDelta(op), RIBLT.empty, Map.empty)
+    ORSet(Map.empty, hashDAG.generateDelta(op))
 
   def remove(element: T): ORSet[T] =
     val op = Op(element, OpType.Remove)
 
-    ORSet(hashDAG.generateDelta(op), RIBLT.empty, Map.empty)
+    ORSet(Map.empty, hashDAG.generateDelta(op))
 
   override def merge(other: ORSet[T]): ORSet[T] =
     var newElements = this.elements
@@ -30,7 +31,6 @@ case class ORSet[T] private (
 
     for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
       if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
-        this.riblt.addSymbol(event.id)
         val op = event.content.get
         op.opType match
           case Add =>
@@ -42,23 +42,28 @@ case class ORSet[T] private (
                 ids = ids - id
             newElements = newElements + (op.element -> ids)
 
-    ORSet(newHashDAG, this.riblt, newElements)
+    ORSet(newElements, newHashDAG)
 
   def getElements: Set[T] =
     elements.filter((k, v) => v.nonEmpty).keySet
 
-  override def empty: ORSet[T] = ORSet()
+  def empty: ORSet[T] = ORSet()
 
-  override def withHashDAG(hashDAG: HashDAG[Op[T]]): ORSet[T] = this.copy(hashDAG = hashDAG)
+  def withHashDAG(hashDAG: HashDAG[Op[T]]): ORSet[T] = this.copy(hashDAG = hashDAG)
+
+  override def generateDelta(ids: List[String]): ORSet[T] =
+    ORSet(Map.empty, hashDAG.getDelta(ids))
 
 object ORSet:
-  def apply[T](): ORSet[T] =
-    new ORSet[T](HashDAG[Op[T]](Ed25519Util.generateNewKeyPair), RIBLT.empty, new HashMap())
+  def apply[T](): ORSet[T] = {
+    val keyPair = Ed25519Util.generateNewKeyPair
+    new ORSet[T](new HashMap(), HashDAG[Op[T]](keyPair.getPublic, Some(keyPair.getPrivate)))
+  }
 
 case class Op[T](
-    element: T,
-    opType: OpType
-)
+                  element: T,
+                  opType: OpType
+                )
 
 enum OpType:
   case Add, Remove

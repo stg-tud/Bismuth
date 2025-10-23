@@ -6,8 +6,8 @@ import dag.HashDAG
 import scala.util.hashing.MurmurHash3
 
 case class LastWriterWins[T](
-    hashDAG: HashDAG[T]
-):
+                              hashDAG: HashDAG[T]
+                            ):
 
   def write(value: T): LastWriterWins[T] =
     LastWriterWins(hashDAG.generateDelta(value))
@@ -24,4 +24,5 @@ case class LastWriterWins[T](
 
 object LastWriterWins:
   def apply[T](): LastWriterWins[T] =
-    LastWriterWins(HashDAG(Ed25519Util.generateNewKeyPair))
+    val keyPair = Ed25519Util.generateNewKeyPair
+    LastWriterWins(HashDAG(keyPair.getPublic, Some(keyPair.getPrivate)))
