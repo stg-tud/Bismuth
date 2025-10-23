@@ -7,14 +7,15 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import crypto.Ed25519Util
 
 import java.security.{PrivateKey, PublicKey}
+import scala.concurrent.duration.{Duration, DurationInt}
 
 given JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
 
 given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
   override def encodeValue(key: PublicKey, out: JsonWriter): Unit =
-    out.writeRawVal(Ed25519Util.publicKeyToRawPublicKeyBytes(key))
+    out.writeBase64Val(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(key).getBytes, false)
   override def decodeValue(in: JsonReader, default: PublicKey): PublicKey =
-    Ed25519Util.rawPublicKeyBytesToPublicKey(in.readRawValAsBytes())
+    Ed25519Util.base64PublicKeyBytesToPublicKey(String(in.readBase64AsBytes(Array.empty[Byte])))
 
   override def nullValue: PublicKey = null
 }
@@ -29,30 +30,54 @@ given JsonValueCodec[PrivateKey] = new JsonValueCodec[PrivateKey] {
 }
 
 class RIBLTSyncTest extends munit.FunSuite:
+  override def munitTimeout: Duration = 5.minutes
+
   test("basic") {
-    /* var crdt1 = ORSet[String]()
+    var crdt1 = ORSet[String]()
     crdt1 = crdt1.merge(crdt1.add("hello"))
+    crdt1 = crdt1.merge(crdt1.add("hola"))
+    crdt1 = crdt1.merge(crdt1.add("Gday Mate"))
+
     var crdt2 = ORSet[String]()
     crdt2 = crdt2.merge(crdt2.add("hi"))
-    var crdt3 = ORSet[String]()
+    crdt2 = crdt2.merge(crdt2.add("bonjour"))
+    crdt2 = crdt2.merge(crdt2.add("hallo"))
 
-    val sync1 = RIBLTSync(crdt1, Map.empty, "0".getBytes)
-    val sync2 = RIBLTSync(crdt2, Map.empty, "z".getBytes)
-    //val sync3 = RIBLTSync(crdt3)
+    var crdt3 = ORSet[String]()
+    crdt3 = crdt3.merge(crdt3.add("Guten Tag"))
+    crdt3 = crdt3.merge(crdt3.add("Ni hao"))
+    crdt3 = crdt3.merge(crdt3.add("Konichiwa"))
+
+
+    val sync1 = RIBLTSync(crdt1, Map.empty, "replica_1")
+    val sync2 = RIBLTSync(crdt2, Map.empty, "replica_2")
+    val sync3 = RIBLTSync(crdt3, Map.empty, "replica_3")
 
     val t1 = sync1.startSession(sync2.replicaID, sessionType=sender)
     val t2 = sync2.startSession(sync1.replicaID, sessionType=receiver)
 
+    val t3 = sync3.startSession(sync2.replicaID, sessionType=receiver)
+    val t4 = sync2.startSession(sync3.replicaID, sessionType=sender)
+
     t2.start()
     t1.start()
+    t3.start()
+    t4.start()
 
     t1.join()
     t2.join()
+    t3.join()
+    t4.join()
+
+    crdt1 = sync1.replica
+    crdt2 = sync2.replica
+    crdt3 = sync3.replica
 
     //sync2.startSession(sync3.id, sessionType=sender)
     //sync3.startSession(sync2.id, sessionType=receiver)
 
     println(crdt1.elements.keySet)
-    println(crdt2.elements.keySet)*/
+    println(crdt2.elements.keySet)
+    println(crdt3.elements.keySet)
 
   }
