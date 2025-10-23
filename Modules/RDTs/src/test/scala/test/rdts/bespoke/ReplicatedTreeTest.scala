@@ -20,6 +20,8 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val v1 = v0 `merge` v0.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
 
     {
+      assertEquals(v1.size, 1)
+
       val root = treeView(v1)
       root.assertValue("ROOT")
       root.assertChildren(Set.empty)
@@ -162,6 +164,9 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val v1b = tree `merge` delta1b
 
     {
+      assertEquals(v1a.size, 4)
+      assertEquals(v1b.size, 4)
+
       val rootA = treeView(v1a)
       rootA.assertValue("ROOT")
       rootA.assertChildren(Set("A"))
@@ -192,6 +197,8 @@ class ReplicatedTreeTest extends munit.FunSuite {
     tree = tree `merge` delta1a `merge` delta1b
 
     {
+      assertEquals(tree.size, 4)
+
       val root = treeView(tree)
       root.assertValue("ROOT")
       root.assertChildren(Set("A"))
