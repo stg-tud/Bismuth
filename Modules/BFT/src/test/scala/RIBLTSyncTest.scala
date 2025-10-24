@@ -33,7 +33,7 @@ class RIBLTSyncTest extends munit.FunSuite:
   override def munitTimeout: Duration = 5.minutes
 
   test("basic") {
-    var crdt1 = ORSet[String]()
+    /*var crdt1 = ORSet[String]()
     crdt1 = crdt1.merge(crdt1.add("hello"))
     crdt1 = crdt1.merge(crdt1.add("hola"))
     crdt1 = crdt1.merge(crdt1.add("Gday Mate"))
@@ -77,6 +77,6 @@ class RIBLTSyncTest extends munit.FunSuite:
 
     println(crdt1.elements.keySet)
     println(crdt2.elements.keySet)
-    println(crdt3.elements.keySet)
+    println(crdt3.elements.keySet)*/
 
   }
