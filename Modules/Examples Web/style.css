@@ -378,10 +378,7 @@ html .clear-completed:active {
   text-decoration: underline;
 }
 
-.filesystem-list {
-  display: flex;
-  flex-direction: row;
-}
+/* filesystem specific styles */
 
 .drag-over {
   border-bottom: 2px dashed #1ac11a !important;
@@ -390,6 +387,19 @@ html .clear-completed:active {
 .selected-list-item-bg {
   background-color: #0158D1;
 }
+
+.filesystem-list {
+  display: flex;
+  flex-direction: row;
+}
+
+.filesystem-entry {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+/* */
 
 /*
 	Hack to remove background from Mobile Safari.
