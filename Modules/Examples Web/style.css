@@ -378,8 +378,17 @@ html .clear-completed:active {
   text-decoration: underline;
 }
 
+.filesystem-list {
+  display: flex;
+  flex-direction: row;
+}
+
 .drag-over {
   border-bottom: 2px dashed #1ac11a !important;
+}
+
+.selected-list-item-bg {
+  background-color: #0158D1;
 }
 
 /*

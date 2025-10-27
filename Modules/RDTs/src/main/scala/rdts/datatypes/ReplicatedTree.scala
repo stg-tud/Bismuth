@@ -7,7 +7,7 @@ import rdts.base.Lattice
 import rdts.experiments.UndoRedoReplica.Delta.removed
 
 case class ReplicatedTree[A](
-    elements: Map[Dot, ReplicatedTree.Node[A]] = Map.empty,
+    elements: Map[Dot, ReplicatedTree.Node[A]],
     deleted: Dots = Dots.empty
 ) {
   type Delta = ReplicatedTree[A]
@@ -39,6 +39,13 @@ case class ReplicatedTree[A](
     )
   }
 
+  def clear(): Delta = {
+    ReplicatedTree(
+      elements = Map.empty,
+      deleted = observed
+    )
+  }
+
   def move(dot: Dot, newParent: Dot): Delta = {
     node(dot) match {
       case Some(child) =>
@@ -67,6 +74,8 @@ case class ReplicatedTree[A](
   }
 
   def size: Int = compact.size
+
+  def nodes: Iterable[ReplicatedTree.Node[A]] = compact.values
 
   def node(dot: Dot): Option[ReplicatedTree.Node[A]] = elements.get(dot)
 

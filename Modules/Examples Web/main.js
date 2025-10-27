@@ -39,7 +39,7 @@ modulePromise.then(
 			}
 		});
 
-		// default open todolist
-		Todolist();
+		// default open filesystem
+		Filesystem();
 	}
 );
