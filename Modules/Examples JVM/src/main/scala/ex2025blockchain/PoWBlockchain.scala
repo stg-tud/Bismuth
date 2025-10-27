@@ -3,8 +3,6 @@ package ex2025blockchain
 import ex2025blockchain.Block
 import rdts.base.{Bottom, Lattice}
 
-import scala.annotation.tailrec
-
 /** The implementation ignores the cryptographic concepts used in blockchains and focuses instead on the replication and consensus
   * proof of work implementation
   *
@@ -23,14 +21,6 @@ case class PoWBlockchain[T](inner: Map[String, Block[T]], difficulty: Int)
 
   override def addBlock(newBlock: Block[T]): PoWBlockchain[T] =
     PoWBlockchain(Map(newBlock.hash -> newBlock), difficulty)
-
-  @tailrec
-  private def chainLength(start: String, length: Int = 0): Int = inner(start).previousHash match {
-    case Some(next) => chainLength(next, length + 1)
-    case None       => length + 1
-  }
-
-  def validChainLength: Int = chainLength(validHead)
 
   override def validate(): Boolean = {
     inner.values.forall { block =>

@@ -15,15 +15,13 @@ abstract class Blockchain[T, Self <: Blockchain[T, Self]](inner: Map[String, Blo
 
   def validHead: String
 
-  def addBlock(newBlock: Block[T]): Self
-
   /** adds a new block to the blockchain by appending it to the end of the chain
     *
     * @param hash the hash value of the block
     * @param data the data in the block
     * @return the resulting blockchain
     */
-//  def addBlock(hash: H, data: T, dot: Dot): Self = addBlock(Block(hash, validHead, data, dot))
+  def addBlock(newBlock: Block[T]): Self
 
   /** verify that a given block is part of the current valid blockchain
     *
@@ -45,6 +43,14 @@ abstract class Blockchain[T, Self <: Blockchain[T, Self]](inner: Map[String, Blo
   def contains(hash: String): Boolean = inner.contains(hash)
 
   def contains(block: Block[T]): Boolean = contains(block.hash)
+
+  @tailrec
+  final def chainLength(start: String, length: Int = 0): Int = inner(start).previousHash match {
+    case Some(next) => chainLength(next, length + 1)
+    case None       => length + 1
+  }
+
+  def validChainLength: Int = chainLength(validHead)
 
   def toTreeString: String = {
     @tailrec

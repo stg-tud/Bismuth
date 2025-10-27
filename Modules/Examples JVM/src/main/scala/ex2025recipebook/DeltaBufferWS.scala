@@ -39,7 +39,9 @@ case class DeltaBufferWS[A](state: A, deltaBuffer: List[MetaDelta[A]] = List.emp
   inline def mod(f: A => A, dotsId: Dots)(using Lattice[A])(using Historized[A]): DeltaBufferWS[A] =
     applyDelta(MetaDelta(dotsId, f(state)))
 
-  inline def redundantDots: Dots = deltaBuffer.foldLeft(Dots.empty)((s, d) => s.union(d.redundantDots))
+  inline def redundantDots: Dots = deltaBuffer.foldLeft(Dots.empty)((dots, bufferedDelta) =>
+    if !dots.contains(bufferedDelta.id) then dots.union(bufferedDelta.redundantDots) else dots
+  )
 
 }
 
