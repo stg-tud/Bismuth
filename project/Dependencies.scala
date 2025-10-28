@@ -4,6 +4,8 @@ import sbt.Keys.libraryDependencies
 
 object Dependencies {
 
+  val akka        = libraryDependencies += "com.typesafe.akka"      %% "akka-actor-typed"         % "2.8.8"
+  val akkaTestKit = libraryDependencies += "com.typesafe.akka"      %% "akka-actor-testkit-typed" % "2.8.8" % Test
   val catsParse   = libraryDependencies += "org.typelevel"         %%% "cats-parse"             % "1.1.0"
   val conscript   = libraryDependencies += "org.conscrypt"           % "conscrypt-openjdk-uber" % "2.5.2"
   val decline     = libraryDependencies += "com.monovore"          %%% "decline"                % "2.5.0"

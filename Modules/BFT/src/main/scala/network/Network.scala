@@ -3,7 +3,7 @@ package network
 import java.util.concurrent.LinkedBlockingQueue
 
 object Network:
-  var channels: Map[String, LinkedBlockingQueue[Array[Byte]]] = Map.empty
+  private var channels: Map[String, LinkedBlockingQueue[Array[Byte]]] = Map.empty
 
   def put(receiver: String, msg: Array[Byte]): Unit =
     val queue = channels.getOrElse(receiver, LinkedBlockingQueue())

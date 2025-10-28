@@ -1,82 +1,53 @@
-import riblt.SessionType.{receiver, sender}
-import datatypes.{ORSet, Op}
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import munit.FunSuite
+import datatypes.ORSet
 import riblt.RIBLTSync
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import crypto.Ed25519Util
+import riblt.RIBLTSync.SessionType._
 
-import java.security.{PrivateKey, PublicKey}
-import scala.concurrent.duration.{Duration, DurationInt}
+class RIBLTSyncAkkaTest extends FunSuite {
 
-given JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
+  val testKit = ActorTestKit()
 
-given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
-  override def encodeValue(key: PublicKey, out: JsonWriter): Unit =
-    out.writeBase64Val(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(key).getBytes, false)
-  override def decodeValue(in: JsonReader, default: PublicKey): PublicKey =
-    Ed25519Util.base64PublicKeyBytesToPublicKey(String(in.readBase64AsBytes(Array.empty[Byte])))
+  test("replicas should sync") {
+    var set1 = ORSet[String]()
+    set1 = set1.merge(set1.add("replica_0"))
 
-  override def nullValue: PublicKey = null
-}
+    var set2 = ORSet[String]()
+    set2 = set2.merge(set2.add("replica_1"))
 
-given JsonValueCodec[PrivateKey] = new JsonValueCodec[PrivateKey] {
-  override def encodeValue(key: PrivateKey, out: JsonWriter): Unit =
-    out.writeRawVal(Ed25519Util.privateKeyToRawPrivateKeyBytes(key))
-  override def decodeValue(in: JsonReader, default: PrivateKey): PrivateKey =
-    Ed25519Util.rawPrivateKeyBytesToPrivateKey(in.readRawValAsBytes())
+    var set3 = ORSet[String]()
+    set3 = set3.merge(set3.add("replica_2"))
 
-  override def nullValue: PrivateKey = null
-}
+    val replica0 = testKit.spawn(RIBLTSync("replica_0", set1), "replica_0")
+    val replica1 = testKit.spawn(RIBLTSync("replica_1", set2), "replica_1")
+    val replica2 = testKit.spawn(RIBLTSync("replica_2", set3), "replica_2")
 
-class RIBLTSyncTest extends munit.FunSuite:
-  override def munitTimeout: Duration = 5.minutes
+    // Start sync sessions
+    replica0 ! RIBLTSync.StartSession(replica1, sender)
+    replica1 ! RIBLTSync.StartSession(replica0, receiver)
 
-  test("basic") {
-    /*var crdt1 = ORSet[String]()
-    crdt1 = crdt1.merge(crdt1.add("hello"))
-    crdt1 = crdt1.merge(crdt1.add("hola"))
-    crdt1 = crdt1.merge(crdt1.add("Gday Mate"))
+    replica1 ! RIBLTSync.StartSession(replica2, sender)
+    replica2 ! RIBLTSync.StartSession(replica1, receiver)
 
-    var crdt2 = ORSet[String]()
-    crdt2 = crdt2.merge(crdt2.add("hi"))
-    crdt2 = crdt2.merge(crdt2.add("bonjour"))
-    crdt2 = crdt2.merge(crdt2.add("hallo"))
+    val probe = testKit.createTestProbe[RIBLTSync.ReplicaResponse]()
+    
+    // wait for the asserts to be true
+    probe.awaitAssert({
+      replica0 ! RIBLTSync.GetReplica(probe.ref)
+      val r0 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
 
-    var crdt3 = ORSet[String]()
-    crdt3 = crdt3.merge(crdt3.add("Guten Tag"))
-    crdt3 = crdt3.merge(crdt3.add("Ni hao"))
-    crdt3 = crdt3.merge(crdt3.add("Konichiwa"))
+      replica1 ! RIBLTSync.GetReplica(probe.ref)
+      val r1 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
 
-    val sync1 = RIBLTSync(crdt1, Map.empty, "replica_1")
-    val sync2 = RIBLTSync(crdt2, Map.empty, "replica_2")
-    val sync3 = RIBLTSync(crdt3, Map.empty, "replica_3")
+      replica2 ! RIBLTSync.GetReplica(probe.ref)
+      val r2 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
 
-    val t1 = sync1.startSession(sync2.replicaID, sessionType = sender)
-    val t2 = sync2.startSession(sync1.replicaID, sessionType = receiver)
+      println("CRDT0 elements after sync: " + r0.elements.keySet)
+      println("CRDT1 elements after sync: " + r1.elements.keySet)
+      println("CRDT2 elements after sync: " + r2.elements.keySet)
 
-    val t3 = sync3.startSession(sync2.replicaID, sessionType = receiver)
-    val t4 = sync2.startSession(sync3.replicaID, sessionType = sender)
-
-    t2.start()
-    t1.start()
-    t3.start()
-    t4.start()
-
-    t1.join()
-    t2.join()
-    t3.join()
-    t4.join()
-
-    crdt1 = sync1.replica
-    crdt2 = sync2.replica
-    crdt3 = sync3.replica
-
-    // sync2.startSession(sync3.id, sessionType=sender)
-    // sync3.startSession(sync2.id, sessionType=receiver)
-
-    println(crdt1.elements.keySet)
-    println(crdt2.elements.keySet)
-    println(crdt3.elements.keySet)*/
-
+      assert(r0.getElements.subsetOf(r1.getElements))
+      assert(r2.getElements.subsetOf(r1.getElements))
+    })
   }
+}

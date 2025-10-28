@@ -13,4 +13,4 @@ object Message:
   given JsonValueCodec[Message] = JsonCodecMaker.make
 
 enum Tag:
-  case CODED_SYMBOLS_REQUEST, CODED_SYMBOLS, DELTA, REQUEST_DELTA, SYNC_DONE
+  case CODED_SYMBOLS_REQUEST, CODED_SYMBOLS, DELTA, REQUEST_DELTA
