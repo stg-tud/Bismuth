@@ -384,19 +384,34 @@ html .clear-completed:active {
   border-bottom: 2px dashed #1ac11a !important;
 }
 
-.selected-list-item-bg {
+.selected-entry {
   background-color: #0158D1;
 }
 
-.filesystem-list {
+.filesystem-container {
   display: flex;
   flex-direction: row;
+}
+
+.filesystem-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .filesystem-entry {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  padding: 8px 4px;
+  gap: 16px;
+  align-items: center;
+  height: 32px;
+  border: 0px;
+}
+
+.filesystem-entry > img {
+  width: 24px;
+  height: 24px;
 }
 
 /* */
