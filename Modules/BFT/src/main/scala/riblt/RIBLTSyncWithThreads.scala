@@ -9,9 +9,9 @@ import network.Message.given_JsonValueCodec_Message
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import network.Tag.{CODED_SYMBOLS, DELTA, REQUEST_DELTA, CODED_SYMBOLS_REQUEST}
-import riblt.RIBLTSync.{codec1, codec2}
+import riblt.RIBLTSyncWithThreads.{codec1, codec2}
 
-class RIBLTSync[T, R <: Replica[T, R]](
+class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
     var replica: R,
     var RIBLTSessions: Map[String, Session] = Map.empty,
     val replicaID: String,
@@ -125,7 +125,7 @@ class RIBLTSync[T, R <: Replica[T, R]](
         session.isSynced = true
   }
 
-object RIBLTSync:
+object RIBLTSyncWithThreads:
   given codec1: JsonValueCodec[List[Array[Byte]]] = JsonCodecMaker.make
   given codec2: JsonValueCodec[List[String]]      = JsonCodecMaker.make
 

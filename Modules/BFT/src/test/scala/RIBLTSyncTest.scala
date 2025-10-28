@@ -2,9 +2,9 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import munit.FunSuite
 import datatypes.ORSet
 import riblt.RIBLTSync
-import riblt.RIBLTSync.SessionType._
+import riblt.RIBLTSync.SessionType.*
 
-class RIBLTSyncAkkaTest extends FunSuite {
+class RIBLTSyncTest extends FunSuite {
 
   val testKit = ActorTestKit()
 
@@ -30,9 +30,9 @@ class RIBLTSyncAkkaTest extends FunSuite {
     replica2 ! RIBLTSync.StartSession(replica1, receiver)
 
     val probe = testKit.createTestProbe[RIBLTSync.ReplicaResponse]()
-    
+
     // wait for the asserts to be true
-    probe.awaitAssert({
+    probe.awaitAssert {
       replica0 ! RIBLTSync.GetReplica(probe.ref)
       val r0 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
 
@@ -48,6 +48,6 @@ class RIBLTSyncAkkaTest extends FunSuite {
 
       assert(r0.getElements.subsetOf(r1.getElements))
       assert(r2.getElements.subsetOf(r1.getElements))
-    })
+    }
   }
 }

@@ -41,7 +41,7 @@ object RIBLTSync {
             val riblt = RIBLT[String]()
             for id <- replica.hashDAG.getIDs do riblt.addSymbol(id)
             val newSession = Session(sessionType, riblt)
-            //println(s"[$replicaID] started session with ${other.path.name} as $sessionType")
+            // println(s"[$replicaID] started session with ${other.path.name} as $sessionType")
 
             if sessionType == sender then {
               val symbols = riblt.produceNextCodedSymbolsAsBytes()
@@ -52,7 +52,7 @@ object RIBLTSync {
 
           // Handle coded symbols
           case ReceiveCodedSymbols(from, codedSymbols) =>
-            //println(s"[$replicaID] received coded symbols from ${from.path.name}")
+            // println(s"[$replicaID] received coded symbols from ${from.path.name}")
             val session = sessions(from)
             session.riblt.addCodedSymbolsAsBytes(codedSymbols)
             if session.riblt.isDecoded then
@@ -67,7 +67,7 @@ object RIBLTSync {
 
           // Handle coded symbols request
           case ReceiveCodedSymbolsRequest(from) =>
-            //println(s"[$replicaID] received coded symbol request from ${from.path.name}")
+            // println(s"[$replicaID] received coded symbol request from ${from.path.name}")
             val session = sessions(from)
             val symbols = session.riblt.produceNextCodedSymbolsAsBytes()
             from ! ReceiveCodedSymbols(context.self, symbols)
@@ -76,11 +76,11 @@ object RIBLTSync {
           // Handle delta
           case ReceiveDelta(from, deltaAny) =>
             val delta = deltaAny.asInstanceOf[R]
-            //println(s"[$replicaID] received delta from ${from.path.name}")
-            val newReplica     = replica.merge(delta)
-            //println("**************************************************")
-            //println(newReplica.hashDAG.events.map(e => e._2.content))
-            //println("**************************************************")
+            // println(s"[$replicaID] received delta from ${from.path.name}")
+            val newReplica = replica.merge(delta)
+            // println("**************************************************")
+            // println(newReplica.hashDAG.events.map(e => e._2.content))
+            // println("**************************************************")
 
             val updatedSession = sessions(from).copy(deltaReceived = true)
             val stillActive    = !updatedSession.deltaSent || !updatedSession.deltaReceived
@@ -91,7 +91,7 @@ object RIBLTSync {
 
           // Handle delta request
           case ReceiveDeltaRequest(from, ids) =>
-            //println(s"[$replicaID] received delta request from ${from.path.name}")
+            // println(s"[$replicaID] received delta request from ${from.path.name}")
             val delta = replica.generateDelta(ids)
             from ! ReceiveDelta(context.self, delta)
             val updatedSession = sessions(from).copy(deltaSent = true)
@@ -102,13 +102,13 @@ object RIBLTSync {
             running(replica, newSessions)
 
           case RIBLTSync.GetReplica(replyTo) =>
-            //println("///////////////////////////////////")
-            //println(replica.hashDAG.events.map(e => e._2.content))
-            //println("////////////////////////////////////")
+            // println("///////////////////////////////////")
+            // println(replica.hashDAG.events.map(e => e._2.content))
+            // println("////////////////////////////////////")
             replyTo ! RIBLTSync.ReplicaResponse(replica)
             Behaviors.same
 
-          case _  => Behaviors.same
+          case _ => Behaviors.same
         }
       }
 
