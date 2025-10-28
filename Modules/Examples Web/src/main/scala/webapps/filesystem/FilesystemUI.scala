@@ -38,13 +38,38 @@ enum EntryType:
   case File
   case Folder
 
-case class Entry(val name: String, val ty: EntryType) {
+case class MoveEntry(id: Dot, parent: Dot)
+
+case class Entry(val id: Dot, val name: String, val ty: EntryType) {
   val onClick       = Event.fromCallback(onclick := Event.handle)
   val onDoubleClick = Event.fromCallback(ondblclick := Event.handle)
+  val onDragStart   = Event.fromCallback(ondragstart := Event.handle)
+  val onDragOver    = Event.fromCallback(ondragover := Event.handle)
+  val onDrop        = Event.fromCallback(ondrop := Event.handle)
+  val onEntryDrop   = onDrop.event.map { e =>
+    val de        = e.asInstanceOf[DragEvent]
+    val data      = de.dataTransfer.getData("text/plain")
+    val parts     = data.split(":")
+    val place     = Uid.predefined(parts(0))
+    val time      = parts(1).toLong
+    val targetDot = Dot(place, time)
+    MoveEntry(targetDot, id)
+  }
 
-  def toTag(isSelected: Signal[Boolean]): LI = {
+  def toTag(id: Dot, isSelected: Signal[Boolean]): LI = {
+    onDragStart.event.observe(e => {
+      val de = e.asInstanceOf[DragEvent]
+      de.dataTransfer.setData("text/plain", id.place.delegate + ":" + id.time.toString)
+    })
+
+    onDragOver.event.observe(e => {
+      val de = e.asInstanceOf[DragEvent]
+      de.preventDefault()
+    })
+
     li(
-      `class` := "filesystem-entry",
+      `class`     := "filesystem-entry",
+      `draggable` := "true",
       img(
         src := (ty match {
           case EntryType.File   => Icons.file
@@ -54,6 +79,9 @@ case class Entry(val name: String, val ty: EntryType) {
       p(name),
       onClick.data,
       onDoubleClick.data,
+      onDragStart.data,
+      onDragOver.data,
+      onDrop.data,
     ).render.reattach(Signal {
       if isSelected.value
       then (elem: dom.Element) => elem.setAttribute("class", "filesystem-entry selected-entry")
@@ -74,12 +102,14 @@ case class FilesystemState(
     val selections: Map[ReplicaId, LWW[Option[Dot]]] = Map.empty,
     val locations: Map[ReplicaId, LWW[Dot]] = Map.empty
 ) {
-  def addEntry(parent: Dot, entry: Entry)(using LocalUid): FilesystemState = {
-    FilesystemState(tree = tree.insert(parent, entry))
+  def addEntry(parent: Dot, entry: Dot => Entry)(using LocalUid): FilesystemState = {
+    FilesystemState(tree = tree.insertWith(parent, dot => entry(dot)))
   }
 
   def moveToParent(entry: Dot, parent: Dot)(using LocalUid): FilesystemState = {
-    FilesystemState(tree = tree.move(entry, parent))
+    tree.node(parent) match
+      case Some(n) if n.value.ty == EntryType.Folder => FilesystemState(tree = tree.move(entry, parent))
+      case _                                         => FilesystemState.empty
   }
 
   def isSelected(using LocalUid)(entry: Dot): Boolean = {
@@ -158,15 +188,14 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     val addRandomFolderButton = Event.fromCallback(button("Add random folder", onclick := Event.handle))
     val deleteAllButton       = Event.fromCallback(button("Delete all", onclick := Event.handle))
 
-    val addEntryEvent = entryInputTag.inputEntered.map { name =>
-      Entry(name, EntryType.File)
-    }
-
     val markSelected = Interaction[State, Dot]
       .executes { (s: State, e) => s.mod(_.markSelected(e)) }
 
     val setLocation = Interaction[State, Dot]
       .executes { (s: State, d) => s.mod(_.setLocation(d)) }
+
+    val onDropEntry = Interaction[State, MoveEntry]
+      .executes { (s: State, e) => s.mod(_.moveToParent(e.id, e.parent)) }
 
     def events[T](s: State)(mapper: ReplicatedTree.Node[Entry] => Event[T]): Event[T] = {
       val events = s.state.tree.nodes.map(mapper)
@@ -192,20 +221,20 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     val stateRDT: Signal[State] = {
       Storing.storedAs(storagePrefix, DeltaBuffer(FilesystemState(tree = ReplicatedTree.empty[Entry]))) { init =>
         Fold(init)(
-          addEntryEvent.branch { e => current.mod((s) => s.addEntry(s.location, e)) },
           addRandomFileButton.event.branch { _ =>
             val name = scala.util.Random.alphanumeric.take(8).mkString
-            current.mod((s) => s.addEntry(s.location, Entry(name, EntryType.File)))
+            current.mod((s) => s.addEntry(s.location, dot => Entry(dot, name, EntryType.File)))
           },
           addRandomFolderButton.event.branch { _ =>
             val name = scala.util.Random.alphanumeric.take(8).mkString
-            current.mod((s) => s.addEntry(s.location, Entry(name, EntryType.Folder)))
+            current.mod((s) => s.addEntry(s.location, dot => Entry(dot, name, EntryType.Folder)))
           },
           deleteAllButton.event.branch { _ => current.mod(_.clearAll()) },
           markSelected.actWith[State](events(current)((n) => n.value.onClick.event.map(_ => n.dot))),
           setLocation.actWith[State](events(current)((n) =>
             n.value.onDoubleClick.event.filter(_ => n.value.ty == EntryType.Folder).map(_ => n.dot)
           )),
+          onDropEntry.actWith[State](events(current)((n) => n.value.onEntryDrop)),
           onNavigateToDirection.branch { d =>
             d match {
               case Direction.Left => {
@@ -255,7 +284,7 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
 
     val entriesTags: Signal[Seq[LI]] = entryNodes.map { entries =>
       entries.map((n) => {
-        n.value.toTag(stateRDT.map(_.state.isSelected(n.dot)))
+        n.value.toTag(n.dot, stateRDT.map(_.state.isSelected(n.dot)))
       })
     }
 

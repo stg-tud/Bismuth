@@ -19,6 +19,10 @@ case class ReplicatedTree[A](
   def isEmpty: Boolean = compact.isEmpty
 
   def insert(parent: Dot, value: A)(using LocalUid): Delta = {
+    insertWith(parent, _ => value)
+  }
+
+  def insertWith(parent: Dot, value: Dot => A)(using LocalUid): Delta = {
     if parent != ReplicatedTree.rootDot && !compact.contains(parent) then {
       throw new IllegalArgumentException(s"Dot $parent does not exist in the tree")
     }
@@ -27,7 +31,8 @@ case class ReplicatedTree[A](
       observed.nextDot(LocalUid.replicaId)
 
     ReplicatedTree(
-      elements = Map(dot -> ReplicatedTree.Node(dot, parent, Map(parent -> ReplicatedTree.EdgeCounter(dot, 0)), value)),
+      elements =
+        Map(dot -> ReplicatedTree.Node(dot, parent, Map(parent -> ReplicatedTree.EdgeCounter(dot, 0)), value(dot))),
     )
   }
 
@@ -69,6 +74,7 @@ case class ReplicatedTree[A](
           elements = newElements
         )
       case None =>
+        println("Empty child")
         return ReplicatedTree.empty
     }
   }
