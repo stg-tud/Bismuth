@@ -18,6 +18,24 @@ case class ReplicatedTree[A](
 
   def isEmpty: Boolean = compact.isEmpty
 
+  def size: Int = compact.size
+
+  def nodes: Iterable[ReplicatedTree.Node[A]] = compact.values
+
+  def node(dot: Dot): Option[ReplicatedTree.Node[A]] = elements.get(dot)
+
+  def parent(dot: Dot): Option[Dot] = elements.get(dot).map(_.parent)
+
+  def root: Option[ReplicatedTree.Node[A]] = {
+    val c = children(ReplicatedTree.rootDot)
+    assert(c.size <= 1)
+    c.headOption
+  }
+
+  def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] = {
+    elements.values.filter(_.parent == dot)
+  }
+
   def insert(parent: Dot, value: A)(using LocalUid): Delta = {
     insertWith(parent, _ => value)
   }
@@ -34,6 +52,19 @@ case class ReplicatedTree[A](
       elements =
         Map(dot -> ReplicatedTree.Node(dot, parent, Map(parent -> ReplicatedTree.EdgeCounter(dot, 0)), value(dot))),
     )
+  }
+
+  def update(dot: Dot, newValue: A): Delta = {
+    node(dot) match {
+      case Some(n) =>
+        ReplicatedTree(
+          elements = Map(
+            dot -> n.copy(value = newValue)
+          )
+        )
+      case None =>
+        ReplicatedTree.empty
+    }
   }
 
   def delete(dot: Dot): Delta = {
@@ -78,25 +109,7 @@ case class ReplicatedTree[A](
     }
   }
 
-  def size: Int = compact.size
-
-  def nodes: Iterable[ReplicatedTree.Node[A]] = compact.values
-
-  def node(dot: Dot): Option[ReplicatedTree.Node[A]] = elements.get(dot)
-
-  def parent(dot: Dot): Option[Dot] = elements.get(dot).map(_.parent)
-
-  def root: Option[ReplicatedTree.Node[A]] = {
-    val c = children(ReplicatedTree.rootDot)
-    assert(c.size <= 1)
-    c.headOption
-  }
-
-  def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] = {
-    elements.values.filter(_.parent == dot)
-  }
-
-  def isBelowNode(node: Dot, other: Dot): Boolean = {
+  private def isBelowNode(node: Dot, other: Dot): Boolean = {
     if node == other then {
       return true
     }
@@ -116,7 +129,7 @@ case class ReplicatedTree[A](
     hare.contains(other)
   }
 
-  def ensureNodeIsRooted(dot: Dot): List[(Dot, Dot)] = {
+  private def ensureNodeIsRooted(dot: Dot): List[(Dot, Dot)] = {
     node(dot) match {
       case Some(child) => {
         if child.parent == ReplicatedTree.rootDot then {
