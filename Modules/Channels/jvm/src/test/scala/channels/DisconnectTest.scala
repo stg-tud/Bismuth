@@ -40,9 +40,9 @@ class DisconnectTest extends munit.FunSuite {
 
     listen.prepare(conn =>
       TestUtil.printErrors { mb =>
-        conn.send(mb).run(using ())(TestUtil.printErrors(mb => ()))
+        conn.send(mb).run(TestUtil.printErrors(mb => ()))
       }
-    ).run(using Abort()) {
+    ).runIn(Abort()) {
       case Success(_)  =>
       case Failure(ex) => throw ex
     }
@@ -63,14 +63,14 @@ class DisconnectTest extends munit.FunSuite {
         case Success(mb) =>
         case Failure(ex) => assert(ex.isInstanceOf[NoMoreDataException])
       }
-    }.run(using Abort()) {
+    }.runIn(Abort()) {
       case Success(conn) =>
-        conn.send(ArrayMessageBuffer("Hi!".getBytes())).run(using Abort()) { TestUtil.printErrors(mb => ()) }
+        conn.send(ArrayMessageBuffer("Hi!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
         Thread.sleep(10)
         serverNioTCP.selector.keys().forEach(_.channel().close())
         Thread.sleep(10)
 
-        conn.send(ArrayMessageBuffer("Hi 2!".getBytes())).run(using Abort()) { TestUtil.printErrors(mb => ()) }
+        conn.send(ArrayMessageBuffer("Hi 2!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
       case Failure(_) =>
     }
 

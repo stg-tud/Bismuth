@@ -59,7 +59,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
       val handling = WebRTCHandling(None)
       renderedConnectionTable.appendChild(handling.controlRow().render)
       addDataChannel(handling)
-    .run(using ExecutionContext.global)(errorReporter)
+    .runIn(ExecutionContext.global)(errorReporter)
 
     useLocalBroadcastChannel(renderedConnectionTable)
 
@@ -89,7 +89,7 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
               case BroadcastCommunication.Hello(id) =>
                 val handling = WebRTCHandling(Some {
                   case Success(sd) =>
-                    conn.send(BroadcastCommunication.Request(selfId, id, sd).convert).run(using ())(Async.handler)
+                    conn.send(BroadcastCommunication.Request(selfId, id, sd).convert).run(Async.handler)
                   case Failure(ex) => Async.handler.fail(ex)
                 })
                 autoconnections = autoconnections.updated(id, handling)
@@ -99,25 +99,25 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
               case BroadcastCommunication.Request(from, `selfId`, sessionDescription) =>
                 val handling = WebRTCHandling(Some {
                   case Success(sd) =>
-                    conn.send(BroadcastCommunication.Response(selfId, from, sd).convert).run(using ())(Async.handler)
+                    conn.send(BroadcastCommunication.Response(selfId, from, sd).convert).run(Async.handler)
                   case Failure(ex) => Async.handler.fail(ex)
                 })
                 autoconnections = autoconnections.updated(from, handling)
                 renderedConnectionTable.appendChild(handling.controlRow().render)
                 addDataChannel(handling)
-                handling.peer.updateRemoteDescription(sessionDescription).run(using ())(Async.handler)
+                handling.peer.updateRemoteDescription(sessionDescription).run(Async.handler)
               case BroadcastCommunication.Response(from, `selfId`, sessionDescription) =>
                 autoconnections.get(from).foreach: handling =>
-                  handling.peer.updateRemoteDescription(sessionDescription).run(using ())(Async.handler)
+                  handling.peer.updateRemoteDescription(sessionDescription).run(Async.handler)
 
               // ignore messages to other peers
               case BroadcastCommunication.Request(from, to, desc)  =>
               case BroadcastCommunication.Response(from, to, desc) =>
-          }.run(using Abort())(errorReporter)
+          }.runIn(Abort())(errorReporter)
       }
-    }.run(using Abort()) {
+    }.runIn(Abort()) {
       case Success(conn) =>
-        conn.send(BroadcastCommunication.Hello(selfId).convert).run(using ())(errorReporter)
+        conn.send(BroadcastCommunication.Hello(selfId).convert).run(errorReporter)
       case Failure(ex) => errorReporter.fail(ex)
     }
   }
@@ -162,7 +162,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
         oninput     := { (ev: UIEvent) =>
           try
             val cs = readFromString(ev.target.asInstanceOf[dom.html.TextArea].value)(using codec)
-            peer.updateRemoteDescription(cs).run(using ())(errorReporter)
+            peer.updateRemoteDescription(cs).run(errorReporter)
           catch
             case ex: JsonReaderException =>
               throw IllegalStateException("input is not a valid session description", ex)
@@ -205,13 +205,13 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
         readyChannelSent = true
         readyChannel.foreach(cb => lifecycle.localSession.foreach(cb.succeed))
 
-    }.run(using ())(errorReporter)
+    }.run(errorReporter)
 
     Async {
       val dateOffset = Date.now()
       val candidate  = peer.iceCandidates.bind
       iceTrickle.value = s"${iceTrickle.value}${Date.now() - dateOffset}: ${candidate.candidate}\n\n"
-    }.run(using ())(errorReporter)
+    }.run(errorReporter)
 
     tr(localSession, remoteSession, gatheringState, connectionState, signalingState, td(iceTrickle))
 

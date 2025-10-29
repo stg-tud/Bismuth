@@ -47,7 +47,7 @@ class ChannelConnectionManager(
       case Some(connectionSet) if connectionSet.nonEmpty =>
         val connection = connectionSet.head
         messages.foreach { message =>
-          connection.send(message).run(using abort) {
+          connection.send(message).runIn(abort) {
             case Success(_) => if !disableLogging then println(s"Successfully sent msg: ${String(message.asArray)}")
             case Failure(exception) => if !disableLogging then exception.printStackTrace()
           }
@@ -80,14 +80,14 @@ class ChannelConnectionManager(
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     listener = Some(p2pTls.latentListener(0, ec))
-    listener.get.prepare(receiveMessageHandler).run(using abort) {
+    listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  => if !disableLogging then exception.printStackTrace()
     }
   }
 
   def connectTo(host: String, port: Int): Unit = {
-    p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler).run(using abort) {
+    p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  => if !disableLogging then exception.printStackTrace()
     }
