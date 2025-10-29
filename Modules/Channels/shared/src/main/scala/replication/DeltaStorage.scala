@@ -98,7 +98,7 @@ class MergingHistory[State: JsonValueCodec](blockSize: Int)(using Lattice[Payloa
 
 }
 
-class NonRedundantHistory[State: {JsonValueCodec, Lattice, Historized}] extends DeltaStorage[State] {
+class NonRedundantHistory[State: {JsonValueCodec, Historized}] extends DeltaStorage[State] {
 
   private var history: List[Payload[State]] = List.empty
 
