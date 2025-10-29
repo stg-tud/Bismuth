@@ -26,8 +26,19 @@ import reactives.operator.Event.CBR
 import rdts.datatypes.ObserveRemoveMap
 import rdts.datatypes.LastWriterWins as LWW
 import lore.Parser._var
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 case class MoveToParent(entry: Dot, parent: Dot)
+
+val timeZone = {
+  try {
+    ZoneId.systemDefault()
+  } catch {
+    case _: Exception => ZoneId.of("UTC")
+  }
+}
 
 object Icons {
   val file   = "assets/file.svg"
@@ -40,7 +51,7 @@ enum EntryType:
 
 case class MoveEntry(id: Dot, parent: Dot)
 
-case class Entry(val id: Dot, val name: String, val ty: EntryType) {
+case class Entry(val id: Dot, val name: String, val ty: EntryType, val mtime: Long = System.currentTimeMillis()) {
   val onClick       = Event.fromCallback(onclick := Event.handle)
   val onDoubleClick = Event.fromCallback(ondblclick := Event.handle)
   val onDragStart   = Event.fromCallback(ondragstart := Event.handle)
@@ -67,16 +78,27 @@ case class Entry(val id: Dot, val name: String, val ty: EntryType) {
       de.preventDefault()
     })
 
+    val date = Instant.ofEpochMilli(
+      mtime
+    ).atZone(timeZone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+
     li(
       `class`     := "filesystem-entry",
       `draggable` := "true",
-      img(
-        src := (ty match {
-          case EntryType.File   => Icons.file
-          case EntryType.Folder => Icons.folder
-        })
+      div(
+        `class` := "entry-content",
+        div(
+          `class` := "entry-icon",
+          img(
+            src := (ty match {
+              case EntryType.File   => Icons.file
+              case EntryType.Folder => Icons.folder
+            })
+          )
+        ),
+        div(`class` := "entry-name", name),
+        div(`class` := "entry-date", date)
       ),
-      p(name),
       onClick.data,
       onDoubleClick.data,
       onDragStart.data,

@@ -400,18 +400,53 @@ html .clear-completed:active {
 }
 
 .filesystem-entry {
-  display: flex;
-  flex-direction: row;
-  padding: 8px 4px;
-  gap: 16px;
-  align-items: center;
-  height: 32px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
   border: 0px;
 }
 
-.filesystem-entry > img {
-  width: 24px;
-  height: 24px;
+.filesystem-entry:hover {
+  background-color: #f5f5f5;
+}
+
+.filesystem-entry.selected-entry {
+  background-color: #007acc;
+  color: white;
+}
+
+.entry-content {
+  display: grid;
+  grid-template-columns: 32px 1fr 150px;
+  gap: 12px;
+  padding: 8px 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.entry-icon img {
+  width: 20px;
+  height: 20px;
+}
+
+.selected-entry .entry-icon img {
+  filter: brightness(0) invert(1);
+}
+
+.entry-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-date {
+  font-size: 0.875rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.selected-entry .entry-date {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* */

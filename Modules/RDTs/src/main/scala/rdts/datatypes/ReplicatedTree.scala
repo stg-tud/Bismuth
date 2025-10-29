@@ -74,7 +74,6 @@ case class ReplicatedTree[A](
           elements = newElements
         )
       case None =>
-        println("Empty child")
         return ReplicatedTree.empty
     }
   }
