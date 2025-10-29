@@ -51,7 +51,7 @@ class WebRTCConnector(configuration: dom.RTCConfiguration) {
   peerConnection.addEventListener(
     "negotiationneeded",
     (_: dom.Event) =>
-      smartUpdateLocalDescription.run(using ()) {
+      smartUpdateLocalDescription.run {
         case Failure(ex) =>
           throw ex
         case _ =>

@@ -46,7 +46,7 @@ object JSHttpPseudoChannel {
 
       val streamCon = StreamConsumer(reader, resultCallback)
 
-      streamCon.loop().run(using ()) { _ => () }
+      streamCon.loop().run { _ => () }
     }
 
     override def close(): Unit = ()

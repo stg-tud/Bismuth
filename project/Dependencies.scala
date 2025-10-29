@@ -12,15 +12,15 @@ object Dependencies {
   val monocleCore = libraryDependencies += "dev.optics"            %%% "monocle-core"           % "3.3.0"
   val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.2.1"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.2.0"  % Test
-  val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.5"
+  val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.6"
   val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.4"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules" %% "scala-swing"            % "3.0.0"
   val scalaXml    = libraryDependencies += "org.scala-lang.modules" %% "scala-xml"              % "2.4.0"
   val scalajsDom  = libraryDependencies += "org.scala-js"          %%% "scalajs-dom"            % "2.8.1"
   val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"               % "slf4j-nop"              % "2.0.17" % Test
-  val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.14.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.12"
+  val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.15.0"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.13"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.19.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.0"
 
