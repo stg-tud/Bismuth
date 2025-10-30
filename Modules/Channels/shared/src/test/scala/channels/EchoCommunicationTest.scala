@@ -41,7 +41,7 @@ trait EchoCommunicationTest[Info](
       serverLatent.prepare: conn =>
         printErrors: mb =>
           trace("server received; echoing")
-          conn.send(mb).runToFuture(using ())
+          conn.send(mb).runToFuture(())
 
     val client: Prod[Connection[MessageBuffer]] =
       clientConn.apply(ec).apply(info).prepare: conn =>
@@ -52,7 +52,7 @@ trait EchoCommunicationTest[Info](
           }
           messageCounter.release()
 
-    echoServer.run:
+    echoServer.runIn(summon):
       printErrors: conn =>
         ()
 
@@ -62,10 +62,10 @@ trait EchoCommunicationTest[Info](
       trace("sending")
       ec.execute: () =>
         toSend.foreach: msg =>
-          conn.send(ArrayMessageBuffer(msg.getBytes())).run(using ()):
+          conn.send(ArrayMessageBuffer(msg.getBytes())).run:
             printErrors(_ => ())
 
-    sending.run:
+    sending.runIn(summon):
       printErrors: conn =>
         ()
 

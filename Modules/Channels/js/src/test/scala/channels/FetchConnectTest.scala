@@ -12,7 +12,7 @@ object FetchConnectTest {
         case Success(msg) => println(msg.convert: String)
         case Failure(ex)  => ex.printStackTrace()
       }
-    }.run(using Abort()) {
+    }.runIn(Abort()) {
       case Success(conn) =>
         println("established")
         conn.send(ArrayMessageBuffer("Test".getBytes()))

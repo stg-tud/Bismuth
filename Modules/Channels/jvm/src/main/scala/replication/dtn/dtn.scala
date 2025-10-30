@@ -158,7 +158,7 @@ def run(): Unit =
 
     replica.mut(_.add(10))
 
-  }.runToFuture(using ())
+  }.runToFuture(())
 
   Await.result(res, scala.concurrent.duration.Duration.Inf)
   Thread.sleep(1000)

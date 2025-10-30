@@ -46,14 +46,14 @@ object Historized {
   given subsumption[T: Lattice]: Historized[T] = (delta: T, buffer: Iterable[MetaDelta[T]]) =>
     buffer.filter(bufferedDelta => delta `subsumes` bufferedDelta.delta).getAllDots
 
-  inline def derived[T <: Product: {Mirror.ProductOf, Lattice}]: Historized[T] = productHistorized[T]
+  inline def derived[T <: Product: {Mirror.ProductOf}]: Historized[T] = productHistorized[T]
 
-  inline def productHistorized[T <: Product: Lattice](using pm: Mirror.ProductOf[T]): Historized[T] = {
+  inline def productHistorized[T <: Product](using pm: Mirror.ProductOf[T]): Historized[T] = {
     val historizables: Tuple = summonAll[Tuple.Map[pm.MirroredElemTypes, Historized]]
     new ProductHistorized[T](historizables, pm, valueOf[pm.MirroredLabel])
   }
 
-  class ProductHistorized[T <: Product: Historized](
+  class ProductHistorized[T <: Product](
       historizables: Tuple,
       pm: Mirror.ProductOf[T],
       label: String

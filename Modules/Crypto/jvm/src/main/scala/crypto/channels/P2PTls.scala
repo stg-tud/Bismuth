@@ -92,7 +92,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
                   val conn = P2PTlsConnection(socket, Uid(identity.id), receiver)
                   executionContext.execute(() => conn.receiveLoopBlocking())
                   conn
-                }.run(Async.handler)
+                }.runIn(summon)(Async.handler)
             }
           )
         catch {

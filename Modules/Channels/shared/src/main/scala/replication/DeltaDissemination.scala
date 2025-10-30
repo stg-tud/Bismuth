@@ -11,7 +11,7 @@ import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
 
-import scala.annotation.{nowarn, unused}
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -88,10 +88,10 @@ class DeltaDissemination[State](
     case Success(_) => ()
 
   def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit =
-    prepareBinaryConnection(latentConnection).run(using ())(printExceptionHandler)
+    prepareBinaryConnection(latentConnection).run(printExceptionHandler)
 
   def addObjectConnection(latentConnection: LatentConnection[ProtocolMessage[State]]): Unit =
-    prepareObjectConnection(latentConnection).run(using ())(printExceptionHandler)
+    prepareObjectConnection(latentConnection).run(printExceptionHandler)
 
   /** prepare a connection that serializes to some binary format. Primary means of network communication. Adds a serialization and caching layer */
   def prepareBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Async[Any, Unit] =
@@ -203,7 +203,7 @@ class DeltaDissemination[State](
     if globalAbort.closeRequest then ()
     else
       sendingActor.execute { () =>
-        con.send(payload).run(using ())(debugCallbackAndRemoveCon(con))
+        con.send(payload).run(debugCallbackAndRemoveCon(con))
       }
 
   def disseminate(payload: Message, except: Set[ConnectionContext] = Set.empty): Unit = {

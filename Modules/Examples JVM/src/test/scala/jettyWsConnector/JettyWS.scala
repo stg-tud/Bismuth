@@ -87,7 +87,7 @@ object JettyWsConnection {
         client.connect(
           new JettyWsHandler(incomingHandler, Async.handler[Connection[MessageBuffer]]),
           uri
-        ).toAsync.run(using ()) {
+        ).toAsync.run {
           sess =>
         }
       }

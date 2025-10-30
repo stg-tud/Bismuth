@@ -31,7 +31,7 @@ object JettyConnectTest {
       val outgoing = prepared.bind
       outgoing.send(ArrayMessageBuffer("hello world".getBytes)).bind
       println("send successfull")
-    }.run(using Abort()) { res =>
+    }.runIn(Abort()) { res =>
       println("done!")
       println(res)
     }

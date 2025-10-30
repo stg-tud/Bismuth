@@ -71,7 +71,7 @@ class UDPPseudoConnection(
 
       executionContext.execute(() => receiveLoop(summon[Abort]))
 
-      initializeOutbound.run(using ()):
+      initializeOutbound.run:
         case Success(target) =>
           getOrCreateConnection(target)
           ()

@@ -48,7 +48,7 @@ object cli {
       tries: Int
   ): Unit = {
 
-    dataManager.prepareBinaryConnection(connection).run(using ()) {
+    dataManager.prepareBinaryConnection(connection).run {
       case Success(_)  => ()
       case Failure(ex) =>
         println(s"Failed to connect to $connection, retrying in $delay ms, retries: $tries")
@@ -150,8 +150,8 @@ object cli {
           case Result.Ok(first, remaining) =>
             avp.parse(remaining) match
               case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
-              case Result.Err(_, _, _)          => Result.Err("not a valid tuple", descriptor)
-          case Result.Err(_, _, _) => Result.Err("not a valid tuple", descriptor)
+              case _ : Result.Err         => Result.Err("not a valid tuple", descriptor)
+          case _ : Result.Err => Result.Err("not a valid tuple", descriptor)
 
       override def descriptor: Descriptor = avp.descriptor.mapSpec(s => s"$s $s")
     }
