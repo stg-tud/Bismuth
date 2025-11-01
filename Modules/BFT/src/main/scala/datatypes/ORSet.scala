@@ -42,6 +42,8 @@ case class ORSet[T](
   def getElements: Set[T] =
     elements.filter((k, v) => v.nonEmpty).keySet
 
+  def contains(elem: T): Boolean = elements.contains(elem) && elements(elem).nonEmpty
+
   def empty: ORSet[T] = ORSet()
 
   def withHashDAG(hashDAG: HashDAG[Op[T]]): ORSet[T] = this.copy(hashDAG = hashDAG)

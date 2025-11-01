@@ -19,6 +19,14 @@ case class LWWAWMap[K, V](
     val op = Remove[K, V](key)
 
     LWWAWMap(Map.empty, Map.empty, hashDAG.generateDelta(op))
+    
+  def get(key: K): Option[V] = map.get(key)
+  
+  def contains(key: K): Boolean = map.contains(key)
+  
+  def keyset: Set[K] = map.keySet
+  
+  def values: Iterable[V] = map.values
 
   override def merge(other: LWWAWMap[K, V]): LWWAWMap[K, V] = {
     var newMap     = this.map
