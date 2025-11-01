@@ -13,8 +13,6 @@ case class ORSet[T](
     hashDAG: HashDAG[Op[T]]
 ) extends Replica[Op[T], ORSet[T]]:
 
-  override def id: Array[Byte] = hashDAG.publicKey.getEncoded
-
   def add(element: T): ORSet[T] =
     val op = Op(element, OpType.Add)
 

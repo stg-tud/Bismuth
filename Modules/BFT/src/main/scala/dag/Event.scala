@@ -13,7 +13,7 @@ case class Event[T](
     author: PublicKey,
     dependencies: Set[String],
     signature: Array[Byte],
-    authorIsByzantine: Boolean = false
+    // authorIsByzantine: Boolean = false
 ):
 
   private val HashAlgorithm = "SHA3-512"

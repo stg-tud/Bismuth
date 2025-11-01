@@ -9,13 +9,13 @@ import riblt.{CodedSymbol, RIBLT}
 
 // a hash directed acyclic graph
 case class HashDAG[T](
-    graph: Map[String, Set[String]],
-    events: Map[String, Event[T]],
-    publicKey: PublicKey,
-    privateKey: Option[PrivateKey],
-    queue: Set[Event[T]] = Set.empty[Event[T]],
-    byzantineNodes: Set[PublicKey] = Set.empty
-):
+                        graph: Map[String, Set[String]],
+                        events: Map[String, Event[T]],
+                        publicKey: PublicKey,
+                        privateKey: Option[PrivateKey],
+                        queue: Set[Event[T]] = Set.empty[Event[T]],
+                        byzantineNodes: Set[PublicKey] = Set.empty
+                      ):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean =
@@ -71,10 +71,12 @@ case class HashDAG[T](
     if contains(event) then
       this
     else
-      if event.calculateHash != event.id || !event.signatureIsValid || event.authorIsByzantine then
+      if event.calculateHash != event.id || !event.signatureIsValid then
         this
       else if isByzantine(event) then
-        markEventsFromByzantineNode(event.author)
+        // markEventsFromByzantineNode(event.author)
+
+        this.copy(byzantineNodes = this.byzantineNodes + event.author)
       else
         val dependencies = event.dependencies
         if dependencies.forall(e => contains(e)) then
@@ -148,7 +150,10 @@ case class HashDAG[T](
 
       isByz
 
-  def markEventsFromByzantineNode(author: PublicKey): HashDAG[T] = {
+  def autohrIsByzantine(author: PublicKey): Boolean =
+    byzantineNodes.contains(author)
+
+  /*def markEventsFromByzantineNode(author: PublicKey): HashDAG[T] = {
     var e = this.events
 
     for event <- e.values do
@@ -156,7 +161,7 @@ case class HashDAG[T](
         e = e + (event.id -> event.copy(authorIsByzantine = true))
 
     this.copy(events = e, byzantineNodes = this.byzantineNodes + author)
-  }
+  }*/
 
   def empty: HashDAG[T] =
     HashDAG(this.publicKey, None)
