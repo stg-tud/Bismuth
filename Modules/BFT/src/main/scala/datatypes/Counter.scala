@@ -2,8 +2,6 @@ package datatypes
 
 import crypto.Ed25519Util
 import dag.HashDAG
-import riblt.RIBLT
-import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 
 case class Counter private (
     hashDAG: HashDAG[Int]

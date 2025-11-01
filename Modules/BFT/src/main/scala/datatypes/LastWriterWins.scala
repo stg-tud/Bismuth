@@ -2,7 +2,6 @@ package datatypes
 
 import crypto.Ed25519Util
 import dag.HashDAG
-
 import scala.util.hashing.MurmurHash3
 
 case class LastWriterWins[T](

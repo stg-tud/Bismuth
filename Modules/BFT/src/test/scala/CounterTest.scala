@@ -1,5 +1,4 @@
 import datatypes.Counter
-
 import scala.concurrent.duration.*
 
 class CounterTest extends munit.FunSuite:

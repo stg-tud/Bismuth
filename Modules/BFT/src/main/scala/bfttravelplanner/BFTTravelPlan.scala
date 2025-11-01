@@ -1,12 +1,9 @@
 package bfttravelplanner
 import crypto.Ed25519Util
 import dag.{Event, HashDAG}
-import datatypes.Replica
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.UniqueId
 import rdts.base.LocalUid
-import riblt.RIBLT
-import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 
 type Delta = BFTTravelPlan
 

@@ -2,11 +2,8 @@ package datatypes
 
 import datatypes.OpType.{Add, Remove}
 import crypto.Ed25519Util
-import dag.{Event, HashDAG}
-import riblt.{CodedSymbol, RIBLT}
-import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
+import dag.HashDAG
 import scala.collection.immutable.HashMap
-import scala.collection.{immutable, mutable}
 
 case class ORSet[T](
     elements: Map[T, Set[String]],
