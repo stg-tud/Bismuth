@@ -71,32 +71,39 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
   val onKeyDown       = Event.fromCallback(onkeydown := Event.handle)
   val onReturnKeyDown = onKeyDown.event.filter { e =>
     val ke = e.asInstanceOf[dom.KeyboardEvent]
-    ke.key == "Enter"
+    ke.key == "Enter" && !ke.target.isInstanceOf[dom.html.Input]
   }
-  val onEscapeKeyDown = onKeyDown.event.filter { e =>
+
+  val editText: Event.CBR[dom.Event, dom.html.Input] = Event.fromCallback {
+    input(
+      `class`   := "entry-name-edit",
+      `type`    := "text",
+      onkeydown := Event.handle[dom.Event],
+    ).render
+  }
+
+  val onCancelEdit = editText.event.filter { e =>
     val ke = e.asInstanceOf[dom.KeyboardEvent]
     ke.key == "Escape"
   }
 
-  val edittext: Event.CBR[dom.Event, dom.html.Input] = Event.fromCallback {
-    input(
-      `class`  := "entry-name-edit",
-      `type`   := "text",
-      onchange := Event.handle[dom.Event],
-      onblur   := Event.handle[dom.Event],
-    ).render
+  val onConfirmEdit = editText.event.filter { e =>
+    val ke = e.asInstanceOf[dom.KeyboardEvent]
+    ke.key == "Enter"
   }
 
-  val editInput = edittext.data.reattach(Signal { value := name.value })
-
-  val onRename = edittext.event.map { (e: dom.Event) =>
+  val editTextValue = editText.event.map { (e: dom.Event) =>
     val input = e.target.asInstanceOf[Input]
     input.value.trim
-  }
+  }.hold("")
+
+  val editInput = editText.data.reattach(Signal { value := name.value })
 
   val changeEditing =
-    (onRename `map` const(false)) || (onReturnKeyDown `map` const(true)) || (onEscapeKeyDown `map` const(false))
-  val isEditing = changeEditing.hold(init = false)
+    (onReturnKeyDown `map` const(true)) || (onConfirmEdit `map` const(false)) || (onCancelEdit `map` const(false))
+  val isEditing = changeEditing.hold(false)
+
+  val onRename: Event[String] = changeEditing.filter(!_).map { _ => editTextValue.value }
 
   val nameElement = isEditing.map { editing =>
     if editing then {
@@ -107,8 +114,10 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
   }
 
   def toTag(id: Dot, isSelected: Signal[Boolean]): LI = {
-    onReturnKeyDown.observe { _ =>
-      setTimeout(0) { editInput.focus() }; ()
+    isEditing.observe { editing =>
+      if editing then {
+        setTimeout(0) { editInput.focus() }; ()
+      }
     }
 
     onDragStart.event.observe(e => {
