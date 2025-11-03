@@ -259,7 +259,7 @@ object FilesystemState {
   given Bottom[FilesystemState]  = Bottom.provide(FilesystemState(ReplicatedTree.empty[Entry]))
 }
 
-type State = DeltaBuffer[FilesystemState];
+type State = UndoRedoReplica[FilesystemState];
 
 enum Direction:
   case Up
@@ -275,6 +275,8 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     val addRandomFileButton   = Event.fromCallback(button("Add random file", onclick := Event.handle))
     val addRandomFolderButton = Event.fromCallback(button("Add random folder", onclick := Event.handle))
     val deleteAllButton       = Event.fromCallback(button("Delete all", onclick := Event.handle))
+    val undoButton            = Event.fromCallback(button("Undo", onclick := Event.handle))
+    val redoButton            = Event.fromCallback(button("Redo", onclick := Event.handle))
 
     val markSelected = Interaction[State, Dot]
       .executes { (s: State, e) => s.mod(_.markSelected(e)) }
@@ -310,75 +312,89 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     // }.flatten
 
     val stateRDT: Signal[State] = {
-      Storing.storedAs(storagePrefix, DeltaBuffer(FilesystemState(tree = ReplicatedTree.empty[Entry]))) { init =>
-        Fold(init)(
-          addRandomFileButton.event.branch { _ =>
-            val name = scala.util.Random.alphanumeric.take(8).mkString
-            current.mod((s) => s.addEntry(s.location, dot => Entry.file(dot, name)))
-          },
-          addRandomFolderButton.event.branch { _ =>
-            val name = scala.util.Random.alphanumeric.take(8).mkString
-            current.mod((s) => s.addEntry(s.location, dot => Entry.folder(dot, name)))
-          },
-          deleteAllButton.event.branch { _ => current.mod(_.clearAll()) },
-          markSelected.actWith[State](events(current)((n) => n.value.onClick.event.map(_ => n.dot))),
-          setLocation.actWith[State](events(current)((n) =>
-            n.value.onDoubleClick.event.filter(_ => n.value.ty == EntryType.Folder).map(_ => n.dot)
-          )),
-          onDropEntry.actWith[State](events(current)((n) => n.value.onEntryDrop)),
-          renameEntry.actWith[State](events(current)((n) =>
-            n.value.onRename.map { s => (n.dot, s) }
-          )),
-          // onNavigateToDirection.branch { d =>
-          //   d match {
-          //     case Direction.Left => {
-          //       val node = current.state.tree.node(current.state.location)
-          //       node match
-          //         case Some(node) => current.mod(_.setLocation(node.parent))
-          //         case None       => current
-          //     }
-          //     case Direction.Right => {
-          //       val selected     = current.state.selection
-          //       val selectedNode = current.state.tree.node(selected)
-          //       selectedNode match {
-          //         case Some(n) if n.value.ty == EntryType.Folder =>
-          //           current.mod(_.setLocation(selected))
-          //         case _ => current
-          //       }
-          //     }
-          //     case Direction.Down | Direction.Up => {
-          //       val selection     = current.state.selection
-          //       val activeEntries =
-          //         current.state.tree.children(current.state.location).toList.sorted(using Entry.lexicographicOrdering)
-          //       val currentIndex = activeEntries.indexWhere(_.dot == selection)
-          //       val targetIndex  = d match {
-          //         case Direction.Up   => Math.max(currentIndex - 1, 0)
-          //         case Direction.Down => Math.min(currentIndex + 1, activeEntries.size - 1)
-          //         case _              => throw new IllegalStateException()
-          //       }
-          //       val target = activeEntries(targetIndex).dot
-          //       current.mod(_.markSelected(target))
-          //     }
-          //   }
-          // },
-          goToParent.event.branch { _ =>
-            val node = current.state.tree.node(current.state.location).get
-            current.mod(_.setLocation(node.parent))
-          },
-        )
+      Storing.storedAs(storagePrefix, UndoRedoReplica.empty[FilesystemState]) { init =>
+        FilesystemDataManager.hookup(
+          init,
+        ) { (init, branch) =>
+          Fold(UndoRedoReplica.empty[FilesystemState])(
+            FilesystemDataManager.resetBuffer,
+            addRandomFileButton.event.branch { _ =>
+              val name = scala.util.Random.alphanumeric.take(8).mkString
+              current.mod((s) => s.addEntry(s.location, dot => Entry.file(dot, name)))
+            },
+            addRandomFolderButton.event.branch { _ =>
+              val name = scala.util.Random.alphanumeric.take(8).mkString
+              current.mod((s) => s.addEntry(s.location, dot => Entry.folder(dot, name)))
+            },
+            deleteAllButton.event.branch { _ => current.mod(_.clearAll()) },
+            markSelected.actWith[State](events(current)((n) => n.value.onClick.event.map(_ => n.dot))),
+            setLocation.actWith[State](events(current)((n) =>
+              n.value.onDoubleClick.event.filter(_ => n.value.ty == EntryType.Folder).map(_ => n.dot)
+            )),
+            onDropEntry.actWith[State](events(current)((n) => n.value.onEntryDrop)),
+            renameEntry.actWith[State](events(current)((n) =>
+              n.value.onRename.map { s => (n.dot, s) }
+            )),
+            // onNavigateToDirection.branch { d =>
+            //   d match {
+            //     case Direction.Left => {
+            //       val node = current.state.tree.node(current.state.location)
+            //       node match
+            //         case Some(node) => current.mod(_.setLocation(node.parent))
+            //         case None       => current
+            //     }
+            //     case Direction.Right => {
+            //       val selected     = current.state.selection
+            //       val selectedNode = current.state.tree.node(selected)
+            //       selectedNode match {
+            //         case Some(n) if n.value.ty == EntryType.Folder =>
+            //           current.mod(_.setLocation(selected))
+            //         case _ => current
+            //       }
+            //     }
+            //     case Direction.Down | Direction.Up => {
+            //       val selection     = current.state.selection
+            //       val activeEntries =
+            //         current.state.tree.children(current.state.location).toList.sorted(using Entry.lexicographicOrdering)
+            //       val currentIndex = activeEntries.indexWhere(_.dot == selection)
+            //       val targetIndex  = d match {
+            //         case Direction.Up   => Math.max(currentIndex - 1, 0)
+            //         case Direction.Down => Math.min(currentIndex + 1, activeEntries.size - 1)
+            //         case _              => throw new IllegalStateException()
+            //       }
+            //       val target = activeEntries(targetIndex).dot
+            //       current.mod(_.markSelected(target))
+            //     }
+            //   }
+            // },
+            goToParent.event.branch { _ =>
+              val node = current.state.tree.node(current.state.location).get
+              current.mod(_.setLocation(node.parent))
+            },
+            undoButton.event.branch { _ =>
+              current.undo()
+            },
+            redoButton.event.branch { _ =>
+              current.redo()
+            },
+            branch
+          )
+        }
       }
     }
 
-    val parent: Signal[Option[ReplicatedTree.Node[Entry]]] = stateRDT.map { s =>
-      s.state.tree.node(s.state.location)
+    val state: Signal[FilesystemState] = stateRDT.map(_.state)
+
+    val parent: Signal[Option[ReplicatedTree.Node[Entry]]] = state.map { s =>
+      s.tree.node(s.location)
     }
 
     val entryNodes: Signal[List[ReplicatedTree.Node[Entry]]] =
-      stateRDT.map((s) => s.state.tree.children(s.state.location).toList.sorted(using Entry.lexicographicOrdering))
+      state.map((s) => s.tree.children(s.location).toList.sorted(using Entry.lexicographicOrdering))
 
     val entriesTags: Signal[Seq[LI]] = entryNodes.map { entries =>
       entries.map((n) => {
-        n.value.toTag(n.dot, stateRDT.map(_.state.isSelected(n.dot)))
+        n.value.toTag(n.dot, state.map(_.isSelected(n.dot)))
       })
     }
 
@@ -394,10 +410,16 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
       ),
       div(
         `class` := "filesystem-container",
+        undoButton.data.render.reattach(
+          DomHelper.enabledWhen(stateRDT.map(_.canUndo))
+        ),
+        redoButton.data.render.reattach(
+          DomHelper.enabledWhen(stateRDT.map(_.canRedo))
+        ),
         goToParent.data.render,
         addRandomFileButton.data.render,
         addRandomFolderButton.data.render,
-        deleteAllButton.data.render
+        deleteAllButton.data.render,
       ),
       entryList,
       // onKeyDown.data,
@@ -415,4 +437,16 @@ given [A <: dom.Element]: RangeSplice[A, A => Unit] with {
   override def splice(anchor: A, range: dom.Range, value: A => Unit): Unit =
     anchor match
       case elem: A => value.apply(elem)
+}
+
+object DomHelper {
+  def enabledWhen(enabled: Signal[Boolean]) = {
+    Signal {
+      if enabled.value then { (elem: dom.Element) =>
+        elem.removeAttribute("disabled")
+      } else { (elem: dom.Element) =>
+        elem.setAttribute("disabled", "true")
+      }
+    }
+  }
 }

@@ -23,24 +23,25 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       given bottom: Bottom[State] = Bottom.provide(State(value = 0))
     }
 
-    val Array(replica) = UndoRedoReplicaTest.createReplicas[State](1)
+    val Array(initialReplica) = UndoRedoReplicaTest.createReplicas[State](1)
+    var replica               = initialReplica
 
-    replica.mod(_.setValue(1))
+    replica = replica.mod(_.setValue(1))
     assertEquals(replica.state, State(value = 1))
 
-    replica.mod(_.setValue(2))
+    replica = replica.mod(_.setValue(2))
     assertEquals(replica.state, State(value = 2))
 
-    replica.undo()
+    replica = replica.undo()
     assertEquals(replica.state, State(value = 1))
 
-    replica.undo()
+    replica = replica.undo()
     assertEquals(replica.state, State.bottom.empty)
 
-    replica.redo()
+    replica = replica.redo()
     assertEquals(replica.state, State(value = 1))
 
-    replica.redo()
+    replica = replica.redo()
     assertEquals(replica.state, State(value = 2))
   }
 
@@ -120,16 +121,19 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       given bottom: Bottom[Color] = Bottom.provide(Color.White)
     }
 
-    val Array(replica1, replica2) = UndoRedoReplicaTest.createReplicas[Document](2)
+    var (replica1, replica2) = {
+      val Array(r1, r2) = UndoRedoReplicaTest.createReplicas[Document](2)
+      (r1, r2)
+    }
 
     val node1 = "node1"
     val node2 = "node2"
 
-    val delta1 = replica1.mod(_.add(
+    replica1 = replica1.mod(_.add(
       node1,
       Node(LWW.now(Position(0, 0)), LWW.now(Color.Red), LWW.now(NodeKind.Rectangle(width = 50.0, height = 100.0)))
     ))
-    val delta2 = replica2.mod(_.add(
+    replica2 = replica2.mod(_.add(
       node2,
       Node(LWW.now(Position(100, 100)), LWW.now(Color.Blue), LWW.now(NodeKind.Circle(radius = 25.0)))
     ))
@@ -151,8 +155,10 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       ))
     )
 
-    replica1.receive(delta2)
-    replica2.receive(delta1)
+    replica1 = replica1.receive(replica2.buffer)
+    replica2 = replica2.receive(replica1.buffer)
+    replica1 = replica1.clearBuffer()
+    replica2 = replica2.clearBuffer()
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -185,10 +191,12 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
 
-    val delta3 = replica1.mod(_.setColor(node2, Color.Green))
-    val delta4 = replica2.mod(_.setPosition(node1, Position(50, 50)))
-    replica1.receive(delta4)
-    replica2.receive(delta3)
+    replica1 = replica1.mod(_.setColor(node2, Color.Green))
+    replica2 = replica2.mod(_.setPosition(node1, Position(50, 50)))
+    replica1 = replica1.receive(replica2.buffer)
+    replica2 = replica2.receive(replica1.buffer)
+    replica1 = replica1.clearBuffer()
+    replica2 = replica2.clearBuffer()
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -222,10 +230,12 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Undo should reset the position of node1 to (0, 0) and the color of node2 to Blue
-    val delta5 = replica1.undo()
-    val delta6 = replica2.undo()
-    replica1.receive(delta6)
-    replica2.receive(delta5)
+    replica1 = replica1.undo()
+    replica2 = replica2.undo()
+    replica1 = replica1.receive(replica2.buffer)
+    replica2 = replica2.receive(replica1.buffer)
+    replica1 = replica1.clearBuffer()
+    replica2 = replica2.clearBuffer()
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -259,8 +269,9 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Undo on replica1 should remove node1
-    val delta7 = replica1.undo()
-    replica2.receive(delta7)
+    replica1 = replica1.undo()
+    replica2 = replica2.receive(replica1.buffer)
+    replica1 = replica1.clearBuffer()
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -284,8 +295,9 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Redo should reset the position of node1 to (50, 50)
-    val delta8 = replica2.redo()
-    replica1.receive(delta8)
+    replica2 = replica2.redo()
+    replica1 = replica1.receive(replica2.buffer)
+    replica2 = replica2.clearBuffer()
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -319,8 +331,9 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Redo should be a no-op, since there is nothing on the undo stack
-    val delta9 = replica2.redo()
-    replica1.receive(delta9)
+    replica2 = replica2.redo()
+    replica1 = replica1.receive(replica2.buffer)
+    replica2 = replica2.clearBuffer()
 
     assertEquals(
       replica1.state.materialized_nodes,

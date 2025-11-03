@@ -4,7 +4,6 @@ import rdts.time.Dot
 import rdts.base.LocalUid
 import rdts.time.Dots
 import rdts.base.Lattice
-import rdts.experiments.UndoRedoReplica.Delta.removed
 
 case class ReplicatedTree[A](
     elements: Map[Dot, ReplicatedTree.Node[A]],
