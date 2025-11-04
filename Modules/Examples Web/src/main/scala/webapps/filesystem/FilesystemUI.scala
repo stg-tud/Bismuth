@@ -386,9 +386,7 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
       }
     }
 
-    val state: Signal[FilesystemState] = stateRDT.map((s) => {
-      s.state
-    })
+    val state: Signal[FilesystemState] = stateRDT.map(_.state)
 
     val parent: Signal[Option[ReplicatedTree.Node[Entry]]] = state.map { s =>
       s.tree.node(s.location)
