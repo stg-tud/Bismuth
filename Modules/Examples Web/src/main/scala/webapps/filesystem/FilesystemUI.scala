@@ -279,10 +279,10 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     val redoButton            = Event.fromCallback(button("Redo", onclick := Event.handle))
 
     val markSelected = Interaction[State, Dot]
-      .executes { (s: State, e) => s.mod(_.markSelected(e)) }
+      .executes { (s: State, e) => s.modUntracked(_.markSelected(e)) }
 
     val setLocation = Interaction[State, Dot]
-      .executes { (s: State, d) => s.mod(_.setLocation(d)) }
+      .executes { (s: State, d) => s.modUntracked(_.setLocation(d)) }
 
     val onDropEntry = Interaction[State, MoveEntry]
       .executes { (s: State, e) => s.mod(_.moveToParent(e.id, e.parent)) }
@@ -316,7 +316,7 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
         FilesystemDataManager.hookup(
           init,
         ) { (init, branch) =>
-          Fold(UndoRedoReplica.empty[FilesystemState])(
+          Fold(init)(
             FilesystemDataManager.resetBuffer,
             addRandomFileButton.event.branch { _ =>
               val name = scala.util.Random.alphanumeric.take(8).mkString
@@ -368,8 +368,11 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
             //   }
             // },
             goToParent.event.branch { _ =>
-              val node = current.state.tree.node(current.state.location).get
-              current.mod(_.setLocation(node.parent))
+              if current.state.location == ReplicatedTree.rootDot then current
+              else {
+                val node = current.state.tree.node(current.state.location).get
+                current.mod(_.setLocation(node.parent))
+              }
             },
             undoButton.event.branch { _ =>
               current.undo()
@@ -383,7 +386,9 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
       }
     }
 
-    val state: Signal[FilesystemState] = stateRDT.map(_.state)
+    val state: Signal[FilesystemState] = stateRDT.map((s) => {
+      s.state
+    })
 
     val parent: Signal[Option[ReplicatedTree.Node[Entry]]] = state.map { s =>
       s.tree.node(s.location)
@@ -416,7 +421,9 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
         redoButton.data.render.reattach(
           DomHelper.enabledWhen(stateRDT.map(_.canRedo))
         ),
-        goToParent.data.render,
+        goToParent.data.render.reattach(
+          DomHelper.enabledWhen(state.map(_.location != ReplicatedTree.rootDot))
+        ),
         addRandomFileButton.data.render,
         addRandomFolderButton.data.render,
         deleteAllButton.data.render,
