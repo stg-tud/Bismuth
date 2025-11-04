@@ -51,6 +51,7 @@ lazy val publishedProjects =
 // projects in alphabetical order
 
 lazy val bft = project.in(file("Modules/BFT"))
+  .enablePlugins(JmhPlugin)
   .dependsOn(
     crypto.jvm,
     examplesJVM
