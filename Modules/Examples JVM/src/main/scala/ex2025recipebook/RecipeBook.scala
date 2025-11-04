@@ -2,8 +2,10 @@ package ex2025recipebook
 
 import com.softwaremill.quicklens.*
 import ex2025recipebook.RecipeBook.Delta
+import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap
+import rdts.time.Dots
 
 case class RecipeBook(
     recipes: ObserveRemoveMap[String, Recipe]
@@ -12,7 +14,7 @@ case class RecipeBook(
   def addRecipe(key: String, recipe: Recipe)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using(_.update(key, recipe))
 
-  def deleteRecipe(key: String)(using localUid: LocalUid): Delta =
+  def deleteRecipe(key: String): Delta =
     this.deltaModify(_.recipes).using(_.remove(key))
 
   def updateRecipeTitle(key: String, updatedRecipeTitle: String)(using localUid: LocalUid): Delta = {
@@ -62,7 +64,7 @@ object RecipeBook {
   def apply(): RecipeBook = RecipeBook(ObserveRemoveMap.empty)
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[RecipeBook] = Replica()
+    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] = Replica(DeltaBufferNonRedundant[RecipeBook](List.empty[MetaDelta[RecipeBook]], Dots.empty))
 
     println("--- add recipe")
     val recipe1 = Recipe(

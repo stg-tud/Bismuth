@@ -2,8 +2,10 @@ package ex2025recipebook
 
 import com.softwaremill.quicklens.*
 import ex2025recipebook.Ingredient.{Delta, stringBottom}
+import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Historized, Lattice}
 import rdts.datatypes.LastWriterWins
+import rdts.time.Dots
 
 /** complicated on purpose for more nested ardts
   *
@@ -52,8 +54,8 @@ object Ingredient {
     )
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[Ingredient] = Replica()
-    def ingredient                    = replica1.buffer.result.state
+    val replica1: Replica[Ingredient, DeltaBufferNonRedundant[Ingredient]] = Replica(DeltaBufferNonRedundant[Ingredient](List.empty[MetaDelta[Ingredient]], Dots.empty))
+    def ingredient                    = replica1.state
 
     println("---0")
     val delta0 = Ingredient("Teig", 1.0, "Stk.")
@@ -84,5 +86,8 @@ object Ingredient {
     val delta5 = ingredient.updateAmount(0.0)
     replica1.mod(_ => delta5)
     println("---")
+
+    replica1.show()
+    println(replica1.buffer.getSize)
   }
 }

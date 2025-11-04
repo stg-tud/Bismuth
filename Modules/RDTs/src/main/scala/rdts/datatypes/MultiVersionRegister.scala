@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
@@ -50,5 +50,8 @@ object MultiVersionRegister {
     DecoratedLattice.filter(decorated) { (base, other) =>
       base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
     }
+
+  given historized[A]: Historized[MultiVersionRegister[A]] = (delta, bufferedDelta) =>
+    if delta.removed.contains(Dots.from(bufferedDelta.delta.repr.keys)) then bufferedDelta.getAllDots else Dots.empty
 
 }

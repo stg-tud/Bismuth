@@ -1,6 +1,5 @@
 package rdts.datatypes
 
-import rdts.base.Historized.MetaDelta
 import rdts.datatypes.ObserveRemoveMap.Entry
 import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
 import rdts.time.Dots
@@ -90,31 +89,18 @@ object ObserveRemoveMap {
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
-  given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta: ObserveRemoveMap[K, V], buffer: Iterable[MetaDelta[ObserveRemoveMap[K, V]]]) => {
-    println(s"get redundant dots for OR-Map:\n\tdelta: $delta\n\tbuffer: ${buffer.size} $buffer")
-    // all values that are removed by the new delta
-    // TODO: was passiert bei gleichzeitigen remove und update, wenn update erst später gesehen wird
-    // was passiert wenn nicht causal stability, kann ich die deltas wirklich wegschmeißen?
-    var redundant = buffer.filter(bufferedDelta => delta.removed.contains(bufferedDelta.delta.observed)).getAllDots
-
-    // all entries that are updated by the new delta
-    // the new delta must contain all keys from the delta in the buffer (no partial updates)
-    redundant = redundant.union(
-      buffer.filter(bufferedDelta => bufferedDelta.delta.inner.keys.forall(k => delta.contains(k))) // only look at deltas in the buffer which keys are contained by the new delta
-        .foldLeft(Dots.empty)((dots, bufferedDelta) =>
-          dots.union(
-            bufferedDelta.delta.entries.foldLeft(Dots.empty)((dots, entry) => // iterate over all keys of the delta in the buffer
-              // TODO intersect instead of union
-              dots.union(delta.get(entry._1).get.getRedundantDeltas(
-                buffer.filter(bufferedDelta => bufferedDelta.delta.contains(entry._1)).mapDeltas(_.get(entry._1).get)
-              ))
-            )
+  given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) => {
+    if bufferedDelta.delta.inner.keys.forall(k => delta.contains(k)) then {
+      // only look at deltas in the buffer which keys are contained by the new delta
+      bufferedDelta.delta.entries.toList match {
+        case Nil => Dots.empty
+        case head :: tail =>
+          val redundantDotsAtHead = delta.get(head._1).get.getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.get(head._1).get))
+          tail.foldLeft(redundantDotsAtHead)((dots, entry) => // iterate over all keys of the delta in the buffer
+            dots.intersect(delta.get(entry._1).get.getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.get(head._1).get)))
           )
-        )
-    )
-
-    println(f"\tredundant: $redundant")
-    redundant
+      }
+    } else Dots.empty
   }
 
 }

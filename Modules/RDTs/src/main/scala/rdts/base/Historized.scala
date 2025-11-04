@@ -12,16 +12,16 @@ trait Historized[T] {
 
   /** get all redundant deltas from the buffer
     * @param delta the new delta
-    * @param buffer a buffer containing previously applied deltas
+    * @param bufferedDelta a previously applied delta from the delta buffer
     * @return all dots (ids of deltas) that are subsumed by the new delta
     */
-  def getRedundantDeltas(delta: T, buffer: Iterable[MetaDelta[T]]): Dots
+  def getRedundantDeltas(delta: T, bufferedDelta: MetaDelta[T]): Dots
 
   extension (delta: T) {
 
     @targetName("getRedundantDeltasInfix")
-    inline def getRedundantDeltas(butter: Iterable[MetaDelta[T]]): Dots =
-      Historized.this.getRedundantDeltas(delta, butter)
+    inline def getRedundantDeltas(butteredDelta: MetaDelta[T]): Dots =
+      Historized.this.getRedundantDeltas(delta, butteredDelta)
 
   }
 
@@ -29,22 +29,28 @@ trait Historized[T] {
 
 object Historized {
 
-  case class MetaDelta[T](id: Dots, delta: T, redundantDots: Dots)
+  case class MetaDelta[T](id: Dots, delta: T, redundantDots: Dots) {
+    def getAllDots: Dots = id.union(redundantDots)
+  }
 
   object MetaDelta {
 
     def apply[T](ids: Dots, delta: T): MetaDelta[T] = MetaDelta(ids, delta, Dots.empty)
 
     extension [T](metaDeltas: Iterable[MetaDelta[T]]) {
-      inline def getAllDots: Dots = metaDeltas.foldLeft(Dots.empty)((dots, metaDelta) => dots.union(metaDelta.id.union(metaDelta.redundantDots)))
+      inline def getAllDots: Dots =
+        metaDeltas.foldLeft(Dots.empty)((dots, metaDelta) => dots.union(metaDelta.id.union(metaDelta.redundantDots)))
 
       inline def mapDeltas[A](f: T => A): Iterable[MetaDelta[A]] =
         metaDeltas.map(bufferedDelta => bufferedDelta.copy(delta = f(bufferedDelta.delta)))
+
+      inline def getRedundantDeltas(delta: T)(using Historized[T]): Dots =
+        metaDeltas.foldLeft(Dots.empty)((dots, bufferedDelta) => dots.union(delta.getRedundantDeltas(bufferedDelta)))
     }
   }
 
-  given subsumption[T: Lattice]: Historized[T] = (delta: T, buffer: Iterable[MetaDelta[T]]) =>
-    buffer.filter(bufferedDelta => delta `subsumes` bufferedDelta.delta).getAllDots
+  given subsumption[T: Lattice]: Historized[T] = (delta: T, bufferedDelta: MetaDelta[T]) =>
+    if delta `subsumes` bufferedDelta.delta then bufferedDelta.getAllDots else Dots.empty
 
   inline def derived[T <: Product: {Mirror.ProductOf}]: Historized[T] = productHistorized[T]
 
@@ -63,8 +69,11 @@ object Historized {
 
     private def hist(i: Int): Historized[Any] = historizables.productElement(i).asInstanceOf[Historized[Any]]
 
-    override def getRedundantDeltas(delta: T, buffer: Iterable[MetaDelta[T]]): Dots = {
-      inline def redundantDotsAtZero: Dots = hist(0).getRedundantDeltas(delta.productElement(0), buffer.mapDeltas(_.productElement(0)))
+    override def getRedundantDeltas(delta: T, bufferedDelta: MetaDelta[T]): Dots = {
+      inline def redundantDotsAtZero: Dots = hist(0).getRedundantDeltas(
+        delta.productElement(0),
+        bufferedDelta.copy(delta = bufferedDelta.delta.productElement(0))
+      )
 
       historizables.productArity match {
         case 0 => Dots.empty
@@ -73,7 +82,7 @@ object Historized {
           val redundant = Range(1, historizables.productArity).foldLeft(redundantDotsAtZero) { (dots, i) =>
             dots.intersect(hist(i).getRedundantDeltas(
               delta.productElement(i),
-              buffer.mapDeltas(_.productElement(i))
+              bufferedDelta.copy(delta = bufferedDelta.delta.productElement(i))
             ))
           }
           redundant

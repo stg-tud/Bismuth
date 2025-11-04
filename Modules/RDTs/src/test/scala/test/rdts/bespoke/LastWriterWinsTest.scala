@@ -69,7 +69,7 @@ class LastWriterWinsTest extends munit.FunSuite {
     )
     
     val delta = LastWriterWins.now("Bye Distributed World")
-    val redundantDeltas = delta.getRedundantDeltas(buffer)
+    val redundantDeltas = buffer.getRedundantDeltas(delta)
     
     assertEquals(redundantDeltas, dots)
   }
@@ -94,8 +94,8 @@ class LastWriterWinsTest extends munit.FunSuite {
       MetaDelta(Dots.single(dot1), delta1),
       MetaDelta(Dots.single(dot3), delta3)
     )
-    
-    val redundantDeltas: Dots = delta2.getRedundantDeltas(buffer)
+
+    val redundantDeltas = buffer.getRedundantDeltas(delta2)
 
     assertEquals(redundantDeltas, Dots.single(dot1))
   }

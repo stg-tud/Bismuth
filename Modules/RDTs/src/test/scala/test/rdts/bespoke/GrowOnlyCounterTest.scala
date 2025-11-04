@@ -40,7 +40,7 @@ class GrowOnlyCounterTest extends munit.FunSuite {
     )
 
     val delta = counter.inc()(using localId)
-    val redundantDeltas = delta.getRedundantDeltas(buffer)
+    val redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, dots)
   }
@@ -71,7 +71,7 @@ class GrowOnlyCounterTest extends munit.FunSuite {
       MetaDelta(Dots.single(dot3), delta3)
     )
 
-    val redundantDeltas: Dots = delta2.getRedundantDeltas(buffer)
+    val redundantDeltas = buffer.getRedundantDeltas(delta2)
 
     assertEquals(redundantDeltas, Dots.single(dot1))
   }
@@ -105,7 +105,7 @@ class GrowOnlyCounterTest extends munit.FunSuite {
     )
 
     val delta = counter.inc()(using localId2)
-    val redundantDeltas = delta.getRedundantDeltas(buffer)
+    val redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, Dots.single(dot21))
   }

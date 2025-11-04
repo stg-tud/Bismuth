@@ -2,8 +2,10 @@ package ex2025recipebook
 
 import com.softwaremill.quicklens.*
 import ex2025recipebook.Recipe.Delta
+import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, LastWriterWins}
+import rdts.time.Dots
 
 case class Recipe(
     title: LastWriterWins[String],
@@ -58,8 +60,8 @@ object Recipe {
     Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients))
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[Recipe] = Replica()
-    val replica2: Replica[Recipe] = Replica()
+    val replica1: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
+    val replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
 
     println("---0")
     val delta0 = Recipe("Piza")
@@ -97,10 +99,8 @@ object Recipe {
     Replica.quiescence(replica1, replica2)
     println("---")
 
-    println("fffffinal")
-    println("redundant: replica2 -> [0]")
-    println(f"replica1 (${replica1.replicaId}) redundant: ${replica1.buffer.result.redundantDots}")
-    println(f"replica2 (${replica2.replicaId}) redundant: ${replica2.buffer.result.redundantDots}")
+    replica1.show()
+    replica2.show()
   }
 
 }
