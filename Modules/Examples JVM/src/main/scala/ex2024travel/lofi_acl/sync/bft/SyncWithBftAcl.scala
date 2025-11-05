@@ -89,10 +89,10 @@ class SyncWithBftAcl[RDT](
     antiEntropy.mutateRdt(dot, deltaMutator(rdtReference.get()._2))
   }
 
-  override def createInvitation: BftInvitation = {
-    val connectionString = s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
-    BftInvitation(aclRoot, Ed25519Util.generateNewKeyPair, localIdentity.getPublic, connectionString)
-  }
+  def address: String = s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
+
+  override def createInvitation: BftInvitation =
+    BftInvitation(aclRoot, Ed25519Util.generateNewKeyPair, localIdentity.getPublic, address)
 
   def connect(remoteUser: PublicIdentity, remoteAddress: String): Unit = {
     val hostParts = remoteAddress.split(":")

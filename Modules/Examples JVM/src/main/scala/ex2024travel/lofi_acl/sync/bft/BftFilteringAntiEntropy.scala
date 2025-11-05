@@ -37,6 +37,8 @@ class BftFilteringAntiEntropy[RDT](
     localPublicId,
     MessageReceiver.wrap(this, mb => readFromArray[SyncMsg[RDT]](mb.asArray))
   )
+  
+  def connectedPeers: Set[PublicIdentity] = connectionManager.connectedPeers
 
   private def send(destination: PublicIdentity, syncMsg: SyncMsg[RDT]): Unit = {
     println(s"sending $syncMsg to $destination")
