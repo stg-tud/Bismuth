@@ -70,8 +70,8 @@ class SyncWithMonotonicAcl[RDT](
   }
 
   override def receivedDelta(dot: Dot, delta: RDT): Unit =
-     val _ = rdtReference.updateAndGet { case (dots, rdt) => dots.add(dot) -> rdt.merge(delta) }
-     onDeltaReceive(delta)
+      val _ = rdtReference.updateAndGet { case (dots, rdt) => dots.add(dot) -> rdt.merge(delta) }
+      onDeltaReceive(delta)
 
   def start(): Unit = {
     synchronized {

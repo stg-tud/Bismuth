@@ -17,7 +17,7 @@ class Freedraw(
 
   override def doDraw(g: Graphics2D): Unit =
     for (a, b) <- toLines() do
-       g.drawLine(a.x, a.y, b.x, b.y)
+        g.drawLine(a.x, a.y, b.x, b.y)
 
   override def toLines(): List[(Point, Point)] =
     path zip path.tail

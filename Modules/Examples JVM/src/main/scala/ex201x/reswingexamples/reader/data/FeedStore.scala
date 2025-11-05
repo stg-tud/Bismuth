@@ -22,9 +22,9 @@ class FeedStore(
     addItem.value.filter { item => // #EVT //#EF
       val contains =
         for
-           channel <- item.srcChannel
-           items   <- channels.value get channel
-           if !(items.value contains item)
+            channel <- item.srcChannel
+            items   <- channels.value get channel
+            if !(items.value contains item)
         yield ()
 
       contains.isDefined

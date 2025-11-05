@@ -17,15 +17,15 @@ object PartialReplicationPeerSubsetSolver {
     if contributingPermissions.isEmpty
     then (Set.empty, PermissionTree.empty)
     else
-       val arr                            = contributingPermissions.toArray
-       val (replicas, achievedPermission) =
-         randomSubsetThatAllowsReconstruction(arr, arr.length, Set.empty, PermissionTree.empty, requiredPermissions)
-       // Drop all replicas whose permissions are <= than another replica from the set.
-       // This is still not necessarily a minimal set (e.g., A can write a1,a2; B can write a1;b1; C can write a2;b1).
-       val maximalReplicas = replicas.filter(r1 =>
-         replicas.forall(r2 => (r2 `eq` r1) || contributingPermissions(r1) <= contributingPermissions(r2))
-       )
-       (maximalReplicas, achievedPermission)
+        val arr                            = contributingPermissions.toArray
+        val (replicas, achievedPermission) =
+          randomSubsetThatAllowsReconstruction(arr, arr.length, Set.empty, PermissionTree.empty, requiredPermissions)
+        // Drop all replicas whose permissions are <= than another replica from the set.
+        // This is still not necessarily a minimal set (e.g., A can write a1,a2; B can write a1;b1; C can write a2;b1).
+        val maximalReplicas = replicas.filter(r1 =>
+          replicas.forall(r2 => (r2 `eq` r1) || contributingPermissions(r1) <= contributingPermissions(r2))
+        )
+        (maximalReplicas, achievedPermission)
   }
 
   @tailrec
@@ -52,13 +52,13 @@ object PartialReplicationPeerSubsetSolver {
     if progress == progressWithPermissionsOfReplica // No progress, don't pick new replica
     then randomSubsetThatAllowsReconstruction(contributingPermissions, length - 1, includedRemotes, progress, goal)
     else // Progress with picked replica, so include replica
-       randomSubsetThatAllowsReconstruction(
-         contributingPermissions,
-         length - 1,
-         includedRemotes + pickedReplica,
-         progressWithPermissionsOfReplica,
-         goal
-       )
+        randomSubsetThatAllowsReconstruction(
+          contributingPermissions,
+          length - 1,
+          includedRemotes + pickedReplica,
+          progressWithPermissionsOfReplica,
+          goal
+        )
   }
 
 }

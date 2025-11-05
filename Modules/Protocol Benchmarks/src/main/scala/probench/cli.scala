@@ -53,10 +53,10 @@ object cli {
       case Failure(ex) =>
         println(s"Failed to connect to $connection, retrying in $delay ms, retries: $tries")
         if tries > 0 then
-           Thread.sleep(delay)
-           addRetryingLatentConnection(dataManager, connection, delay, tries - 1)
+            Thread.sleep(delay)
+            addRetryingLatentConnection(dataManager, connection, delay, tries - 1)
         else
-           throw ex
+            throw ex
     }
 
   }
@@ -69,77 +69,77 @@ object cli {
     val ipAndPort = """(.+):(\d+)""".r
 
     given ipAndPortParser: ArgumentValueParser[(String, Int)] with
-       override def parse(args: List[String]): Result[(String, Int)] =
-         args match {
-           case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
-           case _                           => Err("not a valid ip:port")
-         }
+        override def parse(args: List[String]): Result[(String, Int)] =
+          args match {
+            case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
+            case _                           => Err("not a valid ip:port")
+          }
 
-       def descriptor: de.rmgk.options.Descriptor = Descriptor("ip:port", "ip:port pair")
+        def descriptor: de.rmgk.options.Descriptor = Descriptor("ip:port", "ip:port pair")
     end ipAndPortParser
 
     given uidParser: ArgumentValueParser[Uid] with
-       override def parse(args: List[String]): Result[Uid] =
-         args match {
-           case string :: rest => Result.Ok(Uid.predefined(string), rest)
-           case _              => Result.Err("not a valid uid", descriptor)
-         }
+        override def parse(args: List[String]): Result[Uid] =
+          args match {
+            case string :: rest => Result.Ok(Uid.predefined(string), rest)
+            case _              => Result.Err("not a valid uid", descriptor)
+          }
 
-       override def descriptor: Descriptor = Descriptor("uid", "uid")
+        override def descriptor: Descriptor = Descriptor("uid", "uid")
 
     end uidParser
 
     given benchmarkModeParser: ArgumentValueParser[BenchmarkMode] with
-       override def parse(args: List[String]): Result[BenchmarkMode] =
-         args match {
-           case "fixed" :: rest => Result.Ok(BenchmarkMode.Fixed, rest)
-           case "timed" :: rest => Result.Ok(BenchmarkMode.Timed, rest)
-           case _               => Result.Err(s"not a valid benchmark mode: $args", descriptor)
-         }
+        override def parse(args: List[String]): Result[BenchmarkMode] =
+          args match {
+            case "fixed" :: rest => Result.Ok(BenchmarkMode.Fixed, rest)
+            case "timed" :: rest => Result.Ok(BenchmarkMode.Timed, rest)
+            case _               => Result.Err(s"not a valid benchmark mode: $args", descriptor)
+          }
 
-       override def descriptor: Descriptor = Descriptor("mode", "fixed|timed")
+        override def descriptor: Descriptor = Descriptor("mode", "fixed|timed")
 
     end benchmarkModeParser
 
     given benchmarkOpTypeParser: ArgumentValueParser[BenchmarkOpType] with
-       override def parse(args: List[String]): Result[BenchmarkOpType] =
-         args match {
-           case "read" :: rest  => Result.Ok(BenchmarkOpType.Read, rest)
-           case "write" :: rest => Result.Ok(BenchmarkOpType.Write, rest)
-           case "mixed" :: rest => Result.Ok(BenchmarkOpType.Mixed, rest)
-           case _               => Result.Err("not a valid benchmark opType", descriptor)
-         }
+        override def parse(args: List[String]): Result[BenchmarkOpType] =
+          args match {
+            case "read" :: rest  => Result.Ok(BenchmarkOpType.Read, rest)
+            case "write" :: rest => Result.Ok(BenchmarkOpType.Write, rest)
+            case "mixed" :: rest => Result.Ok(BenchmarkOpType.Mixed, rest)
+            case _               => Result.Err("not a valid benchmark opType", descriptor)
+          }
 
-       override def descriptor: Descriptor = Descriptor("opType", "read|write|mixed")
+        override def descriptor: Descriptor = Descriptor("opType", "read|write|mixed")
 
     end benchmarkOpTypeParser
 
     given deltaStorageTypeParser: ArgumentValueParser[DeltaStorage.Type] with
-       val discarding: Regex = """discarding\((\d+)\)""".r
-       val merging: Regex    = """merging\((\d+)\)""".r
+        val discarding: Regex = """discarding\((\d+)\)""".r
+        val merging: Regex    = """merging\((\d+)\)""".r
 
-       override def parse(args: List[String]): Result[DeltaStorage.Type] =
-         args match {
-           case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
-           case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
-           case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
-           case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
-           case _                           => Result.Err("not a valid delta storage type", descriptor)
-         }
+        override def parse(args: List[String]): Result[DeltaStorage.Type] =
+          args match {
+            case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
+            case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
+            case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
+            case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
+            case _                           => Result.Err("not a valid delta storage type", descriptor)
+          }
 
-       override def descriptor: Descriptor =
-         Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")
+        override def descriptor: Descriptor =
+          Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")
     end deltaStorageTypeParser
 
     given booleanParser: ArgumentValueParser[Boolean] with
-       override def parse(args: List[String]): Result[Boolean] =
-         args match {
-           case "true" :: rest  => Result.Ok(true, rest)
-           case "false" :: rest => Result.Ok(false, rest)
-           case _               => Result.Err("not a valid boolean", descriptor)
-         }
+        override def parse(args: List[String]): Result[Boolean] =
+          args match {
+            case "true" :: rest  => Result.Ok(true, rest)
+            case "false" :: rest => Result.Ok(false, rest)
+            case _               => Result.Err("not a valid boolean", descriptor)
+          }
 
-       override def descriptor: Descriptor = Descriptor("boolean", "true|false")
+        override def descriptor: Descriptor = Descriptor("boolean", "true|false")
     end booleanParser
 
     class TupleArgumentValueParser[T](@unused /* TODO: this seems wrong … */ preselect: String => Boolean)(using
@@ -147,11 +147,11 @@ object cli {
     ) extends ArgumentValueParser[(T, T)] {
       override def parse(args: List[String]): Result[(T, T)] =
         avp.parse(args) match
-           case Result.Ok(first, remaining) =>
-             avp.parse(remaining) match
-                case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
-                case _: Result.Err                => Result.Err("not a valid tuple", descriptor)
-           case _: Result.Err => Result.Err("not a valid tuple", descriptor)
+            case Result.Ok(first, remaining) =>
+              avp.parse(remaining) match
+                  case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
+                  case _: Result.Err                => Result.Err("not a valid tuple", descriptor)
+            case _: Result.Err => Result.Err("not a valid tuple", descriptor)
 
       override def descriptor: Descriptor = avp.descriptor.mapSpec(s => s"$s $s")
     }
@@ -355,25 +355,25 @@ object cli {
           )
 
           mode.value match
-             case BenchmarkMode.Timed =>
-               val (min, max) = kvRange.value
-               client.benchmarkTimed(
-                 mode = opType.value,
-                 warmup = warmup.value,
-                 measurement = measurement.value,
-                 min = min,
-                 max = max,
-                 blockSize = blockSize.value
-               )
-             case BenchmarkMode.Fixed =>
-               val (min, max) = kvRange.value
-               client.benchmarkFixed(
-                 mode = opType.value,
-                 warmup = warmup.value,
-                 measurement = measurement.value,
-                 min = min,
-                 max = max
-               )
+              case BenchmarkMode.Timed =>
+                val (min, max) = kvRange.value
+                client.benchmarkTimed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max,
+                  blockSize = blockSize.value
+                )
+              case BenchmarkMode.Fixed =>
+                val (min, max) = kvRange.value
+                client.benchmarkFixed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max
+                )
 
           abort.closeRequest = true
           executor.shutdownNow()
@@ -382,25 +382,25 @@ object cli {
           val client = EtcdClient(name.value, endpoints.value, logTimings.value)
 
           mode.value match
-             case BenchmarkMode.Timed =>
-               val (min, max) = kvRange.value
-               client.benchmarkTimed(
-                 mode = opType.value,
-                 warmup = warmup.value,
-                 measurement = measurement.value,
-                 min = min,
-                 max = max,
-                 blockSize = blockSize.value
-               )
-             case BenchmarkMode.Fixed =>
-               val (min, max) = kvRange.value
-               client.benchmarkFixed(
-                 mode = opType.value,
-                 warmup = warmup.value,
-                 measurement = measurement.value,
-                 min = min,
-                 max = max
-               )
+              case BenchmarkMode.Timed =>
+                val (min, max) = kvRange.value
+                client.benchmarkTimed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max,
+                  blockSize = blockSize.value
+                )
+              case BenchmarkMode.Fixed =>
+                val (min, max) = kvRange.value
+                client.benchmarkFixed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max
+                )
 
           executor.shutdownNow()
         },

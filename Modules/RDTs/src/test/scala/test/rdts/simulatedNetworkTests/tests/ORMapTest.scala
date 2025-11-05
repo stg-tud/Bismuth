@@ -15,7 +15,7 @@ class ORMapTest extends munit.ScalaCheckSuite {
   property("contains") {
     given LocalUid = base.LocalUid.predefined("test")
     given Bottom[Int] with
-       def empty = Int.MinValue
+        def empty = Int.MinValue
     forAll { (entries: List[Int]) =>
       val orMap = entries.foldLeft(ObserveRemoveMap.empty[Int, Int]) { (curr, elem) =>
         curr.update(elem, elem)

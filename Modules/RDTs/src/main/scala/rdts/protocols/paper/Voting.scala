@@ -20,9 +20,9 @@ case class Voting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
   def decision(using Participants): Agreement[A] =
     if hasDuplicateVotes then Invalid
     else
-       getLeadingValue match
-          case Some(value, count) if count >= majority => Decided(value)
-          case _                                       => Undecided
+        getLeadingValue match
+            case Some(value, count) if count >= majority => Decided(value)
+            case _                                       => Undecided
 
   // helper functions
   def majority(using Participants): Int =

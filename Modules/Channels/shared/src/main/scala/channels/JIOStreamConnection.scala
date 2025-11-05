@@ -20,11 +20,11 @@ class JioInputStreamAdapter(in: InputStream) {
 
   def loopReceive(handler: Callback[MessageBuffer]): Unit = {
     try
-       while !closed do
-          handler.succeed(readNext())
+        while !closed do
+            handler.succeed(readNext())
     catch
-       case ioe: IOException =>
-         handler.fail(ioe)
+        case ioe: IOException =>
+          handler.fail(ioe)
   }
 
   def close(): Unit =

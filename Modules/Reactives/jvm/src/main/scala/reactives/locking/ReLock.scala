@@ -59,7 +59,7 @@ final class ReLock[InterTurn]() {
       else target
 
     if !owner.compareAndSet(oldOwner, trueTarget) then
-       assert(assertion = false, s"$this is held by $owner but tried to transfer by $oldOwner (to $target)")
+        assert(assertion = false, s"$this is held by $owner but tried to transfer by $oldOwner (to $target)")
 
     if trueTarget != null then trueTarget.addLock(this)
   }

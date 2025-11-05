@@ -9,10 +9,10 @@ import scala.util.{Failure, Success}
 object TestUtil {
 
   def printErrors[T](cb: T => Unit): Callback[T] =
-     case Success(mb) => cb(mb)
-     case Failure(ex) => ex match
-          case ex: IOException if ex.getCause.isInstanceOf[InterruptedException] =>
-          case ex: ClosedChannelException                                        =>
-          case ex: NoMoreDataException                                           =>
-          case ex                                                                => ex.printStackTrace()
+      case Success(mb) => cb(mb)
+      case Failure(ex) => ex match
+            case ex: IOException if ex.getCause.isInstanceOf[InterruptedException] =>
+            case ex: ClosedChannelException                                        =>
+            case ex: NoMoreDataException                                           =>
+            case ex                                                                => ex.printStackTrace()
 }

@@ -4,8 +4,8 @@ import rdts.base.{Lattice, LocalUid, Uid}
 
 class TestReplica[A](val replicaId: LocalUid, var anon: A) {
   def apply(delta: A)(using Lattice[A]): TestReplica[A] =
-     anon = anon `merge` delta
-     this
+      anon = anon `merge` delta
+      this
 
   def mod(f: A => LocalUid ?=> A)(using Lattice[A]): TestReplica[A] =
     apply(f(anon)(using replicaId))

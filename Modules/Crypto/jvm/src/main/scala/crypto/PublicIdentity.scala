@@ -18,8 +18,8 @@ object PublicIdentity {
     PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(publicKey))
 
   def fromRawPublicKeyBytes(pubKeyBytes: Array[Byte]): PublicIdentity =
-     require(pubKeyBytes.length == 32)
-     PublicIdentity(base64Encoder.encodeToString(pubKeyBytes))
+      require(pubKeyBytes.length == 32)
+      PublicIdentity(base64Encoder.encodeToString(pubKeyBytes))
 
   // def fromUid(uid: Uid): PublicIdentity = PublicIdentity(uid.delegate)
 

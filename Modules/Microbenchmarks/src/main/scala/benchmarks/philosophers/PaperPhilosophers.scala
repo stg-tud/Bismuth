@@ -185,7 +185,7 @@ trait NoTopper extends IndividualCounts {
       }
     lock1.lock(); lock2.lock(); lock3.lock()
     try
-       f
+        f
     finally {
       lock1.unlock(); lock2.unlock(); lock3.unlock()
     }

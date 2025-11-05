@@ -2,109 +2,109 @@ import datatypes.ORSet
 import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
 
 class ORSetTest extends munit.FunSuite:
-   test("add element to empty set") {
-     var set = ORSet[String]()
-     set = set.merge(set.add("x"))
+    test("add element to empty set") {
+      var set = ORSet[String]()
+      set = set.merge(set.add("x"))
 
-     assertEquals(set.getElements, Set("x"))
-   }
+      assertEquals(set.getElements, Set("x"))
+    }
 
-   test("remove element from empty set") {
-     var set = ORSet[String]()
-     set = set.merge(set.remove("x"))
+    test("remove element from empty set") {
+      var set = ORSet[String]()
+      set = set.merge(set.remove("x"))
 
-     assertEquals(set.getElements, Set.empty)
-   }
+      assertEquals(set.getElements, Set.empty)
+    }
 
-   test("remove existing element") {
-     var set = ORSet[String]()
-     set = set.merge(set.add("x"))
-     set = set.merge(set.remove("x"))
+    test("remove existing element") {
+      var set = ORSet[String]()
+      set = set.merge(set.add("x"))
+      set = set.merge(set.remove("x"))
 
-     assertEquals(set.getElements, Set.empty)
-   }
+      assertEquals(set.getElements, Set.empty)
+    }
 
-   test("synchronise 2 sets: example 1") {
-     var set1 = ORSet[String]()
-     set1 = set1.merge(set1.add("x"))
-     set1 = set1.merge(set1.remove("y"))
+    test("synchronise 2 sets: example 1") {
+      var set1 = ORSet[String]()
+      set1 = set1.merge(set1.add("x"))
+      set1 = set1.merge(set1.remove("y"))
 
-     var set2 = ORSet[String]()
-     set2 = set2.merge(set2.add("y"))
-     set2 = set2.merge(set2.remove("x"))
+      var set2 = ORSet[String]()
+      set2 = set2.merge(set2.add("y"))
+      set2 = set2.merge(set2.remove("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     assertEquals(set1.getElements, Set("x", "y"))
-     assertEquals(set1.getElements, set2.getElements)
-   }
+      assertEquals(set1.getElements, Set("x", "y"))
+      assertEquals(set1.getElements, set2.getElements)
+    }
 
-   test("synchronise 2 sets: example 2") {
-     var set1 = ORSet[String]()
-     set1 = set1.merge(set1.add("x"))
-     set1 = set1.merge(set1.remove("y"))
+    test("synchronise 2 sets: example 2") {
+      var set1 = ORSet[String]()
+      set1 = set1.merge(set1.add("x"))
+      set1 = set1.merge(set1.remove("y"))
 
-     var set2 = ORSet[String]()
-     set2 = set2.merge(set2.add("y"))
-     set2 = set2.merge(set2.remove("x"))
+      var set2 = ORSet[String]()
+      set2 = set2.merge(set2.add("y"))
+      set2 = set2.merge(set2.remove("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     set1 = set1.merge(set1.remove("y"))
-     set2 = set2.merge(set2.remove("x"))
+      set1 = set1.merge(set1.remove("y"))
+      set2 = set2.merge(set2.remove("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     assertEquals(set1.getElements, Set.empty)
-     assertEquals(set1.getElements, set2.getElements)
-   }
+      assertEquals(set1.getElements, Set.empty)
+      assertEquals(set1.getElements, set2.getElements)
+    }
 
-   test("synchronise 2 sets: example 3") {
-     var set1 = ORSet[String]()
-     set1 = set1.merge(set1.add("x"))
-     set1 = set1.merge(set1.remove("y"))
+    test("synchronise 2 sets: example 3") {
+      var set1 = ORSet[String]()
+      set1 = set1.merge(set1.add("x"))
+      set1 = set1.merge(set1.remove("y"))
 
-     var set2 = ORSet[String]()
-     set2 = set2.merge(set2.add("y"))
-     set2 = set2.merge(set2.remove("x"))
+      var set2 = ORSet[String]()
+      set2 = set2.merge(set2.add("y"))
+      set2 = set2.merge(set2.remove("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     set1 = set1.merge(set1.remove("y"))
-     set2 = set2.merge(set2.remove("x"))
+      set1 = set1.merge(set1.remove("y"))
+      set2 = set2.merge(set2.remove("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     set1 = set1.merge(set1.add("y"))
-     set2 = set2.merge(set2.add("x"))
+      set1 = set1.merge(set1.add("y"))
+      set2 = set2.merge(set2.add("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     assertEquals(set1.getElements, Set("x", "y"))
-     assertEquals(set1.getElements, set2.getElements)
+      assertEquals(set1.getElements, Set("x", "y"))
+      assertEquals(set1.getElements, set2.getElements)
 
-   }
+    }
 
-   test("synchronise 2 sets: example 4") {
-     var set1 = ORSet[String]()
-     set1 = set1.merge(set1.add("x"))
-     set1 = set1.merge(set1.remove("x"))
+    test("synchronise 2 sets: example 4") {
+      var set1 = ORSet[String]()
+      set1 = set1.merge(set1.add("x"))
+      set1 = set1.merge(set1.remove("x"))
 
-     var set2 = ORSet[String]()
-     set2 = set2.merge(set2.add("x"))
+      var set2 = ORSet[String]()
+      set2 = set2.merge(set2.add("x"))
 
-     set1 = set1.merge(set2)
-     set2 = set2.merge(set1)
+      set1 = set1.merge(set2)
+      set2 = set2.merge(set1)
 
-     assertEquals(set1.getElements, Set("x"))
-     assertEquals(set1.getElements, set2.getElements)
-   }
+      assertEquals(set1.getElements, Set("x"))
+      assertEquals(set1.getElements, set2.getElements)
+    }
 
 /*test("synchronise 2 sets with riblt") {
   var set1 = ORSet[String]()

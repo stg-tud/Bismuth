@@ -8,7 +8,7 @@ class P2PX509TrustManager extends X509TrustManager {
   /** Verifies that the certificate is signed by subject unique identifier of self-signed certificate. */
   private def verifyP2PCertificate(certificate: X509Certificate): Unit = {
     if "Ed25519" != certificate.getSigAlgName then
-       throw CertificateException("Only Ed25519 is supported as signature algo")
+        throw CertificateException("Only Ed25519 is supported as signature algo")
     if certificate.getVersion != 3 then throw CertificateException("Only X509v3 Certificates are supported")
 
     // Validates and verifies the certificate

@@ -40,16 +40,16 @@ class SyncWithBftAcl[RDT](
   // Only change using grantPermissions!
   private val localAcl: AtomicReference[(BftAclOpGraph, BftAcl)] = {
     aclRoot.deserialize match
-       case Failure(exception)    => throw exception
-       case Success((sig, aclOp)) =>
-         val opGraph = BftAclOpGraph(sig, Map(sig -> aclOp), Set(sig))
-         AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
+        case Failure(exception)    => throw exception
+        case Success((sig, aclOp)) =>
+          val opGraph = BftAclOpGraph(sig, Map(sig -> aclOp), Set(sig))
+          AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
   }
 
   def grantPermissions(affectedUser: PublicIdentity, realm: PermissionTree, typeOfPermission: Operation): Unit = {
     val (read, write) = typeOfPermission match
-       case rdts.filters.Operation.READ  => (realm, PermissionTree.empty)
-       case rdts.filters.Operation.WRITE => (realm, realm)
+        case rdts.filters.Operation.READ  => (realm, PermissionTree.empty)
+        case rdts.filters.Operation.WRITE => (realm, realm)
 
     localAcl.synchronized {
       val old @ (opGraph, acl) = localAcl.get()
@@ -68,19 +68,19 @@ class SyncWithBftAcl[RDT](
     localAcl.synchronized {
       val old @ (opGraph, acl) = localAcl.get()
       opGraph.receive(serializedAclOp) match
-         case Left(missingSignatures) => return missingSignatures
-         case Right(updatedOpGraph)   =>
-           val updatedAcl = updatedOpGraph.reconstruct
-           if !localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl))
-           then // Sanity check, the lock should prevent this
-              throw IllegalStateException("Could not apply update to ACL reference")
+          case Left(missingSignatures) => return missingSignatures
+          case Right(updatedOpGraph)   =>
+            val updatedAcl = updatedOpGraph.reconstruct
+            if !localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl))
+            then // Sanity check, the lock should prevent this
+                throw IllegalStateException("Could not apply update to ACL reference")
 
-           opGraph.ops(serializedAclOp.signatureAsString) match {
-             case RemovalOp(_, removed, _) => antiEntropy.removePeer(removed)
-             case _                        => ()
-           }
+            opGraph.ops(serializedAclOp.signatureAsString) match {
+              case RemovalOp(_, removed, _) => antiEntropy.removePeer(removed)
+              case _                        => ()
+            }
 
-           Set.empty
+            Set.empty
     }
   }
 
@@ -101,8 +101,8 @@ class SyncWithBftAcl[RDT](
   }
 
   override def receivedDelta(dot: Dot, delta: RDT): Unit =
-     val _ = rdtReference.updateAndGet { case (dots, rdt) => dots.add(dot) -> rdt.merge(delta) }
-     onDeltaReceive(delta)
+      val _ = rdtReference.updateAndGet { case (dots, rdt) => dots.add(dot) -> rdt.merge(delta) }
+      onDeltaReceive(delta)
 
   def start(): Unit = {
     synchronized {

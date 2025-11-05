@@ -75,10 +75,10 @@ trait ParRP extends Levelbased {
         val reactive = toVisit.pop()
         val owner    = reactive.state.lock.getOwner
         if (priorKey ne null) && (owner eq priorKey) then
-           throw new IllegalStateException(s"$this tried to lock reactive $reactive owned by its parent $priorKey")
+            throw new IllegalStateException(s"$this tried to lock reactive $reactive owned by its parent $priorKey")
         if owner ne key then {
           if reactive.state.lock.tryLock(key) eq key then
-             reactive.state.outgoing.foreach { offer }
+              reactive.state.outgoing.foreach { offer }
           else {
             key.reset()
             backoff.backoff()
@@ -118,10 +118,10 @@ trait ParRP extends Levelbased {
         if source.state.lock.isWriteLock then {
           key.lockKeychain(_.removeFallthrough(owner))
           if
-             !sink.state.incoming.exists { inc =>
-               val lock = inc.state.lock
-               lock.isOwner(owner) && lock.isWriteLock
-             }
+              !sink.state.incoming.exists { inc =>
+                val lock = inc.state.lock
+                lock.isOwner(owner) && lock.isWriteLock
+              }
           then owner.turn.forget(sink)
         }
       } else super.drop(source, sink)

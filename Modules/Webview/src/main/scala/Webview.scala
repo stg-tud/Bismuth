@@ -14,27 +14,27 @@ object Webview {
   def main(args: Array[String]): Unit = {
 
     if args.isEmpty then
-       println(s"requires a path to the html as a first argument")
-       return
+        println(s"requires a path to the html as a first argument")
+        return
 
     def receiveCallback(state: TodoRepState): Unit = {
       println(s"executing receive callback")
       println(state)
       try
-         Files.write(
-           Path.of("webviewoutputtest.json"),
-           writeToArray(state),
-           StandardOpenOption.CREATE,
-           StandardOpenOption.APPEND
-         )
-         Files.write(
-           Path.of("webviewoutputtest.json"),
-           "\n".getBytes,
-           StandardOpenOption.CREATE,
-           StandardOpenOption.APPEND
-         )
+          Files.write(
+            Path.of("webviewoutputtest.json"),
+            writeToArray(state),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.APPEND
+          )
+          Files.write(
+            Path.of("webviewoutputtest.json"),
+            "\n".getBytes,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.APPEND
+          )
       catch
-         case ex: Exception => ex.printStackTrace()
+          case ex: Exception => ex.printStackTrace()
       ()
     }
 

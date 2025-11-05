@@ -31,10 +31,10 @@ given JsonValueCodec[PrivateKey] = new JsonValueCodec[PrivateKey] {
 }
 
 class RIBLTSyncWithThreadsTest extends munit.FunSuite:
-   override def munitTimeout: Duration = 5.minutes
+    override def munitTimeout: Duration = 5.minutes
 
-   test("basic") {
-     /* var crdt0 = ORSet[String]()
+    test("basic") {
+      /* var crdt0 = ORSet[String]()
      crdt0 = crdt0.merge(crdt0.add("hello"))
      crdt0 = crdt0.merge(crdt0.add("hola"))
      crdt0 = crdt0.merge(crdt0.add("Gday Mate"))
@@ -100,4 +100,4 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
        crdt1afterSync.elements.keySet,
        crdt0.elements.keySet ++ crdt1.elements.keySet ++ crdt2.elements.keySet
      ) */
-   }
+    }

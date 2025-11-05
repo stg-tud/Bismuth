@@ -37,9 +37,9 @@ object Codecs {
 
   // dummy codec to prevent compilation error. We do not want to serialize source files
   given sourceFileC: JsonValueCodec[SourceFile] = new JsonValueCodec[SourceFile]:
-     override def decodeValue(in: JsonReader, default: SourceFile): SourceFile = default
-     override def encodeValue(x: SourceFile, out: JsonWriter): Unit            = ()
-     override def nullValue: SourceFile                                        = null
+      override def decodeValue(in: JsonReader, default: SourceFile): SourceFile = default
+      override def encodeValue(x: SourceFile, out: JsonWriter): Unit            = ()
+      override def nullValue: SourceFile                                        = null
 
   given targTListC: JsonValueCodec[List[TArgT]] = JsonCodecMaker.make(
     CodecMakerConfig

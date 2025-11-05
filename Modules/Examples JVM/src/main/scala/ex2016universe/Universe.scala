@@ -18,13 +18,13 @@ object Universe {
     val outfile = s"universe-${reactives.SelectedScheduler.candidate.scheduler.schedulerName}.csv"
 
     if genCsv then
-       Files.write(
-         Paths.get(outfile),
-         s""""Repetition","Threads","Score","Param: engineName","Benchmark","Param: height","Param: width","Param: animals","Param: plants"${"\n"}""".getBytes(),
-         StandardOpenOption.WRITE,
-         StandardOpenOption.CREATE
-       )
-       ()
+        Files.write(
+          Paths.get(outfile),
+          s""""Repetition","Threads","Score","Param: engineName","Benchmark","Param: height","Param: width","Param: animals","Param: plants"${"\n"}""".getBytes(),
+          StandardOpenOption.WRITE,
+          StandardOpenOption.CREATE
+        )
+        ()
 
     for repetition <- 0 to repetitions do {
       println(s"rep: $repetition")

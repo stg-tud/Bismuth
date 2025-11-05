@@ -30,7 +30,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-       aec.mod(_.insert(0, elem)(using aec.replicaID))
+        aec.mod(_.insert(0, elem)(using aec.replicaID))
     // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("UPD", "100"))
@@ -60,7 +60,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
     val lots = List.tabulate(100)(_.toString)
 
     lots.foreach: elem =>
-       aec.mod(_.insertAt(0, elem))
+        aec.mod(_.insertAt(0, elem))
     // aec.modn(_.insertAll(using aec.replicaID)(0, lots))
 
     assertEquals(aec.data.toList, lots.reverse ::: List("00", "100"))

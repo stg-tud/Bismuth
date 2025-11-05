@@ -24,11 +24,11 @@ object ConversionTest {
     * @param lens the conversion lens from Celsius
     */
   enum TempConversion(val lens: BijectiveLens[Double, Double]):
-     // All Conversions are given from Celsius
-     case C extends TempConversion(new NeutralLens)
-     case K extends TempConversion(new AddLens(274.15))
-     case L extends TempConversion(new AddLens(253))
-     case F extends TempConversion(new MulLens(1.8).compose(new AddLens(32.0)))
+      // All Conversions are given from Celsius
+      case C extends TempConversion(new NeutralLens)
+      case K extends TempConversion(new AddLens(274.15))
+      case L extends TempConversion(new AddLens(253))
+      case F extends TempConversion(new MulLens(1.8).compose(new AddLens(32.0)))
   end TempConversion
 
   /** Creates a lens which converts between any supported units */

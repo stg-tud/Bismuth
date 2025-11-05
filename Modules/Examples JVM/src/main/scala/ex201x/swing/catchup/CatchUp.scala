@@ -93,7 +93,7 @@ class CatchUp {
           g.setColor(java.awt.Color.DARK_GRAY)
           g.fill(t.now(catchBox))
           if t.now(caught) then
-             g.setColor(java.awt.Color.RED)
+              g.setColor(java.awt.Color.RED)
           g.fill(t.now(upBox))
           g.setColor(java.awt.Color.WHITE)
           g.setFont(myFont)

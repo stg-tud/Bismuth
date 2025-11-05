@@ -209,8 +209,8 @@ class DeltaBufferBenchmark {
   def baselineBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, Int]] =
-       given Lattice[Int] = math.max
-       Lattice.derived
+        given Lattice[Int] = math.max
+        Lattice.derived
     val deltaBuffer =
       DeltaBufferEverything[ObserveRemoveMap[Int, Int]](List.empty[MetaDelta[ObserveRemoveMap[Int, Int]]])
 
@@ -227,8 +227,8 @@ class DeltaBufferBenchmark {
   def nonRedundantBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, Int]] =
-       given Lattice[Int] = math.max
-       Lattice.derived
+        given Lattice[Int] = math.max
+        Lattice.derived
     val deltaBuffer =
       DeltaBufferNonRedundant[ObserveRemoveMap[Int, Int]](List.empty[MetaDelta[ObserveRemoveMap[Int, Int]]], Dots.empty)
 
@@ -245,8 +245,8 @@ class DeltaBufferBenchmark {
   def subsumedBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, Int]] =
-       given Lattice[Int] = math.max
-       Lattice.derived
+        given Lattice[Int] = math.max
+        Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, Int]](List.empty[MetaDelta[ObserveRemoveMap[Int, Int]]])
 

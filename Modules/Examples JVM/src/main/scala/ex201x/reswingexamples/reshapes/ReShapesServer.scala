@@ -17,7 +17,7 @@ object ReShapesServer {
       new Thread(new CommandThread(commandThreadPort)).start()
       new Thread(new UpdateThread(updateThreadPort)).start()
     } else
-       println("invalid number of arguments please enter two port numbers")
+        println("invalid number of arguments please enter two port numbers")
   }
 
   /** Registers a client to the server if not already registered. */
@@ -27,7 +27,7 @@ object ReShapesServer {
       println("ReshapesServer register new client (%s, %d)".format(inetAddress, port))
       println("\t registered clients: ")
       for client <- clients do
-         println("\t  (%s, %d)".format(client._1, client._2))
+          println("\t  (%s, %d)".format(client._1, client._2))
       println()
       sendToClient((inetAddress, port))
       ()
@@ -43,8 +43,8 @@ object ReShapesServer {
   def sendUpdateToClients(shapes: Elem, sender: (InetAddress, Int)): Unit = {
     currentShapes = shapes
     for client <- clients do
-       if client != sender && !sendToClient(client) then
-          removeClient(client)
+        if client != sender && !sendToClient(client) then
+            removeClient(client)
   }
 
   /** Sends shapes to a client.

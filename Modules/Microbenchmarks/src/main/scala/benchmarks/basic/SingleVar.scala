@@ -28,7 +28,7 @@ class SingleVar {
     current = false
     source = engineT.Var(current)
     if reactives.SelectedScheduler.candidate.scheduler == reactives.scheduler.LevelbasedVariants.unmanaged then
-       lock = new ReentrantReadWriteLock()
+        lock = new ReentrantReadWriteLock()
   }
 
   @Benchmark

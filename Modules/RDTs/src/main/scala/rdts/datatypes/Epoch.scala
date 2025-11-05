@@ -22,10 +22,10 @@ object Epoch {
   def empty[E: Bottom]: Epoch[E] = Epoch(0, Bottom[E].empty)
 
   given bottom[E: Bottom]: Bottom[Epoch[E]] with
-     override def empty: Epoch[E] = Epoch.empty
+      override def empty: Epoch[E] = Epoch.empty
 
   given decomposeInstance[E: Decompose]: Decompose[Epoch[E]] =
-     case Epoch(c, v) => Decompose.decompose(v).map(Epoch(c, _))
+      case Epoch(c, v) => Decompose.decompose(v).map(Epoch(c, _))
 
   given latticeInstance[E: Lattice as E]: Lattice[Epoch[E]] = {
     given Lattice[Time] = Lattice.assertEquals

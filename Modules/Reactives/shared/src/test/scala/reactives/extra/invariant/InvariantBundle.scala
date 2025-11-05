@@ -33,9 +33,9 @@ trait InvariantBundle extends TopoBundle {
     override val getMessage: String = {
       val chainErrorMessage =
         if causalErrorChains.nonEmpty then
-           "The error was caused by these update chains:\n\n" ++ causalErrorChains.map(_.map(r =>
-             s"${r.info} with value: ${r.state.value}"
-           ).mkString("\n↓\n")).mkString("\n---\n")
+            "The error was caused by these update chains:\n\n" ++ causalErrorChains.map(_.map(r =>
+              s"${r.info} with value: ${r.state.value}"
+            ).mkString("\n↓\n")).mkString("\n---\n")
         else "The error was not triggered by a change."
 
       s"${t.getMessage} in reactive ${reactive.info}\n$chainErrorMessage\n"
@@ -165,9 +165,9 @@ trait InvariantBundle extends TopoBundle {
 
     def evaluateInvariants(reactives: Seq[ReSource], initialWrites: Set[ReSource]): Unit = {
       for
-         reactive <- reactives
-         inv      <- reactive.state.invariants
-         if !inv.validate(reactive.state.value)
+          reactive <- reactives
+          inv      <- reactive.state.invariants
+          if !inv.validate(reactive.state.value)
       do {
         throw new InvariantViolationException(
           new IllegalArgumentException(s"${reactive.state.value} violates invariant ${inv.description}"),

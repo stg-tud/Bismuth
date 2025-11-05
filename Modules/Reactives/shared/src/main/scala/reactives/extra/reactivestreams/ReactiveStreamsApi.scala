@@ -17,9 +17,9 @@ class RESubscriber[T](evt: Evt[T]) extends Subscriber[T] {
     synchronized {
       Objects.requireNonNull(thrw)
       thrw match
-         case ex: Exception =>
-           PlanTransactionScope.search.planTransaction(evt) { implicit turn => evt.admitPulse(Pulse.Exceptional(ex)) }
-         case other => throw other
+          case ex: Exception =>
+            PlanTransactionScope.search.planTransaction(evt) { implicit turn => evt.admitPulse(Pulse.Exceptional(ex)) }
+          case other => throw other
     }
   override def onSubscribe(s: Subscription): Unit =
     synchronized {

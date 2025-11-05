@@ -78,10 +78,10 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
     }
 
   def disjunct(other: Dots): Boolean =
-     val keys = internal.keySet intersect other.internal.keySet
-     keys.forall { k =>
-       rangeAt(k) `disjunct` other.rangeAt(k)
-     }
+      val keys = internal.keySet intersect other.internal.keySet
+      keys.forall { k =>
+        rangeAt(k) `disjunct` other.rangeAt(k)
+      }
 
   def union(other: Dots): Dots = Dots.lattice.merge(this, other)
 
@@ -125,23 +125,23 @@ object Dots {
 
   given partialOrder: PartialOrdering[Dots] with {
     override def tryCompare(x: Dots, y: Dots): Option[Int] =
-       var leftLTE  = true
-       var rightLTE = true
-       (x.internal.keySet concat y.internal.keySet).forall { k =>
-         ArrayRanges.partialOrder.tryCompare(x.rangeAt(k), y.rangeAt(k)) match
-            case None =>
-              leftLTE = false
-              rightLTE = false
-            case Some(-1) =>
-              rightLTE = false
-            case Some(1) =>
-              leftLTE = false
-            case Some(0) =>
-            case Some(_) => throw IllegalStateException("does not happen")
-         end match
-         leftLTE || rightLTE
-       }
-       ArrayRanges.leftRightToOrder(leftLTE, rightLTE)
+        var leftLTE  = true
+        var rightLTE = true
+        (x.internal.keySet concat y.internal.keySet).forall { k =>
+          ArrayRanges.partialOrder.tryCompare(x.rangeAt(k), y.rangeAt(k)) match
+              case None =>
+                leftLTE = false
+                rightLTE = false
+              case Some(-1) =>
+                rightLTE = false
+              case Some(1) =>
+                leftLTE = false
+              case Some(0) =>
+              case Some(_) => throw IllegalStateException("does not happen")
+          end match
+          leftLTE || rightLTE
+        }
+        ArrayRanges.leftRightToOrder(leftLTE, rightLTE)
 
     override def lteq(x: Dots, y: Dots): Boolean = x <= y
   }

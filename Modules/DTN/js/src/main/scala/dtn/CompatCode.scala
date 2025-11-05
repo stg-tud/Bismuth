@@ -16,13 +16,13 @@ object CompatCode {
 }
 
 extension [U >: Unit](fut: Future[U])
-   def recoverAndLog(): Future[U] =
-     fut.recover(_.printStackTrace())
+    def recoverAndLog(): Future[U] =
+      fut.recover(_.printStackTrace())
 
 extension [U >: Unit](x: Try[U])
-   def recoverAndLog(): Try[U] =
-     x.recover(_.printStackTrace())
+    def recoverAndLog(): Try[U] =
+      x.recover(_.printStackTrace())
 
 extension [E <: Exception](e: E)
-   def log(): Unit =
-     e.printStackTrace()
+    def log(): Unit =
+      e.printStackTrace()

@@ -234,9 +234,9 @@ object ViperBackend {
         case TupleType(inner)     => inner.toList.map(typeToViper(_)(using ctx))
       }
     if argNames.length != argTypes.length then
-       throw ViperCompilationException(
-         s"Tried to compile interaction but number of arguments does not match interaction body (expected ${argTypes.length} based on type signature but got ${argNames.length}). argTypes: $argTypes, argnames: $argNames"
-       )
+        throw ViperCompilationException(
+          s"Tried to compile interaction but number of arguments does not match interaction body (expected ${argTypes.length} based on type signature but got ${argNames.length}). argTypes: $argTypes, argnames: $argNames"
+        )
     val argsString =
       (argNames zip argTypes)
         .map((name, `type`) => s"$name: ${`type`}")
@@ -273,9 +273,9 @@ object ViperBackend {
       lastExpression match {
         case t: TTuple =>
           if t.factors.length != interaction.modifies.length then
-             throw ViperCompilationException(
-               s"Interaction $name has invalid executes part. Expected tuple with ${interaction.modifies.length} entries as result but only ${t.factors.length} were given: $t"
-             )
+              throw ViperCompilationException(
+                s"Interaction $name has invalid executes part. Expected tuple with ${interaction.modifies.length} entries as result but only ${t.factors.length} were given: $t"
+              )
           (interaction.modifies zip t.factors.toList)
             .map((reactive, assignment) =>
               s"graph.$reactive := ${expressionToViper(assignment)}"
@@ -283,9 +283,9 @@ object ViperBackend {
             .mkString("\n")
         case t =>
           if interaction.modifies.length != 1 then
-             throw ViperCompilationException(
-               s"Interaction $name has invalid executes part. Expected tuple with ${interaction.modifies.length} entries as result but only a simple arg was given: $t"
-             )
+              throw ViperCompilationException(
+                s"Interaction $name has invalid executes part. Expected tuple with ${interaction.modifies.length} entries as result but only a simple arg was given: $t"
+              )
           s"graph.${interaction.modifies.head} := ${expressionToViper(t)}"
       }
 
@@ -369,9 +369,9 @@ object ViperBackend {
           }
         // insert method args
         if argumentNames.length != methodArgs.length then
-           throw ViperCompilationException(
-             s"Interaction body $term has wrong arity. It should accept the same number of arguments as the executes part of the interaction: $methodArgs"
-           )
+            throw ViperCompilationException(
+              s"Interaction body $term has wrong arity. It should accept the same number of arguments as the executes part of the interaction: $methodArgs"
+            )
         (argumentNames zip methodArgs).foldLeft(reactivesInserted) {
           case (body, (from, to)) => rename(from, to, body)
         }

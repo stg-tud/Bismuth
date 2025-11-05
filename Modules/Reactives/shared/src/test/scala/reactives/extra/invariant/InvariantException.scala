@@ -11,9 +11,9 @@ case class InvariantViolationException(
   override val getMessage: String = {
     val chainErrorMessage =
       if causalErrorChains.nonEmpty then
-         "The error was caused by these update chains:\n\n" ++ causalErrorChains.map(_.map(r =>
-           s"${r} with value: ${r}"
-         ).mkString("\n↓\n")).mkString("\n---\n")
+          "The error was caused by these update chains:\n\n" ++ causalErrorChains.map(_.map(r =>
+            s"${r} with value: ${r}"
+          ).mkString("\n↓\n")).mkString("\n---\n")
       else "The error was not triggered by a change."
 
     s"${t.getMessage} in reactive ${reactive}\n$chainErrorMessage\n"

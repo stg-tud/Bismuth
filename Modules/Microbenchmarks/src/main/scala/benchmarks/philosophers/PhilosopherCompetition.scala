@@ -28,9 +28,9 @@ class PhilosopherCompetition {
     while {
       val seating: Seating = myBlock(ThreadLocalRandom.current().nextInt(myBlock.length))
       if comp.manualLocking then
-         manualLocking(comp)(seating)
+          manualLocking(comp)(seating)
       else
-         tryUpdateCycle(comp)(seating)
+          tryUpdateCycle(comp)(seating)
     } do bo.backoff()
 
   }

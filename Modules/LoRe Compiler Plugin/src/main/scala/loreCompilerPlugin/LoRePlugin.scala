@@ -78,19 +78,19 @@ class LoRePhase extends PluginPhase {
       var programTermList: List[Term] = List()
 
       tree.rhs match
-         // TypeDef trees include a Template tree, which then again includes the actual tree of definitions.
-         // That is to say, the last parameter contains the ValDefs, DefDefs etc, of the object in question.
-         case Template(_, _, _, objectContents: List[Tree[?]]) =>
-           // Process each individual part of this LoRe program
-           // First entry is some internal compiler entry, so drop it
-           objectContents.drop(1).foreach { (t: Tree[?]) =>
-             // Generate LoRe term for this tree
-             val loreTerm: List[Term] = createLoReTermFromTree(t, programTermList)
+          // TypeDef trees include a Template tree, which then again includes the actual tree of definitions.
+          // That is to say, the last parameter contains the ValDefs, DefDefs etc, of the object in question.
+          case Template(_, _, _, objectContents: List[Tree[?]]) =>
+            // Process each individual part of this LoRe program
+            // First entry is some internal compiler entry, so drop it
+            objectContents.drop(1).foreach { (t: Tree[?]) =>
+              // Generate LoRe term for this tree
+              val loreTerm: List[Term] = createLoReTermFromTree(t, programTermList)
 
-             // Add generated LoRe term to this LoreProgram's term list
-             programTermList = programTermList :++ loreTerm
-           }
-         case _ => ()
+              // Add generated LoRe term to this LoreProgram's term list
+              programTermList = programTermList :++ loreTerm
+            }
+          case _ => ()
 
       // Add the finalized term list for this LoreProgram to the phase's overall term list
       if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
@@ -185,20 +185,20 @@ class LoRePhase extends PluginPhase {
         programsWithErrors = programsWithErrors :+ programName
 
         diagnosticsNotification match
-           // No diagnostics were read before the error occurred: No error info known.
-           case None       => report.error("An unknown critical Dafny compilation error occurred.")
-           case Some(diag) =>
-             val errors: List[Diagnostic] = diag.params.diagnostics.filter { d =>
-               d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
-             }
+            // No diagnostics were read before the error occurred: No error info known.
+            case None       => report.error("An unknown critical Dafny compilation error occurred.")
+            case Some(diag) =>
+              val errors: List[Diagnostic] = diag.params.diagnostics.filter { d =>
+                d.severity.isDefined && d.severity.get == DiagnosticSeverity.Error
+              }
 
-             val errorPlural: String = if errors.size > 1 then "errors" else "error"
+              val errorPlural: String = if errors.size > 1 then "errors" else "error"
 
-             // Unfortunately, these errors will not have Scala positions to report cleanly to.
-             report.error(
-               s"""${errors.size} Dafny compilation $errorPlural occurred:
+              // Unfortunately, these errors will not have Scala positions to report cleanly to.
+              report.error(
+                s"""${errors.size} Dafny compilation $errorPlural occurred:
                  |${errors.map(e => e.message).mkString("\n")}""".stripMargin
-             )
+              )
       } else {
         // Regular processing of verification results
         val erroneousVerifiables: List[NamedVerifiable] =
@@ -220,38 +220,38 @@ class LoRePhase extends PluginPhase {
           }
 
           diagnosticsNotification match
-             case None =>
-               // No diagnostics received, so no error details known
-               report.error(
-                 s"""The following verifiables in $programName could not be verified:
+              case None =>
+                // No diagnostics received, so no error details known
+                report.error(
+                  s"""The following verifiables in $programName could not be verified:
                   |${unverifiableNames.mkString("\n")}""".stripMargin
-               )
-             case Some(diag) =>
-               // Order of diagnostics and named verifiables lists is the same so we can associate by zipping
-               diag.params.diagnostics.zip(unverifiableNames).foreach { (d, n) =>
-                 d.relatedInformation match
-                    case None =>
-                      // No direct Scala position known
-                      report.error(s"A verification error occurred in $n:\n${d.message}")
-                    case Some(info) =>
-                      info.foreach { i =>
-                        // If the message doesn't start with an opening bracket, it's not an embedded error,
-                        // but a different error output by the Dafny verifier, so take the string as it is.
-                        // If it does, however, then the message has to be de-escaped to be parsed properly.
-                        val embeddedError: DafnyEmbeddedLoReError =
-                          if i.message.startsWith("{") then
-                             upickleRead[DafnyEmbeddedLoReError](i.message.replace("\\\"", "\""))
-                          else DafnyEmbeddedLoReError(i.message, None)
+                )
+              case Some(diag) =>
+                // Order of diagnostics and named verifiables lists is the same so we can associate by zipping
+                diag.params.diagnostics.zip(unverifiableNames).foreach { (d, n) =>
+                  d.relatedInformation match
+                      case None =>
+                        // No direct Scala position known
+                        report.error(s"A verification error occurred in $n:\n${d.message}")
+                      case Some(info) =>
+                        info.foreach { i =>
+                          // If the message doesn't start with an opening bracket, it's not an embedded error,
+                          // but a different error output by the Dafny verifier, so take the string as it is.
+                          // If it does, however, then the message has to be de-escaped to be parsed properly.
+                          val embeddedError: DafnyEmbeddedLoReError =
+                            if i.message.startsWith("{") then
+                                upickleRead[DafnyEmbeddedLoReError](i.message.replace("\\\"", "\""))
+                            else DafnyEmbeddedLoReError(i.message, None)
 
-                        embeddedError.position match
-                           case None =>
-                             // No position embedded, so only message known
-                             report.error(s"A verification error occurred in $n:\n${embeddedError.message}")
-                           case Some(pos) =>
-                             val sourcePos: SourcePosition = SourcePosition(file, new Span(pos))
-                             report.error(embeddedError.message, sourcePos)
-                      }
-               }
+                          embeddedError.position match
+                              case None =>
+                                // No position embedded, so only message known
+                                report.error(s"A verification error occurred in $n:\n${embeddedError.message}")
+                              case Some(pos) =>
+                                val sourcePos: SourcePosition = SourcePosition(file, new Span(pos))
+                                report.error(embeddedError.message, sourcePos)
+                        }
+                }
         }
       }
 

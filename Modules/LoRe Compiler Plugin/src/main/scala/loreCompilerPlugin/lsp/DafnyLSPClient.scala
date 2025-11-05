@@ -237,33 +237,33 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     // Continue reading messages while the read message isn't a symbol status notification
     // unrelated to the desired file, or any of the named verifiables are not on status 4/5 yet
     while !latestReadMessage.isInstanceOf[SymbolStatusNotification]
-       || !latestReadMessage.asInstanceOf[SymbolStatusNotification].params.uri.endsWith(name)
-       || latestReadMessage.asInstanceOf[SymbolStatusNotification].params.namedVerifiables.exists(nv =>
-         nv.status != VerificationStatus.Error && nv.status != VerificationStatus.Correct
-       )
+        || !latestReadMessage.asInstanceOf[SymbolStatusNotification].params.uri.endsWith(name)
+        || latestReadMessage.asInstanceOf[SymbolStatusNotification].params.namedVerifiables.exists(nv =>
+          nv.status != VerificationStatus.Error && nv.status != VerificationStatus.Correct
+        )
     do {
       // If a diagnostics message was read, save the message to return it alongside the result later.
       // If a compilation status notification with a critical error appears, stop waiting for the verification result
       // (it will not be sent in this case) and return an empty result plus any diagnostics possibly read so far.
       latestReadMessage match
-         case diag: PublishDiagnosticsNotification =>
-           if diag.params.uri.endsWith(name) then {
-             if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
-               println("Diagnostics notification read while waiting for verification result.")
-             }
-             diagnosticsNotification = Some(diag)
-           }
-         case comp: CompilationStatusNotification =>
-           if comp.params.uri.endsWith(name) then {
-             comp.params.status match
-                case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
-                  if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
-                    println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
-                  }
-                  return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
-                case _ => ()
-           }
-         case _ => ()
+          case diag: PublishDiagnosticsNotification =>
+            if diag.params.uri.endsWith(name) then {
+              if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
+                println("Diagnostics notification read while waiting for verification result.")
+              }
+              diagnosticsNotification = Some(diag)
+            }
+          case comp: CompilationStatusNotification =>
+            if comp.params.uri.endsWith(name) then {
+              comp.params.status match
+                  case s @ (InternalException | ParsingFailed | ResolutionFailed) =>
+                    if logLevel.isLevelOrHigher(LogLevel.Sparse) then {
+                      println(s"Dafny ${s.code} compilation error: Stopping wait for verification result.")
+                    }
+                    return (SymbolStatusNotification(method = "", params = null), diagnosticsNotification)
+                  case _ => ()
+            }
+          case _ => ()
 
       latestReadMessage = readMessage()
     }
@@ -288,7 +288,7 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
     while !msg.isInstanceOf[LSPNotification] || msg.asInstanceOf[LSPNotification].method != method
     do
-       msg = readMessage()
+        msg = readMessage()
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then {
       println(s"Message using method $method found:\n${upickleWrite(msg)}")
@@ -308,7 +308,7 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
     while !msg.isInstanceOf[LSPResponse] || msg.asInstanceOf[LSPResponse].id != id
     do
-       msg = readMessage()
+        msg = readMessage()
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Response with id $id found:\n${upickleWrite(msg)}")
     msg.asInstanceOf[LSPResponse] // Cast is safe because of above check
@@ -351,10 +351,10 @@ object DafnyLSPClient {
     if id.nonEmpty then jsonObject("id") = id.get
 
     params.length match
-       case 0 => jsonObject("params") = Obj() // Use empty json object when no params are specified
-       case 1 if params.head._1 == "_primitive" =>
-         jsonObject("params") = params.head._2 // Primitive params (strings, etc)
-       case _ => jsonObject("params") = params // Complex params are carried over as-is
+        case 0 => jsonObject("params") = Obj() // Use empty json object when no params are specified
+        case 1 if params.head._1 == "_primitive" =>
+          jsonObject("params") = params.head._2 // Primitive params (strings, etc)
+        case _ => jsonObject("params") = params // Complex params are carried over as-is
 
     // Render ujson object to string
     jsonObject.toString

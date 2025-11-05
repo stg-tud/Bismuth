@@ -23,8 +23,8 @@ object Parser {
     */
   private def calcSourcePos(l: Term, r: Term): Option[SourcePos] =
     for
-       sl <- l.sourcePos
-       sr <- r.sourcePos
+        sl <- l.sourcePos
+        sr <- r.sourcePos
     yield sl.copy(end = sr.end)
   // helper definition for parsing sequences of expressions with operators as strings
   private def parseSeq(factor: P[Term], separator: P[String]) =

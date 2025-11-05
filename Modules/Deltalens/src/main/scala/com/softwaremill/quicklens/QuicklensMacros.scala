@@ -74,56 +74,56 @@ object QuicklensMacros {
       /** adds some path to the current tree */
       def add(symbols: Seq[PathSymbol]): PathTree = {
         this match
-           case PathTree.Empty          => symbols.toPathTree
-           case PathTree.Node(children) =>
-             symbols match
-                case Nil           => this
-                case symbol :: Nil =>
-                  PathTree.Node {
-                    if !children.exists(_._1 `equiv` symbol)
-                    then children :+ (symbol -> Seq(PathTree.Empty))
-                    else
-                       children.map {
-                         case (sym, trees) if sym `equiv` symbol =>
-                           sym -> (trees :+ PathTree.Empty)
-                         case c => c
-                       }
-                  }
-                case symbol :: tail =>
-                  PathTree.Node {
-                    if !children.exists(_._1 `equiv` symbol)
-                    then children :+ (symbol -> Seq(tail.toPathTree))
-                    else
-                       children.map {
-                         case (sym, trees) if sym `equiv` symbol =>
-                           sym -> (trees.init ++ {
-                             trees.last match
-                                case PathTree.Empty => Seq(PathTree.Empty, tail.toPathTree)
-                                case node           => Seq(node.add(tail))
-                           })
-                         case c => c
-                       }
-                  }
+            case PathTree.Empty          => symbols.toPathTree
+            case PathTree.Node(children) =>
+              symbols match
+                  case Nil           => this
+                  case symbol :: Nil =>
+                    PathTree.Node {
+                      if !children.exists(_._1 `equiv` symbol)
+                      then children :+ (symbol -> Seq(PathTree.Empty))
+                      else
+                          children.map {
+                            case (sym, trees) if sym `equiv` symbol =>
+                              sym -> (trees :+ PathTree.Empty)
+                            case c => c
+                          }
+                    }
+                  case symbol :: tail =>
+                    PathTree.Node {
+                      if !children.exists(_._1 `equiv` symbol)
+                      then children :+ (symbol -> Seq(tail.toPathTree))
+                      else
+                          children.map {
+                            case (sym, trees) if sym `equiv` symbol =>
+                              sym -> (trees.init ++ {
+                                trees.last match
+                                    case PathTree.Empty => Seq(PathTree.Empty, tail.toPathTree)
+                                    case node           => Seq(node.add(tail))
+                              })
+                            case c => c
+                          }
+                    }
       }
     }
 
     object PathTree:
-       def empty: PathTree = Empty
+        def empty: PathTree = Empty
 
     extension (symbols: Seq[PathSymbol])
-       def toPathTree: PathTree = symbols match
-          case Nil              => PathTree.Empty
-          case (symbol :: tail) => PathTree.Node(Seq(symbol -> Seq(tail.toPathTree)))
+        def toPathTree: PathTree = symbols match
+            case Nil              => PathTree.Empty
+            case (symbol :: tail) => PathTree.Node(Seq(symbol -> Seq(tail.toPathTree)))
 
     enum PathSymbol {
       case Field(name: String)
       case FunctionDelegate(name: String, givn: Term, typeTree: TypeTree, args: List[Term])
 
       def equiv(other: PathSymbol): Boolean = (this, other) match
-         case (Field(name1), Field(name2)) => name1 == name2
-         case (FunctionDelegate(name1, _, typeTree1, args1), FunctionDelegate(name2, _, typeTree2, args2)) =>
-           name1 == name2 && typeTree1.tpe == typeTree2.tpe && args1 == args2
-         case _ => false
+          case (Field(name1), Field(name2)) => name1 == name2
+          case (FunctionDelegate(name1, _, typeTree1, args1), FunctionDelegate(name2, _, typeTree2, args2)) =>
+            name1 == name2 && typeTree1.tpe == typeTree2.tpe && args1 == args2
+          case _ => false
     }
 
     def toPath(tree: Tree, focus: Expr[S => A]): Seq[PathSymbol] = {
@@ -216,14 +216,14 @@ object QuicklensMacros {
           if !produceDelta
           then obj
           else
-             obj.tpe.widen.asType match
-                case '[τ] => '{
-                    ${
-                      Expr.summon[Bottom[τ]].getOrElse(
-                        report.errorAndAbort(s"Could not find implicit for type ${Type.show[Bottom[τ]]}")
-                      )
-                    }.empty
-                  }.asTerm
+              obj.tpe.widen.asType match
+                  case '[τ] => '{
+                      ${
+                        Expr.summon[Bottom[τ]].getOrElse(
+                          report.errorAndAbort(s"Could not find implicit for type ${Type.show[Bottom[τ]]}")
+                        )
+                      }.empty
+                    }.asTerm
         }
 
         val argsMap: Map[Int, Term] = fields.map { (field, trees) =>
@@ -251,9 +251,9 @@ object QuicklensMacros {
         }.toList
 
         if constructorTree.termParamss.drop(1).exists(_.params.exists(!_.symbol.flags.is(Flags.Implicit))) then
-           report.errorAndAbort(
-             "Implementation limitation: Only the first parameter list of the modified case classes can be non-implicit."
-           )
+            report.errorAndAbort(
+              "Implementation limitation: Only the first parameter list of the modified case classes can be non-implicit."
+            )
 
         typeParams match {
           // if the object's type is parametrised, we need to call .copy with the same type parameters
@@ -292,7 +292,7 @@ object QuicklensMacros {
           If(ifCond, ifThen, ifElse)
         }
       } else
-         report.errorAndAbort(s"Unsupported source object: must be a case class or sealed trait, but got: $objSymbol")
+          report.errorAndAbort(s"Unsupported source object: must be a case class or sealed trait, but got: $objSymbol")
     }
 
     def applyFunctionDelegate(
@@ -302,24 +302,24 @@ object QuicklensMacros {
         f: PathSymbol.FunctionDelegate,
         tree: PathTree
     ): Term =
-       val defdefSymbol = Symbol.newMethod(
-         owner,
-         "$anonfun",
-         MethodType(List("x"))(_ => List(f.typeTree.tpe), _ => f.typeTree.tpe)
-       )
-       val fMethod = termMethodByNameUnsafe(f.givn, f.name)
-       val fun     = TypeApply(
-         Select(f.givn, fMethod),
-         List(f.typeTree)
-       )
-       val defdefStatements = DefDef(
-         defdefSymbol,
-         (_: @unchecked) match
-            case List(List(x)) => Some(mapToCopy(defdefSymbol, mod, x.asExpr.asTerm, tree))
-       )
-       val closure = Closure(Ref(defdefSymbol), None)
-       val block   = Block(List(defdefStatements), closure)
-       Apply(fun, List(objTerm, block) ++ f.args.map(_.changeOwner(owner)))
+        val defdefSymbol = Symbol.newMethod(
+          owner,
+          "$anonfun",
+          MethodType(List("x"))(_ => List(f.typeTree.tpe), _ => f.typeTree.tpe)
+        )
+        val fMethod = termMethodByNameUnsafe(f.givn, f.name)
+        val fun     = TypeApply(
+          Select(f.givn, fMethod),
+          List(f.typeTree)
+        )
+        val defdefStatements = DefDef(
+          defdefSymbol,
+          (_: @unchecked) match
+              case List(List(x)) => Some(mapToCopy(defdefSymbol, mod, x.asExpr.asTerm, tree))
+        )
+        val closure = Closure(Ref(defdefSymbol), None)
+        val block   = Block(List(defdefStatements), closure)
+        Apply(fun, List(objTerm, block) ++ f.args.map(_.changeOwner(owner)))
 
     def accumulateToCopy(
         owner: Symbol,

@@ -58,8 +58,8 @@ object CalculusLike {
     def requiresReev(reSource: ReSource.of[State]): Boolean = {
       if FScheduler.currentPropagation == null then false
       else
-         FScheduler.currentPropagation.nn.isReady(reSource) &&
-         FScheduler.currentPropagation.nn.isOutdated(reSource)
+          FScheduler.currentPropagation.nn.isReady(reSource) &&
+          FScheduler.currentPropagation.nn.isOutdated(reSource)
     }
 
   }
@@ -70,8 +70,8 @@ object CalculusLike {
     override def observe(obs: Observation): Unit                                         = obs.execute()
 
     override def preconditionTicket: DynamicTicket[State] = new DynamicTicket[State](this):
-       override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
-       override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
+        override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
+        override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
   }
 
   object FScheduler

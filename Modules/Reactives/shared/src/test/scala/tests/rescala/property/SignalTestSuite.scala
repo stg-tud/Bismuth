@@ -44,7 +44,7 @@ class SignalTestSuite extends munit.ScalaCheckSuite {
 
   given signalsGen: Arbitrary[List[Signal[Int]]] = Arbitrary(
     for
-       i <- Gen.oneOf(0 to 1000)
+        i <- Gen.oneOf(0 to 1000)
     yield {
       val root    = Var(0)
       val signals = new ListBuffer[Signal[Int]]()
@@ -60,7 +60,7 @@ class SignalTestSuite extends munit.ScalaCheckSuite {
   test("level Is Correctly Computed") {
     forAll { (signals: List[Signal[Int]]) =>
       for signal <- signals do
-         assertLevel(signal, signal.readValueOnce)
+          assertLevel(signal, signal.readValueOnce)
     }
   }
 

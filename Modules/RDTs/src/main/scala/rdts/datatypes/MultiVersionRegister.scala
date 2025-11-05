@@ -45,11 +45,11 @@ object MultiVersionRegister {
   }
 
   given lattice[A]: Lattice[MultiVersionRegister[A]] =
-     given Lattice[A] = Lattice.assertEquals
-     val decorated    = Lattice.derived[MultiVersionRegister[A]]
-     DecoratedLattice.filter(decorated) { (base, other) =>
-       base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
-     }
+      given Lattice[A] = Lattice.assertEquals
+      val decorated    = Lattice.derived[MultiVersionRegister[A]]
+      DecoratedLattice.filter(decorated) { (base, other) =>
+        base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
+      }
 
   given historized[A]: Historized[MultiVersionRegister[A]] = (delta, bufferedDelta) =>
     if delta.removed.contains(Dots.from(bufferedDelta.delta.repr.keys)) then bufferedDelta.getAllDots else Dots.empty

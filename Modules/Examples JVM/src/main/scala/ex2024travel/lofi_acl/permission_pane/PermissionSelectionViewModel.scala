@@ -22,11 +22,11 @@ class PermissionSelectionViewModel private (
       parent.foreach { p =>
         // switched to selected and parent is not selected and parent is not indeterminate
         if newVal && !p.readSelected.value && !p.readIndeterminate.value then
-           p.readIndeterminate.value = true
+            p.readIndeterminate.value = true
         if !newVal && !p.readSelected.value && p.readIndeterminate.value then {
           // Check if all siblings are unset and not indeterminate
           if p.children.values.forall(c => !c.readSelected.value && !c.readIndeterminate.value) then
-             p.readIndeterminate.value = false
+              p.readIndeterminate.value = false
         }
       }
     }
@@ -54,11 +54,11 @@ class PermissionSelectionViewModel private (
       parent.foreach { p =>
         // switched to selected and parent is not selected and parent is not indeterminate
         if newVal && !p.writeSelected.value && !p.writeIndeterminate.value then
-           p.writeIndeterminate.value = true
+            p.writeIndeterminate.value = true
         if !newVal && !p.writeSelected.value && p.writeIndeterminate.value then {
           // Check if all siblings are unset and not indeterminate
           if p.children.values.forall(c => !c.writeSelected.value && !c.writeIndeterminate.value) then
-             p.writeIndeterminate.value = false
+              p.writeIndeterminate.value = false
         }
       }
     }

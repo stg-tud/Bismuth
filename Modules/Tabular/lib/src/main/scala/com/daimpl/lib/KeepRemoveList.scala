@@ -38,12 +38,12 @@ case class KeepRemoveList[E] private (
   def insertAt(i: Int, e: E)(using LocalUid): C = {
     val newDot = observed.nextDot(LocalUid.replicaId)
     findInsertIndex(i) match
-       case None        => KeepRemoveList.empty
-       case Some(glIdx) =>
-         val nOrder   = order.map(_.insertAt(glIdx, newDot))
-         val nPayload = Map(newDot -> LastWriterWins.now(e))
-         val nFlag    = Map(newDot -> EnableWinsFlag(Dots.single(newDot), Dots.empty))
-         KeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
+        case None        => KeepRemoveList.empty
+        case Some(glIdx) =>
+          val nOrder   = order.map(_.insertAt(glIdx, newDot))
+          val nPayload = Map(newDot -> LastWriterWins.now(e))
+          val nFlag    = Map(newDot -> EnableWinsFlag(Dots.single(newDot), Dots.empty))
+          KeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
   def append(using LocalUid)(e: E): C = insertAt(sizeIncludingDead, e)
@@ -59,13 +59,13 @@ case class KeepRemoveList[E] private (
     }
 
   def purgeTombstones(): C =
-     val dead = flags.collect { case (d, f) if !f.read => d }.toSet
-     if dead.isEmpty then KeepRemoveList.empty
-     else
-        val nOrder    = order.map(_.without(dead))
-        val nPayloads = payloads -- dead
-        val nFlags    = flags -- dead
-        KeepRemoveList(order = nOrder, payloads = nPayloads, flags = nFlags)
+      val dead = flags.collect { case (d, f) if !f.read => d }.toSet
+      if dead.isEmpty then KeepRemoveList.empty
+      else
+          val nOrder    = order.map(_.without(dead))
+          val nPayloads = payloads -- dead
+          val nFlags    = flags -- dead
+          KeepRemoveList(order = nOrder, payloads = nPayloads, flags = nFlags)
 
   private def isAlive(d: Dot): Boolean = flags.get(d).forall(_.read)
 
@@ -86,21 +86,21 @@ case class KeepRemoveList[E] private (
 
   private def updateFlag(idx: Int)(f: EnableWinsFlag => EnableWinsFlag): C =
     findRealIndex(idx) match
-       case None          => KeepRemoveList.empty
-       case Some(realIdx) =>
-         order.value.toLazyList.lift(realIdx) match
-            case None    => KeepRemoveList.empty
-            case Some(d) =>
-              val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
-              val next = f(cur)
-              if cur == next then KeepRemoveList.empty else KeepRemoveList(flags = Map(d -> next))
+        case None          => KeepRemoveList.empty
+        case Some(realIdx) =>
+          order.value.toLazyList.lift(realIdx) match
+              case None    => KeepRemoveList.empty
+              case Some(d) =>
+                val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
+                val next = f(cur)
+                if cur == next then KeepRemoveList.empty else KeepRemoveList(flags = Map(d -> next))
 }
 
 object KeepRemoveList {
   def empty[E]: KeepRemoveList[E] = KeepRemoveList(Epoch.empty, Map.empty, Map.empty)
 
   given bottom[E]: Bottom[KeepRemoveList[E]] with
-     def empty: KeepRemoveList[E] = KeepRemoveList.empty
+      def empty: KeepRemoveList[E] = KeepRemoveList.empty
 
   given lattice[E]: Lattice[KeepRemoveList[E]] = Lattice.derived
 }

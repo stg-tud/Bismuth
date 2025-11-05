@@ -97,40 +97,40 @@ class TravelPlanModel(
     val newTravelPlan = state
     // Title
     if !delta.title.isEmpty then
-       title.value = newTravelPlan.title.read
+        title.value = newTravelPlan.title.read
 
     // Bucket List Entries
     val bucketListEntriesInDelta = delta.bucketList.inner
     if bucketListEntriesInDelta.nonEmpty then
-       val newIds = bucketListEntriesInDelta.keySet.diff(bucketListIdSet)
-       val props  = bucketListProperties.updateAndGet(oldProps =>
-         oldProps ++ newIds.map(id => id -> StringProperty(""))
-       )
-       bucketListEntriesInDelta.foreach { (id, entry) =>
-         props(id).value = entry.value.read
-       }
-       bucketListIdList.addAll(newIds)
-       bucketListIdSet = bucketListIdSet ++ newIds
+        val newIds = bucketListEntriesInDelta.keySet.diff(bucketListIdSet)
+        val props  = bucketListProperties.updateAndGet(oldProps =>
+          oldProps ++ newIds.map(id => id -> StringProperty(""))
+        )
+        bucketListEntriesInDelta.foreach { (id, entry) =>
+          props(id).value = entry.value.read
+        }
+        bucketListIdList.addAll(newIds)
+        bucketListIdSet = bucketListIdSet ++ newIds
 
     // Expenses
     val expenseEntriesInDelta = delta.expenses.inner
     if expenseEntriesInDelta.nonEmpty then
-       val newIds = expenseEntriesInDelta.keySet.diff(expenseIdSet)
-       val props  = expenseListProperties.updateAndGet(oldProps =>
-         oldProps ++ newIds.map(id =>
-           id -> (StringProperty(""), StringProperty("0.00 €"), StringProperty(""))
-         )
-       )
-       expenseEntriesInDelta.foreach { (id, _) =>
-         val (description, amount, comment) = props(id)
-         // TODO: Would fail on removal of entries
-         val curValue = newTravelPlan.expenses.get(id).get
-         description.value = curValue.description.read.getOrElse("")
-         amount.value = curValue.amount.read.getOrElse("0.00 €")
-         comment.value = curValue.comment.read.getOrElse("")
+        val newIds = expenseEntriesInDelta.keySet.diff(expenseIdSet)
+        val props  = expenseListProperties.updateAndGet(oldProps =>
+          oldProps ++ newIds.map(id =>
+            id -> (StringProperty(""), StringProperty("0.00 €"), StringProperty(""))
+          )
+        )
+        expenseEntriesInDelta.foreach { (id, _) =>
+          val (description, amount, comment) = props(id)
+          // TODO: Would fail on removal of entries
+          val curValue = newTravelPlan.expenses.get(id).get
+          description.value = curValue.description.read.getOrElse("")
+          amount.value = curValue.amount.read.getOrElse("0.00 €")
+          comment.value = curValue.comment.read.getOrElse("")
 
-       }
-       expenseIdList.addAll(newIds)
-       expenseIdSet = expenseIdSet ++ newIds
+        }
+        expenseIdList.addAll(newIds)
+        expenseIdSet = expenseIdSet ++ newIds
   }
 }

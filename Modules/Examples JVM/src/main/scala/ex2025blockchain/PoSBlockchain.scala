@@ -42,8 +42,8 @@ case class PoSBlockchain[T](inner: Map[String, Block[T]]) extends Blockchain[T, 
     val roundNumber          = stakeList.length
 
     if roundNumber > 0 then
-       val index = (stakeHolders * randomPrime) % roundNumber
-       stakeList(index.toInt)
+        val index = (stakeHolders * randomPrime) % roundNumber
+        stakeList(index.toInt)
     else Uid.zero // roundNumber == 1 => blockchain only contains genesis block
   }
 

@@ -11,7 +11,7 @@ object Helper {
   def dummyKeyValuePairs(size: Int): Array[(String, String)] = {
     val arr = new Array[(String, String)](size)
     for i <- arr.indices do
-       arr(i) = scala.util.Random.nextString(10) -> scala.util.Random.nextString(10)
+        arr(i) = scala.util.Random.nextString(10) -> scala.util.Random.nextString(10)
     arr
   }
 
@@ -20,7 +20,7 @@ object Helper {
       Conscrypt.checkAvailability()
       Security.addProvider(Conscrypt.newProvider)
     } else
-       System.err.println("Conscrypt could not be loaded, continuing anyway")
+        System.err.println("Conscrypt could not be loaded, continuing anyway")
     AeadConfig.register()
     val keyset: KeysetHandle = KeysetHandle.generateNew(KeyTemplates.get(keyTemplateString))
     keyset.getPrimitive(RegistryConfiguration.get, classOf[Aead])

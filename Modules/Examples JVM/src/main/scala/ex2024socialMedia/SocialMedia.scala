@@ -24,12 +24,12 @@ object UI {
 }
 
 case class SocialMedia(sm: Map[ID, SocialPost] = Map.empty):
-   def like(post: ID)(using replicaId: LocalUid): SocialMedia =
-      val increment = sm(post).likes.inc()
-      SocialMedia(Map(post -> SocialPost(likes = increment)))
+    def like(post: ID)(using replicaId: LocalUid): SocialMedia =
+        val increment = sm(post).likes.inc()
+        SocialMedia(Map(post -> SocialPost(likes = increment)))
 
-   def comment(post: ID, text: String)(using replicaId: LocalUid): SocialMedia = ???
-   def post(text: String)(using replicaId: LocalUid): SocialMedia              = ???
+    def comment(post: ID, text: String)(using replicaId: LocalUid): SocialMedia = ???
+    def post(text: String)(using replicaId: LocalUid): SocialMedia              = ???
 
 case class SocialPost(
     message: Option[LWW[String]] = None,

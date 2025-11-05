@@ -7,9 +7,9 @@ import rdts.time.Dots
 case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
 
   lazy val observed: Dots = removed.union:
-     inner.values.foldLeft(Dots.empty) {
-       case (set, v) => set `union` v.dots
-     }
+      inner.values.foldLeft(Dots.empty) {
+        case (set, v) => set `union` v.dots
+      }
 
   type Delta = ObserveRemoveMap[K, V]
 

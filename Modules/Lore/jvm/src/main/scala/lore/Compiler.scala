@@ -14,9 +14,9 @@ import java.nio.file.{Files, NoSuchFileException, Path, Paths, StandardOpenOptio
 object Compiler {
 
   private def writeFile(path: Path, content: String): Unit =
-     Files.createDirectories(path.getParent)
-     Files.writeString(path, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
-     ()
+      Files.createDirectories(path.getParent)
+      Files.writeString(path, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE)
+      ()
 
   def toScala(ast: NonEmptyList[Term], options: Options): Unit =
     ???
@@ -51,9 +51,9 @@ object Compiler {
       case h @ Left(Help(errors, _, _, _)) =>
         if errors.isEmpty
         then
-           return println(h.value) // --help flag given
+            return println(h.value) // --help flag given
         else
-           return println(h.value)
+            return println(h.value)
       case Right(s) =>
         s
     }
@@ -86,24 +86,24 @@ object Compiler {
     // check if anything went wrong: print error messages and set return code
     try result()
     catch
-       case e: NoSuchFileException =>
-         println(
-           fansi.Color
-             .Red(s"Error! No such file: ${e.getFile()}")
-             .overlay(fansi.Bold.On, 0, 6)
-         )
-       case e: ParsingException =>
-         println(
-           fansi.Color
-             .Red(s"Parsing error!\n${e.getMessage()}")
-             .overlay(fansi.Bold.On, 0, 14)
-         )
-       case e: Throwable =>
-         println(
-           fansi.Color
-             .Red("Unknown error!")
-             .overlay(fansi.Bold.On)
-         )
-         throw e
+        case e: NoSuchFileException =>
+          println(
+            fansi.Color
+              .Red(s"Error! No such file: ${e.getFile()}")
+              .overlay(fansi.Bold.On, 0, 6)
+          )
+        case e: ParsingException =>
+          println(
+            fansi.Color
+              .Red(s"Parsing error!\n${e.getMessage()}")
+              .overlay(fansi.Bold.On, 0, 14)
+          )
+        case e: Throwable =>
+          println(
+            fansi.Color
+              .Red("Unknown error!")
+              .overlay(fansi.Bold.On)
+          )
+          throw e
   }
 }

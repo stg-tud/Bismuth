@@ -30,11 +30,11 @@ case class ReplicatedUniqueList[E](
   def toLazyList: LazyList[E] = elementIdsAndOperations.toLazyList.map(x => elementIdToValue.get(x.elementId).get.value)
 
   private def markersImpactedByChangeAt(index: Int) =
-     val elementId       = elementIdsAndOperations.read(index).get.elementId
-     val impactedMarkers = markerIdToElementIdAndBehavior.entries.filter { (_, marker) =>
-       marker.elementId == elementId
-     }.toList
-     impactedMarkers
+      val elementId       = elementIdsAndOperations.read(index).get.elementId
+      val impactedMarkers = markerIdToElementIdAndBehavior.entries.filter { (_, marker) =>
+        marker.elementId == elementId
+      }.toList
+      impactedMarkers
 
   def readAt(i: Int): Option[E] =
     elementIdsAndOperations.read(i).map(elemIdAndOp => elementIdToValue.get(elemIdAndOp.elementId).get.value)
@@ -87,20 +87,20 @@ case class ReplicatedUniqueList[E](
             content.counter,
             id,
             behavior match
-               case MarkerRemovalBehavior.Predecessor => inRange(index - 1)
-               case MarkerRemovalBehavior.Successor   => inRange(index + 1)
-               case MarkerRemovalBehavior.None        => None,
+                case MarkerRemovalBehavior.Predecessor => inRange(index - 1)
+                case MarkerRemovalBehavior.Successor   => inRange(index + 1)
+                case MarkerRemovalBehavior.None        => None,
             behavior
           )
         }
         .map { (counter, id, newIdxOpt, behavior) =>
           newIdxOpt match
-             case Some(newIdx) =>
-               val markedElementId = elementIdsAndOperations.read(newIdx).get.elementId
-               val newMarkerValue  = (counter, OpPrecedence.Generic, CausalTime.now(), markedElementId, behavior)
-               updateMarkerEntry(markerIdToElementIdAndBehavior, id, newMarkerValue)
-             case None =>
-               markerIdToElementIdAndBehavior.remove(id)
+              case Some(newIdx) =>
+                val markedElementId = elementIdsAndOperations.read(newIdx).get.elementId
+                val newMarkerValue  = (counter, OpPrecedence.Generic, CausalTime.now(), markedElementId, behavior)
+                updateMarkerEntry(markerIdToElementIdAndBehavior, id, newMarkerValue)
+              case None =>
+                markerIdToElementIdAndBehavior.remove(id)
         }
         .foldLeft(ObserveRemoveMap.empty[MarkerId, MarkerValue])(_ `merge` _)
 
@@ -152,8 +152,8 @@ case class ReplicatedUniqueList[E](
 
     val mergedMapEntry =
       base.inner.get(markerId) match
-         case Some(oldInternal) => oldInternal `merge` updatedMapEntry
-         case None              => updatedMapEntry
+          case Some(oldInternal) => oldInternal `merge` updatedMapEntry
+          case None              => updatedMapEntry
 
     ObserveRemoveMap.empty[MarkerId, MarkerValue].copy(inner = Map(markerId -> mergedMapEntry))
   }
@@ -213,18 +213,18 @@ case class ReplicatedUniqueList[E](
     val updatedDots = Dots.from(
       combinedRemoved.toSet.filter { removedDot =>
         combinedDotToElementMetadata.get(removedDot) match
-           case None                    => false
-           case Some(candidateMetadata) =>
-             combinedElementMetadata.exists { (candidateDot, elementMetadata) =>
-               elementMetadata.elementId == candidateMetadata.elementId
-               && elementMetadata.opPrecedence.detail.positional == Positional.Update
-               && candidateDot != removedDot
-               && {
-                 val otherDotTimestamp = combinedTimes(candidateDot)
-                 Array(otherDotTimestamp, combinedTimes(removedDot)).max == otherDotTimestamp
-               }
-             }
-           // returns whether there is another dot for this element, caused by an update with a more recent timestamp
+            case None                    => false
+            case Some(candidateMetadata) =>
+              combinedElementMetadata.exists { (candidateDot, elementMetadata) =>
+                elementMetadata.elementId == candidateMetadata.elementId
+                && elementMetadata.opPrecedence.detail.positional == Positional.Update
+                && candidateDot != removedDot
+                && {
+                  val otherDotTimestamp = combinedTimes(candidateDot)
+                  Array(otherDotTimestamp, combinedTimes(removedDot)).max == otherDotTimestamp
+                }
+              }
+            // returns whether there is another dot for this element, caused by an update with a more recent timestamp
       }
     )
 
@@ -307,17 +307,17 @@ object ReplicatedUniqueList {
 
   object OpPrecedence {
     enum Positional:
-       case Generic, Update, Move
+        case Generic, Update, Move
 
     enum Textual:
-       case Generic, Insert, Update
+        case Generic, Insert, Update
 
     given enumOrdinalOrdering[E <: scala.reflect.Enum]: Ordering[E] =
       Ordering.by[E, Int](_.ordinal)
   }
 
   enum MarkerRemovalBehavior:
-     case Predecessor, Successor, None
+      case Predecessor, Successor, None
 
   given bottom[E]: Bottom[ReplicatedUniqueList[E]] = Bottom.derived
   def empty[E]: ReplicatedUniqueList[E]            = bottom.empty

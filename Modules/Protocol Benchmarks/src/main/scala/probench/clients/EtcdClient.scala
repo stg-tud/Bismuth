@@ -13,15 +13,15 @@ class EtcdClient(val name: Uid, val endpoints: List[String], logTimings: Boolean
 
   override def handleOpImpl(op: KVOperation[String, String]): Unit = {
     op match
-       case data.KVOperation.Read(opKey) =>
-         val key = ByteSequence.from(opKey.getBytes)
-         val res = kvClient.get(key).get().getKvs.get(0)
-         onResultValue(s"${res.getKey}=${res.getValue}")
-       case data.KVOperation.Write(opKey, opValue) =>
-         val key   = ByteSequence.from(opKey.getBytes)
-         val value = ByteSequence.from(opValue.getBytes)
-         kvClient.put(key, value).get()
-         onResultValue(s"$opKey=$opValue; OK")
+        case data.KVOperation.Read(opKey) =>
+          val key = ByteSequence.from(opKey.getBytes)
+          val res = kvClient.get(key).get().getKvs.get(0)
+          onResultValue(s"${res.getKey}=${res.getValue}")
+        case data.KVOperation.Write(opKey, opValue) =>
+          val key   = ByteSequence.from(opKey.getBytes)
+          val value = ByteSequence.from(opValue.getBytes)
+          kvClient.put(key, value).get()
+          onResultValue(s"$opKey=$opValue; OK")
   }
 
 }

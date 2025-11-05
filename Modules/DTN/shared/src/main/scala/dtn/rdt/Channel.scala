@@ -24,24 +24,24 @@ class ClientContext[T: JsonValueCodec](
 ) extends Connection[ProtocolMessage[T]] {
   override def send(message: ProtocolMessage[T]): Async[Any, Unit] =
     message match
-       case Request(sender, dots) =>
-         // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
-         // todo: actually there should be no requests being sent anymore then. is that the case?
-         operationMode match
-            case ClientOperationMode.PushAll      => Sync { () }
-            case ClientOperationMode.RequestLater =>
-              connection.send(RdtMessageType.Request, Array(), dots, Dots.empty).toAsync(using
-                executionContext
-              )
-         Sync { () }
-       case Payload(sender, dots, data, redundantDots) =>
-         connection.send(
-           RdtMessageType.Payload,
-           writeToArray[T](data),
-           dots,
-           redundantDots
-         ).toAsync(using executionContext)
-       case Ping(_) | Pong(_) => Async {}
+        case Request(sender, dots) =>
+          // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
+          // todo: actually there should be no requests being sent anymore then. is that the case?
+          operationMode match
+              case ClientOperationMode.PushAll      => Sync { () }
+              case ClientOperationMode.RequestLater =>
+                connection.send(RdtMessageType.Request, Array(), dots, Dots.empty).toAsync(using
+                  executionContext
+                )
+          Sync { () }
+        case Payload(sender, dots, data, redundantDots) =>
+          connection.send(
+            RdtMessageType.Payload,
+            writeToArray[T](data),
+            dots,
+            redundantDots
+          ).toAsync(using executionContext)
+        case Ping(_) | Pong(_) => Async {}
 
   override def close(): Unit = connection.close().onComplete {
     case Failure(f)     => f.printStackTrace()
@@ -70,15 +70,15 @@ class Channel[T: JsonValueCodec](
 
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
-           case RdtMessageType.Request => cb.succeed(ProtocolMessage.Request(dtnid, dots))
-           case RdtMessageType.Payload => cb.succeed(ProtocolMessage.Payload(dtnid, dots, readFromArray[T](payload)))
+            case RdtMessageType.Request => cb.succeed(ProtocolMessage.Request(dtnid, dots))
+            case RdtMessageType.Payload => cb.succeed(ProtocolMessage.Payload(dtnid, dots, readFromArray[T](payload)))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
-         case ClientOperationMode.PushAll      => cb.succeed(ProtocolMessage.Request(dtnid, Dots.empty))
-         case ClientOperationMode.RequestLater =>
+          case ClientOperationMode.PushAll      => cb.succeed(ProtocolMessage.Request(dtnid, Dots.empty))
+          case ClientOperationMode.RequestLater =>
 
       conn
     }

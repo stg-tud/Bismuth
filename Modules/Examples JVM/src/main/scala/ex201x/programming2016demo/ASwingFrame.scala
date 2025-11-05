@@ -31,7 +31,7 @@ object ASwingFrame extends SimpleSwingApplication {
 
     while !top.visible do Thread.sleep(5)
     while top.visible do
-       Thread.sleep(1)
-       /* TODO main loop */
+        Thread.sleep(1)
+        /* TODO main loop */
   }
 }

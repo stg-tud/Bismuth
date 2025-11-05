@@ -18,8 +18,8 @@ class SignatureVerifyingMessageSerialization[RDT](
 
   override def writeToStream(msg: MonotonicAclSyncMessage[RDT], outputStream: DataOutputStream): Unit =
     msg match
-       case aclMsg: AclDelta[RDT] => writeSigned(aclMsg, outputStream)
-       case _                     => writeUnsigned(msg, outputStream)
+        case aclMsg: AclDelta[RDT] => writeSigned(aclMsg, outputStream)
+        case _                     => writeUnsigned(msg, outputStream)
 
   override def readFromStream(inputStream: DataInputStream): MonotonicAclSyncMessage[RDT] =
     if inputStream.readBoolean()   // 1 byte
@@ -36,12 +36,12 @@ class SignatureVerifyingMessageSerialization[RDT](
     val deserializedMsg = readFromArray[MonotonicAclSyncMessage[RDT]](msgBytes)
 
     deserializedMsg match
-       case aclEntry @ AclDelta(_, _, _, Dot(author, _), _, _) => // Authorship is derived from dot
-         if !Ed25519Util.checkEd25519Signature(msgBytes, signature, PublicIdentity(author.delegate))
-         then throw SignatureException("Failed to verify signature of received message")
-         // Splice (verified) signature into object (null in serialized version so signature doesn't depend on itself)
-         aclEntry.copy(signature = Signature(signature))
-       case _ => throw InvalidMessageException("Signed message is not an update to ACL")
+        case aclEntry @ AclDelta(_, _, _, Dot(author, _), _, _) => // Authorship is derived from dot
+          if !Ed25519Util.checkEd25519Signature(msgBytes, signature, PublicIdentity(author.delegate))
+          then throw SignatureException("Failed to verify signature of received message")
+          // Splice (verified) signature into object (null in serialized version so signature doesn't depend on itself)
+          aclEntry.copy(signature = Signature(signature))
+        case _ => throw InvalidMessageException("Signed message is not an update to ACL")
   }
 
   private def readUnsigned(inputStream: DataInputStream): MonotonicAclSyncMessage[RDT] = {
@@ -55,16 +55,16 @@ class SignatureVerifyingMessageSerialization[RDT](
   }
 
   private def writeSigned(msg: AclDelta[RDT], outputStream: DataOutputStream): Unit =
-     require(msg.signature != null && msg.signature.sig.length == 64)
-     val msgBytes = writeToArray(msg.copy(signature = null))
-     outputStream.writeBoolean(true /* signature following */ ) // 1 byte
-     outputStream.write(msg.signature.nn.sig)                   // 64 bytes
-     outputStream.writeInt(msgBytes.length)                     // 4 bytes
-     outputStream.write(msgBytes)                               // n-bytes with n == length of the message
+      require(msg.signature != null && msg.signature.sig.length == 64)
+      val msgBytes = writeToArray(msg.copy(signature = null))
+      outputStream.writeBoolean(true /* signature following */ ) // 1 byte
+      outputStream.write(msg.signature.nn.sig)                   // 64 bytes
+      outputStream.writeInt(msgBytes.length)                     // 4 bytes
+      outputStream.write(msgBytes)                               // n-bytes with n == length of the message
 
   private def writeUnsigned(msg: MonotonicAclSyncMessage[RDT], outputStream: DataOutputStream): Unit =
-     val msgBytes = writeToArray(msg)
-     outputStream.writeBoolean(false /* No signature */ ) // 1 byte
-     outputStream.writeInt(msgBytes.length)               // 4 bytes
-     outputStream.write(msgBytes)                         // n-bytes with n == length of the message
+      val msgBytes = writeToArray(msg)
+      outputStream.writeBoolean(false /* No signature */ ) // 1 byte
+      outputStream.writeInt(msgBytes.length)               // 4 bytes
+      outputStream.write(msgBytes)                         // n-bytes with n == length of the message
 }

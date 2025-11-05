@@ -95,11 +95,11 @@ class RdtRouter(
     val rdt_meta_info: RdtMetaInfo = tempRdtMetaInfoStore.get(packet.bp.id)
 
     rdt_meta_info.message_type match
-       case RdtMessageType.Request =>
-         println("got rdt request bundle. routing with epidemic strategy")
-         return epidemicStrategy.onRequestSenderForBundle(peers, services, packet)
-       case RdtMessageType.Payload =>
-         println("got rdt payload bundle. routing with rdt strategy")
+        case RdtMessageType.Request =>
+          println("got rdt request bundle. routing with epidemic strategy")
+          return epidemicStrategy.onRequestSenderForBundle(peers, services, packet)
+        case RdtMessageType.Payload =>
+          println("got rdt payload bundle. routing with rdt strategy")
 
     // if we already successfully forwarded this package to enough clas we can 'safely' delete it.
     if delivered.getOrDefault(packet.bp.id, 0) >= nTotalNodes then {
@@ -194,13 +194,13 @@ class RdtRouter(
       println("no rdt-meta-information are available. ignoring")
     } else {
       rdt_meta_info.message_type match
-         case RdtMessageType.Request =>
-           println("rdt-request-message. feeding epidemic strat")
-           epidemicStrategy.onSendingSucceeded(packet)
-         case RdtMessageType.Payload =>
-           delivered.merge(packet.bid, 1, (x1, x2) => x1 + x2)
-           println("rdt-payload-message. merging dots for next hop")
-           dotState.mergeDots(Endpoint.createFromName(packet.cla_sender), rdt_id, rdt_meta_info.dots)
+          case RdtMessageType.Request =>
+            println("rdt-request-message. feeding epidemic strat")
+            epidemicStrategy.onSendingSucceeded(packet)
+          case RdtMessageType.Payload =>
+            delivered.merge(packet.bid, 1, (x1, x2) => x1 + x2)
+            println("rdt-payload-message. merging dots for next hop")
+            dotState.mergeDots(Endpoint.createFromName(packet.cla_sender), rdt_id, rdt_meta_info.dots)
 
     }
   }
@@ -232,13 +232,13 @@ class RdtRouter(
       likelihoodState.update_score(neighbour_node = previous_node.get, destination_node = source_node)
 
       rdt_meta_info.get.message_type match
-         case RdtMessageType.Request =>
-           println("rdt-request-message. merging only source")
-           dotState.mergeDots(source_node, rdt_id, rdt_meta_info.get.dots)
-         case RdtMessageType.Payload =>
-           println("rdt-payload-message. merging source and previous node")
-           dotState.mergeDots(source_node, rdt_id, rdt_meta_info.get.dots)
-           dotState.mergeDots(previous_node.get, rdt_id, rdt_meta_info.get.dots)
+          case RdtMessageType.Request =>
+            println("rdt-request-message. merging only source")
+            dotState.mergeDots(source_node, rdt_id, rdt_meta_info.get.dots)
+          case RdtMessageType.Payload =>
+            println("rdt-payload-message. merging source and previous node")
+            dotState.mergeDots(source_node, rdt_id, rdt_meta_info.get.dots)
+            dotState.mergeDots(previous_node.get, rdt_id, rdt_meta_info.get.dots)
 
       tempRdtMetaInfoStore.put(packet.bndl.id, rdt_meta_info.get)
       tempRdtIdStore.put(packet.bndl.id, rdt_id)
@@ -317,12 +317,12 @@ class DotState {
    */
   def getDestinationNodeEndpoints(node_endpoint: Endpoint, rdt_id: String, dots: Dots): Set[Endpoint] = {
     map.get(rdt_id) match
-       case null                                       => Set()
-       case rdt_map: ConcurrentHashMap[Endpoint, Dots] =>
-         rdt_map.asScala
-           .filter((n: Endpoint, d: Dots) => !n.equals(node_endpoint) && !(dots <= d))
-           .collect[Endpoint]((n: Endpoint, d: Dots) => n)
-           .toSet
+        case null                                       => Set()
+        case rdt_map: ConcurrentHashMap[Endpoint, Dots] =>
+          rdt_map.asScala
+            .filter((n: Endpoint, d: Dots) => !n.equals(node_endpoint) && !(dots <= d))
+            .collect[Endpoint]((n: Endpoint, d: Dots) => n)
+            .toSet
   }
 
   /*
@@ -331,8 +331,8 @@ class DotState {
   def filterNeighbourNodes(neighbour_node_endpoints: Set[Endpoint], rdt_id: String, dots: Dots): Set[Endpoint] = {
     neighbour_node_endpoints.filter { endpoint =>
       val d = map.get(rdt_id) match
-         case null                                        => Dots.empty
-         case node_map: ConcurrentHashMap[Endpoint, Dots] => node_map.getOrDefault(endpoint, Dots.empty)
+          case null                                        => Dots.empty
+          case node_map: ConcurrentHashMap[Endpoint, Dots] => node_map.getOrDefault(endpoint, Dots.empty)
 
       !(dots <= d) || dots.isEmpty
     }
@@ -344,8 +344,8 @@ class DotState {
   def filterPeers(peers: Iterable[DtnPeer], rdt_id: String, dots: Dots): Iterable[DtnPeer] = {
     peers.filter { peer =>
       val d = map.get(rdt_id) match
-         case null                                        => Dots.empty
-         case node_map: ConcurrentHashMap[Endpoint, Dots] => node_map.getOrDefault(peer.eid, Dots.empty)
+          case null                                        => Dots.empty
+          case node_map: ConcurrentHashMap[Endpoint, Dots] => node_map.getOrDefault(peer.eid, Dots.empty)
 
       !(dots <= d) || dots.isEmpty
     }

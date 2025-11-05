@@ -29,9 +29,9 @@ abstract class UntrustedReplica(initialStates: Set[EncryptedState]) extends Repl
     } else {
       // received state may already be subsumed by some state in the stateStore
       if
-         stateStore.exists(oldState =>
-           VectorClock.vectorClockOrdering.lteq(newState.versionVector, oldState.versionVector)
-         )
+          stateStore.exists(oldState =>
+            VectorClock.vectorClockOrdering.lteq(newState.versionVector, oldState.versionVector)
+          )
       then {
         // The newState is already subsumed by a single state in the stateStore
         return

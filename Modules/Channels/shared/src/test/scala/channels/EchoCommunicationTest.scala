@@ -39,35 +39,35 @@ trait EchoCommunicationTest[Info](
 
     val echoServer: Prod[Connection[MessageBuffer]] =
       serverLatent.prepare: conn =>
-         printErrors: mb =>
-            trace("server received; echoing")
-            conn.send(mb).runToFuture(())
+          printErrors: mb =>
+              trace("server received; echoing")
+              conn.send(mb).runToFuture(())
 
     val client: Prod[Connection[MessageBuffer]] =
       clientConn.apply(ec).apply(info).prepare: conn =>
-         printErrors: mb =>
-            trace("client received")
-            synchronized {
-              received = String(mb.asArray) :: received
-            }
-            messageCounter.release()
+          printErrors: mb =>
+              trace("client received")
+              synchronized {
+                received = String(mb.asArray) :: received
+              }
+              messageCounter.release()
 
     echoServer.runIn(summon):
-       printErrors: conn =>
-          ()
+        printErrors: conn =>
+            ()
 
     val sending = Async: (_: Abort) ?=>
-       trace("starting sending")
-       val conn = client.bind
-       trace("sending")
-       ec.execute: () =>
-          toSend.foreach: msg =>
-             conn.send(ArrayMessageBuffer(msg.getBytes())).run:
-                printErrors(_ => ())
+        trace("starting sending")
+        val conn = client.bind
+        trace("sending")
+        ec.execute: () =>
+            toSend.foreach: msg =>
+                conn.send(ArrayMessageBuffer(msg.getBytes())).run:
+                    printErrors(_ => ())
 
     sending.runIn(summon):
-       printErrors: conn =>
-          ()
+        printErrors: conn =>
+            ()
 
     trace("test waiting")
 

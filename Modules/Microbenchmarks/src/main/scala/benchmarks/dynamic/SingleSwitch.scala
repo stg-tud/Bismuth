@@ -33,7 +33,7 @@ class SingleSwitch {
     }
 
     if reactives.SelectedScheduler.candidate.scheduler == reactives.scheduler.LevelbasedVariants.unmanaged then
-       isManual = true
+        isManual = true
 
   }
 

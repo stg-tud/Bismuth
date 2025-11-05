@@ -214,7 +214,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
         } else {
           var min = trackingSequence.head._2 // current minimum
           if ord.compare(delta.value, min) < 0 then // update if added element is smaller
-             min = delta.value
+              min = delta.value
           (delta.value, min) +: trackingSequence // prepend to the tracking-sequence
         }
     } {
@@ -223,22 +223,22 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
         // index of element, being removed
         val deletionIndex = trackingSequence.indexWhere(element => ord.compare(element._1, delta.value) == 0)
         if deletionIndex < 0 then
-           throw new Exception("min: Element not found in the sequence")
+            throw new Exception("min: Element not found in the sequence")
 
         if deletionIndex > 0 then { // must be more than two elements to make sense to change minimum
           var min = trackingSequence(deletionIndex)._2
           if deletionIndex == trackingSequence.size - 1 then // last element
-             min = trackingSequence(deletionIndex - 1)._1    // new min will be same as the element on the left
+              min = trackingSequence(deletionIndex - 1)._1   // new min will be same as the element on the left
           else
-             min =
-               trackingSequence(
-                 deletionIndex + 1
-               )._2 // new min will be same as the min stored in the tuple on the right
+              min =
+                trackingSequence(
+                  deletionIndex + 1
+                )._2 // new min will be same as the min stored in the tuple on the right
           breakable {
             for i <- (deletionIndex - 1) to 0 by -1 do {
               val element = trackingSequence(i)
               if ord.compare(element._1, min) < 0 then // if no more update needed, stop
-                 break()
+                  break()
               trackingSequence.update(i, (element._1, min)) // otherwise update the minimum
             }
           }
@@ -260,27 +260,27 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
       } else {
         var max = seq.head._2
         if ord.gt(delta.value, max) then
-           max = delta.value
+            max = delta.value
         (delta.value, max) +: seq
       }
     } { (trackingSequence: mutable.IndexedSeq[(T, T)], delta: Delta[T]) =>
       val deletionIndex = trackingSequence.indexWhere(element => ord.equiv(element._1, delta.value))
       if deletionIndex < 0 then
-         throw new Exception("max: Element not found in the sequence")
+          throw new Exception("max: Element not found in the sequence")
 
       if deletionIndex > 0 then { // must be more than two elements to make sense to change maxValue
         var max = trackingSequence(deletionIndex)._2
         if deletionIndex == trackingSequence.size - 1 then // last element
-           max = trackingSequence(deletionIndex - 1)._1
+            max = trackingSequence(deletionIndex - 1)._1
         else
-           max = trackingSequence(deletionIndex + 1)._2
+            max = trackingSequence(deletionIndex + 1)._2
 
         // after setting the new min, update the minimum of the elements on the left till minimum has different value
         breakable {
           for i <- (0 until deletionIndex).reverse do {
             val element = trackingSequence(i)
             if ord.gteq(element._1, max) then
-               break()
+                break()
             trackingSequence.update(i, (element._1, max))
           }
         }
@@ -431,17 +431,17 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
       case Addition(value) =>
         val counter = elements.getOrElse(value, 0)
         if counter == 0 then
-           elements.put(value, 1)
+            elements.put(value, 1)
         else
-           elements.put(value, counter + 1)
+            elements.put(value, counter + 1)
       case Removal(value) =>
         val counter = elements.getOrElse(value, 0)
         if counter > 1 then
-           elements.put(value, counter - 1)
+            elements.put(value, counter - 1)
         else if counter == 1 then
-           elements.remove(value)
+            elements.remove(value)
         else
-           throw new Exception("Cannot remove element as it cannot be found")
+            throw new Exception("Cannot remove element as it cannot be found")
     }
     ticket.recordChange(new InitialChange[State] {
       override val source: IncSeq.this.type                              = IncSeq.this

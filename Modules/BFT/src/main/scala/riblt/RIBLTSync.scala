@@ -29,7 +29,7 @@ object RIBLTSync {
   )
 
   enum SessionType:
-     case sender, receiver
+      case sender, receiver
 
   def apply[T, R <: Replica[T, R]](replicaID: String, initialReplica: R): Behavior[Command] = {
     Behaviors.setup { context =>
@@ -56,14 +56,14 @@ object RIBLTSync {
             val session = sessions(from)
             session.riblt.addCodedSymbolsAsBytes(codedSymbols)
             if session.riblt.isDecoded then
-               val delta = replica.generateDelta(session.riblt.localSymbols.map(_.value))
-               from ! ReceiveDelta(context.self, delta)
-               from ! ReceiveDeltaRequest(context.self, session.riblt.remoteSymbols.map(_.value))
-               val updated = session.copy(isDecoded = true, deltaSent = true)
-               running(replica, sessions.updated(from, updated))
+                val delta = replica.generateDelta(session.riblt.localSymbols.map(_.value))
+                from ! ReceiveDelta(context.self, delta)
+                from ! ReceiveDeltaRequest(context.self, session.riblt.remoteSymbols.map(_.value))
+                val updated = session.copy(isDecoded = true, deltaSent = true)
+                running(replica, sessions.updated(from, updated))
             else
-               from ! ReceiveCodedSymbolsRequest(context.self)
-               Behaviors.same
+                from ! ReceiveCodedSymbolsRequest(context.self)
+                Behaviors.same
 
           // Handle coded symbols request
           case ReceiveCodedSymbolsRequest(from) =>

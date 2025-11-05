@@ -13,19 +13,19 @@ class LineIterator(it: Iterator[Char]) extends Iterator[String] {
 
     val sb = new StringBuilder
     while hasNext do
-       nextChar match {
-         case '\r' =>
-           if hasNext then
-              it.next() match {
-                case '\n' => blank = !hasNext; return sb.toString + "\r\n"
-                case c    => ch = Some(c)
-              }
-           blank = !hasNext; return sb.toString + '\r'
-         case '\n' =>
-           blank = !hasNext; return sb.toString + '\n'
-         case ch =>
-           sb += ch
-       }
+        nextChar match {
+          case '\r' =>
+            if hasNext then
+                it.next() match {
+                  case '\n' => blank = !hasNext; return sb.toString + "\r\n"
+                  case c    => ch = Some(c)
+                }
+            blank = !hasNext; return sb.toString + '\r'
+          case '\n' =>
+            blank = !hasNext; return sb.toString + '\n'
+          case ch =>
+            sb += ch
+        }
 
     return sb.toString
   }
@@ -47,10 +47,10 @@ object LineOffset {
     var (row, col, prev) = (0, 0, ' ')
     for ch <- it.slice(0, offset) do {
       if ch != '\n' || prev != '\r' then
-         ch match {
-           case '\n' | '\r' => col = 0; row += 1
-           case _           => col += 1
-         }
+          ch match {
+            case '\n' | '\r' => col = 0; row += 1
+            case _           => col += 1
+          }
       prev = ch
     }
     Position(row, col)
@@ -65,7 +65,7 @@ object LineOffset {
       val ch = it.next()
       if ch != '\n' || prev != '\r' then {
         if position == Position(row, col) || (position.row == row && (ch == '\n' || ch == '\r')) then
-           return off
+            return off
 
         ch match {
           case '\n' | '\r' => col = 0; row += 1

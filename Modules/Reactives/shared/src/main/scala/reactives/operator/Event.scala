@@ -137,9 +137,9 @@ trait Event[+T] extends MacroAccess[Option[T]] with Disconnectable {
     if n < 0 then throw new IllegalArgumentException("length must be positive")
     else if n == 0 then Var(Nil)
     else
-       fold(Queue[A]()) { (queue: Queue[A], v: T) =>
-         if queue.lengthCompare(n) >= 0 then queue.tail.enqueue(v) else queue.enqueue(v)
-       }
+        fold(Queue[A]()) { (queue: Queue[A], v: T) =>
+          if queue.lengthCompare(n) >= 0 then queue.tail.enqueue(v) else queue.enqueue(v)
+        }
   }
 
   /** collects events resulting in a variable holding a list of all values.
@@ -201,7 +201,7 @@ trait Event[+T] extends MacroAccess[Option[T]] with Disconnectable {
   final inline def fold[A](init: A)(inline op: (A, T) => A)(using ticket: CreationTicket[State]): Signal[A] =
     Fold(init)(
       this.branch: v =>
-         op(Fold.current, v)
+          op(Fold.current, v)
     )
 
   /** This creates a branch that can be combined into a `Fold` */
@@ -242,9 +242,9 @@ object Event {
     * }}}
     */
   def fromCallback[R, T](using CreationTicket[State])(block: Accepts[T] ?=> R): CBR[T, R] =
-     val evt = Evt[T]()
-     val res = block(using evt)
-     CBR(evt, res)
+      val evt = Evt[T]()
+      val res = block(using evt)
+      CBR(evt, res)
 
   case class CBR[T, R](event: Event[T], data: R)
   opaque type Accepts[T] = Evt[T]

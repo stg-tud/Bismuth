@@ -37,8 +37,8 @@ class AWSetBench {
 
   @Benchmark
   def addAll(): NamedDeltaBuffer[ReplicatedSet[Int]] =
-     val ndb = NamedDeltaBuffer("a".asId, ReplicatedSet.empty[Int])
-     ndb.mod(_.addAll(using ndb.replicaID)(0 until size))
+      val ndb = NamedDeltaBuffer("a".asId, ReplicatedSet.empty[Int])
+      ndb.mod(_.addAll(using ndb.replicaID)(0 until size))
 
   @Benchmark
   def remove(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.remove(0))

@@ -14,7 +14,7 @@ class JScrollableComponent extends JComponent with Scrollable {
   override def setPreferredSize(preferredSize: Dimension): Unit = {
     super.setPreferredSize(preferredSize)
     if getParent != null then
-       getParent.doLayout()
+        getParent.doLayout()
   }
 
   def getPreferredScrollableViewportSize = getPreferredSize

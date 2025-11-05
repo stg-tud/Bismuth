@@ -31,8 +31,8 @@ class NioTCP {
 
   def loopSelection(abort: Abort): Unit = {
     while !abort.closeRequest do
-       selector.select()
-       runSelection()
+        selector.select()
+        runSelection()
   }
 
   def runSelection(): Unit = {
@@ -139,17 +139,17 @@ class NioTCP {
       override def prepare(incoming: Receive[MessageBuffer]): Async[Any, Connection[MessageBuffer]] =
         Async.fromCallback {
           try
-             Async.handler.succeed {
-               handleConnection(bindsocket(), incoming)
-             }
+              Async.handler.succeed {
+                handleConnection(bindsocket(), incoming)
+              }
           catch case NonFatal(exception) => Async.handler.fail(exception)
         }
     }
 
   def defaultSocketChannel(socketAddress: SocketAddress): () => SocketChannel = () => {
     val pf = socketAddress match
-       case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
-       case other                      => StandardProtocolFamily.INET
+        case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
+        case other                      => StandardProtocolFamily.INET
     val channel = SocketChannel.open(pf)
     channel.connect(socketAddress)
     configureChannel(channel)
@@ -159,15 +159,15 @@ class NioTCP {
   private def configureChannel(channel: SocketChannel) = {
     channel.configureBlocking(false)
     try
-       channel.setOption(StandardSocketOptions.TCP_NODELAY, true)
+        channel.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch
-       case _: UnsupportedOperationException => // fine
+        case _: UnsupportedOperationException => // fine
   }
 
   def defaultServerSocketChannel(socketAddress: SocketAddress): () => ServerSocketChannel = () => {
     val pf = socketAddress match
-       case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
-       case other                      => StandardProtocolFamily.INET
+        case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
+        case other                      => StandardProtocolFamily.INET
     val socket = ServerSocketChannel.open(pf)
     socket.configureBlocking(false)
 
@@ -189,7 +189,7 @@ class NioTCP {
             selector.wakeup()
             ()
           } catch
-             case NonFatal(ex) => Async.handler.fail(ex)
+              case NonFatal(ex) => Async.handler.fail(ex)
 
         }
     }

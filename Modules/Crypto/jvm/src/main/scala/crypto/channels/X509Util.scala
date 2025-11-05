@@ -94,8 +94,8 @@ object X509Util {
 
     val uniqueIdRDNs = JcaX500NameUtil.getSubject(certificate).getRDNs(BCStyle.UNIQUE_IDENTIFIER)
     if
-       uniqueIdRDNs.isEmpty || uniqueIdRDNs(0).size() != 1 || !uniqueIdRDNs(0).getFirst.getValue
-         .isInstanceOf[DERUTF8String]
+        uniqueIdRDNs.isEmpty || uniqueIdRDNs(0).size() != 1 || !uniqueIdRDNs(0).getFirst.getValue
+          .isInstanceOf[DERUTF8String]
     then {
       throw new CertificateException("Subject does not contain a UNIQUE_IDENTIFIER")
     }
@@ -116,15 +116,15 @@ object X509Util {
   }
 
   extension (certHolder: X509CertificateHolder)
-     def toPem: CertificatePem = {
-       val writer    = new StringWriter()
-       val pemWriter = new JcaPEMWriter(writer)
-       val cert      = new JcaX509CertificateConverter().getCertificate(certHolder)
-       pemWriter.writeObject(cert)
-       pemWriter.close()
-       CertificatePem(writer.toString)
-     }
+      def toPem: CertificatePem = {
+        val writer    = new StringWriter()
+        val pemWriter = new JcaPEMWriter(writer)
+        val cert      = new JcaX509CertificateConverter().getCertificate(certHolder)
+        pemWriter.writeObject(cert)
+        pemWriter.close()
+        CertificatePem(writer.toString)
+      }
 
-     def toJavaCertificate: X509Certificate =
-       new JcaX509CertificateConverter().getCertificate(certHolder)
+      def toJavaCertificate: X509Certificate =
+        new JcaX509CertificateConverter().getCertificate(certHolder)
 }

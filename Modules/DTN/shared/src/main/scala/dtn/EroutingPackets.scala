@@ -14,23 +14,23 @@ deserialization: JSON -> object
 
 // example encoded: {"Ip":"192.168.217.128"}  // idk about the others, just guessing in decoder/encoder
 enum PeerAddress:
-   case Ip(address: String)
-   case BroadcastGeneric(domain: String, address: String)
-   case Generic(address: String)
+    case Ip(address: String)
+    case BroadcastGeneric(domain: String, address: String)
+    case Generic(address: String)
 
 // example encoded: "DispatchPending"
 enum Constraint derives Codec:
-   case DispatchPending
-   case ForwardPending
-   case ReassemblyPending
-   case Contraindicated
-   case LocalEndpoint
-   case Deleted
+    case DispatchPending
+    case ForwardPending
+    case ReassemblyPending
+    case Contraindicated
+    case LocalEndpoint
+    case Deleted
 
 // example encoded: "Static"
 enum PeerType derives Codec:
-   case Static
-   case Dynamic
+    case Static
+    case Dynamic
 
 // example encoded: {"secs": ..., "nanos": ...}  // no class type info
 case class Duration(secs: Int, nanos: Int) derives Codec
@@ -65,29 +65,29 @@ case class Sender(remote: PeerAddress, port: Option[Int], agent: String, next_ho
 
 // example encoded: {"type": "Error", "reason": "some error reason"}
 enum Packet derives Codec.All:
-   // packets sent from dtnd
-   case RequestSenderForBundle(clas: List[String], bp: BundlePack)
-   case Error(reason: String)
-   case Timeout(bp: BundlePack)
-   case SendingFailed(bid: String, cla_sender: String)
-   case SendingSucceeded(bid: String, cla_sender: String)
-   case IncomingBundle(bndl: Bundle)
-   case IncomingBundleWithoutPreviousNode(bid: String, node_name: String)
-   case EncounteredPeer(name: String, eid: Endpoint, peer: DtnPeer)
-   case DroppedPeer(name: String, eid: Endpoint)
-   case PeerState(peers: Map[String, DtnPeer])
-   case ServiceState(service_list: Map[Int, String])
-   // packets sent from client
-   case AddService(tag: Int, service: String)
-   case ResponseSenderForBundle(bp: BundlePack, clas: List[Sender], delete_afterwards: Boolean)
+    // packets sent from dtnd
+    case RequestSenderForBundle(clas: List[String], bp: BundlePack)
+    case Error(reason: String)
+    case Timeout(bp: BundlePack)
+    case SendingFailed(bid: String, cla_sender: String)
+    case SendingSucceeded(bid: String, cla_sender: String)
+    case IncomingBundle(bndl: Bundle)
+    case IncomingBundleWithoutPreviousNode(bid: String, node_name: String)
+    case EncounteredPeer(name: String, eid: Endpoint, peer: DtnPeer)
+    case DroppedPeer(name: String, eid: Endpoint)
+    case PeerState(peers: Map[String, DtnPeer])
+    case ServiceState(service_list: Map[Int, String])
+    // packets sent from client
+    case AddService(tag: Int, service: String)
+    case ResponseSenderForBundle(bp: BundlePack, clas: List[Sender], delete_afterwards: Boolean)
 
 given Encoder[PeerAddress] = Encoder { (writer, peerAddress) =>
   writer.writeMapOpen(1)
 
   peerAddress match
-     case PeerAddress.Ip(address)                       => writer.writeMapMember("Ip", address)
-     case PeerAddress.BroadcastGeneric(domain, address) => writer.writeMapMember("BroadcastGeneric", (domain, address))
-     case PeerAddress.Generic(addr)                     => writer.writeMapMember("Generic", addr)
+      case PeerAddress.Ip(address)                       => writer.writeMapMember("Ip", address)
+      case PeerAddress.BroadcastGeneric(domain, address) => writer.writeMapMember("BroadcastGeneric", (domain, address))
+      case PeerAddress.Generic(addr)                     => writer.writeMapMember("Generic", addr)
 
   writer.writeMapClose()
 }
@@ -98,13 +98,13 @@ given Decoder[PeerAddress] = Decoder { reader =>
   var peerAddress: PeerAddress | Null = null
 
   reader.readString() match
-     case "Ip"               => peerAddress = PeerAddress.Ip(reader.readString())
-     case "BroadcastGeneric" =>
-       val arr_unbounded = reader.readArrayOpen(2)
-       peerAddress = PeerAddress.BroadcastGeneric(reader.readString(), reader.readString())
-       reader.readArrayClose(arr_unbounded, peerAddress)
-     case "Generic" => peerAddress = PeerAddress.Generic(reader.readString())
-     case s: Any    => throw Exception(s"unknown PeerAddress type: $s")
+      case "Ip"               => peerAddress = PeerAddress.Ip(reader.readString())
+      case "BroadcastGeneric" =>
+        val arr_unbounded = reader.readArrayOpen(2)
+        peerAddress = PeerAddress.BroadcastGeneric(reader.readString(), reader.readString())
+        reader.readArrayClose(arr_unbounded, peerAddress)
+      case "Generic" => peerAddress = PeerAddress.Generic(reader.readString())
+      case s: Any    => throw Exception(s"unknown PeerAddress type: $s")
 
   reader.readMapClose(unbounded, peerAddress)
 }

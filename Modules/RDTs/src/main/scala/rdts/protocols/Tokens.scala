@@ -27,10 +27,10 @@ case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
   def upkeep(using LocalUid): Token =
     if !isOwner then Token.unchanged
     else
-       selectFrom(wants) match
-          case None            => Token.unchanged
-          case Some(nextOwner) =>
-            Token(Ownership(os.epoch + 1, nextOwner), ReplicatedSet.empty)
+        selectFrom(wants) match
+            case None            => Token.unchanged
+            case Some(nextOwner) =>
+              Token(Ownership(os.epoch + 1, nextOwner), ReplicatedSet.empty)
 
   def selectFrom(wants: ReplicatedSet[Uid])(using LocalUid): Option[Uid] =
     // We find the “largest” ID that wants the token.

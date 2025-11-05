@@ -12,8 +12,8 @@ import scala.util.Random
 object EWFlagGenerators {
   def genEWFlag: Gen[AntiEntropyContainer[EnableWinsFlag]] =
     for
-       nEnable  <- Gen.posNum[Int]
-       nDisable <- Gen.posNum[Int]
+        nEnable  <- Gen.posNum[Int]
+        nDisable <- Gen.posNum[Int]
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[EnableWinsFlag]("a", network, mutable.Buffer())

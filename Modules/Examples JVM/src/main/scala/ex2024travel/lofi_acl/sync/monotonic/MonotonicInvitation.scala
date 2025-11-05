@@ -14,8 +14,8 @@ case class MonotonicInvitation(
     joinAddress: String
 ) extends Invitation {
   def encode: String =
-     val privateKeyBytes = Ed25519Util.privateKeyToRawPrivateKeyBytes(identityKey.getPrivate)
-     s"${rootOfTrust.id}|${base64Encoder.encodeToString(privateKeyBytes)}|${inviter.id}|$joinAddress"
+      val privateKeyBytes = Ed25519Util.privateKeyToRawPrivateKeyBytes(identityKey.getPrivate)
+      s"${rootOfTrust.id}|${base64Encoder.encodeToString(privateKeyBytes)}|${inviter.id}|$joinAddress"
 }
 
 object MonotonicInvitation {

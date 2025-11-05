@@ -85,31 +85,31 @@ trait Twoversion {
 
       val result = {
         try
-           tracePhase("preparation")
-           tx.preparationPhase(initialWrites)
-           val result = dynamicScope.withDynamicInitializer(tx) {
-             tracePhase("admission")
-             val admissionTicket = tx.makeAdmissionPhaseTicket(initialWrites)
-             val admissionResult = admissionPhase(admissionTicket)
-             tx.initializationPhase(admissionTicket.initialChanges)
-             tracePhase("propagation")
-             tx.propagationPhase()
-             if admissionTicket.wrapUp != null then
-                tracePhase("wrapUp")
-                admissionTicket.wrapUp.nn(tx)
-             admissionResult
-           }
-           tracePhase("commit")
-           tx.commitPhase()
-           result
+            tracePhase("preparation")
+            tx.preparationPhase(initialWrites)
+            val result = dynamicScope.withDynamicInitializer(tx) {
+              tracePhase("admission")
+              val admissionTicket = tx.makeAdmissionPhaseTicket(initialWrites)
+              val admissionResult = admissionPhase(admissionTicket)
+              tx.initializationPhase(admissionTicket.initialChanges)
+              tracePhase("propagation")
+              tx.propagationPhase()
+              if admissionTicket.wrapUp != null then
+                  tracePhase("wrapUp")
+                  admissionTicket.wrapUp.nn(tx)
+              admissionResult
+            }
+            tracePhase("commit")
+            tx.commitPhase()
+            result
         catch
-           case e: Throwable =>
-             tracePhase("rollback")
-             tx.rollbackPhase()
-             throw e
+            case e: Throwable =>
+              tracePhase("rollback")
+              tx.rollbackPhase()
+              throw e
         finally
-           tracePhase("release")
-           tx.releasePhase()
+            tracePhase("release")
+            tx.releasePhase()
       }
 
       tracePhase("observer")
@@ -174,8 +174,8 @@ trait Twoversion {
 
     def checkNotCommitted(): Unit =
       if commitStarted then
-         throw new IllegalStateException:
-            s"Added observation to transaction ($this), but it is too late in its lifecycle. This may happen due to capturing a transaction reference such that it survives outside of its dynamic scope."
+          throw new IllegalStateException:
+              s"Added observation to transaction ($this), but it is too late in its lifecycle. This may happen due to capturing a transaction reference such that it survives outside of its dynamic scope."
 
     def observe(f: Observation): Unit = {
       checkNotCommitted()
@@ -205,11 +205,11 @@ trait Twoversion {
       }
 
       failure match
-         case Nil              =>
-         case latest :: others =>
-           // not sure if this is a reasonable way to aggregate exceptions, but better than nothing?
-           others.foreach(latest.addSuppressed)
-           throw latest
+          case Nil              =>
+          case latest :: others =>
+            // not sure if this is a reasonable way to aggregate exceptions, but better than nothing?
+            others.foreach(latest.addSuppressed)
+            throw latest
 
     }
 
@@ -245,10 +245,10 @@ trait Twoversion {
     }
 
     override def preconditionTicket: DynamicTicket[State] = new DynamicTicket[State](this):
-       override private[reactives] def collectDynamic(reactive: ReSource.of[State]) =
-         accessHandler.dynamicAccess(reactive)
-       override private[reactives] def collectStatic(reactive: ReSource.of[State]) =
-         accessHandler.staticAccess(reactive)
+        override private[reactives] def collectDynamic(reactive: ReSource.of[State]) =
+          accessHandler.dynamicAccess(reactive)
+        override private[reactives] def collectStatic(reactive: ReSource.of[State]) =
+          accessHandler.staticAccess(reactive)
 
     override private[reactives] def makeAdmissionPhaseTicket(initialWrites: Set[ReSource]): AdmissionTicket[State] =
       new AdmissionTicket[State](this, initialWrites)

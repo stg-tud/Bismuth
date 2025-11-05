@@ -78,9 +78,9 @@ object JavaHttp {
           case Failure(ex) =>
             if SSEClientConnection.this.synchronized(currentReceive == adapter)
             then
-               // if this fails again, then we give up
-               send(ArrayMessageBuffer(Array.emptyByteArray)).run(_ => ())
-               ()
+                // if this fails again, then we give up
+                send(ArrayMessageBuffer(Array.emptyByteArray)).run(_ => ())
+                ()
             else {
               // accept close because another stream seems to be open
               ()

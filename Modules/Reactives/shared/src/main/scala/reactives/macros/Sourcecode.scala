@@ -78,9 +78,9 @@ object Sourcecode {
     private def adjustName(s: String): String =
       // Required to get the same name from dotty
       if s.startsWith("<local ") && s.endsWith("$>") then
-         s.stripSuffix("$>") + ">"
+          s.stripSuffix("$>") + ">"
       else
-         s
+          s
 
     def fileImpl(using Quotes): Expr[File] = {
       val file = quotes.reflect.Position.ofMacroExpansion.sourceFile.getJPath.map(_.toAbsolutePath.toString).getOrElse(
@@ -112,9 +112,9 @@ object Sourcecode {
 
       var current = Symbol.spliceOwner
       if !machine then
-         current = actualOwner(current)
+          current = actualOwner(current)
       else
-         current = nonMacroOwner(current)
+          current = nonMacroOwner(current)
       var path = List.empty[Chunk]
       while current != Symbol.noSymbol && current != defn.RootPackage && current != defn.RootClass do {
         if filter(current) then {

@@ -75,7 +75,9 @@ trait Sidup extends Twoversion {
         reactive.state.activate = true
         // immediate evaluation helps break dynamic creation cycle … sometimes
         if currentTx.sources != null then
-           currentTx.evaluateIn(reactive)(currentTx.makeDynamicReevaluationTicket(reactive.state.base(currentTx.token)))
+            currentTx.evaluateIn(reactive)(
+              currentTx.makeDynamicReevaluationTicket(reactive.state.base(currentTx.token))
+            )
         else currentTx.pokeLater(reactive)
       }
     }

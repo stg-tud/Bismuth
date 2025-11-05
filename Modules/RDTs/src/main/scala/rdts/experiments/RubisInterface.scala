@@ -60,8 +60,8 @@ object RubisInterface {
       val (req, users, _) = current
       if users.contains(userId) then deltaState.make()
       else
-         val merged = req.add(userId -> LocalUid.replicaId)
-         deltaState.make(userRequests = merged)
+          val merged = req.add(userId -> LocalUid.replicaId)
+          deltaState.make(userRequests = merged)
     }
 
     def resolveRegisterUser(): Delta = {
@@ -69,7 +69,7 @@ object RubisInterface {
       val newUsers        = req.elements.foldLeft(Map.empty[User, Uid]) {
         case (newlyRegistered, (uid, rid)) =>
           if (users ++ newlyRegistered).contains(uid) then
-             newlyRegistered
+              newlyRegistered
           else {
             newlyRegistered.updated(uid, rid)
           }

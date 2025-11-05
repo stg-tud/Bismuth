@@ -37,12 +37,12 @@ object Fold {
     val isStatic   = branches.forall(_.isStatic)
 
     def operator(dt: DynamicTicket[State], state: () => T): T =
-       var extracted = Option.empty[T]
-       def curr: T   = extracted.getOrElse(state())
-       branches.foreach { b =>
-         extracted = Some(b.run(dt)(using FoldState(curr)))
-       }
-       curr
+        var extracted = Option.empty[T]
+        def curr: T   = extracted.getOrElse(state())
+        branches.foreach { b =>
+          extracted = Some(b.run(dt)(using FoldState(curr)))
+        }
+        curr
 
     ticket.scope.create(
       staticDeps,

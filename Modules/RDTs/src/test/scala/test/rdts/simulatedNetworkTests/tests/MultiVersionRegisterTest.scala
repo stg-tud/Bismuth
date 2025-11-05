@@ -16,8 +16,8 @@ object MVRegisterGenerators {
       a: Arbitrary[A],
   ): Gen[AntiEntropyContainer[MultiVersionRegister[A]]] =
     for
-       values <- Gen.containerOf[List, A](a.arbitrary)
-       nClear <- Gen.posNum[Short]
+        values <- Gen.containerOf[List, A](a.arbitrary)
+        nClear <- Gen.posNum[Short]
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[MultiVersionRegister[A]]("a", network, mutable.Buffer())

@@ -13,12 +13,12 @@ object MacroLegos {
   def reactiveMacro[Res: Type, ReSourceT: Type, Ticket: Type, ForceStatic <: Boolean: Type](
       expr: Expr[Res]
   )(using q: Quotes): Expr[(List[ReSourceT], Ticket => Res, Boolean)] =
-     import q.reflect.*
+      import q.reflect.*
 
-     val forceStatic =
-       Type.valueOfConstant[ForceStatic].getOrElse(report.errorAndAbort("requires literal type for force static"))
-     MacroLego[ReSourceT, Ticket](forceStatic)
-       .makeReactive[Res](expr).asInstanceOf[Expr[(List[ReSourceT], Ticket => Res, Boolean)]]
+      val forceStatic =
+        Type.valueOfConstant[ForceStatic].getOrElse(report.errorAndAbort("requires literal type for force static"))
+      MacroLego[ReSourceT, Ticket](forceStatic)
+        .makeReactive[Res](expr).asInstanceOf[Expr[(List[ReSourceT], Ticket => Res, Boolean)]]
 
   class MacroLego[ReSourceT: Type, Ticket: Type](
       forceStatic: Boolean
@@ -28,12 +28,12 @@ object MacroLegos {
 
     class FindDefs extends TreeAccumulator[List[Symbol]] {
       override def foldTree(acc: List[Symbol], tree: Tree)(owner: Symbol): List[Symbol] =
-         val accd = tree match {
-           case d: Definition => d.symbol :: acc
-           case b: Bind       => b.symbol :: acc
-           case other         => acc
-         }
-         foldOverTree(accd, tree)(owner)
+          val accd = tree match {
+            case d: Definition => d.symbol :: acc
+            case b: Bind       => b.symbol :: acc
+            case other         => acc
+          }
+          foldOverTree(accd, tree)(owner)
     }
 
     class ContainsSymbol(defs: List[quotes.reflect.Symbol]) extends TreeAccumulator[Boolean] {
@@ -52,17 +52,17 @@ object MacroLegos {
       )(owner: quotes.reflect.Symbol): (List[quotes.reflect.Term], Boolean) = {
 
         def handleFind(x: Term): (List[Term], Boolean) =
-           val before = acc._1
-           val res    = foldTree((Nil, true), x)(owner)
-           // we do not find things with nested things inside
-           if res._1.nonEmpty then (before, false)
-           else (x :: before, acc._2)
+            val before = acc._1
+            val res    = foldTree((Nil, true), x)(owner)
+            // we do not find things with nested things inside
+            if res._1.nonEmpty then (before, false)
+            else (x :: before, acc._2)
 
         if !tree.isExpr then foldOverTree(acc, tree)(owner)
         else
-           tree.asExpr match
-              case '{ (${ x }: MacroAccess[?]).value } => handleFind(x.asTerm)
-              case _                                   => foldOverTree(acc, tree)(owner)
+            tree.asExpr match
+                case '{ (${ x }: MacroAccess[?]).value } => handleFind(x.asTerm)
+                case _                                   => foldOverTree(acc, tree)(owner)
 
       }
     }
@@ -80,19 +80,19 @@ object MacroLegos {
 
         def replaceAccess(a: TypeTree, xy: Term): Term = {
           replacement.get(xy) match
-             case Some(replaced) => accessTree(a)(true, replaced.asExpr.asTerm)
-             case None           =>
-               val xye = transformTree(xy)(owner).asInstanceOf[Term]
-               accessTree(a)(false, xye)
+              case Some(replaced) => accessTree(a)(true, replaced.asExpr.asTerm)
+              case None           =>
+                val xye = transformTree(xy)(owner).asInstanceOf[Term]
+                accessTree(a)(false, xye)
           end match
         }
 
         val res = if !tree.isExpr then super.transformTerm(tree)(owner)
         else
-           tree.asExpr match {
-             case '{ (${ xy }: MacroAccess[α]).value } => replaceAccess(TypeTree.of[α], xy.asTerm)
-             case _                                    => super.transformTerm(tree)(owner)
-           }
+            tree.asExpr match {
+              case '{ (${ xy }: MacroAccess[α]).value } => replaceAccess(TypeTree.of[α], xy.asTerm)
+              case _                                    => super.transformTerm(tree)(owner)
+            }
         res
       }
     }
@@ -101,10 +101,10 @@ object MacroLegos {
 
       override def transformTerm(tree: quotes.reflect.Term)(owner: quotes.reflect.Symbol): quotes.reflect.Term = {
         tree match
-           case TypeApply(Ident("dynamicTransactionScope"), ta) =>
-             Apply(TypeApply(Ident(TermRef(TypeRepr.of[TransactionSearch.type], "fromTicket")), ta), List(ticket))
-           case other =>
-             super.transformTerm(tree)(owner)
+            case TypeApply(Ident("dynamicTransactionScope"), ta) =>
+              Apply(TypeApply(Ident(TermRef(TypeRepr.of[TransactionSearch.type], "fromTicket")), ta), List(ticket))
+            case other =>
+              super.transformTerm(tree)(owner)
       }
     }
 

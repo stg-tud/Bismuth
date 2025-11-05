@@ -351,7 +351,7 @@ object ConnectionManagerTest {
     // Repeated loop ensures that assertion is stable (length depends on how whether test is run in CI)
     while System.currentTimeMillis() < stopTime && !assertion do {
       while System.currentTimeMillis() < stopTime && !assertion do
-         Thread.`yield`()
+          Thread.`yield`()
       Thread.sleep(assertionStabilityTime)
     }
 

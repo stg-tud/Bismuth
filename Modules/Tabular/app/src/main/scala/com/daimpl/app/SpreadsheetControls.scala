@@ -44,9 +44,9 @@ object SpreadsheetControls {
           <.button(
             ^.className := s"px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
                 if props.isOnline then
-                   "bg-red-500 hover:bg-red-600 text-white"
+                    "bg-red-500 hover:bg-red-600 text-white"
                 else
-                   "bg-green-500 hover:bg-green-600 text-white"
+                    "bg-green-500 hover:bg-green-600 text-white"
               }",
             ^.onClick --> props.onToggleOnline(props.spreadsheetId),
             if props.isOnline then "Go Offline" else "Go Online"

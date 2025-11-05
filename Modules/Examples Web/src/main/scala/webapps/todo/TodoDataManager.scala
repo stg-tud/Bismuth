@@ -35,8 +35,8 @@ object TodoDataManager {
 
       val branch = Fold.branch[DeltaBuffer[A]] {
         receivedCallback.value.flatMap(unwrap) match
-           case None    => Fold.current
-           case Some(v) => Fold.current.applyDeltaNonAppend(v)
+            case None    => Fold.current
+            case Some(v) => Fold.current.applyDeltaNonAppend(v)
       }
 
       val sig = create(fullInit, branch)

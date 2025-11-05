@@ -43,15 +43,15 @@ class KeyValueReplica(
 
   val sendingActor: ExecutionContext = {
     if offloadSending then
-       val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
-         val thread = new Thread(r)
-         thread.setDaemon(true)
-         thread
-       }
+        val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
+          val thread = new Thread(r)
+          thread.setDaemon(true)
+          thread
+        }
 
-       ExecutionContext.fromExecutorService(singleThreadExecutor)
+        ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
-       DeltaDissemination.executeImmediately
+        DeltaDissemination.executeImmediately
   }
 
   given Participants(votingReplicas)
@@ -130,22 +130,22 @@ class KeyValueReplica(
     /** propose myself as leader if I have the lowest id */
     def maybeLeaderElection(peers: Set[Uid]): Unit = {
       peers.minOption match
-         case Some(id) if id == uid =>
-           log(s"Proposing election of $uid")
-           transform(_.startLeaderElection): Unit
-         case _ => ()
+          case Some(id) if id == uid =>
+            log(s"Proposing election of $uid")
+            transform(_.startLeaderElection): Unit
+          case _ => ()
     }
 
     def maybeProposeNewValue(client: ClientState)(using LocalUid): Unit = {
       // check if we are the leader and ready to handle a request
       if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
-         // ready to propose value
-         client.firstUnansweredRequest match
-            case Some(req) =>
-              log(s"Proposing new value $req.")
-              val _ = transform(_.proposeIfLeader(req))
-            case None =>
-              log("I am the leader but request queue is empty.")
+          // ready to propose value
+          client.firstUnansweredRequest match
+              case Some(req) =>
+                log(s"Proposing new value $req.")
+                val _ = transform(_.proposeIfLeader(req))
+              case None =>
+                log("I am the leader but request queue is empty.")
     }
 
     private def maybeAnswerClient(previousRound: Time): Unit = {
@@ -212,7 +212,7 @@ class KeyValueReplica(
         state = state.merge(delta)
         dataManager.applyDelta(delta)
       } else
-         log("skip")
+          log("skip")
 
       state
     }

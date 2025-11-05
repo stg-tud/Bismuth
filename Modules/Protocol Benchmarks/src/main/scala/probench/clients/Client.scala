@@ -68,9 +68,9 @@ trait Client(name: Uid, logTimings: Boolean) {
     for i <- 1 to times do {
       val num = Math.round(Math.random() * (max - min) + min).toInt
       if Math.random() > 0.5 then
-         read(f"key$num")
+          read(f"key$num")
       else
-         write(f"key$num", f"value$num")
+          write(f"key$num", f"value$num")
     }
     log(s"Did $times mixed queries in ${(System.nanoTime() - start) / 1_000_000}ms")
     log(s"Did ${times.toDouble / ((System.nanoTime() - start) / 1_000_000_000d)} ops/s")
@@ -80,17 +80,17 @@ trait Client(name: Uid, logTimings: Boolean) {
     println("Initializing")
 
     mode match
-       case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min, min)
-       case BenchmarkOpType.Write                        =>
+        case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min, min)
+        case BenchmarkOpType.Write                        =>
 
     println("Warmup")
 
     val warmupStart = System.currentTimeMillis()
 
     mode match
-       case BenchmarkOpType.Read  => randomMultiGet("key%n", warmup, min, max)
-       case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", warmup, min, max)
-       case BenchmarkOpType.Mixed => mixed(warmup, min, max)
+        case BenchmarkOpType.Read  => randomMultiGet("key%n", warmup, min, max)
+        case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", warmup, min, max)
+        case BenchmarkOpType.Mixed => mixed(warmup, min, max)
 
     println("Measurement")
 
@@ -99,9 +99,9 @@ trait Client(name: Uid, logTimings: Boolean) {
     val start = System.currentTimeMillis()
 
     mode match
-       case BenchmarkOpType.Read  => randomMultiGet("key%n", measurement, min, max)
-       case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", measurement, min, max)
-       case BenchmarkOpType.Mixed => mixed(measurement, min, max)
+        case BenchmarkOpType.Read  => randomMultiGet("key%n", measurement, min, max)
+        case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", measurement, min, max)
+        case BenchmarkOpType.Mixed => mixed(measurement, min, max)
 
     val duration = System.currentTimeMillis() - start
 
@@ -117,8 +117,8 @@ trait Client(name: Uid, logTimings: Boolean) {
     println("Initializing")
 
     mode match
-       case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min, min)
-       case BenchmarkOpType.Write                        =>
+        case BenchmarkOpType.Read | BenchmarkOpType.Mixed => multiput("key%n", "value%n", max - min, min)
+        case BenchmarkOpType.Write                        =>
 
     println("Warmup")
 
@@ -126,9 +126,9 @@ trait Client(name: Uid, logTimings: Boolean) {
 
     while (System.currentTimeMillis() - warmupStart) < warmup * 1000 do {
       mode match
-         case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
-         case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
-         case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
+          case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
+          case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
+          case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
     }
 
     println("Measurement")
@@ -140,9 +140,9 @@ trait Client(name: Uid, logTimings: Boolean) {
 
     while (System.currentTimeMillis() - measurementStart) < measurement * 1000 do {
       mode match
-         case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
-         case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
-         case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
+          case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
+          case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
+          case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
       queries += blockSize
     }
 
@@ -162,11 +162,11 @@ trait Client(name: Uid, logTimings: Boolean) {
     if doBenchmark then {
       val end      = System.nanoTime()
       val opString = op match
-         case KVOperation.Read(_)     => "get"
-         case KVOperation.Write(_, _) => "put"
+          case KVOperation.Read(_)     => "get"
+          case KVOperation.Write(_, _) => "put"
       val args = op match
-         case KVOperation.Read(key)         => key
-         case KVOperation.Write(key, value) => s"$key $value"
+          case KVOperation.Read(key)         => key
+          case KVOperation.Write(key, value) => s"$key $value"
       benchmarkData.append(BenchmarkData(
         name.delegate,
         opString,

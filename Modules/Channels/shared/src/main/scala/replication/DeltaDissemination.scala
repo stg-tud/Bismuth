@@ -60,18 +60,18 @@ class DeltaDissemination[State](
   @volatile var connections: List[ConnectionContext] = Nil
 
   def debugCallbackAndRemoveCon(con: ConnectionContext): Callback[Any] =
-     case Success(value)     => ()
-     case Failure(exception) =>
-       lock.synchronized {
-         connections = connections.filter(cc => cc != con)
-       }
-       println(s"exception during message handling, removing connection $con from list of connections")
-       exception.printStackTrace()
+      case Success(value)     => ()
+      case Failure(exception) =>
+        lock.synchronized {
+          connections = connections.filter(cc => cc != con)
+        }
+        println(s"exception during message handling, removing connection $con from list of connections")
+        exception.printStackTrace()
 
   def requestData(): Unit = {
     val msg = SentCachedMessage(Request(replicaId.uid, selfContext))(using pmscodec)
     connections.foreach: con =>
-       send(con, msg)
+        send(con, msg)
   }
 
   def pingAll(): Unit = {
@@ -82,10 +82,10 @@ class DeltaDissemination[State](
   }
 
   val printExceptionHandler: Callback[Any] =
-     case Failure(ex) =>
-       println("exception during connection activation")
-       ex.printStackTrace()
-     case Success(_) => ()
+      case Failure(ex) =>
+        println("exception during connection activation")
+        ex.printStackTrace()
+      case Success(_) => ()
 
   def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit =
     prepareBinaryConnection(latentConnection).run(printExceptionHandler)
@@ -143,15 +143,15 @@ class DeltaDissemination[State](
   def selfContext: Dots = contexts.getOrElse(replicaId.uid, Dots.empty)
 
   def applyDelta(delta: State): Unit =
-     val message = lock.synchronized {
-       val nextDot = selfContext.nextDot(replicaId.uid)
-       val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
-       updateContext(replicaId.uid, payload.dots)
-       val message = SentCachedMessage(payload)(using pmscodec)
-       rememberPayload(message)
-       message
-     }
-     disseminate(message)
+      val message = lock.synchronized {
+        val nextDot = selfContext.nextDot(replicaId.uid)
+        val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
+        updateContext(replicaId.uid, payload.dots)
+        val message = SentCachedMessage(payload)(using pmscodec)
+        rememberPayload(message)
+        message
+      }
+      disseminate(message)
 
   def updateContext(rr: Uid, dots: Dots): Unit = lock.synchronized {
     contexts = contexts.updatedWith(rr)(curr => curr `merge` Some(dots))
@@ -164,52 +164,52 @@ class DeltaDissemination[State](
   def handleMessage(msg: Message, from: ConnectionContext): Unit = {
     if globalAbort.closeRequest then return
     msg.payload match
-       case Ping(time) =>
-         send(from, SentCachedMessage(Pong(time))(using pmscodec))
-       case Pong(time) =>
-       // println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
-       case Request(uid, knows) =>
-         val (relevant, context) = lock.synchronized {
-           val relevant     = allPayloads.filterNot { dt => dt.payload.dots <= knows }
-           val newknowledge =
-             knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
-           val context = selfContext
-           val diff    = context `subtract` newknowledge
-           if !diff.isEmpty then
-              throw IllegalStateException(
-                s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${selfContext}}"
-              )
-           (relevant, context)
-         }
-         relevant.foreach: msg =>
-            send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
-         updateContext(uid, context `merge` knows)
-       case payload @ Payload(uid, context, data, redundantDots) =>
-         if context <= selfContext then return
-         lock.synchronized {
-           uid.foreach { uid =>
-             updateContext(uid, context)
-           }
-           updateContext(replicaId.uid, context)
-           rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
-         }
-         receiveCallback(data)
-         if immediateForward then
-            disseminate(msg, Set(from))
+        case Ping(time) =>
+          send(from, SentCachedMessage(Pong(time))(using pmscodec))
+        case Pong(time) =>
+        // println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
+        case Request(uid, knows) =>
+          val (relevant, context) = lock.synchronized {
+            val relevant     = allPayloads.filterNot { dt => dt.payload.dots <= knows }
+            val newknowledge =
+              knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
+            val context = selfContext
+            val diff    = context `subtract` newknowledge
+            if !diff.isEmpty then
+                throw IllegalStateException(
+                  s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${selfContext}}"
+                )
+            (relevant, context)
+          }
+          relevant.foreach: msg =>
+              send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
+          updateContext(uid, context `merge` knows)
+        case payload @ Payload(uid, context, data, redundantDots) =>
+          if context <= selfContext then return
+          lock.synchronized {
+            uid.foreach { uid =>
+              updateContext(uid, context)
+            }
+            updateContext(replicaId.uid, context)
+            rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
+          }
+          receiveCallback(data)
+          if immediateForward then
+              disseminate(msg, Set(from))
 
   }
 
   def send(con: ConnectionContext, payload: Message): Unit =
     if globalAbort.closeRequest then ()
     else
-       sendingActor.execute { () =>
-         con.send(payload).run(debugCallbackAndRemoveCon(con))
-       }
+        sendingActor.execute { () =>
+          con.send(payload).run(debugCallbackAndRemoveCon(con))
+        }
 
   def disseminate(payload: Message, except: Set[ConnectionContext] = Set.empty): Unit = {
     val cons = lock.synchronized(connections)
     cons.filterNot(con => except.contains(con)).foreach: con =>
-       send(con, payload)
+        send(con, payload)
 
   }
 

@@ -16,35 +16,35 @@ object DataGenerator {
     override def toString: _root_.java.lang.String = content.mkString("\"", "", "\"")
   }
   object ExampleData:
-     given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
+      given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
 
   given Arbitrary[ExampleData] = Arbitrary:
-     Gen.oneOf(List("Anne", "Ben", "Chris", "Erin", "Julina", "Lynn", "Sara", "Taylor")).map(name =>
-       ExampleData(Set(name))
-     )
+      Gen.oneOf(List("Anne", "Ben", "Chris", "Erin", "Julina", "Lynn", "Sara", "Taylor")).map(name =>
+        ExampleData(Set(name))
+      )
 
   given arbId: Arbitrary[Uid] = Arbitrary(Gen.oneOf('a' to 'g').map(c => Uid.predefined(c.toString)))
 
   given arbVectorClock: Arbitrary[VectorClock] = Arbitrary:
-     for
-        ids: Set[Uid]     <- Gen.nonEmptyListOf(arbId.arbitrary).map(_.toSet)
-        value: List[Long] <- Gen.listOfN(ids.size, Gen.oneOf(0L to 100L))
-     yield VectorClock.fromMap(ids.zip(value).toMap)
+      for
+          ids: Set[Uid]     <- Gen.nonEmptyListOf(arbId.arbitrary).map(_.toSet)
+          value: List[Long] <- Gen.listOfN(ids.size, Gen.oneOf(0L to 100L))
+      yield VectorClock.fromMap(ids.zip(value).toMap)
 
   val smallNum: Gen[Int] = Gen.chooseNum(-10, 10)
 
   given arbCausalTime: Arbitrary[CausalTime] = Arbitrary:
-     for
-        time     <- smallNum
-        causal   <- smallNum
-        nanotime <- Gen.long
-     yield CausalTime(time, causal, nanotime)
+      for
+          time     <- smallNum
+          causal   <- smallNum
+          nanotime <- Gen.long
+      yield CausalTime(time, causal, nanotime)
 
   given arbLww[E: Arbitrary]: Arbitrary[LastWriterWins[E]] = Arbitrary:
-     for
-        causal <- arbCausalTime.arbitrary
-        value  <- Arbitrary.arbitrary
-     yield LastWriterWins(causal, value)
+      for
+          causal <- arbCausalTime.arbitrary
+          value  <- Arbitrary.arbitrary
+      yield LastWriterWins(causal, value)
 
   given arbGcounter: Arbitrary[GrowOnlyCounter] = Arbitrary(
     Gen.mapOf[Uid, Int](Gen.zip(arbId.arbitrary, smallNum)).map(GrowOnlyCounter(_))
@@ -52,8 +52,8 @@ object DataGenerator {
 
   given arbPosNeg: Arbitrary[PosNegCounter] = Arbitrary(
     for
-       pos <- arbGcounter.arbitrary
-       neg <- arbGcounter.arbitrary
+        pos <- arbGcounter.arbitrary
+        neg <- arbGcounter.arbitrary
     yield PosNegCounter(pos, neg)
   )
 
@@ -61,32 +61,32 @@ object DataGenerator {
 
   val genDot: Gen[Dot] =
     for
-       id    <- Gen.oneOf('a' to 'g')
-       value <- Gen.oneOf(0 to 100)
+        id    <- Gen.oneOf('a' to 'g')
+        value <- Gen.oneOf(0 to 100)
     yield Dot(Uid.predefined(id.toString), value)
 
   val uniqueDot: Gen[Dot] =
     for
-       id    <- Gen.oneOf('a' to 'g')
-       value <- Gen.long
+        id    <- Gen.oneOf('a' to 'g')
+        value <- Gen.long
     yield Dot(Uid.predefined(id.toString), value)
 
   given arbDot: Arbitrary[Dot] = Arbitrary(genDot)
 
   given arbDots: Arbitrary[Dots] = Arbitrary:
-     Gen.containerOfN[Set, Dot](10, genDot).map(Dots.from)
+      Gen.containerOfN[Set, Dot](10, genDot).map(Dots.from)
 
   given Arbitrary[ArrayRanges] = Arbitrary(
     for
-       x <- Gen.listOf(smallNum)
+        x <- Gen.listOf(smallNum)
     yield ArrayRanges.from(x.map(_.toLong))
   )
 
   def genDotFun[A](using g: Arbitrary[A]): Gen[Map[Dot, A]] =
     for
-       n      <- Gen.choose(0, 10)
-       dots   <- Gen.containerOfN[List, Dot](n, genDot)
-       values <- Gen.containerOfN[List, A](n, g.arbitrary)
+        n      <- Gen.choose(0, 10)
+        dots   <- Gen.containerOfN[List, Dot](n, genDot)
+        values <- Gen.containerOfN[List, A](n, g.arbitrary)
     yield (dots zip values).toMap
 
   given arbDotFun[A](using g: Arbitrary[A]): Arbitrary[Map[Dot, A]] = Arbitrary(genDotFun)
@@ -94,51 +94,51 @@ object DataGenerator {
   @tailrec
   def makeUnique(rem: List[Dots], acc: List[Dots], state: Dots): List[Dots] =
     rem match
-       case Nil    => acc
-       case h :: t => makeUnique(t, h.subtract(state) :: acc, state `union` h)
+        case Nil    => acc
+        case h :: t => makeUnique(t, h.subtract(state) :: acc, state `union` h)
 
   case class SmallTimeSet(s: Set[Time])
 
   given Arbitrary[SmallTimeSet] = Arbitrary(for
-     contents <- Gen.listOf(Gen.chooseNum(0L, 100L))
+      contents <- Gen.listOf(Gen.chooseNum(0L, 100L))
   yield SmallTimeSet(contents.toSet))
 
   given arbGrowOnlyList[E](using arb: Arbitrary[E]): Arbitrary[GrowOnlyList[E]] = Arbitrary:
-     Gen.listOf(arb.arbitrary).map: list =>
-        GrowOnlyList.empty.insertAllAt(0, list)
+      Gen.listOf(arb.arbitrary).map: list =>
+          GrowOnlyList.empty.insertAllAt(0, list)
 
   given arbDotmap[K, V](using arbElem: Arbitrary[K], arbKey: Arbitrary[V]): Arbitrary[Map[K, V]] =
     Arbitrary:
-       Gen.listOf(Gen.zip[K, V](arbElem.arbitrary, arbKey.arbitrary)).map: pairs =>
-          pairs.toMap
+        Gen.listOf(Gen.zip[K, V](arbElem.arbitrary, arbKey.arbitrary)).map: pairs =>
+            pairs.toMap
 
   given arbCMultiVersion[E](using arb: Arbitrary[E]): Arbitrary[MultiVersionRegister[E]] = Arbitrary {
     for
-       elements <- Gen.listOf(Gen.zip(uniqueDot, arb.arbitrary))
-       removed  <- arbDots.arbitrary
+        elements <- Gen.listOf(Gen.zip(uniqueDot, arb.arbitrary))
+        removed  <- arbDots.arbitrary
     yield MultiVersionRegister(elements.toMap, removed)
   }
 
   given arbEnableWinsFlag: Arbitrary[EnableWinsFlag] = Arbitrary {
     for
-       set   <- arbDots.arbitrary
-       unset <- arbDots.arbitrary
+        set   <- arbDots.arbitrary
+        unset <- arbDots.arbitrary
     yield EnableWinsFlag(set, unset)
   }
 
   given arbCausalDelta[A: {Arbitrary}]: Arbitrary[CausalDelta[A]] = Arbitrary:
-     for
-        predec <- arbDots.arbitrary
-        value  <- Arbitrary.arbitrary[A]
-        dots   <- arbDot.arbitrary
-     yield CausalDelta(dots, Dots.empty, value)
+      for
+          predec <- arbDots.arbitrary
+          value  <- Arbitrary.arbitrary[A]
+          dots   <- arbDot.arbitrary
+      yield CausalDelta(dots, Dots.empty, value)
 
   given arbCausalStore[A: {Arbitrary, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
-     for
-        predec <- Gen.listOf(arbCausalDelta.arbitrary)
-        value  <- Arbitrary.arbitrary[A]
-        dots   <- arbDots.arbitrary
-     yield Lattice.normalize(CausalStore(predec.toSet, dots, Some(value)))
+      for
+          predec <- Gen.listOf(arbCausalDelta.arbitrary)
+          value  <- Arbitrary.arbitrary[A]
+          dots   <- arbDots.arbitrary
+      yield Lattice.normalize(CausalStore(predec.toSet, dots, Some(value)))
 
   object ReplicatedListGen {
     def makeRGA[E](
@@ -161,11 +161,11 @@ object DataGenerator {
 
     def genRGA[E](using e: Arbitrary[E]): Gen[ReplicatedList[E]] =
       for
-         nInserted       <- Gen.choose(0, 20)
-         insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
-         insertedValues  <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
-         removed         <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
-         id              <- Gen.stringOfN(10, Gen.alphaChar)
+          nInserted       <- Gen.choose(0, 20)
+          insertedIndices <- Gen.containerOfN[List, Int](nInserted, Arbitrary.arbitrary[Int])
+          insertedValues  <- Gen.containerOfN[List, E](nInserted, e.arbitrary)
+          removed         <- Gen.containerOf[List, Int](Arbitrary.arbitrary[Int])
+          id              <- Gen.stringOfN(10, Gen.alphaChar)
       yield makeRGA(insertedIndices zip insertedValues, removed, Uid.predefined(id.toString).convert)
 
     given arbRGA[E](using
@@ -176,8 +176,8 @@ object DataGenerator {
   }
 
   given arbOpGraph[T](using arbData: Arbitrary[T]): Arbitrary[OpGraph[T]] = Arbitrary:
-     Gen.containerOf[List, T](arbData.arbitrary).map: elems =>
-        elems.foldLeft(OpGraph.bottom.empty): (curr, elem) =>
-           curr `merge` curr.set(elem)
+      Gen.containerOf[List, T](arbData.arbitrary).map: elems =>
+          elems.foldLeft(OpGraph.bottom.empty): (curr, elem) =>
+              curr `merge` curr.set(elem)
 
 }

@@ -84,9 +84,9 @@ class ArrayRanges(
 
   def contains(x: Time): Boolean = {
     val index =
-       // binary search returns either the index of x, or the position where x should be inserted (but shifted into negative numbers)
-       val res = java.util.Arrays.binarySearch(inner, 0, used, x)
-       if res < 0 then -res - 1 else res
+        // binary search returns either the index of x, or the position where x should be inserted (but shifted into negative numbers)
+        val res = java.util.Arrays.binarySearch(inner, 0, used, x)
+        if res < 0 then -res - 1 else res
     if index >= used then false
     else if index % 2 == 0
     // found a start
@@ -108,13 +108,13 @@ class ArrayRanges(
 
     override def hasNext: Boolean = used > pos
     override def next(): Time     =
-       val res = value
-       value += 1
-       if value >= inner(pos + 1) then
-          pos += 2
-          if used > pos then
-             value = inner(pos)
-       res
+        val res = value
+        value += 1
+        if value >= inner(pos + 1) then
+            pos += 2
+            if used > pos then
+                value = inner(pos)
+        res
   }
 
   def head: Time =
@@ -159,32 +159,32 @@ class ArrayRanges(
     }
 
     inline def write(t: Time): Unit =
-       merged(mergedPos) = t
-       mergedPos += 1
+        merged(mergedPos) = t
+        mergedPos += 1
 
     def findNextRange(): Unit =
-       var curStart = 0L
-       var minEnd   = 0L
+        var curStart = 0L
+        var minEnd   = 0L
 
-       if !lok then
-          curStart = rstart
-          minEnd = rend
-       else if !rok || lstart < rstart then
-          curStart = lstart
-          minEnd = lend
-       else
-          curStart = rstart
-          minEnd = rend
+        if !lok then
+            curStart = rstart
+            minEnd = rend
+        else if !rok || lstart < rstart then
+            curStart = lstart
+            minEnd = lend
+        else
+            curStart = rstart
+            minEnd = rend
 
-       def mergeOverlapping(): Boolean =
-          var res = false
-          if rok && rstart <= minEnd then { res = true; minEnd = math.max(rend, minEnd); rightPos += 2 }
-          if lok && lstart <= minEnd then { res = true; minEnd = math.max(lend, minEnd); leftPos += 2 }
-          res
+        def mergeOverlapping(): Boolean =
+            var res = false
+            if rok && rstart <= minEnd then { res = true; minEnd = math.max(rend, minEnd); rightPos += 2 }
+            if lok && lstart <= minEnd then { res = true; minEnd = math.max(lend, minEnd); leftPos += 2 }
+            res
 
-       while mergeOverlapping() do ()
-       write(curStart)
-       write(minEnd)
+        while mergeOverlapping() do ()
+        write(curStart)
+        write(minEnd)
     end findNextRange
 
     while rok || lok do findNextRange()
@@ -278,38 +278,38 @@ class ArrayRanges(
 
     // Loop over ranges in left, creating holes for ranges that are in right
     while
-       if lMin > rMax // left range is entirely after right range
-       then
-          // Look at next range of right
-          nextRightOrAddAllFromLeft()
-       else if lMax < rMin // left range is entirely before right range
-       then
-          // Add left range
-          includeRangeInclusive(lMin, lMax)
-          // Look at next range from left
-          nextLeft()
-       else if lMin >= rMin // left range starts after or at start of right range
-       then
-          if lMax > rMax // overlap from start but not until end
-          then
-             lMin = rMax + 1 // punch a hole in left range ending at rMax
-             // Look at next range of right
-             nextRightOrAddAllFromLeft()
-          else // Complete overlap
-             // Don't add left range
-             // Look at next left range
-             nextLeft()
-       else // overlap after start of left until end of left
-          // Add parts of left range
-          includeRangeInclusive(lMin, rMin - 1) // Exclude rMin
-          if lMax < rMax                        // l is completely removed
-          then
-             // Look at next left range
-             nextLeft()
-          else // l is only partially removed
-             // increase left pointer to after right and recur
-             lMin = rMax
-             true
+        if lMin > rMax // left range is entirely after right range
+        then
+            // Look at next range of right
+            nextRightOrAddAllFromLeft()
+        else if lMax < rMin // left range is entirely before right range
+        then
+            // Add left range
+            includeRangeInclusive(lMin, lMax)
+            // Look at next range from left
+            nextLeft()
+        else if lMin >= rMin // left range starts after or at start of right range
+        then
+            if lMax > rMax // overlap from start but not until end
+            then
+                lMin = rMax + 1 // punch a hole in left range ending at rMax
+                // Look at next range of right
+                nextRightOrAddAllFromLeft()
+            else // Complete overlap
+                // Don't add left range
+                // Look at next left range
+                nextLeft()
+        else // overlap after start of left until end of left
+            // Add parts of left range
+            includeRangeInclusive(lMin, rMin - 1) // Exclude rMin
+            if lMax < rMax                        // l is completely removed
+            then
+                // Look at next left range
+                nextLeft()
+            else // l is only partially removed
+                // increase left pointer to after right and recur
+                lMin = rMax
+                true
     do ()
 
     new ArrayRanges(newInner, newInnerNextIndex)
@@ -357,75 +357,75 @@ object ArrayRanges {
 
   given latticeInstance: Lattice[ArrayRanges] with Decompose[ArrayRanges] with {
     extension (a: ArrayRanges)
-       override def decomposed: Iterable[ArrayRanges]                        = a.decomposed
+        override def decomposed: Iterable[ArrayRanges]                       = a.decomposed
     override def subsumption(left: ArrayRanges, right: ArrayRanges): Boolean = left <= right
     override def merge(left: ArrayRanges, right: ArrayRanges): ArrayRanges   = left `union` right
   }
 
   def leftRightToOrder: (Boolean, Boolean) => Option[Int] =
-     case (true, true)   => Some(0)
-     case (true, false)  => Some(-1)
-     case (false, true)  => Some(1)
-     case (false, false) => None
+      case (true, true)   => Some(0)
+      case (true, false)  => Some(-1)
+      case (false, true)  => Some(1)
+      case (false, false) => None
 
   given partialOrder: PartialOrdering[ArrayRanges] with {
     override def lteq(x: ArrayRanges, y: ArrayRanges): Boolean                  = x <= y
     override def tryCompare(left: ArrayRanges, right: ArrayRanges): Option[Int] = {
       (left.isEmpty, right.isEmpty) match
-         case (true, true)   => Some(0)
-         case (true, false)  => Some(-1)
-         case (false, true)  => Some(1)
-         case (false, false) =>
-           var leftIndex  = 0
-           var rightIndex = 0
+          case (true, true)   => Some(0)
+          case (true, false)  => Some(-1)
+          case (false, true)  => Some(1)
+          case (false, false) =>
+            var leftIndex  = 0
+            var rightIndex = 0
 
-           var leftLTE  = true
-           var rightLTE = true
+            var leftLTE  = true
+            var rightLTE = true
 
-           while
-              leftIndex < left.used &&
-              rightIndex < right.used &&
-              (leftLTE || rightLTE)
-           do
-              val leftLower  = left.inner(leftIndex)
-              val leftUpper  = left.inner(leftIndex + 1)
-              val rightLower = right.inner(rightIndex)
-              val rightUpper = right.inner(rightIndex + 1)
+            while
+                leftIndex < left.used &&
+                rightIndex < right.used &&
+                (leftLTE || rightLTE)
+            do
+                val leftLower  = left.inner(leftIndex)
+                val leftUpper  = left.inner(leftIndex + 1)
+                val rightLower = right.inner(rightIndex)
+                val rightUpper = right.inner(rightIndex + 1)
 
-              if // complete right interval not known by left
-                 rightUpper <= leftLower
-              then
-                 rightLTE = false
-                 rightIndex += 2
-              else if // complete left interval not known by right
-                 leftUpper <= rightLower
-              then
-                 leftLTE = false
-                 leftIndex += 2
-              else if // intervals are exactly the same
-                 leftLower == rightLower && rightUpper == leftUpper
-              then
-                 leftIndex += 2
-                 rightIndex += 2
-              else // now we know there is some overlap, disambiguate further
-              if   // right inside left
-                 rightUpper <= leftUpper &&
-                 leftLower <= rightLower
-              then
-                 leftLTE = false
-                 rightIndex += 2
-              else if // left inside right
-                 leftUpper <= rightUpper &&
-                 rightLower <= leftLower
-              then
-                 rightLTE = false
-                 leftIndex += 2
-              else // both partially overlap
-                 rightLTE = false
-                 leftLTE = false
-           end while
+                if // complete right interval not known by left
+                    rightUpper <= leftLower
+                then
+                    rightLTE = false
+                    rightIndex += 2
+                else if // complete left interval not known by right
+                    leftUpper <= rightLower
+                then
+                    leftLTE = false
+                    leftIndex += 2
+                else if // intervals are exactly the same
+                    leftLower == rightLower && rightUpper == leftUpper
+                then
+                    leftIndex += 2
+                    rightIndex += 2
+                else // now we know there is some overlap, disambiguate further
+                if   // right inside left
+                    rightUpper <= leftUpper &&
+                    leftLower <= rightLower
+                then
+                    leftLTE = false
+                    rightIndex += 2
+                else if // left inside right
+                    leftUpper <= rightUpper &&
+                    rightLower <= leftLower
+                then
+                    rightLTE = false
+                    leftIndex += 2
+                else // both partially overlap
+                    rightLTE = false
+                    leftLTE = false
+            end while
 
-           leftRightToOrder(leftLTE, rightLTE)
+            leftRightToOrder(leftLTE, rightLTE)
     }
   }
 }

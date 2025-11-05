@@ -51,7 +51,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
   def caseStudyListen(): Unit = {
     while true do
-       Thread.sleep(1000)
+        Thread.sleep(1000)
   }
 
   def caseStudyActive(): Unit = {
@@ -68,7 +68,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
     println("finshed adding changes")
 
     while true do
-       Thread.sleep(1000)
+        Thread.sleep(1000)
   }
 }
 
@@ -115,7 +115,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   def caseStudyListen(): Unit = {
     while true do
-       Thread.sleep(1000)
+        Thread.sleep(1000)
   }
 
   def caseStudyActive(): Unit = {
@@ -150,7 +150,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
     println("finshed adding changes")
 
     while true do
-       Thread.sleep(1000)
+        Thread.sleep(1000)
   }
 }
 
@@ -189,7 +189,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   def caseStudyListen(): Unit = {
     while true do
-       Thread.sleep(1000)
+        Thread.sleep(1000)
   }
 
   def caseStudyActive(): Unit = {
@@ -207,6 +207,6 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
     }
 
     while true do
-       Thread.sleep(1000)
+        Thread.sleep(1000)
   }
 }

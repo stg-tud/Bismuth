@@ -31,8 +31,8 @@ class CreationTicketTest extends FunSuite {
     given implicitTurn: Transaction[State] = getTurn
 
     implicitly[CreationTicket[State]].scope match
-       case StaticCreationScope(tx) => assertEquals(tx, implicitTurn)
-       case other                   => assert(false)
+        case StaticCreationScope(tx) => assertEquals(tx, implicitTurn)
+        case other                   => assert(false)
     assertEquals(implicitTurn, summon[CreationTicket[State]].scope.embedCreation(x ?=> x))
   }
 
@@ -41,8 +41,8 @@ class CreationTicketTest extends FunSuite {
       given implicitTurn: Transaction[State] = getTurn
 
       summon[CreationTicket[State]](using implicitTurn.convert).scope match
-         case StaticCreationScope(tx) => assertEquals(tx, implicitTurn)
-         case other                   => assert(false)
+          case StaticCreationScope(tx) => assertEquals(tx, implicitTurn)
+          case other                   => assert(false)
       assertEquals(implicitTurn, summon[CreationTicket[State]](using implicitTurn.convert).scope.embedCreation(x ?=> x))
     }
   }
@@ -56,8 +56,8 @@ class CreationTicketTest extends FunSuite {
     }
     transaction() {
       closure().scope match
-         case StaticCreationScope(tx) => assertEquals(tx, closureDefinition)
-         case other                   => assert(false)
+          case StaticCreationScope(tx) => assertEquals(tx, closureDefinition)
+          case other                   => assert(false)
       assertEquals(closureDefinition, closure().scope.embedCreation(x ?=> x))
     }
   }

@@ -29,7 +29,7 @@ class LoadAction extends Action("Load") {
     if fileChooser.showDialog(null, "load") == FileChooser.Result.Approve then {
       ReShapes.drawingSpaceState.now.clear.fire()
       for shape <- Shape.deserialize(XML.loadFile(fileChooser.selectedFile), ReShapes.drawingSpaceState.now) do
-         ReShapes.drawingSpaceState.now.execute.fire(new CreateShape(shape))
+          ReShapes.drawingSpaceState.now.execute.fire(new CreateShape(shape))
     }
   }
 }

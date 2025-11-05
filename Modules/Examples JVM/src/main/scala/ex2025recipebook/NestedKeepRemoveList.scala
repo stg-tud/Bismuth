@@ -34,12 +34,12 @@ case class NestedKeepRemoveList[E] private (
   def insertAt(i: Int, e: E)(using LocalUid): C = {
     val newDot = observed.nextDot(LocalUid.replicaId)
     findInsertIndex(i) match
-       case None        => NestedKeepRemoveList.empty
-       case Some(glIdx) =>
-         val nOrder   = order.map(_.insertAt(glIdx, newDot))
-         val nPayload = Map(newDot -> e)
-         val nFlag    = Map(newDot -> EnableWinsFlag(Dots.single(newDot), Dots.empty))
-         NestedKeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
+        case None        => NestedKeepRemoveList.empty
+        case Some(glIdx) =>
+          val nOrder   = order.map(_.insertAt(glIdx, newDot))
+          val nPayload = Map(newDot -> e)
+          val nFlag    = Map(newDot -> EnableWinsFlag(Dots.single(newDot), Dots.empty))
+          NestedKeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
   def append(using LocalUid)(e: E): C = insertAt(sizeIncludingDead, e)
@@ -55,15 +55,15 @@ case class NestedKeepRemoveList[E] private (
     read(idx) match {
       case Some(value) =>
         findRealIndex(idx) match
-           case None          => NestedKeepRemoveList.empty
-           case Some(realIdx) =>
-             order.value.toLazyList.lift(realIdx) match
-                case None    => NestedKeepRemoveList.empty
-                case Some(d) =>
-                  val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
-                  val next = cur.enable()
-                  if cur == next then NestedKeepRemoveList.empty
-                  else NestedKeepRemoveList(flags = Map(d -> next), payloads = Map(d -> mod(value)))
+            case None          => NestedKeepRemoveList.empty
+            case Some(realIdx) =>
+              order.value.toLazyList.lift(realIdx) match
+                  case None    => NestedKeepRemoveList.empty
+                  case Some(d) =>
+                    val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
+                    val next = cur.enable()
+                    if cur == next then NestedKeepRemoveList.empty
+                    else NestedKeepRemoveList(flags = Map(d -> next), payloads = Map(d -> mod(value)))
       case None => NestedKeepRemoveList.empty
     }
   }
@@ -74,13 +74,13 @@ case class NestedKeepRemoveList[E] private (
     }
 
   def purgeTombstones(): C =
-     val dead = flags.collect { case (d, f) if !f.read => d }.toSet
-     if dead.isEmpty then NestedKeepRemoveList.empty
-     else
-        val nOrder    = order.map(_.without(dead))
-        val nPayloads = payloads -- dead
-        val nFlags    = flags -- dead
-        NestedKeepRemoveList(order = nOrder, payloads = nPayloads, flags = nFlags)
+      val dead = flags.collect { case (d, f) if !f.read => d }.toSet
+      if dead.isEmpty then NestedKeepRemoveList.empty
+      else
+          val nOrder    = order.map(_.without(dead))
+          val nPayloads = payloads -- dead
+          val nFlags    = flags -- dead
+          NestedKeepRemoveList(order = nOrder, payloads = nPayloads, flags = nFlags)
 
   private def isAlive(d: Dot): Boolean = flags.get(d).forall(_.read)
 
@@ -101,21 +101,21 @@ case class NestedKeepRemoveList[E] private (
 
   private def updateFlag(idx: Int)(f: (EnableWinsFlag) => EnableWinsFlag)(using LocalUid): C =
     findRealIndex(idx) match
-       case None          => NestedKeepRemoveList.empty
-       case Some(realIdx) =>
-         order.value.toLazyList.lift(realIdx) match
-            case None    => NestedKeepRemoveList.empty
-            case Some(d) =>
-              val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
-              val next = f(cur)
-              if cur == next then NestedKeepRemoveList.empty else NestedKeepRemoveList(flags = Map(d -> next))
+        case None          => NestedKeepRemoveList.empty
+        case Some(realIdx) =>
+          order.value.toLazyList.lift(realIdx) match
+              case None    => NestedKeepRemoveList.empty
+              case Some(d) =>
+                val cur  = flags.getOrElse(d, EnableWinsFlag.empty)
+                val next = f(cur)
+                if cur == next then NestedKeepRemoveList.empty else NestedKeepRemoveList(flags = Map(d -> next))
 }
 
 object NestedKeepRemoveList {
   def empty[E]: NestedKeepRemoveList[E] = NestedKeepRemoveList(Epoch.empty, Map.empty, Map.empty)
 
   given bottom[E]: Bottom[NestedKeepRemoveList[E]] with
-     def empty: NestedKeepRemoveList[E] = NestedKeepRemoveList.empty
+      def empty: NestedKeepRemoveList[E] = NestedKeepRemoveList.empty
 
   given lattice[E: Lattice]: Lattice[NestedKeepRemoveList[E]] = Lattice.derived
 

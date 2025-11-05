@@ -31,7 +31,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       currentState = currentState.merge(delta)
       dataManager.applyDelta(delta)
     } else
-       log("skip")
+        log("skip")
     currentState
   }
 
@@ -54,29 +54,29 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
   }
 
   private def maybeHandleResponses(newState: State): Unit =
-     val (requests, responses) = (newState.requests, newState.responses)
-     for {
-       req @ Req(_, _, timestamp) <- requests.get(replicaId).map(_.value).getOrElse(Set())
-       if responses.contains(timestamp)
-     } {
-       responses.get(timestamp) match
-          case Some(res) =>
-            onResultValue(res.value)
-            transform(_.complete(req))
-            if blocking then requestSemaphore.release(1)
-          case None => ()
-     }
+      val (requests, responses) = (newState.requests, newState.responses)
+      for {
+        req @ Req(_, _, timestamp) <- requests.get(replicaId).map(_.value).getOrElse(Set())
+        if responses.contains(timestamp)
+      } {
+        responses.get(timestamp) match
+            case Some(res) =>
+              onResultValue(res.value)
+              transform(_.complete(req))
+              if blocking then requestSemaphore.release(1)
+            case None => ()
+      }
 
   override def handleOpImpl(op: KVOperation[String, String]): Unit =
-     // TODO: still not sure that the semaphore use is correct …
-     // its quite likely possible that some other request is answered after draining, causing the code below to return immediately
-     // though overall currentOp is not protected at all, so it is triple unclear what is going on
-     if blocking then
-        requestSemaphore.drainPermits()
-        ()
+      // TODO: still not sure that the semaphore use is correct …
+      // its quite likely possible that some other request is answered after draining, causing the code below to return immediately
+      // though overall currentOp is not protected at all, so it is triple unclear what is going on
+      if blocking then
+          requestSemaphore.drainPermits()
+          ()
 
-     val _ = transform(_.request(op))
+      val _ = transform(_.request(op))
 
-     if blocking then requestSemaphore.acquire(1)
+      if blocking then requestSemaphore.acquire(1)
 
 }

@@ -55,12 +55,12 @@ abstract class DecomposePropertyChecks[A](
         )
         if decomposed.sizeIs > 1
         then
-           BottomOpt.explicit: bo =>
-              assertNotEquals(bo.empty, d, s"decomposed result was empty\n  $decomposed")
+            BottomOpt.explicit: bo =>
+                assertNotEquals(bo.empty, d, s"decomposed result was empty\n  $decomposed")
       }
 
       BottomOpt.explicit: bo =>
-         assertEquals(bo.empty `merge` theValue, normalized, "bottom is bottom")
+          assertEquals(bo.empty `merge` theValue, normalized, "bottom is bottom")
 
       val merged =
         if decomposed.sizeIs == 1

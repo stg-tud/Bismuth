@@ -68,15 +68,15 @@ class ExpenseListEntryListCell(model: TravelPlanModel) extends ListCell[String] 
   ): Unit = {
     subscriptions += modelProperty.onChange((_, _, newText) =>
       if !textField.isFocused then
-         textField.text = newText
+          textField.text = newText
     )
     subscriptions += textField.text.onChange((_, _, newText) =>
       if textField.isFocused then
-         update(newText)
+          update(newText)
     )
     subscriptions += textField.focused.onChange((_, wasFocused, isNowFocused) =>
       if !isNowFocused then
-         textField.text = modelProperty.get()
+          textField.text = modelProperty.get()
     )
   }
 }

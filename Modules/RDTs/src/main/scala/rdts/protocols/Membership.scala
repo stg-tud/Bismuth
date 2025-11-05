@@ -26,8 +26,8 @@ object MembershipRound {
   )
 
   given lattice[A, C[_], D[_]](using Lattice[C[Set[Uid]]], Lattice[D[A]]): Lattice[MembershipRound[A, C, D]] =
-     given Lattice[Boolean] = _ || _
-     Lattice.derived
+      given Lattice[Boolean] = _ || _
+      Lattice.derived
 }
 
 case class Membership[A, C[_], D[_]](
@@ -55,19 +55,19 @@ case class Membership[A, C[_], D[_]](
 
   def addMember(id: Uid)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if isMember then
-       bottomRound.copy(
-         membershipChanging = true,
-         membersConsensus = rounds.value.membersConsensus.propose(currentMembers + id)
-       )
+        bottomRound.copy(
+          membershipChanging = true,
+          membersConsensus = rounds.value.membersConsensus.propose(currentMembers + id)
+        )
     else bottomRound
   }
 
   def removeMember(id: Uid)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if currentMembers.size > 1 && isMember then // cannot remove last member
-       bottomRound.copy(
-         membershipChanging = true,
-         membersConsensus = rounds.value.membersConsensus.propose(currentMembers - id)
-       )
+        bottomRound.copy(
+          membershipChanging = true,
+          membersConsensus = rounds.value.membersConsensus.propose(currentMembers - id)
+        )
     else bottomRound
   }
 
@@ -78,54 +78,54 @@ case class Membership[A, C[_], D[_]](
 
   def write(value: A)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if !rounds.value.membershipChanging && isMember then
-       bottomRound.copy(
-         innerConsensus = rounds.value.innerConsensus.propose(value)
-       )
+        bottomRound.copy(
+          innerConsensus = rounds.value.innerConsensus.propose(value)
+        )
     else bottomRound
   }
 
   def isMember(using LocalUid): Boolean = currentMembers.contains(replicaId)
 
   def upkeep()(using rid: LocalUid, cc: Consensus[C], cd: Consensus[D]): Membership[A, C, D] =
-     if !isMember then return writeRound(bottomRound) // do nothing if we are not a member anymore
-     val deltaMembers = rounds.value.membersConsensus.upkeep()
-     val newMembers   = rounds.value.membersConsensus.merge(deltaMembers)
-     val deltaInner   = rounds.value.innerConsensus.upkeep()
-     val newInner     = rounds.value.innerConsensus.merge(deltaInner)
-     (newMembers.result, newInner.result) match
-        // member consensus reached -> members have changed
-        case (Some(members), _) =>
-          assert(!members.isEmpty, "members consensus reached but no members found")
-          Membership(rounds.epocheWrite(
-            MembershipRound(
-              membersConsensus = Consensus[C].empty,
-              innerConsensus = Consensus[D].empty,
-              membershipChanging = false,
-              members = members
-            )
-          ))
-        // inner consensus is reached
-        case (None, Some(value)) if !rounds.value.membershipChanging =>
-          val newLog = Map(rounds.counter -> value)
-          Membership(
-            rounds.epocheWrite(
+      if !isMember then return writeRound(bottomRound) // do nothing if we are not a member anymore
+      val deltaMembers = rounds.value.membersConsensus.upkeep()
+      val newMembers   = rounds.value.membersConsensus.merge(deltaMembers)
+      val deltaInner   = rounds.value.innerConsensus.upkeep()
+      val newInner     = rounds.value.innerConsensus.merge(deltaInner)
+      (newMembers.result, newInner.result) match
+          // member consensus reached -> members have changed
+          case (Some(members), _) =>
+            assert(!members.isEmpty, "members consensus reached but no members found")
+            Membership(rounds.epocheWrite(
               MembershipRound(
                 membersConsensus = Consensus[C].empty,
                 innerConsensus = Consensus[D].empty,
                 membershipChanging = false,
-                members = currentMembers
+                members = members
               )
-            ),
-            log = newLog
-          )
-        // nothing has changed
-        case _ =>
-          writeRound(
-            bottomRound.copy(
-              membersConsensus = deltaMembers,
-              innerConsensus = deltaInner
+            ))
+          // inner consensus is reached
+          case (None, Some(value)) if !rounds.value.membershipChanging =>
+            val newLog = Map(rounds.counter -> value)
+            Membership(
+              rounds.epocheWrite(
+                MembershipRound(
+                  membersConsensus = Consensus[C].empty,
+                  innerConsensus = Consensus[D].empty,
+                  membershipChanging = false,
+                  members = currentMembers
+                )
+              ),
+              log = newLog
             )
-          )
+          // nothing has changed
+          case _ =>
+            writeRound(
+              bottomRound.copy(
+                membersConsensus = deltaMembers,
+                innerConsensus = deltaInner
+              )
+            )
 }
 
 object Membership {
@@ -134,11 +134,11 @@ object Membership {
       Consensus[C],
       Consensus[D]
   ): Membership[A, C, D] =
-     require(initialMembers.nonEmpty, "initial members can't be empty")
-     Membership(
-       Epoch(0, MembershipRound.bottom[A, C, D].empty.copy(members = initialMembers)),
-       Map.empty
-     )
+      require(initialMembers.nonEmpty, "initial members can't be empty")
+      Membership(
+        Epoch(0, MembershipRound.bottom[A, C, D].empty.copy(members = initialMembers)),
+        Map.empty
+      )
 
   given latticeFromConsensus[A, C[_], D[_]](using
       ccon: Consensus[C],
@@ -147,9 +147,9 @@ object Membership {
     lattice(using ccon.lattice, dcon.lattice)
 
   def lattice[A, C[_], D[_]](using Lattice[C[Set[Uid]]], Lattice[D[A]]): Lattice[Membership[A, C, D]] =
-     // for the log
-     given Lattice[Map[Long, A]] =
-        given Lattice[A] = Lattice.assertEquals
-        Lattice.mapLattice
-     Lattice.derived
+      // for the log
+      given Lattice[Map[Long, A]] =
+          given Lattice[A] = Lattice.assertEquals
+          Lattice.mapLattice
+      Lattice.derived
 }

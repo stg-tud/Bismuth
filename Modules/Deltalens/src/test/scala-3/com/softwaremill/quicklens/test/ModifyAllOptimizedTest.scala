@@ -197,11 +197,11 @@ object ModifyAllOptimizedTest {
 
   given QuicklensFunctor[Opt] with {
     def map[A](fa: Opt[A], f: A => A): Opt[A] =
-       Opt.eachCount = Opt.eachCount + 1
-       fa match {
-         case Nada    => Nada
-         case Just(a) => Just(f(a))
-       }
+        Opt.eachCount = Opt.eachCount + 1
+        fa match {
+          case Nada    => Nada
+          case Just(a) => Just(f(a))
+        }
   }
 
   case class ConsOpt(head: Int, tail: Opt[ConsOpt]) {

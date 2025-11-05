@@ -24,9 +24,9 @@ abstract class OrderTests[A: {Arbitrary, Lattice}](using pa: PartialOrdering[A])
 ) extends munit.ScalaCheckSuite {
 
   extension [A](using pa: PartialOrdering[A])(a: A)
-     def <(b: A)     = pa.lt(a, b)
-     def <=(b: A)    = pa.lteq(a, b)
-     def equiv(b: A) = pa.equiv(a, b)
+      def <(b: A)     = pa.lt(a, b)
+      def <=(b: A)    = pa.lteq(a, b)
+      def equiv(b: A) = pa.equiv(a, b)
 
   property("transitive") {
     forAll { (a: A, b: A, c: A) =>
@@ -38,17 +38,17 @@ abstract class OrderTests[A: {Arbitrary, Lattice}](using pa: PartialOrdering[A])
     forAll { (a: A, b: A) =>
       if a <= b && b <= a
       then
-         assert(a `equiv` b)
-         if agreesWithEquals then assert(a == b)
+          assert(a `equiv` b)
+          if agreesWithEquals then assert(a == b)
     }
   }
 
   property("total") {
     if total
     then
-       forAll { (a: A, b: A) =>
-         assert(a <= b || b <= a)
-       }
+        forAll { (a: A, b: A) =>
+          assert(a <= b || b <= a)
+        }
   }
 
   property("reflexive") {
@@ -59,19 +59,19 @@ abstract class OrderTests[A: {Arbitrary, Lattice}](using pa: PartialOrdering[A])
 
   property("order commutative") {
     forAll: (a: A, b: A) =>
-       val left  = pa.tryCompare(a, b)
-       val right = pa.tryCompare(b, a)
-       // negation is a bit weird in the sense that “not comparable” negates to “not comparable”
-       val invertedRight = right.map(x => -x)
-       assertEquals(left, invertedRight, s"a: $a\nb: $b")
+        val left  = pa.tryCompare(a, b)
+        val right = pa.tryCompare(b, a)
+        // negation is a bit weird in the sense that “not comparable” negates to “not comparable”
+        val invertedRight = right.map(x => -x)
+        assertEquals(left, invertedRight, s"a: $a\nb: $b")
   }
 
   property("sorts") {
     pa match
-       // this both checks that pa is a total order and that the total flag is set
-       case given Ordering[A] if total =>
-         forAll: (list: List[A]) =>
-            list.to(Queue).sorted == list.to(Queue).sorted.sorted
-       case other =>
+        // this both checks that pa is a total order and that the total flag is set
+        case given Ordering[A] if total =>
+          forAll: (list: List[A]) =>
+              list.to(Queue).sorted == list.to(Queue).sorted.sorted
+        case other =>
   }
 }

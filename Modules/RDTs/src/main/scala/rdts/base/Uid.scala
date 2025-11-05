@@ -8,9 +8,9 @@ import scala.annotation.implicitNotFound
 case class Uid(delegate: String) derives CanEqual {
   override def toString: String = show
   def show: String              =
-     val offset    = delegate.indexOf('.')
-     val shortened = if offset > 0 then delegate.substring(0, offset + 4) else delegate
-     s"🪪$shortened"
+      val offset    = delegate.indexOf('.')
+      val shortened = if offset > 0 then delegate.substring(0, offset + 4) else delegate
+      s"🪪$shortened"
 }
 
 object Uid {
@@ -77,8 +77,8 @@ object UidEncoding {
     sb.clear()
     var remaining = long
     while remaining != 0 do
-       sb.append(alphabet((remaining & 0b111111).toInt))
-       remaining = remaining >>> 6
+        sb.append(alphabet((remaining & 0b111111).toInt))
+        remaining = remaining >>> 6
     sb.result()
   }
 }

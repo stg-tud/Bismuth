@@ -14,36 +14,36 @@ object DebugAdapter {
   given infoCodec: JsonValueCodec[ReInfo]       = JsonCodecMaker.make
   given resourceCodec: JsonValueCodec[ReSource] = {
     new JsonValueCodec[ReSource]:
-       override def decodeValue(in: JsonReader, default: ReSource): ReSource =
-         throw IllegalStateException("deserialization not supported")
-       override def encodeValue(x: ReSource, out: JsonWriter): Unit = infoCodec.encodeValue(x.info, out)
-       override def nullValue: ReSource                             = null.asInstanceOf[ReSource]
+        override def decodeValue(in: JsonReader, default: ReSource): ReSource =
+          throw IllegalStateException("deserialization not supported")
+        override def encodeValue(x: ReSource, out: JsonWriter): Unit = infoCodec.encodeValue(x.info, out)
+        override def nullValue: ReSource                             = null.asInstanceOf[ReSource]
   }
 
   def debugPrinter(x: Any): String = x match
-     case v: String                                => s"\"$v\""
-     case v: (Boolean | Char | Short | Int | Long) => v.toString
-     case o: Option[Any]                           => o.map(debugPrinter).toString
-     case s: Seq[Any]                              => s.iterator.map(debugPrinter).mkString("List(", ", ", ")")
-     case m: scalatags.generic.Modifier[?]         => "<some html>"
-     case p: Pulse[Any]                            => p.map(debugPrinter).getOrElse("")
-     case p: Product                               => Range(0, p.productArity).map(n =>
-         s"${p.productElementName(n)} = ${debugPrinter(p.productElement(n))}"
-       ).mkString(s"${p.getClass.getName}(", ", ", ")")
-     case other => s"<unknown: ${other.getClass}>"
+      case v: String                                => s"\"$v\""
+      case v: (Boolean | Char | Short | Int | Long) => v.toString
+      case o: Option[Any]                           => o.map(debugPrinter).toString
+      case s: Seq[Any]                              => s.iterator.map(debugPrinter).mkString("List(", ", ", ")")
+      case m: scalatags.generic.Modifier[?]         => "<some html>"
+      case p: Pulse[Any]                            => p.map(debugPrinter).getOrElse("")
+      case p: Product                               => Range(0, p.productArity).map(n =>
+          s"${p.productElementName(n)} = ${debugPrinter(p.productElement(n))}"
+        ).mkString(s"${p.getClass.getName}(", ", ", ")")
+      case other => s"<unknown: ${other.getClass}>"
 
   given JsonValueCodec[Tracing.ValueWrapper] = new JsonValueCodec[Tracing.ValueWrapper]:
-     override def decodeValue(in: JsonReader, default: Tracing.ValueWrapper): Tracing.ValueWrapper =
-       throw IllegalStateException("deserialization not supported")
-     override def encodeValue(x: Tracing.ValueWrapper, out: JsonWriter): Unit =
-       out.writeVal(debugPrinter(x.v))
-     override def nullValue: Tracing.ValueWrapper = null.asInstanceOf[Tracing.ValueWrapper]
+      override def decodeValue(in: JsonReader, default: Tracing.ValueWrapper): Tracing.ValueWrapper =
+        throw IllegalStateException("deserialization not supported")
+      override def encodeValue(x: Tracing.ValueWrapper, out: JsonWriter): Unit =
+        out.writeVal(debugPrinter(x.v))
+      override def nullValue: Tracing.ValueWrapper = null.asInstanceOf[Tracing.ValueWrapper]
 
   given JsonValueCodec[Tracing.RawWrapper] = new JsonValueCodec[Tracing.RawWrapper]:
-     override def decodeValue(in: JsonReader, default: Tracing.RawWrapper): Tracing.RawWrapper =
-       RawWrapper(in.readNullOrError(default, "unexpected"))
-     override def encodeValue(x: Tracing.RawWrapper, out: JsonWriter): Unit = out.writeNull()
-     override def nullValue: Tracing.RawWrapper                             = null.asInstanceOf[Tracing.RawWrapper]
+      override def decodeValue(in: JsonReader, default: Tracing.RawWrapper): Tracing.RawWrapper =
+        RawWrapper(in.readNullOrError(default, "unexpected"))
+      override def encodeValue(x: Tracing.RawWrapper, out: JsonWriter): Unit = out.writeNull()
+      override def nullValue: Tracing.RawWrapper                             = null.asInstanceOf[Tracing.RawWrapper]
 
   given dataCodec: JsonValueCodec[Tracing.Data] = JsonCodecMaker.make
 

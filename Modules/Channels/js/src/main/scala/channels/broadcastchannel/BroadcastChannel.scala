@@ -23,15 +23,15 @@ object BroadcastChannelConnector {
 
       bc.onmessage = (event: dom.MessageEvent) =>
         event.data match
-           case data: ArrayBuffer =>
-             handler.succeed(JsArrayBufferMessageBuffer(data))
-           case other =>
-             handler.fail(
-               BroadcastException(
-                 s"someone put something weird on the broadcast channel ($name):\n${event.data}",
-                 event
-               )
-             )
+            case data: ArrayBuffer =>
+              handler.succeed(JsArrayBufferMessageBuffer(data))
+            case other =>
+              handler.fail(
+                BroadcastException(
+                  s"someone put something weird on the broadcast channel ($name):\n${event.data}",
+                  event
+                )
+              )
 
       bc.onmessageerror = (event: dom.MessageEvent) =>
         handler.fail(BroadcastException(s"broadcast error ($name):\n${event.data}", event))

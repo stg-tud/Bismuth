@@ -10,7 +10,7 @@ case class Message(
 )
 
 object Message:
-   given JsonValueCodec[Message] = JsonCodecMaker.make
+    given JsonValueCodec[Message] = JsonCodecMaker.make
 
 enum Tag:
-   case CODED_SYMBOLS_REQUEST, CODED_SYMBOLS, DELTA, REQUEST_DELTA
+    case CODED_SYMBOLS_REQUEST, CODED_SYMBOLS, DELTA, REQUEST_DELTA

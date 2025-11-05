@@ -18,11 +18,11 @@ class InfoPanel extends FlowPanel {
 
   val color: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null then
-       "color: %d-%d-%d".format(
-         state.value.color.value.getRed,
-         state.value.color.value.getGreen,
-         state.value.color.value.getBlue
-       )
+        "color: %d-%d-%d".format(
+          state.value.color.value.getRed,
+          state.value.color.value.getGreen,
+          state.value.color.value.getBlue
+        )
     else ""
   }
 
@@ -36,7 +36,7 @@ class InfoPanel extends FlowPanel {
 
   val selectedShape: Signal[String] = Signal.dynamic { // #SIG
     if state.value != null && state.value.selectedShape.value != null then
-       "selected: %s".format(state.value.selectedShape.value.toString)
+        "selected: %s".format(state.value.selectedShape.value.toString)
     else ""
   }
 

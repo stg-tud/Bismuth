@@ -113,16 +113,16 @@ object ReShapes extends SimpleSwingApplication {
     case SelectionChanged(ui.tabbedPane) =>
       drawingSpaceState.set(
         if
-           ui.tabbedPane.selection.index != -1
-           && (panelDrawingSpaceStates contains ui.tabbedPane.selection.page)
+            ui.tabbedPane.selection.index != -1
+            && (panelDrawingSpaceStates contains ui.tabbedPane.selection.page)
         then
-           panelDrawingSpaceStates(ui.tabbedPane.selection.page)._1
+            panelDrawingSpaceStates(ui.tabbedPane.selection.page)._1
         else
-           null
+            null
       )
 
       if ui.tabbedPane.pages.size > 0 then
-         menu.update.fire()
+          menu.update.fire()
   }
 
   def addTab(networkSpaceState: DrawingSpaceState => NetworkSpaceState = { _ => null }): Unit = {
@@ -181,33 +181,33 @@ object ReShapes extends SimpleSwingApplication {
 
   def addNetworkTab(): Unit = {
     if serverDialog.showDialog(ui.locationOnScreen) && serverDialog.inputIsValid() then
-       try addTab { drawingSpaceState =>
-           new NetworkSpaceState(
-             drawingSpaceState,
-             Swing.onEDTWait,
-             serverDialog.hostname,
-             serverDialog.commandPort,
-             serverDialog.exchangePort,
-             serverDialog.listenerPort
-           )
-         }
-       catch {
-         case e: ConnectException =>
-           JOptionPane.showMessageDialog(null, "Server not available", "ConnectException", JOptionPane.ERROR_MESSAGE)
-         case e: BindException =>
-           JOptionPane.showMessageDialog(null, "Port cannot be bound", "BindException", JOptionPane.ERROR_MESSAGE)
-         case e: Exception =>
-           e.printStackTrace()
-           JOptionPane.showMessageDialog(null, "Invalid input!")
-           addNetworkTab()
-       }
+        try addTab { drawingSpaceState =>
+            new NetworkSpaceState(
+              drawingSpaceState,
+              Swing.onEDTWait,
+              serverDialog.hostname,
+              serverDialog.commandPort,
+              serverDialog.exchangePort,
+              serverDialog.listenerPort
+            )
+          }
+        catch {
+          case e: ConnectException =>
+            JOptionPane.showMessageDialog(null, "Server not available", "ConnectException", JOptionPane.ERROR_MESSAGE)
+          case e: BindException =>
+            JOptionPane.showMessageDialog(null, "Port cannot be bound", "BindException", JOptionPane.ERROR_MESSAGE)
+          case e: Exception =>
+            e.printStackTrace()
+            JOptionPane.showMessageDialog(null, "Invalid input!")
+            addNetworkTab()
+        }
   }
 
   def removeCurrentTab(): Unit = {
     if ui.tabbedPane.pages.size > 0 then {
       val (_, networkSpaceState) = panelDrawingSpaceStates(ui.tabbedPane.selection.page)
       if networkSpaceState != null then
-         networkSpaceState.dispose()
+          networkSpaceState.dispose()
       panelDrawingSpaceStates remove ui.tabbedPane.selection.page
       ui.tabbedPane.pages remove ui.tabbedPane.selection.index
       menu.update.fire()
