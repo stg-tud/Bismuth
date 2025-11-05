@@ -12,18 +12,21 @@ import rdts.time.{Dot, Dots}
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.{Failure, Success}
 
-class SyncWithBftAcl[RDT](
-    private val localIdentity: PrivateIdentity,
-    aclRoot: SerializedAclOp,
-    onDeltaReceive: RDT => Unit = (_: RDT) => {} // Consumes a delta
-)(using
+class SyncWithBftAcl[RDT](using
     lattice: Lattice[RDT],
     bottom: Bottom[RDT],
     rdtJsonCodec: JsonValueCodec[RDT],
     filter: Filter[RDT]
+)(
+    private val localIdentity: PrivateIdentity,
+    aclRoot: SerializedAclOp,
+    onDeltaReceive: RDT => Unit = (_: RDT) => {}, // Consumes a delta
+    antiEntropyProvider: (PrivateIdentity, SerializedAclOp, SyncWithBftAcl[RDT]) => BftFilteringAntiEntropy[RDT] =
+      (localIdentity, aclRoot, sync: SyncWithBftAcl[RDT]) =>
+        BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, sync)(using rdtJsonCodec, filter, lattice, bottom)
 ) extends RDTSync[RDT] {
 
-  private val antiEntropy                                 = BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, this)
+  private val antiEntropy                                 = antiEntropyProvider(localIdentity, aclRoot, this)
   @volatile private var antiEntropyThread: Option[Thread] = None
 
   private val localPublicId = localIdentity.getPublic

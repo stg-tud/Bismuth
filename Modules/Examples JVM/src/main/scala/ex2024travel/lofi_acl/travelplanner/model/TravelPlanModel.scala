@@ -2,7 +2,6 @@ package ex2024travel.lofi_acl.travelplanner.model
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
 import ex2024travel.lofi_acl.sync.{Acl, Invitation, RDTSync}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.given

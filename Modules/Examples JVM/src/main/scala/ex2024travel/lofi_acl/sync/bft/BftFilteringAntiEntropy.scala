@@ -174,11 +174,14 @@ class BftFilteringAntiEntropy[RDT](
             .map[AclDelta[RDT]](delegation => AclDelta(delegation))
           sendMultiple(sender, msgs.toArray*)
 
-          val missingLocally = heads.filterNot(opGraph.ops.contains)
+          // Traverse op-graph until heads found
+          //heads.removedAll(missingLocally).removedAll(opGraph.heads) // Remove all locally missing and up-to-date ops
+
           // TODO: Requesting should be deferred until after message queue is empty (+ some delay).
-          if missingLocally.nonEmpty then {
-            send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missingLocally))
-          }
+          //val missingLocally = heads.filterNot(opGraph.ops.contains)
+          //if missingLocally.nonEmpty then {
+          //  send(sender, RequestMissingAcl(syncInstance.currentBftAcl._1.heads, missingLocally))
+          //}
 
         case RequestMissingRdt(remoteRdtDots) =>
           // TODO: avoid possibility of interleaving with acl change
