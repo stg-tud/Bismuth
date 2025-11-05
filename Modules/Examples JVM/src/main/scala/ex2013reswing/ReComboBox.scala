@@ -35,9 +35,9 @@ class ReComboBox[A](
 
   def modelChanged(): Unit = {
     if model != null then
-      model `removeListDataListener` modelListener
+       model `removeListDataListener` modelListener
     if javaPeer.getModel != null then
-      javaPeer.getModel `addListDataListener` modelListener
+       javaPeer.getModel `addListDataListener` modelListener
     model = javaPeer.getModel
   }
 
@@ -102,9 +102,9 @@ object ReComboBox {
       if !items.contains[Any](selected) then selected = null
 
       if additional > 0 then
-        fireIntervalAdded(this, itemsSize, listData.size - 1)
+         fireIntervalAdded(this, itemsSize, listData.size - 1)
       if additional < 0 then
-        fireIntervalRemoved(this, listData.size, itemsSize - 1)
+         fireIntervalRemoved(this, listData.size, itemsSize - 1)
 
       fireContentsChanged(this, 0, listData.size)
     }
@@ -117,9 +117,9 @@ object ReComboBox {
     def getSelectedItem: AnyRef             = selected
     def setSelectedItem(item: AnyRef): Unit = {
       if
-        (item == null || (items contains item)) &&
-        ((selected != null && selected != item) ||
-        (selected == null && item != null))
+         (item == null || (items contains item)) &&
+         ((selected != null && selected != item) ||
+         (selected == null && item != null))
       then {
         selected = item
         fireContentsChanged(this, -1, -1)

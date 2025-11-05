@@ -37,13 +37,13 @@ class WebView private (val w: webview_t) {
   }
 
   def bind(name: String, f: String => String): CBDesc =
-    WebView.callbacks.get(name).foreach(_.unbind())
-    val handler = new WebView.CBDesc(name, f, w)
-    WebView.callbacks += name -> handler
-    Zone {
-      webview_bind(w, toCString(name), WebView.bnd, fromRawPtr(Intrinsics.castObjectToRawPtr(handler)))
-    }
-    handler
+     WebView.callbacks.get(name).foreach(_.unbind())
+     val handler = new WebView.CBDesc(name, f, w)
+     WebView.callbacks += name -> handler
+     Zone {
+       webview_bind(w, toCString(name), WebView.bnd, fromRawPtr(Intrinsics.castObjectToRawPtr(handler)))
+     }
+     handler
 }
 
 object WebView {

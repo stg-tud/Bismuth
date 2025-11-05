@@ -39,9 +39,9 @@ class Replica[A](init: A) {
 object Replica {
   def quiescence[A: Lattice](replicas: Replica[A]*): Unit =
     replicas.toList match
-      case Seq() | Seq(_) => ()
-      case Seq(a, rem*)   =>
-        rem.foreach(a.receive)
-        rem.foreach(r => r.receive(a))
+       case Seq() | Seq(_) => ()
+       case Seq(a, rem*)   =>
+         rem.foreach(a.receive)
+         rem.foreach(r => r.receive(a))
 
 }

@@ -24,11 +24,11 @@ class DrawingPanel(val state: DrawingSpaceState) extends Panel {
     if currentShape != null then {
       currentShape.draw(g)
       for shape <- state.shapes.now do
-        if !shape.selected then
-          shape.draw(g)
+         if !shape.selected then
+            shape.draw(g)
     } else
-      for shape <- state.shapes.now do
-        shape.draw(g)
+       for shape <- state.shapes.now do
+          shape.draw(g)
   }
 
   lazy val drawn: Evt[Command] = Evt[Command]() // #EVT
@@ -57,9 +57,9 @@ class DrawingPanel(val state: DrawingSpaceState) extends Panel {
           currentShape = currentShape.copy(path = e.point :: currentShape.path)
         case _ =>
           if resizingMode && currentShape.isInstanceOf[Resizable] then
-            currentShape = currentShape.asInstanceOf[Resizable].resizedShape(point, e.point)
+             currentShape = currentShape.asInstanceOf[Resizable].resizedShape(point, e.point)
           else if currentShape.isInstanceOf[Movable] then
-            currentShape = currentShape.asInstanceOf[Movable].movedShape(point, e.point)
+             currentShape = currentShape.asInstanceOf[Movable].movedShape(point, e.point)
       }
       point = e.point
       repaint()
@@ -90,21 +90,21 @@ trait ShowIntersection extends DrawingPanel {
     g.setColor(new Color(255, 0, 0))
     g.setStroke(new BasicStroke)
     for point <- getIntersectionPoints() do
-      g.drawOval(point.x - 3, point.y - 3, 6, 6)
+       g.drawOval(point.x - 3, point.y - 3, 6, 6)
   }
 
   def getIntersectionPoints(): List[Point] = {
     val points = new ListBuffer[Point]
 
     for shape <- state.shapes.now do
-      for otherShape <- state.shapes.now do
-        if shape != otherShape then
-          for line <- shape.toLines() do
-            for otherLine <- otherShape.toLines() do {
-              val intersection = MathUtil.getIntersectionsOfTwoLines(line, otherLine)
-              if intersection != null then
-                points += intersection
-            }
+       for otherShape <- state.shapes.now do
+          if shape != otherShape then
+             for line <- shape.toLines() do
+                for otherLine <- otherShape.toLines() do {
+                  val intersection = MathUtil.getIntersectionsOfTwoLines(line, otherLine)
+                  if intersection != null then
+                     points += intersection
+                }
 
     points.toList
   }
@@ -139,6 +139,6 @@ trait ShowNameLabels extends DrawingPanel {
     g.setStroke(new BasicStroke)
 
     for shape <- state.shapes.now do
-      g.drawString(shape.toString, shape.start.x, shape.start.y)
+       g.drawString(shape.toString, shape.start.x, shape.start.y)
   }
 }

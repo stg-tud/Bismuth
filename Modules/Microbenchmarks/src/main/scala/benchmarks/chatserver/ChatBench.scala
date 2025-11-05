@@ -27,7 +27,7 @@ class ChatBench {
       locks(room1).lock()
       locks(room2).lock()
       try
-        benchState.clients(threadParams.getThreadIndex).fire("hello")
+         benchState.clients(threadParams.getThreadIndex).fire("hello")
       finally {
         locks(room2).unlock()
         locks(room1).unlock()

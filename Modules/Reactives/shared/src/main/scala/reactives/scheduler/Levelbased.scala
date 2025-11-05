@@ -175,7 +175,7 @@ trait Levelbased extends Twoversion {
         enqueue(headMinLevel, reevaluate)(head)
         head.state.outgoing.foreach { r =>
           if r.state.level() <= headMinLevel then
-            enqueue(headMinLevel + 1, needsEvaluate = false)(r)
+             enqueue(headMinLevel + 1, needsEvaluate = false)(r)
         }
       } else if reevaluate then {
         evaluator.evaluate(head)

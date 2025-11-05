@@ -48,14 +48,14 @@ class SecureToDoListClient(
     val _disseminatedBefore = _disseminatedDataInBytes
 
     crdt.get(uuid).map(_.copy(completed = true)) match
-      case None          =>
-      case Some(updated) =>
-        val delta = crdt.putDelta(
-          uuid,
-          updated
-        )
-        localChangeOptimized(delta, uuid)
-        _disseminatedDataCompletion += _disseminatedDataInBytes - _disseminatedBefore
+       case None          =>
+       case Some(updated) =>
+         val delta = crdt.putDelta(
+           uuid,
+           updated
+         )
+         localChangeOptimized(delta, uuid)
+         _disseminatedDataCompletion += _disseminatedDataInBytes - _disseminatedBefore
 
   }
 

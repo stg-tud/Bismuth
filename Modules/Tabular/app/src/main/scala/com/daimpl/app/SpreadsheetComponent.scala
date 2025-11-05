@@ -190,16 +190,16 @@ object SpreadsheetComponent {
       } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get + 1)))
 
     def removeRow(): Callback =
-      var numRows: Int = 0
-      withSelectedRowAndProps { (rowIdx, props) =>
-        numRows = props.spreadsheetAggregator.current.numRows
-        replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
-        >> concludeEdit()
-        >> modSpreadsheet(_.removeRow(rowIdx))
-        // >> modSpreadsheet(_.purgeTombstones())
-      } >> $.modState(st =>
-        st.copy(selectedRow = for { o <- Some(numRows - 2) if o >= 0 } yield o min st.selectedRow.get max 0)
-      )
+       var numRows: Int = 0
+       withSelectedRowAndProps { (rowIdx, props) =>
+         numRows = props.spreadsheetAggregator.current.numRows
+         replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
+         >> concludeEdit()
+         >> modSpreadsheet(_.removeRow(rowIdx))
+         // >> modSpreadsheet(_.purgeTombstones())
+       } >> $.modState(st =>
+         st.copy(selectedRow = for { o <- Some(numRows - 2) if o >= 0 } yield o min st.selectedRow.get max 0)
+       )
 
     def insertColumnLeft(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
@@ -347,11 +347,11 @@ object SpreadsheetComponent {
       } yield (start, end)
 
       def inside(range: com.daimpl.lib.Spreadsheet.Range, r: Int, c: Int): Boolean =
-        val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
-        val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
-        val minCol = math.min(range.from.colIdx, range.to.colIdx)
-        val maxCol = math.max(range.from.colIdx, range.to.colIdx)
-        r >= minRow && r <= maxRow && c >= minCol && c <= maxCol
+         val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
+         val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
+         val minCol = math.min(range.from.colIdx, range.to.colIdx)
+         val maxCol = math.max(range.from.colIdx, range.to.colIdx)
+         r >= minRow && r <= maxRow && c >= minCol && c <= maxCol
 
       def onBoundary(range: com.daimpl.lib.Spreadsheet.Range, r: Int, c: Int): (Boolean, Boolean, Boolean, Boolean) = {
         val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
@@ -431,15 +431,15 @@ object SpreadsheetComponent {
               )
             case None =>
               if spreadsheet.numRows == 0 then
-                <.div(
-                  ^.className := "flex gap-2 items-center",
-                  <.span(^.className := "text-sm text-gray-600", "No rows present."),
-                  <.button(
-                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
-                    ^.onClick --> backend.addRow(),
-                    "Insert"
-                  )
-                )
+                 <.div(
+                   ^.className := "flex gap-2 items-center",
+                   <.span(^.className := "text-sm text-gray-600", "No rows present."),
+                   <.button(
+                     ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                     ^.onClick --> backend.addRow(),
+                     "Insert"
+                   )
+                 )
               else <.span()
           },
           state.selectedColumn match {
@@ -465,15 +465,15 @@ object SpreadsheetComponent {
               )
             case None =>
               if spreadsheet.numColumns == 0 then
-                <.div(
-                  ^.className := "flex gap-2 items-center",
-                  <.span(^.className := "text-sm text-gray-600", "No columns present."),
-                  <.button(
-                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
-                    ^.onClick --> backend.addColumn(),
-                    "Insert"
-                  )
-                )
+                 <.div(
+                   ^.className := "flex gap-2 items-center",
+                   <.span(^.className := "text-sm text-gray-600", "No columns present."),
+                   <.button(
+                     ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                     ^.onClick --> backend.addColumn(),
+                     "Insert"
+                   )
+                 )
               else <.span()
           }
         ),
@@ -500,7 +500,7 @@ object SpreadsheetComponent {
                         val previewLeft  = if state.previewColumn.contains(i) then " border-l-4 border-blue-400" else ""
                         val previewRight =
                           if state.previewColumn.contains(i + 1) && i == spreadsheet.numColumns - 1 then
-                            " border-r-4 border-blue-400"
+                             " border-r-4 border-blue-400"
                           else ""
                         baseClass + selectedClass + previewLeft + previewRight
                       },
@@ -528,7 +528,7 @@ object SpreadsheetComponent {
                       val previewTop = if state.previewRow.contains(rowIdx) then " border-t-4 border-blue-400" else ""
                       val previewBottom =
                         if state.previewRow.contains(rowIdx + 1) && rowIdx == spreadsheet.numRows - 1 then
-                          " border-b-4 border-blue-400"
+                           " border-b-4 border-blue-400"
                         else ""
                       baseClass + selectedClass + previewTop + previewBottom
                     },
@@ -551,12 +551,12 @@ object SpreadsheetComponent {
                       onHold(200)(backend.handleRangeMouseDown(rowIdx, colIdx)),
                       ^.onMouseOver --> backend.handleRangeMouseOver(rowIdx, colIdx),
                       if cell.hasConflicts then
-                        <.span(
-                          ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
-                          ^.title     := "Resolve conflict",
-                          "!",
-                          ^.onClick --> backend.openConflict(rowIdx, colIdx)
-                        )
+                         <.span(
+                           ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
+                           ^.title     := "Resolve conflict",
+                           "!",
+                           ^.onClick --> backend.openConflict(rowIdx, colIdx)
+                         )
                       else EmptyVdom,
                       state.editingCell match {
                         case Some((editRow, editCol)) if editRow == rowIdx && editCol == colIdx =>
@@ -607,41 +607,41 @@ object SpreadsheetComponent {
             "Purge Tombstones"
           )
         )(state.conflictPopup match
-          case Some((r, c)) =>
-            val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(r, c)).toList
-            <.div(
-              ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
-              ^.onClick --> backend.closeConflict(),
-              <.div(
-                ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
-                ^.onClick ==> {
-                  _.stopPropagationCB
-                },
-                <.button(
-                  ^.className  := "absolute top-4 right-4 text-gray-400 hover:text-gray-600",
-                  ^.aria.label := "Close",
-                  ^.onClick --> backend.closeConflict(),
-                  "✕"
-                ),
-                <.h3(^.className := "text-lg font-semibold text-gray-800 mb-4", "Resolve conflict"),
-                <.p(
-                  ^.className := "text-sm text-gray-600 mb-3",
-                  s"Choose the value you want to keep for cell ${(c + 'A').toChar}${r + 1}:"
-                ),
-                <.div(
-                  ^.className := "flex flex-col gap-2",
-                  vals.map { v =>
-                    <.button(
-                      ^.key := v,
-                      ^.className := "w-full px-4 py-2 rounded-lg text-left bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400",
-                      ^.onClick --> backend.keepValue(r, c, v),
-                      v
-                    )
-                  }.toVdomArray
-                )
-              )
-            )
-          case None => EmptyVdom)
+           case Some((r, c)) =>
+             val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(r, c)).toList
+             <.div(
+               ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
+               ^.onClick --> backend.closeConflict(),
+               <.div(
+                 ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
+                 ^.onClick ==> {
+                   _.stopPropagationCB
+                 },
+                 <.button(
+                   ^.className  := "absolute top-4 right-4 text-gray-400 hover:text-gray-600",
+                   ^.aria.label := "Close",
+                   ^.onClick --> backend.closeConflict(),
+                   "✕"
+                 ),
+                 <.h3(^.className := "text-lg font-semibold text-gray-800 mb-4", "Resolve conflict"),
+                 <.p(
+                   ^.className := "text-sm text-gray-600 mb-3",
+                   s"Choose the value you want to keep for cell ${(c + 'A').toChar}${r + 1}:"
+                 ),
+                 <.div(
+                   ^.className := "flex flex-col gap-2",
+                   vals.map { v =>
+                     <.button(
+                       ^.key := v,
+                       ^.className := "w-full px-4 py-2 rounded-lg text-left bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400",
+                       ^.onClick --> backend.keepValue(r, c, v),
+                       v
+                     )
+                   }.toVdomArray
+                 )
+               )
+             )
+           case None => EmptyVdom)
       )
     }
     .build

@@ -49,16 +49,16 @@ class ConnectionManager[MSG](
   def sendMultiple(user: PublicIdentity, msgs: MSG*): Boolean = {
     if stopped then return false
     outputStreams.get(user) match
-      case Some(outputStream) =>
-        Future {
-          outputStream.synchronized {
-            msgs.foreach { msg =>
-              msgCodec.writeToStream(msg, outputStream)
-            }
-          }
-        }
-        true
-      case None => false
+       case Some(outputStream) =>
+         Future {
+           outputStream.synchronized {
+             msgs.foreach { msg =>
+               msgCodec.writeToStream(msg, outputStream)
+             }
+           }
+         }
+         true
+       case None => false
   }
 
   def broadcast(msg: MSG*): Boolean = {
@@ -73,21 +73,21 @@ class ConnectionManager[MSG](
     def acceptConnection(): Unit =
       if stopped then running = false
       else
-        val connectionFuture = connector.acceptConnection
-        connectionFuture.onComplete {
-          case Failure(exception) =>
-            running = false
-            if false then Console.err.println("Stopping listener")
-          case Success((socket, peerIdentity)) =>
-            if peerIdentity == localPublicId
-            then // We don't want to connect to ourselves.
-              try socket.close()
-              catch
-                case e: IOException =>
-            else connectionEstablished(socket, peerIdentity, establishedByRemote = true)
+         val connectionFuture = connector.acceptConnection
+         connectionFuture.onComplete {
+           case Failure(exception) =>
+             running = false
+             if false then Console.err.println("Stopping listener")
+           case Success((socket, peerIdentity)) =>
+             if peerIdentity == localPublicId
+             then // We don't want to connect to ourselves.
+                try socket.close()
+                catch
+                   case e: IOException =>
+             else connectionEstablished(socket, peerIdentity, establishedByRemote = true)
 
-            acceptConnection()
-        }
+             acceptConnection()
+         }
 
     this.synchronized {
       if running then throw IllegalStateException("Already listening")
@@ -120,9 +120,9 @@ class ConnectionManager[MSG](
       case Success((socket, peerId)) =>
         if peerId == localPublicId
         then // We don't want to connect to ourselves.
-          try socket.close()
-          catch
-            case e: IOException =>
+           try socket.close()
+           catch
+              case e: IOException =>
         else connectionEstablished(socket, peerId, establishedByRemote = false)
     }
   }
@@ -141,11 +141,11 @@ class ConnectionManager[MSG](
         then connectionEstablished(socket, peerId, establishedByRemote = false)
         else {
           if false then
-            Console.err.println(s"Expecting $expectedUser at $host:$port but connected to $peerId. Closing socket.")
+             Console.err.println(s"Expecting $expectedUser at $host:$port but connected to $peerId. Closing socket.")
           try
-            socket.close()
+             socket.close()
           catch
-            case e: IOException => e.printStackTrace()
+             case e: IOException => e.printStackTrace()
         }
     }
   }
@@ -162,31 +162,31 @@ class ConnectionManager[MSG](
 
     this.synchronized {
       connections.get(peerIdentity) match
-        case Some(existingConnection) =>
-          // Avoid duplicate connections while allowing one connection to persist (make sure the same connection is
-          // terminated by both sides, i.e., not both).
-          // Use the socket initiated by the peer with higher ID
-          // TODO: If one side attempts two connections, then this probably won't work reliably
-          if establishedByRemote && peerIdentity.id > localPublicId.id
-            || !establishedByRemote && peerIdentity.id < localPublicId.id
-          then
-            connections = connections.updated(peerIdentity, socket)
-            outputStreams = outputStreams.updated(peerIdentity, DataOutputStream(socket.getOutputStream))
-            try {
-              existingConnection.close()
-              messageHandler.connectionShutdown(peerIdentity)
-            } catch { case e: IOException => }
-            receiveFrom(peerIdentity, socket)
-            messageHandler.connectionEstablished(peerIdentity)
-          else
-            try
-              socket.close()
-            catch { case e: IOException => }
-        case None =>
-          connections = connections.updated(peerIdentity, socket)
-          outputStreams = outputStreams.updated(peerIdentity, DataOutputStream(socket.getOutputStream))
-          receiveFrom(peerIdentity, socket)
-          messageHandler.connectionEstablished(peerIdentity)
+         case Some(existingConnection) =>
+           // Avoid duplicate connections while allowing one connection to persist (make sure the same connection is
+           // terminated by both sides, i.e., not both).
+           // Use the socket initiated by the peer with higher ID
+           // TODO: If one side attempts two connections, then this probably won't work reliably
+           if establishedByRemote && peerIdentity.id > localPublicId.id
+              || !establishedByRemote && peerIdentity.id < localPublicId.id
+           then
+              connections = connections.updated(peerIdentity, socket)
+              outputStreams = outputStreams.updated(peerIdentity, DataOutputStream(socket.getOutputStream))
+              try {
+                existingConnection.close()
+                messageHandler.connectionShutdown(peerIdentity)
+              } catch { case e: IOException => }
+              receiveFrom(peerIdentity, socket)
+              messageHandler.connectionEstablished(peerIdentity)
+           else
+              try
+                socket.close()
+              catch { case e: IOException => }
+         case None =>
+           connections = connections.updated(peerIdentity, socket)
+           outputStreams = outputStreams.updated(peerIdentity, DataOutputStream(socket.getOutputStream))
+           receiveFrom(peerIdentity, socket)
+           messageHandler.connectionEstablished(peerIdentity)
     }
   }
 
@@ -198,36 +198,36 @@ class ConnectionManager[MSG](
   private def receiveFrom(peerIdentity: PublicIdentity, socket: SSLSocket): Unit = {
     val receiverFuture: util.concurrent.Future[?] = executor.submit(
       new Runnable:
-        override def run(): Unit = {
-          val input = new DataInputStream(socket.getInputStream)
-          while !stopped do
-            try {
-              val msg = msgCodec.readFromStream(input)
-              messageHandler.receivedMessage(msg, peerIdentity)
-            } catch {
-              case e: IOException =>
-                try socket.close()
-                catch { case e: IOException => }
-                this.synchronized {
-                  // Only remove socket from map, if it hasn't been replaced already
-                  connections.get(peerIdentity) match
-                    case Some(storedSocket) =>
-                      if storedSocket eq socket // Only remove and notify if this socket wasn't already replaced
-                      then
-                        connections = connections.removed(peerIdentity)
-                        outputStreams = outputStreams.removed(peerIdentity)
-                        messageHandler.connectionShutdown(peerIdentity)
-                    case None =>
-                }
-                return
-              case e: InterruptedException =>
-                try socket.close()
-                catch { case e: IOException => }
-              case runtimeException: RuntimeException =>
-                // TODO: Close socket here as well?
-                runtimeException.printStackTrace()
-            }
-        }
+         override def run(): Unit = {
+           val input = new DataInputStream(socket.getInputStream)
+           while !stopped do
+              try {
+                val msg = msgCodec.readFromStream(input)
+                messageHandler.receivedMessage(msg, peerIdentity)
+              } catch {
+                case e: IOException =>
+                  try socket.close()
+                  catch { case e: IOException => }
+                  this.synchronized {
+                    // Only remove socket from map, if it hasn't been replaced already
+                    connections.get(peerIdentity) match
+                       case Some(storedSocket) =>
+                         if storedSocket eq socket // Only remove and notify if this socket wasn't already replaced
+                         then
+                            connections = connections.removed(peerIdentity)
+                            outputStreams = outputStreams.removed(peerIdentity)
+                            messageHandler.connectionShutdown(peerIdentity)
+                       case None =>
+                  }
+                  return
+                case e: InterruptedException =>
+                  try socket.close()
+                  catch { case e: IOException => }
+                case runtimeException: RuntimeException =>
+                  // TODO: Close socket here as well?
+                  runtimeException.printStackTrace()
+              }
+         }
     )
     receiverFutureLock.synchronized {
       receiverThreads = receiverThreads + receiverFuture

@@ -85,8 +85,8 @@ trait TopoBundle {
     override def observe(obs: Observation): Unit                               = initializer.observe(obs)
 
     override def preconditionTicket: DynamicTicket[State] = new DynamicTicket[State](this):
-      override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
-      override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
+       override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
+       override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
   }
 
   object TopoScheduler extends TopoSchedulerInterface
@@ -155,7 +155,7 @@ trait TopoBundle {
               admissionResult
             }
           } finally
-            idle = true
+             idle = true
         }
         afterCommitObservers.foreach(_.execute())
         res

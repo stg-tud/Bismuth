@@ -118,14 +118,14 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
   val moveLines: Signal[Seq[Line[Int]]] = Signal { // #SIG
     val possibleMoves =
       if selectedIndex.value == SlotIndex(-1) then
-        game.possibleNextMoves.value filter {
-          case (from, to) => from == highlightedIndex.value || to == highlightedIndex.value
-        }
+         game.possibleNextMoves.value filter {
+           case (from, to) => from == highlightedIndex.value || to == highlightedIndex.value
+         }
       else
-        game.possibleNextMoves.value filter (_ == ((selectedIndex.value, highlightedIndex.value))) match {
-          case Nil => game.possibleMoves filter (_._1 == selectedIndex.value)
-          case l   => l
-        }
+         game.possibleNextMoves.value filter (_ == ((selectedIndex.value, highlightedIndex.value))) match {
+           case Nil => game.possibleMoves filter (_._1 == selectedIndex.value)
+           case l   => l
+         }
 
     possibleMoves map {
       case (from, to) =>
@@ -178,19 +178,19 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
     )
 
     for p <- presentation.now do
-      p match {
-        case Presentation(shape, color, width) =>
-          g.setColor(color)
-          g.setStroke(new BasicStroke(width.toFloat))
+       p match {
+         case Presentation(shape, color, width) =>
+           g.setColor(color)
+           g.setStroke(new BasicStroke(width.toFloat))
 
-          shape match {
-            case Line(from, to) =>
-              g.drawLine(from.x, from.y, to.x, to.y)
-            case Rect(anchor, width, height) =>
-              g.fillRect(anchor.x, anchor.y, width, height)
-            case Circle(center, radius) =>
-              g.fillOval(center.x - radius, center.y - radius, 2 * radius, 2 * radius)
-          }
-      }
+           shape match {
+             case Line(from, to) =>
+               g.drawLine(from.x, from.y, to.x, to.y)
+             case Rect(anchor, width, height) =>
+               g.fillRect(anchor.x, anchor.y, width, height)
+             case Circle(center, radius) =>
+               g.fillOval(center.x - radius, center.y - radius, 2 * radius, 2 * radius)
+           }
+       }
   }
 }

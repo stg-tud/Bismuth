@@ -69,8 +69,8 @@ class TCPReadonlyServer(socket: ServerSocket) {
     println("initiated tcp server stop")
 
     listenerRunnable match
-      case None        => println("server was never started")
-      case Some(value) => value.keepRunning = false
+       case None        => println("server was never started")
+       case Some(value) => value.keepRunning = false
 
     runnables.values().forEach((receiverRunnable: ReceiverRunnable) => receiverRunnable.keepRunning = false)
     runnables.keySet().forEach((connection: TCPConnection) => connection.close())
@@ -109,7 +109,7 @@ class TCPReadonlyServer(socket: ServerSocket) {
     override def run(): Unit = {
       try {
         while keepRunning do
-          queue.put((connection, connection.receive))
+           queue.put((connection, connection.receive))
       } catch {
         case e: IOException =>
           println(s"read attempted on closed socket (conn: ${connection}):")

@@ -23,9 +23,9 @@ object JettyConnectTest {
   def main(args: Array[String]): Unit = {
 
     val prepared = JettyWsConnection.connect(URI.create("wss://echo.websocket.org/")).prepare: conn =>
-      println("established connection")
-      msg =>
-        println(s"received ${msg.map(_.show)}")
+       println("established connection")
+       msg =>
+         println(s"received ${msg.map(_.show)}")
 
     val connect = Async[Abort] {
       val outgoing = prepared.bind

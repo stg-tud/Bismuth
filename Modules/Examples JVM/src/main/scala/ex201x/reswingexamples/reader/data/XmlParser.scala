@@ -68,7 +68,7 @@ class XmlParser {
         val result = RSSChannel(meta(Symbol("title")), link, meta(Symbol("description")), date, url)
         Some(result)
       } else
-        None
+         None
   }
 
   /** Parses a RSSItem from the given NodeSeq
@@ -88,7 +88,7 @@ class XmlParser {
   // does not fire events after parsing
   private def parseItemSilent(xmlNode: Node): Option[RSSItem] = {
     if xmlNode.size != 1 then
-      return None
+       return None
 
     val meta = extractInformation(xmlNode)
     val date = extractDate(xmlNode)
@@ -120,10 +120,10 @@ class XmlParser {
     val itemsOpt = sequence((itemXML map { parseItemSilent(_) }).toList)
 
     for
-      channel <- parseChannel((channelXML, Some(url)))
-      items   <- itemsOpt.map { items =>
-        items.map { i => RSSItem.changeSource(i, Some(channel)) }
-      }
+       channel <- parseChannel((channelXML, Some(url)))
+       items   <- itemsOpt.map { items =>
+         items.map { i => RSSItem.changeSource(i, Some(channel)) }
+       }
     yield {
       items foreach { explicitItemParsed.fire(_) }
       (channel, items)
@@ -141,12 +141,12 @@ class XmlParser {
     val res = xml \ "pubDate"
 
     if res.isEmpty then
-      None
+       None
     else
-      try Some(dateFormat `parse` res.text)
-      catch {
-        case _: ParseException => None
-      }
+       try Some(dateFormat `parse` res.text)
+       catch {
+         case _: ParseException => None
+       }
   }
 
   private def extractInformation(xml: NodeSeq): Map[Symbol, String] =

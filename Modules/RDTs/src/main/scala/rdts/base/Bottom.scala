@@ -27,7 +27,7 @@ trait Bottom[A] {
 
 object Bottom {
   def provide[A](v: A): Bottom[A] = new Bottom[A]:
-    override val empty: A = v
+     override val empty: A = v
 
   def empty[A](using bottom: Bottom[A]): A               = bottom.empty
   def isEmpty[A](v: A)(using bottom: Bottom[A]): Boolean = bottom.isEmpty(v)
@@ -63,16 +63,16 @@ object Bottom {
 
   inline def derived[T](using m: Mirror.Of[T]): Bottom[T] =
     inline m match
-      case pm: Mirror.ProductOf[T] => productBottom[T](using pm)
-      case sm: Mirror.SumOf[T]     => sumBottom[T](using sm)
+       case pm: Mirror.ProductOf[T] => productBottom[T](using pm)
+       case sm: Mirror.SumOf[T]     => sumBottom[T](using sm)
 
   inline def sumBottom[T](using sm: Mirror.SumOf[T]): Bottom[T] =
-    val bottoms: Bottom[Derived.Head[sm.MirroredElemTypes]] = summonInline
-    Derived.SumBottom[T](sm, bottoms)
+     val bottoms: Bottom[Derived.Head[sm.MirroredElemTypes]] = summonInline
+     Derived.SumBottom[T](sm, bottoms)
 
   inline def productBottom[T](using pm: Mirror.ProductOf[T]): Bottom[T] =
-    val lattices = summonAll[Tuple.Map[pm.MirroredElemTypes, Bottom]]
-    Derived.ProductBottom(pm, lattices)
+     val lattices = summonAll[Tuple.Map[pm.MirroredElemTypes, Bottom]]
+     Derived.ProductBottom(pm, lattices)
 
   object Derived {
 
@@ -84,36 +84,36 @@ object Bottom {
       override def empty: T =
         pm.fromProduct(
           Tuple.fromArray:
-            bottoms.toArray.map[AnyRef](_.asInstanceOf[Bottom[AnyRef]].empty)
+             bottoms.toArray.map[AnyRef](_.asInstanceOf[Bottom[AnyRef]].empty)
         )
       extension (value: T)
-        override def isEmpty: Boolean =
-          value.asInstanceOf[Product].productIterator.zipWithIndex.forall: (v, i) =>
-            bottoms.productElement(i).asInstanceOf[Bottom[Any]].isEmpty(v)
+         override def isEmpty: Boolean =
+           value.asInstanceOf[Product].productIterator.zipWithIndex.forall: (v, i) =>
+              bottoms.productElement(i).asInstanceOf[Bottom[Any]].isEmpty(v)
     }
 
     class SumBottom[T](sm: Mirror.SumOf[T], bottoms: Bottom[Head[sm.MirroredElemTypes]])
         extends Bottom[T] {
       override def empty: T = bottoms.empty.asInstanceOf[T]
       extension (value: T)
-        override def isEmpty: Boolean =
-          sm.ordinal(value) == 0 && bottoms.isEmpty(value.asInstanceOf[Head[sm.MirroredElemTypes]])
+         override def isEmpty: Boolean =
+           sm.ordinal(value) == 0 && bottoms.isEmpty(value.asInstanceOf[Head[sm.MirroredElemTypes]])
     }
 
   }
 }
 
 case class BottomOpt[A](maybeBottom: Option[Bottom[A]]):
-  inline def withBottom[R](inline block: Bottom[A] ?=> R): Option[R] = maybeBottom match
-    case Some(value) => Some(block(using value))
-    case None        => None
+   inline def withBottom[R](inline block: Bottom[A] ?=> R): Option[R] = maybeBottom match
+      case Some(value) => Some(block(using value))
+      case None        => None
 
 object BottomOpt:
-  inline def explicit[A, R](using inline bo: BottomOpt[A])(inline block: Bottom[A] => R): Option[R] =
-    bo.withBottom(bo ?=> block(bo))
+   inline def explicit[A, R](using inline bo: BottomOpt[A])(inline block: Bottom[A] => R): Option[R] =
+     bo.withBottom(bo ?=> block(bo))
 
-  inline given bottomOpt[A]: BottomOpt[A] =
-    BottomOpt:
-      scala.compiletime.summonFrom:
-        case b: Bottom[A] => Some(b)
-        case _            => None
+   inline given bottomOpt[A]: BottomOpt[A] =
+     BottomOpt:
+        scala.compiletime.summonFrom:
+           case b: Bottom[A] => Some(b)
+           case _            => None

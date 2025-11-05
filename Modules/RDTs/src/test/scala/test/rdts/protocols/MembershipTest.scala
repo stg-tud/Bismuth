@@ -133,14 +133,14 @@ class MembershipTest extends munit.FunSuite {
     val r3 = Replika(id3, Membership.init(Set(id1, id2, id3)))
 
     extension (m: Replika)
-      def trans(f: LocalUid ?=> Membership[Int, Paxos, Paxos] => Membership[Int, Paxos, Paxos]): Unit = {
-        given LocalUid = m.uid.convert
-        val delta      = f(m.mem)
+       def trans(f: LocalUid ?=> Membership[Int, Paxos, Paxos] => Membership[Int, Paxos, Paxos]): Unit = {
+         given LocalUid = m.uid.convert
+         val delta      = f(m.mem)
 
-        r1.mem = r1.mem `merge` delta
-        r2.mem = r2.mem `merge` delta
-        r3.mem = r3.mem `merge` delta
-      }
+         r1.mem = r1.mem `merge` delta
+         r2.mem = r2.mem `merge` delta
+         r3.mem = r3.mem `merge` delta
+       }
 
     r1.trans(_.write(10))
 
@@ -154,7 +154,7 @@ class MembershipTest extends munit.FunSuite {
       r1.trans(_.upkeep())
       o1 != r1.mem && o2 != r2.mem && o3 != r3.mem
     } do
-      iterations += 1
+       iterations += 1
 
     assertEquals(iterations, 2)
     assertEquals(r3.mem.log.get(0), Some(10))

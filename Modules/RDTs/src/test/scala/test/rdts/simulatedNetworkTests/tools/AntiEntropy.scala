@@ -83,7 +83,7 @@ class AntiEntropy[A](
 
   private def prepareDeltaMsg(to: String): Option[DeltaMsg[A]] = {
     if deltaBufferOut.isEmpty || deltaBufferOut.keySet.min > ackMap(to) then
-      Some(DeltaMsg(Named(replicaID.asId, fullState), nextSeqNum))
+       Some(DeltaMsg(Named(replicaID.asId, fullState), nextSeqNum))
     else {
       deltaBufferOut.collect {
         case (n, Named(origin, deltaState)) if n >= ackMap(to) && Uid.unwrap(origin) != to => deltaState

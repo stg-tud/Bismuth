@@ -30,7 +30,7 @@ object ObserverSwingApp extends SimpleSwingApplication {
           nClicks += 1
           label.text = "Number of button clicks: " + nClicks
           if nClicks > 0 then
-            button.text = "Click me again"
+             button.text = "Click me again"
       }
     }
 }

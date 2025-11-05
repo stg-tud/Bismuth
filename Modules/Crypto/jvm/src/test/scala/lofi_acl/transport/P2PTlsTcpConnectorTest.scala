@@ -26,15 +26,15 @@ class P2PTlsTcpConnectorTest extends FunSuite {
     val conn2Future = connector2.connect("localhost", connector1.listenPort)
 
     for
-      (serverSocket, returnedIdFromConn1) <- conn1Future
-      (clientSocket, returnedIdFromConn2) <- conn2Future
+       (serverSocket, returnedIdFromConn1) <- conn1Future
+       (clientSocket, returnedIdFromConn2) <- conn2Future
     yield
-      assertEquals(returnedIdFromConn1, id2.getPublic)
-      assertEquals(returnedIdFromConn2, id1.getPublic)
-      serverSocket.close()
-      clientSocket.close()
-      connector1.closeServerSocket()
-      connector2.closeServerSocket()
+       assertEquals(returnedIdFromConn1, id2.getPublic)
+       assertEquals(returnedIdFromConn2, id1.getPublic)
+       serverSocket.close()
+       clientSocket.close()
+       connector1.closeServerSocket()
+       connector2.closeServerSocket()
   }
 
   test("establishing a connection fails when using invalid client cert") {
@@ -53,10 +53,10 @@ class P2PTlsTcpConnectorTest extends FunSuite {
 
     for serverErr <- serverConnFuture.failed
     yield
-      assert(serverErr.isInstanceOf[SSLHandshakeException])
-      Try { clientConnFuture.map(_._1.close()) } // Client might connect, though the socket should be closed by server
-      clientConnector.closeServerSocket()
-      serverConnector.closeServerSocket()
+       assert(serverErr.isInstanceOf[SSLHandshakeException])
+       Try { clientConnFuture.map(_._1.close()) } // Client might connect, though the socket should be closed by server
+       clientConnector.closeServerSocket()
+       serverConnector.closeServerSocket()
   }
 
   test("establishing a connection fails when using invalid server cert") {
@@ -73,13 +73,13 @@ class P2PTlsTcpConnectorTest extends FunSuite {
     val clientConnFuture = clientConnector.connect("localhost", serverConnector.listenPort)
 
     for
-      clientErr <- clientConnFuture.failed
-      serverErr <- serverConnFuture.failed
+       clientErr <- clientConnFuture.failed
+       serverErr <- serverConnFuture.failed
     yield
-      assert(clientErr.isInstanceOf[SSLHandshakeException])
-      assert(serverErr.isInstanceOf[SSLHandshakeException] || serverErr.isInstanceOf[IOException])
-      clientConnector.closeServerSocket()
-      serverConnector.closeServerSocket()
+       assert(clientErr.isInstanceOf[SSLHandshakeException])
+       assert(serverErr.isInstanceOf[SSLHandshakeException] || serverErr.isInstanceOf[IOException])
+       clientConnector.closeServerSocket()
+       serverConnector.closeServerSocket()
   }
 
   test("establishing a connection to a port that is closed fails") {
@@ -97,10 +97,10 @@ class P2PTlsTcpConnectorTest extends FunSuite {
     val clientConnFuture = clientConnector.connect("localhost", serverConnector.listenPort)
 
     for
-      clientErr <- clientConnFuture.failed
+       clientErr <- clientConnFuture.failed
     yield
-      assert(clientErr.isInstanceOf[SocketException])
-      clientConnector.closeServerSocket()
+       assert(clientErr.isInstanceOf[SocketException])
+       clientConnector.closeServerSocket()
   }
 
 }

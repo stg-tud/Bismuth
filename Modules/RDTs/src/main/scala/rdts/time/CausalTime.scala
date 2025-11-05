@@ -12,24 +12,24 @@ import scala.util.Random
   * The `random` parameter is used for enforcing totality in cases where the `causal` values also happen to collide. It is slightly preferrable if `random` is monotonically increasing on a single replica, as then updates within the same millisecond from the same replica do not need to increment the causal counter.
   */
 case class CausalTime(time: Time, causal: Long, random: Long):
-  def causalIncrement: CausalTime = CausalTime(time, causal + 1, CausalTime.countedTime())
-  def advance: CausalTime         =
-    val now = CausalTime.now()
-    if now <= this
-    then causalIncrement
-    else now
+   def causalIncrement: CausalTime = CausalTime(time, causal + 1, CausalTime.countedTime())
+   def advance: CausalTime         =
+      val now = CausalTime.now()
+      if now <= this
+      then causalIncrement
+      else now
 
 object CausalTime:
-  val empty: CausalTime = CausalTime(0, 0, Long.MinValue)
+   val empty: CausalTime = CausalTime(0, 0, Long.MinValue)
 
-  given causalTimeBottom: Bottom[CausalTime] with
-    override def empty: CausalTime = CausalTime.empty
+   given causalTimeBottom: Bottom[CausalTime] with
+      override def empty: CausalTime = CausalTime.empty
 
-  given ordering: Ordering[CausalTime] = Orderings.lexicographic
+   given ordering: Ordering[CausalTime] = Orderings.lexicographic
 
-  given lattice: Lattice[CausalTime] = Lattice.fromOrdering(using ordering)
+   given lattice: Lattice[CausalTime] = Lattice.fromOrdering(using ordering)
 
-  // originally used `System.nanoTime` for the third component, but the Web does not offer high precision timers, so a counter it is!
-  private val timeCounter = AtomicLong(Random.nextLong())
-  def countedTime(): Long = timeCounter.getAndIncrement()
-  def now(): CausalTime   = CausalTime(Time.currentWallMillis(), 0, countedTime())
+   // originally used `System.nanoTime` for the third component, but the Web does not offer high precision timers, so a counter it is!
+   private val timeCounter = AtomicLong(Random.nextLong())
+   def countedTime(): Long = timeCounter.getAndIncrement()
+   def now(): CausalTime   = CausalTime(Time.currentWallMillis(), 0, countedTime())

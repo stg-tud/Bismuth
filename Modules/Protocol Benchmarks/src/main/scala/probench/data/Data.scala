@@ -21,11 +21,11 @@ case class KVState(
     requests: RequestResponseQueue[KVOperation[String, String], String] = RequestResponseQueue.empty,
     clusterState: MultiPaxos[Req[KVOperation[String, String]]] = MultiPaxos.empty
 ):
-  def upkeep(using LocalUid, Participants): KVState =
-    KVState(clusterState = clusterState.upkeep)
+   def upkeep(using LocalUid, Participants): KVState =
+     KVState(clusterState = clusterState.upkeep)
 
 object KVState:
-  given Lattice[KVState] =
-    Lattice.derived
+   given Lattice[KVState] =
+     Lattice.derived
 
-  def empty: KVState = KVState()
+   def empty: KVState = KVState()

@@ -125,8 +125,8 @@ trait DeltaStateUntrustedReplicaSizeBenchEnvironment {
 
   val outDir: Path = Paths.get("./", "benchmarks", "results")
   if !outDir.toFile.exists() then
-    outDir.toFile.mkdirs()
-    ()
+     outDir.toFile.mkdirs()
+     ()
   val aead: replication.Aead                      = AeadTranslation(Helper.setupAead("AES128_GCM"))
   val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(10_000)
 }

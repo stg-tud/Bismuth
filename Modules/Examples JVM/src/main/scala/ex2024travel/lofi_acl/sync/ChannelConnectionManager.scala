@@ -44,16 +44,16 @@ class ChannelConnectionManager(
   def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean = {
     if abort.closeRequest then return false
     connections.get.get(user) match
-      case Some(connectionSet) if connectionSet.nonEmpty =>
-        val connection = connectionSet.head
-        messages.foreach { message =>
-          connection.send(message).runIn(abort) {
-            case Success(_) => if !disableLogging then println(s"Successfully sent msg: ${String(message.asArray)}")
-            case Failure(exception) => if !disableLogging then exception.printStackTrace()
-          }
-        }
-        true
-      case _ => false
+       case Some(connectionSet) if connectionSet.nonEmpty =>
+         val connection = connectionSet.head
+         messages.foreach { message =>
+           connection.send(message).runIn(abort) {
+             case Success(_) => if !disableLogging then println(s"Successfully sent msg: ${String(message.asArray)}")
+             case Failure(exception) => if !disableLogging then exception.printStackTrace()
+           }
+         }
+         true
+       case _ => false
   }
 
   def broadcast(messages: MessageBuffer*): Boolean = {
@@ -125,9 +125,9 @@ class ChannelConnectionManager(
       case Success(msg)       => messageReceiver.receivedMessage(msg, remotePeerId)
       case Failure(exception) =>
         if !disableLogging then
-          println(
-            s"Closing connection with ${connection.authenticatedPeerReplicaId.get} at ${connection.info.hostname}:${connection.info.port}, because of $exception"
-          )
+           println(
+             s"Closing connection with ${connection.authenticatedPeerReplicaId.get} at ${connection.info.hostname}:${connection.info.port}, because of $exception"
+           )
         connections.updateAndGet { old =>
           old.updatedWith(remotePeerId) {
             case Some(connections) =>

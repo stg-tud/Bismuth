@@ -32,11 +32,11 @@ object Decompose {
 
   given mapDecompose[K, V: Decompose, Mp[K1, +V1] <: MapOps[K1, V1, Mp, Mp[K1, V1]]]: Decompose[Mp[K, V]] with {
     extension (state: Mp[K, V])
-      override def decomposed: Iterable[Mp[K, V]] =
-        for
-          case (k, v) <- state
-          d <- v.decomposed
-        yield state.mapFactory(k -> d)
+       override def decomposed: Iterable[Mp[K, V]] =
+         for
+            case (k, v) <- state
+            d <- v.decomposed
+         yield state.mapFactory(k -> d)
   }
 
   given setDecompose[A]: Decompose[Set[A]] = a => a.map(e => Set(e))
@@ -44,8 +44,8 @@ object Decompose {
   inline given tupleDecompose[T <: Tuple](using pm: Mirror.ProductOf[T]): Decompose[T] = derived
 
   inline def sumDecompose[T](using sm: Mirror.SumOf[T]): Decompose[T] =
-    val lattices: Tuple = summonAll[Tuple.Map[sm.MirroredElemTypes, Decompose]]
-    new Derivation.SumDecompose[T](sm, lattices)
+     val lattices: Tuple = summonAll[Tuple.Map[sm.MirroredElemTypes, Decompose]]
+     new Derivation.SumDecompose[T](sm, lattices)
 
   inline def derived[T <: Product](using pm: Mirror.ProductOf[T]): Decompose[T] = {
     val lattices: Tuple = summonAll[Tuple.Map[pm.MirroredElemTypes, Decompose]]
@@ -55,13 +55,13 @@ object Decompose {
 
   inline def summonAllMaybe[T <: Tuple]: T = {
     val res =
-      inline erasedValue[T] match
-        case _: EmptyTuple => EmptyTuple
-        case _: (τ *: τs)  => summonFrom {
-            case b: τ => b
-            case _    => null
-          } *: summonAllMaybe[τs]
-      end match
+       inline erasedValue[T] match
+          case _: EmptyTuple => EmptyTuple
+          case _: (τ *: τs)  => summonFrom {
+              case b: τ => b
+              case _    => null
+            } *: summonAllMaybe[τs]
+       end match
     res.asInstanceOf[T]
   }
 
@@ -72,12 +72,12 @@ object Decompose {
 
       extension (a: T) {
         override def decomposed: Iterable[T] =
-          val ordinal = sm.ordinal(a)
-          val res     = lat(ordinal).decomposed(a)
-          // When `a` decomposes into nothing, it is no longer possible to distinguish which alternative of the sum we are dealing with. That is fine when the ordinal is 0 because then we have reached the bottom case for the sum type, but in all other cases we must keep enough information around to figure out the ordinal.
-          if ordinal != 0 && res.isEmpty
-          then Iterable(a)
-          else res
+           val ordinal = sm.ordinal(a)
+           val res     = lat(ordinal).decomposed(a)
+           // When `a` decomposes into nothing, it is no longer possible to distinguish which alternative of the sum we are dealing with. That is fine when the ordinal is 0 because then we have reached the bottom case for the sum type, but in all other cases we must keep enough information around to figure out the ordinal.
+           if ordinal != 0 && res.isEmpty
+           then Iterable(a)
+           else res
       }
     }
 
@@ -92,32 +92,32 @@ object Decompose {
 
       private def lat(i: Int): Decompose[Any]    = lattices.productElement(i).asInstanceOf[Decompose[Any]]
       private def bot(i: Int, default: Any): Any =
-        val btm = bottoms.productElement(i)
-        if btm == null
-        then default
-        else btm.asInstanceOf[Bottom[Any]].empty
+         val btm = bottoms.productElement(i)
+         if btm == null
+         then default
+         else btm.asInstanceOf[Bottom[Any]].empty
       private def isEmpty(i: Int)(a: Any): Boolean =
-        val btm = bottoms.productElement(i)
-        if btm == null then false
-        else btm.asInstanceOf[Bottom[Any]].isEmpty(a)
+         val btm = bottoms.productElement(i)
+         if btm == null then false
+         else btm.asInstanceOf[Bottom[Any]].isEmpty(a)
 
       extension (a: T)
-        override def decomposed: Iterable[T] = {
-          // Singleton types (product arity == 0) would return an empty iterable if not handled explicitly.
-          // That would be “fine” with regards to the guarantees of decompose, but is slightly less useful in cases where the singleton type does not have a bottom instance defined.
-          if lattices.productArity == 0 then Iterable(a)
-          else
-            Range(0, lattices.productArity).flatMap { j =>
-              lat(j).decomposed(a.productElement(j)).iterator.filterNot(isEmpty(j)).map { elem =>
-                pm.fromProduct(new Product {
-                  def canEqual(that: Any): Boolean = false
-                  def productArity: Int            = lattices.productArity
-                  def productElement(i: Int): Any  = if i == j then elem
-                  else bot(i, a.productElement(i))
-                })
+         override def decomposed: Iterable[T] = {
+           // Singleton types (product arity == 0) would return an empty iterable if not handled explicitly.
+           // That would be “fine” with regards to the guarantees of decompose, but is slightly less useful in cases where the singleton type does not have a bottom instance defined.
+           if lattices.productArity == 0 then Iterable(a)
+           else
+              Range(0, lattices.productArity).flatMap { j =>
+                lat(j).decomposed(a.productElement(j)).iterator.filterNot(isEmpty(j)).map { elem =>
+                  pm.fromProduct(new Product {
+                    def canEqual(that: Any): Boolean = false
+                    def productArity: Int            = lattices.productArity
+                    def productElement(i: Int): Any  = if i == j then elem
+                    else bot(i, a.productElement(i))
+                  })
+                }
               }
-            }
-        }
+         }
 
     }
   }

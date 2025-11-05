@@ -17,8 +17,8 @@ class EchoWSTest extends munit.FunSuite {
     }
 
     val fut = Async[Abort]:
-      val wsc = outgoing.bind
-      wsc.send(ArrayMessageBuffer("hello world".getBytes())).bind
+       val wsc = outgoing.bind
+       wsc.send(ArrayMessageBuffer("hello world".getBytes())).bind
     .runToFuture(Abort())
     fut
   }

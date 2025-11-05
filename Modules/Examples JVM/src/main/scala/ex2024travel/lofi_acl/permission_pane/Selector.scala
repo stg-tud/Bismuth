@@ -56,18 +56,18 @@ object SelectorFactory {
       // existingRead: PermissionTree,
       // existingWrite: PermissionTree
   ): Map[String, Selector[?]] = inline erasedValue[T] match
-    case _: EmptyTuple     => Map.empty
-    case _: (head *: tail) =>
-      val childLabel = childLabels.productElement(idx).asInstanceOf[String]
-      val factory    = childSelectors.productElement(idx).asInstanceOf[SelectorFactory[head]]
-      val selector   = factory.create(
-        ardt.productElement(idx).asInstanceOf[head],
-        // writeSelectable.descend(childLabel),
-        // readSelectable.descend(childLabel),
-        // existingWrite.descend(childLabel),
-        // existingRead.descend(childLabel),
-      )
-      processChildren[ARDT, tail](ardt, idx + 1, childLabels, childSelectors) + (childLabel -> selector)
+     case _: EmptyTuple     => Map.empty
+     case _: (head *: tail) =>
+       val childLabel = childLabels.productElement(idx).asInstanceOf[String]
+       val factory    = childSelectors.productElement(idx).asInstanceOf[SelectorFactory[head]]
+       val selector   = factory.create(
+         ardt.productElement(idx).asInstanceOf[head],
+         // writeSelectable.descend(childLabel),
+         // readSelectable.descend(childLabel),
+         // existingWrite.descend(childLabel),
+         // existingRead.descend(childLabel),
+       )
+       processChildren[ARDT, tail](ardt, idx + 1, childLabels, childSelectors) + (childLabel -> selector)
 
   def leafSelectorFactory[T]: SelectorFactory[T] = (ardt: T) => leafSelector
 
@@ -83,17 +83,17 @@ object SelectorFactory {
     BoxedValueSelectorFactory[Option[T], T](opt => opt.getOrElse(Bottom[T].empty))
 
   given ORMapSelectorFactory[K: KeyAsString, V: {SelectorFactory, Bottom}]: SelectorFactory[ObserveRemoveMap[K, V]] with
-    override def create(ardt: ObserveRemoveMap[K, V]): Selector[ObserveRemoveMap[K, V]] = {
-      new Selector[ObserveRemoveMap[K, V]]() {
-        override def children: Map[String, Selector[V]] = {
-          val wildcard = SelectorFactory[V].create(Bottom[V].empty)
-          ((if wildcard.children.isEmpty then Seq.empty else Seq("*" -> wildcard)) ++ ardt.entries.map((k, v) =>
-            val keyString = KeyAsString[K].encode(k)
-            keyString -> SelectorFactory[V].create(v)
-          )).toMap
-        }
-      }
-    }
+     override def create(ardt: ObserveRemoveMap[K, V]): Selector[ObserveRemoveMap[K, V]] = {
+       new Selector[ObserveRemoveMap[K, V]]() {
+         override def children: Map[String, Selector[V]] = {
+           val wildcard = SelectorFactory[V].create(Bottom[V].empty)
+           ((if wildcard.children.isEmpty then Seq.empty else Seq("*" -> wildcard)) ++ ardt.entries.map((k, v) =>
+              val keyString = KeyAsString[K].encode(k)
+              keyString -> SelectorFactory[V].create(v)
+           )).toMap
+         }
+       }
+     }
 
   given LwwSelectorFactory[V: SelectorFactory]: SelectorFactory[LastWriterWins[V]] =
     BoxedValueSelectorFactory[LastWriterWins[V], V](lww => lww.read)

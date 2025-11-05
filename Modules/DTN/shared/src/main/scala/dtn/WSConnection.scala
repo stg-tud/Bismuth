@@ -99,9 +99,9 @@ class WSEndpointClient(host: String, port: Int, connection: WSConnection, val no
         if s.startsWith("200 Sent payload") then lock.set(false)
 
         if !s.startsWith("200") then
-          println(
-            s"dtn ws command response indicated 'not successfull', further interaction with the ws will likely fail: $s"
-          )
+           println(
+             s"dtn ws command response indicated 'not successfull', further interaction with the ws will likely fail: $s"
+           )
         receiveBundle()
       case b: Array[Byte] =>
         Future(Cbor.decode(b).to[Bundle].value)

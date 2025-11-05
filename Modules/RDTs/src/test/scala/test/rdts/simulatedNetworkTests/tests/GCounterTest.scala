@@ -11,7 +11,7 @@ import scala.collection.mutable
 object GCounterGenerators {
   val genGCounter: Gen[AntiEntropyContainer[GrowOnlyCounter]] =
     for
-      n <- Gen.posNum[Int]
+       n <- Gen.posNum[Int]
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[GrowOnlyCounter]("a", network, mutable.Buffer())

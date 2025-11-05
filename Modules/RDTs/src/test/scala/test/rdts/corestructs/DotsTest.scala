@@ -113,8 +113,8 @@ class DotsTest extends munit.ScalaCheckSuite {
       val leftSet  = left.toSet
       val rightSet = right.toSet
       if left <= right then
-        assertEquals(leftSet.intersect(rightSet), leftSet, s"left: $left\nright: $right")
-        assertEquals(leftSet.union(rightSet), rightSet)
+         assertEquals(leftSet.intersect(rightSet), leftSet, s"left: $left\nright: $right")
+         assertEquals(leftSet.union(rightSet), rightSet)
 
       assertEquals(left.disjunct(right), leftSet.intersect(rightSet).isEmpty)
     }

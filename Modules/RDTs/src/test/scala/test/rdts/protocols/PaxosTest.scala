@@ -6,7 +6,7 @@ import rdts.time.Dots
 
 class PaxosTest extends munit.FunSuite {
   given Bottom[Int] with
-    override def empty: Int = Int.MinValue
+     override def empty: Int = Int.MinValue
 
   given dots: Dots  = Dots.empty
   val id1: LocalUid = LocalUid.gen()

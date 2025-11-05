@@ -21,16 +21,16 @@ class TravelPlanViewModel(model: TravelPlanModel) extends GridPane {
   titleTextField.text = model.title.get()
   model.title.onChange((_, _, _) =>
     if !titleTextField.isFocused then
-      titleTextField.text = model.state.title.read
+       titleTextField.text = model.state.title.read
   )
 
   titleTextField.text.onChange((op, oldVal, newVal) =>
     if titleTextField.isFocused then
-      model.changeTitle(newVal)
+       model.changeTitle(newVal)
   )
   titleTextField.focused.onChange((op, wasFocused, isNowFocused) =>
     if !isNowFocused then
-      titleTextField.text = model.title.get()
+       titleTextField.text = model.title.get()
   )
 
   def bucketListCellFactory: Callback[jfxsc.ListView[String], jfxsc.ListCell[String]] = { (_: Any) =>

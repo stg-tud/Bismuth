@@ -99,8 +99,8 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
     val doneEv = toggleAll || doneClick.event
 
     extension (db: DeltaBuffer[LastWriterWins[Option[TaskData]]])
-      def modTask(f: TaskData => TaskData): DeltaBuffer[LastWriterWins[Option[TaskData]]] =
-        db.mod(_.map(f))
+       def modTask(f: TaskData => TaskData): DeltaBuffer[LastWriterWins[Option[TaskData]]] =
+         db.mod(_.map(f))
 
     val crdt: Signal[DeltaBuffer[LastWriterWins[Option[TaskData]]]] =
       Storing.storedAs(s"$storePrefix$taskID", lww) { init =>
@@ -137,15 +137,15 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
           `type`  := "checkbox",
           doneClick.data,
         ).render.reattach(Signal:
-          if taskData.value.done
-          then
-            (elem: dom.html.Input) =>
-              elem.checked = true
-              elem.setAttribute("checked", "checked")
-          else
-            (elem: dom.html.Input) =>
-              elem.checked = false
-              elem.removeAttribute("checked")),
+           if taskData.value.done
+           then
+              (elem: dom.html.Input) =>
+                 elem.checked = true
+                 elem.setAttribute("checked", "checked")
+           else
+              (elem: dom.html.Input) =>
+                 elem.checked = false
+                 elem.removeAttribute("checked")),
         label.render.reattach(taskData.map(c => c.desc)),
         removeButton.data
       ),
@@ -162,15 +162,15 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
 
 given RangeSplice[dom.Element, Modifier] with {
   override def splice(anchor: dom.Element, range: dom.Range, value: Modifier): Unit =
-    println(s"applying $value to $anchor")
-    anchor match
-      case elem: dom.Element => value.applyTo(elem)
+     println(s"applying $value to $anchor")
+     anchor match
+        case elem: dom.Element => value.applyTo(elem)
 }
 
 given [A <: dom.Element]: RangeSplice[A, A => Unit] with {
   override def splice(anchor: A, range: dom.Range, value: A => Unit): Unit =
     anchor match
-      case elem: A => value.apply(elem)
+       case elem: A => value.apply(elem)
 }
 
 given optionAttrValue[T](using ev: AttrValue[T]): AttrValue[Option[T]] =

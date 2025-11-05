@@ -19,8 +19,8 @@ object StateBasedUntrustedReplicaSizeBenchmark extends App {
 
   val outDir: Path = Paths.get("./benchmarks/results/")
   if !outDir.toFile.exists() then
-    outDir.toFile.mkdirs()
-    ()
+     outDir.toFile.mkdirs()
+     ()
   val csvFile   = new PrintWriter(Files.newOutputStream(outDir.resolve("state_size_benchmark.csv")))
   val csvHeader = "concurrentUpdates,commonElements,uniqueElements,untrustedReplicaSize,mergedSize"
   println(csvHeader)

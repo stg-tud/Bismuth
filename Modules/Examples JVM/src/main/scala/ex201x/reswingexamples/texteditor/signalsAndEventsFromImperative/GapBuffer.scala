@@ -18,7 +18,7 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
   def hasNext: Boolean = c < count
   def next(): Char     = {
     if b == caret then
-      b += buf.length - count
+       b += buf.length - count
     val ch = buf(b)
     b += 1
     c += 1
@@ -71,7 +71,7 @@ class GapBuffer {
   def insert(str: String): Unit = {
     // insert text into the gap between the two text segments
     if size.now + str.length > buf.length then
-      expand(size.now + str.length)
+       expand(size.now + str.length)
 
     val post = buf.length - size.now + caret.now
     str.copyToArray(buf, post - str.length, str.length)

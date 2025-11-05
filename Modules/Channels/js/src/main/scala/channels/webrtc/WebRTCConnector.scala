@@ -22,7 +22,7 @@ case class SessionDescription(descType: String, sdp: String) {
 object SessionDescription {
   def apply(value: dom.RTCSessionDescription): Option[SessionDescription] =
     Option(value).map: value =>
-      SessionDescription(value.`type`.asInstanceOf[String], value.sdp)
+       SessionDescription(value.`type`.asInstanceOf[String], value.sdp)
 }
 
 case class ConnectorOverview(
@@ -69,8 +69,8 @@ class WebRTCConnector(configuration: dom.RTCConfiguration) {
 
   /** this exists, but unclear how it could be used to restart the connection */
   def restartIce(): Unit =
-    peerConnection.asInstanceOf[js.Dynamic].restartIce()
-    ()
+     peerConnection.asInstanceOf[js.Dynamic].restartIce()
+     ()
 
   /** This just generates a local description that automatically figures out if it should be an offer or an answer based on the current state. */
   def smartUpdateLocalDescription: Async[Any, SessionDescription] = Async {
@@ -86,12 +86,12 @@ class WebRTCConnector(configuration: dom.RTCConfiguration) {
     * Once an ICE candidate exists it is also automatically included in the local description, so this is not necessary.
     */
   def iceCandidates: Async[Any, RTCIceCandidate] = Async.fromCallback:
-    peerConnection.addEventListener(
-      "icecandidate",
-      (event: dom.RTCPeerConnectionIceEvent) =>
-        if !js.isUndefined(event.candidate) && (event.candidate ne null) && event.candidate.candidate != "" then
-          Async.handler.succeed(event.candidate)
-    )
+     peerConnection.addEventListener(
+       "icecandidate",
+       (event: dom.RTCPeerConnectionIceEvent) =>
+         if !js.isUndefined(event.candidate) && (event.candidate ne null) && event.candidate.candidate != "" then
+            Async.handler.succeed(event.candidate)
+     )
 
   /** Mostly to wrap the session descriptions, but having the rest is also convenient */
   def readOverview: ConnectorOverview =
@@ -113,10 +113,10 @@ class WebRTCConnector(configuration: dom.RTCConfiguration) {
         "icecandidate",
         (event: dom.RTCPeerConnectionIceEvent) =>
           if event.candidate ne null then
-            // we could do incremental ice, here, but seems fast enough, so eh
-            Async.handler.succeed(())
+             // we could do incremental ice, here, but seems fast enough, so eh
+             Async.handler.succeed(())
           else // I guess this means we are done?
-            Async.handler.succeed(())
+             Async.handler.succeed(())
       )
 
       peerConnection.addEventListener(

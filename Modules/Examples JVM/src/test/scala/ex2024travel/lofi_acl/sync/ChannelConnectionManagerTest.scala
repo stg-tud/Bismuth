@@ -14,7 +14,7 @@ object ChannelConnectionManagerTest {
 
   def buf(str: String): MessageBuffer = ArrayMessageBuffer(str.getBytes)
   extension (tpl: (MessageBuffer, PublicIdentity))
-    def unbuf: (String, PublicIdentity) = if tpl == null then null else tpl.copy(_1 = String(tpl._1.asArray))
+     def unbuf: (String, PublicIdentity) = if tpl == null then null else tpl.copy(_1 = String(tpl._1.asArray))
 }
 
 class ChannelConnectionManagerTest extends FunSuite {

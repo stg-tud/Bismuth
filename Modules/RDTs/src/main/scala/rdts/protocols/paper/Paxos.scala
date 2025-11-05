@@ -36,21 +36,21 @@ case class Paxos[A](
 
   // boolean threshold queries
   def currentRoundHasCandidate: Boolean = currentRound match
-    case Some(PaxosRound(leaderElection, _))
-        if leaderElection.votes.nonEmpty => true
-    case _ => false
+     case Some(PaxosRound(leaderElection, _))
+         if leaderElection.votes.nonEmpty => true
+     case _ => false
   def isCurrentLeader(using
       Participants,
       LocalUid
   ): Boolean = currentRound match
-    case Some(PaxosRound(leaderElection, _))
-        if leaderElection.decision == Decided(replicaId) =>
-      true
-    case _ => false
+     case Some(PaxosRound(leaderElection, _))
+         if leaderElection.decision == Decided(replicaId) =>
+       true
+     case _ => false
   def currentRoundHasProposal: Boolean = currentRound match
-    case Some(PaxosRound(_, proposals))
-        if proposals.votes.nonEmpty => true
-    case _ => false
+     case Some(PaxosRound(_, proposals))
+         if proposals.votes.nonEmpty => true
+     case _ => false
 
   // protocol actions:
   def phase1a(using LocalUid)(value: A): Paxos[A] =
@@ -64,30 +64,30 @@ case class Paxos[A](
     updateIf(currentRoundHasCandidate)(
       // vote in the current leader election
       lastValueVote match
-        case Some(promisedBallot, acceptedVal) =>
-          // vote for candidate and include value most recently voted for
-          Paxos(Map(
-            currentBallotNum -> voteLeader(leaderCandidate),
-            promisedBallot   -> acceptedVal
-          )) // previously accepted value
-        case None =>
-          // no value voted for, just vote for candidate
-          Paxos(Map(
-            currentBallotNum -> voteLeader(leaderCandidate)
-          ))
+         case Some(promisedBallot, acceptedVal) =>
+           // vote for candidate and include value most recently voted for
+           Paxos(Map(
+             currentBallotNum -> voteLeader(leaderCandidate),
+             promisedBallot   -> acceptedVal
+           )) // previously accepted value
+         case None =>
+           // no value voted for, just vote for candidate
+           Paxos(Map(
+             currentBallotNum -> voteLeader(leaderCandidate)
+           ))
     )
 
   def phase2a(myValue: A)(using LocalUid, Participants): Paxos[A] =
     // propose a value if I am the leader
     updateIf(isCurrentLeader)(
       if newestReceivedVal.nonEmpty then
-        // propose most recent received value
-        Paxos(Map(currentBallotNum -> voteValue(
-          newestReceivedVal.get
-        )))
+         // propose most recent received value
+         Paxos(Map(currentBallotNum -> voteValue(
+           newestReceivedVal.get
+         )))
       else
-        // no values received during leader election, propose my value
-        Paxos(Map(currentBallotNum -> voteValue(myValue)))
+         // no values received during leader election, propose my value
+         Paxos(Map(currentBallotNum -> voteValue(myValue)))
     )
 
   // This is a helper function that allows calling phase2a without a parameter.
@@ -117,11 +117,11 @@ case class Paxos[A](
 
   // helper functions
   def nextBallotNum(using LocalUid): BallotNum =
-    val maxCounter: Long = rounds
-      .map((b, _) => b.counter)
-      .maxOption
-      .getOrElse(-1)
-    BallotNum(replicaId, maxCounter + 1)
+     val maxCounter: Long = rounds
+       .map((b, _) => b.counter)
+       .maxOption
+       .getOrElse(-1)
+     BallotNum(replicaId, maxCounter + 1)
   def currentRound: Option[PaxosRound[A]] =
     rounds.maxOption.map(_._2)
   def currentBallotNum: BallotNum =
@@ -130,9 +130,9 @@ case class Paxos[A](
     currentLeaderElection.map(_.votes.head.value).get
   def currentLeaderElection: Option[LeaderElection] =
     currentRound match
-      case Some(PaxosRound(leaderElection, _)) =>
-        Some(leaderElection)
-      case None => None
+       case Some(PaxosRound(leaderElection, _)) =>
+         Some(leaderElection)
+       case None => None
   def lastValueVote: Option[(BallotNum, PaxosRound[A])] =
     rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
   def newestReceivedVal: Option[A] =
@@ -151,52 +151,52 @@ object Paxos {
   given paxosBottom[A]: Bottom[Paxos[A]]   = Bottom.provide(Paxos())
 
   given Ordering[BallotNum] with
-    override def compare(x: BallotNum, y: BallotNum): Int =
-      if x.counter > y.counter then 1
-      else if x.counter < y.counter then -1
-      else Ordering[Uid].compare(x.uid, y.uid)
+     override def compare(x: BallotNum, y: BallotNum): Int =
+       if x.counter > y.counter then 1
+       else if x.counter < y.counter then -1
+       else Ordering[Uid].compare(x.uid, y.uid)
   given [A]: Ordering[(BallotNum, PaxosRound[A])] with
-    override def compare(
-        x: (BallotNum, PaxosRound[A]),
-        y: (BallotNum, PaxosRound[A])
-    ): Int = (x, y) match
-      case ((x, _), (y, _)) =>
-        Ordering[BallotNum].compare(x, y)
+     override def compare(
+         x: (BallotNum, PaxosRound[A]),
+         y: (BallotNum, PaxosRound[A])
+     ): Int = (x, y) match
+        case ((x, _), (y, _)) =>
+          Ordering[BallotNum].compare(x, y)
 
   // implementation of consensus typeclass for the testing framework
   given consensus: Consensus[Paxos] with
-    extension [A](c: Paxos[A])
-      override def propose(value: A)(using LocalUid, Participants): Paxos[A] =
-        // check if I can propose a value
-        val afterProposal = c.phase2a
-        if Lattice.subsumption(afterProposal, c) then
-          // proposing did not work, try to become leader
-          c.phase1a(value)
-        else
-          afterProposal
-    extension [A](c: Paxos[A])(using Participants)
-      override def result: Option[A] = c.decision match {
-        case Invalid                       => None
-        case Util.Agreement.Decided(value) => Some(value)
-        case Util.Agreement.Undecided      => None
-      }
-    extension [A](c: Paxos[A])
-      // upkeep can be used to perform the next protocol step automatically
-      override def upkeep()(using LocalUid, Participants): Paxos[A] =
-        // check which phase we are in
-        c.currentRound match
-          case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>
-            // we have a leader -> phase 2
-            if leaderElection.result.get == replicaId then
-              c.phase2a
-            else
-              c.phase2b
-          // we are in the process of electing a new leader
-          case _ =>
-            c.phase1b
+     extension [A](c: Paxos[A])
+        override def propose(value: A)(using LocalUid, Participants): Paxos[A] =
+           // check if I can propose a value
+           val afterProposal = c.phase2a
+           if Lattice.subsumption(afterProposal, c) then
+              // proposing did not work, try to become leader
+              c.phase1a(value)
+           else
+              afterProposal
+     extension [A](c: Paxos[A])(using Participants)
+        override def result: Option[A] = c.decision match {
+          case Invalid                       => None
+          case Util.Agreement.Decided(value) => Some(value)
+          case Util.Agreement.Undecided      => None
+        }
+     extension [A](c: Paxos[A])
+        // upkeep can be used to perform the next protocol step automatically
+        override def upkeep()(using LocalUid, Participants): Paxos[A] =
+          // check which phase we are in
+          c.currentRound match
+             case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>
+               // we have a leader -> phase 2
+               if leaderElection.result.get == replicaId then
+                  c.phase2a
+               else
+                  c.phase2b
+             // we are in the process of electing a new leader
+             case _ =>
+               c.phase1b
 
-    override def empty[A]: Paxos[A] = paxosBottom.empty
+     override def empty[A]: Paxos[A] = paxosBottom.empty
 
-    override def lattice[A]: Lattice[Paxos[A]] = paxosLattice
+     override def lattice[A]: Lattice[Paxos[A]] = paxosLattice
 
 }

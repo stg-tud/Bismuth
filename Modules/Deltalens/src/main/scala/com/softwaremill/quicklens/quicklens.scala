@@ -11,29 +11,29 @@ package object quicklens {
   // #114: obj shouldn't be inline since we want to reference the parameter by-name, rather then embedding the whole
   // expression whenever obj is used; this is especially important for chained .modify invocations
   extension [S](obj: S)
-    /** Create an object allowing modifying the given (deeply nested) field accessible in a `case class` hierarchy via
-      * `path` on the given `obj`.
-      *
-      * All modifications are side-effect free and create copies of the original objects.
-      *
-      * You can use `.each` to traverse options, lists, etc.
-      */
-    inline def modify[A](inline path: S => A): PathModify[S, A] =
-      ${ toPathModifyFromFocus('{ obj }, '{ path }, produceDelta = false) }
+     /** Create an object allowing modifying the given (deeply nested) field accessible in a `case class` hierarchy via
+       * `path` on the given `obj`.
+       *
+       * All modifications are side-effect free and create copies of the original objects.
+       *
+       * You can use `.each` to traverse options, lists, etc.
+       */
+     inline def modify[A](inline path: S => A): PathModify[S, A] =
+       ${ toPathModifyFromFocus('{ obj }, '{ path }, produceDelta = false) }
 
-    inline def deltaModify[A](inline path: S => A): PathModify[S, A] =
-      ${ toPathModifyFromFocus('{ obj }, '{ path }, produceDelta = true) }
+     inline def deltaModify[A](inline path: S => A): PathModify[S, A] =
+       ${ toPathModifyFromFocus('{ obj }, '{ path }, produceDelta = true) }
 
-    /** Create an object allowing modifying the given (deeply nested) fields accessible in a `case class` hierarchy via
-      * `paths` on the given `obj`.
-      *
-      * All modifications are side-effect free and create copies of the original objects.
-      *
-      * You can use `.each` to traverse options, lists, etc.
-      */
-    inline def modifyAll[A](inline path: S => A, inline paths: (S => A)*): PathModify[S, A] = ${
-      modifyAllImpl('{ obj }, '{ path }, '{ paths })
-    }
+     /** Create an object allowing modifying the given (deeply nested) fields accessible in a `case class` hierarchy via
+       * `paths` on the given `obj`.
+       *
+       * All modifications are side-effect free and create copies of the original objects.
+       *
+       * You can use `.each` to traverse options, lists, etc.
+       */
+     inline def modifyAll[A](inline path: S => A, inline paths: (S => A)*): PathModify[S, A] = ${
+       modifyAllImpl('{ obj }, '{ path }, '{ paths })
+     }
 
   case class PathModify[S, A](obj: S, f: (A => A) => S) {
 
@@ -151,8 +151,8 @@ package object quicklens {
 
     given QuicklensFunctor[Array] with {
       def map[A](fa: Array[A], f: A => A): Array[A] =
-        given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
-        fa.map(f)
+         given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
+         fa.map(f)
     }
 
     given [K, M <: ([V] =>> Map[K, V])]: QuicklensFunctor[M] with {
@@ -184,14 +184,14 @@ package object quicklens {
 
     given QuicklensIndexedFunctor[Array, Int] with {
       def at[A](fa: Array[A], f: A => A, idx: Int): Array[A] =
-        given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
-        fa.updated(idx, f(fa(idx)))
+         given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
+         fa.updated(idx, f(fa(idx)))
       def atOrElse[A](fa: Array[A], f: A => A, idx: Int, default: => A): Array[A] =
-        given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
-        fa.updated(idx, f(fa.applyOrElse(idx, Function.const(default))))
+         given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
+         fa.updated(idx, f(fa.applyOrElse(idx, Function.const(default))))
       def index[A](fa: Array[A], f: A => A, idx: Int): Array[A] =
-        given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
-        if fa.isDefinedAt(idx) then fa.updated(idx, f(fa(idx))) else fa
+         given aClassTag: ClassTag[A] = fa.elemTag.asInstanceOf[ClassTag[A]]
+         if fa.isDefinedAt(idx) then fa.updated(idx, f(fa(idx))) else fa
     }
 
     given [K, M <: ([V] =>> Map[K, V])]: QuicklensIndexedFunctor[M, K] with {
@@ -205,78 +205,78 @@ package object quicklens {
   }
 
   trait QuicklensEitherFunctor[T[_, _], L, R]:
-    def eachLeft[A](e: T[A, R], f: A => A): T[A, R]
-    def eachRight[A](e: T[L, A], f: A => A): T[L, A]
+     def eachLeft[A](e: T[A, R], f: A => A): T[A, R]
+     def eachRight[A](e: T[L, A], f: A => A): T[L, A]
 
   object QuicklensEitherFunctor:
-    given [L, R]: QuicklensEitherFunctor[Either, L, R] with
-      override def eachLeft[A](e: Either[A, R], f: A => A): Either[A, R]  = e.left.map(f)
-      override def eachRight[A](e: Either[L, A], f: A => A): Either[L, A] = e.map(f)
+     given [L, R]: QuicklensEitherFunctor[Either, L, R] with
+        override def eachLeft[A](e: Either[A, R], f: A => A): Either[A, R]  = e.left.map(f)
+        override def eachRight[A](e: Either[L, A], f: A => A): Either[L, A] = e.map(f)
 
   // Currently only used for [[Option]], but could be used for [[Right]]-biased [[Either]]s.
   trait QuicklensSingleAtFunctor[F[_]]:
-    def at[A](fa: F[A], f: A => A): F[A]
-    def atOrElse[A](fa: F[A], f: A => A, default: => A): F[A]
-    def index[A](fa: F[A], f: A => A): F[A]
+     def at[A](fa: F[A], f: A => A): F[A]
+     def atOrElse[A](fa: F[A], f: A => A, default: => A): F[A]
+     def index[A](fa: F[A], f: A => A): F[A]
 
   object QuicklensSingleAtFunctor:
-    given QuicklensSingleAtFunctor[Option] with
-      override def at[A](fa: Option[A], f: A => A): Option[A]                      = Some(fa.map(f).get)
-      override def atOrElse[A](fa: Option[A], f: A => A, default: => A): Option[A] = fa.orElse(Some(default)).map(f)
-      override def index[A](fa: Option[A], f: A => A): Option[A]                   = fa.map(f)
+     given QuicklensSingleAtFunctor[Option] with
+        override def at[A](fa: Option[A], f: A => A): Option[A]                      = Some(fa.map(f).get)
+        override def atOrElse[A](fa: Option[A], f: A => A, default: => A): Option[A] = fa.orElse(Some(default)).map(f)
+        override def index[A](fa: Option[A], f: A => A): Option[A]                   = fa.map(f)
 
   trait QuicklensWhen[A]:
-    inline def when[B <: A](a: A, f: B => B): A
+     inline def when[B <: A](a: A, f: B => B): A
 
   object QuicklensWhen:
-    given [A]: QuicklensWhen[A] with
-      override inline def when[B <: A](a: A, f: B => B): A =
-        a match
-          case b: B => f(b)
-          case _    => a
+     given [A]: QuicklensWhen[A] with
+        override inline def when[B <: A](a: A, f: B => B): A =
+          a match
+             case b: B => f(b)
+             case _    => a
 
   extension [F[_]: QuicklensFunctor, A](fa: F[A])
-    @compileTimeOnly(canOnlyBeUsedInsideModify("each"))
-    def each: A = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("each"))
+     def each: A = ???
 
-    @compileTimeOnly(canOnlyBeUsedInsideModify("eachWhere"))
-    def eachWhere(cond: A => Boolean): A = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("eachWhere"))
+     def eachWhere(cond: A => Boolean): A = ???
 
   extension [F[_]: ([G[_]] =>> QuicklensIndexedFunctor[G, I]), I, A](fa: F[A])
-    @compileTimeOnly(canOnlyBeUsedInsideModify("at"))
-    def at(idx: I): A = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("at"))
+     def at(idx: I): A = ???
 
-    @compileTimeOnly(canOnlyBeUsedInsideModify("atOrElse"))
-    def atOrElse(idx: I, default: => A): A = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("atOrElse"))
+     def atOrElse(idx: I, default: => A): A = ???
 
-    @compileTimeOnly(canOnlyBeUsedInsideModify("index"))
-    def index(idx: I): A = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("index"))
+     def index(idx: I): A = ???
 
   extension [T[_, _]: ([E[_, _]] =>> QuicklensEitherFunctor[E, L, R]), R, L](e: T[L, R])
-    @compileTimeOnly(canOnlyBeUsedInsideModify("eachLeft"))
-    def eachLeft: L = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("eachLeft"))
+     def eachLeft: L = ???
 
   extension [T[_, _]: ([E[_, _]] =>> QuicklensEitherFunctor[E, L, R]), L, R](e: T[L, R])
-    @compileTimeOnly(canOnlyBeUsedInsideModify("eachRight"))
-    def eachRight: R = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("eachRight"))
+     def eachRight: R = ???
 
   extension [F[_]: QuicklensSingleAtFunctor, T](t: F[T])
-    @compileTimeOnly(canOnlyBeUsedInsideModify("at"))
-    def at: T = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("at"))
+     def at: T = ???
 
-    @compileTimeOnly(canOnlyBeUsedInsideModify("atOrElse"))
-    def atOrElse(default: => T): T = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("atOrElse"))
+     def atOrElse(default: => T): T = ???
 
-    @compileTimeOnly(canOnlyBeUsedInsideModify("index"))
-    def index: T = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("index"))
+     def index: T = ???
 
   extension [A: QuicklensWhen](value: A)
-    @compileTimeOnly(canOnlyBeUsedInsideModify("when"))
-    def when[B <: A]: B = ???
+     @compileTimeOnly(canOnlyBeUsedInsideModify("when"))
+     def when[B <: A]: B = ???
 
   extension [T, U](f1: T => PathModify[T, U])
-    def andThenModify[V](f2: U => PathModify[U, V]): T => PathModify[T, V] = (t: T) =>
-      PathModify[T, V](t, vv => f1(t).f(u => f2(u).f(vv)))
+     def andThenModify[V](f2: U => PathModify[U, V]): T => PathModify[T, V] = (t: T) =>
+       PathModify[T, V](t, vv => f1(t).f(u => f2(u).f(vv)))
 
   private def canOnlyBeUsedInsideModify(method: String) = s"$method can only be used as a path component inside modify"
 }

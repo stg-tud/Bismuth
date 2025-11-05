@@ -12,12 +12,12 @@ object GlobalCandidate {
 
   transparent inline def select: GlobalCandidate[?] =
     inline GeneratedSelection.selection match
-      case "toposort" => toposort
-      case "calculus" => calculus
-      case "sidup"    => sidup
-      case "levelled" => levelled
-      case "parrp"    => PlatformCandidates.parrp
-      case other      => levelled
+       case "toposort" => toposort
+       case "calculus" => calculus
+       case "sidup"    => sidup
+       case "levelled" => levelled
+       case "parrp"    => PlatformCandidates.parrp
+       case other      => levelled
 
   // the type of selected might be expressible with a match type,
   // but type inference will take care of that for us instead

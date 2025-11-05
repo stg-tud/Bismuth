@@ -18,9 +18,9 @@ import scala.concurrent.{Await, Future}
 
 /** API base path used for http request */
 def api(using scheme: String = "http"): String =
-  val ip   = "127.0.0.1"
-  val port = 3000
-  s"$scheme://$ip:$port"
+   val ip   = "127.0.0.1"
+   val port = 3000
+   s"$scheme://$ip:$port"
 
 val client: HttpClient = HttpClient.newBuilder()
   .connectTimeout(Duration.ofSeconds(20))
@@ -115,8 +115,8 @@ class ReplicaListener[S](replica: Replica[S]) extends Listener {
 
   override def onOpen(webSocket: WebSocket): Unit                                                  = ()
   override def onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage[?] =
-    if CharSequence.compare(data, "200 tx mode: JSON") == 0 then modeSwitched.succeed(true)
-    super.onText(webSocket, data, last)
+     if CharSequence.compare(data, "200 tx mode: JSON") == 0 then modeSwitched.succeed(true)
+     super.onText(webSocket, data, last)
   override def onBinary(webSocket: WebSocket, data: ByteBuffer, last: Boolean): CompletionStage[?] = {
     replica.receive(data)
 
@@ -130,35 +130,35 @@ class ReplicaMutator[S](val replica: Replica[S]) {
 }
 
 def traverse[T](list: List[Async[Any, T]]): Async[Any, List[T]] = list match
-  case Nil    => Async { Nil }
-  case h :: t => Async {
-      val hr   = h.bind
-      val rest = traverse(t).bind
-      hr :: rest
-    }
+   case Nil    => Async { Nil }
+   case h :: t => Async {
+       val hr   = h.bind
+       val rest = traverse(t).bind
+       hr :: rest
+     }
 
 def run(): Unit =
-  val service = "dtn://rdt/~test"
+   val service = "dtn://rdt/~test"
 
-  val res = Async[Unit] {
-    val nodeId = sget(URI.create(s"$api/status/nodeid")).bind
-    sget(URI.create(s"$api/register?$service")).bind
+   val res = Async[Unit] {
+     val nodeId = sget(URI.create(s"$api/status/nodeid")).bind
+     sget(URI.create(s"$api/register?$service")).bind
 
-    val replica    = Replica(Uid.gen(), nodeId, service, PosNegCounter.zero)
-    given LocalUid = replica.id.convert
+     val replica    = Replica(Uid.gen(), nodeId, service, PosNegCounter.zero)
+     given LocalUid = replica.id.convert
 
-    val bundleString = sget(URI.create(s"$api/status/bundles")).bind
-    val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
-      bget(URI.create(s"$api/download?$id"))
-    }).bind
+     val bundleString = sget(URI.create(s"$api/status/bundles")).bind
+     val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
+       bget(URI.create(s"$api/download?$id"))
+     }).bind
 
-    replica.connectOn(URI.create(s"${api(using "ws")}/ws")).bind
+     replica.connectOn(URI.create(s"${api(using "ws")}/ws")).bind
 
-    Thread.sleep(1000)
+     Thread.sleep(1000)
 
-    replica.mut(_.add(10))
+     replica.mut(_.add(10))
 
-  }.runToFuture(())
+   }.runToFuture(())
 
-  Await.result(res, scala.concurrent.duration.Duration.Inf)
-  Thread.sleep(1000)
+   Await.result(res, scala.concurrent.duration.Duration.Inf)
+   Thread.sleep(1000)

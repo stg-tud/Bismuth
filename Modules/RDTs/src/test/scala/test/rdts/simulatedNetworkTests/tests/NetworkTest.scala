@@ -8,13 +8,13 @@ import test.rdts.simulatedNetworkTests.tools.{Network, SimulatedMessage}
 object NetworkGenerators {
 
   case class NetworkGenerator(lossChance: Double, duplicateChance: Double, delayChance: Double):
-    def make(): Network = Network(lossChance, duplicateChance, delayChance)
+     def make(): Network = Network(lossChance, duplicateChance, delayChance)
 
   val genNetwork: Gen[NetworkGenerator] =
     for
-      lossChance      <- Gen.choose(0.0, 1.0)
-      duplicateChance <- Gen.choose(0.0, 1.0)
-      delayChance     <- Gen.choose(0.0, 1.0)
+       lossChance      <- Gen.choose(0.0, 1.0)
+       duplicateChance <- Gen.choose(0.0, 1.0)
+       delayChance     <- Gen.choose(0.0, 1.0)
     yield new NetworkGenerator(lossChance, duplicateChance, delayChance)
 
   given arbNetwork: Arbitrary[NetworkGenerator] = Arbitrary(genNetwork)

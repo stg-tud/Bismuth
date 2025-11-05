@@ -7,10 +7,10 @@ import rdts.time.Dots
 import java.time.ZonedDateTime
 
 enum MonitoringMessage derives Codec.All:
-  case BundleReceivedAtRouter(nodeId: String, bundleId: String, time: Option[ZonedDateTime] = None)
-  case BundleForwardedAtRouter(nodeId: String, bundleId: String, time: Option[ZonedDateTime] = None)
-  case BundleDeliveredAtClient(clientId: String, bundleId: String, dots: Dots, time: Option[ZonedDateTime] = None)
-  case BundleCreatedAtClient(clientId: String, bundleId: String, dots: Dots, time: Option[ZonedDateTime] = None)
+   case BundleReceivedAtRouter(nodeId: String, bundleId: String, time: Option[ZonedDateTime] = None)
+   case BundleForwardedAtRouter(nodeId: String, bundleId: String, time: Option[ZonedDateTime] = None)
+   case BundleDeliveredAtClient(clientId: String, bundleId: String, dots: Dots, time: Option[ZonedDateTime] = None)
+   case BundleCreatedAtClient(clientId: String, bundleId: String, dots: Dots, time: Option[ZonedDateTime] = None)
 
 trait MonitoringClientInterface {
   def send(message: MonitoringMessage): Unit

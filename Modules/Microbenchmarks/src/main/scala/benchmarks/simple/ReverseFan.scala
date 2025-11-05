@@ -32,15 +32,15 @@ class ReverseFan {
       work.consumeSecondary(); values.sum
     }
     if reactives.SelectedScheduler.candidate.scheduler == reactives.scheduler.LevelbasedVariants.unmanaged then
-      isManual = true
+       isManual = true
 
   }
 
   @Benchmark
   def run(step: Step, params: ThreadParams): Unit =
     if isManual then
-      synchronized {
-        sources(params.getThreadIndex).set(step.run())
-      }
+       synchronized {
+         sources(params.getThreadIndex).set(step.run())
+       }
     else sources(params.getThreadIndex).set(step.run())
 }

@@ -9,28 +9,28 @@ case class BftAcl(
     write: Map[PublicIdentity, PermissionTree],
     removed: Set[PublicIdentity] = Set.empty
 ):
-  def addPermissions(user: PublicIdentity, read: PermissionTree, write: PermissionTree): BftAcl = {
-    if removed.contains(user) then this // Don't fail, otherwise reconstruction in reverse order would fail
-    else
-      copy(
-        read = this.read.updatedWith(user) {
-          case Some(oldRead) => Some(oldRead.merge(read))
-          case None          => Some(read)
-        },
-        write = this.write.updatedWith(user) {
-          case Some(oldWrite) => Some(oldWrite.merge(write))
-          case None           => Some(write)
-        }
-      )
-  }
+   def addPermissions(user: PublicIdentity, read: PermissionTree, write: PermissionTree): BftAcl = {
+     if removed.contains(user) then this // Don't fail, otherwise reconstruction in reverse order would fail
+     else
+        copy(
+          read = this.read.updatedWith(user) {
+            case Some(oldRead) => Some(oldRead.merge(read))
+            case None          => Some(read)
+          },
+          write = this.write.updatedWith(user) {
+            case Some(oldWrite) => Some(oldWrite.merge(write))
+            case None           => Some(write)
+          }
+        )
+   }
 
-  def remove(publicIdentity: PublicIdentity): BftAcl = {
-    BftAcl(
-      read.removed(publicIdentity),
-      write.removed(publicIdentity),
-      removed + publicIdentity
-    )
-  }
+   def remove(publicIdentity: PublicIdentity): BftAcl = {
+     BftAcl(
+       read.removed(publicIdentity),
+       write.removed(publicIdentity),
+       removed + publicIdentity
+     )
+   }
 
-  // TODO: Remove Acl
-  def asAcl: Acl = Acl(read, write)
+   // TODO: Remove Acl
+   def asAcl: Acl = Acl(read, write)

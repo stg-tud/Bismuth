@@ -37,11 +37,11 @@ object LastWriterWins {
   given decompose[E]: Decompose[LastWriterWins[E]] = Decompose.atomic
 
   given lattice[A]: Lattice[LastWriterWins[A]] =
-    given Ordering[A] = Lattice.assertEqualsOrdering
-    Lattice.fromOrdering(using Orderings.lexicographic)
+     given Ordering[A] = Lattice.assertEqualsOrdering
+     Lattice.fromOrdering(using Orderings.lexicographic)
 
   given bottom[A: Bottom]: Bottom[LastWriterWins[A]] with
-    override def empty: LastWriterWins[A] = LastWriterWins.this.empty
+     override def empty: LastWriterWins[A] = LastWriterWins.this.empty
 
   /* This is an alternative lattice implementation that supports merging in case of concurrent changes */
   inline def generalizedLattice[A]: Lattice[LastWriterWins[A]] = scala.compiletime.summonFrom {
@@ -55,11 +55,11 @@ object LastWriterWins {
 
     override def merge(left: LastWriterWins[A], right: LastWriterWins[A]): LastWriterWins[A] =
       CausalTime.ordering.compare(left.timestamp, right.timestamp) match
-        case 0 =>
-          val newPayload = conflict.merge(left.payload, right.payload)
-          LastWriterWins(left.timestamp, newPayload)
-        case x if x < 0 => right
-        case x if x > 0 => left
+         case 0 =>
+           val newPayload = conflict.merge(left.payload, right.payload)
+           LastWriterWins(left.timestamp, newPayload)
+         case x if x < 0 => right
+         case x if x > 0 => left
   }
 
   given historized[A]: Historized[LastWriterWins[A]] = (delta, bufferedDelta) =>

@@ -46,8 +46,8 @@ class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
   override def remember(message: CachedMessage[Payload[State]]): Unit = {
     pastPayloads = pastPayloads.enqueue(message)
     if pastPayloads.sizeIs > size then
-      pastPayloads = pastPayloads.drop(1)
-      ()
+       pastPayloads = pastPayloads.drop(1)
+       ()
   }
 
 }

@@ -12,14 +12,14 @@ case class RequestResponseQueue[S, T](
     responses: Map[Timestamp, Res[T]] = Map.empty[Timestamp, Res[T]]
 ) {
   def request(value: S)(using LocalUid): RequestResponseQueue[S, T] =
-    // find the newest timestamp
-    val timestamp = requestsSorted.lastOption.map(_.timestamp) match
-      case Some((time, _)) => (time.advance, replicaId)
-      case None            => (CausalTime.now(), replicaId)
+     // find the newest timestamp
+     val timestamp = requestsSorted.lastOption.map(_.timestamp) match
+        case Some((time, _)) => (time.advance, replicaId)
+        case None            => (CausalTime.now(), replicaId)
 
-    val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
-    val updated    = myRequests.value + Req(value, replicaId, timestamp)
-    RequestResponseQueue(requests = Map(replicaId -> myRequests.write(updated)))
+     val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
+     val updated    = myRequests.value + Req(value, replicaId, timestamp)
+     RequestResponseQueue(requests = Map(replicaId -> myRequests.write(updated)))
 
   def respond(request: Req[S], value: T): RequestResponseQueue[S, T] =
     RequestResponseQueue(responses =
@@ -33,21 +33,21 @@ case class RequestResponseQueue[S, T](
     * This is supposed to be done by the replica where the request originated.
     */
   def complete(request: Req[S])(using LocalUid): RequestResponseQueue[S, T] =
-    val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
-    RequestResponseQueue(
-      requests = Map(replicaId -> myRequests.epocheWrite(
-        myRequests.value - request
-      ))
-    )
+     val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
+     RequestResponseQueue(
+       requests = Map(replicaId -> myRequests.epocheWrite(
+         myRequests.value - request
+       ))
+     )
 
   def firstUnansweredRequest: Option[Req[S]] =
     requestsSorted.find(responseTo(_).isEmpty)
 
   def requestsSorted: List[Req[S]] =
-    val allRequests: Iterable[Req[S]] = requests.flatMap {
-      case (nodeId, epoch) => epoch.value
-    }
-    allRequests.toList.sortBy(_.timestamp)
+     val allRequests: Iterable[Req[S]] = requests.flatMap {
+       case (nodeId, epoch) => epoch.value
+     }
+     allRequests.toList.sortBy(_.timestamp)
 }
 
 object RequestResponseQueue {
@@ -64,8 +64,8 @@ object RequestResponseQueue {
 
   // lattices
   given [S, T]: Lattice[Map[Timestamp, Res[T]]] = // for the requestMap
-    given Lattice[Res[T]] = Lattice.assertEquals
-    Lattice.mapLattice
+     given Lattice[Res[T]] = Lattice.assertEquals
+     Lattice.mapLattice
 
   given [S, T]: Lattice[RequestResponseQueue[S, T]] = Lattice.derived
 }

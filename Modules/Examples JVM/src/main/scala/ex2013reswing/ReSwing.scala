@@ -14,7 +14,7 @@ package object ex2013reswing {
 
   def inSyncEDT(op: => Unit): Unit =
     if SwingUtilities.isEventDispatchThread then
-      op
+       op
     else
-      Swing onEDT op
+       Swing onEDT op
 }

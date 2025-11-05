@@ -42,15 +42,15 @@ class ReTable[A <: AnyRef](
         e.getType match {
           case javax.swing.event.TableModelEvent.UPDATE =>
             if
-              e.getFirstRow == 0 &&
-              e.getLastRow == Int.MaxValue &&
-              e.getColumn == javax.swing.event.TableModelEvent.ALL_COLUMNS
+               e.getFirstRow == 0 &&
+               e.getLastRow == Int.MaxValue &&
+               e.getColumn == javax.swing.event.TableModelEvent.ALL_COLUMNS
             then
-              TableChanged(peer)
+               TableChanged(peer)
             else if e.getFirstRow == javax.swing.event.TableModelEvent.HEADER_ROW then
-              TableStructureChanged(peer)
+               TableStructureChanged(peer)
             else
-              TableUpdated(peer, e.getFirstRow to e.getLastRow, e.getColumn)
+               TableUpdated(peer, e.getFirstRow to e.getLastRow, e.getColumn)
           case javax.swing.event.TableModelEvent.INSERT =>
             TableRowsAdded(peer, e.getFirstRow to e.getLastRow)
           case javax.swing.event.TableModelEvent.DELETE =>
@@ -61,9 +61,9 @@ class ReTable[A <: AnyRef](
 
   def modelChanged(): Unit = {
     if model != null then
-      model `removeTableModelListener` modelListener
+       model `removeTableModelListener` modelListener
     if peer.peer.getModel != null then
-      peer.peer.getModel `addTableModelListener` modelListener
+       peer.peer.getModel `addTableModelListener` modelListener
     model = peer.peer.getModel
   }
 
@@ -169,15 +169,15 @@ class ReTable[A <: AnyRef](
 
   selectColumnInterval using { range =>
     if range._1 == -1 || range._2 == -1 then
-      peer.peer.clearSelection
+       peer.peer.clearSelection
     else
-      peer.peer.setColumnSelectionInterval(range._1, range._2)
+       peer.peer.setColumnSelectionInterval(range._1, range._2)
   }
   selectRowInterval using { range =>
     if range._1 == -1 || range._2 == -1 then
-      peer.peer.clearSelection
+       peer.peer.clearSelection
     else
-      peer.peer.setRowSelectionInterval(range._1, range._2)
+       peer.peer.setRowSelectionInterval(range._1, range._2)
   }
   selectAll.using(() => peer.peer.selectAll())
   clearSelection.using(() => peer.peer.clearSelection())
@@ -283,18 +283,18 @@ object ReTable {
       if rowData.isDefinedAt(row) then {
         val data = rowData(row)
         if data.isDefinedAt(col) then
-          data(col)
+           data(col)
         else
-          null
+           null
       } else
-        null
+         null
     }
 
     override def getColumnName(column: Int): String             = columnNames(column).toString
     override def isCellEditable(row: Int, column: Int): Boolean =
       if editable != null then
-        editable(row, column)
+         editable(row, column)
       else
-        false
+         false
   }
 }

@@ -10,7 +10,7 @@ abstract class CustomDialog extends Dialog {
 
   def showDialog(position: Point = null): Boolean = {
     if position != null then
-      location = position
+       location = position
     dialogResult = false
     visible = true
     dialogResult

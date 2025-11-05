@@ -41,18 +41,18 @@ private[ex2013reswing] trait ReSwingEventConnection {
   implicit final protected class EventConnector[T] private[ReSwingEventConnection] (value: ReSwingEvent[T]) {
     def using(setter: T => Unit): ReSwingEvent[T] = {
       if value.isInstanceOf[ReSwingEventIn[?]] then
-        delayedInitEvents += { () =>
-          value observe { v => inSyncEDT { setter(v) } }
-          ()
-        }
+         delayedInitEvents += { () =>
+           value observe { v => inSyncEDT { setter(v) } }
+           ()
+         }
       value
     }
     def using(setter: () => Unit): ReSwingEvent[T] = {
       if value.isInstanceOf[ReSwingEventIn[?]] then
-        delayedInitEvents += { () =>
-          value observe { _ => inSyncEDT { setter() } }
-          ()
-        }
+         delayedInitEvents += { () =>
+           value observe { _ => inSyncEDT { setter() } }
+           ()
+         }
       value
     }
   }
@@ -68,7 +68,7 @@ private[ex2013reswing] trait ReSwingEventConnection {
           reactor.reactions += {
             case e =>
               if reaction `isInstance` e then
-                event(e.asInstanceOf[T])
+                 event(e.asInstanceOf[T])
           }
           ()
         }
@@ -90,7 +90,7 @@ private[ex2013reswing] trait ReSwingEventConnection {
 
   protected def initReSwingEventConnection(): Unit = {
     for init <- delayedInitEvents do
-      init()
+       init()
     delayedInitEvents.clear()
   }
 }

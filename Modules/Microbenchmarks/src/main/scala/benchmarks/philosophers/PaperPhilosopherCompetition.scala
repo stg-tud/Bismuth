@@ -49,7 +49,7 @@ class PaperCompetition extends BusyThreads {
     }
     assert(captureAssertionsEnabled)
     println("Running on " + Runtime.getRuntime.availableProcessors() + " cores with assertions " + (if assertions then
-                                                                                                      "enabled."
+                                                                                                       "enabled."
                                                                                                     else "disabled."))
   }
 

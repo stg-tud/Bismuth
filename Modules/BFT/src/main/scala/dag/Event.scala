@@ -15,22 +15,22 @@ case class Event[T](
     // authorIsByzantine: Boolean = false
 ):
 
-  private val HashAlgorithm = "SHA3-512"
+   private val HashAlgorithm = "SHA3-512"
 
-  def calculateHash: String =
-    val bytes =
-      s"${content.toString}${author.toString}${dependencies.toString}${signature.mkString("signature(", ", ", ")")}"
-        .getBytes
+   def calculateHash: String =
+      val bytes =
+        s"${content.toString}${author.toString}${dependencies.toString}${signature.mkString("signature(", ", ", ")")}"
+          .getBytes
 
-    MessageDigest.getInstance(HashAlgorithm).digest(bytes).mkString("id(", ", ", ")")
+      MessageDigest.getInstance(HashAlgorithm).digest(bytes).mkString("id(", ", ", ")")
 
-  def signatureIsValid: Boolean =
-    Ed25519Util.checkEd25519Signature(content.get.toString.getBytes, signature, author)
+   def signatureIsValid: Boolean =
+     Ed25519Util.checkEd25519Signature(content.get.toString.getBytes, signature, author)
 
 object Event:
 
-  def apply[T](content: Option[T], author: PublicKey, dependencies: Set[String], signature: Array[Byte]): Event[T] =
-    val tmp = Event("", content, author, dependencies, signature)
-    val id  = tmp.calculateHash
+   def apply[T](content: Option[T], author: PublicKey, dependencies: Set[String], signature: Array[Byte]): Event[T] =
+      val tmp = Event("", content, author, dependencies, signature)
+      val id  = tmp.calculateHash
 
-    Event(id, content, author, dependencies, signature)
+      Event(id, content, author, dependencies, signature)

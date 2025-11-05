@@ -52,30 +52,30 @@ class UDPPseudoConnection(
         try { // scalafmt does not understand this without braces
           try {
             while !abort.closeRequest do
-              val packet = new DatagramPacket(receiveBuffer, receiveBuffer.length)
-              try
-                datagramSocket.receive(packet)
+               val packet = new DatagramPacket(receiveBuffer, receiveBuffer.length)
+               try
+                  datagramSocket.receive(packet)
 
-                val sa = packet.getSocketAddress
+                  val sa = packet.getSocketAddress
 
-                val (conn, receiveCallback) = getOrCreateConnection(sa)
+                  val (conn, receiveCallback) = getOrCreateConnection(sa)
 
-                receiveCallback.succeed(ArrayMessageBuffer(packet.getData.slice(packet.getOffset, packet.getLength)))
-              catch case _: SocketTimeoutException => ()
+                  receiveCallback.succeed(ArrayMessageBuffer(packet.getData.slice(packet.getOffset, packet.getLength)))
+               catch case _: SocketTimeoutException => ()
           } finally datagramSocket.close()
         } catch
-          case NonFatal(e) =>
-            connections.values.foreach: (_, cb) =>
-              cb.fail(e)
+           case NonFatal(e) =>
+             connections.values.foreach: (_, cb) =>
+                cb.fail(e)
       }
 
       executionContext.execute(() => receiveLoop(summon[Abort]))
 
       initializeOutbound.run:
-        case Success(target) =>
-          getOrCreateConnection(target)
-          ()
-        case Failure(exception) => connectionSuccess.fail(exception)
+         case Success(target) =>
+           getOrCreateConnection(target)
+           ()
+         case Failure(exception) => connectionSuccess.fail(exception)
 
     }
   }
@@ -87,15 +87,15 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
 
   override val info: ConnectionInfo =
     datagramSocket.getLocalSocketAddress match
-      case isa: InetSocketAddress =>
-        ConnectionInfo(Option(isa.getHostString), Option(isa.getPort))
-      case other => ConnectionInfo(None, None)
+       case isa: InetSocketAddress =>
+         ConnectionInfo(Option(isa.getHostString), Option(isa.getPort))
+       case other => ConnectionInfo(None, None)
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {
     // Create a packet with the message, server address, and port
     val sendPacket: DatagramPacket =
-      val outArray = message.asArray
-      new DatagramPacket(outArray, outArray.length, target)
+       val outArray = message.asArray
+       new DatagramPacket(outArray, outArray.length, target)
 
     // Send the packet to the server
     datagramSocket.send(sendPacket)

@@ -12,60 +12,60 @@ import reactives.structure.{Observe, Pulse}
 object Tags {
 
   trait RangeSplice[-A <: dom.Element, -T]:
-    def splice(anchor: A, range: dom.Range, value: T): Unit
+     def splice(anchor: A, range: dom.Range, value: T): Unit
   object RangeSplice:
-    given elem: RangeSplice[dom.Element, dom.Element] with {
-      override def splice(anchor: dom.Element, range: Range, value: dom.Element): Unit =
-        range.insertNode(value)
-    }
-    given many[A <: dom.Element, T](using other: RangeSplice[A, T]): RangeSplice[A, Seq[T]] with {
-      override def splice(anchor: A, range: Range, value: Seq[T]): Unit =
-        value.reverseIterator.foreach { v => other.splice(anchor, range, v) }
-    }
-    given string: RangeSplice[dom.Element, String] with {
-      override def splice(anchor: dom.Element, range: Range, value: String): Unit =
-        anchor.textContent = value
-    }
+     given elem: RangeSplice[dom.Element, dom.Element] with {
+       override def splice(anchor: dom.Element, range: Range, value: dom.Element): Unit =
+         range.insertNode(value)
+     }
+     given many[A <: dom.Element, T](using other: RangeSplice[A, T]): RangeSplice[A, Seq[T]] with {
+       override def splice(anchor: A, range: Range, value: Seq[T]): Unit =
+         value.reverseIterator.foreach { v => other.splice(anchor, range, v) }
+     }
+     given string: RangeSplice[dom.Element, String] with {
+       override def splice(anchor: dom.Element, range: Range, value: String): Unit =
+         anchor.textContent = value
+     }
 
   extension [A <: dom.Element](anchor: A)
-    def reattach[T](signal: Signal[T])(using
-        splicer: RangeSplice[A, T],
-        creationTicket: CreationTicket[SelectedScheduler.State]
-    ): anchor.type = {
-      val startMarker = document.createComment("reattach start")
-      val endMarker   = document.createComment("reattach end")
-      anchor.append(startMarker, endMarker)
-      Observe.strong(signal, true) {
-        tagObserver(anchor, signal) { v =>
-          val range = document.createRange()
-          range.setStartAfter(startMarker)
-          range.setEndBefore(endMarker)
-          range.deleteContents()
-          splicer.splice(anchor, range, v)
-        }
-      }
-      anchor
-    }
+     def reattach[T](signal: Signal[T])(using
+         splicer: RangeSplice[A, T],
+         creationTicket: CreationTicket[SelectedScheduler.State]
+     ): anchor.type = {
+       val startMarker = document.createComment("reattach start")
+       val endMarker   = document.createComment("reattach end")
+       anchor.append(startMarker, endMarker)
+       Observe.strong(signal, true) {
+         tagObserver(anchor, signal) { v =>
+           val range = document.createRange()
+           range.setStartAfter(startMarker)
+           range.setEndBefore(endMarker)
+           range.deleteContents()
+           splicer.splice(anchor, range, v)
+         }
+       }
+       anchor
+     }
 
   extension (input: Input)
-    def inputEntered(using
-        creationTicket: CreationTicket[SelectedScheduler.State],
-        scheduler: PlanTransactionScope[SelectedScheduler.State]
-    ): Event[String] = {
-      val handler: Event.CBR[KeyboardEvent, Unit] = Event.fromCallback(input.onkeyup = Event.handle(_))
+     def inputEntered(using
+         creationTicket: CreationTicket[SelectedScheduler.State],
+         scheduler: PlanTransactionScope[SelectedScheduler.State]
+     ): Event[String] = {
+       val handler: Event.CBR[KeyboardEvent, Unit] = Event.fromCallback(input.onkeyup = Event.handle(_))
 
-      handler.event
-        .map { (e: KeyboardEvent) =>
-          if e.key == "Enter" then
-            val res = input.value.trim
-            if res.nonEmpty then
-              e.preventDefault()
-              input.value = ""
-              Some(res)
-            else None
-          else None
-        }.flatten
-    }
+       handler.event
+         .map { (e: KeyboardEvent) =>
+           if e.key == "Enter" then
+              val res = input.value.trim
+              if res.nonEmpty then
+                 e.preventDefault()
+                 input.value = ""
+                 Some(res)
+              else None
+           else None
+         }.flatten
+     }
 
   /* This only returns true the second time it is called to prevent observers to directly trigger */
   def isInDocumentHack(elem: dom.Element): Any => Boolean = {

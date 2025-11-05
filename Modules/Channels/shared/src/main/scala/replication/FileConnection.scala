@@ -14,22 +14,22 @@ class FileConnection[T](path: Path)(using JsonValueCodec[ProtocolMessage[T]])
     lazy val peer                                           = peerFun
     def send(message: ProtocolMessage[T]): Async[Any, Unit] = Async.fromCallback {
       message match
-        case ProtocolMessage.Request(sender, knows) =>
-          Using(Files.newInputStream(path)) { is =>
-            scanJsonValuesFromStream[ProtocolMessage[T]](is) {
-              case pm @ ProtocolMessage.Payload(_, dots, _, _) if !(dots <= knows) =>
-                peer.succeed(pm)
-                true
-              case _ => true
-            }
-          }
-          ()
-        case pl: ProtocolMessage.Payload[T] =>
-          val res = writeToString[ProtocolMessage[T]](pl)
-          Files.writeString(path, res + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-          ()
-        case ProtocolMessage.Ping(time) => peer.succeed(ProtocolMessage.Pong(time))
-        case ProtocolMessage.Pong(time) => ()
+         case ProtocolMessage.Request(sender, knows) =>
+           Using(Files.newInputStream(path)) { is =>
+             scanJsonValuesFromStream[ProtocolMessage[T]](is) {
+               case pm @ ProtocolMessage.Payload(_, dots, _, _) if !(dots <= knows) =>
+                 peer.succeed(pm)
+                 true
+               case _ => true
+             }
+           }
+           ()
+         case pl: ProtocolMessage.Payload[T] =>
+           val res = writeToString[ProtocolMessage[T]](pl)
+           Files.writeString(path, res + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+           ()
+         case ProtocolMessage.Ping(time) => peer.succeed(ProtocolMessage.Pong(time))
+         case ProtocolMessage.Pong(time) => ()
     }
     def close(): Unit = ()
   }

@@ -24,11 +24,11 @@ object JSHttpPseudoChannel {
       val abort = new AbortController()
 
       val requestInit = new RequestInit {}.tap: ri =>
-        ri.method = HttpMethod.POST
-        ri.body = message.asArrayBuffer
-        ri.signal = abort.signal
-        ri.headers = Headers().tap: hi =>
-          hi.set("Accept", "text/event-stream")
+         ri.method = HttpMethod.POST
+         ri.body = message.asArrayBuffer
+         ri.signal = abort.signal
+         ri.headers = Headers().tap: hi =>
+            hi.set("Accept", "text/event-stream")
 
       val res = fetch(uri, requestInit).toFuture.toAsync.bind
 
@@ -71,11 +71,11 @@ object JSHttpPseudoChannel {
           buffer = buffer.appendedAll(new Int8Array(input.buffer, input.byteOffset, input.length).toArray)
 
           if buffer.length >= 4 then
-            val len = ByteBuffer.wrap(buffer.slice(0, 4)).getInt()
-            if buffer.length >= len + 4 then
-              val mb = ArrayMessageBuffer(buffer.slice(4, len + 4))
-              buffer = buffer.slice(len + 4, buffer.length)
-              cb.succeed(mb)
+             val len = ByteBuffer.wrap(buffer.slice(0, 4)).getInt()
+             if buffer.length >= len + 4 then
+                val mb = ArrayMessageBuffer(buffer.slice(4, len + 4))
+                buffer = buffer.slice(len + 4, buffer.length)
+                cb.succeed(mb)
 
           loop()
         } else Async(())

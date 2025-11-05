@@ -32,12 +32,12 @@ class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
 
   def handleRemoveAll(removeAll: Event[Any]): Fold.Branch[State] =
     removeAll.branch: _ =>
-      current.mod(_.deleteBy { (taskref: TaskRef) =>
-        val isDone = taskref.task.value.state.read.exists(_.done)
-        // todo, move to observer, disconnect during transaction does not respect rollbacks
-        if isDone then taskref.task.disconnect()
-        isDone
-      })
+       current.mod(_.deleteBy { (taskref: TaskRef) =>
+         val isDone = taskref.task.value.state.read.exists(_.done)
+         // todo, move to observer, disconnect during transaction does not respect rollbacks
+         if isDone then taskref.task.disconnect()
+         isDone
+       })
 
   def handleRemove(state: State)(id: String): State = {
     state.mod(_.deleteBy { (taskref: TaskRef) =>

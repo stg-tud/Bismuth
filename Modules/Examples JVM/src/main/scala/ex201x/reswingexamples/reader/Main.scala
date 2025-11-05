@@ -51,8 +51,8 @@ object Main extends App {
   // I assume it’s because the feeds are no longer available, but the while loop also seems extremely sketchy
   val readUrls: Option[Seq[String]] =
     for
-      file <- args.headOption
-      urls <- loadURLs(file)
+       file <- args.headOption
+       urls <- loadURLs(file)
     yield urls
 
   (readUrls getOrElse defaultURLs) foreach (checker.check(_))

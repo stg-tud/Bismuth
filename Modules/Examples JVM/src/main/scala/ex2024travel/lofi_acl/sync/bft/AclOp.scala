@@ -12,25 +12,25 @@ import java.util.Base64
 import scala.util.{Failure, Success, Try}
 
 sealed trait AclOp:
-  val author: PublicIdentity
-  val parents: Set[Signature]
-  def serialize(signature: Signature): SerializedAclOp = {
-    val opBytes        = writeToArray(this)
-    val signatureBytes = Base64.getDecoder.decode(signature)
-    // assert(Ed25519Util.checkEd25519Signature(opBytes, signatureBytes, author))
-    SerializedAclOp(signatureBytes, opBytes)
-  }
+   val author: PublicIdentity
+   val parents: Set[Signature]
+   def serialize(signature: Signature): SerializedAclOp = {
+     val opBytes        = writeToArray(this)
+     val signatureBytes = Base64.getDecoder.decode(signature)
+     // assert(Ed25519Util.checkEd25519Signature(opBytes, signatureBytes, author))
+     SerializedAclOp(signatureBytes, opBytes)
+   }
 
-  def sign(delegatorKey: PrivateKey): SerializedAclOp = {
-    val opBytes = writeToArray(this)
-    val sig     = Ed25519Util.sign(opBytes, delegatorKey)
-    SerializedAclOp(sig, opBytes)
-  }
+   def sign(delegatorKey: PrivateKey): SerializedAclOp = {
+     val opBytes = writeToArray(this)
+     val sig     = Ed25519Util.sign(opBytes, delegatorKey)
+     SerializedAclOp(sig, opBytes)
+   }
 
 object AclOp:
-  given opCodec: JsonValueCodec[AclOp] = JsonCodecMaker.make(
-    CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
-  )
+   given opCodec: JsonValueCodec[AclOp] = JsonCodecMaker.make(
+     CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
+   )
 
 case class SerializedAclOp(signature: Array[Byte], op: Array[Byte]) {
   def deserialize: Try[(Signature, AclOp)] = {

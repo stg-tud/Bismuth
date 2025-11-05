@@ -40,9 +40,9 @@ class RescalatagsTest extends FunSuite {
 
   given RangeSplice[dom.Element, Modifier] with {
     override def splice(anchor: dom.Element, range: dom.Range, value: Modifier): Unit =
-      val parent = range.commonAncestorContainer
-      parent match
-        case elem: dom.Element => value.applyTo(elem)
+       val parent = range.commonAncestorContainer
+       parent match
+          case elem: dom.Element => value.applyTo(elem)
   }
 
   test("put style into dom") {

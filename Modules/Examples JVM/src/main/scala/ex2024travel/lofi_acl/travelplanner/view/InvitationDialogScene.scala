@@ -49,9 +49,9 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
           )
         }
       } catch
-        case e: Exception =>
-          e.printStackTrace()
-          Alert(Alert.AlertType.Error, e.toString).show()
+         case e: Exception =>
+           e.printStackTrace()
+           Alert(Alert.AlertType.Error, e.toString).show()
     }
   }
 
@@ -80,9 +80,9 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
           }
           permissionReceiverComboBox.value = null
         } catch
-          case e: Exception =>
-            e.printStackTrace()
-            Alert(Alert.AlertType.Error, e.toString).show()
+           case e: Exception =>
+             e.printStackTrace()
+             Alert(Alert.AlertType.Error, e.toString).show()
       }
     }
   }

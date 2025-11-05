@@ -225,8 +225,8 @@ def traverseFromNode[A <: Term](
         t.copy(
           parent = traverseFromNode(t.parent, transformer),
           args = t.args match
-            case None    => None
-            case Some(a) => Some(a.map(traverseFromNode(_, transformer)))
+             case None    => None
+             case Some(a) => Some(a.map(traverseFromNode(_, transformer)))
         )
       case t: TFCurly =>
         t.copy(

@@ -29,15 +29,15 @@ class BucketListEntryListCell(travelPlanModel: TravelPlanModel) extends ListCell
 
     subscriptions += entryTextInModel.onChange((op, oldText, newText) =>
       if !textField.isFocused then
-        textField.text = newText
+         textField.text = newText
     )
     subscriptions += textField.text.onChange((op, oldText, newText) =>
       if textField.isFocused then
-        travelPlanModel.setBucketListEntryText(entryId, newText)
+         travelPlanModel.setBucketListEntryText(entryId, newText)
     )
     subscriptions += textField.focused.onChange((_, wasFocused, isNowFocused) =>
       if !isNowFocused then
-        textField.text = entryTextInModel.get()
+         textField.text = entryTextInModel.get()
     )
 
     setGraphic(textField)

@@ -10,9 +10,9 @@ object AutomergyOpGraphLWW {
   type Id = CausalTime
 
   enum Op[+T]:
-    case set(value: T)
-    case del
-    case undo(anchor: Id)
+     case set(value: T)
+     case del
+     case undo(anchor: Id)
 
   case class Entry[T](op: Op[T], predecessors: Set[Id])
 
@@ -23,14 +23,14 @@ object AutomergyOpGraphLWW {
     lazy val latest: Option[Id] = elements.keysIterator.reduceOption(Lattice.merge[CausalTime])
 
     def values: List[T] =
-      def getTerminals(cur: Map[Id, Entry[T]]): List[T] =
-        cur.toList.sortBy(_._1)(using CausalTime.ordering.reverse).map(_._2.op).flatMap:
-          case Op.set(v)       => List(v)
-          case Op.del          => Nil
-          case Op.undo(anchor) => elements.get(anchor).toList.flatMap: pred =>
-              getTerminals(elements.filter((k, _) => pred.predecessors.contains(k)))
+       def getTerminals(cur: Map[Id, Entry[T]]): List[T] =
+         cur.toList.sortBy(_._1)(using CausalTime.ordering.reverse).map(_._2.op).flatMap:
+            case Op.set(v)       => List(v)
+            case Op.del          => Nil
+            case Op.undo(anchor) => elements.get(anchor).toList.flatMap: pred =>
+                 getTerminals(elements.filter((k, _) => pred.predecessors.contains(k)))
 
-      getTerminals(heads)
+       getTerminals(heads)
 
     private def applyOp(op: Op[T]) =
       OpGraph(
@@ -49,8 +49,8 @@ object AutomergyOpGraphLWW {
 
   object OpGraph {
     given lattice[T]: Lattice[OpGraph[T]] =
-      given Lattice[Entry[T]] = Lattice.assertEquals
-      Lattice.derived
+       given Lattice[Entry[T]] = Lattice.assertEquals
+       Lattice.derived
     given bottom[T]: Bottom[OpGraph[T]] = Bottom.derived
   }
 }

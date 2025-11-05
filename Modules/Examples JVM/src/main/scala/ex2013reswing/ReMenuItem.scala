@@ -51,7 +51,7 @@ class ReMenuItem(
   override protected lazy val peer: MenuItem & ComponentMixin = new MenuItem(null: String) with ComponentMixin
 
   if action != null then
-    peer.action = action
+     peer.action = action
 }
 
 object ReMenuItem {

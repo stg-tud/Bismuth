@@ -58,10 +58,10 @@ class Replica[A: Bottom as B, D <: DeltaBuffer[A, D]](var buffer: DeltaBuffer[A,
 object Replica {
   def quiescence[A: {Lattice, Historized}, D <: DeltaBuffer[A, D]](replicas: Replica[A, D]*): Unit =
     replicas.toList match
-      case Seq() | Seq(_) => ()
-      case Seq(a, rem*)   =>
-        rem.foreach(a.receive)
-        rem.foreach(r => r.receive(a))
+       case Seq() | Seq(_) => ()
+       case Seq(a, rem*)   =>
+         rem.foreach(a.receive)
+         rem.foreach(r => r.receive(a))
 
   def main(args: Array[String]): Unit =
     ew()

@@ -151,8 +151,8 @@ object Pulse {
   object empty {
     def apply(info: ReInfo): Exceptional               = Exceptional(EmptySignalControlThrowable(info))
     def unapply(exceptional: Pulse[?]): Option[ReInfo] = exceptional match
-      case Exceptional(EmptySignalControlThrowable(reSource)) => Some(reSource)
-      case _                                                  => None
+       case Exceptional(EmptySignalControlThrowable(reSource)) => Some(reSource)
+       case _                                                  => None
 
   }
 

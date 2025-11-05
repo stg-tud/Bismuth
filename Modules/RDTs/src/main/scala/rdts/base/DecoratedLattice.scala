@@ -11,10 +11,10 @@ class DecoratedLattice[A](decorated: Lattice[A]) extends Lattice[A] {
   def compact(merged: A): A = merged
 
   def merge(left: A, right: A): A =
-    val filteredLeft  = filter(left, right)
-    val filteredRight = filter(right, left)
-    compact:
-      decorated.merge(filteredLeft, filteredRight)
+     val filteredLeft  = filter(left, right)
+     val filteredRight = filter(right, left)
+     compact:
+        decorated.merge(filteredLeft, filteredRight)
 }
 
 object DecoratedLattice {

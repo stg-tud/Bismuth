@@ -7,11 +7,11 @@ import scalafx.beans.property.{BooleanProperty, DoubleProperty, Property, String
 object JFXAdapter {
 
   extension [T, J](p: Property[T, J])
-    def toSignal: Signal[T] = {
-      val v = Var(p.value)
-      p.onChange { (_, _, _) => v.set(p.value) }
-      v
-    }
+     def toSignal: Signal[T] = {
+       val v = Var(p.value)
+       p.onChange { (_, _, _) => v.set(p.value) }
+       v
+     }
 
   extension (s: Signal[String]) {
     def toProperty: StringProperty = {

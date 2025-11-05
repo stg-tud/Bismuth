@@ -13,40 +13,40 @@ class CodingWindow[T](
     var nextIndex: Int
 ):
 
-  def addSourceSymbol(symbol: T)(using Hashable[T]): Unit =
-    addSourceSymbol(SourceSymbol(symbol))
+   def addSourceSymbol(symbol: T)(using Hashable[T]): Unit =
+     addSourceSymbol(SourceSymbol(symbol))
 
-  def addSourceSymbol(sourceSymbol: SourceSymbol[T]): Unit =
-    symbols = symbols :+ sourceSymbol
+   def addSourceSymbol(sourceSymbol: SourceSymbol[T]): Unit =
+     symbols = symbols :+ sourceSymbol
 
-  def addSourceSymbolWithMapping(sourceSymbol: SourceSymbol[T], mapping: Mapping): Unit =
-    val result = sourceSymbol
-    result.mapping = mapping
+   def addSourceSymbolWithMapping(sourceSymbol: SourceSymbol[T], mapping: Mapping): Unit =
+      val result = sourceSymbol
+      result.mapping = mapping
 
-    symbols = symbols :+ result
+      symbols = symbols :+ result
 
-  def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
-    assert(symbols.nonEmpty, "you have to add source symbols first")
-    applyCodedSymbol(CodedSymbol.identity, Add)
+   def produceNextCodedSymbol(using Xorable[T]): CodedSymbol[T] =
+      assert(symbols.nonEmpty, "you have to add source symbols first")
+      applyCodedSymbol(CodedSymbol.identity, Add)
 
-  def applyCodedSymbol(codedSymbol: CodedSymbol[T], op: Operation)(using Xorable[T]): CodedSymbol[T] =
-    var result = codedSymbol
+   def applyCodedSymbol(codedSymbol: CodedSymbol[T], op: Operation)(using Xorable[T]): CodedSymbol[T] =
+      var result = codedSymbol
 
-    for element <- symbols do
-      if element.mapping.lastIndex == nextIndex then
-        result = op match
-          case Add    => result.add(element)
-          case Remove => result.remove(element)
+      for element <- symbols do
+         if element.mapping.lastIndex == nextIndex then
+            result = op match
+               case Add    => result.add(element)
+               case Remove => result.remove(element)
 
-        element.mapping.nextIndex: Unit
+            element.mapping.nextIndex: Unit
 
-    nextIndex = nextIndex + 1
-    result
+      nextIndex = nextIndex + 1
+      result
 
 object CodingWindow:
-  def apply[T](): CodingWindow[T] =
-    new CodingWindow(List.empty, 0)
+   def apply[T](): CodingWindow[T] =
+     new CodingWindow(List.empty, 0)
 
 enum Operation:
-  case Add
-  case Remove
+   case Add
+   case Remove

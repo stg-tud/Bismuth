@@ -84,62 +84,62 @@ private[ex2013reswing] trait ReSwingValueConnection {
 
     private def using(getter: () => T, setter: Option[T => Unit], names: Seq[ChangingProperty]): ReSwingValue[T] = {
       if value != null then
-        inSyncEDT {
-          value() = getter()
-          value initLazily { _ => inSyncEDT { initReSwingValueConnection() } }
+         inSyncEDT {
+           value() = getter()
+           value initLazily { _ => inSyncEDT { initReSwingValueConnection() } }
 
-          delayedInitValues += { () =>
-            var updatingSwingNotification = false
-            if setter.isDefined then {
-              val set = setter.get
-              value use { v =>
-                if updatingSwingNotification then
-                  Swing onEDT set(v)
-                else
-                  inSyncEDT { set(v) }
-              }
+           delayedInitValues += { () =>
+             var updatingSwingNotification = false
+             if setter.isDefined then {
+               val set = setter.get
+               value use { v =>
+                 if updatingSwingNotification then
+                    Swing onEDT set(v)
+                 else
+                    inSyncEDT { set(v) }
+               }
 
-              if value.fixed then
-                for name <- names do
+               if value.fixed then
+                  for name <- names do
+                     name match {
+                       case Left(name) =>
+                         changingProperties.getOrElseUpdate(name, ListBuffer()) += { () =>
+                           if getter() != value.get then
+                              Swing onEDT { if getter() != value.get then set(value.get) }
+                         }
+
+                       case Right((publisher, reaction)) =>
+                         reactor listenTo publisher
+                         changingReactions.getOrElseUpdate(reaction, ListBuffer()) += { () =>
+                           if getter() != value.get then
+                              Swing onEDT { if getter() != value.get then set(value.get) }
+                         }
+                     }
+             }
+
+             if !value.fixed then {
+               value() = getter()
+               for name <- names do
                   name match {
                     case Left(name) =>
                       changingProperties.getOrElseUpdate(name, ListBuffer()) += { () =>
-                        if getter() != value.get then
-                          Swing onEDT { if getter() != value.get then set(value.get) }
+                        updatingSwingNotification = true
+                        value() = getter()
+                        updatingSwingNotification = false
                       }
 
                     case Right((publisher, reaction)) =>
                       reactor listenTo publisher
                       changingReactions.getOrElseUpdate(reaction, ListBuffer()) += { () =>
-                        if getter() != value.get then
-                          Swing onEDT { if getter() != value.get then set(value.get) }
+                        updatingSwingNotification = true
+                        value() = getter()
+                        updatingSwingNotification = false
                       }
                   }
-            }
-
-            if !value.fixed then {
-              value() = getter()
-              for name <- names do
-                name match {
-                  case Left(name) =>
-                    changingProperties.getOrElseUpdate(name, ListBuffer()) += { () =>
-                      updatingSwingNotification = true
-                      value() = getter()
-                      updatingSwingNotification = false
-                    }
-
-                  case Right((publisher, reaction)) =>
-                    reactor listenTo publisher
-                    changingReactions.getOrElseUpdate(reaction, ListBuffer()) += { () =>
-                      updatingSwingNotification = true
-                      value() = getter()
-                      updatingSwingNotification = false
-                    }
-                }
-            }
-          }
-          ()
-        }
+             }
+           }
+           ()
+         }
       value
     }
 
@@ -149,11 +149,11 @@ private[ex2013reswing] trait ReSwingValueConnection {
       */
     def force[U](name: String, setter: U => Unit, forcedValue: U): ReSwingValue[T] = {
       if value != null && value.fixed then
-        inSyncEDT {
-          setter(forcedValue)
-          enforcedProperties += name -> { () => Swing onEDT setter(forcedValue) }
-          ()
-        }
+         inSyncEDT {
+           setter(forcedValue)
+           enforcedProperties += name -> { () => Swing onEDT setter(forcedValue) }
+           ()
+         }
       value
     }
   }
@@ -167,7 +167,7 @@ private[ex2013reswing] trait ReSwingValueConnection {
     reactions += {
       case e: Event =>
         for signals <- changingReactions get e.getClass; signal <- signals do
-          signal()
+           signal()
     }
   }
 
@@ -193,7 +193,7 @@ private[ex2013reswing] trait ReSwingValueConnection {
 
   protected def initReSwingValueConnection(): Unit = {
     for init <- delayedInitValues do
-      init()
+       init()
     delayedInitValues.clear()
   }
 }

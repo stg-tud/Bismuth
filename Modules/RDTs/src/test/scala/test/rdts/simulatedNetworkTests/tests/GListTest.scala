@@ -11,7 +11,7 @@ import scala.collection.mutable
 object GListGenerators {
   def genGList[E](using e: Arbitrary[E]): Gen[GrowOnlyList[E]] =
     for
-      elems <- Gen.listOfN(20, e.arbitrary)
+       elems <- Gen.listOfN(20, e.arbitrary)
     yield {
       elems.foldLeft(GrowOnlyList.empty[E]) {
         case (list, el) => list `merge` list.insertAt(0, el)
@@ -24,10 +24,10 @@ object GListGenerators {
     Arbitrary(genGList)
 
   def makeNet[E](v: GrowOnlyList[E]): AntiEntropyContainer[GrowOnlyList[E]] =
-    val network = new Network(0, 0, 0)
-    val ae      = new AntiEntropy[GrowOnlyList[E]]("a", network, mutable.Buffer())
-    val aec     = AntiEntropyContainer[GrowOnlyList[E]](ae)
-    aec.applyDelta(Named(aec.replicaID.uid, v))
+     val network = new Network(0, 0, 0)
+     val ae      = new AntiEntropy[GrowOnlyList[E]]("a", network, mutable.Buffer())
+     val aec     = AntiEntropyContainer[GrowOnlyList[E]](ae)
+     aec.applyDelta(Named(aec.replicaID.uid, v))
 
 }
 
@@ -51,7 +51,7 @@ class GListTest extends munit.ScalaCheckSuite {
       val l         = list.data.toList
 
       l.zipWithIndex.foreach: (e, i) =>
-        assertEquals(list.data.read(i), Some(e))
+         assertEquals(list.data.read(i), Some(e))
 
       assertEquals(szeBefore, l.size)
 
@@ -60,8 +60,8 @@ class GListTest extends munit.ScalaCheckSuite {
       list.mod(_.insertAt(n, e))
 
       val inserted =
-        val (b, a) = l.splitAt(n)
-        b ::: (e :: a)
+         val (b, a) = l.splitAt(n)
+         b ::: (e :: a)
 
       assertEquals(list.data.read(n), Some(e), s"$n ${insertIndex},\n  ${l}\n  ${list.data.toList}\n  ${list.state}")
 

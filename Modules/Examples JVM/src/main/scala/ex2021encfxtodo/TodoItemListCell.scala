@@ -44,20 +44,20 @@ class TodoItemListCell extends ListCell[UUID] {
       subscriptions = subscriptions :+ textField.text.onChange { (_: ObservableValue[String, String], _, newVal) =>
         val uuid = getItem
         if uuid != null then
-          todoProperty match {
-            case Some(property) => TodoListController.changeTodo(uuid, property.value.copy(description = newVal))
-            case None           => Console.err.println(s"TodoItemListCell: Entry $uuid not present in Controller")
-          }
+           todoProperty match {
+             case Some(property) => TodoListController.changeTodo(uuid, property.value.copy(description = newVal))
+             case None           => Console.err.println(s"TodoItemListCell: Entry $uuid not present in Controller")
+           }
       }
 
       subscriptions = subscriptions :+ checkBox.selectedProperty.onChange {
         (_: ObservableValue[Boolean, java.lang.Boolean], _, newVal) =>
           val uuid = getItem
           if uuid != null then
-            todoProperty match {
-              case Some(property) => TodoListController.changeTodo(uuid, property.value.copy(completed = newVal))
-              case None           => Console.err.println(s"TodoItemListCell: Entry $uuid not present in Controller")
-            }
+             todoProperty match {
+               case Some(property) => TodoListController.changeTodo(uuid, property.value.copy(completed = newVal))
+               case None           => Console.err.println(s"TodoItemListCell: Entry $uuid not present in Controller")
+             }
       }
 
       subscriptions = subscriptions :+ todoProperty.get.onChange(

@@ -98,12 +98,12 @@ case class ReplicatedList[E](
 
     if index < 0 || dotList.sizeIs <= index + 1 then ReplicatedList.empty
     else
-      ReplicatedList(
-        causalOrder = Map.empty,
-        elements = Map.empty,
-        removed = Dots.single(dotList(index + 1)),
-        times = Map.empty
-      )
+       ReplicatedList(
+         causalOrder = Map.empty,
+         elements = Map.empty,
+         removed = Dots.single(dotList(index + 1)),
+         times = Map.empty
+       )
   }
 
   def size: Int = elements.size
@@ -122,8 +122,8 @@ case class ReplicatedList[E](
   def prependAll(e: Iterable[E])(using LocalUid): ReplicatedList[E] = insertAfter(headDot, e)
   def prepend(e: E)(using LocalUid): ReplicatedList[E]              = insertAfter(dotList(0), List(e))
   def append(e: E)(using LocalUid): ReplicatedList[E]               =
-    val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(ReplicatedList.headDot))
-    insertAfter(pos, List(e))
+     val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(ReplicatedList.headDot))
+     insertAfter(pos, List(e))
 
   def update(index: Int, elem: E)(using LocalUid): ReplicatedList[E] = {
     val pos = dotList(index + 1)

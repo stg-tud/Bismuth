@@ -26,9 +26,9 @@ object DropdownSample1 extends SimpleSwingApplication {
         Signal {
           listOfValues.value.filter { x =>
             if x != null then
-              x.nonEmpty
+               x.nonEmpty
             else
-              false
+               false
           }
         }
 

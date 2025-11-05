@@ -19,8 +19,8 @@ case class RSSChannel(title: String, link: Option[URL], description: String, pub
   def compare(that: RSSChannel): Int = {
     val result =
       for
-        thisDate <- this.pubDate
-        thatDate <- that.pubDate
+         thisDate <- this.pubDate
+         thatDate <- that.pubDate
       yield thisDate `compareTo` thatDate
 
     result getOrElse 0

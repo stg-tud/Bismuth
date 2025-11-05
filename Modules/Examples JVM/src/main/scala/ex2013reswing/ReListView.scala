@@ -41,9 +41,9 @@ class ReListView[A](
 
   def modelChanged(): Unit = {
     if model != null then
-      model `removeListDataListener` modelListener
+       model `removeListDataListener` modelListener
     if javaPeer.getModel != null then
-      javaPeer.getModel `addListDataListener` modelListener
+       javaPeer.getModel `addListDataListener` modelListener
     model = javaPeer.getModel
   }
 
@@ -67,9 +67,9 @@ class ReListView[A](
       })() = listData
 
       if selected != null then
-        javaPeer `setSelectedIndices` (listData.zipWithIndex collect {
-          case (el, index) if selected contains el => index
-        }).toArray
+         javaPeer `setSelectedIndices` (listData.zipWithIndex collect {
+           case (el, index) if selected contains el => index
+         }).toArray
     },
     classOf[ListChanged[?]]
   )
@@ -145,9 +145,9 @@ object ReListView {
       items = listData
 
       if additional > 0 then
-        fireIntervalAdded(this, itemsSize, listData.size - 1)
+         fireIntervalAdded(this, itemsSize, listData.size - 1)
       if additional < 0 then
-        fireIntervalRemoved(this, listData.size, itemsSize - 1)
+         fireIntervalRemoved(this, listData.size, itemsSize - 1)
       fireContentsChanged(this, 0, listData.size)
     }
     def getElementAt(n: Int): A = items(n)

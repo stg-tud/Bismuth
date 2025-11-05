@@ -4,9 +4,9 @@ import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 
 case class PosNegCounter(pos: GrowOnlyCounter, neg: GrowOnlyCounter) derives Lattice, Bottom, Decompose {
   def value: Int =
-    val posv = pos.value
-    val negv = neg.value
-    posv - negv
+     val posv = pos.value
+     val negv = neg.value
+     posv - negv
 
   def inc()(using LocalUid): PosNegCounter = add(1)
 

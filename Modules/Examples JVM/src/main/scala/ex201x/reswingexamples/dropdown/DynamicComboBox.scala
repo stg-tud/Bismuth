@@ -16,7 +16,7 @@ class DynamicComboBox[A] extends ComboBox[A](Nil: List[A]) {
     val model      = ComboBox.newConstantModel(options).asInstanceOf[ComboBoxModel[String]]
     peerBox.asInstanceOf[JComboBox[String]].setModel(model)
     if currentIdx < options.length then
-      selection.index = currentIdx
+       selection.index = currentIdx
   }
 
   def getChoices: List[A] = Nil

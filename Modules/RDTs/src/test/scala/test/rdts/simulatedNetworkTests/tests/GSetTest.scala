@@ -10,7 +10,7 @@ import scala.collection.mutable
 object GSetGenerators {
   def genGSet[E](using e: Arbitrary[E]): Gen[AntiEntropyContainer[Set[E]]] =
     for
-      elements <- Gen.containerOf[List, E](e.arbitrary)
+       elements <- Gen.containerOf[List, E](e.arbitrary)
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[Set[E]]("a", network, mutable.Buffer())

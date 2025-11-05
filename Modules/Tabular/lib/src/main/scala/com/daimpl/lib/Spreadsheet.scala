@@ -38,34 +38,34 @@ case class Spreadsheet[A](
     Spreadsheet[A](colIds = colIds.insertAt(colIdx, newRowOrColId))
 
   def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
-    val touchedRanges = listRangesWithIds.filter(_._2.touchedRows(sourceIdx))
-    val rangeIds      =
-      touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]) { (accumulator, rangeAndId) =>
-        accumulator.merge({
-          val (rangeId, range) = rangeAndId
-          if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
-          else removeRange(rangeId)
-        }.rangeIds)
-      }
-    Spreadsheet[A](
-      rowIds = rowIds.move(sourceIdx, targetIdx),
-      rangeIds = rangeIds
-    )
+     val touchedRanges = listRangesWithIds.filter(_._2.touchedRows(sourceIdx))
+     val rangeIds      =
+       touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]) { (accumulator, rangeAndId) =>
+         accumulator.merge({
+           val (rangeId, range) = rangeAndId
+           if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
+           else removeRange(rangeId)
+         }.rangeIds)
+       }
+     Spreadsheet[A](
+       rowIds = rowIds.move(sourceIdx, targetIdx),
+       rangeIds = rangeIds
+     )
 
   def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[A] =
-    val touchedRanges = listRangesWithIds.filter(_._2.touchedCols(sourceIdx))
-    val rangeIds      =
-      touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]) { (accumulator, rangeAndId) =>
-        accumulator.merge({
-          val (rangeId, range) = rangeAndId
-          if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
-          else removeRange(rangeId)
-        }.rangeIds)
-      }
-    Spreadsheet[A](
-      colIds = colIds.move(sourceIdx, targetIdx),
-      rangeIds = rangeIds
-    )
+     val touchedRanges = listRangesWithIds.filter(_._2.touchedCols(sourceIdx))
+     val rangeIds      =
+       touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]) { (accumulator, rangeAndId) =>
+         accumulator.merge({
+           val (rangeId, range) = rangeAndId
+           if range.validAfterSwapping(sourceIdx, targetIdx) then keepRange(rangeId)
+           else removeRange(rangeId)
+         }.rangeIds)
+       }
+     Spreadsheet[A](
+       colIds = colIds.move(sourceIdx, targetIdx),
+       rangeIds = rangeIds
+     )
 
   def editCell(coordinate: SpreadsheetCoordinate, value: A)(using LocalUid): Spreadsheet[A] = {
     val rowId      = rowIds.readAt(coordinate.rowIdx).get
@@ -73,11 +73,11 @@ case class Spreadsheet[A](
     val newContent =
       rowAndColIdPairToContent.transform(rowId, colId) {
         if value == null then
-          case None      => None
-          case Some(set) => Some(set.clear())
+           case None      => None
+           case Some(set) => Some(set.clear())
         else
-          case None      => Some(ReplicatedSet.empty.add(value))
-          case Some(set) => Some(set.removeBy(_ != value) `merge` set.add(value))
+           case None      => Some(ReplicatedSet.empty.add(value))
+           case Some(set) => Some(set.removeBy(_ != value) `merge` set.add(value))
       }
     Spreadsheet[A](
       rowIds = rowIds.updateAt(coordinate.rowIdx, rowId),
@@ -105,47 +105,47 @@ case class Spreadsheet[A](
 
   def read(coordinate: SpreadsheetCoordinate): ConflictableValue[A] =
     (for
-      rowId <- rowIds.readAt(coordinate.rowIdx)
-      colId <- colIds.readAt(coordinate.colIdx)
-      cell  <- rowAndColIdPairToContent.get(rowId, colId)
+       rowId <- rowIds.readAt(coordinate.rowIdx)
+       colId <- colIds.readAt(coordinate.colIdx)
+       cell  <- rowAndColIdPairToContent.get(rowId, colId)
     yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty[A])
 
   def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
-    val idFrom = Uid(id.show + ":from")
-    val idTo   = Uid(id.show + ":to")
-    Spreadsheet[A](
-      rowIds = rowIds.addMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
-        `merge` rowIds.addMarker(idTo, to.rowIdx, MarkerRemovalBehavior.Predecessor),
-      colIds = colIds.addMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
-        `merge` colIds.addMarker(idTo, to.colIdx, MarkerRemovalBehavior.Predecessor),
-      rangeIds = rangeIds.add(id)
-    )
+     val idFrom = Uid(id.show + ":from")
+     val idTo   = Uid(id.show + ":to")
+     Spreadsheet[A](
+       rowIds = rowIds.addMarker(idFrom, from.rowIdx, MarkerRemovalBehavior.Successor)
+         `merge` rowIds.addMarker(idTo, to.rowIdx, MarkerRemovalBehavior.Predecessor),
+       colIds = colIds.addMarker(idFrom, from.colIdx, MarkerRemovalBehavior.Successor)
+         `merge` colIds.addMarker(idTo, to.colIdx, MarkerRemovalBehavior.Predecessor),
+       rangeIds = rangeIds.add(id)
+     )
 
   def keepRange(id: RangeId)(using LocalUid): Spreadsheet[A] =
     Spreadsheet[A](rangeIds = rangeIds.add(id))
 
   def removeRange(id: RangeId): Spreadsheet[A] =
-    val idFrom = Uid(id.show + ":from")
-    val idTo   = Uid(id.show + ":to")
-    Spreadsheet[A](
-      rowIds = rowIds.removeMarker(idFrom)
-        `merge` rowIds.removeMarker(idTo),
-      colIds = colIds.removeMarker(idFrom)
-        `merge` colIds.removeMarker(idTo),
-      rangeIds = rangeIds.remove(id)
-    )
+     val idFrom = Uid(id.show + ":from")
+     val idTo   = Uid(id.show + ":to")
+     Spreadsheet[A](
+       rowIds = rowIds.removeMarker(idFrom)
+         `merge` rowIds.removeMarker(idTo),
+       colIds = colIds.removeMarker(idFrom)
+         `merge` colIds.removeMarker(idTo),
+       rangeIds = rangeIds.remove(id)
+     )
 
   def getRange(id: RangeId): Option[Range] =
-    val idFrom = Uid(id.show + ":from")
-    val idTo   = Uid(id.show + ":to")
+     val idFrom = Uid(id.show + ":from")
+     val idTo   = Uid(id.show + ":to")
 
-    for {
-      x1 <- rowIds.getMarker(idFrom)
-      y1 <- colIds.getMarker(idFrom)
-      x2 <- rowIds.getMarker(idTo)
-      y2 <- colIds.getMarker(idTo)
-      if x1 <= x2 && y1 <= y2
-    } yield Range(SpreadsheetCoordinate(x1, y1), SpreadsheetCoordinate(x2, y2))
+     for {
+       x1 <- rowIds.getMarker(idFrom)
+       y1 <- colIds.getMarker(idFrom)
+       x2 <- rowIds.getMarker(idTo)
+       y2 <- colIds.getMarker(idTo)
+       if x1 <= x2 && y1 <= y2
+     } yield Range(SpreadsheetCoordinate(x1, y1), SpreadsheetCoordinate(x2, y2))
 
   def listRanges(): List[Range] = rangeIds.elements.toList.map(getRange).map(_.get)
 
@@ -219,16 +219,16 @@ object Spreadsheet {
     def touchedCols(index: Int): Boolean = from.colIdx == index || to.colIdx == index
 
     def validAfterSwapping(source: Int, target: Int): Boolean =
-      val plugInTarget =
-        (coord: SpreadsheetCoordinate) =>
-          source match {
-            case coord.rowIdx => (target, coord.colIdx)
-            case coord.colIdx => (coord.rowIdx, target)
-            case _            => (coord.rowIdx, from.colIdx)
-          }
-      val newFrom = plugInTarget(from)
-      val newTo   = plugInTarget(to)
-      (newFrom._1 <= newTo._1) && (newFrom._2 <= newTo._2)
+       val plugInTarget =
+         (coord: SpreadsheetCoordinate) =>
+           source match {
+             case coord.rowIdx => (target, coord.colIdx)
+             case coord.colIdx => (coord.rowIdx, target)
+             case _            => (coord.rowIdx, from.colIdx)
+           }
+       val newFrom = plugInTarget(from)
+       val newTo   = plugInTarget(to)
+       (newFrom._1 <= newTo._1) && (newFrom._2 <= newTo._2)
   }
 
   given bottom[A]: Bottom[Spreadsheet[A]]   = Bottom.provide(empty)

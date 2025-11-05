@@ -7,20 +7,20 @@ class CodedSymbol[T](
     var decoded: Boolean = false
 ):
 
-  def add(sourceSymbol: SourceSymbol[T])(using Xorable[T]): CodedSymbol[T] =
-    apply(sourceSymbol)
-    count += 1
-    this
+   def add(sourceSymbol: SourceSymbol[T])(using Xorable[T]): CodedSymbol[T] =
+      apply(sourceSymbol)
+      count += 1
+      this
 
-  def remove(sourceSymbol: SourceSymbol[T])(using Xorable[T]): CodedSymbol[T] =
-    apply(sourceSymbol)
-    count -= 1
-    this
+   def remove(sourceSymbol: SourceSymbol[T])(using Xorable[T]): CodedSymbol[T] =
+      apply(sourceSymbol)
+      count -= 1
+      this
 
-  def apply(sourceSymbol: SourceSymbol[T])(using Xorable[T]): Unit =
-    sum = sum.xor(sourceSymbol.value)
-    hash ^= sourceSymbol.hash
+   def apply(sourceSymbol: SourceSymbol[T])(using Xorable[T]): Unit =
+      sum = sum.xor(sourceSymbol.value)
+      hash ^= sourceSymbol.hash
 
 object CodedSymbol:
-  def identity[T](using x: Xorable[T]): CodedSymbol[T] =
-    CodedSymbol(x.zero, 0L, 0L)
+   def identity[T](using x: Xorable[T]): CodedSymbol[T] =
+     CodedSymbol(x.zero, 0L, 0L)

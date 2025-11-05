@@ -33,7 +33,7 @@ commandline options:
       var keyword_args: Map[String, String] = Map()
       args.sliding(2, 2).foreach { pair =>
         if !pair.head.startsWith("-") then
-          throw Exception(s"could not parse commandline. ${pair.head} is not a key. (corresponding value: ${pair(1)}")
+           throw Exception(s"could not parse commandline. ${pair.head} is not a key. (corresponding value: ${pair(1)}")
         keyword_args += (pair.head -> pair(1))
       }
 
@@ -53,88 +53,88 @@ commandline options:
       val rdt_router_top_n_neighbours                = keyword_args.getOrElse("-rrt", "3").toInt
 
       method match
-        case "monitoring" => start_monitoring_server(host_address, host_port)
-        case "routing"    =>
-          _route_forever(
-            routing_strategy match
-              case "direct" =>
-                DirectRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
-              case "flooding" =>
-                FloodingRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
-              case "epidemic" =>
-                EpidemicRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
-              case "rdt" =>
-                RdtRouter(
-                  host_address,
-                  host_port,
-                  MonitoringClient(monitoring_address, monitoring_port),
-                  rdt_router_n_total_nodes,
-                  rdt_router_top_n_neighbours
-                )
-              case "rdt2" =>
-                RdtRouter2(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
-              case "spray" =>
-                SprayAndWaitRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
-              case "random" =>
-                RandomSprayRouter(
-                  host_address,
-                  host_port,
-                  MonitoringClient(monitoring_address, monitoring_port),
-                  rdt_router_n_total_nodes,
-                  rdt_router_top_n_neighbours
-                )
-              case s =>
-                throw Exception(s"unknown routing strategy (-rs): ${s}")
-          )
-        case "client" =>
-          val mode: ClientOperationMode = client_operation_mode match
-            case "pushall"      => ClientOperationMode.PushAll
-            case "requestlater" => ClientOperationMode.RequestLater
-            case s              => throw Exception(s"unknown rdt client operation mode: $s")
+         case "monitoring" => start_monitoring_server(host_address, host_port)
+         case "routing"    =>
+           _route_forever(
+             routing_strategy match
+                case "direct" =>
+                  DirectRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
+                case "flooding" =>
+                  FloodingRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
+                case "epidemic" =>
+                  EpidemicRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
+                case "rdt" =>
+                  RdtRouter(
+                    host_address,
+                    host_port,
+                    MonitoringClient(monitoring_address, monitoring_port),
+                    rdt_router_n_total_nodes,
+                    rdt_router_top_n_neighbours
+                  )
+                case "rdt2" =>
+                  RdtRouter2(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
+                case "spray" =>
+                  SprayAndWaitRouter(host_address, host_port, MonitoringClient(monitoring_address, monitoring_port))
+                case "random" =>
+                  RandomSprayRouter(
+                    host_address,
+                    host_port,
+                    MonitoringClient(monitoring_address, monitoring_port),
+                    rdt_router_n_total_nodes,
+                    rdt_router_top_n_neighbours
+                  )
+                case s =>
+                  throw Exception(s"unknown routing strategy (-rs): ${s}")
+           )
+         case "client" =>
+           val mode: ClientOperationMode = client_operation_mode match
+              case "pushall"      => ClientOperationMode.PushAll
+              case "requestlater" => ClientOperationMode.RequestLater
+              case s              => throw Exception(s"unknown rdt client operation mode: $s")
 
-          client_rdt match
-            case "addwins.listen" =>
-              case_study_listen(
-                host_address,
-                host_port,
-                MonitoringClient(monitoring_address, monitoring_port),
-                mode,
-                AddWinsSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
-              )
-            case "addwins.active" =>
-              case_study_active(
-                host_address,
-                host_port,
-                MonitoringClient(monitoring_address, monitoring_port),
-                mode,
-                AddWinsSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
-              )
-            case "observeremove.listen" =>
-              case_study_listen(
-                host_address,
-                host_port,
-                MonitoringClient(monitoring_address, monitoring_port),
-                mode,
-                ObserveRemoveSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
-              )
-            case "observeremove.active" =>
-              case_study_active(
-                host_address,
-                host_port,
-                MonitoringClient(monitoring_address, monitoring_port),
-                mode,
-                ObserveRemoveSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
-              )
-            case "lastwriterwins.listen" => throw Exception("lastwriterwins.listen not implemented yet")
-            case "lastwriterwins.active" => throw Exception("lastwriterwins.active not implemented yet")
-            case s                       => throw Exception(s"unknown client rdt: $s")
-        case "print.received" =>
-          MonitoringBundlesReceivedPrinter().run()
-        case "print.forwarded" =>
-          MonitoringBundlesForwardedPrinter().run()
-        case "print.statedev" =>
-          MonitoringStateDevelopmentPrinter(creationClientId = creation_client_id).run()
-        case s => throw Exception(s"could not partse commandline. unknown method: $s")
+           client_rdt match
+              case "addwins.listen" =>
+                case_study_listen(
+                  host_address,
+                  host_port,
+                  MonitoringClient(monitoring_address, monitoring_port),
+                  mode,
+                  AddWinsSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
+                )
+              case "addwins.active" =>
+                case_study_active(
+                  host_address,
+                  host_port,
+                  MonitoringClient(monitoring_address, monitoring_port),
+                  mode,
+                  AddWinsSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
+                )
+              case "observeremove.listen" =>
+                case_study_listen(
+                  host_address,
+                  host_port,
+                  MonitoringClient(monitoring_address, monitoring_port),
+                  mode,
+                  ObserveRemoveSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
+                )
+              case "observeremove.active" =>
+                case_study_active(
+                  host_address,
+                  host_port,
+                  MonitoringClient(monitoring_address, monitoring_port),
+                  mode,
+                  ObserveRemoveSetRDT(add_wins_rdt_number_of_additions, add_wins_rdt_sleep_time_milliseconds)
+                )
+              case "lastwriterwins.listen" => throw Exception("lastwriterwins.listen not implemented yet")
+              case "lastwriterwins.active" => throw Exception("lastwriterwins.active not implemented yet")
+              case s                       => throw Exception(s"unknown client rdt: $s")
+         case "print.received" =>
+           MonitoringBundlesReceivedPrinter().run()
+         case "print.forwarded" =>
+           MonitoringBundlesForwardedPrinter().run()
+         case "print.statedev" =>
+           MonitoringStateDevelopmentPrinter(creationClientId = creation_client_id).run()
+         case s => throw Exception(s"could not partse commandline. unknown method: $s")
     }
   } catch {
     case e: Exception => e.log()
@@ -185,7 +185,7 @@ def _route_forever(router: Future[BaseRouter]): Unit = {
   }.recoverAndLog()
 
   while true do
-    Thread.sleep(1000)
+     Thread.sleep(1000)
 }
 
 def case_study_listen(

@@ -78,7 +78,7 @@ object Ed25519Util {
     val asn1Primitive = new ASN1InputStream(new ByteArrayInputStream(publicKey.getEncoded)).readObject()
     val bytes         = SubjectPublicKeyInfo.getInstance(asn1Primitive).getPublicKeyData.getBytes
     if bytes.length != 32 then
-      throw IllegalArgumentException(s"Ed25519 public keys are 32 bytes long, got ${bytes.length}")
+       throw IllegalArgumentException(s"Ed25519 public keys are 32 bytes long, got ${bytes.length}")
     bytes
   }
 
@@ -91,7 +91,7 @@ object Ed25519Util {
     require(octets(0) == 4 && octets(1) == 32) // Starts with [4,32] (=> 32 bit long octet string)
     val bytes = octets.drop(2)
     if bytes.length != 32 then
-      throw IllegalArgumentException(s"Ed25519 private keys are 32 bytes long, got ${bytes.length}")
+       throw IllegalArgumentException(s"Ed25519 private keys are 32 bytes long, got ${bytes.length}")
     bytes
   }
 

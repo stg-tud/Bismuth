@@ -46,8 +46,8 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
     }
 
     channel.readyState match
-      case RTCDataChannelState.closed => Async.handler.fail(WebRTCReceiveFailed("channel already closed"))
-      case _                          =>
+       case RTCDataChannelState.closed => Async.handler.fail(WebRTCReceiveFailed("channel already closed"))
+       case _                          =>
 
   }
   def send(message: MessageBuffer): Async[Any, Unit] =
@@ -115,8 +115,8 @@ object WebRTCConnection {
         }
 
         channel.readyState match
-          case RTCDataChannelState.closed => handler.fail(WebRTCReceiveFailed("channel already closed"))
-          case _                          =>
+           case RTCDataChannelState.closed => handler.fail(WebRTCReceiveFailed("channel already closed"))
+           case _                          =>
       }
 
       connector

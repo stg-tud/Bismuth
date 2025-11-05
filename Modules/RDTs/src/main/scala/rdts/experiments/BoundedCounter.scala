@@ -27,9 +27,9 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
   def transfer(amount: Int, target: Uid)(using LocalUid): Delta = {
     if amount > available(LocalUid.replicaId) then neutral
     else
-      neutral.copy(reservations =
-        current.reservations.add(amount)(using target.convert) `merge` current.reservations.add(-amount)
-      )
+       neutral.copy(reservations =
+         current.reservations.add(amount)(using target.convert) `merge` current.reservations.add(-amount)
+       )
   }
 
   def rebalance(using LocalUid): Delta = {
@@ -38,23 +38,23 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
     val least              = availableByReplica.min
     if most._2 != LocalUid.replicaId then neutral
     else
-      val diff: Int = (most._1 - least._1) / 2
-      current.transfer(diff, least._2)
+       val diff: Int = (most._1 - least._1) / 2
+       current.transfer(diff, least._2)
   }
 
   def invariantOk: Unit =
-    assert(current.reservations.value == 0, s"incorrect reservations: ${current.reservations.value}")
-    assert(
-      current.allocations.value <= current.reservations.neg.inner(Uid.predefined("initial-allocation")),
-      s"allocation sum ${current.allocations.value} larger than initial reservations ${current.reservations.neg.inner(Uid.predefined("initial-allocation"))}"
-    )
+     assert(current.reservations.value == 0, s"incorrect reservations: ${current.reservations.value}")
+     assert(
+       current.allocations.value <= current.reservations.neg.inner(Uid.predefined("initial-allocation")),
+       s"allocation sum ${current.allocations.value} larger than initial reservations ${current.reservations.neg.inner(Uid.predefined("initial-allocation"))}"
+     )
 }
 
 object BoundedCounter {
   def init(value: Int, replicaID: Uid): BoundedCounter =
-    val countervalue = PosNegCounter.zero.add(-value)(using Uid.predefined("initial-allocation").convert)
-    val initial      = PosNegCounter.zero.add(value)(using replicaID.convert)
-    BoundedCounter(countervalue `merge` initial, GrowOnlyCounter.zero, Set(replicaID))
+     val countervalue = PosNegCounter.zero.add(-value)(using Uid.predefined("initial-allocation").convert)
+     val initial      = PosNegCounter.zero.add(value)(using replicaID.convert)
+     BoundedCounter(countervalue `merge` initial, GrowOnlyCounter.zero, Set(replicaID))
 
   private val neutral: BoundedCounter = BoundedCounter(PosNegCounter.zero, GrowOnlyCounter.zero, Set.empty)
 

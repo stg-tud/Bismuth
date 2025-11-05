@@ -54,7 +54,7 @@ object DotTreeNode {
   }
 
   extension (nodes: IterableOnce[DotTreeNode.Node])
-    def toDots: Dots = nodes.iterator.foldLeft(Dots.empty)((acc, node) => acc.add(node.dot))
+     def toDots: Dots = nodes.iterator.foldLeft(Dots.empty)((acc, node) => acc.add(node.dot))
 
 }
 
@@ -93,25 +93,25 @@ class DotTree {
 
     val leafNodeOption = getLeaf(dot.place)
     if leafNodeOption.isEmpty && dot == causalPredecessor && dot.time == 0 then
-      return {
-        // initial message
-        val node = DotTreeNode.Node(dot, rootNode, causalPredecessor, None)
-        rootNode.successors += node
-        leaves += (dot.place         -> node)
-        causalBarriers += (dot.place -> node)
-        true
-      }
+       return {
+         // initial message
+         val node = DotTreeNode.Node(dot, rootNode, causalPredecessor, None)
+         rootNode.successors += node
+         leaves += (dot.place         -> node)
+         causalBarriers += (dot.place -> node)
+         true
+       }
     else if leafNodeOption.isDefined && dot == causalPredecessor && dot.time == 0 then
-      return {
-        val leafNode = leafNodeOption.get
-        if leafNode.causalPredecessor == dot then {
-          val node = DotTreeNode.Node(dot, rootNode, causalPredecessor, Some(leafNode))
-          rootNode.successors += node
-          leafNode.predecessorNode = node
-          causalBarriers += (dot.place -> leafNode)
-          true
-        } else false
-      }
+       return {
+         val leafNode = leafNodeOption.get
+         if leafNode.causalPredecessor == dot then {
+           val node = DotTreeNode.Node(dot, rootNode, causalPredecessor, Some(leafNode))
+           rootNode.successors += node
+           leafNode.predecessorNode = node
+           causalBarriers += (dot.place -> leafNode)
+           true
+         } else false
+       }
     else if dot == causalPredecessor || dot.time == 0 then return false
 
     val causalPredecessorNodeOption = getNodeOfDot(causalPredecessor)
@@ -184,7 +184,7 @@ class DotTree {
   def shiftCausalBarrier(branch: Uid): Unit = {
     var currentNode = causalBarriers(branch)
     while currentNode.successorNode.exists(successor => successor.causalPredecessor == currentNode.dot) do
-      currentNode = currentNode.successorNode.get
+       currentNode = currentNode.successorNode.get
     causalBarriers += (branch -> currentNode)
   }
 
@@ -318,10 +318,10 @@ class DotTree {
     rootNode.successors.foreach { startNode =>
       var currentNode = Option(startNode)
       while currentNode.exists(node =>
-          node.knownBy.size == numberOfKnownPeers && node.successorNode.exists(successorNode =>
-            successorNode.causalPredecessor == node.dot
-          )
-        )
+           node.knownBy.size == numberOfKnownPeers && node.successorNode.exists(successorNode =>
+             successorNode.causalPredecessor == node.dot
+           )
+         )
       do {
         val nextNode = currentNode.get.successorNode
         rootNode.successors -= currentNode.get

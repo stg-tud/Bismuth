@@ -158,65 +158,65 @@ class TextArea extends ReComponent {
   keys.pressed observe { e =>
     def shift = e.modifiers == Key.Modifier.Shift
     if e.modifiers == Key.Modifier.Control then
-      e.key match {
-        case Key.V => paste()
-        case Key.C => copy()
-        case Key.A => selectAll()
-        case _     =>
-      }
+       e.key match {
+         case Key.V => paste()
+         case Key.C => copy()
+         case Key.A => selectAll()
+         case _     =>
+       }
     else
-      e.key match {
-        case Key.Left =>
-          val offset = caret.offset.readValueOnce - (if posInLinebreak(caret.offset.readValueOnce - 1) then 2 else 1)
-          if shift then caret.dot = offset else caret.offset = offset
-        case Key.Right =>
-          val offset = caret.offset.readValueOnce + (if posInLinebreak(caret.offset.readValueOnce + 1) then 2 else 1)
-          if shift then caret.dot = offset else caret.offset = offset
-        case Key.Up =>
-          val position = Position(max(0, caret.position.readValueOnce.row - 1), caret.position.readValueOnce.col)
-          if shift then caret.dotPos = position else caret.position = position
-        case Key.Down =>
-          val position = Position(
-            min(lineCount.readValueOnce - 1, caret.position.readValueOnce.row + 1),
-            caret.position.readValueOnce.col
-          )
-          if shift then caret.dotPos = position else caret.position = position
-        case Key.Home =>
-          var offset = 0
-          for (ch, i) <- buffer.iterable.readValueOnce.iterator.zipWithIndex do
-            if i < caret.offset.readValueOnce && (ch == '\r' || ch == '\n') then
-              offset = i + 1;
-          if shift then caret.dot = offset else caret.offset = offset
-        case Key.End =>
-          val offset =
-            caret.offset.readValueOnce +
-            buffer.iterable.readValueOnce.iterator.drop(caret.offset.readValueOnce).takeWhile {
-              ch => ch != '\r' && ch != '\n'
-            }.size
-          if shift then caret.dot = offset else caret.offset = offset
-        case _ =>
-      }
+       e.key match {
+         case Key.Left =>
+           val offset = caret.offset.readValueOnce - (if posInLinebreak(caret.offset.readValueOnce - 1) then 2 else 1)
+           if shift then caret.dot = offset else caret.offset = offset
+         case Key.Right =>
+           val offset = caret.offset.readValueOnce + (if posInLinebreak(caret.offset.readValueOnce + 1) then 2 else 1)
+           if shift then caret.dot = offset else caret.offset = offset
+         case Key.Up =>
+           val position = Position(max(0, caret.position.readValueOnce.row - 1), caret.position.readValueOnce.col)
+           if shift then caret.dotPos = position else caret.position = position
+         case Key.Down =>
+           val position = Position(
+             min(lineCount.readValueOnce - 1, caret.position.readValueOnce.row + 1),
+             caret.position.readValueOnce.col
+           )
+           if shift then caret.dotPos = position else caret.position = position
+         case Key.Home =>
+           var offset = 0
+           for (ch, i) <- buffer.iterable.readValueOnce.iterator.zipWithIndex do
+              if i < caret.offset.readValueOnce && (ch == '\r' || ch == '\n') then
+                 offset = i + 1;
+           if shift then caret.dot = offset else caret.offset = offset
+         case Key.End =>
+           val offset =
+             caret.offset.readValueOnce +
+             buffer.iterable.readValueOnce.iterator.drop(caret.offset.readValueOnce).takeWhile {
+               ch => ch != '\r' && ch != '\n'
+             }.size
+           if shift then caret.dot = offset else caret.offset = offset
+         case _ =>
+       }
   }
 
   keys.typed observe { e =>
     if e.modifiers != Key.Modifier.Control then
-      e.char match {
-        case '\u007f' => // Del key
-          if selected.readValueOnce.isEmpty then {
-            val count = if posInLinebreak(caret.dot.readValueOnce + 1) then 2 else 1
-            buffer.remove(count);
-          } else removeSelection()
-        case '\b' => // Backspace key
-          if selected.readValueOnce.isEmpty then {
-            val count = min(if posInLinebreak(caret.dot.readValueOnce - 1) then 2 else 1, caret.dot.readValueOnce)
-            caret.offset = caret.offset.readValueOnce - count
-            buffer.remove(count);
-          } else removeSelection()
-        case c => // character input
-          removeSelection()
-          buffer.insert(c.toString)
-          caret.offset = caret.offset.readValueOnce + 1
-      }
+       e.char match {
+         case '\u007f' => // Del key
+           if selected.readValueOnce.isEmpty then {
+             val count = if posInLinebreak(caret.dot.readValueOnce + 1) then 2 else 1
+             buffer.remove(count);
+           } else removeSelection()
+         case '\b' => // Backspace key
+           if selected.readValueOnce.isEmpty then {
+             val count = min(if posInLinebreak(caret.dot.readValueOnce - 1) then 2 else 1, caret.dot.readValueOnce)
+             caret.offset = caret.offset.readValueOnce - count
+             buffer.remove(count);
+           } else removeSelection()
+         case c => // character input
+           removeSelection()
+           buffer.insert(c.toString)
+           caret.offset = caret.offset.readValueOnce + 1
+       }
   }
 
   mouse.clicks.pressed observe { e =>
@@ -273,7 +273,7 @@ class TextArea extends ReComponent {
           lineHeight
         )
       } else
-        start = line
+         start = line
 
       lineIndex += 1
       charIndex += line.length

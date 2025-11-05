@@ -49,8 +49,8 @@ object MembershipSpec extends Commands {
 
   override def genInitialState: Gen[State] =
     for
-      numDevices <- Gen.choose(minDevices, maxDevices)
-      ids = Range(0, maxDevices).map(_ => LocalUid.gen()).toList
+       numDevices <- Gen.choose(minDevices, maxDevices)
+       ids = Range(0, maxDevices).map(_ => LocalUid.gen()).toList
     yield ids.map(id => (id, Membership.init[Int, Paxos, Paxos](ids.map(_.uid).toSet)))
 
   override def genCommand(state: State): Gen[MembershipSpec.Command] =
@@ -67,8 +67,8 @@ object MembershipSpec extends Commands {
 
   def genIndex2(state: State): Gen[(Int, Int)] =
     for
-      leftIndex <- genIndex(state)
-      rightIndex = (leftIndex + 1) % state.length
+       leftIndex <- genIndex(state)
+       rightIndex = (leftIndex + 1) % state.length
     yield (leftIndex, rightIndex)
 
   def genMerge(state: State): Gen[Merge] =
@@ -76,8 +76,8 @@ object MembershipSpec extends Commands {
 
   def genWrite(state: State): Gen[Write] =
     for
-      index <- genIndex(state)
-      value <- arbitrary[Int]
+       index <- genIndex(state)
+       value <- arbitrary[Int]
     yield Write(index, value)
 
   def genRead(state: State): Gen[Read] = genIndex(state).map(Read(_))
@@ -86,155 +86,155 @@ object MembershipSpec extends Commands {
 
   def genAddMember(state: State): Gen[AddMember] =
     for
-      index    <- genIndex(state)
-      addIndex <- genIndex(state)
-      addId = state(addIndex)._1
+       index    <- genIndex(state)
+       addIndex <- genIndex(state)
+       addId = state(addIndex)._1
     yield AddMember(index, addId)
 
   def genRemoveMember(state: State): Gen[RemoveMember] =
     for
-      index       <- genIndex(state)
-      removeIndex <- genIndex(state)
-      removeId = state(removeIndex)._1
+       index       <- genIndex(state)
+       removeIndex <- genIndex(state)
+       removeId = state(removeIndex)._1
     yield RemoveMember(index, removeId)
 
   // commands: merge, upkeep, read, write, addMember, removeMember
   case class Merge(leftIndex: Int, rightIndex: Int) extends Command:
-    type Result = Membership[Int, Paxos, Paxos]
+     type Result = Membership[Int, Paxos, Paxos]
 
-    def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
-      val (idL, membershipL) = states(leftIndex)
-      val (idR, membershipR) = states(rightIndex)
-      //      println(s"merging ${states(leftIndex)} with ${states(rightIndex)}")
-      (idL, membershipL.merge(membershipR))
+     def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
+        val (idL, membershipL) = states(leftIndex)
+        val (idR, membershipR) = states(rightIndex)
+        //      println(s"merging ${states(leftIndex)} with ${states(rightIndex)}")
+        (idL, membershipL.merge(membershipR))
 
-    override def run(sut: Sut): Result =
-      sut(leftIndex) = newLocalState(sut.toSeq)
-      newLocalState(sut.toSeq)._2
+     override def run(sut: Sut): Result =
+        sut(leftIndex) = newLocalState(sut.toSeq)
+        newLocalState(sut.toSeq)._2
 
-    override def nextState(state: State): State =
-      state.updated(leftIndex, newLocalState(state))
+     override def nextState(state: State): State =
+       state.updated(leftIndex, newLocalState(state))
 
-    override def preCondition(state: State): Boolean =
-      leftIndex >= 0 && leftIndex < state.length &&
-      rightIndex >= 0 && rightIndex < state.length
-      && leftIndex != rightIndex
+     override def preCondition(state: State): Boolean =
+       leftIndex >= 0 && leftIndex < state.length &&
+       rightIndex >= 0 && rightIndex < state.length
+       && leftIndex != rightIndex
 
-    override def postCondition(state: State, result: Try[Result]): Prop =
-      val (leftId, leftMembership)   = state(leftIndex)
-      val (rightId, rightMembership) = state(rightIndex)
+     override def postCondition(state: State, result: Try[Result]): Prop =
+        val (leftId, leftMembership)   = state(leftIndex)
+        val (rightId, rightMembership) = state(rightIndex)
 
-      def allUids(p: Paxos[?]): Set[Uid] =
-        p.prepares.map(_.proposer) union
-        p.promises.flatMap(p => Set(p.proposal.proposer, p.acceptor)) union
-        p.accepts.map(_.proposal.proposer) union
-        p.accepteds.flatMap(p => Set(p.proposal.proposer, p.acceptor))
+        def allUids(p: Paxos[?]): Set[Uid] =
+          p.prepares.map(_.proposer) union
+          p.promises.flatMap(p => Set(p.proposal.proposer, p.acceptor)) union
+          p.accepts.map(_.proposal.proposer) union
+          p.accepteds.flatMap(p => Set(p.proposal.proposer, p.acceptor))
 
-      (leftMembership.counter != rightMembership.counter || (allUids(leftMembership.innerConsensus) union allUids(
-        rightMembership.innerConsensus
-      ) union allUids(leftMembership.membersConsensus) union allUids(rightMembership.membersConsensus)).subsetOf(
-        leftMembership.currentMembers
-      )) :| s"updates only contain Uids of known members. Tried merging ${allUids(leftMembership.innerConsensus)} and ${allUids(rightMembership.innerConsensus)}" &&
-      ((leftMembership.counter != rightMembership.counter) || leftMembership.currentMembers == rightMembership.currentMembers) :| "when two instances have the same counter, they have to have the same set of members" &&
-      result.isSuccess
+        (leftMembership.counter != rightMembership.counter || (allUids(leftMembership.innerConsensus) union allUids(
+          rightMembership.innerConsensus
+        ) union allUids(leftMembership.membersConsensus) union allUids(rightMembership.membersConsensus)).subsetOf(
+          leftMembership.currentMembers
+        )) :| s"updates only contain Uids of known members. Tried merging ${allUids(leftMembership.innerConsensus)} and ${allUids(rightMembership.innerConsensus)}" &&
+        ((leftMembership.counter != rightMembership.counter) || leftMembership.currentMembers == rightMembership.currentMembers) :| "when two instances have the same counter, they have to have the same set of members" &&
+        result.isSuccess
   //      Lattice[Membership[Int, Paxos, Paxos]].lteq(state(rightIndex)._2, result.get) :| "Merge produces valid results"
 
   case class Write(index: Int, value: Int) extends UnitCommand:
-    def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
-      val (id, membership) = states(index)
-      (id, membership.merge(membership.write(value)(using id)))
+     def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
+        val (id, membership) = states(index)
+        (id, membership.merge(membership.write(value)(using id)))
 
-    override def run(sut: Sut): Unit =
-      sut(index) = newLocalState(sut.toSeq)
+     override def run(sut: Sut): Unit =
+       sut(index) = newLocalState(sut.toSeq)
 
-    override def nextState(state: State): State =
-      state.updated(index, newLocalState(state))
+     override def nextState(state: State): State =
+       state.updated(index, newLocalState(state))
 
-    override def preCondition(state: State): Boolean = true
+     override def preCondition(state: State): Boolean = true
 
-    override def postCondition(state: State, success: Boolean): Prop = success
+     override def postCondition(state: State, success: Boolean): Prop = success
 
   case class Read(index: Int) extends Command:
-    override type Result = List[Int]
+     override type Result = List[Int]
 
-    override def run(sut: Sut): Result =
-      val (id, membership) = sut(index)
-      val res              = membership.read
-      //      if res.nonEmpty then
-      //        println(s"members: ${membership.currentMembers}, res: $res, innerConsensus: ${membership.innerConsensus}")
-      res
+     override def run(sut: Sut): Result =
+        val (id, membership) = sut(index)
+        val res              = membership.read
+        //      if res.nonEmpty then
+        //        println(s"members: ${membership.currentMembers}, res: $res, innerConsensus: ${membership.innerConsensus}")
+        res
 
-    override def nextState(state: State): State = state
+     override def nextState(state: State): State = state
 
-    override def preCondition(state: State): Boolean = true
+     override def preCondition(state: State): Boolean = true
 
-    override def postCondition(state: State, result: Try[Result]): Prop =
-      // every log is a prefix of another log or vice versa
-      Prop.forAll(genIndex(state)) {
-        index =>
-          state(index) match
-            case (id, membership) =>
-              (membership.read.containsSlice(result.get) || result.get.containsSlice(
-                membership.read
-              )) :| "every log is a prefix of another log or vice versa"
-      }
+     override def postCondition(state: State, result: Try[Result]): Prop =
+       // every log is a prefix of another log or vice versa
+       Prop.forAll(genIndex(state)) {
+         index =>
+           state(index) match
+              case (id, membership) =>
+                (membership.read.containsSlice(result.get) || result.get.containsSlice(
+                  membership.read
+                )) :| "every log is a prefix of another log or vice versa"
+       }
 
   case class AddMember(index: Int, newId: LocalUid) extends UnitCommand:
-    override def run(sut: Sut): Unit =
-      val (id, membership) = sut(index)
-      sut(index) = (id, membership.merge(membership.addMember(newId.uid)(using id)))
+     override def run(sut: Sut): Unit =
+        val (id, membership) = sut(index)
+        sut(index) = (id, membership.merge(membership.addMember(newId.uid)(using id)))
 
-    override def nextState(state: List[(LocalUid, LocalState)]): List[(LocalUid, LocalState)] =
-      val (id, membership) = state(index)
-      assert(membership.currentMembers.nonEmpty, s"members should not be empty: $state")
-      state
-        .updated(index, (id, membership.merge(membership.addMember(newId.uid)(using id))))
+     override def nextState(state: List[(LocalUid, LocalState)]): List[(LocalUid, LocalState)] =
+        val (id, membership) = state(index)
+        assert(membership.currentMembers.nonEmpty, s"members should not be empty: $state")
+        state
+          .updated(index, (id, membership.merge(membership.addMember(newId.uid)(using id))))
 
-    override def preCondition(state: List[(LocalUid, LocalState)]): Boolean = true
+     override def preCondition(state: List[(LocalUid, LocalState)]): Boolean = true
 
-    override def postCondition(state: State, success: Boolean): Prop = success
+     override def postCondition(state: State, success: Boolean): Prop = success
 
   case class RemoveMember(index: Int, removeId: LocalUid) extends UnitCommand:
-    override def run(sut: Sut): Unit =
-      val (id, membership) = sut(index)
-      sut(index) = (id, membership.merge(membership.removeMember(removeId.uid)(using id)))
+     override def run(sut: Sut): Unit =
+        val (id, membership) = sut(index)
+        sut(index) = (id, membership.merge(membership.removeMember(removeId.uid)(using id)))
 
-    override def nextState(state: List[(LocalUid, LocalState)]): List[(LocalUid, LocalState)] =
-      val (id, membership) = state(index)
-      state.updated(index, (id, membership.merge(membership.removeMember(removeId.uid)(using id))))
+     override def nextState(state: List[(LocalUid, LocalState)]): List[(LocalUid, LocalState)] =
+        val (id, membership) = state(index)
+        state.updated(index, (id, membership.merge(membership.removeMember(removeId.uid)(using id))))
 
-    override def preCondition(state: List[(LocalUid, LocalState)]): Boolean = true
+     override def preCondition(state: List[(LocalUid, LocalState)]): Boolean = true
 
-    override def postCondition(state: State, success: Boolean): Prop = success
+     override def postCondition(state: State, success: Boolean): Prop = success
 
   case class Upkeep(index: Int) extends Command:
-    type Result = Sut
+     type Result = Sut
 
-    def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
-      val (id, membership) = states(index)
-      (id, membership.merge(membership.upkeep()(using id)))
+     def newLocalState(states: Seq[(LocalUid, LocalState)]): (LocalUid, Membership[Int, Paxos, Paxos]) =
+        val (id, membership) = states(index)
+        (id, membership.merge(membership.upkeep()(using id)))
 
-    override def run(sut: Sut): Result =
-      val newState = newLocalState(sut.toSeq)
-      //      if newState._2.counter > sut(index)._2.counter then
-      //        println(newState)
-      sut(index) = newLocalState(sut.toSeq)
-      sut
+     override def run(sut: Sut): Result =
+        val newState = newLocalState(sut.toSeq)
+        //      if newState._2.counter > sut(index)._2.counter then
+        //        println(newState)
+        sut(index) = newLocalState(sut.toSeq)
+        sut
 
-    override def nextState(state: State): State =
-      state.updated(index, newLocalState(state))
+     override def nextState(state: State): State =
+       state.updated(index, newLocalState(state))
 
-    override def preCondition(state: State): Boolean = true
+     override def preCondition(state: State): Boolean = true
 
-    override def postCondition(state: State, result: Try[Result]): Prop =
-      Prop.forAll(genIndex2(result.get.toList)) {
-        (index1, index2) =>
-          (result.get(index1), result.get(index2)) match
-            case ((_, membership1), (_, membership2)) =>
-              (membership1.membersConsensus.members == membership1.innerConsensus.members) :| "members of both protocols never go out of sync" &&
-              ((membership1.counter != membership2.counter) || membership1.currentMembers == membership2.currentMembers) :| "members for a given counter are the same for all indices"
+     override def postCondition(state: State, result: Try[Result]): Prop =
+       Prop.forAll(genIndex2(result.get.toList)) {
+         (index1, index2) =>
+           (result.get(index1), result.get(index2)) match
+              case ((_, membership1), (_, membership2)) =>
+                (membership1.membersConsensus.members == membership1.innerConsensus.members) :| "members of both protocols never go out of sync" &&
+                ((membership1.counter != membership2.counter) || membership1.currentMembers == membership2.currentMembers) :| "members for a given counter are the same for all indices"
 
-      }
+       }
 
 }
 //class PaxosPropertyTests {

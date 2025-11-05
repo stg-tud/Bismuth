@@ -33,14 +33,14 @@ object DafnyGen {
     */
   private def getDafnyType(typeName: String): String = {
     typeName match
-      case "Boolean"          => "bool"
-      case "Char"             => "char"
-      case "Int"              => "int"
-      case "Float" | "Double" => "real"   // Dafny "real" follows SMT-Lib "Real" theory, so should be fine to map onto.
-      case "String"           => "string" // Technically seq<char> (String is Seq[Char]), syntactic sugar respectively.
-      case "Map"              => "map"
-      case "List"             => "seq"    // This does confer some changes in semantics regarding mutability etc.
-      case _                  => typeName
+       case "Boolean"          => "bool"
+       case "Char"             => "char"
+       case "Int"              => "int"
+       case "Float" | "Double" => "real"   // Dafny "real" follows SMT-Lib "Real" theory, so should be fine to map onto.
+       case "String"           => "string" // Technically seq<char> (String is Seq[Char]), syntactic sugar respectively.
+       case "Map"              => "map"
+       case "List"             => "seq"    // This does confer some changes in semantics regarding mutability etc.
+       case _                  => typeName
   }
 
   /** Recursively gathers the names of all references used in the given LoRe Term node.
@@ -52,42 +52,42 @@ object DafnyGen {
     // This uses sets to avoid duplicate entries.
 
     val refs: Set[String] = node match
-      case t: (TViperImport | TArgT | TTypeAl | TNum | TTrue | TFalse | TString) => Set.empty // No references here
-      case TVar(name, _, _)                                                      =>
-        if !ctx.isDefinedAt(name) then Set.empty // Skip non-top-level definition references (e.g. arrow func params)
-        else Set(name) // Regular reference to a top-level definition
-      case TAbs(_, _, body, _, _)        => usedReferences(body, ctx)
-      case TTuple(factors, _, _)         => factors.flatMap((n: Term) => usedReferences(n, ctx)).toSet
-      case TIf(cond, _then, _else, _, _) =>
-        val refs: Set[String] = usedReferences(cond, ctx) ++ usedReferences(_then, ctx)
-        if _else.isDefined then refs ++ usedReferences(_else.get, ctx) else refs
-      case TSeq(body, _, _) => body.toList.flatMap((n: Term) => usedReferences(n, ctx)).toSet
-      case t: BinaryOp => usedReferences(t.left, ctx) ++ usedReferences(t.right, ctx) // Arith., Bool expr, Arrow func
-      case TAssert(body, _, _)                   => usedReferences(body, ctx)
-      case TAssume(body, _, _)                   => usedReferences(body, ctx)
-      case t: TReactive                          => usedReferences(t.body, ctx)
-      case TInteraction(_, _, m, r, e, ex, _, _) =>
-        val reqs: Set[String] = r.flatMap((n: Term) => usedReferences(n, ctx)).toSet
-        val ens: Set[String]  = e.flatMap((n: Term) => usedReferences(n, ctx)).toSet
-        val refs: Set[String] = m.toSet ++ reqs ++ ens
+       case t: (TViperImport | TArgT | TTypeAl | TNum | TTrue | TFalse | TString) => Set.empty // No references here
+       case TVar(name, _, _)                                                      =>
+         if !ctx.isDefinedAt(name) then Set.empty // Skip non-top-level definition references (e.g. arrow func params)
+         else Set(name) // Regular reference to a top-level definition
+       case TAbs(_, _, body, _, _)        => usedReferences(body, ctx)
+       case TTuple(factors, _, _)         => factors.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+       case TIf(cond, _then, _else, _, _) =>
+         val refs: Set[String] = usedReferences(cond, ctx) ++ usedReferences(_then, ctx)
+         if _else.isDefined then refs ++ usedReferences(_else.get, ctx) else refs
+       case TSeq(body, _, _) => body.toList.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+       case t: BinaryOp => usedReferences(t.left, ctx) ++ usedReferences(t.right, ctx) // Arith., Bool expr, Arrow func
+       case TAssert(body, _, _)                   => usedReferences(body, ctx)
+       case TAssume(body, _, _)                   => usedReferences(body, ctx)
+       case t: TReactive                          => usedReferences(t.body, ctx)
+       case TInteraction(_, _, m, r, e, ex, _, _) =>
+         val reqs: Set[String] = r.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+         val ens: Set[String]  = e.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+         val refs: Set[String] = m.toSet ++ reqs ++ ens
 
-        if ex.isDefined then refs ++ usedReferences(ex.get, ctx) else refs
-      case TInvariant(condition, _, _) => usedReferences(condition, ctx)
-      case TNeg(body, _, _)            => usedReferences(body, ctx)
-      case t: TQuantifier              =>
-        // vars are new definitions of TArgTs, they do not contain references, so skip those.
-        // triggers should not contain any references that don't also appear in the body already, so skip too.
-        usedReferences(t.body, ctx)
-      case TParens(inner, _, _)          => usedReferences(inner, ctx)
-      case TFCall(parent, _, args, _, _) =>
-        val refs: Set[String] = usedReferences(parent, ctx)
-        // The called field/method is not a standalone reference, so don't include it.
-        // If this is a field call, args will be null, otherwise contains method parameters.
-        args match
-          case None    => refs
-          case Some(a) => refs ++ a.flatMap((n: Term) => usedReferences(n, ctx)).toSet
-      case TFCurly(parent, _, body, _, _) => usedReferences(parent, ctx) ++ usedReferences(body, ctx)
-      case TFunC(_, args, _, _)           => args.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+         if ex.isDefined then refs ++ usedReferences(ex.get, ctx) else refs
+       case TInvariant(condition, _, _) => usedReferences(condition, ctx)
+       case TNeg(body, _, _)            => usedReferences(body, ctx)
+       case t: TQuantifier              =>
+         // vars are new definitions of TArgTs, they do not contain references, so skip those.
+         // triggers should not contain any references that don't also appear in the body already, so skip too.
+         usedReferences(t.body, ctx)
+       case TParens(inner, _, _)          => usedReferences(inner, ctx)
+       case TFCall(parent, _, args, _, _) =>
+         val refs: Set[String] = usedReferences(parent, ctx)
+         // The called field/method is not a standalone reference, so don't include it.
+         // If this is a field call, args will be null, otherwise contains method parameters.
+         args match
+            case None    => refs
+            case Some(a) => refs ++ a.flatMap((n: Term) => usedReferences(n, ctx)).toSet
+       case TFCurly(parent, _, body, _, _) => usedReferences(parent, ctx) ++ usedReferences(body, ctx)
+       case TFunC(_, args, _, _)           => args.flatMap((n: Term) => usedReferences(n, ctx)).toSet
 
     // Some LoRe types, which are defined as regular variables, are modelled differently in Dafny.
     // For example, Derived terms are modelled as functions in Dafny but regular variables in LoRe.
@@ -104,12 +104,12 @@ object DafnyGen {
           val tp: Type = ctx(ref).loreType
 
           tp match
-            case SimpleType(name, _) => name == "Signal" || name == "Interaction" || name == "Invariant"
-            case TupleType(_)        =>
-              // For a Derived/Interaction/Invariant to appear in a tuple type, it would have to be declared
-              // within a tuple expression. However, this implementation forbids declarations for these types
-              // to happen within other expressions, so this case is unreachable as long as that is unchanged.
-              false
+             case SimpleType(name, _) => name == "Signal" || name == "Interaction" || name == "Invariant"
+             case TupleType(_)        =>
+               // For a Derived/Interaction/Invariant to appear in a tuple type, it would have to be declared
+               // within a tuple expression. However, this implementation forbids declarations for these types
+               // to happen within other expressions, so this case is unreachable as long as that is unchanged.
+               false
         } else false
       }
 
@@ -142,10 +142,10 @@ object DafnyGen {
   ): TArrow = {
     // Find list of currently used actual names in Interaction
     val args: List[String] = term.left match
-      case TTuple(a, _, _) => a.collect {
-          case TArgT(name, _, _, _) => name
-        }
-      case _ => List()
+       case TTuple(a, _, _) => a.collect {
+           case TArgT(name, _, _, _) => name
+         }
+       case _ => List()
     val (actualReactiveNames, actualArgumentNames) = args.splitAt(modifiesNames.length)
 
     // Replace actual reactive names with those specified in the modifies clause
@@ -180,32 +180,32 @@ object DafnyGen {
       scalaCtx: Context
   ): String = {
     t match
-      case tup: TTuple =>
-        // Multiple Sources are being modified, so generate multiple assignments.
-        if tup.factors.length != reactiveNames.length then {
-          t.scalaSourcePos match
-            case Some(pos) =>
-              report.error(
-                "Invalid executes in Interaction: " +
-                s"Number of modifies reactives (${reactiveNames.length}) " +
-                s"and number of values supplied in return value tuple (${tup.factors.length}) do not match.",
-                pos
-              )
-            case None =>
-              report.error(
-                "Invalid executes in Interaction: " +
-                s"Number of modifies reactives (${reactiveNames.length}) " +
-                s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
-              )
-        }
+       case tup: TTuple =>
+         // Multiple Sources are being modified, so generate multiple assignments.
+         if tup.factors.length != reactiveNames.length then {
+           t.scalaSourcePos match
+              case Some(pos) =>
+                report.error(
+                  "Invalid executes in Interaction: " +
+                  s"Number of modifies reactives (${reactiveNames.length}) " +
+                  s"and number of values supplied in return value tuple (${tup.factors.length}) do not match.",
+                  pos
+                )
+              case None =>
+                report.error(
+                  "Invalid executes in Interaction: " +
+                  s"Number of modifies reactives (${reactiveNames.length}) " +
+                  s"and number of values supplied in return value tuple (${tup.factors.length}) do not match."
+                )
+         }
 
-        // Order of assignments is the same as the order of Sources in the modifies list
-        reactiveNames.zip(tup.factors)
-          .map((r, v) => s"LoReFields.$r := ${generate(v, ctx)};")
-          .mkString("\n")
-      case _ =>
-        // Body is a single expression for a single Source (i.e. not a tuple), so that becomes the assignment.
-        s"LoReFields.${reactiveNames.head} := ${generate(t, ctx)};"
+         // Order of assignments is the same as the order of Sources in the modifies list
+         reactiveNames.zip(tup.factors)
+           .map((r, v) => s"LoReFields.$r := ${generate(v, ctx)};")
+           .mkString("\n")
+       case _ =>
+         // Body is a single expression for a single Source (i.e. not a tuple), so that becomes the assignment.
+         s"LoReFields.${reactiveNames.head} := ${generate(t, ctx)};"
   }
 
   /** Compiles a list of LoRe terms into Dafny code.
@@ -223,16 +223,16 @@ object DafnyGen {
     val termGroups: Map[String, List[Term]] = ast.groupBy {
       case TAbs(_, _type, _, _, _) =>
         _type match
-          case SimpleType(name, _) =>
-            if name == "Var" then "sourceDefs"
-            else if name == "Signal" then "derivedDefs"
-            else if name == "Interaction" then "interactionDefs"
-            else if name == "Invariant" then "invariantDefs"
-            else "otherDefs"
-          case TupleType(_) =>
-            // Reactives and Interactions are forbidden from being declared within tuples.
-            // Therefore, a tuple type must always be a def that is neither of those.
-            "otherDefs"
+           case SimpleType(name, _) =>
+             if name == "Var" then "sourceDefs"
+             else if name == "Signal" then "derivedDefs"
+             else if name == "Interaction" then "interactionDefs"
+             else if name == "Invariant" then "invariantDefs"
+             else "otherDefs"
+           case TupleType(_) =>
+             // Reactives and Interactions are forbidden from being declared within tuples.
+             // Therefore, a tuple type must always be a def that is neither of those.
+             "otherDefs"
       case _ => "statements"
     }
 
@@ -259,15 +259,15 @@ object DafnyGen {
           // Find the definition of the reference from context (should always be present because it was built above)
           val refDef: Option[NodeInfo] = compilationContext.get(ref)
           refDef match
-            case None       => ()
-            case Some(node) =>
-              // If both terms have positions recorded, compare their starting line
-              // If the ref term is ahead of (smaller than) the node def, this is a forward reference
-              if term.scalaSourcePos.isDefined && node.loreNode.scalaSourcePos.isDefined then {
-                if term.scalaSourcePos.get.startLine < node.loreNode.scalaSourcePos.get.startLine then {
-                  report.error("Forward references are not allowed.", term.scalaSourcePos.orNull)
-                }
-              }
+             case None       => ()
+             case Some(node) =>
+               // If both terms have positions recorded, compare their starting line
+               // If the ref term is ahead of (smaller than) the node def, this is a forward reference
+               if term.scalaSourcePos.isDefined && node.loreNode.scalaSourcePos.isDefined then {
+                 if term.scalaSourcePos.get.startLine < node.loreNode.scalaSourcePos.get.startLine then {
+                   report.error("Forward references are not allowed.", term.scalaSourcePos.orNull)
+                 }
+               }
         }
 
         // Map to generation result of term
@@ -347,27 +347,27 @@ object DafnyGen {
     */
   private def generate(node: Term, ctx: Map[String, NodeInfo])(using logLevel: LogLevel, scalaCtx: Context): String = {
     node match
-      // Cases ordered by order in LoRe AST definition.
-      case n: TViperImport => generateFromTViperImport(n, ctx)
-      case n: TArgT        => generateFromTArgT(n, ctx)
-      case n: TVar         => generateFromTVar(n, ctx)
-      case n: TAbs         => generateFromTAbs(n, ctx)
-      case n: TTuple       => generateFromTTuple(n, ctx)
-      case n: TIf          => generateFromTIf(n, ctx)
-      case n: TSeq         => generateFromTSeq(n, ctx)
-      case n: TArrow       => generateFromTArrow(n, ctx)
-      case n: TTypeAl      => generateFromTTypeAl(n, ctx)
-      case n: TAssert      => generateFromTAssert(n, ctx)
-      case n: TAssume      => generateFromTAssume(n, ctx)
-      case n: TReactive    => generateFromTReactive(n, ctx)
-      case n: TInteraction => generateFromTInteraction(n, ctx)
-      case n: TInvariant   => generateFromTInvariant(n, ctx)
-      case n: TArith       => generateFromTArith(n, ctx)
-      case n: TBoolean     => generateFromTBoolean(n, ctx)
-      case n: TParens      => generateFromTParens(n, ctx)
-      case n: TString      => generateFromTString(n, ctx)
-      case n: TFAcc        => generateFromTFAcc(n, ctx)
-      case n: TFunC        => generateFromTFunC(n, ctx)
+       // Cases ordered by order in LoRe AST definition.
+       case n: TViperImport => generateFromTViperImport(n, ctx)
+       case n: TArgT        => generateFromTArgT(n, ctx)
+       case n: TVar         => generateFromTVar(n, ctx)
+       case n: TAbs         => generateFromTAbs(n, ctx)
+       case n: TTuple       => generateFromTTuple(n, ctx)
+       case n: TIf          => generateFromTIf(n, ctx)
+       case n: TSeq         => generateFromTSeq(n, ctx)
+       case n: TArrow       => generateFromTArrow(n, ctx)
+       case n: TTypeAl      => generateFromTTypeAl(n, ctx)
+       case n: TAssert      => generateFromTAssert(n, ctx)
+       case n: TAssume      => generateFromTAssume(n, ctx)
+       case n: TReactive    => generateFromTReactive(n, ctx)
+       case n: TInteraction => generateFromTInteraction(n, ctx)
+       case n: TInvariant   => generateFromTInvariant(n, ctx)
+       case n: TArith       => generateFromTArith(n, ctx)
+       case n: TBoolean     => generateFromTBoolean(n, ctx)
+       case n: TParens      => generateFromTParens(n, ctx)
+       case n: TString      => generateFromTString(n, ctx)
+       case n: TFAcc        => generateFromTFAcc(n, ctx)
+       case n: TFunC        => generateFromTFunC(n, ctx)
   }
 
   /** Generates a Dafny type annotation for the given LoRe Type node.
@@ -377,8 +377,8 @@ object DafnyGen {
     */
   private def generate(node: Type, ctx: Map[String, NodeInfo])(using logLevel: LogLevel, scalaCtx: Context): String = {
     node match
-      case n: SimpleType => generateFromSimpleType(n, ctx)
-      case n: TupleType  => generateFromTupleType(n, ctx)
+       case n: SimpleType => generateFromSimpleType(n, ctx)
+       case n: TupleType  => generateFromTupleType(n, ctx)
   }
 
   /** Generates a Dafny Type annotation for the given LoRe SimpleType node.
@@ -469,43 +469,43 @@ object DafnyGen {
     if !ctx.isDefinedAt(node.name) then return node.name // Skip non-top-level definition references
 
     ctx(node.name).loreType match
-      case SimpleType(typeName, _) if typeName == "Signal" || typeName == "Var" =>
-        // Reactives (i.e. Sources and Derived) may not be referenced plainly, only via the "value" method.
-        // This is because Derived terms are translated into functions, and the type used for Derived in Dafny
-        // is simply the type parameter of the Derived, or in Dafny's case the return type of the function.
-        // However, when a Derived would be referenced without that reference being a call (which would turn
-        // the reference's type into the return type), it would be necessary to give the reference the
-        // _function type_ of that translated Derived instead. Therefore, when accessed, it must be via access
-        // to the "value" property. For Sources this turns into a reference, for Deriveds into a function call.
-        node.scalaSourcePos match
-          case None =>
-            report.error(
-              "Reactives may not be referenced directly, apart from calling the \"value\" or \"now\" property."
-            )
-          case Some(pos) =>
-            report.error(
-              "Reactives may not be referenced directly, apart from calling the \"value\" or \"now\" property.",
-              pos
-            )
-        "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
-      case SimpleType("Interaction", _) =>
-        // Interactions may not be referenced if said reference is not used to extend the Interaction with further
-        // components (i.e. requires, ensures, executes, modifies), for similar reasons to Derived terms above.
-        // References that extensions Interactions will already have been processed into TInteraction terms in the
-        // rather than showing up as TVars, so references of such kind would not show up anymore in the LoRe AST.
-        // Therefore, if a reference to an Interaction shows up, it is always faulty.
-        node.scalaSourcePos match
-          case None      => report.error("Interactions may not be referenced without further method calls.")
-          case Some(pos) => report.error("Interactions may not be referenced without further method calls.", pos)
-        "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
-      case SimpleType("Invariant", _) =>
-        // Invariants may not be referenced, for mostly same reasons as Derived terms explained above.
-        // Invariants however do not have the exception of access via the "value" method, as it does not exist.
-        node.scalaSourcePos match
-          case None      => report.error("Invariants may not be referenced.")
-          case Some(pos) => report.error("Invariants may not be referenced.", pos)
-        "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
-      case _ => node.name // Simply place the reference for other types
+       case SimpleType(typeName, _) if typeName == "Signal" || typeName == "Var" =>
+         // Reactives (i.e. Sources and Derived) may not be referenced plainly, only via the "value" method.
+         // This is because Derived terms are translated into functions, and the type used for Derived in Dafny
+         // is simply the type parameter of the Derived, or in Dafny's case the return type of the function.
+         // However, when a Derived would be referenced without that reference being a call (which would turn
+         // the reference's type into the return type), it would be necessary to give the reference the
+         // _function type_ of that translated Derived instead. Therefore, when accessed, it must be via access
+         // to the "value" property. For Sources this turns into a reference, for Deriveds into a function call.
+         node.scalaSourcePos match
+            case None =>
+              report.error(
+                "Reactives may not be referenced directly, apart from calling the \"value\" or \"now\" property."
+              )
+            case Some(pos) =>
+              report.error(
+                "Reactives may not be referenced directly, apart from calling the \"value\" or \"now\" property.",
+                pos
+              )
+         "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
+       case SimpleType("Interaction", _) =>
+         // Interactions may not be referenced if said reference is not used to extend the Interaction with further
+         // components (i.e. requires, ensures, executes, modifies), for similar reasons to Derived terms above.
+         // References that extensions Interactions will already have been processed into TInteraction terms in the
+         // rather than showing up as TVars, so references of such kind would not show up anymore in the LoRe AST.
+         // Therefore, if a reference to an Interaction shows up, it is always faulty.
+         node.scalaSourcePos match
+            case None      => report.error("Interactions may not be referenced without further method calls.")
+            case Some(pos) => report.error("Interactions may not be referenced without further method calls.", pos)
+         "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
+       case SimpleType("Invariant", _) =>
+         // Invariants may not be referenced, for mostly same reasons as Derived terms explained above.
+         // Invariants however do not have the exception of access via the "value" method, as it does not exist.
+         node.scalaSourcePos match
+            case None      => report.error("Invariants may not be referenced.")
+            case Some(pos) => report.error("Invariants may not be referenced.", pos)
+         "<error>" // Still return a string value to satisfy compiler (this is invalid code but compilation fails anyway)
+       case _ => node.name // Simply place the reference for other types
   }
 
   /** Generates Dafny code for the given LoRe TAbs.
@@ -520,259 +520,260 @@ object DafnyGen {
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Generating Dafny code for definition ${node.name}...")
 
     node.body match
-      case n: TSource =>
-        // Source terms are realized as Dafny fields that can be modified post-definition.
-        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
-        s"var ${node.name}: ${generate(node._type, ctx)} := ${generate(n.body, ctx)};"
-      case n: TDerived =>
-        // Derived terms are realized as Dafny functions. Functions do not have side-effects.
-        // The return type of these functions is the type parameter of the Derived, while any
-        // references included in the body of the Derived are turned into function parameters.
-        val references: Set[String] = usedReferences(n.body, ctx)
-        val parameters: Set[String] = references.map(ref => s"$ref: ${ctx(ref).dafnyType}")
+       case n: TSource =>
+         // Source terms are realized as Dafny fields that can be modified post-definition.
+         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
+         s"var ${node.name}: ${generate(node._type, ctx)} := ${generate(n.body, ctx)};"
+       case n: TDerived =>
+         // Derived terms are realized as Dafny functions. Functions do not have side-effects.
+         // The return type of these functions is the type parameter of the Derived, while any
+         // references included in the body of the Derived are turned into function parameters.
+         val references: Set[String] = usedReferences(n.body, ctx)
+         val parameters: Set[String] = references.map(ref => s"$ref: ${ctx(ref).dafnyType}")
 
-        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
-        s"""function ${node.name}(${parameters.mkString(", ")}): ${generate(node._type, ctx)} {
+         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
+         s"""function ${node.name}(${parameters.mkString(", ")}): ${generate(node._type, ctx)} {
            |${generate(n.body, ctx).indent(2)}
            |}""".stripMargin
-      case n: TInvariant =>
-        // Invariant terms are also realized as Dafny functions, like Derived terms.
-        // References are again turned into function parameters.
-        // The body as well as return type of all Invariants is a boolean (expression).
-        val references: Set[String] = usedReferences(n.condition, ctx)
-        val parameters: Set[String] = references.map(ref => s"$ref: ${ctx(ref).dafnyType}")
+       case n: TInvariant =>
+         // Invariant terms are also realized as Dafny functions, like Derived terms.
+         // References are again turned into function parameters.
+         // The body as well as return type of all Invariants is a boolean (expression).
+         val references: Set[String] = usedReferences(n.condition, ctx)
+         val parameters: Set[String] = references.map(ref => s"$ref: ${ctx(ref).dafnyType}")
 
-        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
-        s"""function ${node.name}(${parameters.mkString(", ")}): bool {
+         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
+         s"""function ${node.name}(${parameters.mkString(", ")}): bool {
            |${generate(n.condition, ctx).indent(2)}
            |}""".stripMargin
-      case n: TInteraction =>
-        // Interaction terms are realized as Dafny methods. Methods may have side-effects.
-        // As Interactions modify state directly, they do not have return values, however.
-        // Their parameters are the state (a reference to the main object) as well as
-        // any parameters as specified in the definition of the Interaction.
+       case n: TInteraction =>
+         // Interaction terms are realized as Dafny methods. Methods may have side-effects.
+         // As Interactions modify state directly, they do not have return values, however.
+         // Their parameters are the state (a reference to the main object) as well as
+         // any parameters as specified in the definition of the Interaction.
 
-        // Only generate Dafny code for fully-featured Interactions, i.e. those with both modifies and executes.
-        // When either is lacking, the Interaction would be irrelevant either way, as it does not affect anything.
-        // Additionally, incomplete Interactions lead to invalid generated Dafny code. Defining incomplete Interactions
-        // in Scala and then completing them through a reference is fine, however.
-        if n.modifies.isEmpty || n.executes.isEmpty then return ""
+         // Only generate Dafny code for fully-featured Interactions, i.e. those with both modifies and executes.
+         // When either is lacking, the Interaction would be irrelevant either way, as it does not affect anything.
+         // Additionally, incomplete Interactions lead to invalid generated Dafny code. Defining incomplete Interactions
+         // in Scala and then completing them through a reference is fine, however.
+         if n.modifies.isEmpty || n.executes.isEmpty then return ""
 
-        val reactiveTypes: List[String] = n.reactiveType match
-          case t: SimpleType    => List(generate(t, ctx))
-          case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
-        val reactiveNames: List[String] = n.modifies
+         val reactiveTypes: List[String] = n.reactiveType match
+            case t: SimpleType    => List(generate(t, ctx))
+            case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
+         val reactiveNames: List[String] = n.modifies
 
-        val argumentTypes: List[String] = n.argumentType match
-          case t: SimpleType    => List(generate(t, ctx))
-          case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
-        val argumentNames: List[String] = n.executes match
-          case None               => List() // No body in this Interaction
-          case Some(term: TArrow) =>
-            // Regular body: an arrow function
+         val argumentTypes: List[String] = n.argumentType match
+            case t: SimpleType    => List(generate(t, ctx))
+            case TupleType(inner) => inner.map(t => generate(t, ctx)).toList
+         val argumentNames: List[String] = n.executes match
+            case None               => List() // No body in this Interaction
+            case Some(term: TArrow) =>
+              // Regular body: an arrow function
 
-            // Find list of arguments by going through the left side.
-            // Warning: Normally, this should be possible simply through accessing term.args, but that
-            // property calls a function with similar behavior to the below, but it relies on TArrow nodes
-            // being structured via currying rather than having a singular argument tuple in "left".
-            val args: List[String] = term.left match
-              case TTuple(arguments, _, _) =>
-                // Index count is to swap in names for Scala args left blank
-                var argIdx: Int = 0
+              // Find list of arguments by going through the left side.
+              // Warning: Normally, this should be possible simply through accessing term.args, but that
+              // property calls a function with similar behavior to the below, but it relies on TArrow nodes
+              // being structured via currying rather than having a singular argument tuple in "left".
+              val args: List[String] = term.left match
+                 case TTuple(arguments, _, _) =>
+                   // Index count is to swap in names for Scala args left blank
+                   var argIdx: Int = 0
 
-                arguments.collect { arg =>
-                  val argName: String = arg match
-                    // Replace any arguments left as blanks in Scala with a name that's valid in Dafny
-                    case TArgT(name, _, _, _) if name.startsWith("_") => s"arg$argIdx"
-                    // Use given argument name if one as specified
-                    case TArgT(name, _, _, _) => name
-                    case _                    => s"arg$argIdx" // Should not happen, only so match is exhaustive
+                   arguments.collect { arg =>
+                     val argName: String = arg match
+                        // Replace any arguments left as blanks in Scala with a name that's valid in Dafny
+                        case TArgT(name, _, _, _) if name.startsWith("_") => s"arg$argIdx"
+                        // Use given argument name if one as specified
+                        case TArgT(name, _, _, _) => name
+                        case _                    => s"arg$argIdx" // Should not happen, only so match is exhaustive
 
-                  argIdx += 1
-                  argName
-                }
-              case _ => List()
+                     argIdx += 1
+                     argName
+                   }
+                 case _ => List()
 
-            // Reactives aren't arguments, so remove those
-            args.drop(reactiveTypes.length)
-          case Some(term) => List() // Irrelevant body: non-arrow func
+              // Reactives aren't arguments, so remove those
+              args.drop(reactiveTypes.length)
+            case Some(term) => List() // Irrelevant body: non-arrow func
 
-        val definedSources: List[NodeInfo] = ctx.values.filter { definition =>
-          definition.loreNode match
-            case TAbs(name, _, body: TSource, _, _) => true
-            case _                                  => false
-        }.toList
+         val definedSources: List[NodeInfo] = ctx.values.filter { definition =>
+           definition.loreNode match
+              case TAbs(name, _, body: TSource, _, _) => true
+              case _                                  => false
+         }.toList
 
-        val preconditions: List[String] = n.requires.map {
-          case t: TArrow =>
-            t.right match
-              case s: TSeq =>
-                // Preconditions must be a single expression, so blocks are not allowed.
-                // This is because Dafny preconditions only allow a single expression.
-                s.scalaSourcePos match
-                  case None      => report.error("Preconditions may only contain a single expression.")
-                  case Some(pos) => report.error("Preconditions may only contain a single expression.", pos)
-                "<error>" // Compiler still requires a return value
-              case _ =>
-                val pre: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-                val embeddedError: DafnyEmbeddedLoReError = t.scalaSourcePos match
-                  case None =>
-                    DafnyEmbeddedLoReError(
-                      "A precondition could be not be proven, but no Scala source position is available."
-                    )
-                  case Some(pos) =>
-                    DafnyEmbeddedLoReError(
-                      "This precondition could be not be proven.",
-                      Some(pos.span.coords)
-                    )
-                val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
+         val preconditions: List[String] = n.requires.map {
+           case t: TArrow =>
+             t.right match
+                case s: TSeq =>
+                  // Preconditions must be a single expression, so blocks are not allowed.
+                  // This is because Dafny preconditions only allow a single expression.
+                  s.scalaSourcePos match
+                     case None      => report.error("Preconditions may only contain a single expression.")
+                     case Some(pos) => report.error("Preconditions may only contain a single expression.", pos)
+                  "<error>" // Compiler still requires a return value
+                case _ =>
+                  val pre: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+                  val embeddedError: DafnyEmbeddedLoReError = t.scalaSourcePos match
+                     case None =>
+                       DafnyEmbeddedLoReError(
+                         "A precondition could be not be proven, but no Scala source position is available."
+                       )
+                     case Some(pos) =>
+                       DafnyEmbeddedLoReError(
+                         "This precondition could be not be proven.",
+                         Some(pos.span.coords)
+                       )
+                  val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
 
-                s"requires {:error \"$embeddedErrorEsc\"} ${generate(pre.right, ctx)}"
-          case _ => ""
-        }
+                  s"requires {:error \"$embeddedErrorEsc\"} ${generate(pre.right, ctx)}"
+           case _ => ""
+         }
 
-        val postconditions: List[String] = n.ensures.map {
-          case t: TArrow =>
-            t.right match
-              case s: TSeq =>
-                // Postconditions must be a single expression, so blocks are not allowed.
-                // This is because Dafny postconditions only allow a single expression.
-                s.scalaSourcePos match
-                  case None      => report.error("Postconditions may only contain a single expression.")
-                  case Some(pos) => report.error("Postconditions may only contain a single expression.", pos)
-                "<error>" // Compiler still requires a return value
-              case _ =>
-                val post: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-                val embeddedError: DafnyEmbeddedLoReError = t.scalaSourcePos match
-                  case None =>
-                    DafnyEmbeddedLoReError(
-                      "A postcondition could be not be proven, but no Scala source position is available."
-                    )
-                  case Some(pos) =>
-                    DafnyEmbeddedLoReError(
-                      "This postcondition could be not be proven.",
-                      Some(pos.span.coords)
-                    )
-                val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
+         val postconditions: List[String] = n.ensures.map {
+           case t: TArrow =>
+             t.right match
+                case s: TSeq =>
+                  // Postconditions must be a single expression, so blocks are not allowed.
+                  // This is because Dafny postconditions only allow a single expression.
+                  s.scalaSourcePos match
+                     case None      => report.error("Postconditions may only contain a single expression.")
+                     case Some(pos) => report.error("Postconditions may only contain a single expression.", pos)
+                  "<error>" // Compiler still requires a return value
+                case _ =>
+                  val post: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+                  val embeddedError: DafnyEmbeddedLoReError = t.scalaSourcePos match
+                     case None =>
+                       DafnyEmbeddedLoReError(
+                         "A postcondition could be not be proven, but no Scala source position is available."
+                       )
+                     case Some(pos) =>
+                       DafnyEmbeddedLoReError(
+                         "This postcondition could be not be proven.",
+                         Some(pos.span.coords)
+                       )
+                  val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
 
-                s"ensures {:error \"$embeddedErrorEsc\"} ${generate(post.right, ctx)}"
-          case _ => ""
-        }
+                  s"ensures {:error \"$embeddedErrorEsc\"} ${generate(post.right, ctx)}"
+           case _ => ""
+         }
 
-        // As only objects can be referenced in Dafny modifies clauses, the main object is directly used here.
-        // To still ensure only the specified Sources are modified, instead attach ensures clauses that include
-        // a condition specifying the not-mentioned Sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
-        // for every Source that is not included in the modifies list, where obj is the main object of the program.
-        val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
-        val modifies: List[String]            = "modifies LoReFields" :: unmodifiedSources.map { source =>
-          // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
-          val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
-            case None =>
-              DafnyEmbeddedLoReError(
-                s"It could not be proven that the ${source.name} Source, which was not specified in this Interaction's modifies clause, was not modified."
-              )
-            case Some(pos) =>
-              DafnyEmbeddedLoReError(
-                s"It could not be proven that the ${source.name} Source, which was not specified in this Interaction's modifies clause, was not modified.",
-                Some(pos.span.coords)
-              )
-          val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
-
-          s"ensures {:error \"$embeddedErrorEsc\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
-        }
-
-        val definedInvariants: List[NodeInfo] = ctx.values.filter { definition =>
-          definition.loreNode match
-            case TAbs(name, _, body: TInvariant, _, _) => true
-            case _                                     => false
-        }.toList
-
-        // Get any Invariants which includes references to any of the Sources modified by this Interaction
-        val relevantInvariants: List[NodeInfo] = definedInvariants.filter { inv =>
-          inv.loreNode match
-            case TAbs(_, _, TInvariant(cond, _, _), _, _) =>
-              val invRefs: Set[String] = usedReferences(cond, ctx)
-              reactiveNames.exists(s => invRefs.contains(s))
-            case _ => false
-        }
-
-        val invariants: List[String] = relevantInvariants.map { inv =>
-          // No Invariant-specific position is available, since the Invariants aren't specifically
-          // called for individual Interactions, but checked through other means in Scala execution.
-          val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
-            n.scalaSourcePos match
+         // As only objects can be referenced in Dafny modifies clauses, the main object is directly used here.
+         // To still ensure only the specified Sources are modified, instead attach ensures clauses that include
+         // a condition specifying the not-mentioned Sources are unmodified, i.e. "ensures old(obj.other) == obj.other"
+         // for every Source that is not included in the modifies list, where obj is the main object of the program.
+         val unmodifiedSources: List[NodeInfo] = definedSources.filter(node => !n.modifies.contains(node.name))
+         val modifies: List[String]            = "modifies LoReFields" :: unmodifiedSources.map { source =>
+           // No modifies-specific position is available, since the modifies list isn't a list of terms, but strings
+           val embeddedError: DafnyEmbeddedLoReError = n.scalaSourcePos match
               case None =>
-                val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
-                  s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
+                DafnyEmbeddedLoReError(
+                  s"It could not be proven that the ${source.name} Source, which was not specified in this Interaction's modifies clause, was not modified."
                 )
-                val postErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
-                  s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
-                )
-                (preErr, postErr)
               case Some(pos) =>
-                val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
-                  s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
+                DafnyEmbeddedLoReError(
+                  s"It could not be proven that the ${source.name} Source, which was not specified in this Interaction's modifies clause, was not modified.",
                   Some(pos.span.coords)
                 )
-                val postErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
-                  s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
-                  Some(pos.span.coords)
-                )
-                (preErr, postErr)
+           val embeddedErrorEsc: String = upickleWrite(embeddedError).replace("\"", "\\\"")
 
-          val embeddedErrorsEsc: (String, String) = (
-            upickleWrite(embeddedErrorPre).replace("\"", "\\\""),
-            upickleWrite(embeddedErrorPost).replace("\"", "\\\"")
-          )
+           s"ensures {:error \"$embeddedErrorEsc\"} old(LoReFields.${source.name}) == LoReFields.${source.name}"
+         }
 
-          // Assemble list of parameters for Invariant call:
-          // Any calls to definitions that exist are turned into field calls on the main object.
-          val refs: Set[String] = usedReferences(inv.loreNode, ctx).map { ref =>
-            if ctx.exists((name, node) => name == ref) then s"LoReFields.$ref" else ref
-          }
+         val definedInvariants: List[NodeInfo] = ctx.values.filter { definition =>
+           definition.loreNode match
+              case TAbs(name, _, body: TInvariant, _, _) => true
+              case _                                     => false
+         }.toList
 
-          // Call the Invariant both before execution and after execution of the Interaction
-          s"""requires {:error \"${embeddedErrorsEsc._1}\"} ${inv.name}(${refs.mkString(", ")})
+         // Get any Invariants which includes references to any of the Sources modified by this Interaction
+         val relevantInvariants: List[NodeInfo] = definedInvariants.filter { inv =>
+           inv.loreNode match
+              case TAbs(_, _, TInvariant(cond, _, _), _, _) =>
+                val invRefs: Set[String] = usedReferences(cond, ctx)
+                reactiveNames.exists(s => invRefs.contains(s))
+              case _ => false
+         }
+
+         val invariants: List[String] = relevantInvariants.map { inv =>
+           // No Invariant-specific position is available, since the Invariants aren't specifically
+           // called for individual Interactions, but checked through other means in Scala execution.
+           val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
+             n.scalaSourcePos match
+                case None =>
+                  val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
+                    s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
+                  )
+                  val postErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
+                    s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold."
+                  )
+                  (preErr, postErr)
+                case Some(pos) =>
+                  val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
+                    s"Prior to execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
+                    Some(pos.span.coords)
+                  )
+                  val postErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(
+                    s"After execution of this Interaction, the ${inv.name} Invariant could not be proven to hold.",
+                    Some(pos.span.coords)
+                  )
+                  (preErr, postErr)
+
+           val embeddedErrorsEsc: (String, String) = (
+             upickleWrite(embeddedErrorPre).replace("\"", "\\\""),
+             upickleWrite(embeddedErrorPost).replace("\"", "\\\"")
+           )
+
+           // Assemble list of parameters for Invariant call:
+           // Any calls to definitions that exist are turned into field calls on the main object.
+           val refs: Set[String] = usedReferences(inv.loreNode, ctx).map { ref =>
+             if ctx.exists((name, node) => name == ref) then s"LoReFields.$ref" else ref
+           }
+
+           // Call the Invariant both before execution and after execution of the Interaction
+           s"""requires {:error \"${embeddedErrorsEsc._1}\"} ${inv.name}(${refs.mkString(", ")})
              |ensures {:error \"${embeddedErrorsEsc._2}\"} ${inv.name}(${refs.mkString(", ")})""".stripMargin
-        }
+         }
 
-        // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
-        // block is. Instead, return values are named and appear similar to local variables, and must be assigned to in
-        // the body of the method at some point (as often as desired, even). Then, at the end of the method's body, the
-        // current value of those return value variables is taken as the method's return value(s). The methods which are
-        // used to model Interactions don't have any return values to begin with, so because in Scala/LoRe the last
-        // expression decides the return value that will be assigned to the Source that is being modifies (as specified
-        // in the modifies clause), all that needs to be done is get the last expression of the executes block
-        // specified in LoRe, and then turn that into an assignment to the Source specified in the modifies clause.
-        // This last expression already must be of the correct type, otherwise the Scala type checker would've errored.
-        // If the Interaction modifies multiple Sources, this expression will be a tuple in Scala. Therefore, create
-        // an assignment in Dafny for each item of the tuple to the specified modifies-Sources in order.
-        val body: String = n.executes match
-          case Some(t: TArrow) =>
-            val bodyArrow: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
-            bodyArrow.right match
-              case seq: TSeq =>
-                // Body is a block, so go through and turn the last expression into Source assignment(s).
-                val bodyStatements: List[String] = seq.body.take(seq.body.length - 1).map(term => generate(term, ctx))
-                val bodyAssignment: String       = getInteractionAssignment(seq.body.last, reactiveNames, ctx)
+         // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
+         // block is. Instead, return values are named and appear similar to local variables, and must be assigned to in
+         // the body of the method at some point (as often as desired, even). Then, at the end of the method's body, the
+         // current value of those return value variables is taken as the method's return value(s). The methods which are
+         // used to model Interactions don't have any return values to begin with, so because in Scala/LoRe the last
+         // expression decides the return value that will be assigned to the Source that is being modifies (as specified
+         // in the modifies clause), all that needs to be done is get the last expression of the executes block
+         // specified in LoRe, and then turn that into an assignment to the Source specified in the modifies clause.
+         // This last expression already must be of the correct type, otherwise the Scala type checker would've errored.
+         // If the Interaction modifies multiple Sources, this expression will be a tuple in Scala. Therefore, create
+         // an assignment in Dafny for each item of the tuple to the specified modifies-Sources in order.
+         val body: String = n.executes match
+            case Some(t: TArrow) =>
+              val bodyArrow: TArrow = prepareInteractionTerm(t, reactiveNames, argumentNames, definedSources)
+              bodyArrow.right match
+                 case seq: TSeq =>
+                   // Body is a block, so go through and turn the last expression into Source assignment(s).
+                   val bodyStatements: List[String] =
+                     seq.body.take(seq.body.length - 1).map(term => generate(term, ctx))
+                   val bodyAssignment: String = getInteractionAssignment(seq.body.last, reactiveNames, ctx)
 
-                // All statements included in the method body have to end with either a closing brace or a semicolon
-                (bodyStatements :+ bodyAssignment).map { l =>
-                  if l.endsWith("}") || l.endsWith(";") then l else s"$l;"
-                }.mkString("\n")
-              case b: Term =>
-                // Body is a single expression, so turn that into the assignment(s).
-                getInteractionAssignment(b, reactiveNames, ctx)
-          case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
-          case None          => "" // No body specified
+                   // All statements included in the method body have to end with either a closing brace or a semicolon
+                   (bodyStatements :+ bodyAssignment).map { l =>
+                     if l.endsWith("}") || l.endsWith(";") then l else s"$l;"
+                   }.mkString("\n")
+                 case b: Term =>
+                   // Body is a single expression, so turn that into the assignment(s).
+                   getInteractionAssignment(b, reactiveNames, ctx)
+            case Some(t: Term) => "" // Non-arrow function bodies are irrelevant
+            case None          => "" // No body specified
 
-        // Arguments for the Interaction are the main object (for Sources), as well as any non-Source executes arguments
-        val argsString: String = argumentNames.zip(argumentTypes) match
-          case Nil  => "LoReFields: LoReFields"
-          case args => s"LoReFields: LoReFields, ${args.map((name, tp) => s"$name: $tp").mkString(", ")}"
+         // Arguments for the Interaction are the main object (for Sources), as well as any non-Source executes arguments
+         val argsString: String = argumentNames.zip(argumentTypes) match
+            case Nil  => "LoReFields: LoReFields"
+            case args => s"LoReFields: LoReFields, ${args.map((name, tp) => s"$name: $tp").mkString(", ")}"
 
-        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
-        s"""method ${node.name}($argsString)
+         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
+         s"""method ${node.name}($argsString)
            |${preconditions.mkString("\n").indent(2)}
            |${postconditions.mkString("\n").indent(2)}
            |${modifies.mkString("\n").indent(2)}
@@ -780,11 +781,11 @@ object DafnyGen {
            |{
            |${body.indent(2)}
            |}""".stripMargin.linesIterator.filter(l => !l.isBlank).mkString("\n")
-      case _ =>
-        // Default into generic *const* declarations for other types, as all TAbs are by default non-mutable.
-        val typeAnnot: String = generate(node._type, ctx)
-        val body: String      = generate(node.body, ctx)
-        s"const ${node.name}: $typeAnnot := $body"
+       case _ =>
+         // Default into generic *const* declarations for other types, as all TAbs are by default non-mutable.
+         val typeAnnot: String = generate(node._type, ctx)
+         val body: String      = generate(node.body, ctx)
+         s"const ${node.name}: $typeAnnot := $body"
   }
 
   /** Generates Dafny code for the given LoRe TTuple.
@@ -905,8 +906,8 @@ object DafnyGen {
     // These use-cases are not supported, which is why the below methods simply report a compiler error instead.
     // For the actual generation, such as the function modelling of Derived, see the generateFromTAbs function.
     val reactive: String = node match
-      case n: TSource  => generateFromTSource(n, ctx)
-      case n: TDerived => generateFromTDerived(n, ctx)
+       case n: TSource  => generateFromTSource(n, ctx)
+       case n: TDerived => generateFromTDerived(n, ctx)
 
     reactive
   }
@@ -923,8 +924,8 @@ object DafnyGen {
     // Source terms are realized as Dafny fields, which happens in generateFromTAbs. This method is only entered
     // when a Source term is declared as a literal within another expression - a use-case that is not supported.
     node.scalaSourcePos match
-      case Some(pos) => report.error("Declaring Source reactives within other expressions is not supported.", pos)
-      case None      => report.error("Declaring Source reactives within other expressions is not supported.")
+       case Some(pos) => report.error("Declaring Source reactives within other expressions is not supported.", pos)
+       case None      => report.error("Declaring Source reactives within other expressions is not supported.")
     "<error>"
   }
 
@@ -940,8 +941,8 @@ object DafnyGen {
     // Derived terms are realized as Dafny functions, which happens in generateFromTAbs. This method is only entered
     // when a Derived term is declared as a literal within another expression - a use-case that is not supported.
     node.scalaSourcePos match
-      case Some(pos) => report.error("Declaring Derived reactives within other expressions is not supported.", pos)
-      case None      => report.error("Declaring Derived reactives within other expressions is not supported.")
+       case Some(pos) => report.error("Declaring Derived reactives within other expressions is not supported.", pos)
+       case None      => report.error("Declaring Derived reactives within other expressions is not supported.")
     "<error>"
   }
 
@@ -957,8 +958,8 @@ object DafnyGen {
     // Interaction terms are realized as Dafny methods, which happens in generateFromTAbs. This method is only entered
     // when an Interaction term is declared as a literal within another expression - a use-case that is not supported.
     node.scalaSourcePos match
-      case Some(pos) => report.error("Declaring Interactions within other expressions is not supported.", pos)
-      case None      => report.error("Declaring Interactions within other expressions is not supported.")
+       case Some(pos) => report.error("Declaring Interactions within other expressions is not supported.", pos)
+       case None      => report.error("Declaring Interactions within other expressions is not supported.")
     "<error>"
   }
 
@@ -975,8 +976,8 @@ object DafnyGen {
     // This method is only entered when an Invariant term is declared as a literal within another expression.
     // Said use-case is not supported.
     node.scalaSourcePos match
-      case Some(pos) => report.error("Declaring Invariants within other expressions is not supported.", pos)
-      case None      => report.error("Declaring Invariants within other expressions is not supported.")
+       case Some(pos) => report.error("Declaring Invariants within other expressions is not supported.", pos)
+       case None      => report.error("Declaring Invariants within other expressions is not supported.")
     "<error>"
   }
 
@@ -992,15 +993,15 @@ object DafnyGen {
     // FYI: Modulo and Unary Minus do not exist in LoRe, but do in Dafny.
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-numeric-types
     val expr: String = node match
-      case n: TNum => generateFromTNum(n, ctx)
-      case n: TDiv => generateFromTDiv(n, ctx)
-      case n: TMul => generateFromTMul(n, ctx)
-      case n: TAdd => generateFromTAdd(n, ctx)
-      case n: TSub => generateFromTSub(n, ctx)
+       case n: TNum => generateFromTNum(n, ctx)
+       case n: TDiv => generateFromTDiv(n, ctx)
+       case n: TMul => generateFromTMul(n, ctx)
+       case n: TAdd => generateFromTAdd(n, ctx)
+       case n: TSub => generateFromTSub(n, ctx)
 
     node match
-      case n: TNum => expr // Simple numbers don't need parens as there is no nesting at this level.
-      case _ => s"($expr)" // Surround with parens to respect expression nesting as instructed by the AST node nesting.
+       case n: TNum => expr // Simple numbers don't need parens as there is no nesting at this level.
+       case _ => s"($expr)" // Surround with parens to respect expression nesting as instructed by the AST node nesting.
   }
 
   /** Generates Dafny code for the given LoRe TNum.
@@ -1071,25 +1072,25 @@ object DafnyGen {
   ): String = {
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-booleans
     val expr: String = node match
-      case n: TTrue       => generateFromTTrue(n, ctx)
-      case n: TFalse      => generateFromTFalse(n, ctx)
-      case n: TNeg        => generateFromTNeg(n, ctx)
-      case n: TLt         => generateFromTLt(n, ctx)
-      case n: TGt         => generateFromTGt(n, ctx)
-      case n: TLeq        => generateFromTLeq(n, ctx)
-      case n: TGeq        => generateFromTGeq(n, ctx)
-      case n: TEq         => generateFromTEq(n, ctx)
-      case n: TIneq       => generateFromTIneq(n, ctx)
-      case n: TDisj       => generateFromTDisj(n, ctx)
-      case n: TConj       => generateFromTConj(n, ctx)
-      case n: TImpl       => generateFromTImpl(n, ctx)
-      case n: TBImpl      => generateFromTBImpl(n, ctx)
-      case n: TInSet      => generateFromTInSet(n, ctx)
-      case n: TQuantifier => generateFromTQuantifier(n, ctx)
+       case n: TTrue       => generateFromTTrue(n, ctx)
+       case n: TFalse      => generateFromTFalse(n, ctx)
+       case n: TNeg        => generateFromTNeg(n, ctx)
+       case n: TLt         => generateFromTLt(n, ctx)
+       case n: TGt         => generateFromTGt(n, ctx)
+       case n: TLeq        => generateFromTLeq(n, ctx)
+       case n: TGeq        => generateFromTGeq(n, ctx)
+       case n: TEq         => generateFromTEq(n, ctx)
+       case n: TIneq       => generateFromTIneq(n, ctx)
+       case n: TDisj       => generateFromTDisj(n, ctx)
+       case n: TConj       => generateFromTConj(n, ctx)
+       case n: TImpl       => generateFromTImpl(n, ctx)
+       case n: TBImpl      => generateFromTBImpl(n, ctx)
+       case n: TInSet      => generateFromTInSet(n, ctx)
+       case n: TQuantifier => generateFromTQuantifier(n, ctx)
 
     node match
-      case n: (TTrue | TFalse) => expr // Simple booleans don't need parens because there is no nesting at this level.
-      case _ => s"($expr)" // Surround with parens to respect expression nesting as instructed by the AST node nesting.
+       case n: (TTrue | TFalse) => expr // Simple booleans don't need parens because there is no nesting at this level.
+       case _ => s"($expr)" // Surround with parens to respect expression nesting as instructed by the AST node nesting.
   }
 
   /** Generates Dafny code for the given LoRe TTrue.
@@ -1259,8 +1260,8 @@ object DafnyGen {
   ): String = {
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-quantifier-expression
     val expr: String = node match
-      case n: TForall => generateFromTForall(n, ctx)
-      case n: TExists => generateFromTExists(n, ctx)
+       case n: TForall => generateFromTForall(n, ctx)
+       case n: TExists => generateFromTExists(n, ctx)
 
     s"($expr)" // Surround with parens to respect expression nesting as instructed by the AST node nesting.
   }
@@ -1301,8 +1302,8 @@ object DafnyGen {
       scalaCtx: Context
   ): String = {
     val fieldAccess: String = node match
-      case n: TFCall  => generateFromTFCall(n, ctx)
-      case n: TFCurly => generateFromTFCurly(n, ctx)
+       case n: TFCall  => generateFromTFCall(n, ctx)
+       case n: TFCurly => generateFromTFCurly(n, ctx)
 
     fieldAccess
   }
@@ -1317,35 +1318,35 @@ object DafnyGen {
       scalaCtx: Context
   ): String = {
     node.args match
-      case None =>
-        // Property (field) access
+       case None =>
+         // Property (field) access
 
-        // References:
-        // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
-        // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-class-types
+         // References:
+         // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-field-declaration
+         // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-class-types
 
-        // Accesses to the "value"/"now" field of a Source/Derived reference in LoRe are modeled differently in Dafny.
-        // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
-        // Therefore, the call to the "value"/"now" property has to be replaced by the respective ref or function call.
-        node.parent match
-          case n: TVar if node.field == "value" || node.field == "now" =>
-            val refType: Type = ctx(n.name).loreType
+         // Accesses to the "value"/"now" field of a Source/Derived reference in LoRe are modeled differently in Dafny.
+         // For Sources, it simply represents a field access to the Source. For Derived, it's a call to the function.
+         // Therefore, the call to the "value"/"now" property has to be replaced by the respective ref or function call.
+         node.parent match
+            case n: TVar if node.field == "value" || node.field == "now" =>
+              val refType: Type = ctx(n.name).loreType
 
-            refType match
-              case SimpleType(name, _) if name == "Var" => // Source is REScala "Var" type
-                n.name
-              case SimpleType(name, _) if name == "Signal" => // Derived is REScala "Signal" type
-                val refs: Set[String] = usedReferences(node.parent, ctx)
-                s"${n.name}(${refs.mkString(", ")})"
-              case _ => // "value" property access of a non-Source/non-Derived
-                s"${generate(node.parent, ctx)}.${node.field}"
-          case _ => // Any other field accesses
-            s"${generate(node.parent, ctx)}.${node.field}"
-      case Some(args) =>
-        // Method access
-        // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
-        val argsList: List[String] = args.map(arg => generate(arg, ctx))
-        s"${generate(node.parent, ctx)}.${node.field}(${argsList.mkString(", ")})"
+              refType match
+                 case SimpleType(name, _) if name == "Var" => // Source is REScala "Var" type
+                   n.name
+                 case SimpleType(name, _) if name == "Signal" => // Derived is REScala "Signal" type
+                   val refs: Set[String] = usedReferences(node.parent, ctx)
+                   s"${n.name}(${refs.mkString(", ")})"
+                 case _ => // "value" property access of a non-Source/non-Derived
+                   s"${generate(node.parent, ctx)}.${node.field}"
+            case _ => // Any other field accesses
+              s"${generate(node.parent, ctx)}.${node.field}"
+       case Some(args) =>
+         // Method access
+         // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
+         val argsList: List[String] = args.map(arg => generate(arg, ctx))
+         s"${generate(node.parent, ctx)}.${node.field}(${argsList.mkString(", ")})"
   }
 
   /** Generates Dafny code for the given LoRe TFunC.
@@ -1363,40 +1364,40 @@ object DafnyGen {
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-sequences
 
     node.name match
-      case "Map" =>
-        // Map instantiations differ from regular function calls.
-        // Each map pair is a 2-tuple (i.e. length 2 TTuple in LoRe).
-        val mapKeyValues: Seq[String] = node.args.map { kv =>
-          // Simply throwing these TTuples to generate would give us tuple syntax, not map syntax.
-          // Therefore, generate key and value separately and combine them with appropriate Dafny syntax.
-          val keyValueTuple: TTuple = kv.asInstanceOf[TTuple]
-          val key: String           = generate(keyValueTuple.factors.head, ctx)
-          val value: String         = generate(keyValueTuple.factors.last, ctx)
-          s"$key := $value"
-        }
-        s"map[${mapKeyValues.mkString(", ")}]"
-      case "List" =>
-        // List instantiations also differ, these are turned into Dafny sequences.
-        val items: Seq[String] = node.args.map(i => generate(i, ctx))
-        s"[${items.mkString(", ")}]"
-      case "println" =>
-        // Dafny does not have a "println" function, so change the name of the function being called to "print", which
-        // does exist in Dafny, and append a second parameter to the parameter list, that being the newline character.
-        val printlnCall: TFunC = node.copy(
-          name = "print",            // Change function name from "println" to "print"
-          args = node.args.appended( // Add on a "\n" as last parameter for the print call
-            if node.args.isEmpty
-            then TString("\\n", node.sourcePos, node.scalaSourcePos)
-            else TString("\\n", node.args.last.sourcePos, node.args.last.scalaSourcePos)
-          )
-        )
+       case "Map" =>
+         // Map instantiations differ from regular function calls.
+         // Each map pair is a 2-tuple (i.e. length 2 TTuple in LoRe).
+         val mapKeyValues: Seq[String] = node.args.map { kv =>
+           // Simply throwing these TTuples to generate would give us tuple syntax, not map syntax.
+           // Therefore, generate key and value separately and combine them with appropriate Dafny syntax.
+           val keyValueTuple: TTuple = kv.asInstanceOf[TTuple]
+           val key: String           = generate(keyValueTuple.factors.head, ctx)
+           val value: String         = generate(keyValueTuple.factors.last, ctx)
+           s"$key := $value"
+         }
+         s"map[${mapKeyValues.mkString(", ")}]"
+       case "List" =>
+         // List instantiations also differ, these are turned into Dafny sequences.
+         val items: Seq[String] = node.args.map(i => generate(i, ctx))
+         s"[${items.mkString(", ")}]"
+       case "println" =>
+         // Dafny does not have a "println" function, so change the name of the function being called to "print", which
+         // does exist in Dafny, and append a second parameter to the parameter list, that being the newline character.
+         val printlnCall: TFunC = node.copy(
+           name = "print",            // Change function name from "println" to "print"
+           args = node.args.appended( // Add on a "\n" as last parameter for the print call
+             if node.args.isEmpty
+             then TString("\\n", node.sourcePos, node.scalaSourcePos)
+             else TString("\\n", node.args.last.sourcePos, node.args.last.scalaSourcePos)
+           )
+         )
 
-        val args: Seq[String] = printlnCall.args.map(arg => generate(arg, ctx))
-        // The Dafny "print" function doesn't use parens when multiple parameters are supplied
-        s"${printlnCall.name} ${args.mkString(", ")}"
-      case _ =>
-        val args: Seq[String] = node.args.map(arg => generate(arg, ctx))
-        s"${node.name}(${args.mkString(", ")})"
+         val args: Seq[String] = printlnCall.args.map(arg => generate(arg, ctx))
+         // The Dafny "print" function doesn't use parens when multiple parameters are supplied
+         s"${printlnCall.name} ${args.mkString(", ")}"
+       case _ =>
+         val args: Seq[String] = node.args.map(arg => generate(arg, ctx))
+         s"${node.name}(${args.mkString(", ")})"
   }
 
   /* Term types that are not covered currently, and should error */
