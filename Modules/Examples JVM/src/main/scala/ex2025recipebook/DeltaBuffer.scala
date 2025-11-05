@@ -18,13 +18,11 @@ abstract class DeltaBuffer[A, Self <: DeltaBuffer[A, Self]](buffer: List[MetaDel
 
 }
 
-/** A delta buffer
- */
+/** A delta buffer */
 class DeltaBufferEverything[A](buffer: List[MetaDelta[A]]) extends DeltaBuffer[A, DeltaBufferEverything[A]](buffer) {
 
-  def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferEverything[A] = {
+  def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferEverything[A] =
     DeltaBufferEverything(metaDelta :: buffer)
-  }
 
   def applyDelta(delta: A, id: Dots): DeltaBufferEverything[A] = {
     val newMetaDelta = MetaDelta(id, delta)
@@ -35,21 +33,23 @@ class DeltaBufferEverything[A](buffer: List[MetaDelta[A]]) extends DeltaBuffer[A
 
 }
 
-/** A delta buffer with test for redundancy
-  */
-class DeltaBufferNonRedundant[A: Historized](buffer: List[MetaDelta[A]], redundantDots: Dots) extends DeltaBuffer[A, DeltaBufferNonRedundant[A]](buffer) {
+/** A delta buffer with test for redundancy */
+class DeltaBufferNonRedundant[A: Historized](buffer: List[MetaDelta[A]], redundantDots: Dots)
+    extends DeltaBuffer[A, DeltaBufferNonRedundant[A]](buffer) {
 
-  def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferNonRedundant[A] = {
+  def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferNonRedundant[A] =
     DeltaBufferNonRedundant(metaDelta :: buffer, redundantDots)
-  }
 
   def applyDelta(delta: A, id: Dots): DeltaBufferNonRedundant[A] = {
-    val redundantDeltas = buffer.getRedundantDeltas(delta)
-    val newMetaDelta = MetaDelta(id, delta, redundantDeltas)
+    val redundantDeltas  = buffer.getRedundantDeltas(delta)
+    val newMetaDelta     = MetaDelta(id, delta, redundantDeltas)
     val newRedundantDots = redundantDeltas.union(redundantDots)
 
     // buffer.filterNot() currently makes this approach twice as slow as subsumption, buffer is iterated twice
-    DeltaBufferNonRedundant(newMetaDelta :: buffer.filterNot(metaDelta => newRedundantDots.contains(metaDelta.id)), newRedundantDots)
+    DeltaBufferNonRedundant(
+      newMetaDelta :: buffer.filterNot(metaDelta => newRedundantDots.contains(metaDelta.id)),
+      newRedundantDots
+    )
   }
 
   def clearDeltas(): DeltaBufferNonRedundant[A] = DeltaBufferNonRedundant(List.empty[MetaDelta[A]], Dots.empty)
@@ -60,13 +60,12 @@ class DeltaBufferNonRedundant[A: Historized](buffer: List[MetaDelta[A]], redunda
 
 }
 
-/** A delta buffer with test for subsumption
- */
-class DeltaBufferSubsumed[A: Lattice](buffer: List[MetaDelta[A]]) extends DeltaBuffer[A, DeltaBufferSubsumed[A]](buffer) {
+/** A delta buffer with test for subsumption */
+class DeltaBufferSubsumed[A: Lattice](buffer: List[MetaDelta[A]])
+    extends DeltaBuffer[A, DeltaBufferSubsumed[A]](buffer) {
 
-  def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferSubsumed[A] = {
+  def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferSubsumed[A] =
     DeltaBufferSubsumed(metaDelta :: buffer)
-  }
 
   def applyDelta(delta: A, id: Dots): DeltaBufferSubsumed[A] = {
     val newMetaDelta = MetaDelta(id, delta)

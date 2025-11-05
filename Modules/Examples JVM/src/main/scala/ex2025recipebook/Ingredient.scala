@@ -54,8 +54,9 @@ object Ingredient {
     )
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[Ingredient, DeltaBufferNonRedundant[Ingredient]] = Replica(DeltaBufferNonRedundant[Ingredient](List.empty[MetaDelta[Ingredient]], Dots.empty))
-    def ingredient                    = replica1.state
+    val replica1: Replica[Ingredient, DeltaBufferNonRedundant[Ingredient]] =
+      Replica(DeltaBufferNonRedundant[Ingredient](List.empty[MetaDelta[Ingredient]], Dots.empty))
+    def ingredient = replica1.state
 
     println("---0")
     val delta0 = Ingredient("Teig", 1.0, "Stk.")

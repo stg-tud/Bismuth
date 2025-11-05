@@ -37,9 +37,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     }
   }
 
-  def remove(k: K): Delta = {
+  def remove(k: K): Delta =
     ObserveRemoveMap(Map.empty, inner.get(k).map(_.dots).getOrElse(Dots.empty))
-  }
 
   def removeAll(keys: Iterable[K]): Delta = {
     val rem = keys.flatMap(inner.get).map(_.dots).foldLeft(Dots.empty)(_ `union` _)
@@ -64,9 +63,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     )
   }
 
-  def clear(): Delta = {
+  def clear(): Delta =
     ObserveRemoveMap(Map.empty, inner.values.map(_.dots).foldLeft(Dots.empty)(_ `union` _))
-  }
 }
 
 object ObserveRemoveMap {
@@ -93,11 +91,14 @@ object ObserveRemoveMap {
     if bufferedDelta.delta.inner.keys.forall(k => delta.contains(k)) then {
       // only look at deltas in the buffer which keys are contained by the new delta
       bufferedDelta.delta.entries.toList match {
-        case Nil => Dots.empty
+        case Nil          => Dots.empty
         case head :: tail =>
-          val redundantDotsAtHead = delta.get(head._1).get.getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.get(head._1).get))
+          val redundantDotsAtHead =
+            delta.get(head._1).get.getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.get(head._1).get))
           tail.foldLeft(redundantDotsAtHead)((dots, entry) => // iterate over all keys of the delta in the buffer
-            dots.intersect(delta.get(entry._1).get.getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.get(head._1).get)))
+            dots.intersect(delta.get(entry._1).get.getRedundantDeltas(bufferedDelta.copy(delta =
+              bufferedDelta.delta.get(head._1).get
+            )))
           )
       }
     } else Dots.empty

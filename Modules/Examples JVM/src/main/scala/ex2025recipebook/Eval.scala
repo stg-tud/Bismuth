@@ -70,7 +70,8 @@ class DeltaBufferBenchmark {
   @Benchmark
   def nonRedundantBufferLWW(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   = DeltaBufferNonRedundant[LastWriterWins[Int]](List.empty[MetaDelta[LastWriterWins[Int]]], Dots.empty)
+    val deltaBuffer   =
+      DeltaBufferNonRedundant[LastWriterWins[Int]](List.empty[MetaDelta[LastWriterWins[Int]]], Dots.empty)
 
     modReplica(deltaBuffer, blackhole, state.randomArr, resultCapture, (lww, r, _) => lww.write(r))
   }

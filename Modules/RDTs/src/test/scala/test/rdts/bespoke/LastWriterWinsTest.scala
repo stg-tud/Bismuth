@@ -49,28 +49,28 @@ class LastWriterWinsTest extends munit.FunSuite {
 
     assertEquals(merged.read, "Hello Distributed World")
   }
-  
+
   test("newer delta marks older deltas as redundant") {
     import LastWriterWins.given
-    
+
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
     val dot3 = dots.nextDot(using localId)
     dots = dots.add(dot3)
-    
+
     val buffer: List[MetaDelta[LastWriterWins[String]]] = List(
       MetaDelta(Dots.single(dot1), LastWriterWins.now("Hello World")),
       MetaDelta(Dots.single(dot2), LastWriterWins.now("Hello Distributed World")),
       MetaDelta(Dots.single(dot3), LastWriterWins.now("Bye World"))
     )
-    
-    val delta = LastWriterWins.now("Bye Distributed World")
+
+    val delta           = LastWriterWins.now("Bye Distributed World")
     val redundantDeltas = buffer.getRedundantDeltas(delta)
-    
+
     assertEquals(redundantDeltas, dots)
   }
 
@@ -78,8 +78,8 @@ class LastWriterWinsTest extends munit.FunSuite {
     import LastWriterWins.given
 
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -89,7 +89,7 @@ class LastWriterWinsTest extends munit.FunSuite {
     val delta1 = LastWriterWins.now("Hello World")
     val delta2 = LastWriterWins.now("Hello Distributed World")
     val delta3 = LastWriterWins.now("Bye World")
-    
+
     val buffer: List[MetaDelta[LastWriterWins[String]]] = List(
       MetaDelta(Dots.single(dot1), delta1),
       MetaDelta(Dots.single(dot3), delta3)

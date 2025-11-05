@@ -29,12 +29,14 @@ object ProtocolMessage {
     // given [T: Lattice]: Lattice[Payload[T]] = Lattice.derived
 
     extension [T](payloads: Iterable[Payload[T]]) {
-      inline def getAllDots: Dots = payloads.foldLeft(Dots.empty)((dots, payload) => dots.union(payload.dots.union(payload.redundantDots)))
+      inline def getAllDots: Dots =
+        payloads.foldLeft(Dots.empty)((dots, payload) => dots.union(payload.dots.union(payload.redundantDots)))
 
       inline def mapDeltas[A](f: T => A): Iterable[Payload[A]] =
         payloads.map(bufferedPayload => bufferedPayload.copy(data = f(bufferedPayload.data)))
 
-      inline def toMetaDeltas: Iterable[MetaDelta[T]] = payloads.map(payload => MetaDelta(payload.dots, payload.data, payload.redundantDots))
+      inline def toMetaDeltas: Iterable[MetaDelta[T]] =
+        payloads.map(payload => MetaDelta(payload.dots, payload.data, payload.redundantDots))
     }
   }
 

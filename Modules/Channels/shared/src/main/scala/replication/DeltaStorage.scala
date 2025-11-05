@@ -106,11 +106,12 @@ class NonRedundantHistory[State: {JsonValueCodec, Historized}] extends DeltaStor
 
   override def remember(message: CachedMessage[Payload[State]]): Unit = {
     val redundantDeltas: Dots = history.toMetaDeltas.getRedundantDeltas(message.payload.data)
-    val redundantDots: Dots = history.foldLeft(Dots.empty)((dots, bufferedDelta) =>
+    val redundantDots: Dots   = history.foldLeft(Dots.empty)((dots, bufferedDelta) =>
       if !dots.contains(bufferedDelta.dots) then dots.union(bufferedDelta.redundantDots) else dots
     )
-    
-    history = message.payload.copy(redundantDots = redundantDeltas) :: history.filterNot(p => redundantDots.contains(p.dots))
+
+    history =
+      message.payload.copy(redundantDots = redundantDeltas) :: history.filterNot(p => redundantDots.contains(p.dots))
   }
 
 }

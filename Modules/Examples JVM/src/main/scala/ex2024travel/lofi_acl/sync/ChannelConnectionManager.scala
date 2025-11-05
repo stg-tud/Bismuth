@@ -93,9 +93,8 @@ class ChannelConnectionManager(
     }
   }
 
-  def disconnect(userId: PublicIdentity): Unit = {
+  def disconnect(userId: PublicIdentity): Unit =
     connections.get().get(userId).foreach(_.foreach(_.close()))
-  }
 
   def connectedPeers: Set[PublicIdentity] = connections.get().keySet
 

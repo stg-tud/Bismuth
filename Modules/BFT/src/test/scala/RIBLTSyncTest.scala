@@ -41,13 +41,12 @@ class RIBLTSyncTest extends FunSuite {
       val r1 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
       Thread.sleep(100)
 
-
       replica2 ! RIBLTSync.GetReplica(probe.ref)
       val r2 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
 
-      //println("CRDT0 elements after sync: " + r0.elements.keySet)
-      //println("CRDT1 elements after sync: " + r1.elements.keySet)
-      //println("CRDT2 elements after sync: " + r2.elements.keySet)
+      // println("CRDT0 elements after sync: " + r0.elements.keySet)
+      // println("CRDT1 elements after sync: " + r1.elements.keySet)
+      // println("CRDT2 elements after sync: " + r2.elements.keySet)
 
       assert(r0.getElements.subsetOf(r1.getElements))
       assert(r2.getElements.subsetOf(r1.getElements))

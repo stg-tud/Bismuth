@@ -170,11 +170,11 @@ class DeltaDissemination[State](
       // println(s"ping took ${(System.nanoTime() - time.toLong).doubleValue / 1000_000}ms")
       case Request(uid, knows) =>
         val (relevant, context) = lock.synchronized {
-          val relevant = allPayloads.filterNot { dt => dt.payload.dots <= knows }
+          val relevant     = allPayloads.filterNot { dt => dt.payload.dots <= knows }
           val newknowledge =
             knows.merge(relevant.map { dt => dt.payload.dots }.reduceOption(Lattice.merge).getOrElse(Dots.empty))
           val context = selfContext
-          val diff = context `subtract` newknowledge
+          val diff    = context `subtract` newknowledge
           if !diff.isEmpty then
             throw IllegalStateException(
               s"could not answer request, missing deltas for: ${diff}\n  relevant: ${relevant.map(_.payload)}\n knows: ${knows}\n  selfcontext: ${selfContext}}"
@@ -184,7 +184,7 @@ class DeltaDissemination[State](
         relevant.foreach: msg =>
           send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
         updateContext(uid, context `merge` knows)
-      case payload@Payload(uid, context, data, redundantDots) =>
+      case payload @ Payload(uid, context, data, redundantDots) =>
         if context <= selfContext then return
         lock.synchronized {
           uid.foreach { uid =>

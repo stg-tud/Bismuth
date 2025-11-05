@@ -150,8 +150,8 @@ object cli {
           case Result.Ok(first, remaining) =>
             avp.parse(remaining) match
               case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
-              case _ : Result.Err         => Result.Err("not a valid tuple", descriptor)
-          case _ : Result.Err => Result.Err("not a valid tuple", descriptor)
+              case _: Result.Err                => Result.Err("not a valid tuple", descriptor)
+          case _: Result.Err => Result.Err("not a valid tuple", descriptor)
 
       override def descriptor: Descriptor = avp.descriptor.mapSpec(s => s"$s $s")
     }

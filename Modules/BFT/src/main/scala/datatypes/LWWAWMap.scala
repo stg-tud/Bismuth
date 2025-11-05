@@ -19,13 +19,13 @@ case class LWWAWMap[K, V](
     val op = Remove[K, V](key)
 
     LWWAWMap(Map.empty, Map.empty, hashDAG.generateDelta(op))
-    
+
   def get(key: K): Option[V] = map.get(key)
-  
+
   def contains(key: K): Boolean = map.contains(key)
-  
+
   def keyset: Set[K] = map.keySet
-  
+
   def values: Iterable[V] = map.values
 
   override def merge(other: LWWAWMap[K, V]): LWWAWMap[K, V] = {
@@ -51,13 +51,13 @@ case class LWWAWMap[K, V](
                 case Add(k, v) => v
                 case Remove(_) => throw Exception("This is not supposed to happen")
 
-              newMap = newMap + (key -> v)
-              val newSet: Set[String] = newTags.getOrElse(key, Set.empty) + event.id
-              newTags = newTags + (key  -> newSet)
+              newMap = newMap + (key   -> v)
+              val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
+              newTags = newTags + (key -> newSet)
             else {
-              newMap = newMap + (key -> value)
-              val newSet: Set[String] = newTags.getOrElse(key, Set.empty) + event.id
-              newTags = newTags + (key  -> newSet)
+              newMap = newMap + (key   -> value)
+              val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
+              newTags = newTags + (key -> newSet)
             }
           case Remove(k) =>
             if !newMap.contains(k) || !newTags.contains(k) then {

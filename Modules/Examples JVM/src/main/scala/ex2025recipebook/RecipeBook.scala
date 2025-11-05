@@ -64,7 +64,8 @@ object RecipeBook {
   def apply(): RecipeBook = RecipeBook(ObserveRemoveMap.empty)
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] = Replica(DeltaBufferNonRedundant[RecipeBook](List.empty[MetaDelta[RecipeBook]], Dots.empty))
+    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] =
+      Replica(DeltaBufferNonRedundant[RecipeBook](List.empty[MetaDelta[RecipeBook]], Dots.empty))
 
     println("--- add recipe")
     val recipe1 = Recipe(

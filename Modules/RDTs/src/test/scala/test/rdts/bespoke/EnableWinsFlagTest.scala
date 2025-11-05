@@ -1,6 +1,5 @@
 package test.rdts.bespoke
 
-
 import rdts.time.Dots
 import rdts.base.{Bottom, LocalUid}
 import rdts.base.Historized.MetaDelta
@@ -16,8 +15,8 @@ class EnableWinsFlagTest extends munit.FunSuite {
     import EnableWinsFlag.given
 
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -48,7 +47,7 @@ class EnableWinsFlagTest extends munit.FunSuite {
       MetaDelta(Dots.single(dot5), delta5),
     )
 
-    val delta = ewFlag.disable()
+    val delta           = ewFlag.disable()
     val redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, dots)
@@ -58,8 +57,8 @@ class EnableWinsFlagTest extends munit.FunSuite {
     import EnableWinsFlag.given
 
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)

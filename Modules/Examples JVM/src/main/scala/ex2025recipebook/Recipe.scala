@@ -60,8 +60,10 @@ object Recipe {
     Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients))
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
-    val replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
+    val replica1: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] =
+      Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
+    val replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] =
+      Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
 
     println("---0")
     val delta0 = Recipe("Piza")

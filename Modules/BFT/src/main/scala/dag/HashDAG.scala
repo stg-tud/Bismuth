@@ -6,13 +6,13 @@ import crypto.Ed25519Util
 
 // a hash directed acyclic graph
 case class HashDAG[T](
-                        graph: Map[String, Set[String]],
-                        events: Map[String, Event[T]],
-                        publicKey: PublicKey,
-                        privateKey: Option[PrivateKey],
-                        queue: Set[Event[T]] = Set.empty[Event[T]],
-                        byzantineNodes: Set[PublicKey] = Set.empty
-                      ):
+    graph: Map[String, Set[String]],
+    events: Map[String, Event[T]],
+    publicKey: PublicKey,
+    privateKey: Option[PrivateKey],
+    queue: Set[Event[T]] = Set.empty[Event[T]],
+    byzantineNodes: Set[PublicKey] = Set.empty
+):
 
   // checks if an event is contained in the graph
   def contains(event: Event[T]): Boolean =

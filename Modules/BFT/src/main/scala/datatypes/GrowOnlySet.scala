@@ -4,14 +4,14 @@ import crypto.Ed25519Util
 import dag.HashDAG
 
 case class GrowOnlySet[T](
-                     hashDAG: HashDAG[T]
-                   ) extends Replica[T, GrowOnlySet[T]]:
+    hashDAG: HashDAG[T]
+) extends Replica[T, GrowOnlySet[T]]:
 
   def add(element: T): GrowOnlySet[T] =
     GrowOnlySet(hashDAG.generateDelta(element))
 
   override def merge(other: GrowOnlySet[T]): GrowOnlySet[T] =
-    val newHashDAG  = this.hashDAG.merge(other.hashDAG)
+    val newHashDAG = this.hashDAG.merge(other.hashDAG)
 
     GrowOnlySet(newHashDAG)
 

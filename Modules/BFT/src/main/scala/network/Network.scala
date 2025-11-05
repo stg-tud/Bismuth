@@ -4,10 +4,10 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap, LinkedBlockingQue
 
 object Network:
   private val channels: ConcurrentMap[String, LinkedBlockingQueue[Array[Byte]]] = ConcurrentHashMap()
-  
-  def startChannel(ReplicaID: String): Unit = 
+
+  def startChannel(ReplicaID: String): Unit =
     channels.putIfAbsent(ReplicaID, LinkedBlockingQueue()): Unit
-    
+
   def put(receiver: String, msg: Array[Byte]): Unit =
     channels.get(receiver).put(msg)
 

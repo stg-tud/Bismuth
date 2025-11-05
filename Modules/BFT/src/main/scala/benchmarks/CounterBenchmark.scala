@@ -48,7 +48,6 @@ class CounterBenchmark {
   }
 
   @Benchmark
-  def testValueComputation(): Int = {
+  def testValueComputation(): Int =
     counter1.value
-  }
 }

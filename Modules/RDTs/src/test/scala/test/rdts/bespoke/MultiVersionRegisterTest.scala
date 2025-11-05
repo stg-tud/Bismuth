@@ -35,8 +35,8 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     import MultiVersionRegister.given
 
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -48,7 +48,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     dots = dots.add(dot5)
 
     var mvRegister = MultiVersionRegister.empty[String]
-    val delta1 = mvRegister.write("a")(using localId)
+    val delta1     = mvRegister.write("a")(using localId)
     mvRegister = mvRegister `merge` delta1
     val delta2 = mvRegister.write("b")(using localId)
     mvRegister = mvRegister `merge` delta2
@@ -67,7 +67,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
       MetaDelta(Dots.single(dot5), delta5, Dots.from(List(dot1, dot2, dot3, dot4))),
     )
 
-    val delta = mvRegister.write("f")(using localId)
+    val delta           = mvRegister.write("f")(using localId)
     val redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, dots)
@@ -77,8 +77,8 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     import MultiVersionRegister.given
 
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -90,7 +90,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     dots = dots.add(dot5)
 
     var mvRegister = MultiVersionRegister.empty[String]
-    val delta1 = mvRegister.write("a")(using localId)
+    val delta1     = mvRegister.write("a")(using localId)
     mvRegister = mvRegister `merge` delta1
     val delta2 = mvRegister.write("b")(using localId)
     mvRegister = mvRegister `merge` delta2
