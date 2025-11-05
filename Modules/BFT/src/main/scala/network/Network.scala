@@ -1,17 +1,15 @@
 package network
 
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap, LinkedBlockingQueue}
 
 object Network:
-  private var channels: Map[String, LinkedBlockingQueue[Array[Byte]]] = Map.empty
-
+  private val channels: ConcurrentMap[String, LinkedBlockingQueue[Array[Byte]]] = ConcurrentHashMap()
+  
+  def startChannel(ReplicaID: String): Unit = 
+    channels.putIfAbsent(ReplicaID, LinkedBlockingQueue()): Unit
+    
   def put(receiver: String, msg: Array[Byte]): Unit =
-    val queue = channels.getOrElse(receiver, LinkedBlockingQueue())
-    queue.put(msg)
-    channels = channels.updated(receiver, queue)
+    channels.get(receiver).put(msg)
 
   def get(replicaID: String): Array[Byte] =
-    val queue = channels.getOrElse(replicaID, LinkedBlockingQueue())
-    channels = channels.updated(replicaID, queue)
-
-    queue.take()
+    channels.get(replicaID).take()

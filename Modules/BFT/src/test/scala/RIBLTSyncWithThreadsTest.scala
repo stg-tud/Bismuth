@@ -5,6 +5,7 @@ import riblt.RIBLTSyncWithThreads
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import crypto.Ed25519Util
+import network.Network
 
 import java.security.{PrivateKey, PublicKey}
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -33,7 +34,7 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
   override def munitTimeout: Duration = 5.minutes
 
   test("basic") {
-    /*var crdt0 = ORSet[String]()
+    var crdt0 = ORSet[String]()
     crdt0 = crdt0.merge(crdt0.add("hello"))
     crdt0 = crdt0.merge(crdt0.add("hola"))
     crdt0 = crdt0.merge(crdt0.add("Gday Mate"))
@@ -53,10 +54,15 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
     crdt3 = crdt3.merge(crdt3.add("hehehehee"))
     crdt3 = crdt3.merge(crdt3.add("hahahahah"))
 
-    val sync0 = RIBLTSync(crdt0, Map.empty, "replica_0")
-    val sync1 = RIBLTSync(crdt1, Map.empty, "replica_1")
-    val sync2 = RIBLTSync(crdt2, Map.empty, "replica_2")
-    val sync3 = RIBLTSync(crdt3, Map.empty, "replica_3")
+    val sync0 = RIBLTSyncWithThreads(crdt0, Map.empty, "replica_0")
+    val sync1 = RIBLTSyncWithThreads(crdt1, Map.empty, "replica_1")
+    val sync2 = RIBLTSyncWithThreads(crdt2, Map.empty, "replica_2")
+    val sync3 = RIBLTSyncWithThreads(crdt3, Map.empty, "replica_3")
+
+    Network.startChannel("replica_0")
+    Network.startChannel("replica_1")
+    Network.startChannel("replica_2")
+    Network.startChannel("replica_3")
 
     val t0 = sync0.startSession(sync1.replicaID, sessionType = sender)
     val t1 = sync1.startSession(sync0.replicaID, sessionType = receiver)
@@ -85,11 +91,13 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
     // println(crdt2.elements.keySet)
     // println(crdt3.elements.keySet)
 
+    println(crdt0afterSync.elements.keySet)
+    println(crdt1afterSync.elements.keySet)
+    println(crdt2afterSync.elements.keySet)
+    println(crdt3afterSync.elements.keySet)
+
     assertEquals(
       crdt1afterSync.elements.keySet,
       crdt0.elements.keySet ++ crdt1.elements.keySet ++ crdt2.elements.keySet
     )
-    println(crdt2afterSync.elements.keySet)
-    println(crdt3afterSync.elements.keySet)*/
-
   }
