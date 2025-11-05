@@ -17,7 +17,7 @@ class ChannelConnectionManager(
     messageReceiver: MessageReceiver[MessageBuffer],
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
-) {
+) extends ConnectionManager {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private given ec: ExecutionContext    = {
     if disableLogging
@@ -38,10 +38,10 @@ class ChannelConnectionManager(
     * @param msg The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  def send(user: PublicIdentity, msg: MessageBuffer): Boolean =
+  override def send(user: PublicIdentity, msg: MessageBuffer): Boolean =
     sendMultiple(user, msg)
 
-  def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean = {
+  override def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean = {
     if abort.closeRequest then return false
     connections.get.get(user) match
        case Some(connectionSet) if connectionSet.nonEmpty =>
@@ -56,18 +56,18 @@ class ChannelConnectionManager(
        case _ => false
   }
 
-  def broadcast(messages: MessageBuffer*): Boolean = {
-    connections.get.forall { (user, connection) =>
+  override def broadcast(messages: MessageBuffer*): Unit = {
+    connections.get.foreach { (user, connection) =>
       sendMultiple(user, messages*)
     }
   }
 
-  def listenPort: Option[Int] = {
+  override def listenPort: Option[Int] = {
     if abort.closeRequest then None
     else listener.map(_.listenPort)
   }
 
-  def shutdown(): Unit = {
+  override def shutdown(): Unit = {
     abort.closeRequest = true
     val old = connections.getAndUpdate(old => Map.empty)
     old.foreach {
@@ -76,7 +76,7 @@ class ChannelConnectionManager(
     executor.shutdownNow(): Unit
   }
 
-  def acceptIncomingConnections(): Unit = {
+  override def acceptIncomingConnections(): Unit = {
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     listener = Some(p2pTls.latentListener(0, ec))
@@ -86,17 +86,17 @@ class ChannelConnectionManager(
     }
   }
 
-  def connectTo(host: String, port: Int): Unit = {
+  override def connectTo(host: String, port: Int): Unit = {
     p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  => if !disableLogging then exception.printStackTrace()
     }
   }
 
-  def disconnect(userId: PublicIdentity): Unit =
+  override def disconnect(userId: PublicIdentity): Unit =
     connections.get().get(userId).foreach(_.foreach(_.close()))
 
-  def connectedPeers: Set[PublicIdentity] = connections.get().keySet
+  override def connectedPeers: Set[PublicIdentity] = connections.get().keySet
 
   private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {

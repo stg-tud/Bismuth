@@ -6,7 +6,7 @@ import crypto.channels.IdentityFactory
 import ex2024travel.lofi_acl.sync.ChannelConnectionManagerTest.{DEBUG, TIMEOUT_MS, buf, unbuf}
 import munit.FunSuite
 
-import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.TimeUnit
 
 object ChannelConnectionManagerTest {
   val DEBUG      = false
