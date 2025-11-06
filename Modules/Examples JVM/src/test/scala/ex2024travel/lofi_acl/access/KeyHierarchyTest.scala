@@ -1,13 +1,13 @@
-package lofi_acl.access
+package ex2024travel.lofi_acl.access
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.{Ed25519Util, PublicIdentity}
+import ex2024travel.lofi_acl.sync.DeltaSurgeon
 import munit.FunSuite
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.time.Dot
-import replication.filters.DeltaSurgeon
 
 case class CompoundTest(a: LastWriterWins[Option[String]], b: String)
 

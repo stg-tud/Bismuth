@@ -1,8 +1,8 @@
-package lofi_acl.access
+package ex2024travel.lofi_acl.access
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.access.KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
+import KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dot

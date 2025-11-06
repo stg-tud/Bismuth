@@ -1,4 +1,4 @@
-package replication.filters
+package ex2024travel.lofi_acl.sync
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
@@ -65,8 +65,7 @@ object DeltaSurgeon {
   }
 
   inline def derived[T](using m: Mirror.Of[T], bottom: Bottom[T]): DeltaSurgeon[T] =
-      val elementLabels = getLabels[m.MirroredElemLabels].toArray
-      // TODO: Don't summon singleton delta surgeons but derive from here
+      val elementLabels   = getLabels[m.MirroredElemLabels].toArray
       val elementSurgeons =
         summonAll[Tuple.Map[m.MirroredElemTypes, DeltaSurgeon]].toIArray.map(_.asInstanceOf[DeltaSurgeon[Any]])
       inline m match
@@ -170,7 +169,7 @@ object DeltaSurgeon {
       ofTerminalValue[Dots]
 
   given optionSurgeon[T: {Bottom, DeltaSurgeon}]: DeltaSurgeon[Option[T]] = {
-    given noneBottom: Bottom[None.type] = Bottom.provide(None) // TODO: Bottom for singletons should be derivable
+    given noneBottom: Bottom[None.type]             = Bottom.provide(None)
     given noneDeltaSurgeon: DeltaSurgeon[None.type] = DeltaSurgeon.derived
     given someBottom: Bottom[Some[T]]               = Bottom.derived
     given someSurgeon: DeltaSurgeon[Some[T]]        = DeltaSurgeon.derived

@@ -1,8 +1,8 @@
-package lofi_acl.access
+package ex2024travel.lofi_acl.access
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
+import ex2024travel.lofi_acl.sync.IsolatedDeltaParts
 import rdts.time.Dot
-import replication.filters.IsolatedDeltaParts
 
 import scala.annotation.tailrec
 

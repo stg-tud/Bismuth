@@ -1,4 +1,4 @@
-package lofi_acl.access
+package ex2024travel.lofi_acl.access
 
 case class EncryptedDeltaParts(inner: Map[String, EncryptedDeltaParts] | Array[Byte]) {
   def isEmpty: Boolean = inner.isInstanceOf[Map[?, ?]] && inner.asInstanceOf[Map[?, ?]].isEmpty
