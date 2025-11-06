@@ -5,16 +5,15 @@ import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
-class Replica[A: Bottom as B, D <: DeltaBuffer[A, D]](var buffer: DeltaBuffer[A, D]) {
-  val replicaId: LocalUid = LocalUid.gen()
-  var state: A            = B.empty
-  var dots: Dots          = Dots.empty
+
+class Replica[A: Bottom as B, D <: DeltaBuffer[A,D]](val replicaId: LocalUid, var state: A, var buffer: DeltaBuffer[A,D]) {
+  var dots: Dots                        = Dots.empty
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A]): this.type = {
     val dot = nextDot
     dots = dots.add(dot)
 
-    val delta  = f(using replicaId)(state)
+    val delta = f(using replicaId)(state)
     val dotsId = Dots.single(dot)
 
     state = state `merge` delta
@@ -39,16 +38,14 @@ class Replica[A: Bottom as B, D <: DeltaBuffer[A, D]](var buffer: DeltaBuffer[A,
     this
   }
 
-  def getDeltas(seen: Dots): List[MetaDelta[A]] = buffer.getDeltas(seen)
+  def getDeltas(seen: Dots): Iterable[MetaDelta[A]] = buffer.getDeltas(seen)
 
   def show[B](select: A => B = identity): Unit = {
     print(s"$replicaId: ")
     pprint.pprintln(select(state))
     println(f"buffer:         ${buffer.getDeltas(Dots.empty).map(md => f"(${md.id},${md.delta})")}")
     println(f"dots:           $dots")
-    println(
-      f"redundant:      ${dots.subtract(buffer.getDeltas(Dots.empty).foldLeft(Dots.empty)((acc, md) => acc.union(md.id)))}"
-    )
+    println(f"redundant:      ${dots.subtract(buffer.getDeltas(Dots.empty).foldLeft(Dots.empty)((acc, md) => acc.union(md.id)))}")
   }
 
   inline def nextDot: Dot = dots.nextDot(using replicaId)
@@ -56,22 +53,24 @@ class Replica[A: Bottom as B, D <: DeltaBuffer[A, D]](var buffer: DeltaBuffer[A,
 }
 
 object Replica {
-  def quiescence[A: {Lattice, Historized}, D <: DeltaBuffer[A, D]](replicas: Replica[A, D]*): Unit =
+  def quiescence[A: {Lattice, Historized},D<:DeltaBuffer[A,D]](replicas: Replica[A,D]*): Unit =
     replicas.toList match
-        case Seq() | Seq(_) => ()
-        case Seq(a, rem*)   =>
-          rem.foreach(a.receive)
-          rem.foreach(r => r.receive(a))
+      case Seq() | Seq(_) => ()
+      case Seq(a, rem*)   =>
+        rem.foreach(a.receive)
+        rem.foreach(r => r.receive(a))
 
-  def main(args: Array[String]): Unit =
+
+  def main(args: Array[String]): Unit = {
     ew()
+  }
 
   def ew(): Unit = {
-    val random          = new scala.util.Random(123456789)
+    val random = new scala.util.Random(123456789)
     val list: List[Int] = List.fill(10)(random.nextInt())
 
-    val deltaBuffer = DeltaBufferNonRedundant[EnableWinsFlag](List.empty[MetaDelta[EnableWinsFlag]], Dots.empty)
-    val replica     = Replica(deltaBuffer)
+    val deltaBuffer = DeltaBufferNonRedundant[EnableWinsFlag]()
+    val replica = Replica(LocalUid.gen(), EnableWinsFlag.empty, deltaBuffer)
 
     list.foreach { r =>
       println(s"r: $r ${if r % 2 != 0 then "enable" else "disable"}")
@@ -81,12 +80,13 @@ object Replica {
   }
 
   def lww(): Unit = {
-    given Bottom[Int]   = Bottom.provide(0)
-    val random          = new scala.util.Random(123456789)
+    given Bottom[Int] = Bottom.provide(0)
+    val random = new scala.util.Random(123456789)
     val list: List[Int] = List.fill(10)(random.nextInt())
 
-    val deltaBuffer = DeltaBufferSubsumed[LastWriterWins[Int]](List.empty[MetaDelta[LastWriterWins[Int]]])
-    val replica     = Replica(deltaBuffer)
+
+    val deltaBuffer = DeltaBufferSubsumed[LastWriterWins[Int]]()
+    val replica = Replica(LocalUid.gen(), LastWriterWins.empty, deltaBuffer)
 
     list.foreach { r =>
       replica.mod(lww => lww.write(r))

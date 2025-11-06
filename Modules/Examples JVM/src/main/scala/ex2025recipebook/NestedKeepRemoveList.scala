@@ -119,37 +119,24 @@ object NestedKeepRemoveList {
 
   given lattice[E: Lattice]: Lattice[NestedKeepRemoveList[E]] = Lattice.derived
 
-//  given historized[E: Historized]: Historized[NestedKeepRemoveList[E]] =
-//    (delta: NestedKeepRemoveList[E], buffer: Iterable[MetaDelta[NestedKeepRemoveList[E]]]) => {
-//      println(s"get redundant dots for KR-List:\n\tdelta: $delta\n\tbuffer: ${buffer.size} $buffer")
-//      val redundant = delta match {
-//        case NestedKeepRemoveList(order, payloads, flags) if order.isEmpty && payloads.isEmpty && flags.nonEmpty =>
-//          // keep or remove operations overrides concurrent removes or previous keep operations
-//          buffer.filter(bufferedDelta =>
-//            flags.forall((dot, f) =>
-//              bufferedDelta.delta.flags.contains(dot) &&
-//              ((f.read && !bufferedDelta.delta.flags(dot).read) || (!f.read && bufferedDelta.delta.flags(dot).read))
-//            )
-//          ).getAllDots
-//        case NestedKeepRemoveList(order, payloads, flags) if order.isEmpty && payloads.nonEmpty && flags.nonEmpty =>
-//          // update operation
-//          buffer.filter(bufferedDelta => flags.forall((dot, _) => bufferedDelta.delta.flags.contains(dot)))
-//            .foldLeft(Dots.empty)((dots, bufferedDelta) =>
-//              dots.union(bufferedDelta.delta.payloads.foldLeft(Dots.empty)((dots, entry) =>
-//                dots.union(delta.payloads(entry._1).getRedundantDeltas(
-//                  buffer.filter(bufferedDelta => bufferedDelta.delta.payloads.contains(entry._1))
-//                    .mapDeltas(_.payloads(entry._1))
-//                ))
-//              ))
-//            )
-//        case NestedKeepRemoveList(order, payloads, flags)
-//            if !order.isEmpty && payloads.nonEmpty && flags.nonEmpty && flags.forall(_._2.read) =>
-//          // insert operation overwrites concurrent remove and keep operations
-//          buffer.filter(bufferedDelta => flags.forall((dot, _) => bufferedDelta.delta.flags.contains(dot))).getAllDots
-//        case _ => Dots.empty
-//      }
-//
-//      println(f"\tredundant: $redundant")
-//      redundant
-//    }
+  given historized[E: Historized]: Historized[NestedKeepRemoveList[E]] = (delta, bufferedDelta) => {
+    if isInsertOperation(delta) && delta.flags.forall((dot, _) => bufferedDelta.delta.flags.contains(dot)) then bufferedDelta.getAllDots
+    else if isUpdateOperation(delta) && bufferedDelta.delta.flags.forall((dot, _) => delta.flags.contains(dot)) then {
+      // delta is an update operation, overrides concurrent removes and may override previous updates for the same key
+      val payloads = bufferedDelta.delta.payloads.keys.toList
+      if payloads.nonEmpty then {
+        val initialDots = delta.payloads(payloads.head).getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.read(payloads.head).get))
+        payloads.tail.foldLeft(initialDots)((dots, entry) =>
+          dots.union(delta.payloads(entry).getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.read(entry).get)))
+        )
+      } else bufferedDelta.getAllDots
+    } else Dots.empty
+  }
+
+  private def isInsertOperation[E](delta: NestedKeepRemoveList[E]): Boolean =
+    !delta.order.isEmpty && delta.payloads.nonEmpty && delta.flags.nonEmpty && delta.flags.forall(_._2.read)
+
+  private def isUpdateOperation[E](delta: NestedKeepRemoveList[E]): Boolean =
+    delta.order.isEmpty && delta.payloads.nonEmpty && delta.flags.nonEmpty
+
 }

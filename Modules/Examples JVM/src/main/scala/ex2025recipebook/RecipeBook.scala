@@ -2,14 +2,16 @@ package ex2025recipebook
 
 import com.softwaremill.quicklens.*
 import ex2025recipebook.RecipeBook.Delta
-import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap
-import rdts.time.Dots
 
 case class RecipeBook(
     recipes: ObserveRemoveMap[String, Recipe]
 ) {
+
+  def keys: Set[String] = recipes.inner.keySet
+
+  def get(recipeKey: String): Option[Recipe] = recipes.inner.get(recipeKey).map(_.value)
 
   def addRecipe(key: String, recipe: Recipe)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using(_.update(key, recipe))
@@ -46,6 +48,19 @@ case class RecipeBook(
     }
   }
 
+  def deleteIngredient(recipeKey: String, ingredientIndex: Int)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.recipes).using { ormap =>
+      ormap.transform(recipeKey) {
+        case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.remove(ingredientIndex)))
+        case None => ???
+      }
+    }
+  }
+
+  def isEmpty: Boolean = recipes.observed.isEmpty
+
+  def nonEmpty: Boolean = !isEmpty
+
   override def toString: String =
     f"[${this.recipes.inner.map(_._2.value).mkString(", ")}]"
 
@@ -54,6 +69,8 @@ case class RecipeBook(
 object RecipeBook {
 
   type Delta = RecipeBook
+
+  val empty: RecipeBook = RecipeBook(ObserveRemoveMap.empty)
 
   given Bottom[RecipeBook] = Bottom.derived
 
@@ -64,8 +81,7 @@ object RecipeBook {
   def apply(): RecipeBook = RecipeBook(ObserveRemoveMap.empty)
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] =
-      Replica(DeltaBufferNonRedundant[RecipeBook](List.empty[MetaDelta[RecipeBook]], Dots.empty))
+    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] = Replica(LocalUid.gen(), RecipeBook.empty, DeltaBufferNonRedundant[RecipeBook]())
 
     println("--- add recipe")
     val recipe1 = Recipe(

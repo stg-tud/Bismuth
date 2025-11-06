@@ -2,20 +2,17 @@ package ex2025recipebook
 
 import com.softwaremill.quicklens.*
 import ex2025recipebook.Recipe.Delta
-import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, LastWriterWins}
-import rdts.time.Dots
+import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 
 case class Recipe(
     title: LastWriterWins[String],
     ingredients: NestedKeepRemoveList[Ingredient],
-    favorite: EnableWinsFlag = EnableWinsFlag.empty,
-    numberOfEdits: GrowOnlyCounter = GrowOnlyCounter.zero
+    favorite: EnableWinsFlag = EnableWinsFlag.empty
 ) {
 
   private inline def mod[A](inline path: Delta => A, mod: A => A)(using localUid: LocalUid): Delta =
-    this.deltaModify(path).using(mod) `merge` this.deltaModify(_.numberOfEdits).using(_.inc())
+    this.deltaModify(path).using(mod)
 
   def editTitle(newTitle: String)(using localUid: LocalUid): Delta =
     mod(_.title, _.write(newTitle))
@@ -34,7 +31,7 @@ case class Recipe(
 
   override def toString: String = {
     val star = if favorite.read then "* " else ""
-    f"$star${this.title.payload}(${numberOfEdits.value})(${this.ingredients.payloads.map(_._2.toString).mkString(", ")})"
+    f"$star${this.title.payload}(${this.ingredients.payloads.map(_._2.toString).mkString(", ")})"
   }
 
 }
@@ -42,6 +39,8 @@ case class Recipe(
 object Recipe {
 
   type Delta = Recipe
+
+  val empty: Recipe = Recipe(LastWriterWins.empty[String], NestedKeepRemoveList.empty)
 
   given Bottom[String] = Bottom.provide("")
 
@@ -60,10 +59,7 @@ object Recipe {
     Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients))
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] =
-      Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
-    val replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] =
-      Replica(DeltaBufferNonRedundant[Recipe](List.empty[MetaDelta[Recipe]], Dots.empty))
+    val replica1, replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(LocalUid.gen(), Recipe.empty, DeltaBufferNonRedundant[Recipe]())
 
     println("---0")
     val delta0 = Recipe("Piza")

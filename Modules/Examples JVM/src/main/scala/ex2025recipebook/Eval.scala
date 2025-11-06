@@ -2,7 +2,6 @@ package ex2025recipebook
 
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, LastWriterWins, MultiVersionRegister, ObserveRemoveMap}
 import rdts.time.Dots
@@ -12,19 +11,16 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 class EvalState {
 
-  @Param(Array("1", "10"))
-//  @Param(Array("1", "2", "5", "10"))
-//  @Param(Array("1", "2", "5", "10", "25", "50", "100", "250", "500", "1000"))
-//  @Param(Array("1", "2", "5", "10", "25", "50", "100", "250", "500", "1000", "2500", "5000", "10000"))
+  @Param(Array("1", "10", "100", "1000"))
   var numOperations: Int   = 0
   val random               = new scala.util.Random(123456789)
   var randomArr: List[Int] = List.empty
-
-  var mapSize: Int = 4
+  val localUid: LocalUid = LocalUid.gen()
 
   @Setup(Level.Trial)
-  def setup(): Unit =
+  def setup(): Unit = {
     randomArr = List.fill(numOperations)(random.nextInt())
+  }
 
 }
 
@@ -38,170 +34,163 @@ class ResultCapture {
 }
 
 @Fork(value = 1, warmups = 0)
-@Warmup(iterations = 2)
-@Measurement(iterations = 2)
+@Warmup(iterations = 0)
+@Measurement(iterations = 1)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 class DeltaBufferBenchmark {
 
-  private inline def modReplica[A: {Bottom, Lattice}, B <: DeltaBuffer[A, B], L](
-      deltaBuffer: DeltaBuffer[A, B],
-      blackhole: Blackhole,
-      list: List[L],
-      resultCapture: ResultCapture,
-      f: (A, L, LocalUid) => A
-  ): Unit = {
-    val replica = Replica(deltaBuffer)
-
-    blackhole.consume(list.foreach { item =>
-      replica.mod(a => f(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
-    })
-  }
-
   @Benchmark
   def baselineBufferLWW(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   = DeltaBufferEverything[LastWriterWins[Int]](List.empty[MetaDelta[LastWriterWins[Int]]])
+    val deltaBuffer   = DeltaBufferEverything[LastWriterWins[Int]]()
 
-    modReplica(deltaBuffer, blackhole, state.randomArr, resultCapture, (lww, r, _) => lww.write(r))
+    Eval.modReplica(deltaBuffer, blackhole, state, resultCapture, LastWriterWins.empty, (lww, r) => lww.write(r))
   }
 
   @Benchmark
   def nonRedundantBufferLWW(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   =
-      DeltaBufferNonRedundant[LastWriterWins[Int]](List.empty[MetaDelta[LastWriterWins[Int]]], Dots.empty)
+    val deltaBuffer   = DeltaBufferNonRedundant[LastWriterWins[Int]]()
 
-    modReplica(deltaBuffer, blackhole, state.randomArr, resultCapture, (lww, r, _) => lww.write(r))
+    Eval.modReplica(deltaBuffer, blackhole, state, resultCapture, LastWriterWins.empty, (lww, r) => lww.write(r))
   }
 
   @Benchmark
   def subsumedBufferLWW(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   = DeltaBufferSubsumed[LastWriterWins[Int]](List.empty[MetaDelta[LastWriterWins[Int]]])
+    val deltaBuffer   = DeltaBufferSubsumed[LastWriterWins[Int]]()
 
-    modReplica(deltaBuffer, blackhole, state.randomArr, resultCapture, (lww, r, _) => lww.write(r))
+    Eval.modReplica(deltaBuffer, blackhole, state, resultCapture, LastWriterWins.empty, (lww, r) => lww.write(r))
   }
 
   @Benchmark
   def baselineBufferGOCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   = DeltaBufferEverything[GrowOnlyCounter](List.empty[MetaDelta[GrowOnlyCounter]])
+    val deltaBuffer   = DeltaBufferEverything[GrowOnlyCounter]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (goCounter, r, replicaID) => goCounter.inc()(using replicaID)
+      GrowOnlyCounter.zero,
+      (goCounter, r) => goCounter.inc()(using state.localUid)
     )
   }
 
   @Benchmark
   def nonRedundantBufferGOCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   = DeltaBufferNonRedundant[GrowOnlyCounter](List.empty[MetaDelta[GrowOnlyCounter]], Dots.empty)
+    val deltaBuffer   = DeltaBufferNonRedundant[GrowOnlyCounter]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (goCounter, r, replicaID) => goCounter.inc()(using replicaID)
+      GrowOnlyCounter.zero,
+      (goCounter, r) => goCounter.inc()(using state.localUid)
     )
   }
 
   @Benchmark
   def subsumedBufferGOCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int] = Bottom.provide(0)
-    val deltaBuffer   = DeltaBufferSubsumed[GrowOnlyCounter](List.empty[MetaDelta[GrowOnlyCounter]])
+    val deltaBuffer   = DeltaBufferSubsumed[GrowOnlyCounter]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (goCounter, r, replicaID) => goCounter.inc()(using replicaID)
+      GrowOnlyCounter.zero,
+      (goCounter, r) => goCounter.inc()(using state.localUid)
     )
   }
 
   @Benchmark
   def baselineBufferEWFlag(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferEverything[EnableWinsFlag](List.empty[MetaDelta[EnableWinsFlag]])
+    val deltaBuffer = DeltaBufferEverything[EnableWinsFlag]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (ew, r, replicaId) => if r % 2 != 0 then ew.enable(using replicaId)() else ew.disable()
+      EnableWinsFlag.empty,
+      (ew, r) => if r % 2 != 0 then ew.enable(using state.localUid)() else ew.disable()
     )
   }
 
   @Benchmark
   def nonRedundantBufferEWFlag(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferNonRedundant[EnableWinsFlag](List.empty[MetaDelta[EnableWinsFlag]], Dots.empty)
+    val deltaBuffer = DeltaBufferNonRedundant[EnableWinsFlag]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (ew, r, replicaId) => if r % 2 != 0 then ew.enable(using replicaId)() else ew.disable()
+      EnableWinsFlag.empty,
+      (ew, r) => if r % 2 != 0 then ew.enable(using state.localUid)() else ew.disable()
     )
   }
 
   @Benchmark
   def subsumedBufferEWFlag(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferSubsumed[EnableWinsFlag](List.empty[MetaDelta[EnableWinsFlag]])
+    val deltaBuffer = DeltaBufferSubsumed[EnableWinsFlag]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (ew, r, replicaId) => if (r % 2) != 0 then ew.enable(using replicaId)() else ew.disable()
+      EnableWinsFlag.empty,
+      (ew, r) => if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable()
     )
   }
 
   @Benchmark
   def baselineBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferEverything[MultiVersionRegister[Int]](List.empty[MetaDelta[MultiVersionRegister[Int]]])
+    val deltaBuffer = DeltaBufferEverything[MultiVersionRegister[Int]]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (mvRegister, r, replicaId) => mvRegister.write(r)(using replicaId)
+      MultiVersionRegister.empty[Int],
+      (mvRegister, r) => mvRegister.write(r)(using state.localUid)
     )
   }
 
   @Benchmark
   def nonRedundantBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     val deltaBuffer =
-      DeltaBufferNonRedundant[MultiVersionRegister[Int]](List.empty[MetaDelta[MultiVersionRegister[Int]]], Dots.empty)
+      DeltaBufferNonRedundant[MultiVersionRegister[Int]]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (mvRegister, r, replicaId) => mvRegister.write(r)(using replicaId)
+      MultiVersionRegister.empty[Int],
+      (mvRegister, r) => mvRegister.write(r)(using state.localUid)
     )
   }
 
   @Benchmark
   def subsumedBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferSubsumed[MultiVersionRegister[Int]](List.empty[MetaDelta[MultiVersionRegister[Int]]])
+    val deltaBuffer = DeltaBufferSubsumed[MultiVersionRegister[Int]]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (mvRegister, r, replicaId) => mvRegister.write(r)(using replicaId)
+      MultiVersionRegister.empty[Int],
+      (mvRegister, r) => mvRegister.write(r)(using state.localUid)
     )
   }
 
@@ -209,17 +198,18 @@ class DeltaBufferBenchmark {
   def baselineBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+      given Lattice[Int] = math.max
+      Lattice.derived
     val deltaBuffer =
-      DeltaBufferEverything[ObserveRemoveMap[Int, Int]](List.empty[MetaDelta[ObserveRemoveMap[Int, Int]]])
+      DeltaBufferEverything[ObserveRemoveMap[Int, Int]]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (orMap, r, replicaId) => orMap.update(r % state.mapSize, r)(using replicaId)
+      ObserveRemoveMap.empty[Int, Int],
+      (orMap, r) => orMap.update(r, r)(using state.localUid)
     )
   }
 
@@ -227,17 +217,18 @@ class DeltaBufferBenchmark {
   def nonRedundantBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+      given Lattice[Int] = math.max
+      Lattice.derived
     val deltaBuffer =
-      DeltaBufferNonRedundant[ObserveRemoveMap[Int, Int]](List.empty[MetaDelta[ObserveRemoveMap[Int, Int]]], Dots.empty)
+      DeltaBufferNonRedundant[ObserveRemoveMap[Int, Int]]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (orMap, r, replicaId) => orMap.update(r % state.mapSize, r)(using replicaId)
+      ObserveRemoveMap.empty[Int, Int],
+      (orMap, r) => orMap.update(r, r)(using state.localUid)
     )
   }
 
@@ -245,20 +236,176 @@ class DeltaBufferBenchmark {
   def subsumedBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+      given Lattice[Int] = math.max
+      Lattice.derived
 
-    val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, Int]](List.empty[MetaDelta[ObserveRemoveMap[Int, Int]]])
+    val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, Int]]()
 
-    modReplica(
+    Eval.modReplica(
       deltaBuffer,
       blackhole,
-      state.randomArr,
+      state,
       resultCapture,
-      (orMap, r, replicaId) => orMap.update(r % state.mapSize, r)(using replicaId)
+      ObserveRemoveMap.empty[Int, Int],
+      (orMap, r) => orMap.update(r, r)(using state.localUid)
     )
+  }
+
+  @Benchmark
+  def baselineBufferKRList(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    given Lattice[Int] = math.max
+    val deltaBuffer = DeltaBufferEverything[NestedKeepRemoveList[Int]]()
+    val krList = NestedKeepRemoveList.empty[Int]
+    val replica = Replica(state.localUid, krList, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => Eval.performKRListOperation(a, item, state.localUid))
+      resultCapture.recordBufferSize(replica.buffer.getSize)
+    })
+  }
+
+  @Benchmark
+  def nonRedundantBufferKRList(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    given Lattice[Int] = math.max
+    val deltaBuffer = DeltaBufferNonRedundant[NestedKeepRemoveList[Int]]()
+    val krList = NestedKeepRemoveList.empty[Int]
+    val replica = Replica(state.localUid, krList, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => Eval.performKRListOperation(a, item, state.localUid))
+      resultCapture.recordBufferSize(replica.buffer.getSize)
+    })
+  }
+
+  @Benchmark
+  def subsumedBufferKRList(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    given Lattice[Int] = math.max
+    val deltaBuffer = DeltaBufferSubsumed[NestedKeepRemoveList[Int]]()
+    val krList = NestedKeepRemoveList.empty[Int]
+    val replica = Replica(state.localUid, krList, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => Eval.performKRListOperation(a, item, state.localUid))
+      resultCapture.recordBufferSize(replica.buffer.getSize)
+    })
+  }
+
+  @Benchmark
+  def baselineBufferRecipeBook(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferEverything[RecipeBook]()
+    val recipeBook = RecipeBook.empty
+    val replica = Replica(state.localUid, recipeBook, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => Eval.performRecipeBookOperation(a, item, state.localUid))
+      resultCapture.recordBufferSize(replica.buffer.getSize)
+    })
+  }
+
+  @Benchmark
+  def nonRedundantBufferRecipeBook(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferNonRedundant[RecipeBook]()
+    val recipeBook = RecipeBook.empty
+    val replica = Replica(state.localUid, recipeBook, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => Eval.performRecipeBookOperation(a, item, state.localUid))
+      resultCapture.recordBufferSize(replica.buffer.getSize)
+    })
+  }
+
+  @Benchmark
+  def subsumedBufferRecipeBook(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferSubsumed[RecipeBook]()
+    val recipeBook = RecipeBook.empty
+    val replica = Replica(state.localUid, recipeBook, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => Eval.performRecipeBookOperation(a, item, state.localUid))
+      resultCapture.recordBufferSize(replica.buffer.getSize)
+    })
   }
 
 }
 
-object Eval {}
+object Eval {
+
+  inline def modReplica[A: {Bottom as AB, Lattice}, B <: DeltaBuffer[A, B]](
+     deltaBuffer: DeltaBuffer[A, B],
+     blackhole: Blackhole,
+     state: EvalState,
+     resultCapture: ResultCapture,
+     initialState: A,
+     f: (A, Int) => A
+   ): Unit = {
+    val replica = Replica(state.localUid, initialState, deltaBuffer)
+
+    blackhole.consume(state.randomArr.foreach { item =>
+      replica.mod(a => f(a, item))
+      resultCapture.recordBufferSize(replica.buffer.getSize) // O(1) for size lookup in a set
+    })
+  }
+
+  private def lottery(keys: List[String], random: Int): String = {
+    val randomIndex = math.abs(random % keys.size)
+    keys(randomIndex)
+  }
+
+  def performRecipeBookOperation(recipeBook: RecipeBook, random: Int, replicaID: LocalUid): RecipeBook = {
+    def addIngredient(): RecipeBook = {
+      val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+      recipeBook.addIngredient(randomRecipeKey, Ingredient(random.toString, random.toDouble, random.toString))(using replicaID)
+    }
+
+    (random % 6) match {
+      case 0 if recipeBook.nonEmpty => {
+        val randomKey = lottery(recipeBook.keys.toList, random)
+        recipeBook.deleteRecipe(randomKey)
+      }
+      case 1 if recipeBook.nonEmpty => {
+        val randomKey = lottery(recipeBook.keys.toList, random)
+        recipeBook.updateRecipeTitle(randomKey, random.toString)(using replicaID)
+      }
+      case 2 if recipeBook.nonEmpty => addIngredient()
+      case 3 if recipeBook.nonEmpty => {
+        val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+        val ingredientsSize = recipeBook.get(randomRecipeKey).get.ingredients.size
+        if ingredientsSize > 0 then {
+          val randomIngredientIndex = random % ingredientsSize
+          recipeBook.updateIngredient(randomRecipeKey, randomIngredientIndex, _ => Ingredient(random.toString, random.toDouble, random.toString))(using replicaID)
+        } else addIngredient()
+      }
+      case 4 if recipeBook.nonEmpty => {
+        val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+        val ingredientsSize = recipeBook.get(randomRecipeKey).get.ingredients.size
+        if ingredientsSize > 0 then {
+          val randomIngredientIndex = random % ingredientsSize
+          recipeBook.deleteIngredient(randomRecipeKey, randomIngredientIndex)(using replicaID)
+        } else addIngredient()
+      }
+      case _ => {
+        val recipe = Recipe.empty
+        recipeBook.addRecipe(random.toString, recipe)(using replicaID)
+      }
+    }
+  }
+
+  def performKRListOperation(krList: NestedKeepRemoveList[Int], random: Int, replicaID: LocalUid): NestedKeepRemoveList[Int] = {
+    if krList.size == 0 then return krList.insertAt(0, random)(using replicaID)
+    (random % 3) match {
+      case 0 => {
+        val index = math.abs(random % krList.size)
+        krList.remove(index)(using replicaID)
+      }
+      case 1 => {
+        val index = math.abs(random % krList.size)
+        krList.update(index, (_) => random)(using replicaID)
+      }
+      case _ => {
+        val index = math.abs(random % krList.size)
+        krList.insertAt(index, random)(using replicaID)
+      }
+    }
+  }
+
+}

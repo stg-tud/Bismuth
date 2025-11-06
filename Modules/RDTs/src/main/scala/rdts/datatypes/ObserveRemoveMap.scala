@@ -88,7 +88,11 @@ object ObserveRemoveMap {
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
   given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) => {
-    if bufferedDelta.delta.inner.keys.forall(k => delta.contains(k)) then {
+    if bufferedDelta == ObserveRemoveMap.empty then bufferedDelta.getAllDots
+    else if isRemoveOperation(delta) && isObserveOperation(bufferedDelta.delta)
+      && delta.observed.contains(bufferedDelta.delta.observed) then bufferedDelta.getAllDots
+    else if isObserveOperation(bufferedDelta.delta) && isObserveOperation(delta)
+      && bufferedDelta.delta.inner.keys.forall(k => delta.contains(k)) then {
       // only look at deltas in the buffer which keys are contained by the new delta
       bufferedDelta.delta.entries.toList match {
         case Nil          => Dots.empty
@@ -103,5 +107,11 @@ object ObserveRemoveMap {
       }
     } else Dots.empty
   }
+
+  private def isObserveOperation[K, V](delta: ObserveRemoveMap[K, V]): Boolean =
+    delta.inner.nonEmpty && delta.removed.isEmpty
+
+  private def isRemoveOperation[K, V](delta: ObserveRemoveMap[K, V]): Boolean =
+    delta.inner.isEmpty && !delta.removed.isEmpty
 
 }
