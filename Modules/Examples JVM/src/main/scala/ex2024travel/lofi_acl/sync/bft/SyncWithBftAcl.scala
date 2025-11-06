@@ -78,7 +78,7 @@ class SyncWithBftAcl[RDT](using
             then // Sanity check, the lock should prevent this
                 throw IllegalStateException("Could not apply update to ACL reference")
 
-            opGraph.ops(serializedAclOp.signatureAsString) match {
+            updatedOpGraph.ops(serializedAclOp.signatureAsString) match {
               case RemovalOp(_, removed, _) => antiEntropy.removePeer(removed)
               case _                        => ()
             }
