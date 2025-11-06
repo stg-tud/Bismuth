@@ -15,7 +15,7 @@ import scala.util.Random
 @Measurement(iterations = 3, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
 class HashAndSignatureBench {
-  // (Quick and dirty) Macbook Pro M4 Pro Results:
+  // (Quick and dirty) Macbook Pro M4 Pro / Temurin 25.0.1 + BC 1.82 Results:
   // Benchmark  (messageLengthBytes)  (provider) Mode   Cnt      Score      Error   Units
   // checkSignature         100          BC      thrpt    6     26.783 ±    0.184  ops/ms
   // checkSignature         100         SUN      thrpt    6      3.727 ±    0.055  ops/ms

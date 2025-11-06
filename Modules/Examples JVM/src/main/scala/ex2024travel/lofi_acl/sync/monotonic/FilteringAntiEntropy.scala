@@ -3,9 +3,8 @@ package ex2024travel.lofi_acl.sync.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2024travel.lofi_acl.sync.monotonic.FilteringAntiEntropy.PartialDelta
+import ex2024travel.lofi_acl.sync.*
 import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
-import ex2024travel.lofi_acl.sync.{DeltaMapWithPrefix, MessageReceiver, PartialReplicationPeerSubsetSolver, RDTSync}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.Operation.WRITE
 import rdts.filters.{Filter, Operation, PermissionTree}
@@ -484,9 +483,4 @@ class FilteringAntiEntropy[RDT](
     }
   }
   antiEntropyThread.start()
-}
-
-object FilteringAntiEntropy {
-  // TODO: extract
-  case class PartialDelta[RDT](delta: RDT, includedParts: PermissionTree, requiredPermissions: PermissionTree)
 }
