@@ -134,7 +134,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     scala3defaults,
     javaOutputVersion(17),
     fork := true,
-    Dependencies.conscript,
+    Dependencies.conscrypt,
     Dependencies.jetty,
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
@@ -227,7 +227,12 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
     Dependencies.jsoniterScala,
     Settings.jolSettings,
     Dependencies.tink,
-    Dependencies.conscript,
+    Dependencies.conscrypt,
+    javaOptions ++= Seq(
+      "-XX:+IgnoreUnrecognizedVMOptions",
+      "--sun-misc-unsafe-memory-access=allow",
+      "--enable-native-access=ALL-UNNAMED"
+    ),
   )
 
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
