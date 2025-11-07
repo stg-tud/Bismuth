@@ -2,29 +2,33 @@ package ex2024travel.lofi_acl.eval
 
 import channels.MessageBuffer
 import crypto.PublicIdentity
-import ex2024travel.lofi_acl.sync.ConnectionManager
+import ex2024travel.lofi_acl.sync.{ConnectionManager, MessageReceiver}
 
 class MockConnectionRegistry {
-  var connectionManagers: Map[(String, Int), SingleThreadedMockConnectionManager] = Map.empty
+  private var connectionManagers: Map[(String, Int), MockConnectionManager] = Map.empty
+  private var addresses: Map[PublicIdentity, (String, Int)]                 = Map.empty
 
-  def getPeer(hostname: String, port: Int): Option[SingleThreadedMockConnectionManager] =
+  def peer(hostname: String, port: Int): Option[MockConnectionManager] =
     connectionManagers.get((hostname, port))
 
-  def addMyself(peer: SingleThreadedMockConnectionManager): (String, Int) = {
+  def address(peer: PublicIdentity): (String, Int) = addresses(peer)
+
+  def addMyself(peer: MockConnectionManager): (String, Int) = {
     val address = ("mock", nextFreePort)
     nextFreePort += 1
     connectionManagers = connectionManagers.updated(address, peer)
+    addresses = addresses + (peer.localUserId -> address)
     address
   }
 
   private var nextFreePort = 0
 }
 
-class SingleThreadedMockConnectionManager(
+class MockConnectionManager(
     val localUserId: PublicIdentity,
-    val receiveHandler: (PublicIdentity, MessageBuffer) => Unit
+    val messageReceiver: MessageReceiver[MessageBuffer],
 )(using registry: MockConnectionRegistry) extends ConnectionManager {
-  var peers: Map[PublicIdentity, SingleThreadedMockConnectionManager] = Map.empty
+  var peers: Map[PublicIdentity, MockConnectionManager] = Map.empty
 
   /** Sends a message to the user and returns true, if a connections exists. Otherwise, discards message and returns false.
     *
@@ -36,7 +40,7 @@ class SingleThreadedMockConnectionManager(
     */
   override def send(user: PublicIdentity, msg: MessageBuffer): Boolean = {
     val peer = peers.get(user)
-    peer.foreach(peer => peer.receiveHandler(localUserId, msg))
+    peer.foreach(peer => peer.messageReceiver.receivedMessage(msg, localUserId))
     peer.isEmpty
   }
 
@@ -46,7 +50,7 @@ class SingleThreadedMockConnectionManager(
   override def broadcast(messages: MessageBuffer*): Unit =
     peers.foreach { (id, peer) =>
       messages.foreach { msg =>
-        peer.receiveHandler(localUserId, msg)
+        peer.messageReceiver.receivedMessage(msg, localUserId)
       }
     }
 
@@ -55,6 +59,7 @@ class SingleThreadedMockConnectionManager(
   override def shutdown(): Unit = {
     peers.foreach { (_, peer) =>
       peer.peers = peer.peers.removed(localUserId)
+      peer.messageReceiver.connectionShutdown(localUserId)
     }
     peers = Map.empty
   }
@@ -63,7 +68,7 @@ class SingleThreadedMockConnectionManager(
     listenPort = Some(registry.addMyself(this)._2)
 
   override def connectTo(host: String, port: Int): Unit = {
-    registry.getPeer(host, port) match {
+    registry.peer(host, port) match {
       case Some(peer) =>
         if !peers.contains(peer.localUserId) then {
           require(!peer.peers.contains(localUserId))

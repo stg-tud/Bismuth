@@ -26,7 +26,7 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set
       val sigAsString  = serializedOp.signatureAsString
       (BftAclOpGraph(root, ops + (sigAsString -> op), Set(sigAsString)), serializedOp)
 
-  def isDelegationLegal(op: DelegationOp): Boolean =
+  private def isDelegationLegal(op: DelegationOp): Boolean =
       val referenceVersion = reconstruct(op.parents).get
       op.read <= referenceVersion.read.getOrElse(op.author, PermissionTree.empty) &&
       op.write <= referenceVersion.write.getOrElse(op.author, PermissionTree.empty)
@@ -36,6 +36,9 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set
       val signatureAsString = Base64.getEncoder.encodeToString(serializedOp.signature)
       if ops.contains(signatureAsString) then return Right(this)
       val decodedOp = readFromArray[AclOp](serializedOp.op)
+
+      // Ensure that we don't accept a second root (node without predecessors)
+      require(decodedOp.parents.nonEmpty)
 
       // Check signature
       if !Ed25519Util.checkEd25519Signature(serializedOp.op, serializedOp.signature, decodedOp.author)

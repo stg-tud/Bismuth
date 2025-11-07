@@ -23,7 +23,7 @@ class ReplicaWithBftAcl[RDT](using
     onDeltaReceive: RDT => Unit = (_: RDT) => {}, // Consumes a delta
     antiEntropyProvider: (PrivateIdentity, SerializedAclOp, ReplicaWithBftAcl[RDT]) => BftFilteringAntiEntropy[RDT] =
       (localIdentity, aclRoot, sync: ReplicaWithBftAcl[RDT]) =>
-        BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, sync)(using rdtJsonCodec, filter, lattice, bottom)
+        BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, sync)
 ) extends Replica[RDT] {
 
   private val antiEntropy                                 = antiEntropyProvider(localIdentity, aclRoot, this)
