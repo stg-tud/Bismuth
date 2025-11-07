@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
-import ex2024travel.lofi_acl.sync.{Acl, RDTSync}
+import ex2024travel.lofi_acl.sync.{Acl, Replica}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -12,7 +12,7 @@ import rdts.time.{Dot, Dots}
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.{Failure, Success}
 
-class SyncWithBftAcl[RDT](using
+class ReplicaWithBftAcl[RDT](using
     lattice: Lattice[RDT],
     bottom: Bottom[RDT],
     rdtJsonCodec: JsonValueCodec[RDT],
@@ -21,10 +21,10 @@ class SyncWithBftAcl[RDT](using
     private val localIdentity: PrivateIdentity,
     aclRoot: SerializedAclOp,
     onDeltaReceive: RDT => Unit = (_: RDT) => {}, // Consumes a delta
-    antiEntropyProvider: (PrivateIdentity, SerializedAclOp, SyncWithBftAcl[RDT]) => BftFilteringAntiEntropy[RDT] =
-      (localIdentity, aclRoot, sync: SyncWithBftAcl[RDT]) =>
+    antiEntropyProvider: (PrivateIdentity, SerializedAclOp, ReplicaWithBftAcl[RDT]) => BftFilteringAntiEntropy[RDT] =
+      (localIdentity, aclRoot, sync: ReplicaWithBftAcl[RDT]) =>
         BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, sync)(using rdtJsonCodec, filter, lattice, bottom)
-) extends RDTSync[RDT] {
+) extends Replica[RDT] {
 
   private val antiEntropy                                 = antiEntropyProvider(localIdentity, aclRoot, this)
   @volatile private var antiEntropyThread: Option[Thread] = None

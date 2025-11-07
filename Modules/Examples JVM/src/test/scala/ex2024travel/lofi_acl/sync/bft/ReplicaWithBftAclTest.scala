@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.channels.IdentityFactory
 import ex2024travel.lofi_acl.sync.QueueAppendingMessageReceiver
-import ex2024travel.lofi_acl.sync.bft.SyncWithBftAclTest.peek
+import ex2024travel.lofi_acl.sync.bft.ReplicaWithBftAclTest.peek
 import munit.FunSuite
 import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
@@ -12,7 +12,7 @@ import rdts.filters.Filter
 
 import java.lang.reflect.Field
 
-class SyncWithBftAclTest extends FunSuite {
+class ReplicaWithBftAclTest extends FunSuite {
 
   override def munitIgnore: Boolean = isCI
 
@@ -32,25 +32,25 @@ class SyncWithBftAclTest extends FunSuite {
     val rcvA = QueueAppendingMessageReceiver()
     val rcvB = QueueAppendingMessageReceiver()
 
-    val syncA = SyncWithBftAcl[LWW](privateIdA, aclRoot, delta => ())
-    syncA.start()
-    val syncB = SyncWithBftAcl[LWW](privateIdB, aclRoot, delta => ())
-    syncB.start()
-    val syncC = SyncWithBftAcl[LWW](privateIdC, aclRoot, delta => ())
-    syncC.start()
-    val syncD = SyncWithBftAcl[LWW](privateIdD, aclRoot, delta => ())
-    syncD.start()
+    val replicaA = ReplicaWithBftAcl[LWW](privateIdA, aclRoot, delta => ())
+    replicaA.start()
+    val replicaB = ReplicaWithBftAcl[LWW](privateIdB, aclRoot, delta => ())
+    replicaB.start()
+    val replicaC = ReplicaWithBftAcl[LWW](privateIdC, aclRoot, delta => ())
+    replicaC.start()
+    val replicaD = ReplicaWithBftAcl[LWW](privateIdD, aclRoot, delta => ())
+    replicaD.start()
 
-    syncA.connect(privateIdB.getPublic, syncB.address)
-    syncB.connect(privateIdB.getPublic, syncC.address)
-    syncC.connect(privateIdB.getPublic, syncD.address)
+    replicaA.connect(privateIdB.getPublic, replicaB.address)
+    replicaB.connect(privateIdB.getPublic, replicaC.address)
+    replicaC.connect(privateIdB.getPublic, replicaD.address)
 
-    val antiEntropyField = syncA.getClass.getDeclaredField("antiEntropy")
+    val antiEntropyField = replicaA.getClass.getDeclaredField("antiEntropy")
     type T = BftFilteringAntiEntropy[LWW]
-    val antiEntropyA = peek[T](antiEntropyField, syncA)
-    val antiEntropyB = peek[T](antiEntropyField, syncB)
-    val antiEntropyC = peek[T](antiEntropyField, syncC)
-    val antiEntropyD = peek[T](antiEntropyField, syncD)
+    val antiEntropyA = peek[T](antiEntropyField, replicaA)
+    val antiEntropyB = peek[T](antiEntropyField, replicaB)
+    val antiEntropyC = peek[T](antiEntropyField, replicaC)
+    val antiEntropyD = peek[T](antiEntropyField, replicaD)
 
     Thread.sleep(1000)
 
@@ -59,11 +59,11 @@ class SyncWithBftAclTest extends FunSuite {
     assertEquals(antiEntropyB.connectedPeers, allIds - privateIdB.getPublic)
     assertEquals(antiEntropyC.connectedPeers, allIds - privateIdC.getPublic)
 
-    syncA.currentState
+    replicaA.currentState
   }
 }
 
-object SyncWithBftAclTest {
+object ReplicaWithBftAclTest {
   private def peek[T](field: Field, obj: AnyRef): T = {
     field.setAccessible(true)
     val value = field.get(obj)

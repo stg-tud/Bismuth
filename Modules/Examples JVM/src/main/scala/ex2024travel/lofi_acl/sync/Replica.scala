@@ -4,7 +4,7 @@ import crypto.PublicIdentity
 import rdts.filters.{Operation, PermissionTree}
 import rdts.time.Dot
 
-trait RDTSync[RDT] {
+trait Replica[RDT] {
   def receivedDelta(dot: Dot, rdt: RDT): Unit
   def connect(remoteUser: PublicIdentity, connectionString: String): Unit
   def createInvitation: Invitation

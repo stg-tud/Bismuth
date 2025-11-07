@@ -2,7 +2,7 @@ package ex2024travel.lofi_acl.travelplanner.model
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2024travel.lofi_acl.sync.{Acl, Invitation, RDTSync}
+import ex2024travel.lofi_acl.sync.{Acl, Invitation, Replica}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.given
 import rdts.base.{LocalUid, Uid}
@@ -18,35 +18,35 @@ import scala.concurrent.ExecutionContext.global
 
 class TravelPlanModel(
     private val localIdentity: PrivateIdentity,
-    syncProvider: (TravelPlan => Unit) => RDTSync[TravelPlan]
+    replicaProvider: (TravelPlan => Unit) => Replica[TravelPlan]
 ) {
   val publicId: PublicIdentity = localIdentity.getPublic
 
   private given localUid: LocalUid = LocalUid(Uid(publicId.id))
 
-  def state: TravelPlan = sync.currentState
+  def state: TravelPlan = replica.currentState
 
-  def currentAcl: Acl = sync.currentAcl
+  def currentAcl: Acl = replica.currentAcl
 
-  private val sync: RDTSync[TravelPlan] = syncProvider(stateChanged)
-  sync.start()
-  Runtime.getRuntime.addShutdownHook(new Thread(() => sync.stop()))
+  private val replica: Replica[TravelPlan] = replicaProvider(stateChanged)
+  replica.start()
+  Runtime.getRuntime.addShutdownHook(new Thread(() => replica.stop()))
 
   def grantPermission(
       affectedUser: PublicIdentity,
       readPermissions: PermissionTree,
       writePermissions: PermissionTree
   ): Unit = {
-    sync.grantPermissions(affectedUser, readPermissions, READ)
+    replica.grantPermissions(affectedUser, readPermissions, READ)
     if !writePermissions.isEmpty
-    then sync.grantPermissions(affectedUser, writePermissions, WRITE)
+    then replica.grantPermissions(affectedUser, writePermissions, WRITE)
   }
 
   def createInvitation: Invitation =
-    sync.createInvitation
+    replica.createInvitation
 
   def addConnection(remoteUser: PublicIdentity, address: String): Unit =
-    sync.connect(remoteUser, address)
+    replica.connect(remoteUser, address)
 
   def changeTitle(newTitle: String): Unit =
     mutateRdt(_.changeTitle(newTitle))
@@ -71,7 +71,7 @@ class TravelPlanModel(
 
   private def mutateRdt(mutator: TravelPlan => TravelPlan): Unit = {
     global.execute { () =>
-      sync.mutateState(mutator)
+      replica.mutateState(mutator)
     }
   }
 

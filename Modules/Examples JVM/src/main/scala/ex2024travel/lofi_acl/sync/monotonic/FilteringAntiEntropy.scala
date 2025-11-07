@@ -21,7 +21,7 @@ class FilteringAntiEntropy[RDT](
     rootOfTrust: PublicIdentity,
     initialAclDeltas: List[AclDelta[RDT]], // Signatures are assumed to have been validated already
     initialRdtDeltas: DeltaMapWithPrefix[RDT],
-    syncInstance: RDTSync[RDT]
+    syncInstance: Replica[RDT]
 )(using
     filter: Filter[RDT],
     rdtLattice: Lattice[RDT],

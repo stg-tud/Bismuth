@@ -5,7 +5,7 @@ import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
 import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
-import ex2024travel.lofi_acl.sync.{DeltaMapWithPrefix, RDTSync}
+import ex2024travel.lofi_acl.sync.{DeltaMapWithPrefix, Replica}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -22,7 +22,7 @@ class SyncWithMonotonicAcl[RDT](
     bottom: Bottom[RDT],
     rdtJsonCode: JsonValueCodec[RDT],
     filter: Filter[RDT]
-) extends RDTSync[RDT] {
+) extends Replica[RDT] {
 
   private val antiEntropy =
     FilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, DeltaMapWithPrefix.empty, this)
