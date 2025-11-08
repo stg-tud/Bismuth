@@ -1,6 +1,6 @@
 {
 	"dependencies": {
-		"jsdom": "26.1.0",
+		"jsdom": "27.1.0",
 		"libsodium-wrappers": "0.7.15"
 	}
 }
