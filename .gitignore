@@ -5,6 +5,7 @@
 .scala-build/
 .vscode/
 bun.lock
+deno.lock
 metals.sbt
 node_modules/
 package-lock.json
