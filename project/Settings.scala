@@ -10,10 +10,6 @@ object Settings {
   // also consider updating the -source param below
   val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.7.4")
 
-  // needs either 3.7 or 3.5 minor version in 3.6, otherwise there is a unfixable warning about changed implicit order
-  // see https://github.com/scala/scala3/issues/22153
-  val scala3VersionMinor = scala3VersionString.reverse.dropWhile(c => c != '.').drop(1).reverse
-
   // see https://docs.scala-lang.org/overviews/compiler-options/
   // and https://docs.scala-lang.org/scala3/guides/migration/options-new.html
   // and https://www.scala-lang.org/api/current/scala/language$.html
@@ -22,7 +18,6 @@ object Settings {
   val scala3defaults = Def.settings(
     scalaVersion := scala3VersionString,
     fullFeatureDeprecationWarnings,
-    scalaSourceLevel(scala3VersionMinor),
     warningsAreErrors(Compile / compile, Test / compile),
     valueDiscard(Compile / compile),
     typeParameterShadow(Compile / compile),
