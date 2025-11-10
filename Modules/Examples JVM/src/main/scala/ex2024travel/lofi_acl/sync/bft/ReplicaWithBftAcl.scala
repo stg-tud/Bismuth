@@ -6,7 +6,7 @@ import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.Replica
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import rdts.base.{Bottom, Lattice, Uid}
-import rdts.filters.{Filter, Operation, PermissionTree}
+import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.AtomicReference
@@ -99,7 +99,7 @@ class ReplicaWithBftAcl[RDT](using
   def connect(remoteUser: PublicIdentity, remoteAddress: String): Unit = {
     val hostParts = remoteAddress.split(":")
     require(hostParts.length == 2)
-    antiEntropy.newPeers(Set(remoteUser -> (hostParts(0), hostParts(1).toInt)))
+    antiEntropy.connect(remoteUser, hostParts(0), hostParts(1).toInt)
   }
 
   override def receivedDelta(dot: Dot, delta: RDT): Unit =

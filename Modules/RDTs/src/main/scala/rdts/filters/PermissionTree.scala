@@ -59,6 +59,9 @@ object PermissionTree {
   val allow: PermissionTree = PermissionTree(ALLOW, Map.empty)
   val empty: PermissionTree = PermissionTree(PARTIAL, Map.empty)
 
+  def apply(permission: Permission, children: (String, PermissionTree)*): PermissionTree =
+    PermissionTree(permission, children.toMap)
+
   given lattice: Lattice[PermissionTree] with
       private val childrenLattice: Lattice[Map[String, PermissionTree]] =
         Lattice.mapLattice(using (left, right) => mergeNonNormalizing(left, right))

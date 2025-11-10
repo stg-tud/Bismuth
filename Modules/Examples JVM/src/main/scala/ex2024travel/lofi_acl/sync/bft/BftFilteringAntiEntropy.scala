@@ -98,6 +98,11 @@ class BftFilteringAntiEntropy[RDT](
   override def connectionShutdown(remote: PublicIdentity): Unit =
     println(s"Disconnected from $remote")
 
+  def connect(peerId: PublicIdentity, host: String, port: Int): Unit = {
+    connectionManager.connectTo(host, port)
+    newPeers(Set((peerId, (host, port))))
+  }
+
   def newPeers(peers: Set[(PublicIdentity, (String, Int))]): Unit =
     receivedMessage(AnnouncePeers(peers), localPublicId)
 
