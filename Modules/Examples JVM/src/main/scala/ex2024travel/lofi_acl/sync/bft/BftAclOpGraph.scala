@@ -11,7 +11,15 @@ import java.util.Base64
 import scala.collection.mutable
 
 // TODO: Add cached lookups (maybe keep ~5 latest and/or a few last read acls)
-case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set[Signature]) {
+case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set[Signature], latestAcl: BftAcl) {
+  private def applyOp(signature: Signature, op: AclOp): BftAclOpGraph =
+      require(isOpLegal(op))
+      val updatedAcl = op match {
+        case DelegationOp(_, delegatee, read, write, _) => latestAcl.addPermissions(delegatee, read, write)
+        case RemovalOp(_, removed, _)                   => latestAcl.remove(removed)
+      }
+      BftAclOpGraph(root, ops + (signature -> op), (heads -- op.parents) + signature, updatedAcl)
+
   def delegateAccess(
       delegator: PublicIdentity,
       delegatorKey: PrivateKey,
@@ -19,26 +27,32 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set
       read: PermissionTree,
       write: PermissionTree
   ): (BftAclOpGraph, SerializedAclOp) =
-      require(write <= read) // Write access implies read access! (Not really enforced)
-      val op = DelegationOp(delegator, delegatee, read, write, parents = heads)
-      require(isDelegationLegal(op))
+      val op           = DelegationOp(delegator, delegatee, read, write, parents = heads)
       val serializedOp = op.sign(delegatorKey)
       val sigAsString  = serializedOp.signatureAsString
-      (BftAclOpGraph(root, ops + (sigAsString -> op), Set(sigAsString)), serializedOp)
+      (applyOp(sigAsString, op), serializedOp)
 
-  private def isDelegationLegal(op: DelegationOp): Boolean =
-      val referenceVersion = reconstruct(op.parents).get
-      op.read <= referenceVersion.read.getOrElse(op.author, PermissionTree.empty) &&
-      op.write <= referenceVersion.write.getOrElse(op.author, PermissionTree.empty)
+  private def isOpLegal(op: AclOp): Boolean =
+      val opPrefixAcl = reconstruct(op.parents).get
+      op.parents.nonEmpty && // Ensure that we don't accept a second root (node without predecessors)
+      !opPrefixAcl.removed.contains(op.author) &&
+      (op match
+          case delegation @ DelegationOp(delegator, delegatee, read, write, parents) =>
+            !opPrefixAcl.removed.contains(delegation.delegatee) && // Delegatee must be a member
+            write <= read &&                                       // Write access should imply read access
+            // read and write permissions of author must be less or equal to delegated permissions
+            delegation.read <= opPrefixAcl.read.getOrElse(op.author, PermissionTree.empty) &&
+            delegation.write <= opPrefixAcl.write.getOrElse(op.author, PermissionTree.empty)
+          case removal @ RemovalOp(author, removed, parents) =>
+            // Check author is admin in ACL defined by "parents"
+            opPrefixAcl.write(author) == PermissionTree.allow &&
+            opPrefixAcl.read(author) == PermissionTree.allow)
 
   // Returns either missing deltas, or the (potentially) updated op graph
   def receive(serializedOp: SerializedAclOp): Either[Set[Signature], BftAclOpGraph] =
       val signatureAsString = Base64.getEncoder.encodeToString(serializedOp.signature)
       if ops.contains(signatureAsString) then return Right(this)
       val decodedOp = readFromArray[AclOp](serializedOp.op)
-
-      // Ensure that we don't accept a second root (node without predecessors)
-      require(decodedOp.parents.nonEmpty)
 
       // Check signature
       if !Ed25519Util.checkEd25519Signature(serializedOp.op, serializedOp.signature, decodedOp.author)
@@ -48,31 +62,12 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set
       val missing = decodedOp.parents.filterNot(ops.contains)
       if missing.nonEmpty then return Left(missing)
 
-      // Check invariants
-      decodedOp match
-          case delegation @ DelegationOp(delegator, delegatee, read, write, parents) =>
-            // Write access implies read access!
-            require(write <= read)
-            // Check delegation is valid
-            require(isDelegationLegal(delegation))
-          case removal @ RemovalOp(author, removed, parents) =>
-            val aclAtRemoval = reconstruct(parents).get
-            // Check if author is removed in specified (!) version
-
-            // Check author is admin in ACL defined by "parents"
-            require(aclAtRemoval.write(author) == PermissionTree.allow)
-            require(aclAtRemoval.read(author) == PermissionTree.allow)
-
-      // Track new op, remove heads that op references as predecessors and add new op as head
-      Right(BftAclOpGraph(
-        root,
-        ops + (signatureAsString -> decodedOp),
-        (heads -- decodedOp.parents) + signatureAsString
-      ))
+      Right(applyOp(signatureAsString, decodedOp))
 
   def reconstruct: BftAcl = reconstruct(heads).get
 
   def reconstruct(heads: Set[Signature]): Option[BftAcl] =
+      if heads == this.heads then return Some(latestAcl)
       require(heads.forall(ops.contains))
 
       val visited   = mutable.Set.empty[Signature]
@@ -97,6 +92,23 @@ case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set
 
 object BftAclOpGraph:
     type Signature = String
+
+    def fromRootAclOp(signature: Signature, aclOp: AclOp): BftAclOpGraph = {
+      aclOp match {
+        case DelegationOp(author, delegatee, read, write, parents) =>
+          require(author == delegatee)
+          require(read == PermissionTree.allow)
+          require(write == PermissionTree.allow)
+          require(parents.isEmpty)
+          BftAclOpGraph(
+            signature,
+            Map(signature -> aclOp),
+            Set(signature),
+            BftAcl(Map(delegatee -> read), Map(delegatee -> write), Set.empty)
+          )
+        case RemovalOp(author, removed, parents) => throw IllegalArgumentException("root op must be a delegation")
+      }
+    }
 
     def createSelfSignedRoot(rootIdentity: PrivateIdentity): SerializedAclOp = {
       val rootAclDelta: DelegationOp = DelegationOp(

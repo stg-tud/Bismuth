@@ -11,7 +11,11 @@ trait Replica[RDT] {
   def currentState: RDT
   def mutateState(mutator: RDT => RDT): Unit
   def currentAcl: Acl
-  def grantPermissions(affectedUser: PublicIdentity, realm: PermissionTree, typeOfPermission: Operation): Unit
+  def grantPermissions(
+      affectedUser: PublicIdentity,
+      readPermission: PermissionTree,
+      writePermission: PermissionTree
+  ): Unit
   def start(): Unit
   def stop(): Unit
 }

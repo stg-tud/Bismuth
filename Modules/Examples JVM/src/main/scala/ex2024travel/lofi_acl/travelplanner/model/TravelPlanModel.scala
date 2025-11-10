@@ -7,7 +7,6 @@ import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.given
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.filters.Operation.{READ, WRITE}
 import rdts.filters.PermissionTree
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
@@ -36,11 +35,7 @@ class TravelPlanModel(
       affectedUser: PublicIdentity,
       readPermissions: PermissionTree,
       writePermissions: PermissionTree
-  ): Unit = {
-    replica.grantPermissions(affectedUser, readPermissions, READ)
-    if !writePermissions.isEmpty
-    then replica.grantPermissions(affectedUser, writePermissions, WRITE)
-  }
+  ): Unit = replica.grantPermissions(affectedUser, readPermissions, writePermissions)
 
   def createInvitation: Invitation =
     replica.createInvitation

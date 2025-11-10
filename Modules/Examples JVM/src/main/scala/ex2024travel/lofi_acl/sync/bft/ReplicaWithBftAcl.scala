@@ -36,45 +36,44 @@ class ReplicaWithBftAcl[RDT](using
 
   override def currentState: RDT = rdtReference.get()._2
 
-  def currentAcl: BftAcl = currentBftAcl._2
+  def currentAcl: BftAcl = currentOpGraph.latestAcl
 
-  def currentBftAcl: (BftAclOpGraph, BftAcl) = localAcl.get()
+  def currentOpGraph: BftAclOpGraph = localAcl.get()
 
-  // Only change using grantPermissions!
-  private val localAcl: AtomicReference[(BftAclOpGraph, BftAcl)] = {
+  // Only change with lock on localAcl
+  private val localAcl: AtomicReference[BftAclOpGraph] = {
     aclRoot.deserialize match
         case Failure(exception)    => throw exception
-        case Success((sig, aclOp)) =>
-          val opGraph = BftAclOpGraph(sig, Map(sig -> aclOp), Set(sig))
-          AtomicReference((opGraph, opGraph.reconstruct(Set(sig)).get))
+        case Success((sig, aclOp)) => AtomicReference(BftAclOpGraph.fromRootAclOp(sig, aclOp))
   }
 
-  def grantPermissions(affectedUser: PublicIdentity, realm: PermissionTree, typeOfPermission: Operation): Unit = {
-    val (read, write) = typeOfPermission match
-        case rdts.filters.Operation.READ  => (realm, PermissionTree.empty)
-        case rdts.filters.Operation.WRITE => (realm, realm)
-
+  def grantPermissions(
+      affectedUser: PublicIdentity,
+      read: PermissionTree,
+      write: PermissionTree
+  ): Unit = {
+    val privateKey                = localIdentity.identityKey.getPrivate
+    var aclDelta: SerializedAclOp = null
     localAcl.synchronized {
-      val old @ (opGraph, acl) = localAcl.get()
-      val privateKey           = localIdentity.identityKey.getPrivate
-
-      val (updatedOpGraph, aclDelta) = opGraph.delegateAccess(localPublicId, privateKey, affectedUser, read, write)
-      val updatedAcl                 = acl.addPermissions(affectedUser, read, write)
-      require(localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl)))
-
-      antiEntropy.broadcastAclDelegation(aclDelta)
+      val oldOpGraph = localAcl.get()
+      oldOpGraph.delegateAccess(localPublicId, privateKey, affectedUser, read, write) match {
+        case (updatedOpGraph, op) =>
+          aclDelta = op
+          require(localAcl.compareAndSet(oldOpGraph, updatedOpGraph))
+      }
     }
+
+    antiEntropy.broadcastAclDelegation(aclDelta)
   }
 
   /** Applies aclOp if dependencies are met and op is legal. Returns the missing dependencies (or Set.empty). */
   def applyAclOpIfPossible(serializedAclOp: SerializedAclOp): Set[Signature] = {
     localAcl.synchronized {
-      val old @ (opGraph, acl) = localAcl.get()
-      opGraph.receive(serializedAclOp) match
+      val oldOpGraph = localAcl.get()
+      oldOpGraph.receive(serializedAclOp) match
           case Left(missingSignatures) => return missingSignatures
           case Right(updatedOpGraph)   =>
-            val updatedAcl = updatedOpGraph.reconstruct
-            if !localAcl.compareAndSet(old, (updatedOpGraph, updatedAcl))
+            if !localAcl.compareAndSet(oldOpGraph, updatedOpGraph)
             then // Sanity check, the lock should prevent this
                 throw IllegalStateException("Could not apply update to ACL reference")
 
@@ -107,19 +106,9 @@ class ReplicaWithBftAcl[RDT](using
       val _ = rdtReference.updateAndGet { case (dots, rdt) => dots.add(dot) -> rdt.merge(delta) }
       onDeltaReceive(delta)
 
-  def start(): Unit = {
-    synchronized {
-      require(antiEntropyThread.isEmpty)
-      antiEntropyThread = Some(antiEntropy.start())
-    }
-  }
+  def start(): Unit =
+    antiEntropy.start()
 
-  def stop(): Unit = {
-    synchronized {
-      require(antiEntropyThread.nonEmpty)
-      antiEntropy.stop()
-      antiEntropyThread.get.interrupt()
-      antiEntropyThread = None
-    }
-  }
+  def stop(): Unit =
+    antiEntropy.stop()
 }

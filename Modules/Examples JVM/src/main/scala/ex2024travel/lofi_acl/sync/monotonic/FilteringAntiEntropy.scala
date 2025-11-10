@@ -128,22 +128,22 @@ class FilteringAntiEntropy[RDT](
 
   def acl: MonotonicAcl[RDT] = aclReference.get()._2
 
-  def grantPermission(aclDot: Dot, affectedUser: PublicIdentity, realm: PermissionTree, operation: Operation): Unit = {
+  def grantPermission(aclDot: Dot, affectedUser: PublicIdentity, read: PermissionTree, write: PermissionTree): Unit = {
     val (aclDots, acl) = aclReference.get()
     require(!aclDots.contains(aclDot))
 
-    operation match
-        case Operation.READ  => require(realm <= acl.read(localPublicId))
-        case Operation.WRITE => require(realm <= acl.write(localPublicId))
+    require(read <= acl.read(localPublicId))
+    require(write <= acl.write(localPublicId))
 
-    val addAclMsg: AclDelta[RDT] = {
-      val unsignedDelta: AclDelta[RDT] =
-        AclDelta(affectedUser, realm, operation, aclDot, aclReference.get()._1, null)
-      MonotonicAcl.signDelta(unsignedDelta, localIdentity)
-    }
-
-    receivedMessage(addAclMsg, localPublicId)
-    val _ = connectionManager.broadcast(addAclMsg)
+    val msgs = Array((Operation.READ, read), (Operation.WRITE, write))
+      .filterNot(_._2.isEmpty)
+      .map((operation, realm) =>
+          val unsignedDelta: AclDelta[RDT] =
+            AclDelta(affectedUser, realm, operation, aclDot, aclReference.get()._1, null)
+          MonotonicAcl.signDelta(unsignedDelta, localIdentity)
+      )
+    msgs.foreach(receivedMessage(_, localPublicId))
+    val _ = connectionManager.broadcast(msgs*)
   }
 
   @volatile private var stopped = false

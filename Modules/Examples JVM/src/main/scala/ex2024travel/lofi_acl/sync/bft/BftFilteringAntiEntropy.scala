@@ -39,6 +39,8 @@ class BftFilteringAntiEntropy[RDT](
 
   def connectedPeers: Set[PublicIdentity] = connectionManager.connectedPeers
 
+  private var thread: Option[Thread] = None
+
   private def send(destination: PublicIdentity, syncMsg: SyncMsg[RDT]): Unit = {
     // println(s"msg to ${destination.id}: $syncMsg")
     val buffer = ArrayMessageBuffer(writeToArray(syncMsg))
@@ -81,7 +83,7 @@ class BftFilteringAntiEntropy[RDT](
 
   // Executed in thread from ConnectionManager
   override def connectionEstablished(remote: PublicIdentity): Unit = {
-    val (aclOpGraph, acl) = replica.currentBftAcl
+    val aclOpGraph = replica.currentOpGraph
     // TODO: It might make sense to tell the other side which document we're talking about. Otherwise they might try to
     //  sync unrelated op graphs
     sendMultiple(
@@ -105,8 +107,8 @@ class BftFilteringAntiEntropy[RDT](
 
   def mutateRdt(dot: Dot, delta: RDT): Unit = {
     require(!rdtDeltas.allDots.contains(dot))
-    val (aclOpGraph, acl) = replica.currentBftAcl
-    val localWritePerms   = acl.write.get(localPublicId)
+    val aclOpGraph      = replica.currentOpGraph
+    val localWritePerms = aclOpGraph.latestAcl.write.get(localPublicId)
     if localWritePerms.isEmpty
     then
         Console.err.println("Could not mutate RDT: missing write permissions")
@@ -114,7 +116,7 @@ class BftFilteringAntiEntropy[RDT](
     val filteredDelta           = filter.filter(delta, localWritePerms.get)
     val deltaMsg: RdtDelta[RDT] = RdtDelta(dot, filteredDelta, aclOpGraph.heads, aclOpGraph.heads)
     msgQueue.put((deltaMsg, localPublicId))
-    broadcastFiltered(acl, deltaMsg)
+    broadcastFiltered(aclOpGraph.latestAcl, deltaMsg)
   }
 
   def broadcastAclDelegation(delegation: SerializedAclOp): Unit = broadcast(AclDelta(delegation))
@@ -123,10 +125,11 @@ class BftFilteringAntiEntropy[RDT](
 
   def stop(): Unit = {
     stopped = true
+    thread.foreach(_.interrupt())
     connectionManager.shutdown()
   }
 
-  def start(): Thread = {
+  def start(): Unit = {
     require(connectionManager.listenPort.isEmpty) // TODO: Allow restart?
     connectionManager.acceptIncomingConnections()
     peerAddressCache.updateAndGet(cache => cache + (localPublicId -> ("localhost", connectionManager.listenPort.get)))
@@ -145,11 +148,11 @@ class BftFilteringAntiEntropy[RDT](
         }
     )
     thread.start()
-    thread
+    this.thread = Some(thread)
   }
 
   private def receiveMessage(msg: SyncMsg[RDT], sender: PublicIdentity): Unit = {
-    if !replica.currentBftAcl._2.removed.contains(sender) // Check if user was removed -> drop message
+    if !replica.currentOpGraph.latestAcl.removed.contains(sender) // Check if user was removed -> drop message
     then // Process message immediately or backlog it if not processable
         handleMessage(msg, sender)
 
@@ -172,8 +175,8 @@ class BftFilteringAntiEntropy[RDT](
           then deltaMessageBacklog = deltaMessageBacklog.appended((deltaMsg, sender))
 
         case AclDelta(encodedDelegation) =>
-          val aclBefore           = replica.currentBftAcl._2
-          val localReadPermBefore = replica.currentBftAcl._2.read.getOrElse(localPublicId, PermissionTree.empty)
+          val aclBefore           = replica.currentAcl
+          val localReadPermBefore = aclBefore.read.getOrElse(localPublicId, PermissionTree.empty)
           val missing = replica.applyAclOpIfPossible(encodedDelegation) // throws an exception if invalid signature
           // Track this delta as received (even if it has missing dependencies)
           knownMissingAclOps.updateAndGet(knownMissing => knownMissing - encodedDelegation.signatureAsString)
@@ -185,7 +188,7 @@ class BftFilteringAntiEntropy[RDT](
             processAclBacklog(Set(encodedDelegation.signatureAsString))
           }
           // check if local read permissions increased => request potentially missing delta parts
-          val aclAfter           = replica.currentBftAcl._2
+          val aclAfter           = replica.currentAcl
           val localReadPermAfter = aclAfter.read.getOrElse(localPublicId, PermissionTree.empty)
           if localReadPermAfter != localReadPermBefore then {
             // Over approximation because replicas might not have actually written content
@@ -212,7 +215,7 @@ class BftFilteringAntiEntropy[RDT](
 
         // heads are placed in local knownMissing if new, locally available ops specified in knownMissing of remote are sent to remote
         case TellKnownAclOps(remoteHeads: Set[Signature], knownMissing: Set[Signature]) =>
-          val opGraph = replica.currentBftAcl._1
+          val opGraph = replica.currentOpGraph
           val msgs    = knownMissing
             .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.serialize(sig)) }
             .map[AclDelta[RDT]](delegation => AclDelta(delegation))
@@ -225,8 +228,8 @@ class BftFilteringAntiEntropy[RDT](
 
         case TellKnownRdtDots(remoteRdtDots) =>
           // TODO: avoid possibility of interleaving with acl change
-          val (aclOpGraph, acl) = replica.currentBftAcl
-          val rdtDeltaCopy      = rdtDeltas
+          val aclOpGraph   = replica.currentOpGraph
+          val rdtDeltaCopy = rdtDeltas
 
           val rdtDots          = rdtDeltas.deltaDots
           val missingRdtDeltas = rdtDots.subtract(remoteRdtDots)
@@ -234,7 +237,7 @@ class BftFilteringAntiEntropy[RDT](
             rdtDeltaCopy.retrieveDeltas(missingRdtDeltas).map[RdtDelta[RDT]] { case (dot, (delta, authorAcl)) =>
               RdtDelta(dot, delta, authorAcl, aclOpGraph.heads)
             }.toArray
-          if deltas.nonEmpty then sendFiltered(sender, acl, deltas*)
+          if deltas.nonEmpty then sendFiltered(sender, aclOpGraph.latestAcl, deltas*)
 
           // Check if we're missing anything that the remote has
           if !rdtDeltas.deltaDots.contains(remoteRdtDots)
@@ -273,7 +276,7 @@ class BftFilteringAntiEntropy[RDT](
 
   private def processDeltaBacklog(): Unit = {
     // Process backlogged rdt deltas
-    val aclOpGraph                               = replica.currentBftAcl._1
+    val aclOpGraph                               = replica.currentOpGraph
     val partialDeltaStoreBeforeProcessing        = partialDeltaStore
     val (processableDeltas, unprocessableDeltas) = deltaMessageBacklog.partition((delta, _) =>
       delta.authorAclContext.union(delta.senderAclContext).forall(aclOpGraph.ops.contains)
@@ -288,20 +291,14 @@ class BftFilteringAntiEntropy[RDT](
   private def handlePartialDelta(unfilteredDelta: RdtDelta[RDT], sender: PublicIdentity): Boolean = {
     unfilteredDelta match
         case RdtDelta(dot, _, authorAclHeads, senderAclHeads) =>
-          val (aclOpGraph, localAcl) = replica.currentBftAcl
+          val aclOpGraph = replica.currentOpGraph
           if !authorAclHeads.union(senderAclHeads).forall(aclOpGraph.ops.contains) then return false
 
-          val authorAcl =
-            if authorAclHeads == aclOpGraph.heads
-            then localAcl
-            else aclOpGraph.reconstruct(authorAclHeads).get
-          val senderAcl =
-            if senderAclHeads == aclOpGraph.heads then localAcl
-            else if senderAclHeads == authorAclHeads then authorAcl
-            else aclOpGraph.reconstruct(senderAclHeads).get
+          val authorAcl            = aclOpGraph.reconstruct(authorAclHeads).get
+          val senderAcl            = aclOpGraph.reconstruct(senderAclHeads).get
           val effectivePermissions = authorAcl.write(PublicIdentity(dot.place.delegate))
             .intersect(senderAcl.write(sender))
-            .intersect(localAcl.read(localPublicId))
+            .intersect(aclOpGraph.latestAcl.read(localPublicId))
 
           if effectivePermissions.isEmpty then return true
 
@@ -310,7 +307,7 @@ class BftFilteringAntiEntropy[RDT](
           val existingPartialDelta = partialDeltaStore.get(dot)
           if existingPartialDelta.isEmpty then {
             val requiredPermissions =
-              authorAcl.write(PublicIdentity(dot.place.delegate)).intersect(localAcl.read(localPublicId))
+              authorAcl.write(PublicIdentity(dot.place.delegate)).intersect(aclOpGraph.latestAcl.read(localPublicId))
             if requiredPermissions <= senderAcl.write(sender)
             then // Immediately applicable
                 rdtDeltas = rdtDeltas.addDelta(dot, (delta, authorAclHeads))
@@ -359,14 +356,14 @@ class BftFilteringAntiEntropy[RDT](
   }
 
   private def requestPartialDeltas(): Unit = {
-    val (aclOpGraph, acl) = replica.currentBftAcl
-    val partialDeltas     = partialDeltaStore
-    val requiredPerms     =
+    val aclOpGraph    = replica.currentOpGraph
+    val partialDeltas = partialDeltaStore
+    val requiredPerms =
       if partialDeltas.size < 100
       then // Only need to reconstruct what is missing
           partialDeltas.values.map(_.requiredPermissions).reduce(Lattice.merge)
       else // Request everything that is readable
-          acl.read.getOrElse(localPublicId, PermissionTree.empty)
+          aclOpGraph.latestAcl.read.getOrElse(localPublicId, PermissionTree.empty)
 
     // TODO: Could be optimized to reduce number of replicas to contact and deltas to request at the cost of complexity
     // - If a replica won't provide progress, don't request specific dot
@@ -375,7 +372,7 @@ class BftFilteringAntiEntropy[RDT](
     // - Provide union of requiredPermissions of partial deltas instead of local read permission
     val (replicasToRequestFrom, _) =
       PartialReplicationPeerSubsetSolver.randomSubsetThatAllowsReconstruction(
-        acl.write,
+        aclOpGraph.latestAcl.write,
         requiredPerms
       )
     replicasToRequestFrom.foreach { remote =>
@@ -397,7 +394,7 @@ class BftFilteringAntiEntropy[RDT](
 
     // Synchronize with peers
     if randomPeer.nonEmpty then
-        val (aclOpGraph, acl) = replica.currentBftAcl
+        val aclOpGraph = replica.currentOpGraph
         if partialDeltaStore.nonEmpty then {
           requestPartialDeltas()
           send(randomPeer.get, TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get()))
