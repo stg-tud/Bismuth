@@ -152,6 +152,7 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     Dependencies.scalatags(),
     Dependencies.jsoniterScala,
     Dependencies.pprint,
+    Dependencies.munit,
     scalaJSLinkerConfig := {
       scalaJSLinkerConfig.value
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
@@ -165,9 +166,6 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     // fix the output directory to make it “guessable” by JS import
     fastLinkJS / crossTarget := target.value / "generated_js",
     fullLinkJS / crossTarget := target.value / "generated_js",
-    // examples do not have tests, but still fail to execute them with WASM backend
-    test      := {},
-    testQuick := {},
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))

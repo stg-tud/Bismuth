@@ -47,13 +47,11 @@ object Icons {
   val folder = "assets/folder.svg"
 }
 
-enum EntryType:
-  case File
-  case Folder
-
 case class MoveEntry(id: Dot, parent: Dot)
 
-case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtime: Long = System.currentTimeMillis()) {
+case class FsEntryView(
+    val state: FsEntry
+) {
   val onClick       = Event.fromCallback(onclick := Event.handle)
   val onDoubleClick = Event.fromCallback(ondblclick := Event.handle)
   val onDragStart   = Event.fromCallback(ondragstart := Event.handle)
@@ -66,7 +64,7 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
     val place     = Uid.predefined(parts(0))
     val time      = parts(1).toLong
     val targetDot = Dot(place, time)
-    MoveEntry(targetDot, id)
+    MoveEntry(targetDot, state.id)
   }
   val onKeyDown       = Event.fromCallback(onkeydown := Event.handle)
   val onReturnKeyDown = onKeyDown.event.filter { e =>
@@ -97,7 +95,7 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
     input.value.trim
   }.hold("")
 
-  val editInput = editText.data.reattach(Signal { value := name.value })
+  val editInput = editText.data.reattach(Signal { value := state.name.value })
 
   val changeEditing =
     (onReturnKeyDown `map` const(true)) || (onConfirmEdit `map` const(false)) || (onCancelEdit `map` const(false))
@@ -109,11 +107,11 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
     if editing then {
       editInput
     } else {
-      span(`class` := "entry-name-text", name.value).render
+      span(`class` := "entry-name-text", state.name.value).render
     }
   }
 
-  def toTag(id: Dot, isSelected: Signal[Boolean]): LI = {
+  def toTag(isSelected: Signal[Boolean]): LI = {
     isEditing.observe { editing =>
       if editing then {
         setTimeout(0) { editInput.focus() }; ()
@@ -122,7 +120,7 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
 
     onDragStart.event.observe(e => {
       val de = e.asInstanceOf[DragEvent]
-      de.dataTransfer.setData("text/plain", id.place.delegate + ":" + id.time.toString)
+      de.dataTransfer.setData("text/plain", state.id.place.delegate + ":" + state.id.time.toString)
     })
 
     onDragOver.event.observe(e => {
@@ -131,7 +129,7 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
     })
 
     val date = Instant.ofEpochMilli(
-      mtime
+      state.mtime
     ).atZone(timeZone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
     li(
@@ -143,9 +141,9 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
         div(
           `class` := "entry-icon",
           img(
-            src := (ty match {
-              case EntryType.File   => Icons.file
-              case EntryType.Folder => Icons.folder
+            src := (state.ty match {
+              case FsEntryType.File   => Icons.file
+              case FsEntryType.Folder => Icons.folder
             })
           )
         ),
@@ -173,22 +171,33 @@ case class Entry(val id: Dot, val name: LWW[String], val ty: EntryType, val mtim
   }
 }
 
-object Entry {
-  def file(id: Dot, name: String): Entry   = Entry(id, LWW.now(name), EntryType.File)
-  def folder(id: Dot, name: String): Entry = Entry(id, LWW.now(name), EntryType.Folder)
-
-  given lexicographicOrdering: Ordering[ReplicatedTree.Node[Entry]] = Ordering.by(_.value.name.value)
-}
-
 //todo: Ideally these should be deterministic per machine somehow
 type ReplicaId = Uid
 
+case class FsEntry(
+    val id: Dot,
+    val name: LWW[String],
+    val ty: FsEntryType,
+    val mtime: Long = System.currentTimeMillis()
+)
+
+object FsEntry {
+  def file(id: Dot, name: String): FsEntry   = FsEntry(id, LWW.now(name), FsEntryType.File)
+  def folder(id: Dot, name: String): FsEntry = FsEntry(id, LWW.now(name), FsEntryType.Folder)
+
+  given lexicographicOrdering: Ordering[ReplicatedTree.Node[FsEntry]] = Ordering.by(_.value.name.value)
+}
+
+enum FsEntryType:
+  case File
+  case Folder
+
 case class FilesystemState(
-    val tree: ReplicatedTree[Entry],
+    val tree: ReplicatedTree[FsEntry],
     val selections: Map[ReplicaId, LWW[Option[Dot]]] = Map.empty,
     val locations: Map[ReplicaId, LWW[Dot]] = Map.empty
 ) {
-  def addEntry(parent: Dot, entry: Dot => Entry)(using LocalUid): FilesystemState = {
+  def addEntry(parent: Dot, entry: Dot => FsEntry)(using LocalUid): FilesystemState = {
     FilesystemState(tree = tree.insertWith(parent, dot => entry(dot)))
   }
 
@@ -204,8 +213,8 @@ case class FilesystemState(
 
   def moveToParent(entry: Dot, parent: Dot)(using LocalUid): FilesystemState = {
     tree.node(parent) match
-      case Some(n) if n.value.ty == EntryType.Folder => FilesystemState(tree = tree.move(entry, parent))
-      case _                                         => FilesystemState.empty
+      case Some(n) if n.value.ty == FsEntryType.Folder => FilesystemState(tree = tree.move(entry, parent))
+      case _                                           => FilesystemState.empty
   }
 
   def isSelected(using LocalUid)(entry: Dot): Boolean = {
@@ -253,10 +262,10 @@ case class FilesystemState(
 }
 
 object FilesystemState {
-  def empty: FilesystemState = FilesystemState(ReplicatedTree.empty[Entry])
+  def empty: FilesystemState = FilesystemState(ReplicatedTree.empty[FsEntry])
 
   given Lattice[FilesystemState] = Lattice.derived
-  given Bottom[FilesystemState]  = Bottom.provide(FilesystemState(ReplicatedTree.empty[Entry]))
+  given Bottom[FilesystemState]  = Bottom.provide(FilesystemState(ReplicatedTree.empty[FsEntry]))
 }
 
 type State = UndoRedoReplica[FilesystemState];
@@ -278,20 +287,10 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     val undoButton            = Event.fromCallback(button("Undo", onclick := Event.handle))
     val redoButton            = Event.fromCallback(button("Redo", onclick := Event.handle))
 
-    val markSelected = Interaction[State, Dot]
-      .executes { (s: State, e) => s.modUntracked(_.markSelected(e)) }
+    val markSelected: Event[Dot] = Event.static(None)
 
-    val setLocation = Interaction[State, Dot]
-      .executes { (s: State, d) => s.modUntracked(_.setLocation(d)) }
-
-    val onDropEntry = Interaction[State, MoveEntry]
-      .executes { (s: State, e) => s.mod(_.moveToParent(e.id, e.parent)) }
-
-    val renameEntry = Interaction[State, (Dot, String)]
-      .executes { (s: State, e) => s.mod(_.renameEntry(e._1, e._2)) }
-
-    def events[T](s: State)(mapper: ReplicatedTree.Node[Entry] => Event[T]): Event[T] = {
-      val events = s.state.tree.nodes.map(mapper)
+    def events[T](s: Seq[FsEntryView], mapper: FsEntryView => Event[T]): Event[T] = {
+      val events = s.map(mapper)
 
       Event.Impl.static(events.toSeq*) { st =>
         events.map(st.dependStatic)
@@ -320,21 +319,28 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
             FilesystemDataManager.resetBuffer,
             addRandomFileButton.event.branch { _ =>
               val name = scala.util.Random.alphanumeric.take(8).mkString
-              current.mod((s) => s.addEntry(s.location, dot => Entry.file(dot, name)))
+              current.mod((s) => s.addEntry(s.location, dot => FsEntry.file(dot, name)))
             },
             addRandomFolderButton.event.branch { _ =>
               val name = scala.util.Random.alphanumeric.take(8).mkString
-              current.mod((s) => s.addEntry(s.location, dot => Entry.folder(dot, name)))
+              current.mod((s) => s.addEntry(s.location, dot => FsEntry.folder(dot, name)))
             },
             deleteAllButton.event.branch { _ => current.mod(_.clearAll()) },
-            markSelected.actWith[State](events(current)((n) => n.value.onClick.event.map(_ => n.dot))),
-            setLocation.actWith[State](events(current)((n) =>
-              n.value.onDoubleClick.event.filter(_ => n.value.ty == EntryType.Folder).map(_ => n.dot)
-            )),
-            onDropEntry.actWith[State](events(current)((n) => n.value.onEntryDrop)),
-            renameEntry.actWith[State](events(current)((n) =>
-              n.value.onRename.map { s => (n.dot, s) }
-            )),
+            events(entryViews.value, (n) => n.onClick.event.map(_ => n.state.id)).branch { id =>
+              current.mod(_.markSelected(id))
+            },
+            events(
+              entryViews.value,
+              (n) => n.onDoubleClick.event.filter(_ => n.state.ty == FsEntryType.Folder).map(_ => n.state.id)
+            ).branch { id =>
+              current.mod(_.setLocation(id))
+            },
+            events(entryViews.value, (n) => n.onEntryDrop).branch { op =>
+              current.mod(_.moveToParent(op.id, op.parent))
+            },
+            events(entryViews.value, (n) => n.onRename.map { s => (n.state.id, s) }).branch { (id, v) =>
+              current.mod(_.renameEntry(id, v))
+            },
             // onNavigateToDirection.branch { d =>
             //   d match {
             //     case Direction.Left => {
@@ -388,21 +394,27 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
 
     val state: Signal[FilesystemState] = stateRDT.map(_.state)
 
-    val parent: Signal[Option[ReplicatedTree.Node[Entry]]] = state.map { s =>
+    val parent: Signal[Option[ReplicatedTree.Node[FsEntry]]] = state.map { s =>
       s.tree.node(s.location)
     }
 
-    val entryNodes: Signal[List[ReplicatedTree.Node[Entry]]] =
-      state.map((s) => s.tree.children(s.location).toList.sorted(using Entry.lexicographicOrdering))
+    val entryNodes: Signal[List[ReplicatedTree.Node[FsEntry]]] =
+      state.map((s) => s.tree.children(s.location).toList.sorted(using FsEntry.lexicographicOrdering))
 
-    val entriesTags: Signal[Seq[LI]] = entryNodes.map { entries =>
+    val entryViews: Signal[Seq[FsEntryView]] = entryNodes.map { entries =>
+      entries.map((n) => FsEntryView(n.value))
+    }
+
+    entryViews.observe({ views => {} })
+
+    val entryTags: Signal[Seq[LI]] = entryViews.map { entries =>
       entries.map((n) => {
-        n.value.toTag(n.dot, state.map(_.isSelected(n.dot)))
+        n.toTag(state.map(_.isSelected(n.state.id)))
       })
     }
 
     val entryList =
-      ul(`class` := "filesystem-list").render.reattach(entriesTags)
+      ul(`class` := "filesystem-list").render.reattach(entryTags)
 
     div(
       autofocus,
