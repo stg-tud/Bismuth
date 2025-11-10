@@ -19,7 +19,8 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
 
   private val state = travelPlanModel.state
 
-  private val acl: Acl           = travelPlanModel.currentAcl
+  private val acl: Acl = travelPlanModel.currentAcl
+
   private val permissionTreePane = PermissionTreePane(
     state,
     acl.read.getOrElse(invitation.inviter, PermissionTree.empty),

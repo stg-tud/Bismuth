@@ -14,7 +14,7 @@ case class MonotonicAcl[RDT](
     root: PublicIdentity,
     override val read: Map[PublicIdentity, PermissionTree],
     override val write: Map[PublicIdentity, PermissionTree]
-) extends Acl(read, write) {
+) extends Acl {
   def addReadPermissionIfAllowed(
       forPrincipal: PublicIdentity,
       delegatingFrom: PublicIdentity,

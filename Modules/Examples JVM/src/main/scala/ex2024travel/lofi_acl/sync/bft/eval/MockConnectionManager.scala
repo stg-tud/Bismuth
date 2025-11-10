@@ -1,4 +1,4 @@
-package ex2024travel.lofi_acl.eval
+package ex2024travel.lofi_acl.sync.bft.eval
 
 import channels.MessageBuffer
 import crypto.PublicIdentity

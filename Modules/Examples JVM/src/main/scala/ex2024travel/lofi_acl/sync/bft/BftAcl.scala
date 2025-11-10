@@ -5,10 +5,10 @@ import ex2024travel.lofi_acl.sync.Acl
 import rdts.filters.PermissionTree
 
 case class BftAcl(
-    read: Map[PublicIdentity, PermissionTree],
-    write: Map[PublicIdentity, PermissionTree],
+    override val read: Map[PublicIdentity, PermissionTree],
+    override val write: Map[PublicIdentity, PermissionTree],
     removed: Set[PublicIdentity] = Set.empty
-):
+) extends Acl:
     def addPermissions(user: PublicIdentity, read: PermissionTree, write: PermissionTree): BftAcl = {
       if removed.contains(user) then this // Don't fail, otherwise reconstruction in reverse order would fail
       else
@@ -31,6 +31,3 @@ case class BftAcl(
         removed + publicIdentity
       )
     }
-
-    // TODO: Remove Acl
-    def asAcl: Acl = Acl(read, write)

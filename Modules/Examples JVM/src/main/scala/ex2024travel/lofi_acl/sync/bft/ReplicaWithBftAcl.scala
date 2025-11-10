@@ -3,8 +3,8 @@ package ex2024travel.lofi_acl.sync.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
+import ex2024travel.lofi_acl.sync.Replica
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
-import ex2024travel.lofi_acl.sync.{Acl, Replica}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, Operation, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -36,7 +36,7 @@ class ReplicaWithBftAcl[RDT](using
 
   override def currentState: RDT = rdtReference.get()._2
 
-  def currentAcl: Acl = currentBftAcl._2.asAcl
+  def currentAcl: BftAcl = currentBftAcl._2
 
   def currentBftAcl: (BftAclOpGraph, BftAcl) = localAcl.get()
 

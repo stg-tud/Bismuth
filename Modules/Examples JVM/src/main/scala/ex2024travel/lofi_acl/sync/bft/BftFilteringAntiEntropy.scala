@@ -386,7 +386,8 @@ class BftFilteringAntiEntropy[RDT](
     }
   }
 
-  protected def doSyncActions(incomingMessagePollTimeoutMillis: Int, randomPeer: Option[PublicIdentity]): Unit = {
+  // TODO: Maybe split this up into two parts
+  protected[bft] def doSyncActions(incomingMessagePollTimeoutMillis: Int, randomPeer: Option[PublicIdentity]): Unit = {
     var nextMessage = Option(msgQueue.poll(incomingMessagePollTimeoutMillis, TimeUnit.MILLISECONDS))
     while nextMessage.nonEmpty do {
       val (msg, sender) = nextMessage.get
