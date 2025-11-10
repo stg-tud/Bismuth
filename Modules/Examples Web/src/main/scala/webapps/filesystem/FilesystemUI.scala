@@ -371,7 +371,7 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
               if current.state.location == ReplicatedTree.rootDot then current
               else {
                 val node = current.state.tree.node(current.state.location).get
-                current.mod(_.setLocation(node.parent))
+                current.modUntracked(_.setLocation(node.parent))
               }
             },
             undoButton.event.branch { _ =>

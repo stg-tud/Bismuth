@@ -11,7 +11,8 @@ case class UndoRedoReplica[A](
     val nextLocalDot: Dot = Dot.zero,
     val undoStack: List[Dot] = List.empty,
     val redoStack: List[Dot] = List.empty,
-    val buffer: UndoRedoReplica.Buffer[A] = UndoRedoReplica.Buffer[A](Set.empty, Dots.empty)
+    val buffer: UndoRedoReplica.Buffer[A] = UndoRedoReplica.Buffer[A](Set.empty, Dots.empty),
+    val base: Option[A] = None,
 ) {
   def id: LocalUid = LocalUid(nextLocalDot.place)
 
@@ -48,9 +49,8 @@ case class UndoRedoReplica[A](
     val dot   = nextLocalDot
 
     val operationDelta = UndoRedoReplica.Delta(dot, delta)
-    buffer.add(operationDelta)
     this.copy(
-      deltas = deltas + operationDelta,
+      base = Some(base.map(b => Lattice.merge(b, delta)).getOrElse(delta)),
       nextLocalDot = nextLocalDot.advance,
       buffer = buffer.add(operationDelta)
     )
@@ -97,7 +97,7 @@ case class UndoRedoReplica[A](
     deltas
       .filterNot(d => removed.contains(d.dot))
       .map(_.delta)
-      .foldLeft(Bottom.empty[A])(Lattice.merge)
+      .foldLeft(base.getOrElse(Bottom.empty[A]))(Lattice.merge)
   }
 }
 
