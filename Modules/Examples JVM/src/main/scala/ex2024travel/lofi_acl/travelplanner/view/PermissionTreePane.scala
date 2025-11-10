@@ -152,30 +152,30 @@ class PermissionTreePane(
     if !(expenses <= readPerm)
     then
         expensesParentCheckBoxes.read.disable = true
-        if !(PermissionTree.fromPath("expenses.data.*.value.description") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.value.description") <= readPerm)
         then expensesParentCheckBoxes.descriptionRead.disable = true
-        if !(PermissionTree.fromPath("expenses.data.*.value.amount") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.value.amount") <= readPerm)
         then expensesParentCheckBoxes.amountRead.disable = true
-        if !(PermissionTree.fromPath("expenses.data.*.value.comment") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.value.comment") <= readPerm)
         then expensesParentCheckBoxes.commentRead.disable = true
     if !(expenses <= writePerm)
     then
         expensesParentCheckBoxes.write.disable = true
-        if !(PermissionTree.fromPath("expenses.data.*.value.description") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.value.description") <= writePerm)
         then expensesParentCheckBoxes.descriptionWrite.disable = true
-        if !(PermissionTree.fromPath("expenses.data.*.value.amount") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.value.amount") <= writePerm)
         then expensesParentCheckBoxes.amountWrite.disable = true
-        if !(PermissionTree.fromPath("expenses.data.*.value.comment") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.value.comment") <= writePerm)
         then expensesParentCheckBoxes.commentWrite.disable = true
 
-    if !(PermissionTree.fromPath("expenses.data") <= writePerm)
+    if !(PermissionTree.fromPath("expenses.inner") <= writePerm)
     then
         val entryWritePerms = writePerm
           .children.getOrElse("expenses", PermissionTree.empty)
-          .children.getOrElse("data", PermissionTree.empty)
+          .children.getOrElse("inner", PermissionTree.empty)
         val entryReadPerms = readPerm
           .children.getOrElse("expenses", PermissionTree.empty)
-          .children.getOrElse("data", PermissionTree.empty)
+          .children.getOrElse("inner", PermissionTree.empty)
         expenseEntryCheckBoxes.foreach { case (id, checkBoxes) =>
           checkBoxes.disableCheckBoxesIfInsufficientPermissions(
             entryReadPerms.children.getOrElse(id, PermissionTree.empty),
@@ -234,7 +234,7 @@ class PermissionTreePane(
         case _ =>
 
     inline def expenseWildcardSubPermissionTree(field: String): IArray[String] =
-      IArray(s"expenses.data.*.value.$field", "expenses.data.*.dots", "expenses.observed", "expenses.deletions")
+      IArray(s"expenses.inner.*.value.$field", "expenses.inner.*.dots", "expenses.removed")
 
     // Expenses wildcard
     read = read
@@ -262,8 +262,8 @@ class PermissionTreePane(
           Map("expenses" -> PermissionTree(
             PARTIAL,
             Map(
-              "data"     -> PermissionTree(PARTIAL, expenseEntryReadPerms),
-              "observed" -> PermissionTree.allow
+              "inner"   -> PermissionTree(PARTIAL, expenseEntryReadPerms),
+              "removed" -> PermissionTree.allow
             )
           ))
         ))
@@ -280,8 +280,8 @@ class PermissionTreePane(
           Map("expenses" -> PermissionTree(
             PARTIAL,
             Map(
-              "data"     -> PermissionTree(PARTIAL, expenseEntryWritePerms),
-              "observed" -> PermissionTree.allow
+              "inner"   -> PermissionTree(PARTIAL, expenseEntryWritePerms),
+              "removed" -> PermissionTree.allow
             )
           ))
         ))
