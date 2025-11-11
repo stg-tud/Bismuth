@@ -178,6 +178,9 @@ case class HashDAG[T](
     def getDelta(ids: List[String]): HashDAG[T] =
       withQueue(ids.map(id => events(id)).toSet)
 
+    def orderEvents(events: Iterable[Event[T]]): List[Event[T]] =
+      events.toList.sortWith((e1, e2) => pathExists(e1.id, e2.id))
+
 object HashDAG:
     def apply[T](publicKey: PublicKey, privateKey: Option[PrivateKey]): HashDAG[T] =
         val graph = new HashMap[String, Set[String]]()

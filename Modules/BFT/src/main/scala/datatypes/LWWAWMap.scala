@@ -7,16 +7,16 @@ import scala.util.hashing.MurmurHash3
 case class LWWAWMap[K, V](
     map: Map[K, V],
     tags: Map[K, Set[String]],
-    hashDAG: HashDAG[Operation[K, V]]
-) extends Replica[Operation[K, V], LWWAWMap[K, V]]:
+    hashDAG: HashDAG[MapOperation[K, V]]
+) extends Replica[MapOperation[K, V], LWWAWMap[K, V]]:
 
     def put(key: K, value: V): LWWAWMap[K, V] =
-        val op = Add(key, value)
+        val op = AddKeyValue(key, value)
 
         LWWAWMap(Map.empty, Map.empty, hashDAG.generateDelta(op))
 
     def remove(key: K): LWWAWMap[K, V] =
-        val op = Remove[K, V](key)
+        val op = RemoveKey[K, V](key)
 
         LWWAWMap(Map.empty, Map.empty, hashDAG.generateDelta(op))
 
@@ -37,7 +37,7 @@ case class LWWAWMap[K, V](
           if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
               val op = event.content.get
               op match
-                  case Add(key, value) =>
+                  case AddKeyValue(key, value) =>
                     if newMap.contains(key) then
                         var ids = Set.empty[String]
                         for id <- newTags(key) do
@@ -49,8 +49,8 @@ case class LWWAWMap[K, V](
                           ids.toList.sortWith((x, y) => MurmurHash3.stringHash(x) > MurmurHash3.stringHash(y)).head
                         val chosenEvent = newHashDAG.getEventByID(chosenID)
                         val v           = chosenEvent.content.get match
-                            case Add(k, v) => v
-                            case Remove(_) => throw Exception("This is not supposed to happen")
+                            case AddKeyValue(k, v) => v
+                            case RemoveKey(_) => throw Exception("This is not supposed to happen")
 
                         newMap = newMap + (key   -> v)
                         val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
@@ -60,7 +60,7 @@ case class LWWAWMap[K, V](
                       val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
                       newTags = newTags + (key -> newSet)
                     }
-                  case Remove(k) =>
+                  case RemoveKey(k) =>
                     if !newMap.contains(k) || !newTags.contains(k) then {
                       newMap = newMap - k
                       newTags = newTags - k
@@ -77,7 +77,7 @@ case class LWWAWMap[K, V](
 
     def empty: LWWAWMap[K, V] = LWWAWMap()
 
-    def withHashDAG(hashDAG: HashDAG[Operation[K, V]]): LWWAWMap[K, V] = this.copy(hashDAG = hashDAG)
+    def withHashDAG(hashDAG: HashDAG[MapOperation[K, V]]): LWWAWMap[K, V] = this.copy(hashDAG = hashDAG)
 
     override def generateDelta(ids: List[String]): LWWAWMap[K, V] =
       LWWAWMap(Map.empty, Map.empty, hashDAG.getDelta(ids))
@@ -88,10 +88,10 @@ object LWWAWMap:
       new LWWAWMap[K, V](
         Map.empty,
         Map.empty,
-        HashDAG[Operation[K, V]](keyPair.getPublic, Some(keyPair.getPrivate))
+        HashDAG[MapOperation[K, V]](keyPair.getPublic, Some(keyPair.getPrivate))
       )
     }
 
-sealed trait Operation[K, V]
-case class Add[K, V](key: K, value: V) extends Operation[K, V]
-case class Remove[K, V](key: K)        extends Operation[K, V]
+sealed trait MapOperation[K, V]
+case class AddKeyValue[K, V](key: K, value: V) extends MapOperation[K, V]
+case class RemoveKey[K, V](key: K)        extends MapOperation[K, V]
