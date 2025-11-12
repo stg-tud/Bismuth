@@ -235,6 +235,12 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
     ),
   )
 
+lazy val prdtSmr = project.in(file("Modules/PRDT SMR"))
+  .dependsOn(rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
+  .settings(
+    scala3defaultsExtra
+  )
+
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .dependsOn(reactives.jvm, rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
   .enablePlugins(JavaAppPackaging)
