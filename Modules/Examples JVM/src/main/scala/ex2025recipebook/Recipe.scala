@@ -8,7 +8,10 @@ import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 case class Recipe(
     title: LastWriterWins[String],
     ingredients: NestedKeepRemoveList[Ingredient],
-    favorite: EnableWinsFlag = EnableWinsFlag.empty
+    servings: LastWriterWins[Int],
+    cookingTime: LastWriterWins[Int],
+    description: LastWriterWins[String],
+    favorite: EnableWinsFlag
 ) {
 
   private inline def mod[A](inline path: Delta => A, mod: A => A)(using localUid: LocalUid): Delta =
@@ -25,6 +28,12 @@ case class Recipe(
 
   def removeIngredient(index: Int)(using localUid: LocalUid): Delta =
     mod(_.ingredients, _.remove(index))
+    
+  def updateServings(newServings: Int)(using localUid: LocalUid): Delta = mod(_.servings, _.write(newServings))
+
+  def updateCookingTime(newCookingTime: Int)(using localUid: LocalUid): Delta = mod(_.cookingTime, _.write(newCookingTime))
+
+  def updateDescription(newDescription: String)(using localUid: LocalUid): Delta = mod(_.description, _.write(newDescription))
 
   def setFavorite(value: Boolean)(using localUid: LocalUid): Delta =
     if value then mod(_.favorite, _.enable()) else mod(_.favorite, _.disable())
@@ -40,23 +49,25 @@ object Recipe {
 
   type Delta = Recipe
 
-  val empty: Recipe = Recipe(LastWriterWins.empty[String], NestedKeepRemoveList.empty)
+  val empty: Recipe = Recipe(LastWriterWins.empty[String], NestedKeepRemoveList.empty, LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
 
   given Bottom[String] = Bottom.provide("")
 
+  given Bottom[Int] = Bottom.provide(0)
+  
   given bottom: Bottom[Recipe] = Bottom.derived
 
   given Lattice[Recipe] = Lattice.derived
 
   given Historized[Recipe] = Historized.productHistorized
 
-  def apply(title: String): Recipe = Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty)
+  def apply(title: String): Recipe = Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty, LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
 
   def apply(title: String, ingredient: Ingredient)(using localUid: LocalUid): Recipe =
-    Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].append(ingredient))
+    Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].append(ingredient), LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
 
   def apply(title: String, ingredients: Iterable[Ingredient])(using localUid: LocalUid): Recipe =
-    Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients))
+    Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients), LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
 
   def main(args: Array[String]): Unit = {
     val replica1, replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(LocalUid.gen(), Recipe.empty, DeltaBufferNonRedundant[Recipe]())

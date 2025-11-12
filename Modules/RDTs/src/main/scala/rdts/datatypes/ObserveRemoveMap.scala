@@ -87,26 +87,12 @@ object ObserveRemoveMap {
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
-  given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) => {
-    if bufferedDelta == ObserveRemoveMap.empty then bufferedDelta.getAllDots
-    else if isRemoveOperation(delta) && isObserveOperation(bufferedDelta.delta)
-      && delta.observed.contains(bufferedDelta.delta.observed) then bufferedDelta.getAllDots
-    else if isObserveOperation(bufferedDelta.delta) && isObserveOperation(delta)
-      && bufferedDelta.delta.inner.keys.forall(k => delta.contains(k)) then {
-      // only look at deltas in the buffer which keys are contained by the new delta
-      bufferedDelta.delta.entries.toList match {
-        case Nil          => Dots.empty
-        case head :: tail =>
-          val redundantDotsAtHead =
-            delta.get(head._1).get.getRedundantDeltas(bufferedDelta.copy(delta = bufferedDelta.delta.get(head._1).get))
-          tail.foldLeft(redundantDotsAtHead)((dots, entry) => // iterate over all keys of the delta in the buffer
-            dots.intersect(delta.get(entry._1).get.getRedundantDeltas(bufferedDelta.copy(delta =
-              bufferedDelta.delta.get(head._1).get
-            )))
-          )
-      }
-    } else Dots.empty
-  }
+  given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
+    bufferedDelta == ObserveRemoveMap.empty
+    || (isRemoveOperation(delta) && isRemoveOperation(bufferedDelta) && delta.removed.contains(bufferedDelta.removed))
+    || (isObserveOperation(delta) && isObserveOperation(bufferedDelta) 
+        && bufferedDelta.inner.keys.forall(k => delta.contains(k))
+        && bufferedDelta.entries.forall(entry => delta.get(entry._1).get.isRedundant(bufferedDelta.get(entry._1).get)))
 
   private def isObserveOperation[K, V](delta: ObserveRemoveMap[K, V]): Boolean =
     delta.inner.nonEmpty && delta.removed.isEmpty

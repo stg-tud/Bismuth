@@ -100,9 +100,9 @@ class MergingHistory[State: JsonValueCodec](blockSize: Int)(using Lattice[Payloa
 
 class NonRedundantHistory[State: {JsonValueCodec, Historized}] extends DeltaStorage[State] {
 
-  private var history: List[Payload[State]] = List.empty
+  private var history: Set[Payload[State]] = Set.empty
 
-  override def getHistory: List[CachedMessage[Payload[State]]] = history.map(SentCachedMessage(_)(using pmscodec))
+  override def getHistory: List[CachedMessage[Payload[State]]] = history.map(SentCachedMessage(_)(using pmscodec)).toList
 
   override def remember(message: CachedMessage[Payload[State]]): Unit = {
     val redundantDeltas: Dots = history.toMetaDeltas.getRedundantDeltas(message.payload.data)
@@ -110,8 +110,7 @@ class NonRedundantHistory[State: {JsonValueCodec, Historized}] extends DeltaStor
       if !dots.contains(bufferedDelta.dots) then dots.union(bufferedDelta.redundantDots) else dots
     )
 
-    history =
-      message.payload.copy(redundantDots = redundantDeltas) :: history.filterNot(p => redundantDots.contains(p.dots))
+    history = history.filterNot(p => redundantDots.contains(p.dots)) + message.payload.copy(redundantDots = redundantDeltas)
   }
 
 }

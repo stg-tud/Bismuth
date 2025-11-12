@@ -30,6 +30,8 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
       Map.empty,
       Dots.from(repr.keySet)
     )
+
+  def observed: Dots = repr.foldLeft(removed)((dots, entry) => dots.add(entry._1))
 }
 
 object MultiVersionRegister {
@@ -51,7 +53,10 @@ object MultiVersionRegister {
         base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
       }
 
-  given historized[A]: Historized[MultiVersionRegister[A]] = (delta, bufferedDelta) =>
-    if delta.removed.contains(Dots.from(bufferedDelta.delta.repr.keys)) then bufferedDelta.getAllDots else Dots.empty
+  /** The buffered delta is redundant if it happened before the delta
+    * -> the key/dot of the write operation in the buffered delta is removed by the delta
+    */
+  given historized[A]: Historized[MultiVersionRegister[A]] = (delta, bufferedDelta) => 
+    delta.removed.contains(delta.observed)
 
 }

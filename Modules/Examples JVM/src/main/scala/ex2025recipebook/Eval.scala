@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 class EvalState {
 
-  @Param(Array("1", "10", "100", "1000"))
+  @Param(Array("1", "2", "5", "10", "100", "200", "500", "1000", "2000", "5000", "10000"))
   var numOperations: Int   = 0
   val random               = new scala.util.Random(123456789)
   var randomArr: List[Int] = List.empty
@@ -357,7 +357,7 @@ object Eval {
       recipeBook.addIngredient(randomRecipeKey, Ingredient(random.toString, random.toDouble, random.toString))(using replicaID)
     }
 
-    (random % 6) match {
+    (random % 10) match {
       case 0 if recipeBook.nonEmpty => {
         val randomKey = lottery(recipeBook.keys.toList, random)
         recipeBook.deleteRecipe(randomKey)
@@ -383,6 +383,22 @@ object Eval {
           recipeBook.deleteIngredient(randomRecipeKey, randomIngredientIndex)(using replicaID)
         } else addIngredient()
       }
+      case 5 if recipeBook.nonEmpty => {
+        val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+        recipeBook.updateServings(randomRecipeKey, random)(using replicaID)
+      }
+      case 6 if recipeBook.nonEmpty => {
+        val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+        recipeBook.updateCookingTime(randomRecipeKey, random)(using replicaID)
+      }
+      case 7 if recipeBook.nonEmpty => {
+        val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+        recipeBook.updateDescription(randomRecipeKey, random.toString)(using replicaID)
+      }
+      case 8 if recipeBook.nonEmpty => {
+        val randomRecipeKey = lottery(recipeBook.keys.toList, random)
+        recipeBook.updateFavorite(randomRecipeKey, random%2 == 0)(using replicaID)
+      }
       case _ => {
         val recipe = Recipe.empty
         recipeBook.addRecipe(random.toString, recipe)(using replicaID)
@@ -406,6 +422,18 @@ object Eval {
         krList.insertAt(index, random)(using replicaID)
       }
     }
+  }
+
+  def initializeRecipeBook(localUid: LocalUid, num: Int): RecipeBook = {
+    var recipeBook: RecipeBook = RecipeBook.empty
+
+    (0 to num).foreach( i =>
+      val ingredients: Iterable[Ingredient] = (0 to i%10).map(j => Ingredient(j.toString, j, j.toString))
+      val recipe: Recipe = Recipe(i.toString, ingredients)(using localUid)
+      recipeBook = recipeBook `merge` recipeBook.addRecipe(i.toString, recipe)(using localUid)
+    )
+
+    recipeBook
   }
 
 }

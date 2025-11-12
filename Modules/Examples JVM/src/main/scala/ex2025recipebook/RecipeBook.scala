@@ -19,9 +19,9 @@ case class RecipeBook(
   def deleteRecipe(key: String): Delta =
     this.deltaModify(_.recipes).using(_.remove(key))
 
-  def updateRecipeTitle(key: String, updatedRecipeTitle: String)(using localUid: LocalUid): Delta = {
+  def updateRecipeTitle(recipeKey: String, updatedRecipeTitle: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.recipes).using { ormap =>
-      ormap.transform(key) {
+      ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.title).using(_.write(updatedRecipeTitle)))
         case None        => ???
       }
@@ -57,7 +57,43 @@ case class RecipeBook(
     }
   }
 
-  def isEmpty: Boolean = recipes.observed.isEmpty
+  def updateServings(recipeKey: String, newServings: Int)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.recipes).using { ormap =>
+      ormap.transform(recipeKey) {
+        case Some(prior) => Some(prior.updateServings(newServings)(using localUid))
+        case None => ???
+      }
+    }
+  }
+
+  def updateCookingTime(recipeKey: String, newCookingTime: Int)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.recipes).using { ormap =>
+      ormap.transform(recipeKey) {
+        case Some(prior) => Some(prior.updateCookingTime(newCookingTime)(using localUid))
+        case None => ???
+      }
+    }
+  }
+
+  def updateDescription(recipeKey: String, newDescription: String)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.recipes).using { ormap =>
+      ormap.transform(recipeKey) {
+        case Some(prior) => Some(prior.updateDescription(newDescription)(using localUid))
+        case None => ???
+      }
+    }
+  }
+
+  def updateFavorite(recipeKey: String, newValue: Boolean)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.recipes).using { ormap =>
+      ormap.transform(recipeKey) {
+        case Some(prior) => Some(prior.deltaModify(_.favorite).using(ew => if newValue then ew.enable(using localUid)() else ew.disable()))
+        case None => ???
+      }
+    }
+  }
+
+  def isEmpty: Boolean = recipes.inner.isEmpty
 
   def nonEmpty: Boolean = !isEmpty
 

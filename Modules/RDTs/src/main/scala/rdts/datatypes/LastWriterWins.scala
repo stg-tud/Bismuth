@@ -62,7 +62,7 @@ object LastWriterWins {
           case x if x > 0 => left
   }
 
-  given historized[A]: Historized[LastWriterWins[A]] = (delta, bufferedDelta) =>
-    if bufferedDelta.delta.timestamp <= delta.timestamp then bufferedDelta.getAllDots else Dots.empty
+  given historized[A]: Historized[LastWriterWins[A]] = (delta, bufferedDelta) => 
+    bufferedDelta.timestamp <= delta.timestamp
 
 }

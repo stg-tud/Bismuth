@@ -129,14 +129,14 @@ class ObserveRemoveMapTest extends munit.FunSuite {
 
     var redundantDeltas = buffer.getRedundantDeltas(delta6)
 
-    assertEquals(redundantDeltas, Dots.from(List(dot1)))
+    assertEquals(redundantDeltas, Dots.empty)
 
     buffer = MetaDelta(Dots.single(dot6), delta6) :: buffer.filterNot(bufferedDelta => redundantDeltas.contains(bufferedDelta.id))
 
     val delta = produceDeltaAdd("a", "ab")
     redundantDeltas = buffer.getRedundantDeltas(delta)
 
-    assertEquals(redundantDeltas, Dots.empty)
+    assertEquals(redundantDeltas, Dots.single(dot1))
   }
 
 }

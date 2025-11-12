@@ -15,13 +15,12 @@ trait Historized[T] {
     * @param bufferedDelta a previously applied delta from the delta buffer
     * @return all dots (ids of deltas) that are subsumed by the new delta
     */
-  def getRedundantDeltas(delta: T, bufferedDelta: MetaDelta[T]): Dots
+  def isRedundant(delta: T, bufferedDelta: T): Boolean
 
   extension (delta: T) {
 
-    @targetName("getRedundantDeltasInfix")
-    inline def getRedundantDeltas(butteredDelta: MetaDelta[T]): Dots =
-      Historized.this.getRedundantDeltas(delta, butteredDelta)
+    @targetName("isRedundantInfix")
+    inline def isRedundant(butteredDelta: T): Boolean = Historized.this.isRedundant(delta, butteredDelta)
 
   }
 
@@ -45,12 +44,14 @@ object Historized {
         metaDeltas.map(bufferedDelta => bufferedDelta.copy(delta = f(bufferedDelta.delta)))
 
       inline def getRedundantDeltas(delta: T)(using Historized[T]): Dots =
-        metaDeltas.foldLeft(Dots.empty)((dots, bufferedDelta) => dots.union(delta.getRedundantDeltas(bufferedDelta)))
+        metaDeltas.foldLeft(Dots.empty)((dots, bufferedDelta) => 
+          val redundantDeltas = if delta.isRedundant(bufferedDelta.delta) then bufferedDelta.getAllDots else Dots.empty
+          dots.union(redundantDeltas)
+        )
     }
   }
 
-  given subsumption[T: Lattice]: Historized[T] = (delta: T, bufferedDelta: MetaDelta[T]) =>
-    if delta `subsumes` bufferedDelta.delta then bufferedDelta.getAllDots else Dots.empty
+  given subsumption[T: Lattice]: Historized[T] = (delta, bufferedDelta) => delta `subsumes` bufferedDelta
 
   inline def derived[T <: Product: {Mirror.ProductOf}]: Historized[T] = productHistorized[T]
 
@@ -69,23 +70,9 @@ object Historized {
 
     private def hist(i: Int): Historized[Any] = historizables.productElement(i).asInstanceOf[Historized[Any]]
 
-    override def getRedundantDeltas(delta: T, bufferedDelta: MetaDelta[T]): Dots = {
-      inline def redundantDotsAtZero: Dots = hist(0).getRedundantDeltas(
-        delta.productElement(0),
-        bufferedDelta.copy(delta = bufferedDelta.delta.productElement(0))
-      )
-
-      historizables.productArity match {
-        case 0 => Dots.empty
-        case 1 => redundantDotsAtZero
-        case _ =>
-          val redundant = Range(1, historizables.productArity).foldLeft(redundantDotsAtZero) { (dots, i) =>
-            dots.intersect(hist(i).getRedundantDeltas(
-              delta.productElement(i),
-              bufferedDelta.copy(delta = bufferedDelta.delta.productElement(i))
-            ))
-          }
-          redundant
+    override def isRedundant(delta: T, bufferedDelta: T): Boolean = {
+      Range(0, historizables.productArity).forall { i => 
+        hist(i).isRedundant(delta.productElement(i), bufferedDelta.productElement(i))
       }
     }
   }

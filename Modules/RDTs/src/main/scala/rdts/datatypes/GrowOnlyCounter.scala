@@ -26,13 +26,9 @@ object GrowOnlyCounter {
       given Decompose[Int] = Decompose.atomic
       Decompose.derived
 
-  /** the delta must contain all keys of the buffered delta, and the counter of each replica must be greater equal */
+  /** the delta must contain all replica ids of the buffered delta,
+    * and the counter of each replica must be greater equal
+    */
   given historized: Historized[GrowOnlyCounter] = (delta, bufferedDelta) =>
-    if bufferedDelta.delta.inner.keys.forall(k =>
-          delta.inner.contains(k) && bufferedDelta.delta.inner(k) <= delta.inner(k)
-        )
-    then
-        bufferedDelta.getAllDots
-    else
-        Dots.empty
+    bufferedDelta.inner.forall((uid, counter) => counter <= delta.inner.getOrElse(uid, -1))
 }

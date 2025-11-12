@@ -92,4 +92,55 @@ class EnableWinsFlagTest extends munit.FunSuite {
     assertEquals(redundantDeltas, dots.subtract(Dots.single(dot4).union(Dots.single(dot5))))
   }
 
+  test("subsumption previous from same replica") {
+    import EnableWinsFlag.given
+
+    val localUid1 = LocalUid.gen()
+    var ewFlag = EnableWinsFlag.empty
+    var dots = Dots.empty
+
+    val delta1 = ewFlag.enable(using localUid1)()
+    ewFlag = ewFlag `merge` delta1
+    val dot1 = dots.nextDot(using localUid1)
+    dots = dots.add(dot1)
+    
+    println(f"${ewFlag.read}, ${ewFlag.set}")
+
+    val delta2 = ewFlag.disable()
+    ewFlag = ewFlag `merge` delta2
+    val dot2= dots.nextDot(using localUid1)
+    dots = dots.add(dot2)
+
+    println(f"${ewFlag.read}, ${ewFlag.set}")
+
+    val delta3 = ewFlag.enable(using localUid1)()
+    ewFlag = ewFlag `merge` delta3
+    val dot3 = dots.nextDot(using localUid1)
+    dots = dots.add(dot3)
+
+    println(f"${ewFlag.read}, ${ewFlag.set}")
+
+    val delta4 = ewFlag.disable()
+    ewFlag = ewFlag `merge` delta4
+    val dot4 = dots.nextDot(using localUid1)
+    dots = dots.add(dot4)
+
+    println(f"${ewFlag.read}, ${ewFlag.set}")
+
+    println(delta1)
+    println(delta2)
+    println(delta3)
+    println(delta4)
+
+    println("delta2")
+    println(f"${delta2 `subsumes` delta1} ${delta2.isRedundant(delta1)}")
+    println("delta3")
+    println(f"${delta3 `subsumes` delta1} ${delta3.isRedundant(delta1)}")
+    println(f"${delta3 `subsumes` delta2} ${delta3.isRedundant(delta2)}")
+    println("delta4")
+    println(f"${delta4 `subsumes` delta1} ${delta4.isRedundant(delta1)}")
+    println(f"${delta4 `subsumes` delta2} ${delta4.isRedundant(delta2)}")
+    println(f"${delta4 `subsumes` delta3} ${delta4.isRedundant(delta3)}")
+  }
+
 }

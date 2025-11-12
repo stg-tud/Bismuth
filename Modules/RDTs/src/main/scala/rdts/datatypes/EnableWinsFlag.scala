@@ -35,7 +35,6 @@ object EnableWinsFlag {
     * and not in set, it is equivalent to only being present in unset. An enable modification does not make any previous
     * delta redundant other than the delta containing the exact same dot for enabling the flag.
     */
-  given historized: Historized[EnableWinsFlag] = (delta: EnableWinsFlag, bufferedDelta: MetaDelta[EnableWinsFlag]) =>
-    if delta.unset.contains(bufferedDelta.delta.observed) then bufferedDelta.getAllDots else Dots.empty
+  given historized: Historized[EnableWinsFlag] = (delta, bufferedDelta) => delta.unset.contains(bufferedDelta.observed)
 
 }
