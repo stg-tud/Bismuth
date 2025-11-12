@@ -101,3 +101,39 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
         crdt0.elements.keySet ++ crdt1.elements.keySet ++ crdt2.elements.keySet
       )
     }
+
+    test("basic_2") {
+      var crdt0 = ORSet[String]()
+      crdt0 = crdt0.merge(crdt0.add("hello"))
+
+      var crdt1 = ORSet[String]()
+      crdt1 = crdt1.merge(crdt1.add("hi"))
+
+      val sync0 = RIBLTSyncWithThreads(crdt0, Map.empty, "replica_0")
+      val sync1 = RIBLTSyncWithThreads(crdt1, Map.empty, "replica_1")
+
+      Network.startChannel("replica_0")
+      Network.startChannel("replica_1")
+      Network.startChannel("replica_2")
+      Network.startChannel("replica_3")
+
+      val t0 = sync0.startSession(sync1.replicaID, sessionType = sender)
+      val t1 = sync1.startSession(sync0.replicaID, sessionType = receiver)
+
+      t0.join()
+      t1.join()
+
+      val crdt0afterSync = sync0.replica
+      val crdt1afterSync = sync1.replica
+
+      // sync2.startSession(sync3.id, sessionType=sender)
+      // sync3.startSession(sync2.id, sessionType=receiver)
+
+      // println(crdt1.elements.keySet)
+      // println(crdt2.elements.keySet)
+      // println(crdt3.elements.keySet)
+
+      println(crdt0afterSync.elements.keySet)
+      println(crdt1afterSync.elements.keySet)
+      
+    }
