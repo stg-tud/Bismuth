@@ -287,7 +287,10 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
     val undoButton            = Event.fromCallback(button("Undo", onclick := Event.handle))
     val redoButton            = Event.fromCallback(button("Redo", onclick := Event.handle))
 
-    val markSelected: Event[Dot] = Event.static(None)
+    val markEntrySelectedEvent  = Evt[Dot]()
+    val setEntryAsLocationEvent = Evt[Dot]()
+    val moveEntryToParentEvent  = Evt[MoveEntry]()
+    val renameEntryEvent        = Evt[(Dot, String)]()
 
     def events[T](s: Seq[FsEntryView], mapper: FsEntryView => Event[T]): Event[T] = {
       val events = s.map(mapper)
@@ -326,19 +329,16 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
               current.mod((s) => s.addEntry(s.location, dot => FsEntry.folder(dot, name)))
             },
             deleteAllButton.event.branch { _ => current.mod(_.clearAll()) },
-            events(entryViews.value, (n) => n.onClick.event.map(_ => n.state.id)).branch { id =>
-              current.mod(_.markSelected(id))
+            markEntrySelectedEvent.branch { id =>
+              current.mod((s) => s.markSelected(id))
             },
-            events(
-              entryViews.value,
-              (n) => n.onDoubleClick.event.filter(_ => n.state.ty == FsEntryType.Folder).map(_ => n.state.id)
-            ).branch { id =>
-              current.mod(_.setLocation(id))
+            setEntryAsLocationEvent.branch { id =>
+              current.mod((s) => s.setLocation(id))
             },
-            events(entryViews.value, (n) => n.onEntryDrop).branch { op =>
+            moveEntryToParentEvent.branch { op =>
               current.mod(_.moveToParent(op.id, op.parent))
             },
-            events(entryViews.value, (n) => n.onRename.map { s => (n.state.id, s) }).branch { (id, v) =>
+            renameEntryEvent.branch { (id, v) =>
               current.mod(_.renameEntry(id, v))
             },
             // onNavigateToDirection.branch { d =>
@@ -405,7 +405,22 @@ class FilesystemUI(val storagePrefix: String, val replicaId: LocalUid) {
       entries.map((n) => FsEntryView(n.value))
     }
 
-    entryViews.observe({ views => {} })
+    val e1 = entryViews.map { views =>
+      views.map(v => v.onDoubleClick.event.filter(_ => v.state.ty == FsEntryType.Folder).map(_ => v.state.id))
+    }.flatten(using Flatten.firstFiringEvent)
+    e1.observe(d => setEntryAsLocationEvent.fire(d))
+    val e2 = entryViews.map { views =>
+      views.map(v => v.onClick.event.map(_ => v.state.id))
+    }.flatten(using Flatten.firstFiringEvent)
+    e2.observe(d => markEntrySelectedEvent.fire(d))
+    val e3 = entryViews.map { views =>
+      views.map(v => v.onEntryDrop)
+    }.flatten(using Flatten.firstFiringEvent)
+    e3.observe(d => moveEntryToParentEvent.fire(d))
+    val e4 = entryViews.map { views =>
+      views.map(v => v.onRename.map(name => (v.state.id, name)))
+    }.flatten(using Flatten.firstFiringEvent)
+    e4.observe(d => renameEntryEvent.fire(d))
 
     val entryTags: Signal[Seq[LI]] = entryViews.map { entries =>
       entries.map((n) => {
