@@ -21,6 +21,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
 
   def entries: Iterable[(K, V)] = inner.view.mapValues(_.value)
 
+  def keySet: Set[K] = inner.keySet
+
   /** merges `v` into the current value stored in the map */
   def update(k: K, v: V)(using LocalUid): Delta = {
     val next = Dots.single(observed.nextDot(LocalUid.replicaId))
