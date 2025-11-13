@@ -16,9 +16,10 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
-class TravelPlannerBenchmark(
+class TravelPlannerBenchmark private[TravelPlannerBenchmark](
     val numReplicas: Int,
     val identities: Array[PrivateIdentity],
+    val aclRoot: SerializedAclOp
 ) {
   require(numReplicas == identities.length)
   val antiEntropyInstances: Array[BftFilteringAntiEntropy[RDT]] = Array.ofDim(numReplicas)
@@ -26,40 +27,6 @@ class TravelPlannerBenchmark(
   var indices: Map[PublicIdentity, Int]                         = ids.zipWithIndex.toMap
   val registry                                                  = MockConnectionRegistry()
   var replicas: Array[ReplicaWithBftAcl[RDT]]                   = scala.compiletime.uninitialized
-
-  def this(numReplicas: Int) = this(
-    numReplicas,
-    Array.ofDim[PrivateIdentity](numReplicas).mapInPlace(_ => IdentityFactory.createNewIdentity),
-  )
-
-  def initReplicas(
-      aclRoot: SerializedAclOp = BftAclOpGraph.createSelfSignedRoot(identities(0)),
-      initialConnectionMap: Map[Int, Set[Int]] = Map.empty,
-  ): Unit = {
-    replicas = identities.map(identity =>
-      ReplicaWithBftAcl[RDT](
-        identity,
-        aclRoot,
-        (_: RDT) => (),
-        (id, aclRoot, sync: ReplicaWithBftAcl[RDT]) => {
-          val antiEntropy = BftFilteringAntiEntropy[RDT](
-            id,
-            aclRoot,
-            sync,
-            (id, rcv) => {
-              val mgr = MockConnectionManager(id.getPublic, rcv)(using registry)
-              mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
-              mgr
-            }
-          )
-          antiEntropyInstances(indices(id.getPublic)) = antiEntropy
-          antiEntropy
-        }
-      )
-    )
-
-    connect(initialConnectionMap)
-  }
 
   def performRandomRdtAction(
       permittedMutators: Array[Array[TravelPlanMutator]],
@@ -120,9 +87,41 @@ class TravelPlannerBenchmark(
 }
 
 object TravelPlannerBenchmark {
-
   type RDT   = TravelPlan
   type Trace = Vector[Seq[(Int, RDT)]]
+
+  def apply(numReplicas: Int, identities: Array[PrivateIdentity], aclRoot: SerializedAclOp): TravelPlannerBenchmark = {
+    given MockConnectionRegistry = MockConnectionRegistry()
+    val bench                    = new TravelPlannerBenchmark(numReplicas, identities, aclRoot)
+    val replicas                 = identities.map(identity =>
+      ReplicaWithBftAcl[RDT](
+        identity,
+        aclRoot,
+        (_: RDT) => (),
+        (id, aclRoot, sync: ReplicaWithBftAcl[RDT]) => {
+          val antiEntropy = BftFilteringAntiEntropy[RDT](
+            id,
+            aclRoot,
+            sync,
+            (id, rcv) => {
+              val mgr = MockConnectionManager(id.getPublic, rcv)
+              mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
+              mgr
+            }
+          )
+          bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
+          antiEntropy
+        }
+      )
+    )
+    bench
+  }
+
+  def apply(numReplicas: Int): TravelPlannerBenchmark = {
+    val identities = Array.fill(numReplicas)(IdentityFactory.createNewIdentity)
+    val aclRoot: SerializedAclOp = BftAclOpGraph.createSelfSignedRoot(identities(0))
+    apply(numReplicas, identities, aclRoot)
+  }
 
   def createTrace(
       numReplicas: Int,
@@ -132,8 +131,7 @@ object TravelPlannerBenchmark {
     require(numReplicas >= 2)
     given random: Random = Random(42)
 
-    val bench = new TravelPlannerBenchmark(4)
-    bench.initReplicas()
+    val bench = TravelPlannerBenchmark(4)
     // bench.connectAll()
     bench.connect(Map(0 -> Set(1, 2, 3)))
     require(bench.antiEntropyInstances.forall(antiEntropy => antiEntropy.connectedPeers.size == bench.numReplicas - 1))
