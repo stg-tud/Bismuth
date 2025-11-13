@@ -44,7 +44,7 @@ class TravelPlanModel(
     replica.connect(remoteUser, address)
 
   def changeTitle(newTitle: String): Unit =
-    mutateRdt(_.changeTitle(newTitle))
+    mutateRdt(_.setTitle(newTitle))
 
   def addBucketListEntry(text: String): Unit =
     mutateRdt(_.addBucketListEntry(text))

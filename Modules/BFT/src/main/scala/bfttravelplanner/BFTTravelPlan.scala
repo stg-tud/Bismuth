@@ -10,7 +10,7 @@ type Delta = BFTTravelPlan
 case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan]):
 
     def changeTitle(newTitle: String): Delta = {
-      val delta = state.changeTitle(newTitle)
+      val delta = state.setTitle(newTitle)
       BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
     }
 

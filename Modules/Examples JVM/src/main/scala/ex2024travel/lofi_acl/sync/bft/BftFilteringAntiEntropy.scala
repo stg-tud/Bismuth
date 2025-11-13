@@ -99,6 +99,7 @@ class BftFilteringAntiEntropy[RDT](
     println(s"Disconnected from $remote")
 
   def connect(peerId: PublicIdentity, host: String, port: Int): Unit = {
+    if peerId == localPublicId then return
     connectionManager.connectTo(host, port)
     newPeers(Set((peerId, (host, port))))
   }
@@ -144,9 +145,9 @@ class BftFilteringAntiEntropy[RDT](
         while !stopped do {
           try
               val pollWaitTime = 500 + rand.nextInt(1_000) // wait up to .5 to 1.5 seconds for messages to arrive
-              val peers        = connectedPeers
-              val peer         = if peers.nonEmpty then Some(peers.drop(rand.nextInt(peers.size)).head) else None
-              doSyncActions(pollWaitTime, peer)
+              processAllMessagesInInbox(pollWaitTime)
+              val peers = connectedPeers
+              if peers.nonEmpty then notifyPeerAboutLocalState(peers.drop(rand.nextInt(peers.size)).head)
           catch {
             case e: InterruptedException =>
           }
@@ -388,30 +389,29 @@ class BftFilteringAntiEntropy[RDT](
     }
   }
 
-  // TODO: Maybe split this up into two parts
-  protected[bft] def doSyncActions(incomingMessagePollTimeoutMillis: Int, randomPeer: Option[PublicIdentity]): Unit = {
+  protected[bft] def notifyPeerAboutLocalState(peer: PublicIdentity): Unit = {
+    val aclOpGraph = replica.currentOpGraph
+    if partialDeltaStore.nonEmpty then {
+      requestPartialDeltas()
+      send(peer, TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get()))
+    } else {
+      // If no partial deltas are stored locally, request from peer.
+      // If there are partial deltas, use PartialReplicationPeerSubsetSolver to choose replicas to request from.
+      sendMultiple(
+        peer,
+        TellKnownRdtDots(rdtDeltas.allDots),
+        TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get())
+      )
+    }
+  }
+
+  protected[bft] def processAllMessagesInInbox(incomingMessagePollTimeoutMillis: Int): Unit = {
     var nextMessage = Option(msgQueue.poll(incomingMessagePollTimeoutMillis, TimeUnit.MILLISECONDS))
     while nextMessage.nonEmpty do {
       val (msg, sender) = nextMessage.get
-      receiveMessage.tupled(nextMessage.get)
+      receiveMessage(msg, sender)
       nextMessage = Option(msgQueue.poll())
     }
-
-    // Synchronize with peers
-    if randomPeer.nonEmpty then
-        val aclOpGraph = replica.currentOpGraph
-        if partialDeltaStore.nonEmpty then {
-          requestPartialDeltas()
-          send(randomPeer.get, TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get()))
-        } else {
-          // If no partial deltas are stored locally, request from peer.
-          // If there are partial deltas, use PartialReplicationPeerSubsetSolver to choose replicas to request from.
-          sendMultiple(
-            randomPeer.get,
-            TellKnownRdtDots(rdtDeltas.allDots),
-            TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get())
-          )
-        }
   }
 }
 

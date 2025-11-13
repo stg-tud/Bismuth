@@ -1,7 +1,7 @@
 package ex2024travel.lofi_acl.travelplanner
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.softwaremill.quicklens.*
 import ex2024travel.lofi_acl.permission_pane.SelectorFactory
 import ex2024travel.lofi_acl.travelplanner.TravelPlan.{*, given}
@@ -18,11 +18,11 @@ case class TravelPlan(
     bucketList: ObserveRemoveMap[UniqueId, LastWriterWins[String]],
     expenses: ObserveRemoveMap[UniqueId, Expense]
 ) derives Lattice, Bottom, Filter {
-  def changeTitle(newTitle: String): Delta =
+  def setTitle(newTitle: String): Delta =
     this.deltaModify(_.title).using(_.write(newTitle))
 
   def addBucketListEntry(text: String)(using localUid: LocalUid): Delta = {
-    val key = randomKey
+    val key = randomIdentifier
     this.deltaModify(_.bucketList).using { ormap =>
       ormap.transform(key) {
         case None => Some(LastWriterWins.now(text))
@@ -40,8 +40,14 @@ case class TravelPlan(
     }
   }
 
+  def removeBucketListEntry(bucketListId: UniqueId)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.bucketList).using { ormap =>
+      ormap.remove(bucketListId)
+    }
+  }
+
   def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta = {
-    val key = randomKey
+    val key = randomIdentifier
     this.deltaModify(_.expenses).using { ormap =>
       val expense =
         Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.now(None))
@@ -49,6 +55,12 @@ case class TravelPlan(
         case None => Some(expense)
         case _    => ???
       }
+    }
+  }
+
+  def removeExpense(key: UniqueId)(using localUid: LocalUid): Delta = {
+    this.deltaModify(_.expenses).using { ormap =>
+      ormap.remove(key)
     }
   }
 
@@ -91,9 +103,9 @@ case class Expense(
 ) derives Lattice, Bottom, Filter
 
 object TravelPlan {
-  private val base64Encoder     = Base64.getEncoder
-  private val random            = Random
-  private def randomKey: String =
+  private val base64Encoder            = Base64.getEncoder
+  private val random                   = Random
+  private def randomIdentifier: String =
     base64Encoder.encodeToString(random.nextBytes(6))
 
   type Title = String
@@ -113,8 +125,10 @@ object TravelPlan {
 
   type Delta = TravelPlan
 
-  import ex2024travel.lofi_acl.sync.JsoniterCodecs.uidKeyCodec
-  given jsonCodec: JsonValueCodec[TravelPlan] = JsonCodecMaker.make[TravelPlan]
+  given jsonCodec: JsonValueCodec[TravelPlan] = {
+    import replication.JsoniterCodecs.given
+    JsonCodecMaker.make[TravelPlan](CodecMakerConfig.withMapAsArray(true))
+  }
 }
 
 object Expense {

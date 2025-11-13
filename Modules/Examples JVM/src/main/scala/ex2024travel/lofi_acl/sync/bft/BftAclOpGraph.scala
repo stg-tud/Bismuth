@@ -11,7 +11,12 @@ import java.util.Base64
 import scala.collection.mutable
 
 // TODO: Add cached lookups (maybe keep ~5 latest and/or a few last read acls)
-case class BftAclOpGraph(root: Signature, ops: Map[Signature, AclOp], heads: Set[Signature], latestAcl: BftAcl) {
+class BftAclOpGraph(
+    val root: Signature,
+    val ops: Map[Signature, AclOp],
+    val heads: Set[Signature],
+    val latestAcl: BftAcl
+) {
   private def applyOp(signature: Signature, op: AclOp): BftAclOpGraph =
       require(isOpLegal(op))
       val updatedAcl = op match {
