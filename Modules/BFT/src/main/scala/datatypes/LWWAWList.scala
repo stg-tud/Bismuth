@@ -10,13 +10,15 @@ case class LWWAWList[T](
     hashDAG: HashDAG[ListOperation[T]]
 ) extends Replica[ListOperation[T], LWWAWList[T]]:
 
-    lazy val list: List[T] =
+    lazy val listWithIDs: List[(T, String)] =
       itemsMap.toList.sortWith((item1, item2) => item1._1 <= item2._1).map(x => x._2).map(set =>
         choseValueRandomlyAndDeterministically(set)
       )
 
-    private def choseValueRandomlyAndDeterministically(set: Set[(T, String)]): T =
-      set.toList.sortWith((x, y) => MurmurHash3.stringHash(x._2) > MurmurHash3.stringHash(y._2)).head._1
+    def list: List[T] = listWithIDs.map(item => item._1)
+
+    private def choseValueRandomlyAndDeterministically(set: Set[(T, String)]): (T, String) =
+      set.toList.sortWith((x, y) => MurmurHash3.stringHash(x._2) > MurmurHash3.stringHash(y._2)).head
 
     def add(index: Int, element: T): LWWAWList[T] = {
       val l = list
@@ -25,16 +27,16 @@ case class LWWAWList[T](
 
       var hashDAGDelta = hashDAG.generateDelta(AddItem(ListItem(element, index)))
       var newHashDAG   = hashDAG.merge(hashDAGDelta)
-      for i <- index until l.size do
+      /*for i <- index until l.size do
           val delta = newHashDAG.generateDelta(AddItem(ListItem(l(i), i + 1)))
           newHashDAG = newHashDAG.merge(delta)
-          hashDAGDelta = hashDAGDelta.merge(delta)
+          hashDAGDelta = hashDAGDelta.merge(delta)*/
 
       LWWAWList(Map.empty, hashDAGDelta)
     }
 
     def remove(index: Int): LWWAWList[T] = {
-      val l = list
+      val l = listWithIDs
 
       if l.isEmpty then
           throw Exception("cannot remove empty list")
@@ -42,8 +44,8 @@ case class LWWAWList[T](
       if index > l.size || index < 0 then
           throw Exception("illegal index")
 
-      var hashDAGDelta = hashDAG.generateDelta(RemoveItem(index))
-      var newHashDAG   = hashDAG.merge(hashDAGDelta)
+      var hashDAGDelta = hashDAG.generateDelta(RemoveItem(listWithIDs(index)._2))
+      /*var newHashDAG   = hashDAG.merge(hashDAGDelta)
       for i <- index + 1 until l.size do
           val delta = newHashDAG.generateDelta(AddItem(ListItem(l(i), i - 1)))
           newHashDAG = newHashDAG.merge(delta)
@@ -52,7 +54,7 @@ case class LWWAWList[T](
       if l.size > 1 then
           val d = newHashDAG.generateDelta(RemoveItem(l.size - 1))
           newHashDAG = newHashDAG.merge(d)
-          hashDAGDelta = hashDAGDelta.merge(d)
+          hashDAGDelta = hashDAGDelta.merge(d)*/
 
       LWWAWList(Map.empty, hashDAGDelta)
     }
@@ -88,12 +90,16 @@ case class LWWAWList[T](
                         ids = ids + event.id
                         currentItems = currentItems + ((listItem.item, event.id))
                       }
+                      var tmpMap = Map.empty[Int, Set[(T, String)]]
+                      for key <- newItemMaps.keySet do
+                        tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
 
+                      newItemMaps = tmpMap
                       newItemMaps = newItemMaps + (listItem.index -> currentItems)
                     }
 
-                  case RemoveItem(index) =>
-                    if newItemMaps.contains(index) then
+                  case RemoveItem(itemID) =>
+                    /*if newItemMaps.contains(index) then
                         var currentItems = newItemMaps(index)
                         var ids          = currentItems.map((t, id) => id)
                         for id <- ids do
@@ -104,7 +110,14 @@ case class LWWAWList[T](
                         if ids.isEmpty then
                             newItemMaps = newItemMaps - index
                         else
-                            newItemMaps = newItemMaps + (index -> currentItems)
+                            newItemMaps = newItemMaps + (index -> currentItems)*/
+
+                    newItemMaps = newItemMaps.map {
+                      case (index, set) =>
+                        index -> set.filterNot { case (_, id) => id == itemID}
+                    }
+
+                    newItemMaps = newItemMaps.filterNot {case (_, set) => set.isEmpty}
             }
 
         LWWAWList(newItemMaps, newHashDAG)
@@ -144,5 +157,5 @@ object LWWAWList:
     }
 
 sealed trait ListOperation[T]
-case class RemoveItem[T](index: Int)         extends ListOperation[T]
+case class RemoveItem[T](id: String)         extends ListOperation[T]
 case class AddItem[T](listItem: ListItem[T]) extends ListOperation[T]

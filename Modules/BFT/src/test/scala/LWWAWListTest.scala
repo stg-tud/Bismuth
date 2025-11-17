@@ -55,6 +55,7 @@ class LWWAWListTest extends munit.FunSuite:
 
       list1 = list1.merge(list1.add(0, "x"))
       list2 = list2.merge(list2.remove(2))
+      println(list2.list)
 
       list1 = list1.merge(list2)
       list2 = list2.merge(list1)
