@@ -127,6 +127,7 @@ object TravelPlan {
 
   given jsonCodec: JsonValueCodec[TravelPlan] = {
     import replication.JsoniterCodecs.given
+    import ex2024travel.lofi_acl.sync.JsoniterCodecs.given
     JsonCodecMaker.make[TravelPlan](CodecMakerConfig.withMapAsArray(true))
   }
 }

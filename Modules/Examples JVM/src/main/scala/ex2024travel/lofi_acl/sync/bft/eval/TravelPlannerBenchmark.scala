@@ -1,31 +1,33 @@
 package ex2024travel.lofi_acl.sync.bft.eval
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToStream}
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
+import crypto.{Ed25519Util, PublicIdentity}
 import ex2024travel.lofi_acl.sync.bft.eval.TravelPlannerBenchmark.*
 import ex2024travel.lofi_acl.sync.bft.eval.TravelPlannerBenchmark.TravelPlanMutator.*
 import ex2024travel.lofi_acl.sync.bft.{BftAclOpGraph, BftFilteringAntiEntropy, ReplicaWithBftAcl, SerializedAclOp}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
+import org.bouncycastle.cert.X509CertificateHolder
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
+import replication.JsoniterCodecs
 
 import java.nio.file.{Files, Paths, StandardOpenOption}
+import java.security.KeyPair
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
-class TravelPlannerBenchmark private[TravelPlannerBenchmark](
+class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
     val numReplicas: Int,
     val identities: Array[PrivateIdentity],
     val aclRoot: SerializedAclOp
-) {
+)(using val registry: MockConnectionRegistry) {
   require(numReplicas == identities.length)
   val antiEntropyInstances: Array[BftFilteringAntiEntropy[RDT]] = Array.ofDim(numReplicas)
   var ids: Array[PublicIdentity]                                = identities.map(_.getPublic)
   var indices: Map[PublicIdentity, Int]                         = ids.zipWithIndex.toMap
-  val registry                                                  = MockConnectionRegistry()
   var replicas: Array[ReplicaWithBftAcl[RDT]]                   = scala.compiletime.uninitialized
 
   def performRandomRdtAction(
@@ -54,6 +56,7 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark](
     }
     (authoringReplica, delta)
   }
+
   def connectAll(): Unit = connect((0 until (numReplicas - 1)).map(i => i -> ((i + 1) until numReplicas).toSet).toMap)
 
   def connect(connectionMap: Map[Int, Set[Int]]): Unit = {
@@ -80,45 +83,54 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark](
       mutators.toArray
   ).toArray
 
-  def replayTrace(trace: Trace): Unit = {}
+  def replayTrace(trace: DeltaTrace, notificationTrace: NotificationTrace): Unit = {
+    trace.zip(notificationTrace).foreach { (concurrentOps, notificationTrace) =>
+      concurrentOps.foreach { (authorIndex, delta) =>
+        replicas(authorIndex).mutateState(_ => delta)
+      }
+      antiEntropyInstances.foreach { antiEntropy =>
+        antiEntropy.processAllMessagesInInbox(incomingMessagePollTimeoutMillis = 0)
+      }
+      antiEntropyInstances.indices.foreach(replicaIdx =>
+        antiEntropyInstances(replicaIdx).notifyPeerAboutLocalState(ids(notificationTrace(replicaIdx)))
+      )
+    }
+  }
 
   def assignPermission(from: Int, to: Int, readPerm: PermissionTree, writePerm: PermissionTree): Unit =
     replicas(from).grantPermissions(ids(to), readPerm.merge(writePerm), writePerm)
 }
 
 object TravelPlannerBenchmark {
-  type RDT   = TravelPlan
-  type Trace = Vector[Seq[(Int, RDT)]]
+  type RDT               = TravelPlan
+  type DeltaTrace        = Vector[Seq[(Int, RDT)]]
+  type NotificationTrace = Array[Array[Int]]
 
   def apply(numReplicas: Int, identities: Array[PrivateIdentity], aclRoot: SerializedAclOp): TravelPlannerBenchmark = {
     given MockConnectionRegistry = MockConnectionRegistry()
     val bench                    = new TravelPlannerBenchmark(numReplicas, identities, aclRoot)
-    val replicas                 = identities.map(identity =>
-      ReplicaWithBftAcl[RDT](
-        identity,
-        aclRoot,
-        (_: RDT) => (),
-        (id, aclRoot, sync: ReplicaWithBftAcl[RDT]) => {
-          val antiEntropy = BftFilteringAntiEntropy[RDT](
-            id,
-            aclRoot,
-            sync,
-            (id, rcv) => {
-              val mgr = MockConnectionManager(id.getPublic, rcv)
-              mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
-              mgr
-            }
-          )
-          bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
-          antiEntropy
-        }
-      )
-    )
+    val antiEntropyFactory: (PrivateIdentity, SerializedAclOp, ReplicaWithBftAcl[RDT]) => BftFilteringAntiEntropy[RDT] =
+      (id, aclRoot, sync: ReplicaWithBftAcl[RDT]) => {
+        val antiEntropy = BftFilteringAntiEntropy[RDT](
+          id,
+          aclRoot,
+          sync,
+          (id, rcv) => {
+            val mgr = MockConnectionManager(id.getPublic, rcv)
+            mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
+            mgr
+          }
+        )
+        bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
+        antiEntropy
+      }
+    bench.replicas =
+      identities.map(identity => ReplicaWithBftAcl[RDT](identity, aclRoot, (_: RDT) => (), antiEntropyFactory))
     bench
   }
 
   def apply(numReplicas: Int): TravelPlannerBenchmark = {
-    val identities = Array.fill(numReplicas)(IdentityFactory.createNewIdentity)
+    val identities               = Array.fill(numReplicas)(IdentityFactory.createNewIdentity)
     val aclRoot: SerializedAclOp = BftAclOpGraph.createSelfSignedRoot(identities(0))
     apply(numReplicas, identities, aclRoot)
   }
@@ -127,22 +139,22 @@ object TravelPlannerBenchmark {
       numReplicas: Int,
       numOperations: Int,
       permissionAssignmentFunction: TravelPlannerBenchmark => Unit
-  ): (Trace, TravelPlannerBenchmark) = {
+  ): (DeltaTrace, NotificationTrace, TravelPlannerBenchmark) = {
     require(numReplicas >= 2)
     given random: Random = Random(42)
 
     val bench = TravelPlannerBenchmark(4)
     // bench.connectAll()
     bench.connect(Map(0 -> Set(1, 2, 3)))
-    require(bench.antiEntropyInstances.forall(antiEntropy => antiEntropy.connectedPeers.size == bench.numReplicas - 1))
 
     permissionAssignmentFunction(bench)
 
     val permittedMutators = bench.permittedMutators
 
-    var mutationRoundIndex             = 0 // Counts the number of rounds in which deltas are created
-    var numCreatedDeltas               = 0 // Counts the number of all (including concurrent) deltas
-    val deltas: Array[Seq[(Int, RDT)]] = Array.ofDim(numOperations)
+    var mutationRoundIndex                   = 0 // Counts the number of rounds in which deltas are created
+    var numCreatedDeltas                     = 0 // Counts the number of all (including concurrent) deltas
+    val deltas: Array[Seq[(Int, RDT)]]       = Array.ofDim(numOperations)
+    val notificationTrace: Array[Array[Int]] = Array.ofDim(numOperations, numReplicas)
     while numCreatedDeltas < numOperations do {
       // Always perform at least one update per round
       val authorA = random.nextInt(numReplicas)
@@ -150,7 +162,7 @@ object TravelPlannerBenchmark {
       numCreatedDeltas += 1
 
       // Sometimes perform a second (concurrent) update (1 in 3)
-      if random.nextInt(3) == 0 && numCreatedDeltas < numOperations then
+      if random.nextInt(numReplicas) == 0 && numCreatedDeltas < numOperations then
           var authorB = random.nextInt(numReplicas)
           // Choose a different replica
           while authorB == authorA do authorB = random.nextInt(numReplicas)
@@ -158,22 +170,26 @@ object TravelPlannerBenchmark {
             deltas(mutationRoundIndex) :+ bench.performRandomRdtAction(permittedMutators, authorB)
           numCreatedDeltas += 1
 
-      // Increment index
-      mutationRoundIndex += 1
-
       // Apply deltas to state of replicas and broadcast deltas from authoring replica to peers
       deltas(mutationRoundIndex).foreach { (replicaIdx, delta) =>
         bench.replicas(replicaIdx).mutateState(_ => delta)
       }
 
       // TODO: Parameterize this as strategy?
-      // We also need to sync the replicas for the next round
-      bench.antiEntropyInstances.foreach(_.processAllMessagesInInbox(incomingMessagePollTimeoutMillis = 0))
+      bench.antiEntropyInstances.foreach { antiEntropy =>
+        antiEntropy.processAllMessagesInInbox(incomingMessagePollTimeoutMillis = 0)
+      }
+      bench.antiEntropyInstances.zipWithIndex.foreach { (antiEntropy, sendingReplicaIdx) =>
+        val notifiedPeer = random.nextInt(antiEntropy.connectedPeers.size)
+        antiEntropy.notifyPeerAboutLocalState(bench.ids(notifiedPeer))
+        notificationTrace(mutationRoundIndex)(sendingReplicaIdx) = notifiedPeer
+      }
+
+      // Increment index
+      mutationRoundIndex += 1
     }
 
-    val trace = deltas.slice(0, mutationRoundIndex).toVector
-
-    (trace, bench)
+    (deltas.slice(0, mutationRoundIndex).toVector, notificationTrace.slice(0, mutationRoundIndex), bench)
   }
 
   enum TravelPlanMutator:
@@ -202,6 +218,29 @@ object TravelPlannerBenchmark {
 
 object TravelPlannerBenchmarkRunner extends App {
 
+  import TravelPlan.jsonCodec
+
+  given privateIdentityCodec: JsonValueCodec[SavedTrace] = {
+    given JsonValueCodec[KeyPair] = JsoniterCodecs.bimapCodec[Array[Byte], KeyPair](
+      JsonCodecMaker.make,
+      arr => if arr.isEmpty then null else Ed25519Util.rawPrivateKeyBytesToKeyPair(arr),
+      keypair => if keypair eq null then Array.empty else Ed25519Util.privateKeyToRawPrivateKeyBytes(keypair.getPrivate)
+    )
+    given JsonValueCodec[X509CertificateHolder] = JsoniterCodecs.bimapCodec[Array[Byte], X509CertificateHolder](
+      JsonCodecMaker.make,
+      encoded => if encoded.isEmpty then null else X509CertificateHolder(encoded),
+      cert => if cert eq null then Array.empty else cert.getEncoded
+    )
+    JsonCodecMaker.make
+  }
+
+  case class SavedTrace(
+      identities: Array[PrivateIdentity],
+      aclRoot: SerializedAclOp,
+      deltaTrace: DeltaTrace,
+      notificationTrace: NotificationTrace
+  )
+
   def permissionAssignment(bench: TravelPlannerBenchmark): Unit = {
     // bench.assignPermission(0, 1, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
     // bench.assignPermission(0, 2, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
@@ -226,24 +265,44 @@ object TravelPlannerBenchmarkRunner extends App {
   }
 
   // ########
-  val start          = System.nanoTime()
-  val (trace, bench) = createTrace(4, 1_000_000, permissionAssignment)
-  val stop           = System.nanoTime()
-  println(s"${(stop - start) / 1_000}ms")
+  val numOps                        = 1_000_000
+  val start                         = System.nanoTime()
+  val (trace, notifications, bench) = createTrace(4, numOps, permissionAssignment)
+  val stop                          = System.nanoTime()
+  println(s"${(stop - start) / 1_000_000}ms")
   // ########
-
-  import TravelPlan.jsonCodec
-  given traceCodec: JsonValueCodec[Trace] = JsonCodecMaker.make
 
   val traceFile = Paths.get("./results/lofi_acl/trace.json")
   Files.createDirectories(traceFile.getParent)
-  val traceOutputStream = Files.newOutputStream(traceFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
-  writeToStream(trace, traceOutputStream)
+  val traceOutputStream = Files.newOutputStream(
+    traceFile,
+    StandardOpenOption.WRITE,
+    StandardOpenOption.CREATE,
+    StandardOpenOption.TRUNCATE_EXISTING
+  )
+  val savedTrace = SavedTrace(bench.identities, bench.aclRoot, trace, notifications)
+  writeToStream(savedTrace, traceOutputStream)
+  traceOutputStream.close()
 
   bench.replicas.zipWithIndex.foreach { (replica, idx) =>
     val path = Paths.get(s"./results/lofi_acl/replica-$idx")
-    val out  = Files.newOutputStream(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+    val out  = Files.newOutputStream(
+      path,
+      StandardOpenOption.WRITE,
+      StandardOpenOption.CREATE,
+      StandardOpenOption.TRUNCATE_EXISTING
+    )
     writeToStream(replica.currentState, out)
+    out.close()
+  }
+
+  {
+    val restoredTrace = readFromStream[SavedTrace](Files.newInputStream(traceFile, StandardOpenOption.READ))
+    val bench = TravelPlannerBenchmark(restoredTrace.identities.length, restoredTrace.identities, restoredTrace.aclRoot)
+    val start = System.nanoTime()
+    bench.replayTrace(restoredTrace.deltaTrace, restoredTrace.notificationTrace)
+    val stop = System.nanoTime()
+    println(s"${(stop - start) / 1_000_000}ms")
   }
 
   // bench.replicas.foreach { replica =>
