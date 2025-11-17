@@ -2,7 +2,6 @@ package benchmarks
 
 import datatypes.Counter
 import org.openjdk.jmh.annotations.*
-
 import java.util.concurrent.TimeUnit
 
 @BenchmarkMode(Array(Mode.Throughput))

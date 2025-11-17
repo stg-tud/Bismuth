@@ -1,6 +1,6 @@
 package riblt
 
-import datatypes.Replica
+import datatypes.{ORSet, Replica}
 import network.{Message, Network}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
@@ -8,13 +8,16 @@ import riblt.SessionType.{receiver, sender}
 import network.Message.given_JsonValueCodec_Message
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import network.Tag.{CODED_SYMBOLS, DELTA, REQUEST_DELTA, CODED_SYMBOLS_REQUEST}
+import crypto.Ed25519Util
+import network.Tag.{CODED_SYMBOLS, CODED_SYMBOLS_REQUEST, DELTA, REQUEST_DELTA}
 import riblt.RIBLTSyncWithThreads.{codec1, codec2}
+
+import java.security.{PrivateKey, PublicKey}
 
 class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
     var replica: R,
-    var RIBLTSessions: Map[String, Session] = Map.empty,
     val replicaID: String,
+    var RIBLTSessions: Map[String, Session] = Map.empty,
     var syncThread: Option[Thread] = None
 ):
 
@@ -128,6 +131,28 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
 object RIBLTSyncWithThreads:
     given codec1: JsonValueCodec[List[Array[Byte]]] = JsonCodecMaker.make
     given codec2: JsonValueCodec[List[String]]      = JsonCodecMaker.make
+
+    given JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
+    
+    given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
+      override def encodeValue(key: PublicKey, out: JsonWriter): Unit =
+        out.writeBase64Val(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(key).getBytes, false)
+    
+      override def decodeValue(in: JsonReader, default: PublicKey): PublicKey =
+        Ed25519Util.base64PublicKeyBytesToPublicKey(String(in.readBase64AsBytes(Array.empty[Byte])))
+    
+      override def nullValue: PublicKey = null.asInstanceOf[PublicKey]
+    }
+    
+    given JsonValueCodec[PrivateKey] = new JsonValueCodec[PrivateKey] {
+      override def encodeValue(key: PrivateKey, out: JsonWriter): Unit =
+        out.writeRawVal(Ed25519Util.privateKeyToRawPrivateKeyBytes(key))
+    
+      override def decodeValue(in: JsonReader, default: PrivateKey): PrivateKey =
+        Ed25519Util.rawPrivateKeyBytesToPrivateKey(in.readRawValAsBytes())
+    
+      override def nullValue: PrivateKey = null.asInstanceOf[PrivateKey]
+    }
 
 enum SessionType:
     case sender, receiver

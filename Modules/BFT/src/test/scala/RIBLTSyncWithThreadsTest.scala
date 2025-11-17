@@ -6,29 +6,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import crypto.Ed25519Util
 import network.Network
+import riblt.RIBLTSyncWithThreads.given_JsonValueCodec_ORSet
+import scala.util.Random
 
 import java.security.{PrivateKey, PublicKey}
 import scala.concurrent.duration.{Duration, DurationInt}
-
-given JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
-
-given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
-  override def encodeValue(key: PublicKey, out: JsonWriter): Unit =
-    out.writeBase64Val(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(key).getBytes, false)
-  override def decodeValue(in: JsonReader, default: PublicKey): PublicKey =
-    Ed25519Util.base64PublicKeyBytesToPublicKey(String(in.readBase64AsBytes(Array.empty[Byte])))
-
-  override def nullValue: PublicKey = null
-}
-
-given JsonValueCodec[PrivateKey] = new JsonValueCodec[PrivateKey] {
-  override def encodeValue(key: PrivateKey, out: JsonWriter): Unit =
-    out.writeRawVal(Ed25519Util.privateKeyToRawPrivateKeyBytes(key))
-  override def decodeValue(in: JsonReader, default: PrivateKey): PrivateKey =
-    Ed25519Util.rawPrivateKeyBytesToPrivateKey(in.readRawValAsBytes())
-
-  override def nullValue: PrivateKey = null
-}
 
 class RIBLTSyncWithThreadsTest extends munit.FunSuite:
     override def munitTimeout: Duration = 5.minutes
@@ -54,10 +36,10 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
       crdt3 = crdt3.merge(crdt3.add("hehehehee"))
       crdt3 = crdt3.merge(crdt3.add("hahahahah"))
 
-      val sync0 = RIBLTSyncWithThreads(crdt0, Map.empty, "replica_0")
-      val sync1 = RIBLTSyncWithThreads(crdt1, Map.empty, "replica_1")
-      val sync2 = RIBLTSyncWithThreads(crdt2, Map.empty, "replica_2")
-      val sync3 = RIBLTSyncWithThreads(crdt3, Map.empty, "replica_3")
+      val sync0 = RIBLTSyncWithThreads(crdt0, "replica_0")
+      val sync1 = RIBLTSyncWithThreads(crdt1, "replica_1")
+      val sync2 = RIBLTSyncWithThreads(crdt2, "replica_2")
+      val sync3 = RIBLTSyncWithThreads(crdt3, "replica_3")
 
       Network.startChannel("replica_0")
       Network.startChannel("replica_1")
@@ -109,8 +91,8 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
       var crdt1 = ORSet[String]()
       crdt1 = crdt1.merge(crdt1.add("hi"))
 
-      val sync0 = RIBLTSyncWithThreads(crdt0, Map.empty, "replica_0")
-      val sync1 = RIBLTSyncWithThreads(crdt1, Map.empty, "replica_1")
+      val sync0 = RIBLTSyncWithThreads(crdt0, "replica_0")
+      val sync1 = RIBLTSyncWithThreads(crdt1, "replica_1")
 
       Network.startChannel("replica_0")
       Network.startChannel("replica_1")
@@ -135,5 +117,41 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
 
       println(crdt0afterSync.elements.keySet)
       println(crdt1afterSync.elements.keySet)
-      
+
+    }
+
+    test("basic_3") {
+      Network.startChannel("replica1")
+      Network.startChannel("replica2")
+
+      var replica1 = ORSet[String]()
+      var replica2 = ORSet[String]()
+
+      for i <- 0 to 10 do
+          val r = Random().nextDouble()
+          if r <= 0.8 then {
+            replica1 = replica1.merge(replica1.add(i.toString))
+            replica2 = replica2.merge(replica2.add(i.toString))
+          } else
+              val rr = Random().nextDouble()
+              if rr <= 0.5 then
+                  replica1 = replica1.merge(replica1.add(i.toString))
+              else
+                  replica2 = replica2.merge(replica2.add(i.toString))
+
+      val riblt1 = RIBLTSyncWithThreads(replica1, "replica1")
+      val riblt2 = RIBLTSyncWithThreads(replica2, "replica2")
+
+      val t1 = riblt1.startSession("replica2", sender)
+      val t2 = riblt2.startSession("replica1", receiver)
+
+      t1.join()
+      t2.join()
+
+      println(replica1.getElements)
+      println(replica2.getElements)
+
+      println(riblt1.replica.getElements)
+      println(riblt2.replica.getElements)
+
     }
