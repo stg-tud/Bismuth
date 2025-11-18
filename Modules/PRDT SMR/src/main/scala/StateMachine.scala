@@ -1,8 +1,10 @@
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{LocalUid, Uid}
 import rdts.protocols.MultiPaxos
 import rdts.protocols.Participants
+import rdts.time.Time
 
 import scala.collection.View
+import scala.collection.immutable.NumericRange
 
 opaque type ParticipantSet = Set[Uid]
 
@@ -10,24 +12,24 @@ trait StateMachine[A] {
 //  val participants: ParticipantSet // Should be set of state machines? or just hide this here?
 //  def propose(command: A): StateMachine[A]
   def log: List[A]            // stores the series of commands
-  def length: Long // returns the length of the log
-  def maxIndex: Long // returns the index of the newest entry
+  def maxIndex: Long // returns the index of the newest entry TODO: I don't think this is needed
   def get(index: Long): A // returns a specific position in the log
   def upkeep: StateMachine[A] // performs a step that may commit a command
+  def commandAfter(index: Long): Option[(Long, A)] // returns the command after the listed index
 //  def commitIndex: Long
 }
 
-case class NonRepStateMachine[A](state: Map[Long,A], index: Long = -1) extends StateMachine[A] {
+case class NonRepStateMachine[A](state: Map[Long,A], commitIndex: Long = -1) extends StateMachine[A] {
   override def log: List[A]            = state.toList.sortBy(_._1).map(_._2)
   override def upkeep: StateMachine[A] = this
 
   override def get(index: Long): A = state(index)
 
-  override def length: Long = index
+  override def commandAfter(index: Long): Option[(Long,A)] = state.get(index+1).map(c => (index+1, c))
 
-  override def maxIndex: Long = index
+  override def maxIndex: Long = commitIndex
 
-  def append(command: A): StateMachine[A] = NonRepStateMachine[A](state + (index -> command), index + 1)
+  def append(command: A): StateMachine[A] = NonRepStateMachine[A](state + (commitIndex -> command), commitIndex + 1)
 }
 
 enum MultiPaxosCommands[+A]:
@@ -53,8 +55,7 @@ case class MultiPaxosStateMachine[A](
     // check what this means for paxos and compute deltas and new indices
     val steps: View[((Uid, Long), MultiPaxos[A])] = updatedParticipants.map{
       case (uid, stateMachine) if stateMachine.maxIndex > commitIndex(uid) =>
-        val lastCommand = stateMachine.get(maxIndex)
-        val newIndex = stateMachine.maxIndex
+        val (newIndex, lastCommand) = stateMachine.commandAfter(commitIndex(uid)).get // should be safe because maxIndex is higher
         val delta: MultiPaxos[A] = lastCommand match {
           case MultiPaxosCommands.propose(value) =>  multiPaxos.proposeIfLeader(value)(using LocalUid(uid))
           case MultiPaxosCommands.startLeaderElection => multiPaxos.startLeaderElection(using LocalUid(uid))
@@ -70,11 +71,14 @@ case class MultiPaxosStateMachine[A](
     MultiPaxosStateMachine(multiPaxos = newPaxos, commitIndex = commitIndexes, participants = participants)
   }
 
-  override def length: Long = multiPaxos.log.size
-
   override def get(index: Long): A = multiPaxos.log(index)
 
   override def maxIndex: Long = multiPaxos.log.keySet.maxOption.getOrElse(-1)
+
+  override def commandAfter(index: Long): Option[(Long, A)] = {
+    val a: View[(Time, A)] = NumericRange(index+1, multiPaxos.rounds.counter, 1L).view.flatMap(k => multiPaxos.log.get(k).map((k,_)))
+    a.minByOption(_._1)
+  }
 }
 
 /*
