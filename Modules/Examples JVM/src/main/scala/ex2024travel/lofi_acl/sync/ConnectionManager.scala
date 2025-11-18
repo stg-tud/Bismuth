@@ -15,9 +15,9 @@ trait ConnectionManager {
     */
   def send(user: PublicIdentity, msg: MessageBuffer): Boolean
 
-  def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean
+  def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Boolean
 
-  def broadcast(messages: MessageBuffer*): Unit
+  def broadcast(messages: Array[MessageBuffer]): Unit
 
   def listenPort: Option[Int]
 

@@ -38,10 +38,10 @@ class ChannelConnectionManager(
     * @param msg The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  override def send(user: PublicIdentity, msg: MessageBuffer): Boolean =
-    sendMultiple(user, msg)
+  override inline def send(user: PublicIdentity, msg: MessageBuffer): Boolean =
+    sendMultiple(user, Array(msg))
 
-  override def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean = {
+  override def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Boolean = {
     if abort.closeRequest then return false
     connections.get.get(user) match
         case Some(connectionSet) if connectionSet.nonEmpty =>
@@ -56,9 +56,9 @@ class ChannelConnectionManager(
         case _ => false
   }
 
-  override def broadcast(messages: MessageBuffer*): Unit = {
+  override def broadcast(messages: Array[MessageBuffer]): Unit = {
     connections.get.foreach { (user, connection) =>
-      sendMultiple(user, messages*)
+      sendMultiple(user, messages)
     }
   }
 

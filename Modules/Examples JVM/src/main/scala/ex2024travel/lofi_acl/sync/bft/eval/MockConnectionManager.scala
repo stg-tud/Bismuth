@@ -44,10 +44,10 @@ class MockConnectionManager(
     peer.isEmpty
   }
 
-  override def sendMultiple(user: PublicIdentity, messages: MessageBuffer*): Boolean =
+  override def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Boolean =
     messages.forall(msg => send(user, msg))
 
-  override def broadcast(messages: MessageBuffer*): Unit =
+  override def broadcast(messages: Array[MessageBuffer]): Unit =
     peers.foreach { (id, peer) =>
       messages.foreach { msg =>
         peer.messageReceiver.receivedMessage(msg, localUserId)

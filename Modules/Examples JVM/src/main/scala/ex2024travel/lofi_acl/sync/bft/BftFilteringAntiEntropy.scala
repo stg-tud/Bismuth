@@ -47,18 +47,18 @@ class BftFilteringAntiEntropy[RDT](
     connectionManager.send(destination, buffer): Unit
   }
 
-  private def sendMultiple(destination: PublicIdentity, syncMsgs: SyncMsg[RDT]*): Unit = {
+  private def sendMultiple(destination: PublicIdentity, syncMsgs: Array[SyncMsg[RDT]]): Unit = {
     if syncMsgs.isEmpty then return
     // println(s"msgs to ${destination.id}: $syncMsgs")
     connectionManager.sendMultiple(
       destination,
-      syncMsgs.map(msg => ArrayMessageBuffer(writeToArray(msg))).toArray*
+      syncMsgs.map(msg => ArrayMessageBuffer(writeToArray(msg)))
     ): Unit
   }
 
   private def broadcast(syncMsg: SyncMsg[RDT]): Unit = {
     val buffer = ArrayMessageBuffer(writeToArray(syncMsg))
-    connectionManager.broadcast(buffer): Unit
+    connectionManager.broadcast(Array(buffer)): Unit
   }
 
   // Only updated in message queue thread
@@ -88,8 +88,7 @@ class BftFilteringAntiEntropy[RDT](
     //  sync unrelated op graphs
     sendMultiple(
       remote,
-      TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get()),
-      TellKnownRdtDots(rdtDeltas.allDots)
+      Array(TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get()), TellKnownRdtDots(rdtDeltas.allDots))
     )
     broadcast(AnnouncePeers(peerAddressCache.get()))
   }
@@ -225,7 +224,7 @@ class BftFilteringAntiEntropy[RDT](
           val msgs    = knownMissing
             .flatMap { sig => opGraph.ops.get(sig).map(delegation => delegation.serialize(sig)) }
             .map[AclDelta[RDT]](delegation => AclDelta(delegation))
-          sendMultiple(sender, msgs.toArray*)
+          sendMultiple(sender, msgs.toArray)
 
           val missingLocally = remoteHeads.filterNot(opGraph.ops.contains)
           if missingLocally.nonEmpty then {
@@ -243,7 +242,7 @@ class BftFilteringAntiEntropy[RDT](
             rdtDeltaCopy.retrieveDeltas(missingRdtDeltas).map[RdtDelta[RDT]] { case (dot, (delta, authorAcl)) =>
               RdtDelta(dot, delta, authorAcl, aclOpGraph.heads)
             }.toArray
-          if deltas.nonEmpty then sendFiltered(sender, aclOpGraph.latestAcl, deltas*)
+          if deltas.nonEmpty then sendFiltered(sender, aclOpGraph.latestAcl, deltas)
 
           // Check if we're missing anything that the remote has
           if !rdtDeltas.deltaDots.contains(remoteRdtDots)
@@ -341,12 +340,12 @@ class BftFilteringAntiEntropy[RDT](
           true
   }
 
-  private def sendFiltered(receiver: PublicIdentity, acl: BftAcl, deltas: RdtDelta[RDT]*): Unit = {
+  private def sendFiltered(receiver: PublicIdentity, acl: BftAcl, deltas: Array[RdtDelta[RDT]]): Unit = {
     val permissions = acl.read(receiver).intersect(acl.write(localPublicId))
-    if permissions.isEmpty then return
+    if permissions.isEmpty then return // TODO: Test without this
     sendMultiple(
       receiver,
-      deltas.map(delta => delta.copy(delta = filter.filter(delta.delta, permissions)))*
+      deltas.map(delta => delta.copy(delta = filter.filter(delta.delta, permissions)))
     )
   }
 
@@ -382,10 +381,7 @@ class BftFilteringAntiEntropy[RDT](
         requiredPerms
       )
     replicasToRequestFrom.foreach { remote =>
-      sendMultiple(
-        remote,
-        TellKnownRdtDots[RDT](rdtDeltas.allDots)
-      )
+      send(remote, TellKnownRdtDots[RDT](rdtDeltas.allDots))
     }
   }
 
@@ -399,8 +395,10 @@ class BftFilteringAntiEntropy[RDT](
       // If there are partial deltas, use PartialReplicationPeerSubsetSolver to choose replicas to request from.
       sendMultiple(
         peer,
-        TellKnownRdtDots(rdtDeltas.allDots),
-        TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get())
+        Array(
+          TellKnownRdtDots(rdtDeltas.allDots),
+          TellKnownAclOps(aclOpGraph.heads, knownMissingAclOps.get())
+        )
       )
     }
   }

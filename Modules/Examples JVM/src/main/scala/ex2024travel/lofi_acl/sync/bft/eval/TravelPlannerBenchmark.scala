@@ -1,20 +1,15 @@
 package ex2024travel.lofi_acl.sync.bft.eval
 
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import crypto.{Ed25519Util, PublicIdentity}
+import ex2024travel.lofi_acl.sync.bft.*
+import ex2024travel.lofi_acl.sync.bft.eval.SavedTrace.{DeltaTrace, NotificationTrace}
 import ex2024travel.lofi_acl.sync.bft.eval.TravelPlannerBenchmark.*
 import ex2024travel.lofi_acl.sync.bft.eval.TravelPlannerBenchmark.TravelPlanMutator.*
-import ex2024travel.lofi_acl.sync.bft.{BftAclOpGraph, BftFilteringAntiEntropy, ReplicaWithBftAcl, SerializedAclOp}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
-import org.bouncycastle.cert.X509CertificateHolder
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecs
 
-import java.nio.file.{Files, Paths, StandardOpenOption}
-import java.security.KeyPair
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
@@ -102,9 +97,7 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
 }
 
 object TravelPlannerBenchmark {
-  type RDT               = TravelPlan
-  type DeltaTrace        = Vector[Seq[(Int, RDT)]]
-  type NotificationTrace = Array[Array[Int]]
+  type RDT = TravelPlan
 
   def apply(numReplicas: Int, identities: Array[PrivateIdentity], aclRoot: SerializedAclOp): TravelPlannerBenchmark = {
     given MockConnectionRegistry = MockConnectionRegistry()
@@ -119,7 +112,8 @@ object TravelPlannerBenchmark {
             val mgr = MockConnectionManager(id.getPublic, rcv)
             mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
             mgr
-          }
+          },
+          autoConnect = false
         )
         bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
         antiEntropy
@@ -138,14 +132,14 @@ object TravelPlannerBenchmark {
   def createTrace(
       numReplicas: Int,
       numOperations: Int,
-      permissionAssignmentFunction: TravelPlannerBenchmark => Unit
+      connectionMap: Map[Int, Set[Int]],
+      permissionAssignmentFunction: TravelPlannerBenchmark => Unit,
   ): (DeltaTrace, NotificationTrace, TravelPlannerBenchmark) = {
     require(numReplicas >= 2)
     given random: Random = Random(42)
 
     val bench = TravelPlannerBenchmark(4)
-    // bench.connectAll()
-    bench.connect(Map(0 -> Set(1, 2, 3)))
+    bench.connect(connectionMap)
 
     permissionAssignmentFunction(bench)
 
@@ -187,6 +181,7 @@ object TravelPlannerBenchmark {
 
       // Increment index
       mutationRoundIndex += 1
+      if numCreatedDeltas % 10_000 == 0 then print("#")
     }
 
     (deltas.slice(0, mutationRoundIndex).toVector, notificationTrace.slice(0, mutationRoundIndex), bench)
@@ -214,100 +209,4 @@ object TravelPlannerBenchmark {
     catch {
       case _: Throwable => retryUntilSuccess(action)
     }
-}
-
-object TravelPlannerBenchmarkRunner extends App {
-
-  import TravelPlan.jsonCodec
-
-  given privateIdentityCodec: JsonValueCodec[SavedTrace] = {
-    given JsonValueCodec[KeyPair] = JsoniterCodecs.bimapCodec[Array[Byte], KeyPair](
-      JsonCodecMaker.make,
-      arr => if arr.isEmpty then null else Ed25519Util.rawPrivateKeyBytesToKeyPair(arr),
-      keypair => if keypair eq null then Array.empty else Ed25519Util.privateKeyToRawPrivateKeyBytes(keypair.getPrivate)
-    )
-    given JsonValueCodec[X509CertificateHolder] = JsoniterCodecs.bimapCodec[Array[Byte], X509CertificateHolder](
-      JsonCodecMaker.make,
-      encoded => if encoded.isEmpty then null else X509CertificateHolder(encoded),
-      cert => if cert eq null then Array.empty else cert.getEncoded
-    )
-    JsonCodecMaker.make
-  }
-
-  case class SavedTrace(
-      identities: Array[PrivateIdentity],
-      aclRoot: SerializedAclOp,
-      deltaTrace: DeltaTrace,
-      notificationTrace: NotificationTrace
-  )
-
-  def permissionAssignment(bench: TravelPlannerBenchmark): Unit = {
-    // bench.assignPermission(0, 1, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
-    // bench.assignPermission(0, 2, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
-    // bench.assignPermission(0, 2, PermissionTree.fromPath("expenses"), PermissionTree.fromPath("expenses"))
-    // bench.assignPermission(0, 3, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
-    // bench.assignPermission(0, 3, PermissionTree.fromPath("bucketList"), PermissionTree.fromPath("bucketList"))
-
-    // bench.assignPermission(0, 1, PermissionTree.allow, PermissionTree.allow)
-    // bench.assignPermission(0, 2, PermissionTree.allow, PermissionTree.allow)
-    // bench.assignPermission(0, 3, PermissionTree.allow, PermissionTree.allow)
-
-    bench.assignPermission(0, 1, PermissionTree.empty, PermissionTree.fromPath("title"))
-    bench.assignPermission(
-      0,
-      2,
-      PermissionTree.fromPath("title").merge(PermissionTree.fromPath("bucketList")),
-      PermissionTree.fromPath("expenses")
-    )
-    bench.assignPermission(0, 3, PermissionTree.fromPath("title"), PermissionTree.fromPath("bucketList"))
-
-    bench.antiEntropyInstances.foreach(_.processAllMessagesInInbox(0))
-  }
-
-  // ########
-  val numOps                        = 1_000_000
-  val start                         = System.nanoTime()
-  val (trace, notifications, bench) = createTrace(4, numOps, permissionAssignment)
-  val stop                          = System.nanoTime()
-  println(s"${(stop - start) / 1_000_000}ms")
-  // ########
-
-  val traceFile = Paths.get("./results/lofi_acl/trace.json")
-  Files.createDirectories(traceFile.getParent)
-  val traceOutputStream = Files.newOutputStream(
-    traceFile,
-    StandardOpenOption.WRITE,
-    StandardOpenOption.CREATE,
-    StandardOpenOption.TRUNCATE_EXISTING
-  )
-  val savedTrace = SavedTrace(bench.identities, bench.aclRoot, trace, notifications)
-  writeToStream(savedTrace, traceOutputStream)
-  traceOutputStream.close()
-
-  bench.replicas.zipWithIndex.foreach { (replica, idx) =>
-    val path = Paths.get(s"./results/lofi_acl/replica-$idx")
-    val out  = Files.newOutputStream(
-      path,
-      StandardOpenOption.WRITE,
-      StandardOpenOption.CREATE,
-      StandardOpenOption.TRUNCATE_EXISTING
-    )
-    writeToStream(replica.currentState, out)
-    out.close()
-  }
-
-  {
-    val restoredTrace = readFromStream[SavedTrace](Files.newInputStream(traceFile, StandardOpenOption.READ))
-    val bench = TravelPlannerBenchmark(restoredTrace.identities.length, restoredTrace.identities, restoredTrace.aclRoot)
-    val start = System.nanoTime()
-    bench.replayTrace(restoredTrace.deltaTrace, restoredTrace.notificationTrace)
-    val stop = System.nanoTime()
-    println(s"${(stop - start) / 1_000_000}ms")
-  }
-
-  // bench.replicas.foreach { replica =>
-  //  println(replica.currentAcl)
-  //  println(replica.currentState)
-  //  println()
-  // }
 }
