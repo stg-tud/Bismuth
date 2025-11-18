@@ -17,6 +17,7 @@ case class SavedTrace(
     identities: Array[PrivateIdentity],
     aclRoot: SerializedAclOp,
     aclOps: Map[Signature, AclOp],
+    connectionMap: Map[Int, Set[Int]],
     deltaTrace: DeltaTrace,
     notificationTrace: NotificationTrace
 )

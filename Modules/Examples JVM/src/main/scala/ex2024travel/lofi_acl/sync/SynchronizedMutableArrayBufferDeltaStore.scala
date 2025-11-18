@@ -11,25 +11,22 @@ class SynchronizedMutableArrayBufferDeltaStore[RDT] {
   def dots: Dots = _dots
 
   def get(dot: Dot): Option[RDT] = synchronized {
-    arrays.get(dot.place.delegate) match {
-      case Some(buffer) =>
-        require(dot.time >= 0 && dot.time <= Int.MaxValue)
-        if buffer.length <= dot.time then None
-        else Option(buffer(dot.time.toInt))
-      case None => None
-    }
+    if !dots.contains(dot) then None
+    else Some(arrays(dot.place.delegate)(dot.time.toInt))
   }
 
   def getAll(dots: Dots): Array[(Dot, RDT)] = synchronized {
+    // TODO: Could also copy range from buffer.
     require(dots.size <= Int.MaxValue)
-    val resultBuffer = Array.ofDim[(Dot, RDT)](dots.size.toInt)
+    val retrievable  = this.dots.intersect(dots)
+    val resultBuffer = Array.ofDim[(Dot, RDT)](retrievable.size.toInt)
 
     var resultBufferIdx = 0
-    dots.internal.foreach { (uid, ranges) =>
+    retrievable.internal.foreach { (uid, ranges) =>
       arrays.get(uid.delegate) match {
         case Some(bufferOfReplica) =>
           val times = ranges.iterator
-          times.takeWhile(_ < bufferOfReplica.length).foreach(time =>
+          times.foreach(time =>
               resultBuffer(resultBufferIdx) = Dot(uid, time) -> bufferOfReplica(time.toInt)
               resultBufferIdx += 1
           )
@@ -37,7 +34,7 @@ class SynchronizedMutableArrayBufferDeltaStore[RDT] {
       }
     }
 
-    resultBuffer.slice(0, resultBufferIdx)
+    resultBuffer
   }
 
   /** Adds or replaces a delta. */
@@ -49,9 +46,14 @@ class SynchronizedMutableArrayBufferDeltaStore[RDT] {
         buffer.insert(dot.time.toInt, delta)
         _dots = dots.add(dot)
       case None =>
-        val buffer = ArrayBuffer.empty(dot.time.toInt)
+        val buffer = ArrayBuffer.empty[RDT]
         this.arrays = arrays.updated(dot.place.delegate, buffer)
         put(dot, delta)
     }
+  }
+
+  // Lazy removal -> doesn't shrink or free array, only changes tracked dots
+  def removed(removedDots: Dots): Unit = synchronized {
+    _dots = this._dots.subtract(removedDots)
   }
 }

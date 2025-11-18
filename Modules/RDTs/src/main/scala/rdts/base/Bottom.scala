@@ -81,10 +81,10 @@ object Bottom {
     }
 
     class ProductBottom[T](pm: Mirror.ProductOf[T], bottoms: Tuple) extends Bottom[T] {
-      override def empty: T =
+      override val empty: T =
         pm.fromProduct(
           Tuple.fromArray:
-              bottoms.toArray.map[AnyRef](_.asInstanceOf[Bottom[AnyRef]].empty)
+              bottoms.toArray.mapInPlace(_.asInstanceOf[Bottom[AnyRef]].empty)
         )
       extension (value: T)
           override def isEmpty: Boolean =

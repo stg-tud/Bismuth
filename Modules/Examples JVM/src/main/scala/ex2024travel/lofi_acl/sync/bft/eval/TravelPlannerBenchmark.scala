@@ -52,8 +52,6 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
     (authoringReplica, delta)
   }
 
-  def connectAll(): Unit = connect((0 until (numReplicas - 1)).map(i => i -> ((i + 1) until numReplicas).toSet).toMap)
-
   def connect(connectionMap: Map[Int, Set[Int]]): Unit = {
     connectionMap.foreach { (from, destinations) =>
       destinations.foreach(peerIndex =>
@@ -99,27 +97,64 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
 object TravelPlannerBenchmark {
   type RDT = TravelPlan
 
-  def apply(numReplicas: Int, identities: Array[PrivateIdentity], aclRoot: SerializedAclOp): TravelPlannerBenchmark = {
+  def antiEntropyFactory(bench: TravelPlannerBenchmark)(
+      id: PrivateIdentity,
+      aclRoot: SerializedAclOp,
+      sync: ReplicaWithBftAcl[RDT]
+  )(using registry: MockConnectionRegistry): BftFilteringAntiEntropy[RDT] = {
+    val antiEntropy = BftFilteringAntiEntropy[RDT](
+      id,
+      aclRoot,
+      sync,
+      (id, rcv) => {
+        val mgr = MockConnectionManager(id.getPublic, rcv)
+        mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
+        mgr
+      },
+      autoConnect = false
+    )
+    bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
+    antiEntropy
+  }
+
+  def nonFilteringAntiEntropyFactory(bench: TravelPlannerBenchmark)(
+      id: PrivateIdentity,
+      aclRoot: SerializedAclOp,
+      sync: ReplicaWithBftAcl[RDT]
+  )(using registry: MockConnectionRegistry): BftFilteringAntiEntropy[RDT] = {
+    val antiEntropy = NonFilteringAntiEntropy[RDT](
+      id,
+      aclRoot,
+      sync,
+      (id, rcv) => {
+        val mgr = MockConnectionManager(id.getPublic, rcv)
+        mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
+        mgr
+      },
+      autoConnect = false
+    )
+    bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
+    antiEntropy
+  }
+
+  def apply(
+      numReplicas: Int,
+      identities: Array[PrivateIdentity],
+      aclRoot: SerializedAclOp,
+      withAcl: Boolean = true
+  ): TravelPlannerBenchmark = {
     given MockConnectionRegistry = MockConnectionRegistry()
     val bench                    = new TravelPlannerBenchmark(numReplicas, identities, aclRoot)
-    val antiEntropyFactory: (PrivateIdentity, SerializedAclOp, ReplicaWithBftAcl[RDT]) => BftFilteringAntiEntropy[RDT] =
-      (id, aclRoot, sync: ReplicaWithBftAcl[RDT]) => {
-        val antiEntropy = BftFilteringAntiEntropy[RDT](
-          id,
-          aclRoot,
-          sync,
-          (id, rcv) => {
-            val mgr = MockConnectionManager(id.getPublic, rcv)
-            mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
-            mgr
-          },
-          autoConnect = false
-        )
-        bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
-        antiEntropy
-      }
+
     bench.replicas =
-      identities.map(identity => ReplicaWithBftAcl[RDT](identity, aclRoot, (_: RDT) => (), antiEntropyFactory))
+      identities.map(identity =>
+        ReplicaWithBftAcl[RDT](
+          identity,
+          aclRoot,
+          (_: RDT) => (),
+          if withAcl then antiEntropyFactory(bench) else nonFilteringAntiEntropyFactory(bench)
+        )
+      )
     bench
   }
 

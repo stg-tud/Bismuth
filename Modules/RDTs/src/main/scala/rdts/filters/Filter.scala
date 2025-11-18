@@ -48,7 +48,7 @@ object Filter {
           FilterDerivation.ProductTypeFilter[T](
             prodMirror,
             productBottom,
-            elementNames.zipWithIndex.toMap,
+            elementNames.toArray,
             elementBottoms,
             elementFilters
           )

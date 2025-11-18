@@ -56,11 +56,11 @@ object FilterDerivation {
 
   class ProductTypeFilter[T](
       pm: Mirror.ProductOf[T],
-      productBottom: Bottom[T],           // The bottom of the product (derivable as the product of bottoms)
-      factorLabels: Map[String, Int],     // Maps the factor label to the factor index
+      productBottom: Bottom[T], // The bottom of the product (derivable as the product of bottoms)
+      factorLabels: Array[String],
       factorBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each factor
       factorFilters: IArray[Filter[Any]]  // The Filter TypeClass instance for each factor
-  ) extends AlgebraicFilter[T](factorLabels, factorFilters):
+  ) extends AlgebraicFilter[T](factorLabels.zipWithIndex.toMap, factorFilters):
       override def filter(delta: T, permissionTree: PermissionTree): T = {
         permissionTree match
             case PermissionTree(ALLOW, _)                              => delta
@@ -73,28 +73,28 @@ object FilterDerivation {
       }
 
       private def filterProduct(product: Product, permissionTree: PermissionTree): Product = {
+        // We assume that permission is PARTIAL and children nonempty
         permissionTree.children.get("*") match
-            case None =>
-              val filteredFactors = permissionTree.children.map { case (factorName, permissionSubTree) =>
-                // Assumes that permission tree is valid (i.e., factorName is a valid element)
-                val factorIndex   = factorLabels(factorName)
-                val factorOfDelta = product.productElement(factorIndex)
-                factorIndex -> factorFilters(factorIndex).filter(factorOfDelta, permissionSubTree)
-              }
+            case None => // No wildcard
               new Product:
-                  def canEqual(that: Any): Boolean = false
-                  def productArity: Int            = factorBottoms.length
-                  def productElement(i: Int): Any  = filteredFactors.getOrElse(i, factorBottoms(i).empty)
-            case Some(wildcard) =>
-              val filteredFactors = factorLabels.map { (label, factorIndex) =>
-                val permissions   = permissionTree.children.getOrElse(label, wildcard)
-                val factorOfDelta = product.productElement(factorIndex)
-                factorIndex -> factorFilters(factorIndex).filter(factorOfDelta, permissions)
-              }
+                  def canEqual(that: Any): Boolean          = false
+                  def productArity: Int                     = factorBottoms.length
+                  def productElement(factorIndex: Int): Any =
+                      val label  = factorLabels(factorIndex)
+                      val factor = product.productElement(factorIndex)
+                      permissionTree.children.get(label) match {
+                        case Some(factorPermission) => factorFilters(factorIndex).filter(factor, factorPermission)
+                        case None                   => factorBottoms(factorIndex).empty
+                      }
+            case Some(wildcard) => // Wildcard
               new Product:
-                  def canEqual(that: Any): Boolean = false
-                  def productArity: Int            = factorBottoms.length
-                  def productElement(i: Int): Any  = filteredFactors(i)
+                  def canEqual(that: Any): Boolean          = false
+                  def productArity: Int                     = factorBottoms.length
+                  def productElement(factorIndex: Int): Any =
+                      val label       = factorLabels(factorIndex)
+                      val factor      = product.productElement(factorIndex)
+                      val permissions = permissionTree.children.getOrElse(label, wildcard)
+                      factorFilters(factorIndex).filter(factor, permissions)
       }
 
   class SumTypeFilter[T](
