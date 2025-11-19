@@ -14,6 +14,7 @@ import replication.JsoniterCodecs
 import java.security.KeyPair
 
 case class SavedTrace(
+    numOps: Int,
     identities: Array[PrivateIdentity],
     aclRoot: SerializedAclOp,
     aclOps: Map[Signature, AclOp],

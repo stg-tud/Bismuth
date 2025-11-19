@@ -15,27 +15,36 @@ object TravelPlannerBenchmarkRunner {
 
   def main(args: Array[String]): Unit = {
     val numReplicas = 4
-    val numOps      = 10_000
-    val traceFile   = Paths.get(s"./results/lofi_acl/trace-$numOps.json")
-    //TraceGen.run(traceFile, permissionAssignmentPartial, centralServerConnectionMap(numReplicas), numOps)
+    val numOps      = 50_000
 
+    // val traceFile   = Paths.get(s"./results/lofi_acl/trace-$numOps.json")
+    // TraceGen.run(traceFile, permissionAssignmentPartial, centralServerConnectionMap(numReplicas), numOps)
+
+    val traceFile = Paths.get(s"./results/lofi_acl/trace-valley-$numOps.json")
+    //TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps)
     val trace = TraceReplay.readTrace(traceFile)
 
-    TraceReplay.run(trace)
-    // Without ACL
-    TraceReplay.run(trace, withAcl = false)
+    TraceReplay.run(trace): Unit
+    //// Without Filtering (ACL off)
+    //TraceReplay.run(trace, withAcl = false)
 
-    val fullMeshConnMap = fullMeshConnectionMap(numReplicas)
-    val modifiedTrace = trace.copy(
-        connectionMap = fullMeshConnMap,
-        notificationTrace = TraceReplay.generateNotificationTrace(fullMeshConnMap, trace.deltaTrace.length, numReplicas)
-      )
-    TraceReplay.run(
-      modifiedTrace
-    )
-    TraceReplay.run(
-      modifiedTrace, withAcl = false
-    )
+    //// Test same trace with full mesh instead of central relay
+    //val fullMeshConnMap = fullMeshConnectionMap(numReplicas)
+    //val modifiedTrace   = trace.copy(
+    //  connectionMap = fullMeshConnMap,
+    //  notificationTrace = TraceReplay.generateNotificationTrace(fullMeshConnMap, trace.deltaTrace.length, numReplicas)
+    //)
+    //TraceReplay.run(modifiedTrace)                  // With ACL
+    //TraceReplay.run(modifiedTrace, withAcl = false) // Without
+
+    //// Test trace with permission valley
+    //val permissionValleyTrace = trace.copy(
+    //  connectionMap = permissionValleyConnectionMap,
+    //  notificationTrace =
+    //    TraceReplay.generateNotificationTrace(permissionValleyConnectionMap, trace.deltaTrace.length, numReplicas)
+    //)
+    //TraceReplay.run(permissionValleyTrace)
+    //()
   }
 
   def fullMeshConnectionMap(numReplicas: Int): Map[Int, Set[Int]] =
@@ -59,7 +68,7 @@ object TravelPlannerBenchmarkRunner {
     bench.assignPermission(0, 1, PermissionTree.fromPath("expenses"), PermissionTree.fromPath("expenses"))
     bench.assignPermission(0, 2, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
     bench.assignPermission(0, 2, PermissionTree.fromPath("bucketList"), PermissionTree.fromPath("bucketList"))
-    bench.assignPermission(0, 1, PermissionTree.fromPath("*"), PermissionTree.fromPath("expenses"))
+    bench.assignPermission(0, 3, PermissionTree.fromPath("*"), PermissionTree.fromPath("expenses"))
   }
 
   def permissionAssignmentFull(bench: TravelPlannerBenchmark): Unit = {
@@ -93,14 +102,15 @@ object TravelPlannerBenchmarkRunner {
     val stack     = mutable.Stack.empty[Signature]
     while remaining.nonEmpty do {
       stack.addOne(remaining.head._1)
-      val next    = stack.pop()
-      val missing = replica.applyAclOpIfPossible(remaining(next))
-      if missing.nonEmpty then {
-        stack.push(next)
-        stack.pushAll(missing)
-      } else {
-        remaining = remaining.removed(next)
-      }
+      val next = stack.pop()
+      if remaining.contains(next) then
+          val missing = replica.applyAclOpIfPossible(remaining(next))
+          if missing.nonEmpty then {
+            stack.push(next)
+            stack.pushAll(missing)
+          } else {
+            remaining = remaining.removed(next)
+          }
     }
   }
 
@@ -126,6 +136,7 @@ object TravelPlannerBenchmarkRunner {
         StandardOpenOption.TRUNCATE_EXISTING
       )
       val savedTrace = SavedTrace(
+        numOps,
         bench.identities,
         bench.aclRoot,
         bench.replicas(0).currentOpGraph.ops,
@@ -167,10 +178,13 @@ object TravelPlannerBenchmarkRunner {
       val peerCount     = neighbours.map(_.size)
       val random        = Random(42)
       val notifications = Array.ofDim[Int](numRounds, numReplicas)
-      notifications.mapInPlace(_.mapInPlace(i => random.nextInt(neighbours(i).size)))
+      notifications.mapInPlace(_.mapInPlace(i =>
+        neighbours(i).drop(random.nextInt(neighbours(i).size)).head
+      ))
+      notifications
     }
 
-    def run(trace: SavedTrace, withAcl: Boolean = true): Unit = {
+    def run(trace: SavedTrace, withAcl: Boolean = true): Array[Long] = {
       // Prepare
       val bench = TravelPlannerBenchmark(
         trace.identities.length,
@@ -183,10 +197,10 @@ object TravelPlannerBenchmarkRunner {
       bench.connect(trace.connectionMap)
 
       // Run
-      val start = System.nanoTime()
-      bench.replayTrace(trace.deltaTrace, trace.notificationTrace)
-      val stop = System.nanoTime()
-      println(s"${(stop - start) / 1_000_000}ms")
+      val times           = bench.replayTrace(trace.deltaTrace, trace.notificationTrace, trace.numOps)
+      val timePerThousand = times.take(times.length - 1).zip(times.drop(1)).map((prev, cur) => cur - prev)
+      println(s"${(times.last - times.head) / 1_000_000}ms: ${timePerThousand.map(_ / 1_000_000).mkString(",")}")
+      timePerThousand
     }
   }
 

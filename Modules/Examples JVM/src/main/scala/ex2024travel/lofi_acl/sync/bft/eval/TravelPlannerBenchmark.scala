@@ -76,18 +76,31 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
       mutators.toArray
   ).toArray
 
-  def replayTrace(trace: DeltaTrace, notificationTrace: NotificationTrace): Unit = {
-    trace.zip(notificationTrace).foreach { (concurrentOps, notificationTrace) =>
-      concurrentOps.foreach { (authorIndex, delta) =>
+  def replayTrace(trace: DeltaTrace, notificationTrace: NotificationTrace, numOps: Int): Array[Long] = {
+    require(numOps % 1_000 == 0)
+
+    while antiEntropyInstances.exists(_.msgQueue.size() > 0) do
+        antiEntropyInstances.foreach(_.processAllMessagesInInbox(0))
+
+    var opCounter = 0
+    val times     = Array.ofDim[Long](numOps / 1_000 + 1)
+
+    trace.indices.foreach { roundIndex =>
+      trace(roundIndex).foreach { (authorIndex, delta) =>
+        if opCounter % 1_000 == 0 then times(opCounter / 1_000) = System.nanoTime()
+        opCounter += 1
         replicas(authorIndex).mutateState(_ => delta)
       }
       antiEntropyInstances.foreach { antiEntropy =>
         antiEntropy.processAllMessagesInInbox(incomingMessagePollTimeoutMillis = 0)
       }
       antiEntropyInstances.indices.foreach(replicaIdx =>
-        antiEntropyInstances(replicaIdx).notifyPeerAboutLocalState(ids(notificationTrace(replicaIdx)))
+        antiEntropyInstances(replicaIdx).notifyPeerAboutLocalState(ids(notificationTrace(roundIndex)(replicaIdx)))
       )
     }
+    times(opCounter / 1_000) = System.nanoTime()
+    require(opCounter == numOps)
+    times
   }
 
   def assignPermission(from: Int, to: Int, readPerm: PermissionTree, writePerm: PermissionTree): Unit =
@@ -111,7 +124,8 @@ object TravelPlannerBenchmark {
         mgr.acceptIncomingConnections() // usually start() of anti entropy does this for us
         mgr
       },
-      autoConnect = false
+      autoConnect = false,
+      Random(42)
     )
     bench.antiEntropyInstances(bench.indices(id.getPublic)) = antiEntropy
     antiEntropy
@@ -178,6 +192,16 @@ object TravelPlannerBenchmark {
 
     permissionAssignmentFunction(bench)
 
+    while bench.antiEntropyInstances.exists(_.msgQueue.size() > 0) ||
+        bench.replicas.map(_.currentOpGraph.heads).toSet.size > 1
+    do {
+      bench.antiEntropyInstances.foreach(_.processAllMessagesInInbox(0))
+      bench.antiEntropyInstances.foreach(antiEntropy =>
+        antiEntropy.connectedPeers.foreach(antiEntropy.notifyPeerAboutLocalState)
+      )
+      bench.antiEntropyInstances.foreach(_.processAllMessagesInInbox(0))
+    }
+
     val permittedMutators = bench.permittedMutators
 
     var mutationRoundIndex                   = 0 // Counts the number of rounds in which deltas are created
@@ -209,9 +233,9 @@ object TravelPlannerBenchmark {
         antiEntropy.processAllMessagesInInbox(incomingMessagePollTimeoutMillis = 0)
       }
       bench.antiEntropyInstances.zipWithIndex.foreach { (antiEntropy, sendingReplicaIdx) =>
-        val notifiedPeer = random.nextInt(antiEntropy.connectedPeers.size)
-        antiEntropy.notifyPeerAboutLocalState(bench.ids(notifiedPeer))
-        notificationTrace(mutationRoundIndex)(sendingReplicaIdx) = notifiedPeer
+        val peerId = antiEntropy.connectedPeers.drop(random.nextInt(antiEntropy.connectedPeers.size)).head
+        antiEntropy.notifyPeerAboutLocalState(peerId)
+        notificationTrace(mutationRoundIndex)(sendingReplicaIdx) = bench.ids.indexOf(peerId)
       }
 
       // Increment index
