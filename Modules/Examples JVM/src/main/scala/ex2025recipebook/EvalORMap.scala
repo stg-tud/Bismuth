@@ -3,7 +3,7 @@ package ex2025recipebook
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ObserveRemoveMap}
 import rdts.time.Dots
 
 import java.util.concurrent.TimeUnit
@@ -16,7 +16,7 @@ class EvalORMapState {
   var randomArr: List[Int] = List.empty
   val localUid: LocalUid   = LocalUid.gen()
 
-  @Param(Array("1", "10", "100", "500", "1000"))
+  @Param(Array("1", "10", "100", "1000"))
   var mapSize: Int = 0
 
   @Setup(Level.Trial)
@@ -143,6 +143,63 @@ class DeltaBufferORMapBenchmark {
       resultCapture,
       ObserveRemoveMap.empty[Int, LastWriterWins[Int]],
       (orMap, r) => orMap.update(r % state.mapSize, LastWriterWins.empty.write(r))(using state.localUid)
+    )
+  }
+
+  @Benchmark
+  def baselineBufferORNMap(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
+    given Bottom[Int]                         = Bottom.provide(0)
+    given Lattice[ObserveRemoveMap[Int, EnableWinsFlag]] = Lattice.derived
+    val deltaBuffer = DeltaBufferEverything[ObserveRemoveMap[Int, EnableWinsFlag]]()
+
+    EvalORMap.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      ObserveRemoveMap.empty[Int, EnableWinsFlag],
+      (orMap, r) => orMap.transform(r) {
+        case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
+        case None => Some(if (r%2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
+      }(using state.localUid)
+    )
+  }
+
+  @Benchmark
+  def nonRedundantBufferORNMap(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
+    given Bottom[Int]                         = Bottom.provide(0)
+    given Lattice[ObserveRemoveMap[Int, EnableWinsFlag]] = Lattice.derived
+    val deltaBuffer = DeltaBufferNonRedundant[ObserveRemoveMap[Int, EnableWinsFlag]]()
+
+    EvalORMap.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      ObserveRemoveMap.empty[Int, EnableWinsFlag],
+      (orMap, r) => orMap.transform(r) {
+        case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
+        case None => Some(if (r%2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
+      }(using state.localUid)
+    )
+  }
+
+  @Benchmark
+  def subsumedBufferORNMap(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
+    given Bottom[Int]                         = Bottom.provide(0)
+    given Lattice[ObserveRemoveMap[Int, EnableWinsFlag]] = Lattice.derived
+    val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, EnableWinsFlag]]()
+
+    EvalORMap.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      ObserveRemoveMap.empty[Int, EnableWinsFlag],
+      (orMap, r) => orMap.transform(r) {
+        case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
+        case None => Some(if (r%2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
+      }(using state.localUid)
     )
   }
 

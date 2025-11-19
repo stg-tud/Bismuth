@@ -33,6 +33,17 @@ class Replica[A: Bottom as B, D <: DeltaBuffer[A,D]](val replicaId: LocalUid, va
     buffer = buffer.applyDelta(metaDelta)
   }
 
+  def produceDelta(f: LocalUid ?=> A => A)(using Lattice[A]): MetaDelta[A] = {
+    val dot = nextDot
+    dots = dots.add(dot)
+
+    val delta = f(using replicaId)(state)
+    val dotsId = Dots.single(dot)
+
+    state = state `merge` delta
+    MetaDelta(dotsId, delta)
+  }
+
   def receive(other: Replica[A, D])(using Lattice[A]): this.type = {
     other.getDeltas(dots).foreach(applyDelta)
     this

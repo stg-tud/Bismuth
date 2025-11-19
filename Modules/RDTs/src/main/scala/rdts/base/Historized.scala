@@ -44,9 +44,10 @@ object Historized {
         metaDeltas.map(bufferedDelta => bufferedDelta.copy(delta = f(bufferedDelta.delta)))
 
       inline def getRedundantDeltas(delta: T)(using Historized[T]): Dots =
-        metaDeltas.foldLeft(Dots.empty)((dots, bufferedDelta) => 
-          val redundantDeltas = if delta.isRedundant(bufferedDelta.delta) then bufferedDelta.getAllDots else Dots.empty
-          dots.union(redundantDeltas)
+        metaDeltas.foldLeft(Dots.empty)((dots, bufferedDelta) =>
+            val redundantDeltas =
+              if delta.isRedundant(bufferedDelta.delta) then bufferedDelta.getAllDots else Dots.empty
+            dots.union(redundantDeltas)
         )
     }
   }
@@ -71,7 +72,7 @@ object Historized {
     private def hist(i: Int): Historized[Any] = historizables.productElement(i).asInstanceOf[Historized[Any]]
 
     override def isRedundant(delta: T, bufferedDelta: T): Boolean = {
-      Range(0, historizables.productArity).forall { i => 
+      Range(0, historizables.productArity).forall { i =>
         hist(i).isRedundant(delta.productElement(i), bufferedDelta.productElement(i))
       }
     }

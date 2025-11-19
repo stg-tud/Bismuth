@@ -51,6 +51,20 @@ class EnableWinsFlagTest extends munit.FunSuite {
     val redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, dots)
+
+    assert(!delta2.isRedundant(delta1))
+
+    assert(delta3.isRedundant(delta1))
+    assert(delta3.isRedundant(delta2))
+
+    assert(delta4.isRedundant(delta1))
+    assert(delta4.isRedundant(delta2))
+    assert(delta4.isRedundant(delta3))
+
+    assert(!delta5.isRedundant(delta1))
+    assert(!delta5.isRedundant(delta2))
+    assert(!delta5.isRedundant(delta3))
+    assert(!delta5.isRedundant(delta4))
   }
 
   test("new unset overrides all deltas containing a subset of the observed dots") {
@@ -103,7 +117,7 @@ class EnableWinsFlagTest extends munit.FunSuite {
     ewFlag = ewFlag `merge` delta1
     val dot1 = dots.nextDot(using localUid1)
     dots = dots.add(dot1)
-    
+
     println(f"${ewFlag.read}, ${ewFlag.set}")
 
     val delta2 = ewFlag.disable()

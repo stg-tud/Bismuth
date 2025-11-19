@@ -62,6 +62,8 @@ case class ReplicatedSet[E](inner: Map[E, Dots], deleted: Dots) {
 
   def clear(): Delta = ReplicatedSet(Map.empty, inner.values.foldLeft(Dots.empty)(_ `union` _))
 
+  inline def size: Int = elements.size
+
 }
 
 object ReplicatedSet {
