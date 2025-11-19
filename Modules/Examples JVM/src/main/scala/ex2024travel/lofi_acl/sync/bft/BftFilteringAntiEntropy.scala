@@ -83,7 +83,7 @@ class BftFilteringAntiEntropy[RDT](
 
   // Executed in threads from ConnectionManager, thread safe
   override def receivedMessage(msg: SyncMsg[RDT], fromUser: PublicIdentity): Unit =
-    msgQueue.put(msg, fromUser)
+    msgQueue.put((msg, fromUser))
 
   // Executed in thread from ConnectionManager
   override def connectionEstablished(remote: PublicIdentity): Unit = {
@@ -307,16 +307,19 @@ class BftFilteringAntiEntropy[RDT](
 
           val authorAcl            = aclOpGraph.reconstruct(authorAclHeads).get
           val senderAcl            = aclOpGraph.reconstruct(senderAclHeads).get
-          val effectivePermissions = authorAcl.write(PublicIdentity(dot.place.delegate))
-            .intersect(senderAcl.write(sender))
-            .intersect(aclOpGraph.latestAcl.read(localPublicId))
+          val effectivePermissions = filter.minimizePermissionTree(
+            authorAcl.write(PublicIdentity(dot.place.delegate))
+              .intersect(senderAcl.write(sender))
+              .intersect(aclOpGraph.latestAcl.read(localPublicId))
+          )
 
           val delta = Filter[RDT].filter(unfilteredDelta.delta, effectivePermissions)
 
           val existingPartialDelta = partialDeltaStore.get(dot)
           if existingPartialDelta.isEmpty then {
-            val requiredPermissions =
+            val requiredPermissions = filter.minimizePermissionTree(
               authorAcl.write(PublicIdentity(dot.place.delegate)).intersect(aclOpGraph.latestAcl.read(localPublicId))
+            )
             if requiredPermissions <= senderAcl.write(sender)
             then // Immediately applicable
                 rdtDeltas.put(dot, (delta, authorAclHeads))
@@ -327,7 +330,7 @@ class BftFilteringAntiEntropy[RDT](
           } else {
             existingPartialDelta.get match
                 case PartialDelta(storedDelta, includedParts, requiredPermissions) =>
-                  val combinedPermissions = includedParts.merge(effectivePermissions)
+                  val combinedPermissions = filter.minimizePermissionTree(includedParts.merge(effectivePermissions))
                   if requiredPermissions <= combinedPermissions
                   then // Existing partial delta merged with newly received partial delta is complete
                       val completeDelta = delta.merge(storedDelta)
@@ -346,13 +349,10 @@ class BftFilteringAntiEntropy[RDT](
 
   protected def sendFiltered(receiver: PublicIdentity, acl: BftAcl, deltas: Array[RdtDelta[RDT]]): Unit = {
     val permissions = acl.read(receiver).intersect(acl.write(localPublicId))
-    if !permissions.isEmpty then
-        sendMultiple(
-          receiver,
-          deltas.map(delta => delta.copy(delta = filter.filter(delta.delta, permissions)))
-        )
-    else
-        sendMultiple(receiver, deltas.map(delta => delta.copy(delta = rdtBottom.empty)))
+    sendMultiple(
+      receiver,
+      deltas.map(delta => delta.copy(delta = filter.filter(delta.delta, permissions)))
+    )
   }
 
   protected def broadcastFiltered(acl: BftAcl, delta: RdtDelta[RDT]): Unit = {
@@ -408,7 +408,6 @@ class BftFilteringAntiEntropy[RDT](
           }
 
       // Check RDT sync state with peer
-      //if peerDots.getOrElse(peer, Dots.empty) != rdtDeltas.dots then
       send(peer, TellKnownRdtDots(rdtDeltas.dots))
 
       // Check ACL sync state with peer unless assumed to be equal
