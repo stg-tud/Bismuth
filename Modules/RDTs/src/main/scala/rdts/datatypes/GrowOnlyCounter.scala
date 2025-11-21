@@ -1,7 +1,6 @@
 package rdts.datatypes
 
 import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid, Uid}
-import rdts.time.Dots
 
 case class GrowOnlyCounter(inner: Map[Uid, Int]) {
   lazy val value: Int = inner.valuesIterator.sum

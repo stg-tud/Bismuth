@@ -26,8 +26,7 @@ class ReplicaWithBftAcl[RDT](using
         BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, sync)
 ) extends Replica[RDT] {
 
-  private val antiEntropy                                 = antiEntropyProvider(localIdentity, aclRoot, this)
-  @volatile private var antiEntropyThread: Option[Thread] = None
+  private val antiEntropy = antiEntropyProvider(localIdentity, aclRoot, this)
 
   private val localPublicId = localIdentity.getPublic
 

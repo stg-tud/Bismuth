@@ -7,7 +7,7 @@ import ex2024travel.lofi_acl.sync.JsoniterCodecs.messageJsonCodec
 import ex2024travel.lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
 import ex2024travel.lofi_acl.sync.{DeltaMapWithPrefix, Replica}
 import rdts.base.{Bottom, Lattice, Uid}
-import rdts.filters.{Filter, Operation, PermissionTree}
+import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.AtomicReference

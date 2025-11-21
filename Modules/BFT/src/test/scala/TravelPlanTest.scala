@@ -1,4 +1,3 @@
-import bfttravelplanner.BFTTravelPlan
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import ex2024travel.lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
@@ -144,28 +143,28 @@ class TravelPlanTest extends munit.FunSuite:
       /*var r1 = BFTTravelPlan()
     r1 = r1.merge(r1.addBucketListEntry("entry 1")(using replica1Uid))
     r1 = r1.merge(r1.addBucketListEntry("entry 11")(using replica1Uid))
-  
+
     // println(r1.state.bucketList.queryAllEntries)
-  
+
     var r2 = BFTTravelPlan()
     r2 = r2.merge(r2.addBucketListEntry("entry 2")(using replica2Uid))
     r2 = r2.merge(r2.addBucketListEntry("entry 22")(using replica2Uid))
-  
+
     // println(r2.state.bucketList.queryAllEntries)
-  
+
     while !r1.riblt.isDecoded do
       r1.addCodedSymbols(r2.produceNextCodedSymbols())
-  
+
     val syncReq = r1.sendSyncRequest
     r2 = r2.merge(syncReq.delta)
     r1 = r1.merge(r2.sendSyncResponse(syncReq.requestedEvents))
-  
+
     r1 = r1.processQueue
     r2 = r2.processQueue
-  
+
     // println(r1.state.bucketList.queryAllEntries.map(lww => lww.payload))
     // println(r2.state.bucketList.queryAllEntries.map(lww => lww.payload))
-  
+
     assertEquals(
       r1.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet,
       r2.state.bucketList.queryAllEntries.map(lww => lww.payload).toSet

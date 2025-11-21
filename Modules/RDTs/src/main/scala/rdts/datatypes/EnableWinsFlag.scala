@@ -1,6 +1,5 @@
 package rdts.datatypes
 
-import rdts.base.Historized.MetaDelta
 import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid}
 import rdts.time.Dots
 

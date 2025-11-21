@@ -1,12 +1,12 @@
 package ex2025recipebook
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
 
-class Replica[A: Bottom as B, D <: DeltaBuffer[A,D]](val replicaId: LocalUid, var state: A, var buffer: DeltaBuffer[A,D]) {
+class Replica[A, D <: DeltaBuffer[A,D]](val replicaId: LocalUid, var state: A, var buffer: DeltaBuffer[A,D]) {
   var dots: Dots                        = Dots.empty
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A]): this.type = {
@@ -64,7 +64,7 @@ class Replica[A: Bottom as B, D <: DeltaBuffer[A,D]](val replicaId: LocalUid, va
 }
 
 object Replica {
-  def quiescence[A: {Lattice, Historized},D<:DeltaBuffer[A,D]](replicas: Replica[A,D]*): Unit =
+  def quiescence[A: {Lattice},D<:DeltaBuffer[A,D]](replicas: Replica[A,D]*): Unit =
     replicas.toList match
       case Seq() | Seq(_) => ()
       case Seq(a, rem*)   =>

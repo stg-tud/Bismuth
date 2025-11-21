@@ -1,7 +1,7 @@
 package rdts.datatypes
 
 import rdts.base.{Bottom, Decompose, Historized, Lattice, Orderings}
-import rdts.time.{CausalTime, Dots}
+import rdts.time.CausalTime
 
 import scala.math.Ordering.Implicits.infixOrderingOps
 

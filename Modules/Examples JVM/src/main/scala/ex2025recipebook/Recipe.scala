@@ -14,10 +14,10 @@ case class Recipe(
     favorite: EnableWinsFlag
 ) {
 
-  private inline def mod[A](inline path: Delta => A, mod: A => A)(using localUid: LocalUid): Delta =
+  private inline def mod[A](inline path: Delta => A, mod: A => A): Delta =
     this.deltaModify(path).using(mod)
 
-  def editTitle(newTitle: String)(using localUid: LocalUid): Delta =
+  def editTitle(newTitle: String): Delta =
     mod(_.title, _.write(newTitle))
 
   def addIngredient(newIngredient: Ingredient)(using localUid: LocalUid): Delta =
@@ -26,14 +26,14 @@ case class Recipe(
   def updateIngredient(index: Int, modify: (Ingredient) => Ingredient)(using localUid: LocalUid): Delta =
     mod(_.ingredients, _.update(index, modify))
 
-  def removeIngredient(index: Int)(using localUid: LocalUid): Delta =
+  def removeIngredient(index: Int): Delta =
     mod(_.ingredients, _.remove(index))
-    
-  def updateServings(newServings: Int)(using localUid: LocalUid): Delta = mod(_.servings, _.write(newServings))
 
-  def updateCookingTime(newCookingTime: Int)(using localUid: LocalUid): Delta = mod(_.cookingTime, _.write(newCookingTime))
+  def updateServings(newServings: Int): Delta = mod(_.servings, _.write(newServings))
 
-  def updateDescription(newDescription: String)(using localUid: LocalUid): Delta = mod(_.description, _.write(newDescription))
+  def updateCookingTime(newCookingTime: Int): Delta = mod(_.cookingTime, _.write(newCookingTime))
+
+  def updateDescription(newDescription: String): Delta = mod(_.description, _.write(newDescription))
 
   def setFavorite(value: Boolean)(using localUid: LocalUid): Delta =
     if value then mod(_.favorite, _.enable()) else mod(_.favorite, _.disable())
@@ -54,7 +54,7 @@ object Recipe {
   given Bottom[String] = Bottom.provide("")
 
   given Bottom[Int] = Bottom.provide(0)
-  
+
   given bottom: Bottom[Recipe] = Bottom.derived
 
   given Lattice[Recipe] = Lattice.derived

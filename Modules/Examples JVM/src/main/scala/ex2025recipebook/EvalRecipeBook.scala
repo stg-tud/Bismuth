@@ -2,9 +2,7 @@ package ex2025recipebook
 
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, LastWriterWins, MultiVersionRegister, ObserveRemoveMap}
-import rdts.time.Dots
+import rdts.base.LocalUid
 
 import java.util.concurrent.TimeUnit
 

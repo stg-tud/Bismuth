@@ -207,7 +207,7 @@ class DeltaBufferORMapBenchmark {
 
 object EvalORMap {
 
-  inline def modReplica[A: {Bottom as AB, Lattice}, B <: DeltaBuffer[A, B]](
+  inline def modReplica[A: {Lattice}, B <: DeltaBuffer[A, B]](
       deltaBuffer: DeltaBuffer[A, B],
       blackhole: Blackhole,
       state: EvalORMapState,

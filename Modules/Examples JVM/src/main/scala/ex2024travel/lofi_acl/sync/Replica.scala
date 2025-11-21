@@ -1,7 +1,7 @@
 package ex2024travel.lofi_acl.sync
 
 import crypto.PublicIdentity
-import rdts.filters.{Operation, PermissionTree}
+import rdts.filters.PermissionTree
 import rdts.time.Dot
 
 trait Replica[RDT] {

@@ -1,9 +1,10 @@
 package ex2025recipebook
 
 import rdts.base.*
-import rdts.base.Historized.MetaDelta
 import rdts.datatypes.{EnableWinsFlag, Epoch, GrowOnlyList}
 import rdts.time.{Dot, Dots}
+
+import scala.annotation.nowarn
 
 /** Keep remove list with an arbitrary crdt instead of lww as payload
   * @param order
@@ -14,7 +15,7 @@ import rdts.time.{Dot, Dots}
 case class NestedKeepRemoveList[E] private (
     order: Epoch[GrowOnlyList[Dot]] = empty.order,
     payloads: Map[Dot, E] = Map.empty,
-    flags: Map[Dot, EnableWinsFlag] = Map.empty
+    flags: Map[Dot, EnableWinsFlag] = Map.empty: @nowarn
 ) {
   private type C = NestedKeepRemoveList[E]
 
@@ -68,7 +69,7 @@ case class NestedKeepRemoveList[E] private (
     }
   }
 
-  def remove(idx: Int)(using LocalUid): C =
+  def remove(idx: Int): C =
     updateFlag(idx) { case flag =>
       flag.disable()
     }
@@ -99,7 +100,7 @@ case class NestedKeepRemoveList[E] private (
       .filter((d, _) => isAlive(d))
       .map(_._2).lift(n)
 
-  private def updateFlag(idx: Int)(f: (EnableWinsFlag) => EnableWinsFlag)(using LocalUid): C =
+  private def updateFlag(idx: Int)(f: (EnableWinsFlag) => EnableWinsFlag): C =
     findRealIndex(idx) match
         case None          => NestedKeepRemoveList.empty
         case Some(realIdx) =>
@@ -122,7 +123,7 @@ object NestedKeepRemoveList {
   given historized[E: Historized]: Historized[NestedKeepRemoveList[E]] = (delta, bufferedDelta) =>
     (isInsertOperation(delta) && delta.flags.forall((dot, _) => bufferedDelta.flags.contains(dot)))
     || (isUpdateOperation(delta) && bufferedDelta.flags.forall((dot, _) => delta.flags.contains(dot))
-        && bufferedDelta.payloads.keys.forall(key => delta.payloads(key).isRedundant(bufferedDelta.read(key).get)))
+    && bufferedDelta.payloads.keys.forall(key => delta.payloads(key).isRedundant(bufferedDelta.read(key).get)))
 
   private def isInsertOperation[E](delta: NestedKeepRemoveList[E]): Boolean =
     !delta.order.isEmpty && delta.payloads.nonEmpty && delta.flags.nonEmpty && delta.flags.forall(_._2.read)

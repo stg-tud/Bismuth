@@ -1,16 +1,11 @@
-import riblt.SessionType.{receiver, sender}
 import datatypes.{ORSet, Op}
-import munit.FunSuite
-import riblt.RIBLTSyncWithThreads
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import crypto.Ed25519Util
 import network.Network
+import riblt.RIBLTSyncWithThreads
 import riblt.RIBLTSyncWithThreads.given_JsonValueCodec_ORSet
-import scala.util.Random
+import riblt.SessionType.{receiver, sender}
 
-import java.security.{PrivateKey, PublicKey}
 import scala.concurrent.duration.{Duration, DurationInt}
+import scala.util.Random
 
 class RIBLTSyncWithThreadsTest extends munit.FunSuite:
     override def munitTimeout: Duration = 5.minutes

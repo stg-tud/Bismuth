@@ -4,7 +4,7 @@ import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, MultiVersionRegister, ObserveRemoveMap, PosNegCounter, ReplicatedSet}
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, ObserveRemoveMap, PosNegCounter, ReplicatedSet}
 import rdts.time.Dots
 
 import java.util.concurrent.TimeUnit
@@ -497,7 +497,7 @@ class DeltaBufferBenchmark {
 
 object Eval {
 
-  inline def modReplica[A: {Bottom as AB, Lattice}, B <: DeltaBuffer[A, B]](
+  inline def modReplica[A: {Lattice}, B <: DeltaBuffer[A, B]](
      deltaBuffer: DeltaBuffer[A, B],
      blackhole: Blackhole,
      state: EvalState,
@@ -584,7 +584,7 @@ object Eval {
     (random % 3) match {
       case 0 => {
         val index = math.abs(random % krList.size)
-        krList.remove(index)(using replicaID)
+        krList.remove(index)
       }
       case 1 => {
         val index = math.abs(random % krList.size)

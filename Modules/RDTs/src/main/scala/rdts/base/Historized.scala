@@ -1,6 +1,5 @@
 package rdts.base
 
-import rdts.base.Historized.MetaDelta
 import rdts.base.Lattice
 import rdts.time.Dots
 

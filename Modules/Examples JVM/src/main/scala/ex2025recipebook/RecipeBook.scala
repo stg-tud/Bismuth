@@ -60,7 +60,7 @@ case class RecipeBook(
   def updateServings(recipeKey: String, newServings: Int)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
-        case Some(prior) => Some(prior.updateServings(newServings)(using localUid))
+        case Some(prior) => Some(prior.updateServings(newServings))
         case None => ???
       }
     }
@@ -69,7 +69,7 @@ case class RecipeBook(
   def updateCookingTime(recipeKey: String, newCookingTime: Int)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
-        case Some(prior) => Some(prior.updateCookingTime(newCookingTime)(using localUid))
+        case Some(prior) => Some(prior.updateCookingTime(newCookingTime))
         case None => ???
       }
     }
@@ -78,7 +78,7 @@ case class RecipeBook(
   def updateDescription(recipeKey: String, newDescription: String)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
-        case Some(prior) => Some(prior.updateDescription(newDescription)(using localUid))
+        case Some(prior) => Some(prior.updateDescription(newDescription))
         case None => ???
       }
     }

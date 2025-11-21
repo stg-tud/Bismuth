@@ -40,7 +40,7 @@ case class TravelPlan(
     }
   }
 
-  def removeBucketListEntry(bucketListId: UniqueId)(using localUid: LocalUid): Delta = {
+  def removeBucketListEntry(bucketListId: UniqueId): Delta = {
     this.deltaModify(_.bucketList).using { ormap =>
       ormap.remove(bucketListId)
     }
@@ -58,7 +58,7 @@ case class TravelPlan(
     }
   }
 
-  def removeExpense(key: UniqueId)(using localUid: LocalUid): Delta = {
+  def removeExpense(key: UniqueId): Delta = {
     this.deltaModify(_.expenses).using { ormap =>
       ormap.remove(key)
     }
@@ -126,8 +126,8 @@ object TravelPlan {
   type Delta = TravelPlan
 
   given jsonCodec: JsonValueCodec[TravelPlan] = {
-    import replication.JsoniterCodecs.given
     import ex2024travel.lofi_acl.sync.JsoniterCodecs.given
+    import replication.JsoniterCodecs.given
     JsonCodecMaker.make[TravelPlan](CodecMakerConfig.withMapAsArray(true))
   }
 }
