@@ -1,6 +1,7 @@
 package ex2024travel.lofi_acl.sync.bft.eval
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromStream, writeToStream}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromStream, writeToStream}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import ex2024travel.lofi_acl.sync.bft.eval.SavedTrace.NotificationTrace
 import ex2024travel.lofi_acl.sync.bft.eval.TravelPlannerBenchmark.createTrace
@@ -15,36 +16,62 @@ object TravelPlannerBenchmarkRunner {
 
   def main(args: Array[String]): Unit = {
     val numReplicas = 4
-    val numOps      = 50_000
+    val numOps      = 100_000
 
-    // val traceFile   = Paths.get(s"./results/lofi_acl/trace-$numOps.json")
-    // TraceGen.run(traceFile, permissionAssignmentPartial, centralServerConnectionMap(numReplicas), numOps)
+    val traceFile = Paths.get(s"./results/lofi_acl/valley-$numReplicas-$numOps-trace.json")
+    //TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps)
 
-    val traceFile = Paths.get(s"./results/lofi_acl/trace-valley-$numOps.json")
-    // TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps)
-    val trace = TraceReplay.readTrace(traceFile)
+    val valleyTrace            = TraceReplay.readTrace(traceFile)
 
-    TraceReplay.run(trace): Unit
-    //// Without Filtering (ACL off)
-    // TraceReplay.run(trace, withAcl = false)
+    val valleyTraceButFullMesh =
+      valleyTrace.copy(
+        connectionMap = fullMeshConnectionMap(numReplicas),
+        notificationTrace =
+          TraceReplay.generateNotificationTrace(
+            fullMeshConnectionMap(numReplicas),
+            valleyTrace.deltaTrace.length,
+            numReplicas
+          )
+      )
 
-    //// Test same trace with full mesh instead of central relay
-    // val fullMeshConnMap = fullMeshConnectionMap(numReplicas)
-    // val modifiedTrace   = trace.copy(
-    //  connectionMap = fullMeshConnMap,
-    //  notificationTrace = TraceReplay.generateNotificationTrace(fullMeshConnMap, trace.deltaTrace.length, numReplicas)
-    // )
-    // TraceReplay.run(modifiedTrace)                  // With ACL
-    // TraceReplay.run(modifiedTrace, withAcl = false) // Without
+    val valleyTraceButCentralized =
+      valleyTrace.copy(
+        connectionMap = centralServerConnectionMap(numReplicas),
+        notificationTrace =
+          TraceReplay.generateNotificationTrace(
+            centralServerConnectionMap(numReplicas),
+            valleyTrace.deltaTrace.length,
+            numReplicas
+          )
+      )
 
-    //// Test trace with permission valley
-    // val permissionValleyTrace = trace.copy(
-    //  connectionMap = permissionValleyConnectionMap,
-    //  notificationTrace =
-    //    TraceReplay.generateNotificationTrace(permissionValleyConnectionMap, trace.deltaTrace.length, numReplicas)
-    // )
-    // TraceReplay.run(permissionValleyTrace)
-    // ()
+    // Warmup
+    TraceReplay.run(valleyTrace): Unit
+
+    val res: Map[String, Array[Long]] = Map(
+      "valley" -> TraceReplay.run(valleyTrace),
+      // Without Filtering (ACL off)
+      "valley-no-acl" -> TraceReplay.run(valleyTrace, withAcl = false),
+      // Same trace, different connection map
+      "valley-full-mesh" -> TraceReplay.run(valleyTraceButFullMesh),
+      // Same trace, different connection map, no acl
+      "valley-full-mesh-no-acl" -> TraceReplay.run(valleyTraceButFullMesh, withAcl = false),
+      // Central server
+      "valley-central" -> TraceReplay.run(valleyTraceButFullMesh),
+      // Central server (ACL off)
+      "valley-central-no-acl" -> TraceReplay.run(valleyTraceButFullMesh, withAcl = false),
+    )
+    val resultFile      = Paths.get(s"./results/lofi_acl/valley-$numReplicas-$numOps-results.json")
+    val resultOutStream = Files.newOutputStream(
+      resultFile,
+      StandardOpenOption.WRITE,
+      StandardOpenOption.CREATE,
+      StandardOpenOption.TRUNCATE_EXISTING
+    )
+
+    given JsonValueCodec[Map[String, Array[Long]]] = JsonCodecMaker.make
+    writeToStream(res, resultOutStream)
+    resultOutStream.close()
   }
 
   def fullMeshConnectionMap(numReplicas: Int): Map[Int, Set[Int]] =

@@ -54,7 +54,6 @@ class NonFilteringAntiEntropy[RDT](
       case SyncMsg.TellKnownAclOps(aclVersion, knownMissing) =>
       case SyncMsg.AnnouncePeers(peers)                      => super.handleMessage(msg, sender)
     }
-    super.handleMessage(msg, sender)
   }
 
   override protected def receiveMessage(msg: SyncMsg[RDT], sender: PublicIdentity): Unit =
