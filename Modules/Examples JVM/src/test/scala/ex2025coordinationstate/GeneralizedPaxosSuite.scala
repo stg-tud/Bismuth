@@ -1,4 +1,4 @@
-package test.rdts
+package ex2025coordinationstate
 
 import org.scalacheck.Test.Parameters
 import rdts.protocols.old.simplified.GeneralizedPaxos

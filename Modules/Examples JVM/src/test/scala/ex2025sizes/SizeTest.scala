@@ -1,4 +1,4 @@
-package rdts.size
+package ex2025sizes
 
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

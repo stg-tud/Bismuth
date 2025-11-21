@@ -1,4 +1,4 @@
-package test.rdts
+package ex2025coordinationstate
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
