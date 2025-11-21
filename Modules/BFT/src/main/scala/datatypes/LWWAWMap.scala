@@ -50,7 +50,7 @@ case class LWWAWMap[K, V](
                         val chosenEvent = newHashDAG.getEventByID(chosenID)
                         val v           = chosenEvent.content.get match
                             case AddKeyValue(k, v) => v
-                            case RemoveKey(_) => throw Exception("This is not supposed to happen")
+                            case RemoveKey(_)      => throw Exception("This is not supposed to happen")
 
                         newMap = newMap + (key   -> v)
                         val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
@@ -94,4 +94,4 @@ object LWWAWMap:
 
 sealed trait MapOperation[K, V]
 case class AddKeyValue[K, V](key: K, value: V) extends MapOperation[K, V]
-case class RemoveKey[K, V](key: K)        extends MapOperation[K, V]
+case class RemoveKey[K, V](key: K)             extends MapOperation[K, V]

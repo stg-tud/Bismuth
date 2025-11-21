@@ -49,9 +49,8 @@ class ObserveRemoveMapTest extends munit.FunSuite {
 
     var orMap = ObserveRemoveMap.empty[String, LastWriterWins[String]]
 
-    def produceDeltaAdd(key: String, value: String): ObserveRemoveMap[String, LastWriterWins[String]] = {
+    def produceDeltaAdd(key: String, value: String): ObserveRemoveMap[String, LastWriterWins[String]] =
       orMap.update(key, LastWriterWins.empty[String].write(value))(using localId)
-    }
 
     val delta1 = produceDeltaAdd("a", "a")
     orMap = orMap `merge` delta1
@@ -72,7 +71,7 @@ class ObserveRemoveMapTest extends munit.FunSuite {
       MetaDelta(Dots.single(dot5), delta5),
     ).reverse
 
-    val delta = produceDeltaAdd("a", "ab")
+    val delta           = produceDeltaAdd("a", "ab")
     val redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, Dots.from(List(dot1)))
@@ -82,8 +81,8 @@ class ObserveRemoveMapTest extends munit.FunSuite {
     given Bottom[String] = Bottom.provide("")
 
     val localId: LocalUid = LocalUid.gen()
-    var dots = Dots.empty
-    val dot1 = dots.nextDot(using localId)
+    var dots              = Dots.empty
+    val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -98,13 +97,11 @@ class ObserveRemoveMapTest extends munit.FunSuite {
 
     var orMap = ObserveRemoveMap.empty[String, LastWriterWins[String]]
 
-    def produceDeltaAdd(key: String, value: String): ObserveRemoveMap[String, LastWriterWins[String]] = {
+    def produceDeltaAdd(key: String, value: String): ObserveRemoveMap[String, LastWriterWins[String]] =
       orMap.update(key, LastWriterWins.empty[String].write(value))(using localId)
-    }
 
-    def produceDeltaRemove(key: String): ObserveRemoveMap[String, LastWriterWins[String]] = {
+    def produceDeltaRemove(key: String): ObserveRemoveMap[String, LastWriterWins[String]] =
       orMap.remove(key)
-    }
 
     val delta1 = produceDeltaAdd("a", "a")
     orMap = orMap `merge` delta1
@@ -131,7 +128,9 @@ class ObserveRemoveMapTest extends munit.FunSuite {
 
     assertEquals(redundantDeltas, Dots.empty)
 
-    buffer = MetaDelta(Dots.single(dot6), delta6) :: buffer.filterNot(bufferedDelta => redundantDeltas.contains(bufferedDelta.id))
+    buffer = MetaDelta(Dots.single(dot6), delta6) :: buffer.filterNot(bufferedDelta =>
+      redundantDeltas.contains(bufferedDelta.id)
+    )
 
     val delta = produceDeltaAdd("a", "ab")
     redundantDeltas = buffer.getRedundantDeltas(delta)

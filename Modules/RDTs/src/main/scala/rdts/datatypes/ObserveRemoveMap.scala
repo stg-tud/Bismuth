@@ -92,9 +92,9 @@ object ObserveRemoveMap {
   given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
     bufferedDelta == ObserveRemoveMap.empty
     || (isRemoveOperation(delta) && isRemoveOperation(bufferedDelta) && delta.removed.contains(bufferedDelta.removed))
-    || (isObserveOperation(delta) && isObserveOperation(bufferedDelta) 
-        && bufferedDelta.inner.keys.forall(k => delta.contains(k))
-        && bufferedDelta.entries.forall(entry => delta.get(entry._1).get.isRedundant(bufferedDelta.get(entry._1).get)))
+    || (isObserveOperation(delta) && isObserveOperation(bufferedDelta)
+    && bufferedDelta.inner.keys.forall(k => delta.contains(k))
+    && bufferedDelta.entries.forall(entry => delta.get(entry._1).get.isRedundant(bufferedDelta.get(entry._1).get)))
 
   private def isObserveOperation[K, V](delta: ObserveRemoveMap[K, V]): Boolean =
     delta.inner.nonEmpty && delta.removed.isEmpty

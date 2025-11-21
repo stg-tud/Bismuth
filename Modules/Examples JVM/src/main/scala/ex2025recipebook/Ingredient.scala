@@ -34,7 +34,8 @@ object Ingredient {
 
   type Delta = Ingredient
 
-  val empty: Ingredient = Ingredient(LastWriterWins.empty[String], LastWriterWins.empty[Double], LastWriterWins.empty[String])
+  val empty: Ingredient =
+    Ingredient(LastWriterWins.empty[String], LastWriterWins.empty[Double], LastWriterWins.empty[String])
 
   given stringBottom: Bottom[String] = Bottom.provide("")
 
@@ -54,8 +55,9 @@ object Ingredient {
     )
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[Ingredient, DeltaBufferNonRedundant[Ingredient]] = Replica(LocalUid.gen(), Ingredient.empty, DeltaBufferNonRedundant[Ingredient]())
-    def ingredient                    = replica1.state
+    val replica1: Replica[Ingredient, DeltaBufferNonRedundant[Ingredient]] =
+      Replica(LocalUid.gen(), Ingredient.empty, DeltaBufferNonRedundant[Ingredient]())
+    def ingredient = replica1.state
 
     println("---0")
     val delta0 = Ingredient("Teig", 1.0, "Stk.")

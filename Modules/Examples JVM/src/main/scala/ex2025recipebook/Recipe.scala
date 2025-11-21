@@ -49,7 +49,14 @@ object Recipe {
 
   type Delta = Recipe
 
-  val empty: Recipe = Recipe(LastWriterWins.empty[String], NestedKeepRemoveList.empty, LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
+  val empty: Recipe = Recipe(
+    LastWriterWins.empty[String],
+    NestedKeepRemoveList.empty,
+    LastWriterWins.empty,
+    LastWriterWins.empty,
+    LastWriterWins.empty,
+    EnableWinsFlag.empty
+  )
 
   given Bottom[String] = Bottom.provide("")
 
@@ -61,16 +68,38 @@ object Recipe {
 
   given Historized[Recipe] = Historized.productHistorized
 
-  def apply(title: String): Recipe = Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty, LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
+  def apply(title: String): Recipe = Recipe(
+    LastWriterWins.empty[String].write(title),
+    NestedKeepRemoveList.empty,
+    LastWriterWins.empty,
+    LastWriterWins.empty,
+    LastWriterWins.empty,
+    EnableWinsFlag.empty
+  )
 
   def apply(title: String, ingredient: Ingredient)(using localUid: LocalUid): Recipe =
-    Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].append(ingredient), LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
+    Recipe(
+      LastWriterWins.empty[String].write(title),
+      NestedKeepRemoveList.empty[Ingredient].append(ingredient),
+      LastWriterWins.empty,
+      LastWriterWins.empty,
+      LastWriterWins.empty,
+      EnableWinsFlag.empty
+    )
 
   def apply(title: String, ingredients: Iterable[Ingredient])(using localUid: LocalUid): Recipe =
-    Recipe(LastWriterWins.empty[String].write(title), NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients), LastWriterWins.empty, LastWriterWins.empty, LastWriterWins.empty, EnableWinsFlag.empty)
+    Recipe(
+      LastWriterWins.empty[String].write(title),
+      NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients),
+      LastWriterWins.empty,
+      LastWriterWins.empty,
+      LastWriterWins.empty,
+      EnableWinsFlag.empty
+    )
 
   def main(args: Array[String]): Unit = {
-    val replica1, replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] = Replica(LocalUid.gen(), Recipe.empty, DeltaBufferNonRedundant[Recipe]())
+    val replica1, replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] =
+      Replica(LocalUid.gen(), Recipe.empty, DeltaBufferNonRedundant[Recipe]())
 
     println("---0")
     val delta0 = Recipe("Piza")

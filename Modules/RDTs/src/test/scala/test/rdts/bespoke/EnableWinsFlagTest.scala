@@ -110,8 +110,8 @@ class EnableWinsFlagTest extends munit.FunSuite {
     import EnableWinsFlag.given
 
     val localUid1 = LocalUid.gen()
-    var ewFlag = EnableWinsFlag.empty
-    var dots = Dots.empty
+    var ewFlag    = EnableWinsFlag.empty
+    var dots      = Dots.empty
 
     val delta1 = ewFlag.enable(using localUid1)()
     ewFlag = ewFlag `merge` delta1
@@ -122,7 +122,7 @@ class EnableWinsFlagTest extends munit.FunSuite {
 
     val delta2 = ewFlag.disable()
     ewFlag = ewFlag `merge` delta2
-    val dot2= dots.nextDot(using localUid1)
+    val dot2 = dots.nextDot(using localUid1)
     dots = dots.add(dot2)
 
     println(f"${ewFlag.read}, ${ewFlag.set}")

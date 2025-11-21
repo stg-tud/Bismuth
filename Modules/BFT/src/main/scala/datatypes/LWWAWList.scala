@@ -60,13 +60,13 @@ case class LWWAWList[T](
     }
 
     override def merge(other: LWWAWList[T]): LWWAWList[T] =
-        val newHashDAG  = this.hashDAG.merge(other.hashDAG)
-        var newItemMaps = this.itemsMap
+        val newHashDAG    = this.hashDAG.merge(other.hashDAG)
+        var newItemMaps   = this.itemsMap
         var orderedEvents = List.empty[Event[ListOperation[T]]]
 
         for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
-          if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
-            orderedEvents = event :: orderedEvents
+            if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
+                orderedEvents = event :: orderedEvents
 
         orderedEvents = newHashDAG.orderEvents(orderedEvents)
 
@@ -92,7 +92,7 @@ case class LWWAWList[T](
                       }
                       var tmpMap = Map.empty[Int, Set[(T, String)]]
                       for key <- newItemMaps.keySet do
-                        tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
+                          tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
 
                       newItemMaps = tmpMap
                       newItemMaps = newItemMaps + (listItem.index -> currentItems)
@@ -114,10 +114,10 @@ case class LWWAWList[T](
 
                     newItemMaps = newItemMaps.map {
                       case (index, set) =>
-                        index -> set.filterNot { case (_, id) => id == itemID}
+                        index -> set.filterNot { case (_, id) => id == itemID }
                     }
 
-                    newItemMaps = newItemMaps.filterNot {case (_, set) => set.isEmpty}
+                    newItemMaps = newItemMaps.filterNot { case (_, set) => set.isEmpty }
             }
 
         LWWAWList(newItemMaps, newHashDAG)

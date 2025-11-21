@@ -11,38 +11,38 @@ import scala.util.Try
   * @tparam LocalState the type of the ARDT
   */
 trait CommandsARDTs[LocalState] extends Commands:
-  override type State = Map[LocalUid, LocalState]
-  override type Sut   = scala.collection.mutable.Map[LocalUid, LocalState]
+    override type State = Map[LocalUid, LocalState]
+    override type Sut   = scala.collection.mutable.Map[LocalUid, LocalState]
 
-  override def canCreateNewSut(newState: State, initSuts: Iterable[State], runningSuts: Iterable[Sut]): Boolean = true
+    override def canCreateNewSut(newState: State, initSuts: Iterable[State], runningSuts: Iterable[Sut]): Boolean = true
 
-  override def newSut(state: State): Sut = mutable.Map.from(state)
+    override def newSut(state: State): Sut = mutable.Map.from(state)
 
-  override def destroySut(sut: Sut): Unit = sut.clear()
+    override def destroySut(sut: Sut): Unit = sut.clear()
 
-  override def initialPreCondition(state: State): Boolean = true
+    override def initialPreCondition(state: State): Boolean = true
 
-  def genId(state: State): Gen[LocalUid] = Gen.oneOf(state.keys)
+    def genId(state: State): Gen[LocalUid] = Gen.oneOf(state.keys)
 
-  def genId2(state: State): Gen[(LocalUid, LocalUid)] =
-    val ids = state.keys.toList
-    for
-      leftIndex <- Gen.choose(0, ids.length - 1)
-      offset    <- Gen.choose(1, ids.length - 1)
-      rightIndex = (leftIndex + offset) % ids.length
-    yield (ids(leftIndex), ids(rightIndex))
+    def genId2(state: State): Gen[(LocalUid, LocalUid)] =
+        val ids = state.keys.toList
+        for
+            leftIndex <- Gen.choose(0, ids.length - 1)
+            offset    <- Gen.choose(1, ids.length - 1)
+            rightIndex = (leftIndex + offset) % ids.length
+        yield (ids(leftIndex), ids(rightIndex))
 
-  trait ACommand(id: LocalUid) extends Command:
-    override type Result = State
-    def nextLocalState(states: State): LocalState
+    trait ACommand(id: LocalUid) extends Command:
+        override type Result = State
+        def nextLocalState(states: State): LocalState
 
-    override def run(sut: Sut): Result =
-      sut.update(id, nextLocalState(sut.toMap))
-      sut.toMap
+        override def run(sut: Sut): Result =
+            sut.update(id, nextLocalState(sut.toMap))
+            sut.toMap
 
-    override def nextState(state: State): State =
-      state.updated(id, nextLocalState(state))
+        override def nextState(state: State): State =
+          state.updated(id, nextLocalState(state))
 
-    override def preCondition(state: Map[LocalUid, LocalState]) = true
+        override def preCondition(state: Map[LocalUid, LocalState]) = true
 
-    override def postCondition(state: Map[LocalUid, LocalState], result: Try[Result]): Prop = result.isSuccess
+        override def postCondition(state: Map[LocalUid, LocalState], result: Try[Result]): Prop = result.isSuccess

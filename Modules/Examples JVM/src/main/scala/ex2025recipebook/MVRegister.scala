@@ -1,6 +1,5 @@
 package ex2025recipebook
 
-
 import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
 import rdts.time.{Dot, Dots}
 
@@ -18,7 +17,7 @@ case class MVRegister[A](repr: Map[Dot, A], removed: Dots) {
   def compact: MVRegister[A] = MVRegister(repr.filter((d, _) => !removed.contains(d)), removed)
 
   def write(v: A)(using LocalUid): MVRegister[A] = {
-    val nextDot       = observed.nextDot(LocalUid.replicaId)
+    val nextDot = observed.nextDot(LocalUid.replicaId)
     MVRegister(
       Map(nextDot -> v),
       observed
@@ -47,15 +46,15 @@ object MVRegister {
   }
 
   given lattice[A]: Lattice[MVRegister[A]] =
-    given Lattice[A] = Lattice.assertEquals
-    val decorated    = Lattice.derived[MVRegister[A]]
-    DecoratedLattice.filter(decorated) { (base, other) =>
-      base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
-    }
+      given Lattice[A] = Lattice.assertEquals
+      val decorated    = Lattice.derived[MVRegister[A]]
+      DecoratedLattice.filter(decorated) { (base, other) =>
+        base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
+      }
 
   /** The buffered delta is redundant if it happened before the delta
-   * -> the key/dot of the write operation in the buffered delta is removed by the delta
-   */
+    * -> the key/dot of the write operation in the buffered delta is removed by the delta
+    */
   given historized[A]: Historized[MVRegister[A]] = (delta, bufferedDelta) =>
     delta.removed.contains(bufferedDelta.observed)
 

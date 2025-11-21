@@ -52,7 +52,7 @@ case class RecipeBook(
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.remove(ingredientIndex)))
-        case None => ???
+        case None        => ???
       }
     }
   }
@@ -61,7 +61,7 @@ case class RecipeBook(
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateServings(newServings))
-        case None => ???
+        case None        => ???
       }
     }
   }
@@ -70,7 +70,7 @@ case class RecipeBook(
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateCookingTime(newCookingTime))
-        case None => ???
+        case None        => ???
       }
     }
   }
@@ -79,7 +79,7 @@ case class RecipeBook(
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateDescription(newDescription))
-        case None => ???
+        case None        => ???
       }
     }
   }
@@ -87,7 +87,9 @@ case class RecipeBook(
   def updateFavorite(recipeKey: String, newValue: Boolean)(using localUid: LocalUid): Delta = {
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
-        case Some(prior) => Some(prior.deltaModify(_.favorite).using(ew => if newValue then ew.enable(using localUid)() else ew.disable()))
+        case Some(prior) => Some(prior.deltaModify(_.favorite).using(ew =>
+            if newValue then ew.enable(using localUid)() else ew.disable()
+          ))
         case None => ???
       }
     }
@@ -117,7 +119,8 @@ object RecipeBook {
   def apply(): RecipeBook = RecipeBook(ObserveRemoveMap.empty)
 
   def main(args: Array[String]): Unit = {
-    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] = Replica(LocalUid.gen(), RecipeBook.empty, DeltaBufferNonRedundant[RecipeBook]())
+    val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] =
+      Replica(LocalUid.gen(), RecipeBook.empty, DeltaBufferNonRedundant[RecipeBook]())
 
     println("--- add recipe")
     val recipe1 = Recipe(

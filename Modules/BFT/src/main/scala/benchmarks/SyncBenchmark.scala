@@ -11,9 +11,8 @@ import java.util.concurrent.TimeUnit
 @State(Scope.Thread)
 class Metrics {
   var roundTrips: Int = 0
-  var bytesSent: Int = 0
+  var bytesSent: Int  = 0
 }
-
 
 @Fork(2)
 @Warmup(iterations = 2)
@@ -23,10 +22,10 @@ class Metrics {
 @State(Scope.Benchmark)
 class SyncBenchmark {
 
-  //@Param(Array("1000"))
-  //var size: Int = 0
-  //@Param(Array("0.6", "0.8"))
-  //var diff: Float = 0
+  // @Param(Array("1000"))
+  // var size: Int = 0
+  // @Param(Array("0.6", "0.8"))
+  // var diff: Float = 0
 
   var replica1 = ORSet[String]()
   var replica2 = ORSet[String]()
@@ -37,29 +36,27 @@ class SyncBenchmark {
   def setup(): Unit = {
 
     for i <- 0 to 10000 do
-      val r = Random().nextDouble()
-      if r <= 0.85 then {
-        replica1 = replica1.merge(replica1.add(i.toString))
-        replica2 = replica2.merge(replica2.add(i.toString))
-      } else
-        val rr = Random().nextDouble()
-        if rr <= 0.5 then
+        val r = Random().nextDouble()
+        if r <= 0.85 then {
           replica1 = replica1.merge(replica1.add(i.toString))
-        else
           replica2 = replica2.merge(replica2.add(i.toString))
+        } else
+            val rr = Random().nextDouble()
+            if rr <= 0.5 then
+                replica1 = replica1.merge(replica1.add(i.toString))
+            else
+                replica2 = replica2.merge(replica2.add(i.toString))
 
-    
   }
-
 
   @Benchmark
   def sync(metrics: Metrics): Unit = {
     for id <- replica1.hashDAG.getIDs do
-      riblt1.addSymbol(id)
+        riblt1.addSymbol(id)
 
     for id <- replica2.hashDAG.getIDs do
-      riblt2.addSymbol(id)
-      
+        riblt2.addSymbol(id)
+
     while !riblt1.isDecoded do {
       val cs = riblt2.produceNextCodedSymbol
       riblt1.addCodedSymbol(cs)

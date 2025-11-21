@@ -2,7 +2,6 @@ package rdts.datatypes
 
 import rdts.base.{Bottom, Historized, Lattice}
 
-
 case class GrowOnlySet[A](set: Set[A]) {
 
   def add(a: A): GrowOnlySet[A] = GrowOnlySet(Set(a))

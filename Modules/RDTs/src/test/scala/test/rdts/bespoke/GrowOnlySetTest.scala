@@ -1,6 +1,5 @@
 package test.rdts.bespoke
 
-
 import rdts.datatypes.{GrowOnlySet, LastWriterWins}
 import test.rdts.given
 

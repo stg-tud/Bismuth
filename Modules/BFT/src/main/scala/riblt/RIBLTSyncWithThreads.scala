@@ -133,24 +133,24 @@ object RIBLTSyncWithThreads:
     given codec2: JsonValueCodec[List[String]]      = JsonCodecMaker.make
 
     given JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
-    
+
     given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
       override def encodeValue(key: PublicKey, out: JsonWriter): Unit =
         out.writeBase64Val(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(key).getBytes, false)
-    
+
       override def decodeValue(in: JsonReader, default: PublicKey): PublicKey =
         Ed25519Util.base64PublicKeyBytesToPublicKey(String(in.readBase64AsBytes(Array.empty[Byte])))
-    
+
       override def nullValue: PublicKey = null.asInstanceOf[PublicKey]
     }
-    
+
     given JsonValueCodec[PrivateKey] = new JsonValueCodec[PrivateKey] {
       override def encodeValue(key: PrivateKey, out: JsonWriter): Unit =
         out.writeRawVal(Ed25519Util.privateKeyToRawPrivateKeyBytes(key))
-    
+
       override def decodeValue(in: JsonReader, default: PrivateKey): PrivateKey =
         Ed25519Util.rawPrivateKeyBytesToPrivateKey(in.readRawValAsBytes())
-    
+
       override def nullValue: PrivateKey = null.asInstanceOf[PrivateKey]
     }
 

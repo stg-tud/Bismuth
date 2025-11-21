@@ -21,30 +21,30 @@ object TravelPlannerBenchmarkRunner {
     // TraceGen.run(traceFile, permissionAssignmentPartial, centralServerConnectionMap(numReplicas), numOps)
 
     val traceFile = Paths.get(s"./results/lofi_acl/trace-valley-$numOps.json")
-    //TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps)
+    // TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps)
     val trace = TraceReplay.readTrace(traceFile)
 
     TraceReplay.run(trace): Unit
     //// Without Filtering (ACL off)
-    //TraceReplay.run(trace, withAcl = false)
+    // TraceReplay.run(trace, withAcl = false)
 
     //// Test same trace with full mesh instead of central relay
-    //val fullMeshConnMap = fullMeshConnectionMap(numReplicas)
-    //val modifiedTrace   = trace.copy(
+    // val fullMeshConnMap = fullMeshConnectionMap(numReplicas)
+    // val modifiedTrace   = trace.copy(
     //  connectionMap = fullMeshConnMap,
     //  notificationTrace = TraceReplay.generateNotificationTrace(fullMeshConnMap, trace.deltaTrace.length, numReplicas)
-    //)
-    //TraceReplay.run(modifiedTrace)                  // With ACL
-    //TraceReplay.run(modifiedTrace, withAcl = false) // Without
+    // )
+    // TraceReplay.run(modifiedTrace)                  // With ACL
+    // TraceReplay.run(modifiedTrace, withAcl = false) // Without
 
     //// Test trace with permission valley
-    //val permissionValleyTrace = trace.copy(
+    // val permissionValleyTrace = trace.copy(
     //  connectionMap = permissionValleyConnectionMap,
     //  notificationTrace =
     //    TraceReplay.generateNotificationTrace(permissionValleyConnectionMap, trace.deltaTrace.length, numReplicas)
-    //)
-    //TraceReplay.run(permissionValleyTrace)
-    //()
+    // )
+    // TraceReplay.run(permissionValleyTrace)
+    // ()
   }
 
   def fullMeshConnectionMap(numReplicas: Int): Map[Int, Set[Int]] =

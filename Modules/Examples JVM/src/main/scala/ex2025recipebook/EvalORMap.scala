@@ -148,7 +148,7 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def baselineBufferORNMap(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                         = Bottom.provide(0)
+    given Bottom[Int]                                    = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, EnableWinsFlag]] = Lattice.derived
     val deltaBuffer = DeltaBufferEverything[ObserveRemoveMap[Int, EnableWinsFlag]]()
 
@@ -158,16 +158,18 @@ class DeltaBufferORMapBenchmark {
       state,
       resultCapture,
       ObserveRemoveMap.empty[Int, EnableWinsFlag],
-      (orMap, r) => orMap.transform(r) {
-        case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
-        case None => Some(if (r%2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
-      }(using state.localUid)
+      (orMap, r) =>
+        orMap.transform(r) {
+          case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
+          case None     =>
+            Some(if (r % 2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
+        }(using state.localUid)
     )
   }
 
   @Benchmark
   def nonRedundantBufferORNMap(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                         = Bottom.provide(0)
+    given Bottom[Int]                                    = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, EnableWinsFlag]] = Lattice.derived
     val deltaBuffer = DeltaBufferNonRedundant[ObserveRemoveMap[Int, EnableWinsFlag]]()
 
@@ -177,18 +179,20 @@ class DeltaBufferORMapBenchmark {
       state,
       resultCapture,
       ObserveRemoveMap.empty[Int, EnableWinsFlag],
-      (orMap, r) => orMap.transform(r) {
-        case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
-        case None => Some(if (r%2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
-      }(using state.localUid)
+      (orMap, r) =>
+        orMap.transform(r) {
+          case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
+          case None     =>
+            Some(if (r % 2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
+        }(using state.localUid)
     )
   }
 
   @Benchmark
   def subsumedBufferORNMap(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                         = Bottom.provide(0)
+    given Bottom[Int]                                    = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, EnableWinsFlag]] = Lattice.derived
-    val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, EnableWinsFlag]]()
+    val deltaBuffer                                      = DeltaBufferSubsumed[ObserveRemoveMap[Int, EnableWinsFlag]]()
 
     EvalORMap.modReplica(
       deltaBuffer,
@@ -196,10 +200,12 @@ class DeltaBufferORMapBenchmark {
       state,
       resultCapture,
       ObserveRemoveMap.empty[Int, EnableWinsFlag],
-      (orMap, r) => orMap.transform(r) {
-        case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
-        case None => Some(if (r%2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
-      }(using state.localUid)
+      (orMap, r) =>
+        orMap.transform(r) {
+          case Some(ew) => Some(if (r % 2) != 0 then ew.enable(using state.localUid)() else ew.disable())
+          case None     =>
+            Some(if (r % 2) != 0 then EnableWinsFlag.empty.enable(using state.localUid)() else EnableWinsFlag.empty)
+        }(using state.localUid)
     )
   }
 

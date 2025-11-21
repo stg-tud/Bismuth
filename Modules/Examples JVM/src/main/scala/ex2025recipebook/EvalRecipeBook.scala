@@ -13,7 +13,7 @@ class EvalRecipeBookState {
   var numOperations: Int   = 0
   val random               = new scala.util.Random(123456789)
   var randomArr: List[Int] = List.empty
-  val localUid: LocalUid = LocalUid.gen()
+  val localUid: LocalUid   = LocalUid.gen()
 
   var recipeBook: RecipeBook = RecipeBook.empty
 
@@ -35,7 +35,7 @@ class DeltaBufferRecipeBookBenchmark {
   @Benchmark
   def baselineBufferRecipeBook(blackhole: Blackhole, state: EvalRecipeBookState, resultCapture: ResultCapture): Unit = {
     val deltaBuffer = DeltaBufferEverything[RecipeBook]()
-    val replica = Replica(state.localUid, state.recipeBook, deltaBuffer)
+    val replica     = Replica(state.localUid, state.recipeBook, deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
       replica.mod(a => Eval.performRecipeBookOperation(a, item, state.localUid))
@@ -44,9 +44,13 @@ class DeltaBufferRecipeBookBenchmark {
   }
 
   @Benchmark
-  def nonRedundantBufferRecipeBook(blackhole: Blackhole, state: EvalRecipeBookState, resultCapture: ResultCapture): Unit = {
+  def nonRedundantBufferRecipeBook(
+      blackhole: Blackhole,
+      state: EvalRecipeBookState,
+      resultCapture: ResultCapture
+  ): Unit = {
     val deltaBuffer = DeltaBufferNonRedundant[RecipeBook]()
-    val replica = Replica(state.localUid, state.recipeBook, deltaBuffer)
+    val replica     = Replica(state.localUid, state.recipeBook, deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
       replica.mod(a => Eval.performRecipeBookOperation(a, item, state.localUid))
@@ -57,7 +61,7 @@ class DeltaBufferRecipeBookBenchmark {
   @Benchmark
   def subsumedBufferRecipeBook(blackhole: Blackhole, state: EvalRecipeBookState, resultCapture: ResultCapture): Unit = {
     val deltaBuffer = DeltaBufferSubsumed[RecipeBook]()
-    val replica = Replica(state.localUid, state.recipeBook, deltaBuffer)
+    val replica     = Replica(state.localUid, state.recipeBook, deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
       replica.mod(a => Eval.performRecipeBookOperation(a, item, state.localUid))

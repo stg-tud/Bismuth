@@ -6,7 +6,6 @@ import rdts.datatypes.MultiVersionRegister
 
 import java.util.concurrent.TimeUnit
 
-
 @Fork(value = 1, warmups = 0)
 @Warmup(iterations = 0)
 @Measurement(iterations = 1)
@@ -17,7 +16,7 @@ class BenchmarkMVRegister {
   @Benchmark
   def benchmarkMultiValueRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     val deltaBuffer = DeltaBufferNonRedundant[MultiVersionRegister[Int]]()
-    val replica = Replica(state.localUid, MultiVersionRegister.empty[Int], deltaBuffer)
+    val replica     = Replica(state.localUid, MultiVersionRegister.empty[Int], deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
       replica.mod(a => a.write(item))
@@ -28,7 +27,7 @@ class BenchmarkMVRegister {
   @Benchmark
   def benchmarkMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     val deltaBuffer = DeltaBufferNonRedundant[MVRegister[Int]]()
-    val replica = Replica(state.localUid, MVRegister.empty[Int], deltaBuffer)
+    val replica     = Replica(state.localUid, MVRegister.empty[Int], deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
       replica.mod(a => a.write(item))

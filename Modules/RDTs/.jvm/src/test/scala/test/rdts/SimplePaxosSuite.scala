@@ -37,8 +37,8 @@ class SimplePaxosSpec[A: Arbitrary](
     ) {
   override def genWrite(state: State): Gen[Write] =
     for
-      id    <- genId(state)
-      value <- arbitrary[A]
+        id    <- genId(state)
+        value <- arbitrary[A]
     yield PWrite(id, value)
 
   class PWrite(id: LocalUid, value: A) extends Write(id, value) {
@@ -46,9 +46,9 @@ class SimplePaxosSpec[A: Arbitrary](
         state: Map[LocalUid, Paxos[A]],
         result: Try[Map[LocalUid, Paxos[A]]]
     ): Prop =
-      val res            = result.get
-      val doubleProposal = res(id).accepts.groupBy(_.proposal).find(_._2.size > 1)
-      doubleProposal.isEmpty :| s"Only one proposal for a given proposal number. Found: $doubleProposal" &&
-      super.postCondition(state, result)
+        val res            = result.get
+        val doubleProposal = res(id).accepts.groupBy(_.proposal).find(_._2.size > 1)
+        doubleProposal.isEmpty :| s"Only one proposal for a given proposal number. Found: $doubleProposal" &&
+        super.postCondition(state, result)
   }
 }
