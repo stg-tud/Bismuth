@@ -10,6 +10,7 @@ import webapps.filesystem.FilesystemState
 import rdts.experiments.UndoRedoReplica
 import webapps.filesystem.FsEntry
 import java.nio.file.Files
+import scala.util.Random
 
 class FilesystemStateTest extends munit.FunSuite {
   type SUT = UndoRedoReplica[FilesystemState]
@@ -39,10 +40,7 @@ class FilesystemStateTest extends munit.FunSuite {
 
     {
       assertEquals(sut.state.tree.size, 1)
-      val children = sut.state.tree.children(sut.state.location).toList
-      assertEquals(children.size, 1)
-      val entry = children.head
-      assertEquals(entry.value.name.value, "file1.txt")
+      assertEquals(childValues(sut.state, sut.state.location), List("file1.txt"))
       assert(sut.canUndo)
       assert(!sut.canRedo)
     }
@@ -59,10 +57,8 @@ class FilesystemStateTest extends munit.FunSuite {
 
     {
       assertEquals(sut.state.tree.size, 1)
-      val children = sut.state.tree.children(sut.state.location).toList
-      assertEquals(children.size, 1)
-      val entry = children.head
-      assertEquals(entry.value.name.value, "file1.txt")
+      assertEquals(childValues(sut.state, sut.state.location), List("file1.txt"))
+
       assert(sut.canUndo)
       assert(!sut.canRedo)
     }
@@ -80,23 +76,18 @@ class FilesystemStateTest extends munit.FunSuite {
     val fileDot   = sut.state.tree.children(sut.state.location).find(_.value.name.value == "file1.txt").get.dot
 
     {
-      assertEquals(sut.state.tree.size, 2)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 2)
-      assertEquals(children.map(_.value.name.value), List("file1.txt", "folder"))
+      val state = sut.state
+      assertEquals(state.tree.size, 2)
+      assertEquals(childValues(state, state.location), List("file1.txt", "folder"))
     }
 
     sut = sut.mod(_.moveToParent(fileDot, folderDot))
 
     {
-      assertEquals(sut.state.tree.size, 2)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 1)
-      assertEquals(children.map(_.value.name.value), List("folder"))
-
-      val folderChildren = childValues(sut.state, folderDot)
-      assertEquals(folderChildren.size, 1)
-      assertEquals(folderChildren.map(_.value.name.value), List("file1.txt"))
+      val state = sut.state
+      assertEquals(state.tree.size, 2)
+      assertEquals(childValues(state, state.location), List("folder"))
+      assertEquals(childValues(state, folderDot), List("file1.txt"))
       assert(sut.canUndo)
       assert(!sut.canRedo)
     }
@@ -104,19 +95,17 @@ class FilesystemStateTest extends munit.FunSuite {
     sut = sut.undo()
 
     {
-      assertEquals(sut.state.tree.size, 2)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 2)
-      assertEquals(children.map(_.value.name.value), List("file1.txt", "folder"))
+      val state = sut.state
+      assertEquals(state.tree.size, 2)
+      assertEquals(childValues(state, state.location), List("file1.txt", "folder"))
     }
 
     sut = sut.undo()
 
     {
-      assertEquals(sut.state.tree.size, 1)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 1)
-      assertEquals(children.map(_.value.name.value), List("folder"))
+      val state = sut.state
+      assertEquals(state.tree.size, 1)
+      assertEquals(childValues(state, state.location), List("folder"))
     }
 
     sut = sut.undo()
@@ -128,38 +117,33 @@ class FilesystemStateTest extends munit.FunSuite {
     sut = sut.redo()
 
     {
-      assertEquals(sut.state.tree.size, 1)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 1)
-      assertEquals(children.map(_.value.name.value), List("folder"))
+      val state = sut.state
+      assertEquals(state.tree.size, 1)
+      assertEquals(childValues(state, state.location), List("folder"))
     }
 
     sut = sut.redo()
 
     {
-      assertEquals(sut.state.tree.size, 2)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 2)
-      assertEquals(children.map(_.value.name.value), List("file1.txt", "folder"))
+      val state = sut.state
+      assertEquals(state.tree.size, 2)
+      assertEquals(childValues(state, state.location), List("file1.txt", "folder"))
     }
 
     sut = sut.redo()
 
     {
-      assertEquals(sut.state.tree.size, 2)
-      val children = childValues(sut.state, sut.state.location)
-      assertEquals(children.size, 1)
-      assertEquals(children.map(_.value.name.value), List("folder"))
+      val state = sut.state
 
-      val folderChildren = sut.state.tree.children(folderDot).toList
-      assertEquals(folderChildren.size, 1)
-      assertEquals(folderChildren.map(_.value.name.value), List("file1.txt"))
+      assertEquals(state.tree.size, 2)
+      assertEquals(childValues(state, state.location), List("folder"))
+      assertEquals(childValues(state, folderDot), List("file1.txt"))
       assert(sut.canUndo)
       assert(!sut.canRedo)
     }
   }
 }
 
-def childValues(state: FilesystemState, parent: Dot): List[ReplicatedTree.Node[FsEntry]] = {
-  state.tree.children(parent).toList.sorted(using FsEntry.lexicographicOrdering)
+def childValues(state: FilesystemState, parent: Dot): List[String] = {
+  state.tree.children(parent).toList.sorted(using FsEntry.lexicographicOrdering).map(_.value.name.value).toList
 }

@@ -7,6 +7,7 @@ import scala.language.implicitConversions
 import rdts.time.Dot
 import rdts.base.Lattice.assertEquals
 import munit.Assertions
+import scala.util.Random
 
 class ReplicatedTreeTest extends munit.FunSuite {
   test("insert") {
@@ -213,6 +214,35 @@ class ReplicatedTreeTest extends munit.FunSuite {
       n3.assertChildren(Set.empty)
     }
   }
+
+  test("associativity") {
+    val (expected, deltas) = randomTree(100)
+
+    for _ <- 0 until 100 do {
+      val shuffledDeltas = Random.shuffle(deltas)
+      val result         = shuffledDeltas.foldLeft(ReplicatedTree.empty[Int])(_ `merge` _)
+      assertEquals(result, expected)
+    }
+  }
+}
+
+def randomTree(treeSize: Int): (ReplicatedTree[Int], List[ReplicatedTree[Int]]) = {
+  val id     = LocalUid.predefined("test")
+  var tree   = ReplicatedTree.empty[Int]
+  val root   = tree.insert(ReplicatedTree.rootDot, 0)(using id)
+  var deltas = List(root)
+
+  tree = tree `merge` root
+
+  for _ <- 0 until treeSize - 1 do {
+    val randomIndex = Random.nextInt(tree.size)
+    val randomNode  = tree.nodes.map(_.dot).toList(randomIndex)
+    val delta       = tree.insert(randomNode, Random.nextInt(treeSize))(using id)
+    deltas = deltas :+ delta
+    tree = tree `merge` delta
+  }
+
+  (tree, deltas)
 }
 
 case class TreeViewNode[A](value: A, children: Set[TreeViewNode[A]]) {

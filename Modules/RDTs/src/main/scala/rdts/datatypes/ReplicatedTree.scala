@@ -49,7 +49,12 @@ case class ReplicatedTree[A](
 
     ReplicatedTree(
       elements =
-        Map(dot -> ReplicatedTree.Node(dot, parent, Map(parent -> ReplicatedTree.EdgeCounter(dot, 0)), value(dot))),
+        Map(dot -> ReplicatedTree.Node(
+          dot,
+          parent,
+          Map(parent -> ReplicatedTree.EdgeCounter(0)),
+          value(dot)
+        )),
     )
   }
 
@@ -95,7 +100,7 @@ case class ReplicatedTree[A](
             childDot,
             childNode.copy(
               parent = parent,
-              edges = childNode.edges + (parent -> ReplicatedTree.EdgeCounter(parent, maxCounter + 1))
+              edges = childNode.edges + (parent -> ReplicatedTree.EdgeCounter(maxCounter + 1))
             )
           )
         }.toMap
@@ -150,7 +155,7 @@ case class ReplicatedTree[A](
 object ReplicatedTree {
   val rootDot = Dot.zero
 
-  case class EdgeCounter(dot: Dot, counter: Int)
+  case class EdgeCounter(counter: Int)
 
   case class Node[A](dot: Dot, parent: Dot, edges: Map[Dot, EdgeCounter], value: A) {
     def maxCounter: Int = {
@@ -166,11 +171,29 @@ object ReplicatedTree {
     }
   }
 
+  given nodeLattice[A]: Lattice[Node[A]] = {
+    given Lattice[A] = Lattice.assertEquals
+    given Lattice[Dot] with {
+      def merge(left: Dot, right: Dot): Dot = {
+        // we can always choose left, since we re-parent based on largest edge after merging
+        left
+      }
+    }
+    given Lattice[EdgeCounter] with {
+      def merge(left: EdgeCounter, right: EdgeCounter): EdgeCounter = {
+        EdgeCounter(math.max(left.counter, right.counter))
+      }
+    }
+    given Lattice[Map[Dot, EdgeCounter]] = Lattice.mapLattice
+    Lattice.derived
+  }
+
   def empty[A]: ReplicatedTree[A] = ReplicatedTree[A](Map.empty, Dots.empty)
 
   given lattice[A]: Lattice[ReplicatedTree[A]] with {
+    given mapLattice: Lattice[Map[Dot, ReplicatedTree.Node[A]]]                     = Lattice.mapLattice
     def merge(left: ReplicatedTree[A], right: ReplicatedTree[A]): ReplicatedTree[A] = {
-      val elements = left.elements ++ right.elements
+      val elements = left.elements `merge` right.elements
       val deleted  = left.deleted `union` right.deleted
       recomputeParentChildren(ReplicatedTree(
         elements,
@@ -207,7 +230,8 @@ object ReplicatedTree {
 
     val nonRootedNodes = scala.collection.mutable.Set[Dot]()
     for node <- newState.elements.values do {
-      if !nonRootedNodes.contains(node.parent) && !newState.isBelowNode(node.dot, ReplicatedTree.rootDot) then {
+      if !nonRootedNodes.contains(node.parent) && !newState.isBelowNode(node.dot, ReplicatedTree.rootDot)
+      then {
         var nodeId: Option[Dot] = Some(node.dot)
         while nodeId.isDefined do {
           val currentNode = nodeId.get
