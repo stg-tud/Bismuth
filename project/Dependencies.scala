@@ -15,7 +15,7 @@ object Dependencies {
   val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.2.1"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.2.0"  % Test
   val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.6"
-  val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.4"
+  val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.5"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules" %% "scala-swing"            % "3.0.0"
   val scalaXml    = libraryDependencies += "org.scala-lang.modules" %% "scala-xml"              % "2.4.0"
   val scalajsDom  = libraryDependencies += "org.scala-js"          %%% "scalajs-dom"            % "2.8.1"
@@ -27,8 +27,8 @@ object Dependencies {
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.1"
 
   val ayza = libraryDependencies ++= List(
-    "io.github.hakky54" % "ayza"         % "10.0.1",
-    "io.github.hakky54" % "ayza-for-pem" % "10.0.1",
+    "io.github.hakky54" % "ayza"         % "10.0.2",
+    "io.github.hakky54" % "ayza-for-pem" % "10.0.2",
   )
 
   val bouncyCastle = libraryDependencies ++=
@@ -44,7 +44,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.1.3"
+    val jettyVersion = "12.1.4"
     libraryDependencies ++= Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
@@ -54,8 +54,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.38.3",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.38.3" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.38.4",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.38.4" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.2-R36"
