@@ -203,49 +203,6 @@ class DeltaBufferBenchmark {
   }
 
   @Benchmark
-  def baselineBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferEverything[MVRegister[Int]]()
-
-    Eval.modReplica(
-      deltaBuffer,
-      blackhole,
-      state,
-      resultCapture,
-      MVRegister.empty[Int],
-      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
-    )
-  }
-
-  @Benchmark
-  def nonRedundantBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer =
-      DeltaBufferNonRedundant[MVRegister[Int]]()
-
-    Eval.modReplica(
-      deltaBuffer,
-      blackhole,
-      state,
-      resultCapture,
-      MVRegister.empty[Int],
-      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
-    )
-  }
-
-  @Benchmark
-  def subsumedBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferSubsumed[MVRegister[Int]]()
-
-    Eval.modReplica(
-      deltaBuffer,
-      blackhole,
-      state,
-      resultCapture,
-      MVRegister.empty[Int],
-      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
-    )
-  }
-
-  @Benchmark
   def baselineBufferGSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
     given Bottom[Int]               = Bottom.provide(0)
     given Lattice[GrowOnlySet[Int]] =
@@ -363,16 +320,15 @@ class DeltaBufferBenchmark {
     given Lattice[ObserveRemoveMap[Int, Int]] =
         given Lattice[Int] = math.max
         Lattice.derived
-    val deltaBuffer =
-      DeltaBufferEverything[ObserveRemoveMap[Int, Int]]()
+    val deltaBuffer = DeltaBufferEverything[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
     Eval.modReplica(
       deltaBuffer,
       blackhole,
       state,
       resultCapture,
-      ObserveRemoveMap.empty[Int, Int],
-      (orMap, r, localUid) => orMap.update(r, r)(using localUid)
+      ObserveRemoveMap.empty[Int, LastWriterWins[Int]],
+      (orMap, r, localUid) => Eval.performORMapOperationLWW(orMap, localUid, r)
     )
   }
 
@@ -383,15 +339,15 @@ class DeltaBufferBenchmark {
         given Lattice[Int] = math.max
         Lattice.derived
     val deltaBuffer =
-      DeltaBufferNonRedundant[ObserveRemoveMap[Int, Int]]()
+      DeltaBufferNonRedundant[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
     Eval.modReplica(
       deltaBuffer,
       blackhole,
       state,
       resultCapture,
-      ObserveRemoveMap.empty[Int, Int],
-      (orMap, r, localUid) => orMap.update(r, r)(using localUid)
+      ObserveRemoveMap.empty[Int, LastWriterWins[Int]],
+      (orMap, r, localUid) => Eval.performORMapOperationLWW(orMap, localUid, r)
     )
   }
 
@@ -402,15 +358,15 @@ class DeltaBufferBenchmark {
         given Lattice[Int] = math.max
         Lattice.derived
 
-    val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, Int]]()
+    val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
     Eval.modReplica(
       deltaBuffer,
       blackhole,
       state,
       resultCapture,
-      ObserveRemoveMap.empty[Int, Int],
-      (orMap, r, localUid) => orMap.update(r, r)(using localUid)
+      ObserveRemoveMap.empty[Int, LastWriterWins[Int]],
+      (orMap, r, localUid) => Eval.performORMapOperationLWW(orMap, localUid, r)
     )
   }
 
@@ -422,9 +378,13 @@ class DeltaBufferBenchmark {
     val foreignReplica = Replica(state.foreignUid, NestedKeepRemoveList.empty[Int], deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
-      val replica = if math.abs(item % 10) < state.localReplicaShare then localReplica else foreignReplica
-      replica.mod(a => Eval.performKRListOperation(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
+      if math.abs(item % 10) < state.localReplicaShare then {
+        localReplica.mod(a => Eval.performKRListOperation(a, item, localReplica.replicaId))
+      } else {
+        val delta = foreignReplica.produceDelta(a => Eval.performKRListOperation(a, item, foreignReplica.replicaId))
+        localReplica.applyDelta(delta)
+      }
+      resultCapture.recordBufferSize(localReplica.buffer.getSize)
     })
   }
 
@@ -436,9 +396,13 @@ class DeltaBufferBenchmark {
     val foreignReplica = Replica(state.foreignUid, NestedKeepRemoveList.empty[Int], deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
-      val replica = if math.abs(item % 10) < state.localReplicaShare then localReplica else foreignReplica
-      replica.mod(a => Eval.performKRListOperation(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
+      if math.abs(item % 10) < state.localReplicaShare then {
+        localReplica.mod(a => Eval.performKRListOperation(a, item, localReplica.replicaId))
+      } else {
+        val delta = foreignReplica.produceDelta(a => Eval.performKRListOperation(a, item, foreignReplica.replicaId))
+        localReplica.applyDelta(delta)
+      }
+      resultCapture.recordBufferSize(localReplica.buffer.getSize)
     })
   }
 
@@ -450,9 +414,13 @@ class DeltaBufferBenchmark {
     val foreignReplica = Replica(state.foreignUid, NestedKeepRemoveList.empty[Int], deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
-      val replica = if math.abs(item % 10) < state.localReplicaShare then localReplica else foreignReplica
-      replica.mod(a => Eval.performKRListOperation(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
+      if math.abs(item % 10) < state.localReplicaShare then {
+        localReplica.mod(a => Eval.performKRListOperation(a, item, localReplica.replicaId))
+      } else {
+        val delta = foreignReplica.produceDelta(a => Eval.performKRListOperation(a, item, foreignReplica.replicaId))
+        localReplica.applyDelta(delta)
+      }
+      resultCapture.recordBufferSize(localReplica.buffer.getSize)
     })
   }
 
@@ -463,9 +431,13 @@ class DeltaBufferBenchmark {
     val foreignReplica = Replica(state.foreignUid, RecipeBook.empty, deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
-      val replica = if math.abs(item % 10) < state.localReplicaShare then localReplica else foreignReplica
-      replica.mod(a => Eval.performRecipeBookOperation(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
+      if math.abs(item % 10) < state.localReplicaShare then {
+        localReplica.mod(a => Eval.performRecipeBookOperation(a, item, localReplica.replicaId))
+      } else {
+        val delta = foreignReplica.produceDelta(a => Eval.performRecipeBookOperation(a, item, foreignReplica.replicaId))
+        localReplica.applyDelta(delta)
+      }
+      resultCapture.recordBufferSize(localReplica.buffer.getSize)
     })
   }
 
@@ -476,9 +448,13 @@ class DeltaBufferBenchmark {
     val foreignReplica = Replica(state.foreignUid, RecipeBook.empty, deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
-      val replica = if math.abs(item % 10) < state.localReplicaShare then localReplica else foreignReplica
-      replica.mod(a => Eval.performRecipeBookOperation(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
+      if math.abs(item % 10) < state.localReplicaShare then {
+        localReplica.mod(a => Eval.performRecipeBookOperation(a, item, localReplica.replicaId))
+      } else {
+        val delta = foreignReplica.produceDelta(a => Eval.performRecipeBookOperation(a, item, foreignReplica.replicaId))
+        localReplica.applyDelta(delta)
+      }
+      resultCapture.recordBufferSize(localReplica.buffer.getSize)
     })
   }
 
@@ -489,9 +465,13 @@ class DeltaBufferBenchmark {
     val foreignReplica = Replica(state.foreignUid, RecipeBook.empty, deltaBuffer)
 
     blackhole.consume(state.randomArr.foreach { item =>
-      val replica = if math.abs(item % 10) < state.localReplicaShare then localReplica else foreignReplica
-      replica.mod(a => Eval.performRecipeBookOperation(a, item, replica.replicaId))
-      resultCapture.recordBufferSize(replica.buffer.getSize)
+      if math.abs(item % 10) < state.localReplicaShare then {
+        localReplica.mod(a => Eval.performRecipeBookOperation(a, item, localReplica.replicaId))
+      } else {
+        val delta = foreignReplica.produceDelta(a => Eval.performRecipeBookOperation(a, item, foreignReplica.replicaId))
+        localReplica.applyDelta(delta)
+      }
+      resultCapture.recordBufferSize(localReplica.buffer.getSize)
     })
   }
 
@@ -534,7 +514,7 @@ object Eval {
       )
     }
 
-    (random % 10) match {
+    math.abs(random % 10) match {
       case 0 if recipeBook.nonEmpty =>
         val randomKey = lottery(recipeBook.keys.toList, random)
         recipeBook.deleteRecipe(randomKey)
@@ -584,7 +564,7 @@ object Eval {
       replicaID: LocalUid
   ): NestedKeepRemoveList[Int] = {
     if krList.size == 0 then return krList.insertAt(0, random)(using replicaID)
-    (random % 3) match {
+    math.abs(random % 3) match {
       case 0 =>
         val index = math.abs(random % krList.size)
         krList.remove(index)
@@ -611,11 +591,23 @@ object Eval {
 
   def performORSetOperation(orSet: ReplicatedSet[Int], localUid: LocalUid, random: Int): ReplicatedSet[Int] = {
     if orSet.size == 0 then return orSet.add(using localUid)(random)
-    (random % 2) match {
+    math.abs(random % 2) match {
       case 0 => orSet.add(using localUid)(random)
       case 1 =>
-        val index = random % orSet.size
+        val index = math.abs(random % orSet.size)
         orSet.remove(index)
+    }
+  }
+
+  def performORMapOperationLWW(orMap: ObserveRemoveMap[Int, LastWriterWins[Int]], localUid: LocalUid, random: Int): ObserveRemoveMap[Int, LastWriterWins[Int]] = {
+    given Bottom[Int]= Bottom.provide(0)
+    if orMap.entries.isEmpty then return orMap.update(random, LastWriterWins.empty[Int].write(random))(using localUid)
+    math.abs(random % 2) match {
+      case 0 => {
+        val randomKey = orMap.entries.toList(math.abs(random % orMap.entries.size))._1
+        orMap.remove(randomKey)
+      }
+      case _ => orMap.update(random, LastWriterWins.empty[Int].write(random))(using localUid)
     }
   }
 

@@ -90,16 +90,9 @@ object ObserveRemoveMap {
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
   given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
-    bufferedDelta == ObserveRemoveMap.empty
-    || (isRemoveOperation(delta) && isRemoveOperation(bufferedDelta) && delta.removed.contains(bufferedDelta.removed))
-    || (isObserveOperation(delta) && isObserveOperation(bufferedDelta)
-    && bufferedDelta.inner.keys.forall(k => delta.contains(k))
-    && bufferedDelta.entries.forall(entry => delta.get(entry._1).get.isRedundant(bufferedDelta.get(entry._1).get)))
-
-  private def isObserveOperation[K, V](delta: ObserveRemoveMap[K, V]): Boolean =
-    delta.inner.nonEmpty && delta.removed.isEmpty
-
-  private def isRemoveOperation[K, V](delta: ObserveRemoveMap[K, V]): Boolean =
-    delta.inner.isEmpty && !delta.removed.isEmpty
+    bufferedDelta.inner.forall((key, entry) =>
+      (delta.inner.contains(key)
+        && delta.inner(key).value.isRedundant(entry.value)) || delta.removed.contains(entry.dots)
+    ) && delta.removed.contains(bufferedDelta.removed)
 
 }

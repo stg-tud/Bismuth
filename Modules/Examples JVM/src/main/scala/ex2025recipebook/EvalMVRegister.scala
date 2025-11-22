@@ -14,25 +14,87 @@ import java.util.concurrent.TimeUnit
 class BenchmarkMVRegister {
 
   @Benchmark
-  def benchmarkMultiValueRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferNonRedundant[MultiVersionRegister[Int]]()
-    val replica     = Replica(state.localUid, MultiVersionRegister.empty[Int], deltaBuffer)
+  def baselineBufferMultiValueRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferEverything[MultiVersionRegister[Int]]()
 
-    blackhole.consume(state.randomArr.foreach { item =>
-      replica.mod(a => a.write(item))
-      resultCapture.recordBufferSize(replica.buffer.getSize) // O(1) for size lookup in a set
-    })
+    Eval.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      MultiVersionRegister.empty[Int],
+      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
+    )
   }
 
   @Benchmark
-  def benchmarkMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer = DeltaBufferNonRedundant[MVRegister[Int]]()
-    val replica     = Replica(state.localUid, MVRegister.empty[Int], deltaBuffer)
+  def nonRedundantBufferMultiValueRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferNonRedundant[MultiVersionRegister[Int]]()
 
-    blackhole.consume(state.randomArr.foreach { item =>
-      replica.mod(a => a.write(item))
-      resultCapture.recordBufferSize(replica.buffer.getSize) // O(1) for size lookup in a set
-    })
+    Eval.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      MultiVersionRegister.empty[Int],
+      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
+    )
+  }
+
+  @Benchmark
+  def subsumedBufferMultiValueRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferSubsumed[MultiVersionRegister[Int]]()
+
+    Eval.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      MultiVersionRegister.empty[Int],
+      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
+    )
+  }
+
+  @Benchmark
+  def baselineBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferEverything[MVRegister[Int]]()
+
+    Eval.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      MVRegister.empty[Int],
+      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
+    )
+  }
+
+  @Benchmark
+  def nonRedundantBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferNonRedundant[MVRegister[Int]]()
+
+    Eval.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      MVRegister.empty[Int],
+      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
+    )
+  }
+
+  @Benchmark
+  def subsumedBufferMVRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+    val deltaBuffer = DeltaBufferSubsumed[MVRegister[Int]]()
+
+    Eval.modReplica(
+      deltaBuffer,
+      blackhole,
+      state,
+      resultCapture,
+      MVRegister.empty[Int],
+      (mvRegister, r, localUid) => mvRegister.write(r)(using localUid)
+    )
   }
 
 }

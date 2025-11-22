@@ -25,7 +25,6 @@ class Replica[A, D <: DeltaBuffer[A, D]](val replicaId: LocalUid, var state: A, 
     if dots.contains(metaDelta.id) then return
 
     val merged = state `merge` metaDelta.delta
-    if state == merged then return
 
     state = merged
     dots = dots.union(metaDelta.id.union(metaDelta.redundantDots))
