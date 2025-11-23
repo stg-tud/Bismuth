@@ -62,7 +62,8 @@ lazy val bft = project.in(file("Modules/BFT"))
     Dependencies.jsoniterScala,
     Dependencies.bouncyCastle,
     Dependencies.akka,
-    Dependencies.akkaTestKit
+    Dependencies.akkaTestKit,
+    Dependencies.bloomFilter
   )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
