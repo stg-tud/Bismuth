@@ -88,46 +88,25 @@ case class ReplicatedTree[A](
   }
 
   def move(dot: Dot, newParent: Dot): Delta = {
-    node(dot) match {
-      case Some(n) =>
-        val edits = ensureNodeIsRooted(n.parent) :::
-          ensureNodeIsRooted(newParent) ::: List((dot, newParent))
-
-        val newElements = edits.map { case (dot, parent) =>
-          val n          = node(dot).get
-          val maxCounter = n.maxCounter
-          val edges      = n.edges + (parent -> ReplicatedTree.EdgeCounter(maxCounter + 1))
-          (
-            dot,
-            n.copy(
-              parent = parent,
-              edges = edges
-            )
-          )
-        }.toMap
-
-        return ReplicatedTree(
-          elements = newElements
-        )
-      case None =>
-        return ReplicatedTree.empty
+    node(dot).fold(ReplicatedTree.empty) { n =>
+      val edits       = ensureNodeIsRooted(n.parent) ::: ensureNodeIsRooted(newParent) ::: List((dot, newParent))
+      val newElements = edits.map { case (dot, parent) =>
+        val node  = elements(dot)
+        val edges = node.edges + (parent -> ReplicatedTree.EdgeCounter(node.maxCounter + 1))
+        dot -> node.copy(parent = parent, edges = edges)
+      }.toMap
+      ReplicatedTree(elements = newElements)
     }
   }
 
   private def isBelowNode(node: Dot, other: Dot): Boolean = {
-    if node == other then {
-      return true
-    }
+    if node == other then return true
     var tortoise = node
     var hare     = parent(node)
     while hare.isDefined && hare.get != other do {
-      if tortoise == hare.get then {
-        return false
-      }
+      if tortoise == hare.get then return false
       hare = parent(hare.get)
-      if hare.isEmpty || hare.get == other then {
-        return hare.contains(other)
-      }
+      if hare.isEmpty || hare.get == other then return hare.contains(other)
       tortoise = parent(tortoise).get
       hare = parent(hare.get)
     }
@@ -190,6 +169,25 @@ object ReplicatedTree {
     }
   }
 
+  private def recomputeParentChildren[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
+    var tree = mergedTree.copy(elements = mergedTree.compact.map({
+      case (dot, node) =>
+        (dot, node.copy(parent = node.largestEdge))
+    }))
+
+    val nonRootedNodes = findNonRootedNodes(tree)
+    if nonRootedNodes.isEmpty then return tree
+
+    val parentUpdates = computeParentUpdates(tree, nonRootedNodes)
+    tree.copy(elements = tree.elements.map {
+      case (dot, node) =>
+        parentUpdates.get(dot) match {
+          case Some(newParent) => (dot, node.copy(parent = newParent))
+          case None            => (dot, node)
+        }
+    })
+  }
+
   private def findNonRootedNodes[A](tree: ReplicatedTree[A]): scala.collection.mutable.Set[Dot] = {
     val nonRootedNodes = scala.collection.mutable.Set[Dot]()
     tree.elements.values
@@ -241,27 +239,5 @@ object ReplicatedTree {
       }
     }
     parentUpdates
-  }
-
-  private def recomputeParentChildren[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
-    var tree = mergedTree.copy(elements = mergedTree.compact.map({
-      case (dot, node) =>
-        (dot, node.copy(parent = node.largestEdge))
-    }))
-
-    val nonRootedNodes = findNonRootedNodes(tree)
-    if nonRootedNodes.isEmpty then {
-      return tree
-    }
-
-    val parentUpdates = computeParentUpdates(tree, nonRootedNodes)
-
-    tree.copy(elements = tree.elements.map {
-      case (dot, node) =>
-        parentUpdates.get(dot) match {
-          case Some(newParent) => (dot, node.copy(parent = newParent))
-          case None            => (dot, node)
-        }
-    })
   }
 }
