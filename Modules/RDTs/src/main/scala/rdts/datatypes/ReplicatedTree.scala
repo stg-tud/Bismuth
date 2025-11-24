@@ -134,20 +134,13 @@ case class ReplicatedTree[A](
   }
 
   private def ensureNodeIsRooted(dot: Dot): List[(Dot, Dot)] = {
-    node(dot) match {
-      case Some(n) => {
-        if n.parent == ReplicatedTree.rootDot then {
-          List.empty
-        } else {
-          val edge = n.largestEdge
-          if edge != n.parent then {
-            (n.dot, n.parent) :: ensureNodeIsRooted(n.parent)
-          } else {
-            ensureNodeIsRooted(n.parent)
-          }
-        }
+    node(dot).fold(List.empty[(Dot, Dot)]) { n =>
+      if n.parent == ReplicatedTree.rootDot then List.empty
+      else {
+        val edge    = n.largestEdge
+        val current = if edge != n.parent then List((n.dot, n.parent)) else List.empty
+        current ::: ensureNodeIsRooted(n.parent)
       }
-      case None => List.empty
     }
   }
 }
@@ -158,17 +151,11 @@ object ReplicatedTree {
   case class EdgeCounter(counter: Int)
 
   case class Node[A](dot: Dot, parent: Dot, edges: Map[Dot, EdgeCounter], value: A) {
-    def maxCounter: Int = {
-      if edges.isEmpty then -1 else edges.maxBy(_._2.counter)._2.counter
-    }
+    def maxCounter: Int =
+      edges.values.map(_.counter).maxOption.getOrElse(-1)
 
-    def largestEdge: Dot = {
-      if edges.isEmpty then {
-        parent
-      } else {
-        edges.maxBy(_._2.counter)._1
-      }
-    }
+    def largestEdge: Dot =
+      edges.maxByOption(_._2.counter).map(_._1).getOrElse(parent)
   }
 
   given nodeLattice[A]: Lattice[Node[A]] = {
@@ -202,58 +189,44 @@ object ReplicatedTree {
     }
   }
 
-  private def recomputeParentChildren[A](state: ReplicatedTree[A]): ReplicatedTree[A] = {
-    case class PQItem(child: Dot, parent: Dot, counter: Int) extends Ordered[PQItem] {
-      def compare(that: PQItem): Int = {
-        given dotOrdering: Ordering[Dot] {
-          def compare(x: Dot, y: Dot): Int = {
-            val counterComparison = x.time.compare(y.time)
-            if counterComparison != 0 then counterComparison
-            else x.place.delegate.compare(y.place.delegate)
-          }
-        }
-
-        val counterCmp = this.counter.compare(that.counter)
-        if counterCmp != 0 then counterCmp
-        else {
-          val parentCmp = dotOrdering.compare(this.parent, that.parent)
-          if parentCmp != 0 then parentCmp
-          else dotOrdering.compare(this.child, that.child)
-        }
-      }
-    }
-
-    var newState = state.copy(elements = state.compact.map({
-      case (dot, node) =>
-        (dot, node.copy(parent = node.largestEdge))
-    }))
-
+  private def findNonRootedNodes[A](tree: ReplicatedTree[A]): scala.collection.mutable.Set[Dot] = {
     val nonRootedNodes = scala.collection.mutable.Set[Dot]()
-    for node <- newState.elements.values do {
-      if !nonRootedNodes.contains(node.parent) && !newState.isBelowNode(node.dot, ReplicatedTree.rootDot)
+    for node <- tree.elements.values do {
+      if !nonRootedNodes.contains(node.parent) && !tree.isBelowNode(node.dot, ReplicatedTree.rootDot)
       then {
         var nodeId: Option[Dot] = Some(node.dot)
         while nodeId.isDefined do {
           val currentNode = nodeId.get
           if !nonRootedNodes.contains(currentNode) then {
             nonRootedNodes.add(currentNode)
-            nodeId = newState.parent(currentNode)
+            nodeId = tree.parent(currentNode)
           } else {
             nodeId = None
           }
         }
       }
     }
+    nonRootedNodes
+  }
 
-    if nonRootedNodes.isEmpty then {
-      return newState
+  private def computeParentUpdates[A](
+      tree: ReplicatedTree[A],
+      nonRootedNodes: scala.collection.mutable.Set[Dot]
+  ): scala.collection.mutable.Map[Dot, Dot] = {
+    case class PQItem(child: Dot, parent: Dot, counter: Int) extends Ordered[PQItem] {
+      def compare(that: PQItem): Int = {
+        given dotOrdering: Ordering[Dot] = Ordering.by((d: Dot) => (d.time, d.place.delegate))
+        Ordering
+          .by((i: PQItem) => (i.counter, i.parent, i.child))
+          .compare(this, that)
+      }
     }
 
     val deferredEdges = scala.collection.mutable.Map[Dot, scala.collection.mutable.ListBuffer[PQItem]]()
     val readyEdges    = scala.collection.mutable.PriorityQueue[PQItem]()
 
     for child <- nonRootedNodes do {
-      newState.node(child) match {
+      tree.node(child) match {
         case Some(node) =>
           for (parent, edgeCounter) <- node.edges do {
             val item = PQItem(child, parent, edgeCounter.counter)
@@ -267,28 +240,48 @@ object ReplicatedTree {
       }
     }
 
+    val parentUpdates = scala.collection.mutable.Map[Dot, Dot]()
+
     while readyEdges.nonEmpty do {
       val top   = readyEdges.dequeue()
       val child = top.child
       if !nonRootedNodes.contains(child) then {}
       else {
-        newState = newState.copy(elements = newState.elements.updatedWith(child) {
-          case Some(node) =>
-            nonRootedNodes.remove(child)
-            deferredEdges.remove(child) match {
-              case Some(deferred) =>
-                for edge <- deferred do {
-                  readyEdges.enqueue(edge)
-                }
-              case None =>
+        nonRootedNodes.remove(child)
+        parentUpdates(child) = top.parent
+
+        deferredEdges.remove(child) match {
+          case Some(deferred) =>
+            for edge <- deferred do {
+              readyEdges.enqueue(edge)
             }
-            Some(node.copy(parent = top.parent))
           case None =>
-            None
-        })
+        }
       }
     }
 
-    newState
+    parentUpdates
+  }
+
+  private def recomputeParentChildren[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
+    var tree = mergedTree.copy(elements = mergedTree.compact.map({
+      case (dot, node) =>
+        (dot, node.copy(parent = node.largestEdge))
+    }))
+
+    val nonRootedNodes = findNonRootedNodes(tree)
+    if nonRootedNodes.isEmpty then {
+      return tree
+    }
+
+    val parentUpdates = computeParentUpdates(tree, nonRootedNodes)
+
+    tree.copy(elements = tree.elements.map {
+      case (dot, node) =>
+        parentUpdates.get(dot) match {
+          case Some(newParent) => (dot, node.copy(parent = newParent))
+          case None            => (dot, node)
+        }
+    })
   }
 }
