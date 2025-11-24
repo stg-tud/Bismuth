@@ -22,9 +22,9 @@ case class ReplicatedTree[A](
 
   def nodes: Iterable[ReplicatedTree.Node[A]] = compact.values
 
-  def node(dot: Dot): Option[ReplicatedTree.Node[A]] = elements.get(dot)
+  def node(dot: Dot): Option[ReplicatedTree.Node[A]] = compact.get(dot)
 
-  def parent(dot: Dot): Option[Dot] = elements.get(dot).map(_.parent)
+  def parent(dot: Dot): Option[Dot] = compact.get(dot).map(_.parent)
 
   def root: Option[ReplicatedTree.Node[A]] = {
     val c = children(ReplicatedTree.rootDot)
@@ -33,7 +33,7 @@ case class ReplicatedTree[A](
   }
 
   def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] = {
-    elements.values.filter(_.parent == dot)
+    compact.values.filter(n => n.parent == dot)
   }
 
   def insert(parent: Dot, value: A)(using LocalUid): Delta = {
@@ -53,7 +53,7 @@ case class ReplicatedTree[A](
         Map(dot -> ReplicatedTree.Node(
           dot,
           parent,
-          Map(parent -> ReplicatedTree.EdgeCounter(0)),
+          Map(parent -> 0),
           value(dot)
         )),
     )
@@ -92,7 +92,7 @@ case class ReplicatedTree[A](
       val edits       = ensureNodeIsRooted(n.parent) ::: ensureNodeIsRooted(newParent) ::: List((dot, newParent))
       val newElements = edits.map { case (dot, parent) =>
         val node  = elements(dot)
-        val edges = node.edges + (parent -> ReplicatedTree.EdgeCounter(node.maxCounter + 1))
+        val edges = node.edges + (parent -> (node.maxCounter + 1))
         dot -> node.copy(parent = parent, edges = edges)
       }.toMap
       ReplicatedTree(elements = newElements)
@@ -128,14 +128,12 @@ case class ReplicatedTree[A](
 object ReplicatedTree {
   val rootDot = Dot.zero
 
-  case class EdgeCounter(counter: Int)
-
-  case class Node[A](dot: Dot, parent: Dot, edges: Map[Dot, EdgeCounter], value: A) {
+  case class Node[A](dot: Dot, parent: Dot, edges: Map[Dot, Int], value: A) {
     def maxCounter: Int =
-      edges.values.map(_.counter).maxOption.getOrElse(-1)
+      edges.values.maxOption.getOrElse(-1)
 
     def largestEdge: Dot =
-      edges.maxByOption(_._2.counter).map(_._1).getOrElse(parent)
+      edges.maxByOption(_._2).map(_._1).getOrElse(parent)
   }
 
   given nodeLattice[A]: Lattice[Node[A]] = {
@@ -146,12 +144,8 @@ object ReplicatedTree {
         left
       }
     }
-    given Lattice[EdgeCounter] with {
-      def merge(left: EdgeCounter, right: EdgeCounter): EdgeCounter = {
-        EdgeCounter(math.max(left.counter, right.counter))
-      }
-    }
-    given Lattice[Map[Dot, EdgeCounter]] = Lattice.mapLattice
+    given Lattice[Int]           = math.max
+    given Lattice[Map[Dot, Int]] = Lattice.mapLattice
     Lattice.derived
   }
 
@@ -219,7 +213,7 @@ object ReplicatedTree {
       tree.node(child) match {
         case Some(node) =>
           node.edges.foreach { (parent, edgeCounter) =>
-            val item = PQItem(child, parent, edgeCounter.counter)
+            val item = PQItem(child, parent, edgeCounter)
             if !nonRootedNodes.contains(parent) then readyEdges.enqueue(item)
             else deferredEdges.getOrElseUpdate(parent, mutable.ListBuffer()) += item
           }
