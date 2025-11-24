@@ -303,6 +303,67 @@ class ReplicatedTreeTest extends munit.FunSuite {
     }
   }
 
+  test("move after parent cycle") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    // Create initial tree: ROOT -> C, D ; C -> A,B
+    var tree = ReplicatedTree.empty[String]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    val root = tree.root.get.dot
+    tree = tree `merge` tree.insert(root, "C")(using aid)
+    tree = tree `merge` tree.insert(root, "D")(using aid)
+    var c = tree.children(root).find(_.value == "C").get.dot
+    var d = tree.children(root).find(_.value == "D").get.dot
+    tree = tree `merge` tree.insert(c, "A")(using aid)
+    tree = tree `merge` tree.insert(c, "B")(using aid)
+    val a = tree.children(c).find(_.value == "A").get.dot
+    val b = tree.children(c).find(_.value == "B").get.dot
+
+    {
+      assertEquals(tree.size, 5)
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("C", "D"))
+
+      val c = root.child("C")
+      c.assertChildren(Set("A", "B"))
+    }
+
+    // Create a cycle by concurrently moving A under B and B under A
+    tree = tree `merge` tree.move(a, b) `merge` tree.move(b, a)
+
+    {
+      assertEquals(tree.size, 5)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("C", "D"))
+
+      val c = root.child("C")
+      c.assertChildren(Set("B"))
+
+      val b = c.child("B")
+      b.assertChildren(Set("A"))
+    }
+
+    // Now move A under D
+    tree = tree `merge` tree.move(a, d)
+
+    {
+      assertEquals(tree.size, 5)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("C", "D"))
+
+      val c = root.child("C")
+      c.assertChildren(Set("B"))
+
+      val d = root.child("D")
+      d.assertChildren(Set("A"))
+    }
+  }
 }
 
 def randomTree(treeSize: Int): (ReplicatedTree[Int], List[ReplicatedTree[Int]]) = {

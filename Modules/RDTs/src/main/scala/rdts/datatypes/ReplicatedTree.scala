@@ -88,19 +88,19 @@ case class ReplicatedTree[A](
 
   def move(dot: Dot, newParent: Dot): Delta = {
     node(dot) match {
-      case Some(child) =>
-        val oldParent = child.parent
-        val edits     = ensureNodeIsRooted(oldParent) :::
+      case Some(n) =>
+        val edits = ensureNodeIsRooted(n.parent) :::
           ensureNodeIsRooted(newParent) ::: List((dot, newParent))
 
-        val newElements = edits.map { case (childDot, parent) =>
-          val childNode  = node(childDot).get
-          val maxCounter = childNode.maxCounter
+        val newElements = edits.map { case (dot, parent) =>
+          val n          = node(dot).get
+          val maxCounter = n.maxCounter
+          val edges      = n.edges + (parent -> ReplicatedTree.EdgeCounter(maxCounter + 1))
           (
-            childDot,
-            childNode.copy(
+            dot,
+            n.copy(
               parent = parent,
-              edges = childNode.edges + (parent -> ReplicatedTree.EdgeCounter(maxCounter + 1))
+              edges = edges
             )
           )
         }.toMap
@@ -135,15 +135,15 @@ case class ReplicatedTree[A](
 
   private def ensureNodeIsRooted(dot: Dot): List[(Dot, Dot)] = {
     node(dot) match {
-      case Some(child) => {
-        if child.parent == ReplicatedTree.rootDot then {
+      case Some(n) => {
+        if n.parent == ReplicatedTree.rootDot then {
           List.empty
         } else {
-          val edge = child.largestEdge
-          if edge != child.parent then {
-            (child.dot, edge) :: ensureNodeIsRooted(edge)
+          val edge = n.largestEdge
+          if edge != n.parent then {
+            (n.dot, n.parent) :: ensureNodeIsRooted(n.parent)
           } else {
-            ensureNodeIsRooted(edge)
+            ensureNodeIsRooted(n.parent)
           }
         }
       }
