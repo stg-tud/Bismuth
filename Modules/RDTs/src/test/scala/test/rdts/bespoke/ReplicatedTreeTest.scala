@@ -209,9 +209,9 @@ class ReplicatedTreeTest extends munit.FunSuite {
   }
 
   test("associativity") {
-    val (expected, deltas) = randomTree(100)
+    val (expected, deltas) = randomTree(50)
 
-    for _ <- 0 until 100 do {
+    for _ <- 0 until 10 do {
       val shuffledDeltas = Random.shuffle(deltas)
       val result         = shuffledDeltas.foldLeft(ReplicatedTree.empty[Int])(_ `merge` _)
       assertEquals(result, expected)

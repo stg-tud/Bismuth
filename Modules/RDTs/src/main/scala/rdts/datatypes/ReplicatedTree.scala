@@ -4,6 +4,7 @@ import rdts.time.Dot
 import rdts.base.LocalUid
 import rdts.time.Dots
 import rdts.base.Lattice
+import scala.collection.mutable as mutable
 
 case class ReplicatedTree[A](
     elements: Map[Dot, ReplicatedTree.Node[A]],
@@ -191,28 +192,20 @@ object ReplicatedTree {
 
   private def findNonRootedNodes[A](tree: ReplicatedTree[A]): scala.collection.mutable.Set[Dot] = {
     val nonRootedNodes = scala.collection.mutable.Set[Dot]()
-    for node <- tree.elements.values do {
-      if !nonRootedNodes.contains(node.parent) && !tree.isBelowNode(node.dot, ReplicatedTree.rootDot)
-      then {
-        var nodeId: Option[Dot] = Some(node.dot)
-        while nodeId.isDefined do {
-          val currentNode = nodeId.get
-          if !nonRootedNodes.contains(currentNode) then {
-            nonRootedNodes.add(currentNode)
-            nodeId = tree.parent(currentNode)
-          } else {
-            nodeId = None
-          }
-        }
+    tree.elements.values
+      .filterNot(node => tree.isBelowNode(node.dot, ReplicatedTree.rootDot))
+      .foreach { node =>
+        var current: Option[Dot] = Some(node.dot)
+        while current.isDefined && nonRootedNodes.add(current.get) do
+          current = tree.parent(current.get)
       }
-    }
     nonRootedNodes
   }
 
   private def computeParentUpdates[A](
       tree: ReplicatedTree[A],
-      nonRootedNodes: scala.collection.mutable.Set[Dot]
-  ): scala.collection.mutable.Map[Dot, Dot] = {
+      nonRootedNodes: mutable.Set[Dot]
+  ): mutable.Map[Dot, Dot] = {
     case class PQItem(child: Dot, parent: Dot, counter: Int) extends Ordered[PQItem] {
       def compare(that: PQItem): Int = {
         given dotOrdering: Ordering[Dot] = Ordering.by((d: Dot) => (d.time, d.place.delegate))
@@ -222,44 +215,31 @@ object ReplicatedTree {
       }
     }
 
-    val deferredEdges = scala.collection.mutable.Map[Dot, scala.collection.mutable.ListBuffer[PQItem]]()
-    val readyEdges    = scala.collection.mutable.PriorityQueue[PQItem]()
-
-    for child <- nonRootedNodes do {
+    val deferredEdges = mutable.Map[Dot, mutable.ListBuffer[PQItem]]()
+    val readyEdges    = mutable.PriorityQueue[PQItem]()
+    nonRootedNodes.foreach { child =>
       tree.node(child) match {
         case Some(node) =>
-          for (parent, edgeCounter) <- node.edges do {
+          node.edges.foreach { (parent, edgeCounter) =>
             val item = PQItem(child, parent, edgeCounter.counter)
-            if !nonRootedNodes.contains(parent) then {
-              readyEdges.enqueue(item)
-            } else {
-              deferredEdges.getOrElseUpdate(parent, scala.collection.mutable.ListBuffer[PQItem]()) += item
-            }
+            if !nonRootedNodes.contains(parent) then readyEdges.enqueue(item)
+            else deferredEdges.getOrElseUpdate(parent, mutable.ListBuffer()) += item
           }
         case None =>
       }
     }
 
-    val parentUpdates = scala.collection.mutable.Map[Dot, Dot]()
-
+    val parentUpdates = mutable.Map[Dot, Dot]()
     while readyEdges.nonEmpty do {
-      val top   = readyEdges.dequeue()
-      val child = top.child
-      if !nonRootedNodes.contains(child) then {}
-      else {
-        nonRootedNodes.remove(child)
-        parentUpdates(child) = top.parent
-
-        deferredEdges.remove(child) match {
-          case Some(deferred) =>
-            for edge <- deferred do {
-              readyEdges.enqueue(edge)
-            }
-          case None =>
+      val top = readyEdges.dequeue()
+      if nonRootedNodes.remove(top.child) then {
+        parentUpdates(top.child) = top.parent
+        deferredEdges.remove(top.child) match {
+          case Some(edges) => edges.foreach(readyEdges.enqueue(_))
+          case None        =>
         }
       }
     }
-
     parentUpdates
   }
 
