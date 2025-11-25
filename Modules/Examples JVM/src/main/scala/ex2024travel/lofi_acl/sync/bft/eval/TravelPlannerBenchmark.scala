@@ -27,7 +27,9 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
 
   def performRandomRdtAction(
       permittedMutators: Array[Array[TravelPlanMutator]],
-      authoringReplica: Int
+      authoringReplica: Int,
+      minEntriesPerMap: Int,
+      maxEntriesPerMap: Int
   )(using random: Random): (Int, RDT) = {
     given LocalUid = LocalUid(Uid(ids(authoringReplica).id))
     given Random   = random
@@ -38,15 +40,18 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
     val state = replicas(authoringReplica).currentState
     val delta = retryUntilSuccess { // Need to retry, because removal/update doesn't work on empty collection
       mutators(random.nextInt(mutators.length)) match {
-        case SET_TITLE                  => state.setTitle(dummy)
-        case ADD_BUCKET_LIST_ENTRY      => state.addBucketListEntry(dummy)
-        case REMOVE_BUCKET_LIST_ENTRY   => state.removeBucketListEntry(pickOne(state.bucketList.keySet))
+        case SET_TITLE                                                            => state.setTitle(dummy)
+        case ADD_BUCKET_LIST_ENTRY if state.bucketList.size < maxEntriesPerMap    => state.addBucketListEntry(dummy)
+        case REMOVE_BUCKET_LIST_ENTRY if state.bucketList.size > minEntriesPerMap =>
+          state.removeBucketListEntry(pickOne(state.bucketList.keySet))
         case SET_BUCKET_LIST_ENTRY_TEXT => state.setBucketListEntryText(pickOne(state.bucketList.keySet), dummy)
-        case ADD_EXPENSE                => state.addExpense(dummy, dummy)
-        case REMOVE_EXPENSE             => state.removeExpense(pickOne(state.expenses.keySet))
-        case SET_EXPENSE_AMOUNT         => state.setExpenseAmount(pickOne(state.expenses.keySet), dummy)
-        case SET_EXPENSE_DESCRIPTION    => state.setExpenseDescription(pickOne(state.expenses.keySet), dummy)
-        case SET_EXPENSE_COMMENT        => state.setExpenseComment(pickOne(state.expenses.keySet), dummy)
+        case ADD_EXPENSE if state.expenses.size < maxEntriesPerMap    => state.addExpense(dummy, dummy)
+        case REMOVE_EXPENSE if state.expenses.size > minEntriesPerMap =>
+          state.removeExpense(pickOne(state.expenses.keySet))
+        case SET_EXPENSE_AMOUNT      => state.setExpenseAmount(pickOne(state.expenses.keySet), dummy)
+        case SET_EXPENSE_DESCRIPTION => state.setExpenseDescription(pickOne(state.expenses.keySet), dummy)
+        case SET_EXPENSE_COMMENT     => state.setExpenseComment(pickOne(state.expenses.keySet), dummy)
+        case _                       => ???
       }
     }
     (authoringReplica, delta)
@@ -183,8 +188,11 @@ object TravelPlannerBenchmark {
       numOperations: Int,
       connectionMap: Map[Int, Set[Int]],
       permissionAssignmentFunction: TravelPlannerBenchmark => Unit,
+      mapMinEntries: Int = 0, // Don't remove values from a map if it contains less or equal to this amount of entries
+      mapMaxEntries: Int = Int.MaxValue // Don't add values to a map if it already contains this amount of entries
   ): (DeltaTrace, NotificationTrace, TravelPlannerBenchmark) = {
     require(numReplicas >= 2)
+    require(mapMinEntries <= mapMaxEntries)
     given random: Random = Random(42)
 
     val bench = TravelPlannerBenchmark(4)
@@ -211,7 +219,8 @@ object TravelPlannerBenchmark {
     while numCreatedDeltas < numOperations do {
       // Always perform at least one update per round
       val authorA = random.nextInt(numReplicas)
-      deltas(mutationRoundIndex) = Seq(bench.performRandomRdtAction(permittedMutators, authorA))
+      deltas(mutationRoundIndex) =
+        Seq(bench.performRandomRdtAction(permittedMutators, authorA, mapMinEntries, mapMaxEntries))
       numCreatedDeltas += 1
 
       // Sometimes perform a second (concurrent) update (1 in 3)
@@ -220,7 +229,12 @@ object TravelPlannerBenchmark {
           // Choose a different replica
           while authorB == authorA do authorB = random.nextInt(numReplicas)
           deltas(mutationRoundIndex) =
-            deltas(mutationRoundIndex) :+ bench.performRandomRdtAction(permittedMutators, authorB)
+            deltas(mutationRoundIndex) :+ bench.performRandomRdtAction(
+              permittedMutators,
+              authorB,
+              mapMinEntries,
+              mapMaxEntries
+            )
           numCreatedDeltas += 1
 
       // Apply deltas to state of replicas and broadcast deltas from authoring replica to peers
