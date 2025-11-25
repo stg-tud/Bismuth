@@ -1,13 +1,13 @@
 package ex2024travel.lofi_acl.sync.bft.eval
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromStream, writeToStream}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromStream, writeToStream}
 import ex2024travel.lofi_acl.sync.bft.BftAclOpGraph.Signature
 import ex2024travel.lofi_acl.sync.bft.eval.SavedTrace.NotificationTrace
 import ex2024travel.lofi_acl.sync.bft.eval.TravelPlannerBenchmark.createTrace
 import ex2024travel.lofi_acl.sync.bft.{ReplicaWithBftAcl, SerializedAclOp}
 import rdts.filters.PermissionTree
 
+import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import scala.collection.mutable
 import scala.util.Random
@@ -19,58 +19,61 @@ object TravelPlannerBenchmarkRunner {
     val numOps      = 100_000
 
     val traceFile = Paths.get(s"./results/lofi_acl/valley-$numReplicas-$numOps-trace.json")
-    //TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps)
+    //TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps, 140, 160)
 
-    val valleyTrace            = TraceReplay.readTrace(traceFile)
+    val valleyTrace = TraceReplay.readTrace(traceFile)
 
-    val valleyTraceButFullMesh =
-      valleyTrace.copy(
-        connectionMap = fullMeshConnectionMap(numReplicas),
-        notificationTrace =
-          TraceReplay.generateNotificationTrace(
-            fullMeshConnectionMap(numReplicas),
-            valleyTrace.deltaTrace.length,
-            numReplicas
-          )
-      )
+    val valleyTraceButFullMesh = valleyTrace.copy(
+     connectionMap = fullMeshConnectionMap(numReplicas),
+     notificationTrace =
+       TraceReplay.generateNotificationTrace(
+         fullMeshConnectionMap(numReplicas),
+         valleyTrace.deltaTrace.length,
+         numReplicas
+       )
+    )
 
-    val valleyTraceButCentralized =
-      valleyTrace.copy(
-        connectionMap = centralServerConnectionMap(numReplicas),
-        notificationTrace =
-          TraceReplay.generateNotificationTrace(
-            centralServerConnectionMap(numReplicas),
-            valleyTrace.deltaTrace.length,
-            numReplicas
-          )
-      )
+    val valleyTraceButCentralized = valleyTrace.copy(
+      connectionMap = centralServerConnectionMap(numReplicas),
+      notificationTrace =
+        TraceReplay.generateNotificationTrace(
+          centralServerConnectionMap(numReplicas),
+          valleyTrace.deltaTrace.length,
+          numReplicas
+        )
+    )
 
     // Warmup
-    TraceReplay.run(valleyTrace): Unit
+    // TraceReplay.run(valleyTrace): Unit
 
-    val res: Map[String, Array[Long]] = Map(
-      "valley" -> TraceReplay.run(valleyTrace),
-      // Without Filtering (ACL off)
-      "valley-no-acl" -> TraceReplay.run(valleyTrace, withAcl = false),
-      // Same trace, different connection map
-      "valley-full-mesh" -> TraceReplay.run(valleyTraceButFullMesh),
-      // Same trace, different connection map, no acl
-      "valley-full-mesh-no-acl" -> TraceReplay.run(valleyTraceButFullMesh, withAcl = false),
-      // Central server
-      "valley-central" -> TraceReplay.run(valleyTraceButFullMesh),
-      // Central server (ACL off)
-      "valley-central-no-acl" -> TraceReplay.run(valleyTraceButFullMesh, withAcl = false),
+    val results = List(
+      ("valley", "acl", TraceReplay.run(valleyTrace, withAcl = true)),                    // Valley with ACL,
+      ("valley", "no-acl", TraceReplay.run(valleyTrace, withAcl = false)),                // Valley without ACL,
+      ("full-mesh", "acl", TraceReplay.run(valleyTraceButFullMesh, withAcl = true)),      // Full mesh with ACL,
+      ("full-mesh", "no-acl", TraceReplay.run(valleyTraceButFullMesh, withAcl = false)),  // Full mesh without ACL,
+      ("centralized", "acl", TraceReplay.run(valleyTraceButCentralized, withAcl = true)), // Centralized with ACL
+      ("centralized", "no-acl", TraceReplay.run(valleyTraceButCentralized, withAcl = false)), // Centralized without ACL
     )
-    val resultFile      = Paths.get(s"./results/lofi_acl/valley-$numReplicas-$numOps-results.json")
-    val resultOutStream = Files.newOutputStream(
-      resultFile,
+
+    val resultsFile = Paths.get(s"./results/lofi_acl/valley-$numReplicas-$numOps-results.csv")
+    saveResultsCsv(results, resultsFile)
+  }
+
+  def saveResultsCsv(results: Seq[(String, String, Array[Long])], resultsFile: Path): Unit = {
+    val resultOutStream = PrintWriter(Files.newOutputStream(
+      resultsFile,
       StandardOpenOption.WRITE,
       StandardOpenOption.CREATE,
       StandardOpenOption.TRUNCATE_EXISTING
-    )
+    ))
 
-    given JsonValueCodec[Map[String, Array[Long]]] = JsonCodecMaker.make
-    writeToStream(res, resultOutStream)
+    resultOutStream.println("topology,acl,num_ops_before,time_delta_ns") // header
+    results.foreach { (topology, aclStatus, times) =>
+      times.indices.foreach { timeIndex =>
+        resultOutStream.println(s"$topology,$aclStatus,${timeIndex * 1_000},${times(timeIndex)}")
+      }
+    }
+
     resultOutStream.close()
   }
 
@@ -106,12 +109,6 @@ object TravelPlannerBenchmarkRunner {
 
   def permissionAssignmentPartial(bench: TravelPlannerBenchmark): Unit = {
     require(bench.replicas.length == 4)
-    // bench.assignPermission(0, 1, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
-    // bench.assignPermission(0, 2, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
-    // bench.assignPermission(0, 2, PermissionTree.fromPath("expenses"), PermissionTree.fromPath("expenses"))
-    // bench.assignPermission(0, 3, PermissionTree.fromPath("title"), PermissionTree.fromPath("title"))
-    // bench.assignPermission(0, 3, PermissionTree.fromPath("bucketList"), PermissionTree.fromPath("bucketList"))
-
     bench.assignPermission(0, 1, PermissionTree.empty, PermissionTree.fromPath("title"))
     bench.assignPermission(
       0,
@@ -146,12 +143,15 @@ object TravelPlannerBenchmarkRunner {
         traceFile: Path,
         permissionAssignment: TravelPlannerBenchmark => Unit,
         connectionMap: Map[Int, Set[Int]],
-        numOps: Int
+        numOps: Int,
+        mapMinEntries: Int,
+        mapMaxEntries: Int
     ): Unit = {
       // Run
       val start                         = System.nanoTime()
-      val (trace, notifications, bench) = createTrace(4, numOps, connectionMap, permissionAssignment)
-      val stop                          = System.nanoTime()
+      val (trace, notifications, bench) =
+        createTrace(4, numOps, connectionMap, permissionAssignment, mapMinEntries, mapMaxEntries)
+      val stop = System.nanoTime()
       println(s"${(stop - start) / 1_000_000}ms")
 
       // Save
@@ -205,13 +205,16 @@ object TravelPlannerBenchmarkRunner {
       val peerCount     = neighbours.map(_.size)
       val random        = Random(42)
       val notifications = Array.ofDim[Int](numRounds, numReplicas)
-      notifications.mapInPlace(_.mapInPlace(i =>
-        neighbours(i).drop(random.nextInt(neighbours(i).size)).head
-      ))
+      notifications.foreach(notificationsInRound =>
+        notificationsInRound.indices.foreach(i =>
+          notificationsInRound(i) = neighbours(i).drop(random.nextInt(peerCount(i))).head
+        )
+      )
       notifications
     }
 
     def run(trace: SavedTrace, withAcl: Boolean = true): Array[Long] = {
+      System.gc()
       // Prepare
       val bench = TravelPlannerBenchmark(
         trace.identities.length,
