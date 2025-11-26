@@ -8,13 +8,13 @@ import scala.collection.mutable as mutable
 
 case class ReplicatedTree[A](
     elements: Map[Dot, ReplicatedTree.Node[A]],
-    deleted: Dots = Dots.empty
+    removed: Dots = Dots.empty
 ) {
   type Delta = ReplicatedTree[A]
 
-  lazy val observed = elements.keySet.foldLeft(deleted)((acc, dot) => acc `union` Dots.single(dot))
+  lazy val observed = elements.keySet.foldLeft(removed)((acc, dot) => acc `union` Dots.single(dot))
 
-  lazy val compact = elements.filter((k, _) => !deleted.contains(k))
+  lazy val compact = elements.filter((k, _) => !removed.contains(k))
 
   def isEmpty: Boolean = compact.isEmpty
 
@@ -74,16 +74,17 @@ case class ReplicatedTree[A](
 
   def delete(dot: Dot): Delta = {
     // TODO: do we also need to cleanup the edges maps?
+    // TODO: Delete subtree to avoid tracking nodes that are no longer reachable?
     ReplicatedTree(
       elements = Map.empty,
-      deleted = Dots.single(dot)
+      removed = Dots.single(dot)
     )
   }
 
   def clear(): Delta = {
     ReplicatedTree(
       elements = Map.empty,
-      deleted = observed
+      removed = observed
     )
   }
 
@@ -144,8 +145,10 @@ object ReplicatedTree {
         left
       }
     }
-    given Lattice[Int]           = math.max
-    given Lattice[Map[Dot, Int]] = Lattice.mapLattice
+    given Lattice[Map[Dot, Int]] = {
+      given Lattice[Int] = math.max
+      Lattice.mapLattice
+    }
     Lattice.derived
   }
 
@@ -155,15 +158,15 @@ object ReplicatedTree {
     given mapLattice: Lattice[Map[Dot, ReplicatedTree.Node[A]]]                     = Lattice.mapLattice
     def merge(left: ReplicatedTree[A], right: ReplicatedTree[A]): ReplicatedTree[A] = {
       val elements = left.elements `merge` right.elements
-      val deleted  = left.deleted `union` right.deleted
-      recomputeParentChildren(ReplicatedTree(
+      val deleted  = left.removed `union` right.removed
+      resolveConflicts(ReplicatedTree(
         elements,
         deleted
       ))
     }
   }
 
-  private def recomputeParentChildren[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
+  private def resolveConflicts[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
     var tree = mergedTree.copy(elements = mergedTree.compact.map({
       case (dot, node) =>
         (dot, node.copy(parent = node.largestEdge))
@@ -182,8 +185,8 @@ object ReplicatedTree {
     })
   }
 
-  private def findNonRootedNodes[A](tree: ReplicatedTree[A]): scala.collection.mutable.Set[Dot] = {
-    val nonRootedNodes = scala.collection.mutable.Set[Dot]()
+  private def findNonRootedNodes[A](tree: ReplicatedTree[A]): mutable.Set[Dot] = {
+    val nonRootedNodes = mutable.Set[Dot]()
     tree.elements.values
       .filterNot(node => tree.isBelowNode(node.dot, ReplicatedTree.rootDot))
       .foreach { node =>
@@ -224,7 +227,7 @@ object ReplicatedTree {
     val parentUpdates = mutable.Map[Dot, Dot]()
     while readyEdges.nonEmpty do {
       val top = readyEdges.dequeue()
-      if nonRootedNodes.remove(top.child) then {
+      if nonRootedNodes.contains(top.child) then {
         parentUpdates(top.child) = top.parent
         deferredEdges.remove(top.child) match {
           case Some(edges) => edges.foreach(readyEdges.enqueue(_))
