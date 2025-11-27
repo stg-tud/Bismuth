@@ -18,29 +18,33 @@ class RemoveWinsArrayExperimentTest extends munit.FunSuite {
 
     assertEquals(list.toList, List("a"))
 
-    val list1A = list `merge` list.append("b")(using aid)
-    val list1B = list `merge` list.append("c")(using bid)
+    val delta1A = list.append("b")(using aid)
+    val delta1B = list.append("c")(using bid)
+    val list1A  = list `merge` delta1A
+    val list1B  = list `merge` delta1B
 
     assertEquals(list1A.toList, List("a", "b"))
     assertEquals(list1B.toList, List("a", "c"))
 
-    val list2 = list1A `merge` list1B
+    val list2 = list `merge` delta1A `merge` delta1B
     assertEquals(list2.toList, List("a", "b", "c"))
 
     val list3 = list2 `merge` list2.apply(s => s.toUpperCase())(using aid)
     assertEquals(list3.toList, List("A", "B", "C"))
 
     val list4 = list3 `merge` list3.append("d")(using aid)
-    // for-each should only apply to existing items, not newly appended ones
     assertEquals(list4.toList, List("A", "B", "C", "d"))
 
-    val list5A = list4 `merge` list4.apply(s => s + "!")(using aid)
-    val list5B = list4 `merge` list4.append("e")(using bid)
+    val delta5A = list4 `merge` list4.apply(s => s + "!")(using aid)
+    val delta5B = list4 `merge` list4.appendAll(Set("e", "f"))(using bid)
+    val list5A  = list `merge` delta5A
+    val list5B  = list `merge` delta5B
 
     assertEquals(list5A.toList, List("A!", "B!", "C!", "d!"))
-    assertEquals(list5B.toList, List("A", "B", "C", "d", "e"))
+    assertEquals(list5B.toList, List("A", "B", "C", "d", "e", "f"))
 
-    val list6 = list5A `merge` list5B
-    assertEquals(list6.toList, List("A!", "B!", "C!", "d!", "e!"))
+    // for-each should apply to concurrently inserted items
+    val list6 = list `merge` delta5A `merge` delta5B
+    assertEquals(list6.toList, List("A!", "B!", "C!", "d!", "e!", "f!"))
   }
 }
