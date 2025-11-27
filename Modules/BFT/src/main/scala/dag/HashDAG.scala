@@ -108,13 +108,20 @@ case class HashDAG[T](
     // apply the event
     effector(event)
 
-  def generateDelta(content: T): HashDAG[T] =
-    // generate the event
-    val currentHeads = getCurrentHeads
-    val event        = generator(content)
+  def generateDelta(content: T): HashDAG[T] = {
+    // private key is empty => cannot sign any events => cannot generate any new events
+    // usually the private key is empty in the case of a delta, because before sending a delta we empty the private
+    // key to prevent leaking it out
+    if privateKey.isEmpty then
+      this
+    else
+      // generate the event
+      val currentHeads = getCurrentHeads
+      val event        = generator(content)
 
-    // apply the event
-    this.empty.effector(event)
+      // apply the event
+      this.empty.effector(event)
+  }
 
   def processQueue(): HashDAG[T] =
     var hashDAG = this

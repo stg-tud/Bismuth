@@ -4,25 +4,25 @@ import sbt.Keys.libraryDependencies
 
 object Dependencies {
 
-  val akka        = libraryDependencies += "com.typesafe.akka"      %% "akka-actor-typed"         % "2.8.8"
-  val akkaTestKit = libraryDependencies += "com.typesafe.akka"      %% "akka-actor-testkit-typed" % "2.8.8" % Test
+  val akka        = libraryDependencies += "com.typesafe.akka"         %% "akka-actor-typed"         % "2.8.8"
+  val akkaTestKit = libraryDependencies += "com.typesafe.akka"         %% "akka-actor-testkit-typed" % "2.8.8"  % Test
   val bloomFilter = libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13"        % "0.13.1"
-  val catsParse   = libraryDependencies += "org.typelevel"         %%% "cats-parse"             % "1.1.0"
-  val conscrypt   = libraryDependencies += "org.conscrypt"           % "conscrypt-openjdk-uber" % "2.5.2"
-  val decline     = libraryDependencies += "com.monovore"          %%% "decline"                % "2.5.0"
-  val fansi       = libraryDependencies += "com.lihaoyi"           %%% "fansi"                  % "0.5.1"
-  val jetcd       = libraryDependencies += "io.etcd"                 % "jetcd-core"             % "0.8.6"
-  val monocleCore = libraryDependencies += "dev.optics"            %%% "monocle-core"           % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"         %%% "munit"                  % "1.2.1"  % Test
-  val munitCheck  = libraryDependencies += "org.scalameta"         %%% "munit-scalacheck"       % "1.2.0"  % Test
-  val osLib       = libraryDependencies += "com.lihaoyi"           %%% "os-lib"                 % "0.11.6"
-  val pprint      = libraryDependencies += "com.lihaoyi"           %%% "pprint"                 % "0.9.5"
-  val scalaSwing  = libraryDependencies += "org.scala-lang.modules" %% "scala-swing"            % "3.0.0"
-  val scalaXml    = libraryDependencies += "org.scala-lang.modules" %% "scala-xml"              % "2.4.0"
-  val scalajsDom  = libraryDependencies += "org.scala-js"          %%% "scalajs-dom"            % "2.8.1"
-  val slf4jSimple = libraryDependencies += "org.slf4j"               % "slf4j-simple"           % "2.0.17" % Test
-  val slf4jnop    = libraryDependencies += "org.slf4j"               % "slf4j-nop"              % "2.0.17" % Test
-  val slips       = libraryDependencies += "de.rmgk.slips"         %%% "partypack"              % "0.15.0"
+  val catsParse   = libraryDependencies += "org.typelevel"            %%% "cats-parse"               % "1.1.0"
+  val conscrypt   = libraryDependencies += "org.conscrypt"              % "conscrypt-openjdk-uber"   % "2.5.2"
+  val decline     = libraryDependencies += "com.monovore"             %%% "decline"                  % "2.5.0"
+  val fansi       = libraryDependencies += "com.lihaoyi"              %%% "fansi"                    % "0.5.1"
+  val jetcd       = libraryDependencies += "io.etcd"                    % "jetcd-core"               % "0.8.6"
+  val monocleCore = libraryDependencies += "dev.optics"               %%% "monocle-core"             % "3.3.0"
+  val munit       = libraryDependencies += "org.scalameta"            %%% "munit"                    % "1.2.1"  % Test
+  val munitCheck  = libraryDependencies += "org.scalameta"            %%% "munit-scalacheck"         % "1.2.0"  % Test
+  val osLib       = libraryDependencies += "com.lihaoyi"              %%% "os-lib"                   % "0.11.6"
+  val pprint      = libraryDependencies += "com.lihaoyi"              %%% "pprint"                   % "0.9.5"
+  val scalaSwing  = libraryDependencies += "org.scala-lang.modules"    %% "scala-swing"              % "3.0.0"
+  val scalaXml    = libraryDependencies += "org.scala-lang.modules"    %% "scala-xml"                % "2.4.0"
+  val scalajsDom  = libraryDependencies += "org.scala-js"             %%% "scalajs-dom"              % "2.8.1"
+  val slf4jSimple = libraryDependencies += "org.slf4j"                  % "slf4j-simple"             % "2.0.17" % Test
+  val slf4jnop    = libraryDependencies += "org.slf4j"                  % "slf4j-nop"                % "2.0.17" % Test
+  val slips       = libraryDependencies += "de.rmgk.slips"            %%% "partypack"                % "0.15.0"
   val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.13"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.19.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.1"

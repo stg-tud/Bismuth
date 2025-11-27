@@ -5,7 +5,7 @@ import dag.HashDAG
 
 case class Counter private (
     hashDAG: HashDAG[Int]
-):
+) extends Replica[Int, Counter]:
 
     // filter out all events from byzantine nodes as well as the root event (id == "0")
     lazy val value: Int = hashDAG.events.values.filter { event =>
@@ -35,6 +35,9 @@ case class Counter private (
     def empty: Counter = Counter()
 
     def withHashDAG(hashDAG: HashDAG[Int]): Counter = this.copy(hashDAG = hashDAG)
+
+    override def generateDelta(ids: List[String]): Counter =
+      Counter(hashDAG.getDelta(ids))
 
 object Counter:
     def apply(): Counter =
