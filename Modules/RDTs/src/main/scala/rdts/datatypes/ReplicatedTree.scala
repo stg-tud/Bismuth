@@ -227,7 +227,7 @@ object ReplicatedTree {
     val parentUpdates = mutable.Map[Dot, Dot]()
     while readyEdges.nonEmpty do {
       val top = readyEdges.dequeue()
-      if nonRootedNodes.contains(top.child) then {
+      if nonRootedNodes.remove(top.child) then {
         parentUpdates(top.child) = top.parent
         deferredEdges.remove(top.child) match {
           case Some(edges) => edges.foreach(readyEdges.enqueue(_))
