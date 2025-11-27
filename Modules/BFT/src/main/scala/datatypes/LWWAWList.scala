@@ -39,9 +39,9 @@ case class LWWAWList[T](
       val l = listWithIDs
 
       if l.isEmpty then
-          throw Exception("cannot remove empty list")
+          throw Exception("cannot remove from empty list")
 
-      if index > l.size || index < 0 then
+      if index >= l.size || index < 0 then
           throw Exception("illegal index")
 
       var hashDAGDelta = hashDAG.generateDelta(RemoveItem(listWithIDs(index)._2))
@@ -90,11 +90,11 @@ case class LWWAWList[T](
                         ids = ids + event.id
                         currentItems = currentItems + ((listItem.item, event.id))
                       }
-                      var tmpMap = Map.empty[Int, Set[(T, String)]]
-                      for key <- newItemMaps.keySet do
-                          tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
+                      //var tmpMap = Map.empty[Int, Set[(T, String)]]
+                      //for key <- newItemMaps.keySet do
+                      //    tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
 
-                      newItemMaps = tmpMap
+                      //newItemMaps = tmpMap
                       newItemMaps = newItemMaps + (listItem.index -> currentItems)
                     }
 

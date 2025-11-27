@@ -16,7 +16,7 @@ case class GrowOnlySet[T](
         GrowOnlySet(newHashDAG)
 
     def elements: Set[T] =
-      hashDAG.events.values.filter(e => e.id == "0").map(e => e.content.get).toSet
+      hashDAG.events.values.filterNot(e => e.id == "0").map(e => e.content.get).toSet
 
     def contains(elem: T): Boolean = elements.contains(elem)
 

@@ -14,16 +14,13 @@ class CounterPropertyBasedTests extends munit.ScalaCheckSuite {
   val genOps: Gen[List[Counter => Counter]] = Gen.listOf(genOp)
 
   def applyOps(c: Counter, ops: List[Counter => Counter]): Counter =
-    ops.foldLeft(c)((cc, f) => f(cc))
-
+    ops.foldLeft(c)((cc, f) => cc.merge(f(cc)))
 
   property("merge is commutative") {
     forAll(genOps, genOps) { (opsA, opsB) =>
-      val a = applyOps(Counter(), opsA)
-      val b = applyOps(Counter(), opsB)
-      val merged1 = a.merge(b).value
-      val merged2 = b.merge(a).value
-      assertEquals(merged1, merged2)
+      val a       = applyOps(Counter(), opsA)
+      val b       = applyOps(Counter(), opsB)
+      assertEquals(a.merge(b).value, b.merge(a).value)
     }
   }
 

@@ -5,19 +5,21 @@ import dag.HashDAG
 
 case class EnableWinsFlag(
     hashDAG: HashDAG[Boolean]
-):
+) extends Replica[Boolean, EnableWinsFlag]:
 
     def read: Boolean =
-      hashDAG.getCurrentHeads.exists(e => e.id != "0" && e.content.get)
+      hashDAG.getCurrentHeads.exists(e => e.id != "0" && e.content.get && !hashDAG.autohrIsByzantine(e.author))
 
-    def enable(value: Boolean): EnableWinsFlag =
+    def enable: EnableWinsFlag =
       EnableWinsFlag(hashDAG.generateDelta(true))
 
-    def disable(value: Boolean): EnableWinsFlag =
+    def disable: EnableWinsFlag =
       EnableWinsFlag(hashDAG.generateDelta(false))
 
     def merge(other: EnableWinsFlag): EnableWinsFlag =
       EnableWinsFlag(hashDAG.merge(other.hashDAG))
+
+    override def generateDelta(ids: List[String]): EnableWinsFlag = EnableWinsFlag(hashDAG.getDelta(ids))
 
 object EnableWinsFlag:
     def apply[T](): EnableWinsFlag =

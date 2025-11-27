@@ -6,7 +6,7 @@ import scala.util.hashing.MurmurHash3
 
 case class LastWriterWins[T](
     hashDAG: HashDAG[T]
-):
+) extends Replica[T, LastWriterWins[T]]:
 
     def write(value: T): LastWriterWins[T] =
       LastWriterWins(hashDAG.generateDelta(value))
@@ -26,6 +26,8 @@ case class LastWriterWins[T](
 
     def merge(lww: LastWriterWins[T]): LastWriterWins[T] =
       LastWriterWins(hashDAG.merge(lww.hashDAG))
+
+    override def generateDelta(ids: List[String]): LastWriterWins[T] = LastWriterWins(hashDAG.getDelta(ids))
 
 object LastWriterWins:
     def apply[T](): LastWriterWins[T] =
