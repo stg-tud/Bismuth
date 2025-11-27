@@ -35,16 +35,16 @@ class RemoveWinsArrayExperimentTest extends munit.FunSuite {
     val list4 = list3 `merge` list3.append("d")(using aid)
     assertEquals(list4.toList, List("A", "B", "C", "d"))
 
-    val delta5A = list4 `merge` list4.apply(s => s + "!")(using aid)
-    val delta5B = list4 `merge` list4.appendAll(Set("e", "f"))(using bid)
-    val list5A  = list `merge` delta5A
-    val list5B  = list `merge` delta5B
+    val delta5A = list4.apply(s => s + "!")(using aid)
+    val delta5B = list4.appendAll(Set("e", "f"))(using bid)
+    val list5A  = list4 `merge` delta5A
+    val list5B  = list4 `merge` delta5B
 
     assertEquals(list5A.toList, List("A!", "B!", "C!", "d!"))
     assertEquals(list5B.toList, List("A", "B", "C", "d", "e", "f"))
 
     // for-each should apply to concurrently inserted items
-    val list6 = list `merge` delta5A `merge` delta5B
+    val list6 = list4 `merge` delta5A `merge` delta5B
     assertEquals(list6.toList, List("A!", "B!", "C!", "d!", "e!", "f!"))
   }
 }
