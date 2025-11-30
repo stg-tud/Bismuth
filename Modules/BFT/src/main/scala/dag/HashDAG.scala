@@ -1,8 +1,10 @@
 package dag
 
 import scala.collection.immutable.{HashMap, List, Map, Set}
-import java.security.{PublicKey, PrivateKey}
+import java.security.{PrivateKey, PublicKey}
 import crypto.Ed25519Util
+
+import scala.annotation.tailrec
 
 // a hash directed acyclic graph
 case class HashDAG[T](
@@ -186,7 +188,31 @@ case class HashDAG[T](
     withQueue(ids.map(id => events(id)).toSet)
 
   def orderEvents(events: Iterable[Event[T]]): List[Event[T]] =
-    events.toList.sortWith((e1, e2) => pathExists(e1.id, e2.id))
+    events.toList.sortBy(topologicalSort.zipWithIndex.toMap)
+    
+  def topologicalSort: List[Event[T]] =
+    val nodes = graph.keySet ++ graph.values.flatten
+
+    // Compute in-degree of each node
+    val inDegree = graph.values.flatten
+        .groupBy(identity)
+        .view.mapValues(_.size)
+        .toMap
+        .withDefaultValue(0)
+
+    @tailrec
+    def loop(queue: List[String], inDeg: Map[String, Int], acc: List[String]): List[String] = queue match 
+        case Nil => acc.reverse
+        case node :: rest =>
+          val children = graph.getOrElse(node, Set.empty)
+          // update in-degree
+          val updatedInDeg = children.foldLeft(inDeg) { (m, c) => m.updated(c, m(c) - 1) }
+          // find nodes that have in-degree 0
+          val nodesWithInDegree0 = children.filter(c => updatedInDeg(c) == 0).toList
+
+          loop(rest ++ nodesWithInDegree0, updatedInDeg, node :: acc)
+
+    loop(nodes.filter(n => inDegree(n) == 0).toList, inDegree, Nil).map(id => events(id))
 
   def getDirectDependencies(id: String): Set[String] =
     if events.contains(id) then
