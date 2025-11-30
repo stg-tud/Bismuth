@@ -4,13 +4,15 @@ import org.scalacheck.Prop.forAll
 
 class LastWriterWinsPropertyBasedTests extends munit.ScalaCheckSuite {
 
-
   val genOp: Gen[LastWriterWins[String] => LastWriterWins[String]] =
     (c: LastWriterWins[String]) => c.write(Gen.alphaNumStr.sample.get)
 
   val genOps: Gen[List[LastWriterWins[String] => LastWriterWins[String]]] = Gen.listOf(genOp)
 
-  def applyOps(c: LastWriterWins[String], ops: List[LastWriterWins[String] => LastWriterWins[String]]): LastWriterWins[String] =
+  def applyOps(
+      c: LastWriterWins[String],
+      ops: List[LastWriterWins[String] => LastWriterWins[String]]
+  ): LastWriterWins[String] =
     ops.foldLeft(c)((cc, f) => cc.merge(f(cc)))
 
   property("merge is commutative") {

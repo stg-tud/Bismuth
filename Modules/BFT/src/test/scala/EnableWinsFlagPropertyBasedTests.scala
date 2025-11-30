@@ -15,7 +15,6 @@ class EnableWinsFlagPropertyBasedTests extends munit.ScalaCheckSuite {
   def applyOps(c: EnableWinsFlag, ops: List[EnableWinsFlag => EnableWinsFlag]): EnableWinsFlag =
     ops.foldLeft(c)((cc, f) => cc.merge(f(cc)))
 
-
   property("merge is commutative") {
     forAll(genOps, genOps) { (opsA, opsB) =>
       val a = applyOps(EnableWinsFlag(), opsA)

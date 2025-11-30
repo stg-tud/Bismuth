@@ -172,37 +172,37 @@ class RIBLTTest extends munit.FunSuite:
     test("test") {
       var replica1 = ORSet[String]()
       var replica2 = ORSet[String]()
-      val riblt1 = RIBLT[String]()
-      val riblt2 = RIBLT[String]()
-      var both = 0
-      var a = 0
-      var b = 0
+      val riblt1   = RIBLT[String]()
+      val riblt2   = RIBLT[String]()
+      var both     = 0
+      var a        = 0
+      var b        = 0
 
       var j = 0
       for i <- 0 to 1000 do
-        println(i)
-        val r = Random().nextDouble()
-        if r <= 0.8 then {
-          var e = ORSet[String]()
-          val rr = Random().nextDouble()
-          if rr <= 0.5 then
-            e = replica1.add(i.toString)
-          else
-            e = replica2.add(i.toString)
+          println(i)
+          val r = Random().nextDouble()
+          if r <= 0.8 then {
+            var e  = ORSet[String]()
+            val rr = Random().nextDouble()
+            if rr <= 0.5 then
+                e = replica1.add(i.toString)
+            else
+                e = replica2.add(i.toString)
 
-          replica1 = replica1.merge(e)
-          replica2 = replica2.merge(e)
-          both += 1
-        } else
-          j += 1
-          val rr = Random().nextDouble()
-          if rr <= 0.5 then {
-            a += 1
-            replica1 = replica1.merge(replica1.add(i.toString))
-          } else {
-            b += 1
-            replica2 = replica2.merge(replica2.add(i.toString))
-          }
+            replica1 = replica1.merge(e)
+            replica2 = replica2.merge(e)
+            both += 1
+          } else
+              j += 1
+              val rr = Random().nextDouble()
+              if rr <= 0.5 then {
+                a += 1
+                replica1 = replica1.merge(replica1.add(i.toString))
+              } else {
+                b += 1
+                replica2 = replica2.merge(replica2.add(i.toString))
+              }
 
       var r = 0
 
@@ -213,52 +213,51 @@ class RIBLTTest extends munit.FunSuite:
       println(s"unique to bob $b")
       println(s"bob all ${replica2.hashDAG.getIDs.size}")
 
-
       for id <- replica1.hashDAG.getIDs do
-        riblt1.addSymbol(id)
+          riblt1.addSymbol(id)
 
       for id <- replica2.hashDAG.getIDs do
-        riblt2.addSymbol(id)
+          riblt2.addSymbol(id)
 
       var i = 0
       var d = true
       while d do
-        val s = riblt1.produceNextCodedSymbol
-        i += 1
-        println(i)
-        // print("\n")
-        riblt2.addCodedSymbol(s)
-        riblt2.tryDecode
-        if riblt2.isDecoded then
-          d = false
+          val s = riblt1.produceNextCodedSymbol
+          i += 1
+          println(i)
+          // print("\n")
+          riblt2.addCodedSymbol(s)
+          riblt2.tryDecode
+          if riblt2.isDecoded then
+              d = false
     }
 
     test("test riblt using Event IDs as source symbols") {
       var alice = List[String]()
-      var bob = List[String]()
+      var bob   = List[String]()
 
-      val m = MessageDigest.getInstance("SHA3-512")
+      val m    = MessageDigest.getInstance("SHA3-512")
       var both = 0
-      var a = 0
-      var b = 0
+      var a    = 0
+      var b    = 0
 
       var j = 0
       for i <- 0 to 1000 do
-        val r = Random().nextDouble()
-        if r <= 0.8 then {
-          alice = alice :+ m.digest(i.toString.getBytes).mkString("Array(", ", ", ")")
-          bob = bob :+ m.digest(i.toString.getBytes).mkString("Array(", ", ", ")")
-          both += 1
-        } else
-          j += 1
-          val rr = Random().nextDouble()
-          if rr <= 0.5 then {
+          val r = Random().nextDouble()
+          if r <= 0.8 then {
             alice = alice :+ m.digest(i.toString.getBytes).mkString("Array(", ", ", ")")
-            a += 1
-          } else {
             bob = bob :+ m.digest(i.toString.getBytes).mkString("Array(", ", ", ")")
-            b += 1
-          }
+            both += 1
+          } else
+              j += 1
+              val rr = Random().nextDouble()
+              if rr <= 0.5 then {
+                alice = alice :+ m.digest(i.toString.getBytes).mkString("Array(", ", ", ")")
+                a += 1
+              } else {
+                bob = bob :+ m.digest(i.toString.getBytes).mkString("Array(", ", ", ")")
+                b += 1
+              }
 
       println(s"similarity $both")
       println(s"diff $j")
@@ -268,28 +267,27 @@ class RIBLTTest extends munit.FunSuite:
       println(s"bob all ${bob.size}")
 
       for id <- alice do
-        println(id)
-
+          println(id)
 
       val enc = RIBLT[String]()
       for s <- alice do
-        enc.addSymbol(s)
+          enc.addSymbol(s)
 
       val dec = RIBLT[String]()
       for s <- bob do
-        dec.addSymbol(s)
+          dec.addSymbol(s)
 
       var i = 0
       var d = true
       while d do
-        val s = enc.produceNextCodedSymbol
-        i += 1
-        println(i)
-        // print("\n")
-        dec.addCodedSymbol(s)
-        dec.tryDecode
-        if dec.isDecoded then
-          d = false
+          val s = enc.produceNextCodedSymbol
+          i += 1
+          println(i)
+          // print("\n")
+          dec.addCodedSymbol(s)
+          dec.tryDecode
+          if dec.isDecoded then
+              d = false
 
       // println(s"diff = $j")
 

@@ -78,10 +78,10 @@ class SyncBenchmark {
       val cs = riblt2.produceNextCodedSymbol
       riblt1.addCodedSymbol(cs)
       r += 1
-      //println(r)
+      // println(r)
     }
 
-    //println("DONE")
+    // println("DONE")
 
     syncMetrics.roundtripsAll += r
     syncMetrics.run += 1
@@ -92,11 +92,11 @@ class SyncBenchmark {
   def tearDown(): Unit = {
     val allValues = MyCollector.getAll()
 
-    val writer = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
+    val writer  = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
     val printer = new PrintWriter(writer)
 
     printer.println(s"size = $size, diff = $diff")
-    printer.println(allValues)//.foldLeft("")((z, i) => z.concat(s"${i.toString}, ")))
+    printer.println(allValues) // .foldLeft("")((z, i) => z.concat(s"${i.toString}, ")))
     printer.close()
   }
 
@@ -121,4 +121,4 @@ class SyncBenchmark {
 [info] SyncBenchmark.sync                   0.8    1000  thrpt          0,022          ops/ms
 [info] SyncBenchmark.sync:roundtripsAll     0.8    1000  thrpt        617,000               #
 [info] SyncBenchmark.sync:run               0.8    1000  thrpt          2,000               #
-*/
+ */

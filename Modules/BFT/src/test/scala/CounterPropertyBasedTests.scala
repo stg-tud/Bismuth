@@ -18,8 +18,8 @@ class CounterPropertyBasedTests extends munit.ScalaCheckSuite {
 
   property("merge is commutative") {
     forAll(genOps, genOps) { (opsA, opsB) =>
-      val a       = applyOps(Counter(), opsA)
-      val b       = applyOps(Counter(), opsB)
+      val a = applyOps(Counter(), opsA)
+      val b = applyOps(Counter(), opsB)
       assertEquals(a.merge(b).value, b.merge(a).value)
     }
   }

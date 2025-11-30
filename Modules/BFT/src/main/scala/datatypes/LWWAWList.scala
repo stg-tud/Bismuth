@@ -90,11 +90,11 @@ case class LWWAWList[T](
                         ids = ids + event.id
                         currentItems = currentItems + ((listItem.item, event.id))
                       }
-                      //var tmpMap = Map.empty[Int, Set[(T, String)]]
-                      //for key <- newItemMaps.keySet do
+                      // var tmpMap = Map.empty[Int, Set[(T, String)]]
+                      // for key <- newItemMaps.keySet do
                       //    tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
 
-                      //newItemMaps = tmpMap
+                      // newItemMaps = tmpMap
                       newItemMaps = newItemMaps + (listItem.index -> currentItems)
                     }
 

@@ -4,9 +4,8 @@ import org.scalacheck.Prop.forAll
 
 class GrowOnlySetProperyBasedTests extends munit.ScalaCheckSuite {
 
-
   val genOp: Gen[GrowOnlySet[String] => GrowOnlySet[String]] =
-      (c: GrowOnlySet[String]) => c.add(Gen.alphaNumStr.sample.get)
+    (c: GrowOnlySet[String]) => c.add(Gen.alphaNumStr.sample.get)
 
   val genOps: Gen[List[GrowOnlySet[String] => GrowOnlySet[String]]] = Gen.listOf(genOp)
 
