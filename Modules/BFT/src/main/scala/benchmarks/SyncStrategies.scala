@@ -151,62 +151,37 @@ object SyncStrategies {
       val cs = riblt2.produceNextCodedSymbol
       riblt1.addCodedSymbol(cs)
       roundTrips += 1
-      // println(r)
+      //println(roundTrips)
     }
+
+    println(riblt1.remoteSymbols.size)
+    println(riblt1.localSymbols.size)
 
     (roundTrips, riblt1.localSymbols.size + riblt1.remoteSymbols.size + roundTrips)
   }
 
   @main def main(): Unit =
-      var replica1 = ORSet[String]()
-      var replica2 = ORSet[String]()
-      var replica3 = ORSet[String]()
-      var replica4 = ORSet[String]()
+    val replica1 = ReplicaExamples.Example1.replica1
+    val replica2 = ReplicaExamples.Example1.replica2
+    println(syncNaively(replica1, replica2))
+    println(syncPingPong(replica1, replica2))
+    println(syncRIBLT(replica1, replica2))
+    val res = syncPingPongThreaded(replica1, replica2)
+    println(s"(${res._1 / 2}, ${res._2})")
 
-      // A
-      replica1 = replica1.merge(replica1.add("Hello"))
-      // B
-      replica1 = replica1.merge(replica1.add("Hi"))
+    println("------")
+    val replica3 = ReplicaExamples.Example2.replica1
+    val replica4 = ReplicaExamples.Example2.replica2
+    println(syncRIBLT(replica3, replica4))
+    println(syncPingPong(replica3, replica4))
+    //val res1 = syncPingPongThreaded(replica3, replica4)
+    //println(s"(${res1._1 / 2}, ${res1._2})")
 
-      replica2 = replica2.merge(replica1)
-      replica3 = replica3.merge(replica1)
-      replica4 = replica4.merge(replica1)
-
-      // C
-      replica1 = replica1.merge(replica1.add("Guten Tag"))
-
-      // D
-      replica1 = replica1.merge(replica1.add("Guten Tag"))
-
-      // J
-      replica3 = replica3.merge(replica3.add("Moin"))
-
-      // K
-      replica3 = replica3.merge(replica3.add("Moin"))
-
-      // F
-      replica2 = replica2.merge(replica2.add("qqq"))
-
-      // G
-      replica2 = replica2.merge(replica2.add("ttt"))
-
-      replica1 = replica1.merge(replica3)
-      replica2 = replica2.merge(replica3)
-
-      // E
-      replica1 = replica1.merge(replica1.add("aaa"))
-
-      // L
-      replica3 = replica3.merge(replica3.add("Moin"))
-
-      // M
-      replica3 = replica3.merge(replica3.add("Moin"))
-
-      replica1 = replica1.merge(replica3)
-
-      println(syncNaively(replica1, replica2))
-      println(syncPingPong(replica1, replica2))
-      println(syncRIBLT(replica1, replica2))
-      println(syncPingPongThreaded(replica1, replica2))
-
+    println("------")
+    val replica5 = ReplicaExamples.Example4.replica1
+    val replica6 = ReplicaExamples.Example4.replica2
+    println(syncRIBLT(replica5, replica6))
+    println(syncPingPong(replica5, replica6))
+    //val res2 = syncPingPongThreaded(replica5, replica6)
+    //println(s"(${res1._1 / 2}, ${res1._2})")
 }

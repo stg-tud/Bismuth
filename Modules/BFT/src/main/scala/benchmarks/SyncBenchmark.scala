@@ -90,7 +90,7 @@ class SyncBenchmark {
 
   @TearDown(Level.Trial)
   def tearDown(): Unit = {
-    val allValues = MyCollector.getAll()
+    val allValues = MyCollector.getAll
 
     val writer  = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
     val printer = new PrintWriter(writer)
@@ -105,7 +105,7 @@ class SyncBenchmark {
 
     def add(v: Int): Unit = synchronized { buf += v }: Unit
 
-    def getAll(): Seq[Int] = buf.toList
+    def getAll: Seq[Int] = buf.toList
 
     def clear(): Unit = this.synchronized {
       buf.clear()
