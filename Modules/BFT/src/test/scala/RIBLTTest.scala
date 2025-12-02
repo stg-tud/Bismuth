@@ -74,7 +74,7 @@ class RIBLTTest extends munit.FunSuite:
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
-          println(i)
+          // println(i)
           // print("\n")
           dec.addCodedSymbol(s)
           dec.tryDecode
@@ -180,7 +180,7 @@ class RIBLTTest extends munit.FunSuite:
 
       var j = 0
       for i <- 0 to 1000 do
-          println(i)
+          // println(i)
           val r = Random().nextDouble()
           if r <= 0.8 then {
             var e  = ORSet[String]()
@@ -206,12 +206,12 @@ class RIBLTTest extends munit.FunSuite:
 
       var r = 0
 
-      println(s"similarity $both")
-      println(s"diff $j")
-      println(s"unique to alice $a")
-      println(s"alice all  ${replica1.hashDAG.getIDs.size}")
-      println(s"unique to bob $b")
-      println(s"bob all ${replica2.hashDAG.getIDs.size}")
+      // println(s"similarity $both")
+      // println(s"diff $j")
+      // println(s"unique to alice $a")
+      // println(s"alice all  ${replica1.hashDAG.getIDs.size}")
+      // println(s"unique to bob $b")
+      // println(s"bob all ${replica2.hashDAG.getIDs.size}")
 
       for id <- replica1.hashDAG.getIDs do
           riblt1.addSymbol(id)
@@ -224,7 +224,7 @@ class RIBLTTest extends munit.FunSuite:
       while d do
           val s = riblt1.produceNextCodedSymbol
           i += 1
-          println(i)
+          // println(i)
           // print("\n")
           riblt2.addCodedSymbol(s)
           riblt2.tryDecode
@@ -259,15 +259,15 @@ class RIBLTTest extends munit.FunSuite:
                 b += 1
               }
 
-      println(s"similarity $both")
-      println(s"diff $j")
-      println(s"unique to alice $a")
-      println(s"alice all  ${alice.size}")
-      println(s"unique to bob $b")
-      println(s"bob all ${bob.size}")
+      // println(s"similarity $both")
+      // println(s"diff $j")
+      // println(s"unique to alice $a")
+      // println(s"alice all  ${alice.size}")
+      // println(s"unique to bob $b")
+      // println(s"bob all ${bob.size}")
 
-      for id <- alice do
-          println(id)
+      // for id <- alice do
+      //    println(id)
 
       val enc = RIBLT[String]()
       for s <- alice do
@@ -282,7 +282,7 @@ class RIBLTTest extends munit.FunSuite:
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
-          println(i)
+          //println(i)
           // print("\n")
           dec.addCodedSymbol(s)
           dec.tryDecode

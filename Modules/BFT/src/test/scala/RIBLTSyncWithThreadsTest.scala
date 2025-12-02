@@ -68,10 +68,10 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
       // println(crdt2.elements.keySet)
       // println(crdt3.elements.keySet)
 
-      println(crdt0afterSync.elements.keySet)
-      println(crdt1afterSync.elements.keySet)
-      println(crdt2afterSync.elements.keySet)
-      println(crdt3afterSync.elements.keySet)
+      //println(crdt0afterSync.elements.keySet)
+      //println(crdt1afterSync.elements.keySet)
+      //println(crdt2afterSync.elements.keySet)
+      //println(crdt3afterSync.elements.keySet)
 
       assertEquals(
         crdt1afterSync.elements.keySet,
@@ -110,8 +110,8 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
       // println(crdt2.elements.keySet)
       // println(crdt3.elements.keySet)
 
-      println(crdt0afterSync.elements.keySet)
-      println(crdt1afterSync.elements.keySet)
+      //println(crdt0afterSync.elements.keySet)
+      //println(crdt1afterSync.elements.keySet)
 
     }
 
@@ -143,10 +143,10 @@ class RIBLTSyncWithThreadsTest extends munit.FunSuite:
       t1.join()
       t2.join()
 
-      println(replica1.getElements)
-      println(replica2.getElements)
+      //println(replica1.getElements)
+      //println(replica2.getElements)
 
-      println(riblt1.replica.getElements)
-      println(riblt2.replica.getElements)
+      //println(riblt1.replica.getElements)
+      //println(riblt2.replica.getElements)
 
     }
