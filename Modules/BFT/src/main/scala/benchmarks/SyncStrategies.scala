@@ -179,6 +179,15 @@ object SyncStrategies {
     given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
     given c2: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
 
+    var r1 = Counter()
+    var r2 = Counter()
+    val gen = ReplicaGenerator.generate(10000, 0.1, r1, r2, 0)
+
+    r1 = gen._1
+    r2 = gen._2
+
+    println(syncRIBLT(r1, r2, 1))
+
     val replica1 = ReplicaExamples.Example1.replica1
     val replica2 = ReplicaExamples.Example1.replica2
 

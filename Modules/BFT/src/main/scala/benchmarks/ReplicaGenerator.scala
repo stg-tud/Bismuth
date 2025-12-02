@@ -9,30 +9,29 @@ object ReplicaGenerator:
       var r2  = replica2
       val rnd = new Random()
 
-      for i <- Range(0, math.round(size * (1 - diff))) do
-          if rnd.nextDouble() <= 0.5 then
-              r1 = performActionOnReplica(r1, placeholder)
-          else {
-            r2 = performActionOnReplica(r1, placeholder)
-          }
+      val common = math.round(size * (1 - diff))
+      for i <- Range(0, common - 1) do
+          // println(s"common: $i")
+          r1 = performActionOnReplica(r1, placeholder)
+          r2 = performActionOnReplica(r2, placeholder)
 
       r1 = r1.merge(r2)
       r2 = r2.merge(r1)
 
-      for i <- Range(0, math.round(size *  diff)) do
-          if rnd.nextDouble() <= 0.5 then
-              r1 = performActionOnReplica(r1, placeholder)
-          else {
-            r2 = performActionOnReplica(r1, placeholder)
-          }
+      val diffsize = math.round(size * diff)
+      for i <- Range(0, diffsize - 1) do
+        // println(s"diff: $i")
+        r1 = performActionOnReplica(r1, placeholder)
+          r2 = performActionOnReplica(r2, placeholder)
 
       (r1, r2)
     }
 
-    def performActionOnReplica[T, R <: Replica[T, R]](r: R, placeholder: T): R =
+    private def performActionOnReplica[T, R <: Replica[T, R]](r: R, placeholder: T): R =
         val rnd = new Random()
         r match {
           case c @ Counter(hashDAG) => c.merge(c.add(rnd.nextInt()))
           // case s @ ORSet(e, h)      => s.merge(s.add(placeholder))
-          case _ => r
+          case _ =>
+            sys.error("Not implemented yet")
         }

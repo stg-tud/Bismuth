@@ -1,14 +1,18 @@
 package benchmarks
 
-import datatypes.ORSet
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import dag.Event
+import datatypes.{Counter, ORSet}
 import org.openjdk.jmh.annotations.*
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 import riblt.RIBLT
-
 import java.io.*
 import scala.util.Random
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ListBuffer
+
+given c2: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
 
 @AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
@@ -25,67 +29,34 @@ class SyncMetrics {
 @State(Scope.Benchmark)
 class SyncBenchmark {
 
-  @Param(Array("1000", "10000", "100000"))
+  @Param(Array("100", "500", "1000", "5000", "10000"))
   var size: Int = 0
-  @Param(Array("0.6", "0.8", "0.9"))
+  @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
   var diff: Float = 0
+  @Param(Array("1", "5", "10", "20"))
+  var codedSymbolPerRoundTrip: Int = 1
 
-  var replica1 = ORSet[String]()
-  var replica2 = ORSet[String]()
-  var riblt1   = RIBLT[String]()
-  var riblt2   = RIBLT[String]()
+  var r1 = Counter()
+  var r2 = Counter()
 
-  @Setup(Level.Invocation)
+  @Setup(Level.Trial)
   def setup(): Unit = {
+    val gen = ReplicaGenerator.generate(size, diff, r1, r2, 0)
 
-    replica1 = ORSet[String]()
-    replica2 = ORSet[String]()
-    riblt1 = RIBLT[String]()
-    riblt2 = RIBLT[String]()
-
-    for i <- 0 to size do
-        val r = Random().nextDouble()
-        if r <= diff then {
-          var tmp = ORSet[String]()
-          val rr  = Random().nextDouble()
-          if rr <= 0.5 then
-              tmp = replica1.add(i.toString)
-          else
-              tmp = replica2.add(i.toString)
-
-          replica1 = replica1.merge(tmp)
-          replica2 = replica2.merge(tmp)
-        } else
-            val rr = Random().nextDouble()
-            if rr <= 0.5 then
-                replica1 = replica1.merge(replica1.add(i.toString))
-            else
-                replica2 = replica2.merge(replica2.add(i.toString))
+    r1 = gen._1
+    r2 = gen._2
 
   }
 
   @Benchmark
   def sync(syncMetrics: SyncMetrics): Unit = {
-    var r = 0
 
-    for id <- replica1.hashDAG.getIDs do
-        riblt1.addSymbol(id)
+    val res = SyncStrategies.syncRIBLT(r1, r2, codedSymbolPerRoundTrip)
+    MyCollector.add("RIBLT", size, diff, res._1, res._2, codedSymbolPerRoundTrip)
 
-    for id <- replica2.hashDAG.getIDs do
-        riblt2.addSymbol(id)
-
-    while !riblt1.isDecoded do {
-      val cs = riblt2.produceNextCodedSymbol
-      riblt1.addCodedSymbol(cs)
-      r += 1
-      // println(r)
-    }
-
-    // println("DONE")
-
-    syncMetrics.roundtripsAll += r
-    syncMetrics.run += 1
-    MyCollector.add(r)
+    if codedSymbolPerRoundTrip == 1 then
+      val res2 = SyncStrategies.syncPingPong(r1, r2)
+      MyCollector.add("Traditional", size, diff, res2._1, res2._2, -1)
   }
 
   @TearDown(Level.Trial)
@@ -93,19 +64,18 @@ class SyncBenchmark {
     val allValues = MyCollector.getAll
 
     val writer  = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
-    val printer = new PrintWriter(writer)
-
-    printer.println(s"size = $size, diff = $diff")
-    printer.println(allValues) // .foldLeft("")((z, i) => z.concat(s"${i.toString}, ")))
-    printer.close()
+    benchmarks.Measurement.writeCSVRows(writer, allValues)
   }
 
   private object MyCollector {
-    private val buf = ListBuffer[Int]()
+    private val buf = ListBuffer[benchmarks.Measurement]()
 
-    def add(v: Int): Unit = synchronized { buf += v }: Unit
+    def add(method: String, size: Int, diff: Float, roundTrip: Int, bandwidth: Int, codedSymbolPerRoundTrip: Int): Unit =
+      synchronized {
+        buf += benchmarks.Measurement(method, size, diff, roundTrip, bandwidth, codedSymbolPerRoundTrip)
+      }: Unit
 
-    def getAll: Seq[Int] = buf.toList
+    def getAll: Seq[benchmarks.Measurement] = buf.toList
 
     def clear(): Unit = this.synchronized {
       buf.clear()

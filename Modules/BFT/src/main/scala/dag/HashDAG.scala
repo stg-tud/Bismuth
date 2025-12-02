@@ -51,12 +51,10 @@ case class HashDAG[T](
     def merge(delta: HashDAG[T]): HashDAG[T] =
         var result = this
 
-        for event <- delta.events.values do
+        for event <- delta.getEventsTopologicallySorted ++ delta.queue do
             result = result.effector(event)
 
-        for event <- delta.queue do
-            result = result.effector(event)
-
+        // This works, a bit slow, but it works
         var i = result.queue.size
         while i != 0 do
             i = 0
@@ -188,9 +186,9 @@ case class HashDAG[T](
       withQueue(ids.map(id => events(id)).toSet)
 
     def orderEvents(events: Iterable[Event[T]]): List[Event[T]] =
-      events.toList.sortBy(topologicalSort.zipWithIndex.toMap)
+      events.toList.sortBy(getEventsTopologicallySorted.zipWithIndex.toMap)
 
-    def topologicalSort: List[Event[T]] =
+    def getEventsTopologicallySorted: List[Event[T]] =
         val nodes = graph.keySet ++ graph.values.flatten
 
         // Compute in-degree of each node
