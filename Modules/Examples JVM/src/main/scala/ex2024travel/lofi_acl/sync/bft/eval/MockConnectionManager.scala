@@ -28,7 +28,7 @@ class MockConnectionManager(
     val localUserId: PublicIdentity,
     val messageReceiver: MessageReceiver[MessageBuffer],
 )(using registry: MockConnectionRegistry) extends ConnectionManager {
-  var peers: Map[PublicIdentity, MockConnectionManager] = Map.empty
+  @volatile var peers: Map[PublicIdentity, MockConnectionManager] = Map.empty
 
   /** Sends a message to the user and returns true, if a connections exists. Otherwise, discards message and returns false.
     *

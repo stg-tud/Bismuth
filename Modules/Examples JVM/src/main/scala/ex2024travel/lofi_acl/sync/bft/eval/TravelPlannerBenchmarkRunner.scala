@@ -19,39 +19,37 @@ object TravelPlannerBenchmarkRunner {
     val numOps      = 100_000
 
     val traceFile = Paths.get(s"./results/lofi_acl/valley-$numReplicas-$numOps-trace.json")
-    //TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps, 140, 160)
+    // TraceGen.run(traceFile, permissionValleyPermissionAssignment, permissionValleyConnectionMap, numOps, 140, 160)
 
     val valleyTrace = TraceReplay.readTrace(traceFile)
 
     val valleyTraceButFullMesh = valleyTrace.copy(
-     connectionMap = fullMeshConnectionMap(numReplicas),
-     notificationTrace =
-       TraceReplay.generateNotificationTrace(
-         fullMeshConnectionMap(numReplicas),
-         valleyTrace.deltaTrace.length,
-         numReplicas
-       )
+      connectionMap = fullMeshConnectionMap(numReplicas),
+      notificationTrace = TraceReplay.generateNotificationTrace(
+        fullMeshConnectionMap(numReplicas),
+        valleyTrace.deltaTrace.length,
+        numReplicas
+      )
     )
 
     val valleyTraceButCentralized = valleyTrace.copy(
       connectionMap = centralServerConnectionMap(numReplicas),
-      notificationTrace =
-        TraceReplay.generateNotificationTrace(
-          centralServerConnectionMap(numReplicas),
-          valleyTrace.deltaTrace.length,
-          numReplicas
-        )
+      notificationTrace = TraceReplay.generateNotificationTrace(
+        centralServerConnectionMap(numReplicas),
+        valleyTrace.deltaTrace.length,
+        numReplicas
+      )
     )
 
     // Warmup
-    // TraceReplay.run(valleyTrace): Unit
+    TraceReplay.run(valleyTrace): Unit
 
     val results = List(
-      ("valley", "acl", TraceReplay.run(valleyTrace, withAcl = true)),                    // Valley with ACL,
-      ("valley", "no-acl", TraceReplay.run(valleyTrace, withAcl = false)),                // Valley without ACL,
-      ("full-mesh", "acl", TraceReplay.run(valleyTraceButFullMesh, withAcl = true)),      // Full mesh with ACL,
-      ("full-mesh", "no-acl", TraceReplay.run(valleyTraceButFullMesh, withAcl = false)),  // Full mesh without ACL,
-      ("centralized", "acl", TraceReplay.run(valleyTraceButCentralized, withAcl = true)), // Centralized with ACL
+      ("valley", "acl", TraceReplay.run(valleyTrace, withAcl = true)),                        // Valley with ACL,
+      ("valley", "no-acl", TraceReplay.run(valleyTrace, withAcl = false)),                    // Valley without ACL,
+      ("full-mesh", "acl", TraceReplay.run(valleyTraceButFullMesh, withAcl = true)),          // Full mesh with ACL,
+      ("full-mesh", "no-acl", TraceReplay.run(valleyTraceButFullMesh, withAcl = false)),      // Full mesh without ACL,
+      ("centralized", "acl", TraceReplay.run(valleyTraceButCentralized, withAcl = true)),     // Centralized with ACL
       ("centralized", "no-acl", TraceReplay.run(valleyTraceButCentralized, withAcl = false)), // Centralized without ACL
     )
 
@@ -214,7 +212,6 @@ object TravelPlannerBenchmarkRunner {
     }
 
     def run(trace: SavedTrace, withAcl: Boolean = true): Array[Long] = {
-      System.gc()
       // Prepare
       val bench = TravelPlannerBenchmark(
         trace.identities.length,
@@ -229,7 +226,8 @@ object TravelPlannerBenchmarkRunner {
       // Run
       val times           = bench.replayTrace(trace.deltaTrace, trace.notificationTrace, trace.numOps)
       val timePerThousand = times.take(times.length - 1).zip(times.drop(1)).map((prev, cur) => cur - prev)
-      println(s"${(times.last - times.head) / 1_000_000}ms: ${timePerThousand.map(_ / 1_000_000).mkString(",")}")
+      // println(s"${(times.last - times.head) / 1_000_000}ms: ${timePerThousand.map(_ / 1_000_000).mkString(",")}")
+      println(s"${(times.last - times.head) / 1_000_000}ms")
       timePerThousand
     }
   }
