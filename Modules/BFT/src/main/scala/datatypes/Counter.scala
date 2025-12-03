@@ -3,7 +3,7 @@ package datatypes
 import crypto.Ed25519Util
 import dag.HashDAG
 
-case class Counter (
+case class Counter(
     hashDAG: HashDAG[Int]
 ) extends Replica[Int, Counter]:
 

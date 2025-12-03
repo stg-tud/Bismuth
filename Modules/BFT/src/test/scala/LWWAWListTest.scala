@@ -17,8 +17,8 @@ class LWWAWListTest extends munit.FunSuite:
       list = list.merge(list2)
       list2 = list2.merge(list)
 
-      println(list.list)
-      println(list2.list)
+      // println(list.list)
+      // println(list2.list)
     }
 
     test("basic 2") {
@@ -38,8 +38,8 @@ class LWWAWListTest extends munit.FunSuite:
       list = list.merge(list2)
       list2 = list2.merge(list)
 
-      println(list.list)
-      println(list2.list)
+      // println(list.list)
+      // println(list2.list)
     }
 
     test("basic 3") {
@@ -55,13 +55,13 @@ class LWWAWListTest extends munit.FunSuite:
 
       list1 = list1.merge(list1.add(0, "x"))
       list2 = list2.merge(list2.remove(2))
-      println(list2.list)
+      // println(list2.list)
 
       list1 = list1.merge(list2)
       list2 = list2.merge(list1)
 
-      println(list1.list)
-      println(list2.list)
+      // println(list1.list)
+      // println(list2.list)
     }
 
     test("basic 5") {
@@ -80,8 +80,8 @@ class LWWAWListTest extends munit.FunSuite:
       list1 = list1.merge(list2)
       list2 = list2.merge(list1)
 
-      println(list1.list)
-      println(list2.list)
+      // println(list1.list)
+      // println(list2.list)
     }
 
     test("basic 4") {
@@ -106,8 +106,8 @@ class LWWAWListTest extends munit.FunSuite:
       list3 = list3.merge(list3.remove(1))
       // list3 = list3.merge(list3.remove(0))
 
-      println(list1.merge(list2).merge(list3).list)
-      println(list1.merge(list2.merge(list3)).list)
+      // println(list1.merge(list2).merge(list3).list)
+      // println(list1.merge(list2.merge(list3)).list)
 
       val t1 = list1.merge(list2)
       val t2 = t1.merge(list3)

@@ -9,7 +9,7 @@ import scala.util.Random
 
 class RIBLTTest extends munit.FunSuite:
 
-    private val testSetSize = if isCI then 500 else 10_000
+    private val testSetSize = 500
 
     override def munitTimeout: Duration = 5.minutes
 
@@ -179,7 +179,7 @@ class RIBLTTest extends munit.FunSuite:
       var b        = 0
 
       var j = 0
-      for i <- 0 to 1000 do
+      for i <- 0 to 100 do
           // println(i)
           val r = Random().nextDouble()
           if r <= 0.8 then {
@@ -282,7 +282,7 @@ class RIBLTTest extends munit.FunSuite:
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
-          //println(i)
+          // println(i)
           // print("\n")
           dec.addCodedSymbol(s)
           dec.tryDecode

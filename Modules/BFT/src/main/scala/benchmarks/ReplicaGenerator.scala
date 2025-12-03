@@ -20,8 +20,8 @@ object ReplicaGenerator:
 
       val diffsize = math.round(size * diff)
       for i <- Range(0, diffsize - 1) do
-        // println(s"diff: $i")
-        r1 = performActionOnReplica(r1, placeholder)
+          // println(s"diff: $i")
+          r1 = performActionOnReplica(r1, placeholder)
           r2 = performActionOnReplica(r2, placeholder)
 
       (r1, r2)

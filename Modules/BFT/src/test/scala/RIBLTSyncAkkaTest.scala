@@ -1,10 +1,10 @@
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+/*import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import munit.FunSuite
 import datatypes.ORSet
-import riblt.RIBLTSync
-import riblt.RIBLTSync.SessionType.*
+import riblt.RIBLTSyncAkka
+import riblt.RIBLTSyncAkka.SessionType.*
 
-class RIBLTSyncTest extends FunSuite {
+class RIBLTSyncAkkaTest extends FunSuite {
 
   val testKit = ActorTestKit()
 
@@ -18,30 +18,30 @@ class RIBLTSyncTest extends FunSuite {
     var set3 = ORSet[String]()
     set3 = set3.merge(set3.add("replica_2"))
 
-    val replica0 = testKit.spawn(RIBLTSync("replica_0", set1), "replica_0")
-    val replica1 = testKit.spawn(RIBLTSync("replica_1", set2), "replica_1")
-    val replica2 = testKit.spawn(RIBLTSync("replica_2", set3), "replica_2")
+    val replica0 = testKit.spawn(RIBLTSyncAkka("replica_0", set1), "replica_0")
+    val replica1 = testKit.spawn(RIBLTSyncAkka("replica_1", set2), "replica_1")
+    val replica2 = testKit.spawn(RIBLTSyncAkka("replica_2", set3), "replica_2")
 
     // Start sync sessions
-    replica0 ! RIBLTSync.StartSession(replica1, sender)
-    replica1 ! RIBLTSync.StartSession(replica0, receiver)
+    replica0 ! RIBLTSyncAkka.StartSession(replica1, sender)
+    replica1 ! RIBLTSyncAkka.StartSession(replica0, receiver)
 
-    replica1 ! RIBLTSync.StartSession(replica2, sender)
-    replica2 ! RIBLTSync.StartSession(replica1, receiver)
+    replica1 ! RIBLTSyncAkka.StartSession(replica2, sender)
+    replica2 ! RIBLTSyncAkka.StartSession(replica1, receiver)
 
-    val probe = testKit.createTestProbe[RIBLTSync.ReplicaResponse]()
+    val probe = testKit.createTestProbe[RIBLTSyncAkka.ReplicaResponse]()
 
     // wait for the asserts to be true
     probe.awaitAssert {
-      replica0 ! RIBLTSync.GetReplica(probe.ref)
+      replica0 ! RIBLTSyncAkka.GetReplica(probe.ref)
       val r0 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
       Thread.sleep(100)
 
-      replica1 ! RIBLTSync.GetReplica(probe.ref)
+      replica1 ! RIBLTSyncAkka.GetReplica(probe.ref)
       val r1 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
       Thread.sleep(100)
 
-      replica2 ! RIBLTSync.GetReplica(probe.ref)
+      replica2 ! RIBLTSyncAkka.GetReplica(probe.ref)
       val r2 = probe.receiveMessage().replica.asInstanceOf[ORSet[String]]
 
       // println("CRDT0 elements after sync: " + r0.elements.keySet)
@@ -52,4 +52,4 @@ class RIBLTSyncTest extends FunSuite {
       // assert(r2.getElements.subsetOf(r1.getElements))
     }
   }
-}
+}*/

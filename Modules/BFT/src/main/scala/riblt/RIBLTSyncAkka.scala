@@ -5,9 +5,9 @@ import akka.actor.typed.scaladsl.*
 import datatypes.Replica
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_Xorable_String, given_JsonValueCodec_CodedSymbol}
-import riblt.RIBLTSync.SessionType.sender
+import riblt.RIBLTSyncAkka.SessionType.sender
 
-object RIBLTSync {
+object RIBLTSyncAkka {
 
   sealed trait Command
   final case class StartSession(otherReplica: ActorRef[Command], sessionType: SessionType)            extends Command
@@ -101,11 +101,11 @@ object RIBLTSync {
               else sessions - from
             running(replica, newSessions)
 
-          case RIBLTSync.GetReplica(replyTo) =>
+          case RIBLTSyncAkka.GetReplica(replyTo) =>
             // println("///////////////////////////////////")
             // println(replica.hashDAG.events.map(e => e._2.content))
             // println("////////////////////////////////////")
-            replyTo ! RIBLTSync.ReplicaResponse(replica)
+            replyTo ! RIBLTSyncAkka.ReplicaResponse(replica)
             Behaviors.same
 
           case _ => Behaviors.same

@@ -55,22 +55,29 @@ class SyncBenchmark {
     MyCollector.add("RIBLT", size, diff, res._1, res._2, codedSymbolPerRoundTrip)
 
     if codedSymbolPerRoundTrip == 1 then
-      val res2 = SyncStrategies.syncPingPong(r1, r2)
-      MyCollector.add("Traditional", size, diff, res2._1, res2._2, -1)
+        val res2 = SyncStrategies.syncPingPong(r1, r2)
+        MyCollector.add("Traditional", size, diff, res2._1, res2._2, -1)
   }
 
   @TearDown(Level.Trial)
   def tearDown(): Unit = {
     val allValues = MyCollector.getAll
 
-    val writer  = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
+    val writer = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
     benchmarks.Measurement.writeCSVRows(writer, allValues)
   }
 
   private object MyCollector {
     private val buf = ListBuffer[benchmarks.Measurement]()
 
-    def add(method: String, size: Int, diff: Float, roundTrip: Int, bandwidth: Int, codedSymbolPerRoundTrip: Int): Unit =
+    def add(
+        method: String,
+        size: Int,
+        diff: Float,
+        roundTrip: Int,
+        bandwidth: Int,
+        codedSymbolPerRoundTrip: Int
+    ): Unit =
       synchronized {
         buf += benchmarks.Measurement(method, size, diff, roundTrip, bandwidth, codedSymbolPerRoundTrip)
       }: Unit

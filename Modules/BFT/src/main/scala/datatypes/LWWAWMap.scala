@@ -1,24 +1,32 @@
 package datatypes
 
 import crypto.Ed25519Util
-import dag.HashDAG
+import dag.{Event, HashDAG}
+
 import scala.util.hashing.MurmurHash3
 
 case class LWWAWMap[K, V](
-    map: Map[K, V],
-    tags: Map[K, Set[String]],
+    mapTagged: Map[K, Set[(V, String)]],
     hashDAG: HashDAG[MapOperation[K, V]]
 ) extends Replica[MapOperation[K, V], LWWAWMap[K, V]]:
 
     def put(key: K, value: V): LWWAWMap[K, V] =
         val op = AddKeyValue(key, value)
 
-        LWWAWMap(Map.empty, Map.empty, hashDAG.generateDelta(op))
+        LWWAWMap(Map.empty, hashDAG.generateDelta(op))
 
     def remove(key: K): LWWAWMap[K, V] =
-        val op = RemoveKey[K, V](key)
+      if !this.contains(key) then
+          LWWAWMap(Map.empty, hashDAG.empty)
+      else
+          val op = RemoveKey[K, V](key)
 
-        LWWAWMap(Map.empty, Map.empty, hashDAG.generateDelta(op))
+          LWWAWMap(Map.empty, hashDAG.generateDelta(op))
+
+    def map: Map[K, V] = mapTagged.map((k, set) => (k, choseValueRandomlyAndDeterministically(set)._1))
+
+    private def choseValueRandomlyAndDeterministically(set: Set[(V, String)]): (V, String) =
+      set.toList.sortWith((x, y) => MurmurHash3.stringHash(x._2) > MurmurHash3.stringHash(y._2)).head
 
     def get(key: K): Option[V] = map.get(key)
 
@@ -29,50 +37,44 @@ case class LWWAWMap[K, V](
     def values: Iterable[V] = map.values
 
     override def merge(other: LWWAWMap[K, V]): LWWAWMap[K, V] = {
-      var newMap     = this.map
-      var newTags    = this.tags
-      val newHashDAG = this.hashDAG.merge(other.hashDAG)
+      var newMap        = this.mapTagged
+      val newHashDAG    = this.hashDAG.merge(other.hashDAG)
+      var orderedEvents = List.empty[Event[MapOperation[K, V]]]
 
       for event <- this.hashDAG.queue ++ other.hashDAG.events.values ++ other.hashDAG.queue do
+          if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
+              orderedEvents = event :: orderedEvents
+
+      orderedEvents = newHashDAG.orderEvents(orderedEvents)
+
+      for event <- orderedEvents do
           if newHashDAG.contains(event) && !this.hashDAG.contains(event) then
               val op = event.content.get
               op match
                   case AddKeyValue(key, value) =>
                     if newMap.contains(key) then
-                        var ids = Set.empty[String]
-                        for id <- newTags(key) do
-                            if !newHashDAG.pathExists(id, event.id) then
-                                ids = ids + id
+                        var currentValues = newMap(key)
+                        for (v, id) <- currentValues do
+                            if newHashDAG.pathExists(id, event.id) then
+                                currentValues = currentValues -- Set((v, id))
 
-                        ids = ids + event.id
-                        val chosenID =
-                          ids.toList.sortWith((x, y) => MurmurHash3.stringHash(x) > MurmurHash3.stringHash(y)).head
-                        val chosenEvent = newHashDAG.getEventByID(chosenID)
-                        val v           = chosenEvent.content.get match
-                            case AddKeyValue(k, v) => v
-                            case RemoveKey(_)      => throw Exception("This is not supposed to happen")
-
-                        newMap = newMap + (key   -> v)
-                        val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
-                        newTags = newTags + (key -> newSet)
+                        newMap = newMap + (key -> (currentValues ++ Set((value, event.id))))
                     else {
-                      newMap = newMap + (key   -> value)
-                      val newSet: Set[String]   = newTags.getOrElse(key, Set.empty) + event.id
-                      newTags = newTags + (key -> newSet)
+                      newMap = newMap + (key -> Set((value, event.id)))
                     }
                   case RemoveKey(k) =>
-                    if !newMap.contains(k) || !newTags.contains(k) then {
-                      newMap = newMap - k
-                      newTags = newTags - k
-                    } else
-                        for id <- newTags(k) do
+                    if newMap.contains(k) then
+                        var currentValues = newMap(k)
+                        for (v, id) <- currentValues do
                             if newHashDAG.pathExists(id, event.id) then
-                                newTags = newTags + (k -> (newTags(k) - id))
+                                currentValues = currentValues -- Set((v, id))
 
-                        if !newTags.contains(k) || newTags(k).isEmpty then
+                        if currentValues.isEmpty then
                             newMap = newMap - k
+                        else
+                            newMap = newMap + (k -> currentValues)
 
-      LWWAWMap(newMap, newTags, newHashDAG)
+      LWWAWMap(newMap, newHashDAG)
     }
 
     def empty: LWWAWMap[K, V] = LWWAWMap()
@@ -80,13 +82,12 @@ case class LWWAWMap[K, V](
     def withHashDAG(hashDAG: HashDAG[MapOperation[K, V]]): LWWAWMap[K, V] = this.copy(hashDAG = hashDAG)
 
     override def generateDelta(ids: List[String]): LWWAWMap[K, V] =
-      LWWAWMap(Map.empty, Map.empty, hashDAG.getDelta(ids))
+      LWWAWMap(Map.empty, hashDAG.getDelta(ids))
 
 object LWWAWMap:
     def apply[K, V](): LWWAWMap[K, V] = {
       val keyPair = Ed25519Util.generateNewKeyPair
       new LWWAWMap[K, V](
-        Map.empty,
         Map.empty,
         HashDAG[MapOperation[K, V]](keyPair.getPublic, Some(keyPair.getPrivate))
       )

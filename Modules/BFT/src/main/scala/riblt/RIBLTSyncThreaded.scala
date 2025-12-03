@@ -43,11 +43,11 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
               // println(s"reading from ${this.replicaID.mkString("Array(", ", ", ")")}")
               val message = Network.get(this.replicaID)
               if message.nonEmpty then {
-                println(s"$replicaID:${Thread.currentThread().getName}:     has a new message")
+                //  println(s"$replicaID:${Thread.currentThread().getName}:     has a new message")
               }
               handleMessage(message)
 
-          println(s"$replicaID:${Thread.currentThread().getName}:    sync done, good bye!")
+          // println(s"$replicaID:${Thread.currentThread().getName}:    sync done, good bye!")
         }))
         this.syncThread.get.start()
       }
@@ -64,7 +64,7 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
 
       message.tag match {
         case CODED_SYMBOLS_REQUEST =>
-          println(s"${this.replicaID}:${Thread.currentThread().getName}:    $sender requested coded symbols")
+          // println(s"${this.replicaID}:${Thread.currentThread().getName}:    $sender requested coded symbols")
           val msg = Message(
             CODED_SYMBOLS,
             this.replicaID,
@@ -72,12 +72,12 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
           )
           Network.put(message.sender, writeToArray(msg))
         case CODED_SYMBOLS =>
-          println(s"${this.replicaID}:${Thread.currentThread().getName}:    $sender sent coded symbols")
+          // println(s"${this.replicaID}:${Thread.currentThread().getName}:    $sender sent coded symbols")
           val codedSymbols = readFromArray[List[Array[Byte]]](message.payload)
           val riblt        = this.RIBLTSessions(message.sender).riblt
           riblt.addCodedSymbolsAsBytes(codedSymbols)
           if riblt.isDecoded then {
-            println(s"${this.replicaID}:${Thread.currentThread().getName}:    is sending delta")
+            // println(s"${this.replicaID}:${Thread.currentThread().getName}:    is sending delta")
             RIBLTSessions(message.sender).isDecoded = true
             val msg1 = Message(
               DELTA,
@@ -86,7 +86,7 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
             )
             Network.put(message.sender, writeToArray(msg1))
 
-            println(s"${this.replicaID}:${Thread.currentThread().getName}:    is sending a delta request to $sender")
+            // println(s"${this.replicaID}:${Thread.currentThread().getName}:    is sending a delta request to $sender")
             val msg2 = Message(
               REQUEST_DELTA,
               this.replicaID,
@@ -94,7 +94,7 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
             )
             Network.put(message.sender, writeToArray(msg2))
           } else {
-            println(s"${this.replicaID}:${Thread.currentThread().getName}:    is requesting coded symbols from $sender")
+            // println(s"${this.replicaID}:${Thread.currentThread().getName}:    is requesting coded symbols from $sender")
             val msg = Message(
               CODED_SYMBOLS_REQUEST,
               this.replicaID,
@@ -103,15 +103,15 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
             Network.put(message.sender, writeToArray(msg))
           }
         case DELTA =>
-          println(s"${this.replicaID}:${Thread.currentThread().getName}:    delta is received from $sender")
+          // println(s"${this.replicaID}:${Thread.currentThread().getName}:    delta is received from $sender")
           val delta = readFromArray[R](message.payload)
           this.replica = this.replica.merge(delta)
           this.RIBLTSessions(message.sender).deltaReceived = true
         case REQUEST_DELTA =>
-          println(s"${this.replicaID}:${Thread.currentThread().getName}:    a delta_request is received from $sender")
+          // println(s"${this.replicaID}:${Thread.currentThread().getName}:    a delta_request is received from $sender")
           val ids   = readFromArray[List[String]](message.payload)
           val delta = replica.generateDelta(ids)
-          println(s"${this.replicaID}:${Thread.currentThread().getName}:    sending delta to $sender")
+          // println(s"${this.replicaID}:${Thread.currentThread().getName}:    sending delta to $sender")
           val msg = Message(
             DELTA,
             this.replicaID,

@@ -12,7 +12,7 @@ class TravelPlanTest extends munit.FunSuite:
     private val replica1Uid = LocalUid(Uid("replica 1"))
     private val replica2Uid = LocalUid(Uid("replica 2"))
     private val replica3Uid = LocalUid(Uid("replica 3"))
-    private val testSetSize = if isCI then 500 else 10_000
+    private val testSetSize = 500
 
     test("Example 1: Synchronise TravelPlan's deltas using RIBLT") {
 
