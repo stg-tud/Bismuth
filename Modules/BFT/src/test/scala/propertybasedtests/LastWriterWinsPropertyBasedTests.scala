@@ -1,3 +1,5 @@
+package propertybasedtests
+
 import datatypes.LastWriterWins
 import org.scalacheck.*
 import org.scalacheck.Prop.forAll

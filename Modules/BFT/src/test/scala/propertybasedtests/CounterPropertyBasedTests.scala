@@ -1,3 +1,5 @@
+package propertybasedtests
+
 import datatypes.Counter
 import org.scalacheck.*
 import org.scalacheck.Prop.forAll

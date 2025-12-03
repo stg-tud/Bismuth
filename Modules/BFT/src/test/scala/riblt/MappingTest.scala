@@ -1,3 +1,5 @@
+package riblt
+
 import riblt.Mapping
 
 class MappingTest extends munit.FunSuite:

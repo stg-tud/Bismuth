@@ -1,3 +1,5 @@
+package datatypes
+
 import datatypes.ORSet
 
 class ORSetTest extends munit.FunSuite:

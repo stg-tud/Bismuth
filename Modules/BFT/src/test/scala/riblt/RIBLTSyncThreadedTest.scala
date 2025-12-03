@@ -1,3 +1,5 @@
+package riblt
+
 import datatypes.{ORSet, Op}
 import network.Network
 import riblt.RIBLTSyncWithThreads

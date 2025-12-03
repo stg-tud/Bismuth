@@ -1,3 +1,5 @@
+package datatypes
+
 import datatypes.LWWAWList
 
 class LWWAWListTest extends munit.FunSuite:

@@ -1,3 +1,5 @@
+package datatypes
+
 import datatypes.LWWAWMap
 
 class LWWAWMapTest extends munit.FunSuite:

@@ -1,3 +1,5 @@
+package riblt
+
 import datatypes.ORSet
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}

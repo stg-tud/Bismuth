@@ -1,3 +1,5 @@
+package propertybasedtests
+
 import datatypes.LWWAWMap
 import org.scalacheck.*
 import org.scalacheck.Prop.forAll

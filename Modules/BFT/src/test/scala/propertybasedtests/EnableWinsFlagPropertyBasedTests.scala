@@ -1,3 +1,5 @@
+package propertybasedtests
+
 import datatypes.EnableWinsFlag
 import org.scalacheck.*
 import org.scalacheck.Prop.forAll

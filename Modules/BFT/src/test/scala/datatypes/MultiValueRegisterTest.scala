@@ -1,3 +1,5 @@
+package datatypes
+
 import datatypes.MultiValueRegister
 
 class MultiValueRegisterTest extends munit.FunSuite:

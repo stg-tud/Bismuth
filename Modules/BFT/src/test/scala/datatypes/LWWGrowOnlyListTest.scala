@@ -1,3 +1,5 @@
+package datatypes
+
 import datatypes.LWWGrowOnlyList
 
 class LWWGrowOnlyListTest extends munit.FunSuite {

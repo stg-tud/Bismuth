@@ -1,3 +1,5 @@
+package datatypes
+
 import datatypes.LastWriterWins
 
 class LastWriterWinsTest extends munit.FunSuite:
