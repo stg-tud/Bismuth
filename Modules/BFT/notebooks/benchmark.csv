@@ -1,4 +1,4 @@
-
+method,graph_size,diff,round_trips,bandwidth,coded_symbols_per_round_trip
 RIBLT,100,0.01,1,2, 1
 Traditional,100,0.01,1,3840, -1
 RIBLT,500,0.01,8,8319, 1

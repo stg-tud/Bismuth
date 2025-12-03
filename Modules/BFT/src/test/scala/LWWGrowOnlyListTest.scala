@@ -15,7 +15,7 @@ class LWWGrowOnlyListTest extends munit.FunSuite {
     list1 = list1.merge(list1.add(2, "d"))
     println(list1.list)
 
-    list1 = list1.merge(list1.add(4, "e"))
+    list1 = list1.merge(list1.add(3, "e"))
 
     println(list1.list)
 
@@ -24,7 +24,7 @@ class LWWGrowOnlyListTest extends munit.FunSuite {
     list2 = list2.merge(list2.add(0, "oo"))
     list2 = list2.merge(list2.add(1, "xx"))
     list2 = list2.merge(list2.add(2, "pmpmp"))
-    list2 = list2.merge(list2.add(4, "wwww"))
+    list2 = list2.merge(list2.add(3, "wwww"))
 
     println(list1.list)
     println(list2.list)

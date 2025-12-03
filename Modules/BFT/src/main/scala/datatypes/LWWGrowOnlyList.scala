@@ -65,12 +65,6 @@ case class LWWGrowOnlyList[T](
             currentItems = currentItems + ((listItem.item, event.id))
           }
 
-          var tmpMap = Map.empty[Int, Set[(T, String)]]
-          for key <- newItemMaps.keySet do {
-            tmpMap = tmpMap + (key + 1 -> newItemMaps(key))
-          }
-
-          newItemMaps = tmpMap
           newItemMaps = newItemMaps + (listItem.index -> currentItems)
         }
       }

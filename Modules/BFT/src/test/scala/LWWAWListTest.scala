@@ -64,6 +64,26 @@ class LWWAWListTest extends munit.FunSuite:
       println(list2.list)
     }
 
+    test("basic 5") {
+      var list1 = LWWAWList[String]()
+      var list2 = LWWAWList[String]()
+
+      list1 = list1.merge(list1.add(0, "a"))
+      list1 = list1.merge(list1.add(1, "b"))
+      list1 = list1.merge(list1.add(2, "c"))
+
+      list1 = list1.merge(list2)
+      list2 = list2.merge(list1)
+
+      list1 = list1.merge(list1.add(2, "y"))
+
+      list1 = list1.merge(list2)
+      list2 = list2.merge(list1)
+
+      println(list1.list)
+      println(list2.list)
+    }
+
     test("basic 4") {
       var list1 = LWWAWList[String]()
       var list2 = LWWAWList[String]()

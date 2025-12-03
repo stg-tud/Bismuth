@@ -18,15 +18,12 @@ class LWWGrowOnlyListPropertyBasedTest extends munit.ScalaCheckSuite {
     ops.foldLeft(c)((cc, f) => cc.merge(f(cc)))
 
   property("merge is commutative") {
-    var i = 0
     forAll(genOps, genOps) { (opsA, opsB) =>
       val a       = applyOps(LWWGrowOnlyList[String](), opsA)
       val b       = applyOps(LWWGrowOnlyList[String](), opsB)
       val merged1 = a.merge(b).list
       val merged2 = b.merge(a).list
       assertEquals(merged1, merged2)
-      println(i)
-      i += 1
     }
   }
 
