@@ -3,12 +3,9 @@ package benchmarks
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import dag.Event
-import datatypes.{Counter, ORSet}
+import datatypes.Counter
 import org.openjdk.jmh.annotations.*
-import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
-import riblt.RIBLT
 import java.io.*
-import scala.util.Random
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ListBuffer
 
@@ -33,7 +30,7 @@ class SyncBenchmark {
   var size: Int = 0
   @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
   var diff: Float = 0
-  @Param(Array("1", "5", "10", "20"))
+  @Param(Array(/*"1", "5", */"10", "20"))
   var codedSymbolPerRoundTrip: Int = 1
 
   var r1 = Counter()

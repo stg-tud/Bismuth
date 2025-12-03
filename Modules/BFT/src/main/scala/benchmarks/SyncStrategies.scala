@@ -121,10 +121,10 @@ object SyncStrategies {
     assert(replica2IDs -- replica1IDs == receivedReplica1.map(e => e.id).toSet)
     assert(replica1IDs -- replica2IDs == receivedReplica2.map(e => e.id).toSet)
 
-    println(
+    /*println(
       s"SyncPingPong: diff = ${(replica1IDs -- replica2IDs).size}, total = ${replica1IDs.size}, ${replica2IDs.size}"
     )
-    println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
+    println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")*/
 
     (roundTrips, bandwidth)
 
@@ -175,15 +175,15 @@ object SyncStrategies {
     val replica1IDs = replica1.hashDAG.getIDs
     val replica2IDs = replica2.hashDAG.getIDs
 
-    println(s"SyncRIBLT: diff = ${(replica1IDs -- replica2IDs).size}, total = ${replica1IDs.size}, ${replica2IDs.size}")
-    println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
-    println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
+    //println(s"SyncRIBLT: diff = ${(replica1IDs -- replica2IDs).size}, total = ${replica1IDs.size}, ${replica2IDs.size}")
+    //println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
+    //println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
 
     (roundTrips, bandwidth)
   }
 
-  @main def main(): Unit =
-      given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
+  @main def main(): Unit = ???
+      /*given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
       given c2: JsonValueCodec[Event[Int]]        = JsonCodecMaker.make
 
       var r1  = Counter()
@@ -193,14 +193,14 @@ object SyncStrategies {
       r1 = gen._1
       r2 = gen._2
 
-      println(syncRIBLT(r1, r2, 1))
+      //println(syncRIBLT(r1, r2, 1))
 
       val replica1 = ReplicaExamples.Example1.replica1
       val replica2 = ReplicaExamples.Example1.replica2
 
       // println(syncNaively(replica1, replica2))
-      println(syncPingPong(replica1, replica2))
-      println(syncRIBLT(replica1, replica2))
+      // println(syncPingPong(replica1, replica2))
+      // println(syncRIBLT(replica1, replica2))
       // val res = syncPingPongThreaded(replica1, replica2)
       // println(s"(${res._1 / 2}, ${res._2})")
 
@@ -224,7 +224,7 @@ object SyncStrategies {
       syncPingPong(replica5, replica6)
       syncRIBLT(replica5, replica6): Unit
       // val res2 = syncPingPongThreaded(replica5, replica6)
-      // println(s"(${res2._1 / 2}, ${res2._2})")
+      // println(s"(${res2._1 / 2}, ${res2._2})")*/
 }
 
 /*

@@ -1,6 +1,6 @@
 package benchmarks
 
-import datatypes.{Counter, ORSet, Replica}
+import datatypes.{Counter, Replica}
 import scala.util.Random
 
 object ReplicaGenerator:

@@ -1,5 +1,4 @@
 import datatypes.ORSet
-import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
 
 class ORSetTest extends munit.FunSuite:
     test("add element to empty set") {
