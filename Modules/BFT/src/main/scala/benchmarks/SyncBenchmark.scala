@@ -11,12 +11,12 @@ import scala.collection.mutable.ListBuffer
 
 given c2: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
 
-@AuxCounters(AuxCounters.Type.EVENTS)
+/*@AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
 class SyncMetrics {
   var roundtripsAll: Int = 0
   var run                = 0
-}
+}*/
 
 @Fork(1)
 @Warmup(iterations = 0)
@@ -30,8 +30,8 @@ class SyncBenchmark {
   var size: Int = 0
   @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
   var diff: Float = 0
-  @Param(Array(/*"1", "5", */"10", "20"))
-  var codedSymbolPerRoundTrip: Int = 1
+  // @Param(Array("1", "5", "10", "20"))
+  // var codedSymbolPerRoundTrip: Int = 1
 
   var r1 = Counter()
   var r2 = Counter()
@@ -48,12 +48,20 @@ class SyncBenchmark {
   @Benchmark
   def sync(syncMetrics: SyncMetrics): Unit = {
 
-    val res = SyncStrategies.syncRIBLT(r1, r2, codedSymbolPerRoundTrip)
-    MyCollector.add("RIBLT", size, diff, res._1, res._2, codedSymbolPerRoundTrip)
+    var res = SyncStrategies.syncRIBLT(r1, r2, 1, size, diff)
+    MyCollector.add(res)
 
-    if codedSymbolPerRoundTrip == 1 then
-        val res2 = SyncStrategies.syncPingPong(r1, r2)
-        MyCollector.add("Traditional", size, diff, res2._1, res2._2, -1)
+    res = SyncStrategies.syncRIBLT(r1, r2, 5, size, diff)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 10, size, diff)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 20, size, diff)
+    MyCollector.add(res)
+
+    val res2 = SyncStrategies.syncPingPong(r1, r2, size, diff)
+    MyCollector.add(res2)
   }
 
   @TearDown(Level.Trial)
@@ -67,17 +75,7 @@ class SyncBenchmark {
   private object MyCollector {
     private val buf = ListBuffer[benchmarks.Measurement]()
 
-    def add(
-        method: String,
-        size: Int,
-        diff: Float,
-        roundTrip: Int,
-        bandwidth: Int,
-        codedSymbolPerRoundTrip: Int
-    ): Unit =
-      synchronized {
-        buf += benchmarks.Measurement(method, size, diff, roundTrip, bandwidth, codedSymbolPerRoundTrip)
-      }: Unit
+    def add(measurement: benchmarks.Measurement): Unit = synchronized { buf += measurement }: Unit
 
     def getAll: Seq[benchmarks.Measurement] = buf.toList
 

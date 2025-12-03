@@ -62,11 +62,17 @@ object SyncStrategies {
 
       (roundTrips, bandwidth)
 
-  def syncPingPong[T, R <: Replica[T, R]](replica1: Replica[T, R], replica2: Replica[T, R])(using
+  def syncPingPong[T, R <: Replica[T, R]](
+      replica1: Replica[T, R],
+      replica2: Replica[T, R],
+      size: Int,
+      diff: Float
+  )(using
       JsonValueCodec[Event[T]]
-  ): (Int, Int) = {
+  ): Measurement = {
     var roundTrips = 0
     var bandwidth  = 0
+    var delta      = 0
 
     // Step 1: Exchange Heads of the HashDAG
     val replica1IDs         = replica1.hashDAG.getIDs
@@ -90,7 +96,9 @@ object SyncStrategies {
                   if !replica1IDs.contains(parent) then
                       missingReplica1 = missingReplica1 + parent
             }
-        bandwidth = messagesForReplica1.foldLeft(bandwidth)((b, e) => b + writeToArray(e).length)
+        val tmp1 = messagesForReplica1.foldLeft(0)((b, e) => b + writeToArray(e).length)
+        bandwidth += tmp1
+        delta += tmp1
         messagesForReplica1 = Set.empty[Event[T]]
 
         for id <- missingReplica2 do
@@ -107,7 +115,10 @@ object SyncStrategies {
                   if !replica2IDs.contains(parent) then
                       missingReplica2 = missingReplica2 + parent
             }
-        bandwidth = messagesForReplica2.foldLeft(bandwidth)((b, e) => b + writeToArray(e).length)
+
+        val tmp2 = messagesForReplica2.foldLeft(0)((b, e) => b + writeToArray(e).length)
+        bandwidth += tmp2
+        delta += tmp2
         messagesForReplica2 = Set.empty[Event[T]]
 
         for id <- missingReplica1 do
@@ -126,7 +137,14 @@ object SyncStrategies {
     )
     println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")*/
 
-    (roundTrips, bandwidth)
+    Measurement(
+      method = "Traditional",
+      dagSize = size,
+      diff = diff,
+      roundTrips = roundTrips,
+      bandwidth = bandwidth,
+      delta = delta
+    )
 
   }
 
@@ -145,13 +163,14 @@ object SyncStrategies {
     stats.results
   }
 
-  def syncRIBLT[T, R <: Replica[T, R]](replica1: R, replica2: R, codedSymbolsPerRoundTrip: Int = 10)(using
+  def syncRIBLT[T, R <: Replica[T, R]](replica1: R, replica2: R, codedSymbolsPerRoundTrip: Int = 10, size: Int, diff: Float)(using
       JsonValueCodec[Event[T]]
-  ): (Int, Int) = {
+  ): Measurement = {
     val riblt1     = RIBLT[String]()
     val riblt2     = RIBLT[String]()
     var roundTrips = 0
     var bandwidth  = 0
+    var delta      = 0
 
     for id <- replica1.hashDAG.getIDs do
         riblt1.addSymbol(id)
@@ -163,39 +182,49 @@ object SyncStrategies {
       val cs = riblt2.produceNextCodedSymbolsAsBytes(codedSymbolsPerRoundTrip)
       riblt1.addCodedSymbolsAsBytes(cs)
       roundTrips += 1
-      bandwidth += cs.length
+      bandwidth = cs.foldLeft(bandwidth)((b, arr) => b + arr.length)
       // println(roundTrips)
     }
 
     val localEvents  = riblt1.localSymbols.map(s => replica1.hashDAG.events(s.value))
     val remoteEvents = riblt1.remoteSymbols.map(s => replica2.hashDAG.events(s.value))
 
-    bandwidth = (localEvents ++ remoteEvents).foldLeft(bandwidth)((b, e) => b + writeToArray(e).length)
+    val tmp = (localEvents ++ remoteEvents).foldLeft(0)((b, e) => b + writeToArray(e).length)
+    bandwidth += tmp
+    delta += tmp
 
     val replica1IDs = replica1.hashDAG.getIDs
     val replica2IDs = replica2.hashDAG.getIDs
 
-    //println(s"SyncRIBLT: diff = ${(replica1IDs -- replica2IDs).size}, total = ${replica1IDs.size}, ${replica2IDs.size}")
-    //println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
-    //println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
+    // println(s"SyncRIBLT: diff = ${(replica1IDs -- replica2IDs).size}, total = ${replica1IDs.size}, ${replica2IDs.size}")
+    // println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
+    // println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
 
-    (roundTrips, bandwidth)
+    Measurement(
+      method = "RIBLT",
+      dagSize = size,
+      diff = diff,
+      roundTrips = roundTrips,
+      bandwidth = bandwidth,
+      delta = delta,
+      codedSymbolPerRoundTrip = codedSymbolsPerRoundTrip
+    )
   }
 
-  @main def main(): Unit = ???
-      /*given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
+  @main def main(): Unit =
+      given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
       given c2: JsonValueCodec[Event[Int]]        = JsonCodecMaker.make
 
       var r1  = Counter()
       var r2  = Counter()
-      val gen = ReplicaGenerator.generate(10000, 0.1, r1, r2, 0)
+      val gen = ReplicaGenerator.generate(10000, 1, r1, r2, 0)
 
       r1 = gen._1
       r2 = gen._2
 
-      //println(syncRIBLT(r1, r2, 1))
+      //println(syncRIBLT(r1, r2))
 
-      val replica1 = ReplicaExamples.Example1.replica1
+      /*val replica1 = ReplicaExamples.Example1.replica1
       val replica2 = ReplicaExamples.Example1.replica2
 
       // println(syncNaively(replica1, replica2))

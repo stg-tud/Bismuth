@@ -1,6 +1,6 @@
-package propertybasedtests
+/*package propertybasedtests
 
-/*import datatypes.LWWGrowOnlyList
+import datatypes.LWWGrowOnlyList
 import org.scalacheck.*
 import org.scalacheck.Prop.forAll
 
