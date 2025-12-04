@@ -1,7 +1,7 @@
 package travelplan
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import ex2024travel.lofi_acl.travelplanner.TravelPlan
+import lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_Array, given_Xorable_Array}

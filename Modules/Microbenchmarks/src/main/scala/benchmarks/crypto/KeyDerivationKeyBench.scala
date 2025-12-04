@@ -1,6 +1,6 @@
 package benchmarks.crypto
 
-import ex2024travel.lofi_acl.access.KeyDerivationKey
+import lofi_acl.access.KeyDerivationKey
 import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit

@@ -54,7 +54,8 @@ lazy val bft = project.in(file("Modules/BFT"))
   .enablePlugins(JmhPlugin)
   .dependsOn(
     crypto.jvm,
-    examplesJVM
+    examplesJVM,
+    lofiAcl,
   )
   .settings(
     scala3defaultsExtra,
@@ -181,6 +182,27 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     testQuick := {},
   )
 
+lazy val lofiAcl = project.in(file("Modules/Access Control"))
+  .enablePlugins(JmhPlugin)
+  .dependsOn(deltalens, crypto.jvm, channels.jvm % "compile->compile;test->test")
+  .settings(
+    scala3defaults,
+    javaOutputVersion(21),
+    fork := true,
+    //Dependencies.conscrypt,
+    Dependencies.jsoniterScala,
+    Dependencies.munitCheck,
+    Dependencies.pprint,
+    Dependencies.slips,
+    libraryDependencies += Dependencies.scalafx,
+    //Settings.implicitConversions(), // reswing uses this in a million places for no reason
+    javaOptions ++= Seq(
+      "-XX:+IgnoreUnrecognizedVMOptions",
+      "--sun-misc-unsafe-memory-access=allow",
+      "--enable-native-access=ALL-UNNAMED"
+    ), // Reduce warnings for JavaFX application
+  )
+
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
@@ -223,7 +245,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm, examplesJVM)
+  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm, examplesJVM, lofiAcl)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,

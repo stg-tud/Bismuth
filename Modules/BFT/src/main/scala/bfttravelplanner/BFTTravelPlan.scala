@@ -1,8 +1,8 @@
 package bfttravelplanner
 import crypto.Ed25519Util
 import dag.{Event, HashDAG}
-import ex2024travel.lofi_acl.travelplanner.TravelPlan
-import ex2024travel.lofi_acl.travelplanner.TravelPlan.UniqueId
+import lofi_acl.travelplanner.TravelPlan
+import lofi_acl.travelplanner.TravelPlan.UniqueId
 import rdts.base.LocalUid
 
 type Delta = BFTTravelPlan
