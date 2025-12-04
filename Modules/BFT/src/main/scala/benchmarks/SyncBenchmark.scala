@@ -13,10 +13,11 @@ given c2: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
 
 /*@AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
+*/
 class SyncMetrics {
   var roundtripsAll: Int = 0
   var run                = 0
-}*/
+}
 
 @Fork(1)
 @Warmup(iterations = 0)
