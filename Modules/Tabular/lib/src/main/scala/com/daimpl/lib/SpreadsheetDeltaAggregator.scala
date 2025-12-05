@@ -12,13 +12,13 @@ class SpreadsheetDeltaAggregator[S](
 
   private var undoStack: List[UndoFunction] = Nil
 
-  def editAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])(fn: EditFunction)
+  def editAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])(fn: EditFunction, allowUndo: Boolean = true)
       : Spreadsheet[S] = {
     val delta = fn(using replicaId)(spreadsheet)
-    val recordingWrapper = new UndoRecordingSpreadsheet[S](
+    val recordingWrapper = if (allowUndo) new UndoRecordingSpreadsheet[S](
       spreadsheet,
       undoFn => undoStack = undoFn :: undoStack
-    )
+    ) else spreadsheet
     val resultingOps = fn(using replicaId)(recordingWrapper)
     accumulate(resultingOps)
     initialDelta.merge(resultingOps)
@@ -29,13 +29,13 @@ class SpreadsheetDeltaAggregator[S](
       : Spreadsheet[S] =
     sequentiallyAppliedEditFns.foldLeft(initialDelta) { editAndGetDelta(_)(_) }
 
-  def edit(fn: EditFunction): SpreadsheetDeltaAggregator[S] = {
-    editAndGetDelta()(fn)
+  def edit(fn: EditFunction, allowUndo: Boolean = true): SpreadsheetDeltaAggregator[S] = {
+    editAndGetDelta()(fn, allowUndo)
     this
   }
 
-  def repeatEdit(times: Int, fn: EditFunction): SpreadsheetDeltaAggregator[S] = {
-    (0 until times) foreach { _ => edit(fn) }
+  def repeatEdit(times: Int, fn: EditFunction, allowUndo: Boolean = true): SpreadsheetDeltaAggregator[S] = {
+    (0 until times) foreach { _ => edit(fn, allowUndo) }
     this
   }
 

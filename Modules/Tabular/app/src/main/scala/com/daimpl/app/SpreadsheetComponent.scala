@@ -17,8 +17,8 @@ object SpreadsheetComponent {
 
   def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] = {
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
-      .repeatEdit(6, _.addRow().delta)
-      .repeatEdit(6, _.addColumn().delta)
+      .repeatEdit(6, _.addRow().delta, allowUndo = false)
+      .repeatEdit(6, _.addColumn().delta, allowUndo = false)
   }
 
   case class Props(
@@ -46,10 +46,10 @@ object SpreadsheetComponent {
     private val replicaEventPrint: (LocalUid, String) => Callback =
       (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
-    private def modSpreadsheet(f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String]): Callback = {
+    private def modSpreadsheet(f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String], allowUndo: Boolean = true): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
-        val delta      = props.spreadsheetAggregator.editAndGetDelta()(f)
+        val delta      = props.spreadsheetAggregator.editAndGetDelta()(f, allowUndo)
         props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)
       }
@@ -98,7 +98,7 @@ object SpreadsheetComponent {
           props.replicaId.uid,
           SpreadsheetCoordinate(rowIdx, colIdx),
           SpreadsheetCoordinate(rowIdx, colIdx)
-        ))
+        ), allowUndo = false)
       }
 
     def openConflict(row: Int, col: Int): Callback =
@@ -140,7 +140,7 @@ object SpreadsheetComponent {
               if successful then "committed" else "aborted"
             }: \"$content\""
         )
-        >> modSpreadsheet(_.removeRange(props.replicaId.uid))
+        >> modSpreadsheet(_.removeRange(props.replicaId.uid), allowUndo = false)
       } >> $.modState(_.copy(editingCell = None, editingValue = ""))
 
     def handleRangeMouseDown(rowIdx: Int, colIdx: Int): Callback =
@@ -303,7 +303,6 @@ object SpreadsheetComponent {
 
     def handleDragOver(e: ReactDragEvent): Callback = Callback(e.preventDefault())
 
-    // Delete a range by its id
     def deleteRange(rangeId: Uid): Callback =
       concludeEdit() >> modSpreadsheet(_.removeRange(rangeId))
   }
@@ -415,6 +414,18 @@ object SpreadsheetComponent {
         ^.onMouseUp --> backend.handleRangeMouseUp(),
         <.div(
           ^.className := "mb-4 flex flex-wrap gap-2",
+          {
+            val canUndo = props.spreadsheetAggregator.canUndo
+            val baseCls = "px-3 py-1 rounded text-sm font-medium transition-colors"
+            val enabled = " bg-blue-500 hover:bg-blue-600 text-white shadow"
+            val disabled = " bg-gray-300 text-gray-600 cursor-not-allowed"
+            <.button(
+              ^.className := baseCls + (if canUndo then enabled else disabled),
+              ^.onClick --> backend.undo(),
+              ^.disabled := !canUndo,
+              "Undo"
+            )
+          },
           state.selectedRow match {
             case Some(rowIdx) =>
               <.div(
@@ -482,18 +493,6 @@ object SpreadsheetComponent {
                     )
                   )
               else <.span()
-          }
-          , {
-            val canUndo = props.spreadsheetAggregator.canUndo
-            val baseCls = "px-3 py-1 rounded text-sm font-medium transition-colors"
-            val enabled = " bg-blue-500 hover:bg-blue-600 text-white shadow"
-            val disabled = " bg-gray-300 text-gray-600 cursor-not-allowed"
-            <.button(
-              ^.className := baseCls + (if canUndo then enabled else disabled),
-              ^.onClick --> backend.undo(),
-              ^.disabled := !canUndo,
-              "Undo"
-            )
           }
         ),
         <.div(
