@@ -7,15 +7,21 @@ class SpreadsheetDeltaAggregator[S](
     replicaId: LocalUid
 ) {
 
-  private type EditFunction = LocalUid ?=> Spreadsheet[S] => Spreadsheet[S]
+  private type EditFunction = LocalUid ?=> SpreadsheetOps[S] => Spreadsheet[S]
+  private type UndoFunction = LocalUid ?=> Spreadsheet[S] => Spreadsheet[S]
 
-  private var undoStack: List[EditFunction] = Nil
+  private var undoStack: List[UndoFunction] = Nil
 
   def editAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])(fn: EditFunction)
       : Spreadsheet[S] = {
     val delta = fn(using replicaId)(spreadsheet)
-    accumulate(delta)
-    initialDelta.merge(delta)
+    val recordingWrapper = new UndoRecordingSpreadsheet[S](
+      spreadsheet,
+      undoFn => undoStack = undoFn :: undoStack
+    )
+    val resultingOps = fn(using replicaId)(recordingWrapper)
+    accumulate(resultingOps)
+    initialDelta.merge(resultingOps)
   }
 
   def multiEditAndGetDelta(initialDelta: Spreadsheet[S] =
@@ -25,12 +31,6 @@ class SpreadsheetDeltaAggregator[S](
 
   def edit(fn: EditFunction): SpreadsheetDeltaAggregator[S] = {
     editAndGetDelta()(fn)
-    this
-  }
-
-  def editWithUndo(doEdit: EditFunction, undoEdit: EditFunction): SpreadsheetDeltaAggregator[S] = {
-    editAndGetDelta()(doEdit)
-    undoStack = undoEdit :: undoStack
     this
   }
 

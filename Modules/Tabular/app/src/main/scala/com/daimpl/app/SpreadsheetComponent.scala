@@ -1,7 +1,7 @@
 package com.daimpl.app
 
 import com.daimpl.lib.Spreadsheet.SpreadsheetCoordinate
-import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
+import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator, SpreadsheetOps}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
@@ -17,8 +17,8 @@ object SpreadsheetComponent {
 
   def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] = {
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
-      .repeatEdit(6, _.addRow())
-      .repeatEdit(6, _.addColumn())
+      .repeatEdit(6, _.addRow().delta)
+      .repeatEdit(6, _.addColumn().delta)
   }
 
   case class Props(
@@ -46,7 +46,7 @@ object SpreadsheetComponent {
     private val replicaEventPrint: (LocalUid, String) => Callback =
       (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
-    private def modSpreadsheet(f: LocalUid ?=> Spreadsheet[String] => Spreadsheet[String]): Callback = {
+    private def modSpreadsheet(f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String]): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta()(f)
@@ -80,6 +80,13 @@ object SpreadsheetComponent {
       withEditingCell((coordinate, content) =>
         $.props.flatMap(props => f(SpreadsheetCoordinate(coordinate.rowIdx, coordinate.colIdx), content, props))
       )
+
+    def undo(): Callback =
+      $.props.flatMap { props =>
+        val deltaOpt = props.spreadsheetAggregator.undoAndGetDelta()
+        val broadcast = deltaOpt.fold(Callback.empty)(delta => props.onDelta(delta))
+        broadcast >> $.forceUpdate
+      }
 
     def handleDoubleClick(rowIdx: Int, colIdx: Int): Callback =
       concludeEdit()
@@ -175,15 +182,15 @@ object SpreadsheetComponent {
       withSelectedRowAndProps { (rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
         >> concludeEdit()
-        >> modSpreadsheet(_.insertRow(rowIdx))
+        >> modSpreadsheet(_.insertRow(rowIdx).delta)
       } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get)))
 
     def insertRowBelow(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
         val action      =
-          if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow())
-          else modSpreadsheet(_.insertRow(rowIdx + 1))
+          if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow().delta)
+          else modSpreadsheet(_.insertRow(rowIdx + 1).delta)
         replicaEventPrint(props.replicaId, s"Inserting Row After ${rowIdx + 1}")
         >> concludeEdit()
         >> action
@@ -205,15 +212,15 @@ object SpreadsheetComponent {
       withSelectedColumnAndProps { (colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
         >> concludeEdit()
-        >> modSpreadsheet(_.insertColumn(colIdx))
+        >> modSpreadsheet(_.insertColumn(colIdx).delta)
       } >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get)))
 
     def insertColumnRight(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
         val spreadsheet = props.spreadsheetAggregator.current
         val action      =
-          if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn())
-          else modSpreadsheet(_.insertColumn(colIdx + 1))
+          if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn().delta)
+          else modSpreadsheet(_.insertColumn(colIdx + 1).delta)
         replicaEventPrint(props.replicaId, s"Inserting Column After ${colIdx + 1}")
         >> concludeEdit()
         >> action
@@ -234,11 +241,11 @@ object SpreadsheetComponent {
 
     def addRow(): Callback =
       concludeEdit()
-      >> modSpreadsheet(_.addRow())
+      >> modSpreadsheet(_.addRow().delta)
 
     def addColumn(): Callback =
       concludeEdit()
-      >> modSpreadsheet(_.addColumn())
+      >> modSpreadsheet(_.addColumn().delta)
 
     def purgeTombstones(): Callback = modSpreadsheet(_.purgeTombstones)
 
@@ -475,6 +482,18 @@ object SpreadsheetComponent {
                     )
                   )
               else <.span()
+          }
+          , {
+            val canUndo = props.spreadsheetAggregator.canUndo
+            val baseCls = "px-3 py-1 rounded text-sm font-medium transition-colors"
+            val enabled = " bg-blue-500 hover:bg-blue-600 text-white shadow"
+            val disabled = " bg-gray-300 text-gray-600 cursor-not-allowed"
+            <.button(
+              ^.className := baseCls + (if canUndo then enabled else disabled),
+              ^.onClick --> backend.undo(),
+              ^.disabled := !canUndo,
+              "Undo"
+            )
           }
         ),
         <.div(
