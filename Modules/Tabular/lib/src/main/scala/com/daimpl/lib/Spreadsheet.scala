@@ -110,6 +110,36 @@ case class Spreadsheet[A](
         cell  <- rowAndColIdPairToContent.get(rowId, colId)
     yield ConflictableValue(cell.elements)).getOrElse(ConflictableValue.empty[A])
 
+  def getRowId(idx: Int): Option[Dot] = rowIds.readAt(idx)
+  def getColId(idx: Int): Option[Dot] = colIds.readAt(idx)
+
+  def getRowIndex(id: Dot): Option[Int] = {
+    val idx = rowIds.toList.indexOf(id)
+    if (idx >= 0) Some(idx) else None
+  }
+
+  def getColIndex(id: Dot): Option[Int] = {
+    val idx = colIds.toList.indexOf(id)
+    if (idx >= 0) Some(idx) else None
+  }
+  
+  def removeRowById(id: Dot)(using LocalUid): Spreadsheet[A] =
+    getRowIndex(id) match
+      case Some(idx) => removeRow(idx)
+      case None => this
+
+  def removeColumnById(id: Dot)(using LocalUid): Spreadsheet[A] =
+    getColIndex(id) match
+      case Some(idx) => removeColumn(idx)
+      case None => this
+
+  def editCellById(rowId: Dot, colId: Dot, value: A)(using LocalUid): Spreadsheet[A] =
+    (getRowIndex(rowId), getColIndex(colId)) match
+      case (Some(rIdx), Some(cIdx)) =>
+        editCell(SpreadsheetCoordinate(rIdx, cIdx), value)
+      case _ =>
+        this
+
   def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
       val idFrom = Uid(id.show + ":from")
       val idTo   = Uid(id.show + ":to")
