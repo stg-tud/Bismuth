@@ -1,6 +1,6 @@
 package riblt
 
-import datatypes.{ORSet, Replica}
+import datatypes.{ORSet, Op, Replica}
 import network.{Message, Network}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
@@ -9,6 +9,7 @@ import network.Message.given_JsonValueCodec_Message
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import crypto.Ed25519Util
+import dag.Event
 import network.Tag.{CODED_SYMBOLS, CODED_SYMBOLS_REQUEST, DELTA, REQUEST_DELTA}
 import riblt.RIBLTSyncWithThreads.{codec1, codec2}
 
@@ -133,6 +134,16 @@ object RIBLTSyncWithThreads:
     given codec2: JsonValueCodec[List[String]]      = JsonCodecMaker.make
 
     given JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
+
+    given c7: JsonKeyCodec[Event[Op[String]]] = new JsonKeyCodec[Event[Op[String]]] {
+      override def decodeKey(in: JsonReader): Event[Op[String]] =
+        readFromArray[Event[Op[String]]](in.readRawValAsBytes())
+
+      override def encodeKey(x: Event[Op[String]], out: JsonWriter): Unit =
+        out.writeRawVal(writeToArray(x))
+    }
+
+    given c2: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
 
     given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
       override def encodeValue(key: PublicKey, out: JsonWriter): Unit =

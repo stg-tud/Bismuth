@@ -9,7 +9,6 @@ import java.io.*
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ListBuffer
 
-given c2: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
 
 /*@AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
@@ -47,7 +46,7 @@ class SyncBenchmark {
   }
 
   @Benchmark
-  def sync(syncMetrics: SyncMetrics): Unit = {
+  def sync(): Unit = {
 
     var res = SyncStrategies.syncRIBLT(r1, r2, 1, size, diff)
     MyCollector.add(res)
@@ -61,8 +60,17 @@ class SyncBenchmark {
     res = SyncStrategies.syncRIBLT(r1, r2, 20, size, diff)
     MyCollector.add(res)
 
-    val res2 = SyncStrategies.syncPingPong(r1, r2, size, diff)
-    MyCollector.add(res2)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 1)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 5)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 10)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 20)
+    MyCollector.add(res)
   }
 
   @TearDown(Level.Trial)
