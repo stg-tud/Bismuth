@@ -42,12 +42,12 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.moveRow(targetIdx, sourceIdx) }
+    pushUndo { s => s.moveRow(if (sourceIdx < targetIdx) targetIdx - 1 else targetIdx, sourceIdx) }
     delegate.moveRow(sourceIdx, targetIdx)
   }
 
   override def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.moveColumn(targetIdx, sourceIdx) }
+    pushUndo { s => s.moveColumn(if (sourceIdx < targetIdx) targetIdx - 1 else targetIdx, sourceIdx) }
     delegate.moveColumn(sourceIdx, targetIdx)
   }
 
