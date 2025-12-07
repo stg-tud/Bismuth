@@ -35,7 +35,7 @@ object ReplicaGenerator:
       case c @ Counter(hashDAG) => c.merge(c.add(rnd.nextInt()))
       case s @ ORSet(e, h)      =>
         val set = s.asInstanceOf[ORSet[String]]
-        set.merge(set.add("A" * n)).asInstanceOf[R]
+        set.merge(set.add("A" * n * 1000)).asInstanceOf[R]
       case _ =>
         sys.error("Not implemented yet")
     }

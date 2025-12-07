@@ -95,11 +95,12 @@ object SyncStrategies {
                                            replica2: Replica[T, R],
                                            size: Int,
                                            diff: Float,
-                                           dependencyPerRoundTrip: Int = 1
+                                           dependencyPerRoundTrip: Int = 1,
+                                           deltaSize: Int,
                                          )(using JsonValueCodec[Event[T]]): Measurement = {
 
     var roundTrips = 0
-    var bandwidth  = 0
+    var bandwidth  = 0L
 
     // Messaging queues
     var toR1: Set[Event[T]] = replica2.hashDAG.getCurrentHeadsIDs.map(replica2.hashDAG.events)
@@ -122,12 +123,12 @@ object SyncStrategies {
             needFromR2 += p
         }
       }
-      bandwidth += toR1.map(writeToArray(_).length).sum
+      bandwidth += toR1.toList.map(writeToArray(_).length).sum
       toR1 = Set.empty
 
       toR2 ++= needFromR1.map(id => replica1.hashDAG.events(id))
       toR2 ++= toR2.flatMap(e => replica1.hashDAG.getNDependencies(e.id, dependencyPerRoundTrip)).map(id => replica1.hashDAG.events(id))
-      bandwidth += needFromR1.map(_.getBytes("UTF-8").length).sum
+      bandwidth += needFromR1.toList.map(_.getBytes("UTF-8").length).sum
       needFromR1 = Set.empty
 
       //   Replica 2 receives
@@ -138,12 +139,12 @@ object SyncStrategies {
             needFromR1 += p
         }
       }
-      bandwidth += toR2.map(writeToArray(_).length).sum
+      bandwidth += toR2.toList.map(writeToArray(_).length).sum
       toR2 = Set.empty
 
       toR1 ++= needFromR2.map(id => replica2.hashDAG.events(id))
       toR1 ++= toR1.flatMap(e => replica2.hashDAG.getNDependencies(e.id, dependencyPerRoundTrip)).map(id => replica2.hashDAG.events(id))
-      bandwidth += needFromR2.map(_.getBytes("UTF-8").length).sum
+      bandwidth += needFromR2.toList.map(_.getBytes("UTF-8").length).sum
       needFromR2 = Set.empty
 
       roundTrips += 1
@@ -158,10 +159,7 @@ object SyncStrategies {
     // Final delta bandwidth
     val events1 = replica1.hashDAG.events.values.toSet
     val events2 = replica2.hashDAG.events.values.toSet
-    val deltaBandwidth =
-      ((events1 -- events2) ++ (events2 -- events1))
-        .map(writeToArray(_).length)
-        .sum
+    val deltaBandwidth: Long = ((events1 -- events2) ++ (events2 -- events1)).toList.map(writeToArray(_).length).sum
 
     Measurement(
       method = "TRADI",
@@ -170,7 +168,8 @@ object SyncStrategies {
       roundTrips = roundTrips,
       bandwidth = bandwidth,
       delta = deltaBandwidth,
-      codedSymbolPerRoundTrip = dependencyPerRoundTrip
+      codedSymbolPerRoundTrip = dependencyPerRoundTrip,
+      deltaSize = deltaSize
     )
   }
 
@@ -189,13 +188,13 @@ object SyncStrategies {
     stats.results
   }
 
-  def syncRIBLT[T, R <: Replica[T, R]](replica1: R, replica2: R, codedSymbolsPerRoundTrip: Int = 10, size: Int, diff: Float)(using
+  def syncRIBLT[T, R <: Replica[T, R]](replica1: R, replica2: R, codedSymbolsPerRoundTrip: Int = 10, size: Int, diff: Float, deltaSize: Int)(using
       JsonValueCodec[Event[T]]
   ): Measurement = {
     val riblt1     = RIBLT[String]()
     val riblt2     = RIBLT[String]()
     var roundTrips = 0
-    var bandwidth  = 0
+    var bandwidth  = 0L
 
     for id <- replica1.hashDAG.getIDs do
         riblt1.addSymbol(id)
@@ -224,8 +223,10 @@ object SyncStrategies {
     // println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
     // println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
 
-    val e1 = replica1.hashDAG.events.values.toSet
-    val e2 = replica2.hashDAG.events.values.toSet
+    val events1 = replica1.hashDAG.events.values.toSet
+    val events2 = replica2.hashDAG.events.values.toSet
+    val d = ((events1 -- events2) ++ (events2 -- events1)).toList
+    val deltaBandwidth: Long = d.map(x => writeToArray(x).length).sum
 
     Measurement(
       method = "RIBLT",
@@ -233,8 +234,9 @@ object SyncStrategies {
       diff = diff,
       roundTrips = roundTrips,
       bandwidth = bandwidth,
-      delta = ((e1 -- e2) ++ (e2 -- e1)).foldLeft(0)((acc, e) => acc + writeToArray(e).length),
-      codedSymbolPerRoundTrip = codedSymbolsPerRoundTrip
+      delta = deltaBandwidth,
+      codedSymbolPerRoundTrip = codedSymbolsPerRoundTrip,
+      deltaSize = deltaSize
     )
   }
 
@@ -244,18 +246,19 @@ object SyncStrategies {
 
       var r1  = ORSet[String]()
       var r2  = ORSet[String]()
-      val s1 = System.currentTimeMillis()
-      val gen = ReplicaGenerator.generate(10000, 0.1, r1, r2, 1)
-      val s2 = System.currentTimeMillis()
+      val size = 1000
+      val diff = 0.9F
+      val gen = ReplicaGenerator.generate(size, diff, r1, r2, 1000)
 
-      println(s2 - s1)
       r1 = gen._1
       r2 = gen._2
 
-      println(syncPingPong(r1, r2, 10, 1, 1))
-      println(syncPingPong(r1, r2, 10, 1, 10))
-      println(syncPingPong(r1, r2, 10, 1, 20))
-      println(syncPingPong(r1, r2, 10, 1, 100))
+      println(syncPingPong(r1, r2, size, diff, 1000, 1000))
+      //println(syncPingPong(r1, r2, 10, 1, 10))
+      //println(syncPingPong(r1, r2, 10, 1, 20))
+      //println(syncPingPong(r1, r2, 10, 1, 100))
+
+     // println(syncRIBLT(r1, r2, 20, 100, 1, 1))
 
       //println(syncRIBLT(r1, r2))
 

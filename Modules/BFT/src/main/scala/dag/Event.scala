@@ -5,6 +5,7 @@ package dag
 
 import crypto.Ed25519Util
 import java.security.{MessageDigest, PublicKey}
+import java.util.Base64
 
 case class Event[T](
     id: String,
@@ -19,10 +20,11 @@ case class Event[T](
 
     def calculateHash: String =
         val bytes =
-          s"${content.toString}${author.toString}${dependencies.toString}${signature.mkString("signature(", ", ", ")")}"
+          s"${content.toString}${author.toString}${dependencies.toString}${Base64.getEncoder.encodeToString(signature)}"
             .getBytes
 
-        MessageDigest.getInstance(HashAlgorithm).digest(bytes).mkString("id(", ", ", ")")
+
+        Base64.getEncoder.encodeToString(MessageDigest.getInstance(HashAlgorithm).digest(bytes))
 
     def signatureIsValid: Boolean =
       Ed25519Util.checkEd25519Signature(content.get.toString.getBytes, signature, author)
