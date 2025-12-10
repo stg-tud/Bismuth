@@ -24,19 +24,19 @@ class SyncMetrics {
 @State(Scope.Benchmark)
 class SyncBenchmark {
 
-  @Param(Array("100", "500", "1000"/*, "5000","10000"*/))
+  @Param(Array("10000"))
   var size: Int = 0
   @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
   var diff: Float = 0
-  @Param(Array("1", "10", "100", "1000"))
-  var deltaSize: Int = 1
+  //@Param(Array(/*"1", "10", "100",*/ "1000"))
+  var deltaSizeInKiloBytes: Int = 100
 
   var r1 = ORSet[String]()
   var r2 = ORSet[String]()
 
   @Setup(Level.Trial)
   def setup(): Unit = {
-    val gen = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
+    val gen = ReplicaGenerator.generate(size, diff, r1, r2, deltaSizeInKiloBytes)
 
     r1 = gen._1
     r2 = gen._2
@@ -46,46 +46,55 @@ class SyncBenchmark {
   @Benchmark
   def sync(): Unit = {
 
-    var res = SyncStrategies.syncRIBLT(r1, r2, 1, size, diff, deltaSize)
+    // RIBLT
+    var res = SyncStrategies.syncRIBLT(r1, r2, 1, size, diff, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncRIBLT(r1, r2, 5, size, diff, deltaSize)
+    res = SyncStrategies.syncRIBLT(r1, r2, 5, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt1 = res.roundTrips
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 10, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt2 = res.roundTrips
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 20, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt3 = res.roundTrips
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 50, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt4 = res.roundTrips
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 100, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt5 = res.roundTrips
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 1000, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt6 = res.roundTrips
+
+    // Recursive Sync
+    val d = diff * size
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 1, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncRIBLT(r1, r2, 10, size, diff, deltaSize)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt1).toInt, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncRIBLT(r1, r2, 20, size, diff, deltaSize)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt2).toInt, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncRIBLT(r1, r2, 50, size, diff, deltaSize)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt3).toInt, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncRIBLT(r1, r2, 100, size, diff, deltaSize)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt4).toInt, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncRIBLT(r1, r2, 1000, size, diff, deltaSize)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt5).toInt, deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 1, deltaSize)
-    MyCollector.add(res)
-
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 5, deltaSize)
-    MyCollector.add(res)
-
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 10, deltaSize)
-    MyCollector.add(res)
-
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 20, deltaSize)
-    MyCollector.add(res)
-
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 50, deltaSize)
-    MyCollector.add(res)
-
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 100, deltaSize)
-    MyCollector.add(res)
-
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 1000, deltaSize)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt6).toInt, deltaSizeInKiloBytes)
     MyCollector.add(res)
   }
 

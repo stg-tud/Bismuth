@@ -1,5 +1,6 @@
 package benchmarks
 
+import bloomfilter.mutable.BloomFilter
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.Ed25519Util
@@ -8,14 +9,16 @@ import datatypes.{Counter, ORSet, Op, Replica}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
 
+import java.io.{ByteArrayOutputStream, OutputStream}
+import java.util.Base64
 import java.security.{PrivateKey, PublicKey}
 
-given c1: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
+given c1: JsonValueCodec[Event[Int]]         = JsonCodecMaker.make
 given c22: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
-given c3: JsonValueCodec[Op[String]] = JsonCodecMaker.make
-given c4: JsonValueCodec[ORSet[String]] = JsonCodecMaker.make
-given c5: JsonValueCodec[Counter]       = JsonCodecMaker.make
-given c6: JsonKeyCodec[Op[String]] = new JsonKeyCodec[Op[String]] {
+given c3: JsonValueCodec[Op[String]]         = JsonCodecMaker.make
+given c4: JsonValueCodec[ORSet[String]]      = JsonCodecMaker.make
+given c5: JsonValueCodec[Counter]            = JsonCodecMaker.make
+given c6: JsonKeyCodec[Op[String]]           = new JsonKeyCodec[Op[String]] {
   override def decodeKey(in: JsonReader): Op[String] =
     readFromArray[Op[String]](in.readRawValAsBytes())
 
@@ -39,7 +42,7 @@ given c8: JsonKeyCodec[Event[Int]] = new JsonKeyCodec[Event[Int]] {
     out.writeRawVal(writeToArray(x))
 }
 
-given JsonValueCodec[PublicKey]     = new JsonValueCodec[PublicKey] {
+given JsonValueCodec[PublicKey] = new JsonValueCodec[PublicKey] {
   override def encodeValue(key: PublicKey, out: JsonWriter): Unit =
     out.writeBase64Val(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(key).getBytes, false)
 
@@ -91,13 +94,13 @@ object SyncStrategies {
       (roundTrips, bandwidth)
 
   def syncPingPong[T, R <: Replica[T, R]](
-                                           replica1: Replica[T, R],
-                                           replica2: Replica[T, R],
-                                           size: Int,
-                                           diff: Float,
-                                           dependencyPerRoundTrip: Int = 1,
-                                           deltaSize: Int,
-                                         )(using JsonValueCodec[Event[T]]): Measurement = {
+      replica1: Replica[T, R],
+      replica2: Replica[T, R],
+      size: Int,
+      diff: Float,
+      dependencyPerRoundTrip: Int = 1,
+      deltaSize: Int,
+  )(using JsonValueCodec[Event[T]]): Measurement = {
 
     var roundTrips = 0
     var bandwidth  = 0L
@@ -113,38 +116,42 @@ object SyncStrategies {
     var receivedByR1: List[Event[T]] = Nil
     var receivedByR2: List[Event[T]] = Nil
 
-    while (toR1.nonEmpty || toR2.nonEmpty || needFromR1.nonEmpty || needFromR2.nonEmpty) {
+    while toR1.nonEmpty || toR2.nonEmpty || needFromR1.nonEmpty || needFromR2.nonEmpty do {
 
       //   Replica 1 receives
       receivedByR1 = receivedByR1 ++ toR1
-      for (ev <- toR1) {
-        if (!replica1.hashDAG.contains(ev.id)) {
-          for (p <- ev.dependencies if (!replica1.hashDAG.contains(p) && !receivedByR1.map(_.id).contains(p)))
-            needFromR2 += p
+      for ev <- toR1 do {
+        if !replica1.hashDAG.contains(ev.id) then {
+          for p <- ev.dependencies if !replica1.hashDAG.contains(p) && !receivedByR1.map(_.id).contains(p) do
+              needFromR2 += p
         }
       }
       bandwidth += toR1.toList.map(writeToArray(_).length).sum
       toR1 = Set.empty
 
       toR2 ++= needFromR1.map(id => replica1.hashDAG.events(id))
-      toR2 ++= toR2.flatMap(e => replica1.hashDAG.getNDependencies(e.id, dependencyPerRoundTrip)).map(id => replica1.hashDAG.events(id))
-      bandwidth += needFromR1.toList.map(_.getBytes("UTF-8").length).sum
+      toR2 ++= toR2.flatMap(e => replica1.hashDAG.getNDependencies(e.id, dependencyPerRoundTrip)).map(id =>
+        replica1.hashDAG.events(id)
+      )
+      bandwidth += needFromR1.toList.map(id => Base64.getDecoder.decode(id).length).sum
       needFromR1 = Set.empty
 
       //   Replica 2 receives
       receivedByR2 = receivedByR2 ++ toR2
-      for (ev <- toR2) {
-        if (!replica2.hashDAG.contains(ev.id)) {
-          for (p <- ev.dependencies if (!replica2.hashDAG.contains(p) && !receivedByR2.map(_.id).contains(p)))
-            needFromR1 += p
+      for ev <- toR2 do {
+        if !replica2.hashDAG.contains(ev.id) then {
+          for p <- ev.dependencies if !replica2.hashDAG.contains(p) && !receivedByR2.map(_.id).contains(p) do
+              needFromR1 += p
         }
       }
       bandwidth += toR2.toList.map(writeToArray(_).length).sum
       toR2 = Set.empty
 
       toR1 ++= needFromR2.map(id => replica2.hashDAG.events(id))
-      toR1 ++= toR1.flatMap(e => replica2.hashDAG.getNDependencies(e.id, dependencyPerRoundTrip)).map(id => replica2.hashDAG.events(id))
-      bandwidth += needFromR2.toList.map(_.getBytes("UTF-8").length).sum
+      toR1 ++= toR1.flatMap(e => replica2.hashDAG.getNDependencies(e.id, dependencyPerRoundTrip)).map(id =>
+        replica2.hashDAG.events(id)
+      )
+      bandwidth += needFromR2.toList.map(id => Base64.getDecoder.decode(id).length).sum
       needFromR2 = Set.empty
 
       roundTrips += 1
@@ -157,12 +164,12 @@ object SyncStrategies {
     assert(r1IDs.subsetOf(r2IDs ++ receivedByR2.map(_.id)))
 
     // Final delta bandwidth
-    val events1 = replica1.hashDAG.events.values.toSet
-    val events2 = replica2.hashDAG.events.values.toSet
+    val events1              = replica1.hashDAG.events.values.toSet
+    val events2              = replica2.hashDAG.events.values.toSet
     val deltaBandwidth: Long = ((events1 -- events2) ++ (events2 -- events1)).toList.map(writeToArray(_).length).sum
 
     Measurement(
-      method = "TRADI",
+      method = s"RSync-${dependencyPerRoundTrip}",
       dagSize = size,
       diff = diff,
       roundTrips = roundTrips,
@@ -188,7 +195,14 @@ object SyncStrategies {
     stats.results
   }
 
-  def syncRIBLT[T, R <: Replica[T, R]](replica1: R, replica2: R, codedSymbolsPerRoundTrip: Int = 10, size: Int, diff: Float, deltaSize: Int)(using
+  def syncRIBLT[T, R <: Replica[T, R]](
+      replica1: R,
+      replica2: R,
+      codedSymbolsPerRoundTrip: Int = 10,
+      size: Int,
+      diff: Float,
+      deltaSize: Int
+  )(using
       JsonValueCodec[Event[T]]
   ): Measurement = {
     val riblt1     = RIBLT[String]()
@@ -211,8 +225,11 @@ object SyncStrategies {
     }
 
     val localEvents  = riblt1.localSymbols.map(s => replica1.hashDAG.events(s.value))
+    val remoteEventsIDs = riblt1.remoteSymbols.map(s => s.value)
     val remoteEvents = riblt1.remoteSymbols.map(s => replica2.hashDAG.events(s.value))
 
+    roundTrips += 1
+    bandwidth += remoteEventsIDs.map(id => Base64.getDecoder.decode(id).length).sum
     val tmp = (localEvents ++ remoteEvents).foldLeft(0)((b, e) => b + writeToArray(e).length)
     bandwidth += tmp
 
@@ -223,13 +240,13 @@ object SyncStrategies {
     // println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
     // println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
 
-    val events1 = replica1.hashDAG.events.values.toSet
-    val events2 = replica2.hashDAG.events.values.toSet
-    val d = ((events1 -- events2) ++ (events2 -- events1)).toList
+    val events1              = replica1.hashDAG.events.values.toSet
+    val events2              = replica2.hashDAG.events.values.toSet
+    val d                    = ((events1 -- events2) ++ (events2 -- events1)).toList
     val deltaBandwidth: Long = d.map(x => writeToArray(x).length).sum
 
     Measurement(
-      method = "RIBLT",
+      method = s"RIBLT-${codedSymbolsPerRoundTrip}",
       dagSize = size,
       diff = diff,
       roundTrips = roundTrips,
@@ -240,27 +257,104 @@ object SyncStrategies {
     )
   }
 
+  def syncBloom[T, R <: Replica[T, R]](
+      replica1: R,
+      replica2: R,
+      falsePositiveRate: Float,
+      size: Int,
+      diff: Float,
+      deltaSize: Int
+  )(using JsonValueCodec[Event[T]]): Measurement = {
+    var roundTrips = 0
+    var bandwidth = 0L
+
+    val IDs1              = replica1.hashDAG.events.keySet
+    val expectedElements1 = IDs1.size
+    val bf1               = BloomFilter[String](expectedElements1, falsePositiveRate)
+
+    for id <- IDs1 do
+        bf1.add(id)
+
+    val IDs2              = replica2.hashDAG.events.keySet
+    val expectedElements2 = IDs2.size
+    val bf2               = BloomFilter[String](expectedElements2, falsePositiveRate)
+
+    for id <- IDs2 do
+        bf2.add(id)
+
+    val out1 = ByteArrayOutputStream()
+    bf1.writeTo(out1)
+    bandwidth += out1.size()
+
+    val out2 = ByteArrayOutputStream()
+    bf2.writeTo(out2)
+    bandwidth += out2.size()
+
+    roundTrips += 1
+
+    var toR2 = List.empty[Event[T]]
+    for id <- IDs1 do
+      if !bf2.mightContain(id) then
+        toR2 = toR2 :+ replica1.hashDAG.events(id)
+
+    var toR1 = List.empty[Event[T]]
+    for id <- IDs2 do
+      if !bf1.mightContain(id) then
+        toR1 = toR1 :+ replica2.hashDAG.events(id)
+
+    roundTrips += 1
+    bandwidth += toR2.map(e => writeToArray(e).length).sum
+    bandwidth += toR1.map(e => writeToArray(e).length).sum
+
+    val synced = (toR1.map(e => e.id) ++ IDs1) == (toR2.map(e => e.id) ++ IDs2)
+
+    var c = -1
+    if synced then
+      c = 1
+
+    val events1 = replica1.hashDAG.events.values.toSet
+    val events2 = replica2.hashDAG.events.values.toSet
+    val d = ((events1 -- events2) ++ (events2 -- events1)).toList
+    val deltaBandwidth: Long = d.map(x => writeToArray(x).length).sum
+
+    Measurement(
+      method = "BLOOM",
+      dagSize = size,
+      diff = diff,
+      roundTrips = roundTrips,
+      bandwidth = bandwidth,
+      delta = deltaBandwidth,
+      codedSymbolPerRoundTrip = c,
+      deltaSize = deltaSize
+    )
+  }
+
   @main def main(): Unit =
       given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
       given c2: JsonValueCodec[Event[Int]]        = JsonCodecMaker.make
 
-      var r1  = ORSet[String]()
-      var r2  = ORSet[String]()
-      val size = 1000
-      val diff = 0.9F
-      val gen = ReplicaGenerator.generate(size, diff, r1, r2, 1000)
+      var r1   = ORSet[String]()
+      var r2   = ORSet[String]()
+      val size = 5000
+      val diff = 0.8f
+      val gen  = ReplicaGenerator.generate(size, diff, r1, r2, 1)
+
+      val t = r1.add("A")
+      r1.merge(t)
 
       r1 = gen._1
       r2 = gen._2
 
-      println(syncPingPong(r1, r2, size, diff, 1000, 1000))
-      //println(syncPingPong(r1, r2, 10, 1, 10))
-      //println(syncPingPong(r1, r2, 10, 1, 20))
-      //println(syncPingPong(r1, r2, 10, 1, 100))
+      //println(syncBloom(r1, r2, 0.000001f, size, diff, 1000))
 
-     // println(syncRIBLT(r1, r2, 20, 100, 1, 1))
+      //println(syncPingPong(r1, r2, size, diff, 1000, 1000))
+      // println(syncPingPong(r1, r2, 10, 1, 10))
+      // println(syncPingPong(r1, r2, 10, 1, 20))
+      // println(syncPingPong(r1, r2, 10, 1, 100))
 
-      //println(syncRIBLT(r1, r2))
+      // println(syncRIBLT(r1, r2, 20, 100, 1, 1))
+
+      // println(syncRIBLT(r1, r2))
 
       /*val replica1 = ReplicaExamples.Example1.replica1
       val replica2 = ReplicaExamples.Example1.replica2
