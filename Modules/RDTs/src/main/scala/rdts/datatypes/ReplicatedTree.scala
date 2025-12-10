@@ -73,11 +73,18 @@ case class ReplicatedTree[A](
   }
 
   def delete(dot: Dot): Delta = {
+    def collectChildrenDots(toDelete: Dot, acc: Dots): Dots = {
+      children(toDelete)
+        .map(_.dot)
+        .foldLeft(acc `union` Dots.single(toDelete)) { (currentAcc, childDot) =>
+          collectChildrenDots(childDot, currentAcc)
+        }
+    }
+
     // TODO: do we also need to cleanup the edges maps?
-    // TODO: Delete subtree to avoid tracking nodes that are no longer reachable?
     ReplicatedTree(
       elements = Map.empty,
-      removed = Dots.single(dot)
+      removed = collectChildrenDots(dot, Dots.single(dot))
     )
   }
 

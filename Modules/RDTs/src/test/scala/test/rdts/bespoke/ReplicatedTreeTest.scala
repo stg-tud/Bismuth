@@ -364,6 +364,215 @@ class ReplicatedTreeTest extends munit.FunSuite {
       d.assertChildren(Set("A"))
     }
   }
+
+  test("move with concurrent deletion") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var tree = ReplicatedTree.empty[String]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    val parent = tree.root.get.dot
+    tree = tree `merge` tree.insert(parent, "A")(using aid)
+    tree = tree `merge` tree.insert(parent, "B")(using bid)
+    val a = tree.children(parent).find(_.value == "A").get.dot
+    val b = tree.children(parent).find(_.value == "B").get.dot
+
+    {
+      assertEquals(tree.size, 3)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
+    }
+
+    val delta1a = tree.move(b, a)
+    val delta1b = tree.delete(b)
+
+    val v1a = tree `merge` delta1a
+    val v1b = tree `merge` delta1b
+
+    {
+      assertEquals(v1a.size, 3)
+      val rootA = treeView(v1a)
+      rootA.assertValue("ROOT")
+      rootA.assertChildren(Set("A"))
+
+      val n1a = rootA.child("A")
+      n1a.assertChildren(Set("B"))
+
+      assertEquals(v1b.size, 2)
+      val rootB = treeView(v1b)
+      rootB.assertValue("ROOT")
+      rootB.assertChildren(Set("A"))
+    }
+
+    tree = tree `merge` delta1a `merge` delta1b
+
+    {
+      assertEquals(tree.size, 2)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A"))
+    }
+  }
+
+  test("move with concurrent target deletion") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var tree = ReplicatedTree.empty[String]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    val parent = tree.root.get.dot
+    tree = tree `merge` tree.insert(parent, "A")(using aid)
+    tree = tree `merge` tree.insert(parent, "B")(using bid)
+    val a = tree.children(parent).find(_.value == "A").get.dot
+    val b = tree.children(parent).find(_.value == "B").get.dot
+
+    {
+      assertEquals(tree.size, 3)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
+    }
+
+    val delta1a = tree.move(b, a)
+    val delta1b = tree.delete(a)
+
+    val v1a = tree `merge` delta1a
+    val v1b = tree `merge` delta1b
+
+    {
+      assertEquals(v1a.size, 3)
+      val rootA = treeView(v1a)
+      rootA.assertValue("ROOT")
+      rootA.assertChildren(Set("A"))
+
+      val n1a = rootA.child("A")
+      n1a.assertChildren(Set("B"))
+
+      assertEquals(v1b.size, 2)
+      val rootB = treeView(v1b)
+      rootB.assertValue("ROOT")
+      rootB.assertChildren(Set("B"))
+    }
+
+    tree = tree `merge` delta1a `merge` delta1b
+
+    {
+      assertEquals(tree.size, 2)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("B"))
+    }
+  }
+
+  test("nested deletion") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var tree = ReplicatedTree.empty[String]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    val parent = tree.root.get.dot
+    tree = tree `merge` tree.insert(parent, "A")(using aid)
+    tree = tree `merge` tree.insert(parent, "B")(using bid)
+    val a = tree.children(parent).find(_.value == "A").get.dot
+    val b = tree.children(parent).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(a, "A1")(using aid)
+    tree = tree `merge` tree.insert(a, "A2")(using aid)
+
+    {
+      assertEquals(tree.size, 5)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
+
+      val n1 = root.child("A")
+      n1.assertChildren(Set("A1", "A2"))
+    }
+
+    tree = tree `merge` tree.delete(a)
+
+    {
+      assertEquals(tree.size, 2)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("B"))
+    }
+  }
+
+  test("concurrent move with nested deletion") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var tree = ReplicatedTree.empty[String]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    val parent = tree.root.get.dot
+    tree = tree `merge` tree.insert(parent, "A")(using aid)
+    tree = tree `merge` tree.insert(parent, "B")(using bid)
+    val a = tree.children(parent).find(_.value == "A").get.dot
+    val b = tree.children(parent).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(a, "C")(using aid)
+    val c = tree.children(a).find(_.value == "C").get.dot
+    tree = tree `merge` tree.insert(c, "D")(using aid)
+    val d = tree.children(c).find(_.value == "D").get.dot
+
+    {
+      assertEquals(tree.size, 5)
+
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
+
+      val n1 = root.child("A")
+      n1.assertChildren(Set("C"))
+
+      val n2 = n1.child("C")
+      n2.assertChildren(Set("D"))
+    }
+
+    val delta1a = tree.move(c, b)
+    val delta1b = tree.delete(d)
+    val v1a     = tree `merge` delta1a
+    val v1b     = tree `merge` delta1b
+
+    {
+      assertEquals(v1a.size, 5)
+      val rootA = treeView(v1a)
+      rootA.assertValue("ROOT")
+      rootA.assertChildren(Set("A", "B"))
+
+      val n1A = rootA.child("B")
+      n1A.assertChildren(Set("C"))
+
+      val n2A = n1A.child("C")
+      n2A.assertChildren(Set("D"))
+
+      assertEquals(v1b.size, 4)
+      val rootB = treeView(v1b)
+      rootB.assertValue("ROOT")
+      rootB.assertChildren(Set("A", "B"))
+
+      val n1B = rootB.child("A")
+      n1B.assertChildren(Set("C"))
+    }
+
+    tree = tree `merge` delta1a `merge` delta1b
+
+    {
+      assertEquals(tree.size, 4)
+      val root = treeView(tree)
+      root.assertValue("ROOT")
+      root.assertChildren(Set("A", "B"))
+
+      val n1 = root.child("B")
+      n1.assertChildren(Set("C"))
+    }
+  }
 }
 
 def randomTree(treeSize: Int): (ReplicatedTree[Int], List[ReplicatedTree[Int]]) = {
