@@ -1,6 +1,6 @@
 package com.daimpl.lib
 
-import com.daimpl.lib.Spreadsheet.{RangeId, SpreadsheetCoordinate}
+import com.daimpl.lib.Spreadsheet.SpreadsheetCoordinate
 import rdts.base.LocalUid
 
 class UndoRecordingSpreadsheet[S](
@@ -19,37 +19,37 @@ class UndoRecordingSpreadsheet[S](
     res
   }
 
-  override def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[S] = {
+  override def removeRow(rowIdx: RowIndex)(using LocalUid): Spreadsheet[S] = {
     val undo = delegate.internal.keepRow(rowIdx)
     pushUndo { s => s `merge` undo }
     delegate.removeRow(rowIdx)
   }
 
-  override def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[S] = {
+  override def removeColumn(colIdx: ColumnIndex)(using LocalUid): Spreadsheet[S] = {
     val undo = delegate.internal.keepColumn(colIdx)
     pushUndo { s => s `merge` undo }
     delegate.removeColumn(colIdx)
   }
 
-  override def insertRow(rowIdx: Int)(using LocalUid): RowResult[S] = {
+  override def insertRow(rowIdx: RowIndex)(using LocalUid): RowResult[S] = {
     val res = delegate.insertRow(rowIdx)
     pushUndo { s => s.removeRowById(res.newRowId) }
     res
   }
 
-  override def insertColumn(colIdx: Int)(using LocalUid): ColumnResult[S] = {
+  override def insertColumn(colIdx: ColumnIndex)(using LocalUid): ColumnResult[S] = {
     val res = delegate.insertColumn(colIdx)
     pushUndo { s => s.removeColumnById(res.newColumnId) }
     res
   }
 
-  override def moveRow(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.moveRow(if (sourceIdx < targetIdx) targetIdx - 1 else targetIdx, sourceIdx) }
+  override def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using LocalUid): Spreadsheet[S] = {
+    pushUndo { s => s.moveRow(if (sourceIdx < targetIdx) (targetIdx - 1).toRowIndex else targetIdx, sourceIdx) }
     delegate.moveRow(sourceIdx, targetIdx)
   }
 
-  override def moveColumn(sourceIdx: Int, targetIdx: Int)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.moveColumn(if (sourceIdx < targetIdx) targetIdx - 1 else targetIdx, sourceIdx) }
+  override def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using LocalUid): Spreadsheet[S] = {
+    pushUndo { s => s.moveColumn(if (sourceIdx < targetIdx) (targetIdx - 1).toColumnIndex else targetIdx, sourceIdx) }
     delegate.moveColumn(sourceIdx, targetIdx)
   }
 
