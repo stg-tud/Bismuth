@@ -22,8 +22,8 @@ class PoSBlockchainTest extends FunSuite {
     val block2 = Block(replicaA.buffer.result.state.validHead, "Goodbye World", replicaA.nextDot, difficulty)
     replicaA.mod(_.addBlock(block2))
 
-    println("--- replica a")
-    println(replicaA.buffer.result.state.toTreeString)
+    //println("--- replica a")
+    //println(replicaA.buffer.result.state.toTreeString)
 
     assertEquals(replicaA.buffer.result.state.validHead, block2.hash)
     assert(replicaA.buffer.result.state.validate())
@@ -47,10 +47,10 @@ class PoSBlockchainTest extends FunSuite {
     replicaA.mod(_.addBlock(block2))
     Replica.quiescence(replicaA, replicaB)
 
-    println("--- replica a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- replica b")
-    println(replicaB.buffer.result.state.toTreeString)
+    //println("--- replica a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- replica b")
+    //println(replicaB.buffer.result.state.toTreeString)
 
     assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
     assert(replicaA.buffer.result.state.validate())
@@ -73,10 +73,10 @@ class PoSBlockchainTest extends FunSuite {
     replicaB.mod(_.addBlock(block1))
     Replica.quiescence(replicaA, replicaB)
 
-    println("--- replica a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- replica b")
-    println(replicaB.buffer.result.state.toTreeString)
+    //println("--- replica a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- replica b")
+    //println(replicaB.buffer.result.state.toTreeString)
 
     assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
     assert(replicaA.buffer.result.state.validate())
@@ -123,10 +123,10 @@ class PoSBlockchainTest extends FunSuite {
     assertEquals(replicaA.buffer.result.state.validHead, block7.hash)
     assertEquals(replicaB.buffer.result.state.validHead, block7.hash)
 
-    println("--- blockchain a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- blockchain b")
-    println(replicaB.buffer.result.state.toTreeString)
+    //println("--- blockchain a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- blockchain b")
+    //println(replicaB.buffer.result.state.toTreeString)
 
     assert(replicaA.buffer.result.state.validate())
     assert(replicaB.buffer.result.state.validate())

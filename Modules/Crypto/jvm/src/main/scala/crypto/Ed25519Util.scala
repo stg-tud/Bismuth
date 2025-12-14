@@ -109,9 +109,10 @@ object Ed25519Util {
     val keySpec    = new PKCS8EncodedKeySpec(pkcs8EncodedKey)
     val keyFactory = KeyFactory.getInstance("Ed25519", "BC")
     val privateKey = keyFactory.generatePrivate(keySpec).asInstanceOf[BCEdDSAPrivateKey]
+    val publicKey = privateKey.getPublicKey
 
     KeyPair(
-      privateKey.getPublicKey,
+      publicKey,
       privateKey
     )
   }

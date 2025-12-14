@@ -5,6 +5,7 @@ import java.security.{PrivateKey, PublicKey}
 import crypto.Ed25519Util
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 // a hash directed acyclic graph
 case class HashDAG[T](
@@ -12,7 +13,7 @@ case class HashDAG[T](
     events: Map[String, Event[T]],
     publicKey: PublicKey,
     privateKey: Option[PrivateKey],
-    queue: Set[Event[T]] = Set.empty[Event[T]],
+    queue: Set[Event[T]] = Set.empty[Event[T]],//Map[Event[T], Int] = Map.empty[Event[T], Int],
     byzantineNodes: Set[PublicKey] = Set.empty
 ):
 
@@ -42,7 +43,7 @@ case class HashDAG[T](
     def getCurrentHeadsIDs: Set[String] =
       graph.filter((_, set) => set.isEmpty).keySet
 
-    def generator(content: T): Event[T] = {
+    def generate(content: T): Event[T] = {
       val signature = Ed25519Util.sign(content.toString.getBytes, privateKey.get)
 
       Event(Some(content), publicKey, getCurrentHeadsIDs, signature)
@@ -51,22 +52,42 @@ case class HashDAG[T](
     def merge(delta: HashDAG[T]): HashDAG[T] =
         var result = this
 
-        for event <- delta.events.values do
-            result = result.effector(event)
+        for event <- delta.getEventsTopologicallySorted ++ delta.queue do {
+            result = result.effect(event)
+        }
 
-        for event <- delta.queue do
-            result = result.effector(event)
-
+        // This works, a bit slow, but it works
         var i = result.queue.size
         while i != 0 do
             i = 0
             for event <- result.queue do
-                result = result.effector(event)
+                result = result.effect(event)
                 if result.contains(event) then i += 1
 
         result
 
-    def effector(event: Event[T]): HashDAG[T] =
+        // collect ready events (inDeg == 0)
+        /*val ready = mutable.Queue.empty[Event[T]]
+        result.queue.foreach { (e, inDeg)  =>
+          if inDeg == 0 then ready.enqueue(e)
+        }
+
+        // process ready events
+        while ready.nonEmpty do
+          val e = ready.dequeue()
+
+          val before = result
+          val after = result.effector(e)
+
+          if (after ne before) then {
+            result = after
+
+            ready.enqueueAll(result.queue.filter((e, i) => i == 0).keySet)
+          }
+
+        result*/
+
+    def effect(event: Event[T]): HashDAG[T] =
       if contains(event) then
           this
       else
@@ -84,6 +105,11 @@ case class HashDAG[T](
                       val e = events(d)
                       g = g.updated(d, g(d) + event.id)
 
+                  /*val tmp = this.queue.keySet.filter(e => e.dependencies.contains(event.id))
+                  var q = this.queue
+                  for t <- tmp do
+                    q = q + (t -> (q(t) - 1))*/
+
                   HashDAG(
                     g + (event.id           -> Set.empty),
                     this.events + (event.id -> event),
@@ -98,17 +124,17 @@ case class HashDAG[T](
                     this.events,
                     this.publicKey,
                     this.privateKey,
-                    this.queue + event,
+                    this.queue + event, // (event -> event.dependencies.count(d => this.contains(d))),
                     this.byzantineNodes
                   )
 
     def addEvent(content: T): HashDAG[T] =
         // generate the event
         val currentHeads = getCurrentHeads
-        val event        = generator(content)
+        val event        = generate(content)
 
         // apply the event
-        effector(event)
+        effect(event)
 
     def generateDelta(content: T): HashDAG[T] = {
       // private key is empty => cannot sign any events => cannot generate any new events
@@ -119,10 +145,10 @@ case class HashDAG[T](
       else
           // generate the event
           val currentHeads = getCurrentHeads
-          val event        = generator(content)
+          val event        = generate(content)
 
           // apply the event
-          this.empty.effector(event)
+          this.empty.effect(event)
     }
 
     def processQueue(): HashDAG[T] =
@@ -130,7 +156,7 @@ case class HashDAG[T](
         var events  = Set.empty[Event[T]]
 
         for event <- this.queue do {
-          val tmp = hashDAG.effector(event)
+          val tmp = hashDAG.effect(event)
           hashDAG = tmp
         }
 
@@ -180,7 +206,7 @@ case class HashDAG[T](
       HashDAG(this.publicKey, None)
 
     def withQueue(events: Set[Event[T]]): HashDAG[T] =
-      this.empty.copy(queue = events)
+      this.empty.copy(queue = events) //.map(e => e -> 0).toMap)
 
     def getIDs: Set[String] = events.keySet ++ queue.map(e => e.id)
 
@@ -188,9 +214,9 @@ case class HashDAG[T](
       withQueue(ids.map(id => events(id)).toSet)
 
     def orderEvents(events: Iterable[Event[T]]): List[Event[T]] =
-      events.toList.sortBy(topologicalSort.zipWithIndex.toMap)
+      events.toList.sortBy(getEventsTopologicallySorted.zipWithIndex.toMap)
 
-    def topologicalSort: List[Event[T]] =
+    def getEventsTopologicallySorted: List[Event[T]] =
         val nodes = graph.keySet ++ graph.values.flatten
 
         // Compute in-degree of each node
@@ -219,6 +245,18 @@ case class HashDAG[T](
           events(id).dependencies
       else
           Set.empty
+
+    def getNDependencies(id: String, n: Int): Set[String] =
+
+      def loop(curr: Set[String], depth: Int, visited: Set[String]): Set[String] =
+        if (depth > n || curr.isEmpty)
+          visited
+        else {
+          val next = curr.flatMap(dep => events(dep).dependencies)
+          loop(next, depth + 1, visited ++ curr)
+        }
+
+      loop(events(id).dependencies, 1, Set.empty)
 
 object HashDAG:
     def apply[T](publicKey: PublicKey, privateKey: Option[PrivateKey]): HashDAG[T] =

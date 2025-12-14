@@ -4,7 +4,6 @@ import datatypes.ORSet
 import network.Network
 import org.openjdk.jmh.annotations.*
 import riblt.RIBLTSyncWithThreads
-import riblt.RIBLTSyncWithThreads.given_JsonValueCodec_ORSet
 import riblt.SessionType.{receiver, sender}
 
 import scala.util.Random

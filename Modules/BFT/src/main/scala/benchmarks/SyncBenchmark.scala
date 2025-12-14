@@ -2,16 +2,15 @@ package benchmarks
 
 import datatypes.ORSet
 import org.openjdk.jmh.annotations.*
-import riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
-import riblt.RIBLT
 
 import java.io.*
-import scala.util.Random
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ListBuffer
 
-@AuxCounters(AuxCounters.Type.EVENTS)
+
+/*@AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
+*/
 class SyncMetrics {
   var roundtripsAll: Int = 0
   var run                = 0
@@ -25,87 +24,110 @@ class SyncMetrics {
 @State(Scope.Benchmark)
 class SyncBenchmark {
 
-  @Param(Array("1000", "10000", "100000"))
+  @Param(Array("10000"))
   var size: Int = 0
-  @Param(Array("0.6", "0.8", "0.9"))
+  @Param(Array(/*"0.01", "0.05", "0.1", "0.2", "0.5", "0.8", */"0.9","1"))
   var diff: Float = 0
+  //@Param(Array("1", "10", "100", "1000"))
+  var deltaSizeInKiloBytes: Int = 1
 
-  var replica1 = ORSet[String]()
-  var replica2 = ORSet[String]()
-  var riblt1   = RIBLT[String]()
-  var riblt2   = RIBLT[String]()
+  var r1 = ORSet[String]()
+  var r2 = ORSet[String]()
 
-  @Setup(Level.Invocation)
+  @Setup(Level.Trial)
   def setup(): Unit = {
+    val gen = ReplicaGenerator.generate(size, diff, r1, r2, deltaSizeInKiloBytes)
 
-    replica1 = ORSet[String]()
-    replica2 = ORSet[String]()
-    riblt1 = RIBLT[String]()
-    riblt2 = RIBLT[String]()
-
-    for i <- 0 to size do
-        val r = Random().nextDouble()
-        if r <= diff then {
-          var tmp = ORSet[String]()
-          val rr  = Random().nextDouble()
-          if rr <= 0.5 then
-              tmp = replica1.add(i.toString)
-          else
-              tmp = replica2.add(i.toString)
-
-          replica1 = replica1.merge(tmp)
-          replica2 = replica2.merge(tmp)
-        } else
-            val rr = Random().nextDouble()
-            if rr <= 0.5 then
-                replica1 = replica1.merge(replica1.add(i.toString))
-            else
-                replica2 = replica2.merge(replica2.add(i.toString))
+    r1 = gen._1
+    r2 = gen._2
 
   }
 
   @Benchmark
-  def sync(syncMetrics: SyncMetrics): Unit = {
-    var r = 0
+  def sync(): Unit = {
 
-    for id <- replica1.hashDAG.getIDs do
-        riblt1.addSymbol(id)
+    // RIBLT
+    println("rib1")
+    var res = SyncStrategies.syncRIBLT(r1, r2, 1, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    println("rib2")
+    res = SyncStrategies.syncRIBLT(r1, r2, 5, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt1 = res.roundTrips
 
-    for id <- replica2.hashDAG.getIDs do
-        riblt2.addSymbol(id)
+    res = SyncStrategies.syncRIBLT(r1, r2, 10, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt2 = res.roundTrips
 
-    while !riblt1.isDecoded do {
-      val cs = riblt2.produceNextCodedSymbol
-      riblt1.addCodedSymbol(cs)
-      r += 1
-      // println(r)
-    }
+    res = SyncStrategies.syncRIBLT(r1, r2, 20, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt3 = res.roundTrips
 
-    // println("DONE")
+    res = SyncStrategies.syncRIBLT(r1, r2, 50, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt4 = res.roundTrips
 
-    syncMetrics.roundtripsAll += r
-    syncMetrics.run += 1
-    MyCollector.add(r)
+    res = SyncStrategies.syncRIBLT(r1, r2, 100, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt5 = res.roundTrips
+
+    res = SyncStrategies.syncRIBLT(r1, r2, 1000, size, diff, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt6 = res.roundTrips
+
+    println("check1")
+
+    // Recursive Sync
+    val d = diff * size
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, 1, deltaSizeInKiloBytes)
+    MyCollector.add(res)
+    val rt = res.roundTrips
+
+    println("check2")
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt1, rt), deltaSizeInKiloBytes)
+    MyCollector.add(res)
+
+    println("check3")
+
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt2, rt), deltaSizeInKiloBytes)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt3, rt), deltaSizeInKiloBytes)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt4, rt), deltaSizeInKiloBytes)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt5, rt), deltaSizeInKiloBytes)
+    MyCollector.add(res)
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt6, rt), deltaSizeInKiloBytes)
+    MyCollector.add(res)
   }
 
   @TearDown(Level.Trial)
   def tearDown(): Unit = {
     val allValues = MyCollector.getAll
 
-    val writer  = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
-    val printer = new PrintWriter(writer)
-
-    printer.println(s"size = $size, diff = $diff")
-    printer.println(allValues) // .foldLeft("")((z, i) => z.concat(s"${i.toString}, ")))
-    printer.close()
+    val writer = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
+    benchmarks.Measurement.writeCSVRows(writer, allValues)
   }
 
+  def calculateNeededRSyncDepth(ribltRT: Int, RSyncRT: Int): Int =
+    val tmp = RSyncRT / ribltRT
+    if tmp == 0 || tmp == 1 then
+      2
+    else
+      tmp
+
   private object MyCollector {
-    private val buf = ListBuffer[Int]()
+    private val buf = ListBuffer[benchmarks.Measurement]()
 
-    def add(v: Int): Unit = synchronized { buf += v }: Unit
+    def add(measurement: benchmarks.Measurement): Unit = synchronized { buf += measurement }: Unit
 
-    def getAll: Seq[Int] = buf.toList
+    def getAll: Seq[benchmarks.Measurement] = buf.toList
 
     def clear(): Unit = this.synchronized {
       buf.clear()

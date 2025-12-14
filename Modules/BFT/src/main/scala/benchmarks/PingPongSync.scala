@@ -4,7 +4,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import datatypes.Replica
 import network.Network
-import dag.Event
 
 class PingPongSync[T, R <: Replica[T, R]](
     var replica: R,

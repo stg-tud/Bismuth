@@ -22,12 +22,12 @@ class PoWBlockchainTest extends FunSuite {
     replicaC.mod(_.addBlock(block2))
     Replica.quiescence(replicaA, replicaB, replicaC)
 
-    println("--- replica a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- replica b")
-    println(replicaB.buffer.result.state.toTreeString)
-    println("--- replica c")
-    println(replicaC.buffer.result.state.toTreeString)
+    //println("--- replica a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- replica b")
+    //println(replicaB.buffer.result.state.toTreeString)
+    //println("--- replica c")
+    //println(replicaC.buffer.result.state.toTreeString)
 
     assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
     assertEquals(replicaB.buffer.result.state.validHead, replicaC.buffer.result.state.validHead)
@@ -49,10 +49,10 @@ class PoWBlockchainTest extends FunSuite {
     replicaB.mod(_.addBlock(block2))
     Replica.quiescence(replicaA, replicaB)
 
-    println("--- blockchain a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- blockchain b")
-    println(replicaB.buffer.result.state.toTreeString)
+    //println("--- blockchain a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- blockchain b")
+    //println(replicaB.buffer.result.state.toTreeString)
 
     assertEquals(replicaA.buffer.result.state.validHead, replicaB.buffer.result.state.validHead)
     assert(replicaA.buffer.result.state.contains(block1))
@@ -72,10 +72,10 @@ class PoWBlockchainTest extends FunSuite {
     replicaA.mod(_.addBlock(block5))
     Replica.quiescence(replicaA, replicaB)
 
-    println("--- blockchain a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- blockchain b")
-    println(replicaB.buffer.result.state.toTreeString)
+    //println("--- blockchain a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- blockchain b")
+    //println(replicaB.buffer.result.state.toTreeString)
 
     assertEquals(replicaA.buffer.result.state.validHead, latestB)
     assertEquals(replicaB.buffer.result.state.validHead, latestB)
@@ -124,10 +124,10 @@ class PoWBlockchainTest extends FunSuite {
     assertEquals(replicaA.buffer.result.state.validHead, block7.hash)
     assertEquals(replicaB.buffer.result.state.validHead, block7.hash)
 
-    println("--- blockchain a")
-    println(replicaA.buffer.result.state.toTreeString)
-    println("--- blockchain b")
-    println(replicaB.buffer.result.state.toTreeString)
+    //println("--- blockchain a")
+    //println(replicaA.buffer.result.state.toTreeString)
+    //println("--- blockchain b")
+    //println(replicaB.buffer.result.state.toTreeString)
 
     assert(replicaA.buffer.result.state.validate())
     assert(replicaB.buffer.result.state.validate())
