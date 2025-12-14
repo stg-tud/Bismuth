@@ -19,6 +19,18 @@ case class Spreadsheet[A](
 
   private def newRowOrColId(using LocalUid): Dot = observed.nextDot(LocalUid.replicaId)
 
+  class SpreadsheetInternal {
+    def keepRow(index: Int)(using LocalUid): Spreadsheet[A] = Spreadsheet(
+      rowIds = rowIds.insertAt(index, getRowId(index).get)
+    )
+
+    def keepColumn(index: Int)(using LocalUid): Spreadsheet[A] = Spreadsheet(
+      colIds = colIds.insertAt(index, getColId(index).get)
+    )
+  }
+
+  lazy val internal = SpreadsheetInternal()
+  
   def addRow()(using LocalUid): RowResult[A] =
     val id = newRowOrColId
     RowResult(id, Spreadsheet[A](rowIds = rowIds.append(id)))

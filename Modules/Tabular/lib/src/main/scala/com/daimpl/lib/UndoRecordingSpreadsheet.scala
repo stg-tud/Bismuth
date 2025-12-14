@@ -20,12 +20,14 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def removeRow(rowIdx: Int)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.insertRow(rowIdx).delta }
+    val undo = delegate.internal.keepRow(rowIdx)
+    pushUndo { s => s `merge` undo }
     delegate.removeRow(rowIdx)
   }
 
   override def removeColumn(colIdx: Int)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.insertColumn(colIdx).delta }
+    val undo = delegate.internal.keepColumn(colIdx)
+    pushUndo { s => s `merge` undo }
     delegate.removeColumn(colIdx)
   }
 
@@ -64,7 +66,12 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.removeRange(id) }
+    val before = delegate.getRange(id)
+    if (before.isDefined) {
+      pushUndo { s => s.addRange(id, before.get.from, before.get.to) }
+    } else {
+      pushUndo { s => s.removeRange(id) }
+    }
     delegate.addRange(id, from, to)
   }
 
