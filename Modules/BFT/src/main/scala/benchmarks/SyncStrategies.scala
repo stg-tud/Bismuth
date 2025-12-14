@@ -118,7 +118,7 @@ object SyncStrategies {
 
     while toR1.nonEmpty || toR2.nonEmpty || needFromR1.nonEmpty || needFromR2.nonEmpty do {
 
-      //   Replica 1 receives
+      // Replica 1 receives
       receivedByR1 = receivedByR1 ++ toR1
       for ev <- toR1 do {
         if !replica1.hashDAG.contains(ev.id) then {
@@ -169,7 +169,7 @@ object SyncStrategies {
     val deltaBandwidth: Long = ((events1 -- events2) ++ (events2 -- events1)).toList.map(writeToArray(_).length).sum
 
     Measurement(
-      method = s"RSync-${dependencyPerRoundTrip}",
+      method = "RSync",
       dagSize = size,
       diff = diff,
       roundTrips = roundTrips,
@@ -246,7 +246,7 @@ object SyncStrategies {
     val deltaBandwidth: Long = d.map(x => writeToArray(x).length).sum
 
     Measurement(
-      method = s"RIBLT-${codedSymbolsPerRoundTrip}",
+      method = "RIBLT",
       dagSize = size,
       diff = diff,
       roundTrips = roundTrips,
@@ -264,7 +264,7 @@ object SyncStrategies {
       size: Int,
       diff: Float,
       deltaSize: Int
-  )(using JsonValueCodec[Event[T]]): Measurement = {
+  )(using JsonValueCodec[Event[T]]): Measurement = ???/*{
     var roundTrips = 0
     var bandwidth = 0L
 
@@ -308,9 +308,8 @@ object SyncStrategies {
 
     val synced = (toR1.map(e => e.id) ++ IDs1) == (toR2.map(e => e.id) ++ IDs2)
 
-    var c = -1
-    if synced then
-      c = 1
+    if !synced then
+
 
     val events1 = replica1.hashDAG.events.values.toSet
     val events2 = replica2.hashDAG.events.values.toSet
@@ -327,7 +326,7 @@ object SyncStrategies {
       codedSymbolPerRoundTrip = c,
       deltaSize = deltaSize
     )
-  }
+  }*/
 
   @main def main(): Unit =
       given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make

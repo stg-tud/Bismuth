@@ -26,10 +26,10 @@ class SyncBenchmark {
 
   @Param(Array("10000"))
   var size: Int = 0
-  @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
+  @Param(Array(/*"0.01", "0.05", "0.1", "0.2", "0.5", "0.8", */"0.9","1"))
   var diff: Float = 0
-  //@Param(Array(/*"1", "10", "100",*/ "1000"))
-  var deltaSizeInKiloBytes: Int = 100
+  //@Param(Array("1", "10", "100", "1000"))
+  var deltaSizeInKiloBytes: Int = 1
 
   var r1 = ORSet[String]()
   var r2 = ORSet[String]()
@@ -47,9 +47,10 @@ class SyncBenchmark {
   def sync(): Unit = {
 
     // RIBLT
+    println("rib1")
     var res = SyncStrategies.syncRIBLT(r1, r2, 1, size, diff, deltaSizeInKiloBytes)
     MyCollector.add(res)
-
+    println("rib2")
     res = SyncStrategies.syncRIBLT(r1, r2, 5, size, diff, deltaSizeInKiloBytes)
     MyCollector.add(res)
     val rt1 = res.roundTrips
@@ -74,27 +75,35 @@ class SyncBenchmark {
     MyCollector.add(res)
     val rt6 = res.roundTrips
 
+    println("check1")
+
     // Recursive Sync
     val d = diff * size
     res = SyncStrategies.syncPingPong(r1, r2, size, diff, 1, deltaSizeInKiloBytes)
     MyCollector.add(res)
+    val rt = res.roundTrips
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt1).toInt, deltaSizeInKiloBytes)
+    println("check2")
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt1, rt), deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt2).toInt, deltaSizeInKiloBytes)
+    println("check3")
+
+
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt2, rt), deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt3).toInt, deltaSizeInKiloBytes)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt3, rt), deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt4).toInt, deltaSizeInKiloBytes)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt4, rt), deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt5).toInt, deltaSizeInKiloBytes)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt5, rt), deltaSizeInKiloBytes)
     MyCollector.add(res)
 
-    res = SyncStrategies.syncPingPong(r1, r2, size, diff, (d / rt6).toInt, deltaSizeInKiloBytes)
+    res = SyncStrategies.syncPingPong(r1, r2, size, diff, calculateNeededRSyncDepth(rt6, rt), deltaSizeInKiloBytes)
     MyCollector.add(res)
   }
 
@@ -105,6 +114,13 @@ class SyncBenchmark {
     val writer = new FileWriter("src/main/scala/benchmarks/benchmark.csv", true)
     benchmarks.Measurement.writeCSVRows(writer, allValues)
   }
+
+  def calculateNeededRSyncDepth(ribltRT: Int, RSyncRT: Int): Int =
+    val tmp = RSyncRT / ribltRT
+    if tmp == 0 || tmp == 1 then
+      2
+    else
+      tmp
 
   private object MyCollector {
     private val buf = ListBuffer[benchmarks.Measurement]()

@@ -27,6 +27,7 @@ object ReplicaGenerator:
       r1 = performActionOnReplica(r1, s)
       r2 = performActionOnReplica(r2, s)
 
+    println("done generating")
     (r1, r2)
   }
 

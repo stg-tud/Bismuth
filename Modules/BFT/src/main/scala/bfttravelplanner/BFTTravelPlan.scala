@@ -55,7 +55,7 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan]):
         var newHashDAG = this.hashDAG
         for event <- events do
             val delta = event.content
-            newHashDAG = newHashDAG.effector(event)
+            newHashDAG = newHashDAG.effect(event)
             if newHashDAG.contains(event) && !this.hashDAG.contains(event) && delta.nonEmpty then {
               state = state.merge(delta.get)
             }

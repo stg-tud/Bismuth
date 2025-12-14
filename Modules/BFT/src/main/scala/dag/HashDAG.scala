@@ -43,7 +43,7 @@ case class HashDAG[T](
     def getCurrentHeadsIDs: Set[String] =
       graph.filter((_, set) => set.isEmpty).keySet
 
-    def generator(content: T): Event[T] = {
+    def generate(content: T): Event[T] = {
       val signature = Ed25519Util.sign(content.toString.getBytes, privateKey.get)
 
       Event(Some(content), publicKey, getCurrentHeadsIDs, signature)
@@ -53,7 +53,7 @@ case class HashDAG[T](
         var result = this
 
         for event <- delta.getEventsTopologicallySorted ++ delta.queue do {
-            result = result.effector(event)
+            result = result.effect(event)
         }
 
         // This works, a bit slow, but it works
@@ -61,7 +61,7 @@ case class HashDAG[T](
         while i != 0 do
             i = 0
             for event <- result.queue do
-                result = result.effector(event)
+                result = result.effect(event)
                 if result.contains(event) then i += 1
 
         result
@@ -87,7 +87,7 @@ case class HashDAG[T](
 
         result*/
 
-    def effector(event: Event[T]): HashDAG[T] =
+    def effect(event: Event[T]): HashDAG[T] =
       if contains(event) then
           this
       else
@@ -131,10 +131,10 @@ case class HashDAG[T](
     def addEvent(content: T): HashDAG[T] =
         // generate the event
         val currentHeads = getCurrentHeads
-        val event        = generator(content)
+        val event        = generate(content)
 
         // apply the event
-        effector(event)
+        effect(event)
 
     def generateDelta(content: T): HashDAG[T] = {
       // private key is empty => cannot sign any events => cannot generate any new events
@@ -145,10 +145,10 @@ case class HashDAG[T](
       else
           // generate the event
           val currentHeads = getCurrentHeads
-          val event        = generator(content)
+          val event        = generate(content)
 
           // apply the event
-          this.empty.effector(event)
+          this.empty.effect(event)
     }
 
     def processQueue(): HashDAG[T] =
@@ -156,7 +156,7 @@ case class HashDAG[T](
         var events  = Set.empty[Event[T]]
 
         for event <- this.queue do {
-          val tmp = hashDAG.effector(event)
+          val tmp = hashDAG.effect(event)
           hashDAG = tmp
         }
 
