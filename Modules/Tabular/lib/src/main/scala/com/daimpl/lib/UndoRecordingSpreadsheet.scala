@@ -21,13 +21,15 @@ class UndoRecordingSpreadsheet[S](
 
   override def removeRow(rowIdx: RowIndex)(using LocalUid): Spreadsheet[S] = {
     val undo = delegate.internal.keepRow(rowIdx)
-    pushUndo { s => s `merge` undo }
+    val id = delegate.getRowId(rowIdx).get
+    pushUndo { s => if (s.listRowIds.contains(id)) s `merge` undo else s}
     delegate.removeRow(rowIdx)
   }
 
   override def removeColumn(colIdx: ColumnIndex)(using LocalUid): Spreadsheet[S] = {
     val undo = delegate.internal.keepColumn(colIdx)
-    pushUndo { s => s `merge` undo }
+    val id = delegate.getColId(colIdx).get
+    pushUndo { s => if (s.listColumnIds.contains(id)) s `merge` undo else s}
     delegate.removeColumn(colIdx)
   }
 
