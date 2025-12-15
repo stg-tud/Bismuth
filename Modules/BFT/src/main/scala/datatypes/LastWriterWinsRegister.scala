@@ -4,12 +4,12 @@ import crypto.Ed25519Util
 import dag.HashDAG
 import scala.util.hashing.MurmurHash3
 
-case class LastWriterWins[T](
+case class LastWriterWinsRegister[T](
     hashDAG: HashDAG[T]
-) extends Replica[T, LastWriterWins[T]]:
+) extends Replica[T, LastWriterWinsRegister[T]]:
 
-    def write(value: T): LastWriterWins[T] =
-      LastWriterWins(hashDAG.generateDelta(value))
+    def write(value: T): LastWriterWinsRegister[T] =
+      LastWriterWinsRegister(hashDAG.generateDelta(value))
 
     def read: Option[T] =
         val heads = hashDAG.getCurrentHeads
@@ -24,12 +24,12 @@ case class LastWriterWins[T](
               !hashDAG.autohrIsByzantine(e.author)
             ).map(e => e.content.get)
 
-    def merge(lww: LastWriterWins[T]): LastWriterWins[T] =
-      LastWriterWins(hashDAG.merge(lww.hashDAG))
+    def merge(lww: LastWriterWinsRegister[T]): LastWriterWinsRegister[T] =
+      LastWriterWinsRegister(hashDAG.merge(lww.hashDAG))
 
-    override def generateDelta(ids: List[String]): LastWriterWins[T] = LastWriterWins(hashDAG.getDelta(ids))
+    override def generateDelta(ids: List[String]): LastWriterWinsRegister[T] = LastWriterWinsRegister(hashDAG.getDelta(ids))
 
-object LastWriterWins:
-    def apply[T](): LastWriterWins[T] =
+object LastWriterWinsRegister:
+    def apply[T](): LastWriterWinsRegister[T] =
         val keyPair = Ed25519Util.generateNewKeyPair
-        LastWriterWins(HashDAG(keyPair.getPublic, Some(keyPair.getPrivate)))
+        LastWriterWinsRegister(HashDAG(keyPair.getPublic, Some(keyPair.getPrivate)))

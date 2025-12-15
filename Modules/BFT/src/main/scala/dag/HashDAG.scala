@@ -248,6 +248,7 @@ case class HashDAG[T](
 
     def getNDependencies(id: String, n: Int): Set[String] =
 
+      @tailrec
       def loop(curr: Set[String], depth: Int, visited: Set[String]): Set[String] =
         if (depth > n || curr.isEmpty)
           visited

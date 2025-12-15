@@ -1,14 +1,14 @@
 package datatypes
 
-import datatypes.LastWriterWins
+import datatypes.LastWriterWinsRegister
 
-class LastWriterWinsTest extends munit.FunSuite:
+class LastWriterWinsRegisterTest extends munit.FunSuite:
 
     test("LWW test") {
-      var r1 = LastWriterWins[String]()
+      var r1 = LastWriterWinsRegister[String]()
       r1 = r1.merge(r1.write("hello"))
 
-      var r2 = LastWriterWins[String]()
+      var r2 = LastWriterWinsRegister[String]()
       r2 = r2.merge(r2.write("hi"))
 
       r1 = r1.merge(r2)
