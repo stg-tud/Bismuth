@@ -12,10 +12,11 @@ case class Measurement(
     bandwidth: Long = -1,
     delta: Long = -1,
     codedSymbolPerRoundTrip: Int = -1,
-    deltaSize: Int
+    deltaSize: Int = -1,
+    falsePositiveRate: Float = -1
 ):
     override def toString: String =
-      s"$method,$dagSize,$diff,$roundTrips,$bandwidth,$delta,$codedSymbolPerRoundTrip,$deltaSize"
+      s"$method,$dagSize,$diff,$roundTrips,$bandwidth,$delta,$codedSymbolPerRoundTrip,$deltaSize,$falsePositiveRate"
 
 object Measurement:
     def writeCSVRows(file: java.io.FileWriter, measurements: Seq[Measurement]): Unit = {

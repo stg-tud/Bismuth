@@ -1,4 +1,4 @@
-method,graph_size,diff,round_trips,bandwidth,delta,coded_symbols_per_round_trip,delta_size_mult,fp
+
 RIBLT,10000,0.01,146,19987003,19913303,1,100,-1.0
 RIBLT,10000,0.01,50,19987916,19913303,5,100,-1.0
 RIBLT,10000,0.01,28,19988673,19913303,10,100,-1.0
