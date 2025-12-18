@@ -288,7 +288,7 @@ object SyncStrategies {
     bandwidth += neededAcc1.filter(id => !replica1.hashDAG.contains(id)).toList.map(e =>
       writeToArray(replica2.hashDAG.events(e)).length
     ).sum
-    bandwidth += neededAcc2.filter(id => !replica1.hashDAG.contains(id)).toList.map(e =>
+    bandwidth += neededAcc2.filter(id => !replica2.hashDAG.contains(id)).toList.map(e =>
       writeToArray(replica1.hashDAG.events(e)).length
     ).sum
 
@@ -541,7 +541,7 @@ object SyncStrategies {
     var r2                       = ORSet[String]()
     val size                     = 1000
     val diff                     = 0.1f
-    val deltaSize                = 100
+    val deltaSize                = 10
     val dependencyPerRoundTrip   = 1
     val codedSymbolsPerRoundTrip = 1
     val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
@@ -568,6 +568,7 @@ object SyncStrategies {
     // println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
     println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
     println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
+    println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(syncRIBLT(r1, r2, 10, size, diff, deltaSize))
 
 
