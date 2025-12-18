@@ -13,7 +13,7 @@ case class HashDAG[T](
     events: Map[String, Event[T]],
     publicKey: PublicKey,
     privateKey: Option[PrivateKey],
-    queue: Set[Event[T]] = Set.empty[Event[T]],//Map[Event[T], Int] = Map.empty[Event[T], Int],
+    queue: Set[Event[T]] = Set.empty[Event[T]], // Map[Event[T], Int] = Map.empty[Event[T], Int],
     byzantineNodes: Set[PublicKey] = Set.empty
 ):
 
@@ -52,9 +52,8 @@ case class HashDAG[T](
     def merge(delta: HashDAG[T]): HashDAG[T] =
         var result = this
 
-        for event <- delta.getEventsTopologicallySorted ++ delta.queue do {
+        for event <- delta.getEventsTopologicallySorted ++ delta.queue do
             result = result.effect(event)
-        }
 
         // This works, a bit slow, but it works
         var i = result.queue.size
@@ -206,7 +205,7 @@ case class HashDAG[T](
       HashDAG(this.publicKey, None)
 
     def withQueue(events: Set[Event[T]]): HashDAG[T] =
-      this.empty.copy(queue = events) //.map(e => e -> 0).toMap)
+      this.empty.copy(queue = events) // .map(e => e -> 0).toMap)
 
     def getIDs: Set[String] = events.keySet ++ queue.map(e => e.id)
 
@@ -248,16 +247,28 @@ case class HashDAG[T](
 
     def getNDependencies(id: String, n: Int): Set[String] =
 
-      @tailrec
-      def loop(curr: Set[String], depth: Int, visited: Set[String]): Set[String] =
-        if (depth > n || curr.isEmpty)
-          visited
-        else {
-          val next = curr.flatMap(dep => events(dep).dependencies)
-          loop(next, depth + 1, visited ++ curr)
-        }
+        @tailrec
+        def loop(curr: Set[String], depth: Int, visited: Set[String]): Set[String] =
+          if depth > n || curr.isEmpty then
+              visited
+          else {
+            val next = curr.flatMap(dep => events(dep).dependencies)
+            loop(next, depth + 1, visited ++ curr)
+          }
 
-      loop(events(id).dependencies, 1, Set.empty)
+        loop(events(id).dependencies, 1, Set.empty)
+
+    def getAllSuccessors(id: String): Set[String] =
+        def dfs(node: String, visited: Set[String]): Set[String] =
+            if visited.contains(node) then visited
+            else {
+              val next = graph.getOrElse(node, Nil)
+              next.foldLeft(visited + node) { (acc, n) =>
+                dfs(n, acc)
+              }
+            }
+
+        dfs(id, Set.empty) - id
 
 object HashDAG:
     def apply[T](publicKey: PublicKey, privateKey: Option[PrivateKey]): HashDAG[T] =

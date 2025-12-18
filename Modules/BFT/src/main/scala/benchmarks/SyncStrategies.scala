@@ -428,20 +428,24 @@ object SyncStrategies {
 
     var toR2 = List.empty[Event[T]]
     for id <- IDs1 do
-        if !bf2.mightContain(id) then
-            toR2 = toR2 :+ replica1.hashDAG.events(id)
+        if !bf2.mightContain(id) then {
+          toR2 = toR2 :+ replica1.hashDAG.events(id)
+          toR2 = toR2 :++ replica1.hashDAG.getAllSuccessors(id).map(i => replica1.hashDAG.events(i))
+        }
 
     var toR1 = List.empty[Event[T]]
     for id <- IDs2 do
         if !bf1.mightContain(id) then
             toR1 = toR1 :+ replica2.hashDAG.events(id)
+            toR1 = toR1 :++ replica2.hashDAG.getAllSuccessors(id).map(i => replica2.hashDAG.events(i))
+
 
     roundTrips += 1
     bandwidth += toR2.map(e => writeToArray(e).length).sum
     bandwidth += toR1.map(e => writeToArray(e).length).sum
 
-    val s1 = (toR1.map(e => e.id) ++ IDs1).toSet
-    val s2 = (toR2.map(e => e.id) ++ IDs2).toSet
+    val s1     = (toR1.map(e => e.id) ++ IDs1).toSet
+    val s2     = (toR2.map(e => e.id) ++ IDs2).toSet
     val synced = s1 == s2
 
     var receivedByR1: List[Event[T]] = toR1
@@ -540,16 +544,16 @@ object SyncStrategies {
     val deltaSize                = 100
     val dependencyPerRoundTrip   = 1
     val codedSymbolsPerRoundTrip = 1
-    //val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
+    val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
 
     // val t = r1.add("A")
     // r1.merge(t)
 
-    //r1 = gen._1
-    //r2 = gen._2
+    r1 = gen._1
+    r2 = gen._2
 
-    r1 = ReplicaExamples.Example1.replica1
-    r2 = ReplicaExamples.Example1.replica2
+    //r1 = ReplicaExamples.Example1.replica1
+    //r2 = ReplicaExamples.Example1.replica2
 
     /*println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
@@ -561,9 +565,11 @@ object SyncStrategies {
     println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip + 37, deltaSize))*/
 
     // println(syncBloom(r1, r2, 10f, size, diff, deltaSize))
-    //println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
+    // println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
     println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
     println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
+    println(syncRIBLT(r1, r2, 10, size, diff, deltaSize))
+
 
     /*println(syncBloom(r1, r2, 0.01f, size, diff, deltaSize))
     println(syncBloom(r1, r2, 0.001f, size, diff, deltaSize))
