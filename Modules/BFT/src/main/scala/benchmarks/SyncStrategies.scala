@@ -196,8 +196,10 @@ object SyncStrategies {
     case class Response(id: String, dependencies: Map[String, Set[String]])
 
     // Messaging queues
-    var toR1: Set[Response] = replica2.hashDAG.getCurrentHeads.map(e => Response(e.id, Map.apply((e.id, e.dependencies))))
-    var toR2: Set[Response] = replica1.hashDAG.getCurrentHeads.map(e => Response(e.id, Map.apply((e.id, e.dependencies))))
+    var toR1: Set[Response] =
+      replica2.hashDAG.getCurrentHeads.map(e => Response(e.id, Map.apply((e.id, e.dependencies))))
+    var toR2: Set[Response] =
+      replica1.hashDAG.getCurrentHeads.map(e => Response(e.id, Map.apply((e.id, e.dependencies))))
 
     // Missing dependencies that need to be requested
     var needFromR1: Set[Request] = Set.empty
@@ -205,10 +207,8 @@ object SyncStrategies {
 
     var receivedByR1: Set[Response] = Set.empty
     var receivedByR2: Set[Response] = Set.empty
-    var neededAcc1: Set[String]    = Set.empty
-    var neededAcc2: Set[String]    = Set.empty
-
-
+    var neededAcc1: Set[String]     = Set.empty
+    var neededAcc2: Set[String]     = Set.empty
 
     while toR1.nonEmpty || toR2.nonEmpty || needFromR1.nonEmpty || needFromR2.nonEmpty do {
 
@@ -218,28 +218,32 @@ object SyncStrategies {
         if !replica1.hashDAG.contains(response.id) then {
           neededAcc1 += response.id
           neededAcc1 ++= response.dependencies.keySet
-          val req = response.dependencies.values.flatten.toSet.filter(id => !replica1.hashDAG.contains(id) && !neededAcc1.contains(id))
+          val req = response.dependencies.values.flatten.toSet.filter(id =>
+            !replica1.hashDAG.contains(id) && !neededAcc1.contains(id)
+          )
           neededAcc1 ++= req
           needFromR2 = needFromR2 ++ req.map(r => Request(r))
         }
 
       }
 
-
       for r <- toR1 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
         for (k, v) <- r.dependencies do
-          bandwidth += Base64.getDecoder.decode(k).length
-          bandwidth += v.toList.map(id => Base64.getDecoder.decode(id).length).sum
+            bandwidth += Base64.getDecoder.decode(k).length
+            bandwidth += v.toList.map(id => Base64.getDecoder.decode(id).length).sum
       }
       toR1 = Set.empty
 
-      //toR2 = toR2 ++ needFromR1
-      toR2 = toR2 ++ needFromR1.map(request => Response(
-        request.id,
-        replica1.hashDAG.getNDependencies(request.id, dependencyPerRoundTrip).map(id => replica1.hashDAG.events(id)
-        ).map(e => e.id -> e.dependencies).toMap
-      ))
+      // toR2 = toR2 ++ needFromR1
+      toR2 = toR2 ++ needFromR1.map(request =>
+        Response(
+          request.id,
+          replica1.hashDAG.getNDependencies(request.id, dependencyPerRoundTrip).map(id =>
+            replica1.hashDAG.events(id)
+          ).map(e => e.id -> e.dependencies).toMap
+        )
+      )
       bandwidth += needFromR1.toList.map(request => Base64.getDecoder.decode(request.id).length).sum
       needFromR1 = Set.empty
 
@@ -249,36 +253,44 @@ object SyncStrategies {
         if !replica2.hashDAG.contains(response.id) then {
           neededAcc2 += response.id
           neededAcc2 ++= response.dependencies.keySet
-          val req = response.dependencies.values.flatten.toSet.filter(id => !replica2.hashDAG.contains(id) && !neededAcc2.contains(id))
+          val req = response.dependencies.values.flatten.toSet.filter(id =>
+            !replica2.hashDAG.contains(id) && !neededAcc2.contains(id)
+          )
           neededAcc2 ++= req
           needFromR1 = needFromR1 ++ req.map(r => Request(r))
         }
 
       }
 
-
       for r <- toR2 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
         for (k, v) <- r.dependencies do
-          bandwidth += Base64.getDecoder.decode(k).length
-          bandwidth += v.toList.map(id => Base64.getDecoder.decode(id).length).sum
+            bandwidth += Base64.getDecoder.decode(k).length
+            bandwidth += v.toList.map(id => Base64.getDecoder.decode(id).length).sum
       }
       toR2 = Set.empty
 
-      //toR1 = toR1 ++ needFromR2
-      toR1 = toR1 ++ needFromR2.map(request => Response(
-        request.id,
-        replica2.hashDAG.getNDependencies(request.id, dependencyPerRoundTrip).map(id => replica2.hashDAG.events(id)
-        ).map(e => e.id -> e.dependencies).toMap
-      ))
+      // toR1 = toR1 ++ needFromR2
+      toR1 = toR1 ++ needFromR2.map(request =>
+        Response(
+          request.id,
+          replica2.hashDAG.getNDependencies(request.id, dependencyPerRoundTrip).map(id =>
+            replica2.hashDAG.events(id)
+          ).map(e => e.id -> e.dependencies).toMap
+        )
+      )
       bandwidth += needFromR2.toList.map(request => Base64.getDecoder.decode(request.id).length).sum
       needFromR2 = Set.empty
 
       roundTrips += 1
     }
 
-    bandwidth += neededAcc1.filter(id => !replica1.hashDAG.contains(id)).toList.map(e => writeToArray(replica2.hashDAG.events(e)).length).sum
-    bandwidth += neededAcc2.filter(id => !replica1.hashDAG.contains(id)).toList.map(e => writeToArray(replica1.hashDAG.events(e)).length).sum
+    bandwidth += neededAcc1.filter(id => !replica1.hashDAG.contains(id)).toList.map(e =>
+      writeToArray(replica2.hashDAG.events(e)).length
+    ).sum
+    bandwidth += neededAcc2.filter(id => !replica1.hashDAG.contains(id)).toList.map(e =>
+      writeToArray(replica1.hashDAG.events(e)).length
+    ).sum
 
     // Correctness checks
     val r1IDs = replica1.hashDAG.getIDs
@@ -428,13 +440,18 @@ object SyncStrategies {
     bandwidth += toR2.map(e => writeToArray(e).length).sum
     bandwidth += toR1.map(e => writeToArray(e).length).sum
 
-    val synced = (toR1.map(e => e.id) ++ IDs1) == (toR2.map(e => e.id) ++ IDs2)
+    val s1 = (toR1.map(e => e.id) ++ IDs1).toSet
+    val s2 = (toR2.map(e => e.id) ++ IDs2).toSet
+    val synced = s1 == s2
 
     var receivedByR1: List[Event[T]] = toR1
     var receivedByR2: List[Event[T]] = toR2
 
+    var bloomFilterFailed = -1
+
     if !synced then {
       println("bloom filter had false positives, falling back to ping-pong")
+      bloomFilterFailed = 1
       // Missing dependencies that need to be requested
       var needFromR1: Set[String] = Set.empty
       for e <- toR2 do {
@@ -490,7 +507,7 @@ object SyncStrategies {
 
     }
 
-    assert((toR1.map(e => e.id) ++ IDs1) == (toR2.map(e => e.id) ++ IDs2))
+    assert((receivedByR1.map(e => e.id) ++ IDs1).toSet == (receivedByR2.map(e => e.id) ++ IDs2).toSet)
 
     val events1              = replica1.hashDAG.events.values.toSet
     val events2              = replica2.hashDAG.events.values.toSet
@@ -506,7 +523,8 @@ object SyncStrategies {
       delta = deltaBandwidth,
       codedSymbolPerRoundTrip = -1,
       deltaSize = deltaSize,
-      falsePositiveRate = falsePositiveRate
+      falsePositiveRate = falsePositiveRate,
+      bloomFilterFailed = bloomFilterFailed
     )
   }
 
@@ -520,40 +538,42 @@ object SyncStrategies {
     val size                     = 1000
     val diff                     = 0.1f
     val deltaSize                = 100
-    val dependencyPerRoundTrip   = 300
+    val dependencyPerRoundTrip   = 1
     val codedSymbolsPerRoundTrip = 1
-    val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
+    //val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
 
     // val t = r1.add("A")
     // r1.merge(t)
 
-    r1 = gen._1
-    r2 = gen._2
+    //r1 = gen._1
+    //r2 = gen._2
 
-    //r1 = ReplicaExamples.Example1.replica1
-    //r2 = ReplicaExamples.Example1.replica2
+    r1 = ReplicaExamples.Example1.replica1
+    r2 = ReplicaExamples.Example1.replica2
 
-    println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
+    /*println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
 
     println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip + 18, deltaSize))
     println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip + 18, deltaSize))
 
     println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip + 37, deltaSize))
-    println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip + 37, deltaSize))
+    println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip + 37, deltaSize))*/
 
     // println(syncBloom(r1, r2, 10f, size, diff, deltaSize))
-    /*println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
-      println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
-      println(syncBloom(r1, r2, 0.01f, size, diff, deltaSize))
-      println(syncBloom(r1, r2, 0.001f, size, diff, deltaSize))
-      println(syncBloom(r1, r2, 0.0001f, size, diff, deltaSize))
-      println(syncRIBLT(r1, r2, 100, size, diff, deltaSize))
-      println(syncRIBLT(r1, r2, 500, size, diff, deltaSize))
-      println(syncRIBLT(r1, r2, 1000, size, diff, deltaSize))
-      println(syncRIBLT(r1, r2, 2000, size, diff, deltaSize))
-      println(syncRIBLT(r1, r2, 3000, size, diff, deltaSize))
-      println(syncRIBLT(r1, r2, 4000, size, diff, deltaSize))*/
+    //println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
+    println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
+    println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
+
+    /*println(syncBloom(r1, r2, 0.01f, size, diff, deltaSize))
+    println(syncBloom(r1, r2, 0.001f, size, diff, deltaSize))
+    println(syncBloom(r1, r2, 0.0001f, size, diff, deltaSize))
+    println(syncRIBLT(r1, r2, 100, size, diff, deltaSize))
+    println(syncRIBLT(r1, r2, 500, size, diff, deltaSize))
+    println(syncRIBLT(r1, r2, 1000, size, diff, deltaSize))
+    println(syncRIBLT(r1, r2, 2000, size, diff, deltaSize))
+    println(syncRIBLT(r1, r2, 3000, size, diff, deltaSize))
+    println(syncRIBLT(r1, r2, 4000, size, diff, deltaSize))*/
 
     // println(syncPingPong(r1, r2, size, diff, 1000, 1000))
     // println(syncPingPong(r1, r2, 10, 1, 10))
