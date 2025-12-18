@@ -71,7 +71,7 @@ class SyncBenchmark {
 
     for i <- Range(1, 300) do
       println(s"RSync $i")
-      var res = SyncStrategies.syncPingPong(r1, r2, size, diff, i, deltaSizeInKiloBytes)
+      var res = SyncStrategies.rsync(r1, r2, size, diff, i, deltaSizeInKiloBytes)
       MyCollector.add(res)
 
 

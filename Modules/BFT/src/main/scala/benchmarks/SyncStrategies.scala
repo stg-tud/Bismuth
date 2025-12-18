@@ -93,7 +93,7 @@ object SyncStrategies {
 
       (roundTrips, bandwidth)
 
-  def syncPingPong[T, R <: Replica[T, R]](
+  def rsync[T, R <: Replica[T, R]](
       replica1: Replica[T, R],
       replica2: Replica[T, R],
       size: Int,
@@ -180,7 +180,7 @@ object SyncStrategies {
     )
   }
 
-  def syncPingPongv2[T, R <: Replica[T, R]](
+  def rsyncV2[T, R <: Replica[T, R]](
       replica1: Replica[T, R],
       replica2: Replica[T, R],
       size: Int,
@@ -314,7 +314,7 @@ object SyncStrategies {
     )
   }
 
-  def syncPingPongThreaded[T, R <: Replica[T, R]](replica1: R, replica2: R)(using JsonValueCodec[R]): (Int, Int) = {
+  def rsyncThreaded[T, R <: Replica[T, R]](replica1: R, replica2: R)(using JsonValueCodec[R]): (Int, Int) = {
     val stats = SyncStats()
 
     val t1 = new PingPongSync(replica1, "replica1", "replica2", stats)
@@ -567,8 +567,8 @@ object SyncStrategies {
     // println(syncBloom(r1, r2, 10f, size, diff, deltaSize))
     // println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
     println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
-    println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
-    println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
+    println(rsync(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
+    println(rsyncV2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(syncRIBLT(r1, r2, 10, size, diff, deltaSize))
 
 
