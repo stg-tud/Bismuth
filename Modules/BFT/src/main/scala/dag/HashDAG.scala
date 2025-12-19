@@ -259,16 +259,16 @@ case class HashDAG[T](
         loop(events(id).dependencies, 1, Set.empty)
 
     def getAllSuccessors(id: String): Set[String] =
-        def dfs(node: String, visited: Set[String]): Set[String] =
-            if visited.contains(node) then visited
-            else {
-              val next = graph.getOrElse(node, Nil)
-              next.foldLeft(visited + node) { (acc, n) =>
-                dfs(n, acc)
-              }
-            }
+      var visited = Set.empty[String]
+      var stack = mutable.Stack(id)
 
-        dfs(id, Set.empty) - id
+      while stack.nonEmpty do
+        val v = stack.pop()
+        if !visited.contains(v) then
+          visited = visited + v
+          stack.pushAll(graph(v))
+
+      visited - id
 
 object HashDAG:
     def apply[T](publicKey: PublicKey, privateKey: Option[PrivateKey]): HashDAG[T] =

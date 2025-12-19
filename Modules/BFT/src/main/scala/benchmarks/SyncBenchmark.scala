@@ -27,7 +27,7 @@ class SyncBenchmark {
 
   @Param(Array("10000"))
   var size: Int = 0
-  @Param(Array(/*"0.01", "0.05", "0.1", "0.2", "0.5", */"0.8"/*, "0.9", "1"*/))
+  @Param(Array(/*"0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", */"1"))
   var diff: Float = 0
   //@Param(Array("1", "10", "100", "1000"))
   var deltaSizeInKiloBytes: Int = 10
@@ -73,7 +73,18 @@ class SyncBenchmark {
       println(s"RSync $i")
       var res = SyncStrategies.rsync(r1, r2, size, diff, i, deltaSizeInKiloBytes)
       MyCollector.add(res)
+      res = SyncStrategies.rsyncV2(r1, r2, size, diff, i, deltaSizeInKiloBytes)
+      MyCollector.add(res)
 
+    val lst = List(1, 0.1, 0.01, 0.001, 0.0001, 0.00001)
+    for fp <- lst do
+      try {
+        val res = SyncStrategies.syncBloom(r1, r2, fp.toFloat, size, diff, deltaSizeInKiloBytes)
+        MyCollector.add(res)
+      } catch {
+        case _ =>
+          MyCollector.add(benchmarks.Measurement("BLOOM_FAILED"))
+      }
 
 
     // RIBLT

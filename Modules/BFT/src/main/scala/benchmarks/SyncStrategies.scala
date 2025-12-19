@@ -428,14 +428,14 @@ object SyncStrategies {
 
     var toR2 = List.empty[Event[T]]
     for id <- IDs1 do
-        if !bf2.mightContain(id) then {
+        if !bf2.mightContain(id) && !toR2.map(_.id).contains(id) then {
           toR2 = toR2 :+ replica1.hashDAG.events(id)
           toR2 = toR2 :++ replica1.hashDAG.getAllSuccessors(id).map(i => replica1.hashDAG.events(i))
         }
 
     var toR1 = List.empty[Event[T]]
     for id <- IDs2 do
-        if !bf1.mightContain(id) then
+        if !bf1.mightContain(id) && !toR1.map(_.id).contains(id) then
             toR1 = toR1 :+ replica2.hashDAG.events(id)
             toR1 = toR1 :++ replica2.hashDAG.getAllSuccessors(id).map(i => replica2.hashDAG.events(i))
 
@@ -539,12 +539,14 @@ object SyncStrategies {
 
     var r1                       = ORSet[String]()
     var r2                       = ORSet[String]()
-    val size                     = 1000
-    val diff                     = 0.1f
+    val size                     = 10000
+    val diff                     = 0.5f
     val deltaSize                = 10
     val dependencyPerRoundTrip   = 1
     val codedSymbolsPerRoundTrip = 1
     val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
+
+
 
     // val t = r1.add("A")
     // r1.merge(t)
@@ -566,6 +568,11 @@ object SyncStrategies {
 
     // println(syncBloom(r1, r2, 10f, size, diff, deltaSize))
     // println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
+    val lst = List(0.1, 0.01, 0.001, 0.0001, 0.00001)
+    for fp <- lst do
+      println(SyncStrategies.syncBloom(r1, r2, fp.toFloat, size, diff, deltaSize))
+
+
     println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
     println(rsync(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(rsyncV2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
