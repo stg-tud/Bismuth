@@ -16,9 +16,23 @@ import scala.scalajs.js.timers.SetTimeoutHandle
 object SpreadsheetComponent {
 
   def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] = {
+    val numCols = 6
+    val numRows = 6
+
+    val initialEdits: Iterator[(SpreadsheetCoordinate, String)] = {
+      for
+        colIdx <- (0 until numCols).iterator
+        rowIdx <- (0 until numRows).iterator
+      yield (
+        SpreadsheetCoordinate(rowIdx.toRowIndex, colIdx.toColumnIndex),
+        s"${rowIdx + 1}${('A' + colIdx).toChar}"
+      )
+    }
+
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
-      .repeatEdit(6, _.addRow().delta, allowUndo = false)
-      .repeatEdit(6, _.addColumn().delta, allowUndo = false)
+      .repeatEdit(numRows, _.addRow().delta, allowUndo = false)
+      .repeatEdit(numCols, _.addColumn().delta, allowUndo = false)
+      .repeatEdit(numCols * numRows, s => s.editCell.tupled(initialEdits.next()))
   }
 
   case class Props(

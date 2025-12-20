@@ -44,12 +44,50 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.moveRow(if (sourceIdx < targetIdx) (targetIdx - 1).toRowIndex else targetIdx, sourceIdx) }
+    val forwardSourceRowIdOpt = delegate.getRowId(sourceIdx)
+    val forwardTargetRowIdOpt = delegate.getRowId(targetIdx)
+
+    if (forwardSourceRowIdOpt.isDefined && forwardTargetRowIdOpt.isDefined) {
+      pushUndo { s =>
+        val forwardSourceRowIdxOpt = delegate.getRowIndex(forwardSourceRowIdOpt.get)
+        val forwardTargetRowIdxOpt = delegate.getRowIndex(forwardTargetRowIdOpt.get)
+
+        val targetToSourceIdx = (targetIdx: RowIndex, sourceIdx: RowIndex) => if (sourceIdx < targetIdx) (targetIdx - 1).toRowIndex else targetIdx
+
+        val inverseTargetRowIdx = forwardSourceRowIdxOpt.getOrElse(sourceIdx)
+
+        if (forwardTargetRowIdxOpt.isDefined) {
+          val inverseSourceRowIdx = targetToSourceIdx(inverseTargetRowIdx, forwardTargetRowIdxOpt.get)
+          s.moveRow(inverseSourceRowIdx, inverseTargetRowIdx)
+        }
+        else Spreadsheet.empty[S]
+      }
+    }
+
     delegate.moveRow(sourceIdx, targetIdx)
   }
 
   override def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using LocalUid): Spreadsheet[S] = {
-    pushUndo { s => s.moveColumn(if (sourceIdx < targetIdx) (targetIdx - 1).toColumnIndex else targetIdx, sourceIdx) }
+    val forwardSourceColIdOpt = delegate.getColId(sourceIdx)
+    val forwardTargetColIdOpt = delegate.getColId(targetIdx)
+
+    if (forwardSourceColIdOpt.isDefined && forwardTargetColIdOpt.isDefined) {
+      pushUndo { s =>
+        val forwardSourceColIdxOpt = delegate.getColIndex(forwardSourceColIdOpt.get)
+        val forwardTargetColIdxOpt = delegate.getColIndex(forwardTargetColIdOpt.get)
+
+        val targetToSourceIdx = (targetIdx: ColumnIndex, sourceIdx: ColumnIndex) => if (sourceIdx < targetIdx) (targetIdx - 1).toColumnIndex else targetIdx
+
+        val inverseTargetColIdx = forwardSourceColIdxOpt.getOrElse(sourceIdx)
+
+        if (forwardTargetColIdxOpt.isDefined) {
+          val inverseSourceColIdx = targetToSourceIdx(inverseTargetColIdx, forwardTargetColIdxOpt.get)
+          s.moveColumn(inverseSourceColIdx, inverseTargetColIdx)
+        }
+        else Spreadsheet.empty[S]
+      }
+    }
+
     delegate.moveColumn(sourceIdx, targetIdx)
   }
 

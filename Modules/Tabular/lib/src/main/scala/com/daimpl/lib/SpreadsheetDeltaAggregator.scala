@@ -14,7 +14,6 @@ class SpreadsheetDeltaAggregator[S](
 
   def editAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])(fn: EditFunction, allowUndo: Boolean = true)
       : Spreadsheet[S] = {
-    val delta = fn(using replicaId)(spreadsheet)
     val recordingWrapper = if (allowUndo) new UndoRecordingSpreadsheet[S](
       spreadsheet,
       undoFn => undoStack = undoFn :: undoStack
