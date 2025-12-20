@@ -230,8 +230,9 @@ object SyncStrategies {
       for r <- toR1 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
         for (k, v) <- r.dependencies do
+          if k != "0" then
             bandwidth += Base64.getDecoder.decode(k).length
-            bandwidth += v.toList.map(id => Base64.getDecoder.decode(id).length).sum
+            bandwidth += v.toList.filter(id => id != "0").map(id => Base64.getDecoder.decode(id).length).sum
       }
       toR1 = Set.empty
 
@@ -244,7 +245,7 @@ object SyncStrategies {
           ).map(e => e.id -> e.dependencies).toMap
         )
       )
-      bandwidth += needFromR1.toList.map(request => Base64.getDecoder.decode(request.id).length).sum
+      bandwidth += needFromR1.toList.filter(request => request.id != "0").map(request => Base64.getDecoder.decode(request.id).length).sum
       needFromR1 = Set.empty
 
       //   Replica 2 receives
@@ -265,8 +266,9 @@ object SyncStrategies {
       for r <- toR2 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
         for (k, v) <- r.dependencies do
+          if k != "0" then
             bandwidth += Base64.getDecoder.decode(k).length
-            bandwidth += v.toList.map(id => Base64.getDecoder.decode(id).length).sum
+            bandwidth += v.toList.filter(id => id != "0").map(id => Base64.getDecoder.decode(id).length).sum
       }
       toR2 = Set.empty
 
@@ -279,7 +281,7 @@ object SyncStrategies {
           ).map(e => e.id -> e.dependencies).toMap
         )
       )
-      bandwidth += needFromR2.toList.map(request => Base64.getDecoder.decode(request.id).length).sum
+      bandwidth += needFromR2.toList.filter(request => request.id != "0").map(request => Base64.getDecoder.decode(request.id).length).sum
       needFromR2 = Set.empty
 
       roundTrips += 1
@@ -540,7 +542,7 @@ object SyncStrategies {
     var r1                       = ORSet[String]()
     var r2                       = ORSet[String]()
     val size                     = 10000
-    val diff                     = 0.5f
+    val diff                     = 0.2f
     val deltaSize                = 10
     val dependencyPerRoundTrip   = 1
     val codedSymbolsPerRoundTrip = 1
