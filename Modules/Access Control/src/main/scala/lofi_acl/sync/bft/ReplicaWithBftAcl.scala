@@ -3,8 +3,8 @@ package lofi_acl.sync.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import BftAclOpGraph.Signature
 import lofi_acl.sync.Replica
+import lofi_acl.sync.bft.BftAclOpGraph.Signature
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -26,7 +26,7 @@ class ReplicaWithBftAcl[RDT](using
         BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, sync)
 ) extends Replica[RDT] {
 
-  private val antiEntropy = antiEntropyProvider(localIdentity, aclRoot, this)
+  private[bft] val antiEntropy = antiEntropyProvider(localIdentity, aclRoot, this)
 
   private val localPublicId = localIdentity.getPublic
 
