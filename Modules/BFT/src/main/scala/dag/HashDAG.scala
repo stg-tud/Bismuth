@@ -14,7 +14,6 @@ case class HashDAG[T](
     publicKey: PublicKey,
     privateKey: Option[PrivateKey],
     queue: Set[Event[T]] = Set.empty[Event[T]], // Map[Event[T], Int] = Map.empty[Event[T], Int],
-    byzantineNodes: Set[PublicKey] = Set.empty
 ):
 
     // checks if an event is contained in the graph
@@ -92,10 +91,10 @@ case class HashDAG[T](
       else
           if event.calculateHash != event.id || !event.signatureIsValid then
               this
-          else if isByzantine(event) then
+          /*else if isByzantine(event) then
               // markEventsFromByzantineNode(event.author)
 
-              this.copy(byzantineNodes = this.byzantineNodes + event.author)
+              this.copy(byzantineNodes = this.byzantineNodes + event.author)*/
           else
               val dependencies = event.dependencies
               if dependencies.forall(e => contains(e)) then
@@ -115,7 +114,6 @@ case class HashDAG[T](
                     this.publicKey,
                     this.privateKey,
                     this.queue - event,
-                    this.byzantineNodes,
                   )
               else
                   HashDAG(
@@ -124,7 +122,6 @@ case class HashDAG[T](
                     this.publicKey,
                     this.privateKey,
                     this.queue + event, // (event -> event.dependencies.count(d => this.contains(d))),
-                    this.byzantineNodes
                   )
 
     def addEvent(content: T): HashDAG[T] =
@@ -174,7 +171,7 @@ case class HashDAG[T](
 
         dfs(from, Set())
 
-    def isByzantine(event: Event[T]): Boolean =
+    /*def isByzantine(event: Event[T]): Boolean =
       if byzantineNodes.contains(event.author) then
           true
       else
@@ -189,7 +186,7 @@ case class HashDAG[T](
           isByz
 
     def autohrIsByzantine(author: PublicKey): Boolean =
-      byzantineNodes.contains(author)
+      byzantineNodes.contains(author)*/
 
     /*def markEventsFromByzantineNode(author: PublicKey): HashDAG[T] = {
   var e = this.events

@@ -542,7 +542,7 @@ object SyncStrategies {
     var r1                       = ORSet[String]()
     var r2                       = ORSet[String]()
     val size                     = 10000
-    val diff                     = 0.2f
+    val diff                     = 1.0f
     val deltaSize                = 10
     val dependencyPerRoundTrip   = 1
     val codedSymbolsPerRoundTrip = 1

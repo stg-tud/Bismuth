@@ -27,7 +27,7 @@ class SyncBenchmark {
 
   @Param(Array("10000"))
   var size: Int = 0
-  @Param(Array(/*"0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", */"1"))
+  @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
   var diff: Float = 0
   //@Param(Array("1", "10", "100", "1000"))
   var deltaSizeInKiloBytes: Int = 10

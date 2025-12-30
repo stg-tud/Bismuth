@@ -8,7 +8,7 @@ case class EnableWinsFlag(
 ) extends Replica[Boolean, EnableWinsFlag]:
 
     def read: Boolean =
-      hashDAG.getCurrentHeads.exists(e => e.id != "0" && e.content.get && !hashDAG.autohrIsByzantine(e.author))
+      hashDAG.getCurrentHeads.exists(e => e.id != "0" && e.content.get)
 
     def enable: EnableWinsFlag =
       EnableWinsFlag(hashDAG.generateDelta(true))

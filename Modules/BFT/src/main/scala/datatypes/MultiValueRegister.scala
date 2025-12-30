@@ -12,7 +12,7 @@ case class MultiValueRegister[T](
 
     def read: Set[Option[T]] =
         val heads = hashDAG.getCurrentHeads
-        heads.filter(e => !hashDAG.autohrIsByzantine(e.author)).map(event => event.content)
+        heads.map(event => event.content)
 
     def merge(other: MultiValueRegister[T]): MultiValueRegister[T] =
       MultiValueRegister[T](this.hashDAG.merge(other.hashDAG))

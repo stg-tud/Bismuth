@@ -48,7 +48,7 @@ class CounterPropertyBasedTests extends munit.ScalaCheckSuite {
 
       val eventSum =
         c.hashDAG.events.values
-          .filter(e => !c.hashDAG.autohrIsByzantine(e.author) && e.id != "0")
+          .filter(e => e.id != "0")
           .map(_.content.get)
           .sum
 
