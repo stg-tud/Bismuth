@@ -38,11 +38,11 @@ class ChannelConnectionManager(
     * @param msg The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  override inline def send(user: PublicIdentity, msg: MessageBuffer): Boolean =
+  override inline def send(user: PublicIdentity, msg: MessageBuffer): Unit =
     sendMultiple(user, Array(msg))
 
-  override def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Boolean = {
-    if abort.closeRequest then return false
+  override def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Unit = {
+    if abort.closeRequest then return
     connections.get.get(user) match
         case Some(connectionSet) if connectionSet.nonEmpty =>
           val connection = connectionSet.head
@@ -52,8 +52,7 @@ class ChannelConnectionManager(
               case Failure(exception) => if !disableLogging then exception.printStackTrace()
             }
           }
-          true
-        case _ => false
+        case _ =>
   }
 
   override def broadcast(messages: Array[MessageBuffer]): Unit = {

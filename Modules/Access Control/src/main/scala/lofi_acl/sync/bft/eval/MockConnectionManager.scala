@@ -38,21 +38,15 @@ class MockConnectionManager(
     * @param msg  The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  override def send(user: PublicIdentity, msg: MessageBuffer): Boolean = {
-    peers.get(user) match {
-      case Some(peer) =>
-        peer.messageReceiver.receivedMessage(msg, localUserId)
-        true
-      case None => false
+  override def send(user: PublicIdentity, msg: MessageBuffer): Unit = {
+    peers.get(user).foreach { peer =>
+      peer.messageReceiver.receivedMessage(msg, localUserId)
     }
   }
 
-  override def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Boolean =
-    peers.get(user) match {
-      case Some(peer) =>
-        messages.foreach { msg => peer.messageReceiver.receivedMessage(msg, localUserId) }
-        true
-      case None => false
+  override def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Unit =
+    peers.get(user).foreach { peer =>
+      messages.foreach { msg => peer.messageReceiver.receivedMessage(msg, localUserId) }
     }
 
   override def broadcast(messages: Array[MessageBuffer]): Unit =

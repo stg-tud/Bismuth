@@ -13,9 +13,9 @@ trait ConnectionManager {
     * @param msg  The message to send.
     * @return true if a connections exists, otherwise false.
     */
-  def send(user: PublicIdentity, msg: MessageBuffer): Boolean
+  def send(user: PublicIdentity, msg: MessageBuffer): Unit
 
-  def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Boolean
+  def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Unit
 
   def broadcast(messages: Array[MessageBuffer]): Unit
 
