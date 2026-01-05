@@ -236,7 +236,7 @@ lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   )
 
 lazy val prdtSmr = project.in(file("Modules/PRDT SMR"))
-  .dependsOn(rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
+  .dependsOn(rdts.jvm, channels.jvm, deltalens, rdts.jvm % "compile->compile;test->test")
   .settings(
     scala3defaultsExtra
   )
