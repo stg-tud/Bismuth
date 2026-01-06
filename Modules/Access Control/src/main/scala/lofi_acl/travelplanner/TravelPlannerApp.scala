@@ -1,9 +1,9 @@
 package lofi_acl.travelplanner
 
 import crypto.channels.IdentityFactory
-import lofi_acl.sync.JsoniterCodecs.messageJsonCodec
-import lofi_acl.sync.monotonic.{MonotonicAcl, MonotonicInvitation, SyncWithMonotonicAcl}
 import lofi_acl.sync.monotonic.MonotonicAclSyncMessage.AclDelta
+import lofi_acl.sync.monotonic.SyncWithMonotonicAcl.messageJsonCodec
+import lofi_acl.sync.monotonic.{MonotonicAcl, MonotonicInvitation, SyncWithMonotonicAcl}
 import lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}
 

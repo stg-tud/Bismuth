@@ -3,12 +3,11 @@ package lofi_acl.sync
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
-import lofi_acl.sync.monotonic.MonotonicAclSyncMessage
-import MonotonicAclSyncMessage.Signature
+import lofi_acl.bft.{Hash, Signature}
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree
-import rdts.time.{CausalTime, Dots}
+import rdts.time.CausalTime
 
 object JsoniterCodecs {
   given uidKeyCodec: JsonKeyCodec[rdts.base.Uid] = new JsonKeyCodec[Uid]:
@@ -19,15 +18,13 @@ object JsoniterCodecs {
       override def decodeKey(in: JsonReader): PublicIdentity               = PublicIdentity(in.readKeyAsString())
       override def encodeKey(pubId: PublicIdentity, out: JsonWriter): Unit = out.writeKey(pubId.id)
 
-  given signatureCodec: JsonValueCodec[Signature | Null] = new JsonValueCodec[Signature | Null]:
-      override def decodeValue(in: JsonReader, default: Signature | Null): Signature | Null =
-          val sigArray = in.readBase64AsBytes(Array.empty)
-          if sigArray.isEmpty then null
-          else Signature(sigArray)
-      override def encodeValue(sig: Signature | Null, out: JsonWriter): Unit =
-        if sig == null then out.writeVal("")
-        else out.writeBase64Val(sig.sig, true)
-      override def nullValue: Signature | Null = null
+  given hashValueCodec: JsonValueCodec[Hash] = Hash.hashValueCodec
+
+  given hashKeyCodec: JsonKeyCodec[Hash] = Hash.hashKeyCodec
+
+  given signatureValueCodec: JsonValueCodec[Signature] = Signature.signatureValueCodec
+
+  given signatureKeyCodec: JsonKeyCodec[Signature] = Signature.signatureKeyCodec
 
   given lwwCodecWithBottomOptimization[V: {Bottom, JsonValueCodec}]: JsonValueCodec[LastWriterWins[V]] = {
     import LastWriterWins.bottom
@@ -48,9 +45,5 @@ object JsoniterCodecs {
     CodecMakerConfig
       .withMapAsArray(true)
       .withAllowRecursiveTypes(true)
-  )
-
-  given messageJsonCodec[RDT: JsonValueCodec]: JsonValueCodec[MonotonicAclSyncMessage[RDT]] = JsonCodecMaker.make(
-    CodecMakerConfig.withMapAsArray(true)
   )
 }

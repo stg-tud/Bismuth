@@ -3,7 +3,7 @@ package lofi_acl.sync.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import BftAclOpGraph.Signature
+import lofi_acl.sync.bft.BftAclOpGraph.Signature
 import rdts.filters.PermissionTree
 
 import java.security.PrivateKey

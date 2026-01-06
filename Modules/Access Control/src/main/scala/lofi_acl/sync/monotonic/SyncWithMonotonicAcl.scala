@@ -1,10 +1,11 @@
 package lofi_acl.sync.monotonic
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.sync.JsoniterCodecs.messageJsonCodec
-import MonotonicAclSyncMessage.*
+import lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
+import lofi_acl.sync.monotonic.SyncWithMonotonicAcl.messageJsonCodec
 import lofi_acl.sync.{DeltaMapWithPrefix, Replica}
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
@@ -88,4 +89,21 @@ class SyncWithMonotonicAcl[RDT](
       antiEntropyThread = None
     }
   }
+}
+
+object SyncWithMonotonicAcl {
+  import lofi_acl.sync.JsoniterCodecs.given
+  given signatureCodec: JsonValueCodec[Signature | Null] = new JsonValueCodec[Signature | Null]:
+      override def decodeValue(in: JsonReader, default: Signature | Null): Signature | Null =
+          val sigArray = in.readBase64AsBytes(Array.empty)
+          if sigArray.isEmpty then null
+          else Signature(sigArray)
+      override def encodeValue(sig: Signature | Null, out: JsonWriter): Unit =
+        if sig == null then out.writeVal("")
+        else out.writeBase64Val(sig.sig, true)
+      override def nullValue: Signature | Null = null
+
+  given messageJsonCodec[RDT: JsonValueCodec]: JsonValueCodec[MonotonicAclSyncMessage[RDT]] = JsonCodecMaker.make(
+    CodecMakerConfig.withMapAsArray(true)
+  )
 }

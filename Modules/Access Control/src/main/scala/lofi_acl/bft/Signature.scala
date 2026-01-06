@@ -12,6 +12,8 @@ class Signature private (private val delegate: Array[Byte]) {
 
   def toBase64: String = Base64.getEncoder.encodeToString(delegate)
 
+  def toArray: Array[Byte] = delegate.clone()
+
   override def toString: String = toBase64
 
   override def hashCode(): Int = delegate.hashCode()
