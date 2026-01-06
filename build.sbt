@@ -189,13 +189,13 @@ lazy val lofiAcl = project.in(file("Modules/Access Control"))
     scala3defaults,
     javaOutputVersion(21),
     fork := true,
-    //Dependencies.conscrypt,
+    // Dependencies.conscrypt,
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
     Dependencies.pprint,
     Dependencies.slips,
     libraryDependencies += Dependencies.scalafx,
-    //Settings.implicitConversions(), // reswing uses this in a million places for no reason
+    // Settings.implicitConversions(), // reswing uses this in a million places for no reason
     javaOptions ++= Seq(
       "-XX:+IgnoreUnrecognizedVMOptions",
       "--sun-misc-unsafe-memory-access=allow",
@@ -276,6 +276,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     Dependencies.slips,
     Dependencies.jetcd,
     Dependencies.pprint,
+    Dependencies.ycsb,
     Universal / packageName := "probench",
     Universal / name        := "probench",
   )

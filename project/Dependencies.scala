@@ -26,6 +26,7 @@ object Dependencies {
   val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.13"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.20.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.2"
+  val ycsb     = libraryDependencies += "site.ycsb"                       % "core"    % "0.17.0"
 
   val ayza = libraryDependencies ++= List(
     "io.github.hakky54" % "ayza"         % "10.0.3",
