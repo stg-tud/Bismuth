@@ -61,7 +61,8 @@ class EtcdAdapter extends DB {
   override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
     val k = stringToByteSequence(key)
     try
-        kvClient.get(k).get().getKvs.get(0)
+        val res = kvClient.get(k).get().getKvs.get(0)
+        result.put("result", StringByteIterator(res.getValue.toString))
         Status.OK
     catch
         case exception =>
