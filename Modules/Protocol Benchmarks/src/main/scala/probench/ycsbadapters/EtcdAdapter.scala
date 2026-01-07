@@ -50,6 +50,7 @@ class EtcdAdapter extends DB {
     val k = stringToByteSequence(key)
     val v = stringToByteSequence(valsToString(values))
     try
+        // println(s"writing ($k,$v)")
         kvClient.put(k, v).get()
         Status.OK
     catch
