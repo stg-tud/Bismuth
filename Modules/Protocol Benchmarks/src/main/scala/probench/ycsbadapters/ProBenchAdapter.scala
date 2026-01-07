@@ -62,7 +62,7 @@ class ProBenchAdapter extends DB {
         Status.OK
     catch
         case exception =>
-//          println(exception.toString)
+          println(exception.toString)
           Status.ERROR
   }
 
@@ -72,7 +72,7 @@ class ProBenchAdapter extends DB {
         Status.OK
     catch
         case exception =>
-//          println(exception.toString)
+          println(exception.toString)
           Status.ERROR
   }
 
