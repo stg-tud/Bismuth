@@ -50,7 +50,7 @@ class NioTCP {
 
           attachment.callback.succeed(ArrayMessageBuffer(bytes))
         } catch {
-          case ex: IOException =>
+          case ex: Exception =>
             clientChannel.close()
             key.cancel()
             attachment.callback.fail(ex)
