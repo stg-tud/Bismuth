@@ -206,6 +206,7 @@ class KeyValueReplica(
       if old != changed then {
         assert(changed == state)
         cluster.maybeProposeNewValue(changed)
+        cluster.forceUpkeep() : Unit
         // else log(s"upkept: ${pprint(upkept)}")
       }
     }
