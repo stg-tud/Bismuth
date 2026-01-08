@@ -15,7 +15,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     given LocalUid = LocalUid.predefined("id1")
 
     val queue    = empty
-    val reqDelta = queue.request("one")
+    val (_, reqDelta) = queue.request("one")
     val merged   = queue.merge(reqDelta)
 
     assertEquals(merged.requestsSorted.head.value, "one")
@@ -27,7 +27,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     var queue = empty
 
     val deltas = (0 to 10).map { i =>
-      val delta = queue.request(f"req $i")
+      val (_, delta) = queue.request(f"req $i")
       queue = queue.merge(delta)
       delta
     }
@@ -40,7 +40,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     given LocalUid = LocalUid.predefined("id1")
 
     val queue       = empty
-    val reqDelta    = queue.request("one")
+    val (_, reqDelta)    = queue.request("one")
     val mergedQueue = queue.merge(reqDelta)
     val request     = mergedQueue.requestsSorted.head
     val resDelta    = mergedQueue.respond(request, "1")
@@ -55,7 +55,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     var queue = empty
 
     val reqDeltas = (0 to 10).map { i =>
-      val delta = queue.request(f"req $i")
+      val (_, delta) = queue.request(f"req $i")
       queue = queue.merge(delta)
       delta
     }
@@ -83,8 +83,8 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
       delta
     }
 
-    val req1                    = mod(_.request("one"))
-    val req2                    = mod(_.request("two"))
+    val req1                    = mod(_.request("one")._2)
+    val req2                    = mod(_.request("two")._2)
     val requestOne: Req[String] = queue.requestsSorted.head
     val res1                    = mod(q => q.respond(q.requestsSorted.head, "1"))
     val res2                    = mod(q => q.respond(q.requestsSorted(1), "2"))
