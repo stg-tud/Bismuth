@@ -75,8 +75,9 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
         responses.get(timestamp) match
             case Some(res) =>
               onResultValue(res.value)
-              promises.get(timestamp) match {
-                case Some(promise) => promise.success(res.value)
+              promises.remove(timestamp) match {
+                case Some(promise) =>
+                  promise.success(res.value)
                 case None          => ()
               }
               transform(_.complete(req))
