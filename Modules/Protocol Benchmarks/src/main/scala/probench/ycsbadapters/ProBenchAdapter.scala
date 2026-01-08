@@ -9,7 +9,9 @@ import site.ycsb.{ByteIterator, DB, Status, StringByteIterator}
 import java.net.InetSocketAddress
 import java.util.concurrent.{ExecutorService, Executors}
 import java.util.{HashMap, Map, Properties, Set, Vector}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters.*
 import scala.language.unsafeNulls
 
@@ -68,8 +70,11 @@ class ProBenchAdapter extends DB {
 
   override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
     try
-        pbClient.read(key)
-        Status.OK
+        val f = pbClient.readWithResult(key).map(res =>
+            result.put("result", StringByteIterator(res))
+            Status.OK
+        )
+        Await.result(f, 5.second)
     catch
         case exception =>
           println(exception.toString)

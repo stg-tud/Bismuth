@@ -1,13 +1,15 @@
 package probench.clients
 
 import probench.Codecs.given
-import probench.data.RequestResponseQueue.Req
+import probench.data.RequestResponseQueue.{Req, Timestamp}
 import probench.data.{KVOperation, RequestResponseQueue}
 import rdts.base.LocalUid.replicaId
 import rdts.base.{LocalUid, Uid}
 import replication.DeltaDissemination
 
 import java.util.concurrent.Semaphore
+import scala.collection.mutable
+import scala.concurrent.{Future, Promise}
 
 class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolean) extends Client(name, logTimings) {
   type State = RequestResponseQueue[KVOperation[String, String], String]
@@ -24,6 +26,17 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   var currentState: State      = RequestResponseQueue.empty
   val currentStateLock: AnyRef = new {}
+
+  val promises: mutable.Map[Timestamp, Promise[String]] = mutable.Map.empty[Timestamp, Promise[String]]
+
+  def readWithResult(key: String): Future[String] =
+    currentStateLock.synchronized {
+      val (timestamp, queue) = currentState.request(KVOperation.Read(key))
+      transform(_ => queue)
+      val p = Promise[String]()
+      promises.put(timestamp, p)
+      p.future
+    }
 
   def publish(delta: State): State = currentStateLock.synchronized {
     if delta `inflates` currentState then {
@@ -62,6 +75,10 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
         responses.get(timestamp) match
             case Some(res) =>
               onResultValue(res.value)
+              promises.get(timestamp) match {
+                case Some(promise) => promise.success(res.value)
+                case None          => ()
+              }
               transform(_.complete(req))
               if blocking then requestSemaphore.release(1)
             case None => ()
@@ -75,7 +92,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
           requestSemaphore.drainPermits()
           ()
 
-      val _ = transform(_.request(op))
+      val _ = transform(_.request(op)._2)
 
       if blocking then requestSemaphore.acquire(1)
 

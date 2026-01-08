@@ -11,7 +11,7 @@ case class RequestResponseQueue[S, T](
     requests: Map[Uid, Epoch[Set[Req[S]]]] = Map.empty[Uid, Epoch[Set[Req[S]]]],
     responses: Map[Timestamp, Res[T]] = Map.empty[Timestamp, Res[T]]
 ) {
-  def request(value: S)(using LocalUid): RequestResponseQueue[S, T] =
+  def request(value: S)(using LocalUid): (Timestamp, RequestResponseQueue[S, T]) =
       // find the newest timestamp
       val timestamp = requestsSorted.lastOption.map(_.timestamp) match
           case Some((time, _)) => (time.advance, replicaId)
@@ -19,7 +19,7 @@ case class RequestResponseQueue[S, T](
 
       val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
       val updated    = myRequests.value + Req(value, replicaId, timestamp)
-      RequestResponseQueue(requests = Map(replicaId -> myRequests.write(updated)))
+      (timestamp, RequestResponseQueue(requests = Map(replicaId -> myRequests.write(updated))))
 
   def respond(request: Req[S], value: T): RequestResponseQueue[S, T] =
     RequestResponseQueue(responses =
