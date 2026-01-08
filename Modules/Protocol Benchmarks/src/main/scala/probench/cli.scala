@@ -256,6 +256,15 @@ object cli {
             100
           )
 
+
+          Timer().schedule(
+            () => {
+              node.cluster.forceUpkeep(): Unit
+            },
+            100,
+            100
+          )
+
           cluster.value.foreach { (host, port) =>
             println(s"Connecting to $host:${port + 1}")
             addRetryingLatentConnection(
