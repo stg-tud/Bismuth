@@ -110,9 +110,13 @@ class KeyValueReplica(
     override def publish(delta: ClusterState): ClusterState = lock.synchronized {
       if delta `inflates` state then {
         log("publishing")
+        val oldstate = state
         state = state.merge(delta)
         dataManager.applyDelta(delta)
-      } else log("skip")
+        maybeAnswerClient(oldstate.rounds.counter)
+      } else {
+        log("skip")
+      }
 
       state
     }
