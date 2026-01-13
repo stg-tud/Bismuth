@@ -3,7 +3,6 @@ package channels
 import channels.NioTCP.{AcceptAttachment, ReceiveAttachment}
 import de.rmgk.delay.{Async, Callback, Sync}
 
-import java.io.IOException
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
