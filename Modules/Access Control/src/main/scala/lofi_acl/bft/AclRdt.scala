@@ -45,7 +45,7 @@ class AclRdt(privateIdentity: PrivateIdentity) extends BftSignedDeltaRdt[Acl](pr
     && delegationValid(delta.author, delta.rdt, reconstructor(delta.parents, prefixHashDag))
   }
 
-  def delegationValid(author: PublicIdentity, delta: Acl, prefix: Acl): Boolean = {
+  private def delegationValid(author: PublicIdentity, delta: Acl, prefix: Acl): Boolean = {
     val prefixReadPermOfAuthor  = prefix.read.getOrElse(author, PermissionTree.empty)
     val prefixWritePermOfAuthor = prefix.write.getOrElse(author, PermissionTree.empty)
     // Users that are removed in prefix are not allowed to perform any actions
@@ -58,7 +58,9 @@ class AclRdt(privateIdentity: PrivateIdentity) extends BftSignedDeltaRdt[Acl](pr
     && prefix.write.forall { (delegatee, writePerm) =>
       !prefix.removed.contains(delegatee) && writePerm <= prefixWritePermOfAuthor
     }
+    // Cannot grant admin rights to removed user
     && prefix.admins.forall { admin => !prefix.removed.contains(admin) }
+    // Author is admin if delegating admin rights
     && (delta.admins.isEmpty || prefix.admins.contains(author))
   }
 }

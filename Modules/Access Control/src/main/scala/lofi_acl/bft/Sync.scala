@@ -4,6 +4,7 @@ import lofi_acl.bft.HashDag.Delta
 
 import scala.collection.mutable
 
+// One approach for sync is described in https://arxiv.org/pdf/2012.00472
 object Sync {
   // Optimization for case when remotes HashDag is a strict subset of local HashDag
   def missingInSubsetHashDag[D <: Delta[RDT], RDT](local: HashDag[D, RDT], remoteHeads: Set[Hash]): Option[Seq[D]] = {

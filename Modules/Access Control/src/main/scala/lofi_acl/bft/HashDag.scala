@@ -7,7 +7,7 @@ import rdts.base.{Bottom, Lattice}
 import java.security.MessageDigest
 import scala.collection.mutable
 
-case class HashDag[D <: Delta[RDT], RDT](root: Hash, ops: Map[Hash, D], heads: Set[Hash])(using Encoder[D]) {
+case class HashDag[D <: Delta[RDT]: Encoder, RDT](root: Hash, ops: Map[Hash, D], heads: Set[Hash]) {
   def add(deltaHash: Hash, delta: D): Either[Set[Hash], HashDag[D, RDT]] = {
     if ops.contains(deltaHash) then return Right(this)
     val deltaParents = delta.parents
@@ -40,8 +40,8 @@ object HashDag {
     inline def fromJsoniter[RDT](using codec: JsonValueCodec[RDT]): Encoder[RDT] = rdt => writeToArray(rdt)(using codec)
   }
 
-  def hash[V: Encoder](rdt: V): Hash =
-    Hash.unsafeFromArray(MessageDigest.getInstance("SHA3-256", "SUN").digest(summon[Encoder[V]].apply(rdt)))
+  def hash[V](rdt: V)(using encoder: Encoder[V]): Hash =
+    Hash.unsafeFromArray(MessageDigest.getInstance("SHA3-256", "SUN").digest(encoder(rdt)))
 
   trait Delta[RDT]:
       def parents: Set[Hash]
