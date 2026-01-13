@@ -186,7 +186,7 @@ object cli {
     val measurement = named[Int]("--measurement", "measurement period/operations for the benchmark in seconds")
     val kvRange     = named[(Int, Int)]("--kv-range", "min/max key/value index", (1000, 1999))
     val blockSize   = named[Int]("--block-size", "block size for timed benchmarks")
-    val timeout     = named[Long]("--timeout", "timeout before new leader is elected", 1000)
+    val timeout     = named[Long]("--timeout", "timeout before new leader is elected in miliseconds", 1000)
 
     val argparse = composedParser {
 
