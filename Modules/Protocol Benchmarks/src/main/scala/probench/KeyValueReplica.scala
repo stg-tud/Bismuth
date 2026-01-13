@@ -35,7 +35,8 @@ class KeyValueReplica(
     val uid: Uid,
     val votingReplicas: Set[Uid],
     offloadSending: Boolean = true,
-    deltaStorageType: DeltaStorage.Type = KeepAll
+    deltaStorageType: DeltaStorage.Type = KeepAll,
+    timeoutThreshold: Long = 1000
 ) {
 
   inline def log(inline msg: String): Unit =
@@ -65,7 +66,7 @@ class KeyValueReplica(
 
   val cluster: Cluster = new Cluster(currentStateLock, localUid, sendingActor)
   val client: Client   = new Client(currentStateLock, localUid, sendingActor)
-  val connInf: ConnInf = new ConnInf(currentStateLock, localUid, sendingActor)
+  val connInf: ConnInf = new ConnInf(currentStateLock, localUid, sendingActor, timeoutThreshold = timeoutThreshold)
 
   cluster.maybeLeaderElection(votingReplicas)
 
@@ -231,7 +232,7 @@ class KeyValueReplica(
       localUid: LocalUid,
       sendingActor: ExecutionContext,
       var state: ConnInformation = Map.empty,
-      val timeoutThreshold: Long = 1000
+      val timeoutThreshold: Long
   ) extends State[ConnInformation] {
 
     given Lattice[Payload[ConnInformation]] = Lattice.derived
