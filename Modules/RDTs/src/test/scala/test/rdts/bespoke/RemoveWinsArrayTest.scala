@@ -118,4 +118,30 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     list = list `merge` delta1a `merge` delta1b
     assertEquals(list.toList, List("b", "a", "c", "d"))
   }
+
+  test("nested move") {
+    // Move an element on one replica, and move another element next to it to it on another replica
+
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var list = RemoveWinsArray.empty[String]
+    list = list `merge` list.append("a")(using aid)
+    list = list `merge` list.append("b")(using aid)
+    list = list `merge` list.append("c")(using aid)
+    list = list `merge` list.append("d")(using aid)
+    list = list `merge` list.append("e")(using aid)
+    assertEquals(list.toList, List("a", "b", "c", "d", "e"))
+
+    val delta1a = list.move(4, 2)(using aid)
+    val delta1b = list.move(1, 5)(using bid)
+
+    val v1a = list `merge` delta1a
+    val v1b = list `merge` delta1b
+    assertEquals(v1a.toList, List("a", "b", "e", "c", "d"))
+    assertEquals(v1b.toList, List("a", "c", "d", "e", "b"))
+
+    list = list `merge` delta1a `merge` delta1b
+    assertEquals(list.toList, List("a", "e", "c", "d", "b"))
+  }
 }

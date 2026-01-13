@@ -82,15 +82,15 @@ case class RemoveWinsArray[E](
   }
 
   def move(from: Int, to: Int)(using LocalUid): RemoveWinsArray[E] = {
-    if from < 0 || to < 0 || from >= size || to >= size then RemoveWinsArray.empty
+    if from < 0 || to < 0 || from > size || to > size then RemoveWinsArray.empty
     else if from == to then RemoveWinsArray.empty
     else
       val entriesList = entries
       entriesList.lift(from) match {
         case Some((dot, entry)) =>
           val pos = {
-            val beforePos = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.min)
-            val afterPos  = entriesList.lift(to + 1).map(_._2.index.value).getOrElse(LSeq.max)
+            val beforePos = entriesList.lift(to - 1).map(_._2.index.value).getOrElse(LSeq.min)
+            val afterPos  = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.max)
             LSeq.between(beforePos, afterPos, LocalUid.replicaId)
           }
           RemoveWinsArray(
