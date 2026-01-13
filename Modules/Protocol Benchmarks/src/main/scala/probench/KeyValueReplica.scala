@@ -27,7 +27,7 @@ trait State[T] {
 
   def handleIncoming(delta: T): Unit
   def publish(delta: T): T
-  def transform(f: T => T): T = publish(f(lock.synchronized(state)))
+  def transform(f: T => T): T = lock.synchronized(publish(f(state)))
 
 }
 
