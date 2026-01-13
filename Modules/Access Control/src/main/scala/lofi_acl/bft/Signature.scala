@@ -3,7 +3,7 @@ package lofi_acl.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import crypto.Ed25519Util
 
-import java.security.PublicKey
+import java.security.{PrivateKey, PublicKey}
 import java.util.Base64
 
 /** Container for Ed25519 signature. */
@@ -29,6 +29,10 @@ class Signature private (private val delegate: Array[Byte]) {
 
 object Signature {
   def apply(signatureBytes: Array[Byte]): Signature = new Signature(signatureBytes.clone())
+
+  def compute(content: Array[Byte], signingKey: PrivateKey): Signature = new Signature(
+    Ed25519Util.sign(content, signingKey)
+  )
 
   def unsafeFromArray(signatureBytes: Array[Byte]): Signature = new Signature(signatureBytes)
   given signatureValueCodec: JsonValueCodec[Signature]:
