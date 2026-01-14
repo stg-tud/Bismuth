@@ -9,9 +9,9 @@ import datatypes.{Counter, ORSet, Op, Replica}
 import riblt.RIBLT
 import riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
 
-import java.io.{ByteArrayOutputStream, OutputStream}
-import java.util.Base64
+import java.io.ByteArrayOutputStream
 import java.security.{PrivateKey, PublicKey}
+import java.util.Base64
 
 given c1: JsonValueCodec[Event[Int]]         = JsonCodecMaker.make
 given c22: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
