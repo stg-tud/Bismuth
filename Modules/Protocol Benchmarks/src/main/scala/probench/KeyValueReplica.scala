@@ -77,7 +77,9 @@ class KeyValueReplica(
       var state: ClusterState = MultiPaxos.empty,
   ) extends State[ClusterState] {
 
-    given Lattice[Payload[ClusterState]] = Lattice.derived
+    given Lattice[Payload[ClusterState]] =
+      given Lattice[Int] = Lattice.fromOrdering
+      Lattice.derived
 
     override val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
       localUid,
@@ -187,7 +189,9 @@ class KeyValueReplica(
       var state: ClientState = RequestResponseQueue.empty
   ) extends State[ClientState] {
 
-    given Lattice[Payload[ClientState]] = Lattice.derived
+    given Lattice[Payload[ClientState]] =
+      given Lattice[Int] = Lattice.fromOrdering
+      Lattice.derived
 
     override val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
@@ -235,7 +239,9 @@ class KeyValueReplica(
       val timeoutThreshold: Long
   ) extends State[ConnInformation] {
 
-    given Lattice[Payload[ConnInformation]] = Lattice.derived
+    given Lattice[Payload[ConnInformation]] =
+      given Lattice[Int] = Lattice.fromOrdering
+      Lattice.derived
 
     var alivePeers: Set[Uid] = Set.empty
 

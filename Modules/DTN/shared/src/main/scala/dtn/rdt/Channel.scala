@@ -34,7 +34,7 @@ class ClientContext[T: JsonValueCodec](
                   executionContext
                 )
           Sync { () }
-        case Payload(sender, dots, data, redundantDots) =>
+        case Payload(sender, dots, data, redundantDots, _) =>
           connection.send(
             RdtMessageType.Payload,
             writeToArray[T](data),
@@ -71,7 +71,7 @@ class Channel[T: JsonValueCodec](
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
             case RdtMessageType.Request => cb.succeed(ProtocolMessage.Request(dtnid, dots))
-            case RdtMessageType.Payload => cb.succeed(ProtocolMessage.Payload(dtnid, dots, readFromArray[T](payload)))
+            case RdtMessageType.Payload => cb.succeed(ProtocolMessage.Payload(dtnid, dots, readFromArray[T](payload), 0))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.

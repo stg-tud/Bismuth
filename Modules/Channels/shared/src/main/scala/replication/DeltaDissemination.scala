@@ -142,10 +142,12 @@ class DeltaDissemination[State](
 
   def selfContext: Dots = contexts.getOrElse(replicaId.uid, Dots.empty)
 
-  def applyDelta(delta: State): Unit =
+  def defaultTTL = if immediateForward then Int.MaxValue else 0
+
+  def applyDelta(delta: State, timetolive: Int = defaultTTL): Unit =
       val message = lock.synchronized {
         val nextDot = selfContext.nextDot(replicaId.uid)
-        val payload = Payload(replicaId.uid, Dots.single(nextDot), delta)
+        val payload = Payload(replicaId.uid, Dots.single(nextDot), delta, timetolive)
         updateContext(replicaId.uid, payload.dots)
         val message = SentCachedMessage(payload)(using pmscodec)
         rememberPayload(message)
@@ -184,7 +186,7 @@ class DeltaDissemination[State](
           relevant.foreach: msg =>
               send(from, SentCachedMessage(msg.payload.addSender(replicaId.uid))(using pmscodec))
           updateContext(uid, context `merge` knows)
-        case payload @ Payload(uid, context, data, redundantDots) =>
+        case payload @ Payload(uid, context, data, redundantDots, timetolive) =>
           if context <= selfContext then return
           lock.synchronized {
             uid.foreach { uid =>
@@ -194,8 +196,9 @@ class DeltaDissemination[State](
             rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
           }
           receiveCallback(data)
-          if immediateForward then
-              disseminate(msg, Set(from))
+          if timetolive > 0 then
+            val msg2 = SentCachedMessage(payload.copy(timetolive = timetolive - 1))(using pmscodec)
+            disseminate(msg2, Set(from))
 
   }
 

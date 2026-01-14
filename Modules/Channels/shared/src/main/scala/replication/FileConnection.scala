@@ -17,7 +17,7 @@ class FileConnection[T](path: Path)(using JsonValueCodec[ProtocolMessage[T]])
           case ProtocolMessage.Request(sender, knows) =>
             Using(Files.newInputStream(path)) { is =>
               scanJsonValuesFromStream[ProtocolMessage[T]](is) {
-                case pm @ ProtocolMessage.Payload(_, dots, _, _) if !(dots <= knows) =>
+                case pm @ ProtocolMessage.Payload(_, dots, _, _, _) if !(dots <= knows) =>
                   peer.succeed(pm)
                   true
                 case _ => true
