@@ -37,7 +37,7 @@ class DeltaDissemination[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
     @unused crypto: Option[Aead] = None,
-    immediateForward: Boolean = false,
+    defaultTimetolive: Int = 0,
     sendingActor: ExecutionContext = DeltaDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
@@ -142,9 +142,7 @@ class DeltaDissemination[State](
 
   def selfContext: Dots = contexts.getOrElse(replicaId.uid, Dots.empty)
 
-  def defaultTTL = if immediateForward then Int.MaxValue else 0
-
-  def applyDelta(delta: State, timetolive: Int = defaultTTL): Unit =
+  def applyDelta(delta: State, timetolive: Int = defaultTimetolive): Unit =
       val message = lock.synchronized {
         val nextDot = selfContext.nextDot(replicaId.uid)
         val payload = Payload(replicaId.uid, Dots.single(nextDot), delta, timetolive)
@@ -197,8 +195,8 @@ class DeltaDissemination[State](
           }
           receiveCallback(data)
           if timetolive > 0 then
-            val msg2 = SentCachedMessage(payload.copy(timetolive = timetolive - 1))(using pmscodec)
-            disseminate(msg2, Set(from))
+              val msg2 = SentCachedMessage(payload.copy(timetolive = timetolive - 1))(using pmscodec)
+              disseminate(msg2, Set(from))
 
   }
 

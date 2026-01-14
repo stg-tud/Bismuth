@@ -84,7 +84,7 @@ class KeyValueReplica(
     override val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
       localUid,
       handleIncoming,
-      immediateForward = true,
+      defaultTimetolive = Int.MaxValue,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
     )
@@ -196,7 +196,7 @@ class KeyValueReplica(
     override val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
       handleIncoming,
-      immediateForward = true,
+      defaultTimetolive = Int.MaxValue,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
     )
@@ -248,7 +248,7 @@ class KeyValueReplica(
     override val dataManager: DeltaDissemination[ConnInformation] = DeltaDissemination(
       localUid,
       handleIncoming,
-      immediateForward = false,
+      defaultTimetolive = Int.MaxValue,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
     )

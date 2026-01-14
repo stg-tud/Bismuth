@@ -12,7 +12,7 @@ class DeltaDisseminationTest extends munit.FunSuite {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     // I have no clue why this syntax is still not deprecated xD
-    val dd1, dd2, dd3 = DeltaDissemination[Set[String]](LocalUid.gen(), _ => (), None, true)
+    val dd1, dd2, dd3 = DeltaDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTTL = Int.MaxValue)
 
     val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
 
