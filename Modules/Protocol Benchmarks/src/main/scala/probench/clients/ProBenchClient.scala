@@ -17,7 +17,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
   given localUid: LocalUid = LocalUid(name)
 
   val dataManager: DeltaDissemination[State] =
-    DeltaDissemination[State](localUid, handleIncoming, defaultTimetolive = Int.MaxValue)
+    DeltaDissemination[State](localUid, handleIncoming, defaultTimetolive = 1)
 
   inline def log(inline msg: String): Unit =
     if false then println(s"[$name] $msg")
