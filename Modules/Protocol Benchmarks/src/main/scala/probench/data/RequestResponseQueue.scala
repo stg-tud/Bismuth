@@ -41,6 +41,9 @@ case class RequestResponseQueue[S,T](
 
   private def timestampsSorted: List[Timestamp] =
     requests.keySet.toList.sorted
+
+  def requestsSorted: List[Req[S]] =
+    requests.entries.toList.sortBy(_._1).map(_._2)
 }
 
 object RequestResponseQueue {
