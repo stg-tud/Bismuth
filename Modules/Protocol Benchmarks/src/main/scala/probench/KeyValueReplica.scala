@@ -171,8 +171,11 @@ class KeyValueReplica(
             }
             s"$key=$value; OK"
         }
-        client.transform {
-          _.respond(req, decision)
+        // only leader is allowed to actually respond to requests
+        if cluster.state.leader.contains(replicaId) then {
+          client.transform {
+            _.respond(req, decision)
+          }: Unit
         }
       }
 
