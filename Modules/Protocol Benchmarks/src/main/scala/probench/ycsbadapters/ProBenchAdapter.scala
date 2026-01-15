@@ -38,20 +38,26 @@ class ProBenchAdapter extends DB {
 
   override def init(): Unit = {
     val props: Properties = getProperties
-    val ip                = props.getProperty("pb.ip")
-    val port              = Integer.parseInt(props.getProperty("pb.port"))
+    val endpoints         = props.getProperty("pb.endpoints").split(" ").map(e =>
+      val s = e.split(":")
+      (s(0),s(1))
+    )
     pbClient.printResults = false
 
     nioTCP = NioTCP()
     abort = Abort()
     ec.execute(() => nioTCP.loopSelection(abort))
 
-    addRetryingLatentConnection(
-      pbClient.dataManager,
-      nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
-      1000,
-      10
-    )
+    endpoints.foreach{(ip, port) =>
+      println(s"adding connection to $ip:$port")
+      addRetryingLatentConnection(
+        pbClient.dataManager,
+        nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, Integer.parseInt(port)))),
+        1000,
+        10
+      )
+    }
+
 
     println("Hello from pb adapter!")
   }
