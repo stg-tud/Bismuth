@@ -1,9 +1,8 @@
 package probench.clients
 
 import probench.Codecs.given
-import probench.data.RequestResponseQueue.{Req, Timestamp}
+import probench.data.RequestResponseQueue.Timestamp
 import probench.data.{KVOperation, RequestResponseQueue}
-import rdts.base.LocalUid.replicaId
 import rdts.base.{LocalUid, Uid}
 import replication.DeltaDissemination
 
@@ -27,14 +26,25 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
   var currentState: State      = RequestResponseQueue.empty
   val currentStateLock: AnyRef = new {}
 
-  val promises: mutable.Map[Timestamp, Promise[String]] = mutable.Map.empty[Timestamp, Promise[String]]
+  val promises: mutable.HashMap[Timestamp, Promise[String]] = mutable.HashMap.empty[Timestamp, Promise[String]]
 
   def readWithResult(key: String): Future[String] =
-    currentStateLock.synchronized {
       val (timestamp, queue) = currentState.request(KVOperation.Read(key))
       transform(_ => queue)
       val p = Promise[String]()
-      promises.put(timestamp, p)
+      promises.synchronized {
+        promises.put(timestamp, p)
+      }
+      p.future
+
+  def writeWithResult(key: String, value: String): Future[String] =
+    currentStateLock.synchronized {
+      val (timestamp, queue) = currentState.request(KVOperation.Write(key, value))
+      transform(_ => queue)
+      val p = Promise[String]()
+      promises.synchronized {
+        promises.put(timestamp, p)
+      }
       p.future
     }
 
@@ -68,21 +78,26 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   private def maybeHandleResponses(newState: State): Unit =
       val (requests, responses) = (newState.requests, newState.responses)
-      for {
-        req @ Req(_, _, timestamp) <- requests.get(replicaId).map(_.value).getOrElse(Set())
-        if responses.contains(timestamp)
-      } {
-        responses.get(timestamp) match
-            case Some(res) =>
-              onResultValue(res.value)
-              promises.remove(timestamp) match {
-                case Some(promise) =>
-                  promise.success(res.value)
-                case None          => ()
-              }
-              transform(_.complete(req))
-              if blocking then requestSemaphore.release(1)
-            case None => ()
+      // println(s"open promises: $promises")
+      currentStateLock.synchronized {
+        promises.synchronized {
+          for {
+            timestamp <- promises.keys
+            if responses.keySet.contains(timestamp)
+          } {
+            responses.get(timestamp) match
+                case Some(res) =>
+                  onResultValue(res.value)
+                  promises.remove(timestamp) match {
+                    case Some(promise) =>
+                      promise.success(res.value)
+                    case None => ()
+                  }
+                  transform(_.receive(timestamp))
+                  if blocking then requestSemaphore.release(1)
+                case None => ()
+          }
+        }
       }
 
   override def handleOpImpl(op: KVOperation[String, String]): Unit =
