@@ -4,9 +4,13 @@ import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.RemoveWinsArray
 
 import scala.language.implicitConversions
+import rdts.base.Lattice
+import rdts.datatypes.LastWriterWins as LWW
 
 class RemoveWinsArrayTest extends munit.FunSuite {
   test("insert") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
@@ -41,6 +45,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
   }
 
   test("delete") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
@@ -68,6 +74,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
   }
 
   test("appendAll") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
 
     var list = RemoveWinsArray.empty[String]
@@ -83,19 +91,21 @@ class RemoveWinsArrayTest extends munit.FunSuite {
   test("update") {
     val aid = Uid.predefined("a")
 
-    var list = RemoveWinsArray.empty[String]
+    var list = RemoveWinsArray.empty[LWW[String]]
 
-    list = list `merge` list.append("a")(using aid)
-    assertEquals(list.toList, List("a"))
+    list = list `merge` list.append(LWW.now("a"))(using aid)
+    assertEquals(list.toList.map(_.value), List("a"))
 
-    list = list `merge` list.update(0, "b")(using aid)
-    assertEquals(list.toList, List("b"))
+    list = list `merge` list.update(0, LWW.now("b"))(using aid)
+    assertEquals(list.toList.map(_.value), List("b"))
 
-    list = list `merge` list.update(1, "c")(using aid)
-    assertEquals(list.toList, List("b", "c"))
+    list = list `merge` list.update(1, LWW.now("c"))(using aid)
+    assertEquals(list.toList.map(_.value), List("b"))
   }
 
   test("move") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
@@ -121,6 +131,7 @@ class RemoveWinsArrayTest extends munit.FunSuite {
 
   test("nested move") {
     // Move an element on one replica, and move another element next to it to it on another replica
+    given Lattice[String] = Lattice.assertEquals
 
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
@@ -146,6 +157,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
   }
 
   test("moveRange") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
@@ -172,6 +185,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
   }
 
   test("concurrent moveRange") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
@@ -199,6 +214,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
   }
 
   test("move subrange into range being moved") {
+    given Lattice[String] = Lattice.assertEquals
+
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
@@ -223,5 +240,38 @@ class RemoveWinsArrayTest extends munit.FunSuite {
 
     // Because of the way positions are generated, we expect the original target indices to be remained
     assertEquals(list.toList, List("Buy juice", "Call doctor", "Water plants", "Do laundry", "Cook dinner"))
+  }
+
+  test("nested list with value updates") {
+    given Lattice[String] = Lattice.assertEquals
+
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var list = RemoveWinsArray.empty[RemoveWinsArray[String]]
+
+    list = list `merge` list.append(RemoveWinsArray.of("x")(using aid))(using aid)
+    list = list `merge` list.append(RemoveWinsArray.of("y")(using aid))(using aid)
+    list = list `merge` list.append(RemoveWinsArray.of("z")(using aid))(using aid)
+    assertEquals(
+      list.toList.map(_.toList),
+      List(List("x"), List("y"), List("z"))
+    )
+
+    // Update nested lists concurrently
+    val delta1a = list.updateWith(0, _.append("a")(using aid))(using aid)
+    val delta1b = list.updateWith(0, _.append("b")(using bid))(using bid)
+
+    val v1a = list `merge` delta1a
+    val v1b = list `merge` delta1b
+    assertEquals(v1a.toList.map(_.toList), List(List("x", "a"), List("y"), List("z")))
+    assertEquals(v1b.toList.map(_.toList), List(List("x", "b"), List("y"), List("z")))
+
+    list = list `merge` delta1a `merge` delta1b
+    assertEquals(list.toList.map(_.toList), List(List("x", "a", "b"), List("y"), List("z")))
+
+    // Update another position
+    list = list `merge` list.updateWith(1, _.append("modified")(using aid))(using aid)
+    assertEquals(list.toList.map(_.toList), List(List("x", "a", "b"), List("y", "modified"), List("z")))
   }
 }

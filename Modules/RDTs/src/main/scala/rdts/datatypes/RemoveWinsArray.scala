@@ -65,12 +65,15 @@ case class RemoveWinsArray[E](
   }
 
   def update(index: Int, elem: E)(using LocalUid): RemoveWinsArray[E] = {
+    updateWith(index, _ => elem)
+  }
+
+  def updateWith(index: Int, f: E => E)(using LocalUid): RemoveWinsArray[E] = {
     entries.lift(index) match {
-      case Some((oldDot, _)) =>
-        val dot   = observed.nextDot
-        val entry = RemoveWinsArray.Entry(LWW.now(entries(index)._2.index.value), elem)
-        RemoveWinsArray(elements = Map(dot -> entry), removed = Dots.single(oldDot))
-      case None => insert(index, elem)
+      case Some((dot, oldEntry)) =>
+        val entry = RemoveWinsArray.Entry(LWW.now(oldEntry.index.value), f(oldEntry.value))
+        RemoveWinsArray(elements = Map(dot -> entry), removed = Dots.empty)
+      case None => RemoveWinsArray.empty
     }
   }
 
@@ -143,10 +146,7 @@ object RemoveWinsArray {
   case class Entry[A](index: LWW[LSeq], value: A)
 
   object Entry {
-    given lattice[A]: Lattice[Entry[A]] = {
-      given Lattice[A] = Lattice.assertEquals
-      Lattice.derived
-    }
+    given lattice[A: Lattice]: Lattice[Entry[A]] = Lattice.derived
 
     given decompose[E]: Decompose[Entry[E]] = {
       given Decompose[E] = Decompose.atomic
@@ -156,13 +156,16 @@ object RemoveWinsArray {
 
   def empty[A]: RemoveWinsArray[A] = RemoveWinsArray(Map.empty, Dots.empty)
 
+  def of[A](values: A*)(using LocalUid): RemoveWinsArray[A] = {
+    values.foldLeft(RemoveWinsArray.empty[A]) { (arr, v) =>
+      arr.append(v)
+    }
+  }
+
   given decompose[E]: Decompose[RemoveWinsArray[E]] = Decompose.derived
 
-  given lattice[E]: Lattice[RemoveWinsArray[E]] = {
-    val base: Lattice[RemoveWinsArray[E]] = {
-      given Lattice[E] = Lattice.assertEquals
-      Lattice.derived
-    }
+  given lattice[E: Lattice]: Lattice[RemoveWinsArray[E]] = {
+    val base: Lattice[RemoveWinsArray[E]] = Lattice.derived
     DecoratedLattice.compact(base) { _.compact }
   }
 
