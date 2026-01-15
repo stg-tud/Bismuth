@@ -64,26 +64,34 @@ class ProBenchAdapter extends DB {
 
   override def insert(table: String, key: String, values: Map[String, ByteIterator]): Status = {
     val v = valsToString(values)
+//    println("try write")
     try
-        // println(s"writing ($k,$v)")
-        pbClient.write(key, v)
-        Status.OK
+      val f = pbClient.writeWithResult(key, v)
+//      println("try await")
+      Await.ready(f,6.second)
+//      println("ok await")
+      Status.OK
     catch
-        case exception =>
-          println(exception.toString)
+        case exception: concurrent.TimeoutException =>
+          println(s"failed to write sth")
+          exception.printStackTrace()
           Status.ERROR
   }
 
   override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
+//    println("try read")
     try
         val f = pbClient.readWithResult(key).map(res =>
             result.put("result", StringByteIterator(res))
-            Status.OK
         )
-        Await.result(f, 5.second)
+//        println("try read await")
+        Await.ready(f, 6.second)
+//        println("ok read await")
+        Status.OK
     catch
-        case exception =>
-          println(exception.toString)
+        case exception: concurrent.TimeoutException =>
+          println(s"failed to read sth")
+          exception.printStackTrace()
           Status.ERROR
   }
 
