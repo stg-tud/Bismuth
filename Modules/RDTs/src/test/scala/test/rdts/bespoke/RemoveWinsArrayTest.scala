@@ -107,8 +107,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     list = list `merge` list.append("d")(using aid)
     assertEquals(list.toList, List("a", "b", "c", "d"))
 
-    val delta1a = list.move(0, 2)(using aid)
-    val delta1b = list.move(0, 1)(using bid)
+    val delta1a = list.move(0, 3)(using aid)
+    val delta1b = list.move(0, 2)(using bid)
 
     val v1a = list `merge` delta1a
     val v1b = list `merge` delta1b
@@ -143,5 +143,85 @@ class RemoveWinsArrayTest extends munit.FunSuite {
 
     list = list `merge` delta1a `merge` delta1b
     assertEquals(list.toList, List("a", "e", "c", "d", "b"))
+  }
+
+  test("moveRange") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var list = RemoveWinsArray.empty[String]
+
+    list = list `merge` list.append("a")(using aid)
+    list = list `merge` list.append("b")(using aid)
+    list = list `merge` list.append("c")(using aid)
+    list = list `merge` list.append("d")(using aid)
+    list = list `merge` list.append("e")(using aid)
+    assertEquals(list.toList, List("a", "b", "c", "d", "e"))
+
+    // Move range [1, 3) (elements "b", "c") to position 4
+    list = list `merge` list.moveRange(1, 3, 4)(using aid)
+    assertEquals(list.toList, List("a", "d", "b", "c", "e"))
+
+    // Move range [0, 2) (elements "a", "d") to position 5
+    list = list `merge` list.moveRange(0, 2, 5)(using aid)
+    assertEquals(list.toList, List("b", "c", "e", "a", "d"))
+
+    // Move range [2, 5) (elements "e", "a", "d") to position 0
+    list = list `merge` list.moveRange(2, 5, 0)(using aid)
+    assertEquals(list.toList, List("e", "a", "d", "b", "c"))
+  }
+
+  test("concurrent moveRange") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var list = RemoveWinsArray.empty[String]
+    list = list `merge` list.append("a")(using aid)
+    list = list `merge` list.append("b")(using aid)
+    list = list `merge` list.append("c")(using aid)
+    list = list `merge` list.append("d")(using aid)
+    list = list `merge` list.append("e")(using aid)
+    list = list `merge` list.append("f")(using aid)
+    assertEquals(list.toList, List("a", "b", "c", "d", "e", "f"))
+
+    // Replica A moves range [1, 3) to position 6
+    val delta1a = list.moveRange(1, 3, 6)(using aid)
+    // Replica B moves range [3, 5) to position 0
+    val delta1b = list.moveRange(3, 5, 0)(using bid)
+
+    val v1a = list `merge` delta1a
+    val v1b = list `merge` delta1b
+    assertEquals(v1a.toList, List("a", "d", "e", "f", "b", "c"))
+    assertEquals(v1b.toList, List("d", "e", "a", "b", "c", "f"))
+
+    list = list `merge` delta1a `merge` delta1b
+    assertEquals(list.toList, List("d", "e", "a", "f", "b", "c"))
+  }
+
+  test("move subrange into range being moved") {
+    val aid = Uid.predefined("a")
+    val bid = Uid.predefined("b")
+
+    var list = RemoveWinsArray.empty[String]
+    list = list `merge` list.append("Water plants")(using aid)
+    list = list `merge` list.append("Buy juice")(using aid)
+    list = list `merge` list.append("Call doctor")(using aid)
+    list = list `merge` list.append("Do laundry")(using aid)
+    list = list `merge` list.append("Cook dinner")(using aid)
+    assertEquals(list.toList, List("Water plants", "Buy juice", "Call doctor", "Do laundry", "Cook dinner"))
+
+    val delta1a = list.moveRange(1, 3, 0)(using aid)
+
+    val delta1b = list.moveRange(3, 5, 2)(using bid)
+
+    val v1a = list `merge` delta1a
+    val v1b = list `merge` delta1b
+    assertEquals(v1a.toList, List("Buy juice", "Call doctor", "Water plants", "Do laundry", "Cook dinner"))
+    assertEquals(v1b.toList, List("Water plants", "Buy juice", "Do laundry", "Cook dinner", "Call doctor"))
+
+    list = list `merge` delta1b `merge` delta1a
+
+    // Because of the way positions are generated, we expect the original target indices to be remained
+    assertEquals(list.toList, List("Buy juice", "Call doctor", "Water plants", "Do laundry", "Cook dinner"))
   }
 }

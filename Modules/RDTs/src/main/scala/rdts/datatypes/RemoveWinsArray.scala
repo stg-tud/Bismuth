@@ -103,6 +103,34 @@ case class RemoveWinsArray[E](
       }
   }
 
+  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using LocalUid): RemoveWinsArray[E] = {
+    if fromStart < 0 || fromEnd < 0 || toIndex < 0 then RemoveWinsArray.empty
+    else if fromStart >= fromEnd then RemoveWinsArray.empty
+    else if fromStart >= size || toIndex > size then RemoveWinsArray.empty
+    else if fromEnd > size then RemoveWinsArray.empty
+    else
+      val entriesList    = entries
+      val elementsToMove = entriesList.slice(fromStart, fromEnd)
+
+      if elementsToMove.isEmpty then RemoveWinsArray.empty
+      else
+        val beforePos = entriesList.lift(toIndex - 1).map(_._2.index.value).getOrElse(LSeq.min)
+        val afterPos  = entriesList.lift(toIndex).map(_._2.index.value).getOrElse(LSeq.max)
+
+        val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
+        var currentPos  = beforePos
+
+        for (dot, entry) <- elementsToMove do
+          val newPos = LSeq.between(currentPos, afterPos, LocalUid.replicaId)
+          newElements += (dot -> entry.copy(index = LWW.now(newPos)))
+          currentPos = newPos
+
+        RemoveWinsArray(
+          elements = newElements.toMap,
+          removed = Dots.empty
+        )
+  }
+
   def clear(): RemoveWinsArray[E] = {
     RemoveWinsArray(
       elements = Map.empty,
