@@ -4,50 +4,43 @@ import probench.data.RequestResponseQueue.{Req, Res, Timestamp}
 import rdts.base.*
 import rdts.base.Lattice.mapLattice
 import rdts.base.LocalUid.replicaId
-import rdts.datatypes.Epoch
+import rdts.datatypes.ObserveRemoveMap
 import rdts.time.CausalTime
 
-case class RequestResponseQueue[S, T](
-    requests: Map[Uid, Epoch[Set[Req[S]]]] = Map.empty[Uid, Epoch[Set[Req[S]]]],
-    responses: Map[Timestamp, Res[T]] = Map.empty[Timestamp, Res[T]]
+case class RequestResponseQueue[S,T](
+    requests: ObserveRemoveMap[Timestamp, Req[S]] = ObserveRemoveMap.empty[Timestamp, Req[S]],
+    responses: ObserveRemoveMap[Timestamp, Res[T]] = ObserveRemoveMap.empty[Timestamp, Res[T]]
 ) {
-  def request(value: S)(using LocalUid): (Timestamp, RequestResponseQueue[S, T]) =
+  def request(value: S)(using LocalUid): (Timestamp, RequestResponseQueue[S,T]) =
       // find the newest timestamp
-      val timestamp = requestsSorted.lastOption.map(_.timestamp) match
+      val timestamp = timestampsSorted.lastOption match
           case Some((time, _)) => (time.advance, replicaId)
           case None            => (CausalTime.now(), replicaId)
 
-      val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
-      val updated    = myRequests.value + Req(value, replicaId, timestamp)
-      (timestamp, RequestResponseQueue(requests = Map(replicaId -> myRequests.write(updated))))
+      (timestamp, RequestResponseQueue(requests = requests.update(timestamp, Req(value, replicaId, timestamp))))
 
-  def respond(request: Req[S], value: T): RequestResponseQueue[S, T] =
-    RequestResponseQueue(responses =
-      Map(request.timestamp -> Res(value))
+  def respond(request: Req[S], value: T)(using LocalUid): RequestResponseQueue[S,T] =
+    RequestResponseQueue(
+      requests = requests.remove(request.timestamp),
+      responses =
+        responses.update(request.timestamp, Res(value))
     )
 
   def responseTo(req: Req[S]): Option[Res[T]] =
     responses.get(req.timestamp)
 
-  /** Completes a request by removing it from the set of requests.
-    * This is supposed to be done by the replica where the request originated.
-    */
-  def complete(request: Req[S])(using LocalUid): RequestResponseQueue[S, T] =
-      val myRequests = requests.getOrElse(replicaId, Epoch.empty[Set[Req[S]]])
-      RequestResponseQueue(
-        requests = Map(replicaId -> myRequests.epocheWrite(
-          myRequests.value - request
-        ))
-      )
+  /**
+   * receive the response with given
+   */
+  def receive(timestamp: Timestamp): RequestResponseQueue[S,T] =
+    RequestResponseQueue(responses = responses.remove(timestamp))
 
-  def firstUnansweredRequest: Option[Req[S]] =
-    requestsSorted.find(responseTo(_).isEmpty)
+  def firstUnansweredRequest: Option[Req[S]] = {
+    timestampsSorted.headOption.flatMap(requests.get)
+  }
 
-  def requestsSorted: List[Req[S]] =
-      val allRequests: Iterable[Req[S]] = requests.flatMap {
-        case (nodeId, epoch) => epoch.value
-      }
-      allRequests.toList.sortBy(_.timestamp)
+  private def timestampsSorted: List[Timestamp] =
+    requests.keySet.toList.sorted
 }
 
 object RequestResponseQueue {
@@ -56,16 +49,15 @@ object RequestResponseQueue {
   case class Req[+T](value: T, requester: Uid, timestamp: Timestamp)
   case class Res[+T](value: T)
 
-  def empty[S, T]: RequestResponseQueue[S, T] = RequestResponseQueue()
+  def empty[S,T]: RequestResponseQueue[S,T] = RequestResponseQueue()
 
-  given bottomInstance[S, T]: Bottom[RequestResponseQueue[S, T]] = Bottom.provide(empty)
+  given bottomInstance[S, T]: Bottom[RequestResponseQueue[S,T]] = Bottom.provide(empty)
 
   given Ordering[Timestamp] = Orderings.lexicographic
 
   // lattices
-  given [S, T]: Lattice[Map[Timestamp, Res[T]]] = // for the requestMap
+  given [S,T]: Lattice[RequestResponseQueue[S,T]] =
+      given Lattice[Req[S]] = Lattice.assertEquals
       given Lattice[Res[T]] = Lattice.assertEquals
-      Lattice.mapLattice
-
-  given [S, T]: Lattice[RequestResponseQueue[S, T]] = Lattice.derived
+      Lattice.derived
 }
