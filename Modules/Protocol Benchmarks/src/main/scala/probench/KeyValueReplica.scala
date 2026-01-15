@@ -78,8 +78,8 @@ class KeyValueReplica(
   ) extends State[ClusterState] {
 
     given Lattice[Payload[ClusterState]] =
-      given Lattice[Int] = Lattice.fromOrdering
-      Lattice.derived
+        given Lattice[Int] = Lattice.fromOrdering
+        Lattice.derived
 
     override val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
       localUid,
@@ -193,8 +193,8 @@ class KeyValueReplica(
   ) extends State[ClientState] {
 
     given Lattice[Payload[ClientState]] =
-      given Lattice[Int] = Lattice.fromOrdering
-      Lattice.derived
+        given Lattice[Int] = Lattice.fromOrdering
+        Lattice.derived
 
     override val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
@@ -214,7 +214,7 @@ class KeyValueReplica(
       if old != changed then {
         assert(changed == state)
         cluster.maybeProposeNewValue(changed)
-        cluster.forceUpkeep() : Unit
+        cluster.forceUpkeep(): Unit
         // else log(s"upkept: ${pprint(upkept)}")
       }
     }
@@ -243,8 +243,8 @@ class KeyValueReplica(
   ) extends State[ConnInformation] {
 
     given Lattice[Payload[ConnInformation]] =
-      given Lattice[Int] = Lattice.fromOrdering
-      Lattice.derived
+        given Lattice[Int] = Lattice.fromOrdering
+        Lattice.derived
 
     var alivePeers: Set[Uid] = Set.empty
 
