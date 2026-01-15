@@ -144,8 +144,7 @@ object ReplicatedTree {
       edges.maxByOption(_._2).map(_._1).getOrElse(parent)
   }
 
-  given nodeLattice[A]: Lattice[Node[A]] = {
-    given Lattice[A] = Lattice.assertEquals
+  given nodeLattice[A: Lattice]: Lattice[Node[A]] = {
     given Lattice[Dot] with {
       def merge(left: Dot, right: Dot): Dot = {
         // we can always choose left, since we re-parent based on largest edge after merging
@@ -161,7 +160,7 @@ object ReplicatedTree {
 
   def empty[A]: ReplicatedTree[A] = ReplicatedTree[A](Map.empty, Dots.empty)
 
-  given lattice[A]: Lattice[ReplicatedTree[A]] with {
+  given lattice[A: Lattice]: Lattice[ReplicatedTree[A]] with {
     given mapLattice: Lattice[Map[Dot, ReplicatedTree.Node[A]]]                     = Lattice.mapLattice
     def merge(left: ReplicatedTree[A], right: ReplicatedTree[A]): ReplicatedTree[A] = {
       val elements = left.elements `merge` right.elements

@@ -8,17 +8,19 @@ import rdts.time.Dot
 import rdts.base.Lattice.assertEquals
 import munit.Assertions
 import scala.util.Random
+import rdts.base.Lattice
+import rdts.datatypes.LastWriterWins as LWW
 
 class ReplicatedTreeTest extends munit.FunSuite {
   test("insert") {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
-    val v0 = ReplicatedTree.empty[String]
+    val v0 = ReplicatedTree.empty[LWW[String]]
 
     assert(v0.isEmpty)
 
-    val v1 = v0 `merge` v0.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    val v1 = v0 `merge` v0.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
 
     {
       assertEquals(v1.size, 1)
@@ -30,7 +32,7 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
     val parent = v1.children(ReplicatedTree.rootDot).head.dot
 
-    val v2 = v1 `merge` v1.insert(parent, "A")(using aid) `merge` v1.insert(parent, "B")(using bid)
+    val v2 = v1 `merge` v1.insert(parent, LWW.now("A"))(using aid) `merge` v1.insert(parent, LWW.now("B"))(using bid)
 
     {
       assertEquals(v2.size, 3)
@@ -46,8 +48,8 @@ class ReplicatedTreeTest extends munit.FunSuite {
       n2.assertChildren(Set.empty)
     }
 
-    val a  = v2.children(parent).find(_.value == "A").get
-    val b  = v2.children(parent).find(_.value == "B").get
+    val a  = v2.children(parent).find(_.value.value == "A").get
+    val b  = v2.children(parent).find(_.value.value == "B").get
     val v3 = v2 `merge` v2.move(a.dot, b.dot)
 
     {
@@ -69,19 +71,19 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val parent = tree.root.get.dot
-    tree = tree `merge` tree.insert(parent, "A")(using aid)
-    tree = tree `merge` tree.insert(parent, "B")(using bid)
-    val a = tree.children(parent).find(_.value == "A").get.dot
-    val b = tree.children(parent).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
+    val a = tree.children(parent).find(_.value.value == "A").get.dot
+    val b = tree.children(parent).find(_.value.value == "B").get.dot
 
-    tree = tree `merge` tree.insert(a, "A1")(using aid)
-    tree = tree `merge` tree.insert(b, "B1")(using bid)
+    tree = tree `merge` tree.insert(a, LWW.now("A1"))(using aid)
+    tree = tree `merge` tree.insert(b, LWW.now("B1"))(using bid)
 
-    val a1 = tree.children(a).find(_.value == "A1").get.dot
-    val b1 = tree.children(b).find(_.value == "B1").get.dot
+    val a1 = tree.children(a).find(_.value.value == "A1").get.dot
+    val b1 = tree.children(b).find(_.value.value == "B1").get.dot
 
     {
       assertEquals(tree.size, 5)
@@ -115,11 +117,11 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
       assertEquals(v1a.children(a1).size, 0)
       assertEquals(v1a.children(b1).size, 1)
-      assertEquals(v1a.children(b1).head.value, "A1")
+      assertEquals(v1a.children(b1).head.value.value, "A1")
 
       assertEquals(v1b.children(b1).size, 0)
       assertEquals(v1b.children(a1).size, 1)
-      assertEquals(v1b.children(a1).head.value, "B1")
+      assertEquals(v1b.children(a1).head.value.value, "B1")
     }
 
     tree = tree `merge` delta1a `merge` delta1b
@@ -150,14 +152,14 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val bid = Uid.predefined("b")
 
     // Create initial tree: ROOT -> A,B ; A -> C
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val parent = tree.root.get.dot
-    tree = tree `merge` tree.insert(parent, "A")(using aid)
-    tree = tree `merge` tree.insert(parent, "B")(using bid)
-    val a = tree.children(parent).find(_.value == "A").get.dot
-    val b = tree.children(parent).find(_.value == "B").get.dot
-    tree = tree `merge` tree.insert(a, "C")(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
+    val a = tree.children(parent).find(_.value.value == "A").get.dot
+    val b = tree.children(parent).find(_.value.value == "B").get.dot
+    tree = tree `merge` tree.insert(a, LWW.now("C"))(using aid)
 
     // Move A under B and B under A concurrently
     val delta1a = tree.move(b, a)
@@ -209,8 +211,9 @@ class ReplicatedTreeTest extends munit.FunSuite {
   }
 
   test("associativity") {
-    val (expected, deltas) = randomTree(50)
+    given Lattice[Int] = math.max
 
+    val (expected, deltas) = randomTree(50)
     for _ <- 0 until 10 do {
       val shuffledDeltas = Random.shuffle(deltas)
       val result         = shuffledDeltas.foldLeft(ReplicatedTree.empty[Int])(_ `merge` _)
@@ -223,15 +226,15 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val bid = Uid.predefined("b")
 
     // Create initial tree: ROOT -> C -> A,B
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val root = tree.root.get.dot
-    tree = tree `merge` tree.insert(root, "C")(using aid)
-    var c = tree.children(root).find(_.value == "C").get.dot
-    tree = tree `merge` tree.insert(c, "A")(using aid)
-    tree = tree `merge` tree.insert(c, "B")(using aid)
-    val a = tree.children(c).find(_.value == "A").get.dot
-    val b = tree.children(c).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(root, LWW.now("C"))(using aid)
+    var c = tree.children(root).find(_.value.value == "C").get.dot
+    tree = tree `merge` tree.insert(c, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(c, LWW.now("B"))(using aid)
+    val a = tree.children(c).find(_.value.value == "A").get.dot
+    val b = tree.children(c).find(_.value.value == "B").get.dot
 
     {
       assertEquals(tree.size, 4)
@@ -308,17 +311,17 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val bid = Uid.predefined("b")
 
     // Create initial tree: ROOT -> C, D ; C -> A,B
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val root = tree.root.get.dot
-    tree = tree `merge` tree.insert(root, "C")(using aid)
-    tree = tree `merge` tree.insert(root, "D")(using aid)
-    var c = tree.children(root).find(_.value == "C").get.dot
-    var d = tree.children(root).find(_.value == "D").get.dot
-    tree = tree `merge` tree.insert(c, "A")(using aid)
-    tree = tree `merge` tree.insert(c, "B")(using aid)
-    val a = tree.children(c).find(_.value == "A").get.dot
-    val b = tree.children(c).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(root, LWW.now("C"))(using aid)
+    tree = tree `merge` tree.insert(root, LWW.now("D"))(using aid)
+    var c = tree.children(root).find(_.value.value == "C").get.dot
+    var d = tree.children(root).find(_.value.value == "D").get.dot
+    tree = tree `merge` tree.insert(c, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(c, LWW.now("B"))(using aid)
+    val a = tree.children(c).find(_.value.value == "A").get.dot
+    val b = tree.children(c).find(_.value.value == "B").get.dot
 
     {
       assertEquals(tree.size, 5)
@@ -369,13 +372,13 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val parent = tree.root.get.dot
-    tree = tree `merge` tree.insert(parent, "A")(using aid)
-    tree = tree `merge` tree.insert(parent, "B")(using bid)
-    val a = tree.children(parent).find(_.value == "A").get.dot
-    val b = tree.children(parent).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
+    val a = tree.children(parent).find(_.value.value == "A").get.dot
+    val b = tree.children(parent).find(_.value.value == "B").get.dot
 
     {
       assertEquals(tree.size, 3)
@@ -421,13 +424,13 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val parent = tree.root.get.dot
-    tree = tree `merge` tree.insert(parent, "A")(using aid)
-    tree = tree `merge` tree.insert(parent, "B")(using bid)
-    val a = tree.children(parent).find(_.value == "A").get.dot
-    val b = tree.children(parent).find(_.value == "B").get.dot
+    tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
+    val a = tree.children(parent).find(_.value.value == "A").get.dot
+    val b = tree.children(parent).find(_.value.value == "B").get.dot
 
     {
       assertEquals(tree.size, 3)
@@ -473,16 +476,15 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val parent = tree.root.get.dot
-    tree = tree `merge` tree.insert(parent, "A")(using aid)
-    tree = tree `merge` tree.insert(parent, "B")(using bid)
-    val a = tree.children(parent).find(_.value == "A").get.dot
-    val b = tree.children(parent).find(_.value == "B").get.dot
-    tree = tree `merge` tree.insert(a, "A1")(using aid)
-    tree = tree `merge` tree.insert(a, "A2")(using aid)
-
+    tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
+    val a = tree.children(parent).find(_.value.value == "A").get.dot
+    val b = tree.children(parent).find(_.value.value == "B").get.dot
+    tree = tree `merge` tree.insert(a, LWW.now("A1"))(using aid)
+    tree = tree `merge` tree.insert(a, LWW.now("A2"))(using aid)
     {
       assertEquals(tree.size, 5)
 
@@ -509,17 +511,17 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
-    var tree = ReplicatedTree.empty[String]
-    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, "ROOT")(using aid)
+    var tree = ReplicatedTree.empty[LWW[String]]
+    tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val parent = tree.root.get.dot
-    tree = tree `merge` tree.insert(parent, "A")(using aid)
-    tree = tree `merge` tree.insert(parent, "B")(using bid)
-    val a = tree.children(parent).find(_.value == "A").get.dot
-    val b = tree.children(parent).find(_.value == "B").get.dot
-    tree = tree `merge` tree.insert(a, "C")(using aid)
-    val c = tree.children(a).find(_.value == "C").get.dot
-    tree = tree `merge` tree.insert(c, "D")(using aid)
-    val d = tree.children(c).find(_.value == "D").get.dot
+    tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
+    tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
+    val a = tree.children(parent).find(_.value.value == "A").get.dot
+    val b = tree.children(parent).find(_.value.value == "B").get.dot
+    tree = tree `merge` tree.insert(a, LWW.now("C"))(using aid)
+    val c = tree.children(a).find(_.value.value == "C").get.dot
+    tree = tree `merge` tree.insert(c, LWW.now("D"))(using aid)
+    val d = tree.children(c).find(_.value.value == "D").get.dot
 
     {
       assertEquals(tree.size, 5)
@@ -576,10 +578,11 @@ class ReplicatedTreeTest extends munit.FunSuite {
 }
 
 def randomTree(treeSize: Int): (ReplicatedTree[Int], List[ReplicatedTree[Int]]) = {
-  val id     = LocalUid.predefined("test")
-  var tree   = ReplicatedTree.empty[Int]
-  val root   = tree.insert(ReplicatedTree.rootDot, 0)(using id)
-  var deltas = List(root)
+  given Lattice[Int] = math.max
+  val id             = LocalUid.predefined("test")
+  var tree           = ReplicatedTree.empty[Int]
+  val root           = tree.insert(ReplicatedTree.rootDot, 0)(using id)
+  var deltas         = List(root)
 
   tree = tree `merge` root
 
@@ -609,13 +612,13 @@ case class TreeViewNode[A](value: A, children: Set[TreeViewNode[A]]) {
   }
 }
 
-def treeView[A](tree: ReplicatedTree[A]): TreeViewNode[A] = {
-  def treeViewChildren(tree: ReplicatedTree[A], parent: Dot): Set[TreeViewNode[A]] =
+def treeView[A](tree: ReplicatedTree[LWW[A]]): TreeViewNode[A] = {
+  def treeViewChildren(tree: ReplicatedTree[LWW[A]], parent: Dot): Set[TreeViewNode[A]] =
     tree.children(parent).map { node =>
-      TreeViewNode(node.value, treeViewChildren(tree, node.dot))
+      TreeViewNode(node.value.value, treeViewChildren(tree, node.dot))
     }.toSet
 
   val node = tree.root.get
 
-  TreeViewNode(node.value, treeViewChildren(tree, node.dot))
+  TreeViewNode(node.value.value, treeViewChildren(tree, node.dot))
 }
