@@ -13,12 +13,12 @@ object TestMain {
       "8111",
       "--cluster",
       "localhost:8111",
-      "localhost:8121",
-      "localhost:8131",
       "--initial-cluster-ids",
-      "node1 node2 node3"
+//      "node1"
+      "node1 node2 node3 node4 node5"
     ).toArray)
-    
+
+
     cli.main(List(
       "node",
       "--name",
@@ -30,9 +30,8 @@ object TestMain {
       "--cluster",
       "localhost:8111",
       "localhost:8121",
-      "localhost:8131",
       "--initial-cluster-ids",
-      "node1 node2 node3"
+      "node1 node2 node3 node4 node5"
     ).toArray)
 
     cli.main(List(
@@ -48,8 +47,46 @@ object TestMain {
       "localhost:8121",
       "localhost:8131",
       "--initial-cluster-ids",
-      "node1 node2 node3"
+      "node1 node2 node3 node4 node5"
     ).toArray)
 
+    cli.main(List(
+      "node",
+      "--name",
+      "node4",
+      "--listen-client-port",
+      "8140",
+      "--listen-peer-port",
+      "8141",
+      "--cluster",
+      "localhost:8111",
+      "localhost:8121",
+      "localhost:8131",
+      "localhost:8141",
+      "--initial-cluster-ids",
+      "node1 node2 node3 node4 node5"
+    ).toArray)
+
+    cli.main(List(
+      "node",
+      "--name",
+      "node5",
+      "--listen-client-port",
+      "8150",
+      "--listen-peer-port",
+      "8151",
+      "--cluster",
+      "localhost:8111",
+      "localhost:8121",
+      "localhost:8131",
+      "localhost:8141",
+      "localhost:8151",
+      "--initial-cluster-ids",
+      "node1 node2 node3 node4 node5"
+    ).toArray)
+
+    while(true) {
+
+    }
   }
 }
