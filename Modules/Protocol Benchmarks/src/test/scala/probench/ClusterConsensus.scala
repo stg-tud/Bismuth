@@ -27,6 +27,9 @@ class ClusterConsensus extends munit.FunSuite {
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
     secondaries.foreach { node => node.cluster.dataManager.addObjectConnection(connection.client(node.uid.toString)) }
+    val connection2 = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
+    secondaries.head.cluster.dataManager.addObjectConnection(connection2.server)
+    secondaries(1).cluster.dataManager.addObjectConnection(connection2.client(secondaries(1).uid.toString))
 
     val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
 

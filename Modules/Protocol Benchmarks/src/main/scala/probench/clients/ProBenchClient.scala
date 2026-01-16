@@ -38,7 +38,6 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       p.future
 
   def writeWithResult(key: String, value: String): Future[String] =
-    currentStateLock.synchronized {
       val (timestamp, queue) = currentState.request(KVOperation.Write(key, value))
       transform(_ => queue)
       val p = Promise[String]()
@@ -46,7 +45,6 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
         promises.put(timestamp, p)
       }
       p.future
-    }
 
   def publish(delta: State): State = currentStateLock.synchronized {
     if delta `inflates` currentState then {
@@ -104,12 +102,12 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       // TODO: still not sure that the semaphore use is correct …
       // its quite likely possible that some other request is answered after draining, causing the code below to return immediately
       // though overall currentOp is not protected at all, so it is triple unclear what is going on
-      if blocking then
-          requestSemaphore.drainPermits()
-          ()
 
-      val _ = transform(_.request(op)._2)
 
-      if blocking then requestSemaphore.acquire(1)
+      op match {
+        case KVOperation.Read(key) => readWithResult(key) : Unit
+        case KVOperation.Write(key, value) => writeWithResult(key, value) : Unit
+      }
+
 
 }
