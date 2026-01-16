@@ -262,7 +262,8 @@ object cli {
             () => {
               if reporter != null
               then
-                println(s"${node.uid}: received ${reporter.receivedBytes.get / 1000D} kB/s; sent ${reporter.sentBytes.get() / 1000D} kB/s")
+                println(s"client ${node.uid}")
+                println(reporter.report())
                 reporter.reset()
               node.connInf.sendHeartbeat()
               node.connInf.checkLiveness()

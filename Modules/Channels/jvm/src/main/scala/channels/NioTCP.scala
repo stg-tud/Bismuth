@@ -12,16 +12,34 @@ import scala.util.control.NonFatal
 class ChannelTrafficReporter {
   val receivedBytes: AtomicLong = AtomicLong()
   val sentBytes: AtomicLong     = AtomicLong()
-  
+  val receivedCount: AtomicLong = AtomicLong()
+  val sentCount: AtomicLong = AtomicLong()
+  val maxReceived: AtomicLong = AtomicLong()
+  val maxSent: AtomicLong = AtomicLong()
+
   def reset(): Unit = {
     receivedBytes.set(0)
     sentBytes.set(0)
+    receivedCount.set(0)
+    sentCount.set(0)
+    maxSent.set(0)
+    maxReceived.set(0)
   }
+
+  def report(): String = s"received:\n  ${receivedCount.get()} messages\n ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
 }
 object ChannelTrafficReporter {
   extension (reporter: ChannelTrafficReporter | Null) {
-    inline def received(size: Long): Unit = if reporter != null then reporter.receivedBytes.addAndGet(size): Unit
-    inline def send(size: Long): Unit     = if reporter != null then reporter.sentBytes.addAndGet(size): Unit
+    inline def received(size: Long): Unit = if reporter != null then
+      reporter.maxReceived.accumulateAndGet(size, Math.max)
+      reporter.receivedBytes.addAndGet(size)
+      reporter.receivedCount.incrementAndGet()
+      ()
+    inline def send(size: Long): Unit     = if reporter != null then
+      reporter.maxSent.accumulateAndGet(size, Math.max)
+      reporter.sentBytes.addAndGet(size)
+      reporter.sentCount.incrementAndGet()
+      ()
   }
 }
 
@@ -63,6 +81,7 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
           val len          = readN(4, clientChannel).getInt()
           val bytes        = new Array[Byte](len)
           val targetBuffer = readN(len, clientChannel).get(bytes)
+          reporter.received(len + 4)
 
           attachment.callback.succeed(ArrayMessageBuffer(bytes))
         } catch {
@@ -110,9 +129,9 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
 
       while buffer.hasRemaining() do {
         val res = clientChannel.write(buffers)
-        reporter.send(res)
         ()
       }
+      reporter.send(messageLength + 4)
       ()
 
     }
@@ -145,7 +164,6 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
       }
       bytesRead += result
     }
-    reporter.received(bytesRead)
     buffer.flip()
     buffer
   }
