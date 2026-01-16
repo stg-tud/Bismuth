@@ -21,6 +21,19 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     assertEquals(merged.requests.queryAllEntries.toList.head.value, "one")
   }
 
+  test("add several requests") {
+    given LocalUid = LocalUid.predefined("id1")
+
+    var queue         = empty
+    for n <- Range(0,100) do {
+      val (_, delta) = queue.request(n.toString)
+      queue = queue.merge(delta)
+    }
+    assertEquals(queue.requestsSorted.length, 100)
+    queue = queue.merge(queue.respond(queue.firstUnansweredRequest.get, "ok"))
+    assertEquals(queue.requestsSorted.length, 99)
+  }
+
   test("add requests merge out of order") {
     given LocalUid = LocalUid.predefined("id1")
 
