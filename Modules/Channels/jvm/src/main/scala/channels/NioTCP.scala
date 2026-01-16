@@ -6,7 +6,24 @@ import de.rmgk.delay.{Async, Callback, Sync}
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
+import java.util.concurrent.atomic.AtomicLong
 import scala.util.control.NonFatal
+
+class ChannelTrafficReporter {
+  val receivedBytes: AtomicLong = AtomicLong()
+  val sentBytes: AtomicLong     = AtomicLong()
+  
+  def reset(): Unit = {
+    receivedBytes.set(0)
+    sentBytes.set(0)
+  }
+}
+object ChannelTrafficReporter {
+  extension (reporter: ChannelTrafficReporter | Null) {
+    inline def received(size: Long): Unit = if reporter != null then reporter.receivedBytes.addAndGet(size): Unit
+    inline def send(size: Long): Unit     = if reporter != null then reporter.sentBytes.addAndGet(size): Unit
+  }
+}
 
 object NioTCP {
   case class AcceptAttachment(
@@ -24,7 +41,7 @@ object NioTCP {
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP {
+class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
 
   val selector: Selector = Selector.open()
 
@@ -93,6 +110,7 @@ class NioTCP {
 
       while buffer.hasRemaining() do {
         val res = clientChannel.write(buffers)
+        reporter.send(res)
         ()
       }
       ()
@@ -127,6 +145,7 @@ class NioTCP {
       }
       bytesRead += result
     }
+    reporter.received(bytesRead)
     buffer.flip()
     buffer
   }

@@ -20,8 +20,8 @@ class ProBenchAdapter extends DB {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
   private val pbClient                  = ProBenchClient(name = Uid.gen(), logTimings = false)
-  private var nioTCP: NioTCP            = null
-  private var abort: Abort              = null
+  private val nioTCP: NioTCP            = NioTCP()
+  private val abort: Abort              = Abort()
 
   private def valsToString(values: Map[String, ByteIterator]) = {
     val a = StringByteIterator.getStringMap(values)
@@ -44,8 +44,6 @@ class ProBenchAdapter extends DB {
     )
     pbClient.printResults = false
 
-    nioTCP = NioTCP()
-    abort = Abort()
     ec.execute(() => nioTCP.loopSelection(abort))
 
     endpoints.foreach{(ip, port) =>
@@ -59,7 +57,7 @@ class ProBenchAdapter extends DB {
     }
 
 
-    println("Hello from pb adapter!")
+    println(s"Hello from pb adapter! $this")
   }
 
   override def insert(table: String, key: String, values: Map[String, ByteIterator]): Status = {

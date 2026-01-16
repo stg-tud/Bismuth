@@ -1,6 +1,6 @@
 package probench
 
-import channels.{Abort, LatentConnection, MessageBuffer, NioTCP, UDP}
+import channels.{Abort, LatentConnection, MessageBuffer, NioTCP, ChannelTrafficReporter, UDP}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import de.rmgk.options.*
@@ -61,10 +61,13 @@ object cli {
 
   }
 
+
   def main(args: Array[String]): Unit = {
 
     val clientPort = named[Int]("--listen-client-port", "")
     val peerPort   = named[Int]("--listen-peer-port", "")
+
+    val reporting = flag("--reporting", "enable reporting")
 
     val ipAndPort = """(.+):(\d+)""".r
 
@@ -233,7 +236,9 @@ object cli {
               timeoutThreshold = timeout.value
             )
 
-          val nioTCP = NioTCP()
+          val reporter = if reporting.value then ChannelTrafficReporter() else null
+
+          val nioTCP = NioTCP(reporter)
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           node.client.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
@@ -255,6 +260,10 @@ object cli {
 //          Timer().schedule(() => node.cluster.dataManager.pingAll(), 1000, 1000)
           Timer().schedule(
             () => {
+              if reporter != null
+              then
+                println(s"${node.uid}: received ${reporter.receivedBytes.get / 1000D} kB/s; sent ${reporter.sentBytes.get() / 1000D} kB/s")
+                reporter.reset()
               node.connInf.sendHeartbeat()
               node.connInf.checkLiveness()
             },

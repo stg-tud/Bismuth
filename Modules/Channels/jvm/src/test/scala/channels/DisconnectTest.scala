@@ -24,7 +24,7 @@ class DisconnectTest extends munit.FunSuite {
 
     socket.bind(socketPath)
 
-    val serverNioTCP = new NioTCP
+    val serverNioTCP = new NioTCP()
 
     val serverAbort = Abort()
 
