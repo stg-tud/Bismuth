@@ -63,7 +63,7 @@ object NioTCP {
   * Only one thread should send on a single connection at the same time.
   */
 class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
-  def compression = false
+  inline val compression: false = false
 
   val selector: Selector = Selector.open()
 
