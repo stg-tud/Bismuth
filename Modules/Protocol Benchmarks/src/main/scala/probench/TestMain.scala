@@ -1,88 +1,51 @@
 package probench
 
+import de.rmgk.script.*
+
+import java.nio.file.Path
+
 object TestMain {
   def main(args: Array[String]): Unit = {
 
-    cli.main(List(
-      "node",
-      "--name",
-      "node1",
-      "--listen-client-port",
-      "8110",
-      "--listen-peer-port",
-      "8111",
-      "--cluster",
-      "localhost:8111",
-      "--initial-cluster-ids",
-//      "node1"
-      "node1 node2 node3 node4 node5"
-    ).toArray)
+    val nodes = 9
 
 
-    cli.main(List(
-      "node",
-      "--name",
-      "node2",
-      "--listen-client-port",
-      "8120",
-      "--listen-peer-port",
-      "8121",
-      "--cluster",
-      "localhost:8111",
-      "localhost:8121",
-      "--initial-cluster-ids",
-      "node1 node2 node3 node4 node5"
-    ).toArray)
+    def clientPort(number: Int)   = 8100 + number * 10
+    def peerPortPort(number: Int) = clientPort(number) + 1
 
-    cli.main(List(
-      "node",
-      "--name",
-      "node3",
-      "--listen-client-port",
-      "8130",
-      "--listen-peer-port",
-      "8131",
-      "--cluster",
-      "localhost:8111",
-      "localhost:8121",
-      "localhost:8131",
-      "--initial-cluster-ids",
-      "node1 node2 node3 node4 node5"
-    ).toArray)
+    def initNode(number: Int, total: Int) = {
+      (List(
+        "node",
+        "--name",
+        s"node$number",
+        "--listen-client-port",
+        clientPort(number).toString,
+        "--listen-peer-port",
+        peerPortPort(number).toString,
+        "--cluster"
+      )
+      ++ (1 to number).map(i => s"localhost:${peerPortPort(i)}").toList ++
+      List(
+        "--initial-cluster-ids",
+        (1 to total).map(i => s"node$i").mkString(" ")
+      ))
+    }
 
-    cli.main(List(
-      "node",
-      "--name",
-      "node4",
-      "--listen-client-port",
-      "8140",
-      "--listen-peer-port",
-      "8141",
-      "--cluster",
-      "localhost:8111",
-      "localhost:8121",
-      "localhost:8131",
-      "localhost:8141",
-      "--initial-cluster-ids",
-      "node1 node2 node3 node4 node5"
-    ).toArray)
+    (1 to nodes).foreach { n =>
+      println(s"starting node $n")
 
-    cli.main(List(
-      "node",
-      "--name",
-      "node5",
-      "--listen-client-port",
-      "8150",
-      "--listen-peer-port",
-      "8151",
-      "--cluster",
-      "localhost:8111",
-      "localhost:8121",
-      "localhost:8131",
-      "localhost:8141",
-      "localhost:8151",
-      "--initial-cluster-ids",
-      "node1 node2 node3 node4 node5"
-    ).toArray)
+      cli.main(initNode(n, nodes).toArray)
+    }
+
+    val workdir = Path.of("target/ycsb").toAbsolutePath.normalize()
+
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress root@46.224.98.103:ycsb-core.jar ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress root@46.224.98.103:probench ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress root@46.224.98.103:workloads ${workdir}".run()
+
+    process"""java -cp ycsb-core.jar:probench/lib/* site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P workloads/workloada -s -p pb.endpoints=localhost:8110  -p operationcount=10000 -p recordcount=1000 -p measurementtype=histogram -threads 20""".directory(Path.of("target/ycsb").toFile).run()
+
+    ()
+
   }
 }
