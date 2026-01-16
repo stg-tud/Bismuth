@@ -54,19 +54,16 @@ class KeyValueReplica(
 
   // ============== CLUSTER ==============
 
-  val cluster: Cluster = new Cluster(localUid, sendingActor)
-  val client: Client   = new Client(localUid, sendingActor)
-  val connInf: ConnInf = new ConnInf(localUid, sendingActor, timeoutThreshold = timeoutThreshold)
+  val cluster: Cluster = new Cluster()
+  val client: Client   = new Client()
+  val connInf: ConnInf = new ConnInf()
 
   replicaActor.execute { () =>
     cluster.maybeLeaderElection(votingReplicas)
   }
 
-  class Cluster(
-      localUid: LocalUid,
-      sendingActor: ExecutionContext,
-      var state: ClusterState = MultiPaxos.empty,
-  ) {
+  class Cluster {
+    @volatile var state: ClusterState = MultiPaxos.empty
 
     given Lattice[Payload[ClusterState]] =
         given Lattice[Int] = Lattice.fromOrdering
@@ -176,11 +173,8 @@ class KeyValueReplica(
 
   // ============== CLIENT ==============
 
-  class Client(
-      localUid: LocalUid,
-      sendingActor: ExecutionContext,
-      var state: ClientState = RequestResponseQueue.empty
-  ) {
+  class Client {
+    @volatile var state: ClientState = RequestResponseQueue.empty
 
     given Lattice[Payload[ClientState]] =
         given Lattice[Int] = Lattice.fromOrdering
@@ -224,12 +218,8 @@ class KeyValueReplica(
 
   // ============== CONN-INF ==============
 
-  class ConnInf(
-      localUid: LocalUid,
-      sendingActor: ExecutionContext,
-      var state: ConnInformation = Map.empty,
-      val timeoutThreshold: Long
-  ) {
+  class ConnInf {
+    @volatile var state: ConnInformation = Map.empty
 
     given Lattice[Payload[ConnInformation]] =
         given Lattice[Int] = Lattice.fromOrdering
