@@ -7,9 +7,9 @@ import java.nio.file.Path
 object TestMain {
   def main(args: Array[String]): Unit = {
 
-    val nodes = 9
-    val operationcount = "operationcount=10000"
-    val threads = 20
+    val nodes = 1
+    val operationcount = "operationcount=1000000"
+    val threads = 1
 
 
     def clientPort(number: Int)   = 8100 + number * 10
@@ -24,7 +24,6 @@ object TestMain {
         clientPort(number).toString,
         "--listen-peer-port",
         peerPortPort(number).toString,
-        "--reporting",
         "--cluster"
       )
       ++ (1 to number).map(i => s"localhost:${peerPortPort(i)}").toList ++
@@ -42,8 +41,8 @@ object TestMain {
 
     val workdir = Path.of("target/ycsb").toAbsolutePath.normalize()
 
-    process"rsync --info=progress2 --no-inc-recursive --archive --compress root@46.224.98.103:ycsb-core.jar ${workdir}".run()
-    process"rsync --info=progress2 --no-inc-recursive --archive --compress root@46.224.98.103:workloads ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.98.103:ycsb-core.jar ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.98.103:workloads ${workdir}".run()
 
     process"""java -cp ycsb-core.jar:probench/lib/* site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P workloads/workloada -s -p pb.endpoints=localhost:8110  -p ${operationcount} -p recordcount=1000 -p measurementtype=histogram -threads ${threads}""".directory(Path.of("target/ycsb").toFile).run()
 
