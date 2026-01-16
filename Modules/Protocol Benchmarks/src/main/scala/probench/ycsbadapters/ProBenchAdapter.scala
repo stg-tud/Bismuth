@@ -28,11 +28,6 @@ class ProBenchAdapter extends DB {
     a.asScala.mkString(";")
   }
 
-  override def cleanup(): Unit = {
-    abort.closeRequest = true
-    executor.shutdownNow(): Unit
-  }
-
   override def delete(table: String, key: String): Status =
     Status.NOT_IMPLEMENTED
 
