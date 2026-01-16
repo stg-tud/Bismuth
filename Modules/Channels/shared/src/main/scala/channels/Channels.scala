@@ -73,28 +73,28 @@ trait LatentConnection[T] {
 
 object LatentConnection {
 
-  class EncodingConnection[A, B](f: B => A, name: String, acc: Connection[A]) extends Connection[B] {
+  class EncodingConnection[A, B](encode: B => A, name: String, acc: Connection[A]) extends Connection[B] {
     override def info: ConnectionInfo =
       ConnectionInfo(acc.info.details.updatedWith("encoding")(v => v.map(_ + name).orElse(Some(name))))
 
     override def send(message: B): Async[Any, Unit] =
-      acc.send(f(message))
+      acc.send(encode(message))
 
     override def close(): Unit = acc.close()
   }
 
-  def adapt[A, B](f: A => B, g: B => A, name: String)(latentConnection: LatentConnection[A]): LatentConnection[B] = {
+  def adapt[A, B](decode: A => B, encode: B => A, name: String)(latentConnection: LatentConnection[A]): LatentConnection[B] = {
     new LatentConnection[B] {
       def prepare(receiver: Receive[B]): Async[Abort, Connection[B]] =
         Async[Abort] {
           val conn = Async.bind {
             latentConnection.prepare { conn =>
-              val mapped = EncodingConnection(g, name, conn)
+              val mapped = EncodingConnection(encode, name, conn)
               val cb     = receiver.messageHandler(mapped)
-              rs => cb.complete(rs.map(f))
+              rs => cb.complete(rs.map(decode))
             }
           }
-          EncodingConnection(g, name, conn)
+          EncodingConnection(encode, name, conn)
         }
     }
   }
