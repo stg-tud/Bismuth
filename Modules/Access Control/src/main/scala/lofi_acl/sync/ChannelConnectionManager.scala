@@ -125,7 +125,7 @@ class ChannelConnectionManager(
       case Failure(exception) =>
         if !disableLogging then
             println(
-              s"Closing connection with ${connection.authenticatedPeerReplicaId.get} at ${connection.info.hostname}:${connection.info.port}, because of $exception"
+              s"Closing connection with ${connection.authenticatedPeerReplicaId.get} at ${connection.info}, because of $exception"
             )
         connections.updateAndGet { old =>
           old.updatedWith(remotePeerId) {
