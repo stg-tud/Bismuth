@@ -18,7 +18,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     val nextDot = treeContext.getNextDot
-    val payload = Payload(uid, Dots.single(nextDot), delta, 0)
+    val payload = Payload(Dots.single(nextDot), delta, 0)
     val message = SentCachedMessage(payload)(using pmscodec)
     treeContext.storeOutgoingMessage(nextDot, message)
     (nextDot, message)
