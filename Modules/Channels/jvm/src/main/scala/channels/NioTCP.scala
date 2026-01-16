@@ -2,6 +2,7 @@ package channels
 
 import channels.NioTCP.{AcceptAttachment, ReceiveAttachment}
 import de.rmgk.delay.{Async, Callback, Sync}
+import replication.Compression
 
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
@@ -14,9 +15,9 @@ class ChannelTrafficReporter {
   val receivedBytes: AtomicLong = AtomicLong()
   val sentBytes: AtomicLong     = AtomicLong()
   val receivedCount: AtomicLong = AtomicLong()
-  val sentCount: AtomicLong = AtomicLong()
-  val maxReceived: AtomicLong = AtomicLong()
-  val maxSent: AtomicLong = AtomicLong()
+  val sentCount: AtomicLong     = AtomicLong()
+  val maxReceived: AtomicLong   = AtomicLong()
+  val maxSent: AtomicLong       = AtomicLong()
 
   def reset(): Unit = {
     receivedBytes.set(0)
@@ -27,20 +28,21 @@ class ChannelTrafficReporter {
     maxReceived.set(0)
   }
 
-  def report(): String = s"received:\n  ${receivedCount.get()} messages\n  ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
+  def report(): String =
+    s"received:\n  ${receivedCount.get()} messages\n  ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
 }
 object ChannelTrafficReporter {
   extension (reporter: ChannelTrafficReporter | Null) {
     inline def received(size: Long): Unit = if reporter != null then
-      reporter.maxReceived.accumulateAndGet(size, Math.max)
-      reporter.receivedBytes.addAndGet(size)
-      reporter.receivedCount.incrementAndGet()
-      ()
-    inline def send(size: Long): Unit     = if reporter != null then
-      reporter.maxSent.accumulateAndGet(size, Math.max)
-      reporter.sentBytes.addAndGet(size)
-      reporter.sentCount.incrementAndGet()
-      ()
+        reporter.maxReceived.accumulateAndGet(size, Math.max)
+        reporter.receivedBytes.addAndGet(size)
+        reporter.receivedCount.incrementAndGet()
+        ()
+    inline def send(size: Long): Unit = if reporter != null then
+        reporter.maxSent.accumulateAndGet(size, Math.max)
+        reporter.sentBytes.addAndGet(size)
+        reporter.sentCount.incrementAndGet()
+        ()
   }
 }
 
@@ -60,7 +62,7 @@ object NioTCP {
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
+class NioTCP(reporter: ChannelTrafficReporter | Null = null, compression: Boolean = false) {
 
   val selector: Selector = Selector.open()
 
@@ -84,7 +86,8 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
           val targetBuffer = readN(len, clientChannel).get(bytes)
           reporter.received(len + 4)
 
-          attachment.callback.succeed(ArrayMessageBuffer(bytes))
+          val decompressedBytes = Compression.decompress(bytes)
+          attachment.callback.succeed(ArrayMessageBuffer(decompressedBytes))
         } catch {
           case ex: Exception =>
             clientChannel.close()
@@ -116,17 +119,18 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
   class NioTCPConnection(clientChannel: SocketChannel) extends Connection[MessageBuffer] {
 
     override val info: ConnectionInfo = ConnectionInfo(
-      "type" -> "niotcp",
-      "remoteAddress" -> Try { clientChannel.getRemoteAddress.toString}.recover(_.getMessage).get,
-      "localAddress"  -> Try { clientChannel.getLocalAddress.toString}.recover(_.getMessage).get
+      "type"          -> "niotcp",
+      "remoteAddress" -> Try { clientChannel.getRemoteAddress.toString }.recover(_.getMessage).get,
+      "localAddress"  -> Try { clientChannel.getLocalAddress.toString }.recover(_.getMessage).get
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
 
-      val bytes         = message.asArray
-      val messageLength = bytes.length
+      val bytes           = message.asArray
+      val compressedBytes = Compression.compress(bytes)
+      val messageLength   = compressedBytes.length
 
-      val buffer = ByteBuffer.wrap(bytes)
+      val buffer = ByteBuffer.wrap(compressedBytes)
 
       val sizeBuffer = ByteBuffer.allocate(4)
       sizeBuffer.putInt(messageLength)

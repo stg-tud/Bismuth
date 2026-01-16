@@ -8,7 +8,7 @@ object TestMain {
   def main(args: Array[String]): Unit = {
 
     val nodes = 9
-    val operationcount = "operationcount=10000"
+    val operationcount = "operationcount=100000"
     val threads = 20
 
 
