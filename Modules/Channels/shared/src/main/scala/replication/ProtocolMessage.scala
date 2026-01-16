@@ -21,9 +21,11 @@ object ProtocolMessage {
     def addSender(s: Uid): Payload[T] = copy(senders = senders + s)
   }
   object Payload {
-    def apply[T](sender: Uid, dots: Dots, data: T, timetolive: Int): Payload[T] = Payload(Set(sender), dots, data, Dots.empty, timetolive)
+    def apply[T](sender: Uid, dots: Dots, data: T, timetolive: Int): Payload[T] =
+      Payload(Set(sender), dots, data, Dots.empty, timetolive)
 
-    def apply[T](senders: Set[Uid], dots: Dots, data: T): Payload[T] = Payload(senders, dots, data, Dots.empty, timetolive = 0)
+    def apply[T](senders: Set[Uid], dots: Dots, data: T): Payload[T] =
+      Payload(senders, dots, data, Dots.empty, timetolive = 0)
 
     // this kinda makes sense, but kinda does not
     // given [T: Lattice]: Lattice[Payload[T]] = Lattice.derived
@@ -56,10 +58,5 @@ class ReceivedCachedMessage[T: JsonValueCodec](val messageBuffer: MessageBuffer)
 }
 
 class SentCachedMessage[T: JsonValueCodec](val payload: T) extends CachedMessage[T] {
-  val messageBuffer: MessageBuffer =
-    try
-        ArrayMessageBuffer(writeToArray(payload))
-    catch
-        case e: Exception =>
-          throw new RuntimeException(s"Error serializing payload $payload", e)
+  val messageBuffer: MessageBuffer = ArrayMessageBuffer(writeToArray(payload))
 }
