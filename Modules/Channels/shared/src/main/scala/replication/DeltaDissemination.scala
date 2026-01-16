@@ -205,7 +205,7 @@ class DeltaDissemination[State](
           }
           receiveCallback(data)
           if timetolive > 0 then
-              val msg2 = SentCachedMessage(payload.copy(timetolive = timetolive - 1))(using pmscodec)
+              val msg2 = SentCachedMessage(payload.copy(timetolive = timetolive - 1).addSender(replicaId.uid))(using pmscodec)
               disseminate(msg2, Set(from))
 
   }
