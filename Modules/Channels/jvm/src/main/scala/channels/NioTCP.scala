@@ -62,7 +62,7 @@ object NioTCP {
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(reporter: ChannelTrafficReporter | Null = null, compression: Boolean = false) {
+class NioTCP(reporter: ChannelTrafficReporter | Null = null, compression: Boolean = true) {
 
   val selector: Selector = Selector.open()
 
@@ -86,7 +86,7 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null, compression: Boolea
           val targetBuffer = readN(len, clientChannel).get(bytes)
           reporter.received(len + 4)
 
-          val decompressedBytes = Compression.decompress(bytes)
+          val decompressedBytes = if compression then Compression.decompress(bytes) else bytes
           attachment.callback.succeed(ArrayMessageBuffer(decompressedBytes))
         } catch {
           case ex: Exception =>
@@ -127,7 +127,7 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null, compression: Boolea
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
 
       val bytes           = message.asArray
-      val compressedBytes = Compression.compress(bytes)
+      val compressedBytes = if compression then Compression.compress(bytes) else bytes
       val messageLength   = compressedBytes.length
 
       val buffer = ByteBuffer.wrap(compressedBytes)
