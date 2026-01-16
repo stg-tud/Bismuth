@@ -117,6 +117,8 @@ class DeltaDissemination[State](
           error match {
             case se: SocketException if se.getMessage == "Connection reset" =>
               println(s"$replicaId: disconnected ${from.info} (${from})")
+            case se: NoMoreDataException =>
+              println(s"$replicaId: disconnected ${from.info} (${from})")
             case other =>
               println(s"$replicaId: error during message handling")
               error.printStackTrace()

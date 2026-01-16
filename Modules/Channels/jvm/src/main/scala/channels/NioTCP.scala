@@ -62,7 +62,8 @@ object NioTCP {
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(reporter: ChannelTrafficReporter | Null = null, compression: Boolean = true) {
+class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
+  def compression = false
 
   val selector: Selector = Selector.open()
 
