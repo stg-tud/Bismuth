@@ -47,6 +47,7 @@ class KeyValueReplica(
     val uid: Uid,
     val votingReplicas: Set[Uid],
     offloadSending: Boolean = true,
+    offloadReplica: Boolean = true,
     deltaStorageType: DeltaStorage.Type = KeepAll,
     timeoutThreshold: Long = 1000
 ) {
@@ -55,7 +56,7 @@ class KeyValueReplica(
     if false then println(s"[$uid] $msg")
 
   val sendingActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(offloadSending)
-  val replicaActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(true)
+  val replicaActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(offloadReplica)
 
   given Participants(votingReplicas)
   given localUid: LocalUid = LocalUid(uid)
