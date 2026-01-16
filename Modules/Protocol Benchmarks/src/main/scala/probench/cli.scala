@@ -1,6 +1,6 @@
 package probench
 
-import channels.{Abort, LatentConnection, MessageBuffer, NioTCP, ChannelTrafficReporter, UDP}
+import channels.{Abort, ChannelTrafficReporter, ConcurrencyHelper, LatentConnection, MessageBuffer, NioTCP, UDP}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import de.rmgk.options.*
@@ -237,7 +237,7 @@ object cli {
 
           val reporter = if reporting.value then ChannelTrafficReporter() else null
 
-          val nioTCP = NioTCP(reporter)
+          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(4),  reporter)
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           node.client.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
@@ -328,7 +328,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          val nioTCP = NioTCP()
+          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(4))
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 
@@ -363,7 +363,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          val nioTCP = NioTCP()
+          val nioTCP = NioTCP(ConcurrencyHelper.makeExecutionContext(false))
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 

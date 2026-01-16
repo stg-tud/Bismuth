@@ -1,6 +1,6 @@
 package ex2021encfxtodo.sync
 
-import channels.NioTCP
+import channels.{ConcurrencyHelper, NioTCP}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, LegacyKeysetSerialization, RegistryConfiguration}
@@ -53,7 +53,7 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
   )
   val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  val niotcp: NioTCP = new NioTCP {}
+  val niotcp: NioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
   dataManager.addBinaryConnection(niotcp.listen(
     niotcp.defaultServerSocketChannel(new InetSocketAddress("127.0.0.1", port))

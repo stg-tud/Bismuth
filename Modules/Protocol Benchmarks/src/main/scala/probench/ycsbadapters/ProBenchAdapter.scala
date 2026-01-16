@@ -1,6 +1,6 @@
 package probench.ycsbadapters
 
-import channels.{Abort, NioTCP}
+import channels.{Abort, ConcurrencyHelper, NioTCP}
 import probench.cli.addRetryingLatentConnection
 import probench.clients.ProBenchClient
 import rdts.base.Uid
@@ -19,7 +19,7 @@ class ProBenchAdapter extends DB {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
   private val pbClient                  = ProBenchClient(name = Uid.gen(), logTimings = false)
-  private val nioTCP: NioTCP            = NioTCP()
+  private val nioTCP: NioTCP            = NioTCP(ConcurrencyHelper.makePooledExecutor(4))
   private val abort: Abort              = Abort()
 
   val operationTimeout: FiniteDuration = 20.seconds

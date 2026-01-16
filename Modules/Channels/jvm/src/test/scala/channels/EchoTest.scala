@@ -62,7 +62,7 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
 
         // val port = socket.socket().getLocalPort
 
-        val nioTCP = new NioTCP
+        val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
         ec.execute(() => nioTCP.loopSelection(Abort()))
 
@@ -78,7 +78,7 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
             channel
           }
 
-          val nioTCP = new NioTCP
+          val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
           ec.execute(() => nioTCP.loopSelection(Abort()))
 

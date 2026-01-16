@@ -24,7 +24,7 @@ class DisconnectTest extends munit.FunSuite {
 
     socket.bind(socketPath)
 
-    val serverNioTCP = new NioTCP()
+    val serverNioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
     val serverAbort = Abort()
 
@@ -54,7 +54,7 @@ class DisconnectTest extends munit.FunSuite {
       channel
     }
 
-    val clientNioTCP = new NioTCP
+    val clientNioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
     ec.execute(() => clientNioTCP.loopSelection(Abort()))
     val connect = serverNioTCP.connect(() => socketChannel)
 

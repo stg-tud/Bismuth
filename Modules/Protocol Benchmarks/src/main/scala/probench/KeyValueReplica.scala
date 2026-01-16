@@ -1,5 +1,6 @@
 package probench
 
+import channels.ConcurrencyHelper
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import probench.Codecs.given
@@ -16,7 +17,6 @@ import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage}
 
-import java.util.concurrent.{ExecutorService, Executors}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
@@ -26,21 +26,6 @@ object ClientProtocol {
   case class ClusterAnswer(req: Req[KVOperation[String, String]], decision: String) extends ClientProtocol
 
   given JsonValueCodec[ClientProtocol] = JsonCodecMaker.make
-}
-
-object ConcurrencyHelper {
-  def makeExecutionContext(singleThreadExecutor: Boolean) = {
-    if singleThreadExecutor then
-        val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
-          val thread = new Thread(r)
-          thread.setDaemon(true)
-          thread
-        }
-
-        ExecutionContext.fromExecutorService(singleThreadExecutor)
-    else
-        DeltaDissemination.executeImmediately
-  }
 }
 
 class KeyValueReplica(

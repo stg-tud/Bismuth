@@ -2,12 +2,14 @@ package channels
 
 import channels.NioTCP.{AcceptAttachment, ReceiveAttachment}
 import de.rmgk.delay.{Async, Callback, Sync}
-import replication.Compression
+import replication.{Compression, DeltaDissemination}
 
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
+import java.util.concurrent.{ExecutorService, Executors}
 import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -59,10 +61,27 @@ object NioTCP {
   class EndOfChannelException(msg: String) extends Exception(msg)
 }
 
+object ConcurrencyHelper {
+  def makeExecutionContext(singleThreadExecutor: Boolean) = {
+    if singleThreadExecutor then
+        val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
+          val thread = new Thread(r)
+          thread.setDaemon(true)
+          thread
+        }
+
+        ExecutionContext.fromExecutorService(singleThreadExecutor)
+    else
+        DeltaDissemination.executeImmediately
+  }
+
+  def makePooledExecutor(poolSize: Int) = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
+}
+
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
+class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = null) {
   inline val compression: false = false
 
   val selector: Selector = Selector.open()
@@ -85,10 +104,11 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
           val len          = readN(4, clientChannel).getInt()
           val bytes        = new Array[Byte](len)
           val targetBuffer = readN(len, clientChannel).get(bytes)
-          reporter.received(len + 4)
-
-          val decompressedBytes = if compression then Compression.decompress(bytes) else bytes
-          attachment.callback.succeed(ArrayMessageBuffer(decompressedBytes))
+          pool.execute { () =>
+            reporter.received(len + 4)
+            val decompressedBytes = if compression then Compression.decompress(bytes) else bytes
+            attachment.callback.succeed(ArrayMessageBuffer(decompressedBytes))
+          }
         } catch {
           case ex: Exception =>
             clientChannel.close()
