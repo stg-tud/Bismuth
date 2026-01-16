@@ -61,7 +61,6 @@ object cli {
 
   }
 
-
   def main(args: Array[String]): Unit = {
 
     val clientPort = named[Int]("--listen-client-port", "")
@@ -258,21 +257,24 @@ object cli {
           ))))
 
 //          Timer().schedule(() => node.cluster.dataManager.pingAll(), 1000, 1000)
+          if reporter != null then
+              Timer().schedule(
+                () => {
+                  println(s"client ${node.uid}")
+                  println(reporter.report())
+                  reporter.reset()
+                },
+                1000,
+                1000
+              )
           Timer().schedule(
             () => {
-              if reporter != null
-              then
-                println(s"client ${node.uid}")
-                println(reporter.report())
-                reporter.reset()
               node.connInf.sendHeartbeat()
               node.connInf.checkLiveness()
             },
             100,
             100
           )
-
-
 
           cluster.value.foreach { (host, port) =>
             println(s"Connecting to $host:${port + 1}")
