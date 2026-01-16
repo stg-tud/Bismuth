@@ -18,19 +18,6 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
-trait State[T] {
-
-  val lock: AnyRef
-
-  var state: T
-  val dataManager: DeltaDissemination[T]
-
-  def handleIncoming(delta: T): Unit
-  def publish(delta: T): T
-  def transform(f: T => T): T = lock.synchronized(publish(f(state)))
-
-}
-
 class KeyValueReplica(
     val uid: Uid,
     val votingReplicas: Set[Uid],
@@ -42,7 +29,10 @@ class KeyValueReplica(
   inline def log(inline msg: String): Unit =
     if false then println(s"[$uid] $msg")
 
-  val sendingActor: ExecutionContext = {
+  val sendingActor: ExecutionContext = makeActor(offloadSending)
+  val replicaActor: ExecutionContext = makeActor(true)
+
+  private def makeActor(offloadSending: Boolean) = {
     if offloadSending then
         val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
           val thread = new Thread(r)
@@ -64,34 +54,33 @@ class KeyValueReplica(
 
   // ============== CLUSTER ==============
 
-  val cluster: Cluster = new Cluster(currentStateLock, localUid, sendingActor)
-  val client: Client   = new Client(currentStateLock, localUid, sendingActor)
-  val connInf: ConnInf = new ConnInf(currentStateLock, localUid, sendingActor, timeoutThreshold = timeoutThreshold)
+  val cluster: Cluster = new Cluster(localUid, sendingActor)
+  val client: Client   = new Client(localUid, sendingActor)
+  val connInf: ConnInf = new ConnInf(localUid, sendingActor, timeoutThreshold = timeoutThreshold)
 
   cluster.maybeLeaderElection(votingReplicas)
 
   class Cluster(
-      override val lock: AnyRef,
       localUid: LocalUid,
       sendingActor: ExecutionContext,
       var state: ClusterState = MultiPaxos.empty,
-  ) extends State[ClusterState] {
+  ) {
 
     given Lattice[Payload[ClusterState]] =
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    override val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
+    val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
       localUid,
-      handleIncoming,
+      delta => replicaActor.execute(() => handleIncoming(delta)),
       defaultTimetolive = 0,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)
     )
 
-    override def handleIncoming(delta: ClusterState): Unit = lock.synchronized {
+    def handleIncoming(delta: ClusterState): Unit = currentStateLock.synchronized {
       log(s"handling incoming $delta")
-      val (old, changed) = lock.synchronized {
+      val (old, changed) = currentStateLock.synchronized {
         val old = state
         state = state `merge` delta
         (old, state)
@@ -110,7 +99,7 @@ class KeyValueReplica(
       }
     }
 
-    override def publish(delta: ClusterState): ClusterState = lock.synchronized {
+    def publish(delta: ClusterState): ClusterState = currentStateLock.synchronized {
       if delta `inflates` state then {
         log("publishing")
         val oldstate = state
@@ -139,7 +128,7 @@ class KeyValueReplica(
       peers.minOption match
           case Some(id) if id == uid =>
             log(s"Proposing election of $uid")
-            transform(_.startLeaderElection): Unit
+            publish(state.startLeaderElection): Unit
           case _ => ()
     }
 
@@ -150,7 +139,7 @@ class KeyValueReplica(
           client.firstUnansweredRequest match
               case Some(req) =>
                 log(s"Proposing new value $req.")
-                val _ = transform(_.proposeIfLeader(req))
+                val _ = publish(state.proposeIfLeader(req))
               case None =>
                 log("I am the leader but request queue is empty.")
     }
@@ -173,8 +162,8 @@ class KeyValueReplica(
         }
         // only leader is allowed to actually respond to requests
         if cluster.state.leader.contains(replicaId) then {
-          client.transform {
-            _.respond(req, decision)
+          client.publish {
+            client.state.respond(req, decision)
           }: Unit
         }
       }
@@ -186,25 +175,24 @@ class KeyValueReplica(
   // ============== CLIENT ==============
 
   class Client(
-      override val lock: AnyRef,
       localUid: LocalUid,
       sendingActor: ExecutionContext,
       var state: ClientState = RequestResponseQueue.empty
-  ) extends State[ClientState] {
+  ) {
 
     given Lattice[Payload[ClientState]] =
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    override val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
+    val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
       handleIncoming,
       defaultTimetolive = 0,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
     )
 
-    override def handleIncoming(delta: ClientState): Unit = {
+    def handleIncoming(delta: ClientState): Unit = {
       log("handling incoming from client")
       val (old, changed) = currentStateLock.synchronized {
         val old = state
@@ -219,7 +207,7 @@ class KeyValueReplica(
       }
     }
 
-    override def publish(delta: ClientState): ClientState = currentStateLock.synchronized {
+    def publish(delta: ClientState): ClientState = currentStateLock.synchronized {
       if delta `inflates` state then {
         log("publishing")
         state = state.merge(delta)
@@ -235,12 +223,11 @@ class KeyValueReplica(
   // ============== CONN-INF ==============
 
   class ConnInf(
-      override val lock: AnyRef,
       localUid: LocalUid,
       sendingActor: ExecutionContext,
       var state: ConnInformation = Map.empty,
       val timeoutThreshold: Long
-  ) extends State[ConnInformation] {
+  ) {
 
     given Lattice[Payload[ConnInformation]] =
         given Lattice[Int] = Lattice.fromOrdering
@@ -248,15 +235,15 @@ class KeyValueReplica(
 
     var alivePeers: Set[Uid] = Set.empty
 
-    override val dataManager: DeltaDissemination[ConnInformation] = DeltaDissemination(
+    val dataManager: DeltaDissemination[ConnInformation] = DeltaDissemination(
       localUid,
       handleIncoming,
       defaultTimetolive = 0,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => lock.synchronized(state))
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
     )
 
-    override def handleIncoming(delta: ConnInformation): Unit = {
+    def handleIncoming(delta: ConnInformation): Unit = {
       log("handling incoming conn inf")
       val (old, changed) = currentStateLock.synchronized {
         val old = state
@@ -265,7 +252,7 @@ class KeyValueReplica(
       }
     }
 
-    override def publish(delta: ConnInformation): ConnInformation = currentStateLock.synchronized {
+    def publish(delta: ConnInformation): ConnInformation = currentStateLock.synchronized {
       if delta `inflates` state then {
         log("publishing conn inf")
         state = state.merge(delta)
