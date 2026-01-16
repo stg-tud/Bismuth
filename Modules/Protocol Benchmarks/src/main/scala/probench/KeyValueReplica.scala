@@ -159,7 +159,7 @@ class KeyValueReplica(
       log(s"log: ${state.log}")
       // println(s"${pprint.tokenize(newState).mkString("")}")
 
-      for req @ Req(op, _, _) <- state.readDecisionsSince(previousRound) do {
+      for req @ Req(op, _) <- state.readDecisionsSince(previousRound) do {
         val decision: String = op match {
           case KVOperation.Read(key) =>
             kvCache.synchronized {

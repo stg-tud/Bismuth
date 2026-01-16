@@ -17,7 +17,7 @@ case class RequestResponseQueue[S,T](
           case Some((time, _)) => (time.advance, replicaId)
           case None            => (CausalTime.now(), replicaId)
 
-      (timestamp, RequestResponseQueue(requests = requests.update(timestamp, Req(value, replicaId, timestamp))))
+      (timestamp, RequestResponseQueue(requests = requests.update(timestamp, Req(value, timestamp))))
 
   def respond(request: Req[S], value: T)(using LocalUid): RequestResponseQueue[S,T] =
     RequestResponseQueue(
@@ -49,7 +49,7 @@ case class RequestResponseQueue[S,T](
 object RequestResponseQueue {
   type Timestamp = (CausalTime, Uid)
 
-  case class Req[+T](value: T, requester: Uid, timestamp: Timestamp)
+  case class Req[+T](value: T, timestamp: Timestamp)
   case class Res[+T](value: T)
 
   def empty[S,T]: RequestResponseQueue[S,T] = RequestResponseQueue()
