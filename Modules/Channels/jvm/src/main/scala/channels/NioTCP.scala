@@ -26,7 +26,7 @@ class ChannelTrafficReporter {
     maxReceived.set(0)
   }
 
-  def report(): String = s"received:\n  ${receivedCount.get()} messages\n ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
+  def report(): String = s"received:\n  ${receivedCount.get()} messages\n  ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
 }
 object ChannelTrafficReporter {
   extension (reporter: ChannelTrafficReporter | Null) {
