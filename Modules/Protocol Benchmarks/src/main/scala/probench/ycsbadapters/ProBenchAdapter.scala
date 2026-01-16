@@ -10,10 +10,9 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{ExecutorService, Executors}
 import java.util.{HashMap, Map, Properties, Set, Vector}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters.*
-import scala.language.unsafeNulls
 
 class ProBenchAdapter extends DB {
 
@@ -22,6 +21,8 @@ class ProBenchAdapter extends DB {
   private val pbClient                  = ProBenchClient(name = Uid.gen(), logTimings = false)
   private val nioTCP: NioTCP            = NioTCP()
   private val abort: Abort              = Abort()
+
+  val operationTimeout: FiniteDuration = 20.seconds
 
   private def valsToString(values: Map[String, ByteIterator]) = {
     val a = StringByteIterator.getStringMap(values)
@@ -34,14 +35,14 @@ class ProBenchAdapter extends DB {
   override def init(): Unit = {
     val props: Properties = getProperties
     val endpoints         = props.getProperty("pb.endpoints").split(" ").map(e =>
-      val s = e.split(":")
-      (s(0),s(1))
+        val s = e.split(":")
+        (s(0), s(1))
     )
     pbClient.printResults = false
 
     ec.execute(() => nioTCP.loopSelection(abort))
 
-    endpoints.foreach{(ip, port) =>
+    endpoints.foreach { (ip, port) =>
       println(s"adding connection to $ip:$port")
       addRetryingLatentConnection(
         pbClient.dataManager,
@@ -51,19 +52,15 @@ class ProBenchAdapter extends DB {
       )
     }
 
-
     println(s"Hello from pb adapter! $this")
   }
 
   override def insert(table: String, key: String, values: Map[String, ByteIterator]): Status = {
     val v = valsToString(values)
-//    println("try write")
     try
-      val f = pbClient.writeWithResult(key, v)
-//      println("try await")
-      Await.ready(f,6.second)
-//      println("ok await")
-      Status.OK
+        val f = pbClient.writeWithResult(key, v)
+        Await.ready(f, operationTimeout)
+        Status.OK
     catch
         case exception: concurrent.TimeoutException =>
           println(s"failed to write sth")
@@ -72,14 +69,11 @@ class ProBenchAdapter extends DB {
   }
 
   override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
-//    println("try read")
     try
         val f = pbClient.readWithResult(key).map(res =>
-            result.put("result", StringByteIterator(res))
+          result.put("result", StringByteIterator(res))
         )
-//        println("try read await")
-        Await.ready(f, 6.second)
-//        println("ok read await")
+        Await.ready(f, operationTimeout)
         Status.OK
     catch
         case exception: concurrent.TimeoutException =>
