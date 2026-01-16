@@ -1,5 +1,7 @@
 package probench
 
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import probench.Codecs.given
 import probench.data.*
 import probench.data.RequestResponseQueue.Req
@@ -18,21 +20,16 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
-class KeyValueReplica(
-    val uid: Uid,
-    val votingReplicas: Set[Uid],
-    offloadSending: Boolean = true,
-    deltaStorageType: DeltaStorage.Type = KeepAll,
-    timeoutThreshold: Long = 1000
-) {
+sealed trait ClientProtocol
+object ClientProtocol {
+  case class ClientRequest(req: Req[KVOperation[String, String]])                   extends ClientProtocol
+  case class ClusterAnswer(req: Req[KVOperation[String, String]], decision: String) extends ClientProtocol
 
-  inline def log(inline msg: String): Unit =
-    if false then println(s"[$uid] $msg")
+  given JsonValueCodec[ClientProtocol] = JsonCodecMaker.make
+}
 
-  val sendingActor: ExecutionContext = makeActor(offloadSending)
-  val replicaActor: ExecutionContext = makeActor(true)
-
-  private def makeActor(singleThreadExecutor: Boolean) = {
+object ConcurrencyHelper {
+  def makeExecutionContext(singleThreadExecutor: Boolean) = {
     if singleThreadExecutor then
         val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
           val thread = new Thread(r)
@@ -44,6 +41,21 @@ class KeyValueReplica(
     else
         DeltaDissemination.executeImmediately
   }
+}
+
+class KeyValueReplica(
+    val uid: Uid,
+    val votingReplicas: Set[Uid],
+    offloadSending: Boolean = true,
+    deltaStorageType: DeltaStorage.Type = KeepAll,
+    timeoutThreshold: Long = 1000
+) {
+
+  inline def log(inline msg: String): Unit =
+    if false then println(s"[$uid] $msg")
+
+  val sendingActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(offloadSending)
+  val replicaActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(true)
 
   given Participants(votingReplicas)
   given localUid: LocalUid = LocalUid(uid)
