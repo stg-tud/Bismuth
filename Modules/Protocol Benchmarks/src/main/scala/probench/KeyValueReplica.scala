@@ -32,8 +32,8 @@ class KeyValueReplica(
   val sendingActor: ExecutionContext = makeActor(offloadSending)
   val replicaActor: ExecutionContext = makeActor(true)
 
-  private def makeActor(offloadSending: Boolean) = {
-    if offloadSending then
+  private def makeActor(singleThreadExecutor: Boolean) = {
+    if singleThreadExecutor then
         val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
           val thread = new Thread(r)
           thread.setDaemon(true)
@@ -58,7 +58,9 @@ class KeyValueReplica(
   val client: Client   = new Client(localUid, sendingActor)
   val connInf: ConnInf = new ConnInf(localUid, sendingActor, timeoutThreshold = timeoutThreshold)
 
-  cluster.maybeLeaderElection(votingReplicas)
+  replicaActor.execute { () =>
+    cluster.maybeLeaderElection(votingReplicas)
+  }
 
   class Cluster(
       localUid: LocalUid,
@@ -186,7 +188,7 @@ class KeyValueReplica(
 
     val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
-      handleIncoming,
+      delta => replicaActor.execute(() => handleIncoming(delta)),
       defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
@@ -237,7 +239,7 @@ class KeyValueReplica(
 
     val dataManager: DeltaDissemination[ConnInformation] = DeltaDissemination(
       localUid,
-      handleIncoming,
+      delta => replicaActor.execute(() => handleIncoming(delta)),
       defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
