@@ -113,7 +113,7 @@ class ClusterConsensus extends munit.FunSuite {
     val ids = Set("Node1").map(Uid.predefined)
     given Participants(ids)
     val nodes @ primary :: x =
-      ids.map { id => KeyValueReplica(id, ids, offloadSending = false, maxClients = Some(1)) }.toList: @unchecked
+      ids.map { id => KeyValueReplica(id, ids, offloadSending = false) }.toList: @unchecked
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
 
