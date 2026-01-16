@@ -26,12 +26,15 @@ class Abort(@volatile var closeRequest: Boolean = false)
 
 type Prod[A] = Async[Abort, A]
 
-case class ConnectionInfo(hostname: Option[String], port: Option[Int])
+case class ConnectionInfo(details: Map[String, String])
+object ConnectionInfo {
+  def apply(details: (String, String)*): ConnectionInfo = ConnectionInfo(details.toMap)
+}
 
 /** Connections are bidirectional. Receiving is handled by the incoming handler of the latent connection. */
 trait Connection[T] {
   // TODO: currently not consistently implemented
-  def info: ConnectionInfo                    = ConnectionInfo(None, None)
+  def info: ConnectionInfo                    = ConnectionInfo(Map.empty)
   def authenticatedPeerReplicaId: Option[Uid] = None
   def send(message: T): Async[Any, Unit]
   def close(): Unit
@@ -70,25 +73,28 @@ trait LatentConnection[T] {
 
 object LatentConnection {
 
-  class EncodingConnection[A, B](f: B => A, acc: Connection[A]) extends Connection[B] {
+  class EncodingConnection[A, B](f: B => A, name: String, acc: Connection[A]) extends Connection[B] {
+    override def info: ConnectionInfo =
+      ConnectionInfo(acc.info.details.updatedWith("encoding")(v => v.map(_ + name).orElse(Some(name))))
+
     override def send(message: B): Async[Any, Unit] =
       acc.send(f(message))
 
     override def close(): Unit = acc.close()
   }
 
-  def adapt[A, B](f: A => B, g: B => A)(latentConnection: LatentConnection[A]): LatentConnection[B] = {
+  def adapt[A, B](f: A => B, g: B => A, name: String)(latentConnection: LatentConnection[A]): LatentConnection[B] = {
     new LatentConnection[B] {
       def prepare(receiver: Receive[B]): Async[Abort, Connection[B]] =
         Async[Abort] {
           val conn = Async.bind {
             latentConnection.prepare { conn =>
-              val mapped = EncodingConnection(g, conn)
+              val mapped = EncodingConnection(g, name, conn)
               val cb     = receiver.messageHandler(mapped)
               rs => cb.complete(rs.map(f))
             }
           }
-          EncodingConnection(g, conn)
+          EncodingConnection(g, name, conn)
         }
     }
   }

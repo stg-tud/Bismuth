@@ -91,8 +91,11 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
   override val info: ConnectionInfo =
     datagramSocket.getLocalSocketAddress match
         case isa: InetSocketAddress =>
-          ConnectionInfo(Option(isa.getHostString), Option(isa.getPort))
-        case other => ConnectionInfo(None, None)
+          ConnectionInfo(
+            "type" -> "udp",
+            "host" -> isa.getHostString,
+            "port" -> isa.getPort.toString)
+        case other => ConnectionInfo("type" -> "udp")
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {
     // Create a packet with the message, server address, and port

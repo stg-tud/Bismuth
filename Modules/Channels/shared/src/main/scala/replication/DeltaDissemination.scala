@@ -11,6 +11,7 @@ import replication.DeltaDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
 
+import java.net.SocketException
 import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -51,7 +52,8 @@ class DeltaDissemination[State](
       : LatentConnection[CachedMessage[ProtocolMessage[State]]] = {
     LatentConnection.adapt(
       (mb: MessageBuffer) => ReceivedCachedMessage[ProtocolMessage[State]](mb)(using pmscodec),
-      (pm: CachedMessage[ProtocolMessage[State]]) => pm.messageBuffer
+      (pm: CachedMessage[ProtocolMessage[State]]) => pm.messageBuffer,
+      "json caching"
     )(conn)
   }
 
@@ -65,7 +67,7 @@ class DeltaDissemination[State](
         lock.synchronized {
           connections = connections.filter(cc => cc != con)
         }
-        println(s"exception during message handling, removing connection $con from list of connections")
+        println(s"exception during message sending, removing connection $con from list of connections")
         exception.printStackTrace()
 
   def requestData(): Unit = {
@@ -101,7 +103,8 @@ class DeltaDissemination[State](
   def prepareObjectConnection(latentConnection: LatentConnection[ProtocolMessage[State]]): Async[Any, Unit] = {
     prepareLatentConnection(LatentConnection.adapt[ProtocolMessage[State], Message](
       pm => SentCachedMessage(pm)(using pmscodec),
-      cm => cm.payload
+      cm => cm.payload,
+      "message serialization"
     )(latentConnection))
   }
 
@@ -111,8 +114,13 @@ class DeltaDissemination[State](
       {
         case Success(msg)   => handleMessage(msg, from)
         case Failure(error) =>
-          println("exception during message handling")
-          error.printStackTrace()
+          error match {
+            case se: SocketException if se.getMessage == "Connection reset" =>
+              println(s"$replicaId: disconnected ${from.info} (${from})")
+            case other =>
+              println(s"$replicaId: error during message handling")
+              error.printStackTrace()
+          }
       }
     }
     Async.provided(globalAbort) {

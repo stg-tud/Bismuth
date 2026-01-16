@@ -7,6 +7,7 @@ import java.net.{SocketAddress, SocketException, StandardProtocolFamily, Standar
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import java.util.concurrent.atomic.AtomicLong
+import scala.util.Try
 import scala.util.control.NonFatal
 
 class ChannelTrafficReporter {
@@ -113,6 +114,12 @@ class NioTCP(reporter: ChannelTrafficReporter | Null = null) {
   }
 
   class NioTCPConnection(clientChannel: SocketChannel) extends Connection[MessageBuffer] {
+
+    override val info: ConnectionInfo = ConnectionInfo(
+      "type" -> "niotcp",
+      "remoteAddress" -> Try { clientChannel.getRemoteAddress.toString}.recover(_.getMessage).get,
+      "localAddress"  -> Try { clientChannel.getLocalAddress.toString}.recover(_.getMessage).get
+    )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
 
