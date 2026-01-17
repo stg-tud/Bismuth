@@ -1,6 +1,5 @@
 package ex2024bft
 
-import rdts.base.Lattice.mapLattice
 import rdts.base.{Bottom, Lattice}
 
 import java.security.MessageDigest

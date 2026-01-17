@@ -152,7 +152,6 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
 trait EventPyramidTopper {
   self: PaperPhilosophers =>
-  import engine.*
 
   val anySuccess: Event[Sight]  = successes.reduce(_ || _)
   val successCount: Signal[Int] =
@@ -162,7 +161,6 @@ trait EventPyramidTopper {
 
 trait IndividualCounts {
   self: PaperPhilosophers =>
-  import engine.*
 
   val individualCounts: Seq[Signal[Int]] =
     for idx <- 0 until size yield successes(idx).fold(0) { (acc, _) =>
@@ -196,7 +194,6 @@ trait NoTopper extends IndividualCounts {
 
 trait SignalPyramidTopper extends IndividualCounts {
   self: PaperPhilosophers =>
-  import engine.*
 
   val successCount: Signal[Int] =
     individualCounts.reduce { (a, b) =>
@@ -207,7 +204,6 @@ trait SignalPyramidTopper extends IndividualCounts {
 
 trait SingleFoldTopper {
   self: PaperPhilosophers =>
-  import engine.*
 
   val successCount: Signal[Int] = Fold(0)(successes.map(s => s branch { _ => Fold.current[Int] + 1 })*)
   override def total: Int       = successCount.readValueOnce

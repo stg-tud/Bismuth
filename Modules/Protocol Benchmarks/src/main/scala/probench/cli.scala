@@ -72,6 +72,7 @@ object cli {
 
     given ipAndPortParser: ArgumentValueParser[(String, Int)] with
         override def parse(args: List[String]): Result[(String, Int)] =
+          import scala.language.unsafeNulls
           args match {
             case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
             case _                           => Err("not a valid ip:port")
@@ -121,6 +122,7 @@ object cli {
         val merging: Regex    = """merging\((\d+)\)""".r
 
         override def parse(args: List[String]): Result[DeltaStorage.Type] =
+          import scala.language.unsafeNulls
           args match {
             case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
             case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)

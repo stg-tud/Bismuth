@@ -3,7 +3,6 @@ import cats.data.NonEmptyList
 import cats.implicits.*
 import cats.parse
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import lore.ast.*
 import lore.ast.Codecs.given
 import munit.FunSuite

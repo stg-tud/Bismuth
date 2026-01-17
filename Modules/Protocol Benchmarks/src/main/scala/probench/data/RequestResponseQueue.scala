@@ -2,7 +2,6 @@ package probench.data
 
 import probench.data.RequestResponseQueue.{Req, Res, Timestamp}
 import rdts.base.*
-import rdts.base.Lattice.mapLattice
 import rdts.base.LocalUid.replicaId
 import rdts.datatypes.ObserveRemoveMap
 import rdts.time.CausalTime

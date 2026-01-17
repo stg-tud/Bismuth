@@ -1,6 +1,5 @@
 package loreCompilerPlugin
 
-import lore.dsl.*
 import loreCompilerPlugin.annotation.LoReProgram
 import reactives.default.Var as Source
 

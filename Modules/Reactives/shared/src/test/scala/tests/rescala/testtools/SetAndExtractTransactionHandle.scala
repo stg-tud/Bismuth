@@ -5,7 +5,6 @@ import reactives.core.{Initializer, Scheduler}
 import reactives.operator.Source
 
 class SetAndExtractTransactionHandle(val api: reactives.default.type) {
-  import api.*
   def SetAndExtractTransactionHandle[A, N](
       source: Source[A] { type State[V] = reactives.SelectedScheduler.State[V] },
       value: A

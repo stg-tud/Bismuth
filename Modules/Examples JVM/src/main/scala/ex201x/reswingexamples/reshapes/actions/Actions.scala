@@ -3,7 +3,6 @@ package ex201x.reswingexamples.reshapes.actions
 import ex201x.reswingexamples.reshapes.ReShapes
 import ex201x.reswingexamples.reshapes.drawing.CreateShape
 import ex201x.reswingexamples.reshapes.figures.Shape
-import reactives.default.*
 
 import java.io.File
 import scala.swing.{Action, FileChooser}

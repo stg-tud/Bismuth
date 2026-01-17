@@ -84,10 +84,12 @@ class Elevator(val nFloors: Int) {
     }
 }
 
-object Test extends App {
-  val e = new Elevator(3)
-  e.callToFloor `fire` 2
-  e.callToFloor `fire` 2
+object Test {
+  def main(args: Array[String]): Unit = {
+    val e = new Elevator(3)
+    e.callToFloor `fire` 2
+    e.callToFloor `fire` 2
 
-  for _ <- 0 to 100 do e.tick.fire()
+    for _ <- 0 to 100 do e.tick.fire()
+  }
 }

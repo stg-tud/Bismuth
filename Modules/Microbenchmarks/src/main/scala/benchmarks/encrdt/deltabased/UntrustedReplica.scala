@@ -1,6 +1,5 @@
 package benchmarks.encrdt.deltabased
 
-import rdts.base.Lattice.*
 import rdts.time.Dots
 
 import scala.collection.mutable

@@ -2,7 +2,6 @@ package test.rdts.bespoke
 
 import rdts.base.{Lattice, Uid}
 import rdts.time.VectorClock
-import test.rdts.given
 
 import scala.math.Ordering.Implicits.infixOrderingOps
 

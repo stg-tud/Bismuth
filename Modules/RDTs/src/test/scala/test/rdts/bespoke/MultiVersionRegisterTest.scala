@@ -4,7 +4,6 @@ import rdts.time.Dots
 import rdts.base.{Uid, LocalUid}
 import rdts.datatypes.MultiVersionRegister
 import rdts.base.Historized.MetaDelta
-import test.rdts.given
 
 class MultiVersionRegisterTest extends munit.FunSuite {
 

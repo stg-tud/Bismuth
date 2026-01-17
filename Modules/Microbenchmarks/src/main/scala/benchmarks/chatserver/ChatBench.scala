@@ -16,7 +16,6 @@ class ChatBench {
 
   @Benchmark
   def chat(benchState: BenchState, threadParams: ThreadParams): Unit = {
-    import benchState.stableEngine.*
     if reactives.SelectedScheduler.candidate.scheduler != reactives.scheduler.LevelbasedVariants.unmanaged then {
       benchState.clients(threadParams.getThreadIndex).fire("hello")
     } else {

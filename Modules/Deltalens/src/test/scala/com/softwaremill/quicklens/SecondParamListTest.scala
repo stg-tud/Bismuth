@@ -1,6 +1,5 @@
 package com.softwaremill.quicklens
 
-import com.softwaremill.quicklens.TestData.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -35,5 +34,5 @@ class SecondParamListTest extends AnyFlatSpec with Matchers {
     given dd: Double = d
 
     assertDoesNotCompile("state1.modify(_.inside).setTo(true)")
-  }
+  }: @nowarn("msg=unused")
 }

@@ -12,7 +12,7 @@ import scala.swing.Dialog.Message
 import scala.swing.Swing.EmptyIcon
 import scala.swing.{Dialog, Swing}
 
-object Main extends App {
+object Main {
   val tick: Evt[Unit] = Evt[Unit]() // #EVT
   val checker         = new UrlChecker
   val fetcher         = new Fetcher(checker.checkedURL.fold(Set.empty[URL])(_ + _))
@@ -30,34 +30,38 @@ object Main extends App {
     fetcher.state
   )
 
-  setupGuiEvents()
+  def main(args: Array[String]): Unit = {
 
-  List(SimpleReporter, CentralizedEvents) foreach { m =>
-    m.mediate(fetcher, parser, store, checker)
+    setupGuiEvents()
+
+    List(SimpleReporter, CentralizedEvents) foreach { m =>
+      m.mediate(fetcher, parser, store, checker)
+    }
+
+    checker.urlIsInvalid observe { _ => showInvalidUrlDialog() } // #HDL
+
+    val sleepTime = 5000L // 20000
+
+    // ---------------------------------------------------------------------------
+
+    println("Program started")
+
+    app.main(Array())
+
+    // TODO: this crashes because args is null
+    // which causes the below two lines to not be executed … which is good, because if they are executed the program just hangs
+    // I assume it’s because the feeds are no longer available, but the while loop also seems extremely sketchy
+    val readUrls: Option[Seq[String]] =
+      for
+          file <- args.headOption
+          urls <- loadURLs(file)
+      yield urls
+
+    (readUrls getOrElse defaultURLs) foreach (checker.check(_))
+
+    while true do { Swing.onEDTWait { tick.fire() }; Thread.sleep(sleepTime) }
+
   }
-
-  checker.urlIsInvalid observe { _ => showInvalidUrlDialog() } // #HDL
-
-  val sleepTime = 5000L // 20000
-
-  // ---------------------------------------------------------------------------
-
-  println("Program started")
-
-  app.main(Array())
-
-  // TODO: this crashes because args is null
-  // which causes the below two lines to not be executed … which is good, because if they are executed the program just hangs
-  // I assume it’s because the feeds are no longer available, but the while loop also seems extremely sketchy
-  val readUrls: Option[Seq[String]] =
-    for
-        file <- args.headOption
-        urls <- loadURLs(file)
-    yield urls
-
-  (readUrls getOrElse defaultURLs) foreach (checker.check(_))
-
-  while true do { Swing.onEDTWait { tick.fire() }; Thread.sleep(sleepTime) }
 
   // ---------------------------------------------------------------------------
 

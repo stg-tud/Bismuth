@@ -5,7 +5,6 @@ import org.scalacheck.Prop.*
 import rdts.base.Uid
 import rdts.datatypes.ReplicatedList
 import test.rdts.DataGenerator.ReplicatedListGen.{makeRGA, given}
-import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 
 import scala.collection.mutable
@@ -21,7 +20,7 @@ object RGAGenerators {
 }
 
 class RGATest extends munit.ScalaCheckSuite {
-  import RGAGenerators.{*, given}
+  import RGAGenerators.{*}
 
   property("size, toList, read") {
     forAll { (rl: ReplicatedList[Int], readIdx: Int) =>

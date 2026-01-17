@@ -4,7 +4,6 @@ import lore.dsl.*
 import reactives.default.*
 
 import scala.annotation.targetName
-import scala.quoted.*
 
 trait Interaction[S <: Tuple, A] {
   type T[_ <: S, _ <: A] <: Interaction[S, A]

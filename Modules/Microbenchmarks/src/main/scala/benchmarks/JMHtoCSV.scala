@@ -19,6 +19,7 @@ object JMHtoCSV {
 
   def main(args: Array[String]): Unit = {
     try {
+      import scala.language.unsafeNulls
       for fileName <- args do {
         println("processing " + fileName)
         for (line, lineNo) <- Source.fromFile(fileName).getLines().zipWithIndex do {

@@ -9,35 +9,38 @@ import java.nio.file.Paths
 import java.util
 import java.util.concurrent.{Callable, Executors, TimeUnit}
 
-object BenchmarkRunnerApp extends App {
-  Paths.get("benchmarks/results/").toFile.mkdirs()
+object BenchmarkRunnerApp {
+  def main(args: Array[String]): Unit = {
 
-  val timeBefore: Long = System.currentTimeMillis()
+    Paths.get("benchmarks/results/").toFile.mkdirs()
 
-  val jmhOptions: Options = new OptionsBuilder()
-    .include("serializeOnly|encryptOnly")
-    .resultFormat(ResultFormatType.CSV)
-    .result("benchmarks/results/jmh_benchmark.csv")
-    .forks(3)
-    .build()
+    val timeBefore: Long = System.currentTimeMillis()
 
-  val results: util.Collection[RunResult] = new Runner(jmhOptions).run()
+    val jmhOptions: Options = new OptionsBuilder()
+      .include("serializeOnly|encryptOnly")
+      .resultFormat(ResultFormatType.CSV)
+      .result("benchmarks/results/jmh_benchmark.csv")
+      .forks(3)
+      .build()
 
-  println("Running ToDo App Benchmarks")
-  ToDoAppBenchmark.main(Array.empty)
+    val results: util.Collection[RunResult] = new Runner(jmhOptions).run()
 
-  println("Running size benchmarks")
-  private val sizeBenchmarks = List[Callable[Unit]](
-    () => DeltaStateBasedUntrustedReplicaSizeBenchmark.main(Array.empty),
-    () => DeltaStateBasedUntrustedReplicaSizeBenchmarkLinearScaling.main(Array.empty),
-    () => StateBasedUntrustedReplicaSizeBenchmark.main(Array.empty),
-  )
+    println("Running ToDo App Benchmarks")
+    ToDoAppBenchmark.main(Array.empty)
 
-  private val executorService = Executors.newFixedThreadPool(4)
-  sizeBenchmarks.foreach((task: Callable[Unit]) => executorService.submit(task))
-  executorService.shutdown()
-  executorService.awaitTermination(1, TimeUnit.HOURS)
+    println("Running size benchmarks")
+    val sizeBenchmarks = List[Callable[Unit]](
+      () => DeltaStateBasedUntrustedReplicaSizeBenchmark.main(Array.empty),
+      () => DeltaStateBasedUntrustedReplicaSizeBenchmarkLinearScaling.main(Array.empty),
+      () => StateBasedUntrustedReplicaSizeBenchmark.main(Array.empty),
+    )
 
-  val timeAfter: Long = System.currentTimeMillis()
-  println("Finished running size benchmarks (in " + (timeAfter - timeBefore) + "ms)")
+    val executorService = Executors.newFixedThreadPool(4)
+    sizeBenchmarks.foreach((task: Callable[Unit]) => executorService.submit(task))
+    executorService.shutdown()
+    executorService.awaitTermination(1, TimeUnit.HOURS)
+
+    val timeAfter: Long = System.currentTimeMillis()
+    println("Finished running size benchmarks (in " + (timeAfter - timeBefore) + "ms)")
+  }
 }

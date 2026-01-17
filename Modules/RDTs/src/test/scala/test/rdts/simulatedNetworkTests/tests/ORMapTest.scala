@@ -7,7 +7,6 @@ import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
-import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
   given decompose[K, V]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic

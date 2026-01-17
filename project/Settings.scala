@@ -106,8 +106,6 @@ object Settings {
         "-Wunused:nowarn",
         // Warn if an import selector is not referenced.
         "-Wunused:imports",
-        // Same as -Wunused:import, only for imports of explicit named members. NOTE : This overrides -Wunused:imports and NOT set by -Wunused:all,
-        "-Wunused:strict-no-implicit-warn",
         // Warn if a private member is unused,
         "-Wunused:privates",
         // Warn if a local definition is unused,

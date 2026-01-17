@@ -25,6 +25,7 @@ class ClientCLI(name: Uid, client: Client) {
     while running do {
       print("client> ")
       val line = Option(readLine()).map(_.strip())
+      import scala.language.unsafeNulls
       line match {
         case Some(commented())                 => // ignore
         case Some(get(key))                    => client.read(key)
