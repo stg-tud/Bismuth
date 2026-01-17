@@ -1,6 +1,7 @@
 package test.rdts.protocols.simplified
 
 import rdts.base.{Bottom, LocalUid}
+import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
 import rdts.protocols.Participants.participants
 import rdts.protocols.old.simplified.Paxos
@@ -20,7 +21,7 @@ class SimplePaxosTest extends munit.FunSuite {
 
   given Participants = Participants(Set(id1, id2, id3).map(_.uid))
 
-  var emptyPaxosObject: Paxos[Int] = Paxos.init(participants)
+  val emptyPaxosObject: Paxos[Int] = Paxos.init(participants)
 
 //  test("Merge fails with different members") {
 //    val p1: Paxos[Int] = Paxos.unchanged.copy(members = Set(id1).map(_.uid))
@@ -170,10 +171,15 @@ class SimplePaxosTest extends munit.FunSuite {
   }
 
   test("concurrent writes") {
-    var testPaxosObject = emptyPaxosObject
+    var testPaxosObject: Paxos[Int] = emptyPaxosObject
     // replica 1 and 2 try to write
-    testPaxosObject =
-      testPaxosObject.merge(testPaxosObject.propose(1)(using id1)).merge(testPaxosObject.propose(2)(using id2))
+    val proposal1 = testPaxosObject.propose(1)(using id1)
+    val proposal2 = testPaxosObject.propose(2)(using id2)
+    testPaxosObject = testPaxosObject.merge(proposal1).merge(proposal2)
+    assertEquals(testPaxosObject.members.size, 3)
+    val proposals: Iterable[LastWriterWins[Int]] = testPaxosObject.members.values.flatten
+    assertEquals(proposals.size, 2)
+    assertEquals(proposals.map(_.payload).toSet, Set(1, 2))
     // deliver prepares
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep()(using id1)).merge(testPaxosObject.upkeep()(using
       id2
