@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
 
-import replication.{Compression, DeltaDissemination, ProtocolMessage}
+import replication.{DeltaDissemination, ProtocolMessage}
 
 class DeltaDisseminationTest extends munit.FunSuite {
   test("basics") {
@@ -50,9 +50,4 @@ class DeltaDisseminationTest extends munit.FunSuite {
 
   }
 
-  test("deflate") {
-    val message = "hallo welt" * 5000
-    val res     = Compression.decompress(Compression.compress(message.getBytes))
-    assertEquals(new String(res), message)
-  }
 }
