@@ -28,7 +28,11 @@ class BenchmarkMVRegister {
   }
 
   @Benchmark
-  def nonRedundantBufferMultiValueRegister(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
+  def nonRedundantBufferMultiValueRegister(
+      blackhole: Blackhole,
+      state: EvalState,
+      resultCapture: ResultCapture
+  ): Unit = {
     val deltaBuffer = DeltaBufferNonRedundant[MultiVersionRegister[Int]]()
 
     Eval.modReplica(

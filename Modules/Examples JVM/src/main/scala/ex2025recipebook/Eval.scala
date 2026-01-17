@@ -599,14 +599,17 @@ object Eval {
     }
   }
 
-  def performORMapOperationLWW(orMap: ObserveRemoveMap[Int, LastWriterWins[Int]], localUid: LocalUid, random: Int): ObserveRemoveMap[Int, LastWriterWins[Int]] = {
-    given Bottom[Int]= Bottom.provide(0)
+  def performORMapOperationLWW(
+      orMap: ObserveRemoveMap[Int, LastWriterWins[Int]],
+      localUid: LocalUid,
+      random: Int
+  ): ObserveRemoveMap[Int, LastWriterWins[Int]] = {
+    given Bottom[Int] = Bottom.provide(0)
     if orMap.entries.isEmpty then return orMap.update(random, LastWriterWins.empty[Int].write(random))(using localUid)
     math.abs(random % 2) match {
-      case 0 => {
+      case 0 =>
         val randomKey = orMap.entries.toList(math.abs(random % orMap.entries.size))._1
         orMap.remove(randomKey)
-      }
       case _ => orMap.update(random, LastWriterWins.empty[Int].write(random))(using localUid)
     }
   }

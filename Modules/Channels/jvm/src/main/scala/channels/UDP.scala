@@ -94,7 +94,8 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
           ConnectionInfo(
             "type" -> "udp",
             "host" -> isa.getHostString,
-            "port" -> isa.getPort.toString)
+            "port" -> isa.getPort.toString
+          )
         case other => ConnectionInfo("type" -> "udp")
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {

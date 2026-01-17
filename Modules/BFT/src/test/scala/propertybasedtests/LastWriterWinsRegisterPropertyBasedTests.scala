@@ -12,8 +12,8 @@ class LastWriterWinsRegisterPropertyBasedTests extends munit.ScalaCheckSuite {
   val genOps: Gen[List[LastWriterWinsRegister[String] => LastWriterWinsRegister[String]]] = Gen.listOf(genOp)
 
   def applyOps(
-                c: LastWriterWinsRegister[String],
-                ops: List[LastWriterWinsRegister[String] => LastWriterWinsRegister[String]]
+      c: LastWriterWinsRegister[String],
+      ops: List[LastWriterWinsRegister[String] => LastWriterWinsRegister[String]]
   ): LastWriterWinsRegister[String] =
     ops.foldLeft(c)((cc, f) => cc.merge(f(cc)))
 

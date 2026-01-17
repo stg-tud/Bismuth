@@ -20,15 +20,16 @@ case class LastWriterWinsRegister[T](
           else
               None
         } else
-          Some(
-            heads.toList.sortWith((x, y) => MurmurHash3.stringHash(x.id) > MurmurHash3.stringHash(y.id))
-              .head.content.get
-          )
+            Some(
+              heads.toList.sortWith((x, y) => MurmurHash3.stringHash(x.id) > MurmurHash3.stringHash(y.id))
+                .head.content.get
+            )
 
     def merge(lww: LastWriterWinsRegister[T]): LastWriterWinsRegister[T] =
       LastWriterWinsRegister(hashDAG.merge(lww.hashDAG))
 
-    override def generateDelta(ids: List[String]): LastWriterWinsRegister[T] = LastWriterWinsRegister(hashDAG.getDelta(ids))
+    override def generateDelta(ids: List[String]): LastWriterWinsRegister[T] =
+      LastWriterWinsRegister(hashDAG.getDelta(ids))
 
 object LastWriterWinsRegister:
     def apply[T](): LastWriterWinsRegister[T] =

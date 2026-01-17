@@ -150,8 +150,8 @@ class DeltaDissemination[State](
 
   @volatile private var localContext: Dots = Dots.empty
 
-  def localKnownDeltaContext: Dots = localContext
-  def addLocalContext(dots: Dots): Unit = lock.synchronized{localContext = localContext.merge(dots)}
+  def localKnownDeltaContext: Dots      = localContext
+  def addLocalContext(dots: Dots): Unit = lock.synchronized { localContext = localContext.merge(dots) }
 
   def applyDelta(delta: State, timetolive: Int = defaultTimetolive): Unit =
       val message = lock.synchronized {

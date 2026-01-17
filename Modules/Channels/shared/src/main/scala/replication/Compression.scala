@@ -5,7 +5,7 @@ import java.util.zip.{DeflaterOutputStream, InflaterOutputStream}
 
 object Compression {
   def compress(in: Array[Byte]): Array[Byte] =
-      val out = new ByteArrayOutputStream
+      val out  = new ByteArrayOutputStream
       val defl = new DeflaterOutputStream(out)
       defl.write(in)
       defl.flush()

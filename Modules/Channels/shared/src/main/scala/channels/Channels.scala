@@ -83,7 +83,11 @@ object LatentConnection {
     override def close(): Unit = acc.close()
   }
 
-  def adapt[A, B](decode: A => B, encode: B => A, name: String)(latentConnection: LatentConnection[A]): LatentConnection[B] = {
+  def adapt[A, B](
+      decode: A => B,
+      encode: B => A,
+      name: String
+  )(latentConnection: LatentConnection[A]): LatentConnection[B] = {
     new LatentConnection[B] {
       def prepare(receiver: Receive[B]): Async[Abort, Connection[B]] =
         Async[Abort] {

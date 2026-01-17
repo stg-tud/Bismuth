@@ -230,9 +230,9 @@ object SyncStrategies {
       for r <- toR1 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
         for (k, v) <- r.dependencies do
-          if k != "0" then
-            bandwidth += Base64.getDecoder.decode(k).length
-            bandwidth += v.toList.filter(id => id != "0").map(id => Base64.getDecoder.decode(id).length).sum
+            if k != "0" then
+                bandwidth += Base64.getDecoder.decode(k).length
+                bandwidth += v.toList.filter(id => id != "0").map(id => Base64.getDecoder.decode(id).length).sum
       }
       toR1 = Set.empty
 
@@ -245,7 +245,9 @@ object SyncStrategies {
           ).map(e => e.id -> e.dependencies).toMap
         )
       )
-      bandwidth += needFromR1.toList.filter(request => request.id != "0").map(request => Base64.getDecoder.decode(request.id).length).sum
+      bandwidth += needFromR1.toList.filter(request => request.id != "0").map(request =>
+        Base64.getDecoder.decode(request.id).length
+      ).sum
       needFromR1 = Set.empty
 
       //   Replica 2 receives
@@ -266,9 +268,9 @@ object SyncStrategies {
       for r <- toR2 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
         for (k, v) <- r.dependencies do
-          if k != "0" then
-            bandwidth += Base64.getDecoder.decode(k).length
-            bandwidth += v.toList.filter(id => id != "0").map(id => Base64.getDecoder.decode(id).length).sum
+            if k != "0" then
+                bandwidth += Base64.getDecoder.decode(k).length
+                bandwidth += v.toList.filter(id => id != "0").map(id => Base64.getDecoder.decode(id).length).sum
       }
       toR2 = Set.empty
 
@@ -281,7 +283,9 @@ object SyncStrategies {
           ).map(e => e.id -> e.dependencies).toMap
         )
       )
-      bandwidth += needFromR2.toList.filter(request => request.id != "0").map(request => Base64.getDecoder.decode(request.id).length).sum
+      bandwidth += needFromR2.toList.filter(request => request.id != "0").map(request =>
+        Base64.getDecoder.decode(request.id).length
+      ).sum
       needFromR2 = Set.empty
 
       roundTrips += 1
@@ -441,7 +445,6 @@ object SyncStrategies {
             toR1 = toR1 :+ replica2.hashDAG.events(id)
             toR1 = toR1 :++ replica2.hashDAG.getAllSuccessors(id).map(i => replica2.hashDAG.events(i))
 
-
     roundTrips += 1
     bandwidth += toR2.map(e => writeToArray(e).length).sum
     bandwidth += toR1.map(e => writeToArray(e).length).sum
@@ -548,16 +551,14 @@ object SyncStrategies {
     val codedSymbolsPerRoundTrip = 1
     val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
 
-
-
     // val t = r1.add("A")
     // r1.merge(t)
 
     r1 = gen._1
     r2 = gen._2
 
-    //r1 = ReplicaExamples.Example1.replica1
-    //r2 = ReplicaExamples.Example1.replica2
+    // r1 = ReplicaExamples.Example1.replica1
+    // r2 = ReplicaExamples.Example1.replica2
 
     /*println(syncPingPong(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(syncPingPongv2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
@@ -572,14 +573,12 @@ object SyncStrategies {
     // println(syncBloom(r1, r2, 0.00001f, size, diff, deltaSize))
     val lst = List(0.1, 0.01, 0.001, 0.0001, 0.00001)
     for fp <- lst do
-      println(SyncStrategies.syncBloom(r1, r2, fp.toFloat, size, diff, deltaSize))
-
+        println(SyncStrategies.syncBloom(r1, r2, fp.toFloat, size, diff, deltaSize))
 
     println(syncBloom(r1, r2, 0.1f, size, diff, deltaSize))
     println(rsync(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(rsyncV2(r1, r2, size, diff, dependencyPerRoundTrip, deltaSize))
     println(syncRIBLT(r1, r2, 10, size, diff, deltaSize))
-
 
     /*println(syncBloom(r1, r2, 0.01f, size, diff, deltaSize))
     println(syncBloom(r1, r2, 0.001f, size, diff, deltaSize))

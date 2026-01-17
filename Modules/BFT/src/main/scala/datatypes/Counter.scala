@@ -9,7 +9,7 @@ case class Counter(
 
     // filter out all events from byzantine nodes as well as the root event (id == "0")
     lazy val value: Int = hashDAG.events.values.filter { event =>
-        event.id != "0"
+      event.id != "0"
     }
       .foldLeft(0) { (acc, event) => acc + event.content.get }
 

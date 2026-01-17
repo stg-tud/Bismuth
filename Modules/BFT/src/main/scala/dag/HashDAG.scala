@@ -256,16 +256,16 @@ case class HashDAG[T](
         loop(events(id).dependencies, 1, Set.empty)
 
     def getAllSuccessors(id: String): Set[String] =
-      var visited = Set.empty[String]
-      var stack = mutable.Stack(id)
+        var visited = Set.empty[String]
+        var stack   = mutable.Stack(id)
 
-      while stack.nonEmpty do
-        val v = stack.pop()
-        if !visited.contains(v) then
-          visited = visited + v
-          stack.pushAll(graph(v))
+        while stack.nonEmpty do
+            val v = stack.pop()
+            if !visited.contains(v) then
+                visited = visited + v
+                stack.pushAll(graph(v))
 
-      visited - id
+        visited - id
 
 object HashDAG:
     def apply[T](publicKey: PublicKey, privateKey: Option[PrivateKey]): HashDAG[T] =

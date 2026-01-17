@@ -129,13 +129,13 @@ class ObserveRemoveMapTest extends munit.FunSuite {
 
     // removing key makes previous add/updates redundant
     var redundantDeltas = buffer.getRedundantDeltas(delta7)
-    assertEquals(redundantDeltas, Dots.from(List(dot1,dot6)))
+    assertEquals(redundantDeltas, Dots.from(List(dot1, dot6)))
 
     // updating key makes previous adds/updates redundant
     val delta = produceDeltaAdd("a", "abc")
     redundantDeltas = buffer.getRedundantDeltas(delta)
 
-    assertEquals(redundantDeltas, Dots.from(List(dot1,dot6)))
+    assertEquals(redundantDeltas, Dots.from(List(dot1, dot6)))
   }
 
 }

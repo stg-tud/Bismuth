@@ -237,7 +237,7 @@ object cli {
 
           val reporter = if reporting.value then ChannelTrafficReporter() else null
 
-          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(4),  reporter)
+          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(4), reporter)
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           node.client.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(

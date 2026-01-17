@@ -121,11 +121,11 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
     override def info: ConnectionInfo =
       socket.getLocalSocketAddress match
           case isa: InetSocketAddress => ConnectionInfo(
-            "type" -> "p2ptls",
-            "host" -> isa.getHostName,
-            "port" -> isa.getPort.toString,
-          )
-          case _                      => ConnectionInfo("type" -> "p2ptls")
+              "type" -> "p2ptls",
+              "host" -> isa.getHostName,
+              "port" -> isa.getPort.toString,
+            )
+          case _ => ConnectionInfo("type" -> "p2ptls")
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       outputStream.synchronized {

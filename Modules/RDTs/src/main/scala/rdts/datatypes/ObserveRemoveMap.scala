@@ -22,7 +22,7 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
   def entries: Iterable[(K, V)] = inner.view.mapValues(_.value)
 
   def keySet: Set[K] = inner.keySet
-  
+
   def size: Int = inner.size
 
   /** merges `v` into the current value stored in the map */
@@ -94,7 +94,7 @@ object ObserveRemoveMap {
   given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
     bufferedDelta.inner.forall((key, entry) =>
       (delta.inner.contains(key)
-        && delta.inner(key).value.isRedundant(entry.value)) || delta.removed.contains(entry.dots)
+      && delta.inner(key).value.isRedundant(entry.value)) || delta.removed.contains(entry.dots)
     ) && delta.removed.contains(bufferedDelta.removed)
 
 }

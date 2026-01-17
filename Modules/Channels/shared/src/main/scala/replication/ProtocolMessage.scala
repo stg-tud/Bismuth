@@ -17,9 +17,8 @@ object ProtocolMessage {
     * then a.data <= b.data according to the lattice of T
     */
   case class Payload[+T](dots: Dots, data: T, redundantDots: Dots, timetolive: Int)
-      extends ProtocolMessage[T] {
-  }
-  object Payload {
+      extends ProtocolMessage[T] {}
+  object Payload                 {
     def apply[T](dots: Dots, data: T, timetolive: Int): Payload[T] =
       Payload(dots, data, Dots.empty, timetolive)
 

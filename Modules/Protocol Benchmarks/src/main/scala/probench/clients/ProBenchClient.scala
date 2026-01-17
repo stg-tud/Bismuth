@@ -99,15 +99,13 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       }
 
   override def handleOpImpl(op: KVOperation[String, String]): Unit =
-      // TODO: still not sure that the semaphore use is correct …
-      // its quite likely possible that some other request is answered after draining, causing the code below to return immediately
-      // though overall currentOp is not protected at all, so it is triple unclear what is going on
+    // TODO: still not sure that the semaphore use is correct …
+    // its quite likely possible that some other request is answered after draining, causing the code below to return immediately
+    // though overall currentOp is not protected at all, so it is triple unclear what is going on
 
-
-      op match {
-        case KVOperation.Read(key) => readWithResult(key) : Unit
-        case KVOperation.Write(key, value) => writeWithResult(key, value) : Unit
-      }
-
+    op match {
+      case KVOperation.Read(key)         => readWithResult(key): Unit
+      case KVOperation.Write(key, value) => writeWithResult(key, value): Unit
+    }
 
 }

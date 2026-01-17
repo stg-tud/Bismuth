@@ -24,8 +24,8 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
   test("add several requests") {
     given LocalUid = LocalUid.predefined("id1")
 
-    var queue         = empty
-    for n <- Range(0,100) do {
+    var queue = empty
+    for n <- Range(0, 100) do {
       val (_, delta) = queue.request(n.toString)
       queue = queue.merge(delta)
     }

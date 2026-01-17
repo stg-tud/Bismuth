@@ -133,9 +133,8 @@ class ClusterConsensus extends munit.FunSuite {
     assertEquals(primary.client.state.requestsSorted, List.empty)
     assertEquals(primary.cluster.state.read.length, 2)
 
-    for n <- Range(0,1000) do {
-      client.write(n.toString, "value")
-    }
+    for n <- Range(0, 1000) do
+        client.write(n.toString, "value")
 
     assertEquals(primary.cluster.state.read.length, 1002)
 
@@ -171,7 +170,6 @@ class ClusterConsensus extends munit.FunSuite {
 
     // simulate crash
 
-
     client.printResults = false
 
     client.write("test2", "Hi")
@@ -180,7 +178,6 @@ class ClusterConsensus extends munit.FunSuite {
     runUpkeep()
 
     nodes.foreach(noUpkeep)
-
 
   }
 }

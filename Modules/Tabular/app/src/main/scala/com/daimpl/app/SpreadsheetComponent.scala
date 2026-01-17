@@ -22,31 +22,34 @@ object SpreadsheetComponent {
   }
 
   case class Props(
-                    spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
-                    onDelta: Spreadsheet[String] => Callback,
-                    replicaId: LocalUid
-                  )
+      spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
+      onDelta: Spreadsheet[String] => Callback,
+      replicaId: LocalUid
+  )
 
   case class State(
-                    editingCell: Option[(RowIndex, ColumnIndex)],
-                    editingValue: String,
-                    selectedRow: Option[RowIndex],
-                    selectedColumn: Option[ColumnIndex],
-                    conflictPopup: Option[(RowIndex, ColumnIndex)],
-                    draggingRow: Option[RowIndex],
-                    draggingColumn: Option[ColumnIndex],
-                    previewRow: Option[RowIndex],
-                    previewColumn: Option[ColumnIndex],
-                    rangeDragStart: Option[(RowIndex, ColumnIndex)],
-                    rangePreviewEnd: Option[(RowIndex, ColumnIndex)]
-                  )
+      editingCell: Option[(RowIndex, ColumnIndex)],
+      editingValue: String,
+      selectedRow: Option[RowIndex],
+      selectedColumn: Option[ColumnIndex],
+      conflictPopup: Option[(RowIndex, ColumnIndex)],
+      draggingRow: Option[RowIndex],
+      draggingColumn: Option[ColumnIndex],
+      previewRow: Option[RowIndex],
+      previewColumn: Option[ColumnIndex],
+      rangeDragStart: Option[(RowIndex, ColumnIndex)],
+      rangePreviewEnd: Option[(RowIndex, ColumnIndex)]
+  )
 
   class Backend($ : BackendScope[Props, State]) {
 
     private val replicaEventPrint: (LocalUid, String) => Callback =
       (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
-    private def modSpreadsheet(f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String], allowUndo: Boolean = true): Callback = {
+    private def modSpreadsheet(
+        f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String],
+        allowUndo: Boolean = true
+    ): Callback = {
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta()(f, allowUndo)
@@ -67,7 +70,7 @@ object SpreadsheetComponent {
           for {
             (rowIdx, colIdx) <- state.editingCell
           } yield SpreadsheetCoordinate(rowIdx, colIdx)
-          ).map(f(_, state.editingValue)).getOrElse(Callback.empty)
+        ).map(f(_, state.editingValue)).getOrElse(Callback.empty)
       )
 
     private def withSelectedRowAndProps(f: (RowIndex, Props) => Callback): Callback =
@@ -83,22 +86,25 @@ object SpreadsheetComponent {
 
     def undo(): Callback =
       $.props.flatMap { props =>
-        val deltaOpt = props.spreadsheetAggregator.undoAndGetDelta()
+        val deltaOpt  = props.spreadsheetAggregator.undoAndGetDelta()
         val broadcast = deltaOpt.fold(Callback.empty)(delta => props.onDelta(delta))
         broadcast >> $.forceUpdate
       }
 
     def handleDoubleClick(rowIdx: RowIndex, colIdx: ColumnIndex): Callback =
       concludeEdit()
-        >> $.props.flatMap { props =>
+      >> $.props.flatMap { props =>
         val currentSet = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(rowIdx, colIdx))
         val firstValue = currentSet.getFirstOrEmpty.getOrElse("")
         $.modState(_.copy(editingCell = Some((rowIdx, colIdx)), editingValue = firstValue))
-          >> modSpreadsheet(_.addRange(
-          props.replicaId.uid.asInstanceOf[RangeId],
-          SpreadsheetCoordinate(rowIdx, colIdx),
-          SpreadsheetCoordinate(rowIdx, colIdx)
-        ), allowUndo = false)
+        >> modSpreadsheet(
+          _.addRange(
+            props.replicaId.uid.asInstanceOf[RangeId],
+            SpreadsheetCoordinate(rowIdx, colIdx),
+            SpreadsheetCoordinate(rowIdx, colIdx)
+          ),
+          allowUndo = false
+        )
       }
 
     def openConflict(row: RowIndex, col: ColumnIndex): Callback =
@@ -137,10 +143,10 @@ object SpreadsheetComponent {
         replicaEventPrint(
           props.replicaId,
           s"Edit at (${coordinate.rowIdx + 1}, ${coordinate.colIdx + 1}) was ${
-            if successful then "committed" else "aborted"
-          }: \"$content\""
+              if successful then "committed" else "aborted"
+            }: \"$content\""
         )
-          >> modSpreadsheet(_.removeRange(props.replicaId.uid.asInstanceOf[RangeId]), allowUndo = false)
+        >> modSpreadsheet(_.removeRange(props.replicaId.uid.asInstanceOf[RangeId]), allowUndo = false)
       } >> $.modState(_.copy(editingCell = None, editingValue = ""))
 
     def handleRangeMouseDown(rowIdx: RowIndex, colIdx: ColumnIndex): Callback =
@@ -181,8 +187,8 @@ object SpreadsheetComponent {
     def insertRowAbove(): Callback =
       withSelectedRowAndProps { (rowIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Row Before ${rowIdx + 1}")
-          >> concludeEdit()
-          >> modSpreadsheet(_.insertRow(rowIdx).delta)
+        >> concludeEdit()
+        >> modSpreadsheet(_.insertRow(rowIdx).delta)
       } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get)))
 
     def insertRowBelow(): Callback =
@@ -192,26 +198,28 @@ object SpreadsheetComponent {
           if rowIdx == spreadsheet.numRows - 1 then modSpreadsheet(_.addRow().delta)
           else modSpreadsheet(_.insertRow(rowIdx.withOffset(1)).delta)
         replicaEventPrint(props.replicaId, s"Inserting Row After ${rowIdx + 1}")
-          >> concludeEdit()
-          >> action
+        >> concludeEdit()
+        >> action
       } >> $.modState(st => st.copy(selectedRow = Option(st.selectedRow.get.withOffset(1))))
 
     def removeRow(): Callback =
-      var numRows: Int = 0
-      withSelectedRowAndProps { (rowIdx, props) =>
-        numRows = props.spreadsheetAggregator.current.numRows
-        replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
+        var numRows: Int = 0
+        withSelectedRowAndProps { (rowIdx, props) =>
+          numRows = props.spreadsheetAggregator.current.numRows
+          replicaEventPrint(props.replicaId, s"Removing Row ${rowIdx + 1}")
           >> concludeEdit()
           >> modSpreadsheet(_.removeRow(rowIdx))
-      } >> $.modState(st =>
-        st.copy(selectedRow = for { o <- Some(numRows - 2) if o >= 0 } yield (o min st.selectedRow.get max 0).toRowIndex)
-      )
+        } >> $.modState(st =>
+          st.copy(selectedRow = for {
+            o <- Some(numRows - 2) if o >= 0
+          } yield (o min st.selectedRow.get max 0).toRowIndex)
+        )
 
     def insertColumnLeft(): Callback =
       withSelectedColumnAndProps { (colIdx, props) =>
         replicaEventPrint(props.replicaId, s"Inserting Column Before ${colIdx + 1}")
-          >> concludeEdit()
-          >> modSpreadsheet(_.insertColumn(colIdx).delta)
+        >> concludeEdit()
+        >> modSpreadsheet(_.insertColumn(colIdx).delta)
       } >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get)))
 
     def insertColumnRight(): Callback =
@@ -221,8 +229,8 @@ object SpreadsheetComponent {
           if colIdx == spreadsheet.numColumns - 1 then modSpreadsheet(_.addColumn().delta)
           else modSpreadsheet(_.insertColumn(colIdx.withOffset(1)).delta)
         replicaEventPrint(props.replicaId, s"Inserting Column After ${colIdx + 1}")
-          >> concludeEdit()
-          >> action
+        >> concludeEdit()
+        >> action
       } >> $.modState(st => st.copy(selectedColumn = Some(st.selectedColumn.get.withOffset(1))))
 
     def removeColumn(): Callback = {
@@ -230,21 +238,23 @@ object SpreadsheetComponent {
       withSelectedColumnAndProps { (colIdx, props) =>
         numCols = props.spreadsheetAggregator.current.numColumns
         replicaEventPrint(props.replicaId, s"Removing Column ${colIdx + 1}")
-          >> concludeEdit()
-          >> modSpreadsheet(_.removeColumn(colIdx))
+        >> concludeEdit()
+        >> modSpreadsheet(_.removeColumn(colIdx))
         // >> modSpreadsheet(_.purgeTombstones())
       } >> $.modState(st =>
-        st.copy(selectedColumn = for { o <- Some(numCols - 2) if o >= 0 } yield (o min st.selectedColumn.get max 0).toColumnIndex)
+        st.copy(selectedColumn = for {
+          o <- Some(numCols - 2) if o >= 0
+        } yield (o min st.selectedColumn.get max 0).toColumnIndex)
       )
     }
 
     def addRow(): Callback =
       concludeEdit()
-        >> modSpreadsheet(_.addRow().delta)
+      >> modSpreadsheet(_.addRow().delta)
 
     def addColumn(): Callback =
       concludeEdit()
-        >> modSpreadsheet(_.addColumn().delta)
+      >> modSpreadsheet(_.addColumn().delta)
 
     def purgeTombstones(): Callback = modSpreadsheet(_.purgeTombstones)
 
@@ -258,8 +268,8 @@ object SpreadsheetComponent {
           .map { srcIdx =>
             $.props.flatMap(props =>
               replicaEventPrint(props.replicaId, s"Dragged row $srcIdx to index $insertionIdx")
-                >> concludeEdit()
-                >> modSpreadsheet(_.moveRow(srcIdx, insertionIdx))
+              >> concludeEdit()
+              >> modSpreadsheet(_.moveRow(srcIdx, insertionIdx))
             )
           }
           .getOrElse(Callback.empty)
@@ -267,9 +277,9 @@ object SpreadsheetComponent {
     }
 
     def handleRowDragOver(targetIdx: RowIndex)(e: ReactDragEvent): Callback = {
-      val elem         = e.currentTarget.asInstanceOf[dom.html.Element]
-      val rect         = elem.getBoundingClientRect()
-      val isAbove      = e.clientY < (rect.top + rect.height / 2)
+      val elem                   = e.currentTarget.asInstanceOf[dom.html.Element]
+      val rect                   = elem.getBoundingClientRect()
+      val isAbove                = e.clientY < (rect.top + rect.height / 2)
       val insertionIdx: RowIndex = if isAbove then targetIdx else targetIdx.withOffset(1)
       Callback(e.preventDefault()) >> $.modState(_.copy(previewRow = Some(insertionIdx)))
     }
@@ -284,8 +294,8 @@ object SpreadsheetComponent {
           .map { srcIdx =>
             $.props.flatMap(props =>
               replicaEventPrint(props.replicaId, s"Dragged column $srcIdx to index $insertionIdx")
-                >> concludeEdit()
-                >> modSpreadsheet(_.moveColumn(srcIdx, insertionIdx))
+              >> concludeEdit()
+              >> modSpreadsheet(_.moveColumn(srcIdx, insertionIdx))
             )
           }
           .getOrElse(Callback.empty)
@@ -352,13 +362,17 @@ object SpreadsheetComponent {
       } yield (start, end)
 
       def inside(range: com.daimpl.lib.Spreadsheet.Range, r: RowIndex, c: ColumnIndex): Boolean =
-        val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
-        val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
-        val minCol = math.min(range.from.colIdx, range.to.colIdx)
-        val maxCol = math.max(range.from.colIdx, range.to.colIdx)
-        r >= minRow && r <= maxRow && c >= minCol && c <= maxCol
+          val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
+          val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
+          val minCol = math.min(range.from.colIdx, range.to.colIdx)
+          val maxCol = math.max(range.from.colIdx, range.to.colIdx)
+          r >= minRow && r <= maxRow && c >= minCol && c <= maxCol
 
-      def onBoundary(range: com.daimpl.lib.Spreadsheet.Range, r: RowIndex, c: ColumnIndex): (Boolean, Boolean, Boolean, Boolean) = {
+      def onBoundary(
+          range: com.daimpl.lib.Spreadsheet.Range,
+          r: RowIndex,
+          c: ColumnIndex
+      ): (Boolean, Boolean, Boolean, Boolean) = {
         val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
         val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)
         val minCol = math.min(range.from.colIdx, range.to.colIdx)
@@ -412,11 +426,10 @@ object SpreadsheetComponent {
       <.div(
         ^.onMouseUp --> backend.handleRangeMouseUp(),
         <.div(
-          ^.className := "mb-4 flex flex-wrap gap-2",
-          {
-            val canUndo = props.spreadsheetAggregator.canUndo
-            val baseCls = "px-3 py-1 rounded text-sm font-medium transition-colors"
-            val enabled = " bg-blue-500 hover:bg-blue-600 text-white shadow"
+          ^.className := "mb-4 flex flex-wrap gap-2", {
+            val canUndo  = props.spreadsheetAggregator.canUndo
+            val baseCls  = "px-3 py-1 rounded text-sm font-medium transition-colors"
+            val enabled  = " bg-blue-500 hover:bg-blue-600 text-white shadow"
             val disabled = " bg-gray-300 text-gray-600 cursor-not-allowed"
             <.button(
               ^.className := baseCls + (if canUndo then enabled else disabled),
@@ -448,15 +461,15 @@ object SpreadsheetComponent {
               )
             case None =>
               if spreadsheet.numRows == 0 then
-                <.div(
-                  ^.className := "flex gap-2 items-center",
-                  <.span(^.className := "text-sm text-gray-600", "No rows present."),
-                  <.button(
-                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
-                    ^.onClick --> backend.addRow(),
-                    "Insert"
+                  <.div(
+                    ^.className := "flex gap-2 items-center",
+                    <.span(^.className := "text-sm text-gray-600", "No rows present."),
+                    <.button(
+                      ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                      ^.onClick --> backend.addRow(),
+                      "Insert"
+                    )
                   )
-                )
               else <.span()
           },
           state.selectedColumn match {
@@ -482,15 +495,15 @@ object SpreadsheetComponent {
               )
             case None =>
               if spreadsheet.numColumns == 0 then
-                <.div(
-                  ^.className := "flex gap-2 items-center",
-                  <.span(^.className := "text-sm text-gray-600", "No columns present."),
-                  <.button(
-                    ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
-                    ^.onClick --> backend.addColumn(),
-                    "Insert"
+                  <.div(
+                    ^.className := "flex gap-2 items-center",
+                    <.span(^.className := "text-sm text-gray-600", "No columns present."),
+                    <.button(
+                      ^.className := "px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs",
+                      ^.onClick --> backend.addColumn(),
+                      "Insert"
+                    )
                   )
-                )
               else <.span()
           }
         ),
@@ -513,11 +526,13 @@ object SpreadsheetComponent {
                       ^.className := {
                         val baseClass =
                           "border border-gray-300 px-4 py-2 font-semibold w-32 max-w-32 cursor-pointer hover:bg-gray-200"
-                        val selectedClass = if state.selectedColumn.contains(i.toColumnIndex) then " bg-blue-200" else " bg-gray-100"
-                        val previewLeft  = if state.previewColumn.contains(i.toColumnIndex) then " border-l-4 border-blue-400" else ""
+                        val selectedClass =
+                          if state.selectedColumn.contains(i.toColumnIndex) then " bg-blue-200" else " bg-gray-100"
+                        val previewLeft =
+                          if state.previewColumn.contains(i.toColumnIndex) then " border-l-4 border-blue-400" else ""
                         val previewRight =
                           if state.previewColumn.contains((i + 1).toColumnIndex) && i == spreadsheet.numColumns - 1 then
-                            " border-r-4 border-blue-400"
+                              " border-r-4 border-blue-400"
                           else ""
                         baseClass + selectedClass + previewLeft + previewRight
                       },
@@ -545,7 +560,7 @@ object SpreadsheetComponent {
                       val previewTop = if state.previewRow.contains(rowIdx) then " border-t-4 border-blue-400" else ""
                       val previewBottom =
                         if state.previewRow.contains(rowIdx + 1) && rowIdx == spreadsheet.numRows - 1 then
-                          " border-b-4 border-blue-400"
+                            " border-b-4 border-blue-400"
                         else ""
                       baseClass + selectedClass + previewTop + previewBottom
                     },
@@ -568,12 +583,12 @@ object SpreadsheetComponent {
                       onHold(200)(backend.handleRangeMouseDown(rowIdx, colIdx)),
                       ^.onMouseOver --> backend.handleRangeMouseOver(rowIdx, colIdx),
                       if cell.hasConflicts then
-                        <.span(
-                          ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
-                          ^.title     := "Resolve conflict",
-                          "!",
-                          ^.onClick --> backend.openConflict(rowIdx, colIdx)
-                        )
+                          <.span(
+                            ^.className := "absolute top-0 right-0 mr-1 mt-1 text-m cursor-pointer text-red-600",
+                            ^.title     := "Resolve conflict",
+                            "!",
+                            ^.onClick --> backend.openConflict(rowIdx, colIdx)
+                          )
                       else EmptyVdom,
                       state.editingCell match {
                         case Some((editRow, editCol)) if editRow == rowIdx && editCol == colIdx =>
@@ -624,41 +639,41 @@ object SpreadsheetComponent {
             "Purge Tombstones"
           )
         )(state.conflictPopup match
-          case Some((r, c)) =>
-            val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(r, c)).toList
-            <.div(
-              ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
-              ^.onClick --> backend.closeConflict(),
+            case Some((r, c)) =>
+              val vals = props.spreadsheetAggregator.current.read(SpreadsheetCoordinate(r, c)).toList
               <.div(
-                ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
-                ^.onClick ==> {
-                  _.stopPropagationCB
-                },
-                <.button(
-                  ^.className  := "absolute top-4 right-4 text-gray-400 hover:text-gray-600",
-                  ^.aria.label := "Close",
-                  ^.onClick --> backend.closeConflict(),
-                  "✕"
-                ),
-                <.h3(^.className := "text-lg font-semibold text-gray-800 mb-4", "Resolve conflict"),
-                <.p(
-                  ^.className := "text-sm text-gray-600 mb-3",
-                  s"Choose the value you want to keep for cell ${(c + 'A').toChar}${r + 1}:"
-                ),
+                ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
+                ^.onClick --> backend.closeConflict(),
                 <.div(
-                  ^.className := "flex flex-col gap-2",
-                  vals.map { v =>
-                    <.button(
-                      ^.key := v,
-                      ^.className := "w-full px-4 py-2 rounded-lg text-left bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400",
-                      ^.onClick --> backend.keepValue(r, c, v),
-                      v
-                    )
-                  }.toVdomArray
+                  ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
+                  ^.onClick ==> {
+                    _.stopPropagationCB
+                  },
+                  <.button(
+                    ^.className  := "absolute top-4 right-4 text-gray-400 hover:text-gray-600",
+                    ^.aria.label := "Close",
+                    ^.onClick --> backend.closeConflict(),
+                    "✕"
+                  ),
+                  <.h3(^.className := "text-lg font-semibold text-gray-800 mb-4", "Resolve conflict"),
+                  <.p(
+                    ^.className := "text-sm text-gray-600 mb-3",
+                    s"Choose the value you want to keep for cell ${(c + 'A').toChar}${r + 1}:"
+                  ),
+                  <.div(
+                    ^.className := "flex flex-col gap-2",
+                    vals.map { v =>
+                      <.button(
+                        ^.key := v,
+                        ^.className := "w-full px-4 py-2 rounded-lg text-left bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400",
+                        ^.onClick --> backend.keepValue(r, c, v),
+                        v
+                      )
+                    }.toVdomArray
+                  )
                 )
               )
-            )
-          case None => EmptyVdom)
+            case None => EmptyVdom)
       )
     }
     .build

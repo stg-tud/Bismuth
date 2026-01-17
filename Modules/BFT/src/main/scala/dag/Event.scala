@@ -23,7 +23,6 @@ case class Event[T](
           s"${content.toString}${author.toString}${dependencies.toString}${Base64.getEncoder.encodeToString(signature)}"
             .getBytes
 
-
         Base64.getEncoder.encodeToString(MessageDigest.getInstance(HashAlgorithm).digest(bytes))
 
     def signatureIsValid: Boolean =

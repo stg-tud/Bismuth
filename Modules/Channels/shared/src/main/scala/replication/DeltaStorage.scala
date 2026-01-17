@@ -54,14 +54,13 @@ class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
 
 class StateDeltaStorage[State: JsonValueCodec](getState: () => State)(using Lattice[Dots]) extends DeltaStorage[State] {
 
-  private var dots    = Dots.empty
+  private var dots = Dots.empty
 
   override def getHistory: List[CachedMessage[Payload[State]]] =
     List(SentCachedMessage(Payload(dots, getState()))(using pmscodec))
 
-  override def remember(message: CachedMessage[Payload[State]]): Unit = {
+  override def remember(message: CachedMessage[Payload[State]]): Unit =
     dots = dots.merge(message.payload.dots)
-  }
 
 }
 

@@ -8,10 +8,9 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
-
 /*@AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
-*/
+ */
 class SyncMetrics {
   var roundtripsAll: Int = 0
   var run                = 0
@@ -29,7 +28,7 @@ class SyncBenchmark {
   var size: Int = 0
   @Param(Array("0.01", "0.05", "0.1", "0.2", "0.5", "0.8", "0.9", "1"))
   var diff: Float = 0
-  //@Param(Array("1", "10", "100", "1000"))
+  // @Param(Array("1", "10", "100", "1000"))
   var deltaSizeInKiloBytes: Int = 10
 
   var r1 = ORSet[String]()
@@ -48,44 +47,42 @@ class SyncBenchmark {
   def sync(): Unit = {
 
     for i <- Range(1, 31) do
-      println(s"RIBLT $i")
-      var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
-      MyCollector.add(res)
+        println(s"RIBLT $i")
+        var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
+        MyCollector.add(res)
 
-    var l = List.empty[Int]
+    var l    = List.empty[Int]
     val rand = new Random()
     for i <- Range(0, 100) do
-      val n = rand.nextInt(1000) + 30
-      l = l :+ n
+        val n = rand.nextInt(1000) + 30
+        l = l :+ n
 
     for i <- l.sorted do
-      println(s"RIBLT $i")
-      var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
-      MyCollector.add(res)
+        println(s"RIBLT $i")
+        var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
+        MyCollector.add(res)
 
     for i <- Range(1000, 4000, 500) do
-      println(s"RIBLT $i")
-      var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
-      MyCollector.add(res)
-
+        println(s"RIBLT $i")
+        var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
+        MyCollector.add(res)
 
     for i <- Range(1, 300) do
-      println(s"RSync $i")
-      var res = SyncStrategies.rsync(r1, r2, size, diff, i, deltaSizeInKiloBytes)
-      MyCollector.add(res)
-      res = SyncStrategies.rsyncV2(r1, r2, size, diff, i, deltaSizeInKiloBytes)
-      MyCollector.add(res)
+        println(s"RSync $i")
+        var res = SyncStrategies.rsync(r1, r2, size, diff, i, deltaSizeInKiloBytes)
+        MyCollector.add(res)
+        res = SyncStrategies.rsyncV2(r1, r2, size, diff, i, deltaSizeInKiloBytes)
+        MyCollector.add(res)
 
     val lst = List(1, 0.1, 0.01, 0.001, 0.0001, 0.00001)
     for fp <- lst do
-      try {
-        val res = SyncStrategies.syncBloom(r1, r2, fp.toFloat, size, diff, deltaSizeInKiloBytes)
-        MyCollector.add(res)
-      } catch {
-        case _ =>
-          MyCollector.add(benchmarks.Measurement("BLOOM_FAILED"))
-      }
-
+        try {
+          val res = SyncStrategies.syncBloom(r1, r2, fp.toFloat, size, diff, deltaSizeInKiloBytes)
+          MyCollector.add(res)
+        } catch {
+          case _ =>
+            MyCollector.add(benchmarks.Measurement("BLOOM_FAILED"))
+        }
 
     // RIBLT
     /*println("rib1")
@@ -178,11 +175,11 @@ class SyncBenchmark {
   }
 
   def calculateNeededRSyncDepth(ribltRT: Int, RSyncRT: Int): Int =
-    val tmp = RSyncRT / ribltRT
-    if tmp == 0 || tmp == 1 then
-      2
-    else
-      tmp
+      val tmp = RSyncRT / ribltRT
+      if tmp == 0 || tmp == 1 then
+          2
+      else
+          tmp
 
   private object MyCollector {
     private val buf = ListBuffer[benchmarks.Measurement]()
