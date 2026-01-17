@@ -533,8 +533,8 @@ object DafnyGen {
 
           // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
           s"""function ${node.name}(${parameters.mkString(", ")}): ${generate(node._type, ctx)} {
-           |${generate(n.body, ctx).indent(2)}
-           |}""".stripMargin
+             |${generate(n.body, ctx).indent(2)}
+             |}""".stripMargin
         case n: TInvariant =>
           // Invariant terms are also realized as Dafny functions, like Derived terms.
           // References are again turned into function parameters.
@@ -544,8 +544,8 @@ object DafnyGen {
 
           // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
           s"""function ${node.name}(${parameters.mkString(", ")}): bool {
-           |${generate(n.condition, ctx).indent(2)}
-           |}""".stripMargin
+             |${generate(n.condition, ctx).indent(2)}
+             |}""".stripMargin
         case n: TInteraction =>
           // Interaction terms are realized as Dafny methods. Methods may have side-effects.
           // As Interactions modify state directly, they do not have return values, however.
@@ -733,7 +733,7 @@ object DafnyGen {
 
             // Call the Invariant both before execution and after execution of the Interaction
             s"""requires {:error \"${embeddedErrorsEsc._1}\"} ${inv.name}(${refs.mkString(", ")})
-             |ensures {:error \"${embeddedErrorsEsc._2}\"} ${inv.name}(${refs.mkString(", ")})""".stripMargin
+               |ensures {:error \"${embeddedErrorsEsc._2}\"} ${inv.name}(${refs.mkString(", ")})""".stripMargin
           }
 
           // In Dafny, unlike Scala/LoRe, the return value of methods isn't decided by whatever the last expression in the
@@ -774,13 +774,13 @@ object DafnyGen {
 
           // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
           s"""method ${node.name}($argsString)
-           |${preconditions.mkString("\n").indent(2)}
-           |${postconditions.mkString("\n").indent(2)}
-           |${modifies.mkString("\n").indent(2)}
-           |${invariants.mkString("\n").indent(2)}
-           |{
-           |${body.indent(2)}
-           |}""".stripMargin.linesIterator.filter(l => !l.isBlank).mkString("\n")
+             |${preconditions.mkString("\n").indent(2)}
+             |${postconditions.mkString("\n").indent(2)}
+             |${modifies.mkString("\n").indent(2)}
+             |${invariants.mkString("\n").indent(2)}
+             |{
+             |${body.indent(2)}
+             |}""".stripMargin.linesIterator.filter(l => !l.isBlank).mkString("\n")
         case _ =>
           // Default into generic *const* declarations for other types, as all TAbs are by default non-mutable.
           val typeAnnot: String = generate(node._type, ctx)

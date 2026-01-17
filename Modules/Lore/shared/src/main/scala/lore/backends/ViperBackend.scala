@@ -49,17 +49,17 @@ object ViperBackend {
     val res = toViper(ast)
 
     s"""|// imports
-          |${res.imports.mkString("\n")}
-          |// sources
-          |${res.sources.mkString("\n")}
-          |// derived
-          |${res.derived.mkString("\n")}
-          |// invariants
-          |${res.invariants.mkString("\n")}
-          |
-          |// interactions
-          |${res.interactions.map(_._2).mkString("\n")}
-          |""".stripMargin
+        |${res.imports.mkString("\n")}
+        |// sources
+        |${res.sources.mkString("\n")}
+        |// derived
+        |${res.derived.mkString("\n")}
+        |// invariants
+        |${res.invariants.mkString("\n")}
+        |
+        |// interactions
+        |${res.interactions.map(_._2).mkString("\n")}
+        |""".stripMargin
   }
 
   def toViper(

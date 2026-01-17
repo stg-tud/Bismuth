@@ -197,7 +197,7 @@ class LoRePhase extends PluginPhase {
               // Unfortunately, these errors will not have Scala positions to report cleanly to.
               report.error(
                 s"""${errors.size} Dafny compilation $errorPlural occurred:
-                 |${errors.map(e => e.message).mkString("\n")}""".stripMargin
+                   |${errors.map(e => e.message).mkString("\n")}""".stripMargin
               )
       } else {
         // Regular processing of verification results
@@ -224,7 +224,7 @@ class LoRePhase extends PluginPhase {
                 // No diagnostics received, so no error details known
                 report.error(
                   s"""The following verifiables in $programName could not be verified:
-                  |${unverifiableNames.mkString("\n")}""".stripMargin
+                     |${unverifiableNames.mkString("\n")}""".stripMargin
                 )
               case Some(diag) =>
                 // Order of diagnostics and named verifiables lists is the same so we can associate by zipping

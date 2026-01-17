@@ -40,10 +40,10 @@ object SelectScheduler {
             Files.writeString(
               target,
               s"""package reactives.scheduler
-             |object GeneratedSelection {
-             |  inline val selection: "$selection" = "$selection"
-             |}
-             |""".stripMargin,
+                 |object GeneratedSelection {
+                 |  inline val selection: "$selection" = "$selection"
+                 |}
+                 |""".stripMargin,
               StandardOpenOption.CREATE,
               StandardOpenOption.TRUNCATE_EXISTING
             )
