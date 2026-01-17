@@ -56,7 +56,7 @@ object DafnyGen {
         case TVar(name, _, _)                                                      =>
           if !ctx.isDefinedAt(name) then Set.empty // Skip non-top-level definition references (e.g. arrow func params)
           else Set(name) // Regular reference to a top-level definition
-        case TAbs(_, _, body, _, _)        => usedReferences(body, ctx)
+        case TAbs(_, _, body, _, _)                                                => usedReferences(body, ctx)
         case TTuple(factors, _, _)         => factors.flatMap((n: Term) => usedReferences(n, ctx)).toSet
         case TIf(cond, _then, _else, _, _) =>
           val refs: Set[String] = usedReferences(cond, ctx) ++ usedReferences(_then, ctx)

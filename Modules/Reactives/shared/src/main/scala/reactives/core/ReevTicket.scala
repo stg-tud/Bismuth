@@ -55,9 +55,9 @@ final class ReevTicket[State[_], V](
   }
   def withEffect(v: Observation): ReevTicket[State, V] = { effect = v; this }
 
-  override def activate: Boolean                       = _propagate
-  override def forValue(f: V => Unit): Unit            = if value != null then f(value)
-  override def forEffect(f: Observation => Unit): Unit = if effect != null then f(effect.nn)
+  override def activate: Boolean                         = _propagate
+  override def forValue(f: V => Unit): Unit              = if value != null then f(value)
+  override def forEffect(f: Observation => Unit): Unit   = if effect != null then f(effect.nn)
   override def inputs(): Option[Set[ReSource.of[State]]] =
     // TODO: change to Option.fromNullable once non experimental …
     Option(collectedDependencies).asInstanceOf[Option[Set[ReSource.of[State]]]]
