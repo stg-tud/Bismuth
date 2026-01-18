@@ -13,6 +13,8 @@ import scala.deriving.Mirror
 trait Filter[T] {
   def filter(delta: T, permission: PermissionTree): T
 
+  def isAllowed(delta: T, permissionTree: PermissionTree): Boolean
+
   /** Checks whether the permission tree is valid.
     * <li> Not DENY & ALLOW on the same level
     * <li> All fields exist
@@ -63,6 +65,15 @@ object Filter {
   }
 
   given dotsFilter: Filter[Dots] with {
+    private def permRangeToRange(dotPermissions: Map[String, PermissionTree]): ArrayRanges =
+      ArrayRanges.from(
+        dotPermissions.flatMap { (timeAsString, perm) =>
+          if perm.isEmpty
+          then None
+          else Some(java.lang.Long.parseUnsignedLong(timeAsString))
+        }
+      )
+
     override def filter(delta: Dots, permission: PermissionTree): Dots =
       permission match
           case PermissionTree(ALLOW, _)                              => delta
@@ -72,16 +83,20 @@ object Filter {
               perms.get(uid.delegate) match
                   case Some(PermissionTree(ALLOW, _))                => Some(uid -> ranges)
                   case Some(PermissionTree(PARTIAL, dotPermissions)) =>
-                    val allowedRanges = ArrayRanges.from(
-                      dotPermissions.flatMap { (timeAsString, perm) =>
-                        if perm.isEmpty
-                        then None
-                        else Some(java.lang.Long.parseUnsignedLong(timeAsString))
-                      }
-                    )
-                    Some(uid -> ranges.intersect(allowedRanges))
+                    Some(uid -> ranges.intersect(permRangeToRange(dotPermissions)))
                   case None => None
             ))
+
+    override def isAllowed(delta: Dots, permissionTree: PermissionTree): Boolean = permissionTree match
+        case PermissionTree(ALLOW, _)                              => true
+        case PermissionTree(PARTIAL, children) if children.isEmpty => delta.isEmpty
+        case PermissionTree(PARTIAL, perms)                        =>
+          delta.internal.forall((uid, ranges) =>
+            perms.get(uid.delegate) match
+                case None                                          => false
+                case Some(PermissionTree(ALLOW, _))                => true
+                case Some(PermissionTree(PARTIAL, dotPermissions)) => ranges <= permRangeToRange(dotPermissions)
+          )
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit = {
       permissionTree.children.foreach { (_, childPerm) =>
@@ -122,6 +137,11 @@ object Filter {
                   // NOTE: PermissionTree(PARTIAL, Map("a" -> allow)) on Option[T] keeps the field a of T.
                   Some(Filter[T].filter(value, permission))
 
+    override def isAllowed(delta: Option[T], permissionTree: PermissionTree): Boolean = delta match {
+      case None        => true // None is bottom, thus it must be allowed
+      case Some(value) => Filter[T].isAllowed(value, permissionTree)
+    }
+
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
       if permissionTree.children.nonEmpty then
           Filter[T].validatePermissionTree(permissionTree)
@@ -136,6 +156,13 @@ object Filter {
         case PermissionTree(PARTIAL, entryPermissions) if entryPermissions.isEmpty => Set.empty
         case PermissionTree(PARTIAL, entryPermissions)                             =>
           throw IllegalArgumentException("Non-terminal rule used in terminal filter")
+
+    override def isAllowed(delta: Set[T], permissionTree: PermissionTree): Boolean = permissionTree match {
+      case PermissionTree(ALLOW, _)                                            => true
+      case PermissionTree(PARTIAL, entryPermission) if entryPermission.isEmpty => delta.isEmpty
+      case PermissionTree(PARTIAL, entryPermission)                            =>
+        throw IllegalArgumentException("Non-terminal rule used in terminal filter")
+    }
 
     override def validatePermissionTree(permission: PermissionTree): Unit =
       if permission.children.nonEmpty then throw InvalidPathException(permission.children.keys.head :: Nil)
@@ -152,6 +179,16 @@ object Filter {
           require(entryPermissions.size == 1, "Only * rules supported in Set filter")
           entryPermissions.get("*") match
               case Some(entryPermission) => delta.map(entry => Filter[T].filter(entry, entryPermission))
+              case None                  => ???
+
+    override def isAllowed(delta: Set[T], permissionTree: PermissionTree): Boolean = permissionTree match
+        case PermissionTree(ALLOW, _)                                              => true
+        case PermissionTree(PARTIAL, entryPermissions) if entryPermissions.isEmpty => delta.isEmpty
+        case PermissionTree(PARTIAL, entryPermissions)                             =>
+          // TODO: Maybe add support for named child filters
+          require(entryPermissions.size == 1, "Only * rules supported in Set filter")
+          entryPermissions.get("*") match
+              case Some(entryPermission) => delta.forall(entry => Filter[T].isAllowed(entry, entryPermission))
               case None                  => ???
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
@@ -172,14 +209,23 @@ object Filter {
   }
 
   given mapFilter[K: KeyAsString, V: Filter]: Filter[Map[K, V]] with {
-    override def filter(delta: Map[K, V], permission: PermissionTree): Map[K, V] =
-      permission match
-          case PermissionTree(ALLOW, _)                       => delta
+    override def filter(delta: Map[K, V], permission: PermissionTree): Map[K, V] = permission match
+        case PermissionTree(ALLOW, _)                       => delta
+        case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
+          delta.flatMap { case key -> value =>
+            mapOfEntryPermissions.get(KeyAsString[K].encode(key)) match
+                case None /* No rule for key -> discard entry */ => None
+                case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
+          }
+
+    override def isAllowed(delta: Map[K, V], permissionTree: PermissionTree): Boolean =
+      permissionTree match
+          case PermissionTree(ALLOW, _)                       => true
           case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
-            delta.flatMap { case key -> value =>
+            delta.forall { case key -> value =>
               mapOfEntryPermissions.get(KeyAsString[K].encode(key)) match
-                  case None /* No rule for key -> discard entry */ => None
-                  case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
+                  case None /* No rule for key -> discard entry */ => false
+                  case Some(entryPermission)                       => Filter[V].isAllowed(value, entryPermission)
             }
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
@@ -202,10 +248,16 @@ object Filter {
         else minimized
   }
 
-  given lwwFilter[V: {Filter}]: Filter[LastWriterWins[V]] with {
+  given lwwFilter[V: {Filter, Bottom}]: Filter[LastWriterWins[V]] with {
     override def filter(delta: LastWriterWins[V], permission: PermissionTree): LastWriterWins[V] = permission match
-        case PermissionTree(ALLOW, _)   => delta
+        case PermissionTree(ALLOW, _)                                        => delta
+        case PermissionTree(PARTIAL, recursivePerm) if recursivePerm.isEmpty => LastWriterWins.bottom[V].empty
         case PermissionTree(PARTIAL, _) => delta.copy(payload = Filter[V].filter(delta.read, permission))
+
+    override def isAllowed(delta: LastWriterWins[V], permissionTree: PermissionTree): Boolean = permissionTree match
+        case PermissionTree(ALLOW, _)                                        => true
+        case PermissionTree(PARTIAL, recursivePerm) if recursivePerm.isEmpty => LastWriterWins.bottom[V].isEmpty(delta)
+        case PermissionTree(PARTIAL, _) => Filter[V].isAllowed(delta.payload, permissionTree)
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit = permissionTree match
         case PermissionTree(ALLOW, _)   =>
@@ -222,6 +274,13 @@ object Filter {
           // This is actually never reached, if using normalized permission trees
           require(valuePermission.isEmpty)
           LastWriterWins.bottom[V].empty
+
+    override def isAllowed(delta: LastWriterWins[V], permissionTree: PermissionTree): Boolean = permissionTree match
+        case PermissionTree(ALLOW, _)                 => true
+        case PermissionTree(PARTIAL, valuePermission) =>
+          // This is actually never reached, if using normalized permission trees
+          require(valuePermission.isEmpty)
+          LastWriterWins.bottom[V].isEmpty(delta)
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
       if permissionTree.children.nonEmpty then throw InvalidPathException(permissionTree.children.keys.head :: Nil)

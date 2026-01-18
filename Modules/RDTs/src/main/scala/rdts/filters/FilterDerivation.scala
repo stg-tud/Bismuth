@@ -97,6 +97,22 @@ object FilterDerivation {
                       factorFilters(factorIndex).filter(factor, permissions)
       }
 
+      override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean = {
+        if permissionTree.permission == ALLOW then return true
+        if permissionTree.children.isEmpty then return productBottom.isEmpty(delta)
+        val product = delta.asInstanceOf[Product]
+        // Merge wildcard permission into specific permission
+        val factorPermissions = {
+          val wildcard = permissionTree.children.getOrElse("*", PermissionTree.empty)
+          factorLabels.indices.map(idx =>
+            wildcard.merge(permissionTree.children.getOrElse(factorLabels(idx), PermissionTree.empty))
+          )
+        }
+        factorFilters.indices.forall(idx =>
+          factorFilters(idx).isAllowed(product.productElement(idx), factorPermissions(idx))
+        )
+      }
+
   class SumTypeFilter[T](
       sm: Mirror.SumOf[T],
       bottom: Bottom[T],                           // The bottom of the sum
@@ -117,11 +133,27 @@ object FilterDerivation {
                   case childPerm @ PermissionTree(PARTIAL, children)         =>
                     elementFilters(ordinal).filter(delta, childPerm).asInstanceOf[T]
 
+      override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean = permissionTree match {
+        case PermissionTree(ALLOW, _)                              => true
+        case PermissionTree(PARTIAL, children) if children.isEmpty => bottom.isEmpty(delta)
+        case PermissionTree(PARTIAL, children)                     =>
+          val ordinal     = sm.ordinal(delta)
+          val elementName = elementNames(ordinal)
+          val wildcard    = children.getOrElse("*", PermissionTree.empty)
+          children.getOrElse(elementName, PermissionTree.empty).merge(wildcard) match
+              case PermissionTree(ALLOW, _)                              => true
+              case PermissionTree(PARTIAL, children) if children.isEmpty => bottom.isEmpty(delta)
+              case childPerm @ PermissionTree(PARTIAL, children)         =>
+                elementFilters(ordinal).isAllowed(delta, childPerm)
+      }
+
   class TerminalFilter[T: Bottom] extends Filter[T]:
       override def filter(delta: T, permission: PermissionTree): T =
         permission match
             case PermissionTree(ALLOW, _)   => delta
             case PermissionTree(PARTIAL, _) => Bottom[T].empty
+      override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean =
+        permissionTree.permission == ALLOW || Bottom[T].isEmpty(delta)
       override def validatePermissionTree(permissionTree: PermissionTree): Unit =
         require(permissionTree.children.isEmpty)
       override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree =
