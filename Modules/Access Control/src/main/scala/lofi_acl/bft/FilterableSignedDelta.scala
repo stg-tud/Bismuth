@@ -16,7 +16,6 @@ case class FilterableSignedDelta[RDT: Bottom](
   def isSignatureValid(using encoder: Encoder[FilterableSignedDelta[RDT]]): Boolean =
     signature.verify(author.publicKey, encoder(this.copy(signature = null)))
   override def rdt: RDT = payload.getOrElse(Bottom[RDT].empty)
-
 }
 
 object FilterableSignedDelta {

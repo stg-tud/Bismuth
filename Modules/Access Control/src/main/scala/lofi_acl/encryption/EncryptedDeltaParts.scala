@@ -1,4 +1,4 @@
-package lofi_acl.access
+package lofi_acl.encryption
 
 case class EncryptedDeltaParts(inner: Map[String, EncryptedDeltaParts] | Array[Byte]) {
   def isEmpty: Boolean = inner.isInstanceOf[Map[?, ?]] && inner.asInstanceOf[Map[?, ?]].isEmpty

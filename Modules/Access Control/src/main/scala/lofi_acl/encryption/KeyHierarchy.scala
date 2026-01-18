@@ -1,4 +1,4 @@
-package lofi_acl.access
+package lofi_acl.encryption
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import lofi_acl.sync.IsolatedDeltaParts

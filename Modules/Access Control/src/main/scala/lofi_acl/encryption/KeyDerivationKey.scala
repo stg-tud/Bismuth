@@ -1,4 +1,4 @@
-package lofi_acl.access
+package lofi_acl.encryption
 
 import crypto.Ed25519Util
 import KeyDerivationKey.*
