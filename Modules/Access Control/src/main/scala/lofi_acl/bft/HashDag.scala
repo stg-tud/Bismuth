@@ -1,13 +1,14 @@
 package lofi_acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import lofi_acl.bft.HashDag.{Delta, Encoder, hash}
+import lofi_acl.bft.HashDag.{Delta, Encoder, Hashable}
 import rdts.base.{Bottom, Lattice}
 
-import java.security.MessageDigest
 import scala.collection.mutable
 
-case class HashDag[D <: Delta[RDT]: Encoder, RDT](root: Hash, ops: Map[Hash, D], heads: Set[Hash]) {
+case class HashDag[D <: Delta[RDT]: Hashable, RDT](root: Hash, ops: Map[Hash, D], heads: Set[Hash])(using
+    Encoder[Delta[RDT]]
+) {
   def add(deltaHash: Hash, delta: D): Either[Set[Hash], HashDag[D, RDT]] = {
     if ops.contains(deltaHash) then return Right(this)
     val deltaParents = delta.parents
@@ -24,7 +25,7 @@ case class HashDag[D <: Delta[RDT]: Encoder, RDT](root: Hash, ops: Map[Hash, D],
     val deltaParents = delta.parents
     val missing      = deltaParents.filterNot(ops.contains)
     if missing.nonEmpty then return Left(missing)
-    val deltaHash = hash(delta)
+    val deltaHash = Hashable[D].hash(delta)
     if ops.contains(deltaHash) then return Right(this)
     Right(copy(
       ops = ops + (deltaHash -> delta),
@@ -40,8 +41,11 @@ object HashDag {
     inline def fromJsoniter[RDT](using codec: JsonValueCodec[RDT]): Encoder[RDT] = rdt => writeToArray(rdt)(using codec)
   }
 
-  def hash[V](rdt: V)(using encoder: Encoder[V]): Hash =
-    Hash.unsafeFromArray(MessageDigest.getInstance("SHA3-256", "SUN").digest(encoder(rdt)))
+  trait Hashable[D]:
+      def hash(value: D): Hash
+
+  object Hashable:
+      inline def apply[D](using instance: Hashable[D]): Hashable[D] = instance
 
   trait Delta[RDT]:
       def parents: Set[Hash]
@@ -62,5 +66,4 @@ object HashDag {
         result = result.merge(next.rdt)
     result
   }
-
 }

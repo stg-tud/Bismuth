@@ -1,8 +1,8 @@
 package lofi_acl.bft
 
+import crypto.Ed25519Util
 import crypto.channels.PrivateIdentity
-import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.bft.HashDag.{Delta, Encoder}
+import lofi_acl.bft.HashDag.{Delta, Encoder, Hashable}
 
 class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
     protected val encoder: Encoder[SignedDelta[RDT]],
@@ -23,8 +23,8 @@ class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
       val encodedDelta  = encoder(emptySigDelta)
       val signature     = Signature.unsafeFromArray(Ed25519Util.sign(encodedDelta, privateKey))
       val signedDelta   = emptySigDelta.copy(signature = signature)
-      val hash          = HashDag.hash(signedDelta)
-      require(invariants(hash, signedDelta, hashDag))
+
+      require(invariants(Hashable[SignedDelta[RDT]].hash(signedDelta), signedDelta, hashDag))
       hashDag.add(signedDelta) match {
         case Left(missing)         => throw IllegalStateException() // heads are never missing from valid hashDag
         case Right(updatedHashDag) => updatedHashDag
@@ -36,7 +36,7 @@ class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
   ): Either[Set[Hash], HashDag[SignedDelta[RDT], RDT]] = {
     val deltaHash = encoder(signedDelta)
     require(isSignatureValid(signedDelta))
-    val hash = HashDag.hash(signedDelta)
+    val hash = Hashable[SignedDelta[RDT]].hash(signedDelta)
     require(invariants(hash, signedDelta, hashDag))
     hashDag.add(hash, signedDelta)
   }
@@ -45,8 +45,5 @@ class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
     delta.signature.verify(delta.author.publicKey, encoder(delta.copy(signature = null)))
 
 }
-
-case class SignedDelta[RDT](signature: Signature, author: PublicIdentity, rdt: RDT, parents: Set[Hash])
-    extends Delta[RDT]
 
 type StateReconstructor[D <: Delta[RDT], RDT] = (prefix: Set[Hash], hashDag: HashDag[D, RDT]) => RDT
