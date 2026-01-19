@@ -1,8 +1,8 @@
 package lofi_acl.sync.monotonic
 
 import crypto.{Ed25519Util, PublicIdentity}
-import MonotonicInvitation.base64Encoder
 import lofi_acl.sync.Invitation
+import lofi_acl.sync.monotonic.MonotonicInvitation.base64Encoder
 
 import java.security.KeyPair
 import java.util.Base64

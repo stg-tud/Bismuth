@@ -3,11 +3,11 @@ package lofi_acl.sync.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import MonotonicAclSyncMessage.*
-import lofi_acl.sync.{DeltaMapWithPrefix, MessageReceiver, PartialDelta, PartialReplicationPeerSubsetSolver, Replica}
+import lofi_acl.sync.*
+import lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
+import lofi_acl.sync.monotonic.Operation.WRITE
 import rdts.base.{Bottom, Lattice, Uid}
-import rdts.filters.Operation.WRITE
-import rdts.filters.{Filter, Operation, PermissionTree}
+import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.LinkedBlockingQueue
