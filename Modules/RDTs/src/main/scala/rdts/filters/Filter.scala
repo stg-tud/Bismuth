@@ -64,7 +64,9 @@ object Filter {
           )
   }
 
-  given dotsFilter: Filter[Dots] with {
+  val terminalDotsFilter: Filter[Dots] = TerminalFilter[Dots]()
+
+  val dotsFilterDeep: Filter[Dots] = new Filter[Dots] {
     private def permRangeToRange(dotPermissions: Map[String, PermissionTree]): ArrayRanges =
       ArrayRanges.from(
         dotPermissions.flatMap { (timeAsString, perm) =>
@@ -288,7 +290,13 @@ object Filter {
     override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree = permissionTree
   }
 
-  given observeRemoveMapEntryFilter[A: {Filter, Bottom}]: Filter[Entry[A]] = Filter.derived
+  given observeRemoveMapEntryFilter[A: {Filter, Bottom}]: Filter[Entry[A]] = {
+    given Filter[Dots] = terminalDotsFilter
+    Filter.derived
+  }
 
-  given observeRemoveMapFilter[K: KeyAsString, V: {Filter, Bottom}]: Filter[ObserveRemoveMap[K, V]] = Filter.derived
+  given observeRemoveMapFilter[K: KeyAsString, V: {Filter, Bottom}]: Filter[ObserveRemoveMap[K, V]] = {
+    given Filter[Dots] = terminalDotsFilter
+    Filter.derived
+  }
 }
