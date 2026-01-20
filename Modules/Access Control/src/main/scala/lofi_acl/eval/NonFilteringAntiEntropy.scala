@@ -1,4 +1,4 @@
-package lofi_acl.sync.bft.eval
+package lofi_acl.eval
 
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
@@ -37,7 +37,7 @@ class NonFilteringAntiEntropy[RDT](
   override protected def broadcastFiltered(acl: BftAcl, delta: SyncMsg.RdtDelta[RDT]): Unit =
     connectionManager.broadcast(Array(ArrayMessageBuffer(writeToArray(delta)(using codec))))
 
-  override protected[bft] def notifyPeerAboutLocalState(peer: PublicIdentity): Unit =
+  override def notifyPeerAboutLocalState(peer: PublicIdentity): Unit =
     send(peer, TellKnownRdtDots(rdtDeltas.dots))
 
   override def mutateRdt(dot: Dot, delta: RDT): Unit = {

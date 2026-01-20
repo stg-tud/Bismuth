@@ -5,10 +5,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import BftAclOpGraph.Signature
-import BftFilteringAntiEntropy.SyncMsg
-import BftFilteringAntiEntropy.SyncMsg.*
-import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver, PartialDelta, PartialReplicationPeerSubsetSolver, SynchronizedMutableArrayBufferDeltaStore}
+import lofi_acl.sync.*
+import lofi_acl.sync.bft.BftAclOpGraph.Signature
+import lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg
+import lofi_acl.sync.bft.BftFilteringAntiEntropy.SyncMsg.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -393,7 +393,7 @@ class BftFilteringAntiEntropy[RDT](
     }
   }
 
-  protected[bft] def notifyPeerAboutLocalState(peer: PublicIdentity): Unit = {
+  def notifyPeerAboutLocalState(peer: PublicIdentity): Unit = {
     val aclOpGraph = replica.currentOpGraph
     if partialDeltaStore.nonEmpty then {
       requestPartialDeltas()
@@ -416,7 +416,7 @@ class BftFilteringAntiEntropy[RDT](
     }
   }
 
-  protected[bft] def processAllMessagesInInbox(incomingMessagePollTimeoutMillis: Int): Unit = {
+  def processAllMessagesInInbox(incomingMessagePollTimeoutMillis: Int): Unit = {
     var nextMessage = Option(msgQueue.poll(incomingMessagePollTimeoutMillis, TimeUnit.MILLISECONDS))
     while nextMessage.nonEmpty do {
       val (msg, sender) = nextMessage.get

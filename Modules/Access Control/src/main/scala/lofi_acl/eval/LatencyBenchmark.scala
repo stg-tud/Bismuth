@@ -1,4 +1,4 @@
-package lofi_acl.sync.bft.eval
+package lofi_acl.eval
 
 import channels.MessageBuffer
 import crypto.PublicIdentity

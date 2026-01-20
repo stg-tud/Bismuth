@@ -1,4 +1,4 @@
-package lofi_acl.sync.bft.eval
+package lofi_acl.eval
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromStream, writeToStream}
 import lofi_acl.sync.bft.BftAclOpGraph.Signature

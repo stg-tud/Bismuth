@@ -1,4 +1,4 @@
-package lofi_acl.sync.bft.eval
+package lofi_acl.eval
 
 import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
@@ -14,7 +14,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
-class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
+class TravelPlannerBenchmark private[TravelPlannerBenchmark](
     val numReplicas: Int,
     val identities: Array[PrivateIdentity],
     val aclRoot: SerializedAclOp
