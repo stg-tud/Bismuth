@@ -437,7 +437,7 @@ object BftFilteringAntiEntropy {
 
   object SyncMsg {
     given codec[RDT](using JsonValueCodec[RDT]): JsonValueCodec[SyncMsg[RDT]] = {
-      import lofi_acl.sync.JsoniterCodecs.uidKeyCodec
+      import replication.JsoniterCodecs.uidKeyCodec
       JsonCodecMaker.make
     }
   }

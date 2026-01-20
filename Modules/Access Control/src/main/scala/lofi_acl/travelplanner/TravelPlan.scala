@@ -4,8 +4,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.softwaremill.quicklens.*
 import lofi_acl.permission_pane.SelectorFactory
-import TravelPlan.{*, given}
-import rdts.base.{Bottom, Lattice, LocalUid}
+import lofi_acl.travelplanner.TravelPlan.{*, given}
+import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.Filter
 import rdts.time.Dots
@@ -17,7 +17,7 @@ case class TravelPlan(
     title: LastWriterWins[Title],
     bucketList: ObserveRemoveMap[UniqueId, LastWriterWins[String]],
     expenses: ObserveRemoveMap[UniqueId, Expense]
-) derives Lattice, Bottom, Filter {
+) derives Lattice, Bottom, Filter, Decompose {
   def setTitle(newTitle: String): Delta =
     this.deltaModify(_.title).using(_.write(newTitle))
 
@@ -50,7 +50,7 @@ case class TravelPlan(
     val key = randomIdentifier
     this.deltaModify(_.expenses).using { ormap =>
       val expense =
-        Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.now(None))
+        Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.empty)
       ormap.transform(key) {
         case None => Some(expense)
         case _    => ???
@@ -100,7 +100,7 @@ case class Expense(
     description: LastWriterWins[Option[String]],
     amount: LastWriterWins[Option[String]],
     comment: LastWriterWins[Option[String]],
-) derives Lattice, Bottom, Filter
+) derives Lattice, Bottom, Filter, Decompose
 
 object TravelPlan {
   private val base64Encoder            = Base64.getEncoder
@@ -124,12 +124,13 @@ object TravelPlan {
   }
 
   type Delta = TravelPlan
-
-  given jsonCodec: JsonValueCodec[TravelPlan] = {
-    import lofi_acl.sync.JsoniterCodecs.given
-    import replication.JsoniterCodecs.given
-    JsonCodecMaker.make[TravelPlan](CodecMakerConfig.withMapAsArray(true))
-  }
+  given jsonCodec: JsonValueCodec[TravelPlan] =
+      given JsonValueCodec[String]         = JsonCodecMaker.make
+      given Bottom[String]                 = Bottom.provide("")
+      given JsonValueCodec[Option[String]] = JsonCodecMaker.make
+      given Bottom[Option[String]]         = Bottom.provide(None)
+      import replication.JsoniterCodecs.given
+      JsonCodecMaker.make[TravelPlan](CodecMakerConfig.withMapAsArray(true))
 }
 
 object Expense {
