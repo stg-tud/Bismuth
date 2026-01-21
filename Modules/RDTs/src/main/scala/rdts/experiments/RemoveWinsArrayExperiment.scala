@@ -10,6 +10,7 @@ import rdts.base.Uid
 import rdts.base.Bottom
 import rdts.time.CausalTime
 import rdts.base.Decompose
+import scala.collection.mutable.ListBuffer
 
 case class RemoveWinsArrayExperiment[E](
     elements: Map[Dot, RemoveWinsArrayExperiment.Entry[E]],
@@ -27,11 +28,9 @@ case class RemoveWinsArrayExperiment[E](
     elements.filterNot((d, _) => removed.contains(d))
 
   lazy val toList: List[E] = {
-    val e                                              = entries
-    val output: scala.collection.mutable.ListBuffer[E] =
-      e.map(_._2.value).to(scala.collection.mutable.ListBuffer)
-
-    for ((itemId, item), ix) <- e.zipWithIndex do {
+    val state                 = entries
+    val output: ListBuffer[E] = state.map(_._2.value).to(ListBuffer)
+    for ((itemId, item), ix) <- state.zipWithIndex do {
       for (opId, apply) <- ops do {
         val ordering = Dots.partialOrder.tryCompare(history(itemId), history(opId))
         ordering match {
@@ -115,7 +114,8 @@ case class RemoveWinsArrayExperiment[E](
     if from < 0 || to < 0 || from >= size || to >= size then RemoveWinsArrayExperiment.empty
     else if from == to then RemoveWinsArrayExperiment.empty
     else
-      val entriesList = entries
+      val entriesList  = entries
+      val predecessors = observed
       entriesList.lift(from) match {
         case Some((dot, entry)) =>
           val pos = {
@@ -127,7 +127,8 @@ case class RemoveWinsArrayExperiment[E](
             elements = Map(dot -> entry.copy(
               index = LWW.now(pos)
             )),
-            removed = Dots.empty
+            removed = Dots.empty,
+            history = Map(dot -> predecessors),
           )
         case None => RemoveWinsArrayExperiment.empty
       }
@@ -175,6 +176,14 @@ object RemoveWinsArrayExperiment {
       Lattice.derived
     }
     DecoratedLattice.compact(base) { _.compact }
+  }
+
+  given optionLattice[A: Lattice]: Lattice[Option[A]] = new Lattice[Option[A]] {
+    override def merge(x: Option[A], y: Option[A]): Option[A] = (x, y) match {
+      case (Some(a), Some(b)) => Some(summon[Lattice[A]].merge(a, b))
+      case (Some(a), None)    => Some(a)
+      case _                  => y
+    }
   }
 
   given bottom[E]: Bottom[RemoveWinsArrayExperiment[E]] = Bottom.provide(empty)

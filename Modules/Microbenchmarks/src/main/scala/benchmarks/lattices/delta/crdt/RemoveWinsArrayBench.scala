@@ -5,6 +5,7 @@ import rdts.base.LocalUid.asId
 import rdts.datatypes.RemoveWinsArray
 
 import java.util.concurrent.TimeUnit
+import rdts.base.Lattice
 
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -20,41 +21,43 @@ class RemoveWinsArrayBench {
 
   type SUT = NamedDeltaBuffer[RemoveWinsArray[Int]]
 
-  var rga: SUT = scala.compiletime.uninitialized
+  var sut: SUT = scala.compiletime.uninitialized
+
+  given intLattice: Lattice[Int] = math.max
 
   @Setup
   def setup(): Unit = {
-    rga = NamedDeltaBuffer("a".asId, RemoveWinsArray.empty[Int]).mod(_.appendAll(0 until listSize)(using "".asId))
+    sut = NamedDeltaBuffer("a".asId, RemoveWinsArray.empty[Int]).mod(_.appendAll(0 until listSize)(using "".asId))
   }
 
   @Benchmark
-  def readFirst(): Option[Int] = rga.state.read(0)
+  def readFirst(): Option[Int] = sut.state.read(0)
 
   @Benchmark
-  def readLast(): Option[Int] = rga.state.read(listSize - 1)
+  def readLast(): Option[Int] = sut.state.read(listSize - 1)
 
   @Benchmark
-  def size(): Int = rga.state.size
+  def size(): Int = sut.state.size
 
   @Benchmark
-  def toList: List[Int] = rga.state.toList
+  def toList: List[Int] = sut.state.toList
 
   @Benchmark
-  def prepend(): SUT = rga.mod(_.prepend(-1)(using rga.replicaID))
+  def prepend(): SUT = sut.mod(_.prepend(-1)(using sut.replicaID))
 
   @Benchmark
-  def append(): SUT = rga.mod(_.append(listSize)(using rga.replicaID))
+  def append(): SUT = sut.mod(_.append(listSize)(using sut.replicaID))
 
   @Benchmark
-  def prependTen(): SUT = rga.mod(_.prependAll(-10 to -1)(using rga.replicaID))
+  def prependTen(): SUT = sut.mod(_.prependAll(-10 to -1)(using sut.replicaID))
 
   @Benchmark
-  def appendTen(): SUT = rga.mod(_.appendAll(listSize until listSize + 10)(using rga.replicaID))
+  def appendTen(): SUT = sut.mod(_.appendAll(listSize until listSize + 10)(using sut.replicaID))
 
   @Benchmark
-  def deleteFirst(): SUT = rga.mod(_.remove(0))
+  def deleteFirst(): SUT = sut.mod(_.remove(0))
 
   @Benchmark
-  def deleteLast(): SUT = rga.mod(_.remove(listSize - 1))
+  def deleteLast(): SUT = sut.mod(_.remove(listSize - 1))
 
 }
