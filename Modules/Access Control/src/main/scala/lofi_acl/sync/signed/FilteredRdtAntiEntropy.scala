@@ -20,8 +20,15 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private def currentAcl: (Set[Hash], Acl)                              = ???
   private def hashDag: HashDag[BftDelta[Acl], Acl]                      = ???
   private def requestDeltas(deltas: Dots, remote: PublicIdentity): Unit = ???
-  private def notifyStateChanged(delta: State): Unit                    = ???
-  private def onAclChangeNotification(delta: Acl): Unit                 =
+  private def connectedPeers: Set[PublicIdentity]                       = ???
+  private def sendDeltas(
+      deltas: Seq[SignedDelta[State]],
+      filtered: Dots,
+      acl: Set[Hash],
+      remote: PublicIdentity
+  ): Unit                                               = ???
+  private def notifyStateChanged(delta: State): Unit    = ???
+  private def onAclChangeNotification(delta: Acl): Unit =
     // TODO: request all filtered deltas
     ???
 
@@ -34,10 +41,30 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private val missingDots: AtomicReference[Dots]  = AtomicReference(Dots.empty)
 
   def localMutation(delta: State): Unit = {
-    val decomposed = delta.decomposed.map(d =>
-      SignedDelta.fromDelta(localIdentity, Dot(localUid, dotCounter.getAndIncrement()), d)
-    )
-    ???
+    val (aclVersion, acl)    = currentAcl
+    val localWritePermission = acl.write.getOrElse(localIdentity.getPublic, PermissionTree.empty)
+    val decomposedDelta      =
+      delta.decomposed
+        .filter(delta => Filter[State].isAllowed(delta, localWritePermission)) // Enforce local write permissions
+        .map(d => SignedDelta.fromDelta(localIdentity, Dot(localUid, dotCounter.getAndIncrement()), d))
+
+    if decomposedDelta.nonEmpty then {
+      decomposedDelta.foreach(d => deltaStore.put(d.dot, d))
+      val recombined = decomposedDelta.map(_.payload).reduce((l, r) => Lattice.merge(l, r))
+      val dots       = Dots.from(decomposedDelta.map(_.dot))
+      latestState.updateAndGet((oldDots, oldState) => (oldDots.union(dots), oldState.merge(recombined)))
+      broadcastDeltasFiltered(decomposedDelta)
+    }
+  }
+
+  private def broadcastDeltasFiltered(deltas: Iterable[SignedDelta[State]]): Unit = {
+    val (aclVersion, acl) = currentAcl
+    connectedPeers.foreach { remote =>
+      val receiverReadPermission    = acl.read.getOrElse(remote, PermissionTree.empty)
+      val (allowedDeltas, filtered) =
+        deltas.partition(delta => Filter[State].isAllowed(delta.payload, receiverReadPermission))
+      sendDeltas(allowedDeltas.toSeq, Dots.from(filtered.map(_.dot)), aclVersion, remote)
+    }
   }
 
   def receiveDeltas(
@@ -50,9 +77,12 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
 
     // Check signatures and enforce ACL
     val deltas = unverifiedDeltas
-      .filter(_.isSignatureValid)
-      .flatMap(delta =>
-        delta.filtered(localAcl.write.getOrElse(PublicIdentity(delta.dot.place.delegate), PermissionTree.empty))
+      .filter(delta =>
+        delta.isSignatureValid
+        && Filter[State].isAllowed(
+          delta.payload,
+          localAcl.write.getOrElse(PublicIdentity(delta.dot.place.delegate), PermissionTree.empty)
+        )
       )
 
     // If remote acl < local acl, remote filter might be too restrictive

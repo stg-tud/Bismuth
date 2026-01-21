@@ -3,8 +3,7 @@ package lofi_acl.sync.signed
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.HashDag.Encoder
-import lofi_acl.bft.{Acl, Signature}
-import rdts.filters.{Filter, PermissionTree}
+import lofi_acl.bft.Signature
 import rdts.time.Dot
 
 case class SignedDelta[State](
@@ -12,9 +11,6 @@ case class SignedDelta[State](
     signature: Signature,
     payload: State
 ) {
-  def filtered(permissionTree: PermissionTree)(using Filter[State]): Option[SignedDelta[State]] =
-    Option.when(Filter[State].isAllowed(payload, permissionTree))(this)
-
   def isSignatureValid(using encoder: Encoder[SignedDelta[State]]): Boolean =
     signature.verify(PublicIdentity(dot.place.delegate).publicKey, encoder(this.copy(signature = null)))
 }
