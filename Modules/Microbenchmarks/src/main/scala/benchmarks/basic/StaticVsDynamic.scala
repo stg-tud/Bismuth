@@ -38,9 +38,9 @@ class StaticVsDynamic {
     b = stableEngine.Var { 20 }
 
     res = if static then
-      Signal.static(source, a, b) { st =>
-        if st.dependStatic(source) then st.dependStatic(a) else st.dependStatic(b)
-      }
+        Signal.static(source, a, b) { st =>
+          if st.dependStatic(source) then st.dependStatic(a) else st.dependStatic(b)
+        }
     else Signal.dynamic { if source.value then a.value else b.value }
 
   }
@@ -52,11 +52,9 @@ class StaticVsDynamic {
   }
 
   @Benchmark
-  def aOnly(step: Step): Unit = {
+  def aOnly(step: Step): Unit =
     a.set(step.run())
-  }
   @Benchmark
-  def bOnly(step: Step): Unit = {
+  def bOnly(step: Step): Unit =
     b.set(step.run())
-  }
 }

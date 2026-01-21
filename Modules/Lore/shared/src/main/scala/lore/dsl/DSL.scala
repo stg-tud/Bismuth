@@ -1,8 +1,7 @@
 package lore.dsl
 
 import reactives.SelectedScheduler.State as BundleState
-import reactives.core.{AdmissionTicket, ReSource, StaticTicket}
-import reactives.default.*
+import reactives.core.{ReSource, StaticTicket}
 
 import scala.quoted.*
 
@@ -18,6 +17,5 @@ case class Ensures[S, A](
     representation: String
 )
 
-def showPredicateCode(expr: Expr[(?, ?) => Boolean])(using Quotes): Expr[String] = {
+def showPredicateCode(expr: Expr[(?, ?) => Boolean])(using Quotes): Expr[String] =
   Expr(expr.show)
-}

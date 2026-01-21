@@ -27,7 +27,7 @@ object TodoDataManager {
       init: A,
       wrap: A => TodoRepState,
       unwrap: TodoRepState => Option[A]
-  )(create: (A, Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]) = {
+  )(create: (A, Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] = {
     dataManager.lock.synchronized {
       dataManager.applyDelta(wrap(init))
       val fullInit =
@@ -35,8 +35,8 @@ object TodoDataManager {
 
       val branch = Fold.branch[DeltaBuffer[A]] {
         receivedCallback.value.flatMap(unwrap) match
-          case None    => Fold.current
-          case Some(v) => Fold.current.applyDeltaNonAppend(v)
+            case None    => Fold.current
+            case Some(v) => Fold.current.applyDeltaNonAppend(v)
       }
 
       val sig = create(fullInit, branch)

@@ -26,7 +26,6 @@ class WorkReference {
   def reference(work: Workload): Unit = work.consume()
 
   @Benchmark
-  def allocationStress(): Object = {
+  def allocationStress(): Object =
     new Object()
-  }
 }

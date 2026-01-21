@@ -21,7 +21,7 @@ class BaselineEventPropagation {
   var signal: Signal[Int] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(engineParam: EngineParam) = {
+  def setup(engineParam: EngineParam): Unit = {
     engine = engineParam.engine
     event = Evt[Int]()
     signal = event.hold(0)

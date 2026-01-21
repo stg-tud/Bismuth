@@ -42,11 +42,10 @@ object Sourcecode {
   object Enclosing { inline given generate: Enclosing = ${ Macros.enclosingImpl } }
 
   object Util {
-    def isSynthetic(using Quotes)(s: quotes.reflect.Symbol) = isSyntheticName(getName(s))
-    def isSyntheticName(name: String)                       = {
+    def isSynthetic(using Quotes)(s: quotes.reflect.Symbol): Boolean = isSyntheticName(getName(s))
+    def isSyntheticName(name: String): Boolean                       =
       name == "<init>" || (name.startsWith("<local ") && name.endsWith(">")) || name == "$anonfun" || name == "macro"
-    }
-    def getName(using Quotes)(s: quotes.reflect.Symbol) = {
+    def getName(using Quotes)(s: quotes.reflect.Symbol): String = {
       s.name.trim
         .stripSuffix("$") // meh
     }
@@ -74,14 +73,14 @@ object Sourcecode {
       * such a synthetic variable.
       */
     def nonMacroOwner(using Quotes)(owner: quotes.reflect.Symbol): quotes.reflect.Symbol =
-      findOwner(owner, owner0 => { owner0.flags.is(quotes.reflect.Flags.Macro) && Util.getName(owner0) == "macro" })
+      findOwner(owner, owner0 => owner0.flags.is(quotes.reflect.Flags.Macro) && Util.getName(owner0) == "macro")
 
     private def adjustName(s: String): String =
       // Required to get the same name from dotty
       if s.startsWith("<local ") && s.endsWith("$>") then
-        s.stripSuffix("$>") + ">"
+          s.stripSuffix("$>") + ">"
       else
-        s
+          s
 
     def fileImpl(using Quotes): Expr[File] = {
       val file = quotes.reflect.Position.ofMacroExpansion.sourceFile.getJPath.map(_.toAbsolutePath.toString).getOrElse(
@@ -113,9 +112,9 @@ object Sourcecode {
 
       var current = Symbol.spliceOwner
       if !machine then
-        current = actualOwner(current)
+          current = actualOwner(current)
       else
-        current = nonMacroOwner(current)
+          current = nonMacroOwner(current)
       var path = List.empty[Chunk]
       while current != Symbol.noSymbol && current != defn.RootPackage && current != defn.RootClass do {
         if filter(current) then {

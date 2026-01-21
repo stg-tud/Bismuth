@@ -24,7 +24,7 @@ class ObserverCreation extends FunSuite {
     test("event Handlers Can Be Removed") {
       var test = 0
       val e1   = Evt[Int]()(using "e1")
-      val f    = (_: Int) => { test += 1 }
+      val f    = (_: Int) => test += 1
       val o    = e1.observe(f)(using "e1Observer")
       e1.fire(10)
       e1.fire(10)

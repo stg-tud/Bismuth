@@ -3,12 +3,11 @@ package ex201x.swing.tempconverter
 // Escala lib + behaviour extensions
 import reactives.default.*
 
-// Scala swing events
 import scala.swing.*
 
 object ReactiveTempConverter extends SimpleSwingApplication {
 
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "Celsius/Fahrenheit Converter"
       object celsius    extends ReactiveTextfield { columns = 5 }

@@ -1,7 +1,7 @@
 package channels
 
 import java.net.StandardProtocolFamily
-import java.nio.channels.{ClosedChannelException, ServerSocketChannel, SocketChannel}
+import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -24,25 +24,25 @@ class DisconnectTest extends munit.FunSuite {
 
     socket.bind(socketPath)
 
-    val serverNioTCP = new NioTCP
+    val serverNioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
     val serverAbort = Abort()
 
-    ec.execute(() => {
+    ec.execute { () =>
       TestUtil.printErrors(_ => ()).complete(
         Try(
           serverNioTCP.loopSelection(serverAbort)
         )
       )
-    })
+    }
 
     val listen = serverNioTCP.listen(() => socket)
 
     listen.prepare(conn =>
       TestUtil.printErrors { mb =>
-        conn.send(mb).run(using ())(TestUtil.printErrors(mb => ()))
+        conn.send(mb).run(TestUtil.printErrors(mb => ()))
       }
-    ).run(using Abort()) {
+    ).runIn(Abort()) {
       case Success(_)  =>
       case Failure(ex) => throw ex
     }
@@ -54,7 +54,7 @@ class DisconnectTest extends munit.FunSuite {
       channel
     }
 
-    val clientNioTCP = new NioTCP
+    val clientNioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
     ec.execute(() => clientNioTCP.loopSelection(Abort()))
     val connect = serverNioTCP.connect(() => socketChannel)
 
@@ -63,14 +63,14 @@ class DisconnectTest extends munit.FunSuite {
         case Success(mb) =>
         case Failure(ex) => assert(ex.isInstanceOf[NoMoreDataException])
       }
-    }.run(using Abort()) {
+    }.runIn(Abort()) {
       case Success(conn) =>
-        conn.send(ArrayMessageBuffer("Hi!".getBytes())).run(using Abort()) { TestUtil.printErrors(mb => ()) }
+        conn.send(ArrayMessageBuffer("Hi!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
         Thread.sleep(10)
         serverNioTCP.selector.keys().forEach(_.channel().close())
         Thread.sleep(10)
 
-        conn.send(ArrayMessageBuffer("Hi 2!".getBytes())).run(using Abort()) { TestUtil.printErrors(mb => ()) }
+        conn.send(ArrayMessageBuffer("Hi 2!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
       case Failure(_) =>
     }
 

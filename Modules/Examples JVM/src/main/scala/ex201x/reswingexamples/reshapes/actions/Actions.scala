@@ -3,7 +3,6 @@ package ex201x.reswingexamples.reshapes.actions
 import ex201x.reswingexamples.reshapes.ReShapes
 import ex201x.reswingexamples.reshapes.drawing.CreateShape
 import ex201x.reswingexamples.reshapes.figures.Shape
-import reactives.default.*
 
 import java.io.File
 import scala.swing.{Action, FileChooser}
@@ -11,7 +10,7 @@ import scala.xml.XML
 
 /** Serializes all currently drawn shapes to a chosen file */
 class SaveAction extends Action("Save") {
-  def apply() = {
+  def apply(): Unit = {
     val fileChooser = new FileChooser()
     fileChooser.selectedFile = new File(ReShapes.drawingSpaceState.now.fileName.now)
     if fileChooser.showDialog(null, "save") == FileChooser.Result.Approve then {
@@ -24,12 +23,12 @@ class SaveAction extends Action("Save") {
 
 /** Deserializes shapes from a chosen file */
 class LoadAction extends Action("Load") {
-  def apply() = {
+  def apply(): Unit = {
     val fileChooser = new FileChooser()
     if fileChooser.showDialog(null, "load") == FileChooser.Result.Approve then {
       ReShapes.drawingSpaceState.now.clear.fire()
       for shape <- Shape.deserialize(XML.loadFile(fileChooser.selectedFile), ReShapes.drawingSpaceState.now) do
-        ReShapes.drawingSpaceState.now.execute.fire(new CreateShape(shape))
+          ReShapes.drawingSpaceState.now.execute.fire(new CreateShape(shape))
     }
   }
 }

@@ -14,15 +14,14 @@ class Infiltrator {
       reactive: ReSource,
       level: Int,
       text: String = "level did not match"
-  )(using maybe: Scheduler[?]) =
+  )(using maybe: Scheduler[?]): Unit =
     if (api.isInstanceOf[Levelbased] && reactive.state.isInstanceOf[LevelState[?]]): @nowarn then {
       reactive.state match {
-        case rb: LevelState[?] => {
+        case rb: LevelState[?] =>
           val rblevel = maybe.forceNewTransaction() { _ =>
             rb.level()
           }
           assert(rblevel == level, s"$text, $reactive level was $rblevel but expected $level")
-        }
       }
     }
 }

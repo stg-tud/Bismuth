@@ -1,7 +1,7 @@
 package rdts.protocols.raft
 
 import rdts.base.{Lattice, Uid}
-import RaftState.{DecisionImpossible, Propose, Undecided, Vote}
+import rdts.protocols.raft.RaftState.{DecisionImpossible, Propose, Undecided, Vote}
 
 import scala.util.Try
 

@@ -129,9 +129,8 @@ trait Disconnectable {
   */
 trait DisconnectableImpl extends Derived with Disconnectable {
   @volatile private var disconnected = false
-  final def disconnect(): Unit       = {
+  final def disconnect(): Unit       =
     disconnected = true
-  }
 
   final override protected[reactives] def reevaluate(rein: ReIn): Rout = {
     if disconnected then {
@@ -155,9 +154,8 @@ trait DisconnectableImpl extends Derived with Disconnectable {
   */
 trait Transaction[State[_]] {
 
-  final def now[A](reactive: ReadAs.of[State, A]): A = {
+  final def now[A](reactive: ReadAs.of[State, A]): A =
     RExceptions.toExternalReadException(reactive, reactive.read(access(reactive)))
-  }
   private[reactives] def access(reactive: ReSource.of[State]): reactive.Value
 
   def observe(obs: Observation): Unit
@@ -168,21 +166,18 @@ trait Transaction[State[_]] {
 
   def preconditionTicket: DynamicTicket[State]
 
-  private[reactives] def discover(source: ReSource.of[State], sink: Derived.of[State]): Unit = {
+  private[reactives] def discover(source: ReSource.of[State], sink: Derived.of[State]): Unit =
     Tracing.observe(Tracing.Discover(source, sink))
-  }
-  private[reactives] def drop(source: ReSource.of[State], sink: Derived.of[State]): Unit = {
+  private[reactives] def drop(source: ReSource.of[State], sink: Derived.of[State]): Unit =
     Tracing.observe(Tracing.Drop(source, sink))
-  }
 }
 
 /** Scheduler that defines the basic data-types available to the user and creates turns for propagation handling. */
 @implicitNotFound(msg = "Could not find an implicit scheduler. Did you forget an import?")
 trait Scheduler[S[_]] {
 
-  final def forceNewTransaction[R](initialWrites: ReSource.of[S]*)(admissionPhase: AdmissionTicket[S] => R): R = {
+  final def forceNewTransaction[R](initialWrites: ReSource.of[S]*)(admissionPhase: AdmissionTicket[S] => R): R =
     forceNewTransaction(initialWrites.toSet, admissionPhase)
-  }
   def forceNewTransaction[R](initialWrites: Set[ReSource.of[S]], admissionPhase: AdmissionTicket[S] => R): R
   private[reactives] def singleReadValueOnce[A](reactive: ReadAs.of[S, A]): A
 

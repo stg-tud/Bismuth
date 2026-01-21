@@ -3,21 +3,20 @@ package ex201x.swing.tempconverter
 // EScala lib + behaviour extensions
 import reactives.default.*
 
-// Scala swing events
 import scala.swing.*
 import scala.swing.event.*
 
 object SignalTempConverter extends SimpleSwingApplication {
 
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "Celsius/Fahrenheit Converter"
       object celsius    extends ReactiveTextfield { columns = 5 }
       object fahrenheit extends ReactiveTextfield { columns = 5 }
 
       // two global variables, holding the state
-      val degree_f = Var(0)
-      val degree_c = Var(0)
+      val degree_f: Var[Int] = Var(0)
+      val degree_c: Var[Int] = Var(0)
 
       // content of the textfields is well-defined
       fahrenheit.text = Signal { (degree_c.value * 9 / 5 + 32).toString }

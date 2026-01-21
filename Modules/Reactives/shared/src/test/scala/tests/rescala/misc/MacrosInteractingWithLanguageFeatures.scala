@@ -29,7 +29,7 @@ class MacrosInteractingWithLanguageFeatures extends munit.FunSuite {
       trait T {
         type A
         lazy val v: Var[A]
-        val s = Signal { v.value }
+        val s: Signal[A] = Signal { v.value }
       }
       object o extends T {
         type A = Int

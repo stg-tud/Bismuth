@@ -16,7 +16,7 @@ object CalculusLike {
     */
   class StoreValue[V](var value: V) {
     var inputs: Set[ReSource.of[State]] = Set.empty
-    override def toString: String       = s""
+    override def toString: String       = ""
   }
 
   /** The main task of the initializer is to handle creation of reactives,
@@ -58,8 +58,8 @@ object CalculusLike {
     def requiresReev(reSource: ReSource.of[State]): Boolean = {
       if FScheduler.currentPropagation == null then false
       else
-        FScheduler.currentPropagation.nn.isReady(reSource) &&
-        FScheduler.currentPropagation.nn.isOutdated(reSource)
+          FScheduler.currentPropagation.nn.isReady(reSource) &&
+          FScheduler.currentPropagation.nn.isOutdated(reSource)
     }
 
   }
@@ -70,8 +70,8 @@ object CalculusLike {
     override def observe(obs: Observation): Unit                                         = obs.execute()
 
     override def preconditionTicket: DynamicTicket[State] = new DynamicTicket[State](this):
-      override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
-      override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
+        override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
+        override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
   }
 
   object FScheduler
@@ -79,8 +79,8 @@ object CalculusLike {
 
     override def schedulerName: String = "FormalizationLike"
 
-    var allReactives                           = Set.empty[ReSource.of[State]]
-    var currentPropagation: Propagation | Null = null
+    var allReactives: Set[ReSource { type State[V] = StoreValue[V] }] = Set.empty[ReSource.of[State]]
+    var currentPropagation: Propagation | Null                        = null
 
     var idle = true
 
@@ -121,7 +121,7 @@ object CalculusLike {
             val propagation = Propagation(active = sources, processed = sources, allReactives, transaction)
             println(s"starting propagation $propagation")
             val result = propagation.run()
-            println(s"done activate")
+            println("done activate")
 
             // wrapup, this is for a rarely used rescala features, where transactions can
             // do some cleanup when they complete. Not supported in the formalization
@@ -223,17 +223,14 @@ object CalculusLike {
       }
     }
 
-    def isReady(r: ReSource.of[State]): Boolean = {
+    def isReady(r: ReSource.of[State]): Boolean =
       r.state.inputs.intersect(knownReactives).subsetOf(processed + r)
-    }
 
     /** Compute outdated reactives. Logic is identical to the paper. */
-    lazy val outdated: Set[ReSource.of[State]] = {
+    lazy val outdated: Set[ReSource.of[State]] =
       knownReactives.filter(isOutdated)
-    }
-    def isOutdated(r: ReSource.of[State]): Boolean = {
+    def isOutdated(r: ReSource.of[State]): Boolean =
       r.state.inputs.exists(active.contains)
-    }
   }
 
   object Reevaluate {

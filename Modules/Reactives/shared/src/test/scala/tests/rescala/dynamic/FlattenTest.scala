@@ -372,8 +372,8 @@ class FlattenTest extends FunSuite {
     test("flatten from future type inference") {
       val joined = Evt[String]()
       import scala.concurrent.ExecutionContext.Implicits.global
-      val res = (joined.map(str => Signal.fromFuture(Future.successful(str)))
-        .hold(Signal { "unknown" })).flatten
+      val res = joined.map(str => Signal.fromFuture(Future.successful(str)))
+        .hold(Signal { "unknown" }).flatten
 
       joined.fire("test")
 

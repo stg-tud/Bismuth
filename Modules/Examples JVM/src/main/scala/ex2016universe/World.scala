@@ -20,7 +20,7 @@ class World(val width: Int = 100, val height: Int = 100) {
   }
   var updates: List[() => Unit] = Nil
   def status                    = statusString.readValueOnce
-  def tick()                    = {
+  def tick(): Unit              = {
     time.tick.fire()
     board.removeDead()
     board.elements.foreach { case (pos, be) => be.doStep(pos) }
@@ -43,9 +43,8 @@ class World(val width: Int = 100, val height: Int = 100) {
   }
 
   /** spawns the given Board element at a free random position in the world */
-  def spawn(element: BoardElement): Unit = {
+  def spawn(element: BoardElement): Unit =
     spawn(element, board.randomFreePosition(randomness))
-  }
 
   // each day, spawn a new plant
   time.day.changed observe { _ => // #HDL //#IF
@@ -58,13 +57,13 @@ class World(val width: Int = 100, val height: Int = 100) {
   }
 
   /** spawns the given board element at the given position */
-  def spawn(element: BoardElement, pos: Pos) = board.add(element, pos)
-  def plan(f: => Unit)                       = synchronized(updates ::= (() => f))
-  def runPlan()                              = {
+  def spawn(element: BoardElement, pos: Pos): Unit = board.add(element, pos)
+  def plan(f: => Unit): Unit                       = synchronized(updates ::= (() => f))
+  def runPlan(): Unit                              = {
     updates.foreach { u =>
-      try {
+      try
         u()
-      } catch {
+      catch {
         case e: Throwable => e.printStackTrace()
       }
     }

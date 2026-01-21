@@ -1,5 +1,6 @@
 package ex2013reswing
 
+import javax.swing.JComboBox
 import scala.annotation.nowarn
 import scala.swing.event.{ListChanged, ListElementsAdded, ListElementsRemoved, SelectionChanged}
 import scala.swing.{Color, ComboBox, Dimension, Font}
@@ -20,25 +21,23 @@ class ReComboBox[A](
   final override protected lazy val peer: ComboBox[A] & ComponentMixin =
     new ComboBox[A](Seq.empty[A]) with ComponentMixin
 
-  protected val javaPeer = peer.peer.asInstanceOf[javax.swing.JComboBox[A]]
+  protected val javaPeer: JComboBox[A] = peer.peer.asInstanceOf[javax.swing.JComboBox[A]]
 
   private var model: javax.swing.ListModel[A] = scala.compiletime.uninitialized
 
   private val modelListener = new javax.swing.event.ListDataListener {
-    def contentsChanged(e: javax.swing.event.ListDataEvent): Unit = { peer publish ListChanged(null) }
-    def intervalRemoved(e: javax.swing.event.ListDataEvent): Unit = {
+    def contentsChanged(e: javax.swing.event.ListDataEvent): Unit = peer publish ListChanged(null)
+    def intervalRemoved(e: javax.swing.event.ListDataEvent): Unit =
       peer publish ListElementsRemoved(null, e.getIndex0 to e.getIndex1)
-    }
-    def intervalAdded(e: javax.swing.event.ListDataEvent): Unit = {
+    def intervalAdded(e: javax.swing.event.ListDataEvent): Unit =
       peer publish ListElementsAdded(null, e.getIndex0 to e.getIndex1)
-    }
   }
 
-  def modelChanged() = {
+  def modelChanged(): Unit = {
     if model != null then
-      model `removeListDataListener` modelListener
+        model `removeListDataListener` modelListener
     if javaPeer.getModel != null then
-      javaPeer.getModel `addListDataListener` modelListener
+        javaPeer.getModel `addListDataListener` modelListener
     model = javaPeer.getModel
   }
 
@@ -72,14 +71,14 @@ class ReComboBox[A](
   ) {
     protected[ReComboBox] val peer: ReComboBox.this.peer.selection.type = ReComboBox.this.peer.selection
 
-    index.using({ () => peer.index }, peer.index = _, (peer, classOf[SelectionChanged]))
+    index.using(() => peer.index, peer.index = _, (peer, classOf[SelectionChanged]))
     item.using(
-      { () => Option(peer.item) },
-      { item => peer.item = item getOrElse null.asInstanceOf[A] },
+      () => Option(peer.item),
+      item => peer.item = item getOrElse null.asInstanceOf[A],
       (peer, classOf[SelectionChanged])
     )
 
-    val changed = ReSwingEvent.using(peer, classOf[SelectionChanged])
+    val changed: ReSwingEvent[SelectionChanged] = ReSwingEvent.using(peer, classOf[SelectionChanged])
   }
 
   object ReSelection {
@@ -103,24 +102,24 @@ object ReComboBox {
       if !items.contains[Any](selected) then selected = null
 
       if additional > 0 then
-        fireIntervalAdded(this, itemsSize, listData.size - 1)
+          fireIntervalAdded(this, itemsSize, listData.size - 1)
       if additional < 0 then
-        fireIntervalRemoved(this, listData.size, itemsSize - 1)
+          fireIntervalRemoved(this, listData.size, itemsSize - 1)
 
       fireContentsChanged(this, 0, listData.size)
     }
 
-    def getElementAt(n: Int) = items(n)
-    def getSize              = items.size
-    def getItems             = items
+    def getElementAt(n: Int): A = items(n)
+    def getSize                 = items.size
+    def getItems                = items
 
     private var selected: AnyRef            = scala.compiletime.uninitialized
     def getSelectedItem: AnyRef             = selected
     def setSelectedItem(item: AnyRef): Unit = {
       if
-        (item == null || (items contains item)) &&
-        ((selected != null && selected != item) ||
-        (selected == null && item != null))
+          (item == null || (items contains item)) &&
+          ((selected != null && selected != item) ||
+          (selected == null && item != null))
       then {
         selected = item
         fireContentsChanged(this, -1, -1)

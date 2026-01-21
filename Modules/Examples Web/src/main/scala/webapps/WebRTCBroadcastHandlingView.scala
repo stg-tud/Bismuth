@@ -10,7 +10,7 @@ import org.scalajs.dom
 import org.scalajs.dom.*
 import org.scalajs.dom.html.Table
 import replication.DeltaDissemination
-import scalatags.JsDom.all.{s, *}
+import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
 
 import scala.concurrent.ExecutionContext
@@ -56,10 +56,10 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
       renderedAddConnectionButton.onclick = (_: MouseEvent) =>
         Async.handler.succeed(())
     }.map: _ =>
-      val handling = WebRTCHandling(None)
-      renderedConnectionTable.appendChild(handling.controlRow().render)
-      addDataChannel(handling)
-    .run(using ExecutionContext.global)(errorReporter)
+        val handling = WebRTCHandling(None)
+        renderedConnectionTable.appendChild(handling.controlRow().render)
+        addDataChannel(handling)
+    .runIn(ExecutionContext.global)(errorReporter)
 
     useLocalBroadcastChannel(renderedConnectionTable)
 
@@ -86,43 +86,43 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
           val communication: BroadcastCommunication = converterRead[BroadcastCommunication].convert(msg)
           Async[Abort].fromCallback {
             communication match
-              case BroadcastCommunication.Hello(id) =>
-                val handling = WebRTCHandling(Some {
-                  case Success(sd) =>
-                    conn.send(BroadcastCommunication.Request(selfId, id, sd).convert).run(using ())(Async.handler)
-                  case Failure(ex) => Async.handler.fail(ex)
-                })
-                autoconnections = autoconnections.updated(id, handling)
-                renderedConnectionTable.appendChild(handling.controlRow().render)
-                addDataChannel(handling)
+                case BroadcastCommunication.Hello(id) =>
+                  val handling = WebRTCHandling(Some {
+                    case Success(sd) =>
+                      conn.send(BroadcastCommunication.Request(selfId, id, sd).convert).run(Async.handler)
+                    case Failure(ex) => Async.handler.fail(ex)
+                  })
+                  autoconnections = autoconnections.updated(id, handling)
+                  renderedConnectionTable.appendChild(handling.controlRow().render)
+                  addDataChannel(handling)
 
-              case BroadcastCommunication.Request(from, `selfId`, sessionDescription) =>
-                val handling = WebRTCHandling(Some {
-                  case Success(sd) =>
-                    conn.send(BroadcastCommunication.Response(selfId, from, sd).convert).run(using ())(Async.handler)
-                  case Failure(ex) => Async.handler.fail(ex)
-                })
-                autoconnections = autoconnections.updated(from, handling)
-                renderedConnectionTable.appendChild(handling.controlRow().render)
-                addDataChannel(handling)
-                handling.peer.updateRemoteDescription(sessionDescription).run(using ())(Async.handler)
-              case BroadcastCommunication.Response(from, `selfId`, sessionDescription) =>
-                autoconnections.get(from).foreach: handling =>
-                  handling.peer.updateRemoteDescription(sessionDescription).run(using ())(Async.handler)
+                case BroadcastCommunication.Request(from, `selfId`, sessionDescription) =>
+                  val handling = WebRTCHandling(Some {
+                    case Success(sd) =>
+                      conn.send(BroadcastCommunication.Response(selfId, from, sd).convert).run(Async.handler)
+                    case Failure(ex) => Async.handler.fail(ex)
+                  })
+                  autoconnections = autoconnections.updated(from, handling)
+                  renderedConnectionTable.appendChild(handling.controlRow().render)
+                  addDataChannel(handling)
+                  handling.peer.updateRemoteDescription(sessionDescription).run(Async.handler)
+                case BroadcastCommunication.Response(from, `selfId`, sessionDescription) =>
+                  autoconnections.get(from).foreach: handling =>
+                      handling.peer.updateRemoteDescription(sessionDescription).run(Async.handler)
 
-              // ignore messages to other peers
-              case BroadcastCommunication.Request(from, to, desc)  =>
-              case BroadcastCommunication.Response(from, to, desc) =>
-          }.run(using Abort())(errorReporter)
+                // ignore messages to other peers
+                case BroadcastCommunication.Request(from, to, desc)  =>
+                case BroadcastCommunication.Response(from, to, desc) =>
+          }.runIn(Abort())(errorReporter)
       }
-    }.run(using Abort()) {
+    }.runIn(Abort()) {
       case Success(conn) =>
-        conn.send(BroadcastCommunication.Hello(selfId).convert).run(using ())(errorReporter)
+        conn.send(BroadcastCommunication.Hello(selfId).convert).run(errorReporter)
       case Failure(ex) => errorReporter.fail(ex)
     }
   }
 
-  def addDataChannel(handling: WebRTCHandling) = {
+  def addDataChannel(handling: WebRTCHandling): Unit = {
 
     val channel = handling.peer.peerConnection.createDataChannel(
       channelLabel,
@@ -139,14 +139,14 @@ class WebRTCConnectionView[S](val dataManager: DeltaDissemination[S]) {
 }
 
 def errorReporter: Callback[Any] =
-  case Success(_)  =>
-  case Failure(ex) => throw ex
+    case Success(_)  =>
+    case Failure(ex) => throw ex
 
 class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
 
   val codec: JsonValueCodec[SessionDescription] = JsonCodecMaker.make
 
-  val peer = WebRTCConnector(new dom.RTCConfiguration {
+  val peer: WebRTCConnector = WebRTCConnector(new dom.RTCConfiguration {
     iceServers = js.Array[dom.RTCIceServer](new RTCIceServer {
       urls = js.Array[String]("stun:stun.t-online.de:3478")
     })
@@ -161,11 +161,11 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
         placeholder := "remote session description",
         oninput     := { (ev: UIEvent) =>
           try
-            val cs = readFromString(ev.target.asInstanceOf[dom.html.TextArea].value)(using codec)
-            peer.updateRemoteDescription(cs).run(using ())(errorReporter)
+              val cs = readFromString(ev.target.asInstanceOf[dom.html.TextArea].value)(using codec)
+              peer.updateRemoteDescription(cs).run(errorReporter)
           catch
-            case ex: JsonReaderException =>
-              throw IllegalStateException(s"input is not a valid session description", ex)
+              case ex: JsonReaderException =>
+                throw IllegalStateException("input is not a valid session description", ex)
         }
       ).render
 
@@ -190,28 +190,28 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
     Async[Any] {
       val lifecycle: ConnectorOverview = peer.lifecycle.bind
       lifecycle.localSession match
-        case Some(s) => localSession.replaceChildren(sessionDisplay(s))
-        case None    => localSession.replaceChildren(span("no local session info").render)
+          case Some(s) => localSession.replaceChildren(sessionDisplay(s))
+          case None    => localSession.replaceChildren(span("no local session info").render)
 
       lifecycle.remoteSession match
-        case Some(s) => remoteSession.replaceChildren(sessionDisplay(s))
-        case None    => remoteSession.replaceChildren(answerArea)
+          case Some(s) => remoteSession.replaceChildren(sessionDisplay(s))
+          case None    => remoteSession.replaceChildren(answerArea)
 
       gatheringState.innerText = lifecycle.iceGatheringState
       connectionState.innerText = lifecycle.iceConnectionState
       signalingState.innerText = lifecycle.signalingState
 
       if !readyChannelSent && lifecycle.iceGatheringState == RTCIceGatheringState.complete then
-        readyChannelSent = true
-        readyChannel.foreach(cb => lifecycle.localSession.foreach(cb.succeed))
+          readyChannelSent = true
+          readyChannel.foreach(cb => lifecycle.localSession.foreach(cb.succeed))
 
-    }.run(using ())(errorReporter)
+    }.run(errorReporter)
 
     Async {
       val dateOffset = Date.now()
       val candidate  = peer.iceCandidates.bind
       iceTrickle.value = s"${iceTrickle.value}${Date.now() - dateOffset}: ${candidate.candidate}\n\n"
-    }.run(using ())(errorReporter)
+    }.run(errorReporter)
 
     tr(localSession, remoteSession, gatheringState, connectionState, signalingState, td(iceTrickle))
 

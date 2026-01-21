@@ -21,9 +21,8 @@ class LWWRegisterBench {
   var full: NamedDeltaBuffer[LastWriterWins[Int]] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     full = NamedDeltaBuffer("b".asId, LastWriterWins.now(0))
-  }
 
   @Benchmark
   def readFull(): Int = full.state.read

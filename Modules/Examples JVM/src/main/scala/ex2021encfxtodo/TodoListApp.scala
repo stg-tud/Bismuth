@@ -51,7 +51,7 @@ class TodoListApp extends JFXApp3 {
     addConnectionButton.onAction() = () => {
       val connectionString = connectionTextField.getText
       if !connectionString.forall(Character.isWhitespace) then
-        TodoListController.connect(connectionString)
+          TodoListController.connect(connectionString)
     }
 
     stage = new JFXApp3.PrimaryStage {
@@ -85,7 +85,6 @@ class TodoListApp extends JFXApp3 {
     }
   }
 
-  override def stopApp(): Unit = {
+  override def stopApp(): Unit =
     TodoListController.stop()
-  }
 }

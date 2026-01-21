@@ -26,7 +26,7 @@ class MonadicErrors {
   var isMonadic: Boolean = scala.compiletime.uninitialized
 
   @Setup
-  def setup(size: Size, engineParam: EngineParam, work: Workload) = {
+  def setup(size: Size, engineParam: EngineParam, work: Workload): Unit = {
     engine = engineParam.engine
     if isMonadic then {
       val source                  = Evt[Try[Int]]()

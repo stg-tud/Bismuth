@@ -13,15 +13,13 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
       message_type: RdtMessageType,
       payload: Array[Byte],
       dots: Dots,
-      causalPredecessors: Dots,
-      lastKnownDots: Dots
+      redundantDots: Dots
   ): Future[Unit] = {
     val bundle: Bundle = BundleCreation.createBundleRdt(
       message_type = message_type,
       data = payload,
       dots = dots,
-      causalPredecessors = causalPredecessors,
-      lastKnownDots = lastKnownDots,
+      redundantDots = redundantDots,
       node = Endpoint.createFrom(ws.nodeId),
       full_destination_uri = s"dtn://global/~rdt/$appName",
       full_source_uri = full_source_uri
@@ -34,11 +32,11 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
   def registerOnReceive(callback: (RdtMessageType, Array[Byte], Dots) => Unit): Unit = {
     // flush receive forever and call callback
     def flush_receive(): Future[Bundle] = {
-      ws.receiveBundle().flatMap(bundle => {
+      ws.receiveBundle().flatMap { bundle =>
         println(s"received bundle: ${bundle.id}")
 
-        val payload: Option[Array[Byte]]       = bundle.other_blocks.collectFirst({ case x: PayloadBlock => x.data })
-        val rdt_meta_info: Option[RdtMetaInfo] = bundle.other_blocks.collectFirst({ case x: RdtMetaBlock => x.info })
+        val payload: Option[Array[Byte]]       = bundle.other_blocks.collectFirst { case x: PayloadBlock => x.data }
+        val rdt_meta_info: Option[RdtMetaInfo] = bundle.other_blocks.collectFirst { case x: RdtMetaBlock => x.info }
 
         if payload.isEmpty || rdt_meta_info.isEmpty then {
           println("did not contain dots or payload. bundle is no rdt bundle. ignoring bundle.")
@@ -52,7 +50,7 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
         }
 
         flush_receive()
-      })
+      }
     }
     flush_receive().recoverAndLog()
     ()

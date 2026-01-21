@@ -57,9 +57,9 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
         Async.handler.succeed(peerIdentity)
       }
 
-      try {
+      try
         socket.startHandshake()
-      } catch {
+      catch {
         case e: IOException => Async.handler.fail(e)
       }
     }
@@ -81,20 +81,20 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
     override def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
       Async.fromCallback { abort ?=>
         try
-          serverSocket // binds port if required
+            serverSocket // binds port if required
 
-          executionContext.execute(() =>
-            while !abort.closeRequest do {
-              val socket = serverSocket.accept().asInstanceOf[SSLSocket | Null]
-              if socket != null
-              then
-                startHandshake(socket).map { abort ?=> identity =>
-                  val conn = P2PTlsConnection(socket, Uid(identity.id), receiver)
-                  executionContext.execute(() => conn.receiveLoopBlocking())
-                  conn
-                }.run(Async.handler)
-            }
-          )
+            executionContext.execute(() =>
+              while !abort.closeRequest do {
+                val socket = serverSocket.accept().asInstanceOf[SSLSocket | Null]
+                if socket != null
+                then
+                    startHandshake(socket).map { abort ?=> identity =>
+                      val conn = P2PTlsConnection(socket, Uid(identity.id), receiver)
+                      executionContext.execute(() => conn.receiveLoopBlocking())
+                      conn
+                    }.runIn(summon)(Async.handler)
+              }
+            )
         catch {
           case ioException: IOException =>
             Async.handler.fail(ioException)
@@ -113,15 +113,19 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     try
-      socket.setOption(StandardSocketOptions.TCP_NODELAY, true)
+        socket.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch
-      case _: UnsupportedOperationException =>
-        println(s"TCP nodelay not supported on this socket")
+        case _: UnsupportedOperationException =>
+          println("TCP nodelay not supported on this socket")
 
     override def info: ConnectionInfo =
       socket.getLocalSocketAddress match
-        case isa: InetSocketAddress => ConnectionInfo(Option(isa.getHostName), Option(isa.getPort))
-        case _                      => ConnectionInfo(None, None)
+          case isa: InetSocketAddress => ConnectionInfo(
+              "type" -> "p2ptls",
+              "host" -> isa.getHostName,
+              "port" -> isa.getPort.toString,
+            )
+          case _ => ConnectionInfo("type" -> "p2ptls")
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       outputStream.synchronized {
@@ -135,9 +139,9 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
     private[P2PTls] def receiveLoopBlocking(): Unit = {
       inputStream.synchronized {
         while true do
-          val len   = inputStream.readInt()
-          val bytes = inputStream.readNBytes(len)
-          receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
+            val len   = inputStream.readInt()
+            val bytes = inputStream.readNBytes(len)
+            receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
       }
     }
 

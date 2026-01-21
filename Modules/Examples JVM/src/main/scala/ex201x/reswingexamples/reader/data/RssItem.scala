@@ -27,12 +27,12 @@ case class RSSItem(
     pubDate: Option[Date],
     srcChannel: Option[RSSChannel]
 ) extends Ordered[RSSItem] {
-  def compare(that: RSSItem) = {
+  def compare(that: RSSItem): Int = {
     val result =
       for
-        thisDate <- this.pubDate
-        thatDate <- that.pubDate
-      yield { thisDate `compareTo` thatDate }
+          thisDate <- this.pubDate
+          thatDate <- that.pubDate
+      yield thisDate `compareTo` thatDate
 
     result getOrElse 0
   }

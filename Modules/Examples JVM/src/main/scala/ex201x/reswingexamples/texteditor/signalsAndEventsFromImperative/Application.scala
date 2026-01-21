@@ -4,7 +4,7 @@ import ex2013reswing.{ReButton, ReLabel}
 import reactives.default.*
 
 import scala.swing.BorderPanel.Position
-import scala.swing.{BorderPanel, Dimension, GridPanel, MainFrame, ScrollPane, SimpleSwingApplication}
+import scala.swing.{BorderPanel, Dimension, Frame, GridPanel, MainFrame, ScrollPane, SimpleSwingApplication}
 
 object Application extends SimpleSwingApplication {
   // reactive components
@@ -39,7 +39,7 @@ object Application extends SimpleSwingApplication {
   }
 
   // layout
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "TextEditor (signals0)"
       preferredSize = new Dimension(500, 500)

@@ -23,9 +23,8 @@ class ReplicatedListBench {
   var rga: SUT = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     rga = NamedDeltaBuffer("a".asId, ReplicatedList.empty[Int]).mod(_.appendAll(0 until listSize)(using "".asId))
-  }
 
   @Benchmark
   def readFirst(): Option[Int] = rga.state.read(0)

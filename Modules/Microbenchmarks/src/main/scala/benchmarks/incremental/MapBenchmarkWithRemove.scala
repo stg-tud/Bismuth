@@ -30,13 +30,13 @@ class MapBenchmarkWithRemove {
   @Setup(Level.Invocation)
   def prepare(): Unit = {
     removeEvent = Evt[Int]()
-    val seq = removeEvent.fold((1 to arg).toList)((s, x) => {
+    val seq = removeEvent.fold((1 to arg).toList) { (s, x) =>
       s `diff` Seq(x)
-    })
+    }
     mappedSeq = Signal {
-      seq.value.map(x => {
+      seq.value.map { x =>
         x * x
-      })
+      }
     }
 
     reactSeq = IncSeq.empty[Int]
@@ -48,7 +48,7 @@ class MapBenchmarkWithRemove {
   def testSeq(blackHole: Blackhole): Unit = {
     var toRemove = Random.nextInt(arg)
     if toRemove < 1 then
-      toRemove = 1
+        toRemove = 1
 
     removeEvent.fire(toRemove)
     blackHole.consume(removeEvent)
@@ -59,7 +59,7 @@ class MapBenchmarkWithRemove {
   def testReactSeq(blackHole: Blackhole): Unit = {
     var toRemove = Random.nextInt(arg)
     if toRemove < 1 then
-      toRemove = 1
+        toRemove = 1
 
     reactSeq.remove(toRemove)
     blackHole.consume(reactSeq)

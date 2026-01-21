@@ -3,8 +3,8 @@ package probench.data
 import probench.data.RequestResponseQueue.Req
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.paper.MultiPaxos
 import rdts.protocols.Participants
+import rdts.protocols.paper.MultiPaxos
 
 enum KVOperation[Key, Value] {
   def key: Key
@@ -21,11 +21,11 @@ case class KVState(
     requests: RequestResponseQueue[KVOperation[String, String], String] = RequestResponseQueue.empty,
     clusterState: MultiPaxos[Req[KVOperation[String, String]]] = MultiPaxos.empty
 ):
-  def upkeep(using LocalUid, Participants): KVState =
-    KVState(clusterState = clusterState.upkeep)
+    def upkeep(using LocalUid, Participants): KVState =
+      KVState(clusterState = clusterState.upkeep)
 
 object KVState:
-  given Lattice[KVState] =
-    Lattice.derived
+    given Lattice[KVState] =
+      Lattice.derived
 
-  def empty: KVState = KVState()
+    def empty: KVState = KVState()

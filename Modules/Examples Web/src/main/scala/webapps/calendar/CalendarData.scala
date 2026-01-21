@@ -21,8 +21,8 @@ case class Appointment(name: String, start: Int, end: Int) {
   private val commitChange: CBR[Any, Button] = Event.fromCallback(button("Commit", onclick := Event.handle).render)
   private val currentlyEditing               = (editButton.event || commitChange.event).fold(false)((s, _) => !s)
 
-  val removeEvent: Event[Appointment]              = removeButton.event.map { _ => this }
-  val editEvent: Event[(Appointment, Appointment)] = commitChange.event.map { _ =>
+  lazy val removeEvent: Event[Appointment]              = removeButton.event.map { _ => this }
+  lazy val editEvent: Event[(Appointment, Appointment)] = commitChange.event.map { _ =>
     (this, Appointment(nameInput.value, startInput.value.toInt, endInput.value.toInt))
   }
 

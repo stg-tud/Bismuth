@@ -19,9 +19,9 @@ private case class CompilationContext(
   val derived: Graph[TDerived] = graph.collect {
     case (name: String, (d: TDerived, t: Type)) => (name, (d, t))
   }
-  val invariants: Seq[TInvariant] = ast.collect({ case i: TInvariant =>
+  val invariants: Seq[TInvariant] = ast.collect { case i: TInvariant =>
     i
-  })
+  }
   val interactions: Map[String, TInteraction] = allInteractions(ast)
   val typeAliases: Map[String, Type]          = ast.collect {
     case TTypeAl(name, _type, _, _) =>
@@ -225,8 +225,8 @@ def traverseFromNode[A <: Term](
         t.copy(
           parent = traverseFromNode(t.parent, transformer),
           args = t.args match
-            case None    => None
-            case Some(a) => Some(a.map(traverseFromNode(_, transformer)))
+              case None    => None
+              case Some(a) => Some(a.map(traverseFromNode(_, transformer)))
         )
       case t: TFCurly =>
         t.copy(

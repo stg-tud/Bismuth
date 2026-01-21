@@ -14,11 +14,24 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
   test("add request works") {
     given LocalUid = LocalUid.predefined("id1")
 
-    val queue    = empty
-    val reqDelta = queue.request("one")
-    val merged   = queue.merge(reqDelta)
+    val queue         = empty
+    val (_, reqDelta) = queue.request("one")
+    val merged        = queue.merge(reqDelta)
 
-    assertEquals(merged.requestsSorted.head.value, "one")
+    assertEquals(merged.requests.queryAllEntries.toList.head.value, "one")
+  }
+
+  test("add several requests") {
+    given LocalUid = LocalUid.predefined("id1")
+
+    var queue = empty
+    for n <- Range(0, 100) do {
+      val (_, delta) = queue.request(n.toString)
+      queue = queue.merge(delta)
+    }
+    assertEquals(queue.requestsSorted.length, 100)
+    queue = queue.merge(queue.respond(queue.firstUnansweredRequest.get, "ok"))
+    assertEquals(queue.requestsSorted.length, 99)
   }
 
   test("add requests merge out of order") {
@@ -27,25 +40,24 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     var queue = empty
 
     val deltas = (0 to 10).map { i =>
-      val delta = queue.request(f"req $i")
+      val (_, delta) = queue.request(f"req $i")
       queue = queue.merge(delta)
       delta
     }
 
-    for _ <- 0 to 100 do {
-      assertEquals(Random.shuffle(deltas).foldLeft(empty)(Lattice.merge), queue)
-    }
+    for _ <- 0 to 100 do
+        assertEquals(Random.shuffle(deltas).foldLeft(empty)(Lattice.merge), queue)
   }
 
   test("respond to single request") {
     given LocalUid = LocalUid.predefined("id1")
 
-    val queue       = empty
-    val reqDelta    = queue.request("one")
-    val mergedQueue = queue.merge(reqDelta)
-    val request     = mergedQueue.requestsSorted.head
-    val resDelta    = mergedQueue.respond(request, "1")
-    val merged: CUT = mergedQueue.merge(resDelta)
+    val queue         = empty
+    val (_, reqDelta) = queue.request("one")
+    val mergedQueue   = queue.merge(reqDelta)
+    val request       = mergedQueue.requestsSorted.head
+    val resDelta      = mergedQueue.respond(request, "1")
+    val merged: CUT   = mergedQueue.merge(resDelta)
 
     assertEquals(merged.responseTo(request).map(_.value), Some("1"))
   }
@@ -56,7 +68,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
     var queue = empty
 
     val reqDeltas = (0 to 10).map { i =>
-      val delta = queue.request(f"req $i")
+      val (_, delta) = queue.request(f"req $i")
       queue = queue.merge(delta)
       delta
     }
@@ -69,9 +81,8 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
 
     val allDeltas = reqDeltas ++ resDeltas
 
-    for _ <- 0 to 100 do {
-      assertEquals(Random.shuffle(allDeltas).foldLeft(empty)(Lattice.merge), queue)
-    }
+    for _ <- 0 to 100 do
+        assertEquals(Random.shuffle(allDeltas).foldLeft(empty)(Lattice.merge), queue)
   }
 
   test("one uncompleted, one completed") {
@@ -85,24 +96,24 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
       delta
     }
 
-    val req1                    = mod(_.request("one"))
-    val req2                    = mod(_.request("two"))
+    val req1                    = mod(_.request("one")._2)
+    val req2                    = mod(_.request("two")._2)
     val requestOne: Req[String] = queue.requestsSorted.head
     val res1                    = mod(q => q.respond(q.requestsSorted.head, "1"))
-    val res2                    = mod(q => q.respond(q.requestsSorted(1), "2"))
+    val res2                    = mod(q => q.respond(q.requestsSorted.head, "2"))
 
     // assertEquals(queue.requests.values.map(_.value).toList, List())
     assertEquals(queue.firstUnansweredRequest, None)
-    assertEquals(queue.responses.values.map(_.value).toList, List("1", "2"))
+    assertEquals(queue.responses.queryAllEntries.map(_.value).toList, List("1", "2"))
 
-    val complete = mod(q => q.complete(requestOne))
+    val receive = mod(q => q.receive(requestOne.timestamp))
 
-    assertEquals(queue.requestsSorted.map(_.value), List("two"))
-    assertEquals(queue.responses.values.map(_.value).toList, List("1", "2"))
+    assertEquals(queue.requestsSorted.map(_.value), List.empty)
+    assertEquals(queue.responses.queryAllEntries.map(_.value).toSet, Set("2"))
 
     mod(q => q.respond(requestOne, "1")) // respond again
 
-    assertEquals(queue.responses.values.map(_.value).toList, List("1", "2"))
+    assertEquals(queue.responses.queryAllEntries.map(_.value).toSet, Set("1", "2"))
 //    assertEquals(queue.responses.values.map(_.value).toList, List("2"))
   }
 

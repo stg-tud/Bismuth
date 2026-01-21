@@ -3,7 +3,6 @@ import cats.data.NonEmptyList
 import cats.implicits.*
 import cats.parse
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import lore.ast.*
 import lore.ast.Codecs.given
 import munit.FunSuite
@@ -26,10 +25,10 @@ class WholeProgramParsing extends FunSuite {
   test("simple prog") {
     val prog =
       """
-      |type Calendar = AWSet[Appointment]
-      |val work: Source[Calendar] = Source(AWSet())
-      |5 + 24 * 10 > 0 ==> true
-      |""".stripMargin
+        |type Calendar = AWSet[Appointment]
+        |val work: Source[Calendar] = Source(AWSet())
+        |5 + 24 * 10 > 0 ==> true
+        |""".stripMargin
     Parser.prog.parseAll(prog) match {
       case Left(e)  => fail(e.show)
       case Right(e) => ()

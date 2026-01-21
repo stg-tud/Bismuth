@@ -11,7 +11,7 @@ class ReactiveCreationInTurnsTest extends munit.FunSuite {
       val v2 = Signal {
         val _   = v1.value
         var res = 0
-        c1.map(x => { res += 1; x })
+        c1.map { x => res += 1; x }
         res
       }
 
@@ -29,7 +29,7 @@ class ReactiveCreationInTurnsTest extends munit.FunSuite {
       val v2 = Signal {
         val _   = v1.value
         var res = 0
-        v1.map(x => { res += 1; x })
+        v1.map { x => res += 1; x }
         res
       }
 

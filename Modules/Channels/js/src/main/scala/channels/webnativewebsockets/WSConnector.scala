@@ -19,7 +19,7 @@ class WebsocketConnect(socket: dom.WebSocket) extends Connection[MessageBuffer] 
     socket.send(data.asArrayBuffer)
   }
 
-  def close() = socket.close()
+  def close(): Unit = socket.close()
 
 }
 
@@ -56,15 +56,15 @@ object WebsocketConnect {
           }
 
           socket.onerror = (_: dom.Event) =>
-            socket.close()
-            callback.fail(new WebsocketException("Error during websocket communication"))
+              socket.close()
+              callback.fail(new WebsocketException("Error during websocket communication"))
 
           Async.handler.succeed(connect)
         }
 
         socket.onerror = (_: dom.Event) =>
-          socket.close()
-          Async.handler.fail(new WebsocketException("Websocket failed to connect"))
+            socket.close()
+            Async.handler.fail(new WebsocketException("Websocket failed to connect"))
       }
     }
   }

@@ -1,7 +1,6 @@
 package com.softwaremill.quicklens.test
 
 import com.softwaremill.quicklens.*
-import com.softwaremill.quicklens.TestData.duplicate
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

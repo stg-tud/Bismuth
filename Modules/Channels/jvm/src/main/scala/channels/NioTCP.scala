@@ -1,13 +1,52 @@
 package channels
 
-import channels.NioTCP.{AcceptAttachment, EndOfChannelException, ReceiveAttachment}
+import channels.NioTCP.{AcceptAttachment, ReceiveAttachment}
 import de.rmgk.delay.{Async, Callback, Sync}
+import replication.{Compression, DeltaDissemination}
 
-import java.io.IOException
 import java.net.{SocketAddress, SocketException, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
-import java.nio.channels.{ClosedChannelException, SelectionKey, Selector, ServerSocketChannel, SocketChannel}
+import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
+import java.util.concurrent.{ExecutorService, Executors}
+import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.ExecutionContext
+import scala.util.Try
 import scala.util.control.NonFatal
+
+class ChannelTrafficReporter {
+  val receivedBytes: AtomicLong = AtomicLong()
+  val sentBytes: AtomicLong     = AtomicLong()
+  val receivedCount: AtomicLong = AtomicLong()
+  val sentCount: AtomicLong     = AtomicLong()
+  val maxReceived: AtomicLong   = AtomicLong()
+  val maxSent: AtomicLong       = AtomicLong()
+
+  def reset(): Unit = {
+    receivedBytes.set(0)
+    sentBytes.set(0)
+    receivedCount.set(0)
+    sentCount.set(0)
+    maxSent.set(0)
+    maxReceived.set(0)
+  }
+
+  def report(): String =
+    s"received:\n  ${receivedCount.get()} messages\n  ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
+}
+object ChannelTrafficReporter {
+  extension (reporter: ChannelTrafficReporter | Null) {
+    inline def received(size: Long): Unit = if reporter != null then
+        reporter.maxReceived.accumulateAndGet(size, Math.max)
+        reporter.receivedBytes.addAndGet(size)
+        reporter.receivedCount.incrementAndGet()
+        ()
+    inline def send(size: Long): Unit = if reporter != null then
+        reporter.maxSent.accumulateAndGet(size, Math.max)
+        reporter.sentBytes.addAndGet(size)
+        reporter.sentCount.incrementAndGet()
+        ()
+  }
+}
 
 object NioTCP {
   case class AcceptAttachment(
@@ -22,20 +61,38 @@ object NioTCP {
   class EndOfChannelException(msg: String) extends Exception(msg)
 }
 
+object ConcurrencyHelper {
+  def makeExecutionContext(singleThreadExecutor: Boolean) = {
+    if singleThreadExecutor then
+        val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
+          val thread = new Thread(r)
+          thread.setDaemon(true)
+          thread
+        }
+
+        ExecutionContext.fromExecutorService(singleThreadExecutor)
+    else
+        DeltaDissemination.executeImmediately
+  }
+
+  def makePooledExecutor(poolSize: Int) = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
+}
+
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP {
+class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = null) {
+  inline val compression: false = false
 
   val selector: Selector = Selector.open()
 
-  def loopSelection(abort: Abort) = {
+  def loopSelection(abort: Abort): Unit = {
     while !abort.closeRequest do
-      selector.select()
-      runSelection()
+        selector.select()
+        runSelection()
   }
 
-  def runSelection() = {
+  def runSelection(): Unit = {
 
     selector.selectedKeys().forEach {
       case key if key.isReadable =>
@@ -47,10 +104,13 @@ class NioTCP {
           val len          = readN(4, clientChannel).getInt()
           val bytes        = new Array[Byte](len)
           val targetBuffer = readN(len, clientChannel).get(bytes)
-
-          attachment.callback.succeed(ArrayMessageBuffer(bytes))
+          pool.execute { () =>
+            reporter.received(len + 4)
+            val decompressedBytes = if compression then Compression.decompress(bytes) else bytes
+            attachment.callback.succeed(ArrayMessageBuffer(decompressedBytes))
+          }
         } catch {
-          case ex: IOException =>
+          case ex: Exception =>
             clientChannel.close()
             key.cancel()
             attachment.callback.fail(ex)
@@ -79,12 +139,19 @@ class NioTCP {
 
   class NioTCPConnection(clientChannel: SocketChannel) extends Connection[MessageBuffer] {
 
+    override val info: ConnectionInfo = ConnectionInfo(
+      "type"          -> "niotcp",
+      "remoteAddress" -> Try { clientChannel.getRemoteAddress.toString }.recover(_.getMessage).get,
+      "localAddress"  -> Try { clientChannel.getLocalAddress.toString }.recover(_.getMessage).get
+    )
+
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
 
-      val bytes         = message.asArray
-      val messageLength = bytes.length
+      val bytes           = message.asArray
+      val compressedBytes = if compression then Compression.compress(bytes) else bytes
+      val messageLength   = compressedBytes.length
 
-      val buffer = ByteBuffer.wrap(bytes)
+      val buffer = ByteBuffer.wrap(compressedBytes)
 
       val sizeBuffer = ByteBuffer.allocate(4)
       sizeBuffer.putInt(messageLength)
@@ -96,6 +163,7 @@ class NioTCP {
         val res = clientChannel.write(buffers)
         ()
       }
+      reporter.send(messageLength + 4)
       ()
 
     }
@@ -139,17 +207,17 @@ class NioTCP {
       override def prepare(incoming: Receive[MessageBuffer]): Async[Any, Connection[MessageBuffer]] =
         Async.fromCallback {
           try
-            Async.handler.succeed {
-              handleConnection(bindsocket(), incoming)
-            }
+              Async.handler.succeed {
+                handleConnection(bindsocket(), incoming)
+              }
           catch case NonFatal(exception) => Async.handler.fail(exception)
         }
     }
 
   def defaultSocketChannel(socketAddress: SocketAddress): () => SocketChannel = () => {
     val pf = socketAddress match
-      case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
-      case other                      => StandardProtocolFamily.INET
+        case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
+        case other                      => StandardProtocolFamily.INET
     val channel = SocketChannel.open(pf)
     channel.connect(socketAddress)
     configureChannel(channel)
@@ -159,15 +227,15 @@ class NioTCP {
   private def configureChannel(channel: SocketChannel) = {
     channel.configureBlocking(false)
     try
-      channel.setOption(StandardSocketOptions.TCP_NODELAY, true)
+        channel.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch
-      case _: UnsupportedOperationException => // fine
+        case _: UnsupportedOperationException => // fine
   }
 
   def defaultServerSocketChannel(socketAddress: SocketAddress): () => ServerSocketChannel = () => {
     val pf = socketAddress match
-      case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
-      case other                      => StandardProtocolFamily.INET
+        case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
+        case other                      => StandardProtocolFamily.INET
     val socket = ServerSocketChannel.open(pf)
     socket.configureBlocking(false)
 
@@ -189,7 +257,7 @@ class NioTCP {
             selector.wakeup()
             ()
           } catch
-            case NonFatal(ex) => Async.handler.fail(ex)
+              case NonFatal(ex) => Async.handler.fail(ex)
 
         }
     }

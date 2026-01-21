@@ -21,11 +21,9 @@ object AeadHelper {
     com.google.crypto.tink.subtle.Random.randBytes(32)
   )
 
-  def aeadKeyFromBytes(key: Array[Byte]): TinkAeadKey = {
+  def aeadKeyFromBytes(key: Array[Byte]): TinkAeadKey =
     TinkAeadKey(key)
-  }
 
-  def aeadKeyFromBase64(base64EncodedString: String): TinkAeadKey = {
+  def aeadKeyFromBase64(base64EncodedString: String): TinkAeadKey =
     TinkAeadKey(Base64.decode(base64EncodedString))
-  }
 }

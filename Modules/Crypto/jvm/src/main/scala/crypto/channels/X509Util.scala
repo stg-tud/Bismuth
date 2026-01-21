@@ -26,9 +26,8 @@ object X509Util {
 
   private val algoIdEd25519 = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
 
-  def generateCustomP2PX509Certificate(privateIdentity: PrivateIdentity): X509CertificateHolder = {
+  def generateCustomP2PX509Certificate(privateIdentity: PrivateIdentity): X509CertificateHolder =
     generateCustomP2PX509Certificate(privateIdentity.identityKey, privateIdentity.tlsKey)
-  }
 
   /** Generates a new X.509 Certificate using the certificateKeyPair that is signed using the identityKeyPair. For the
     * subject of the generated certificate, the public key of the identityKeyPair is used as the UNIQUE_IDENTIFIER RDN.
@@ -95,8 +94,8 @@ object X509Util {
 
     val uniqueIdRDNs = JcaX500NameUtil.getSubject(certificate).getRDNs(BCStyle.UNIQUE_IDENTIFIER)
     if
-      uniqueIdRDNs.isEmpty || uniqueIdRDNs(0).size() != 1 || !uniqueIdRDNs(0).getFirst.getValue
-        .isInstanceOf[DERUTF8String]
+        uniqueIdRDNs.isEmpty || uniqueIdRDNs(0).size() != 1 || !uniqueIdRDNs(0).getFirst.getValue
+          .isInstanceOf[DERUTF8String]
     then {
       throw new CertificateException("Subject does not contain a UNIQUE_IDENTIFIER")
     }
@@ -107,9 +106,9 @@ object X509Util {
     val pubKey                  = Ed25519Util.rawPublicKeyBytesToPublicKey(pubKeyBytes)
 
     // Verify cert instead of blindly returning identity
-    try {
+    try
       certificate.verify(pubKey)
-    } catch {
+    catch {
       case e: Exception => throw CertificateException(e)
     }
 
@@ -117,16 +116,15 @@ object X509Util {
   }
 
   extension (certHolder: X509CertificateHolder)
-    def toPem: CertificatePem = {
-      val writer    = new StringWriter()
-      val pemWriter = new JcaPEMWriter(writer)
-      val cert      = new JcaX509CertificateConverter().getCertificate(certHolder)
-      pemWriter.writeObject(cert)
-      pemWriter.close()
-      CertificatePem(writer.toString)
-    }
+      def toPem: CertificatePem = {
+        val writer    = new StringWriter()
+        val pemWriter = new JcaPEMWriter(writer)
+        val cert      = new JcaX509CertificateConverter().getCertificate(certHolder)
+        pemWriter.writeObject(cert)
+        pemWriter.close()
+        CertificatePem(writer.toString)
+      }
 
-    def toJavaCertificate: X509Certificate = {
-      new JcaX509CertificateConverter().getCertificate(certHolder)
-    }
+      def toJavaCertificate: X509Certificate =
+        new JcaX509CertificateConverter().getCertificate(certHolder)
 }

@@ -2,6 +2,7 @@ package ex201x.swing.catchup
 
 import ex201x.Mouse
 import reactives.default.*
+import reactives.operator.Event
 
 import java.awt.*
 import scala.swing.event.*
@@ -14,7 +15,7 @@ object CatchUp extends SimpleSwingApplication {
   override def main(args: Array[String]): Unit = {
     super.main(args)
     while true do {
-      Swing onEDTWait { application.tick.fire() }
+      Swing onEDTWait application.tick.fire()
       Thread `sleep` 50
     }
   }
@@ -30,19 +31,19 @@ class CatchUp {
   val SizeUp    = 40
   val SizeY     = 32
 
-  val tick = Evt[Unit]()
-  val time = tick.iterate(0.0) { (acc: Double) => (acc + 0.1) % (math.Pi * 2) }
+  val tick: Evt[Unit]      = Evt[Unit]()
+  val time: Signal[Double] = tick.iterate(0.0) { (acc: Double) => (acc + 0.1) % (math.Pi * 2) }
 
   // Mouse position
-  val mouse  = new Mouse
-  val mouseX = Signal { mouse.position.value.getX.toInt }
-  val mouseY = Signal { mouse.position.value.getY.toInt }
+  val mouse               = new Mouse
+  val mouseX: Signal[Int] = Signal { mouse.position.value.getX.toInt }
+  val mouseY: Signal[Int] = Signal { mouse.position.value.getY.toInt }
 
-  val xOffset = Signal { math.sin(time.value) * Range }
-  val yOffset = Signal { math.cos(time.value) * Range }
+  val xOffset: Signal[Double] = Signal { math.sin(time.value) * Range }
+  val yOffset: Signal[Double] = Signal { math.cos(time.value) * Range }
 
-  val x = Signal { mouseX.value + xOffset.value.toInt }
-  val y = Signal { mouseY.value + yOffset.value.toInt }
+  val x: Signal[Int] = Signal { mouseX.value + xOffset.value.toInt }
+  val y: Signal[Int] = Signal { mouseY.value + yOffset.value.toInt }
 
   // Old mouse position, some time ago
   val mouseDelayed: Signal[Point] = Signal {
@@ -51,21 +52,21 @@ class CatchUp {
       case Some(v) => v
     }
   }
-  val delayedX = Signal { mouseDelayed.value.getX.toInt }
-  val delayedY = Signal { mouseDelayed.value.getY.toInt }
+  val delayedX: Signal[Int] = Signal { mouseDelayed.value.getX.toInt }
+  val delayedY: Signal[Int] = Signal { mouseDelayed.value.getY.toInt }
 
-  val catchBox = Signal { new Rectangle(x.value, y.value, SizeCatch, SizeY) }
-  val upBox    = Signal { new Rectangle(delayedX.value, delayedY.value, SizeUp, SizeY) }
+  val catchBox: Signal[Rectangle] = Signal { new Rectangle(x.value, y.value, SizeCatch, SizeY) }
+  val upBox: Signal[Rectangle]    = Signal { new Rectangle(delayedX.value, delayedY.value, SizeUp, SizeY) }
 
-  val caught       = Signal { catchBox.value.intersects(upBox.value) }
-  val hits         = caught.changed.filter(_ == true)
-  val numberOfHits = hits.count()
+  val caught: Signal[Boolean]   = Signal { catchBox.value.intersects(upBox.value) }
+  val hits: Event[Boolean]      = caught.changed.filter(_ == true)
+  val numberOfHits: Signal[Int] = hits.count()
 
-  val scoreString = Signal { "You caught up " + numberOfHits.value + " times." }
+  val scoreString: Signal[String] = Signal { "You caught up " + numberOfHits.value + " times." }
 
   // GUI redrawing code
-  val stateChanged = mouse.position.changed.||[Any](tick)
-  stateChanged observe { (_) => frame.repaint() }
+  val stateChanged: Event[Any] = mouse.position.changed.||[Any](tick)
+  stateChanged observe { _ => frame.repaint() }
 
   // GUI
   val frame: MainFrame = new MainFrame {
@@ -78,9 +79,9 @@ class CatchUp {
         * Should be replaced once reactive GUI lib is complete
         */
       reactions += {
-        case e: MouseMoved    => { CatchUp.this.mouse.mouseMovedE.fire(e.point) }
+        case e: MouseMoved    => CatchUp.this.mouse.mouseMovedE.fire(e.point)
         case e: MousePressed  => CatchUp.this.mouse.mousePressedE.fire(e.point)
-        case e: MouseDragged  => { CatchUp.this.mouse.mouseDraggedE.fire(e.point) }
+        case e: MouseDragged  => CatchUp.this.mouse.mouseDraggedE.fire(e.point)
         case e: MouseReleased => CatchUp.this.mouse.mouseReleasedE.fire(e.point)
       }
 
@@ -92,7 +93,7 @@ class CatchUp {
           g.setColor(java.awt.Color.DARK_GRAY)
           g.fill(t.now(catchBox))
           if t.now(caught) then
-            g.setColor(java.awt.Color.RED)
+              g.setColor(java.awt.Color.RED)
           g.fill(t.now(upBox))
           g.setColor(java.awt.Color.WHITE)
           g.setFont(myFont)

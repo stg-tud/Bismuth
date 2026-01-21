@@ -50,9 +50,8 @@ class AntiEntropyContainer[State](
 
   def data: State = state
 
-  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]): AntiEntropyContainer[State] = {
+  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]): AntiEntropyContainer[State] =
     applyDelta(Named(replicaID.uid, f(using replicaID)(state)))
-  }
 }
 
 object AntiEntropyContainer {

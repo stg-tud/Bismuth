@@ -2,8 +2,6 @@ package tests.rescala.misc
 
 import reactives.operator.{Signal, Var}
 
-import scala.concurrent.Future
-
 class PreconditonTest extends munit.FunSuite {
 
   test("basic usage") {

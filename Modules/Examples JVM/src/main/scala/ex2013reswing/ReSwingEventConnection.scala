@@ -1,6 +1,5 @@
 package ex2013reswing
 
-import reactives.default.*
 
 import java.awt.event.{HierarchyEvent, HierarchyListener}
 import scala.collection.mutable.ListBuffer
@@ -38,21 +37,21 @@ import scala.swing.{Publisher, Reactor, UIElement}
 private[ex2013reswing] trait ReSwingEventConnection {
   protected def peer: UIElement
 
-  final protected implicit class EventConnector[T] private[ReSwingEventConnection] (value: ReSwingEvent[T]) {
+  implicit final protected class EventConnector[T] private[ReSwingEventConnection] (value: ReSwingEvent[T]) {
     def using(setter: T => Unit): ReSwingEvent[T] = {
       if value.isInstanceOf[ReSwingEventIn[?]] then
-        delayedInitEvents += { () =>
-          value observe { v => inSyncEDT { setter(v) } }
-          ()
-        }
+          delayedInitEvents += { () =>
+            value observe { v => inSyncEDT { setter(v) } }
+            ()
+          }
       value
     }
     def using(setter: () => Unit): ReSwingEvent[T] = {
       if value.isInstanceOf[ReSwingEventIn[?]] then
-        delayedInitEvents += { () =>
-          value observe { _ => inSyncEDT { setter() } }
-          ()
-        }
+          delayedInitEvents += { () =>
+            value observe { _ => inSyncEDT { setter() } }
+            ()
+          }
       value
     }
   }
@@ -68,7 +67,7 @@ private[ex2013reswing] trait ReSwingEventConnection {
           reactor.reactions += {
             case e =>
               if reaction `isInstance` e then
-                event(e.asInstanceOf[T])
+                  event(e.asInstanceOf[T])
           }
           ()
         }
@@ -81,7 +80,7 @@ private[ex2013reswing] trait ReSwingEventConnection {
   private val delayedInitEvents = ListBuffer.empty[() => Unit]
 
   peer.peer.addHierarchyListener(new HierarchyListener {
-    def hierarchyChanged(e: HierarchyEvent) =
+    def hierarchyChanged(e: HierarchyEvent): Unit =
       if (e.getChangeFlags & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 then {
         initReSwingEventConnection()
         peer.peer.removeHierarchyListener(this)
@@ -90,7 +89,7 @@ private[ex2013reswing] trait ReSwingEventConnection {
 
   protected def initReSwingEventConnection(): Unit = {
     for init <- delayedInitEvents do
-      init()
+        init()
     delayedInitEvents.clear()
   }
 }

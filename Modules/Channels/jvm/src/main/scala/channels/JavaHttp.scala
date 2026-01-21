@@ -46,7 +46,7 @@ object JavaHttp {
   class SSEClientConnection(client: HttpClient, uri: URI, receiver: Receive[MessageBuffer], ec: ExecutionContext)
       extends Connection[MessageBuffer] {
 
-    lazy val handler = receiver.messageHandler(this)
+    lazy val handler: Callback[MessageBuffer] = receiver.messageHandler(this)
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Async {
       val sseRequest = HttpRequest.newBuilder()
@@ -78,9 +78,9 @@ object JavaHttp {
           case Failure(ex) =>
             if SSEClientConnection.this.synchronized(currentReceive == adapter)
             then
-              // if this fails again, then we give up
-              send(ArrayMessageBuffer(Array.emptyByteArray)).run(using ())(_ => ())
-              ()
+                // if this fails again, then we give up
+                send(ArrayMessageBuffer(Array.emptyByteArray)).run(_ => ())
+                ()
             else {
               // accept close because another stream seems to be open
               ()

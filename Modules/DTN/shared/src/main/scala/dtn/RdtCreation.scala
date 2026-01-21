@@ -50,9 +50,8 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
   }
 
   def caseStudyListen(): Unit = {
-    while true do {
-      Thread.sleep(1000)
-    }
+    while true do
+        Thread.sleep(1000)
   }
 
   def caseStudyActive(): Unit = {
@@ -68,9 +67,8 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
     println("finshed adding changes")
 
-    while true do {
-      Thread.sleep(1000)
-    }
+    while true do
+        Thread.sleep(1000)
   }
 }
 
@@ -85,8 +83,8 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
     replicaId,
-    (_ =>
-      println("replica received new state information")),
+    _ =>
+      println("replica received new state information"),
     // we ignore state updates as there will be only one active rdt
   )
 
@@ -116,9 +114,8 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
   }
 
   def caseStudyListen(): Unit = {
-    while true do {
-      Thread.sleep(1000)
-    }
+    while true do
+        Thread.sleep(1000)
   }
 
   def caseStudyActive(): Unit = {
@@ -152,9 +149,8 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
     println("finshed adding changes")
 
-    while true do {
-      Thread.sleep(1000)
-    }
+    while true do
+        Thread.sleep(1000)
   }
 }
 
@@ -170,12 +166,10 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
     (_ => println("replica received new state information")): @unused,
   )
 
-  var state = LastWriterWins.empty[Set[String]]
+  var state: LastWriterWins[Set[String]] = LastWriterWins.empty[Set[String]]
 
-  private def writeStringGetDeltaInfo(s: String): RdtType = {
+  private def writeStringGetDeltaInfo(s: String): RdtType =
     state.write(Set(s)) // advances a total ordering internally
-
-  }
 
   def connect(
       host: String,
@@ -194,9 +188,8 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
   }
 
   def caseStudyListen(): Unit = {
-    while true do {
-      Thread.sleep(1000)
-    }
+    while true do
+        Thread.sleep(1000)
   }
 
   def caseStudyActive(): Unit = {
@@ -208,13 +201,12 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
     for i <- 0 to number_of_changes do {
       Thread.sleep(sleep_time_milliseconds)
 
-      val (state) = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.replicaId}")
+      val state = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.replicaId}")
 
       dataManager.applyDelta(state)
     }
 
-    while true do {
-      Thread.sleep(1000)
-    }
+    while true do
+        Thread.sleep(1000)
   }
 }

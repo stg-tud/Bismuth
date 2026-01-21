@@ -1,12 +1,9 @@
 package tests.rescala.concurrency
 
+import reactives.default.*
 import tests.rescala.testtools.Spawn
 
 import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch}
-
-// change here for FUN
-import reactives.default.*
-
 import scala.util.Random
 
 class PaperGlitchTest extends munit.FunSuite {
@@ -41,9 +38,9 @@ class PaperGlitchTest extends munit.FunSuite {
       latch.countDown()
       latch.await()
       while !cancelled do {
-        try {
+        try
           price.set(3 * 2 << Random.nextInt(8))
-        } catch {
+        catch {
           // occurs because of invalid buffer
           case e: AssertionError => glitches.add(-42)
           // can occur because of missing sync barriers
@@ -55,9 +52,9 @@ class PaperGlitchTest extends munit.FunSuite {
       latch.countDown()
       latch.await()
       while !cancelled do {
-        try {
+        try
           quantity.set(2 << Random.nextInt(8))
-        } catch {
+        catch {
           // occurs because of invalid buffer
           case e: AssertionError => glitches.add(-42)
           // can occur because of missing sync barriers

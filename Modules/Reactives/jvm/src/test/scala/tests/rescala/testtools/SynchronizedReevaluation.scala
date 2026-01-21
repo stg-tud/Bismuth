@@ -26,13 +26,11 @@ class SynchronizedReevaluation extends ManagedBlocker {
     true
   }
 
-  def addSynchronizationPoint(latch: CountDownLatch): Unit = {
+  def addSynchronizationPoint(latch: CountDownLatch): Unit =
     latches ::= latch
-  }
 
-  def addNotifyPoint(latch: CountDownLatch): Unit = {
+  def addNotifyPoint(latch: CountDownLatch): Unit =
     notifies ::= latch
-  }
 }
 
 class SynchronizedReevaluationApi(val api: reactives.default.type) {

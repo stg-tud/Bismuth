@@ -4,13 +4,15 @@ import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
-import TodoDataManager.TodoRepState
+import reactives.operator.Fold.Branch
+import webapps.todo.TodoDataManager.TodoRepState
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.unused
 
 object TaskOps {
-  def resetBuffer[T] = Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
+  def resetBuffer[T]: Branch[DeltaBuffer[T]] =
+    Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
 }
 
 // `taskrefs` is unused as a reference, but is used indirectly so this parameter serves as a requirement
@@ -30,12 +32,12 @@ class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
 
   def handleRemoveAll(removeAll: Event[Any]): Fold.Branch[State] =
     removeAll.branch: _ =>
-      current.mod(_.deleteBy { (taskref: TaskRef) =>
-        val isDone = taskref.task.value.state.read.exists(_.done)
-        // todo, move to observer, disconnect during transaction does not respect rollbacks
-        if isDone then taskref.task.disconnect()
-        isDone
-      })
+        current.mod(_.deleteBy { (taskref: TaskRef) =>
+          val isDone = taskref.task.value.state.read.exists(_.done)
+          // todo, move to observer, disconnect during transaction does not respect rollbacks
+          if isDone then taskref.task.disconnect()
+          isDone
+        })
 
   def handleRemove(state: State)(id: String): State = {
     state.mod(_.deleteBy { (taskref: TaskRef) =>

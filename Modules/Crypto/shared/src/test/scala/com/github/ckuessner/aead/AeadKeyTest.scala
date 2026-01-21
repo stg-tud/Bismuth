@@ -1,6 +1,6 @@
 package com.github.ckuessner.aead
 
-import com.github.ckuessner.aead.{AeadKey, ByteArray}
+import com.github.ckuessner.aead.AeadKey
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}

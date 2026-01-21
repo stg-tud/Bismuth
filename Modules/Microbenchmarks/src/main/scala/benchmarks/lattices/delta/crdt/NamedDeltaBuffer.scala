@@ -1,7 +1,6 @@
 package benchmarks.lattices.delta.crdt
 
 import rdts.base.{Decompose, Lattice, LocalUid, Uid}
-import rdts.time.{Dot, Dots}
 
 case class Named[T](replicaId: Uid, anon: T)
 
@@ -26,6 +25,6 @@ case class NamedDeltaBuffer[State](
       case None => this
     }
 
-  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]) =
+  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =
     applyDelta(replicaID.uid, f(using replicaID)(state))
 }

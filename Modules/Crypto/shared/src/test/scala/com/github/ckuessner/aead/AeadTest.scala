@@ -2,11 +2,9 @@ package com.github.ckuessner.aead
 
 import com.github.ckuessner.aead.ByteArray
 import com.github.ckuessner.aead.Generators.byteArrayGen
-import com.sun.net.httpserver.Authenticator.Failure
 import org.scalacheck.Prop.*
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util
+import scala.concurrent.ExecutionContext
 import scala.util.{Success, Try}
 
 class AeadTest extends munit.ScalaCheckSuite {

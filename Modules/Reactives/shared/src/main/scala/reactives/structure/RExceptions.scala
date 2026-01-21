@@ -14,7 +14,7 @@ object RExceptions {
   }
 
   def toExternalReadException[R](r: ReSource, f: => R): R = {
-    try { f }
+    try f
     catch {
       case esct: EmptySignalControlThrowable =>
         // TODO: there is a API to add a cause to the exception, but only in JDK 15 …

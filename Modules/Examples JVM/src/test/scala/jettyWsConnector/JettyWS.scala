@@ -1,13 +1,13 @@
 package jettyWsConnector
 
 import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive as ChannelHandler}
-import de.rmgk.delay.{Async, toAsync, Callback as DelayCallback}
+import de.rmgk.delay.{Async, Callback as DelayCallback, toAsync}
 import org.eclipse.jetty.http.pathmap.PathSpec
 import org.eclipse.jetty.server.handler.{ContextHandler, ContextHandlerCollection}
 import org.eclipse.jetty.server.{Server, ServerConnector}
 import org.eclipse.jetty.util.Callback as JettyUtilCallback
 import org.eclipse.jetty.websocket.api.Session.Listener
-import org.eclipse.jetty.websocket.api.{Session, Callback as JettyCallback}
+import org.eclipse.jetty.websocket.api.{Callback as JettyCallback, Session}
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.eclipse.jetty.websocket.server.*
 
@@ -63,16 +63,15 @@ class JettyWsListener(val server: Server) {
   def webSocketCreator(
       incoming: ChannelHandler[MessageBuffer],
       delayCallback: DelayCallback[Connection[MessageBuffer]]
-  ) =
+  ): WebSocketCreator =
     new WebSocketCreator {
       override def createWebSocket(
           request: ServerUpgradeRequest,
           upgradeResponse: ServerUpgradeResponse,
           // callback has to be ignored if a handler is returned (great design jetty!)
           callback: JettyUtilCallback
-      ): AnyRef = {
+      ): AnyRef =
         new JettyWsHandler(incoming, delayCallback)
-      }
     }
 }
 
@@ -88,7 +87,7 @@ object JettyWsConnection {
         client.connect(
           new JettyWsHandler(incomingHandler, Async.handler[Connection[MessageBuffer]]),
           uri
-        ).toAsync.run(using ()) {
+        ).toAsync.run {
           sess =>
         }
       }
@@ -137,15 +136,13 @@ class JettyWsHandler(
     getSession.demand()
   }
 
-  override def onWebSocketText(message: String): Unit = {
+  override def onWebSocketText(message: String): Unit =
     getSession.demand()
-  }
 
   override def onWebSocketClose(statusCode: Int, reason: String): Unit = {}
 
-  override def onWebSocketError(cause: Throwable): Unit = {
+  override def onWebSocketError(cause: Throwable): Unit =
     internalCallback.fail(cause)
-  }
 
   override def onWebSocketPing(payload: ByteBuffer): Unit =
     getSession.sendPong(payload, JettyCallback.from(() => getSession.demand(), _ => ()))

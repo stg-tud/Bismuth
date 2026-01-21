@@ -9,7 +9,7 @@ class PhilosopherTable(philosopherCount: Int, work: Long)(val engine: reactives.
 
   import engine.*
 
-  val seatings = createTable(philosopherCount)
+  val seatings: Seq[Seating] = createTable(philosopherCount)
 
   val eaten = new AtomicInteger(0)
 
@@ -44,7 +44,7 @@ class PhilosopherTable(philosopherCount: Int, work: Long)(val engine: reactives.
       if forksAreFree then seating.philosopher.admit(Eating)(using t)
       forksAreFree
     } /* propagation executes here */ { (forksWereFree, t) =>
-      if forksWereFree then assert(t.now(seating.vision) == Done, s"philosopher should be done after turn")
+      if forksWereFree then assert(t.now(seating.vision) == Done, "philosopher should be done after turn")
       forksWereFree
     }
 

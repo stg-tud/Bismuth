@@ -1,8 +1,8 @@
 package test.rdts.simulatedNetworkTests.tools
 
-import AntiEntropy.{AckMsg, DeltaMsg}
 import rdts.base.Uid.asId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import test.rdts.simulatedNetworkTests.tools.AntiEntropy.{AckMsg, DeltaMsg}
 
 import scala.collection.mutable
 
@@ -43,9 +43,8 @@ class AntiEntropy[A](
 
   type Message = Either[AckMsg, DeltaMsg[A]]
 
-  def addNeighbor(newNeighbor: String): Unit = {
+  def addNeighbor(newNeighbor: String): Unit =
     neighbors.append(newNeighbor)
-  }
 
   def recordChange(delta: Named[A], state: A): Unit = {
     fullState = state
@@ -84,7 +83,7 @@ class AntiEntropy[A](
 
   private def prepareDeltaMsg(to: String): Option[DeltaMsg[A]] = {
     if deltaBufferOut.isEmpty || deltaBufferOut.keySet.min > ackMap(to) then
-      Some(DeltaMsg(Named(replicaID.asId, fullState), nextSeqNum))
+        Some(DeltaMsg(Named(replicaID.asId, fullState), nextSeqNum))
     else {
       deltaBufferOut.collect {
         case (n, Named(origin, deltaState)) if n >= ackMap(to) && Uid.unwrap(origin) != to => deltaState

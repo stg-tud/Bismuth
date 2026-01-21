@@ -85,8 +85,8 @@ trait TopoBundle {
     override def observe(obs: Observation): Unit                               = initializer.observe(obs)
 
     override def preconditionTicket: DynamicTicket[State] = new DynamicTicket[State](this):
-      override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
-      override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
+        override private[reactives] def collectDynamic(reactive: ReSource.of[State]) = access(reactive)
+        override private[reactives] def collectStatic(reactive: ReSource.of[State])  = access(reactive)
   }
 
   object TopoScheduler extends TopoSchedulerInterface
@@ -97,7 +97,7 @@ trait TopoBundle {
 
     var idle = true
 
-    def reset(r: ReSource) = r.state.reset(r.commit(r.state.value))
+    def reset(r: ReSource): Unit = r.state.reset(r.commit(r.state.value))
 
     def beforeCleanupHook(all: Seq[ReSource], initialWrites: Set[ReSource]): Unit = ()
 
@@ -154,18 +154,16 @@ trait TopoBundle {
               if admissionTicket.wrapUp != null then admissionTicket.wrapUp.nn(transaction)
               admissionResult
             }
-          } finally {
-            idle = true
-          }
+          } finally
+              idle = true
         }
         afterCommitObservers.foreach(_.execute())
         res
       }
     }
 
-    override private[reactives] def singleReadValueOnce[A](reactive: ReadAs.of[State, A]): A = {
+    override private[reactives] def singleReadValueOnce[A](reactive: ReadAs.of[State, A]): A =
       reactive.read(reactive.state.value)
-    }
   }
 
   object Util {

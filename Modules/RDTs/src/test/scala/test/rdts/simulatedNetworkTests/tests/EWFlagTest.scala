@@ -1,9 +1,9 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.EnableWinsFlag
+import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
@@ -12,8 +12,8 @@ import scala.util.Random
 object EWFlagGenerators {
   def genEWFlag: Gen[AntiEntropyContainer[EnableWinsFlag]] =
     for
-      nEnable  <- Gen.posNum[Int]
-      nDisable <- Gen.posNum[Int]
+        nEnable  <- Gen.posNum[Int]
+        nDisable <- Gen.posNum[Int]
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[EnableWinsFlag]("a", network, mutable.Buffer())

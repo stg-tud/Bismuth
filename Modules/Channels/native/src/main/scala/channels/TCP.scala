@@ -21,7 +21,7 @@ object TCP {
     socket.setTcpNoDelay(true)
     val conn = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
     executionContext.execute: () =>
-      conn.loopHandler(incoming)
+        conn.loopHandler(incoming)
     conn
   }
 
@@ -39,9 +39,9 @@ object TCP {
   def defaultServerSocket(socketAddress: InetSocketAddress): () => ServerSocket = () => {
     val socket = new ServerSocket
 
-    try {
+    try
       socket.setReuseAddress(true)
-    } catch {
+    catch {
       case _: SocketException =>
       // some implementations may not allow SO_REUSEADDR to be set
     }
@@ -56,26 +56,26 @@ object TCP {
         Async.fromCallback { abort ?=>
           try
 
-            val socket = bindsocket()
+              val socket = bindsocket()
 
-            executionContext.execute { () =>
-              try
-                while !abort.closeRequest do {
-                  val connection = socket.accept()
-                  if connection != null
-                  then
-                    Async.handler.succeed {
-                      TCP.handleConnection(connection, incoming, executionContext)
-                    }
+              executionContext.execute { () =>
+                try
+                  while !abort.closeRequest do {
+                    val connection = socket.accept()
+                    if connection != null
+                    then
+                        Async.handler.succeed {
+                          TCP.handleConnection(connection, incoming, executionContext)
+                        }
+                  }
+                catch {
+                  case exception: SocketException =>
+                    Async.handler.fail(exception)
                 }
-              catch {
-                case exception: SocketException =>
-                  Async.handler.fail(exception)
               }
-            }
 
           catch
-            case NonFatal(ex) => Async.handler.fail(ex)
+              case NonFatal(ex) => Async.handler.fail(ex)
         }
     }
 

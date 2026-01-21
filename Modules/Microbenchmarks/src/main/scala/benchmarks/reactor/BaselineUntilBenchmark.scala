@@ -23,18 +23,16 @@ class BaselineUntilBenchmark {
   var trigger: Evt[Unit]    = scala.compiletime.uninitialized
 
   @Setup
-  def setup(engineParam: EngineParam) = {
+  def setup(engineParam: EngineParam): Unit = {
     engine = engineParam.engine
     trigger = Evt[Unit]()
     reactor = Reactor.loop(0) {
       S.until(
         trigger,
-        body = {
-          S.end
-        }: Stage[Int],
-        interruptHandler = {
-          S.end
-        }: Stage[Int]
+        body =
+          S.end: Stage[Int],
+        interruptHandler =
+          S.end: Stage[Int]
       )
     }
   }

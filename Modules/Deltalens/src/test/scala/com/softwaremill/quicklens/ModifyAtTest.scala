@@ -26,8 +26,7 @@ class ModifyAtTest extends AnyFlatSpec with Matchers {
   }
 
   it should "throw an exception if there's no element at the given index" in {
-    an[IndexOutOfBoundsException] should be thrownBy {
-      modify(l1)(_.at(10).a4.a5.name).using(duplicate)
-    }
+    an[IndexOutOfBoundsException] should be thrownBy
+    modify(l1)(_.at(10).a4.a5.name).using(duplicate)
   }
 }

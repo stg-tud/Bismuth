@@ -41,7 +41,7 @@ class PaperCompetition extends BusyThreads {
   var table: PaperPhilosophers = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
-  def printSystemStats() = {
+  def printSystemStats(): Unit = {
     var assertions                       = false
     @inline def captureAssertionsEnabled = {
       assertions = true
@@ -49,13 +49,13 @@ class PaperCompetition extends BusyThreads {
     }
     assert(captureAssertionsEnabled)
     println("Running on " + Runtime.getRuntime.availableProcessors() + " cores with assertions " + (if assertions then
-                                                                                                      "enabled."
+                                                                                                        "enabled."
                                                                                                     else "disabled."))
   }
 
 //  var stream: PrintStream = scala.compiletime.uninitialized
   @Setup(Level.Iteration)
-  def setup(params: BenchmarkParams, engineParam: EngineParam) = {
+  def setup(params: BenchmarkParams, engineParam: EngineParam): Unit = {
     val dynamic = dynamicity match {
       case "dynamic"     => Dynamicity.Dynamic
       case "semi-static" => Dynamicity.SemiStatic

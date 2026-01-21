@@ -82,13 +82,11 @@ class ReactorWithoutAPITest extends FunSuite {
   case class StageBuilder[T](actions: List[ReactorAction[T]] = Nil) {
     import ReactorAction.*
 
-    private def addAction(newValue: ReactorAction[T]): StageBuilder[T] = {
+    private def addAction(newValue: ReactorAction[T]): StageBuilder[T] =
       copy(actions = actions :+ newValue)
-    }
 
-    def set(newValue: T): StageBuilder[T] = {
+    def set(newValue: T): StageBuilder[T] =
       addAction(SetAction(newValue))
-    }
 
     /** Waits until the event is triggered.
       *
@@ -99,9 +97,8 @@ class ReactorWithoutAPITest extends FunSuite {
       * @param body the code to execute when the event is triggered.
       * @tparam E the event's type.
       */
-    def next[E](event: Evt[E])(body: (E => StageBuilder[T])): StageBuilder[T] = {
+    def next[E](event: Evt[E])(body: (E => StageBuilder[T])): StageBuilder[T] =
       addAction(NextAction(event, body))
-    }
 
   }
 
@@ -146,7 +143,7 @@ class ReactorWithoutAPITest extends FunSuite {
   test("Reactor waits for event when using next") {
     val e1      = Evt[Unit]()
     val reactor = Reactor.once(42, Set(e1)) {
-      StageBuilder().next(e1) { (_) =>
+      StageBuilder().next(e1) { _ =>
         StageBuilder().set(1)
       }
     }
@@ -160,7 +157,7 @@ class ReactorWithoutAPITest extends FunSuite {
     val e1 = Evt[Int]()
 
     val reactor = Reactor.once(0, Set(e1)) {
-      StageBuilder().next(e1) { (e) =>
+      StageBuilder().next(e1) { e =>
         StageBuilder().set(e)
       }
     }
@@ -174,9 +171,9 @@ class ReactorWithoutAPITest extends FunSuite {
     val e1 = Evt[Unit]()
 
     val reactor = Reactor.once(0, Set(e1)) {
-      StageBuilder().next(e1) { (_) =>
+      StageBuilder().next(e1) { _ =>
         StageBuilder().set(1)
-          .next(e1) { (_) =>
+          .next(e1) { _ =>
             StageBuilder().set(2)
           }
       }
@@ -194,7 +191,7 @@ class ReactorWithoutAPITest extends FunSuite {
 
     val reactor: Reactor[String] = Reactor.once("Initial Value", Set(e1)) {
       StageBuilder().set("Not Reacted")
-        .next(e1) { (_) =>
+        .next(e1) { _ =>
           StageBuilder().set("Reacted")
         }
     }
@@ -202,12 +199,12 @@ class ReactorWithoutAPITest extends FunSuite {
     val tuple   = Signal { (e1.hold("Init").value, reactor.value) }
     val history = tuple.changed.list(5)
 
-    assertEquals(tuple.now, (("Init", "Not Reacted")))
+    assertEquals(tuple.now, ("Init", "Not Reacted"))
     assertEquals(history.now, Nil)
 
     e1.fire("Fire")
 
-    assertEquals(tuple.now, (("Fire", "Reacted")))
+    assertEquals(tuple.now, ("Fire", "Reacted"))
     assertEquals(history.now, List(("Fire", "Reacted")))
   }
 }

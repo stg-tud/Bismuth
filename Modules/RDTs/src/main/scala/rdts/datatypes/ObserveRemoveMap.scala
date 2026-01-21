@@ -1,15 +1,15 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, DecoratedLattice, Decompose, Lattice, LocalUid}
+import rdts.base.*
 import rdts.datatypes.ObserveRemoveMap.Entry
 import rdts.time.Dots
 
 case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
 
   lazy val observed: Dots = removed.union:
-    inner.values.foldLeft(Dots.empty) {
-      case (set, v) => set `union` v.dots
-    }
+      inner.values.foldLeft(Dots.empty) {
+        case (set, v) => set `union` v.dots
+      }
 
   type Delta = ObserveRemoveMap[K, V]
 
@@ -20,6 +20,10 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
   def queryAllEntries: Iterable[V] = inner.values.map(_.value)
 
   def entries: Iterable[(K, V)] = inner.view.mapValues(_.value)
+
+  def keySet: Set[K] = inner.keySet
+
+  def size: Int = inner.size
 
   /** merges `v` into the current value stored in the map */
   def update(k: K, v: V)(using LocalUid): Delta = {
@@ -37,9 +41,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     }
   }
 
-  def remove(k: K): Delta = {
+  def remove(k: K): Delta =
     ObserveRemoveMap(Map.empty, inner.get(k).map(_.dots).getOrElse(Dots.empty))
-  }
 
   def removeAll(keys: Iterable[K]): Delta = {
     val rem = keys.flatMap(inner.get).map(_.dots).foldLeft(Dots.empty)(_ `union` _)
@@ -64,18 +67,21 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     )
   }
 
-  def clear(): Delta = {
+  def clear(): Delta =
     ObserveRemoveMap(Map.empty, inner.values.map(_.dots).foldLeft(Dots.empty)(_ `union` _))
-  }
 }
 
 object ObserveRemoveMap {
 
   case class Entry[V](dots: Dots, value: V)
   object Entry {
-    given bottom[V: Bottom]: Bottom[Entry[V]]          = Bottom.derived
-    given lattice[V: Lattice]: Lattice[Entry[V]]       = Lattice.derived
-    given decompose[V: Decompose]: Decompose[Entry[V]] = Decompose.derived
+    given bottom[V: Bottom]: Bottom[Entry[V]]    = Bottom.derived
+    given lattice[V: Lattice]: Lattice[Entry[V]] = Lattice.derived
+    given decompose[V: Decompose]: Decompose[Entry[V]] with {
+      extension (entry: Entry[V])
+          override def decomposed: Iterable[Entry[V]] =
+            entry.value.decomposed.map(Entry(entry.dots, _))
+    }
   }
 
   def empty[K, V]: ObserveRemoveMap[K, V] = ObserveRemoveMap(Map.empty, Dots.empty)
@@ -88,4 +94,11 @@ object ObserveRemoveMap {
     }
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
+
+  given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
+    bufferedDelta.inner.forall((key, entry) =>
+      (delta.inner.contains(key)
+      && delta.inner(key).value.isRedundant(entry.value)) || delta.removed.contains(entry.dots)
+    ) && delta.removed.contains(bufferedDelta.removed)
+
 }

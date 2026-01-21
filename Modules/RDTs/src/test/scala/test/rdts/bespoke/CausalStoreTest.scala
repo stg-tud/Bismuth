@@ -1,11 +1,11 @@
 package test.rdts.bespoke
 
-import rdts.base.{Bottom, Lattice, Uid}
+import rdts.base.{Lattice, Uid}
+import rdts.experiments.CausalStore
 import rdts.experiments.CausalStore.CausalDelta
-import rdts.experiments.{BoundedCounter, CausalStore}
 import rdts.time.{ArrayRanges, Dot, Dots}
 import test.rdts.DataGenerator.ExampleData
-import test.rdts.{TestReplica, given}
+import test.rdts.given
 
 import scala.language.implicitConversions
 

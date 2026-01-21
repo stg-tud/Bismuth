@@ -1,7 +1,7 @@
 package tests.rescala.static.signals
 
 import munit.FunSuite
-import reactives.SelectedScheduler.candidate.State as BundleState
+import reactives.SelectedScheduler.candidate.State
 import reactives.core.{CreationScope, CreationTicket}
 
 class SignalMacro extends FunSuite {
@@ -91,7 +91,7 @@ class SignalMacro extends FunSuite {
       val a = new A {
         def obj(): Unit = {
           new {
-            val evt              = Evt[Int]()
+            val evt: Evt[Int]    = Evt[Int]()
             val sig: Signal[Int] = Signal { 2 * evt.hold(0).value }
 
             e = evt
@@ -206,19 +206,19 @@ class SignalMacro extends FunSuite {
     test("correctly replace ticket during macro expansion") {
 
       def wantsTicket(using
-          ct: CreationTicket[BundleState],
-          ct2: CreationTicket[BundleState]
+          ct: CreationTicket[State],
+          ct2: CreationTicket[State]
       ): (Boolean, Boolean, Boolean) = {
         (
           ct.scope == ct2.scope,
-          ct.scope.isInstanceOf[CreationScope.StaticCreationScope[BundleState]],
-          ct2.scope.isInstanceOf[CreationScope.StaticCreationScope[BundleState]]
+          ct.scope.isInstanceOf[CreationScope.StaticCreationScope[State]],
+          ct2.scope.isInstanceOf[CreationScope.StaticCreationScope[State]]
         )
       }
 
       val s = Signal { wantsTicket }
 
-      assertEquals(s.readValueOnce, ((true, true, true)))
+      assertEquals(s.readValueOnce, (true, true, true))
 
     }
 
@@ -230,7 +230,7 @@ class SignalMacro extends FunSuite {
       }
 
       val greeting = Signal {
-        (myMap.ms).value
+        myMap.ms.value
       }
 
       assertEquals(greeting.readValueOnce, source.readValueOnce)
@@ -249,7 +249,7 @@ class SignalMacro extends FunSuite {
       }
 
       val greeting = Signal {
-        (myMap.ms).value
+        myMap.ms.value
       }
 
       assertEquals(greeting.readValueOnce, source.readValueOnce)

@@ -80,12 +80,12 @@ class ReactorWithoutAPITest extends munit.FunSuite {
       val tuple   = Signal { (e1.hold("Init").value, reactor.value) }
       val history = tuple.changed.list(5)
 
-      assertEquals(tuple.now, (("Init", "Not Reacted")))
+      assertEquals(tuple.now, ("Init", "Not Reacted"))
       assertEquals(history.now, Nil)
 
       e1.fire("Fire")
 
-      assertEquals(tuple.now, (("Fire", "Reacted")))
+      assertEquals(tuple.now, ("Fire", "Reacted"))
       assertEquals(history.now, List(("Fire", "Reacted")))
     }
 
@@ -183,12 +183,10 @@ class ReactorWithoutAPITest extends munit.FunSuite {
       val reactor = Reactor.once("Initial Value") {
         S.until(
           e1,
-          body = {
-            S.set("Body value")
-          },
-          interruptHandler = {
+          body =
+            S.set("Body value"),
+          interruptHandler =
             S.set("Interrupt value")
-          }
         )
       }
 
@@ -202,9 +200,8 @@ class ReactorWithoutAPITest extends munit.FunSuite {
       val reactor = Reactor.once("Initial Value") {
         S.until(
           e1,
-          body = {
-            S.set("Body value")
-          },
+          body =
+            S.set("Body value"),
           interruptHandler = { (e: String) =>
             S.set(e)
           }
@@ -229,9 +226,8 @@ class ReactorWithoutAPITest extends munit.FunSuite {
               }
             }
           },
-          interruptHandler = {
+          interruptHandler =
             S.set("Interrupted")
-          }
         )
       }
 

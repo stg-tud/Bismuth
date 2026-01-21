@@ -28,10 +28,10 @@ class PhilosopherCompetition {
     while {
       val seating: Seating = myBlock(ThreadLocalRandom.current().nextInt(myBlock.length))
       if comp.manualLocking then
-        manualLocking(comp)(seating)
+          manualLocking(comp)(seating)
       else
-        tryUpdateCycle(comp)(seating)
-    } do { bo.backoff() }
+          tryUpdateCycle(comp)(seating)
+    } do bo.backoff()
 
   }
 
@@ -57,22 +57,22 @@ class PhilosopherCompetition {
         secondLock.lock()
         try {
           thirdLock.lock()
-          try {
+          try
             comp.stableTable.tryEat(seating)
-          } finally { thirdLock.unlock() }
-        } finally { secondLock.unlock() }
-      } finally { firstLock.unlock() }
+          finally thirdLock.unlock()
+        } finally secondLock.unlock()
+      } finally firstLock.unlock()
     if res then {
       firstLock.lock()
       try {
         secondLock.lock()
         try {
           thirdLock.lock()
-          try {
+          try
             seating.philosopher.set(Thinking)
-          } finally { thirdLock.unlock() }
-        } finally { secondLock.unlock() }
-      } finally { firstLock.unlock() }
+          finally thirdLock.unlock()
+        } finally secondLock.unlock()
+      } finally firstLock.unlock()
     }
     !res
   }
@@ -101,7 +101,7 @@ class Competition extends BusyThreads {
   var locks: Array[Lock]     = scala.compiletime.uninitialized
 
   @Setup
-  def setup(params: BenchmarkParams, work: Workload, engineParam: EngineParam) = {
+  def setup(params: BenchmarkParams, work: Workload, engineParam: EngineParam): Unit = {
     manualLocking = engineParam.engineName == "unmanaged" && layout != "noconflict"
     if manualLocking then {
       locks = Array.fill(philosophers)(new ReentrantLock())

@@ -85,6 +85,12 @@ Applications may use ranges to reliably track things like:
 - Cell contents: map of row/column id pair to cell content. Deleted rows/columns may leave tombstoned cell entries; these can de deleted by `purgeTombstones()`. This does change semantics as these cells then cannot be revived.
 - Ranges: implemented with markers—named anchors in the 1-D lists of row/column ids. A marker points to a concrete element id and therefore follows moves/updates. On deletion of its element it reacts according to its `MarkerRemovalBehavior`: Successor → jump to next element; Predecessor → jump to previous; None → marker is removed.
 
+> [!NOTE]
+> We could also model cells as nested maps (`Map<ColId, Map<RowId, Cell>>`, `Map<RowId, Map<ColId, Cell>>`, or even both).
+> This would enable faster whole-column and whole-row operations.
+> It is a design consideration orthogonal to our other concepts. See [Yanakieva et al., §2.2.2 (“Nested Map” and variants)]((https://dlnext.acm.org/doi/10.1145/3578358.3591324)) for a discussion.
+> As a side note, using both maps would not only increase memory usage but could also lead to larger transmission diffs unless we use a different delta structure for the delta.
+
 ### Ordered list implementation
 
 The `ReplicatedUniqueList` is a **generic, ordered, unique CRDT list**, designed with the purpose of tracking identifiers for movable rows/columns of a spreadsheet in mind.
@@ -110,6 +116,11 @@ In the context of the complete spreadsheet, this enables concurrent cell edits a
 
 Markers use the same criteria to select the winner of a merge.
 Since markers are stored as a map—with unique keys—from marker id to the set of precedences and timestamps of the modifying operations and the competing IDs of the pointed-to element, the winner is selected automatically by the merge without any filtering.
+
+## What’s new compared to prior work (summary)
+- The concept and implementation of ranges as replicated objects with marker-based anchoring. See [Ranges](#ranges) and [Design](#design) for details.
+- Persistent cell conflicts (multi-value cells) instead of LWW, surfaced in the UI for user choice. See [Semantics](#semantics).
+- Support for move operations with the semantics in [Semantics](#semantics). We introduced our ReplicatedUniqueList which decouples position and content, because a plain ReplicatedList in Yjs and Bismuth cannot realize these move semantics. See [Ordered list implementation](#ordered-list-implementation) for details.
 
 ## Earlier attempts
 - We initially built an operation-based CRDT from scratch in Kotlin

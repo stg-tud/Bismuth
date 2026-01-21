@@ -19,7 +19,7 @@ todo: for object -> JSON serialization the corresponding counter-method to readB
  */
 
 enum RdtMessageType:
-  case Request, Payload
+    case Request, Payload
 
 case class Endpoint(scheme: Int, specific_part: String | Int) {
   def full_uri: String = {
@@ -39,12 +39,12 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
-          case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED => Endpoint.NONE_ENDPOINT
-          case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
-          case s: String =>
-            val i: Int = s.indexOf("/", 2)
-            if i == -1 then Endpoint(scheme, specific_part)
-            else Endpoint(scheme, s.substring(0, i + 1))
+            case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED => Endpoint.NONE_ENDPOINT
+            case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
+            case s: String =>
+              val i: Int = s.indexOf("/", 2)
+              if i == -1 then Endpoint(scheme, specific_part)
+              else Endpoint(scheme, s.substring(0, i + 1))
       case Endpoint.IPN_URI_SCHEME_ENCODED => throw Exception(s"cannot extract node endpoint from ipn endpoint: $this")
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
@@ -54,10 +54,10 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
-          case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED =>
-            Endpoint.NONE_ENDPOINT_SPECIFIC_PART_NAME.split("/")(2) // "none"
-          case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
-          case s: String => s.split("/")(2)
+            case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED =>
+              Endpoint.NONE_ENDPOINT_SPECIFIC_PART_NAME.split("/")(2) // "none"
+            case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
+            case s: String => s.split("/")(2)
       case Endpoint.IPN_URI_SCHEME_ENCODED => throw Exception(s"cannot extract node name from ipn endpoint: $this")
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
@@ -67,12 +67,12 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
-          case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED =>
-            Endpoint.NONE_ENDPOINT_SPECIFIC_PART_NAME.split("/")(2) // "none"
-          case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
-          case s: String =>
-            val arr: Array[String] = s.split("/")
-            if arr.length == 4 then arr(3) else ""
+            case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED =>
+              Endpoint.NONE_ENDPOINT_SPECIFIC_PART_NAME.split("/")(2) // "none"
+            case _: Int    => throw Exception(s"unkown integer specific part: $specific_part")
+            case s: String =>
+              val arr: Array[String] = s.split("/")
+              if arr.length == 4 then arr(3) else ""
       case Endpoint.IPN_URI_SCHEME_ENCODED => throw Exception(s"cannot extract node name from ipn endpoint: $this")
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
@@ -123,11 +123,10 @@ object CreationTimestamp {
     var sequence_number = 0
 
     while old_now.isDefined && bundle_creation_time.isEqual(
-        old_now.get.bundle_creation_time
-      ) && sequence_number <= old_now.get.sequence_number
-    do {
-      sequence_number += 1
-    }
+          old_now.get.bundle_creation_time
+        ) && sequence_number <= old_now.get.sequence_number
+    do
+        sequence_number += 1
 
     val now = CreationTimestamp(bundle_creation_time, sequence_number)
     old_now = Option(now)
@@ -139,7 +138,7 @@ case class FragmentInfo(fragment_offset: Int, total_application_data_length: Int
 
 case class HopCount(hop_limit: Int, current_count: Int)
 
-case class RdtMetaInfo(dots: Dots, causalPredecessors: Dots, lastKnownDots: Dots, message_type: RdtMessageType)
+case class RdtMetaInfo(dots: Dots, redundantDots: Dots, message_type: RdtMessageType)
 
 case class PrimaryBlock(
     version: Int,
@@ -300,9 +299,8 @@ private def readBytes(reader: Reader): Array[Byte] = {
     val buffer: ArrayBuffer[Byte] = ArrayBuffer[Byte]()
 
     reader.readArrayStart()
-    while !reader.hasBreak do {
-      buffer += reader.readInt().toByte
-    }
+    while !reader.hasBreak do
+        buffer += reader.readInt().toByte
     reader.readArrayClose(unbounded = true, buffer.toArray)
   }
 }
@@ -331,8 +329,8 @@ given Encoder[Endpoint] = Encoder { (writer, endpoint) =>
     .writeInt(endpoint.scheme)
 
   endpoint.specific_part match
-    case normal_endpint: String => writer.writeString(normal_endpint)
-    case none_endpoint: Int     => writer.writeInt(none_endpoint)
+      case normal_endpint: String => writer.writeString(normal_endpint)
+      case none_endpoint: Int     => writer.writeInt(none_endpoint)
 
   writer.writeArrayClose()
 }
@@ -560,48 +558,48 @@ given Decoder[CanonicalBlock] = Decoder { reader =>
 
   def readBlock(b_type: Int): CanonicalBlock = {
     b_type match
-      case CanonicalBlock.PAYLOAD_BLOCK_TYPE_CODE => PayloadBlock(
-          b_type,
-          reader.readInt(),
-          reader.read[BlockProcessingControlFlags](),
-          reader.readInt(),
-          readBytes(reader)
-        )
-      case CanonicalBlock.PREVIOUS_NODE_BLOCK_TYPE_CODE => PreviousNodeBlock(
-          b_type,
-          reader.readInt(),
-          reader.read[BlockProcessingControlFlags](),
-          reader.readInt(),
-          readBytes(reader)
-        )
-      case CanonicalBlock.BUNDLE_AGE_BLOCK_TYPE_CODE => BundleAgeBlock(
-          b_type,
-          reader.readInt(),
-          reader.read[BlockProcessingControlFlags](),
-          reader.readInt(),
-          readBytes(reader)
-        )
-      case CanonicalBlock.HOP_COUNT_BLOCK_TYPE_CODE => HopCountBlock(
-          b_type,
-          reader.readInt(),
-          reader.read[BlockProcessingControlFlags](),
-          reader.readInt(),
-          readBytes(reader)
-        )
-      case CanonicalBlock.RDT_META_BLOCK_TYPE_CPDE => RdtMetaBlock(
-          b_type,
-          reader.readInt(),
-          reader.read[BlockProcessingControlFlags](),
-          reader.readInt(),
-          readBytes(reader)
-        )
-      case _ => UnknownBlock(
-          b_type,
-          reader.readInt(),
-          reader.read[BlockProcessingControlFlags](),
-          reader.readInt(),
-          readBytes(reader)
-        )
+        case CanonicalBlock.PAYLOAD_BLOCK_TYPE_CODE => PayloadBlock(
+            b_type,
+            reader.readInt(),
+            reader.read[BlockProcessingControlFlags](),
+            reader.readInt(),
+            readBytes(reader)
+          )
+        case CanonicalBlock.PREVIOUS_NODE_BLOCK_TYPE_CODE => PreviousNodeBlock(
+            b_type,
+            reader.readInt(),
+            reader.read[BlockProcessingControlFlags](),
+            reader.readInt(),
+            readBytes(reader)
+          )
+        case CanonicalBlock.BUNDLE_AGE_BLOCK_TYPE_CODE => BundleAgeBlock(
+            b_type,
+            reader.readInt(),
+            reader.read[BlockProcessingControlFlags](),
+            reader.readInt(),
+            readBytes(reader)
+          )
+        case CanonicalBlock.HOP_COUNT_BLOCK_TYPE_CODE => HopCountBlock(
+            b_type,
+            reader.readInt(),
+            reader.read[BlockProcessingControlFlags](),
+            reader.readInt(),
+            readBytes(reader)
+          )
+        case CanonicalBlock.RDT_META_BLOCK_TYPE_CPDE => RdtMetaBlock(
+            b_type,
+            reader.readInt(),
+            reader.read[BlockProcessingControlFlags](),
+            reader.readInt(),
+            readBytes(reader)
+          )
+        case _ => UnknownBlock(
+            b_type,
+            reader.readInt(),
+            reader.read[BlockProcessingControlFlags](),
+            reader.readInt(),
+            readBytes(reader)
+          )
   }
 
   val block = readBlock(block_type_code)
@@ -620,9 +618,8 @@ given Encoder[Bundle] = Encoder { (writer, bundle) =>
     .writeArrayOpen(length)
     .write[PrimaryBlock](bundle.primary_block)
 
-  for block <- bundle.other_blocks do {
-    writer.write[CanonicalBlock](block)
-  }
+  for block <- bundle.other_blocks do
+      writer.write[CanonicalBlock](block)
 
   writer.writeArrayClose()
 }
@@ -639,9 +636,8 @@ given Decoder[Bundle] = Decoder { reader =>
 
   val canonicalBlocks: ListBuffer[CanonicalBlock] = ListBuffer()
 
-  while reader.hasArrayHeader || reader.hasArrayStart do {
-    canonicalBlocks.addOne(reader.read[CanonicalBlock]())
-  }
+  while reader.hasArrayHeader || reader.hasArrayStart do
+      canonicalBlocks.addOne(reader.read[CanonicalBlock]())
 
   reader.readArrayClose(unbounded, Bundle(primaryBlock, canonicalBlocks.toList))
 }

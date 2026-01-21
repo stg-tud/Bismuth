@@ -190,14 +190,14 @@ class Ed25519UtilTest extends FunSuite {
     }
   }
 
-  private def testKeyEqualityUsingSignatureWithAllProviders(keyPairA: KeyPair, keyPairB: KeyPair): Unit = {
-    cryptoProviders.foreach { providerNameVerify =>
-      cryptoProviders.foreach { providerNameSign =>
-        testKeyEqualityUsingSignature(keyPairA.getPublic, keyPairB.getPrivate, providerNameSign, providerNameVerify)
-        testKeyEqualityUsingSignature(keyPairB.getPublic, keyPairA.getPrivate, providerNameSign, providerNameVerify)
-      }
-    }
-  }
+//  private def testKeyEqualityUsingSignatureWithAllProviders(keyPairA: KeyPair, keyPairB: KeyPair): Unit = {
+//    cryptoProviders.foreach { providerNameVerify =>
+//      cryptoProviders.foreach { providerNameSign =>
+//        testKeyEqualityUsingSignature(keyPairA.getPublic, keyPairB.getPrivate, providerNameSign, providerNameVerify)
+//        testKeyEqualityUsingSignature(keyPairB.getPublic, keyPairA.getPrivate, providerNameSign, providerNameVerify)
+//      }
+//    }
+//  }
 
   private def testKeyEqualityUsingSignature(
       pubKey: PublicKey,

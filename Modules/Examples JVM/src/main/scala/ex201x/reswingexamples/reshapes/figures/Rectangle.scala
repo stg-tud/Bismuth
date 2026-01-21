@@ -15,7 +15,7 @@ class Rectangle(
     with Movable
     with Resizable {
 
-  override def doDraw(g: Graphics2D) = {
+  override def doDraw(g: Graphics2D): Unit = {
     val width  = math.abs(start.x - end.x)
     val height = math.abs(start.y - end.y)
     val x      = math.min(start.x, end.x)
@@ -23,7 +23,7 @@ class Rectangle(
     g.drawRect(x, y, width, height)
   }
 
-  override def toLines() = {
+  override def toLines(): List[(Point, Point)] = {
     val width  = math.abs(start.x - end.x)
     val height = math.abs(start.y - end.y)
 

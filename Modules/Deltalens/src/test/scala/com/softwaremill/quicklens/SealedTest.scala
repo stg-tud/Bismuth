@@ -19,9 +19,9 @@ object SealedTestData {
   val p1: P1    = C2("c2", None)
   val p1dup: P1 = C2("c2c2", None)
 
-  val g1        = G(Some(C1("c1", Some("c2"))))
-  val g1dup     = G(Some(C1("c1c1", Some("c2"))))
-  val g1eachdup = G(Some(C1("c1", Some("c2c2"))))
+  val g1: G        = G(Some(C1("c1", Some("c2"))))
+  val g1dup: G     = G(Some(C1("c1c1", Some("c2"))))
+  val g1eachdup: G = G(Some(C1("c1", Some("c2c2"))))
 
   sealed trait P2 {
     def x: String
@@ -41,8 +41,8 @@ object SealedTestData {
   case class Cat(name: String)  extends LeggedPet
   case class Dog(name: String)  extends LeggedPet
 
-  val pets       = List[Pet](Fish("Finn"), Cat("Catia"), Dog("Douglas"))
-  val juniorPets =
+  val pets: List[Pet]       = List[Pet](Fish("Finn"), Cat("Catia"), Dog("Douglas"))
+  val juniorPets: List[Pet] =
     List[Pet](Fish("Finn, Jr."), Cat("Catia, Jr."), Dog("Douglas, Jr."))
 }
 

@@ -1,7 +1,7 @@
 package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import rdts.base.{Lattice, Uid}
+import rdts.base.{Historized, Lattice}
 import rdts.time.Dots
 import replication.DeltaDissemination.pmscodec
 import replication.DeltaStorage.Type.Discarding
@@ -46,24 +46,21 @@ class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
   override def remember(message: CachedMessage[Payload[State]]): Unit = {
     pastPayloads = pastPayloads.enqueue(message)
     if pastPayloads.sizeIs > size then
-      pastPayloads = pastPayloads.drop(1)
-      ()
+        pastPayloads = pastPayloads.drop(1)
+        ()
   }
 
 }
 
 class StateDeltaStorage[State: JsonValueCodec](getState: () => State)(using Lattice[Dots]) extends DeltaStorage[State] {
 
-  private var dots    = Dots.empty
-  private var senders = Set.empty[Uid]
+  private var dots = Dots.empty
 
   override def getHistory: List[CachedMessage[Payload[State]]] =
-    List(SentCachedMessage(Payload(senders, dots, getState()))(using pmscodec))
+    List(SentCachedMessage(Payload(dots, getState()))(using pmscodec))
 
-  override def remember(message: CachedMessage[Payload[State]]): Unit = {
+  override def remember(message: CachedMessage[Payload[State]]): Unit =
     dots = dots.merge(message.payload.dots)
-    senders = senders ++ message.payload.senders
-  }
 
 }
 
@@ -73,9 +70,8 @@ class KeepAllHistory[State] extends DeltaStorage[State] {
 
   override def getHistory: List[CachedMessage[Payload[State]]] = history
 
-  override def remember(message: CachedMessage[Payload[State]]): Unit = {
+  override def remember(message: CachedMessage[Payload[State]]): Unit =
     history = message :: history
-  }
 
 }
 
@@ -95,6 +91,25 @@ class MergingHistory[State: JsonValueCodec](blockSize: Int)(using Lattice[Payloa
       mergedHistory = merged :: mergedHistory
       history = List.empty
     }
+  }
+
+}
+
+class NonRedundantHistory[State: {JsonValueCodec, Historized}] extends DeltaStorage[State] {
+
+  private var history: Set[Payload[State]] = Set.empty
+
+  override def getHistory: List[CachedMessage[Payload[State]]] =
+    history.map(SentCachedMessage(_)(using pmscodec)).toList
+
+  override def remember(message: CachedMessage[Payload[State]]): Unit = {
+    val redundantDeltas: Dots = history.toMetaDeltas.getRedundantDeltas(message.payload.data)
+    val redundantDots: Dots   = history.foldLeft(Dots.empty)((dots, bufferedDelta) =>
+      if !dots.contains(bufferedDelta.dots) then dots.union(bufferedDelta.redundantDots) else dots
+    )
+
+    history =
+      history.filterNot(p => redundantDots.contains(p.dots)) + message.payload.copy(redundantDots = redundantDeltas)
   }
 
 }

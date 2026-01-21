@@ -2,7 +2,7 @@ package test.rdts.corestructs
 
 import org.scalacheck.Prop.*
 import rdts.base.Uid
-import rdts.time.{ArrayRanges, Dot, Dots, Time}
+import rdts.time.{ArrayRanges, Dot, Dots}
 import test.rdts.DataGenerator.given
 
 class DotsTest extends munit.ScalaCheckSuite {
@@ -16,7 +16,7 @@ class DotsTest extends munit.ScalaCheckSuite {
 
   property("contains") {
     forAll { (cc: Dots) =>
-      (cc.toSet).foreach { d =>
+      cc.toSet.foreach { d =>
         assert(
           cc.contains(d),
           s"DietMapCContext.contains should return true for every dot in the context, but returns false when applied to ($cc, $d)"
@@ -36,7 +36,7 @@ class DotsTest extends munit.ScalaCheckSuite {
 
   property("union") {
     forAll { (cca: Dots, ccb: Dots) =>
-      val ccunion = (cca `union` ccb)
+      val ccunion = cca `union` ccb
 
       val seta     = cca.toSet
       val setb     = ccb.toSet
@@ -81,7 +81,7 @@ class DotsTest extends munit.ScalaCheckSuite {
 
   property("nextDot") {
     forAll { (cc: Dots, randId: Uid) =>
-      val asSet = (cc.toSet)
+      val asSet = cc.toSet
       val ids   = asSet.map(_.place) + randId
 
       ids.foreach { id =>
@@ -113,8 +113,8 @@ class DotsTest extends munit.ScalaCheckSuite {
       val leftSet  = left.toSet
       val rightSet = right.toSet
       if left <= right then
-        assertEquals(leftSet.intersect(rightSet), leftSet, s"left: $left\nright: $right")
-        assertEquals(leftSet.union(rightSet), rightSet)
+          assertEquals(leftSet.intersect(rightSet), leftSet, s"left: $left\nright: $right")
+          assertEquals(leftSet.union(rightSet), rightSet)
 
       assertEquals(left.disjunct(right), leftSet.intersect(rightSet).isEmpty)
     }

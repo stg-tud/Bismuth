@@ -6,9 +6,8 @@ import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Try}
 
 class Spawn[T] private (future: Future[T]) {
-  def await(millis: Long): T = {
+  def await(millis: Long): T =
     Await.result(future, millis.millisecond)
-  }
   def awaitTry(millis: Long): Try[T] = {
     try {
       Await.ready(future, millis.milliseconds)

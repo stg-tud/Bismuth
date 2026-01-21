@@ -2,8 +2,6 @@ package lore.ast
 
 import cats.data.NonEmptyList
 import cats.parse.Caret
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import dotty.tools.dotc.util.SourcePosition
 
 import java.nio.file.Path

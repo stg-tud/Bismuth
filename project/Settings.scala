@@ -8,11 +8,7 @@ import sbt.Keys.*
 object Settings {
 
   // also consider updating the -source param below
-  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.7.3")
-
-  // needs either 3.7 or 3.5 minor version in 3.6, otherwise there is a unfixable warning about changed implicit order
-  // see https://github.com/scala/scala3/issues/22153
-  val scala3VersionMinor = scala3VersionString.reverse.dropWhile(c => c != '.').drop(1).reverse
+  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.8.0")
 
   // see https://docs.scala-lang.org/overviews/compiler-options/
   // and https://docs.scala-lang.org/scala3/guides/migration/options-new.html
@@ -22,12 +18,13 @@ object Settings {
   val scala3defaults = Def.settings(
     scalaVersion := scala3VersionString,
     fullFeatureDeprecationWarnings,
-    scalaSourceLevel(scala3VersionMinor),
     warningsAreErrors(Compile / compile, Test / compile),
     valueDiscard(Compile / compile),
     typeParameterShadow(Compile / compile),
     privateShadow(Compile / compile),
     recurseWithDefault(Compile / compile, Test / compile),
+    semanticdbEnabled := true,
+    unusedWarnings(Compile / compile, Test / compile)
   )
 
   val scala3defaultsExtra = Def.settings(
@@ -109,8 +106,6 @@ object Settings {
         "-Wunused:nowarn",
         // Warn if an import selector is not referenced.
         "-Wunused:imports",
-        // Same as -Wunused:import, only for imports of explicit named members. NOTE : This overrides -Wunused:imports and NOT set by -Wunused:all,
-        "-Wunused:strict-no-implicit-warn",
         // Warn if a private member is unused,
         "-Wunused:privates",
         // Warn if a local definition is unused,
@@ -121,6 +116,8 @@ object Settings {
         "-Wunused:implicits",
         // (UNSAFE) Warn if a variable bound in a pattern is unused. This warning can generate false positive, as warning cannot be suppressed yet.
         // "-Wunused:unsafe-warn-patvars",
+        // also make unused warnings not warnings but just infos
+        "-Wconf:id=E198:info",
       )
     }
   }

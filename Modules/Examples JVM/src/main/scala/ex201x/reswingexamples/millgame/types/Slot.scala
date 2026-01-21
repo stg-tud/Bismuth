@@ -6,5 +6,5 @@ case object Black extends Slot { val other = White }
 case object White extends Slot { val other = Black }
 
 final case class SlotIndex(index: Int) extends AnyVal {
-  override def toString = "#" + index
+  override def toString: String = "#" + index
 }

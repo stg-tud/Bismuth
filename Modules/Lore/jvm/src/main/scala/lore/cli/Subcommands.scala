@@ -41,7 +41,7 @@ object ToViper {
 
   // viper flags
   private val split: Opts[SplitMode] =
-    Opts.option[Path]("split", short = "s", help = s"Write output to multiple separate files in a directory.")
+    Opts.option[Path]("split", short = "s", help = "Write output to multiple separate files in a directory.")
       .map(SplitMode.apply)
 
   val toViper: Opts[ToViper] =

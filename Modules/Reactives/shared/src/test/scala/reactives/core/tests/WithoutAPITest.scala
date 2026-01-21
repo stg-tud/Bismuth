@@ -2,7 +2,7 @@ package reactives.core.tests
 
 import munit.FunSuite
 import reactives.SelectedScheduler.State
-import reactives.core.{CreationTicket, Derived, InitialChange, ReInfo, ReSource, ReadAs}
+import reactives.core.{CreationTicket, Derived, InitialChange, ReInfo, ReadAs}
 
 class WithoutAPITest extends FunSuite {
 
@@ -20,7 +20,7 @@ class WithoutAPITest extends FunSuite {
       override def read(v: Value): T                               = v
       override protected[reactives] def commit(base: Value): Value = base
 
-      def makeChange(newValue: T) =
+      def makeChange(newValue: T): InitialChange[State] { val source: CustomSource.this.type } =
         new InitialChange[State] {
           override val source: CustomSource.this.type                                               = outer
           override def writeValue(base: source.Value, writeCallback: source.Value => Unit): Boolean = {

@@ -149,10 +149,10 @@ object Pulse {
 
   /** the pulse representing an empty signal */
   object empty {
-    def apply(info: ReInfo)                            = Exceptional(EmptySignalControlThrowable(info))
+    def apply(info: ReInfo): Exceptional               = Exceptional(EmptySignalControlThrowable(info))
     def unapply(exceptional: Pulse[?]): Option[ReInfo] = exceptional match
-      case Exceptional(EmptySignalControlThrowable(reSource)) => Some(reSource)
-      case _                                                  => None
+        case Exceptional(EmptySignalControlThrowable(reSource)) => Some(reSource)
+        case _                                                  => None
 
   }
 

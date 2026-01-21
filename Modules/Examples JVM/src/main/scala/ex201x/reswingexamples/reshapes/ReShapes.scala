@@ -10,20 +10,21 @@ import ex201x.reswingexamples.reshapes.ui.panels.{CommandPanel, DrawingPanel, In
 import ex201x.reswingexamples.reshapes.util.ReactiveUtil.{UnionEvent, bilateralValues}
 import reactives.default.*
 
+import java.awt.Color
 import java.net.{BindException, ConnectException}
 import javax.swing.JOptionPane
 import scala.collection.mutable.HashMap
 import scala.swing.BorderPanel.Position
 import scala.swing.TabbedPane.Page
 import scala.swing.event.SelectionChanged
-import scala.swing.{Action, BorderPanel, Component, Dimension, MainFrame, Menu, MenuBar, MenuItem, Separator, SimpleSwingApplication, Swing, TabbedPane}
+import scala.swing.{Action, BorderPanel, Component, Dimension, Frame, MainFrame, Menu, MenuBar, MenuItem, Separator, SimpleSwingApplication, Swing, TabbedPane}
 
 object ReShapes extends SimpleSwingApplication {
   private val panelDrawingSpaceStates = new HashMap[TabbedPane.Page, (DrawingSpaceState, NetworkSpaceState)]
 
-  val drawingSpaceState = Var[DrawingSpaceState](null) // #VAR
+  val drawingSpaceState: Var[DrawingSpaceState] = Var[DrawingSpaceState](null) // #VAR
 
-  def top =
+  def top: Frame =
     new MainFrame {
       title = "ReShapes"
       preferredSize = new Dimension(1000, 600)
@@ -63,11 +64,11 @@ object ReShapes extends SimpleSwingApplication {
       }
     )
 
-    final lazy val merged = UnionEvent(Signal { // #SIG //#UE( //#EVT //#IF )
+    final lazy val merged: Event[Command] = UnionEvent(Signal { // #SIG //#UE( //#EVT //#IF )
       itemsEvents.value map { case (_, ev) => ev }
     })
 
-    lazy val update = Evt[Unit]() // #EVT
+    lazy val update: Evt[Unit] = Evt[Unit]() // #EVT
 
     private lazy val itemsEvents: Signal[Seq[(Component, Event[Command])]] = // #SIG
       (update map { (_: Any) => // #EF
@@ -112,16 +113,16 @@ object ReShapes extends SimpleSwingApplication {
     case SelectionChanged(ui.tabbedPane) =>
       drawingSpaceState.set(
         if
-          ui.tabbedPane.selection.index != -1
-          && (panelDrawingSpaceStates contains ui.tabbedPane.selection.page)
+            ui.tabbedPane.selection.index != -1
+            && (panelDrawingSpaceStates contains ui.tabbedPane.selection.page)
         then
-          panelDrawingSpaceStates(ui.tabbedPane.selection.page)._1
+            panelDrawingSpaceStates(ui.tabbedPane.selection.page)._1
         else
-          null
+            null
       )
 
       if ui.tabbedPane.pages.size > 0 then
-        menu.update.fire()
+          menu.update.fire()
   }
 
   def addTab(networkSpaceState: DrawingSpaceState => NetworkSpaceState = { _ => null }): Unit = {
@@ -135,12 +136,12 @@ object ReShapes extends SimpleSwingApplication {
         )
 
         lazy val state: DrawingSpaceState = new DrawingSpaceState {
-          def isCurrentState = drawingSpaceState.now == this
+          def isCurrentState: Boolean = drawingSpaceState.now == this
 
           override lazy val nextShape: Signal[Shape] =
             Signal { ui.shapeSelectionPanel.nextShape.value.copy(this) } // #SIG
-          override lazy val strokeWidth = Signal { ui.strokeInputPanel.strokeWidth.value } // #SIG
-          override lazy val color       = Signal { ui.strokeInputPanel.color.value }       // #SIG
+          override lazy val strokeWidth: Signal[Int] = Signal { ui.strokeInputPanel.strokeWidth.value } // #SIG
+          override lazy val color: Signal[Color]     = Signal { ui.strokeInputPanel.color.value }       // #SIG
 
           override lazy val executed: Event[Command] =                                 // #EVT
             value(panel.drawn || ui.shapePanel.deleted || menu.merged) && (_ => isCurrentState) // #EF //#EF //#EF
@@ -180,33 +181,33 @@ object ReShapes extends SimpleSwingApplication {
 
   def addNetworkTab(): Unit = {
     if serverDialog.showDialog(ui.locationOnScreen) && serverDialog.inputIsValid() then
-      try addTab({ drawingSpaceState =>
-          new NetworkSpaceState(
-            drawingSpaceState,
-            Swing.onEDTWait,
-            serverDialog.hostname,
-            serverDialog.commandPort,
-            serverDialog.exchangePort,
-            serverDialog.listenerPort
-          )
-        })
-      catch {
-        case e: ConnectException =>
-          JOptionPane.showMessageDialog(null, "Server not available", "ConnectException", JOptionPane.ERROR_MESSAGE)
-        case e: BindException =>
-          JOptionPane.showMessageDialog(null, "Port cannot be bound", "BindException", JOptionPane.ERROR_MESSAGE)
-        case e: Exception =>
-          e.printStackTrace()
-          JOptionPane.showMessageDialog(null, "Invalid input!")
-          addNetworkTab()
-      }
+        try addTab { drawingSpaceState =>
+            new NetworkSpaceState(
+              drawingSpaceState,
+              Swing.onEDTWait,
+              serverDialog.hostname,
+              serverDialog.commandPort,
+              serverDialog.exchangePort,
+              serverDialog.listenerPort
+            )
+          }
+        catch {
+          case e: ConnectException =>
+            JOptionPane.showMessageDialog(null, "Server not available", "ConnectException", JOptionPane.ERROR_MESSAGE)
+          case e: BindException =>
+            JOptionPane.showMessageDialog(null, "Port cannot be bound", "BindException", JOptionPane.ERROR_MESSAGE)
+          case e: Exception =>
+            e.printStackTrace()
+            JOptionPane.showMessageDialog(null, "Invalid input!")
+            addNetworkTab()
+        }
   }
 
   def removeCurrentTab(): Unit = {
     if ui.tabbedPane.pages.size > 0 then {
       val (_, networkSpaceState) = panelDrawingSpaceStates(ui.tabbedPane.selection.page)
       if networkSpaceState != null then
-        networkSpaceState.dispose()
+          networkSpaceState.dispose()
       panelDrawingSpaceStates remove ui.tabbedPane.selection.page
       ui.tabbedPane.pages remove ui.tabbedPane.selection.index
       menu.update.fire()

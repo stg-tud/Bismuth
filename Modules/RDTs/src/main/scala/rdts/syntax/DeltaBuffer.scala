@@ -12,20 +12,19 @@ case class DeltaBuffer[A](
 ) {
 
   def applyDelta(delta: A)(using Lattice[A]): DeltaBuffer[A] =
-    val merged = state `merge` delta
-    DeltaBuffer(merged, if merged == state then deltaBuffer else delta :: deltaBuffer)
+      val merged = state `merge` delta
+      DeltaBuffer(merged, if merged == state then deltaBuffer else delta :: deltaBuffer)
 
   def applyDeltaNonAppend(delta: A)(using Lattice[A]): DeltaBuffer[A] =
-    val merged = state `merge` delta
-    DeltaBuffer(merged, deltaBuffer)
+      val merged = state `merge` delta
+      DeltaBuffer(merged, deltaBuffer)
 
   def clearDeltas(): DeltaBuffer[A] = DeltaBuffer(state)
 
   def mutable: DeltaBufferContainer[A] = new DeltaBufferContainer(this)
 
-  inline def mod(f: A => A)(using Lattice[A]): DeltaBuffer[A] = {
+  inline def mod(f: A => A)(using Lattice[A]): DeltaBuffer[A] =
     applyDelta(f(state))
-  }
 
 }
 

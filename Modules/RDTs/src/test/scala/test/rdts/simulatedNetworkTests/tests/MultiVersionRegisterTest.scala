@@ -1,10 +1,10 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Lattice
 import rdts.datatypes.MultiVersionRegister
+import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
@@ -12,12 +12,12 @@ import scala.util.Random
 
 object MVRegisterGenerators {
 
-  def genMVRegister[A: Lattice](using
+  def genMVRegister[A](using
       a: Arbitrary[A],
   ): Gen[AntiEntropyContainer[MultiVersionRegister[A]]] =
     for
-      values <- Gen.containerOf[List, A](a.arbitrary)
-      nClear <- Gen.posNum[Short]
+        values <- Gen.containerOf[List, A](a.arbitrary)
+        nClear <- Gen.posNum[Short]
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[MultiVersionRegister[A]]("a", network, mutable.Buffer())
@@ -30,14 +30,14 @@ object MVRegisterGenerators {
       }
     }
 
-  given arbMVRegister[A: Lattice](using
+  given arbMVRegister[A](using
       a: Arbitrary[A],
   ): Arbitrary[AntiEntropyContainer[MultiVersionRegister[A]]] =
     Arbitrary(genMVRegister)
 }
 
 class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
-  import MVRegisterGenerators.{*, given}
+  import MVRegisterGenerators.{given}
 
   given Lattice[Int] = math.max
 

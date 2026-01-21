@@ -18,13 +18,13 @@ class FloodingRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
     println(s"received sender-request for bundle: ${packet.bp}")
 
     val selected_clas = peers.asScala
-      .map((peer_name, peer) => {
+      .map { (peer_name, peer) =>
         peer.cla_list
           .filter((agent, port_option) => packet.clas.contains(agent))
           .map((agent, port_option) =>
             Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
           )
-      })
+      }
       .flatten
       .toList
 
@@ -32,17 +32,14 @@ class FloodingRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
     Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = selected_clas, delete_afterwards = false))
   }
 
-  override def onError(packet: Packet.Error): Unit = {
+  override def onError(packet: Packet.Error): Unit =
     println(s"received error from dtnd: ${packet.reason}")
-  }
 
-  override def onTimeout(packet: Packet.Timeout): Unit = {
+  override def onTimeout(packet: Packet.Timeout): Unit =
     println(s"sending ran into timeout for bundle-forward-response ${packet.bp}")
-  }
 
-  override def onSendingFailed(packet: Packet.SendingFailed): Unit = {
+  override def onSendingFailed(packet: Packet.SendingFailed): Unit =
     println(s"sending failed for bundle ${packet.bid} on cla ${packet.cla_sender}")
-  }
 
   override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit = {
     println(
@@ -50,13 +47,11 @@ class FloodingRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
     )
   }
 
-  override def onIncomingBundle(packet: Packet.IncomingBundle): Unit = {
+  override def onIncomingBundle(packet: Packet.IncomingBundle): Unit =
     println("received incoming bundle. information not used for routing. ignoring.")
-  }
 
-  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit = {
+  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit =
     println("received incoming bundle without previous node. information not used for routing. ignoring.")
-  }
 }
 object FloodingRouter {
   def apply(

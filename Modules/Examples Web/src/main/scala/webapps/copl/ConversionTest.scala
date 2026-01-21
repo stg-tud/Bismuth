@@ -1,7 +1,7 @@
 package webapps.copl
 
-import org.scalajs.dom.document
 import org.scalajs.dom.html.{Input, Select}
+import org.scalajs.dom.{HTMLDivElement, document}
 import reactives.default.*
 import reactives.extra.lenses.*
 import scalatags.JsDom
@@ -24,11 +24,11 @@ object ConversionTest {
     * @param lens the conversion lens from Celsius
     */
   enum TempConversion(val lens: BijectiveLens[Double, Double]):
-    // All Conversions are given from Celsius
-    case C extends TempConversion(new NeutralLens)
-    case K extends TempConversion(new AddLens(274.15))
-    case L extends TempConversion(new AddLens(253))
-    case F extends TempConversion(new MulLens(1.8).compose(new AddLens(32.0)))
+      // All Conversions are given from Celsius
+      case C extends TempConversion(new NeutralLens)
+      case K extends TempConversion(new AddLens(274.15))
+      case L extends TempConversion(new AddLens(253))
+      case F extends TempConversion(new MulLens(1.8).compose(new AddLens(32.0)))
   end TempConversion
 
   /** Creates a lens which converts between any supported units */
@@ -36,7 +36,7 @@ object ConversionTest {
     from.lens.inverse.compose(to.lens)
 
   /** A demonstration of reactive lenses using a simple unit converter for temperature units */
-  def unitConverter() = {
+  def unitConverter(): TypedTag[HTMLDivElement] = {
 
     // Create selection for units and convert selected units to  signals
     val leftUnitInput: TypedTag[Select] = select(TempConversion.values.map { unit => option(unit.toString) })
@@ -85,10 +85,10 @@ object ConversionTest {
 
   /** Returns the double represented by the string or 0 if no double is represented */
   def toDoubleOr0(str: String): Double = {
-    try {
-      { str.toDouble }
-    } catch {
-      case _ => { 0.0 }
+    try
+      str.toDouble
+    catch {
+      case _ => 0.0
     }
   }
 

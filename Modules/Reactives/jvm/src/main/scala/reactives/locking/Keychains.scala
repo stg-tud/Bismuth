@@ -21,7 +21,7 @@ object Keychains {
     throw new AssertionError("broke out of infinite loop")
   }
 
-  private sealed trait Result[+R]
+  sealed private trait Result[+R]
   private object Await             extends Result[Nothing]
   private object Retry             extends Result[Nothing]
   private case class Done[R](r: R) extends Result[R]

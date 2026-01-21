@@ -2,7 +2,7 @@ package test.rdts.baseproperties
 
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Shrink}
-import rdts.base.{Bottom, Lattice}
+import rdts.base.Lattice
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
 import rdts.experiments.CausalStore
@@ -77,14 +77,14 @@ abstract class LatticePropertyChecks[A](
   }
 
   property("merge agrees with order"):
-    forAll: (left: A, right: A) =>
-      val merged = left `merge` right
+      forAll: (left: A, right: A) =>
+          val merged = left `merge` right
 
-      assertEquals(left `merge` merged, merged, "naive lteq")
-      assertEquals(right `merge` merged, merged, "naive lteq")
-      assert(merged.subsumes(left), s"merged:\n  ${merged}\n ${left `merge` merged}")
-      assert(merged.subsumes(right), s"merged:\n  ${merged}\n ${right `merge` merged}")
-      assert(merged.inflates(left) || merged == Lattice.normalize(left), s"merged:\n  ${merged}")
-      assert(merged.inflates(right) || merged == Lattice.normalize(right), s"merged:\n  ${merged}")
+          assertEquals(left `merge` merged, merged, "naive lteq")
+          assertEquals(right `merge` merged, merged, "naive lteq")
+          assert(merged.subsumes(left), s"merged:\n  ${merged}\n ${left `merge` merged}")
+          assert(merged.subsumes(right), s"merged:\n  ${merged}\n ${right `merge` merged}")
+          assert(merged.inflates(left) || merged == Lattice.normalize(left), s"merged:\n  ${merged}")
+          assert(merged.inflates(right) || merged == Lattice.normalize(right), s"merged:\n  ${merged}")
 
 }

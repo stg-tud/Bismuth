@@ -48,7 +48,7 @@ final class ReLock[InterTurn]() {
   }
 
   /** transfers the lock from the turn to the target. */
-  def transfer(target: Key[InterTurn] | Null, oldOwner: Key[InterTurn], transferWriteSet: Boolean = false) = {
+  def transfer(target: Key[InterTurn] | Null, oldOwner: Key[InterTurn], transferWriteSet: Boolean = false): Unit = {
     // update locks back to read locks when transferring
     writeLock = transferWriteSet && writeLock
     // select the true target:
@@ -59,7 +59,7 @@ final class ReLock[InterTurn]() {
       else target
 
     if !owner.compareAndSet(oldOwner, trueTarget) then
-      assert(assertion = false, s"$this is held by $owner but tried to transfer by $oldOwner (to $target)")
+        assert(assertion = false, s"$this is held by $owner but tried to transfer by $oldOwner (to $target)")
 
     if trueTarget != null then trueTarget.addLock(this)
   }

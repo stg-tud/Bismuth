@@ -51,14 +51,21 @@ lazy val publishedProjects =
 // projects in alphabetical order
 
 lazy val bft = project.in(file("Modules/BFT"))
+  .enablePlugins(JmhPlugin)
   .dependsOn(
-    crypto.jvm
+    crypto.jvm,
+    examplesJVM,
+    lofiAcl,
   )
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
     Dependencies.jsoniterScala,
-    Dependencies.bouncyCastle
+    Dependencies.bouncyCastle,
+    Dependencies.akka,
+    Dependencies.akkaTestKit,
+    Dependencies.bloomFilter,
+    Dependencies.munitCheck,
   )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
@@ -130,7 +137,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     scala3defaults,
     javaOutputVersion(17),
     fork := true,
-    Dependencies.conscript,
+    Dependencies.conscrypt,
     Dependencies.jetty,
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
@@ -142,6 +149,11 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.tink,
     libraryDependencies += Dependencies.scalafx,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
+    javaOptions ++= Seq(
+      "-XX:+IgnoreUnrecognizedVMOptions",
+      "--sun-misc-unsafe-memory-access=allow",
+      "--enable-native-access=ALL-UNNAMED"
+    ), // Reduce warnings for JavaFX application
   )
 
 lazy val examplesWeb = project.in(file("Modules/Examples Web"))
@@ -166,6 +178,27 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     // fix the output directory to make it “guessable” by JS import
     fastLinkJS / crossTarget := target.value / "generated_js",
     fullLinkJS / crossTarget := target.value / "generated_js",
+  )
+
+lazy val lofiAcl = project.in(file("Modules/Access Control"))
+  .enablePlugins(JmhPlugin)
+  .dependsOn(deltalens, crypto.jvm, channels.jvm % "compile->compile;test->test")
+  .settings(
+    scala3defaults,
+    javaOutputVersion(21),
+    fork := true,
+    // Dependencies.conscrypt,
+    Dependencies.jsoniterScala,
+    Dependencies.munitCheck,
+    Dependencies.pprint,
+    Dependencies.slips,
+    libraryDependencies += Dependencies.scalafx,
+    // Settings.implicitConversions(), // reswing uses this in a million places for no reason
+    javaOptions ++= Seq(
+      "-XX:+IgnoreUnrecognizedVMOptions",
+      "--sun-misc-unsafe-memory-access=allow",
+      "--enable-native-access=ALL-UNNAMED"
+    ), // Reduce warnings for JavaFX application
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
@@ -204,19 +237,30 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
     scalacOptions += {
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
         .map(at => at.data).mkString(java.io.File.pathSeparator)
-      s"-Xplugin:${pluginClasspath}"
+      s"-Xplugin:$pluginClasspath"
     }
   )
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm)
+  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm, examplesJVM, lofiAcl)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,
     Settings.jolSettings,
     Dependencies.tink,
-    Dependencies.conscript,
+    Dependencies.conscrypt,
+    javaOptions ++= Seq(
+      "-XX:+IgnoreUnrecognizedVMOptions",
+      "--sun-misc-unsafe-memory-access=allow",
+      "--enable-native-access=ALL-UNNAMED"
+    ),
+  )
+
+lazy val prdtSmr = project.in(file("Modules/PRDT SMR"))
+  .dependsOn(rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
+  .settings(
+    scala3defaultsExtra
   )
 
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
@@ -230,6 +274,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     Dependencies.slips,
     Dependencies.jetcd,
     Dependencies.pprint,
+    Dependencies.ycsb,
     Universal / packageName := "probench",
     Universal / name        := "probench",
   )

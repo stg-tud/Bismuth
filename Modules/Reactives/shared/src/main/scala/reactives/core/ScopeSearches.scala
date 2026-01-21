@@ -29,9 +29,8 @@ trait CreationScope[State[_]] {
     }
   }
 
-  private[reactives] def createSource[V, T <: ReSource.of[State]](intv: V)(instantiateReactive: State[V] => T): T = {
+  private[reactives] def createSource[V, T <: ReSource.of[State]](intv: V)(instantiateReactive: State[V] => T): T =
     embedCreation(tx ?=> tx.initializer.createSource(intv)(instantiateReactive))
-  }
 }
 
 object CreationScope {
@@ -46,8 +45,8 @@ object CreationScope {
   inline given search(using
       ts: TransactionSearch[reactives.SelectedScheduler.State]
   ): CreationScope[reactives.SelectedScheduler.State] = ts.static match
-    case None     => DynamicCreationScope(reactives.SelectedScheduler.candidate.dynamicScope)
-    case Some(tx) => StaticCreationScope(tx)
+      case None     => DynamicCreationScope(reactives.SelectedScheduler.candidate.dynamicScope)
+      case Some(tx) => StaticCreationScope(tx)
 }
 
 trait PlanTransactionScope[State[_]] {
@@ -68,20 +67,20 @@ object PlanTransactionScope {
       extends PlanTransactionScope[State] {
     override def planTransaction(inintialWrites: ReSource.of[State]*)(admission: AdmissionTicket[State] => Unit): Unit =
       dynamicScope.maybeTransaction match
-        case Some(tx) => tx.followup { () =>
+          case Some(tx) => tx.followup { () =>
+              scheduler.forceNewTransaction(inintialWrites*)(admission)
+            }
+          case None =>
             scheduler.forceNewTransaction(inintialWrites*)(admission)
-          }
-        case None =>
-          scheduler.forceNewTransaction(inintialWrites*)(admission)
   }
 
   inline given search(using
       ts: TransactionSearch[reactives.SelectedScheduler.State]
   ): PlanTransactionScope[reactives.SelectedScheduler.State] =
     ts.static match
-      case None => DynamicTransactionLookup(
-          reactives.SelectedScheduler.candidate.scheduler,
-          reactives.SelectedScheduler.candidate.dynamicScope
-        )
-      case Some(tx) => StaticInTransaction(tx, reactives.SelectedScheduler.candidate.scheduler)
+        case None => DynamicTransactionLookup(
+            reactives.SelectedScheduler.candidate.scheduler,
+            reactives.SelectedScheduler.candidate.dynamicScope
+          )
+        case Some(tx) => StaticInTransaction(tx, reactives.SelectedScheduler.candidate.scheduler)
 }

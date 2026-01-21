@@ -48,24 +48,20 @@ class BenchmarkState {
 class BFTBenchmark {
 
   @Benchmark
-  def baselineGOC(blackhole: Blackhole, state: BenchmarkState): Unit = {
+  def baselineGOC(blackhole: Blackhole, state: BenchmarkState): Unit =
     blackhole.consume(state.gocList.reduce((left, right) => state.gocLattice.merge(left, right)))
-  }
 
   @Benchmark
-  def bftGOC(blackhole: Blackhole, state: BenchmarkState): Unit = {
+  def bftGOC(blackhole: Blackhole, state: BenchmarkState): Unit =
     blackhole.consume(state.bftGOCList.reduce((left, right) => state.bftGOCLattice.merge(left, right)).value)
-  }
 
   @Benchmark
-  def baselineRepList(blackhole: Blackhole, state: BenchmarkState): Unit = {
+  def baselineRepList(blackhole: Blackhole, state: BenchmarkState): Unit =
     blackhole.consume(state.repLL.reduce((left, right) => state.repLLLattice.merge(left, right)))
-  }
 
   @Benchmark
-  def bftRepList(blackhole: Blackhole, state: BenchmarkState): Unit = {
+  def bftRepList(blackhole: Blackhole, state: BenchmarkState): Unit =
     blackhole.consume(state.bftRepLL.reduce((left, right) => state.bftRepLLLattice.merge(left, right)).value)
-  }
 
 }
 

@@ -15,8 +15,7 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
 class ChatBench {
 
   @Benchmark
-  def chat(benchState: BenchState, threadParams: ThreadParams) = {
-    import benchState.stableEngine.*
+  def chat(benchState: BenchState, threadParams: ThreadParams): Unit = {
     if reactives.SelectedScheduler.candidate.scheduler != reactives.scheduler.LevelbasedVariants.unmanaged then {
       benchState.clients(threadParams.getThreadIndex).fire("hello")
     } else {
@@ -26,9 +25,9 @@ class ChatBench {
       val room2 = math.max(ti % locks.length, (ti + locks.length / 2) % locks.length)
       locks(room1).lock()
       locks(room2).lock()
-      try {
-        benchState.clients(threadParams.getThreadIndex).fire("hello")
-      } finally {
+      try
+          benchState.clients(threadParams.getThreadIndex).fire("hello")
+      finally {
         locks(room2).unlock()
         locks(room1).unlock()
       }
@@ -49,7 +48,7 @@ class BenchState {
   var locks: Array[Lock]                = scala.compiletime.uninitialized
 
   @Setup
-  def setup(params: BenchmarkParams, engineParam: EngineParam, size: Size, work: Workload) = {
+  def setup(params: BenchmarkParams, engineParam: EngineParam, size: Size, work: Workload): Unit = {
     engine = engineParam.engine
 
     val threads = params.getThreads

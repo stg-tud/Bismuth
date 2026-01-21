@@ -37,9 +37,8 @@ object JFXExample extends JFXApp3 {
         content = render()
       }
 
-      onCloseRequest = _ => {
+      onCloseRequest = _ =>
         Platform.exit()
-      }
     }
   }
 }

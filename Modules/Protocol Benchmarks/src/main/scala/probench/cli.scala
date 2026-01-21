@@ -1,6 +1,6 @@
 package probench
 
-import channels.{Abort, LatentConnection, MessageBuffer, NioTCP, UDP}
+import channels.{Abort, ChannelTrafficReporter, ConcurrencyHelper, LatentConnection, MessageBuffer, NioTCP, UDP}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import de.rmgk.options.*
@@ -8,7 +8,6 @@ import de.rmgk.options.Result.{Err, Ok}
 import probench.clients.{BenchmarkMode, BenchmarkOpType, ClientCLI, EtcdClient, ProBenchClient}
 import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation}
 import rdts.base.Uid
-import rdts.protocols.MultiPaxos
 import replication.{DeltaDissemination, DeltaStorage, FileConnection, ProtocolMessage}
 
 import java.net.{DatagramSocket, InetSocketAddress}
@@ -49,15 +48,15 @@ object cli {
       tries: Int
   ): Unit = {
 
-    dataManager.prepareBinaryConnection(connection).run(using ()) {
+    dataManager.prepareBinaryConnection(connection).run {
       case Success(_)  => ()
       case Failure(ex) =>
         println(s"Failed to connect to $connection, retrying in $delay ms, retries: $tries")
         if tries > 0 then
-          Thread.sleep(delay)
-          addRetryingLatentConnection(dataManager, connection, delay, tries - 1)
+            Thread.sleep(delay)
+            addRetryingLatentConnection(dataManager, connection, delay, tries - 1)
         else
-          throw ex
+            throw ex
     }
 
   }
@@ -67,80 +66,84 @@ object cli {
     val clientPort = named[Int]("--listen-client-port", "")
     val peerPort   = named[Int]("--listen-peer-port", "")
 
+    val reporting = flag("--reporting", "enable reporting")
+
     val ipAndPort = """(.+):(\d+)""".r
 
     given ipAndPortParser: ArgumentValueParser[(String, Int)] with
-      override def parse(args: List[String]): Result[(String, Int)] =
-        args match {
-          case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
-          case _                           => Err("not a valid ip:port")
-        }
+        override def parse(args: List[String]): Result[(String, Int)] =
+          import scala.language.unsafeNulls
+          args match {
+            case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
+            case _                           => Err("not a valid ip:port")
+          }
 
-      def descriptor: de.rmgk.options.Descriptor = Descriptor("ip:port", "ip:port pair")
+        def descriptor: de.rmgk.options.Descriptor = Descriptor("ip:port", "ip:port pair")
     end ipAndPortParser
 
     given uidParser: ArgumentValueParser[Uid] with
-      override def parse(args: List[String]): Result[Uid] =
-        args match {
-          case string :: rest => Result.Ok(Uid.predefined(string), rest)
-          case _              => Result.Err("not a valid uid", descriptor)
-        }
+        override def parse(args: List[String]): Result[Uid] =
+          args match {
+            case string :: rest => Result.Ok(Uid.predefined(string), rest)
+            case _              => Result.Err("not a valid uid", descriptor)
+          }
 
-      override def descriptor: Descriptor = Descriptor("uid", "uid")
+        override def descriptor: Descriptor = Descriptor("uid", "uid")
 
     end uidParser
 
     given benchmarkModeParser: ArgumentValueParser[BenchmarkMode] with
-      override def parse(args: List[String]): Result[BenchmarkMode] =
-        args match {
-          case "fixed" :: rest => Result.Ok(BenchmarkMode.Fixed, rest)
-          case "timed" :: rest => Result.Ok(BenchmarkMode.Timed, rest)
-          case _               => Result.Err(s"not a valid benchmark mode: $args", descriptor)
-        }
+        override def parse(args: List[String]): Result[BenchmarkMode] =
+          args match {
+            case "fixed" :: rest => Result.Ok(BenchmarkMode.Fixed, rest)
+            case "timed" :: rest => Result.Ok(BenchmarkMode.Timed, rest)
+            case _               => Result.Err(s"not a valid benchmark mode: $args", descriptor)
+          }
 
-      override def descriptor: Descriptor = Descriptor("mode", "fixed|timed")
+        override def descriptor: Descriptor = Descriptor("mode", "fixed|timed")
 
     end benchmarkModeParser
 
     given benchmarkOpTypeParser: ArgumentValueParser[BenchmarkOpType] with
-      override def parse(args: List[String]): Result[BenchmarkOpType] =
-        args match {
-          case "read" :: rest  => Result.Ok(BenchmarkOpType.Read, rest)
-          case "write" :: rest => Result.Ok(BenchmarkOpType.Write, rest)
-          case "mixed" :: rest => Result.Ok(BenchmarkOpType.Mixed, rest)
-          case _               => Result.Err("not a valid benchmark opType", descriptor)
-        }
+        override def parse(args: List[String]): Result[BenchmarkOpType] =
+          args match {
+            case "read" :: rest  => Result.Ok(BenchmarkOpType.Read, rest)
+            case "write" :: rest => Result.Ok(BenchmarkOpType.Write, rest)
+            case "mixed" :: rest => Result.Ok(BenchmarkOpType.Mixed, rest)
+            case _               => Result.Err("not a valid benchmark opType", descriptor)
+          }
 
-      override def descriptor: Descriptor = Descriptor("opType", "read|write|mixed")
+        override def descriptor: Descriptor = Descriptor("opType", "read|write|mixed")
 
     end benchmarkOpTypeParser
 
     given deltaStorageTypeParser: ArgumentValueParser[DeltaStorage.Type] with
-      val discarding: Regex = """discarding\((\d+)\)""".r
-      val merging: Regex    = """merging\((\d+)\)""".r
+        val discarding: Regex = """discarding\((\d+)\)""".r
+        val merging: Regex    = """merging\((\d+)\)""".r
 
-      override def parse(args: List[String]): Result[DeltaStorage.Type] =
-        args match {
-          case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
-          case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
-          case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
-          case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
-          case _                           => Result.Err("not a valid delta storage type", descriptor)
-        }
+        override def parse(args: List[String]): Result[DeltaStorage.Type] =
+          import scala.language.unsafeNulls
+          args match {
+            case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
+            case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
+            case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
+            case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
+            case _                           => Result.Err("not a valid delta storage type", descriptor)
+          }
 
-      override def descriptor: Descriptor =
-        Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")
+        override def descriptor: Descriptor =
+          Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")
     end deltaStorageTypeParser
 
     given booleanParser: ArgumentValueParser[Boolean] with
-      override def parse(args: List[String]): Result[Boolean] =
-        args match {
-          case "true" :: rest  => Result.Ok(true, rest)
-          case "false" :: rest => Result.Ok(false, rest)
-          case _               => Result.Err("not a valid boolean", descriptor)
-        }
+        override def parse(args: List[String]): Result[Boolean] =
+          args match {
+            case "true" :: rest  => Result.Ok(true, rest)
+            case "false" :: rest => Result.Ok(false, rest)
+            case _               => Result.Err("not a valid boolean", descriptor)
+          }
 
-      override def descriptor: Descriptor = Descriptor("boolean", "true|false")
+        override def descriptor: Descriptor = Descriptor("boolean", "true|false")
     end booleanParser
 
     class TupleArgumentValueParser[T](@unused /* TODO: this seems wrong … */ preselect: String => Boolean)(using
@@ -148,11 +151,11 @@ object cli {
     ) extends ArgumentValueParser[(T, T)] {
       override def parse(args: List[String]): Result[(T, T)] =
         avp.parse(args) match
-          case Result.Ok(first, remaining) =>
-            avp.parse(remaining) match
-              case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
-              case Result.Err(_, _, _)          => Result.Err("not a valid tuple", descriptor)
-          case Result.Err(_, _, _) => Result.Err("not a valid tuple", descriptor)
+            case Result.Ok(first, remaining) =>
+              avp.parse(remaining) match
+                  case Result.Ok(second, remaining) => Result.Ok((first, second), remaining)
+                  case _: Result.Err                => Result.Err("not a valid tuple", descriptor)
+            case _: Result.Err => Result.Err("not a valid tuple", descriptor)
 
       override def descriptor: Descriptor = avp.descriptor.mapSpec(s => s"$s $s")
     }
@@ -160,14 +163,13 @@ object cli {
     given [T](using avp: ArgumentValueParser[T]): ArgumentValueParser[(T, T)] =
       TupleArgumentValueParser[T](arg => !arg.startsWith("--"))
 
-    def socketPath(host: String, port: Int) = {
+    def socketPath(host: String, port: Int) =
 //      val p = Path.of(s"target/sockets/$name")
 //      Files.createDirectories(p.getParent)
 //      p.toFile.deleteOnExit()
 //      UnixDomainSocketAddress.of(p)
 
       InetSocketAddress(host, port)
-    }
 
     val cluster           = named[List[(String, Int)]]("--cluster", "")
     val initialClusterIds = named[List[Uid]]("--initial-cluster-ids", "")
@@ -188,6 +190,7 @@ object cli {
     val measurement = named[Int]("--measurement", "measurement period/operations for the benchmark in seconds")
     val kvRange     = named[(Int, Int)]("--kv-range", "min/max key/value index", (1000, 1999))
     val blockSize   = named[Int]("--block-size", "block size for timed benchmarks")
+    val timeout     = named[Long]("--timeout", "timeout before new leader is elected in miliseconds", 1000)
 
     val argparse = composedParser {
 
@@ -227,9 +230,16 @@ object cli {
         },
         subcommand("node", "starts a cluster node") {
           val node =
-            KeyValueReplica(name.value, initialClusterIds.value.toSet, deltaStorageType = deltaStorageType.value)
+            KeyValueReplica(
+              name.value,
+              initialClusterIds.value.toSet,
+              deltaStorageType = deltaStorageType.value,
+              timeoutThreshold = timeout.value
+            )
 
-          val nioTCP = NioTCP()
+          val reporter = if reporting.value then ChannelTrafficReporter() else null
+
+          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(4), reporter)
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           node.client.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
@@ -249,6 +259,16 @@ object cli {
           ))))
 
 //          Timer().schedule(() => node.cluster.dataManager.pingAll(), 1000, 1000)
+          if reporter != null then
+              Timer().schedule(
+                () => {
+                  println(s"client ${node.uid}")
+                  println(reporter.report())
+                  reporter.reset()
+                },
+                1000,
+                1000
+              )
           Timer().schedule(
             () => {
               node.connInf.sendHeartbeat()
@@ -310,7 +330,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          val nioTCP = NioTCP()
+          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(4))
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 
@@ -345,7 +365,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          val nioTCP = NioTCP()
+          val nioTCP = NioTCP(ConcurrencyHelper.makeExecutionContext(false))
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 
@@ -357,25 +377,25 @@ object cli {
           )
 
           mode.value match
-            case BenchmarkMode.Timed =>
-              val (min, max) = kvRange.value
-              client.benchmarkTimed(
-                mode = opType.value,
-                warmup = warmup.value,
-                measurement = measurement.value,
-                min = min,
-                max = max,
-                blockSize = blockSize.value
-              )
-            case BenchmarkMode.Fixed =>
-              val (min, max) = kvRange.value
-              client.benchmarkFixed(
-                mode = opType.value,
-                warmup = warmup.value,
-                measurement = measurement.value,
-                min = min,
-                max = max
-              )
+              case BenchmarkMode.Timed =>
+                val (min, max) = kvRange.value
+                client.benchmarkTimed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max,
+                  blockSize = blockSize.value
+                )
+              case BenchmarkMode.Fixed =>
+                val (min, max) = kvRange.value
+                client.benchmarkFixed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max
+                )
 
           abort.closeRequest = true
           executor.shutdownNow()
@@ -384,25 +404,25 @@ object cli {
           val client = EtcdClient(name.value, endpoints.value, logTimings.value)
 
           mode.value match
-            case BenchmarkMode.Timed =>
-              val (min, max) = kvRange.value
-              client.benchmarkTimed(
-                mode = opType.value,
-                warmup = warmup.value,
-                measurement = measurement.value,
-                min = min,
-                max = max,
-                blockSize = blockSize.value
-              )
-            case BenchmarkMode.Fixed =>
-              val (min, max) = kvRange.value
-              client.benchmarkFixed(
-                mode = opType.value,
-                warmup = warmup.value,
-                measurement = measurement.value,
-                min = min,
-                max = max
-              )
+              case BenchmarkMode.Timed =>
+                val (min, max) = kvRange.value
+                client.benchmarkTimed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max,
+                  blockSize = blockSize.value
+                )
+              case BenchmarkMode.Fixed =>
+                val (min, max) = kvRange.value
+                client.benchmarkFixed(
+                  mode = opType.value,
+                  warmup = warmup.value,
+                  measurement = measurement.value,
+                  min = min,
+                  max = max
+                )
 
           executor.shutdownNow()
         },

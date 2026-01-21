@@ -53,9 +53,8 @@ class ModifyMapAtTest extends AnyFlatSpec with Matchers {
   }
 
   it should "throw an exception if there's no such element" in {
-    an[NoSuchElementException] should be thrownBy {
-      modify(m1)(_.at("K0").a5.name).using(duplicate)
-    }
+    an[NoSuchElementException] should be thrownBy
+    modify(m1)(_.at("K0").a5.name).using(duplicate)
   }
 
   it should "modify a map using at with a derived class" in {

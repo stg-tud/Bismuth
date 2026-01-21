@@ -2,26 +2,25 @@ package test.rdts.simulatedNetworkTests.tests
 
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop.*
-import rdts.base.{Bottom, Lattice, Uid}
+import rdts.base.Uid
 import rdts.datatypes.ReplicatedList
 import test.rdts.DataGenerator.ReplicatedListGen.{makeRGA, given}
-import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Named, Network}
 
 import scala.collection.mutable
 
 object RGAGenerators {
 
-  def makeNet[E](rl: ReplicatedList[E]) =
-    val network = new Network(0, 0, 0)
-    val ae      = new AntiEntropy[ReplicatedList[E]]("a", network, mutable.Buffer())
-    val aec     = AntiEntropyContainer[ReplicatedList[E]](ae)
-    aec.applyDelta(Named(Uid.predefined("a"), rl))
-    aec
+  def makeNet[E](rl: ReplicatedList[E]): AntiEntropyContainer[ReplicatedList[E]] =
+      val network = new Network(0, 0, 0)
+      val ae      = new AntiEntropy[ReplicatedList[E]]("a", network, mutable.Buffer())
+      val aec     = AntiEntropyContainer[ReplicatedList[E]](ae)
+      aec.applyDelta(Named(Uid.predefined("a"), rl))
+      aec
 }
 
 class RGATest extends munit.ScalaCheckSuite {
-  import RGAGenerators.{*, given}
+  import RGAGenerators.{*}
 
   property("size, toList, read") {
     forAll { (rl: ReplicatedList[Int], readIdx: Int) =>

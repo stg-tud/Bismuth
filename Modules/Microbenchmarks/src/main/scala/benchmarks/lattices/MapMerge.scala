@@ -20,7 +20,7 @@ object MergeImpl {
   def mergeHashMap[K, V: Lattice]: Lattice[Map[K, V]] = new Lattice[Map[K, V]] {
     def merge(left: Map[K, V], right: Map[K, V]): Map[K, V] =
       left.to(HashMap).merged(right.to(HashMap)) {
-        case ((id, v1), (_, v2)) => (id, (Lattice.merge(v1, v2)))
+        case ((id, v1), (_, v2)) => (id, Lattice.merge(v1, v2))
       }
   }
 
@@ -83,15 +83,15 @@ class MapMergeBenchmark {
   }
 
   @Benchmark
-  def setMerge() = latticeSet.merge(left, right)
+  def setMerge(): Map[Int, Int] = latticeSet.merge(left, right)
 
   @Benchmark
-  def hashMerge() = latticeHash.merge(left, right)
+  def hashMerge(): Map[Int, Int] = latticeHash.merge(left, right)
 
   @Benchmark
-  def mutableMerge() = latticeMutable.merge(left, right)
+  def mutableMerge(): Map[Int, Int] = latticeMutable.merge(left, right)
 
   @Benchmark
-  def foldMerge() = latticeFold.merge(left, right)
+  def foldMerge(): Map[Int, Int] = latticeFold.merge(left, right)
 
 }

@@ -40,9 +40,8 @@ trait Signal[+T] extends Disconnectable with MacroAccess[T] with ReSource {
     *
     * @group accessor
     */
-  final def readValueOnce: T = {
+  final def readValueOnce: T =
     RExceptions.toExternalReadException(this, reactives.SelectedScheduler.candidate.scheduler.singleReadValueOnce(this))
-  }
 
   /** add an observer
     *
@@ -188,17 +187,15 @@ object Signal {
     }
   }
 
-  def lift[A, R](los: Seq[Signal[A]])(fun: Seq[A] => R)(using maybe: CreationTicket[State]): Signal[R] = {
+  def lift[A, R](los: Seq[Signal[A]])(fun: Seq[A] => R)(using maybe: CreationTicket[State]): Signal[R] =
     Signal.static(los*) { t => fun(los.map(s => t.dependStatic(s))) }
-  }
 
   def lift[A1, B](n1: Signal[A1])(fun: A1 => B)(using CreationTicket[State]): Signal[B] =
     Signal { fun(n1.value) }
 
   def lift[A1, A2, B](n1: Signal[A1], n2: Signal[A2])(fun: (A1, A2) => B)(using
       CreationTicket[State]
-  ): Signal[B] = {
+  ): Signal[B] =
     Signal { fun(n1.value, n2.value) }
-  }
 
 }

@@ -21,7 +21,7 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
 
         case data: dom.Blob =>
           val reader = new dom.FileReader
-          reader.onerror = { (event) =>
+          reader.onerror = { event =>
             Async.handler.fail(WebRTCReceiveFailed(s"reading message from blob returned error, event: $event"))
           }
           reader.onload = { (event: dom.Event) =>
@@ -46,8 +46,8 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
     }
 
     channel.readyState match
-      case RTCDataChannelState.closed => Async.handler.fail(WebRTCReceiveFailed(s"channel already closed"))
-      case _                          =>
+        case RTCDataChannelState.closed => Async.handler.fail(WebRTCReceiveFailed("channel already closed"))
+        case _                          =>
 
   }
   def send(message: MessageBuffer): Async[Any, Unit] =
@@ -78,7 +78,7 @@ object WebRTCConnection {
 
   def openLatent(channel: dom.RTCDataChannel): LatentConnection[MessageBuffer] = new LatentConnection {
 
-    def succeedConnection(incoming: Receive[MessageBuffer]) = {
+    def succeedConnection(incoming: Receive[MessageBuffer]): WebRTCConnection = {
       val connector = new WebRTCConnection(channel)
       val handler   = incoming.messageHandler(connector)
 
@@ -90,7 +90,7 @@ object WebRTCConnection {
 
             case data: dom.Blob =>
               val reader = new dom.FileReader
-              reader.onerror = { (event) =>
+              reader.onerror = { event =>
                 handler.fail(WebRTCReceiveFailed(s"reading message from blob returned error, event: $event"))
               }
               reader.onload = { (event: dom.Event) =>
@@ -115,8 +115,8 @@ object WebRTCConnection {
         }
 
         channel.readyState match
-          case RTCDataChannelState.closed => handler.fail(WebRTCReceiveFailed(s"channel already closed"))
-          case _                          =>
+            case RTCDataChannelState.closed => handler.fail(WebRTCReceiveFailed("channel already closed"))
+            case _                          =>
       }
 
       connector

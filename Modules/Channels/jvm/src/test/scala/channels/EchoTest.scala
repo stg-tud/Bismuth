@@ -1,7 +1,6 @@
 package channels
 
 import com.sun.net.httpserver.HttpServer
-import rdts.base.LocalUid
 
 import java.net.http.HttpClient
 import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI, UnixDomainSocketAddress}
@@ -24,9 +23,9 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest(
 
         server.bind(InetSocketAddress("0", 58004), 0)
 
-        val handler = JavaHttp.SSEServer(handler => {
+        val handler = JavaHttp.SSEServer { handler =>
           server.createContext("/path", handler)
-        })
+        }
 
         server.start()
         val port = server.getAddress.getPort
@@ -63,7 +62,7 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
 
         // val port = socket.socket().getLocalPort
 
-        val nioTCP = new NioTCP
+        val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
         ec.execute(() => nioTCP.loopSelection(Abort()))
 
@@ -79,7 +78,7 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
             channel
           }
 
-          val nioTCP = new NioTCP
+          val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
           ec.execute(() => nioTCP.loopSelection(Abort()))
 

@@ -2,7 +2,7 @@ package webapps.todo
 
 import org.scalajs.dom
 import org.scalajs.dom.html.{Div, Input, LI}
-import org.scalajs.dom.{HTMLDivElement, window}
+import org.scalajs.dom.window
 import rdts.base.Bottom
 import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
@@ -11,10 +11,10 @@ import reactives.extra.Tags.*
 import scalatags.JsDom
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
-import Codecs.given
-import TodoDataManager.TodoRepState
-import Todolist.replicaId
 import webapps.Storing
+import webapps.todo.Codecs.given
+import webapps.todo.TodoDataManager.TodoRepState
+import webapps.todo.Todolist.replicaId
 
 class TodoAppUI(val storagePrefix: String) {
 
@@ -72,7 +72,7 @@ class TodoAppUI(val storagePrefix: String) {
     val largeheader = window.location.hash.drop(1)
 
     val hideEmpty = Signal:
-      `style` := (if tasksData.value.isEmpty then "display:none" else "")
+        `style` := (if tasksData.value.isEmpty then "display:none" else "")
 
     div(
       `class` := "appcontainer",
@@ -98,11 +98,11 @@ class TodoAppUI(val storagePrefix: String) {
           ).render.reattach(
             Signal {
               val remainingTasks = tasksData.value.count(!_.done)
-              println(s"remaining observer")
+              println("remaining observer")
               List(
                 strong(remainingTasks.toString).render,
                 span(if remainingTasks == 1 then
-                  " item left"
+                    " item left"
                 else " items left").render
               )
             }

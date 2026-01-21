@@ -7,15 +7,14 @@ import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
-import scala.util.chaining.scalaUtilChainingOps
 
 class ORMapTest extends munit.ScalaCheckSuite {
-  given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
+  given decompose[K, V]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
 
   property("contains") {
     given LocalUid = base.LocalUid.predefined("test")
     given Bottom[Int] with
-      def empty = Int.MinValue
+        def empty = Int.MinValue
     forAll { (entries: List[Int]) =>
       val orMap = entries.foldLeft(ObserveRemoveMap.empty[Int, Int]) { (curr, elem) =>
         curr.update(elem, elem)
@@ -28,7 +27,6 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
   property("mutateKey/queryKey") {
     forAll { (add: List[Int], remove: List[Int], k: Int) =>
-
       val network = new Network(0, 0, 0)
       val aea     = new AntiEntropy[ObserveRemoveMap[Int, ReplicatedSet[Int]]]("a", network, mutable.Buffer())
       val aeb     = new AntiEntropy[ReplicatedSet[Int]]("b", network, mutable.Buffer())

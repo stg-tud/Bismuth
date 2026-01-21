@@ -2,8 +2,9 @@ package replication
 
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import rdts.base.{Lattice, Uid}
-import rdts.time.{Dot, Dots}
+import rdts.base.Historized.MetaDelta
+import rdts.base.Uid
+import rdts.time.Dots
 
 object ProtocolMessage {
 
@@ -15,22 +16,28 @@ object ProtocolMessage {
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T
     */
-  case class Payload[+T](senders: Set[Uid], dots: Dots, data: T, causalPredecessors: Dots, lastKnownDots: Dots)
-      extends ProtocolMessage[T] {
-    def addSender(s: Uid) = copy(senders = senders + s)
+  case class Payload[+T](dots: Dots, data: T, redundantDots: Dots, timetolive: Int)
+      extends ProtocolMessage[T] {}
+  object Payload                 {
+    def apply[T](dots: Dots, data: T, timetolive: Int): Payload[T] =
+      Payload(dots, data, Dots.empty, timetolive)
 
-    def addLastKnownDot(lastKnownDot: Dot) = copy(lastKnownDots = lastKnownDots.add(lastKnownDot))
-  }
-  object Payload {
-    def apply[T](sender: Uid, dots: Dots, data: T): Payload[T] =
-      Payload(Set(sender), dots, data, Dots.empty, Dots.empty)
-    def apply[T](sender: Uid, dots: Dots, data: T, causalPredecessors: Dots): Payload[T] =
-      Payload(Set(sender), dots, data, causalPredecessors, Dots.empty)
-    def apply[T](senders: Set[Uid], dots: Dots, data: T): Payload[T] =
-      Payload(senders, dots, data, Dots.empty, Dots.empty)
+    def apply[T](dots: Dots, data: T): Payload[T] =
+      Payload(dots, data, Dots.empty, timetolive = 0)
 
     // this kinda makes sense, but kinda does not
     // given [T: Lattice]: Lattice[Payload[T]] = Lattice.derived
+
+    extension [T](payloads: Iterable[Payload[T]]) {
+      inline def getAllDots: Dots =
+        payloads.foldLeft(Dots.empty)((dots, payload) => dots.union(payload.dots.union(payload.redundantDots)))
+
+      inline def mapDeltas[A](f: T => A): Iterable[Payload[A]] =
+        payloads.map(bufferedPayload => bufferedPayload.copy(data = f(bufferedPayload.data)))
+
+      inline def toMetaDeltas: Iterable[MetaDelta[T]] =
+        payloads.map(payload => MetaDelta(payload.dots, payload.data, payload.redundantDots))
+    }
   }
 
   case class Ping(time: Long) extends ProtocolMessage[Nothing]
@@ -49,10 +56,5 @@ class ReceivedCachedMessage[T: JsonValueCodec](val messageBuffer: MessageBuffer)
 }
 
 class SentCachedMessage[T: JsonValueCodec](val payload: T) extends CachedMessage[T] {
-  val messageBuffer: MessageBuffer =
-    try
-      ArrayMessageBuffer(writeToArray(payload))
-    catch
-      case e: Exception =>
-        throw new RuntimeException(s"Error serializing payload $payload", e)
+  val messageBuffer: MessageBuffer = ArrayMessageBuffer(writeToArray(payload))
 }

@@ -15,9 +15,8 @@ trait Appointment {
 
 type Calendar = AWSet[Appointment]
 
-def sumDays(cal: Calendar): Int = {
+def sumDays(cal: Calendar): Int =
   ???
-}
 
 val work: Source[Calendar]     = Source(AWSet())
 val vacation: Source[Calendar] = Source(AWSet())

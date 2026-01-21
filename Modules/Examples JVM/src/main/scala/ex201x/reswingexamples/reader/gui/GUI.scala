@@ -21,15 +21,15 @@ class GUI(
   val refreshButton = new ReButton("Refresh")
   val refresh       = refreshButton.clicked
 
-  val requestURLAddition = Evt[String]() // #EVT
+  val requestURLAddition: Evt[String] = Evt[String]() // #EVT
 
   val refreshCheckbox = new ReCheckBox("auto refresh", selected = true)
   def refreshAllowed  = refreshCheckbox.selected
 
-  def top = {
+  def top: Frame = {
     new MainFrame {
-      val quitAction      = swing.Action("Quit") { quit() }
-      val urlDialogAction = swing.Action("Add url") {
+      val quitAction: Action      = swing.Action("Quit") { quit() }
+      val urlDialogAction: Action = swing.Action("Add url") {
         val input = Dialog.showInput(
           null,
           "Please enter a feed url:",
@@ -54,14 +54,14 @@ class GUI(
       val (framewidth, frameheight) = (840, 480)
       configure()
 
-      val channelList = new ReListViewEx[RSSChannel](
+      val channelList: ReListViewEx[RSSChannel] = new ReListViewEx[RSSChannel](
         Signal { store.channels.value.keys.toSeq }, // #SIG
         visibleRowCount = 3
       ) {
         peer.renderer = ListView.Renderer(_.title)
       }
 
-      val selectedChannelItems = Signal.dynamic { // #SIG
+      val selectedChannelItems: Signal[Seq[RSSItem]] = Signal.dynamic { // #SIG
         channelList.selectedItem.value match {
           case Some(channel) => store.channels.value.get(channel) match {
               case Some(items) => items.value.toSeq
@@ -71,7 +71,7 @@ class GUI(
         }
       }
 
-      val itemList = new ReListViewEx[RSSItem](selectedChannelItems) {
+      val itemList: ReListViewEx[RSSItem] = new ReListViewEx[RSSItem](selectedChannelItems) {
         peer.renderer = ListView.Renderer(_.title)
       }
 
@@ -96,7 +96,7 @@ class GUI(
       )
 
       contents = new BorderPanel {
-        val topPane = new GridPanel(1, 1) {
+        val topPane: GridPanel = new GridPanel(1, 1) {
           contents += new BorderPanel {
             add(new Label("Choose Channel: "), BorderPanel.Position.West)
             add(new ScrollPane(channelList), BorderPanel.Position.Center)

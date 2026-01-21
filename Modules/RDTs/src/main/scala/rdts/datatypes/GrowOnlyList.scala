@@ -9,7 +9,7 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
   lazy val now: Option[CausalTime] = order.values.flatten.reduceOption(Lattice.merge)
   def nextTime: CausalTime         = now.map(_.advance).getOrElse(CausalTime.now())
 
-  def insertAfter(predecessor: CausalTime, value: E) = {
+  def insertAfter(predecessor: CausalTime, value: E): GrowOnlyList[E] = {
     val next = nextTime
     GrowOnlyList(order = Map(predecessor -> Set(next)), elements = Map(next -> value))
   }

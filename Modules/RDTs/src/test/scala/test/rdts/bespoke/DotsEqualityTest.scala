@@ -2,7 +2,6 @@ package test.rdts.bespoke
 
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
-import test.rdts.given
 
 class DotsEqualityTest extends munit.FunSuite {
 

@@ -16,9 +16,10 @@ import scala.jdk.CollectionConverters.*
 class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInterface)
     extends BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInterface) {
 
-  val sprayDelivered =
+  val sprayDelivered: ConcurrentHashMap[String, Set[String]] =
     ConcurrentHashMap[String, Set[String]]() // will grow indefinitely as we do not garbage collect here
-  val copies = ConcurrentHashMap[String, Int]() // will grow indefinitely as we do not garbage collect here
+  val copies: ConcurrentHashMap[String, Int] =
+    ConcurrentHashMap[String, Int]() // will grow indefinitely as we do not garbage collect here
 
   override def onRequestSenderForBundle(packet: Packet.RequestSenderForBundle)
       : Option[Packet.ResponseSenderForBundle] = {
@@ -27,40 +28,38 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
     val num_copies_before = copies.getOrDefault(packet.bp.id, SprayAndWaitRouter.MAX_COPIES)
 
     if num_copies_before < 2 || !packet.bp.id.startsWith(ws.nodeId) then {
-      println(s"attempting direct routing")
+      println("attempting direct routing")
 
       val target_node_name: String = packet.bp.destination.extract_node_name()
 
       peers.get(target_node_name) match
-        case null => {
-          println(s"peer $target_node_name not directly known. not routing.")
-          Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = List(), delete_afterwards = false))
-        }
-        case peer: DtnPeer => {
-          val selected_clas = peer.cla_list
-            .filter((agent, port_option) => packet.clas.contains(agent))
-            .map((agent, port_option) =>
-              Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
-            )
-            .toList
+          case null =>
+            println(s"peer $target_node_name not directly known. not routing.")
+            Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = List(), delete_afterwards = false))
+          case peer: DtnPeer =>
+            val selected_clas = peer.cla_list
+              .filter((agent, port_option) => packet.clas.contains(agent))
+              .map((agent, port_option) =>
+                Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
+              )
+              .toList
 
-          println(s"selected clas: ${selected_clas}")
-          Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = selected_clas, delete_afterwards = true))
-        }
+            println(s"selected clas: ${selected_clas}")
+            Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = selected_clas, delete_afterwards = true))
     } else {
       println("attempting spray routing")
 
       val selected_clas = peers.asScala
         .filter((peer_name, peer) => !sprayDelivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
         .take(num_copies_before - 1) // -1 to be left with at least one copy
-        .map((peer_name, peer) => {
+        .map { (peer_name, peer) =>
           peer.cla_list
             .filter((agent, port_option) => packet.clas.contains(agent))
             .map((agent, port_option) =>
               Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
             )
             .take(1) // limiting the number of clas to the number of peers
-        })
+        }
         .flatten
         .toList
 
@@ -71,13 +70,11 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
     }
   }
 
-  override def onError(packet: Packet.Error): Unit = {
+  override def onError(packet: Packet.Error): Unit =
     println(s"received error from dtnd: ${packet.reason}")
-  }
 
-  override def onTimeout(packet: Packet.Timeout): Unit = {
+  override def onTimeout(packet: Packet.Timeout): Unit =
     println(s"sending ran into timeout for bundle-forward-response ${packet.bp}")
-  }
 
   override def onSendingFailed(packet: Packet.SendingFailed): Unit = {
     println(s"sending failed for bundle ${packet.bid} on cla ${packet.cla_sender}")
@@ -97,19 +94,17 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
           sprayDelivered.put(packet.bid, Set(packet.cla_sender))
           ()
         case x: Set[String] =>
-          sprayDelivered.put(packet.bid, (x + packet.cla_sender))
+          sprayDelivered.put(packet.bid, x + packet.cla_sender)
           ()
       }
     }
   }
 
-  override def onIncomingBundle(packet: Packet.IncomingBundle): Unit = {
+  override def onIncomingBundle(packet: Packet.IncomingBundle): Unit =
     println("received incoming bundle. information not used for routing. ignoring.")
-  }
 
-  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit = {
+  override def onIncomingBundleWithoutPreviousNode(packet: Packet.IncomingBundleWithoutPreviousNode): Unit =
     println("received incoming bundle without previous node. information not used for routing. ignoring.")
-  }
 }
 object SprayAndWaitRouter {
   val MAX_COPIES: Int = 7

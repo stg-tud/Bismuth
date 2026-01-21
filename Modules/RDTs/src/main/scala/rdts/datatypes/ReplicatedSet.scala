@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
 import rdts.time.{Dot, Dots}
 
 /** A set that allows deletes.
@@ -15,7 +15,7 @@ case class ReplicatedSet[E](inner: Map[E, Dots], deleted: Dots) {
 
   def contains(elem: E): Boolean = inner.contains(elem)
 
-  lazy val observed = inner.values.foldLeft(deleted)(_ `union` _)
+  lazy val observed: Dots = inner.values.foldLeft(deleted)(_ `union` _)
 
   def add(using LocalUid)(e: E): Delta = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
@@ -62,6 +62,8 @@ case class ReplicatedSet[E](inner: Map[E, Dots], deleted: Dots) {
 
   def clear(): Delta = ReplicatedSet(Map.empty, inner.values.foldLeft(Dots.empty)(_ `union` _))
 
+  inline def size: Int = elements.size
+
 }
 
 object ReplicatedSet {
@@ -74,5 +76,8 @@ object ReplicatedSet {
       base.copy(inner = base.inner.filter((_, dots) => !other.deleted.subsumes(dots)))
   }
   given decompose[E]: Decompose[ReplicatedSet[E]] = Decompose.derived
+
+  given historized[E]: Historized[ReplicatedSet[E]] = (delta, bufferedDelta) =>
+    delta.deleted.contains(bufferedDelta.observed)
 
 }

@@ -6,13 +6,12 @@ package ex201x.swing.tempconverter
 
 import reactives.default.*
 
-// Scala swing events
 import scala.swing.*
 import scala.swing.event.*
 
 // could we actually use Reactive[Any] and use toString?
 trait ReactiveText extends Reactor {
-  protected lazy val userSet = Var(text)
+  protected lazy val userSet: Var[String] = Var(text)
 
   def text: String
   def text_=(s: String): Unit
@@ -23,7 +22,7 @@ trait ReactiveText extends Reactor {
     ()
   }
   // out signal
-  lazy val text_out = Signal { userSet.value }
+  lazy val text_out: Signal[String] = Signal { userSet.value }
   reactions += { case EditDone(_) => userSet `set` text }
 }
 
@@ -33,6 +32,6 @@ class ReactiveTextfield extends TextField with ReactiveText {
 class ReactiveLabel  extends Label with ReactiveText
 class ReactiveButton extends Button with ReactiveText {
   // wrap the event to escala
-  val clicked = Evt[ButtonClicked]()
+  val clicked: Evt[ButtonClicked] = Evt[ButtonClicked]()
   reactions += { case c @ ButtonClicked(_) => clicked.fire(c) }
 }

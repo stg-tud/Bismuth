@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
@@ -17,7 +17,7 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
   def write(v: A)(using LocalUid): MultiVersionRegister[A] = {
 
     val containedDots = Dots.from(repr.keys)
-    val nextDot       = (removed.union(containedDots)).nextDot(LocalUid.replicaId)
+    val nextDot       = removed.union(containedDots).nextDot(LocalUid.replicaId)
 
     MultiVersionRegister(
       Map(nextDot -> v),
@@ -30,11 +30,13 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
       Map.empty,
       Dots.from(repr.keySet)
     )
+
+  def observed: Dots = repr.foldLeft(removed)((dots, entry) => dots.add(entry._1))
 }
 
 object MultiVersionRegister {
 
-  def of[A](a: A)(using LocalUid) = empty.write(a)
+  def of[A](a: A)(using LocalUid): MultiVersionRegister[A] = empty.write(a)
 
   given bottomInstance[A]: Bottom[MultiVersionRegister[A]] = Bottom.derived
   def empty[A]: MultiVersionRegister[A]                    = Bottom.empty
@@ -45,10 +47,16 @@ object MultiVersionRegister {
   }
 
   given lattice[A]: Lattice[MultiVersionRegister[A]] =
-    given Lattice[A] = Lattice.assertEquals
-    val decorated    = Lattice.derived[MultiVersionRegister[A]]
-    DecoratedLattice.filter(decorated) { (base, other) =>
-      base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
-    }
+      given Lattice[A] = Lattice.assertEquals
+      val decorated    = Lattice.derived[MultiVersionRegister[A]]
+      DecoratedLattice.filter(decorated) { (base, other) =>
+        base.copy(repr = base.repr.filter((k, _) => !other.removed.contains(k)))
+      }
+
+  /** The buffered delta is redundant if it happened before the delta
+    * -> the key/dot of the write operation in the buffered delta is removed by the delta
+    */
+  given historized[A]: Historized[MultiVersionRegister[A]] = (delta, bufferedDelta) =>
+    delta.removed.contains(delta.observed)
 
 }

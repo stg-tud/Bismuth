@@ -11,20 +11,20 @@ class WorkflowExample extends munit.FunSuite {
     case Contract(signed: Boolean = false)
     case Complete()
 
-    def newContract         = Documents()
-    def addStaffSheet       = Documents(hasStaffSheet = true)
-    def addHourConfirmation = Documents(hasHourConfirmation = true)
-    def createContract      = this match
-      case Documents(hasStaffSheet = true, hasHourConfirmation = true) => Contract()
-      case other                                                       => Init()
+    def newContract: Workflow         = Documents()
+    def addStaffSheet: Workflow       = Documents(hasStaffSheet = true)
+    def addHourConfirmation: Workflow = Documents(hasHourConfirmation = true)
+    def createContract: Workflow      = this match
+        case Documents(hasStaffSheet = true, hasHourConfirmation = true) => Contract()
+        case other                                                       => Init()
 
-    def signContract = this match
-      case Contract(signed = false) => Contract(true)
-      case other                    => Init()
+    def signContract: Workflow = this match
+        case Contract(signed = false) => Contract(true)
+        case other                    => Init()
 
-    def complete = this match
-      case Contract(signed = true) => Complete()
-      case other                   => Init()
+    def complete: Workflow = this match
+        case Contract(signed = true) => Complete()
+        case other                   => Init()
   }
 
   given Lattice[Workflow] = {

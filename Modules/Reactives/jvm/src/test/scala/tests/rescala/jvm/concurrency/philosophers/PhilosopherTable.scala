@@ -71,17 +71,17 @@ class PhilosopherTable(philosopherCount: Int)(val interface: reactives.default.t
       forksAreFree
     } /* propagation executes here */ { (forksWereFree, turn) =>
       if forksWereFree then
-        assert(
-          turn.now(seating.vision) == Eating,
-          s"philosopher should be done after turn but is ${seating.inspect(turn)}"
-        )
+          assert(
+            turn.now(seating.vision) == Eating,
+            s"philosopher should be done after turn but is ${seating.inspect(turn)}"
+          )
       // println(Thread.currentThread().getName + " done " + turn)
       forksWereFree
     }
 
   def eatOnce(seating: Seating): Unit = {
     val bo = new Backoff()
-    while !tryEat(seating) do { bo.backoff() }
+    while !tryEat(seating) do bo.backoff()
 
     seating.philosopher.set(Thinking)
     // engine.transactionWithWrapup(seating.philosopher){ turn =>

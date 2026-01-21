@@ -17,17 +17,17 @@ object ReShapesServer {
       new Thread(new CommandThread(commandThreadPort)).start()
       new Thread(new UpdateThread(updateThreadPort)).start()
     } else
-      println("invalid number of arguments please enter two port numbers")
+        println("invalid number of arguments please enter two port numbers")
   }
 
   /** Registers a client to the server if not already registered. */
-  def registerClient(inetAddress: InetAddress, port: Int) =
+  def registerClient(inetAddress: InetAddress, port: Int): Unit =
     if !(clients contains ((inetAddress, port))) then {
       clients ::= ((inetAddress, port))
       println("ReshapesServer register new client (%s, %d)".format(inetAddress, port))
       println("\t registered clients: ")
       for client <- clients do
-        println("\t  (%s, %d)".format(client._1, client._2))
+          println("\t  (%s, %d)".format(client._1, client._2))
       println()
       sendToClient((inetAddress, port))
       ()
@@ -43,14 +43,14 @@ object ReShapesServer {
   def sendUpdateToClients(shapes: Elem, sender: (InetAddress, Int)): Unit = {
     currentShapes = shapes
     for client <- clients do
-      if client != sender && !sendToClient(client) then
-        removeClient(client)
+        if client != sender && !sendToClient(client) then
+            removeClient(client)
   }
 
   /** Sends shapes to a client.
     * returns true if shapes where successfully send, false otherwise (connection refused to client)
     */
-  def sendToClient(client: (InetAddress, Int)) = {
+  def sendToClient(client: (InetAddress, Int)): Boolean = {
     try {
       if currentShapes != null then {
         val socket = new Socket(client._1, client._2)

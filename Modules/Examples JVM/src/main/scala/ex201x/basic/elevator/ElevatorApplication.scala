@@ -15,7 +15,7 @@ object ElevatorApplication extends SimpleSwingApplication {
   override def main(args: Array[String]): Unit = {
     super.main(args)
     while true do {
-      Swing onEDTWait { elevator.tick.fire() }
+      Swing onEDTWait elevator.tick.fire()
       Thread `sleep` 50
     }
   }
@@ -23,7 +23,7 @@ object ElevatorApplication extends SimpleSwingApplication {
 
 class ElevatorApplication(val elevator: Elevator) {
   // drawing code
-  val frame = new MainFrame {
+  val frame: MainFrame = new MainFrame {
     contents = new GridPanel(0, 2) {
       contents += new ElevatorPainter(elevator)
       contents += new GridPanel(elevator.nFloors, 1) {
@@ -42,16 +42,15 @@ class ElevatorApplication(val elevator: Elevator) {
 }
 
 class ElevatorPainter(e: Elevator) extends Panel {
-  val FloorHeight = e.FloorHeight
-  val FloorWidth  = (0.9 * e.FloorHeight).toInt
-  val sizeX       = FloorWidth + 50
-  val sizeY       = FloorHeight * e.nFloors + 50
+  val FloorHeight     = e.FloorHeight
+  val FloorWidth: Int = (0.9 * e.FloorHeight).toInt
+  val sizeX: Int      = FloorWidth + 50
+  val sizeY: Int      = FloorHeight * e.nFloors + 50
 
   preferredSize = new Dimension(sizeX, sizeY)
 
-  override def paintComponent(g: Graphics2D): Unit = {
+  override def paintComponent(g: Graphics2D): Unit =
     draw(g, new Rectangle(0, 0, 0, 0))
-  }
 
   def draw(g: Graphics2D, area: Rectangle): Unit = {
     val FloorX = area.x

@@ -4,7 +4,7 @@ import ex201x.programming2016demo.ui.{Circle, Rectangle, Shape, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
-import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
+import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** This is a static display of two circles and a rectangle.
   * It demonstrates, how to display Shapes using our custom
@@ -12,7 +12,7 @@ import scala.swing.{MainFrame, SimpleSwingApplication, UIElement}
   * which we explain in the next step.
   */
 object ASwingFrame extends SimpleSwingApplication {
-  override lazy val top = {
+  override lazy val top: Frame = {
     val panel = new ShapesPanel(Var[List[Shape]](List[Shape](
       new Circle(center = Var(Pos(75, 30)), diameter = Var(25)),
       new Circle(Var(Pos(100, 100)), Var(50)),
@@ -30,9 +30,8 @@ object ASwingFrame extends SimpleSwingApplication {
     super.main(args)
 
     while !top.visible do Thread.sleep(5)
-    while top.visible do {
-      Thread.sleep(1)
-      /* TODO main loop */
-    }
+    while top.visible do
+        Thread.sleep(1)
+        /* TODO main loop */
   }
 }

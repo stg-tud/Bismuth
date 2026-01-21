@@ -1,9 +1,9 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import NetworkGenerators.*
 import org.scalacheck.Prop.*
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.datatypes.PosNegCounter
+import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
 import scala.collection.mutable
@@ -11,8 +11,8 @@ import scala.collection.mutable
 object PosNegCounterGenerator {
   val genPosNegCounter: Gen[AntiEntropyContainer[PosNegCounter]] =
     for
-      nInc <- Gen.posNum[Int]
-      nDec <- Gen.posNum[Int]
+        nInc <- Gen.posNum[Int]
+        nDec <- Gen.posNum[Int]
     yield {
       val network = new Network(0, 0, 0)
       val ae      = new AntiEntropy[PosNegCounter]("a", network, mutable.Buffer())

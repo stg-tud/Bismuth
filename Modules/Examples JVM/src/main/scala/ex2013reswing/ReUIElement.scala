@@ -1,5 +1,6 @@
 package ex2013reswing
 
+import java.awt.{Point, Rectangle}
 import scala.swing.event.{UIElementMoved, UIElementResized}
 import scala.swing.{Dimension, UIElement}
 
@@ -13,13 +14,14 @@ abstract class ReUIElement(
 
   def preferredSize: ReSwingValue[Dimension] = _preferredSize
 
-  val size     = ReSwingValue.using({ () => peer.size }, classOf[UIElementResized])
-  val location = ReSwingValue.using({ () => peer.location }, classOf[UIElementMoved])
-  val bounds   = ReSwingValue.using({ () => peer.bounds }, classOf[UIElementResized], classOf[UIElementMoved])
+  val size: ReSwingValue[Dimension]   = ReSwingValue.using(() => peer.size, classOf[UIElementResized])
+  val location: ReSwingValue[Point]   = ReSwingValue.using(() => peer.location, classOf[UIElementMoved])
+  val bounds: ReSwingValue[Rectangle] =
+    ReSwingValue.using(() => peer.bounds, classOf[UIElementResized], classOf[UIElementMoved])
 
-  minimumSize.using({ () => peer.minimumSize }, peer.minimumSize_=, "minimumSize")
-  maximumSize.using({ () => peer.maximumSize }, peer.maximumSize_=, "maximumSize")
-  preferredSize.using({ () => peer.preferredSize }, peer.preferredSize_=, "preferredSize")
+  minimumSize.using(() => peer.minimumSize, peer.minimumSize_=, "minimumSize")
+  maximumSize.using(() => peer.maximumSize, peer.maximumSize_=, "maximumSize")
+  preferredSize.using(() => peer.preferredSize, peer.preferredSize_=, "preferredSize")
 
   def initReactiveLayer(): Unit = {
     initReSwingValueConnection()

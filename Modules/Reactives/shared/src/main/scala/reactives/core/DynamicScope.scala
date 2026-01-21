@@ -28,8 +28,7 @@ class DynamicScopeImpl[State[_], Tx <: Transaction[State]](val scheduler: Schedu
   final private[reactives] def withDynamicInitializer[R](init: Tx)(thunk: => R): R =
     _currentTransaction.withValue(Some(init))(thunk)
 
-  final override def maybeTransaction: Option[Tx] = {
+  final override def maybeTransaction: Option[Tx] =
     _currentTransaction.value
-  }
 
 }

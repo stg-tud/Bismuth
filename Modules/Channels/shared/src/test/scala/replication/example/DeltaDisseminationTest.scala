@@ -4,6 +4,7 @@ import channels.SynchronousLocalConnection
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
+
 import replication.{DeltaDissemination, ProtocolMessage}
 
 class DeltaDisseminationTest extends munit.FunSuite {
@@ -12,7 +13,7 @@ class DeltaDisseminationTest extends munit.FunSuite {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     // I have no clue why this syntax is still not deprecated xD
-    val dd1, dd2, dd3 = DeltaDissemination[Set[String]](LocalUid.gen(), _ => (), None, true)
+    val dd1, dd2, dd3 = DeltaDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
 
     val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
 
@@ -48,4 +49,5 @@ class DeltaDisseminationTest extends munit.FunSuite {
     assert(true)
 
   }
+
 }

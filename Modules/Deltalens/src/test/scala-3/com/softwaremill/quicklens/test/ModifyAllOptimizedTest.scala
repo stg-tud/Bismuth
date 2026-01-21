@@ -4,12 +4,10 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.reflect.ClassTag
-
 class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
   import ModifyAllOptimizedTest.*
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     Cons.copyCount = 0
     ConsOpt.copyCount = 0
     Opt.eachCount = 0
@@ -199,11 +197,11 @@ object ModifyAllOptimizedTest {
 
   given QuicklensFunctor[Opt] with {
     def map[A](fa: Opt[A], f: A => A): Opt[A] =
-      Opt.eachCount = Opt.eachCount + 1
-      fa match {
-        case Nada    => Nada
-        case Just(a) => Just(f(a))
-      }
+        Opt.eachCount = Opt.eachCount + 1
+        fa match {
+          case Nada    => Nada
+          case Just(a) => Just(f(a))
+        }
   }
 
   case class ConsOpt(head: Int, tail: Opt[ConsOpt]) {

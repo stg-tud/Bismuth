@@ -5,10 +5,12 @@
 .scala-build/
 .vscode/
 bun.lock
+deno.lock
 metals.sbt
 node_modules/
 package-lock.json
 target/
 webview.h
 yarn.lock
+.ipynb_checkpoints
 .DS_Store

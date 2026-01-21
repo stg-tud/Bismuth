@@ -4,8 +4,7 @@ import com.daimpl.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
-import rdts.base.Lattice
-import rdts.base.LocalUid
+import rdts.base.{Lattice, LocalUid}
 
 object Main {
   case class SpreadsheetData(
@@ -24,7 +23,7 @@ object Main {
 
         val newAggregator =
           if state.spreadsheets.isEmpty then {
-            SpreadsheetComponent.createSampleSpreadsheet()(using replicaId)
+            SpreadsheetComponent.createSampleSpreadsheet()
           } else if onlineSpreadsheets.isEmpty then {
             SpreadsheetDeltaAggregator(Spreadsheet[String](), replicaId)
           } else {
@@ -41,9 +40,8 @@ object Main {
       }
     }
 
-    def removeSpreadsheet(id: Int): Callback = {
+    def removeSpreadsheet(id: Int): Callback =
       $.modState(state => state.copy(spreadsheets = state.spreadsheets.filter(_.id != id)))
-    }
 
     def toggleOnlineStatus(id: Int): Callback = {
       $.modState { state =>

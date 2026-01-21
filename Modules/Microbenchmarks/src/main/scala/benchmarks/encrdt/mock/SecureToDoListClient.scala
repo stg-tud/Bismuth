@@ -2,13 +2,12 @@ package benchmarks.encrdt.mock
 
 import benchmarks.encrdt.Codecs.given
 import benchmarks.encrdt.deltabased.{DecryptedDeltaGroup, EncryptedDeltaGroup, TrustedReplica, UntrustedReplica}
-import benchmarks.encrdt.localidFromString
 import benchmarks.encrdt.mock.SecureToDoListClient.{ToDoMapLattice, mergeDecryptedDeltas}
 import benchmarks.encrdt.todolist.ToDoEntry
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
 import rdts.base.LocalUid
 import rdts.datatypes.ObserveRemoveMap
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
 import rdts.time.Dots
 
 import java.util.UUID
@@ -48,14 +47,14 @@ class SecureToDoListClient(
     val _disseminatedBefore = _disseminatedDataInBytes
 
     crdt.get(uuid).map(_.copy(completed = true)) match
-      case None          =>
-      case Some(updated) =>
-        val delta = crdt.putDelta(
-          uuid,
-          updated
-        )
-        localChangeOptimized(delta, uuid)
-        _disseminatedDataCompletion += _disseminatedDataInBytes - _disseminatedBefore
+        case None          =>
+        case Some(updated) =>
+          val delta = crdt.putDelta(
+            uuid,
+            updated
+          )
+          localChangeOptimized(delta, uuid)
+          _disseminatedDataCompletion += _disseminatedDataInBytes - _disseminatedBefore
 
   }
 

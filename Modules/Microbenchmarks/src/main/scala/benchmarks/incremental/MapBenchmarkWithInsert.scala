@@ -29,13 +29,13 @@ class MapBenchmarkWithInsert {
   @Setup(Level.Invocation)
   def prepare(): Unit = {
     addEvent = Evt[Int]()
-    val seq = addEvent.fold(Seq.range(1, arg))((s, x) => {
+    val seq = addEvent.fold(Seq.range(1, arg)) { (s, x) =>
       s :+ x
-    })
+    }
     mappedSeq = Signal {
-      seq.value.map(x => {
+      seq.value.map { x =>
         x * x
-      })
+      }
     }
 
     reactSeq = IncSeq.empty[Int]

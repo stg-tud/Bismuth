@@ -74,9 +74,8 @@ object TodoListController {
     }
   }
 
-  def stop(): Unit = {
+  def stop(): Unit =
     crdt.shutdown()
-  }
 
   def connectionString: String = s"${crdt.replicaId}@${crdt.address}"
 

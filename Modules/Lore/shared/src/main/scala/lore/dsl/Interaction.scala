@@ -1,12 +1,9 @@
 package lore.dsl
 
 import lore.dsl.*
-import reactives.SelectedScheduler.State as BundleState
-import reactives.core.ReSource
 import reactives.default.*
 
-import scala.annotation.{static, targetName}
-import scala.quoted.*
+import scala.annotation.targetName
 
 trait Interaction[S <: Tuple, A] {
   type T[_ <: S, _ <: A] <: Interaction[S, A]
@@ -14,12 +11,12 @@ trait Interaction[S <: Tuple, A] {
   inline def requires(inline pred: (S, A) => Boolean): T[S, A]
 
   inline def requires[B](inline pred: (B, A) => Boolean)(using S =:= Tuple1[B]): T[S, A] =
-    requires({ (s, a) => pred(s._1, a) })
+    requires { (s, a) => pred(s._1, a) }
 
   inline def ensures(inline pred: (S, A) => Boolean): T[S, A]
 
   inline def ensures[B](inline pred: (B, A) => Boolean)(using S =:= Tuple1[B]): T[S, A] =
-    ensures({ (s, a) => pred(s._1, a) })
+    ensures { (s, a) => pred(s._1, a) }
 }
 
 object Interaction {
@@ -57,7 +54,7 @@ trait CanExecute[S <: Tuple, A] {
   def executes(fun: (S, A) => S): E[S, A]
 
   inline def executes[B](inline fun: (B, A) => B)(using ev: S =:= Tuple1[B]): E[S, A] =
-    executes({ (s, a) => ev.flip(Tuple1(fun(s._1, a))) })
+    executes { (s, a) => ev.flip(Tuple1(fun(s._1, a))) }
 
 }
 
@@ -93,9 +90,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: UnboundInteraction[Tuple1[T], A]) {
-    def modifies(source: Var[T]): InteractionWithModifies[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): InteractionWithModifies[Tuple1[T], Tuple1[Var[T]], A] =
       InteractionWithModifies(m.requires, m.ensures, Tuple1(source))
-    }
   }
 
   extension [T1, T2, A](m: UnboundInteraction[(T1, T2), A]) {
@@ -137,9 +133,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: InteractionWithExecutes[Tuple1[T], A]) {
-    def modifies(source: Var[T]): InteractionWithExecutesAndModifies[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): InteractionWithExecutesAndModifies[Tuple1[T], Tuple1[Var[T]], A] =
       InteractionWithExecutesAndModifies(m.requires, m.ensures, m.executes, Tuple1(source))
-    }
   }
 
   extension [T1, T2, A](m: InteractionWithExecutes[(T1, T2), A]) {
@@ -186,9 +181,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: InteractionWithActs[Tuple1[T], A]) {
-    def modifies(source: Var[T]): InteractionWithModifiesAndActs[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): InteractionWithModifiesAndActs[Tuple1[T], Tuple1[Var[T]], A] =
       InteractionWithModifiesAndActs(m.requires, m.ensures, Tuple1(source), m.event)
-    }
   }
 
   extension [T1, T2, A](m: InteractionWithActs[(T1, T2), A]) {
@@ -227,9 +221,8 @@ implicit object Ex {
   }
 
   extension [T, A](m: InteractionWithExecutesAndActs[Tuple1[T], A]) {
-    def modifies(source: Var[T]): BoundInteraction[Tuple1[T], Tuple1[Var[T]], A] = {
+    def modifies(source: Var[T]): BoundInteraction[Tuple1[T], Tuple1[Var[T]], A] =
       BoundInteraction(m.requires, m.ensures, m.executes, Tuple1(source), m.event)
-    }
   }
 
   extension [T1, T2, A](m: InteractionWithExecutesAndActs[(T1, T2), A]) {

@@ -2,7 +2,7 @@ package webapps.todo
 
 import dtn.rdt.Channel
 import org.scalajs.dom.html.Div
-import org.scalajs.dom.{document, window}
+import org.scalajs.dom.{Element, document, window}
 import rdts.base.{Lattice, LocalUid}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
@@ -20,7 +20,7 @@ object Todolist {
 
   val timer = new Timer()
 
-  lazy val contents = {
+  lazy val contents: Div = {
     val storagePrefix = window.location.href
     println(storagePrefix)
 
@@ -30,7 +30,7 @@ object Todolist {
 
   // TodoDataManager.dataManager.addLatentConnection(WebviewAdapterChannel.listen())
 
-  lazy val webrtc = WebRTCConnectionView(TodoDataManager.dataManager).example().render
+  lazy val webrtc: Element = WebRTCConnectionView(TodoDataManager.dataManager).example().render
 
   lazy val updateTask: Unit = {
 
@@ -46,8 +46,8 @@ object Todolist {
 
   lazy val statusInfo: Div = {
     all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
-      val state = TodoDataManager.dataManager.allPayloads.map(_.payload.data).reduceOption(Lattice.merge)
-      all.pre(all.stringFrag(pprint.apply(state).plainText)).render
+        val state = TodoDataManager.dataManager.allPayloads.map(_.payload.data).reduceOption(Lattice.merge)
+        all.pre(all.stringFrag(pprint.apply(state).plainText)).render
     ).hold(all.span.render))
   }
 

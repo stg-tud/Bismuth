@@ -23,10 +23,13 @@ class ClusterConsensus extends munit.FunSuite {
     val ids = Set("Node1", "Node2", "Node3").map(Uid.predefined)
     given Participants(ids)
     val nodes @ primary :: secondaries =
-      ids.map { id => KeyValueReplica(id, ids, offloadSending = false) }.toList: @unchecked
+      ids.map { id => KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false) }.toList: @unchecked
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
     secondaries.foreach { node => node.cluster.dataManager.addObjectConnection(connection.client(node.uid.toString)) }
+    val connection2 = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
+    secondaries.head.cluster.dataManager.addObjectConnection(connection2.server)
+    secondaries(1).cluster.dataManager.addObjectConnection(connection2.client(secondaries(1).uid.toString))
 
     val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
 
@@ -47,7 +50,7 @@ class ClusterConsensus extends munit.FunSuite {
 
     def investigateUpkeep(state: ClusterState)(using LocalUid) = {
       val delta  = state.upkeep
-      val merged = (state `merge` delta)
+      val merged = state `merge` delta
       assert(state != merged)
       assert(delta `inflates` state, delta)
     }
@@ -94,6 +97,87 @@ class ClusterConsensus extends munit.FunSuite {
 
     assertEquals(nodes(0).cluster.state.log(3).value, KVOperation.Read("test2"))
     assertEquals(nodes(2).cluster.state.log.size, 2)
+
+  }
+  test("consensus with one node") {
+
+    given JsonValueCodec[ClusterState] =
+      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+    given clusterCodec: JsonValueCodec[ProtocolMessage[ClusterState]] =
+      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+    given JsonValueCodec[ClientState] =
+      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+    given clientCodec: JsonValueCodec[ProtocolMessage[ClientState]] =
+      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+
+    val ids = Set("Node1").map(Uid.predefined)
+    given Participants(ids)
+    val nodes @ primary :: x =
+      ids.map { id => KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false) }.toList: @unchecked
+    val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
+    primary.cluster.dataManager.addObjectConnection(connection.server)
+
+    val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
+
+    primary.client.dataManager.addObjectConnection(clientConnection.server)
+
+    val clientUid = Uid.gen()
+    val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
+    client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
+
+    client.printResults = false
+
+    client.write("test", "Hi")
+    client.read("test")
+
+    assertEquals(primary.client.state.requestsSorted, List.empty)
+    assertEquals(primary.cluster.state.read.length, 2)
+
+    for n <- Range(0, 1000) do
+        client.write(n.toString, "value")
+
+    assertEquals(primary.cluster.state.read.length, 1002)
+
+    def investigateUpkeep(state: ClusterState)(using LocalUid) = {
+      val delta  = state.upkeep
+      val merged = state `merge` delta
+      assert(state != merged)
+      assert(delta `inflates` state, delta)
+    }
+
+    def runUpkeep() = while {
+      nodes.filter(_.cluster.needsUpkeep()).exists { n =>
+        investigateUpkeep(n.cluster.state)(using n.localUid)
+        n.cluster.forceUpkeep()
+        true
+      }
+    } do ()
+
+    runUpkeep()
+
+    nodes.foreach(node => assert(!node.cluster.needsUpkeep(), node.uid))
+
+    def noUpkeep(keyValueReplica: KeyValueReplica): Unit = {
+      val current = keyValueReplica.cluster.state
+      assertEquals(
+        current `merge` current.upkeep(using keyValueReplica.localUid),
+        current,
+        s"${keyValueReplica.uid} upkeep"
+      )
+    }
+
+    nodes.foreach(noUpkeep)
+
+    // simulate crash
+
+    client.printResults = false
+
+    client.write("test2", "Hi")
+    client.read("test2")
+
+    runUpkeep()
+
+    nodes.foreach(noUpkeep)
 
   }
 }

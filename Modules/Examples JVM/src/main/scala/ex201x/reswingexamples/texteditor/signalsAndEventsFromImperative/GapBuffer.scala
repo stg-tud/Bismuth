@@ -15,10 +15,10 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
 
   override def size = count
 
-  def hasNext = { c < count }
-  def next()  = {
+  def hasNext: Boolean = c < count
+  def next(): Char     = {
     if b == caret then
-      b += buf.length - count
+        b += buf.length - count
     val ch = buf(b)
     b += 1
     c += 1
@@ -39,7 +39,7 @@ class CharacterIterator(buf: Array[Char], count: Int, caret: Int) extends Iterat
   * Moving the caret requires copying text from one segment to the other.
   */
 class GapBuffer {
-  val caretChanged = Evt[Int]() // #EVT
+  val caretChanged: Evt[Int] = Evt[Int]() // #EVT
 
   private var buf                         = new Array[Char](0)
   private val size                        = Var(0)           // #VAR
@@ -57,31 +57,30 @@ class GapBuffer {
       Array.copy(buf, src, buf, dest, dist)
   }
 
-  val caret = Signal { offsets.value._2 } // #SIG
+  val caret: Signal[Int] = Signal { offsets.value._2 } // #SIG
 
-  val iterable = Signal { // #SIG
+  val iterable: Signal[Iterable[Char]] = Signal { // #SIG
     val (b, s) = (buf, size.value)
     new Iterable[Char] { def iterator = new CharacterIterator(b, s, caret.value) }: Iterable[Char]
   }
 
   val length = size
 
-  def apply(i: Int) = buf(if i >= caret.now then i + (buf.length - size.now) else i)
+  def apply(i: Int): Char = buf(if i >= caret.now then i + (buf.length - size.now) else i)
 
   def insert(str: String): Unit = {
     // insert text into the gap between the two text segments
     if size.now + str.length > buf.length then
-      expand(size.now + str.length)
+        expand(size.now + str.length)
 
     val post = buf.length - size.now + caret.now
     str.copyToArray(buf, post - str.length, str.length)
     size.transform(_ + str.length)
   }
 
-  def remove(count: Int): Unit = {
+  def remove(count: Int): Unit =
     // remove text by increasing the gap between the two text segments
     size.transform(_ - math.min(count, size.now - caret.now))
-  }
 
   private def expand(minsize: Int): Unit = {
     // the text does not fit into the buffer

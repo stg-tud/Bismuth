@@ -21,7 +21,7 @@ object PongStarter extends SimpleSwingApplication {
   override def main(args: Array[String]): Unit = {
     super.main(args)
     while true do {
-      Swing onEDTWait { application.tick.fire() }
+      Swing onEDTWait application.tick.fire()
       Thread `sleep` 20
     }
   }
@@ -29,7 +29,7 @@ object PongStarter extends SimpleSwingApplication {
 
 class PongWindow {
 
-  val tick = Evt[Unit]()
+  val tick: Evt[Unit] = Evt[Unit]()
   tick observe { (_: Unit) => frame.repaint() }
 
   val mouse = new Mouse

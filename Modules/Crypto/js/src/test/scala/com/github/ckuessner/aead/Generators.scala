@@ -1,6 +1,6 @@
 package com.github.ckuessner.aead
 
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
 
 import scala.scalajs.js.JSConverters.JSRichIterable
 import scala.scalajs.js.typedarray.Uint8Array

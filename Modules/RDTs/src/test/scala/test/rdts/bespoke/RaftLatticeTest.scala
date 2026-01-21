@@ -1,8 +1,8 @@
 package test.rdts.bespoke
 
 import rdts.base.Lattice
-import rdts.protocols.raft.RaftState.Vote
 import rdts.protocols.raft.RaftState
+import rdts.protocols.raft.RaftState.Vote
 import test.rdts.given
 
 class RaftLatticeTest extends munit.FunSuite {

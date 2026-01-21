@@ -1,8 +1,12 @@
 package com.daimpl.app
 
-import scala.language.implicitConversions
 import japgolly.scalajs.react.*
+import japgolly.scalajs.react.CtorType.Summoner.Aux
+import japgolly.scalajs.react.component.Scala.Component
+import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
+
+import scala.language.implicitConversions
 
 object SpreadsheetControls {
 
@@ -13,7 +17,7 @@ object SpreadsheetControls {
       onRemove: Int => Callback
   )
 
-  val Component = ScalaComponent
+  val Component: Component[Props, Unit, Unit, Aux[Box[Props], Children.None, CtorType.Props]#CT] = ScalaComponent
     .builder[Props]("SpreadsheetControls")
     .render_P { props =>
       <.div(
@@ -40,9 +44,9 @@ object SpreadsheetControls {
           <.button(
             ^.className := s"px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
                 if props.isOnline then
-                  "bg-red-500 hover:bg-red-600 text-white"
+                    "bg-red-500 hover:bg-red-600 text-white"
                 else
-                  "bg-green-500 hover:bg-green-600 text-white"
+                    "bg-green-500 hover:bg-green-600 text-white"
               }",
             ^.onClick --> props.onToggleOnline(props.spreadsheetId),
             if props.isOnline then "Go Offline" else "Go Online"

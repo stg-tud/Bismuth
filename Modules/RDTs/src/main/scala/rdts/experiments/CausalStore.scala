@@ -7,20 +7,20 @@ import rdts.time.{Dot, Dots}
 import scala.annotation.tailrec
 
 case class CausalStore[A](pending: Set[CausalDelta[A]], context: Dots, state: Option[A]) {
-  def add(delta: A)(using LocalUid) =
-    val nextDot = context.nextDot
-    CausalStore(Set(CausalDelta(nextDot, context, delta)), Dots.empty, None)
+  def add(delta: A)(using LocalUid): CausalStore[A] =
+      val nextDot = context.nextDot
+      CausalStore(Set(CausalDelta(nextDot, context, delta)), Dots.empty, None)
 
   @tailrec
   final def compact(using lattice: Lattice[Option[A]]): CausalStore[A] = {
     val (applicable, rem) = pending.partition(p => context.contains(p.predecessors))
     if applicable.isEmpty then this
     else
-      CausalStore(
-        rem,
-        context.union(Dots.from(applicable.map(_.dot))),
-        applicable.map(a => Some(a.delta)).foldLeft(state)(Lattice.merge)
-      ).compact
+        CausalStore(
+          rem,
+          context.union(Dots.from(applicable.map(_.dot))),
+          applicable.map(a => Some(a.delta)).foldLeft(state)(Lattice.merge)
+        ).compact
   }
 }
 
@@ -34,6 +34,6 @@ object CausalStore {
 
   }
 
-  given bottom[A: Bottom]: Bottom[CausalStore[A]] = Bottom.derived
+  given bottom[A]: Bottom[CausalStore[A]] = Bottom.derived
 
 }

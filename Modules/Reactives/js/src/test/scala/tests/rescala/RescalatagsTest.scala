@@ -2,12 +2,11 @@ package tests.rescala
 
 import munit.FunSuite
 import org.scalajs.dom
+import org.scalajs.dom.Element
 import org.scalajs.dom.html.Span
-import org.scalajs.dom.{Element, Node}
 import reactives.default.*
 import reactives.extra.Tags
 import reactives.extra.Tags.*
-import scalatags.JsDom.TypedTag
 import scalatags.JsDom.all.*
 import scalatags.generic.StylePair
 
@@ -41,9 +40,9 @@ class RescalatagsTest extends FunSuite {
 
   given RangeSplice[dom.Element, Modifier] with {
     override def splice(anchor: dom.Element, range: dom.Range, value: Modifier): Unit =
-      val parent = range.commonAncestorContainer
-      parent match
-        case elem: dom.Element => value.applyTo(elem)
+        val parent = range.commonAncestorContainer
+        parent match
+            case elem: dom.Element => value.applyTo(elem)
   }
 
   test("put style into dom") {

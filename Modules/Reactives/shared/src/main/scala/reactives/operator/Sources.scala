@@ -44,9 +44,8 @@ class Evt[T] private[reactives] (initialState: State[Pulse[T]], name: ReInfo)
 
 /** @group create */
 object Evt {
-  def apply[A]()(using ticket: CreationTicket[State]): Evt[A] = {
-    ticket.scope.createSource[Pulse[A], Evt[A]](Pulse.NoChange)(init => { new Evt[A](init, ticket.info) }: Evt[A])
-  }
+  def apply[A]()(using ticket: CreationTicket[State]): Evt[A] =
+    ticket.scope.createSource[Pulse[A], Evt[A]](Pulse.NoChange)(init => new Evt[A](init, ticket.info): Evt[A])
 }
 
 /** Source signals with imperatively updates.
@@ -88,7 +87,6 @@ class Var[A] private[reactives] (initialState: State[Pulse[A]], name: ReInfo)
 object Var {
   def apply[T](initval: T)(using ticket: CreationTicket[State]): Var[T] = fromChange(Pulse.Value(initval))
   def empty[T](using ticket: CreationTicket[State]): Var[T]             = fromChange(Pulse.empty(ticket.info))
-  private def fromChange[T](change: Pulse[T])(using ticket: CreationTicket[State]): Var[T] = {
+  private def fromChange[T](change: Pulse[T])(using ticket: CreationTicket[State]): Var[T] =
     ticket.scope.createSource[Pulse[T], Var[T]](change)(s => new Var[T](s, ticket.info))
-  }
 }

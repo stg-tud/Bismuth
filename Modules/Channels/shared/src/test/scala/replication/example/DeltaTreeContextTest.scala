@@ -2,13 +2,11 @@ package replication.example
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import replication.DeltaTreeContext
-import replication.DotTree
-import replication.ProtocolMessage.Payload
-import replication.{CachedMessage, SentCachedMessage}
-import rdts.base.{LocalUid, Uid}
-import rdts.time.{Dot, Dots, Time}
+import rdts.base.Uid
+import rdts.time.{Dot, Dots}
 import replication.DeltaDissemination.pmscodec
+import replication.ProtocolMessage.Payload
+import replication.{CachedMessage, DeltaTreeContext, DotTree, SentCachedMessage}
 
 class DeltaTreeContextTest extends munit.FunSuite {
 
@@ -20,7 +18,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     val nextDot = treeContext.getNextDot
-    val payload = Payload(uid, Dots.single(nextDot), delta)
+    val payload = Payload(Dots.single(nextDot), delta, 0)
     val message = SentCachedMessage(payload)(using pmscodec)
     treeContext.storeOutgoingMessage(nextDot, message)
     (nextDot, message)
@@ -144,7 +142,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -164,7 +162,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -195,7 +193,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(prevDot3, prevDot3)
     dots = dots.add(prevDot3)
     unknown = unknown.add(prevDot3)
-    for i <- (0 until 10) do {
+    for i <- 0 until 10 do {
       val dot1 = dots.nextDot(uid1)
       tree.addNode(dot1, prevDot1)
       prevDot1 = dot1
@@ -225,7 +223,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -237,9 +235,9 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(peerPrevDot, peerPrevDot)
     dots = dots.add(peerPrevDot)
 
-    dots.peers.foreach(peer => {
+    dots.peers.foreach { peer =>
       tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
-    })
+    }
     tree.collapseGeneralKnowledge()
 
     assertEquals(tree.leaves.values.toSet, tree.rootNode.successors)
@@ -252,7 +250,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     var prevDot = dots.nextDot(uid)
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       if (i % 2) == 0 then tree.addNode(dot, prevDot)
       dots = dots.add(dot)
@@ -264,9 +262,9 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(peerPrevDot, peerPrevDot)
     dots = dots.add(peerPrevDot)
 
-    dots.peers.foreach(peer => {
+    dots.peers.foreach { peer =>
       tree.updateKnowledgeOfPeer(peerUid, dots.clockOf(peer).get)
-    })
+    }
     tree.collapseGeneralKnowledge()
 
     assertEquals(tree.leaves.values.toDots, Dots.empty.add(prevDot).add(peerPrevDot))
@@ -283,7 +281,7 @@ class DeltaTreeContextTest extends munit.FunSuite {
     tree.addNode(prevDot, prevDot)
     dots = dots.add(prevDot)
     expected = expected.add(prevDot)
-    for i <- (0 until 9) do {
+    for i <- 0 until 9 do {
       val dot = dots.nextDot(uid)
       if (i % 2) == 0 then {
         tree.addNode(dot, prevDot)
