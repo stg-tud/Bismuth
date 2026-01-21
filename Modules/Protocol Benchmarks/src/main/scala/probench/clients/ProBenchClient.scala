@@ -81,7 +81,6 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
         promises.synchronized {
           for {
             timestamp <- promises.keys
-            if responses.keySet.contains(timestamp)
           } {
             responses.get(timestamp) match
                 case Some(res) =>
@@ -89,9 +88,9 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
                   promises.remove(timestamp) match {
                     case Some(promise) =>
                       promise.success(res.value)
+                      transform(_.receive(timestamp))
                     case None => ()
                   }
-                  transform(_.receive(timestamp))
                   if blocking then requestSemaphore.release(1)
                 case None => ()
           }
