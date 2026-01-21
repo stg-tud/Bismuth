@@ -7,22 +7,13 @@ const modulePromise = useFullopt
 
 // the dynamic import above returns the module object, which is destructured into the components we care about below.
 modulePromise.then(
-	({
-		Todolist,
-		Calendar,
-		UnitConversion,
-		Filesystem,
-		DebugAdapterSetListener,
-	}) => {
+	({ Todolist, Calendar, UnitConversion, DebugAdapterSetListener }) => {
 		// Add event listeners
 		document.getElementById("todolist-btn").addEventListener("click", Todolist);
 		document.getElementById("calendar-btn").addEventListener("click", Calendar);
 		document
 			.getElementById("unit-conversion-btn")
 			.addEventListener("click", UnitConversion);
-		document
-			.getElementById("filesystem-btn")
-			.addEventListener("click", Filesystem);
 
 		window.reScalaEvents = [];
 		window.reScalaId = Math.random();
@@ -39,7 +30,7 @@ modulePromise.then(
 			}
 		});
 
-		// default open filesystem
-		Filesystem();
-	}
+		// default open todolist
+		Todolist();
+	},
 );
