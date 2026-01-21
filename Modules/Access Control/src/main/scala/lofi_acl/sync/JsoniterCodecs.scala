@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
 import lofi_acl.bft.{Hash, Signature}
-import lofi_acl.sync.signed.FilterableSignedDelta
+import lofi_acl.sync.signed.SignedDelta
 import lofi_acl.sync.signed.FilteredRdtSync.SyncMsg
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecs.given
@@ -28,7 +28,7 @@ object JsoniterCodecs {
       .withAllowRecursiveTypes(true)
   )
 
-  given filterableSignedDeltaCodec[State: JsonValueCodec]: JsonValueCodec[FilterableSignedDelta[State]] =
+  given filterableSignedDeltaCodec[State: JsonValueCodec]: JsonValueCodec[SignedDelta[State]] =
     JsonCodecMaker.make
 
   given syncMsgCodec[State: JsonValueCodec]: JsonValueCodec[SyncMsg[State]] =

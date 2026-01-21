@@ -12,8 +12,8 @@ class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] =
     extends BftSignedDeltaRdt[Acl](privateIdentity) {
   override def invariants(
       hash: Hash,
-      delta: SignedDelta[Acl],
-      prefixHashDag: HashDag[SignedDelta[Acl], Acl]
+      delta: BftDelta[Acl],
+      prefixHashDag: HashDag[BftDelta[Acl], Acl]
   ): Boolean = {
     super.invariants(hash, delta, prefixHashDag) // delta is either root, or transitive child of root
     // either removal or delegation
@@ -46,15 +46,15 @@ class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] =
 }
 
 object AclRdt {
-  given JsonValueCodec[SignedDelta[Acl]] = {
+  given JsonValueCodec[BftDelta[Acl]] = {
     import lofi_acl.sync.JsoniterCodecs.given
     JsonCodecMaker.make(
       CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
     )
   }
 
-  given Encoder[SignedDelta[Acl]] = Encoder.fromJsoniter
+  given Encoder[BftDelta[Acl]] = Encoder.fromJsoniter
 
-  given StateReconstructor[SignedDelta[Acl], Acl] =
-    (prefix: Set[Hash], hashDag: HashDag[SignedDelta[Acl], Acl]) => HashDag.reduce(hashDag, prefix)
+  given StateReconstructor[BftDelta[Acl], Acl] =
+    (prefix: Set[Hash], hashDag: HashDag[BftDelta[Acl], Acl]) => HashDag.reduce(hashDag, prefix)
 }
