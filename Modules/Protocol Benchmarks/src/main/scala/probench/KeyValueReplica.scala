@@ -157,6 +157,7 @@ class KeyValueReplica(
             }
             s"$key=$value; OK"
         }
+        println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size}")
         // only leader is allowed to actually respond to requests
         if cluster.state.leader.contains(replicaId) then {
           client.publish {
