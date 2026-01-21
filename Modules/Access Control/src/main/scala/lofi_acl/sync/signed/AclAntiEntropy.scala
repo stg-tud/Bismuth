@@ -22,9 +22,10 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
   @volatile private var backlog: Vector[(Hash, SignedDelta[Acl])] = Vector.empty
 
   // TODO: Replace
-  private def sendMissingToRemote(deltas: Seq[SignedDelta[Acl]], remote: PublicIdentity): Unit = ???
-  private def requestFromRemote(hashes: Set[Hash], remote: PublicIdentity): Unit               = ???
-  private def notifyRemote(remote: PublicIdentity): Unit                                       = ???
+  private def sendDeltasToRemote(deltas: Seq[SignedDelta[Acl]], remote: PublicIdentity): Unit = ???
+  private def requestFromRemote(hashes: Set[Hash], remote: PublicIdentity): Unit              = ???
+  private def notifyRemote(remote: PublicIdentity): Unit                                      = ???
+  private def notifyAclChanged(delta: Acl): Unit                                              = ???
 
   private def cachedAclLookup(heads: Set[Hash]): Option[Acl] = {
     val (latestHeads, acl) = latestAcl.get()
@@ -33,10 +34,11 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
 
   def receiveDeltas(deltas: Vector[SignedDelta[Acl]], from: PublicIdentity): Unit = {
     synchronized {
-      var changed    = true
-      val hashes     = deltas.map(Hashable[SignedDelta[Acl]].hash(_))
-      var toApply    = hashes.zip(deltas).concat(backlog)
-      var newMissing = Set.empty[Hash]
+      var cumulativeDelta = Bottom[Acl].empty
+      var changed         = true
+      val hashes          = deltas.map(Hashable[SignedDelta[Acl]].hash(_))
+      var toApply         = hashes.zip(deltas).concat(backlog)
+      var newMissing      = Set.empty[Hash]
       // TODO: A more efficient/robust approach would be to topologically sort the deltas
       while changed do {
         changed = false
@@ -47,6 +49,7 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
                 newMissing = newMissing union missingForDelta
                 true // Keep delta, not yet applied
               case Right(updatedHashDag) =>
+                cumulativeDelta = cumulativeDelta.merge(delta.state)
                 changed = true;
                 hashDag = updatedHashDag
                 latestAcl.updateAndGet((_, acl) => (hashDag.heads, acl.merge(delta.state)))
@@ -62,17 +65,19 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
 
       backlog = toApply
       deltasInBacklog = backlog.map(_._1).toSet
-      knownMissingDeltas.updateAndGet(oldMissing => (oldMissing ++ newMissing) diff deltasInBacklog): Unit
+      if newMissing.nonEmpty then {
+        knownMissingDeltas.updateAndGet(oldMissing => (oldMissing ++ newMissing) diff deltasInBacklog): Unit
+        // TODO: request missing
+      }
 
-      // TODO: Notify about changed ACL?
-      // TODO: Notify about newly missing deltas?
+      if changed then notifyAclChanged(cumulativeDelta)
     }
   }
 
   def updatePeerAclKnowledge(remoteHeads: Set[Hash], remote: PublicIdentity): Unit = {
     if remoteHeads != hashDag.heads then
         HashDagSync.missingInSubsetHashDag(hashDag, remoteHeads) match {
-          case Some(missing) => sendMissingToRemote(missing, remote)
+          case Some(missing) => sendDeltasToRemote(missing, remote)
           case None          =>
             // which are missing locally?
             val missingLocally = remoteHeads.filterNot(hashDag.deltas.contains)
@@ -86,5 +91,10 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
             // There might be deltas missing on remote, but we don't know which ones
             notifyRemote(remote)
         }
+  }
+
+  def respondToDeltaRequest(missing: Set[Hash], remote: PublicIdentity): Unit = {
+    val localDeltas = hashDag.deltas
+    sendDeltasToRemote(missing.toSeq.flatMap(localDeltas.get), remote)
   }
 }

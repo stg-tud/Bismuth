@@ -24,12 +24,16 @@ class FilteredAntiEntropy[RDT: {JsonValueCodec, Bottom}](
   val comm: Communication[SyncMsg[RDT]]                             = ???
   val aclAntiEntropy                                                = AclAntiEntropy(localIdentity, initialAclHashDag)
 
-  override def receivedMessage(msg: SyncMsg[RDT], fromUser: PublicIdentity): Unit = msg match {
-    case SyncMsg.DataDelta(delta)                        => ???
-    case SyncMsg.AclDeltas(deltas)                       => aclAntiEntropy.receiveDeltas(deltas, fromUser)
-    case SyncMsg.PeerGossip(peers)                       => ???
-    case SyncMsg.DotGossip(dataDeltas, aclHeads)         => ???
-    case SyncMsg.PleaseSendMe(dataDeltas, aclDeltasDots) => ???
+  override def receivedMessage(msg: SyncMsg[RDT], remote: PublicIdentity): Unit = msg match {
+    case SyncMsg.DataDelta(delta)                                 => ???
+    case SyncMsg.AclDeltas(deltas)                                => aclAntiEntropy.receiveDeltas(deltas, remote)
+    case SyncMsg.PeerGossip(peers)                                => ???
+    case SyncMsg.MyLocalStateIs(remoteDataDeltas, remoteAclHeads) =>
+      ??? // dataDeltas
+      aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
+    case SyncMsg.PleaseSendMe(missingDataDeltas, missingAclDeltas) =>
+      ??? // dataDeltas
+      aclAntiEntropy.respondToDeltaRequest(missingAclDeltas, remote)
   }
 }
 
@@ -44,8 +48,8 @@ object FilteredAntiEntropy {
       case DataDelta(delta: FilterableSignedDelta[RDT])
       case AclDeltas(delta: Vector[SignedDelta[Acl]])
       case PeerGossip(peers: Set[(PublicIdentity, (String, Int))])
-      case DotGossip(dataDeltas: Dots, aclHeads: Set[Hash])
-      case PleaseSendMe(dataDeltas: Dots, aclDeltasDots: Set[Hash])
+      case MyLocalStateIs(dataDeltas: Dots, aclHeads: Set[Hash])
+      case PleaseSendMe(dataDeltas: Dots, aclDeltas: Set[Hash])
 
   given msgCodec[RDT: JsonValueCodec]: JsonValueCodec[SyncMsg[RDT]] = {
     import lofi_acl.sync.JsoniterCodecs.given
