@@ -23,7 +23,7 @@ modulePromise.then(
 			if (data.type === "DomAssociation") {
 				window.domAssocations.set(
 					JSON.parse(data.reSource).idCounter,
-					data.node
+					data.node,
 				);
 			} else if (typeof data === "string") {
 				window.reScalaEvents.push(JSON.parse(data));
