@@ -157,7 +157,8 @@ class KeyValueReplica(
             }
             s"$key=$value; OK"
         }
-        println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size}")
+        val distinctClients : Set[Uid] = client.state.responses.keySet.map(_._2)
+        println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
         // only leader is allowed to actually respond to requests
         if cluster.state.leader.contains(replicaId) then {
           client.publish {
