@@ -4,7 +4,7 @@ import crypto.channels.X509Util.toPem
 import crypto.{CertificatePem, Ed25519Util, PrivateKeyPem, PublicIdentity}
 import org.bouncycastle.cert.X509CertificateHolder
 
-import java.security.KeyPair
+import java.security.{KeyPair, PublicKey}
 
 // TODO: Rename
 case class PrivateIdentity(identityKey: KeyPair, tlsKey: KeyPair, certificateHolder: X509CertificateHolder) {
@@ -16,4 +16,6 @@ case class PrivateIdentity(identityKey: KeyPair, tlsKey: KeyPair, certificateHol
   def getPublic: PublicIdentity = PublicIdentity(
     Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(identityKey.getPublic)
   )
+
+  def getPublicKey: PublicKey = identityKey.getPublic
 }
