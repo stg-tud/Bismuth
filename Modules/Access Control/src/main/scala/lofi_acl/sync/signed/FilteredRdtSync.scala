@@ -6,25 +6,25 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.*
-import lofi_acl.sync.signed.FilteredAntiEntropy.SyncMsg
-import lofi_acl.sync.signed.FilteredAntiEntropy.SyncMsg.PeerGossip
+import lofi_acl.sync.signed.FilteredRdtSync.SyncMsg
+import lofi_acl.sync.signed.FilteredRdtSync.SyncMsg.PeerGossip
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import rdts.base.Bottom
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.LinkedBlockingQueue
 
-class FilteredAntiEntropy[RDT: {JsonValueCodec, Bottom}](
+class FilteredRdtSync[State: {JsonValueCodec, Bottom}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
     initialAclHashDag: HashDag[SignedDelta[Acl], Acl]
-) extends MessageReceiver[SyncMsg[RDT]] {
-  val msgQueue: LinkedBlockingQueue[(SyncMsg[RDT], PublicIdentity)] = LinkedBlockingQueue()
-  val comm: Communication[SyncMsg[RDT]]                             = ???
-  val aclAntiEntropy                                                = AclAntiEntropy(localIdentity, initialAclHashDag)
+) extends MessageReceiver[SyncMsg[State]] {
+  val msgQueue: LinkedBlockingQueue[(SyncMsg[State], PublicIdentity)] = LinkedBlockingQueue()
+  val comm: Communication[SyncMsg[State]]                             = ???
+  val aclAntiEntropy                                                  = AclAntiEntropy(localIdentity, initialAclHashDag)
 
-  override def receivedMessage(msg: SyncMsg[RDT], remote: PublicIdentity): Unit = msg match {
+  override def receivedMessage(msg: SyncMsg[State], remote: PublicIdentity): Unit = msg match {
     case SyncMsg.DataDelta(delta)                                 => ???
     case SyncMsg.AclDeltas(deltas)                                => aclAntiEntropy.receiveDeltas(deltas, remote)
     case SyncMsg.PeerGossip(peers)                                => ???
@@ -43,18 +43,18 @@ trait Communication[Msg: JsonValueCodec] {
   def handlePeerGossip(peers: Set[(PublicIdentity, (String, Int))]): Unit
 }
 
-object FilteredAntiEntropy {
-  enum SyncMsg[RDT]:
-      case DataDelta(delta: FilterableSignedDelta[RDT])
+object FilteredRdtSync {
+  enum SyncMsg[State]:
+      case DataDelta(delta: FilterableSignedDelta[State])
       case AclDeltas(delta: Vector[SignedDelta[Acl]])
       case PeerGossip(peers: Set[(PublicIdentity, (String, Int))])
       case MyLocalStateIs(dataDeltas: Dots, aclHeads: Set[Hash])
       case PleaseSendMe(dataDeltas: Dots, aclDeltas: Set[Hash])
 
-  given msgCodec[RDT: JsonValueCodec]: JsonValueCodec[SyncMsg[RDT]] = {
+  given msgCodec[State: JsonValueCodec]: JsonValueCodec[SyncMsg[State]] = {
     import lofi_acl.sync.JsoniterCodecs.given
     import replication.JsoniterCodecs.given
-    given JsonValueCodec[FilterableSignedDelta[RDT]] = JsonCodecMaker.make
+    given JsonValueCodec[FilterableSignedDelta[State]] = JsonCodecMaker.make
     JsonCodecMaker.make
   }
 }
