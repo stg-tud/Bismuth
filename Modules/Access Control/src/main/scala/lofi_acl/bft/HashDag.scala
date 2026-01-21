@@ -6,29 +6,29 @@ import rdts.base.{Bottom, Lattice}
 
 import scala.collection.mutable
 
-case class HashDag[D <: Delta[RDT]: Hashable, RDT](root: Hash, ops: Map[Hash, D], heads: Set[Hash])(using
-    Encoder[Delta[RDT]]
+case class HashDag[D <: Delta[State]: Hashable, State](root: Hash, deltas: Map[Hash, D], heads: Set[Hash])(using
+    Encoder[Delta[State]]
 ) {
-  def add(deltaHash: Hash, delta: D): Either[Set[Hash], HashDag[D, RDT]] = {
-    if ops.contains(deltaHash) then return Right(this)
+  def add(deltaHash: Hash, delta: D): Either[Set[Hash], HashDag[D, State]] = {
+    if deltas.contains(deltaHash) then return Right(this)
     val deltaParents = delta.parents
-    val missing      = deltaParents.filterNot(ops.contains)
+    val missing      = deltaParents.filterNot(deltas.contains)
     if missing.nonEmpty then return Left(missing)
     Right(copy(
-      ops = ops + (deltaHash -> delta),
+      deltas = deltas + (deltaHash -> delta),
       heads = (heads -- deltaParents) + deltaHash,
     ))
   }
 
   // Returns either missing deltas, or the (potentially) updated op graph
-  def add(delta: D): Either[Set[Hash], HashDag[D, RDT]] = {
+  def add(delta: D): Either[Set[Hash], HashDag[D, State]] = {
     val deltaParents = delta.parents
-    val missing      = deltaParents.filterNot(ops.contains)
+    val missing      = deltaParents.filterNot(deltas.contains)
     if missing.nonEmpty then return Left(missing)
     val deltaHash = Hashable[D].hash(delta)
-    if ops.contains(deltaHash) then return Right(this)
+    if deltas.contains(deltaHash) then return Right(this)
     Right(copy(
-      ops = ops + (deltaHash -> delta),
+      deltas = deltas + (deltaHash -> delta),
       heads = (heads -- deltaParents) + deltaHash,
     ))
   }
@@ -47,12 +47,12 @@ object HashDag {
   object Hashable:
       inline def apply[D](using instance: Hashable[D]): Hashable[D] = instance
 
-  trait Delta[RDT]:
+  trait Delta[State]:
       def parents: Set[Hash]
-      def rdt: RDT
+      def state: State
 
   object Delta:
-      inline def apply[D](using delta: Delta[D]): Delta[D] = delta
+      inline def apply[State](using delta: Delta[State]): Delta[State] = delta
 
   def reduce[D <: Delta[RDT], RDT: {Lattice, Bottom}](hashDag: HashDag[D, RDT], heads: Set[Hash]): RDT = {
     var result  = Bottom[RDT].empty
@@ -60,10 +60,10 @@ object HashDag {
     val toVisit = mutable.Queue.from(heads)
     while toVisit.nonEmpty do
         val nextHash = toVisit.dequeue()
-        val next     = hashDag.ops(nextHash)
+        val next     = hashDag.deltas(nextHash)
         visited += nextHash
         toVisit ++= next.parents.diff(visited)
-        result = result.merge(next.rdt)
+        result = result.merge(next.state)
     result
   }
 }

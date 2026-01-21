@@ -5,8 +5,8 @@ import crypto.channels.PrivateIdentity
 import lofi_acl.bft.HashDag.{Delta, Encoder, Hashable}
 
 class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
-    protected val encoder: Encoder[SignedDelta[RDT]],
-    protected val reconstructor: StateReconstructor[SignedDelta[RDT], RDT]
+    val encoder: Encoder[SignedDelta[RDT]],
+    val reconstructor: StateReconstructor[SignedDelta[RDT], RDT]
 ) {
   private val publicId   = privateIdentity.getPublic
   private val privateKey = privateIdentity.identityKey.getPrivate
@@ -34,11 +34,23 @@ class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
       signedDelta: SignedDelta[RDT],
       hashDag: HashDag[SignedDelta[RDT], RDT]
   ): Either[Set[Hash], HashDag[SignedDelta[RDT], RDT]] = {
-    val deltaHash = encoder(signedDelta)
-    require(isSignatureValid(signedDelta))
     val hash = Hashable[SignedDelta[RDT]].hash(signedDelta)
-    require(invariants(hash, signedDelta, hashDag))
-    hashDag.add(hash, signedDelta)
+    receiveWithComputedHash(hash, signedDelta, hashDag)
+  }
+
+  def receiveWithComputedHash(
+      hash: Hash,
+      signedDelta: SignedDelta[RDT],
+      hashDag: HashDag[SignedDelta[RDT], RDT]
+  ): Either[Set[Hash], HashDag[SignedDelta[RDT], RDT]] = {
+    hashDag.add(hash, signedDelta) match {
+      case missing @ Left(_) =>
+        missing
+      case updated @ Right(_) =>
+        require(isSignatureValid(signedDelta))
+        require(invariants(hash, signedDelta, hashDag))
+        updated
+    }
   }
 
   private inline def isSignatureValid(delta: SignedDelta[RDT]): Boolean =

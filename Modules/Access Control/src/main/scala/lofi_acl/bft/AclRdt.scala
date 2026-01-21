@@ -6,34 +6,10 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.AclRdt.given
 import lofi_acl.bft.HashDag.Encoder
-import rdts.base.{Bottom, DecoratedLattice, Lattice}
 import rdts.filters.PermissionTree
 
-case class Acl(
-    read: Map[PublicIdentity, PermissionTree],
-    write: Map[PublicIdentity, PermissionTree],
-    removed: Set[PublicIdentity],
-    admins: Set[PublicIdentity],
-)
-
-object Acl {
-  given aclLattice: Lattice[Acl] = {
-    import rdts.base.Lattice.mapLattice
-    DecoratedLattice.filter(Lattice.derived[Acl])((base, other) =>
-      if other.removed.isEmpty then base
-      else
-          base.copy(
-            read = base.read.removedAll(other.removed),
-            write = base.write.removedAll(other.removed),
-            admins = base.admins.removedAll(other.removed)
-          )
-    )
-  }
-
-  given aclBottom: Bottom[Acl] = Bottom.derived
-}
-
-class AclRdt(privateIdentity: PrivateIdentity) extends BftSignedDeltaRdt[Acl](privateIdentity) {
+class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] = _ => None)
+    extends BftSignedDeltaRdt[Acl](privateIdentity) {
   override def invariants(
       hash: Hash,
       delta: SignedDelta[Acl],
@@ -41,8 +17,12 @@ class AclRdt(privateIdentity: PrivateIdentity) extends BftSignedDeltaRdt[Acl](pr
   ): Boolean = {
     super.invariants(hash, delta, prefixHashDag) // delta is either root, or transitive child of root
     // either removal or delegation
-    && delta.rdt.removed.isEmpty || delta.rdt.read.isEmpty && delta.rdt.write.isEmpty && delta.rdt.admins.isEmpty
-    && delegationValid(delta.author, delta.rdt, reconstructor(delta.parents, prefixHashDag))
+    && delta.state.removed.isEmpty || delta.state.read.isEmpty && delta.state.write.isEmpty && delta.state.admins.isEmpty
+    && delegationValid(
+      delta.author,
+      delta.state,
+      cache(delta.parents).getOrElse(reconstructor(delta.parents, prefixHashDag))
+    )
   }
 
   private def delegationValid(author: PublicIdentity, delta: Acl, prefix: Acl): Boolean = {
