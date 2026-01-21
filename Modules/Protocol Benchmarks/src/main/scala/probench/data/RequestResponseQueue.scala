@@ -1,9 +1,10 @@
 package probench.data
 
-import probench.data.RequestResponseQueue.{Req, Res, Timestamp}
+import probench.data.RequestResponseQueue.{Req, Res, Timestamp, given}
 import rdts.base.*
 import rdts.base.LocalUid.replicaId
 import rdts.datatypes.ObserveRemoveMap
+import rdts.datatypes.ObserveRemoveMap.lattice
 import rdts.time.CausalTime
 
 case class RequestResponseQueue[S, T](
@@ -16,14 +17,27 @@ case class RequestResponseQueue[S, T](
           case Some((time, _)) => (time.advance, replicaId)
           case None            => (CausalTime.now(), replicaId)
 
-      (timestamp, RequestResponseQueue(requests = requests.update(timestamp, Req(value, timestamp))))
+      // when client adds new request, it is assumed that the previous responses were processed
+      val myResponses = responses.keySet.filter(t => t._2 == replicaId)
 
-  def respond(request: Req[S], value: T)(using LocalUid): RequestResponseQueue[S, T] =
+      (
+        timestamp,
+        RequestResponseQueue(
+          requests = requests.update(timestamp, Req(value, timestamp)),
+          responses = responses.removeAll(myResponses)
+        )
+      )
+
+  def respond(request: Req[S], value: T)(using LocalUid): RequestResponseQueue[S, T] = {
+    val previousResonses = responses.keySet.filter(t => t._2 == request.timestamp._2)
+    val clearedResponses: ObserveRemoveMap[Timestamp, Res[T]] = responses.removeAll(previousResonses)
+    val newResponse: ObserveRemoveMap[Timestamp, Res[T]]      = responses.update(request.timestamp, Res(value))
     RequestResponseQueue(
       requests = requests.remove(request.timestamp),
       responses =
-        responses.update(request.timestamp, Res(value))
+        ObserveRemoveMap.lattice[Timestamp, Res[T]].merge(newResponse, clearedResponses)
     )
+  }
 
   def responseTo(req: Req[S]): Option[Res[T]] =
     responses.get(req.timestamp)
@@ -54,9 +68,10 @@ object RequestResponseQueue {
 
   given Ordering[Timestamp] = Orderings.lexicographic
 
+  given [T]: Lattice[Res[T]] = Lattice.assertEquals
+
   // lattices
   given [S, T]: Lattice[RequestResponseQueue[S, T]] =
       given Lattice[Req[S]] = Lattice.assertEquals
-      given Lattice[Res[T]] = Lattice.assertEquals
       Lattice.derived
 }
