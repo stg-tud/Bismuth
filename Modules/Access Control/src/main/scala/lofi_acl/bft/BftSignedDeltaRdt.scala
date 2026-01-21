@@ -4,45 +4,45 @@ import crypto.Ed25519Util
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.HashDag.{Delta, Encoder, Hashable}
 
-class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
-    val encoder: Encoder[SignedDelta[RDT]],
-    val reconstructor: StateReconstructor[SignedDelta[RDT], RDT]
+class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(using
+    val encoder: Encoder[SignedDelta[State]],
+    val reconstructor: StateReconstructor[SignedDelta[State], State]
 ) {
   private val publicId   = privateIdentity.getPublic
   private val privateKey = privateIdentity.identityKey.getPrivate
 
   // Can be overridden to specify additional invariants
-  def invariants(hash: Hash, delta: SignedDelta[RDT], prefixHashDag: HashDag[SignedDelta[RDT], RDT]): Boolean =
+  def invariants(hash: Hash, delta: SignedDelta[State], prefixHashDag: HashDag[SignedDelta[State], State]): Boolean =
     delta.parents.isEmpty == (hash == prefixHashDag.root) // Only root has no parents
 
   def mutate(
-      delta: RDT,
-      hashDag: HashDag[SignedDelta[RDT], RDT]
-  ): HashDag[SignedDelta[RDT], RDT] =
+      delta: State,
+      hashDag: HashDag[SignedDelta[State], State]
+  ): HashDag[SignedDelta[State], State] =
       val emptySigDelta = SignedDelta(null, publicId, delta, hashDag.heads)
       val encodedDelta  = encoder(emptySigDelta)
       val signature     = Signature.unsafeFromArray(Ed25519Util.sign(encodedDelta, privateKey))
       val signedDelta   = emptySigDelta.copy(signature = signature)
 
-      require(invariants(Hashable[SignedDelta[RDT]].hash(signedDelta), signedDelta, hashDag))
+      require(invariants(Hashable[SignedDelta[State]].hash(signedDelta), signedDelta, hashDag))
       hashDag.add(signedDelta) match {
         case Left(missing)         => throw IllegalStateException() // heads are never missing from valid hashDag
         case Right(updatedHashDag) => updatedHashDag
       }
 
   def receive(
-      signedDelta: SignedDelta[RDT],
-      hashDag: HashDag[SignedDelta[RDT], RDT]
-  ): Either[Set[Hash], HashDag[SignedDelta[RDT], RDT]] = {
-    val hash = Hashable[SignedDelta[RDT]].hash(signedDelta)
+      signedDelta: SignedDelta[State],
+      hashDag: HashDag[SignedDelta[State], State]
+  ): Either[Set[Hash], HashDag[SignedDelta[State], State]] = {
+    val hash = Hashable[SignedDelta[State]].hash(signedDelta)
     receiveWithComputedHash(hash, signedDelta, hashDag)
   }
 
   def receiveWithComputedHash(
       hash: Hash,
-      signedDelta: SignedDelta[RDT],
-      hashDag: HashDag[SignedDelta[RDT], RDT]
-  ): Either[Set[Hash], HashDag[SignedDelta[RDT], RDT]] = {
+      signedDelta: SignedDelta[State],
+      hashDag: HashDag[SignedDelta[State], State]
+  ): Either[Set[Hash], HashDag[SignedDelta[State], State]] = {
     hashDag.add(hash, signedDelta) match {
       case missing @ Left(_) =>
         missing
@@ -53,7 +53,7 @@ class BftSignedDeltaRdt[RDT](private val privateIdentity: PrivateIdentity)(using
     }
   }
 
-  private inline def isSignatureValid(delta: SignedDelta[RDT]): Boolean =
+  private inline def isSignatureValid(delta: SignedDelta[State]): Boolean =
     delta.signature.verify(delta.author.publicKey, encoder(delta.copy(signature = null)))
 
 }

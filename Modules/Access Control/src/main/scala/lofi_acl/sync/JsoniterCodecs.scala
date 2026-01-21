@@ -4,7 +4,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
 import lofi_acl.bft.{Hash, Signature}
+import lofi_acl.sync.signed.FilterableSignedDelta
+import lofi_acl.sync.signed.FilteredRdtSync.SyncMsg
 import rdts.filters.PermissionTree
+import replication.JsoniterCodecs.given
 
 object JsoniterCodecs {
   given pubIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:
@@ -24,4 +27,10 @@ object JsoniterCodecs {
       .withMapAsArray(true)
       .withAllowRecursiveTypes(true)
   )
+
+  given filterableSignedDeltaCodec[State: JsonValueCodec]: JsonValueCodec[FilterableSignedDelta[State]] =
+    JsonCodecMaker.make
+
+  given syncMsgCodec[State: JsonValueCodec]: JsonValueCodec[SyncMsg[State]] =
+    JsonCodecMaker.make
 }

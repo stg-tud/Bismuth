@@ -17,9 +17,9 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
   @volatile private var hashDag: HashDag[SignedDelta[Acl], Acl] = initialHashDag
   private val latestAcl                                         = AtomicReference((Set.empty[Hash], Bottom[Acl].empty))
 
-  @volatile private var deltasInBacklog                           = Set.empty[Hash]
-  private val knownMissingDeltas: AtomicReference[Set[Hash]]      = AtomicReference(Set.empty)
-  @volatile private var backlog: Vector[(Hash, SignedDelta[Acl])] = Vector.empty
+  @volatile private var deltasInBacklog                        = Set.empty[Hash]
+  private val knownMissingDeltas: AtomicReference[Set[Hash]]   = AtomicReference(Set.empty)
+  @volatile private var backlog: Seq[(Hash, SignedDelta[Acl])] = Vector.empty
 
   // TODO: Replace
   private def sendDeltasToRemote(deltas: Seq[SignedDelta[Acl]], remote: PublicIdentity): Unit = ???
@@ -32,7 +32,7 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Si
     if latestHeads == heads then Some(acl) else None
   }
 
-  def receiveDeltas(deltas: Vector[SignedDelta[Acl]], from: PublicIdentity): Unit = {
+  def receiveDeltas(deltas: Seq[SignedDelta[Acl]], from: PublicIdentity): Unit = {
     synchronized {
       var cumulativeDelta = Bottom[Acl].empty
       var changed         = true
