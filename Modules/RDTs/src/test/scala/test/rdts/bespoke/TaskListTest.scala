@@ -35,8 +35,8 @@ object TaskList {
     def read: ReplicatedTree[Entry] = state.state
 
     def applyDelta(delta: DeltaHistory[ReplicatedTree[Entry]]): App =
-      this.state.receive(delta)
-      this
+        this.state.receive(delta)
+        this
 
     def addTaskList(parentFolder: Dot, name: String)(using LocalUid) =
       state.mod(tree =>
@@ -103,8 +103,8 @@ object TaskList {
   }
 
   enum Entry:
-    case FolderEntry(folder: Folder)
-    case TaskListEntry(list: TaskList)
+      case FolderEntry(folder: Folder)
+      case TaskListEntry(list: TaskList)
 
   case class Folder(val name: LWW[String])
   case class TaskList(
@@ -134,7 +134,7 @@ object TaskList {
 }
 
 class TaskListTest extends munit.FunSuite {
-  import TodoList.*
+  import TaskList.*
 
   test("example") {
     given aid: LocalUid = LocalUid.predefined("a")
