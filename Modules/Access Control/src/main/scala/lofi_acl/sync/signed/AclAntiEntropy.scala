@@ -2,6 +2,7 @@ package lofi_acl.sync.signed
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import lofi_acl.bft
 import lofi_acl.bft.*
 import lofi_acl.bft.AclRdt.given_Encoder_SignedDelta
 import lofi_acl.bft.HashDag.Hashable
@@ -9,7 +10,7 @@ import rdts.base.Bottom
 
 import java.util.concurrent.atomic.AtomicReference
 
-class AclAntiEntropy[RDT](private val id: PrivateIdentity, initialHashDag: HashDag[SignedDelta[Acl], Acl]) {
+class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[SignedDelta[Acl], Acl]) {
 
   private val aclRdt = AclRdt(id, cachedAclLookup)
 
@@ -19,6 +20,11 @@ class AclAntiEntropy[RDT](private val id: PrivateIdentity, initialHashDag: HashD
   @volatile private var deltasInBacklog                           = Set.empty[Hash]
   private val knownMissingDeltas: AtomicReference[Set[Hash]]      = AtomicReference(Set.empty)
   @volatile private var backlog: Vector[(Hash, SignedDelta[Acl])] = Vector.empty
+
+  // TODO: Replace
+  private def sendMissingToRemote(deltas: Seq[SignedDelta[Acl]], remote: PublicIdentity): Unit = ???
+  private def requestFromRemote(hashes: Set[Hash], remote: PublicIdentity): Unit               = ???
+  private def notifyRemote(remote: PublicIdentity): Unit                                       = ???
 
   private def cachedAclLookup(heads: Set[Hash]): Option[Acl] = {
     val (latestHeads, acl) = latestAcl.get()
@@ -63,9 +69,22 @@ class AclAntiEntropy[RDT](private val id: PrivateIdentity, initialHashDag: HashD
     }
   }
 
-  def updatePeerAclKnowledge(remoteHeads: Set[Acl], peer: PublicIdentity): Unit = {
-    // Check if equal
-    // -> Is less on remote?
-    // -> Is advanced on remote?
+  def updatePeerAclKnowledge(remoteHeads: Set[Hash], remote: PublicIdentity): Unit = {
+    if remoteHeads != hashDag.heads then
+        HashDagSync.missingInSubsetHashDag(hashDag, remoteHeads) match {
+          case Some(missing) => sendMissingToRemote(missing, remote)
+          case None          =>
+            // which are missing locally?
+            val missingLocally = remoteHeads.filterNot(hashDag.deltas.contains)
+            if missingLocally.nonEmpty then {
+              requestFromRemote(
+                knownMissingDeltas.updateAndGet(_ union missingLocally),
+                remote
+              )
+            }
+
+            // There might be deltas missing on remote, but we don't know which ones
+            notifyRemote(remote)
+        }
   }
 }
