@@ -23,7 +23,7 @@ object Dependencies {
   val slf4jSimple = libraryDependencies += "org.slf4j"                  % "slf4j-simple"             % "2.0.17" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"                  % "slf4j-nop"                % "2.0.17" % Test
   val slips       = libraryDependencies += "de.rmgk.slips"            %%% "partypack"                % "0.16.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.14"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.15"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.20.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.2"
   val ycsb     = libraryDependencies += "site.ycsb"                       % "core"    % "0.17.0"
