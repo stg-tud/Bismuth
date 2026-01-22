@@ -14,9 +14,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     private val localIdentity: PrivateIdentity,
     initialDotValue: Long = 0
-)(
-    using Encoder[SignedDelta[State]]
-) {
+)(using Encoder[SignedDelta[State]]) {
   private def currentAcl: (Set[Hash], Acl)                              = ???
   private def hashDag: HashDag[BftDelta[Acl], Acl]                      = ???
   private def requestDeltas(deltas: Dots, remote: PublicIdentity): Unit = ???
@@ -58,17 +56,17 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     // Invalidate filtered deltas, track them as missing
     if delta.read.contains(localIdentity.getPublic) then {
       val filtered = filteredDots.getAndUpdate(_ => Dots.empty)
-      requestMissing(missingDots.updateAndGet(missing => missing.union(filtered)))
+      requestRoundRobin(missingDots.updateAndGet(missing => missing.union(filtered)))
     }
   }
 
-  private var nextRequestIndex: AtomicInteger  = AtomicInteger(-1)
-  private def requestMissing(dots: Dots): Unit = {
+  private val lastRequestedPeer: AtomicInteger    = AtomicInteger(-1)
+  private def requestRoundRobin(dots: Dots): Unit = {
     if dots.isEmpty then return
 
     // Request missing round-robin style
     val peers = connectedPeers.toArray
-    val idx   = nextRequestIndex.updateAndGet(lastIndex => (lastIndex + 1) % peers.length)
+    val idx   = lastRequestedPeer.updateAndGet(lastIndex => (lastIndex + 1) % peers.length)
     requestDeltas(dots, peers(idx))
   }
 
@@ -105,8 +103,14 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     if !filtered.isEmpty && remoteAcl != localAclHeads then {
       val localAclDeltas: Set[Hash] = hashDag.heads
       if remoteAcl.subsetOf(localAclDeltas) // remote acl > local acl
-      then requestDeltas(filtered, remote)  // Note that we already sent missing ACL deltas to remote
-    } else {
+      then {
+        // Note that we already sent missing ACL deltas to remote
+        val potentiallyMissing = filtered.diff(filteredDots.get()) // Only new filtered dots
+        val missing            = missingDots.updateAndGet(missing => missing.union(potentiallyMissing))
+        requestDeltas(missing, remote)
+      }
+    } else {                                                      // Remote acl is the same as local acl
+      missingDots.updateAndGet(missing => missing.diff(filtered)) // Remove filtered from missing
       val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
       assert(deltaStore.dots.intersect(newFiltered).isEmpty) // TODO: remove this check at some point
     }
@@ -127,9 +131,16 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     }
   }
 
-  def updatePeerDeltaKnowledge(deltas: Dots, remote: PublicIdentity): Unit =
-    ???
+  def updatePeerDeltaKnowledge(deltas: Dots, remote: PublicIdentity): Unit = {
+    val missing = deltas.diff(deltaStore.dots.union(filteredDots.get()))
+    if !missing.isEmpty
+    then {
+      val updatedMissing = missingDots.updateAndGet(oldMissing => oldMissing.union(missing))
+      requestDeltas(updatedMissing, remote)
+    }
+  }
 
   def respondToDeltaRequest(missingRdtDeltas: Dots, remote: PublicIdentity): Unit =
-    ???
+    sendDeltasFiltered(deltaStore.getAll(missingRdtDeltas).map(_._2), remote)
+    // TODO: track locally unknown missingRdtDeltas?
 }
