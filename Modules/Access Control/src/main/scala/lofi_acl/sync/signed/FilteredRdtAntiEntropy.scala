@@ -9,7 +9,7 @@ import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
 class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     private val localIdentity: PrivateIdentity,
@@ -26,11 +26,8 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       filtered: Dots,
       acl: Set[Hash],
       remote: PublicIdentity
-  ): Unit                                               = ???
-  private def notifyStateChanged(delta: State): Unit    = ???
-  private def onAclChangeNotification(delta: Acl): Unit =
-    // TODO: request all filtered deltas
-    ???
+  ): Unit                                            = ???
+  private def notifyStateChanged(delta: State): Unit = ???
 
   private val dotCounter = AtomicLong(0)
   private val localUid   = Uid(localIdentity.getPublic.id)
@@ -57,14 +54,33 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     }
   }
 
-  private def broadcastDeltasFiltered(deltas: Iterable[SignedDelta[State]]): Unit = {
-    val (aclVersion, acl) = currentAcl
-    connectedPeers.foreach { remote =>
-      val receiverReadPermission    = acl.read.getOrElse(remote, PermissionTree.empty)
-      val (allowedDeltas, filtered) =
-        deltas.partition(delta => Filter[State].isAllowed(delta.payload, receiverReadPermission))
-      sendDeltas(allowedDeltas.toSeq, Dots.from(filtered.map(_.dot)), aclVersion, remote)
+  private def onAclChange(delta: Acl): Unit = {
+    // Invalidate filtered deltas, track them as missing
+    if delta.read.contains(localIdentity.getPublic) then {
+      val filtered = filteredDots.getAndUpdate(_ => Dots.empty)
+      requestMissing(missingDots.updateAndGet(missing => missing.union(filtered)))
     }
+  }
+
+  private var nextRequestIndex: AtomicInteger  = AtomicInteger(-1)
+  private def requestMissing(dots: Dots): Unit = {
+    if dots.isEmpty then return
+
+    // Request missing round-robin style
+    val peers = connectedPeers.toArray
+    val idx   = nextRequestIndex.updateAndGet(lastIndex => (lastIndex + 1) % peers.length)
+    requestDeltas(dots, peers(idx))
+  }
+
+  private def broadcastDeltasFiltered(deltas: Iterable[SignedDelta[State]]): Unit =
+    connectedPeers.foreach { remote => sendDeltasFiltered(deltas, remote) }
+
+  private def sendDeltasFiltered(deltas: Iterable[SignedDelta[State]], remote: PublicIdentity): Unit = {
+    val (aclVersion, acl)         = currentAcl
+    val receiverReadPermission    = acl.read.getOrElse(remote, PermissionTree.empty)
+    val (allowedDeltas, filtered) =
+      deltas.partition(delta => Filter[State].isAllowed(delta.payload, receiverReadPermission))
+    sendDeltas(allowedDeltas.toSeq, Dots.from(filtered.map(_.dot)), aclVersion, remote)
   }
 
   def receiveDeltas(
@@ -102,8 +118,11 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       appliedDeltas = appliedDeltas.add(d.dot)
       accumulatedDelta = accumulatedDelta.merge(d.payload)
     }
+    // Track deltas
     if !appliedDeltas.isEmpty then {
       latestState.updateAndGet((oldDots, oldState) => (oldDots.union(appliedDeltas), oldState.merge(accumulatedDelta)))
+      missingDots.updateAndGet(missing => missing.diff(appliedDeltas))
+      filteredDots.updateAndGet(filtered => filtered.diff(appliedDeltas))
       notifyStateChanged(accumulatedDelta)
     }
   }
