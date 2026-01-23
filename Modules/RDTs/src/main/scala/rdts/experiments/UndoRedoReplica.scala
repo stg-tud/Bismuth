@@ -5,25 +5,27 @@ import rdts.time.{Dot, Dots}
 import rdts.base.Lattice
 import rdts.base.Bottom
 
-case class DeltaHistory[A](val deltas: Map[Dot, A], val removed: Dots, val dots: Dots) {
-
+case class DeltaHistory[A](val deltas: Map[Dot, A], val removed: Dots, val base: Option[A], val dots: Dots) {
   def add(dot: Dot, delta: A): DeltaHistory[A] =
-    DeltaHistory(deltas = Map(dot -> delta), removed = Dots.empty, dots = Dots.single(dot))
+    DeltaHistory(deltas = Map(dot -> delta), removed = Dots.empty, base = None, dots = Dots.single(dot))
+
+  def promoteToBase(dot: Dot) =
+    DeltaHistory(deltas = Map.empty, removed = Dots.single(dot), base = deltas.get(dot), dots = Dots.empty)
 
   def remove(dot: Dot): DeltaHistory[A] =
-    DeltaHistory(deltas = Map.empty, removed = Dots.single(dot), dots = Dots.single(dot))
+    DeltaHistory(deltas = Map.empty, removed = Dots.single(dot), base = None, dots = Dots.single(dot))
 
   def state(using Lattice[A])(using Bottom[A]): A =
     deltas
       .filter { case (dot, _) => !removed.contains(dot) }
       .map { case (_, delta) => delta }
-      .foldLeft(Bottom.empty[A])(Lattice.merge)
+      .foldLeft(base.getOrElse(Bottom.empty[A]))(Lattice.merge)
 }
 
 object DeltaHistory {
-  def empty[A]: DeltaHistory[A] = DeltaHistory(Map.empty, Dots.empty, Dots.empty)
+  def empty[A]: DeltaHistory[A] = DeltaHistory(Map.empty, Dots.empty, None, Dots.empty)
 
-  given lattice[A]: Lattice[DeltaHistory[A]] = new Lattice[DeltaHistory[A]] {
+  given lattice[A: Lattice]: Lattice[DeltaHistory[A]] = new Lattice[DeltaHistory[A]] {
     override def merge(l: DeltaHistory[A], r: DeltaHistory[A]): DeltaHistory[A] =
         val removed = l.removed.union(r.removed)
 
@@ -34,7 +36,13 @@ object DeltaHistory {
 
         val deltas = lFiltered ++ rFiltered
         val dots   = l.dots.union(r.dots)
-        DeltaHistory(deltas, removed, dots)
+        val base   = (l.base, r.base) match
+            case (Some(lb), Some(rb)) => Some(Lattice.merge(lb, rb))
+            case (Some(lb), None)     => Some(lb)
+            case (None, Some(rb))     => Some(rb)
+            case (None, None)         => None
+
+        DeltaHistory(deltas, removed, base, dots)
   }
 }
 
@@ -74,26 +82,14 @@ object ReplicaTimings {
 
 case class Replica[A: Lattice](
     var history: DeltaHistory[A],
-    var cached: Option[A] = None,
     var undoStack: Stack[Dot] = Stack.empty,
     var redoStack: Stack[A] = Stack.empty,
+    val undoLimit: Int = 200,
 ) {
-  def state(using Lattice[A])(using Bottom[A]): A =
-    if cached.isDefined then
-        cached.get
-    else
-        cached = Some(history.state)
-        cached.get
+  def state(using Lattice[A])(using Bottom[A]): A = history.state
 
   def receive(delta: DeltaHistory[A]) =
-      if delta.removed.isEmpty && cached.isDefined then {
-        for delta <- delta.deltas.values do
-            cached = Some(Lattice.merge(cached.get, delta))
-      } else {
-        cached = None
-      }
-
-      this.history = Lattice.merge(this.history, delta)
+    this.history = Lattice.merge(this.history, delta)
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A])(using Bottom[A])(using LocalUid): DeltaHistory[A] =
       ReplicaTimings.callCount += 1
@@ -107,7 +103,6 @@ case class Replica[A: Lattice](
       ReplicaTimings.applyFNanos += System.nanoTime() - t0
 
       val (dot, historyDelta) = this.pushDelta(delta)
-      this.undoStack.push(dot)
       this.redoStack.clear()
       historyDelta
 
@@ -117,7 +112,6 @@ case class Replica[A: Lattice](
       val deltaToUndo  = this.history.deltas(dotToUndo)
       val historyDelta = this.history.remove(dotToUndo)
       this.history = Lattice.merge(this.history, historyDelta)
-      this.cached = None
       this.redoStack.push(deltaToUndo)
       historyDelta
 
@@ -125,7 +119,6 @@ case class Replica[A: Lattice](
       if redoStack.isEmpty then return DeltaHistory.empty[A]
       val deltaToRedo         = redoStack.pop()
       val (dot, historyDelta) = this.pushDelta(deltaToRedo)
-      this.undoStack.push(dot)
       historyDelta
 
   private def pushDelta(delta: A)(using LocalUid)(using Bottom[A]): (Dot, DeltaHistory[A]) =
@@ -134,26 +127,24 @@ case class Replica[A: Lattice](
       ReplicaTimings.getDotsNanos += System.nanoTime() - t0
 
       t0 = System.nanoTime()
-      val historyDelta = this.history.add(dot, delta)
+      var historyDelta = this.history.add(dot, delta)
       ReplicaTimings.addDeltaNanos += System.nanoTime() - t0
+
+      this.undoStack.push(dot)
+      if this.undoStack.size > undoLimit then
+          val dot = this.undoStack.remove(0)
+          historyDelta = Lattice.merge(historyDelta, this.history.promoteToBase(dot))
 
       t0 = System.nanoTime()
       this.history = Lattice.merge(this.history, historyDelta)
       ReplicaTimings.mergeHistoryNanos += System.nanoTime() - t0
-
-      t0 = System.nanoTime()
-      cached = if cached.isDefined then
-          Some(Lattice.merge(cached.get, delta))
-      else
-          Some(this.history.state)
-      ReplicaTimings.updateCacheNanos += System.nanoTime() - t0
 
       (dot, historyDelta)
 }
 
 object Replica {
   def empty[A: Lattice]: Replica[A] =
-    Replica(DeltaHistory.empty[A], None, Stack.empty, Stack.empty)
+    Replica(DeltaHistory.empty[A], Stack.empty, Stack.empty)
 }
 
 case class UndoRedoReplica[A](
