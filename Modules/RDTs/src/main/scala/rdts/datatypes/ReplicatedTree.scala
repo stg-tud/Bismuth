@@ -259,20 +259,16 @@ object ReplicatedTree {
     nonRootedNodes
   }
 
+  private case class PQItem(child: Dot, parent: Dot, counter: Int)
+
+  private given dotOrdering: Ordering[Dot]       = Ordering.by((d: Dot) => (d.time, d.place.delegate))
+  private given pqItemOrdering: Ordering[PQItem] = Ordering.by((i: PQItem) => (i.counter, i.parent, i.child))
+
   private def computeParentUpdates[A](
       tree: ReplicatedTree[A],
       nonRootedNodes: mutable.Set[Dot]
   ): mutable.Map[Dot, Dot] = {
-    case class PQItem(child: Dot, parent: Dot, counter: Int) extends Ordered[PQItem] {
-      def compare(that: PQItem): Int = {
-        given dotOrdering: Ordering[Dot] = Ordering.by((d: Dot) => (d.time, d.place.delegate))
-        Ordering
-          .by((i: PQItem) => (i.counter, i.parent, i.child))
-          .compare(this, that)
-      }
-    }
-
-    val deferredEdges = mutable.Map[Dot, mutable.ListBuffer[PQItem]]()
+    val deferredEdges = mutable.Map[Dot, mutable.ArrayBuffer[PQItem]]()
     val readyEdges    = mutable.PriorityQueue[PQItem]()
     nonRootedNodes.foreach { child =>
       tree.node(child) match {
@@ -280,7 +276,7 @@ object ReplicatedTree {
           node.edges.foreach { (parent, edgeCounter) =>
             val item = PQItem(child, parent, edgeCounter)
             if !nonRootedNodes.contains(parent) then readyEdges.enqueue(item)
-            else deferredEdges.getOrElseUpdate(parent, mutable.ListBuffer()) += item
+            else deferredEdges.getOrElseUpdate(parent, mutable.ArrayBuffer()) += item
           }
         case None =>
       }
