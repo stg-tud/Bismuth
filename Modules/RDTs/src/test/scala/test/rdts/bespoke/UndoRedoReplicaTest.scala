@@ -1,14 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.experiments.UndoRedoReplica
-import rdts.base.{Uid, LocalUid, Lattice, Bottom}
-
-object UndoRedoReplicaTest:
-  def createReplicas[A](n: Int): Array[UndoRedoReplica[A]] = {
-    (1 to n).map(i => Uid.predefined(s"R$i")).map(uid =>
-      UndoRedoReplica.empty(using LocalUid(uid))
-    ).toArray
-  }
+import rdts.base.{LocalUid, Lattice, Bottom}
 
 class UndoRedoReplicaTest extends munit.FunSuite {
   test("simple undo redo") {
@@ -18,30 +11,30 @@ class UndoRedoReplicaTest extends munit.FunSuite {
 
     object State {
       given lattice: Lattice[State] with
-        def merge(a: State, b: State): State = State(value = math.max(a.value, b.value))
+          def merge(a: State, b: State): State = State(value = math.max(a.value, b.value))
 
       given bottom: Bottom[State] = Bottom.provide(State(value = 0))
     }
 
-    val Array(initialReplica) = UndoRedoReplicaTest.createReplicas[State](1)
-    var replica               = initialReplica
+    val aid     = LocalUid.predefined("a")
+    val replica = UndoRedoReplica.empty[State]
 
-    replica = replica.mod(_.setValue(1))
+    replica.mod(_.setValue(1))(using aid)
     assertEquals(replica.state, State(value = 1))
 
-    replica = replica.mod(_.setValue(2))
+    replica.mod(_.setValue(2))(using aid)
     assertEquals(replica.state, State(value = 2))
 
-    replica = replica.undo()
+    replica.undo()
     assertEquals(replica.state, State(value = 1))
 
-    replica = replica.undo()
+    replica.undo()
     assertEquals(replica.state, State.bottom.empty)
 
-    replica = replica.redo()
+    replica.redo()(using aid)
     assertEquals(replica.state, State(value = 1))
 
-    replica = replica.redo()
+    replica.redo()(using aid)
     assertEquals(replica.state, State(value = 2))
   }
 
@@ -51,26 +44,26 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     type ID = String
 
     case class Document(nodes: ObserveRemoveMap[ID, Node] = ObserveRemoveMap.empty):
-      def materialized_nodes: Map[ID, MaterializedNode] =
-        nodes.inner.view.mapValues(post => MaterializedNode.from(post.value)).toMap
+        def materialized_nodes: Map[ID, MaterializedNode] =
+          nodes.inner.view.mapValues(post => MaterializedNode.from(post.value)).toMap
 
-      def add(nodeId: ID, node: Node)(using replicaId: LocalUid): Document =
-        Document(nodes.update(nodeId, node))
+        def add(nodeId: ID, node: Node)(using replicaId: LocalUid): Document =
+          Document(nodes.update(nodeId, node))
 
-      def setPosition(nodeId: ID, position: Position)(using replicaId: LocalUid): Document =
-        nodes.get(nodeId) match {
-          case Some(n) => Document(nodes.update(nodeId, n.copy(position = LWW.now(position))))
-          case None    => Document.bottom.empty
-        }
+        def setPosition(nodeId: ID, position: Position)(using replicaId: LocalUid): Document =
+          nodes.get(nodeId) match {
+            case Some(n) => Document(nodes.update(nodeId, n.copy(position = LWW.now(position))))
+            case None    => Document.bottom.empty
+          }
 
-      def setColor(nodeId: ID, color: Color)(using replicaId: LocalUid): Document =
-        nodes.get(nodeId) match {
-          case Some(n) => Document(nodes.update(nodeId, n.copy(color = LWW.now(color))))
-          case None    => Document.bottom.empty
-        }
+        def setColor(nodeId: ID, color: Color)(using replicaId: LocalUid): Document =
+          nodes.get(nodeId) match {
+            case Some(n) => Document(nodes.update(nodeId, n.copy(color = LWW.now(color))))
+            case None    => Document.bottom.empty
+          }
 
     enum Color:
-      case Red, Green, Blue, Yellow, Black, White
+        case Red, Green, Blue, Yellow, Black, White
 
     case class Position(x: Double, y: Double)
 
@@ -81,8 +74,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     enum NodeKind:
-      case Circle(radius: Double)
-      case Rectangle(width: Double, height: Double)
+        case Circle(radius: Double)
+        case Rectangle(width: Double, height: Double)
 
     case class MaterializedNode(
         position: Position,
@@ -121,22 +114,22 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       given bottom: Bottom[Color] = Bottom.provide(Color.White)
     }
 
-    var (replica1, replica2) = {
-      val Array(r1, r2) = UndoRedoReplicaTest.createReplicas[Document](2)
-      (r1, r2)
-    }
+    val aid      = LocalUid.predefined("A")
+    val bid      = LocalUid.predefined("B")
+    val replica1 = UndoRedoReplica.empty[Document]
+    val replica2 = UndoRedoReplica.empty[Document]
 
     val node1 = "node1"
     val node2 = "node2"
 
-    replica1 = replica1.mod(_.add(
+    val d1a = replica1.mod(_.add(
       node1,
       Node(LWW.now(Position(0, 0)), LWW.now(Color.Red), LWW.now(NodeKind.Rectangle(width = 50.0, height = 100.0)))
-    ))
-    replica2 = replica2.mod(_.add(
+    ))(using aid)
+    val d1b = replica2.mod(_.add(
       node2,
       Node(LWW.now(Position(100, 100)), LWW.now(Color.Blue), LWW.now(NodeKind.Circle(radius = 25.0)))
-    ))
+    ))(using bid)
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -155,10 +148,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       ))
     )
 
-    replica1 = replica1.receive(replica2.buffer)
-    replica2 = replica2.receive(replica1.buffer)
-    replica1 = replica1.clearBuffer()
-    replica2 = replica2.clearBuffer()
+    replica1.receive(d1b)
+    replica2.receive(d1a)
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -191,12 +182,10 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       )
     )
 
-    replica1 = replica1.mod(_.setColor(node2, Color.Green))
-    replica2 = replica2.mod(_.setPosition(node1, Position(50, 50)))
-    replica1 = replica1.receive(replica2.buffer)
-    replica2 = replica2.receive(replica1.buffer)
-    replica1 = replica1.clearBuffer()
-    replica2 = replica2.clearBuffer()
+    val d2a = replica1.mod(_.setColor(node2, Color.Green))(using aid)
+    val d2b = replica2.mod(_.setPosition(node1, Position(50, 50)))(using bid)
+    replica1.receive(d2b)
+    replica2.receive(d2a)
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -230,12 +219,10 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Undo should reset the position of node1 to (0, 0) and the color of node2 to Blue
-    replica1 = replica1.undo()
-    replica2 = replica2.undo()
-    replica1 = replica1.receive(replica2.buffer)
-    replica2 = replica2.receive(replica1.buffer)
-    replica1 = replica1.clearBuffer()
-    replica2 = replica2.clearBuffer()
+    val d3a = replica1.undo()
+    val d3b = replica2.undo()
+    replica1.receive(d3b)
+    replica2.receive(d3a)
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -269,9 +256,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Undo on replica1 should remove node1
-    replica1 = replica1.undo()
-    replica2 = replica2.receive(replica1.buffer)
-    replica1 = replica1.clearBuffer()
+    val d4a = replica1.undo()
+    replica2.receive(d4a)
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -295,9 +281,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Redo should reset the position of node1 to (50, 50)
-    replica2 = replica2.redo()
-    replica1 = replica1.receive(replica2.buffer)
-    replica2 = replica2.clearBuffer()
+    val d5b = replica2.redo()(using bid)
+    replica1.receive(d5b)
 
     assertEquals(
       replica1.state.materialized_nodes,
@@ -331,9 +316,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
     )
 
     // Redo should be a no-op, since there is nothing on the undo stack
-    replica2 = replica2.redo()
-    replica1 = replica1.receive(replica2.buffer)
-    replica2 = replica2.clearBuffer()
+    val d6b = replica2.redo()(using bid)
+    replica1.receive(d6b)
 
     assertEquals(
       replica1.state.materialized_nodes,

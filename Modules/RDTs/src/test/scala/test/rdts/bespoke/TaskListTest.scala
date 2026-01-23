@@ -3,7 +3,7 @@ package test.rdts.bespoke
 import rdts.datatypes.RemoveWinsArray as ReplicatedList
 import rdts.datatypes.LastWriterWins as LWW
 import rdts.base.Lattice
-import rdts.experiments.Replica as UndoRedoReplica
+import rdts.experiments.UndoRedoReplica
 import rdts.datatypes.ReplicatedTree
 import rdts.time.Dot
 import rdts.base.LocalUid
