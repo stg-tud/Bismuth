@@ -32,13 +32,11 @@ case class ReplicatedTree[A](
     c.headOption
   }
 
-  def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] = {
+  def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] =
     compact.values.filter(n => n.parent == dot)
-  }
 
-  def insert(parent: Dot, value: A)(using LocalUid): Delta = {
+  def insert(parent: Dot, value: A)(using LocalUid): Delta =
     insertWith(parent, _ => value)
-  }
 
   def insertWith(parent: Dot, value: Dot => A)(using LocalUid): Delta = {
     if parent != ReplicatedTree.rootDot && !compact.contains(parent) then {
@@ -146,10 +144,9 @@ object ReplicatedTree {
 
   given nodeLattice[A: Lattice]: Lattice[Node[A]] = {
     given Lattice[Dot] with {
-      def merge(left: Dot, right: Dot): Dot = {
+      def merge(left: Dot, right: Dot): Dot =
         // we can always choose left, since we re-parent based on largest edge after merging
         left
-      }
     }
     given Lattice[Map[Dot, Int]] = {
       given Lattice[Int] = math.max
@@ -160,35 +157,94 @@ object ReplicatedTree {
 
   def empty[A]: ReplicatedTree[A] = ReplicatedTree[A](Map.empty, Dots.empty)
 
+  // Timing stats for diagnosing ReplicatedTree merge performance
+  object MergeTimings {
+    var mergeElementsNanos: Long        = 0
+    var unionRemovedNanos: Long         = 0
+    var resolveConflictsNanos: Long     = 0
+    var compactNanos: Long              = 0
+    var findNonRootedNanos: Long        = 0
+    var computeParentUpdatesNanos: Long = 0
+    var applyParentUpdatesNanos: Long   = 0
+    var callCount: Long                 = 0
+
+    def reset(): Unit = {
+      mergeElementsNanos = 0
+      unionRemovedNanos = 0
+      resolveConflictsNanos = 0
+      compactNanos = 0
+      findNonRootedNanos = 0
+      computeParentUpdatesNanos = 0
+      applyParentUpdatesNanos = 0
+      callCount = 0
+    }
+
+    def report(): String = {
+      if callCount == 0 then return "No ReplicatedTree merges"
+      f"""ReplicatedTree.merge breakdown (${callCount} calls):
+         |  mergeElements:      ${mergeElementsNanos / 1_000_000.0 / callCount}%.4fms avg
+         |  unionRemoved:       ${unionRemovedNanos / 1_000_000.0 / callCount}%.4fms avg
+         |  resolveConflicts:   ${resolveConflictsNanos / 1_000_000.0 / callCount}%.4fms avg
+         |    compact:          ${compactNanos / 1_000_000.0 / callCount}%.4fms avg
+         |    findNonRooted:    ${findNonRootedNanos / 1_000_000.0 / callCount}%.4fms avg
+         |    computeUpdates:   ${computeParentUpdatesNanos / 1_000_000.0 / callCount}%.4fms avg
+         |    applyUpdates:     ${applyParentUpdatesNanos / 1_000_000.0 / callCount}%.4fms avg""".stripMargin
+    }
+  }
+
   given lattice[A: Lattice]: Lattice[ReplicatedTree[A]] with {
     given mapLattice: Lattice[Map[Dot, ReplicatedTree.Node[A]]]                     = Lattice.mapLattice
     def merge(left: ReplicatedTree[A], right: ReplicatedTree[A]): ReplicatedTree[A] = {
+      MergeTimings.callCount += 1
+
+      var t0       = System.nanoTime()
       val elements = left.elements `merge` right.elements
-      val deleted  = left.removed `union` right.removed
-      resolveConflicts(ReplicatedTree(
+      MergeTimings.mergeElementsNanos += System.nanoTime() - t0
+
+      t0 = System.nanoTime()
+      val deleted = left.removed `union` right.removed
+      MergeTimings.unionRemovedNanos += System.nanoTime() - t0
+
+      t0 = System.nanoTime()
+      val result = resolveConflicts(ReplicatedTree(
         elements,
         deleted
       ))
+      MergeTimings.resolveConflictsNanos += System.nanoTime() - t0
+
+      result
     }
   }
 
   private def resolveConflicts[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
-    var tree = mergedTree.copy(elements = mergedTree.compact.map({
+    var t0   = System.nanoTime()
+    var tree = mergedTree.copy(elements = mergedTree.compact.map {
       case (dot, node) =>
         (dot, node.copy(parent = node.largestEdge))
-    }))
+    })
+    MergeTimings.compactNanos += System.nanoTime() - t0
 
+    t0 = System.nanoTime()
     val nonRootedNodes = findNonRootedNodes(tree)
+    MergeTimings.findNonRootedNanos += System.nanoTime() - t0
+
     if nonRootedNodes.isEmpty then return tree
 
+    t0 = System.nanoTime()
     val parentUpdates = computeParentUpdates(tree, nonRootedNodes)
-    tree.copy(elements = tree.elements.map {
+    MergeTimings.computeParentUpdatesNanos += System.nanoTime() - t0
+
+    t0 = System.nanoTime()
+    val result = tree.copy(elements = tree.elements.map {
       case (dot, node) =>
         parentUpdates.get(dot) match {
           case Some(newParent) => (dot, node.copy(parent = newParent))
           case None            => (dot, node)
         }
     })
+    MergeTimings.applyParentUpdatesNanos += System.nanoTime() - t0
+
+    result
   }
 
   private def findNonRootedNodes[A](tree: ReplicatedTree[A]): mutable.Set[Dot] = {
@@ -198,7 +254,7 @@ object ReplicatedTree {
       .foreach { node =>
         var current: Option[Dot] = Some(node.dot)
         while current.isDefined && nonRootedNodes.add(current.get) do
-          current = tree.parent(current.get)
+            current = tree.parent(current.get)
       }
     nonRootedNodes
   }
