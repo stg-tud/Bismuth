@@ -26,19 +26,14 @@ object DeltaHistory {
   given lattice[A]: Lattice[DeltaHistory[A]] = new Lattice[DeltaHistory[A]] {
     override def merge(l: DeltaHistory[A], r: DeltaHistory[A]): DeltaHistory[A] =
         val removed = l.removed.union(r.removed)
-        
-        // Optimization: Only filter each side against the OTHER side's removed set.
-        // Each side should already be consistent with its own removed set.
-        // For typical add operations: r.removed is empty, so lFiltered = l.deltas (no iteration)
-        // For undo operations: r.deltas is empty, so we only filter l.deltas
-        val lFiltered = if r.removed.isEmpty then l.deltas 
-                        else l.deltas.filter { case (dot, _) => !r.removed.contains(dot) }
-        val rFiltered = if l.removed.isEmpty then r.deltas 
-                        else r.deltas.filter { case (dot, _) => !l.removed.contains(dot) }
-        
+
+        val lFiltered = if r.removed.isEmpty then l.deltas
+        else l.deltas.filter { case (dot, _) => !r.removed.contains(dot) }
+        val rFiltered = if l.removed.isEmpty then r.deltas
+        else r.deltas.filter { case (dot, _) => !l.removed.contains(dot) }
+
         val deltas = lFiltered ++ rFiltered
-        // Incrementally compute dots: union both sides (already tracked)
-        val dots = l.dots.union(r.dots)
+        val dots   = l.dots.union(r.dots)
         DeltaHistory(deltas, removed, dots)
   }
 }
@@ -91,7 +86,14 @@ case class Replica[A: Lattice](
         cached.get
 
   def receive(delta: DeltaHistory[A]) =
-    this.history = Lattice.merge(this.history, delta)
+      if delta.removed.isEmpty && cached.isDefined then {
+        for delta <- delta.deltas.values do
+            cached = Some(Lattice.merge(cached.get, delta))
+      } else {
+        cached = None
+      }
+
+      this.history = Lattice.merge(this.history, delta)
 
   def mod(f: LocalUid ?=> A => A)(using Lattice[A])(using Bottom[A])(using LocalUid): DeltaHistory[A] =
       ReplicaTimings.callCount += 1
@@ -207,7 +209,7 @@ case class UndoRedoReplica[A](
 
   def canUndo = undoStack.nonEmpty
 
-  def undo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
+  def undo(): UndoRedoReplica[A] = {
     if undoStack.isEmpty then return this
 
     val lastDot = undoStack.head
@@ -221,7 +223,7 @@ case class UndoRedoReplica[A](
 
   def canRedo = redoStack.nonEmpty
 
-  def redo()(using Lattice[A])(using Bottom[A]): UndoRedoReplica[A] = {
+  def redo(): UndoRedoReplica[A] = {
     if redoStack.isEmpty then return this
 
     val dot = redoStack.head

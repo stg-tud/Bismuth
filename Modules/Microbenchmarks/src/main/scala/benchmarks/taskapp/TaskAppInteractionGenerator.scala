@@ -34,13 +34,12 @@ class TaskAppInteractionGenerator(
     }
   }
 
-  /** First interaction should always create a task list */
   def initialInteraction(): TaskAppInteraction =
     AddTaskList(ReplicatedTree.rootDot, s"List_${randomString(5, 15)}")
 
   private def analyzeTree(tree: ReplicatedTree[Entry]): (Seq[Dot], Map[Dot, Int], Int) = {
     val folders    = mutable.ArrayBuffer[Dot]()
-    val taskLists  = mutable.Map[Dot, Int]() // dot -> task count
+    val taskLists  = mutable.Map[Dot, Int]()
     var totalTasks = 0
 
     tree.nodes.foreach { node =>
@@ -64,32 +63,34 @@ class TaskAppInteractionGenerator(
       totalTaskCount: Int
   ): TaskAppInteraction = {
     // Weights for different interactions:
-    // - 10% add folder (if under limit)
-    // - 15% add task list (if under limit)
+    // - 5% add folder (if under limit)
+    // - 10% add task list (if under limit)
     // - 30% add task to a list
     // - 5% move entry
     // - 5% update folder name
     // - 5% update task list name
-    // - 5% remove task
+    // - 15% remove task
     // - 5% move task within list
     // - 5% update task title
     // - 5% update task description
+    // - 5% to undo
+    // - 5% to redo
 
     val choice = random.nextInt(100)
 
-    if choice < 10 then {
+    if choice < 5 then {
       if folders.size < maxFolders then addFolder(folders)
       else updateFolderName(folders).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 25 then {
+    } else if choice < 15 then {
       if taskLists.size < maxTaskLists then addTaskList(folders)
       else updateTaskListName(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 55 then {
+    } else if choice < 45 then {
       addTask(taskLists).getOrElse(addTaskList(folders))
-    } else if choice < 60 then {
+    } else if choice < 50 then {
       moveEntry(folders, taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 65 then {
+    } else if choice < 55 then {
       updateFolderName(folders).getOrElse(addFolder(folders))
-    } else if choice < 70 then {
+    } else if choice < 60 then {
       updateTaskListName(taskLists).getOrElse(addTaskList(folders))
     } else if choice < 75 then {
       removeRandomTask(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
@@ -97,8 +98,12 @@ class TaskAppInteractionGenerator(
       moveTaskWithinList(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 85 then {
       updateTaskTitle(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else {
+    } else if choice < 90 then {
       updateTaskDescription(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
+    } else if choice < 95 then {
+      Undo
+    } else {
+      Redo
     }
   }
 
