@@ -233,7 +233,7 @@ object cli {
             KeyValueReplica(
               name.value,
               initialClusterIds.value.toSet,
-              deltaStorageType = deltaStorageType.value,
+              deltaStorageType = DeltaStorage.Type.NoHistory,
               timeoutThreshold = timeout.value
             )
 

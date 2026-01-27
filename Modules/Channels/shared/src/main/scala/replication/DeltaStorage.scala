@@ -24,6 +24,7 @@ object DeltaStorage {
     case State
     case KeepAll
     case Merging(blockSize: Int)
+    case NoHistory
   }
 
   def getStorage[State: JsonValueCodec](t: Type, getState: () => State)(using
@@ -33,8 +34,15 @@ object DeltaStorage {
     case Type.State               => StateDeltaStorage[State](getState)
     case Type.KeepAll             => KeepAllHistory[State]()
     case Type.Merging(blockSize)  => MergingHistory[State](blockSize)
+    case Type.NoHistory           => NoHistory[State]()
   }
 
+}
+
+class NoHistory[State] extends DeltaStorage[State] {
+  override def getHistory: List[CachedMessage[Payload[State]]] = List.empty
+
+  override def remember(message: CachedMessage[Payload[State]]): Unit = ()
 }
 
 class DiscardingHistory[State](val size: Int) extends DeltaStorage[State] {
