@@ -157,8 +157,8 @@ class KeyValueReplica(
             }
             s"$key=$value; OK"
         }
-        val distinctClients : Set[Uid] = client.state.responses.keySet.map(_._2)
-        println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
+        // val distinctClients : Set[Uid] = client.state.responses.keySet.map(_._2)
+        // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
         // only leader is allowed to actually respond to requests
         if cluster.state.leader.contains(replicaId) then {
           client.publish {
@@ -272,7 +272,7 @@ class KeyValueReplica(
       log(s"Alive peers: $alivePeers")
 
       if !alivePeers.exists(cluster.state.leader.contains) then {
-        println("Detected leader failure, triggering new election")
+        println(s"Detected leader failure (${cluster.state.leader}, triggering new election")
         cluster.maybeLeaderElection(alivePeers)
       }
     }
