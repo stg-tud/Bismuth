@@ -47,10 +47,10 @@ case class InteractionWithExecutesAndActs[S <: Tuple, A] private[dsl] (
   type T[_, _] = InteractionWithExecutesAndActs[S, A]
 
   override inline def requires(inline pred: (S, A) => Boolean): InteractionWithExecutesAndActs[S, A] =
-    ${ constructIWEAAWithRequires('{ this }, '{ pred }) }
+    ${ constructIWEAAWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (S, A) => Boolean): InteractionWithExecutesAndActs[S, A] =
-    ${ constructIWEAAWithEnsures('{ this }, '{ pred }) }
+    ${ constructIWEAAWithEnsures('{ this }, 'pred) }
 
   @targetName("foldIntoN")
   inline def foldInto(): Fold.Branch[S] =

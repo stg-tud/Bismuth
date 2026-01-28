@@ -6,21 +6,21 @@ import scala.quoted.*
 
 object QuicklensMacros {
   def toPathModify[S: Type, A: Type](obj: Expr[S], f: Expr[(A => A) => S])(using Quotes): Expr[PathModify[S, A]] = '{
-    PathModify(${ obj }, ${ f })
+    PathModify($obj, $f)
   }
 
   def fromPathModify[S: Type, A: Type](pathModify: Expr[PathModify[S, A]])(using Quotes): Expr[(A => A) => S] = '{
-    ${ pathModify }.f
+    $pathModify.f
   }
 
-  def to[T: Type, R: Type](f: Expr[T] => Expr[R])(using Quotes): Expr[T => R] = '{ (x: T) => ${ f('{ x }) } }
+  def to[T: Type, R: Type](f: Expr[T] => Expr[R])(using Quotes): Expr[T => R] = '{ (x: T) => ${ f('x) } }
 
   def from[T: Type, R: Type](f: Expr[T => R])(using Quotes): Expr[T] => Expr[R] = (x: Expr[T]) => '{ $f($x) }
 
   def modifyLensApplyImpl[T, U](path: Expr[T => U])(using Quotes, Type[T], Type[U]): Expr[PathLazyModify[T, U]] = '{
     PathLazyModify { (t, mod) =>
       ${
-        toPathModify('{ t }, modifyImpl('{ t }, Seq(path), produceDelta = false))
+        toPathModify('t, modifyImpl('t, Seq(path), produceDelta = false))
       }.using(mod)
     }
   }
@@ -29,7 +29,7 @@ object QuicklensMacros {
       path1: Expr[T => U],
       paths: Expr[Seq[T => U]]
   )(using Quotes): Expr[PathLazyModify[T, U]] =
-    '{ PathLazyModify((t, mod) => ${ modifyAllImpl('{ t }, path1, paths) }.using(mod)) }
+    '{ PathLazyModify((t, mod) => ${ modifyAllImpl('t, path1, paths) }.using(mod)) }
 
   def modifyAllImpl[S: Type, A: Type](
       obj: Expr[S],

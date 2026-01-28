@@ -49,10 +49,10 @@ case class InteractionWithModifies[ST <: Tuple, S <: Tuple, A] private[dsl] (
   type AO[_, _] = InteractionWithModifiesAndActs[ST, S, A]
 
   override inline def requires(inline pred: (ST, A) => Boolean): InteractionWithModifies[ST, S, A] =
-    ${ constructInteractionWithModifiesWithRequires('{ this }, '{ pred }) }
+    ${ constructInteractionWithModifiesWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (ST, A) => Boolean): InteractionWithModifies[ST, S, A] =
-    ${ constructInteractionWithModifiesWithEnsures('{ this }, '{ pred }) }
+    ${ constructInteractionWithModifiesWithEnsures('{ this }, 'pred) }
 
   override def executes(fun: (ST, A) => ST): InteractionWithExecutesAndModifies[ST, S, A] =
     InteractionWithExecutesAndModifies(requires, ensures, fun, modifies)

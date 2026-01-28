@@ -15,7 +15,7 @@ class FeedStore(
     addChannel.fold(Map.empty[RSSChannel, Signal[Set[RSSItem]]]) { (map, channel) => // #SIG //#IF
       map + (channel ->
       (addItem && (_.srcChannel.isDefined) && (_.srcChannel.get == channel)). // #EF //#EF
-      fold(Set.empty[RSSItem])(_ + _))                                        // #IF
+        fold(Set.empty[RSSItem])(_ + _))                                      // #IF
     }
 
   val itemAdded: Event[RSSItem] = Event.dynamic {

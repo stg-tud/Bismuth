@@ -45,10 +45,10 @@ case class UnboundInteraction[S <: Tuple, A] private[dsl] (
   type AO[_, _] = InteractionWithActs[S, A]
 
   override inline def requires(inline pred: (S, A) => Boolean): UnboundInteraction[S, A] =
-    ${ constructUnboundInteractionWithRequires('{ this }, '{ pred }) }
+    ${ constructUnboundInteractionWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (S, A) => Boolean): UnboundInteraction[S, A] =
-    ${ constructUnboundInteractionWithEnsures('{ this }, '{ pred }) }
+    ${ constructUnboundInteractionWithEnsures('{ this }, 'pred) }
 
   override def executes(fun: (S, A) => S): InteractionWithExecutes[S, A] =
     InteractionWithExecutes(requires, ensures, fun)

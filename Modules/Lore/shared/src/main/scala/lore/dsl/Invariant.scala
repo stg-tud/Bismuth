@@ -21,7 +21,7 @@ def constructInvariant(pred: Expr[() => Boolean])(using Quotes): Expr[Invariant]
 
 object Invariant {
   private inline def createInvariant(inline pred: () => Boolean): Invariant =
-    ${ constructInvariant('{ pred }) }
+    ${ constructInvariant('pred) }
 
   inline def apply(inline pred: Boolean): Invariant = {
     val x: Signal[Boolean] = Signal {

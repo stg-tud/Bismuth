@@ -50,10 +50,10 @@ case class BoundInteraction[ST <: Tuple, S <: Tuple, A] private[dsl] (
   event.observe { it => apply(it) }
 
   override inline def requires(inline pred: (ST, A) => Boolean): BoundInteraction[ST, S, A] =
-    ${ constructBoundInteractionWithRequires('{ this }, '{ pred }) }
+    ${ constructBoundInteractionWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (ST, A) => Boolean): BoundInteraction[ST, S, A] =
-    ${ constructBoundInteractionWithEnsures('{ this }, '{ pred }) }
+    ${ constructBoundInteractionWithEnsures('{ this }, 'pred) }
 
   def apply(a: A): Unit = {
     val modList = modifies.toList.asInstanceOf[List[Var[?]]]

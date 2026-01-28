@@ -48,10 +48,10 @@ case class InteractionWithModifiesAndActs[ST <: Tuple, S <: Tuple, A] private[ds
   type E[_, _] = BoundInteraction[ST, S, A]
 
   override inline def requires(inline pred: (ST, A) => Boolean): InteractionWithModifiesAndActs[ST, S, A] =
-    ${ constructIWMAAWithRequires('{ this }, '{ pred }) }
+    ${ constructIWMAAWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (ST, A) => Boolean): InteractionWithModifiesAndActs[ST, S, A] =
-    ${ constructIWMAAWithEnsures('{ this }, '{ pred }) }
+    ${ constructIWMAAWithEnsures('{ this }, 'pred) }
 
   override def executes(fun: (ST, A) => ST): BoundInteraction[ST, S, A] =
     BoundInteraction(requires, ensures, fun, modifies, event)

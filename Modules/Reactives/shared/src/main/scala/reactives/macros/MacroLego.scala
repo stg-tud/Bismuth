@@ -8,7 +8,7 @@ object MacroLegos {
 
   inline def getDependencies[Res, ReSourceT, Ticket, ForceStatic <: Boolean](inline expr: Res)
       : (List[ReSourceT], Ticket => Res, Boolean) =
-    ${ reactives.macros.MacroLegos.reactiveMacro[Res, ReSourceT, Ticket, ForceStatic]('{ expr }) }
+    ${ reactives.macros.MacroLegos.reactiveMacro[Res, ReSourceT, Ticket, ForceStatic]('expr) }
 
   def reactiveMacro[Res: Type, ReSourceT: Type, Ticket: Type, ForceStatic <: Boolean: Type](
       expr: Expr[Res]

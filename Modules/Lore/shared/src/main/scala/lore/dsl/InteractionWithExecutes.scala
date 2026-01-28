@@ -47,10 +47,10 @@ case class InteractionWithExecutes[S <: Tuple, A] private[dsl] (
   type AO[_, _] = InteractionWithExecutesAndActs[S, A]
 
   override inline def requires(inline pred: (S, A) => Boolean): InteractionWithExecutes[S, A] =
-    ${ constructIWEWithRequires('{ this }, '{ pred }) }
+    ${ constructIWEWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (S, A) => Boolean): InteractionWithExecutes[S, A] =
-    ${ constructIWEWithEnsures('{ this }, '{ pred }) }
+    ${ constructIWEWithEnsures('{ this }, 'pred) }
 
   override def actsOn(event: Event[A]): InteractionWithExecutesAndActs[S, A] =
     InteractionWithExecutesAndActs(requires, ensures, executes, event)

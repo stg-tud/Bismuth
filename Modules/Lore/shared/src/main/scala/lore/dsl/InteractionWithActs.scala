@@ -45,10 +45,10 @@ case class InteractionWithActs[S <: Tuple, A] private[dsl] (
   type E[_, _] = InteractionWithExecutesAndActs[S, A]
 
   override inline def requires(inline pred: (S, A) => Boolean): InteractionWithActs[S, A] =
-    ${ constructIWAWithRequires('{ this }, '{ pred }) }
+    ${ constructIWAWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (S, A) => Boolean): InteractionWithActs[S, A] =
-    ${ constructIWAWithEnsures('{ this }, '{ pred }) }
+    ${ constructIWAWithEnsures('{ this }, 'pred) }
 
   override def executes(fun: (S, A) => S): InteractionWithExecutesAndActs[S, A] =
     InteractionWithExecutesAndActs(requires, ensures, fun, event)
