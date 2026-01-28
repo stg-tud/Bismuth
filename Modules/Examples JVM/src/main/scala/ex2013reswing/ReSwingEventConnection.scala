@@ -1,6 +1,5 @@
 package ex2013reswing
 
-
 import java.awt.event.{HierarchyEvent, HierarchyListener}
 import scala.collection.mutable.ListBuffer
 import scala.swing.{Publisher, Reactor, UIElement}

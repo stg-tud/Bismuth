@@ -12,7 +12,7 @@ object EventWindows {
     val window: Signal[LinearSeq[Double]] = e.list(5)
     val mean: Signal[Double]              = Signal {
       window.value.sum /
-        window.value.length
+      window.value.length
     }
     mean.changed observe { println(_) }
 
@@ -23,6 +23,5 @@ object EventWindows {
     e.fire(1)
     e.fire(1)
   }
-
 
 }

@@ -20,7 +20,7 @@ object RGAGenerators {
 }
 
 class RGATest extends munit.ScalaCheckSuite {
-  import RGAGenerators.{*}
+  import RGAGenerators.*
 
   property("size, toList, read") {
     forAll { (rl: ReplicatedList[Int], readIdx: Int) =>

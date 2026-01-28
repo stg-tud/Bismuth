@@ -72,11 +72,11 @@ object cli {
 
     given ipAndPortParser: ArgumentValueParser[(String, Int)] with
         override def parse(args: List[String]): Result[(String, Int)] =
-          import scala.language.unsafeNulls
-          args match {
-            case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
-            case _                           => Err("not a valid ip:port")
-          }
+            import scala.language.unsafeNulls
+            args match {
+              case ipAndPort(ip, port) :: rest => Ok((ip, Integer.parseInt(port)), rest)
+              case _                           => Err("not a valid ip:port")
+            }
 
         def descriptor: de.rmgk.options.Descriptor = Descriptor("ip:port", "ip:port pair")
     end ipAndPortParser
@@ -122,14 +122,14 @@ object cli {
         val merging: Regex    = """merging\((\d+)\)""".r
 
         override def parse(args: List[String]): Result[DeltaStorage.Type] =
-          import scala.language.unsafeNulls
-          args match {
-            case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
-            case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
-            case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
-            case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
-            case _                           => Result.Err("not a valid delta storage type", descriptor)
-          }
+            import scala.language.unsafeNulls
+            args match {
+              case discarding(maxSize) :: rest => Result.Ok(DeltaStorage.Type.Discarding(maxSize.toInt), rest)
+              case "state" :: rest             => Result.Ok(DeltaStorage.Type.State, rest)
+              case "keep-all" :: rest          => Result.Ok(DeltaStorage.Type.KeepAll, rest)
+              case merging(blockSize) :: rest  => Result.Ok(DeltaStorage.Type.Merging(blockSize.toInt), rest)
+              case _                           => Result.Err("not a valid delta storage type", descriptor)
+            }
 
         override def descriptor: Descriptor =
           Descriptor("delta-storage-type", "discarding(<max-size>), state, keep-all, merging(<block-size>)")

@@ -36,7 +36,7 @@ object AWSetGenerators {
 }
 
 class AWSetTest extends munit.ScalaCheckSuite {
-  import AWSetGenerators.{given}
+  import AWSetGenerators.given
 
   property("add") {
     forAll { (set: AntiEntropyContainer[ReplicatedSet[Int]], e: Int) =>

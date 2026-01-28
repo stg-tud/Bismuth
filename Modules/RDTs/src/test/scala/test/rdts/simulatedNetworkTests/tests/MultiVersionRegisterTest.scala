@@ -37,7 +37,7 @@ object MVRegisterGenerators {
 }
 
 class MultiVersionRegisterTest extends munit.ScalaCheckSuite {
-  import MVRegisterGenerators.{given}
+  import MVRegisterGenerators.given
 
   given Lattice[Int] = math.max
 

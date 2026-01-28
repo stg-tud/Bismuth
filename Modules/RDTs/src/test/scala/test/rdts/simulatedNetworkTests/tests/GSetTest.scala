@@ -25,7 +25,7 @@ object GSetGenerators {
 }
 
 class GSetTest extends munit.ScalaCheckSuite {
-  import GSetGenerators.{given}
+  import GSetGenerators.given
 
   property("insert") {
     forAll { (set: AntiEntropyContainer[Set[Int]], e: Int) =>

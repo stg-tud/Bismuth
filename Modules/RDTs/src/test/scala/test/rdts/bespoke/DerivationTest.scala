@@ -2,7 +2,7 @@ package test.rdts.bespoke
 
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.{Bottom, Lattice}
-import test.rdts.DataGenerator.{given}
+import test.rdts.DataGenerator.given
 import test.rdts.baseproperties.LatticePropertyChecks
 
 case class SomeProductType[A, B](paramA: A, paramB: B) derives Lattice

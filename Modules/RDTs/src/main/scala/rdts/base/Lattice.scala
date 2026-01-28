@@ -105,10 +105,10 @@ object Lattice {
       override def subsumption(left: Set[A], right: Set[A]): Boolean = left subsetOf right
 
   given optionLattice[A: Lattice]: Lattice[Option[A]] =
-    case (None, None) => None
-    case (None, some) => some
-    case (some, None) => some
-    case (Some(l), Some(r)) => Some(l `merge` r)
+      case (None, None)       => None
+      case (None, some)       => some
+      case (some, None)       => some
+      case (Some(l), Some(r)) => Some(l `merge` r)
 
   given mapLattice[K, V: Lattice, Mp[K1, +V1] <: MapOps[K1, V1, Mp, Mp[K1, V1]]]: Lattice[Mp[K, V]] =
     new Lattice[Mp[K, V]] {
