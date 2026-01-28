@@ -10,6 +10,7 @@ import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
+import scala.annotation.unused
 
 class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     private val localIdentity: PrivateIdentity,
@@ -52,6 +53,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     }
   }
 
+  @unused
   private def onAclChange(delta: Acl): Unit = {
     // Invalidate filtered deltas, track them as missing
     if delta.read.contains(localIdentity.getPublic) then {

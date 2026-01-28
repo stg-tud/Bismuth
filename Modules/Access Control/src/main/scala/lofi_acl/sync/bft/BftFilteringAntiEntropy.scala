@@ -15,7 +15,7 @@ import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.collection.immutable.Queue
 import scala.util.Random
 
@@ -73,6 +73,7 @@ class BftFilteringAntiEntropy[RDT](
 
   // Messages -----------------
   // Stores inbound messages
+  @unused
   val msgQueue: LinkedBlockingQueue[(SyncMsg[RDT], PublicIdentity)] = LinkedBlockingQueue()
   private var deltaMessageBacklog                                   = Queue.empty[(RdtDelta[RDT], PublicIdentity)]
   // ACL ----------------------

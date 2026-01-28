@@ -41,7 +41,7 @@ class FilteredRdtSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter
   }
 }
 
-trait Communication[Msg: JsonValueCodec] {
+trait Communication[Msg] {
   def send(to: PublicIdentity, msg: Msg): Unit
   def sendMultiple(to: PublicIdentity, msg: Msg): Unit
   def handlePeerGossip(peers: Set[(PublicIdentity, (String, Int))]): Unit
