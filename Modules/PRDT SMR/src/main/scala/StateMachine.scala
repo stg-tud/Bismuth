@@ -1,5 +1,5 @@
 import rdts.base.{LocalUid, Uid}
-import rdts.protocols.MultiPaxos
+import rdts.protocols.paper.MultiPaxos
 import rdts.protocols.Participants
 import rdts.time.Time
 
