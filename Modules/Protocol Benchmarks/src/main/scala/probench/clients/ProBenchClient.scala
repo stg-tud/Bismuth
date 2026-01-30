@@ -56,9 +56,9 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
     currentState
   }
 
-  def transform(f: State => State): State = publish(
-    f(currentStateLock.synchronized(currentState))
-  )
+  def transform(f: State => State): State = currentStateLock.synchronized {
+    publish(f(currentState))
+  }
 
   def handleIncoming(change: State): Unit = currentStateLock.synchronized {
     log("handling incoming")

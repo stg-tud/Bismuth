@@ -12,22 +12,34 @@ import java.util.concurrent.{ExecutorService, Executors}
 import java.util.{HashMap, Map, Properties, Set, Vector}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 
 object ProBenchAdapterConnectionPool {
-  private val executor: ExecutorService = Executors.newCachedThreadPool()
-  private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
+  private val receiveEC: ExecutionContext      = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  private val sendEC: ExecutionContext      = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   private val pbClient                  = ProBenchClient(name = Uid.gen(), logTimings = false)
-  private val nioTCP: NioTCP            = NioTCP(ConcurrencyHelper.makePooledExecutor())
+  private val nioTCP: NioTCP            = NioTCP(ConcurrencyHelper.makeExecutionContext(false))
   private val abort: Abort              = Abort()
 
   @volatile var connections: scala.collection.immutable.Set[(String, Int)] = scala.collection.immutable.Set.empty
 
   pbClient.printResults = false
-  ec.execute(() => nioTCP.loopSelection(abort))
+  receiveEC.execute(() => nioTCP.loopSelection(abort))
 
-  def syncClient[A](f: ProBenchClient => A): A = synchronized(f(pbClient))
+  val counter = new java.util.concurrent.atomic.AtomicInteger(0)
+
+
+//  (new java.util.Timer()).scheduleAtFixedRate(() => pprint.pprintln(pbClient.currentState), 0, 1000)
+
+  def syncClient[A](f: ProBenchClient => Future[A]): Future[A] = Future {
+    val count = counter.incrementAndGet()
+    //println(s"syncClient: ${Thread.currentThread().getName} ${count} scheduling task")
+    val res = f(pbClient)
+    // res.onComplete(_ => println(s"syncClient: ${Thread.currentThread().getName} ${count} finished task "))
+    // println(s"syncClient: ${Thread.currentThread().getName} ${count} complete schedule")
+    res
+  }(using sendEC).flatten
 
   def addConnection(ip: String, port: Int): Unit = synchronized {
 
