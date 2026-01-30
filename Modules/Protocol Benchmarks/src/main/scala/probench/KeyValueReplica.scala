@@ -11,7 +11,7 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
-import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
+import rdts.protocols.paper.PipePaxos
 import rdts.time.Time
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
@@ -61,7 +61,7 @@ class KeyValueReplica(
   }
 
   class Cluster {
-    @volatile var state: ClusterState = MultiPaxos.empty
+    @volatile var state: ClusterState = PipePaxos.empty
 
     given Lattice[Payload[ClusterState]] =
         given Lattice[Int] = Lattice.fromOrdering
@@ -90,7 +90,7 @@ class KeyValueReplica(
         assert(changed == state)
         // else log(s"upkept: ${pprint(upkept)}")
         val newState = publish(upkept)
-        maybeAnswerClient(old.rounds.counter)
+        maybeAnswerClient(old.nextDecisionRound)
         // try to propose a new value in case voting is decided
         maybeProposeNewValue(client.state)
       }
@@ -102,7 +102,7 @@ class KeyValueReplica(
         val oldstate = state
         state = state.merge(delta)
         dataManager.applyDelta(delta)
-        maybeAnswerClient(oldstate.rounds.counter)
+        maybeAnswerClient(oldstate.nextDecisionRound)
       } else {
         log("skip")
       }
@@ -125,20 +125,23 @@ class KeyValueReplica(
       peers.minOption match
           case Some(id) if id == uid =>
             log(s"Proposing election of $uid")
-            publish(state.startLeaderElection): Unit
+            if state.openRounds.isEmpty then
+              publish(state.addRound())
+              ()
+            publish(state.startLeaderElection)
+            ()
           case _ => ()
     }
 
     def maybeProposeNewValue(client: ClientState)(using LocalUid): Unit = {
       // check if we are the leader and ready to handle a request
-      if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
+      if state.leader.contains(replicaId) then
           // ready to propose value
-          client.firstUnansweredRequest match
-              case Some(req) =>
-                log(s"Proposing new value $req.")
-                val _ = publish(state.proposeIfLeader(req))
-              case None =>
-                log("I am the leader but request queue is empty.")
+          for req <- client.sortedUnansweredRequests do {
+            log(s"Proposing new value $req.")
+            publish(state.proposeIfLeader(req))
+          }
+
     }
 
     private def maybeAnswerClient(previousRound: Time): Unit = {

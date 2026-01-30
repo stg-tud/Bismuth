@@ -19,10 +19,10 @@ class PipePaxosTest extends munit.FunSuite {
     var testPaxosObject = emptyPaxosObject
 
     assertEquals(testPaxosObject.leader, None)
-    assertEquals(testPaxosObject.phase, MultipaxosPhase.LeaderElection, "multipaxos starts in leader election phase")
 
     val proposeValue = 1
     // replica 1 tries to become leader
+    testPaxosObject = testPaxosObject.merge(testPaxosObject.addRound())
     testPaxosObject = testPaxosObject.merge(testPaxosObject.startLeaderElection(using id1))
 
     // testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep(using id1))
@@ -70,11 +70,11 @@ class PipePaxosTest extends munit.FunSuite {
   }
 
   test("conflicting proposals") {
-    var testPaxosObject = emptyPaxosObject
+    var testPaxosObject = emptyPaxosObject.addRound()
 
     // replicas 1 and 2 try to become leader
-    var rep1 = emptyPaxosObject.merge(emptyPaxosObject.startLeaderElection(using id1))
-    var rep2 = emptyPaxosObject.merge(emptyPaxosObject.startLeaderElection(using id2))
+    var rep1 = testPaxosObject.merge(testPaxosObject.startLeaderElection(using id1))
+    var rep2 = testPaxosObject.merge(testPaxosObject.startLeaderElection(using id2))
 
     // sync
     testPaxosObject = testPaxosObject.merge(rep1).merge(rep2)

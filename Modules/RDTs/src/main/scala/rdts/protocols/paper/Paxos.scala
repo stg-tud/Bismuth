@@ -20,6 +20,16 @@ case class Paxos[A](
     rounds: Map[BallotNum, PaxosRound[A]] =
       Map.empty[BallotNum, PaxosRound[A]]
 ) {
+
+  def phase(using Participants): MultipaxosPhase = currentRound match
+    case None                                                                 => MultipaxosPhase.LeaderElection
+    case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty => MultipaxosPhase.LeaderElection
+    case Some(PaxosRound(leaderElection, proposals))
+      if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
+    case Some(PaxosRound(leaderElection, proposals))
+      if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
+    case _ => throw new Error("Inconsistent Paxos State")
+
   // voting
   def voteLeader(leader: Uid)(using
       LocalUid

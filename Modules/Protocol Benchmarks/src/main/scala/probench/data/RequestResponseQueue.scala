@@ -49,6 +49,8 @@ case class RequestResponseQueue[S, T](
   def firstUnansweredRequest: Option[Req[S]] =
     timestampsSorted.headOption.flatMap(requests.get)
 
+  def sortedUnansweredRequests: Seq[Req[S]] = timestampsSorted.flatMap(requests.get)
+
   private def timestampsSorted: List[Timestamp] =
     requests.keySet.toList.sorted
 

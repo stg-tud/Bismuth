@@ -95,8 +95,9 @@ class ClusterConsensus extends munit.FunSuite {
 
     nodes.foreach(noUpkeep)
 
-    assertEquals(nodes(0).cluster.state.log(3).value, KVOperation.Read("test2"))
-    assertEquals(nodes(2).cluster.state.log.size, 2)
+
+    assertEquals(nodes(0).cluster.state.closedRounds(3).value, KVOperation.Read("test2"))
+    assertEquals(nodes(2).cluster.state.closedRounds.size, 2)
 
   }
   test("consensus with one node") {
@@ -131,12 +132,12 @@ class ClusterConsensus extends munit.FunSuite {
     client.read("test")
 
     assertEquals(primary.client.state.requestsSorted, List.empty)
-    assertEquals(primary.cluster.state.read.length, 2)
+    assertEquals(primary.cluster.state.closedRounds.size, 2)
 
     for n <- Range(0, 1000) do
         client.write(n.toString, "value")
 
-    assertEquals(primary.cluster.state.read.length, 1002)
+    assertEquals(primary.cluster.state.closedRounds.size, 1002)
 
     def investigateUpkeep(state: ClusterState)(using LocalUid) = {
       val delta  = state.upkeep

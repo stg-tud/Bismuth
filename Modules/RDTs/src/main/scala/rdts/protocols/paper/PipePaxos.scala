@@ -23,65 +23,78 @@ case class PipePaxos[A](
 ):
 
     // private helper functions
-    private lazy val openRounds = log.collect { case (k, ClosingCons.Open(paxos)) => (k, paxos) }
-    private lazy val maxPaxos: (round: Time, paxos: Paxos[A]) = openRounds.maxBy(_._1)
-    lazy val nextDecisionRound: Long = openRounds.minBy(_._1)._1
+    lazy val openRounds = log.collect { case (k, ClosingCons.Open(paxos)) => (k, paxos) }
+    private lazy val maxPaxos: (round: Time, paxos: Paxos[A]) = openRounds.maxByOption(_._1).getOrElse((-1, Paxos[A]()))
+    lazy val nextDecisionRound: Long                          = openRounds.minByOption(_._1).map(_._1).getOrElse(-1)
+    lazy val maxRound                                         = log.keys.maxOption.getOrElse(-1L)
+    def nextIdleRound(using Participants): Option[(round: Time, paxos: Paxos[A])] =
+      openRounds.find((_, p) => p.phase == MultipaxosPhase.Idle)
+
+    lazy val closedRounds: Map[Long, A] = log.collect { case (k, ClosingCons.Done(value)) => (k, value) }
+
+    def phase(using Participants) = maxPaxos.paxos.phase
 
     // public API
     def leader(using Participants): Option[Uid] = maxPaxos.paxos.currentRound match
         case Some(PaxosRound(leaderElection, _)) => leaderElection.result
         case None                                => None
 
-    def phase(using Participants): MultipaxosPhase =
-      maxPaxos.paxos.currentRound match
-          case None                                                                 => MultipaxosPhase.LeaderElection
-          case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty => MultipaxosPhase.LeaderElection
-          case Some(PaxosRound(leaderElection, proposals))
-              if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
-          case Some(PaxosRound(leaderElection, proposals))
-              if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
-          case _ => throw new Error("Inconsistent Paxos State")
-
     def readDecisionsSince(time: Time): Iterable[A] =
-      NumericRange(time, nextDecisionRound, 1L).view.flatMap(log.get).collect{case Done(value) => value}
+      NumericRange(time, nextDecisionRound, 1L).view.flatMap(log.get).collect { case Done(value) => value }
 
     def startLeaderElection(using LocalUid): PipePaxos[A] =
       PipePaxos(openRounds.view.mapValues(v => ClosingCons.Open(v.phase1a)).toMap)
 
     def proposeIfLeader(value: A)(using LocalUid, Participants): PipePaxos[A] =
-      PipePaxos(
-        Map(maxPaxos.round -> Open(maxPaxos.paxos.phase2a(value)))
-      ) // phase 2a already checks if I am the leader
+      nextIdleRound match {
+        case Some(round) =>
+          PipePaxos(
+            Map(round.round -> Open(round.paxos.phase2a(value)))
+          ) // phase 2a already checks if I am the leader
+        case None =>
+          val rounded = addRound()
+          val proposed = rounded.maxPaxos.paxos.phase2a(value)
+          rounded `merge` PipePaxos(Map(rounded.maxRound -> Open(proposed)))
 
-    def upkeep(using LocalUid, Participants): PipePaxos[A] = PipePaxos {
-      openRounds.map { (roundNumber, paxos) =>
-        // perform upkeep in Paxos
-        val deltaPaxos = paxos.upkeep()
-        val newPaxos   = paxos.merge(deltaPaxos)
+      }
 
-        (newPaxos.result, newPaxos.newestBallotWithLeader) match
-            case (Some(decision), Some((ballotNum, PaxosRound(leaderElection, _)))) =>
-              // we are voting on proposals and there is a decision
-
-              val newDecision = Map(roundNumber -> Done(decision))
-              if roundNumber == maxPaxos.round then
-                  // create new Paxos where leader is already elected
-                  val newPaxos = Paxos(rounds =
-                    Map(ballotNum -> PaxosRound(
-                      leaderElection = leaderElection,
-                      proposals = Voting[A]()
-                    ))
-                  )
-                  newDecision.updated(roundNumber + 1, Open(newPaxos))
-              else newDecision
-            case _ =>
-              // nothing to do, return upkeep result
-              Map(roundNumber -> Open(deltaPaxos))
-      }.foldLeft(Map.empty[Long, ClosingCons[A]])(Lattice.merge[Map[Long, ClosingCons[A]]])
+    def addRound()(using Participants): PipePaxos[A] = {
+      val maybeshortcut = maxPaxos.paxos.newestBallotWithLeader match {
+        case Some((ballotNum, PaxosRound(leaderElection, _))) =>
+          Paxos(rounds =
+            Map(ballotNum -> PaxosRound(
+              leaderElection = leaderElection,
+              proposals = Voting[A]()
+            ))
+          )
+        case _ => Paxos[A]()
+      }
+      PipePaxos(Map((maxPaxos.round + 1) -> Open(maybeshortcut)))
     }
 
+    def upkeep(using LocalUid, Participants): PipePaxos[A] =
+        val res = PipePaxos {
+          openRounds.map { (roundNumber, paxos) =>
+            // perform upkeep in Paxos
+            val deltaPaxos = paxos.upkeep()
+            val newPaxos   = paxos.merge(deltaPaxos)
+
+            newPaxos.result match
+                case Some(decision) =>
+                  // we are voting on proposals and there is a decision
+                  Map(roundNumber -> Done(decision))
+                case _ =>
+                  // nothing to do, return upkeep result
+                  Map(roundNumber -> Open(deltaPaxos))
+          }.foldLeft(Map.empty[Long, ClosingCons[A]])(Lattice.merge[Map[Long, ClosingCons[A]]])
+        }
+        // keep an open round to remember leaderelection
+        if res.openRounds.nonEmpty
+        then res
+        else
+            res `merge` addRound()
+
 object PipePaxos:
-    def empty[A]: PipePaxos[A] = PipePaxos[A](Map(0L ->  Open(Paxos())))
+    def empty[A]: PipePaxos[A] = PipePaxos[A](Map.empty)
 
     given [A] => Lattice[PipePaxos[A]] = Lattice.derived
-
