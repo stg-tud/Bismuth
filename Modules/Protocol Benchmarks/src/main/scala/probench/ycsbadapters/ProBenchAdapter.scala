@@ -3,6 +3,7 @@ package probench.ycsbadapters
 import channels.{Abort, ConcurrencyHelper, NioTCP}
 import probench.cli.addRetryingLatentConnection
 import probench.clients.ProBenchClient
+import probench.ycsbadapters.ProBenchAdapterConnectionPool.syncClient
 import rdts.base.Uid
 import site.ycsb.{ByteIterator, DB, Status, StringByteIterator}
 
@@ -14,13 +15,38 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters.*
 
-class ProBenchAdapter extends DB {
-
+object ProBenchAdapterConnectionPool {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
   private val pbClient                  = ProBenchClient(name = Uid.gen(), logTimings = false)
   private val nioTCP: NioTCP            = NioTCP(ConcurrencyHelper.makePooledExecutor(4))
   private val abort: Abort              = Abort()
+
+  @volatile var connections: scala.collection.immutable.Set[(String, Int)] = scala.collection.immutable.Set.empty
+
+  pbClient.printResults = false
+  ec.execute(() => nioTCP.loopSelection(abort))
+
+  def syncClient[A](f: ProBenchClient => A): A = synchronized(f(pbClient))
+
+  def addConnection(ip: String, port: Int): Unit = synchronized {
+
+    if connections.contains(ip, port) then ()
+    else
+      addRetryingLatentConnection(
+        pbClient.dataManager,
+        nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
+        1000,
+        10
+      )
+      connections = connections + (ip -> port)
+
+  }
+
+
+}
+
+class ProBenchAdapter extends DB {
 
   val operationTimeout: FiniteDuration = 20.seconds
 
@@ -38,18 +64,10 @@ class ProBenchAdapter extends DB {
         val s = e.split(":")
         (s(0), s(1))
     )
-    pbClient.printResults = false
-
-    ec.execute(() => nioTCP.loopSelection(abort))
 
     endpoints.foreach { (ip, port) =>
       println(s"adding connection to $ip:$port")
-      addRetryingLatentConnection(
-        pbClient.dataManager,
-        nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, Integer.parseInt(port)))),
-        1000,
-        10
-      )
+      ProBenchAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
     }
 
     println(s"Hello from pb adapter! $this")
@@ -58,7 +76,7 @@ class ProBenchAdapter extends DB {
   override def insert(table: String, key: String, values: Map[String, ByteIterator]): Status = {
     val v = valsToString(values)
     try
-        val f = pbClient.writeWithResult(key, v)
+        val f = syncClient(_.writeWithResult(key, v))
         Await.ready(f, operationTimeout)
         Status.OK
     catch
@@ -70,9 +88,9 @@ class ProBenchAdapter extends DB {
 
   override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
     try
-        val f = pbClient.readWithResult(key).map(res =>
+        val f = syncClient(_.readWithResult(key).map(res =>
           result.put("result", StringByteIterator(res))
-        )
+        ))
         Await.ready(f, operationTimeout)
         Status.OK
     catch
