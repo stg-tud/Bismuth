@@ -2,7 +2,7 @@ package probench
 
 import de.rmgk.script.*
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 object TestMain {
   def main(args: Array[String]): Unit = {
@@ -39,11 +39,12 @@ object TestMain {
     }
 
     val workdir = Path.of("target/ycsb").toAbsolutePath.normalize()
+    Files.createDirectories(workdir)
 
-    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.98.103:ycsb-core.jar ${workdir}".run()
-    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.98.103:workloads ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@128.140.117.134:ycsb-core.jar ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@128.140.117.134:workloads ${workdir}".run()
 
-    process"""java -cp ycsb-core.jar:../jars/* site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P workloads/workloada -s -p pb.endpoints=localhost:8110  -p ${operationcount} -p recordcount=1000 -p measurementtype=histogram -threads ${threads}""".directory(
+    process"""java -cp ycsb-core.jar:../jars/* site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P workloads/writeonly -s -p pb.endpoints=localhost:8110  -p ${operationcount} -p recordcount=1000 -p measurementtype=histogram -threads ${threads}""".directory(
       Path.of("target/ycsb").toFile
     ).run()
 
