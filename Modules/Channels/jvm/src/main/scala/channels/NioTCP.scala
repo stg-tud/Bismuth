@@ -75,7 +75,7 @@ object ConcurrencyHelper {
         DeltaDissemination.executeImmediately
   }
 
-  def makePooledExecutor(poolSize: Int) = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
+  def makePooledExecutor() = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 }
 
 /** [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.

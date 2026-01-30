@@ -19,7 +19,7 @@ object ProBenchAdapterConnectionPool {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
   private val pbClient                  = ProBenchClient(name = Uid.gen(), logTimings = false)
-  private val nioTCP: NioTCP            = NioTCP(ConcurrencyHelper.makePooledExecutor(4))
+  private val nioTCP: NioTCP            = NioTCP(ConcurrencyHelper.makePooledExecutor())
   private val abort: Abort              = Abort()
 
   @volatile var connections: scala.collection.immutable.Set[(String, Int)] = scala.collection.immutable.Set.empty
