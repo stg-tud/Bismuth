@@ -274,8 +274,8 @@ object cli {
               node.connInf.sendHeartbeat()
               node.connInf.checkLiveness()
             },
-            100,
-            100
+            500,
+            500
           )
 
           cluster.value.foreach { (host, port) =>
