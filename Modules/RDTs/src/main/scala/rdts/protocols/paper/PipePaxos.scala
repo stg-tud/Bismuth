@@ -1,11 +1,13 @@
 package rdts.protocols.paper
 
 import rdts.base.Lattice.syntax
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.protocols.Participants
 import rdts.protocols.paper.ClosingCons.{Done, Open}
 import rdts.protocols.paper.Paxos.given
 import rdts.time.Time
+
+import scala.collection.immutable.NumericRange
 
 enum ClosingCons[A]:
     case Open(paxos: Paxos[A])
@@ -23,24 +25,25 @@ case class PipePaxos[A](
     // private helper functions
     private lazy val openRounds = log.collect { case (k, ClosingCons.Open(paxos)) => (k, paxos) }
     private lazy val maxPaxos: (round: Time, paxos: Paxos[A]) = openRounds.maxBy(_._1)
+    lazy val nextDecisionRound: Long = openRounds.minBy(_._1)._1
 
     // public API
     def leader(using Participants): Option[Uid] = maxPaxos.paxos.currentRound match
         case Some(PaxosRound(leaderElection, _)) => leaderElection.result
         case None                                => None
 
-    def phase(using Participants): MultipaxosPhase = MultipaxosPhase.Idle
-//      openRounds.currentRound match
-//          case None                                                                 => MultipaxosPhase.LeaderElection
-//          case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty => MultipaxosPhase.LeaderElection
-//          case Some(PaxosRound(leaderElection, proposals))
-//              if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
-//          case Some(PaxosRound(leaderElection, proposals))
-//              if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
-//          case _ => throw new Error("Inconsistent Paxos State")
+    def phase(using Participants): MultipaxosPhase =
+      maxPaxos.paxos.currentRound match
+          case None                                                                 => MultipaxosPhase.LeaderElection
+          case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty => MultipaxosPhase.LeaderElection
+          case Some(PaxosRound(leaderElection, proposals))
+              if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
+          case Some(PaxosRound(leaderElection, proposals))
+              if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
+          case _ => throw new Error("Inconsistent Paxos State")
 
     def readDecisionsSince(time: Time): Iterable[A] =
-      log.view.filter(_._1 >= time).collect { case (_, ClosingCons.Done(value)) => value }
+      NumericRange(time, nextDecisionRound, 1L).view.flatMap(log.get).collect{case Done(value) => value}
 
     def startLeaderElection(using LocalUid): PipePaxos[A] =
       PipePaxos(openRounds.view.mapValues(v => ClosingCons.Open(v.phase1a)).toMap)
@@ -78,6 +81,7 @@ case class PipePaxos[A](
     }
 
 object PipePaxos:
-    def empty[A]: PipePaxos[A] = PipePaxos[A](Map.empty)
+    def empty[A]: PipePaxos[A] = PipePaxos[A](Map(0L ->  Open(Paxos())))
 
-    given [A]: Bottom[PipePaxos[A]] = Bottom.provide(empty)
+    given [A] => Lattice[PipePaxos[A]] = Lattice.derived
+
