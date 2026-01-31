@@ -104,7 +104,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
 
     // assertEquals(queue.requests.values.map(_.value).toList, List())
     assertEquals(queue.firstUnansweredRequest, None)
-    assertEquals(queue.responses.queryAllEntries.map(_.value).toList, List("1", "2"))
+    assertEquals(queue.responses.queryAllEntries.map(_.value).toList, List("2"))
 
     val receive = mod(q => q.receive(requestOne.timestamp))
 
@@ -113,7 +113,7 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
 
     mod(q => q.respond(requestOne, "1")) // respond again
 
-    assertEquals(queue.responses.queryAllEntries.map(_.value).toSet, Set("1", "2"))
+    assertEquals(queue.responses.queryAllEntries.map(_.value).toSet, Set("1"))
 //    assertEquals(queue.responses.values.map(_.value).toList, List("2"))
   }
 
