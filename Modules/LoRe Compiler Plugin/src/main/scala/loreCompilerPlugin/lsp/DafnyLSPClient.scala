@@ -3,10 +3,10 @@ package loreCompilerPlugin.lsp
 import loreCompilerPlugin.LogLevel
 import loreCompilerPlugin.lsp.LSPDataTypes.*
 import loreCompilerPlugin.lsp.LSPDataTypes.CompilationStatus.{InternalException, ParsingFailed, ResolutionFailed}
-import os.{SubProcess, spawn}
 import ujson.{Null, Obj, Str, Value, read as ujsonRead}
 import upickle.default.{read as upickleRead, write as upickleWrite}
 
+import java.io.{BufferedOutputStream, BufferedInputStream}
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable.ArrayBuffer
 
@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
   /** The subprocess running the language server. */
-  private var process: Option[SubProcess] = None
+  private var process: Option[Process] = None
 
   /** Initializes the internal instance running the Dafny language server, if not running.
     * If there is already a running instance present, this method does nothing.
@@ -37,7 +37,10 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
       return
     }
 
-    process = Some(spawn(cmd = ("dafny", "server")))
+    // TODO: this was changed to use ProcessBuilder, but not tested since. May hang when reading/writing input due to full buffers.
+    val pb = new ProcessBuilder("dafny", "server")
+    pb.redirectErrorStream(true)
+    process = Some(pb.start())
 
     val initializeMessage: String = DafnyLSPClient.constructLSPMessage("initialize", Some(initId))(
       ("processId", Null),
@@ -83,7 +86,7 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     */
   def sendMessage(message: String): Unit = {
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Sending a message to the language server...")
-    val proc: SubProcess = process.getOrElse(throw new Error("LSP Client not initialized"))
+    val proc: Process = process.getOrElse(throw new Error("LSP Client not initialized"))
 
     val msgBytes: Array[Byte] = message.getBytes(StandardCharsets.UTF_8)
     val msgHeader: String     = s"Content-Length: ${msgBytes.length}\r\n\r\n"
@@ -93,12 +96,13 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
       println(s"The message to be written is:\n$message")
     }
 
+    val os = new BufferedOutputStream(proc.getOutputStream)
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Writing header to stdin...")
-    proc.stdin.write(msgHeader)
+    os.write(msgHeader.getBytes(StandardCharsets.UTF_8))
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Writing message to stdin...")
-    proc.stdin.write(message)
+    os.write(msgBytes)
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Flushing input stream...")
-    proc.stdin.flush()
+    os.flush()
   }
 
   /** Reads a message from the language server.
@@ -112,15 +116,16 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
   }
 
   /** Reads an JSON-RPC message from the language server by first reading the header until the two CRLF
-    * sequences ("\r\n\r\n") are found, and then reading the JSON payload of the expected length.
-    * This ignores any Content-Type headers, if included, and only processes Content-Length.
-    * If there are no messages to be read, this will block until there is one.
-    *
-    * @return The read message.
-    */
+     * sequences ("\r\n\r\n") are found, and then reading the JSON payload of the expected length.
+     * This ignores any Content-Type headers, if included, and only processes Content-Length.
+     * If there are no messages to be read, this will block until there is one.
+     *
+     * @return The read message.
+     */
   private def readStringMessage(): String = {
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Reading a message from the language server...")
-    val proc: SubProcess = process.getOrElse(throw new Error("LSP Client not initialized"))
+    val proc: Process = process.getOrElse(throw new Error("LSP Client not initialized"))
+    val is = new BufferedInputStream(proc.getInputStream)
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Reading header from stdout...")
     val headerBytes: ArrayBuffer[Byte] = new ArrayBuffer[Byte]()
@@ -129,8 +134,9 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
 
     // Find the header terminator
     while !foundTerminator do {
-      val b: Byte = proc.stdout.readByte()
-      headerBytes.append(b)
+      val b: Int = is.read()
+      if b == -1 then throw new Exception("End of stream reached while reading header")
+      headerBytes.append(b.toByte)
 
       if headerBytes.size >= terminator.length then {
         // Compare the last X bytes, where X is the terminator's byte length, to the terminator string
@@ -153,8 +159,7 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
     }
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Reading $contentLength bytes of message content...")
-    val replyBytes: Array[Byte] = new Array[Byte](contentLength)
-    proc.stdout.readFully(replyBytes)
+    val replyBytes: Array[Byte] = is.readAllBytes()
 
     val replyMessage: String = new String(replyBytes, StandardCharsets.UTF_8)
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println(s"Read message content:\n$replyMessage")

@@ -224,7 +224,6 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
     scala3defaults,
     javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
-    Dependencies.osLib,
     Dependencies.upickle,
     Dependencies.munit
   )

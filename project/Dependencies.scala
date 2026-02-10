@@ -15,7 +15,6 @@ object Dependencies {
   val monocleCore = libraryDependencies += "dev.optics"               %%% "monocle-core"             % "3.3.0"
   val munit       = libraryDependencies += "org.scalameta"            %%% "munit"                    % "1.2.2"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"            %%% "munit-scalacheck"         % "1.2.0"  % Test
-  val osLib       = libraryDependencies += "com.lihaoyi"              %%% "os-lib"                   % "0.11.7"
   val pprint      = libraryDependencies += "com.lihaoyi"              %%% "pprint"                   % "0.9.6"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules"    %% "scala-swing"              % "3.0.0"
   val scalaXml    = libraryDependencies += "org.scala-lang.modules"    %% "scala-xml"                % "2.4.0"
