@@ -48,12 +48,12 @@ object Compiler {
   def main(args: Array[String]): Unit = {
     // parse arguments and combine requested actions
     val subcommand: Subcommand = mainCommand.parse(args.toList) match {
-      case h @ Left(Help(errors, _, _, _)) =>
-        if errors.isEmpty
+      case h @ Left(help) =>
+        if help.errors.isEmpty
         then
-            return println(h.value) // --help flag given
+            return println(help) // --help flag given
         else
-            return println(h.value)
+            return println(help)
       case Right(s) =>
         s
     }
