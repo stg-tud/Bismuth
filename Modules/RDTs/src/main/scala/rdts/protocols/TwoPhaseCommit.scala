@@ -18,11 +18,11 @@ case class TwoPhaseCommit[A](
 ):
 
     // as the coordinator, propose a transaction
-    def commitRequest(transaction: A)(using LocalUid, Participants): TwoPhaseCommit[A] =
+    def commitRequest(tx: A)(using LocalUid, Participants): TwoPhaseCommit[A] =
       // check if there is a transaction ongoing
       transaction match
-          case None => TwoPhaseCommit(Some(transaction), voting = voting.voteFor(Prepare))
-          case Some => TwoPhaseCommit()
+          case None => TwoPhaseCommit(Some(tx), voting = voting.voteFor(Prepare))
+          case Some(_) => TwoPhaseCommit()
 
     // as a participant, vote for commit in the request phase
     def prepare(using LocalUid, Participants): TwoPhaseCommit[A] =
