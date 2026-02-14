@@ -5,6 +5,7 @@ import rdts.datatypes.ReplicatedTree
 import rdts.base.LocalUid
 import rdts.experiments.UndoRedoReplica
 import rdts.experiments.DeltaHistory
+import org.openjdk.jol.info.GraphLayout
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
@@ -13,9 +14,13 @@ import rdts.datatypes.LastWriterWins
 
 object TaskAppBenchmark {
 
-  val numInteractions  = 1_000_000
-  val checkpointEvery  = 100
-  val progressLogEvery = 1_000
+  val numInteractionsPerReplica = 1_000_000
+  val checkpointEvery           = 100
+  val progressLogEvery          = 1_000
+
+  // Memory tracking (uses JOL GraphLayout; enable in Settings.jolSettings)
+  val recordMemory      = true
+  val memorySampleEvery = 100 // 1 = every interaction; increase to reduce overhead
 
   // Two replicas with separate LocalUids
   val localUid1: LocalUid = LocalUid.predefined("benchmark-client-1")
@@ -28,15 +33,36 @@ object TaskAppBenchmark {
   var activeReplica: Int = 1
 
   // Timing trackers per operation type
-  case class OpStats(var count: Long = 0, var totalNanos: Long = 0) {
-    def avgMs: Double             = if count == 0 then 0.0 else totalNanos / (count * 1_000_000.0)
+  case class OpStats(
+      var count: Long = 0,
+      var totalNanos: Long = 0,
+      samples: mutable.ArrayBuffer[Long] = mutable.ArrayBuffer.empty
+  ) {
+    def avgMs: Double = if count == 0 then 0.0 else totalNanos / (count * 1_000_000.0)
+
+    def p90Ms: Double = percentileMs(0.90)
+    def p99Ms: Double = percentileMs(0.99)
+
     def record(nanos: Long): Unit = {
       count += 1
       totalNanos += nanos
+      samples += nanos
     }
+
+    private def percentileMs(p: Double): Double = {
+      if samples.isEmpty then 0.0
+      else {
+        val sorted  = samples.sorted
+        val idx     = math.ceil(p * sorted.size).toInt - 1
+        val clamped = math.max(0, math.min(idx, sorted.size - 1))
+        sorted(clamped) / 1_000_000.0
+      }
+    }
+
     def reset(): Unit = {
       count = 0
       totalNanos = 0
+      samples.clear()
     }
   }
 
@@ -60,6 +86,8 @@ object TaskAppBenchmark {
     "Sync"                     -> OpStats(), // Track sync between replicas
   )
 
+  private val interactionSamplesNanos: mutable.ArrayBuffer[Long] = mutable.ArrayBuffer.empty
+
   inline def timed[T](opName: String)(op: => T): T = {
     val start   = System.nanoTime()
     val result  = op
@@ -70,7 +98,6 @@ object TaskAppBenchmark {
 
   // Helper to get the current active app
   inline def currentApp: App      = if activeReplica == 1 then app1 else app2
-  inline def otherApp: App        = if activeReplica == 1 then app2 else app1
   inline def currentUid: LocalUid = if activeReplica == 1 then localUid1 else localUid2
 
   inline def timedRead: ReplicatedTree[Entry] = timed("read")(currentApp.read)
@@ -79,6 +106,38 @@ object TaskAppBenchmark {
   var syncTimeInCurrentBatch: Long = 0
 
   def main(args: Array[String]): Unit = {
+    println("Warm Up...")
+
+    // Warm-up: run a small number of interactions to trigger JIT and class loading
+    app1 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
+    app2 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
+    val warmupGenerator = new TaskAppInteractionGenerator()
+
+    activeReplica = 1
+    val warmDelta1 = performInteraction(warmupGenerator.initialInteraction())
+    app2.applyDelta(warmDelta1)
+    activeReplica = 2
+    val warmDelta2 = performInteraction(warmupGenerator.initialInteraction())
+    app1.applyDelta(warmDelta2)
+
+    val warmupRounds = 2_000
+    var i            = 0
+    while i < warmupRounds do {
+      val interaction1 = warmupGenerator.nextInteraction(app1.read)
+      val interaction2 = warmupGenerator.nextInteraction(app2.read)
+
+      activeReplica = 1
+      val delta1 = performInteraction(interaction1)
+      activeReplica = 2
+      val delta2 = performInteraction(interaction2)
+      app2.applyDelta(delta1)
+      app1.applyDelta(delta2)
+
+      i += 1
+    }
+    opTimings.values.foreach(_.reset())
+    rdts.experiments.ReplicaTimings.reset()
+
     println("Starting TaskApp benchmark with two replicas...")
 
     // Initialize both apps with empty Replicas
@@ -94,80 +153,147 @@ object TaskAppBenchmark {
     val csvFile = new PrintWriter(csvFilePath.toFile)
 
     csvFile.println(
-      "interactions,treeSize,folderCount,taskListCount,totalTaskCount,last100InteractionsNanoTime,avgInteractionMs,syncNanoTime,avgSyncMs"
+      "interactions,treeSize,folderCount,taskListCount,totalTaskCount,avgInteractionMs,p90InteractionMs,p99InteractionMs,concurrentMoveTreeConflicts,concurrentMoveListConflicts"
     )
+    csvFile.flush()
+
+    val memoryCsvFilePath: Path            = Paths.get("./benchmarks/results/taskapp_replica_memory.csv")
+    val memoryCsvFile: Option[PrintWriter] = if recordMemory then {
+      Files.createDirectories(memoryCsvFilePath.getParent)
+      val f = new PrintWriter(memoryCsvFilePath.toFile)
+      f.println("interactions,phase,app1Bytes,app2Bytes")
+      f.flush()
+      Some(f)
+    } else None
 
     val startNanoTime: Long             = System.nanoTime()
     var lastCheckPointEndNanoTime: Long = startNanoTime
 
-    var counter = 0
+    var counter                     = 0
+    var concurrentMoveTreeConflicts = 0
+    var concurrentMoveListConflicts = 0
 
-    println("Running benchmark interactions (alternating between two replicas)...")
+    println("Running benchmark interactions (1,000,000 per replica)...")
 
-    // First interaction creates a task list (on replica 1)
     activeReplica = 1
-    performInteraction(generator.initialInteraction())
+    val initDelta1 = performInteraction(generator.initialInteraction())
+    app2.applyDelta(initDelta1)
+    activeReplica = 2
+    val initDelta2 = performInteraction(generator.initialInteraction())
+    app1.applyDelta(initDelta2)
     counter += 1
 
-    while counter < numInteractions do {
-      // Alternate between replicas
-      activeReplica = if activeReplica == 1 then 2 else 1
+    var avgTime              = 0L
+    var lastAvgInteractionMs = 0.0
+    var lastP90InteractionMs = 0.0
+    var lastP99InteractionMs = 0.0
+    var lastTreeSize         = 0
+    var lastFolderCount      = 0
+    var lastTaskListCount    = 0
+    var lastTotalTaskCount   = 0
+    while counter < numInteractionsPerReplica do {
+      val interaction1 = generator.nextInteraction(app1.read)
+      val interaction2 = generator.nextInteraction(app2.read)
 
-      val interaction = generator.nextInteraction(currentApp.read)
-      performInteraction(interaction)
+      (interaction1, interaction2) match
+          case (MoveEntry(entryId1, _), MoveEntry(entryId2, _)) if entryId1 == entryId2 =>
+            concurrentMoveTreeConflicts += 1
+          case (MoveTaskListItem(taskListId1, _, _), MoveTaskListItem(taskListId2, _, _))
+              if taskListId1 == taskListId2 =>
+            concurrentMoveListConflicts += 1
+          case _ => ()
+
+      var syncStartTime = System.nanoTime()
+      activeReplica = 1
+      val delta1 = performInteraction(interaction1)
+      activeReplica = 2
+      val delta2 = performInteraction(interaction2)
+      app2.applyDelta(delta1)
+      app1.applyDelta(delta2)
+      val roundDuration = System.nanoTime() - syncStartTime
+      avgTime += roundDuration
+      interactionSamplesNanos += (roundDuration / 2)
+
+      if recordMemory && counter % memorySampleEvery == 0 then
+          val app1Bytes = replicaSizeBytes(app1)
+          val app2Bytes = replicaSizeBytes(app2)
+          memoryCsvFile.foreach { f =>
+            f.println(s"$counter,after-sync,$app1Bytes,$app2Bytes")
+            f.flush()
+          }
+
       counter += 1
 
       if counter % checkpointEvery == 0 then {
-        val checkPointStartNanoTime        = System.nanoTime()
-        val syncNanoTime                   = syncTimeInCurrentBatch
-        val nanoTimeForLast100Interactions = checkPointStartNanoTime - lastCheckPointEndNanoTime - syncNanoTime
-        syncTimeInCurrentBatch = 0 // Reset for next batch
-
-        val tree                                         = currentApp.read
-        val treeSize                                     = tree.size
+        lastAvgInteractionMs = avgTime / checkpointEvery / 2 / 1_000_000.0
+        lastP90InteractionMs = percentileMs(interactionSamplesNanos, 0.90)
+        lastP99InteractionMs = percentileMs(interactionSamplesNanos, 0.99)
+        avgTime = 0L
+        interactionSamplesNanos.clear()
+        val tree = app1.read
+        lastTreeSize = tree.size
         val (folderCount, taskListCount, totalTaskCount) = countEntries(tree)
+        lastFolderCount = folderCount
+        lastTaskListCount = taskListCount
+        lastTotalTaskCount = totalTaskCount
 
         csvFile.println(
-          s"$counter,$treeSize,$folderCount,$taskListCount,$totalTaskCount,$nanoTimeForLast100Interactions,${nanoTimeForLast100Interactions / (1_000_000.0 * checkpointEvery)},$syncNanoTime,${syncNanoTime / (1_000_000.0 * checkpointEvery)}"
+          s"$counter,$lastTreeSize,$lastFolderCount,$lastTaskListCount,$lastTotalTaskCount,$lastAvgInteractionMs,$lastP90InteractionMs,$lastP99InteractionMs,$concurrentMoveTreeConflicts,$concurrentMoveListConflicts"
         )
-
-        if counter % progressLogEvery == 0 then {
-          val historySize1 = app1.state.history.deltas.size
-          val historySize2 = app2.state.history.deltas.size
-          println(
-            s"$counter/$numInteractions completed / avg: ${nanoTimeForLast100Interactions / (1_000_000.0 * checkpointEvery)}ms / tree: $treeSize / history deltas: $historySize1/$historySize2"
-          )
-          // Print per-operation timing breakdown
-          println("  Operation timings (last 1000):")
-          opTimings.toSeq.sortBy(-_._2.avgMs).foreach { case (op, stats) =>
-            if stats.count > 0 then
-                // Find the longest operation name for alignment
-                val maxOpLen = opTimings.keys.map(_.length).max
-                val paddedOp = op.padTo(maxOpLen, ' ')
-                println(
-                  f"    $paddedOp: ${stats.avgMs}%.4fms avg (${stats.count} calls, ${stats.totalNanos / 1_000_000.0}%.2fms total)"
-                )
-          }
-          // Print Replica internal timing breakdown
-          println(rdts.experiments.ReplicaTimings.report())
-          rdts.experiments.ReplicaTimings.reset()
-          // Print ReplicatedTree merge timing breakdown
-          println(rdts.datatypes.ReplicatedTree.MergeTimings.report())
-          rdts.datatypes.ReplicatedTree.MergeTimings.reset()
-          // Reset timings for next batch
-          opTimings.values.foreach(_.reset())
-        }
+        csvFile.flush()
 
         lastCheckPointEndNanoTime = System.nanoTime()
+      }
+
+      if counter % progressLogEvery == 0 then {
+        val historySize1 = app1.state.history.deltas.size
+        val historySize2 = app2.state.history.deltas.size
+        println(
+          s"$counter/$numInteractionsPerReplica completed / avg: $lastAvgInteractionMs ms / p90: $lastP90InteractionMs ms / p99: $lastP99InteractionMs ms / tree: $lastTreeSize / history deltas: $historySize1/$historySize2"
+        )
+        println(
+          s"  Move tree conflicts: $concurrentMoveTreeConflicts, Move list conflicts: $concurrentMoveListConflicts"
+        )
+        // Print per-operation timing breakdown
+        println("  Operation timings (last 1000):")
+        opTimings.toSeq.sortBy(-_._2.avgMs).foreach { case (op, stats) =>
+          if stats.count > 0 then
+              // Find the longest operation name for alignment
+              val maxOpLen = opTimings.keys.map(_.length).max
+              val paddedOp = op.padTo(maxOpLen, ' ')
+              println(
+                f"    $paddedOp: ${stats.avgMs}%.4fms avg / p90 ${stats.p90Ms}%.4fms / p99 ${stats.p99Ms}%.4fms (${stats.count} calls, ${stats.totalNanos / 1_000_000.0}%.2fms total)"
+              )
+        }
+        // Print Replica internal timing breakdown
+        println(rdts.experiments.ReplicaTimings.report())
+        rdts.experiments.ReplicaTimings.reset()
+        // Reset timings for next batch
+        opTimings.values.foreach(_.reset())
       }
     }
 
     csvFile.close()
+    memoryCsvFile.foreach(_.close())
 
     val totalTimeMs = (System.nanoTime() - startNanoTime) / 1_000_000.0
     println(s"Benchmark completed in ${totalTimeMs}ms")
     println(s"Total interactions: $counter")
     println(s"Results written to: ${csvFilePath.toAbsolutePath}")
+  }
+
+  private def replicaSizeBytes(app: App): Long =
+    // Estimate per-replica heap usage by traversing the replica state object graph.
+    GraphLayout.parseInstance(app.state).totalSize()
+
+  private def percentileMs(samples: mutable.ArrayBuffer[Long], p: Double): Double = {
+    if samples.isEmpty then 0.0
+    else {
+      val sorted  = samples.sorted
+      val idx     = math.ceil(p * sorted.size).toInt - 1
+      val clamped = math.max(0, math.min(idx, sorted.size - 1))
+      sorted(clamped) / 1_000_000.0
+    }
   }
 
   private def countEntries(tree: ReplicatedTree[Entry]): (Int, Int, Int) = {
@@ -188,10 +314,9 @@ object TaskAppBenchmark {
     (folderCount, taskListCount, totalTaskCount)
   }
 
-  private def performInteraction(interaction: TaskAppInteraction): Unit = {
+  private def performInteraction(interaction: TaskAppInteraction): DeltaHistory[ReplicatedTree[Entry]] = {
     given LocalUid = currentUid
     val app        = currentApp
-    val other      = otherApp
 
     val delta: DeltaHistory[ReplicatedTree[Entry]] = interaction match {
       case AddFolder(parentFolder, name) =>
@@ -250,12 +375,6 @@ object TaskAppBenchmark {
       case Redo =>
         timed("Redo") { app.state.redo() }
     }
-
-    // Sync the delta to the other replica immediately (timed separately, excluded from interaction timing)
-    val syncStart   = System.nanoTime()
-    val _           = other.applyDelta(delta)
-    val syncElapsed = System.nanoTime() - syncStart
-    opTimings("Sync").record(syncElapsed)
-    syncTimeInCurrentBatch += syncElapsed
+    delta
   }
 }

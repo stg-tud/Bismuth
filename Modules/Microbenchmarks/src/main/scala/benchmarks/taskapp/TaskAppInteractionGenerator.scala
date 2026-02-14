@@ -55,28 +55,28 @@ class TaskAppInteractionGenerator(
   ): TaskAppInteraction = {
     val choice = random.nextInt(100)
 
-    if choice < 2.5 then {
-      // 2.5% add folder
+    if choice < 1 then {
+      // 1% add folder
       addFolder(folders)
-    } else if choice < 10 then {
-      // 7.5% add task list
+    } else if choice < 3.5 then {
+      // 2.5% add task list
       addTaskList(folders)
-    } else if choice < 15 then {
-      // 5% move entry
+    } else if choice < 5.5 then {
+      // 2.5% move entry
       moveEntry(folders, taskLists).getOrElse(addTaskList(folders))
-    } else if choice < 20 then {
-      // 5% remove entry
+    } else if choice < 7.5 then {
+      // 2.5% remove entry
       removeEntry(folders, taskLists).getOrElse(addTaskList(folders))
     } else if choice < 45 then {
-      // 25% add task to a list
+      // 37.5% add task to a list
       addTask(taskLists).getOrElse(addTaskList(folders))
     } else if choice < 50 then {
       // 5% mark tasks as done that match a random character
       markItemsAsDoneThatMatch(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 70 then {
-      // 20% remove task
+    } else if choice < 65 then {
+      // 15% remove task
       removeRandomTask(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 75 then {
+    } else if choice < 70 then {
       // 5% mark items as done
       updateTaskDone(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 80 then {
