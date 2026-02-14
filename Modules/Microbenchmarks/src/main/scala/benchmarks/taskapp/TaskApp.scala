@@ -7,6 +7,7 @@ import rdts.experiments.UndoRedoReplica
 import rdts.experiments.DeltaHistory
 import rdts.datatypes.ReplicatedTree
 import rdts.time.Dot
+import rdts.experiments.RemoveWinsArrayExperiment
 
 object TaskApp {
   def taskList(tree: ReplicatedTree[Entry], dot: Dot): Option[TaskList] =
@@ -44,7 +45,7 @@ object TaskApp {
             Entry.TaskListEntry(
               TaskList(
                 name = LWW.now(name),
-                items = ReplicatedList.empty
+                items = RemoveWinsArrayExperiment.empty
               )
             )
         )
@@ -73,7 +74,9 @@ object TaskApp {
       state.mod(tree => updateFolder(tree, folder, f => f.copy(name = LWW.now(newName))))
 
     def updateTaskListName(id: Dot, newName: String)(using LocalUid) =
-      state.mod(tree => updateTaskList(tree, id, tl => tl.copy(name = LWW.now(newName), items = ReplicatedList.empty)))
+      state.mod(tree =>
+        updateTaskList(tree, id, tl => tl.copy(name = LWW.now(newName), items = RemoveWinsArrayExperiment.empty))
+      )
 
     def addTaskListItem(id: Dot, item: Task)(using LocalUid) =
       state.mod(tree => updateTaskList(tree, id, tl => tl.copy(items = tl.items.append(item))))
@@ -101,6 +104,24 @@ object TaskApp {
           tl => tl.copy(items = tl.items.updateWith(itemIx, item => item.copy(description = LWW.now(newDescription))))
         )
       )
+
+    def updateTaskDone(taskListId: Dot, itemIx: Int, done: Boolean)(using LocalUid) =
+      state.mod(tree =>
+        updateTaskList(
+          tree,
+          taskListId,
+          tl => tl.copy(items = tl.items.updateWith(itemIx, item => item.copy(done = LWW.now(done))))
+        )
+      )
+
+    def forEachTaskListItem(taskListId: Dot, f: Task => Task)(using LocalUid) =
+      state.mod(tree =>
+        updateTaskList(
+          tree,
+          taskListId,
+          tl => tl.copy(items = tl.items.apply(f))
+        )
+      )
   }
 
   enum Entry:
@@ -110,12 +131,13 @@ object TaskApp {
   case class Folder(val name: LWW[String])
   case class TaskList(
       val name: LWW[String],
-      val items: ReplicatedList[Task]
+      val items: RemoveWinsArrayExperiment[Task]
   )
 
   case class Task(
       val title: LWW[String],
       val description: LWW[Option[String]],
+      val done: LWW[Boolean] = LWW.now(false)
   )
 
   given stateBottom: Bottom[ReplicatedTree[Entry]] = Bottom.provide(ReplicatedTree.empty[Entry])

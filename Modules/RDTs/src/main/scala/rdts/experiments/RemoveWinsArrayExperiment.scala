@@ -20,9 +20,8 @@ case class RemoveWinsArrayExperiment[E](
 ) {
   lazy val observed: Dots = removed.union(Dots.from(elements.keys)).union(Dots.from(ops.keys))
 
-  lazy val entries: List[(Dot, RemoveWinsArrayExperiment.Entry[E])] = {
+  lazy val entries: List[(Dot, RemoveWinsArrayExperiment.Entry[E])] =
     compactElements.toList.sortBy(e => e._2.index.value)
-  }
 
   lazy val compactElements: Map[Dot, RemoveWinsArrayExperiment.Entry[E]] =
     elements.filterNot((d, _) => removed.contains(d))
@@ -61,9 +60,8 @@ case class RemoveWinsArrayExperiment[E](
   def append(value: E)(using LocalUid)               = insert(size, value)
   def appendAll(values: Iterable[E])(using LocalUid) = insertAll(size, values)
 
-  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
+  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArrayExperiment[E] =
     insertAll(index, Iterable(value))
-  }
 
   def insertAll(index: Int, values: Iterable[E])(using LocalUid): RemoveWinsArrayExperiment[E] = {
     val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
@@ -77,9 +75,9 @@ case class RemoveWinsArrayExperiment[E](
     val newElements  = scala.collection.mutable.Map[Dot, RemoveWinsArrayExperiment.Entry[E]]()
     val predecessors = observed
     for (value, dot) <- values.zip(nextDots) do
-      val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
-      newElements += (dot -> RemoveWinsArrayExperiment.Entry(LWW(timestamp, newPos), value))
-      beforePos = newPos
+        val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+        newElements += (dot -> RemoveWinsArrayExperiment.Entry(LWW(timestamp, newPos), value))
+        beforePos = newPos
 
     RemoveWinsArrayExperiment(
       elements = newElements.toMap,
@@ -88,18 +86,21 @@ case class RemoveWinsArrayExperiment[E](
     )
   }
 
-  def update(index: Int, elem: E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
+  def update(index: Int, elem: E)(using LocalUid): RemoveWinsArrayExperiment[E] =
+    updateWith(index, _ => elem)
+
+  def updateWith(index: Int, elem: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
     entries.lift(index) match {
-      case Some((oldDot, _)) =>
+      case Some((oldDot, e)) =>
         val predecessors = observed
         val dot          = predecessors.nextDot
-        val entry        = RemoveWinsArrayExperiment.Entry(LWW.now(entries(index)._2.index.value), elem)
+        val entry        = RemoveWinsArrayExperiment.Entry(LWW.now(entries(index)._2.index.value), elem(e.value))
         RemoveWinsArrayExperiment(
           elements = Map(dot -> entry),
           removed = Dots.single(oldDot),
           history = Map(dot -> predecessors)
         )
-      case None => insert(index, elem)
+      case None => RemoveWinsArrayExperiment.empty
     }
   }
 
@@ -114,24 +115,24 @@ case class RemoveWinsArrayExperiment[E](
     if from < 0 || to < 0 || from >= size || to >= size then RemoveWinsArrayExperiment.empty
     else if from == to then RemoveWinsArrayExperiment.empty
     else
-      val entriesList  = entries
-      val predecessors = observed
-      entriesList.lift(from) match {
-        case Some((dot, entry)) =>
-          val pos = {
-            val beforePos = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.min)
-            val afterPos  = entriesList.lift(to + 1).map(_._2.index.value).getOrElse(LSeq.max)
-            LSeq.between(beforePos, afterPos, LocalUid.replicaId)
-          }
-          RemoveWinsArrayExperiment(
-            elements = Map(dot -> entry.copy(
-              index = LWW.now(pos)
-            )),
-            removed = Dots.empty,
-            history = Map(dot -> predecessors),
-          )
-        case None => RemoveWinsArrayExperiment.empty
-      }
+        val entriesList  = entries
+        val predecessors = observed
+        entriesList.lift(from) match {
+          case Some((dot, entry)) =>
+            val pos = {
+              val beforePos = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.min)
+              val afterPos  = entriesList.lift(to + 1).map(_._2.index.value).getOrElse(LSeq.max)
+              LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+            }
+            RemoveWinsArrayExperiment(
+              elements = Map(dot -> entry.copy(
+                index = LWW.now(pos)
+              )),
+              removed = Dots.empty,
+              history = Map(dot -> predecessors),
+            )
+          case None => RemoveWinsArrayExperiment.empty
+        }
   }
 
   def apply(fn: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
@@ -157,10 +158,7 @@ object RemoveWinsArrayExperiment {
   case class Entry[A](index: LWW[LSeq], value: A)
 
   object Entry {
-    given lattice[A]: Lattice[Entry[A]] = {
-      given Lattice[A] = Lattice.assertEquals
-      Lattice.derived
-    }
+    given lattice[A: Lattice]: Lattice[Entry[A]] = Lattice.derived
 
     given decompose[E]: Decompose[Entry[E]] = {
       given Decompose[E] = Decompose.atomic
@@ -170,11 +168,8 @@ object RemoveWinsArrayExperiment {
 
   def empty[A]: RemoveWinsArrayExperiment[A] = RemoveWinsArrayExperiment(Map.empty, Dots.empty)
 
-  given lattice[E]: Lattice[RemoveWinsArrayExperiment[E]] = {
-    val base: Lattice[RemoveWinsArrayExperiment[E]] = {
-      given Lattice[E] = Lattice.assertEquals
-      Lattice.derived
-    }
+  given lattice[E: Lattice]: Lattice[RemoveWinsArrayExperiment[E]] = {
+    val base: Lattice[RemoveWinsArrayExperiment[E]] = Lattice.derived
     DecoratedLattice.compact(base) { _.compact }
   }
 

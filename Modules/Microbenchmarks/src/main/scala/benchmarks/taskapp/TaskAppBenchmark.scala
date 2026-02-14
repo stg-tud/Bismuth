@@ -9,6 +9,7 @@ import rdts.experiments.DeltaHistory
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
+import rdts.datatypes.LastWriterWins
 
 object TaskAppBenchmark {
 
@@ -40,21 +41,23 @@ object TaskAppBenchmark {
   }
 
   val opTimings: mutable.Map[String, OpStats] = mutable.Map(
-    "AddFolder"             -> OpStats(),
-    "AddTaskList"           -> OpStats(),
-    "MoveEntry"             -> OpStats(),
-    "RemoveEntry"           -> OpStats(),
-    "UpdateFolderName"      -> OpStats(),
-    "UpdateTaskListName"    -> OpStats(),
-    "AddTask"               -> OpStats(),
-    "RemoveTaskListItem"    -> OpStats(),
-    "MoveTaskListItem"      -> OpStats(),
-    "UpdateTaskTitle"       -> OpStats(),
-    "UpdateTaskDescription" -> OpStats(),
-    "Undo"                  -> OpStats(),
-    "Redo"                  -> OpStats(),
-    "read"                  -> OpStats(), // Track app.read calls separately
-    "Sync"                  -> OpStats(), // Track sync between replicas
+    "AddFolder"                -> OpStats(),
+    "AddTaskList"              -> OpStats(),
+    "MoveEntry"                -> OpStats(),
+    "RemoveEntry"              -> OpStats(),
+    "UpdateFolderName"         -> OpStats(),
+    "UpdateTaskListName"       -> OpStats(),
+    "AddTask"                  -> OpStats(),
+    "RemoveTaskListItem"       -> OpStats(),
+    "MoveTaskListItem"         -> OpStats(),
+    "UpdateTaskTitle"          -> OpStats(),
+    "UpdateTaskDescription"    -> OpStats(),
+    "UpdateTaskDone"           -> OpStats(),
+    "MarkItemsAsDoneThatMatch" -> OpStats(),
+    "Undo"                     -> OpStats(),
+    "Redo"                     -> OpStats(),
+    "read"                     -> OpStats(), // Track app.read calls separately
+    "Sync"                     -> OpStats(), // Track sync between replicas
   )
 
   inline def timed[T](opName: String)(op: => T): T = {
@@ -138,8 +141,11 @@ object TaskAppBenchmark {
           println("  Operation timings (last 1000):")
           opTimings.toSeq.sortBy(-_._2.avgMs).foreach { case (op, stats) =>
             if stats.count > 0 then
+                // Find the longest operation name for alignment
+                val maxOpLen = opTimings.keys.map(_.length).max
+                val paddedOp = op.padTo(maxOpLen, ' ')
                 println(
-                  f"    $op%-20s: ${stats.avgMs}%.4fms avg (${stats.count} calls, ${stats.totalNanos / 1_000_000.0}%.2fms total)"
+                  f"    $paddedOp: ${stats.avgMs}%.4fms avg (${stats.count} calls, ${stats.totalNanos / 1_000_000.0}%.2fms total)"
                 )
           }
           // Print Replica internal timing breakdown
@@ -175,7 +181,7 @@ object TaskAppBenchmark {
           folderCount += 1
         case Entry.TaskListEntry(list) =>
           taskListCount += 1
-          totalTaskCount += list.items.toList.size
+          totalTaskCount += list.items.size
       }
     }
 
@@ -209,6 +215,15 @@ object TaskAppBenchmark {
       case AddTask(taskListId, task) =>
         timed("AddTask") { app.addTaskListItem(taskListId, task) }
 
+      case UpdateTaskDone(taskListId, itemIx) =>
+        timed("UpdateTaskDone") {
+          app.updateTaskDone(
+            taskListId,
+            itemIx,
+            done = true
+          )
+        }
+
       case RemoveTaskListItem(taskListId, itemIx) =>
         timed("RemoveTaskListItem") { app.removeTaskListItem(taskListId, itemIx) }
 
@@ -220,6 +235,14 @@ object TaskAppBenchmark {
 
       case UpdateTaskDescription(taskListId, itemIx, newDescription) =>
         timed("UpdateTaskDescription") { app.updateTaskDescription(taskListId, itemIx, newDescription) }
+
+      case MarkItemsAsDoneThatMatch(taskListId, text) =>
+        timed("MarkItemsAsDoneThatMatch") {
+          app.forEachTaskListItem(
+            taskListId,
+            task => if task.title.value.contains(text) then task.copy(done = LastWriterWins.now(true)) else task
+          )
+        }
 
       case Undo =>
         timed("Undo") { app.state.undo() }

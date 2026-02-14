@@ -17,9 +17,8 @@ case class RemoveWinsArray[E](
 ) {
   lazy val observed: Dots = removed.union(Dots.from(elements.keys))
 
-  lazy val entries: List[(Dot, RemoveWinsArray.Entry[E])] = {
+  lazy val entries: List[(Dot, RemoveWinsArray.Entry[E])] =
     compactElements.toList.sortBy(e => e._2.index.value)
-  }
 
   lazy val compactElements: Map[Dot, RemoveWinsArray.Entry[E]] =
     elements.filterNot((d, _) => removed.contains(d))
@@ -42,9 +41,8 @@ case class RemoveWinsArray[E](
   def append(value: E)(using LocalUid)               = insert(size, value)
   def appendAll(values: Iterable[E])(using LocalUid) = insertAll(size, values)
 
-  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArray[E] = {
+  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArray[E] =
     insertAll(index, Iterable(value))
-  }
 
   def insertAll(index: Int, values: Iterable[E])(using LocalUid): RemoveWinsArray[E] = {
     val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
@@ -57,16 +55,15 @@ case class RemoveWinsArray[E](
 
     val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
     for (value, dot) <- values.zip(nextDots) do
-      val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
-      newElements += (dot -> RemoveWinsArray.Entry(LWW(timestamp, newPos), value))
-      beforePos = newPos
+        val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+        newElements += (dot -> RemoveWinsArray.Entry(LWW(timestamp, newPos), value))
+        beforePos = newPos
 
     RemoveWinsArray(elements = newElements.toMap, removed)
   }
 
-  def update(index: Int, elem: E)(using LocalUid): RemoveWinsArray[E] = {
+  def update(index: Int, elem: E)(using LocalUid): RemoveWinsArray[E] =
     updateWith(index, _ => elem)
-  }
 
   def updateWith(index: Int, f: E => E)(using LocalUid): RemoveWinsArray[E] = {
     entries.lift(index) match {
@@ -88,22 +85,22 @@ case class RemoveWinsArray[E](
     if from < 0 || to < 0 || from > size || to > size then RemoveWinsArray.empty
     else if from == to then RemoveWinsArray.empty
     else
-      val entriesList = entries
-      entriesList.lift(from) match {
-        case Some((dot, entry)) =>
-          val pos = {
-            val beforePos = entriesList.lift(to - 1).map(_._2.index.value).getOrElse(LSeq.min)
-            val afterPos  = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.max)
-            LSeq.between(beforePos, afterPos, LocalUid.replicaId)
-          }
-          RemoveWinsArray(
-            elements = Map(dot -> entry.copy(
-              index = LWW.now(pos)
-            )),
-            removed = Dots.empty
-          )
-        case None => RemoveWinsArray.empty
-      }
+        val entriesList = entries
+        entriesList.lift(from) match {
+          case Some((dot, entry)) =>
+            val pos = {
+              val beforePos = entriesList.lift(to - 1).map(_._2.index.value).getOrElse(LSeq.min)
+              val afterPos  = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.max)
+              LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+            }
+            RemoveWinsArray(
+              elements = Map(dot -> entry.copy(
+                index = LWW.now(pos)
+              )),
+              removed = Dots.empty
+            )
+          case None => RemoveWinsArray.empty
+        }
   }
 
   def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using LocalUid): RemoveWinsArray[E] = {
@@ -112,26 +109,26 @@ case class RemoveWinsArray[E](
     else if fromStart >= size || toIndex > size then RemoveWinsArray.empty
     else if fromEnd > size then RemoveWinsArray.empty
     else
-      val entriesList    = entries
-      val elementsToMove = entriesList.slice(fromStart, fromEnd)
+        val entriesList    = entries
+        val elementsToMove = entriesList.slice(fromStart, fromEnd)
 
-      if elementsToMove.isEmpty then RemoveWinsArray.empty
-      else
-        val beforePos = entriesList.lift(toIndex - 1).map(_._2.index.value).getOrElse(LSeq.min)
-        val afterPos  = entriesList.lift(toIndex).map(_._2.index.value).getOrElse(LSeq.max)
+        if elementsToMove.isEmpty then RemoveWinsArray.empty
+        else
+            val beforePos = entriesList.lift(toIndex - 1).map(_._2.index.value).getOrElse(LSeq.min)
+            val afterPos  = entriesList.lift(toIndex).map(_._2.index.value).getOrElse(LSeq.max)
 
-        val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
-        var currentPos  = beforePos
+            val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
+            var currentPos  = beforePos
 
-        for (dot, entry) <- elementsToMove do
-          val newPos = LSeq.between(currentPos, afterPos, LocalUid.replicaId)
-          newElements += (dot -> entry.copy(index = LWW.now(newPos)))
-          currentPos = newPos
+            for (dot, entry) <- elementsToMove do
+                val newPos = LSeq.between(currentPos, afterPos, LocalUid.replicaId)
+                newElements += (dot -> entry.copy(index = LWW.now(newPos)))
+                currentPos = newPos
 
-        RemoveWinsArray(
-          elements = newElements.toMap,
-          removed = Dots.empty
-        )
+            RemoveWinsArray(
+              elements = newElements.toMap,
+              removed = Dots.empty
+            )
   }
 
   def clear(): RemoveWinsArray[E] = {

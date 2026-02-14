@@ -55,11 +55,11 @@ class TaskAppInteractionGenerator(
   ): TaskAppInteraction = {
     val choice = random.nextInt(100)
 
-    if choice < 5 then {
-      // 5% add folder
+    if choice < 2.5 then {
+      // 2.5% add folder
       addFolder(folders)
     } else if choice < 10 then {
-      // 5% add task list
+      // 7.5% add task list
       addTaskList(folders)
     } else if choice < 15 then {
       // 5% move entry
@@ -67,12 +67,18 @@ class TaskAppInteractionGenerator(
     } else if choice < 20 then {
       // 5% remove entry
       removeEntry(folders, taskLists).getOrElse(addTaskList(folders))
-    } else if choice < 50 then {
-      // 30% add task to a list
+    } else if choice < 45 then {
+      // 25% add task to a list
       addTask(taskLists).getOrElse(addTaskList(folders))
-    } else if choice < 75 then {
-      // 25% remove task
+    } else if choice < 50 then {
+      // 5% mark tasks as done that match a random character
+      markItemsAsDoneThatMatch(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
+    } else if choice < 70 then {
+      // 20% remove task
       removeRandomTask(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
+    } else if choice < 75 then {
+      // 5% mark items as done
+      updateTaskDone(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 80 then {
       // 5% move task within list
       moveTaskWithinList(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
@@ -231,5 +237,28 @@ class TaskAppInteractionGenerator(
 
     val newDescription = if random.nextBoolean() then Some(randomString(10, 50)) else None
     Some(UpdateTaskDescription(taskListDot, taskIndex, newDescription))
+  }
+
+  private def updateTaskDone(taskLists: Map[Dot, Int]): Option[UpdateTaskDone] = {
+    val nonEmptyLists = taskLists.filter(_._2 > 0)
+    if nonEmptyLists.isEmpty then return None
+
+    val taskListDots = nonEmptyLists.keys.toSeq
+    val taskListDot  = taskListDots(random.nextInt(taskListDots.size))
+    val taskCount    = nonEmptyLists(taskListDot)
+    val taskIndex    = random.nextInt(taskCount)
+
+    Some(UpdateTaskDone(taskListDot, taskIndex))
+  }
+
+  private def markItemsAsDoneThatMatch(taskLists: Map[Dot, Int]): Option[MarkItemsAsDoneThatMatch] = {
+    val nonEmptyLists = taskLists.filter(_._2 > 0)
+    if nonEmptyLists.isEmpty then return None
+
+    val taskListDots = nonEmptyLists.keys.toSeq
+    val taskListDot  = taskListDots(random.nextInt(taskListDots.size))
+
+    val textToMatch = randomString(1, 1)
+    Some(MarkItemsAsDoneThatMatch(taskListDot, textToMatch))
   }
 }

@@ -25,8 +25,12 @@ case class MoveTaskListItem(taskListId: Dot, from: Int, to: Int) extends TaskApp
 
 case class UpdateTaskTitle(taskListId: Dot, itemIx: Int, newTitle: String) extends TaskAppInteraction
 
+case class UpdateTaskDone(taskListId: Dot, itemIx: Int) extends TaskAppInteraction
+
 case class UpdateTaskDescription(taskListId: Dot, itemIx: Int, newDescription: Option[String])
     extends TaskAppInteraction
+
+case class MarkItemsAsDoneThatMatch(taskListId: Dot, text: String) extends TaskAppInteraction
 
 case object Undo extends TaskAppInteraction
 
