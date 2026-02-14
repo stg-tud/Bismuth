@@ -3,7 +3,8 @@ package benchmarks.taskapp
 import benchmarks.taskapp.TaskApp.{App, Entry, given}
 import rdts.datatypes.ReplicatedTree
 import rdts.base.LocalUid
-import rdts.experiments.Replica as UndoRedoReplica
+import rdts.experiments.UndoRedoReplica
+import rdts.experiments.DeltaHistory
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
@@ -12,14 +13,18 @@ import scala.collection.mutable
 object TaskAppBenchmark {
 
   val numInteractions  = 1_000_000
-  val pruningThreshold = 50
-  val keptTasks        = 20
   val checkpointEvery  = 100
   val progressLogEvery = 1_000
 
-  given localUid: LocalUid = LocalUid.predefined("benchmark-client")
+  // Two replicas with separate LocalUids
+  val localUid1: LocalUid = LocalUid.predefined("benchmark-client-1")
+  val localUid2: LocalUid = LocalUid.predefined("benchmark-client-2")
 
-  var app: App = scala.compiletime.uninitialized
+  var app1: App = scala.compiletime.uninitialized
+  var app2: App = scala.compiletime.uninitialized
+
+  // Track which replica is active (alternates between 1 and 2)
+  var activeReplica: Int = 1
 
   // Timing trackers per operation type
   case class OpStats(var count: Long = 0, var totalNanos: Long = 0) {
@@ -38,6 +43,7 @@ object TaskAppBenchmark {
     "AddFolder"             -> OpStats(),
     "AddTaskList"           -> OpStats(),
     "MoveEntry"             -> OpStats(),
+    "RemoveEntry"           -> OpStats(),
     "UpdateFolderName"      -> OpStats(),
     "UpdateTaskListName"    -> OpStats(),
     "AddTask"               -> OpStats(),
@@ -48,6 +54,7 @@ object TaskAppBenchmark {
     "Undo"                  -> OpStats(),
     "Redo"                  -> OpStats(),
     "read"                  -> OpStats(), // Track app.read calls separately
+    "Sync"                  -> OpStats(), // Track sync between replicas
   )
 
   inline def timed[T](opName: String)(op: => T): T = {
@@ -58,16 +65,25 @@ object TaskAppBenchmark {
     result
   }
 
-  inline def timedRead: ReplicatedTree[Entry] = timed("read")(app.read)
+  // Helper to get the current active app
+  inline def currentApp: App      = if activeReplica == 1 then app1 else app2
+  inline def otherApp: App        = if activeReplica == 1 then app2 else app1
+  inline def currentUid: LocalUid = if activeReplica == 1 then localUid1 else localUid2
+
+  inline def timedRead: ReplicatedTree[Entry] = timed("read")(currentApp.read)
+
+  // Track sync time separately to exclude from interaction timing
+  var syncTimeInCurrentBatch: Long = 0
 
   def main(args: Array[String]): Unit = {
-    println("Starting TaskApp benchmark...")
+    println("Starting TaskApp benchmark with two replicas...")
 
-    // Initialize the app with an empty Replica
-    app = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
+    // Initialize both apps with empty Replicas
+    app1 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
+    app2 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
 
     // Create the live interaction generator
-    val generator = new TaskAppInteractionGenerator(pruningThreshold, keptTasks)
+    val generator = new TaskAppInteractionGenerator()
 
     // Setup CSV output
     val csvFilePath: Path = Paths.get("./benchmarks/results/taskapp_benchmark.csv")
@@ -75,7 +91,7 @@ object TaskAppBenchmark {
     val csvFile = new PrintWriter(csvFilePath.toFile)
 
     csvFile.println(
-      "interactions,treeSize,folderCount,taskListCount,totalTaskCount,last100InteractionsNanoTime,avgInteractionMs"
+      "interactions,treeSize,folderCount,taskListCount,totalTaskCount,last100InteractionsNanoTime,avgInteractionMs,syncNanoTime,avgSyncMs"
     )
 
     val startNanoTime: Long             = System.nanoTime()
@@ -83,33 +99,40 @@ object TaskAppBenchmark {
 
     var counter = 0
 
-    println("Running benchmark interactions...")
+    println("Running benchmark interactions (alternating between two replicas)...")
 
-    // First interaction creates a task list
+    // First interaction creates a task list (on replica 1)
+    activeReplica = 1
     performInteraction(generator.initialInteraction())
     counter += 1
 
     while counter < numInteractions do {
-      val interaction = generator.nextInteraction(app.read)
+      // Alternate between replicas
+      activeReplica = if activeReplica == 1 then 2 else 1
+
+      val interaction = generator.nextInteraction(currentApp.read)
       performInteraction(interaction)
       counter += 1
 
       if counter % checkpointEvery == 0 then {
         val checkPointStartNanoTime        = System.nanoTime()
-        val nanoTimeForLast100Interactions = checkPointStartNanoTime - lastCheckPointEndNanoTime
+        val syncNanoTime                   = syncTimeInCurrentBatch
+        val nanoTimeForLast100Interactions = checkPointStartNanoTime - lastCheckPointEndNanoTime - syncNanoTime
+        syncTimeInCurrentBatch = 0 // Reset for next batch
 
-        val tree                                         = app.read
+        val tree                                         = currentApp.read
         val treeSize                                     = tree.size
         val (folderCount, taskListCount, totalTaskCount) = countEntries(tree)
 
         csvFile.println(
-          s"$counter,$treeSize,$folderCount,$taskListCount,$totalTaskCount,$nanoTimeForLast100Interactions,${nanoTimeForLast100Interactions / (1_000_000.0 * checkpointEvery)}"
+          s"$counter,$treeSize,$folderCount,$taskListCount,$totalTaskCount,$nanoTimeForLast100Interactions,${nanoTimeForLast100Interactions / (1_000_000.0 * checkpointEvery)},$syncNanoTime,${syncNanoTime / (1_000_000.0 * checkpointEvery)}"
         )
 
         if counter % progressLogEvery == 0 then {
-          val historySize = app.state.history.deltas.size
+          val historySize1 = app1.state.history.deltas.size
+          val historySize2 = app2.state.history.deltas.size
           println(
-            s"$counter/$numInteractions completed / avg: ${nanoTimeForLast100Interactions / (1_000_000.0 * checkpointEvery)}ms / tree: $treeSize / history deltas: $historySize"
+            s"$counter/$numInteractions completed / avg: ${nanoTimeForLast100Interactions / (1_000_000.0 * checkpointEvery)}ms / tree: $treeSize / history deltas: $historySize1/$historySize2"
           )
           // Print per-operation timing breakdown
           println("  Operation timings (last 1000):")
@@ -160,42 +183,56 @@ object TaskAppBenchmark {
   }
 
   private def performInteraction(interaction: TaskAppInteraction): Unit = {
-    interaction match {
+    given LocalUid = currentUid
+    val app        = currentApp
+    val other      = otherApp
+
+    val delta: DeltaHistory[ReplicatedTree[Entry]] = interaction match {
       case AddFolder(parentFolder, name) =>
-        val _ = timed("AddFolder") { app.addFolder(parentFolder, name) }
+        timed("AddFolder") { app.addFolder(parentFolder, name) }
 
       case AddTaskList(parentFolder, name) =>
-        val _ = timed("AddTaskList") { app.addTaskList(parentFolder, name) }
+        timed("AddTaskList") { app.addTaskList(parentFolder, name) }
 
       case MoveEntry(entryId, newParent) =>
-        val _ = timed("MoveEntry") { app.moveEntry(entryId, newParent) }
+        timed("MoveEntry") { app.moveEntry(entryId, newParent) }
+
+      case RemoveEntry(entryId) =>
+        timed("RemoveEntry") { app.removeEntry(entryId) }
 
       case UpdateFolderName(folder, newName) =>
-        val _ = timed("UpdateFolderName") { app.updateFolderName(folder, newName) }
+        timed("UpdateFolderName") { app.updateFolderName(folder, newName) }
 
       case UpdateTaskListName(taskListId, newName) =>
-        val _ = timed("UpdateTaskListName") { app.updateTaskListName(taskListId, newName) }
+        timed("UpdateTaskListName") { app.updateTaskListName(taskListId, newName) }
 
       case AddTask(taskListId, task) =>
-        val _ = timed("AddTask") { app.addTaskListItem(taskListId, task) }
+        timed("AddTask") { app.addTaskListItem(taskListId, task) }
 
       case RemoveTaskListItem(taskListId, itemIx) =>
-        val _ = timed("RemoveTaskListItem") { app.removeTaskListItem(taskListId, itemIx) }
+        timed("RemoveTaskListItem") { app.removeTaskListItem(taskListId, itemIx) }
 
       case MoveTaskListItem(taskListId, from, to) =>
-        val _ = timed("MoveTaskListItem") { app.moveTaskListItem(taskListId, from, to) }
+        timed("MoveTaskListItem") { app.moveTaskListItem(taskListId, from, to) }
 
       case UpdateTaskTitle(taskListId, itemIx, newTitle) =>
-        val _ = timed("UpdateTaskTitle") { app.updateTaskTitle(taskListId, itemIx, newTitle) }
+        timed("UpdateTaskTitle") { app.updateTaskTitle(taskListId, itemIx, newTitle) }
 
       case UpdateTaskDescription(taskListId, itemIx, newDescription) =>
-        val _ = timed("UpdateTaskDescription") { app.updateTaskDescription(taskListId, itemIx, newDescription) }
+        timed("UpdateTaskDescription") { app.updateTaskDescription(taskListId, itemIx, newDescription) }
 
       case Undo =>
-        val _ = timed("Undo") { app.state.undo() }
+        timed("Undo") { app.state.undo() }
 
       case Redo =>
-        val _ = timed("Redo") { app.state.redo() }
+        timed("Redo") { app.state.redo() }
     }
+
+    // Sync the delta to the other replica immediately (timed separately, excluded from interaction timing)
+    val syncStart   = System.nanoTime()
+    val _           = other.applyDelta(delta)
+    val syncElapsed = System.nanoTime() - syncStart
+    opTimings("Sync").record(syncElapsed)
+    syncTimeInCurrentBatch += syncElapsed
   }
 }

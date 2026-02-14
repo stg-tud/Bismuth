@@ -3,7 +3,7 @@ package benchmarks.taskapp
 import rdts.datatypes.RemoveWinsArray as ReplicatedList
 import rdts.datatypes.LastWriterWins as LWW
 import rdts.base.{Lattice, LocalUid, Bottom}
-import rdts.experiments.Replica as UndoRedoReplica
+import rdts.experiments.UndoRedoReplica
 import rdts.experiments.DeltaHistory
 import rdts.datatypes.ReplicatedTree
 import rdts.time.Dot
@@ -15,13 +15,13 @@ object TaskApp {
       case _                         => None
     }
 
-  def updateTaskList(tree: ReplicatedTree[Entry], id: Dot, f: TaskList => TaskList)(using LocalUid) =
+  def updateTaskList(tree: ReplicatedTree[Entry], id: Dot, f: TaskList => TaskList) =
     tree.update(
       id,
       Entry.TaskListEntry(f(tree.node(id).get.value.asInstanceOf[Entry.TaskListEntry].list))
     )
 
-  def updateFolder(tree: ReplicatedTree[Entry], id: Dot, f: Folder => Folder)(using LocalUid) =
+  def updateFolder(tree: ReplicatedTree[Entry], id: Dot, f: Folder => Folder) =
     tree.update(
       id,
       Entry.FolderEntry(
@@ -65,6 +65,9 @@ object TaskApp {
 
     def moveEntry(entryId: Dot, newParent: Dot)(using LocalUid) =
       state.mod(tree => tree.move(entryId, newParent))
+
+    def removeEntry(entryId: Dot)(using LocalUid) =
+      state.mod(tree => tree.delete(entryId))
 
     def updateFolderName(folder: Dot, newName: String)(using LocalUid) =
       state.mod(tree => updateFolder(tree, folder, f => f.copy(name = LWW.now(newName))))

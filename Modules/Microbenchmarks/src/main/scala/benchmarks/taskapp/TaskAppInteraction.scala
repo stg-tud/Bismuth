@@ -11,6 +11,8 @@ case class AddFolder(parentFolder: Dot, name: String) extends TaskAppInteraction
 
 case class MoveEntry(entryId: Dot, newParent: Dot) extends TaskAppInteraction
 
+case class RemoveEntry(entryId: Dot) extends TaskAppInteraction
+
 case class UpdateFolderName(folder: Dot, newName: String) extends TaskAppInteraction
 
 case class UpdateTaskListName(taskListId: Dot, newName: String) extends TaskAppInteraction

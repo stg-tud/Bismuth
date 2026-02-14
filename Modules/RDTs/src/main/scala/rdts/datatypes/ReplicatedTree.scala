@@ -206,12 +206,18 @@ object ReplicatedTree {
       MergeTimings.unionRemovedNanos += System.nanoTime() - t0
 
       t0 = System.nanoTime()
+      if right.size == 1 then {
+        val nodeOnLeft = left.node(right.nodes.head.dot)
+        if nodeOnLeft.isDefined && nodeOnLeft.get.largestEdge == right.nodes.head.largestEdge then {
+          return ReplicatedTree(elements, deleted)
+        }
+      }
+
       val result = resolveConflicts(ReplicatedTree(
         elements,
         deleted
       ))
       MergeTimings.resolveConflictsNanos += System.nanoTime() - t0
-
       result
     }
   }

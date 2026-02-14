@@ -84,12 +84,25 @@ case class UndoRedoReplica[A: Lattice](
     var history: DeltaHistory[A],
     var undoStack: Stack[Dot] = Stack.empty,
     var redoStack: Stack[A] = Stack.empty,
+    var cached: Option[A],
     val undoLimit: Int = 50,
 ) {
-  def state(using Lattice[A])(using Bottom[A]): A = history.state
+  def state(using Lattice[A])(using Bottom[A]): A =
+    if cached.isDefined then this.cached.get
+    else {
+      val state = history.state
+      this.cached = Some(state)
+      state
+    }
 
   def receive(delta: DeltaHistory[A]) =
-    this.history = Lattice.merge(this.history, delta)
+      if delta.removed.isEmpty && this.cached.isDefined then {
+        for delta <- delta.deltas.values do
+            this.cached = Some(Lattice.merge(this.cached.get, delta))
+      }
+      if !delta.removed.isEmpty then
+          this.cached = None
+      this.history = Lattice.merge(this.history, delta)
 
   def mod(f: LocalUid ?=> A => A)(using LocalUid)(using Lattice[A])(using Bottom[A]): DeltaHistory[A] =
       ReplicaTimings.callCount += 1
@@ -112,6 +125,7 @@ case class UndoRedoReplica[A: Lattice](
       val deltaToUndo  = this.history.deltas(dotToUndo)
       val historyDelta = this.history.remove(dotToUndo)
       this.history = Lattice.merge(this.history, historyDelta)
+      this.cached = None
       this.redoStack.push(deltaToUndo)
       historyDelta
 
@@ -132,8 +146,13 @@ case class UndoRedoReplica[A: Lattice](
 
       this.undoStack.push(dot)
       if this.undoStack.size > undoLimit then
-          val dot = this.undoStack.remove(0)
-          historyDelta = Lattice.merge(historyDelta, this.history.promoteToBase(dot))
+          // remove(size-1) removes the oldest element (bottom of stack)
+          // since Stack index 0 is the top (most recent)
+          val oldDot = this.undoStack.remove(this.undoStack.size - 1)
+          historyDelta = Lattice.merge(historyDelta, this.history.promoteToBase(oldDot))
+
+      if this.cached.isDefined then
+          this.cached = Some(Lattice.merge(this.cached.get, delta))
 
       t0 = System.nanoTime()
       this.history = Lattice.merge(this.history, historyDelta)
@@ -144,7 +163,7 @@ case class UndoRedoReplica[A: Lattice](
 
 object UndoRedoReplica {
   def empty[A: Lattice]: UndoRedoReplica[A] =
-    UndoRedoReplica(DeltaHistory.empty[A], Stack.empty, Stack.empty)
+    UndoRedoReplica(DeltaHistory.empty[A], Stack.empty, Stack.empty, None)
 }
 
 // case class UndoRedoReplica[A](

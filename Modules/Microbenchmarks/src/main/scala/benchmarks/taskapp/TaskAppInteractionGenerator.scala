@@ -12,10 +12,6 @@ import scala.util.Random
   * This ensures the Dots used in interactions match the real app's Dots.
   */
 class TaskAppInteractionGenerator(
-    val pruningThreshold: Int = 50,
-    val keptTasks: Int = 20,
-    val maxFolders: Int = 100,
-    val maxTaskLists: Int = 200,
     val textLengthMin: Int = 10,
     val textLengthMax: Int = 100,
     seed: Long = 42
@@ -26,12 +22,7 @@ class TaskAppInteractionGenerator(
   def nextInteraction(tree: ReplicatedTree[Entry]): TaskAppInteraction = {
     val (folders, taskLists, totalTaskCount) = analyzeTree(tree)
 
-    // Pruning: if we have too many tasks, remove some
-    if totalTaskCount >= pruningThreshold then {
-      removeRandomTask(taskLists).getOrElse(performRandomInteraction(tree, folders, taskLists, totalTaskCount))
-    } else {
-      performRandomInteraction(tree, folders, taskLists, totalTaskCount)
-    }
+    performRandomInteraction(tree, folders, taskLists, totalTaskCount)
   }
 
   def initialInteraction(): TaskAppInteraction =
@@ -62,47 +53,40 @@ class TaskAppInteractionGenerator(
       taskLists: Map[Dot, Int],
       totalTaskCount: Int
   ): TaskAppInteraction = {
-    // Weights for different interactions:
-    // - 5% add folder (if under limit)
-    // - 10% add task list (if under limit)
-    // - 30% add task to a list
-    // - 5% move entry
-    // - 5% update folder name
-    // - 5% update task list name
-    // - 15% remove task
-    // - 5% move task within list
-    // - 5% update task title
-    // - 5% update task description
-    // - 5% to undo
-    // - 5% to redo
-
     val choice = random.nextInt(100)
 
     if choice < 5 then {
-      if folders.size < maxFolders then addFolder(folders)
-      else updateFolderName(folders).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
+      // 5% add folder
+      addFolder(folders)
+    } else if choice < 10 then {
+      // 5% add task list
+      addTaskList(folders)
     } else if choice < 15 then {
-      if taskLists.size < maxTaskLists then addTaskList(folders)
-      else updateTaskListName(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 45 then {
-      addTask(taskLists).getOrElse(addTaskList(folders))
+      // 5% move entry
+      moveEntry(folders, taskLists).getOrElse(addTaskList(folders))
+    } else if choice < 20 then {
+      // 5% remove entry
+      removeEntry(folders, taskLists).getOrElse(addTaskList(folders))
     } else if choice < 50 then {
-      moveEntry(folders, taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 55 then {
-      updateFolderName(folders).getOrElse(addFolder(folders))
-    } else if choice < 60 then {
-      updateTaskListName(taskLists).getOrElse(addTaskList(folders))
+      // 30% add task to a list
+      addTask(taskLists).getOrElse(addTaskList(folders))
     } else if choice < 75 then {
+      // 25% remove task
       removeRandomTask(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 80 then {
+      // 5% move task within list
       moveTaskWithinList(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 85 then {
+      // 5% update task title
       updateTaskTitle(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 90 then {
+      // 5% update task description
       updateTaskDescription(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 95 then {
+      // 5% undo
       Undo
     } else {
+      // 5% redo
       Redo
     }
   }
@@ -134,6 +118,14 @@ class TaskAppInteractionGenerator(
     val parentDot = getRandomFolder(folders)
     val name      = s"List_${randomString(5, 15)}"
     AddTaskList(parentDot, name)
+  }
+
+  private def removeEntry(folders: Seq[Dot], taskLists: Map[Dot, Int]): Option[RemoveEntry] = {
+    val entries = folders ++ taskLists.keys.toSeq
+    if entries.isEmpty then return None
+
+    val entryToRemove = entries(random.nextInt(entries.size))
+    Some(RemoveEntry(entryToRemove))
   }
 
   private def addTask(taskLists: Map[Dot, Int]): Option[AddTask] = {
