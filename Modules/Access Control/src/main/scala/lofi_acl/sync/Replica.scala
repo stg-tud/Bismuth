@@ -1,6 +1,7 @@
 package lofi_acl.sync
 
 import crypto.PublicIdentity
+import lofi_acl.sync.monotonic.Acl
 import rdts.filters.PermissionTree
 import rdts.time.Dot
 

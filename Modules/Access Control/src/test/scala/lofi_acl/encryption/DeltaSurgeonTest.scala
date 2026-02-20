@@ -1,4 +1,4 @@
-package lofi_acl.sync
+package lofi_acl.encryption
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

@@ -3,7 +3,6 @@ package lofi_acl.encryption
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.sync.DeltaSurgeon
 import munit.FunSuite
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.LastWriterWins

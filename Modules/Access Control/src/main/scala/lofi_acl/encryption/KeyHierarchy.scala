@@ -1,7 +1,6 @@
 package lofi_acl.encryption
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
-import lofi_acl.sync.IsolatedDeltaParts
 import rdts.time.Dot
 
 import scala.annotation.tailrec

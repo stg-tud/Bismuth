@@ -4,7 +4,8 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.travelplanner.TravelPlan
 import TravelPlan.given
-import lofi_acl.sync.{Acl, Invitation, Replica}
+import lofi_acl.sync.monotonic.Acl
+import lofi_acl.sync.{Invitation, Replica}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree

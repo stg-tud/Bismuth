@@ -1,4 +1,4 @@
-package lofi_acl.sync
+package lofi_acl.sync.bft
 
 import rdts.filters.PermissionTree
 

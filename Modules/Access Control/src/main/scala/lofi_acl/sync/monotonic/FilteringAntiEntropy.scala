@@ -4,6 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.sync.*
+import lofi_acl.sync.bft.{PartialDelta, PartialReplicationPeerSubsetSolver}
 import lofi_acl.sync.monotonic.MonotonicAclSyncMessage.*
 import lofi_acl.sync.monotonic.Operation.WRITE
 import rdts.base.{Bottom, Lattice, Uid}

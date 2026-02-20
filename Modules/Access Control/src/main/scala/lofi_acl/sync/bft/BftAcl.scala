@@ -1,7 +1,7 @@
 package lofi_acl.sync.bft
 
 import crypto.PublicIdentity
-import lofi_acl.sync.Acl
+import lofi_acl.sync.monotonic.Acl
 import rdts.filters.PermissionTree
 
 case class BftAcl(

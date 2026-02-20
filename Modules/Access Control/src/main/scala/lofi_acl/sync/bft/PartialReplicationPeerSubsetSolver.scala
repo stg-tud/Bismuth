@@ -1,4 +1,4 @@
-package lofi_acl.sync
+package lofi_acl.sync.bft
 
 import crypto.PublicIdentity
 import rdts.filters.PermissionTree

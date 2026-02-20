@@ -3,7 +3,6 @@ package lofi_acl.sync.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import lofi_acl.sync.Acl
 import lofi_acl.sync.monotonic.MonotonicAclSyncMessage.{AclDelta, Signature}
 import lofi_acl.sync.monotonic.Operation.WRITE
 import rdts.base.Uid

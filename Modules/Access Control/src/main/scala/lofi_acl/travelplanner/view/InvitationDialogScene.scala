@@ -1,7 +1,8 @@
 package lofi_acl.travelplanner.view
 
 import crypto.PublicIdentity
-import lofi_acl.sync.{Acl, Invitation}
+import lofi_acl.sync.Invitation
+import lofi_acl.sync.monotonic.Acl
 import lofi_acl.travelplanner.TravelPlan
 import lofi_acl.travelplanner.model.TravelPlanModel
 import rdts.filters.PermissionTree
