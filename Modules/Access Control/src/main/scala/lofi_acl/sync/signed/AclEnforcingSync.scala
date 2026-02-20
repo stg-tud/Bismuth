@@ -6,6 +6,7 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.*
 import lofi_acl.bft.HashDag.Encoder
+import lofi_acl.sync.JsoniterCodecs.syncMsgCodec
 import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg.MyPeersAre
 import lofi_acl.sync.signed.AclEnforcingSync.{SyncMsg, encoder}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, JsoniterCodecs, MessageReceiver}
@@ -22,6 +23,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     initialAclHashDag: HashDag[BftDelta[Acl], Acl]
 ) extends MessageReceiver[SyncMsg[State]] {
   private val msgQueue: LinkedBlockingQueue[(SyncMsg[State], PublicIdentity)] = LinkedBlockingQueue()
+  private val connectionManager = connectionManagerProvider(localIdentity, ???)
+  private val comm              = ConnectionManagerCommunicator(connectionManager)
 
   private val aclAntiEntropy = AclAntiEntropy(localIdentity, initialAclHashDag, ???)
   private val rdtAntiEntropy = FilteredRdtAntiEntropy[State](localIdentity, ???, aclAntiEntropy)
@@ -29,14 +32,13 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   override def receivedMessage(msg: SyncMsg[State], remote: PublicIdentity): Unit = msg match {
     case SyncMsg.DataDeltas(deltas, filtered, remoteAcl) =>
       aclAntiEntropy.updatePeerAclKnowledge(remoteAcl, remote)
-    case SyncMsg.AclDeltas(deltas)                                => aclAntiEntropy.receiveDeltas(deltas, remote)
-    case SyncMsg.MyPeersAre(peers)                                => ???
-    case SyncMsg.MyLocalStateIs(remoteDataDeltas, remoteAclHeads) =>
-      rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
-      aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
+    case SyncMsg.AclDeltas(deltas)                => aclAntiEntropy.receiveDeltas(deltas, remote)
+    case SyncMsg.MyPeersAre(peers)                => ???
+    case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
+    case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>
-      rdtAntiEntropy.respondToDeltaRequest(missingRdtDeltas, remote)
-      aclAntiEntropy.respondToDeltaRequest(missingAclDeltas, remote)
+      if missingRdtDeltas.nonEmpty then rdtAntiEntropy.respondToDeltaRequest(missingRdtDeltas, remote)
+      if missingAclDeltas.nonEmpty then aclAntiEntropy.respondToDeltaRequest(missingAclDeltas, remote)
   }
 }
 
@@ -45,7 +47,8 @@ object AclEnforcingSync {
       case DataDeltas(deltas: Seq[SignedDelta[State]], filtered: Dots, acl: Set[Hash])
       case AclDeltas(delta: Seq[BftDelta[Acl]])
       case MyPeersAre(peers: Seq[(PublicIdentity, (String, Int))])
-      case MyLocalStateIs(dataDeltas: Dots, aclHeads: Set[Hash])
+      case MyAclVersionIs(aclHeads: Set[Hash])
+      case MyRdtVersionIs(dots: Dots)
       case SendMe(dataDeltas: Dots, aclDeltas: Set[Hash])
 
   given encoder[State: JsonValueCodec]: Encoder[SignedDelta[State]] =
