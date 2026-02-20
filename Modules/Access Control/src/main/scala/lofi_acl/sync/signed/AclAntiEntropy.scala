@@ -10,27 +10,28 @@ import rdts.base.Bottom
 
 import java.util.concurrent.atomic.AtomicReference
 
-class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[BftDelta[Acl], Acl]) {
+class AclAntiEntropy(
+    private val id: PrivateIdentity,
+    initialHashDag: HashDag[BftDelta[Acl], Acl],
+    network: AntiEntropyCommunicator[?]
+) {
 
   private val aclRdt = AclRdt(id, cachedAclLookup)
 
   @volatile private var hashDag: HashDag[BftDelta[Acl], Acl] = initialHashDag
   def currentHashDag: HashDag[BftDelta[Acl], Acl]            = hashDag
-  private val latestAcl                                      = AtomicReference((Set.empty[Hash], Bottom[Acl].empty))
-  def currentAcl: (Set[Hash], Acl)                           = latestAcl.get()
+  private val currentAclRef                                  = AtomicReference((Set.empty[Hash], Bottom[Acl].empty))
+  def currentAcl: (Set[Hash], Acl)                           = currentAclRef.get()
 
   @volatile private var deltasInBacklog                      = Set.empty[Hash]
   private val knownMissingDeltas: AtomicReference[Set[Hash]] = AtomicReference(Set.empty)
   @volatile private var backlog: Seq[(Hash, BftDelta[Acl])]  = Vector.empty
 
   // TODO: Replace
-  private def sendDeltasToRemote(deltas: Seq[BftDelta[Acl]], remote: PublicIdentity): Unit = ???
-  private def requestFromRemote(hashes: Set[Hash], remote: PublicIdentity): Unit           = ???
-  private def notifyRemote(remote: PublicIdentity): Unit                                   = ???
-  private def notifyAclChanged(delta: Acl): Unit                                           = ???
+  private def notifyAclChanged(delta: Acl): Unit = ???
 
   private def cachedAclLookup(heads: Set[Hash]): Option[Acl] = {
-    val (latestHeads, acl) = latestAcl.get()
+    val (latestHeads, acl) = currentAclRef.get()
     if latestHeads == heads then Some(acl) else None
   }
 
@@ -54,7 +55,7 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Bf
                 cumulativeDelta = cumulativeDelta.merge(delta.state)
                 changed = true;
                 hashDag = updatedHashDag
-                latestAcl.updateAndGet((_, acl) => (hashDag.heads, acl.merge(delta.state)))
+                currentAclRef.updateAndGet((_, acl) => (hashDag.heads, acl.merge(delta.state)))
                 false // Remove applied delta from queue
             }
           } catch {
@@ -80,24 +81,24 @@ class AclAntiEntropy(private val id: PrivateIdentity, initialHashDag: HashDag[Bf
     if remoteHeads == hashDag.heads then return
 
     HashDagSync.missingInSubsetHashDag(hashDag, remoteHeads) match {
-      case Some(missing) => sendDeltasToRemote(missing, remote)
+      case Some(missing) => network.sendDeltas(missing, remote)
       case None          =>
         // which are missing locally?
         val missingLocally = remoteHeads.filterNot(hashDag.deltas.contains)
         if missingLocally.nonEmpty then {
-          requestFromRemote(
+          network.requestDeltas(
             knownMissingDeltas.updateAndGet(_ union missingLocally),
             remote
           )
         }
 
         // There might be deltas missing on remote, but we don't know which ones
-        notifyRemote(remote)
+        network.tellAclVersion(currentAcl._1, remote)
     }
   }
 
   def respondToDeltaRequest(missing: Set[Hash], remote: PublicIdentity): Unit = {
     val localDeltas = hashDag.deltas
-    sendDeltasToRemote(missing.toSeq.flatMap(localDeltas.get), remote)
+    network.sendDeltas(missing.toSeq.flatMap(localDeltas.get), remote)
   }
 }

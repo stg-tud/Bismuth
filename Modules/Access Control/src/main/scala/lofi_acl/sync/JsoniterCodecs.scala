@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import crypto.PublicIdentity
 import lofi_acl.bft.{Hash, Signature}
 import lofi_acl.sync.signed.SignedDelta
-import lofi_acl.sync.signed.FilteredRdtSync.SyncMsg
+import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecs.given
 

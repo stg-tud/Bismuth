@@ -14,6 +14,8 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
 
   def isEmpty: Boolean = internal.forall((_, r) => r.isEmpty)
 
+  def nonEmpty: Boolean = !isEmpty
+
   /** Retrieves the first Dot that is included in this set of dots.
     *
     *  @return the first included Dot.

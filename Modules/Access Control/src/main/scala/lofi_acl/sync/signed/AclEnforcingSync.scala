@@ -6,8 +6,8 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.*
 import lofi_acl.bft.HashDag.Encoder
-import lofi_acl.sync.signed.FilteredRdtSync.SyncMsg.MyPeersAre
-import lofi_acl.sync.signed.FilteredRdtSync.{SyncMsg, encoder}
+import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg.MyPeersAre
+import lofi_acl.sync.signed.AclEnforcingSync.{SyncMsg, encoder}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, JsoniterCodecs, MessageReceiver}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
@@ -15,17 +15,16 @@ import rdts.time.Dots
 
 import java.util.concurrent.LinkedBlockingQueue
 
-class FilteredRdtSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
+class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
     initialAclHashDag: HashDag[BftDelta[Acl], Acl]
 ) extends MessageReceiver[SyncMsg[State]] {
   private val msgQueue: LinkedBlockingQueue[(SyncMsg[State], PublicIdentity)] = LinkedBlockingQueue()
-  private val comm: Communication[SyncMsg[State]]                             = ???
 
-  private val aclAntiEntropy = AclAntiEntropy(localIdentity, initialAclHashDag)
-  private val rdtAntiEntropy = FilteredRdtAntiEntropy[State](localIdentity)
+  private val aclAntiEntropy = AclAntiEntropy(localIdentity, initialAclHashDag, ???)
+  private val rdtAntiEntropy = FilteredRdtAntiEntropy[State](localIdentity, ???, aclAntiEntropy)
 
   override def receivedMessage(msg: SyncMsg[State], remote: PublicIdentity): Unit = msg match {
     case SyncMsg.DataDeltas(deltas, filtered, remoteAcl) =>
@@ -41,13 +40,7 @@ class FilteredRdtSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter
   }
 }
 
-trait Communication[Msg] {
-  def send(to: PublicIdentity, msg: Msg): Unit
-  def sendMultiple(to: PublicIdentity, msg: Msg): Unit
-  def handlePeerGossip(peers: Set[(PublicIdentity, (String, Int))]): Unit
-}
-
-object FilteredRdtSync {
+object AclEnforcingSync {
   enum SyncMsg[State]:
       case DataDeltas(deltas: Seq[SignedDelta[State]], filtered: Dots, acl: Set[Hash])
       case AclDeltas(delta: Seq[BftDelta[Acl]])
