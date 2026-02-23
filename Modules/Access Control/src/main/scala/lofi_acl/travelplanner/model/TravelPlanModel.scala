@@ -18,7 +18,7 @@ import scala.concurrent.ExecutionContext.global
 
 class TravelPlanModel(
     private val localIdentity: PrivateIdentity,
-    replicaProvider: (TravelPlan => Unit) => Replica[TravelPlan]
+    replicaProvider: (stateChanged: TravelPlan => Unit) => Replica[TravelPlan]
 ) {
   val publicId: PublicIdentity = localIdentity.getPublic
 

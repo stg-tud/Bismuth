@@ -99,4 +99,21 @@ class AclAntiEntropy(
     val localDeltas = hashDag.deltas
     network.sendDeltas(missing.toSeq.flatMap(localDeltas.get), remote)
   }
+
+  def mutate(delta: Acl): Unit = {
+    var toDisseminate: Hash = null
+    synchronized {
+      hashDag = aclRdt.mutate(delta, hashDag) // Throws an exception if delta is illegal
+      assert(hashDag.heads.size == 1)
+      toDisseminate = hashDag.heads.head
+    }
+
+    // Notify about acl change
+    onAclChanged(currentAcl._2)
+
+    // Broadcast change
+    network.connectedPeers.foreach { remote =>
+      network.sendDeltas(Seq(hashDag.deltas(toDisseminate)), remote)
+    }
+  }
 }

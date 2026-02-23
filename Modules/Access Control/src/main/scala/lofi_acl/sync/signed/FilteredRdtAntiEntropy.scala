@@ -28,7 +28,8 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private def notifyStateChanged(delta: State): Unit = ???
   def currentState: (Dots, State)                    = currentStateRef.get()
 
-  def localMutation(delta: State): Unit = {
+  def localMutation(mutator: State => State): Unit = {
+    val delta                = mutator(currentState._2)
     val (aclVersion, acl)    = aclAntiEntropy.currentAcl
     val localWritePermission = acl.write.getOrElse(localIdentity.getPublic, PermissionTree.empty)
     val decomposedDelta      =
@@ -41,6 +42,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       val recombined = decomposedDelta.map(_.payload).reduce((l, r) => Lattice.merge(l, r))
       val dots       = Dots.from(decomposedDelta.map(_.dot))
       currentStateRef.updateAndGet((oldDots, oldState) => (oldDots.union(dots), oldState.merge(recombined)))
+      notifyStateChanged(delta)
       broadcastDeltasFiltered(decomposedDelta)
     }
   }

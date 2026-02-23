@@ -4,6 +4,7 @@ import crypto.PublicIdentity
 import lofi_acl.sync.monotonic.Acl
 import rdts.filters.PermissionTree
 
+// TODO: remove this and replace with bft.Acl
 case class BftAcl(
     override val read: Map[PublicIdentity, PermissionTree],
     override val write: Map[PublicIdentity, PermissionTree],

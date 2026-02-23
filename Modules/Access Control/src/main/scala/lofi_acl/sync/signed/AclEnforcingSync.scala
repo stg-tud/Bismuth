@@ -11,7 +11,7 @@ import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg.MyPeersAre
 import lofi_acl.sync.signed.AclEnforcingSync.{SyncMsg, encoder}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, JsoniterCodecs, MessageReceiver}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
+import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
 
 import java.util.concurrent.Executors
@@ -46,6 +46,25 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       if missingRdtDeltas.nonEmpty then rdtAntiEntropy.respondToDeltaRequest(missingRdtDeltas, remote)
       if missingAclDeltas.nonEmpty then aclAntiEntropy.respondToDeltaRequest(missingAclDeltas, remote)
   }
+
+  def connect(host: String, port: Int): Unit = connectionManager.connectTo(host, port)
+
+  def currentState: State = rdtAntiEntropy.currentState._2
+
+  def aclRootOp: BftDelta[Acl] = {
+    val hashDag = aclAntiEntropy.currentHashDag
+    hashDag.deltas(hashDag.root)
+  }
+
+  def currentAcl: Acl = aclAntiEntropy.currentAcl._2
+
+  def delegatePermission(read: Map[PublicIdentity, PermissionTree], write: Map[PublicIdentity, PermissionTree]): Unit =
+    aclAntiEntropy.mutate(Acl(read, write, Set.empty, Set.empty))
+
+  def mutate(mutator: State => State): Unit =
+    rdtAntiEntropy.localMutation(mutator)
+
+  def listenPort: Option[Int] = connectionManager.listenPort
 }
 
 object AclEnforcingSync {

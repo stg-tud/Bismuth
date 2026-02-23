@@ -1,6 +1,7 @@
 package lofi_acl.bft
 
 import crypto.PublicIdentity
+import lofi_acl.sync.monotonic
 import rdts.base.{Bottom, DecoratedLattice, Lattice}
 import rdts.filters.PermissionTree
 
@@ -9,7 +10,7 @@ case class Acl(
     write: Map[PublicIdentity, PermissionTree],
     removed: Set[PublicIdentity],
     admins: Set[PublicIdentity],
-)
+) extends monotonic.Acl
 
 object Acl {
   given aclLattice: Lattice[Acl] = {
