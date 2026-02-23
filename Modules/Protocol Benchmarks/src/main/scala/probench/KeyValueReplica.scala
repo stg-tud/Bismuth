@@ -309,7 +309,7 @@ class KeyValueReplica(
       log(s"state: $state Alive peers: $alivePeers")
 
       if !alivePeers.exists(cluster.state.leader.contains) then {
-        println(s"Detected leader failure (${cluster.state.leader}, triggering new election")
+        println(s"Detected leader failure (${cluster.state.leader}), triggering new election")
         cluster.maybeLeaderElection(alivePeers)
       }
     }
