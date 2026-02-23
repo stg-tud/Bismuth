@@ -5,7 +5,7 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
-import rdts.protocols.paper.{MultiPaxos, PipePaxos, Vote, Voting}
+import rdts.protocols.paper.{MultiPaxos, Vote, Voting}
 
 enum KVOperation[Key, Value] {
   def key: Key
@@ -18,12 +18,15 @@ type ConnInformation = Map[LocalUid, LastWriterWins[Long]]
 type ClusterState    = MultiPaxos[Req[KVOperation[String, String]]]
 type ClientState     = RequestResponseQueue[KVOperation[String, String], String]
 
-case class Heartbeat(supposedLeader: Uid, timestamp: Long)
+case class Heartbeat(supposedLeader: Uid, senderTimestamp: Long, receiverTimestamp: Option[Long] = None)
 case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]]) {
   private def currentVotes(timeoutThreshold: Long): Map[Uid, Uid] =
     heartbeats
-      .filter((_, lww) => lww.value.timestamp >= (System.currentTimeMillis() - timeoutThreshold))
-      .map((uid, lww) => (uid, lww.value.supposedLeader))
+      .collect {
+        case (uid, LastWriterWins(_, Heartbeat(leader, senderT, Some(receiverT))))
+            if receiverT >= (System.currentTimeMillis() - timeoutThreshold) =>
+          (uid, leader)
+      }
 
   def alivePeers(timeoutThreshold: Long): Set[Uid] = {
     currentVotes(timeoutThreshold)
