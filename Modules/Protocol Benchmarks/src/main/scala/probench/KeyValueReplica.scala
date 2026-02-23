@@ -219,7 +219,7 @@ class KeyValueReplica(
   // ============== CONN-INF ==============
 
   class ConnInf {
-    @volatile var state: ConnInformation = Map.empty
+    @volatile var state: ConnInformation = HeartbeatQuorum()
 
     given Lattice[Payload[ConnInformation]] =
         given Lattice[Int] = Lattice.fromOrdering
@@ -236,10 +236,15 @@ class KeyValueReplica(
     )
 
     def handleIncoming(delta: ConnInformation): Unit = {
-      log("handling incoming conn inf")
+      log(s"handling incoming conn inf: $delta")
       val (old, changed) = currentStateLock.synchronized {
-        val old = state
-        state = state `merge` delta
+        val receivedTime          = System.currentTimeMillis()
+        val old                   = state
+        val deltaWithReceivedTime = delta.copy(heartbeats = delta.heartbeats.map {
+          case (id, LastWriterWins(t, Heartbeat(leader, senderTimestamp, _))) =>
+            (id, LastWriterWins(t, Heartbeat(leader, senderTimestamp, Some(receivedTime))))
+        })
+        state = state `merge` deltaWithReceivedTime
         (old, state)
       }
     }
@@ -256,20 +261,20 @@ class KeyValueReplica(
 
     def sendHeartbeat(): ConnInformation = {
       currentStateLock.synchronized {
-        publish(Map.from(List((localUid, LastWriterWins.now(System.currentTimeMillis())))))
+        val heartbeat = Heartbeat(supposedLeader = cluster.state.leader, senderTimestamp = System.currentTimeMillis())
+        publish(HeartbeatQuorum(Map(
+          replicaId -> state.heartbeats.get(replicaId).map(_.write(heartbeat)).getOrElse(LastWriterWins.now(heartbeat))
+        )))
       }
     }
 
     def checkLiveness(): Unit = {
-      val newAlivePeers = state
-        .filter((_, lww) => lww.value >= (System.currentTimeMillis() - timeoutThreshold))
-        .map((uid, _) => uid.uid)
-        .toSet
+      val newAlivePeers = state.alivePeers(timeoutThreshold, System.currentTimeMillis())
 
       (alivePeers -- newAlivePeers).foreach(id => println(s"Peer $id timed out"))
       alivePeers = newAlivePeers
 
-      log(s"Alive peers: $alivePeers")
+      log(s"state: $state Alive peers: $alivePeers")
 
       if !alivePeers.exists(cluster.state.leader.contains) then {
         println(s"Detected leader failure (${cluster.state.leader}, triggering new election")
