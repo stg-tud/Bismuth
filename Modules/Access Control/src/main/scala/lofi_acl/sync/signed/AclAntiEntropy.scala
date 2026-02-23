@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
 class AclAntiEntropy(
     private val id: PrivateIdentity,
     initialHashDag: HashDag[BftDelta[Acl], Acl],
+    onAclChanged: (delta: Acl) => Unit,
     network: AntiEntropyCommunicator[?]
 ) {
 
@@ -26,9 +27,6 @@ class AclAntiEntropy(
   @volatile private var deltasInBacklog                      = Set.empty[Hash]
   private val knownMissingDeltas: AtomicReference[Set[Hash]] = AtomicReference(Set.empty)
   @volatile private var backlog: Seq[(Hash, BftDelta[Acl])]  = Vector.empty
-
-  // TODO: Replace
-  private def notifyAclChanged(delta: Acl): Unit = ???
 
   private def cachedAclLookup(heads: Set[Hash]): Option[Acl] = {
     val (latestHeads, acl) = currentAclRef.get()
@@ -73,7 +71,7 @@ class AclAntiEntropy(
         // TODO: request missing
       }
 
-      if changed then notifyAclChanged(cumulativeDelta)
+      if changed then onAclChanged(cumulativeDelta)
     }
   }
 

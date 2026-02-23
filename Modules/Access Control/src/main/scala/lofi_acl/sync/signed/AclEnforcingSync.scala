@@ -1,7 +1,7 @@
 package lofi_acl.sync.signed
 
 import channels.MessageBuffer
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.*
@@ -14,7 +14,7 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
 
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.Executors
 
 class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
@@ -22,18 +22,24 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
     initialAclHashDag: HashDag[BftDelta[Acl], Acl]
 ) extends MessageReceiver[SyncMsg[State]] {
-  private val msgQueue: LinkedBlockingQueue[(SyncMsg[State], PublicIdentity)] = LinkedBlockingQueue()
-  private val connectionManager = connectionManagerProvider(localIdentity, ???)
-  private val comm              = ConnectionManagerCommunicator(connectionManager)
+  private val messageHandlerExecutor = Executors.newSingleThreadExecutor() // Executes the message handling logic
+  private val connectionManager      = connectionManagerProvider(
+    localIdentity,
+    (msg: MessageBuffer, fromUser: PublicIdentity) =>
+      messageHandlerExecutor.execute(() => receivedMessage(readFromArray(msg.asArray), fromUser))
+  )
+  private val comm = ConnectionManagerCommunicator(connectionManager)
 
-  private val aclAntiEntropy = AclAntiEntropy(localIdentity, initialAclHashDag, ???)
-  private val rdtAntiEntropy = FilteredRdtAntiEntropy[State](localIdentity, ???, aclAntiEntropy)
+  private val aclAntiEntropy = AclAntiEntropy(localIdentity, initialAclHashDag, onAclChange, comm)
+  private val rdtAntiEntropy: FilteredRdtAntiEntropy[State] =
+    FilteredRdtAntiEntropy[State](localIdentity, comm, aclAntiEntropy)
+
+  private def onAclChange(delta: Acl): Unit = if rdtAntiEntropy != null then rdtAntiEntropy.onAclChanged(delta)
 
   override def receivedMessage(msg: SyncMsg[State], remote: PublicIdentity): Unit = msg match {
-    case SyncMsg.DataDeltas(deltas, filtered, remoteAcl) =>
-      aclAntiEntropy.updatePeerAclKnowledge(remoteAcl, remote)
-    case SyncMsg.AclDeltas(deltas)                => aclAntiEntropy.receiveDeltas(deltas, remote)
-    case SyncMsg.MyPeersAre(peers)                => ???
+    case SyncMsg.DataDeltas(deltas, filtered, remoteAcl) => aclAntiEntropy.updatePeerAclKnowledge(remoteAcl, remote)
+    case SyncMsg.AclDeltas(deltas)                       => aclAntiEntropy.receiveDeltas(deltas, remote)
+    case SyncMsg.MyPeersAre(peers)                       => ???
     case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
     case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>
