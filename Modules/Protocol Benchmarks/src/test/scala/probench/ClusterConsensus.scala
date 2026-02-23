@@ -23,7 +23,9 @@ class ClusterConsensus extends munit.FunSuite {
     val ids = Set("Node1", "Node2", "Node3").map(Uid.predefined)
     given Participants(ids)
     val nodes @ primary :: secondaries =
-      ids.map { id => KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false) }.toList: @unchecked
+      ids.map { id =>
+        KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
+      }.toList: @unchecked
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
     secondaries.foreach { node => node.cluster.dataManager.addObjectConnection(connection.client(node.uid.toString)) }
@@ -95,7 +97,6 @@ class ClusterConsensus extends munit.FunSuite {
 
     nodes.foreach(noUpkeep)
 
-
     assertEquals(nodes(0).cluster.state.closedRounds(3).value, KVOperation.Read("test2"))
     assertEquals(nodes(2).cluster.state.closedRounds.size, 2)
 
@@ -114,7 +115,9 @@ class ClusterConsensus extends munit.FunSuite {
     val ids = Set("Node1").map(Uid.predefined)
     given Participants(ids)
     val nodes @ primary :: x =
-      ids.map { id => KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false) }.toList: @unchecked
+      ids.map { id =>
+        KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
+      }.toList: @unchecked
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
 

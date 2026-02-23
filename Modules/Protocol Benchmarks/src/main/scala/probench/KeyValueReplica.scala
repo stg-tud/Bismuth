@@ -34,7 +34,8 @@ class KeyValueReplica(
     offloadSending: Boolean = true,
     offloadReplica: Boolean = true,
     deltaStorageType: DeltaStorage.Type = KeepAll,
-    timeoutThreshold: Long = 1000
+    timeoutThreshold: Long = 1000,
+    commitReads: Boolean = false
 ) {
 
   inline def log(inline msg: String): Unit =
@@ -90,7 +91,7 @@ class KeyValueReplica(
         assert(changed == state)
         // else log(s"upkept: ${pprint(upkept)}")
         val newState = publish(upkept)
-        maybeAnswerClient(old.nextDecisionRound)
+        maybeAnswerClientFromLog(old.nextDecisionRound)
         // try to propose a new value in case voting is decided
         maybeProposeNewValue(client.state)
       }
@@ -102,7 +103,7 @@ class KeyValueReplica(
         val oldstate = state
         state = state.merge(delta)
         dataManager.applyDelta(delta)
-        maybeAnswerClient(oldstate.nextDecisionRound)
+        maybeAnswerClientFromLog(oldstate.nextDecisionRound)
       } else {
         log("skip")
       }
@@ -133,7 +134,13 @@ class KeyValueReplica(
       // check if we are the leader and ready to handle a request
       if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
           // ready to propose value
-          client.firstUnansweredRequest match
+          val requestToAnswer =
+            if commitReads then client.firstUnansweredRequest
+            else
+                client.requestsSorted.collectFirst {
+                  case r @ Req(KVOperation.Write(_, _), _) => r
+                }
+          requestToAnswer match
               case Some(req) =>
                 log(s"Proposing new value $req.")
                 val _ = publish(state.proposeIfLeader(req))
@@ -141,23 +148,47 @@ class KeyValueReplica(
                 log("I am the leader but request queue is empty.")
     }
 
-    private def maybeAnswerClient(previousRound: Time): Unit = {
+    private def performOp(op: KVOperation[String, String]): String =
+      op match {
+        case KVOperation.Read(key) =>
+          kvCache.synchronized {
+            kvCache.getOrElse(key, s"Key '$key' has not been written to!")
+          }
+        case KVOperation.Write(key, value) =>
+          kvCache.synchronized {
+            kvCache.put(key, value)
+          }
+          s"$key=$value; OK"
+      }
+
+    def maybeAnswerClientFromCache(clientState: ClientState): Unit = {
+      // check if we are the leader and have a heartbeat quorum
+      if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
+            timeoutThreshold,
+            System.currentTimeMillis()
+          )
+      then {
+        // ready to propose value
+        val responses = clientState.requests.queryAllEntries.collect {
+          case req @ Req(k @ KVOperation.Read(key), _) =>
+            clientState.respond(req, performOp(k))
+        }
+
+        if responses.size > 0 then {
+          log("answering unanswered read requests from cache")
+          val accumulatedResponses = responses.fold(RequestResponseQueue.empty)((acc, r) => acc.merge(r))
+          client.publish(accumulatedResponses): Unit
+        }
+      }
+
+    }
+
+    private def maybeAnswerClientFromLog(previousRound: Time): Unit = {
       log(s"log: ${state.log}")
       // println(s"${pprint.tokenize(newState).mkString("")}")
 
       for req @ Req(op, _) <- state.readDecisionsSince(previousRound) do {
-        val decision: String = op match {
-          case KVOperation.Read(key) =>
-            kvCache.synchronized {
-              kvCache.getOrElse(key, s"Key '$key' has not been written to!")
-            }
-          case KVOperation.Write(key, value) =>
-            kvCache.synchronized {
-              kvCache.put(key, value)
-            }
-            s"$key=$value; OK"
-        }
-        // val distinctClients : Set[Uid] = client.state.responses.keySet.map(_._2)
+        val decision: String = performOp(op)
         // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
         // only leader is allowed to actually respond to requests
         if cluster.state.leader.contains(replicaId) then {
@@ -197,6 +228,7 @@ class KeyValueReplica(
       }
       if old != changed then {
         assert(changed == state)
+        cluster.maybeAnswerClientFromCache(state)
         cluster.maybeProposeNewValue(changed)
         cluster.forceUpkeep(): Unit
         // else log(s"upkept: ${pprint(upkept)}")
