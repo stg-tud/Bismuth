@@ -10,7 +10,7 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
 
-class LocalAclReplica[Rdt](
+class ReplicaOfSignedDeltaRdt[Rdt](
     private val localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager,
     initialAclHashDag: HashDag[BftDelta[Acl], Acl],
