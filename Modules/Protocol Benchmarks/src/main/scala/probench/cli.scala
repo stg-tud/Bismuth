@@ -178,6 +178,7 @@ object cli {
     val endpoints         = named[List[String]]("--endpoints", "")
     val deltaStorageType  = named[DeltaStorage.Type]("--delta-storage-type", "", DeltaStorage.Type.Merging(2000))
     val logTimings        = named[Boolean]("--log-timings", "true|false", true)
+    val commitReads        = named[Boolean]("--commit-reads", "true|false", true)
 
     /*
     fixed opType warmup measurement min max
@@ -233,8 +234,9 @@ object cli {
             KeyValueReplica(
               name.value,
               initialClusterIds.value.toSet,
-              deltaStorageType = DeltaStorage.Type.KeepAll,
-              timeoutThreshold = timeout.value
+              deltaStorageType = deltaStorageType.value,
+              timeoutThreshold = timeout.value,
+              commitReads = commitReads.value
             )
 
           val reporter = if reporting.value then ChannelTrafficReporter() else null
