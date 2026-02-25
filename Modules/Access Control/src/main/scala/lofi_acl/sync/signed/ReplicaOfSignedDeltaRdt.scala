@@ -53,7 +53,7 @@ class ReplicaOfSignedDeltaRdt[Rdt](
     )
   }
 
-  override def start(): Unit = ???
+  override def start(): Unit = sync.start()
 
-  override def stop(): Unit = ???
+  override def stop(): Unit = sync.stop()
 }
