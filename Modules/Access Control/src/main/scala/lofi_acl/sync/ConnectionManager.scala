@@ -30,4 +30,6 @@ trait ConnectionManager {
   def disconnect(userId: PublicIdentity): Unit
 
   def connectedPeers: Set[PublicIdentity]
+
+  def peerAddresses: Map[PublicIdentity, (String, Int)]
 }

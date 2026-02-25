@@ -39,7 +39,11 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   override def receivedMessage(msg: SyncMsg[State], remote: PublicIdentity): Unit = msg match {
     case SyncMsg.DataDeltas(deltas, filtered, remoteAcl) => aclAntiEntropy.updatePeerAclKnowledge(remoteAcl, remote)
     case SyncMsg.AclDeltas(deltas)                       => aclAntiEntropy.receiveDeltas(deltas, remote)
-    case SyncMsg.MyPeersAre(peers)                       => ???
+    case SyncMsg.MyPeersAre(peers)                       =>
+      val established = connectionManager.connectedPeers
+      peers.filter((id, _) => established(id)).foreach { case (_, (host, port)) =>
+        connectionManager.connectTo(host, port)
+      }
     case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
     case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>

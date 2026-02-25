@@ -97,12 +97,16 @@ class ChannelConnectionManager(
 
   override def connectedPeers: Set[PublicIdentity] = connections.get().keySet
 
+  override def peerAddresses: Map[PublicIdentity, (String, Int)] =
+    connections.get().flatMap { (remote, connections) =>
+      connections.map(conn => remote -> (conn.info.details("host"), conn.info.details("port").toInt))
+    }
+
   private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
       case Some(`localPublicId`) =>
         if !disableLogging then println("Refusing attempt to track connection to myself")
         connection.close()
-      case None               => ??? // Should not happen
       case Some(remotePeerId) =>
         if !disableLogging then println("Connection established with: " + remotePeerId)
         val updated = connections.updateAndGet(old =>
@@ -115,6 +119,7 @@ class ChannelConnectionManager(
         then println(s"duplicate connections from $remotePeerId: $connections + $connection")
 
         messageReceiver.connectionEstablished(remotePeerId)
+      case None => ??? // Should not happen
     }
   }
 

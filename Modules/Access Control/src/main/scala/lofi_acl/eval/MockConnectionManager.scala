@@ -88,4 +88,7 @@ class MockConnectionManager(
     }
 
   override def connectedPeers: Set[PublicIdentity] = peers.keySet
+
+  override def peerAddresses: Map[PublicIdentity, (String, Int)] =
+    peers.map((remote, conn) => remote -> ("localhost", conn.listenPort.get))
 }
