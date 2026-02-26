@@ -5,6 +5,7 @@ import lofi_acl.sync.monotonic.Acl
 import rdts.filters.PermissionTree
 import rdts.time.Dot
 
+// TODO: Probably should be refactored away
 trait Replica[RDT] {
   def receivedDelta(dot: Dot, rdt: RDT): Unit
   def connect(remoteUser: PublicIdentity, connectionString: String): Unit

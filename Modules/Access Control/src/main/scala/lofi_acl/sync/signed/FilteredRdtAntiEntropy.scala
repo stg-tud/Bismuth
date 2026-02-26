@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
 class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     private val localIdentity: PrivateIdentity,
+    onRdtChange: State => Unit,
     private val network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
     initialDotValue: Long = 0
@@ -25,7 +26,6 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private val filteredDots: AtomicReference[Dots] = AtomicReference(Dots.empty)
   private val missingDots: AtomicReference[Dots]  = AtomicReference(Dots.empty)
 
-  private def notifyStateChanged(delta: State): Unit = ???
   def currentState: (Dots, State)                    = currentStateRef.get()
 
   def localMutation(mutator: State => State): Unit = {
@@ -42,7 +42,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       val recombined = decomposedDelta.map(_.payload).reduce((l, r) => Lattice.merge(l, r))
       val dots       = Dots.from(decomposedDelta.map(_.dot))
       currentStateRef.updateAndGet((oldDots, oldState) => (oldDots.union(dots), oldState.merge(recombined)))
-      notifyStateChanged(delta)
+      onRdtChange(delta)
       broadcastDeltasFiltered(decomposedDelta)
     }
   }
@@ -125,7 +125,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       )
       missingDots.updateAndGet(missing => missing.diff(appliedDeltas))
       filteredDots.updateAndGet(filtered => filtered.diff(appliedDeltas))
-      notifyStateChanged(accumulatedDelta)
+      onRdtChange(accumulatedDelta)
     }
   }
 

@@ -12,17 +12,17 @@ import java.util.concurrent.atomic.AtomicReference
 
 class AclAntiEntropy(
     private val id: PrivateIdentity,
-    initialHashDag: HashDag[BftDelta[Acl], Acl],
+    genesis: BftDelta[Acl],
     onAclChanged: (delta: Acl) => Unit,
     network: AntiEntropyCommunicator[?]
 ) {
 
   private val aclRdt = AclRdt(id, cachedAclLookup)
 
-  @volatile private var hashDag: HashDag[BftDelta[Acl], Acl] = initialHashDag
-  def currentHashDag: HashDag[BftDelta[Acl], Acl]            = hashDag
-  private val currentAclRef                                  = AtomicReference((Set.empty[Hash], Bottom[Acl].empty))
-  def currentAcl: (Set[Hash], Acl)                           = currentAclRef.get()
+  @volatile private var hashDag: HashDag[BftDelta[Acl], Acl] = HashDag.fromRoot(genesis)
+  private val currentAclRef                       = AtomicReference((Set(hashDag.root), hashDag.deltas.head._2.state))
+  def currentHashDag: HashDag[BftDelta[Acl], Acl] = hashDag
+  def currentAcl: (Set[Hash], Acl)                = currentAclRef.get()
 
   @volatile private var deltasInBacklog                      = Set.empty[Hash]
   private val knownMissingDeltas: AtomicReference[Set[Hash]] = AtomicReference(Set.empty)

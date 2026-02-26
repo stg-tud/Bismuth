@@ -20,15 +20,16 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
-    initialAclHashDag: HashDag[BftDelta[Acl], Acl]
+    aclGenesis: BftDelta[Acl],
+    onRdtChanged: State => Unit
 ) {
   private val messageHandlerExecutor = Executors.newSingleThreadExecutor() // Executes the message handling logic
   private var connectionManager: ConnectionManager = null
   private val comm                                 = ConnectionManagerCommunicator(connectionManager)
 
-  private val aclAntiEntropy = AclAntiEntropy(localIdentity, initialAclHashDag, onAclChange, comm)
+  private val aclAntiEntropy = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
   private val rdtAntiEntropy: FilteredRdtAntiEntropy[State] =
-    FilteredRdtAntiEntropy[State](localIdentity, comm, aclAntiEntropy)
+    FilteredRdtAntiEntropy[State](localIdentity, onRdtChanged, comm, aclAntiEntropy)
 
   private def onAclChange(delta: Acl): Unit = if rdtAntiEntropy != null then rdtAntiEntropy.onAclChanged(delta)
 

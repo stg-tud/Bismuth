@@ -4,7 +4,7 @@ import channels.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.bft.{Acl, BftDelta, HashDag}
+import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.sync.*
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
@@ -13,7 +13,7 @@ import rdts.time.Dot
 class ReplicaOfSignedDeltaRdt[Rdt](
     private val localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager,
-    initialAclHashDag: HashDag[BftDelta[Acl], Acl],
+    aclGenesis: BftDelta[Acl],
     onDeltaReceive: Rdt => Unit = (_: Rdt) => {}, // Consumes a delta
 )(using
     Lattice[Rdt],
@@ -23,9 +23,10 @@ class ReplicaOfSignedDeltaRdt[Rdt](
     Decompose[Rdt]
 ) extends Replica[Rdt] {
 
-  val sync = AclEnforcingSync(localIdentity, connectionManagerProvider, initialAclHashDag)
+  val sync = AclEnforcingSync(localIdentity, connectionManagerProvider, aclGenesis, onDeltaReceive)
 
-  override def receivedDelta(dot: Dot, rdt: Rdt): Unit = ()
+  // TODO: Not used in this instance, refactor
+  override def receivedDelta(dot: Dot, rdt: Rdt): Unit = onDeltaReceive(rdt)
 
   override def connect(remoteUser: PublicIdentity, connectionString: String): Unit = {
     val remoteAddr = connectionString.split(':')

@@ -2,8 +2,7 @@ package lofi_acl.travelplanner
 
 import channels.MessageBuffer
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import lofi_acl.bft.AclRdt.given_Encoder_BftDelta
-import lofi_acl.bft.{AclRdt, HashDag}
+import lofi_acl.bft.AclRdt
 import lofi_acl.sync.signed.{ReplicaOfSignedDeltaRdt, SyncInvitation}
 import lofi_acl.sync.{ChannelConnectionManager, MessageReceiver}
 import lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
@@ -27,16 +26,16 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
 
   private object TpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {
-      val identity          = IdentityFactory.createNewIdentity
-      val initialAclHashDag = HashDag.fromRoot(AclRdt.createSelfSignedRoot(identity))
+      val identity        = IdentityFactory.createNewIdentity
+      val aclGenesis      = AclRdt.createSelfSignedRoot(identity)
       val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
-        new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, initialAclHashDag, onDeltaReceive)
+        new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, aclGenesis, onDeltaReceive)
       TravelPlanModel(identity, replicaProvider)
     }
 
     override def createByJoining(invitationString: String): TravelPlanModel = {
       val invitation      = SyncInvitation.decode(invitationString)
-      val aclRoot         = HashDag.fromRoot(invitation.rootOp)
+      val aclRoot         = invitation.rootOp
       val identity        = IdentityFactory.fromIdentityKey(invitation.identityKey)
       val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
         new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, aclRoot, onDeltaReceive)
