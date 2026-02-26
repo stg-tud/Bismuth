@@ -18,7 +18,8 @@ import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage}
 
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait ClientProtocol
 object ClientProtocol {
@@ -161,26 +162,27 @@ class KeyValueReplica(
           s"$key=$value; OK"
       }
 
-    def maybeAnswerClientFromCache(clientState: ClientState): Unit = {
-      // check if we are the leader and have a heartbeat quorum
-      if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
-            timeoutThreshold,
-            System.currentTimeMillis()
-          )
-      then {
-        // ready to propose value
-        val responses = clientState.requests.queryAllEntries.collect {
-          case req @ Req(k @ KVOperation.Read(key), _) =>
-            clientState.respond(req, performOp(k))
-        }
+    def maybeAnswerClientFromCache(clientState: ClientState): Future[Unit] = {
+      Future {
+        // check if we are the leader and have a heartbeat quorum
+        if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
+              timeoutThreshold,
+              System.currentTimeMillis()
+            )
+        then {
+          // ready to propose value
+          val responses = clientState.requests.queryAllEntries.collect {
+            case req @ Req(k @ KVOperation.Read(key), _) =>
+              clientState.respond(req, performOp(k))
+          }
 
-        if responses.size > 0 then {
-          log("answering unanswered read requests from cache")
-          val accumulatedResponses = responses.fold(RequestResponseQueue.empty)((acc, r) => acc.merge(r))
-          client.publish(accumulatedResponses): Unit
+          if responses.nonEmpty then {
+            log("answering unanswered read requests from cache")
+            val accumulatedResponses = responses.fold(RequestResponseQueue.empty)((acc, r) => acc.merge(r))
+            client.publish(accumulatedResponses): Unit
+          }
         }
       }
-
     }
 
     private def maybeAnswerClientFromLog(previousRound: Time): Unit = {
