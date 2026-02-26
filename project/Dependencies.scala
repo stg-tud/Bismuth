@@ -13,7 +13,7 @@ object Dependencies {
   val fansi       = libraryDependencies += "com.lihaoyi"              %%% "fansi"                    % "0.5.1"
   val jetcd       = libraryDependencies += "io.etcd"                    % "jetcd-core"               % "0.8.6"
   val monocleCore = libraryDependencies += "dev.optics"               %%% "monocle-core"             % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"            %%% "munit"                    % "1.2.2"  % Test
+  val munit       = libraryDependencies += "org.scalameta"            %%% "munit"                    % "1.2.3"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"            %%% "munit-scalacheck"         % "1.2.0"  % Test
   val pprint      = libraryDependencies += "com.lihaoyi"              %%% "pprint"                   % "0.9.6"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules"    %% "scala-swing"              % "3.0.0"
