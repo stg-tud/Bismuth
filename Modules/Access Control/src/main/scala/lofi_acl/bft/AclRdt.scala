@@ -1,6 +1,6 @@
 package lofi_acl.bft
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
@@ -46,6 +46,19 @@ class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] =
 }
 
 object AclRdt {
+  def createSelfSignedRoot(rootIdentity: PrivateIdentity): BftDelta[Acl] = {
+    val id       = rootIdentity.getPublic
+    val unsigned = BftDelta(
+      null,
+      id,
+      Acl(Map(id -> PermissionTree.allow), Map(id -> PermissionTree.allow), Set.empty, Set(id)),
+      Set.empty
+    )
+    unsigned.copy(
+      signature = Signature.compute(writeToArray(unsigned), rootIdentity.identityKey.getPrivate)
+    )
+  }
+
   given JsonValueCodec[BftDelta[Acl]] = {
     import lofi_acl.sync.JsoniterCodecs.given
     JsonCodecMaker.make(

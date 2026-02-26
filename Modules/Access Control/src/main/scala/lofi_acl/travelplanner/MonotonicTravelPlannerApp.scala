@@ -7,7 +7,7 @@ import lofi_acl.sync.monotonic.{MonotonicAcl, MonotonicInvitation, SyncWithMonot
 import lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}
 
-object TravelPlannerApp extends JFXApp3 {
+object MonotonicTravelPlannerApp extends JFXApp3 {
   override def start(): Unit = {
     Platform.implicitExit = true
     stage = new JFXApp3.PrimaryStage {

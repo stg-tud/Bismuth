@@ -38,7 +38,10 @@ object Signature {
   given signatureValueCodec: JsonValueCodec[Signature]:
       override def decodeValue(in: JsonReader, default: Signature): Signature =
         new Signature(in.readBase64AsBytes(Array.empty))
-      override def encodeValue(x: Signature, out: JsonWriter): Unit = out.writeBase64Val(x.delegate, true)
+      override def encodeValue(x: Signature, out: JsonWriter): Unit = {
+        if x eq null then out.writeNull()
+        else out.writeBase64Val(x.delegate, true)
+      }
       override def nullValue: Signature                             = null
 
   given signatureKeyCodec: JsonKeyCodec[Signature]:

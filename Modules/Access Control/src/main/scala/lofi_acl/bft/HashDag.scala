@@ -6,9 +6,7 @@ import rdts.base.{Bottom, Lattice}
 
 import scala.collection.mutable
 
-case class HashDag[D <: Delta[State]: Hashable, State](root: Hash, deltas: Map[Hash, D], heads: Set[Hash])(using
-    Encoder[Delta[State]]
-) {
+case class HashDag[D <: Delta[State]: {Hashable, Encoder}, State](root: Hash, deltas: Map[Hash, D], heads: Set[Hash]) {
   def add(deltaHash: Hash, delta: D): Either[Set[Hash], HashDag[D, State]] = {
     if deltas.contains(deltaHash) then return Right(this)
     val deltaParents = delta.parents
@@ -66,4 +64,10 @@ object HashDag {
         result = result.merge(next.state)
     result
   }
+
+  def fromRoot[D <: Delta[State]: {Hashable, Encoder}, State](aclRoot: D): HashDag[D, State] = {
+    val hash = Hashable[D].hash(aclRoot)
+    HashDag(hash, Map(hash -> aclRoot), Set(hash))
+  }
+
 }
