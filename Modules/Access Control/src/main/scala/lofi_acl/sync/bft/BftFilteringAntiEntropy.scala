@@ -66,8 +66,8 @@ class BftFilteringAntiEntropy[RDT](
   private val peerAddressCache = AtomicReference(Set.empty[(PublicIdentity, (String, Int))])
 
   // RDT ----------------------
-  protected var rdtDeltas: SynchronizedMutableArrayBufferDeltaStore[(RDT, Set[Signature])] =
-    SynchronizedMutableArrayBufferDeltaStore()
+  protected var rdtDeltas: SynchronizedMutableArrayDeltaStore[(RDT, Set[Signature])] =
+    SynchronizedMutableArrayDeltaStore()
   @volatile private var partialDeltaStore: Map[Dot, PartialDelta[RDT]] = Map.empty
   @volatile private var peerDots: Map[PublicIdentity, Dots]            = Map.empty
 

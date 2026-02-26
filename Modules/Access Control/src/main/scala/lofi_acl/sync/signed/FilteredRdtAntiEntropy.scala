@@ -4,7 +4,7 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.HashDag.Encoder
 import lofi_acl.bft.{Acl, Hash}
-import lofi_acl.sync.SynchronizedMutableArrayBufferDeltaStore
+import lofi_acl.sync.SynchronizedMutableArrayDeltaStore
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -21,7 +21,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private val localUid   = Uid(localIdentity.getPublic.id)
 
   private val currentStateRef: AtomicReference[(Dots, State)] = AtomicReference((Dots.empty, Bottom[State].empty))
-  private val deltaStore                          = SynchronizedMutableArrayBufferDeltaStore[SignedDelta[State]]()
+  private val deltaStore                          = SynchronizedMutableArrayDeltaStore[SignedDelta[State]]()
   private val filteredDots: AtomicReference[Dots] = AtomicReference(Dots.empty)
   private val missingDots: AtomicReference[Dots]  = AtomicReference(Dots.empty)
 
