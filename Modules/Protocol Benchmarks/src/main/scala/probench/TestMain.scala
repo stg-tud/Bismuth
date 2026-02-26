@@ -7,9 +7,9 @@ import java.nio.file.{Files, Path}
 object TestMain {
   def main(args: Array[String]): Unit = {
 
-    val nodes          = 9
+    val nodes          = 3
     val operationcount = "operationcount=100000"
-    val threads        = 20
+    val threads        = 5
 
     def clientPort(number: Int)   = 8100 + number * 10
     def peerPortPort(number: Int) = clientPort(number) + 1
@@ -41,8 +41,8 @@ object TestMain {
     val workdir = Path.of("target/ycsb").toAbsolutePath.normalize()
     Files.createDirectories(workdir)
 
-    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@128.140.117.134:ycsb-core.jar ${workdir}".run()
-    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@128.140.117.134:workloads ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.69.9:ycsb-core.jar ${workdir}".run()
+    process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.69.9:workloads ${workdir}".run()
 
     process"""java -cp ycsb-core.jar:../jars/* site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P workloads/writeonly -s -p pb.endpoints=localhost:8110  -p ${operationcount} -p recordcount=1000 -p measurementtype=histogram -threads ${threads}""".directory(
       Path.of("target/ycsb").toFile

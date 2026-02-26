@@ -49,6 +49,8 @@ class KeyValueReplica(
   given localUid: LocalUid = LocalUid(uid)
 
   val currentStateLock: AnyRef = new {}
+  val connInfStateLock: AnyRef = new {}
+  val clientStateLock: AnyRef = new {}
 
   private val kvCache = mutable.HashMap[String, String]()
 
@@ -162,6 +164,7 @@ class KeyValueReplica(
           s"$key=$value; OK"
       }
 
+    // TODO: pass state
     def maybeAnswerClientFromCache(clientState: ClientState): Future[Unit] = {
       Future {
         // check if we are the leader and have a heartbeat quorum
@@ -185,6 +188,7 @@ class KeyValueReplica(
       }
     }
 
+    // TODO: pass state here
     private def maybeAnswerClientFromLog(previousRound: Time): Unit = {
       log(s"log: ${state.log}")
       // println(s"${pprint.tokenize(newState).mkString("")}")
@@ -223,21 +227,20 @@ class KeyValueReplica(
 
     def handleIncoming(delta: ClientState): Unit = {
       log("handling incoming from client")
-      val (old, changed) = currentStateLock.synchronized {
+      val (old, changed) = clientStateLock.synchronized {
         val old = state
         state = state `merge` delta
         (old, state)
       }
       if old != changed then {
-        assert(changed == state)
-        cluster.maybeAnswerClientFromCache(state)
+        cluster.maybeAnswerClientFromCache(changed)
         cluster.maybeProposeNewValue(changed)
         cluster.forceUpkeep(): Unit
         // else log(s"upkept: ${pprint(upkept)}")
       }
     }
 
-    def publish(delta: ClientState): ClientState = currentStateLock.synchronized {
+    def publish(delta: ClientState): ClientState = clientStateLock.synchronized {
       if delta `inflates` state then {
         log("publishing")
         state = state.merge(delta)
@@ -283,7 +286,7 @@ class KeyValueReplica(
       }
     }
 
-    def publish(delta: ConnInformation): ConnInformation = currentStateLock.synchronized {
+    def publish(delta: ConnInformation): ConnInformation = connInfStateLock.synchronized {
       if delta `inflates` state then {
         log("publishing conn inf")
         state = state.merge(delta)
@@ -293,8 +296,8 @@ class KeyValueReplica(
       state
     }
 
-    def sendHeartbeat(): ConnInformation = {
-      currentStateLock.synchronized {
+    def sendHeartbeat(): Future[ConnInformation] = Future {
+      connInfStateLock.synchronized {
         val heartbeat = Heartbeat(supposedLeader = cluster.state.leader, senderTimestamp = System.currentTimeMillis())
         publish(HeartbeatQuorum(Map(
           replicaId -> state.heartbeats.get(replicaId).map(_.write(heartbeat)).getOrElse(LastWriterWins.now(heartbeat))
