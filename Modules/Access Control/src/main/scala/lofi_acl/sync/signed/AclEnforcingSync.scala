@@ -24,7 +24,21 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     onRdtChanged: State => Unit
 ) {
   private val messageHandlerExecutor = Executors.newSingleThreadExecutor() // Executes the message handling logic
-  private var connectionManager: ConnectionManager = null
+  private val connectionManager: ConnectionManager = {
+    val msgReceiver = new MessageReceiver[MessageBuffer] {
+      override def receivedMessage(msg: MessageBuffer, fromUser: PublicIdentity): Unit =
+        messageHandlerExecutor.execute(() => handleMessage(readFromArray(msg.asArray), fromUser))
+
+      override def connectionEstablished(newRemote: PublicIdentity): Unit =
+        messageHandlerExecutor.execute(() =>
+          val msg = ArrayMessageBuffer(writeToArray(MyPeersAre(connectionManager.peerAddresses.toSeq)))
+          connectionManager.connectedPeers.foreach { remote =>
+            connectionManager.send(remote, msg)
+          }
+        )
+    }
+    connectionManagerProvider(localIdentity, msgReceiver)
+  }
   private val comm                                 = ConnectionManagerCommunicator(connectionManager)
 
   private val aclAntiEntropy = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
@@ -68,19 +82,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   def listenPort: Option[Int] = connectionManager.listenPort
 
   def start(): Unit = {
-    val msgReceiver = new MessageReceiver[MessageBuffer] {
-      override def receivedMessage(msg: MessageBuffer, fromUser: PublicIdentity): Unit =
-        messageHandlerExecutor.execute(() => handleMessage(readFromArray(msg.asArray), fromUser))
-
-      override def connectionEstablished(newRemote: PublicIdentity): Unit =
-        messageHandlerExecutor.execute(() =>
-            val msg = ArrayMessageBuffer(writeToArray(MyPeersAre(connectionManager.peerAddresses.toSeq)))
-            connectionManager.connectedPeers.foreach { remote =>
-              connectionManager.send(remote, msg)
-            }
-        )
-    }
-    connectionManager = connectionManagerProvider(localIdentity, msgReceiver)
+    connectionManager.acceptIncomingConnections()
   }
 
   def stop(): Unit = {
