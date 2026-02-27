@@ -27,9 +27,9 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
   private object TpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {
       val identity        = IdentityFactory.createNewIdentity
-      val aclGenesis      = AclRdt.createSelfSignedRoot(identity)
+      val aclRoot         = AclRdt.createSelfSignedRoot(identity)
       val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
-        new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, aclGenesis, onDeltaReceive)
+        new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, aclRoot, onDeltaReceive)
       TravelPlanModel(identity, replicaProvider)
     }
 

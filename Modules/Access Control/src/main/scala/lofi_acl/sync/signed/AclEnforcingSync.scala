@@ -7,7 +7,7 @@ import crypto.channels.PrivateIdentity
 import lofi_acl.bft.*
 import lofi_acl.bft.HashDag.Encoder
 import lofi_acl.sync.JsoniterCodecs.syncMsgCodec
-import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg.MyPeersAre
+import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import lofi_acl.sync.signed.AclEnforcingSync.{SyncMsg, encoder}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, JsoniterCodecs, MessageReceiver}
 import rdts.base.{Bottom, Decompose, Lattice}
@@ -29,17 +29,22 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       override def receivedMessage(msg: MessageBuffer, fromUser: PublicIdentity): Unit =
         messageHandlerExecutor.execute(() => handleMessage(readFromArray(msg.asArray), fromUser))
 
-      override def connectionEstablished(newRemote: PublicIdentity): Unit =
+      override def connectionEstablished(newRemote: PublicIdentity): Unit = {
         messageHandlerExecutor.execute(() =>
-          val msg = ArrayMessageBuffer(writeToArray(MyPeersAre(connectionManager.peerAddresses.toSeq)))
-          connectionManager.connectedPeers.foreach { remote =>
-            connectionManager.send(remote, msg)
-          }
+            // Notify remote about local ACL state
+            val aclVersionMsg = ArrayMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
+            // Notify remote about local RDT state
+            val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
+            // Only tell new peer about our peers (instead of everyone)
+            val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(connectionManager.peerAddresses.toSeq)))
+
+            connectionManager.sendMultiple(newRemote, Array(aclVersionMsg, rdtVersionMsg, peersMsg))
         )
+      }
     }
     connectionManagerProvider(localIdentity, msgReceiver)
   }
-  private val comm                                 = ConnectionManagerCommunicator(connectionManager)
+  private val comm = ConnectionManagerCommunicator(connectionManager)
 
   private val aclAntiEntropy = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
   private val rdtAntiEntropy: FilteredRdtAntiEntropy[State] =
@@ -81,9 +86,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
 
   def listenPort: Option[Int] = connectionManager.listenPort
 
-  def start(): Unit = {
+  def start(): Unit =
     connectionManager.acceptIncomingConnections()
-  }
 
   def stop(): Unit = {
     messageHandlerExecutor.shutdown()
