@@ -15,22 +15,25 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   given localUid: LocalUid = LocalUid(name)
 
-  val dataManager: DeltaDissemination[State] =
-    DeltaDissemination[State](localUid, handleIncoming, defaultTimetolive = 1)
+  val writeDataManager: DeltaDissemination[State] =
+    DeltaDissemination[State](localUid, handleIncomingWrite, defaultTimetolive = 1)
+  val readDataManager: DeltaDissemination[State] =
+    DeltaDissemination[State](localUid, handleIncomingRead, defaultTimetolive = 1)
 
   inline def log(inline msg: String): Unit =
-    if false then println(s"[$name] $msg")
+    if true then println(s"[$name] $msg")
 
   val requestSemaphore = new Semaphore(0)
 
-  var currentState: State      = RequestResponseQueue.empty
+  var writeQueue: State      = RequestResponseQueue.empty
+  var readQueue: State      = RequestResponseQueue.empty
   val currentStateLock: AnyRef = new {}
 
   val promises: mutable.HashMap[Timestamp, Promise[String]] = mutable.HashMap.empty[Timestamp, Promise[String]]
 
   def readWithResult(key: String): Future[String] =
-      val (timestamp, queue) = currentState.request(KVOperation.Read(key))
-      transform(_ => queue)
+      val (timestamp, queue) = readQueue.request(KVOperation.Read(key))
+      publishRead(queue)
       val p = Promise[String]()
       promises.synchronized {
         promises.put(timestamp, p)
@@ -38,43 +41,62 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       p.future
 
   def writeWithResult(key: String, value: String): Future[String] =
-      val (timestamp, queue) = currentState.request(KVOperation.Write(key, value))
-      transform(_ => queue)
+      val (timestamp, queue) = writeQueue.request(KVOperation.Write(key, value))
+      publishWrite(queue)
       val p = Promise[String]()
       promises.synchronized {
         promises.put(timestamp, p)
       }
       p.future
 
-  def publish(delta: State): State = currentStateLock.synchronized {
-    if delta `inflates` currentState then {
-      log("publishing")
-      currentState = currentState.merge(delta)
-      dataManager.applyDelta(delta)
+  def publishWrite(delta: State): State = currentStateLock.synchronized {
+    if delta `inflates` writeQueue then {
+      log("publishing write")
+      writeQueue = writeQueue.merge(delta)
+      writeDataManager.applyDelta(delta)
     } else
         log("skip")
-    currentState
+    writeQueue
+  }
+  def publishRead(delta: State): State = currentStateLock.synchronized {
+    if delta `inflates` readQueue then {
+      log("publishing read")
+      readQueue = readQueue.merge(delta)
+      readDataManager.applyDelta(delta)
+    } else
+      log("skip")
+    readQueue
   }
 
-  def transform(f: State => State): State = currentStateLock.synchronized {
-    publish(f(currentState))
-  }
-
-  def handleIncoming(change: State): Unit = currentStateLock.synchronized {
-    log("handling incoming")
+  def handleIncomingWrite(change: State): Unit = currentStateLock.synchronized {
+    log(s"handling incoming write: $change")
     val (old, changed) = currentStateLock.synchronized {
-      val old = currentState
-      currentState = currentState `merge` change
-      (old, currentState)
+      val old = writeQueue
+      writeQueue = writeQueue `merge` change
+      (old, writeQueue)
     }
     if old != changed then {
-      assert(changed == currentState)
-      maybeHandleResponses(changed)
+      assert(changed == writeQueue)
+      maybeHandleWriteResponses(changed)
       // else log(s"upkept: ${pprint(upkept)}")
     }
   }
 
-  private def maybeHandleResponses(newState: State): Unit =
+  def handleIncomingRead(change: State): Unit = currentStateLock.synchronized {
+    log(s"handling incoming read: $change")
+    val (old, changed) = currentStateLock.synchronized {
+      val old = readQueue
+      readQueue = readQueue `merge` change
+      (old, readQueue)
+    }
+    if old != changed then {
+      assert(changed == readQueue)
+      maybeHandleReadResponses(changed)
+      // else log(s"upkept: ${pprint(upkept)}")
+    }
+  }
+
+  private def maybeHandleWriteResponses(newState: State): Unit =
       val (requests, responses) = (newState.requests, newState.responses)
       // println(s"open promises: $promises")
       currentStateLock.synchronized {
@@ -88,7 +110,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
                   promises.remove(timestamp) match {
                     case Some(promise) =>
                       promise.success(res.value)
-                      transform(_.receive(timestamp))
+                      publishWrite(writeQueue.receive(timestamp))
                     case None => ()
                   }
                   if blocking then requestSemaphore.release(1)
@@ -96,6 +118,29 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
           }
         }
       }
+
+  private def maybeHandleReadResponses(newState: State): Unit =
+    val (requests, responses) = (newState.requests, newState.responses)
+    // println(s"open promises: $promises")
+    currentStateLock.synchronized {
+      promises.synchronized {
+        for {
+          timestamp <- promises.keys
+        } {
+          responses.get(timestamp) match
+            case Some(res) =>
+              onResultValue(res.value)
+              promises.remove(timestamp) match {
+                case Some(promise) =>
+                  promise.success(res.value)
+                  publishRead(readQueue.receive(timestamp))
+                case None => ()
+              }
+              if blocking then requestSemaphore.release(1)
+            case None => ()
+        }
+      }
+    }
 
   override def handleOpImpl(op: KVOperation[String, String]): Unit =
     // TODO: still not sure that the semaphore use is correct …

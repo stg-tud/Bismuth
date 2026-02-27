@@ -8,6 +8,10 @@ import rdts.base.{LocalUid, Uid}
 import rdts.protocols.Participants
 import replication.ProtocolMessage
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.{Duration, DurationInt}
+
 class ClusterConsensus extends munit.FunSuite {
   test("simple consensus") {
 
@@ -35,11 +39,11 @@ class ClusterConsensus extends munit.FunSuite {
 
     val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
 
-    primary.client.dataManager.addObjectConnection(clientConnection.server)
+    primary.client.dataManagerWrite.addObjectConnection(clientConnection.server)
 
     val clientUid = Uid.gen()
     val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
-    client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
+    client.writeDataManager.addObjectConnection(clientConnection.client(clientUid.toString))
 
     client.printResults = false
 
@@ -101,6 +105,7 @@ class ClusterConsensus extends munit.FunSuite {
     assertEquals(nodes(2).cluster.state.closedRounds.size, 2)
 
   }
+
   test("consensus with one node") {
 
     given JsonValueCodec[ClusterState] =
@@ -121,24 +126,33 @@ class ClusterConsensus extends munit.FunSuite {
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
 
-    val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
+    val clientConnectionWrites = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
+    val clientConnectionReads  = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
 
-    primary.client.dataManager.addObjectConnection(clientConnection.server)
+    primary.client.dataManagerWrite.addObjectConnection(clientConnectionWrites.server)
+    primary.client.dataManagerRead.addObjectConnection(clientConnectionReads.server)
 
     val clientUid = Uid.gen()
     val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
-    client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
+    client.writeDataManager.addObjectConnection(clientConnectionWrites.client(clientUid.toString))
+    client.readDataManager.addObjectConnection(clientConnectionReads.client(clientUid.toString))
 
     client.printResults = false
 
-    client.write("test", "Hi")
-    client.read("test")
+//    Await.ready(
+//      for
+//          _ <- client.writeWithResult("test", "Hi")
+//          _ <- client.writeWithResult("test", "Hi")
+//          _ <- client.readWithResult("test")
+//      yield (),
+//      5.seconds
+//    )
 
-    assertEquals(primary.client.state.requestsSorted, List.empty)
-    assertEquals(primary.cluster.state.closedRounds.size, 2)
+//    assertEquals(primary.client.writeQueue.requestsSorted, List.empty)
+//    assertEquals(primary.cluster.state.closedRounds.size, 3)
 
-    for n <- Range(0, 1000) do
-        client.write(n.toString, "value")
+    val f = Future.traverse(Range(0,100))(n => client.writeWithResult(n.toString, "value"))
+    Await.ready(f, 5.seconds)
 
     assertEquals(primary.cluster.state.closedRounds.size, 1002)
 

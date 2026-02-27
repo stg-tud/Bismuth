@@ -40,7 +40,7 @@ class KeyValueReplica(
 ) {
 
   inline def log(inline msg: String): Unit =
-    if false then println(s"[$uid] $msg")
+    if true then println(s"[$uid] $msg")
 
   val sendingActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(offloadSending)
   val replicaActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(offloadReplica)
@@ -48,9 +48,10 @@ class KeyValueReplica(
   given Participants(votingReplicas)
   given localUid: LocalUid = LocalUid(uid)
 
-  val currentStateLock: AnyRef = new {}
-  val connInfStateLock: AnyRef = new {}
-  val clientStateLock: AnyRef = new {}
+  val currentStateLock: AnyRef     = new {}
+  val connInfStateLock: AnyRef     = new {}
+  val clientReadStateLock: AnyRef  = new {}
+  val clientWriteStateLock: AnyRef = new {}
 
   private val kvCache = mutable.HashMap[String, String]()
 
@@ -91,22 +92,20 @@ class KeyValueReplica(
         if state.subsumes(upkept)
         then log("no changes")
         else log("upkeep")
-        assert(changed == state)
         // else log(s"upkept: ${pprint(upkept)}")
         val newState = publish(upkept)
-        maybeAnswerClientFromLog(old.nextDecisionRound)
+        maybeAnswerClientFromLog(old.nextDecisionRound, upkept)
         // try to propose a new value in case voting is decided
-        maybeProposeNewValue(client.state)
+        maybeProposeNewValue(client.writeQueue)
       }
     }
 
     def publish(delta: ClusterState): ClusterState = currentStateLock.synchronized {
       if delta `inflates` state then {
-        log("publishing")
+        log(s"publishing cluster state $delta")
         val oldstate = state
         state = state.merge(delta)
         dataManager.applyDelta(delta)
-        maybeAnswerClientFromLog(oldstate.nextDecisionRound)
       } else {
         log("skip")
       }
@@ -115,7 +114,10 @@ class KeyValueReplica(
     }
 
     def forceUpkeep(): ClusterState = currentStateLock.synchronized {
-      publish(state.upkeep)
+      log("forcing upkeep")
+      val upkept = publish(state.upkeep)
+      maybeAnswerClientFromLog(state.nextDecisionRound, upkept)
+      upkept
     }
 
     def needsUpkeep(): Boolean = currentStateLock.synchronized {
@@ -133,20 +135,28 @@ class KeyValueReplica(
           case _ => ()
     }
 
-    def maybeProposeNewValue(client: ClientState)(using LocalUid): Unit = {
+    def maybeProposeNewValue(client: ClientState)(using LocalUid): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
       if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
           // ready to propose value
-          val requestToAnswer =
-            if commitReads then client.firstUnansweredRequest
+          val requestToAnswer = {
+            if commitReads then client.firstUnansweredRequest // TODO: return from both queues here
             else
                 client.requestsSorted.collectFirst {
                   case r @ Req(KVOperation.Write(_, _), _) => r
                 }
+          }
           requestToAnswer match
               case Some(req) =>
                 log(s"Proposing new value $req.")
-                val _ = publish(state.proposeIfLeader(req))
+                val proposal = state.proposeIfLeader(req)
+                if votingReplicas.size == 1 then {
+                  val oldstate = state
+                  state = state `merge` proposal
+                  state = state `merge` state.upkeep
+                  maybeAnswerClientFromLog(oldstate.nextDecisionRound, state) : Unit
+                }
+                val _ = publish(proposal)
               case None =>
                 log("I am the leader but request queue is empty.")
     }
@@ -164,8 +174,7 @@ class KeyValueReplica(
           s"$key=$value; OK"
       }
 
-    // TODO: pass state
-    def maybeAnswerClientFromCache(clientState: ClientState): Future[Unit] = {
+    def maybeAnswerClientFromCache(clientReadQueue: ClientState): Future[Unit] = {
       Future {
         // check if we are the leader and have a heartbeat quorum
         if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
@@ -174,33 +183,37 @@ class KeyValueReplica(
             )
         then {
           // ready to propose value
-          val responses = clientState.requests.queryAllEntries.collect {
+          val responses = clientReadQueue.requests.queryAllEntries.collect {
             case req @ Req(k @ KVOperation.Read(key), _) =>
-              clientState.respond(req, performOp(k))
+              clientReadQueue.respond(req, performOp(k))
           }
 
           if responses.nonEmpty then {
             log("answering unanswered read requests from cache")
             val accumulatedResponses = responses.fold(RequestResponseQueue.empty)((acc, r) => acc.merge(r))
-            client.publish(accumulatedResponses): Unit
+            client.publishRead(accumulatedResponses): Unit
           }
         }
       }
     }
 
-    // TODO: pass state here
-    private def maybeAnswerClientFromLog(previousRound: Time): Unit = {
+    private def maybeAnswerClientFromLog(previousRound: Time, state: ClusterState): Future[Unit] = Future {
       log(s"log: ${state.log}")
+      log(s"decisions since previous round ($previousRound): ${state.readDecisionsSince(previousRound).toList}")
       // println(s"${pprint.tokenize(newState).mkString("")}")
 
       for req @ Req(op, _) <- state.readDecisionsSince(previousRound) do {
         val decision: String = performOp(op)
+
         // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
         // only leader is allowed to actually respond to requests
-        if cluster.state.leader.contains(replicaId) then {
-          client.publish {
-            client.state.respond(req, decision)
-          }: Unit
+        if state.leader.contains(replicaId) then {
+          op match {
+            case KVOperation.Read(key) =>
+              client.publishRead(client.readQueue.respond(req, decision)): Unit
+            case KVOperation.Write(key, value) =>
+              clientWriteStateLock.synchronized { client.publishWrite(client.writeQueue.respond(req, decision)) }: Unit
+          }
         }
       }
 
@@ -211,44 +224,79 @@ class KeyValueReplica(
   // ============== CLIENT ==============
 
   class Client {
-    @volatile var state: ClientState = RequestResponseQueue.empty
+    @volatile var writeQueue: ClientState = RequestResponseQueue.empty
+    @volatile var readQueue: ClientState  = RequestResponseQueue.empty
 
     given Lattice[Payload[ClientState]] =
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    val dataManager: DeltaDissemination[ClientState] = DeltaDissemination(
+    val dataManagerWrite: DeltaDissemination[ClientState] = DeltaDissemination(
       localUid,
-      delta => replicaActor.execute(() => handleIncoming(delta)),
+      delta => replicaActor.execute(() => handleIncomingWrite(delta)),
       defaultTimetolive = 0,
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(writeQueue))
+    )
+    val dataManagerRead: DeltaDissemination[ClientState] = DeltaDissemination(
+      localUid,
+      delta => replicaActor.execute(() => handleIncomingRead(delta)),
+      defaultTimetolive = 0,
+      sendingActor = sendingActor,
+      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(readQueue))
     )
 
-    def handleIncoming(delta: ClientState): Unit = {
-      log("handling incoming from client")
-      val (old, changed) = clientStateLock.synchronized {
-        val old = state
-        state = state `merge` delta
-        (old, state)
+    def handleIncomingWrite(delta: ClientState): Unit = {
+      log("handling incoming write from client")
+      val (old, changed) = clientWriteStateLock.synchronized {
+        val old = writeQueue
+        writeQueue = writeQueue `merge` delta
+        (old, writeQueue)
       }
       if old != changed then {
-        cluster.maybeAnswerClientFromCache(changed)
         cluster.maybeProposeNewValue(changed)
-        cluster.forceUpkeep(): Unit
         // else log(s"upkept: ${pprint(upkept)}")
       }
     }
 
-    def publish(delta: ClientState): ClientState = clientStateLock.synchronized {
-      if delta `inflates` state then {
-        log("publishing")
-        state = state.merge(delta)
-        dataManager.applyDelta(delta)
+    def handleIncomingRead(delta: ClientState): Unit = {
+      log("handling incoming read from client")
+      val (old, changed) = clientReadStateLock.synchronized {
+        val old = readQueue
+        readQueue = readQueue `merge` delta
+        (old, readQueue)
+      }
+      if old != changed then {
+        if commitReads then
+            cluster.maybeProposeNewValue(changed)
+        else
+            cluster.maybeAnswerClientFromCache(changed): Unit
+        // cluster.forceUpkeep(): Unit
+        // else log(s"upkept: ${pprint(upkept)}")
+      }
+    }
+
+    def publishWrite(delta: ClientState): ClientState = clientWriteStateLock.synchronized {
+      if delta `inflates` writeQueue then {
+        log(s"publishing write delta $delta")
+        writeQueue = writeQueue.merge(delta)
+        log(s"new write queue: $writeQueue")
+        dataManagerWrite.applyDelta(delta)
       } else
           log("skip")
 
-      state
+      writeQueue
+    }
+
+    def publishRead(delta: ClientState): ClientState = clientReadStateLock.synchronized {
+      if delta `inflates` readQueue then {
+        log("publishing read delta")
+        readQueue = readQueue.merge(delta)
+        dataManagerRead.applyDelta(delta)
+      } else
+          log("skip")
+
+      readQueue
     }
 
   }

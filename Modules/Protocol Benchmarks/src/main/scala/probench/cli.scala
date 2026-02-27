@@ -220,11 +220,11 @@ object cli {
 
           val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
 
-          primary.client.dataManager.addObjectConnection(clientConnection.server)
+          primary.client.dataManagerWrite.addObjectConnection(clientConnection.server)
 
           val clientUid = Uid.gen()
           val client    = ProBenchClient(clientUid, logTimings = false)
-          client.dataManager.addObjectConnection(clientConnection.client(clientUid.toString))
+          client.writeDataManager.addObjectConnection(clientConnection.client(clientUid.toString))
 
           ClientCLI(clientUid, client).startCLI()
 
@@ -244,9 +244,14 @@ object cli {
           val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(), reporter)
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
-          node.client.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+          val clientPortVal = clientPort.value
+          node.client.dataManagerWrite.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
             "0",
-            clientPort.value
+            clientPortVal
+          ))))
+          node.client.dataManagerRead.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+            "0",
+            clientPortVal - 1
           ))))
 
           val peerPortVal = peerPort.value
@@ -297,7 +302,7 @@ object cli {
             )
             println(s"Connecting to $host:${port - 1}")
             addRetryingLatentConnection(
-              node.client.dataManager,
+              node.client.dataManagerWrite,
               nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port - 1))),
               1000,
               10
@@ -308,7 +313,7 @@ object cli {
           val node =
             KeyValueReplica(name.value, initialClusterIds.value.toSet, deltaStorageType = deltaStorageType.value)
 
-          node.client.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(clientPort.value), ec))
+          node.client.dataManagerWrite.addBinaryConnection(UDP.listen(() => new DatagramSocket(clientPort.value), ec))
           node.cluster.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value), ec))
           node.connInf.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value + 1), ec))
 
@@ -337,7 +342,7 @@ object cli {
           ec.execute(() => nioTCP.loopSelection(abort))
 
           addRetryingLatentConnection(
-            client.dataManager,
+            client.writeDataManager,
             nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(ip, port))),
             1000,
             10
@@ -353,7 +358,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          client.dataManager.addBinaryConnection(UDP.connect(
+          client.writeDataManager.addBinaryConnection(UDP.connect(
             InetSocketAddress(ip, port),
             () => new DatagramSocket(),
             ec
@@ -372,7 +377,7 @@ object cli {
           ec.execute(() => nioTCP.loopSelection(abort))
 
           addRetryingLatentConnection(
-            client.dataManager,
+            client.writeDataManager,
             nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(ip, port))),
             1000,
             10

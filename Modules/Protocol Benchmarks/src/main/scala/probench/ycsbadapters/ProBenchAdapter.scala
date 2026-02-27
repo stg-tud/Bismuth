@@ -47,8 +47,14 @@ object ProBenchAdapterConnectionPool {
     else
       println(s"adding connection to $ip:$port")
       addRetryingLatentConnection(
-        pbClient.dataManager,
+        pbClient.writeDataManager,
         nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
+        1000,
+        10
+      )
+      addRetryingLatentConnection(
+        pbClient.readDataManager,
+        nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port - 1))),
         1000,
         10
       )
