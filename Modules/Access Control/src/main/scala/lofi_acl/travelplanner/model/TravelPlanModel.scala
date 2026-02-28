@@ -28,7 +28,7 @@ class TravelPlanModel(
 
   def currentAcl: Acl = replica.currentAcl
 
-  private val replica: Replica[TravelPlan] = replicaProvider(stateChanged)
+  val replica: Replica[TravelPlan] = replicaProvider(stateChanged)
   replica.start()
   Runtime.getRuntime.addShutdownHook(new Thread(() => replica.stop()))
 

@@ -7,15 +7,16 @@ import lofi_acl.travelplanner.viewmodel.TravelPlanViewModel
 import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Pos
-import scalafx.scene.Scene
 import scalafx.scene.control.{Button, TextField}
 import scalafx.scene.layout.{BorderPane, HBox, Priority, VBox}
+import scalafx.scene.{Group, Scene}
 
 import scala.concurrent.ExecutionContext.global
 
 // Initial screen with creation / join functionality
 class MainScene(travelPlanModelFactory: TravelPlanModelFactory) extends Scene {
-  private val rootPane = new BorderPane()
+  var tpm: TravelPlanModel = null
+  val group: Group         = Group()
 
   val documentIsOpen: BooleanProperty = new BooleanProperty()
   documentIsOpen.value = false
@@ -35,6 +36,7 @@ class MainScene(travelPlanModelFactory: TravelPlanModelFactory) extends Scene {
   joinDocumentButton.onAction() = _ => joinDocumentButtonPressed()
   joinDocumentButton.disable <== documentIsOpen || invitationTextField.text.isEmpty
 
+  val rootPane = new BorderPane()
   rootPane.center = VBox(
     createNewDocumentButton,
     HBox(
@@ -42,8 +44,8 @@ class MainScene(travelPlanModelFactory: TravelPlanModelFactory) extends Scene {
       joinDocumentButton
     )
   )
-
-  content = rootPane
+  group.children.append(rootPane)
+  content = group
 
   private def createNewDocumentButtonPressed(): Unit = {
     documentIsOpen.value = true
@@ -61,12 +63,16 @@ class MainScene(travelPlanModelFactory: TravelPlanModelFactory) extends Scene {
   }
 
   private def init(travelPlanModel: TravelPlanModel): Unit = {
+    this.tpm = travelPlanModel
     Platform.runLater {
       val travelPlanViewModel = TravelPlanViewModel(travelPlanModel)
-      content = new HBox {
-        children = TravelPlanView(travelPlanViewModel)
-        hgrow = Priority.Always
-      }
+      group.children.replaceAll(
+        rootPane,
+        new HBox {
+          children = TravelPlanView(travelPlanViewModel)
+          hgrow = Priority.Always
+        }
+      )
       val stage = window.get().asInstanceOf[Stage]
       stage.sizeToScene()
       stage.setTitle(s"TravelPlanner - replica ${travelPlanModel.publicId.id.take(10)}")

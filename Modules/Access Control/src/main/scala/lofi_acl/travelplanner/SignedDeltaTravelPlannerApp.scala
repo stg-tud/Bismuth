@@ -2,20 +2,44 @@ package lofi_acl.travelplanner
 
 import channels.MessageBuffer
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import lofi_acl.bft.AclRdt
+import javafx.scene.input.KeyCode
+import lofi_acl.bft.{Acl, AclRdt}
 import lofi_acl.sync.signed.{ReplicaOfSignedDeltaRdt, SyncInvitation}
 import lofi_acl.sync.{ChannelConnectionManager, MessageReceiver}
 import lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}
+import scalafx.scene.control.{Menu, MenuBar, MenuItem}
+import scalafx.scene.input.KeyCodeCombination
 
 object SignedDeltaTravelPlannerApp extends JFXApp3 {
   override def start(): Unit = {
+    val mainScene = new MainScene(TpmFactory)
     Platform.implicitExit = true
     stage = new JFXApp3.PrimaryStage {
       title = "Travel Planner"
-      scene = new MainScene(TpmFactory)
+      scene = mainScene
       resizable = true
     }
+    val accelerators = stage.scene.value.getAccelerators
+    val f1           = KeyCodeCombination(KeyCode.F1)
+    accelerators.put(
+      f1,
+      () =>
+          println(Debug.shorten(mainScene.tpm.replica.currentAcl.asInstanceOf[Acl]))
+          println(Debug.shorten(mainScene.tpm.replica.currentState))
+    ): Unit
+
+    val menuBar     = MenuBar()
+    val debugMenu   = Menu("Debug")
+    val aclMenuItem = MenuItem("Print ACL")
+    aclMenuItem.onAction = _ => println(Debug.shorten(mainScene.tpm.replica.currentAcl.asInstanceOf[Acl]))
+    val stateMenuItem = MenuItem("Print State")
+    stateMenuItem.onAction = _ => println(Debug.shorten(mainScene.tpm.replica.currentState))
+    debugMenu.getItems.add(aclMenuItem)
+    debugMenu.getItems.add(stateMenuItem)
+    menuBar.getMenus.add(debugMenu): Unit
+    menuBar.useSystemMenuBar = true
+    mainScene.group.children.append(menuBar): Unit
   }
 
   override def stopApp(): Unit =
