@@ -52,7 +52,7 @@ object Tags {
           creationTicket: CreationTicket[SelectedScheduler.State],
           scheduler: PlanTransactionScope[SelectedScheduler.State]
       ): Event[String] = {
-        val handler: Event.CBR[KeyboardEvent, Unit] = Event.fromCallback(input.onkeyup = Event.handle(_))
+        val handler: (event: Event[KeyboardEvent], data: Unit) = Event.fromCallback(input.onkeyup = Event.handle(_))
 
         handler.event
           .map { (e: KeyboardEvent) =>

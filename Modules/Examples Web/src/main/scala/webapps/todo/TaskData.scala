@@ -73,7 +73,7 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
       then DeltaBuffer(LastWriterWins.fallback(task))
       else DeltaBuffer(LastWriterWins.now(task))
 
-    val edittext: Event.CBR[dom.Event, dom.html.Input] = Event.fromCallback {
+    val edittext = Event.fromCallback {
       input(
         `class`  := "edit",
         `type`   := "text",

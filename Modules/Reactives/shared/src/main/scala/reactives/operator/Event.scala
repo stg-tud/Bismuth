@@ -241,12 +241,11 @@ object Event {
     * }
     * }}}
     */
-  def fromCallback[R, T](using CreationTicket[State])(block: Accepts[T] ?=> R): CBR[T, R] =
+  def fromCallback[R, T](using CreationTicket[State])(block: Accepts[T] ?=> R): (event: Event[T], data: R) =
       val evt = Evt[T]()
       val res = block(using evt)
-      CBR(evt, res)
+      (evt, res)
 
-  case class CBR[T, R](event: Event[T], data: R)
   opaque type Accepts[T] = Evt[T]
 
   /** The callback available within `fromCallback` */

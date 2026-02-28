@@ -8,7 +8,7 @@ import rdts.syntax.DeltaBuffer
 import reactives.core.CreationTicket
 import reactives.default.*
 import reactives.extra.Tags.*
-import reactives.operator.Event.CBR
+
 import scalatags.JsDom.all.*
 import webapps.Storing
 import webapps.calendar.Codecs.given
@@ -31,7 +31,7 @@ class NewAppointment(private val typeName: String) {
     `type`  := "number"
   ).render
 
-  val submitButton: CBR[Any, Input] = Event.fromCallback(input(
+  val submitButton = Event.fromCallback(input(
     `class` := "new-appointment-submit",
     `type`  := "button",
     onclick := Event.handle,
