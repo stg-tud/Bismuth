@@ -4,6 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import crypto.Ed25519Util
 
 import java.security.{PrivateKey, PublicKey}
+import java.util
 import java.util.Base64
 
 /** Container for Ed25519 signature. */
@@ -16,7 +17,7 @@ class Signature private (private val delegate: Array[Byte]) {
 
   override def toString: String = toBase64
 
-  override def hashCode(): Int = delegate.hashCode()
+  override def hashCode(): Int = util.Arrays.hashCode(delegate)
 
   override def equals(obj: Any): Boolean = obj match {
     case otherSignature: Signature => java.util.Arrays.equals(otherSignature.delegate, delegate)

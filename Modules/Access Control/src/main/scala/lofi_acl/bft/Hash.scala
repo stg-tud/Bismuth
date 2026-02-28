@@ -3,6 +3,7 @@ package lofi_acl.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 
 import java.security.MessageDigest
+import java.util
 import java.util.Base64
 
 /** Container for SHA3-256 Hash. */
@@ -15,7 +16,7 @@ class Hash private (private val delegate: Array[Byte]) {
 
   override def toString: String = toBase64
 
-  override def hashCode(): Int = delegate.hashCode()
+  override def hashCode(): Int = util.Arrays.hashCode(delegate)
 
   override def equals(obj: Any): Boolean = obj match {
     case otherHash: Hash => java.util.Arrays.equals(otherHash.delegate, delegate)
