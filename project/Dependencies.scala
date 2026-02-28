@@ -21,8 +21,8 @@ object Dependencies {
   val scalajsDom  = libraryDependencies += "org.scala-js"             %%% "scalajs-dom"              % "2.8.1"
   val slf4jSimple = libraryDependencies += "org.slf4j"                  % "slf4j-simple"             % "2.0.17" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"                  % "slf4j-nop"                % "2.0.17" % Test
-  val slips       = libraryDependencies += "de.rmgk.slips"            %%% "partypack"                % "0.16.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.15"
+  val slips       = libraryDependencies += "de.rmgk.slips"            %%% "partypack"                % "0.17.0"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.19"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.20.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.2"
   val ycsb     = libraryDependencies += "site.ycsb"                       % "core"    % "0.17.0"
@@ -55,11 +55,11 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.38.8",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.38.8" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.38.9",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-macros" % "2.38.9" % Provided
     )
 
-  def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "24.0.2-R36"
+  def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "25.0.2-R37"
 
   def scalajsReact = libraryDependencies ++= Seq(
     "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.3",
