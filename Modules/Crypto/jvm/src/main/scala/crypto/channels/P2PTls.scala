@@ -11,6 +11,7 @@ import rdts.base.Uid
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, IOException}
 import java.net.{InetSocketAddress, StandardSocketOptions}
 import java.security.cert.X509Certificate
+import java.util.Base64
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
 
@@ -124,6 +125,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
               "type" -> "p2ptls",
               "host" -> isa.getHostName,
               "port" -> isa.getPort.toString,
+              "session_id" -> Base64.getEncoder.encodeToString(socket.getSession.getId)
             )
           case _ => ConnectionInfo("type" -> "p2ptls")
 
@@ -139,9 +141,16 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
     private[P2PTls] def receiveLoopBlocking(): Unit = {
       inputStream.synchronized {
         while true do
-            val len   = inputStream.readInt()
-            val bytes = inputStream.readNBytes(len)
-            receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
+            try {
+              val len   = inputStream.readInt()
+              val bytes = inputStream.readNBytes(len)
+              receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
+            } catch {
+              case ex: Throwable =>
+                try close()
+                catch { case _: Throwable => () }
+                receivedMessageCallback.fail(ex)
+            }
       }
     }
 
