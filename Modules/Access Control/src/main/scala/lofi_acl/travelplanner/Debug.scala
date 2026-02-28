@@ -38,7 +38,7 @@ object Debug {
   def shorten(dot: Dot): String = s"${dot.place.toString.substring(0, 4)}@${dot.time}"
 
   def shorten(dots: Dots): String =
-    s"[${dots.internal.map { (uid, arrayRanges) => shorten(uid) + "@" + arrayRanges }.mkString(",")}]"
+    s"[${dots.internal.map { (uid, arrayRanges) => shorten(uid) + ": " + arrayRanges }.mkString(",")}]"
 
   def shorten(signedDelta: SignedDelta[?]): String = signedDelta match {
     case SignedDelta(dot, signature, payload) =>

@@ -7,6 +7,7 @@ import lofi_acl.bft.{Acl, BftDelta, Hash}
 import lofi_acl.sync.ConnectionManager
 import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg
 import lofi_acl.sync.signed.AclEnforcingSync.SyncMsg.*
+import lofi_acl.travelplanner.Debug
 import rdts.time.Dots
 
 trait AntiEntropyCommunicator[State] {
@@ -43,10 +44,17 @@ class ConnectionManagerCommunicator[State](private val conn: ConnectionManager)(
       filteredDeltas: Dots,
       aclVersion: Set[Hash],
       remote: PublicIdentity
-  ): Unit = send(remote, DataDeltas(deltas, filteredDeltas, aclVersion))
+  ): Unit = {
+    val msg = DataDeltas(deltas, filteredDeltas, aclVersion)
+    Debug.sent(msg, remote)
+    send(remote, msg)
+  }
 
-  override def sendDeltas(deltas: Seq[BftDelta[Acl]], remote: PublicIdentity): Unit =
-    send(remote, AclDeltas(deltas))
+  override def sendDeltas(deltas: Seq[BftDelta[Acl]], remote: PublicIdentity): Unit = {
+    val msg: SyncMsg[State] = AclDeltas(deltas)
+    Debug.sent(msg, remote)
+    send(remote, msg)
+  }
 
   override def requestDeltas(deltas: Dots, remote: PublicIdentity): Unit =
     send(remote, SendMe(deltas, Set.empty))

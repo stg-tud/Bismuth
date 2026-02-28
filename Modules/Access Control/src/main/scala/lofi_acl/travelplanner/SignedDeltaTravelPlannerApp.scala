@@ -29,24 +29,36 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
           println(Debug.shorten(mainScene.tpm.replica.currentState))
     ): Unit
 
+    mainScene.group.children.append(
+      debugMenuBar(mainScene.tpm.replica.asInstanceOf[ReplicaOfSignedDeltaRdt[TravelPlan]])
+    ): Unit
+  }
+
+  private def debugMenuBar(replica: => ReplicaOfSignedDeltaRdt[TravelPlan]): MenuBar = {
     val menuBar     = MenuBar()
     val debugMenu   = Menu("Debug")
     val aclMenuItem = MenuItem("Print ACL")
-    aclMenuItem.onAction = _ => println(Debug.shorten(mainScene.tpm.replica.currentAcl.asInstanceOf[Acl]))
+    aclMenuItem.onAction = _ => println(Debug.shorten(replica.currentAcl.asInstanceOf[Acl]))
     val stateMenuItem = MenuItem("Print State")
-    stateMenuItem.onAction = _ => println(Debug.shorten(mainScene.tpm.replica.currentState))
-    debugMenu.getItems.add(aclMenuItem)
-    debugMenu.getItems.add(stateMenuItem)
+    stateMenuItem.onAction = _ => println(Debug.shorten(replica.currentState))
+    val metaDataMenuItem = MenuItem("Print Metadata")
+    metaDataMenuItem.onAction = _ =>
+        println(replica.sync.aclVersion.map(Debug.shorten))
+        println(Debug.shorten(replica.sync.stateVersion))
+    val connectedPeersMenuItem = MenuItem("Print Connected Replicas")
+    connectedPeersMenuItem.onAction = _ =>
+      println(replica.sync.connectedPeers.map(Debug.shorten))
+    debugMenu.getItems.addAll(aclMenuItem, stateMenuItem, metaDataMenuItem, connectedPeersMenuItem)
     menuBar.getMenus.add(debugMenu): Unit
     menuBar.useSystemMenuBar = true
-    mainScene.group.children.append(menuBar): Unit
+    menuBar
   }
 
   override def stopApp(): Unit =
     System.exit(0) // Workaround to ensure that Runtime shutdown hooks are executed
 
   private val connManProvider = (id: PrivateIdentity, msgRec: MessageReceiver[MessageBuffer]) =>
-    ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, msgRec)
+    ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, msgRec, disableLogging = false)
 
   private object TpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {
