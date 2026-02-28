@@ -104,6 +104,7 @@ class AclAntiEntropy(
     var toDisseminate: Hash = null
     synchronized {
       hashDag = aclRdt.mutate(delta, hashDag) // Throws an exception if delta is illegal
+      currentAclRef.updateAndGet { (_, acl) => hashDag.heads -> acl.merge(delta) }
       assert(hashDag.heads.size == 1)
       toDisseminate = hashDag.heads.head
     }
