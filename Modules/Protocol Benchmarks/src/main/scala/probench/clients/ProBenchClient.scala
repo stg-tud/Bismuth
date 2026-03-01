@@ -25,8 +25,8 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   val requestSemaphore = new Semaphore(0)
 
-  var writeQueue: State      = RequestResponseQueue.empty
-  var readQueue: State      = RequestResponseQueue.empty
+  var writeQueue: State        = RequestResponseQueue.empty
+  var readQueue: State         = RequestResponseQueue.empty
   val currentStateLock: AnyRef = new {}
 
   val promises: mutable.HashMap[Timestamp, Promise[String]] = mutable.HashMap.empty[Timestamp, Promise[String]]
@@ -40,14 +40,16 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       }
       p.future
 
-  def writeWithResult(key: String, value: String): Future[String] =
-      val (timestamp, queue) = writeQueue.request(KVOperation.Write(key, value))
-      publishWrite(queue)
-      val p = Promise[String]()
-      promises.synchronized {
-        promises.put(timestamp, p)
-      }
-      p.future
+  def writeWithResult(key: String, value: String): Future[String] = currentStateLock.synchronized {
+    val (timestamp, queue) = writeQueue.request(KVOperation.Write(key, value))
+    val p = Promise[String]()
+    promises.synchronized {
+      promises.put(timestamp, p)
+      log("adding promise")
+    }
+    publishWrite(queue)
+    p.future
+  }
 
   def publishWrite(delta: State): State = currentStateLock.synchronized {
     if delta `inflates` writeQueue then {
@@ -64,7 +66,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       readQueue = readQueue.merge(delta)
       readDataManager.applyDelta(delta)
     } else
-      log("skip")
+        log("skip")
     readQueue
   }
 
@@ -97,6 +99,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
   }
 
   private def maybeHandleWriteResponses(newState: State): Unit =
+      log(s"handling write responses promises: ${promises.size}: $newState")
       val (requests, responses) = (newState.requests, newState.responses)
       // println(s"open promises: $promises")
       currentStateLock.synchronized {
@@ -113,34 +116,35 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
                       publishWrite(writeQueue.receive(timestamp))
                     case None => ()
                   }
+                  assert(!promises.contains(timestamp))
                   if blocking then requestSemaphore.release(1)
-                case None => ()
+                case None => log(s"response to $timestamp not found in: $responses")
           }
         }
       }
 
   private def maybeHandleReadResponses(newState: State): Unit =
-    val (requests, responses) = (newState.requests, newState.responses)
-    // println(s"open promises: $promises")
-    currentStateLock.synchronized {
-      promises.synchronized {
-        for {
-          timestamp <- promises.keys
-        } {
-          responses.get(timestamp) match
-            case Some(res) =>
-              onResultValue(res.value)
-              promises.remove(timestamp) match {
-                case Some(promise) =>
-                  promise.success(res.value)
-                  publishRead(readQueue.receive(timestamp))
+      val (requests, responses) = (newState.requests, newState.responses)
+      // println(s"open promises: $promises")
+      currentStateLock.synchronized {
+        promises.synchronized {
+          for {
+            timestamp <- promises.keys
+          } {
+            responses.get(timestamp) match
+                case Some(res) =>
+                  onResultValue(res.value)
+                  promises.remove(timestamp) match {
+                    case Some(promise) =>
+                      promise.success(res.value)
+                      publishRead(readQueue.receive(timestamp))
+                    case None => ()
+                  }
+                  if blocking then requestSemaphore.release(1)
                 case None => ()
-              }
-              if blocking then requestSemaphore.release(1)
-            case None => ()
+          }
         }
       }
-    }
 
   override def handleOpImpl(op: KVOperation[String, String]): Unit =
     // TODO: still not sure that the semaphore use is correct …

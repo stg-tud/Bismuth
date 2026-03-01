@@ -24,18 +24,22 @@ case class RequestResponseQueue[S, T](
         timestamp,
         RequestResponseQueue(
           requests = requests.update(timestamp, Req(value, timestamp)),
-          responses = responses.removeAll(myResponses)
+//          responses = responses.removeAll(myResponses)
         )
       )
+  
+  def dequeueRequest(request: Req[S]): RequestResponseQueue[S, T] = {
+    RequestResponseQueue(requests = requests.remove(request.timestamp))
+  }
 
   def respond(request: Req[S], value: T)(using LocalUid): RequestResponseQueue[S, T] = {
-    val previousResonses = responses.keySet.filter(t => t._2 == request.timestamp._2)
-    val clearedResponses: ObserveRemoveMap[Timestamp, Res[T]] = responses.removeAll(previousResonses)
+//    val previousResonses = responses.keySet.filter(t => t._2 == request.timestamp._2)
+//    val clearedResponses: ObserveRemoveMap[Timestamp, Res[T]] = responses.removeAll(previousResonses)
     val newResponse: ObserveRemoveMap[Timestamp, Res[T]]      = responses.update(request.timestamp, Res(value))
     RequestResponseQueue(
       requests = requests.remove(request.timestamp),
-      responses =
-        ObserveRemoveMap.lattice[Timestamp, Res[T]].merge(newResponse, clearedResponses)
+      responses = newResponse
+//        ObserveRemoveMap.lattice[Timestamp, Res[T]].merge(newResponse, clearedResponses)
     )
   }
 

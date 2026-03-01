@@ -151,10 +151,13 @@ class ClusterConsensus extends munit.FunSuite {
 //    assertEquals(primary.client.writeQueue.requestsSorted, List.empty)
 //    assertEquals(primary.cluster.state.closedRounds.size, 3)
 
+//    for n <- Range(0,100) do {
+//      Await.ready(client.writeWithResult(n.toString, "value"), 5.seconds)
+//    }
     val f = Future.traverse(Range(0,100))(n => client.writeWithResult(n.toString, "value"))
     Await.ready(f, 5.seconds)
 
-    assertEquals(primary.cluster.state.closedRounds.size, 1002)
+    assertEquals(primary.cluster.state.closedRounds.size, 100)
 
     def investigateUpkeep(state: ClusterState)(using LocalUid) = {
       val delta  = state.upkeep
