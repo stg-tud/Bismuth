@@ -120,7 +120,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
           println("TCP nodelay not supported on this socket")
 
     override def info: ConnectionInfo =
-      socket.getLocalSocketAddress match
+      socket.getRemoteSocketAddress match
           case isa: InetSocketAddress => ConnectionInfo(
               "type"             -> "p2ptls",
               "host"             -> isa.getHostName,
