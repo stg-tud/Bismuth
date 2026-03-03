@@ -4,11 +4,11 @@ import channels.{Abort, Connection, MessageBuffer, Receive}
 import crypto.channels.P2PTls
 import crypto.{CertificatePem, PrivateKeyPem, PublicIdentity}
 import de.rmgk.delay.Callback
+import lofi_acl.travelplanner.Debug
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
-import scala.math.Ordered.orderingToOrdered
 import scala.util.{Failure, Success, Try}
 
 class ChannelConnectionManager(
@@ -81,6 +81,7 @@ class ChannelConnectionManager(
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     listener = Some(p2pTls.latentListener(0, ec))
+    Debug.log("Listening on " + listener.get.listenPort)
     listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  =>
@@ -90,6 +91,7 @@ class ChannelConnectionManager(
   }
 
   override def connectTo(host: String, port: Int): Unit = {
+    Debug.log(s"Attempting to connect to $host:$port")
     p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  => if !disableLogging then exception.printStackTrace()
@@ -114,29 +116,31 @@ class ChannelConnectionManager(
       case Some(remotePeerId) =>
         if !disableLogging
         then
-            println("Connection established with: " + remotePeerId.id + s" (${connection.info.details("session_id")})")
-        var toKill: Option[Connection[MessageBuffer]] = None
-        val updated                                   = connections.updateAndGet(old =>
+            println(
+              "Connection established with: " + remotePeerId.id + s" (${connection.info.details("hacky_identifier")})"
+            )
+        var duplicateConnection: Option[Connection[MessageBuffer]] = None
+        val updated                                                = connections.updateAndGet(old =>
           old.updatedWith(remotePeerId) {
             case None                => Some(connection)
             case Some(oldConnection) => // Keep session with higher session id
-              val oldSessionId = oldConnection.info.details.get("session_id")
-              val newSessionId = connection.info.details.get("session_id")
+              val oldSessionId = oldConnection.info.details("hacky_identifier")
+              val newSessionId = connection.info.details("hacky_identifier")
               assert(oldSessionId != newSessionId)
-              if (oldSessionId compareTo newSessionId) < 0
+              if oldSessionId.toInt < newSessionId.toInt
               then
-                  toKill = Some(oldConnection)
+                  duplicateConnection = Some(oldConnection)
                   Some(connection)
               else
-                  toKill = Some(connection)
+                  duplicateConnection = Some(connection)
                   Some(oldConnection)
           }
         )
-        toKill.foreach { connectionToBeClosed =>
+        duplicateConnection.foreach { connectionToBeClosed =>
           Try { connectionToBeClosed.close() }
           println(s"duplicate connections from $remotePeerId: $connections + $connection")
         }
-        if toKill.isEmpty then messageReceiver.connectionEstablished(remotePeerId)
+        if duplicateConnection.isEmpty then messageReceiver.connectionEstablished(remotePeerId)
       case None => ??? // Should not happen
     }
   }
@@ -146,31 +150,29 @@ class ChannelConnectionManager(
     {
       case Success(msg)       => messageReceiver.receivedMessage(msg, remotePeerId)
       case Failure(exception) =>
-        if !disableLogging then
-            println(
-              s"Closing connection with ${connection.authenticatedPeerReplicaId.get} at ${connection.info}, because of $exception"
-            )
+        if !disableLogging
+        then println(s"Closing connection with $remotePeerId at ${connection.info}, because of $exception")
         onSocketFailure(remotePeerId, connection)
     }
   }
 
-  private def onSocketFailure(remotePeerId: PublicIdentity, connection: Connection[MessageBuffer]): Unit = {
-    var alreadyHandled = false
+  private def onSocketFailure(remotePeerId: PublicIdentity, failedConnection: Connection[MessageBuffer]): Unit = {
+    var socketWasAlreadyRemoved = false
     connections.updateAndGet { old =>
       old.updatedWith(remotePeerId) {
         case Some(connection) =>
-          if connections == connection then None
+          if connection == failedConnection then None
           else
-              alreadyHandled = true
+              socketWasAlreadyRemoved = true
               Some(connection)
         case None =>
-          alreadyHandled = true
+          socketWasAlreadyRemoved = true
           None // Already removed
       }
     }
-    if !alreadyHandled then
-        Try { messageReceiver.connectionShutdown(remotePeerId) }
-        Try { connection.close() }: Unit
+    if !socketWasAlreadyRemoved then
+        Try { failedConnection.close() }
+        Try { messageReceiver.connectionShutdown(remotePeerId) }: Unit
   }
 
 }

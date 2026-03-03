@@ -11,7 +11,6 @@ import rdts.base.Uid
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, IOException}
 import java.net.{InetSocketAddress, StandardSocketOptions}
 import java.security.cert.X509Certificate
-import java.util.Base64
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
 
@@ -86,6 +85,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
 
             executionContext.execute(() =>
               while !abort.closeRequest do {
+                println(s"Accepting on ${serverSocket.getLocalSocketAddress}")
                 val socket = serverSocket.accept().asInstanceOf[SSLSocket | Null]
                 if socket != null
                 then
@@ -122,10 +122,12 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
     override def info: ConnectionInfo =
       socket.getLocalSocketAddress match
           case isa: InetSocketAddress => ConnectionInfo(
-              "type" -> "p2ptls",
-              "host" -> isa.getHostName,
-              "port" -> isa.getPort.toString,
-              "session_id" -> Base64.getEncoder.encodeToString(socket.getSession.getId)
+              "type"             -> "p2ptls",
+              "host"             -> isa.getHostName,
+              "port"             -> isa.getPort.toString,
+              "hacky_identifier" ->
+              // Assumption: The listen port is fixed, the initiator port varies
+              (socket.getLocalPort + socket.getPort).toString
             )
           case _ => ConnectionInfo("type" -> "p2ptls")
 
@@ -140,17 +142,18 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
 
     private[P2PTls] def receiveLoopBlocking(): Unit = {
       inputStream.synchronized {
-        while true do
-            try {
+        try {
+          while true do
               val len   = inputStream.readInt()
               val bytes = inputStream.readNBytes(len)
               receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
-            } catch {
-              case ex: Throwable =>
-                try close()
-                catch { case _: Throwable => () }
-                receivedMessageCallback.fail(ex)
-            }
+        } catch {
+          case ex: Throwable =>
+            try close()
+            catch { case _: Throwable => () }
+            receivedMessageCallback.fail(ex)
+            throw ex
+        }
       }
     }
 
