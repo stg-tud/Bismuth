@@ -103,4 +103,38 @@ class P2PTlsTcpConnectorTest extends FunSuite {
         clientConnector.closeServerSocket()
   }
 
+  test("can establish multiple connections to one server") {
+    val id1: PrivateIdentity = IdentityFactory.createNewIdentity
+    val id2: PrivateIdentity = IdentityFactory.createNewIdentity
+    val id3: PrivateIdentity = IdentityFactory.createNewIdentity
+
+    val connector1 = P2PTlsTcpConnector(id1)
+    val connector2 = P2PTlsTcpConnector(id2)
+    val connector3 = P2PTlsTcpConnector(id3)
+
+    val conn1aFuture = connector1.acceptConnection
+    val conn2Future  = connector2.connect("localhost", connector1.listenPort)
+    val conn1bFuture = connector1.acceptConnection
+    val conn3Future  = connector3.connect("localhost", connector1.listenPort)
+
+    for
+        (sock1a, returnedIdFromConn1a) <- conn1aFuture
+        (sock1b, returnedIdFromConn1b) <- conn1bFuture
+        (sock2, returnedIdFromConn2)   <- conn2Future
+        (sock3, returnedIdFromConn3)   <- conn3Future
+    yield
+        assert(returnedIdFromConn1a == id2.getPublic || returnedIdFromConn1a == id3.getPublic)
+        assert(returnedIdFromConn1b == id2.getPublic || returnedIdFromConn1b == id3.getPublic)
+        assert(returnedIdFromConn1a != returnedIdFromConn1b)
+        assertEquals(returnedIdFromConn2, id1.getPublic)
+        assertEquals(returnedIdFromConn3, id1.getPublic)
+        sock1a.close()
+        sock1b.close()
+        connector1.closeServerSocket()
+        connector2.closeServerSocket()
+        sock2.close()
+        connector3.closeServerSocket()
+        sock3.close()
+  }
+
 }

@@ -12,7 +12,7 @@ import javax.net.ssl.SSLSocket
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class ConnectionManager[MSG](
+class OldConnectionManager[MSG](
     privateIdentity: PrivateIdentity,
     messageHandler: MessageReceiver[MSG],
     disableLogging: Boolean = false

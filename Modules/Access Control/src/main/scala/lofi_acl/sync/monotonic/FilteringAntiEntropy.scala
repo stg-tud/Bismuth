@@ -30,7 +30,7 @@ class FilteringAntiEntropy[RDT](
     rdtBottom: Bottom[RDT],
     msgCodec: JsonValueCodec[MonotonicAclSyncMessage[RDT]]
 ) extends MessageReceiver[MonotonicAclSyncMessage[RDT]] {
-  private val connectionManager = ConnectionManager[MonotonicAclSyncMessage[RDT]](localIdentity, this)(using
+  private val connectionManager = OldConnectionManager[MonotonicAclSyncMessage[RDT]](localIdentity, this)(using
     SignatureVerifyingMessageSerialization[RDT](
       localIdentity.getPublic,
       localIdentity.identityKey.getPrivate

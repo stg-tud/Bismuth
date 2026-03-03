@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
 import lofi_acl.sync.MessageReceiver
-import lofi_acl.sync.monotonic.ConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
+import lofi_acl.sync.monotonic.OldConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
 import munit.FunSuite
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeoutException}
@@ -13,7 +13,7 @@ import scala.concurrent.duration
 import scala.concurrent.duration.*
 import scala.language.postfixOps
 
-class ConnectionManagerTest extends FunSuite {
+class OldConnectionManagerTest extends FunSuite {
 
   override def munitIgnore: Boolean = isGithubCi
 
@@ -29,11 +29,11 @@ class ConnectionManagerTest extends FunSuite {
 
   test("Only establish connection and don't send anything") {
     val receiverA = QueueAppendingMessageReceiver()
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver()
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
 
     Thread.sleep(10)
 
@@ -48,15 +48,15 @@ class ConnectionManagerTest extends FunSuite {
 
   test("connectToExpectingUserIfNoConnectionExists") {
     val receiverA = QueueAppendingMessageReceiver()
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver()
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
     connManB.acceptIncomingConnections()
 
     val receiverC = QueueAppendingMessageReceiver()
-    val connManC  = ConnectionManager[String](idC, receiverC, true)
+    val connManC  = OldConnectionManager[String](idC, receiverC, true)
     connManC.acceptIncomingConnections()
 
     Thread.sleep(10) // Apparently we need to wait a bit for the ServerSockets to actually accept connections
@@ -99,14 +99,14 @@ class ConnectionManagerTest extends FunSuite {
 
   test("send message from initiator to acceptor and vice versa") {
     val receiverA = QueueAppendingMessageReceiver()
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver()
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
 
     val receiverC = QueueAppendingMessageReceiver()
-    val connManC  = ConnectionManager[String](idC, receiverC, true)
+    val connManC  = OldConnectionManager[String](idC, receiverC, true)
     connManC.acceptIncomingConnections()
 
     Thread.sleep(10)
@@ -130,15 +130,15 @@ class ConnectionManagerTest extends FunSuite {
 
   test("broadcast") {
     val receiverA = QueueAppendingMessageReceiver()
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver()
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
     connManB.acceptIncomingConnections()
 
     val receiverC = QueueAppendingMessageReceiver()
-    val connManC  = ConnectionManager[String](idC, receiverC, true)
+    val connManC  = OldConnectionManager[String](idC, receiverC, true)
     connManC.acceptIncomingConnections()
 
     connManA.connectTo("localhost", connManB.listenPort.get)
@@ -186,19 +186,19 @@ class ConnectionManagerTest extends FunSuite {
 
   test("race connectTo") {
     val receiverA = QueueAppendingMessageReceiver()
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver()
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
     connManB.acceptIncomingConnections()
 
     val receiverC = QueueAppendingMessageReceiver()
-    val connManC  = ConnectionManager[String](idC, receiverC, true)
+    val connManC  = OldConnectionManager[String](idC, receiverC, true)
     connManC.acceptIncomingConnections()
 
     val receiverD = QueueAppendingMessageReceiver()
-    val connManD  = ConnectionManager[String](idD, receiverD, true)
+    val connManD  = OldConnectionManager[String](idD, receiverD, true)
     connManD.acceptIncomingConnections()
 
     Thread.sleep(10)
@@ -234,19 +234,19 @@ class ConnectionManagerTest extends FunSuite {
 
   test("race connectTo ALTERNATIVE") {
     val receiverA = QueueAppendingMessageReceiver()
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver()
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
     connManB.acceptIncomingConnections()
 
     val receiverC = QueueAppendingMessageReceiver()
-    val connManC  = ConnectionManager[String](idC, receiverC, true)
+    val connManC  = OldConnectionManager[String](idC, receiverC, true)
     connManC.acceptIncomingConnections()
 
     val receiverD = QueueAppendingMessageReceiver()
-    val connManD  = ConnectionManager[String](idD, receiverD, true)
+    val connManD  = OldConnectionManager[String](idD, receiverD, true)
     connManD.acceptIncomingConnections()
 
     Thread.sleep(10)
@@ -284,15 +284,15 @@ class ConnectionManagerTest extends FunSuite {
 
   test("end-to-end test") {
     val receiverA = QueueAppendingMessageReceiver(idA.getPublic)
-    val connManA  = ConnectionManager[String](idA, receiverA, true)
+    val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
 
     val receiverB = QueueAppendingMessageReceiver(idB.getPublic)
-    val connManB  = ConnectionManager[String](idB, receiverB, true)
+    val connManB  = OldConnectionManager[String](idB, receiverB, true)
     connManB.acceptIncomingConnections()
 
     val receiverC = QueueAppendingMessageReceiver(idC.getPublic)
-    val connManC  = ConnectionManager[String](idC, receiverC, true)
+    val connManC  = OldConnectionManager[String](idC, receiverC, true)
     connManC.acceptIncomingConnections()
 
     connManB.connectTo("localhost", connManA.listenPort.get) // Establish A <-> B
@@ -340,7 +340,7 @@ class ConnectionManagerTest extends FunSuite {
   }
 }
 
-object ConnectionManagerTest {
+object OldConnectionManagerTest {
   val isGithubCi: Boolean            = Option(System.getenv("GITHUB_WORKFLOW")).exists(_.nonEmpty)
   private val assertionStabilityTime = if isGithubCi then 80 else 20
 
