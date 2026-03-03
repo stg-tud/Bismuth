@@ -26,7 +26,7 @@ class SyncWithMonotonicAcl[RDT](
 ) extends Replica[RDT] {
 
   private val antiEntropy =
-    FilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, DeltaMapWithPrefix.empty, this)
+    MonotonicFilteringAntiEntropy[RDT](localIdentity, rootOfTrust, initialAclDeltas, DeltaMapWithPrefix.empty, this)
   @volatile private var antiEntropyThread: Option[Thread] = None
 
   private val localPublicId = localIdentity.getPublic

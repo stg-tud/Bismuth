@@ -18,7 +18,7 @@ import scala.collection.immutable.Queue
 import scala.util.Random
 
 // Responsible for enforcing ACL
-class FilteringAntiEntropy[RDT](
+class MonotonicFilteringAntiEntropy[RDT](
     localIdentity: PrivateIdentity,
     rootOfTrust: PublicIdentity,
     initialAclDeltas: List[AclDelta[RDT]], // Signatures are assumed to have been validated already

@@ -31,7 +31,7 @@ class ReplicaOfSignedDeltaRdt[Rdt](
   override def connect(remoteUser: PublicIdentity, connectionString: String): Unit = {
     val remoteAddr = connectionString.split(':')
     require(remoteAddr.length == 2)
-    sync.connect(remoteAddr(0), remoteAddr(1).toInt)
+    sync.connect(remoteUser, remoteAddr(0), remoteAddr(1).toInt)
   }
 
   override def createInvitation: Invitation =

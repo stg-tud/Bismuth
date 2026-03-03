@@ -81,7 +81,7 @@ class ChannelConnectionManager(
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     listener = Some(p2pTls.latentListener(0, ec))
-    Debug.log("Listening on " + listener.get.listenPort)
+    Debug.log(s"Listening on ${listener.get.listenPort} as ${Debug.shorten(localPublicId)}")
     listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  =>
@@ -102,11 +102,6 @@ class ChannelConnectionManager(
     connections.get().get(userId).foreach(_.close())
 
   override def connectedPeers: Set[PublicIdentity] = connections.get().keySet
-
-  override def peerAddresses: Map[PublicIdentity, (String, Int)] =
-    connections.get().map { (remote, connection) =>
-      remote -> (connection.info.details("host"), connection.info.details("port").toInt)
-    }
 
   private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
