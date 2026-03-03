@@ -81,7 +81,7 @@ class ChannelConnectionManager(
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     listener = Some(p2pTls.latentListener(0, ec))
-    Debug.log(s"Listening on ${listener.get.listenPort} as ${Debug.shorten(localPublicId)}")
+    if !disableLogging then println(s"Listening on ${listener.get.listenPort} as ${Debug.shorten(localPublicId)}")
     listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  =>
@@ -91,7 +91,7 @@ class ChannelConnectionManager(
   }
 
   override def connectTo(host: String, port: Int): Unit = {
-    Debug.log(s"Attempting to connect to $host:$port")
+    if !disableLogging then println(s"Attempting to connect to $host:$port")
     p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  => if !disableLogging then exception.printStackTrace()
