@@ -22,7 +22,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) =>
-        ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver, disableLogging = false),
+        ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
     aclGenesis: BftDelta[Acl],
     onRdtChanged: State => Unit
 ) {
@@ -82,13 +82,13 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
 
   def connect(remoteId: PublicIdentity, host: String, port: Int): Unit = {
     Debug.log(s"Attempting connection to $remoteId ($host:$port)")
+    connectionManager.connectTo(host, port)
     remoteAddressCache.updateAndGet(oldMap =>
       oldMap.updatedWith(remoteId) {
         case Some(existingAddresses) => Some(existingAddresses + (host -> port))
-        case None                                   => Some(Set(host -> port))
+        case None                    => Some(Set(host -> port))
       }
-    )
-    connectionManager.connectTo(host, port)
+    ): Unit
   }
 
   def aclRootOp: BftDelta[Acl] = {

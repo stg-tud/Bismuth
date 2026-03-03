@@ -13,7 +13,7 @@ case class PrivateIdentity(identityKey: KeyPair, tlsKey: KeyPair, certificateHol
 
   def tlsKeyPem: PrivateKeyPem = Ed25519Util.privateKeyToPem(tlsKey.getPrivate)
 
-  def getPublic: PublicIdentity = PublicIdentity(
+  val getPublic: PublicIdentity = PublicIdentity(
     Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(identityKey.getPublic)
   )
 

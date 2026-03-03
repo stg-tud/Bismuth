@@ -22,28 +22,24 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private val localUid   = Uid(localIdentity.getPublic.id)
 
   private val currentStateRef: AtomicReference[(Dots, State)] = AtomicReference((Dots.empty, Bottom[State].empty))
-  private val deltaStore                          = SynchronizedMutableArrayDeltaStore[SignedDelta[State]]()
-  private val filteredDots: AtomicReference[Dots] = AtomicReference(Dots.empty)
-  private val missingDots: AtomicReference[Dots]  = AtomicReference(Dots.empty)
+  private val deltaStore                                      = SynchronizedMutableArrayDeltaStore[SignedDelta[State]]()
+  private val filteredDots: AtomicReference[Dots]             = AtomicReference(Dots.empty)
+  private val missingDots: AtomicReference[Dots]              = AtomicReference(Dots.empty)
 
-  def currentState: (Dots, State)                    = currentStateRef.get()
+  def currentState: (Dots, State) = currentStateRef.get()
 
   def localMutation(mutator: State => State): Unit = {
-    val delta                = mutator(currentState._2)
-    val (aclVersion, acl)    = aclAntiEntropy.currentAcl
-    val localWritePermission = acl.write.getOrElse(localIdentity.getPublic, PermissionTree.empty)
-    val decomposedDelta      =
-      delta.decomposed
-        .filter(delta => Filter[State].isAllowed(delta, localWritePermission)) // Enforce local write permissions
-        .map(d => SignedDelta.fromDelta(localIdentity, Dot(localUid, dotCounter.getAndIncrement()), d))
+    val delta                    = mutator(currentState._2)
+    val (aclVersion, acl)        = aclAntiEntropy.currentAcl
+    val localWritePermission     = acl.write.getOrElse(localIdentity.getPublic, PermissionTree.empty)
+    val decomposedVerifiedDeltas = delta.decomposed
+      .filter(delta => Filter[State].isAllowed(delta, localWritePermission)) // Enforce local write permissions
+      .map(d => SignedDelta.fromDelta(localIdentity, Dot(localUid, dotCounter.getAndIncrement()), d))
+      .toSeq
 
-    if decomposedDelta.nonEmpty then {
-      decomposedDelta.foreach(d => deltaStore.put(d.dot, d))
-      val recombined = decomposedDelta.map(_.payload).reduce((l, r) => Lattice.merge(l, r))
-      val dots       = Dots.from(decomposedDelta.map(_.dot))
-      currentStateRef.updateAndGet((oldDots, oldState) => (oldDots.union(dots), oldState.merge(recombined)))
-      onRdtChange(delta)
-      broadcastDeltasFiltered(decomposedDelta)
+    if decomposedVerifiedDeltas.nonEmpty then {
+      applyVerifiedDeltas(localIdentity.getPublic, decomposedVerifiedDeltas)
+      broadcastDeltasFiltered(decomposedVerifiedDeltas)
     }
   }
 
@@ -68,12 +64,31 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   private def broadcastDeltasFiltered(deltas: Iterable[SignedDelta[State]]): Unit =
     network.connectedPeers.foreach { remote => sendDeltasFiltered(deltas, remote) }
 
-  private def sendDeltasFiltered(deltas: Iterable[SignedDelta[State]], remote: PublicIdentity): Unit = {
+  protected def sendDeltasFiltered(deltas: Iterable[SignedDelta[State]], remote: PublicIdentity): Unit = {
     val (aclVersion, acl)         = aclAntiEntropy.currentAcl
     val receiverReadPermission    = acl.read.getOrElse(remote, PermissionTree.empty)
     val (allowedDeltas, filtered) =
       deltas.partition(delta => Filter[State].isAllowed(delta.payload, receiverReadPermission))
     network.sendDeltas(allowedDeltas.toSeq, Dots.from(filtered.map(_.dot)), aclVersion, remote)
+  }
+
+  protected def applyVerifiedDeltas(source: PublicIdentity, deltas: Seq[SignedDelta[State]]): Unit = {
+    var dots: Dots           = Dots.empty
+    var combinedDelta: State = Bottom[State].empty
+    deltas.foreach { delta =>
+      deltaStore.put(delta.dot, delta)
+      dots = dots.add(delta.dot)
+      combinedDelta = combinedDelta.merge(delta.payload)
+    }
+
+    if dots.nonEmpty then {
+      currentStateRef.updateAndGet((oldDots, oldState) =>
+        (oldDots.union(dots), oldState.merge(combinedDelta))
+      )
+      missingDots.updateAndGet(missing => missing.diff(dots))
+      filteredDots.updateAndGet(filtered => filtered.diff(dots))
+      onRdtChange(combinedDelta)
+    }
   }
 
   def receiveDeltas(
@@ -84,8 +99,8 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   ): Unit = {
     val (localAclHeads, localAcl) = aclAntiEntropy.currentAcl
 
-    // Check signatures and enforce ACL
-    val deltas = unverifiedDeltas
+    // Check signatures and enforce ACL, then apply only verified deltas
+    val verifiedDeltas = unverifiedDeltas
       .filter(delta =>
         delta.isSignatureValid
         && Filter[State].isAllowed(
@@ -93,6 +108,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
           localAcl.write.getOrElse(PublicIdentity(delta.dot.place.delegate), PermissionTree.empty)
         )
       )
+    applyVerifiedDeltas(remote, verifiedDeltas)
 
     // If remote acl < local acl, remote filter might be too restrictive.
     if filtered.nonEmpty && remoteAcl != localAclHeads then {
@@ -109,23 +125,6 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       missingDots.updateAndGet(missing => missing.diff(filtered)) // Remove filtered from missing
       val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
       assert(deltaStore.dots.intersect(newFiltered).isEmpty) // TODO: remove this check at some point
-    }
-
-    var appliedDeltas: Dots     = Dots.empty
-    var accumulatedDelta: State = Bottom[State].empty
-    deltas.foreach { d =>
-      deltaStore.put(d.dot, d)
-      appliedDeltas = appliedDeltas.add(d.dot)
-      accumulatedDelta = accumulatedDelta.merge(d.payload)
-    }
-    // Track deltas
-    if !appliedDeltas.isEmpty then {
-      currentStateRef.updateAndGet((oldDots, oldState) =>
-        (oldDots.union(appliedDeltas), oldState.merge(accumulatedDelta))
-      )
-      missingDots.updateAndGet(missing => missing.diff(appliedDeltas))
-      filteredDots.updateAndGet(filtered => filtered.diff(appliedDeltas))
-      onRdtChange(accumulatedDelta)
     }
   }
 
