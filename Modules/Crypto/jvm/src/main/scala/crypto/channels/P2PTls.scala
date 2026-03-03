@@ -9,10 +9,11 @@ import nl.altindag.ssl.pem.util.PemUtils
 import rdts.base.Uid
 
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, IOException}
-import java.net.{InetSocketAddress, StandardSocketOptions}
+import java.net.StandardSocketOptions
 import java.security.cert.X509Certificate
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
+import scala.util.Try
 
 class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePem) {
   private val sslFactory = {
@@ -119,17 +120,13 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
         case _: UnsupportedOperationException =>
           println("TCP nodelay not supported on this socket")
 
-    override def info: ConnectionInfo =
-      socket.getRemoteSocketAddress match
-          case isa: InetSocketAddress => ConnectionInfo(
-              "type"             -> "p2ptls",
-              "host"             -> isa.getHostName,
-              "port"             -> isa.getPort.toString,
-              "hacky_identifier" ->
-              // Assumption: The listen port is fixed, the initiator port varies
-              (socket.getLocalPort + socket.getPort).toString
-            )
-          case _ => ConnectionInfo("type" -> "p2ptls")
+    override def info: ConnectionInfo = ConnectionInfo(
+      "type"          -> "p2ptls",
+      "remoteAddress" -> Try { socket.getRemoteSocketAddress.toString }.recover(_.getMessage).get,
+      "localAddress"  -> Try { socket.getLocalSocketAddress.toString }.recover(_.getMessage).get,
+      // Assumption: The listen port is fixed, the initiator port varies
+      "hacky_identifier" -> (socket.getLocalPort + socket.getPort).toString
+    )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       outputStream.synchronized {
