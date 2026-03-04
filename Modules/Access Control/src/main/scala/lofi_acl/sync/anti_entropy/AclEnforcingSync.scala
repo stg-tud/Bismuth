@@ -21,13 +21,12 @@ import java.util.concurrent.atomic.AtomicReference
 class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
-      (id, receiver) =>
-        ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
+      (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
     aclGenesis: BftDelta[Acl],
     onRdtChanged: State => Unit
 ) {
   private val messageHandlerExecutor = Executors.newSingleThreadExecutor() // Executes the message handling logic
-  private val connectionManager: ConnectionManager = {
+  protected val connectionManager: ConnectionManager = {
     val msgReceiver = new MessageReceiver[MessageBuffer] {
       override def receivedMessage(msgBuf: MessageBuffer, fromUser: PublicIdentity): Unit =
         messageHandlerExecutor.execute(() =>
@@ -36,31 +35,39 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
             handleMessage(msg, fromUser)
         )
 
-      override def connectionEstablished(newRemote: PublicIdentity): Unit = {
-        messageHandlerExecutor.execute(() =>
-            // Notify remote about local ACL state
-            val aclVersionMsg = ArrayMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
-            // Notify remote about local RDT state
-            val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
-            // Only tell new peer about our peers (instead of everyone)
-            val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(
-              remoteAddressCache.get().flatMap((id, addrs) => addrs.map(addr => id -> addr)).toSeq
-            )))
-
-            connectionManager.sendMultiple(newRemote, Array(aclVersionMsg, rdtVersionMsg, peersMsg))
-        )
-      }
+      override def connectionEstablished(newRemote: PublicIdentity): Unit =
+        messageHandlerExecutor.execute(() => onConnectionEstablished(newRemote))
     }
     connectionManagerProvider(localIdentity, msgReceiver)
   }
-  private val comm = ConnectionManagerCommunicator(connectionManager)
 
-  private val aclAntiEntropy = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
-  private val rdtAntiEntropy: FilteredRdtAntiEntropy[State] =
-    FilteredRdtAntiEntropy[State](localIdentity, onRdtChanged, comm, aclAntiEntropy)
+  protected val comm                             = ConnectionManagerCommunicator(connectionManager)
+  protected val (aclAntiEntropy, rdtAntiEntropy) = instantiateAntiEntropy()
+
+  protected def instantiateAntiEntropy(): (AclAntiEntropy, FilteredRdtAntiEntropy[State]) = {
+    val aclAntiEntropy                                = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
+    val rdtAntiEntropy: FilteredRdtAntiEntropy[State] =
+      FilteredRdtAntiEntropy[State](localIdentity, onRdtChanged, comm, aclAntiEntropy)
+
+    (aclAntiEntropy, rdtAntiEntropy)
+  }
+
   private val remoteAddressCache: AtomicReference[Map[PublicIdentity, Set[(String, Int)]]] = AtomicReference(Map.empty)
 
-  private def onAclChange(delta: Acl): Unit = if rdtAntiEntropy != null then rdtAntiEntropy.onAclChanged(delta)
+  protected def onAclChange(delta: Acl): Unit = if rdtAntiEntropy != null then rdtAntiEntropy.onAclChanged(delta)
+
+  protected def onConnectionEstablished(newRemote: PublicIdentity): Unit = {
+    // Notify remote about local ACL state
+    val aclVersionMsg = ArrayMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
+    // Notify remote about local RDT state
+    val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
+    // Only tell new peer about our peers (instead of everyone)
+    val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(
+      remoteAddressCache.get().flatMap((id, addrs) => addrs.map(addr => id -> addr)).toSeq
+    )))
+
+    connectionManager.sendMultiple(newRemote, Array(aclVersionMsg, rdtVersionMsg, peersMsg))
+  }
 
   def handleMessage(msg: SyncMsg[State], remote: PublicIdentity): Unit = msg match {
     case SyncMsg.DataDeltas(deltas, filtered, remoteAcl) =>
