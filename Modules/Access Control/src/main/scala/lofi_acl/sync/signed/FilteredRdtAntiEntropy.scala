@@ -18,8 +18,8 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     aclAntiEntropy: AclAntiEntropy,
     initialDotValue: Long = 0
 )(using Encoder[SignedDelta[State]]) {
-  private val dotCounter = AtomicLong(0)
-  private val localUid   = Uid(localIdentity.getPublic.id)
+  protected val dotCounter = AtomicLong(0)
+  protected val localUid   = Uid(localIdentity.getPublic.id)
 
   private val currentStateRef: AtomicReference[(Dots, State)] = AtomicReference((Dots.empty, Bottom[State].empty))
   private val deltaStore                                      = SynchronizedMutableArrayDeltaStore[SignedDelta[State]]()
@@ -61,7 +61,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     network.requestDeltas(dots, peers(idx))
   }
 
-  private def broadcastDeltasFiltered(deltas: Iterable[SignedDelta[State]]): Unit =
+  protected def broadcastDeltasFiltered(deltas: Iterable[SignedDelta[State]]): Unit =
     network.connectedPeers.foreach { remote => sendDeltasFiltered(deltas, remote) }
 
   protected def sendDeltasFiltered(deltas: Iterable[SignedDelta[State]], remote: PublicIdentity): Unit = {
