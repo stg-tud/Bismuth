@@ -5,6 +5,8 @@ import io.etcd.jetcd.{ByteSequence, Client, KV}
 import site.ycsb.{ByteIterator, DB, Status, StringByteIterator}
 
 import java.nio.charset.StandardCharsets
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import java.util.{HashMap, Map, Properties, Set, Vector}
 import scala.jdk.CollectionConverters.*
 import scala.language.unsafeNulls
@@ -40,7 +42,9 @@ class EtcdAdapter extends DB {
     val props: Properties = getProperties
     val endpoints         = props.getProperty("etcd.endpoints").split(" ")
 
-    etcdClient = jetcd.Client.builder().endpoints(endpoints*).build()
+    etcdClient = jetcd.Client.builder().connectTimeout(Duration.ofSeconds(1)).keepaliveTimeout(Duration.ofSeconds(
+      1
+    )).endpoints(endpoints*).build()
     kvClient = etcdClient.getKVClient
     println("Hello from etcd adapter!")
     println(s"Endpoints: ${endpoints.mkString(" ")}")
@@ -51,7 +55,7 @@ class EtcdAdapter extends DB {
     val v = stringToByteSequence(valsToString(values))
     try
         // println(s"writing ($k,$v)")
-        kvClient.put(k, v).get()
+        kvClient.put(k, v).get(1, TimeUnit.SECONDS)
         Status.OK
     catch
         case exception =>
@@ -62,7 +66,7 @@ class EtcdAdapter extends DB {
   override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
     val k = stringToByteSequence(key)
     try
-        val res = kvClient.get(k).get().getKvs.get(0)
+        val res = kvClient.get(k).get(1, TimeUnit.SECONDS).getKvs.get(0)
         result.put("result", StringByteIterator(res.getValue.toString))
         Status.OK
     catch

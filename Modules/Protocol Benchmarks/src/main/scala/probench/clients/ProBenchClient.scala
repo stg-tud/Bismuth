@@ -1,10 +1,9 @@
 package probench.clients
 
 import probench.data
-import probench.data.Codecs.given
 import probench.data.ClientComm.given
-import probench.data.RequestResponseQueue.Timestamp
-import probench.data.{ClientCommRead, ClientCommWrite, KVOperation, RequestResponseQueue}
+import probench.data.Codecs.given
+import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{LocalUid, Uid}
 import replication.DeltaStorage.Type
 import replication.{DeltaDissemination, DeltaStorage}

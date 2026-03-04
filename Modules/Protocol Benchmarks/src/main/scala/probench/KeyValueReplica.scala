@@ -60,6 +60,7 @@ class KeyValueReplica(
   val connInf: ConnInf = new ConnInf()
 
   replicaActor.execute { () =>
+    Thread.sleep(2000) // wait 2 seconds before first leader election
     cluster.maybeLeaderElection(votingReplicas)
   }
 
@@ -295,8 +296,9 @@ class KeyValueReplica(
         val receivedTime          = System.currentTimeMillis()
         val old                   = state
         val deltaWithReceivedTime = delta.copy(heartbeats = delta.heartbeats.map {
-          case (id, LastWriterWins(t, Heartbeat(leader, senderTimestamp, _))) =>
-            (id, LastWriterWins(t, Heartbeat(leader, senderTimestamp, Some(receivedTime))))
+          case (id, l @ LastWriterWins(t, Heartbeat(leader, senderTimestamp, _))) if id != replicaId =>
+            (id, l.write(Heartbeat(leader, senderTimestamp, Some(receivedTime))))
+          case h => h
         })
         state = state `merge` deltaWithReceivedTime
         (old, state)

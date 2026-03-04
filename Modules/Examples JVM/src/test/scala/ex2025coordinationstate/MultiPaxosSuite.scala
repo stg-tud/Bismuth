@@ -16,14 +16,14 @@ extension [A](s1: Seq[A])
 
 class MultiPaxosSuite extends munit.ScalaCheckSuite {
 
-  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters)
+  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(100).withMaxSize(500)
 
   property("Multipaxos")(MultiPaxosSpec[Int](
-    logging = false,
+    logging = true,
     minDevices = 3,
     maxDevices = 5,
     proposeFreq = 5,
-    startElectionFreq = 1,
+    startElectionFreq = 5,
     mergeFreq = 80
   ).property())
 }

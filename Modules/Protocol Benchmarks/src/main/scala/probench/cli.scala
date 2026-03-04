@@ -227,7 +227,7 @@ object cli {
               node.connInf.sendHeartbeat(): Unit
             },
             100,
-            500
+            200
           )
           Timer().schedule(
             () => {
