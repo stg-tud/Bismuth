@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Ed25519Util, PublicIdentity}
 import lofi_acl.bft.AclRdt.given_JsonValueCodec_BftDelta
 import lofi_acl.bft.{Acl, BftDelta}
-import SyncInvitation.base64Encoder
+import lofi_acl.travelplanner.SyncInvitation.base64Encoder
 
 import java.security.KeyPair
 import java.util.Base64

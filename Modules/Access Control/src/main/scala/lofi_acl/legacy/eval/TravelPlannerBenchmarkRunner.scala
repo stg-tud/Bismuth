@@ -2,9 +2,9 @@ package lofi_acl.legacy.eval
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromStream, writeToStream}
 import lofi_acl.legacy.bft.BftAclOpGraph.Signature
-import SavedTrace.NotificationTrace
-import TravelPlannerBenchmark.createTrace
 import lofi_acl.legacy.bft.{ReplicaWithBftAcl, SerializedAclOp}
+import lofi_acl.legacy.eval.SavedTrace.NotificationTrace
+import lofi_acl.legacy.eval.TravelPlannerBenchmark.createTrace
 import rdts.filters.PermissionTree
 
 import java.io.PrintWriter

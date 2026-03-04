@@ -2,11 +2,11 @@ package lofi_acl.legacy.eval
 
 import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import SavedTrace.{DeltaTrace, NotificationTrace}
-import lofi_acl.travelplanner.TravelPlan
-import TravelPlannerBenchmark.*
-import TravelPlannerBenchmark.TravelPlanMutator.*
 import lofi_acl.legacy.bft.{BftAclOpGraph, BftFilteringAntiEntropy, ReplicaWithBftAcl, SerializedAclOp}
+import lofi_acl.legacy.eval.SavedTrace.{DeltaTrace, NotificationTrace}
+import lofi_acl.legacy.eval.TravelPlannerBenchmark.*
+import lofi_acl.legacy.eval.TravelPlannerBenchmark.TravelPlanMutator.*
+import lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
 
@@ -14,7 +14,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
-class TravelPlannerBenchmark private[TravelPlannerBenchmark](
+class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
     val numReplicas: Int,
     val identities: Array[PrivateIdentity],
     val aclRoot: SerializedAclOp

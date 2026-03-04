@@ -2,12 +2,12 @@ package lofi_acl.legacy.encryption
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import lofi_acl.legacy.encryption.DeltaSurgeonTest.{optionSurgeon, given}
 import munit.FunSuite
 import rdts.base.Bottom
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree
 import rdts.filters.PermissionTree.{allow, empty}
-import DeltaSurgeonTest.{optionSurgeon, given}
 
 case class A(a: String, b: B)
 case class B(c: String)

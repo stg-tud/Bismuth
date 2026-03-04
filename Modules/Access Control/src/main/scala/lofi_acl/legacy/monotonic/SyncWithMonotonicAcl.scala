@@ -4,9 +4,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
-import MonotonicAclSyncMessage.*
-import SyncWithMonotonicAcl.messageJsonCodec
 import lofi_acl.legacy.DeltaMapWithPrefix
+import lofi_acl.legacy.monotonic.MonotonicAclSyncMessage.*
+import lofi_acl.legacy.monotonic.SyncWithMonotonicAcl.messageJsonCodec
 import lofi_acl.sync.Replica
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}

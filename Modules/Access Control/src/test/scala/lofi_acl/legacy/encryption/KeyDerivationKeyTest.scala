@@ -2,7 +2,7 @@ package lofi_acl.legacy.encryption
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import crypto.{Ed25519Util, PublicIdentity}
-import KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
+import lofi_acl.legacy.encryption.KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dot

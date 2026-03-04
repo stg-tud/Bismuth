@@ -5,9 +5,9 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.Ed25519Util
 import crypto.channels.PrivateIdentity
 import lofi_acl.legacy.bft.BftAclOpGraph.Signature
-import SavedTrace.{DeltaTrace, NotificationTrace}
-import TravelPlannerBenchmark.RDT
 import lofi_acl.legacy.bft.{AclOp, SerializedAclOp}
+import lofi_acl.legacy.eval.SavedTrace.{DeltaTrace, NotificationTrace}
+import lofi_acl.legacy.eval.TravelPlannerBenchmark.RDT
 import org.bouncycastle.cert.X509CertificateHolder
 import replication.JsoniterCodecs
 

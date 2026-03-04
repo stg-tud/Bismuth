@@ -4,9 +4,9 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
+import lofi_acl.legacy.monotonic.OldConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
 import lofi_acl.legacy.monotonic.{MessageSerialization, OldConnectionManager}
 import lofi_acl.sync.MessageReceiver
-import OldConnectionManagerTest.{QueueAppendingMessageReceiver, assertEventually, isGithubCi, given}
 import munit.FunSuite
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeoutException}

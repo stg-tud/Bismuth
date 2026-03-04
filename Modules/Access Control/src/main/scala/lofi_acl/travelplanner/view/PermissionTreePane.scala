@@ -1,7 +1,7 @@
 package lofi_acl.travelplanner.view
 
-import PermissionTreePane.{ExpensePermCheckBoxes, ExpensePermEntryCheckBoxes, wiredReadWriteCheckboxes}
 import lofi_acl.travelplanner.TravelPlan
+import lofi_acl.travelplanner.view.PermissionTreePane.{ExpensePermCheckBoxes, ExpensePermEntryCheckBoxes, wiredReadWriteCheckboxes}
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.{Filter, PermissionTree}
 import scalafx.beans.property.BooleanProperty

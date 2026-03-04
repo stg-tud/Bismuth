@@ -1,9 +1,9 @@
 package lofi_acl.travelplanner.view
 
-import ExpenseListEntryListCell.amountTextFilter
 import javafx.scene.control.ListCell
 import javafx.scene.layout.HBox
 import lofi_acl.travelplanner.model.TravelPlanModel
+import lofi_acl.travelplanner.view.ExpenseListEntryListCell.amountTextFilter
 import scalafx.beans.property.StringProperty
 import scalafx.event.subscriptions.Subscription
 import scalafx.scene.control.{TextField, TextFormatter}

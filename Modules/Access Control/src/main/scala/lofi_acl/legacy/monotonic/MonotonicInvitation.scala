@@ -1,7 +1,7 @@
 package lofi_acl.legacy.monotonic
 
 import crypto.{Ed25519Util, PublicIdentity}
-import MonotonicInvitation.base64Encoder
+import lofi_acl.legacy.monotonic.MonotonicInvitation.base64Encoder
 import lofi_acl.travelplanner.Invitation
 
 import java.security.KeyPair

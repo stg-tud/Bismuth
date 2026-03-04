@@ -43,7 +43,7 @@ object Signature {
         if x eq null then out.writeNull()
         else out.writeBase64Val(x.delegate, true)
       }
-      override def nullValue: Signature                             = null
+      override def nullValue: Signature = null
 
   given signatureKeyCodec: JsonKeyCodec[Signature]:
       override def decodeKey(in: JsonReader): Signature           = new Signature(in.readBase64AsBytes(Array.empty))

@@ -3,7 +3,7 @@ package lofi_acl.legacy.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.channels.IdentityFactory
-import ReplicaWithBftAclTest.peek
+import lofi_acl.legacy.bft.ReplicaWithBftAclTest.peek
 import lofi_acl.legacy.bft.{BftAclOpGraph, BftFilteringAntiEntropy, ReplicaWithBftAcl}
 import lofi_acl.sync.QueueAppendingMessageReceiver
 import munit.FunSuite

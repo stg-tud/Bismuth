@@ -1,7 +1,7 @@
 package lofi_acl.legacy.bft
 
 import crypto.{Ed25519Util, PublicIdentity}
-import BftInvitation.base64Encoder
+import lofi_acl.legacy.bft.BftInvitation.base64Encoder
 import lofi_acl.travelplanner.Invitation
 
 import java.security.KeyPair

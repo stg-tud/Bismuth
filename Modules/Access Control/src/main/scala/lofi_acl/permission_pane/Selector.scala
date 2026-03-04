@@ -1,6 +1,6 @@
 package lofi_acl.permission_pane
 
-import Selector.{FixedSelector, leafSelector}
+import lofi_acl.permission_pane.Selector.{FixedSelector, leafSelector}
 import rdts.base.Bottom
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.KeyAsString

@@ -5,10 +5,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import lofi_acl.legacy.bft.BftAclOpGraph.Signature
+import lofi_acl.legacy.bft.BftFilteringAntiEntropy.SyncMsg
+import lofi_acl.legacy.bft.BftFilteringAntiEntropy.SyncMsg.*
 import lofi_acl.sync.*
-import BftAclOpGraph.Signature
-import BftFilteringAntiEntropy.SyncMsg
-import BftFilteringAntiEntropy.SyncMsg.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}

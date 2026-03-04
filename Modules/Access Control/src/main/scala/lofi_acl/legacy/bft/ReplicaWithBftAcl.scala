@@ -3,8 +3,8 @@ package lofi_acl.legacy.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Ed25519Util, PublicIdentity}
+import lofi_acl.legacy.bft.BftAclOpGraph.Signature
 import lofi_acl.sync.Replica
-import BftAclOpGraph.Signature
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}

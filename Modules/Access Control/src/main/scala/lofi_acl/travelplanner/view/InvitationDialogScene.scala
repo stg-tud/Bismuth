@@ -2,8 +2,8 @@ package lofi_acl.travelplanner.view
 
 import crypto.PublicIdentity
 import lofi_acl.legacy.monotonic.Acl
-import lofi_acl.travelplanner.{Invitation, TravelPlan}
 import lofi_acl.travelplanner.model.TravelPlanModel
+import lofi_acl.travelplanner.{Invitation, TravelPlan}
 import rdts.filters.PermissionTree
 import scalafx.application.Platform
 import scalafx.scene.Scene

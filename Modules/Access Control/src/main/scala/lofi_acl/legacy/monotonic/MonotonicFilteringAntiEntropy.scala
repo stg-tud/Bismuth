@@ -3,11 +3,11 @@ package lofi_acl.legacy.monotonic
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.sync.*
-import MonotonicAclSyncMessage.*
-import Operation.WRITE
 import lofi_acl.legacy.DeltaMapWithPrefix
 import lofi_acl.legacy.bft.{PartialDelta, PartialReplicationPeerSubsetSolver}
+import lofi_acl.legacy.monotonic.MonotonicAclSyncMessage.*
+import lofi_acl.legacy.monotonic.Operation.WRITE
+import lofi_acl.sync.*
 import rdts.base.{Bottom, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}

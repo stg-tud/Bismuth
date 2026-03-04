@@ -3,8 +3,8 @@ package lofi_acl.legacy.bft
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.{Ed25519Util, PublicIdentity}
-import AclOp.opCodec
-import BftAclOpGraph.Signature
+import lofi_acl.legacy.bft.AclOp.opCodec
+import lofi_acl.legacy.bft.BftAclOpGraph.Signature
 import rdts.filters.PermissionTree
 
 import java.security.PrivateKey

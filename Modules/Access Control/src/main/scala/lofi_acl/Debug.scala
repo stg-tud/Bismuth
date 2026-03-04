@@ -58,11 +58,10 @@ object Debug {
       .replaceAll("ObserveRemoveMap", "ORMap")
       .replaceAll("CausalTime", "")
 
-
   def shorten(syncMsg: SyncMsg[?]): String = {
     syncMsg match {
       case AclDeltas(delta) =>
-        s"AclDeltas(${shorten(delta)})".replaceAll("PermissionTree","")
+        s"AclDeltas(${shorten(delta)})".replaceAll("PermissionTree", "")
       case MyPeersAre(peers) =>
         peers.map((id, addr) => s"${shorten(id)}->$addr").mkString("MyPeersAre(", ",", ")")
       case MyAclVersionIs(aclHeads) =>

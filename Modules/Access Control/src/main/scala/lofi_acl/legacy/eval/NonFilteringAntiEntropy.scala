@@ -4,10 +4,10 @@ import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import lofi_acl.legacy.bft.BftFilteringAntiEntropy.SyncMsg
 import lofi_acl.legacy.bft.BftFilteringAntiEntropy.SyncMsg.{RdtDelta, TellKnownRdtDots, codec}
 import lofi_acl.legacy.bft.{BftAcl, BftFilteringAntiEntropy, ReplicaWithBftAcl, SerializedAclOp}
+import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import rdts.base.{Bottom, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dot

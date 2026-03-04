@@ -4,13 +4,13 @@ import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.{Debug, JsoniterCodecs}
+import lofi_acl.JsoniterCodecs.syncMsgCodec
 import lofi_acl.bft.*
 import lofi_acl.bft.HashDag.Encoder
-import lofi_acl.JsoniterCodecs.syncMsgCodec
 import lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import lofi_acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import lofi_acl.{Debug, JsoniterCodecs}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots

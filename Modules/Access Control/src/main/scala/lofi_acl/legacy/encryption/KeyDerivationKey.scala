@@ -1,7 +1,7 @@
 package lofi_acl.legacy.encryption
 
 import crypto.Ed25519Util
-import KeyDerivationKey.*
+import lofi_acl.legacy.encryption.KeyDerivationKey.*
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.crypto.util.DigestFactory
