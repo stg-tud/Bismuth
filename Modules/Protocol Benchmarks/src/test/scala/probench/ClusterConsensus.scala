@@ -1,28 +1,17 @@
 package probench
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import probench.clients.ProBenchClient
-import probench.data.{ClientState, ClusterState, KVOperation}
+import probench.data.{ClientCommRead, ClientCommWrite, ClusterState, KVOperation}
 import rdts.base.{LocalUid, Uid}
 import rdts.protocols.Participants
 import replication.ProtocolMessage
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 class ClusterConsensus extends munit.FunSuite {
   test("simple consensus") {
-
-    given JsonValueCodec[ClusterState] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-    given clusterCodec: JsonValueCodec[ProtocolMessage[ClusterState]] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-    given JsonValueCodec[ClientState] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-    given clientCodec: JsonValueCodec[ProtocolMessage[ClientState]] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
     val ids = Set("Node1", "Node2", "Node3").map(Uid.predefined)
     given Participants(ids)
@@ -37,13 +26,16 @@ class ClusterConsensus extends munit.FunSuite {
     secondaries.head.cluster.dataManager.addObjectConnection(connection2.server)
     secondaries(1).cluster.dataManager.addObjectConnection(connection2.client(secondaries(1).uid.toString))
 
-    val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
+    val clientConnectionWrite = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommWrite]]()
+    val clientConnectionRead = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommRead]]()
 
-    primary.client.dataManagerWrite.addObjectConnection(clientConnection.server)
+    primary.client.dataManagerWrite.addObjectConnection(clientConnectionWrite.server)
+    primary.client.dataManagerRead.addObjectConnection(clientConnectionRead.server)
 
     val clientUid = Uid.gen()
     val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
-    client.writeDataManager.addObjectConnection(clientConnection.client(clientUid.toString))
+    client.writeDataManager.addObjectConnection(clientConnectionWrite.client(clientUid.toString))
+    client.readDataManager.addObjectConnection(clientConnectionRead.client(clientUid.toString))
 
     client.printResults = false
 
@@ -101,21 +93,12 @@ class ClusterConsensus extends munit.FunSuite {
 
     nodes.foreach(noUpkeep)
 
-    assertEquals(nodes(0).cluster.state.closedRounds(3).value, KVOperation.Read("test2"))
-    assertEquals(nodes(2).cluster.state.closedRounds.size, 2)
+    assertEquals(nodes(0).cluster.state.closedRounds(1)._2, KVOperation.Write("test2", "Hi"))
+    assertEquals(nodes(2).cluster.state.closedRounds.size, 1)
 
   }
 
   test("consensus with one node") {
-
-    given JsonValueCodec[ClusterState] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-    given clusterCodec: JsonValueCodec[ProtocolMessage[ClusterState]] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-    given JsonValueCodec[ClientState] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-    given clientCodec: JsonValueCodec[ProtocolMessage[ClientState]] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
     val ids = Set("Node1").map(Uid.predefined)
     given Participants(ids)
@@ -126,8 +109,8 @@ class ClusterConsensus extends munit.FunSuite {
     val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
     primary.cluster.dataManager.addObjectConnection(connection.server)
 
-    val clientConnectionWrites = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
-    val clientConnectionReads  = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
+    val clientConnectionWrites = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommWrite]]()
+    val clientConnectionReads  = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommRead]]()
 
     primary.client.dataManagerWrite.addObjectConnection(clientConnectionWrites.server)
     primary.client.dataManagerRead.addObjectConnection(clientConnectionReads.server)
@@ -154,10 +137,10 @@ class ClusterConsensus extends munit.FunSuite {
 //    for n <- Range(0,100) do {
 //      Await.ready(client.writeWithResult(n.toString, "value"), 5.seconds)
 //    }
-    val f = Future.traverse(Range(0,100))(n => client.writeWithResult(n.toString, "value"))
+    val f = Future.traverse(Range(0,1000))(n => client.writeWithResult(n.toString, "value"))
     Await.ready(f, 5.seconds)
 
-    assertEquals(primary.cluster.state.closedRounds.size, 100)
+    assertEquals(primary.cluster.state.closedRounds.size, 1000)
 
     def investigateUpkeep(state: ClusterState)(using LocalUid) = {
       val delta  = state.upkeep

@@ -1,40 +1,19 @@
 package probench
 
-import channels.{Abort, ChannelTrafficReporter, ConcurrencyHelper, LatentConnection, MessageBuffer, NioTCP, UDP}
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import channels.*
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
-import probench.clients.{BenchmarkMode, BenchmarkOpType, ClientCLI, EtcdClient, ProBenchClient}
-import probench.data.{ClientState, ClusterState, ConnInformation, KVOperation}
+import probench.clients.*
 import rdts.base.Uid
-import replication.{DeltaDissemination, DeltaStorage, FileConnection, ProtocolMessage}
+import replication.{DeltaDissemination, DeltaStorage}
 
 import java.net.{DatagramSocket, InetSocketAddress}
-import java.nio.file.{Files, Path}
 import java.util.Timer
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex
 import scala.util.{Failure, Success}
-
-object Codecs {
-  // codecs
-  given JsonValueCodec[ClusterState] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given clusterCodec: JsonValueCodec[ProtocolMessage[ClusterState]] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given JsonValueCodec[ClientState] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given clientCodec: JsonValueCodec[ProtocolMessage[ClientState]] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given JsonValueCodec[ConnInformation] =
-    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
-}
-
-import probench.Codecs.given
 
 object cli {
 
@@ -196,39 +175,6 @@ object cli {
     val argparse = composedParser {
 
       alternatives(
-        subcommand("easy-setup", "for lazy tests") {
-          val ids                            = Set("Node1", "Node2", "Node3").map(Uid.predefined)
-          val nodes @ primary :: secondaries = ids.map { id => KeyValueReplica(id, ids) }.toList: @unchecked
-          val connection                     = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
-          primary.cluster.dataManager.addObjectConnection(connection.server)
-          secondaries.foreach { node =>
-            node.cluster.dataManager.addObjectConnection(connection.client(node.uid.toString))
-          }
-
-          val persist = flag("--persistence", "enable persistence").value
-
-          if persist then {
-            val persistencePath = Path.of("target/clusterdb/")
-            Files.createDirectories(persistencePath)
-
-            nodes.foreach { node =>
-              node.cluster.dataManager.addObjectConnection(
-                FileConnection[ClusterState](persistencePath.resolve(node.uid.toString + ".jsonl"))
-              )
-            }
-          }
-
-          val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[ClientState]]()
-
-          primary.client.dataManagerWrite.addObjectConnection(clientConnection.server)
-
-          val clientUid = Uid.gen()
-          val client    = ProBenchClient(clientUid, logTimings = false)
-          client.writeDataManager.addObjectConnection(clientConnection.client(clientUid.toString))
-
-          ClientCLI(clientUid, client).startCLI()
-
-        },
         subcommand("node", "starts a cluster node") {
           val node =
             KeyValueReplica(
@@ -278,10 +224,16 @@ object cli {
               )
           Timer().schedule(
             () => {
-              node.connInf.sendHeartbeat()
+              node.connInf.sendHeartbeat(): Unit
+            },
+            100,
+            500
+          )
+          Timer().schedule(
+            () => {
               node.connInf.checkLiveness()
             },
-            500,
+            1000,
             500
           )
 
@@ -300,13 +252,20 @@ object cli {
               1000,
               10
             )
-            println(s"Connecting to $host:${port - 1}")
-            addRetryingLatentConnection(
-              node.client.dataManagerWrite,
-              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port - 1))),
-              1000,
-              10
-            )
+//            println(s"Connecting to $host:${port - 1}")
+//            addRetryingLatentConnection(
+//              node.client.dataManagerWrite,
+//              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port - 1))),
+//              1000,
+//              10
+//            )
+//            println(s"Connecting to $host:${port - 2}")
+//            addRetryingLatentConnection(
+//              node.client.dataManagerRead,
+//              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port - 2))),
+//              1000,
+//              10
+//            )
           }
         },
         subcommand("udp-node", "starts a cluster node") {
