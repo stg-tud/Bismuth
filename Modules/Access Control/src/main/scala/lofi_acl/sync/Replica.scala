@@ -1,7 +1,8 @@
 package lofi_acl.sync
 
 import crypto.PublicIdentity
-import lofi_acl.sync.monotonic.Acl
+import lofi_acl.legacy.monotonic.Acl
+import lofi_acl.travelplanner.Invitation
 import rdts.filters.PermissionTree
 import rdts.time.Dot
 

@@ -2,10 +2,10 @@ package lofi_acl.travelplanner.model
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.travelplanner.TravelPlan
+import lofi_acl.travelplanner.{Invitation, TravelPlan}
 import TravelPlan.given
-import lofi_acl.sync.monotonic.Acl
-import lofi_acl.sync.{Invitation, Replica}
+import lofi_acl.legacy.monotonic.Acl
+import lofi_acl.sync.Replica
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree

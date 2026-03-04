@@ -3,8 +3,8 @@ package lofi_acl.travelplanner
 import channels.MessageBuffer
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import javafx.scene.input.KeyCode
+import lofi_acl.Debug
 import lofi_acl.bft.{Acl, AclRdt}
-import lofi_acl.sync.signed.{ReplicaOfSignedDeltaRdt, SyncInvitation}
 import lofi_acl.sync.{ChannelConnectionManager, MessageReceiver}
 import lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import scalafx.application.{JFXApp3, Platform}

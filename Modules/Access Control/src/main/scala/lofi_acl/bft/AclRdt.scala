@@ -60,7 +60,7 @@ object AclRdt {
   }
 
   given JsonValueCodec[BftDelta[Acl]] = {
-    import lofi_acl.sync.JsoniterCodecs.given
+    import lofi_acl.JsoniterCodecs.given
     JsonCodecMaker.make(
       CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
     )

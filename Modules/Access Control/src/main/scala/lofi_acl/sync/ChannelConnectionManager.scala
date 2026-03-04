@@ -4,7 +4,7 @@ import channels.{Abort, Connection, MessageBuffer, Receive}
 import crypto.channels.P2PTls
 import crypto.{CertificatePem, PrivateKeyPem, PublicIdentity}
 import de.rmgk.delay.Callback
-import lofi_acl.travelplanner.Debug
+import lofi_acl.Debug
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ExecutorService, Executors}
