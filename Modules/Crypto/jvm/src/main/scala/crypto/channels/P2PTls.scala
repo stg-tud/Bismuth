@@ -1,8 +1,8 @@
 package crypto.channels
 
 import channels.*
+import crypto.PublicIdentity
 import crypto.channels.{P2PX509TrustManager, X509Util}
-import crypto.{CertificatePem, PrivateKeyPem, PublicIdentity}
 import de.rmgk.delay.{Async, Sync}
 import nl.altindag.ssl.SSLFactory
 import nl.altindag.ssl.pem.util.PemUtils
@@ -15,11 +15,11 @@ import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
-class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePem) {
+class P2PTls(privateIdentity: PrivateIdentity) {
   private val sslFactory = {
     val keyManager = {
-      val certPemFile = new ByteArrayInputStream(tlsCertPem.getBytes)
-      val keyPemFile  = new ByteArrayInputStream(tlsKeyPem.getBytes)
+      val certPemFile = new ByteArrayInputStream(privateIdentity.tlsCertPem.getBytes)
+      val keyPemFile  = new ByteArrayInputStream(privateIdentity.tlsKeyPem.getBytes)
       PemUtils.loadIdentityMaterial(certPemFile, keyPemFile)
     }
     val trustManager = new P2PX509TrustManager()
@@ -43,7 +43,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
           .createSocket(host, port)
           .asInstanceOf[SSLSocket]
         val remotePublicId = startHandshake(socket).bind
-        val conn           = P2PTlsConnection(socket, Uid(remotePublicId.id), receiver)
+        val conn           = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(remotePublicId.id), receiver)
         ec.execute(() => conn.receiveLoopBlocking())
         conn
       }
@@ -90,8 +90,8 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
                 val socket = serverSocket.accept().asInstanceOf[SSLSocket | Null]
                 if socket != null
                 then
-                    startHandshake(socket).map { abort ?=> identity =>
-                      val conn = P2PTlsConnection(socket, Uid(identity.id), receiver)
+                    startHandshake(socket).map { abort ?=> peerIdentity =>
+                      val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
                       executionContext.execute(() => conn.receiveLoopBlocking())
                       conn
                     }.runIn(summon)(Async.handler)
@@ -106,6 +106,7 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
 
   private class P2PTlsConnection(
       private val socket: SSLSocket,
+      private val localId: PublicIdentity,
       peerReplicaId: Uid, // TODO: change type to PublicIdentity
       receiver: Receive[MessageBuffer]
   ) extends Connection[MessageBuffer] {
@@ -125,7 +126,13 @@ class P2PTls(private val tlsKeyPem: PrivateKeyPem, val tlsCertPem: CertificatePe
       "remoteAddress" -> Try { socket.getRemoteSocketAddress.toString }.recover(_.getMessage).get,
       "localAddress"  -> Try { socket.getLocalSocketAddress.toString }.recover(_.getMessage).get,
       // Assumption: The listen port is fixed, the initiator port varies
-      "hacky_identifier" -> (socket.getLocalPort + socket.getPort).toString
+      "hacky_identifier" -> {
+        val ports = List(
+          authenticatedPeerReplicaId.get.delegate -> socket.getPort,
+          localId.id                              -> socket.getLocalPort
+        )
+        "%s|%s".format(ports.minBy(_._1)._2, ports.maxBy(_._1)._2)
+      }
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {

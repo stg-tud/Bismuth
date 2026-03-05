@@ -1,20 +1,17 @@
 package lofi_acl.sync
 
 import channels.{Abort, Connection, MessageBuffer, Receive}
-import crypto.channels.P2PTls
-import crypto.{CertificatePem, PrivateKeyPem, PublicIdentity}
+import crypto.PublicIdentity
+import crypto.channels.{P2PTls, PrivateIdentity}
 import de.rmgk.delay.Callback
 import lofi_acl.Debug
 
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 class ChannelConnectionManager(
-    tlsKeyPem: PrivateKeyPem,
-    tlsCertPem: CertificatePem,
-    localPublicId: PublicIdentity,
+    private val privateIdentity: PrivateIdentity,
     messageReceiver: MessageReceiver[MessageBuffer],
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
@@ -25,11 +22,11 @@ class ChannelConnectionManager(
     then ExecutionContext.fromExecutor(executor, _ => ())
     else ExecutionContext.fromExecutor(executor)
   }
-  private val p2pTls                                            = P2PTls(tlsKeyPem, tlsCertPem)
+  private val p2pTls                                            = P2PTls(privateIdentity)
+  private val localPublicId                                     = privateIdentity.getPublic
   @volatile private var listener: Option[p2pTls.P2PTlsListener] = None
   // Stores multiple connections
-  private val connections: AtomicReference[Map[PublicIdentity, Connection[MessageBuffer]]] =
-    AtomicReference(Map.empty)
+  @volatile private var connections: Map[PublicIdentity, Connection[MessageBuffer]] = Map.empty
 
   /** Sends a message to the user and returns true, if a connections exists. Otherwise, discards message and returns false.
     *
@@ -44,7 +41,7 @@ class ChannelConnectionManager(
 
   override def sendMultiple(remotePeerId: PublicIdentity, messages: Array[MessageBuffer]): Unit = {
     if abort.closeRequest then return
-    connections.get.get(remotePeerId) match
+    connections.get(remotePeerId) match
         case Some(connection) =>
           messages.foreach { message =>
             connection.send(message).runIn(abort) {
@@ -58,7 +55,7 @@ class ChannelConnectionManager(
   }
 
   override def broadcast(messages: Array[MessageBuffer]): Unit = {
-    connections.get.foreach { (user, connection) =>
+    connections.foreach { (user, connection) =>
       sendMultiple(user, messages)
     }
   }
@@ -68,10 +65,11 @@ class ChannelConnectionManager(
     else listener.map(_.listenPort)
   }
 
-  override def shutdown(): Unit = {
+  override def shutdown(): Unit = synchronized {
     abort.closeRequest = true
-    val old = connections.getAndUpdate(old => Map.empty)
-    old.foreach {
+    val connectionsToClose = connections
+    connections = Map.empty
+    connectionsToClose.foreach {
       case (_, connection) => Try { connection.close() }
     }
     executor.shutdownNow(): Unit
@@ -98,10 +96,18 @@ class ChannelConnectionManager(
     }
   }
 
-  override def disconnect(userId: PublicIdentity): Unit =
-    connections.get().get(userId).foreach(_.close())
+  override def disconnect(remotePeerId: PublicIdentity): Unit = synchronized {
+    val toClose = connections.get(remotePeerId)
+    connections = connections.removed(remotePeerId)
+    toClose match {
+      case Some(conn) =>
+        Try { conn.close() }
+        messageReceiver.connectionShutdown(remotePeerId)
+      case None =>
+    }
+  }
 
-  override def connectedPeers: Set[PublicIdentity] = connections.get().keySet
+  override def connectedPeers: Set[PublicIdentity] = connections.keySet
 
   private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
@@ -109,20 +115,15 @@ class ChannelConnectionManager(
         if !disableLogging then println("Refusing attempt to track connection to myself")
         connection.close()
       case Some(remotePeerId) =>
-        if !disableLogging
-        then
-            println(
-              "Connection established with: " + remotePeerId.id + s" (${connection.info.details("hacky_identifier")})"
-            )
         var duplicateConnection: Option[Connection[MessageBuffer]] = None
-        val updated                                                = connections.updateAndGet(old =>
-          old.updatedWith(remotePeerId) {
+        synchronized {
+          connections = connections.updatedWith(remotePeerId) {
             case None                => Some(connection)
             case Some(oldConnection) => // Keep session with higher session id
               val oldSessionId = oldConnection.info.details("hacky_identifier")
               val newSessionId = connection.info.details("hacky_identifier")
-              assert(oldSessionId != newSessionId)
-              if oldSessionId.toInt < newSessionId.toInt
+              assert(oldConnection != connection && oldSessionId != newSessionId)
+              if oldSessionId < newSessionId
               then
                   duplicateConnection = Some(oldConnection)
                   Some(connection)
@@ -130,12 +131,17 @@ class ChannelConnectionManager(
                   duplicateConnection = Some(connection)
                   Some(oldConnection)
           }
-        )
+        }
         duplicateConnection.foreach { connectionToBeClosed =>
           Try { connectionToBeClosed.close() }
-          println(s"duplicate connections from $remotePeerId: $connections + $connection")
+          if !disableLogging then println(s"duplicate connections from $remotePeerId: $connections + $connection")
         }
-        if duplicateConnection.isEmpty then messageReceiver.connectionEstablished(remotePeerId)
+        if duplicateConnection.isEmpty then
+            if !disableLogging then
+                println(
+                  "Connection established with: " + remotePeerId.id + s" (${connection.info.details("hacky_identifier")})"
+                )
+            messageReceiver.connectionEstablished(remotePeerId)
       case None => ??? // Should not happen
     }
   }
@@ -153,11 +159,12 @@ class ChannelConnectionManager(
 
   private def onSocketFailure(remotePeerId: PublicIdentity, failedConnection: Connection[MessageBuffer]): Unit = {
     var socketWasAlreadyRemoved = false
-    connections.updateAndGet { old =>
-      old.updatedWith(remotePeerId) {
+    synchronized {
+      connections = connections.updatedWith(remotePeerId) {
         case Some(connection) =>
           if connection == failedConnection then None
           else
+              // Keep existing connection in map, as it is different to the failed one
               socketWasAlreadyRemoved = true
               Some(connection)
         case None =>

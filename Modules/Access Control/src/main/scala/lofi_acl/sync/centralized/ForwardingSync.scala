@@ -16,8 +16,7 @@ import rdts.filters.Filter
 class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
-      (id, receiver) =>
-        ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
+      (id, receiver) => ChannelConnectionManager(id, receiver),
     aclGenesis: BftDelta[Acl],
     onRdtChanged: State => Unit
 ) extends AclEnforcingSync[State](localIdentity, connectionManagerProvider, aclGenesis, onRdtChanged) {

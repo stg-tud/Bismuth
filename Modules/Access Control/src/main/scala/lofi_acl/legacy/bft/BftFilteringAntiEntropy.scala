@@ -25,7 +25,7 @@ class BftFilteringAntiEntropy[RDT](
     aclRoot: SerializedAclOp,
     replica: ReplicaWithBftAcl[RDT],
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
-      (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
+      (id, receiver) => ChannelConnectionManager(id, receiver),
     autoConnect: Boolean = true,
     random: Random = Random()
 )(using

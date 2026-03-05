@@ -9,7 +9,7 @@ import munit.FunSuite
 import java.util.concurrent.TimeUnit
 
 object ChannelConnectionManagerTest {
-  val DEBUG      = false
+  val DEBUG      = true
   val TIMEOUT_MS = 100
 
   def buf(str: String): MessageBuffer = ArrayMessageBuffer(str.getBytes)
@@ -26,10 +26,8 @@ class ChannelConnectionManagerTest extends FunSuite {
   test("Two replicas") {
     val receiverA = QueueAppendingMessageReceiver()
     val receiverB = QueueAppendingMessageReceiver()
-    val connManA  =
-      ChannelConnectionManager(idA.tlsKeyPem, idA.tlsCertPem, idA.getPublic, receiverA, disableLogging = !DEBUG)
-    val connManB =
-      ChannelConnectionManager(idB.tlsKeyPem, idB.tlsCertPem, idB.getPublic, receiverB, disableLogging = !DEBUG)
+    val connManA  = ChannelConnectionManager(idA, receiverA, disableLogging = !DEBUG)
+    val connManB  = ChannelConnectionManager(idB, receiverB, disableLogging = !DEBUG)
     connManA.acceptIncomingConnections()
     connManB.connectTo("localhost", connManA.listenPort.get) // B -> A
 
@@ -55,12 +53,9 @@ class ChannelConnectionManagerTest extends FunSuite {
     val receiverB = QueueAppendingMessageReceiver()
     val receiverC = QueueAppendingMessageReceiver()
 
-    val connManA =
-      ChannelConnectionManager(idA.tlsKeyPem, idA.tlsCertPem, idA.getPublic, receiverA, disableLogging = !DEBUG)
-    val connManB =
-      ChannelConnectionManager(idB.tlsKeyPem, idB.tlsCertPem, idB.getPublic, receiverB, disableLogging = !DEBUG)
-    val connManC =
-      ChannelConnectionManager(idC.tlsKeyPem, idC.tlsCertPem, idC.getPublic, receiverC, disableLogging = !DEBUG)
+    val connManA = ChannelConnectionManager(idA, receiverA, disableLogging = !DEBUG)
+    val connManB = ChannelConnectionManager(idB, receiverB, disableLogging = !DEBUG)
+    val connManC = ChannelConnectionManager(idC, receiverC, disableLogging = !DEBUG)
 
     connManA.acceptIncomingConnections()
     connManB.acceptIncomingConnections()

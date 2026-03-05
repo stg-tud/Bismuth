@@ -58,7 +58,7 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
     System.exit(0) // Workaround to ensure that Runtime shutdown hooks are executed
 
   private val connManProvider = (id: PrivateIdentity, msgRec: MessageReceiver[MessageBuffer]) =>
-    ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, msgRec, disableLogging = false)
+    ChannelConnectionManager(id, msgRec, disableLogging = false)
 
   private object TpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {

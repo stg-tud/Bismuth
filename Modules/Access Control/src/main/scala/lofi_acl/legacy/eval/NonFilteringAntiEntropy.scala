@@ -17,7 +17,7 @@ class NonFilteringAntiEntropy[RDT](
     aclRoot: SerializedAclOp,
     replica: ReplicaWithBftAcl[RDT],
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
-      (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
+      (id, receiver) => ChannelConnectionManager(id, receiver),
     autoConnect: Boolean = true
 )(using rdtCodec: JsonValueCodec[RDT], filter: Filter[RDT], rdtLattice: Lattice[RDT], rdtBottom: Bottom[RDT])
     extends BftFilteringAntiEntropy[RDT](localIdentity, aclRoot, replica, connectionManagerProvider, autoConnect) {

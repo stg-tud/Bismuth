@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
-      (id, receiver) => ChannelConnectionManager(id.tlsKeyPem, id.tlsCertPem, id.getPublic, receiver),
+      (id, receiver) => ChannelConnectionManager(id, receiver),
     aclGenesis: BftDelta[Acl],
     onRdtChanged: State => Unit
 ) {
