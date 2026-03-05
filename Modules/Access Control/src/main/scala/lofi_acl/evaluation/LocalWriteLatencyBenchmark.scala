@@ -19,11 +19,15 @@ object ProfilerEntryPoint {
   def main(args: Array[String]): Unit = {
     val bench = LocalWriteLatencyBenchmark()
 
+    val startTime = System.nanoTime()
+
     val writeState = WriteState()
     0 until 100_000 foreach { _ => bench.decomposeFilterSign(writeState) }
 
     val readState = ReadState()
     0 until 100_000 foreach { _ => bench.verifyAndFilter(readState) }
+
+    println(s"${(System.nanoTime() - startTime) / 1_000_000}ms")
   }
 }
 

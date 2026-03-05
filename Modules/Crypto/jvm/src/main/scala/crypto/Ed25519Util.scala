@@ -159,21 +159,21 @@ object Ed25519Util {
   }
 
   def checkEd25519Signature(data: Array[Byte], signature: Array[Byte], signingKey: PublicKey): Boolean = {
-    val verifier = Signature.getInstance("ED25519")
+    val verifier = Signature.getInstance("ED25519", "BC")
     verifier.initVerify(signingKey)
     verifier.update(data)
     verifier.verify(signature)
   }
 
   def checkEd25519Signature(data: Array[Byte], signature: Array[Byte], signer: PublicIdentity): Boolean = {
-    val verifier = Signature.getInstance("ED25519")
+    val verifier = Signature.getInstance("ED25519", "BC")
     verifier.initVerify(signer.publicKey)
     verifier.update(data)
     verifier.verify(signature)
   }
 
   def sign(data: Array[Byte], signKey: PrivateKey): Array[Byte] = {
-    val verifier = Signature.getInstance("ED25519")
+    val verifier = Signature.getInstance("ED25519", "BC")
     verifier.initSign(signKey)
     verifier.update(data)
     verifier.sign()
