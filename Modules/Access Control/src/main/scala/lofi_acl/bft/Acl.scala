@@ -6,10 +6,10 @@ import rdts.base.{Bottom, DecoratedLattice, Lattice}
 import rdts.filters.PermissionTree
 
 case class Acl(
-    read: Map[PublicIdentity, PermissionTree],
-    write: Map[PublicIdentity, PermissionTree],
-    removed: Set[PublicIdentity],
-    admins: Set[PublicIdentity],
+    read: Map[PublicIdentity, PermissionTree] = Map.empty,
+    write: Map[PublicIdentity, PermissionTree] = Map.empty,
+    removed: Set[PublicIdentity] = Set.empty,
+    admins: Set[PublicIdentity] = Set.empty,
 ) extends monotonic.Acl
 
 object Acl {

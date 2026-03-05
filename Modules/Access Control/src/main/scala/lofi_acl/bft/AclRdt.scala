@@ -10,6 +10,9 @@ import rdts.filters.PermissionTree
 
 class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] = _ => None)
     extends BftSignedDeltaRdt[Acl](privateIdentity) {
+  def reconstruct(version: Set[Hash], hashDag: HashDag[BftDelta[Acl], Acl]): Acl =
+    cache(version).getOrElse(reconstructor(version, hashDag))
+
   override def invariants(
       hash: Hash,
       delta: BftDelta[Acl],
@@ -21,7 +24,7 @@ class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] =
     && delegationValid(
       delta.author,
       delta.state,
-      cache(delta.parents).getOrElse(reconstructor(delta.parents, prefixHashDag))
+      reconstruct(delta.parents, prefixHashDag)
     )
   }
 
