@@ -69,7 +69,12 @@ object SynchronizedMutableArrayDeltaStore {
     val max = 2147483639
     require(requiredSize <= max)
     if currentSize >= requiredSize then -1
-    else math.min(currentSize * 2, max)
+    else {
+      var newSize = currentSize
+      while newSize < requiredSize do
+          newSize = math.min(newSize * 2, max)
+      newSize
+    }
   }
 
   private inline def resize[T: ClassTag](array: Array[T], newSize: Int): Array[T] = {
