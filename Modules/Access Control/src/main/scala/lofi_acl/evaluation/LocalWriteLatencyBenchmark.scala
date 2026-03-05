@@ -17,11 +17,13 @@ import scala.util.Random
 
 object ProfilerEntryPoint {
   def main(args: Array[String]): Unit = {
-    val state = WriteState()
     val bench = LocalWriteLatencyBenchmark()
 
-    0 until 100_000 foreach { _ => bench.decomposeFilterSign(state) }
+    val writeState = WriteState()
+    0 until 100_000 foreach { _ => bench.decomposeFilterSign(writeState) }
 
+    val readState = ReadState()
+    0 until 100_000 foreach { _ => bench.verifyAndFilter(readState) }
   }
 }
 
@@ -62,8 +64,20 @@ class LocalWriteLatencyBenchmark {
     // writeToArray(DataDeltas(allowedDeltas, Dots.from(filtered.map(_.dot)), input.aclVersion))
   }
 
-  // @Benchmark
-  def verifyAndFilter: Unit = ???
+  @Benchmark
+  def verifyAndFilter(input: ReadState): Unit = {
+    val decomposedDeltas = {
+      val delta = input.deltas(input.counter)
+      input.counter = (input.counter + 1) % input.deltas.length
+      delta
+    }
+
+    decomposedDeltas.filter(d =>
+        val authorWritePerm = input.acl.write.getOrElse(PublicIdentity(d.dot.place.delegate), PermissionTree.empty)
+        d.isSignatureValid
+        && Filter[TravelPlan].isAllowed(d.payload, authorWritePerm)
+    ): Unit
+  }
 
 }
 
@@ -79,6 +93,25 @@ class WriteState {
 
   val deltas: Array[TravelPlan]         = LocalWriteLatencyBenchmark.generateDeltas(using LocalUid(uid))
   val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyBenchmark.getAcl(local, remote)
+}
+
+@State(Scope.Thread)
+class ReadState {
+  var counter = 0
+
+  val authorIdentity: PrivateIdentity = IdentityFactory.createNewIdentity
+  val author: PublicIdentity          = authorIdentity.getPublic
+  val authorUid                       = Uid(authorIdentity.getPublic.id)
+
+  val receiver: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
+
+  val deltas: Array[Seq[SignedDelta[TravelPlan]]] =
+    LocalWriteLatencyBenchmark.generateDeltas(using LocalUid(authorUid)).map(d =>
+      d.decomposed
+        .map(decomposedDelta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), decomposedDelta))
+        .toSeq
+    )
+  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyBenchmark.getAcl(author, receiver)
 }
 
 object LocalWriteLatencyBenchmark {
