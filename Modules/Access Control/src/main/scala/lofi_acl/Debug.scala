@@ -12,7 +12,7 @@ import rdts.base.Uid
 import rdts.time.{Dot, Dots}
 
 object Debug {
-  inline val enabled = true
+  inline val enabled = false
 
   def shorten(signature: Signature): String = "✍️" + signature.toString.substring(0, 2)
 

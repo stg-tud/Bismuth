@@ -2,6 +2,7 @@ package lofi_acl.sync
 
 import channels.MessageBuffer
 import crypto.PublicIdentity
+import lofi_acl.Debug
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -17,9 +18,9 @@ class QueueAppendingMessageReceiver(_id: PublicIdentity = null) extends MessageR
     messageQueue.put((msg, fromUser))
 
   override def connectionEstablished(publicIdentity: PublicIdentity): Unit =
-    // if DEBUG then println(s"${localId.map(_.id).getOrElse("Replica")} is now connected to ${publicIdentity.id}")
-    connectionQueue.put(publicIdentity)
+      Debug.log(s"${localId.map(_.id).getOrElse("Replica")} is now connected to ${publicIdentity.id}")
+      connectionQueue.put(publicIdentity)
 
   override def connectionShutdown(publicIdentity: PublicIdentity): Unit =
-    if false then println(s"${localId.map(_.id).getOrElse("Replica")} connectionShutdown to $publicIdentity")
+    Debug.log(s"${localId.map(_.id).getOrElse("Replica")} connectionShutdown to $publicIdentity")
 }

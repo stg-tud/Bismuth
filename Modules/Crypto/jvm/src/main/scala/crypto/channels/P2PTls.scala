@@ -9,7 +9,7 @@ import nl.altindag.ssl.pem.util.PemUtils
 import rdts.base.Uid
 
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, IOException}
-import java.net.StandardSocketOptions
+import java.net.{SocketException, StandardSocketOptions}
 import java.security.cert.X509Certificate
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
@@ -86,7 +86,6 @@ class P2PTls(privateIdentity: PrivateIdentity) {
 
             executionContext.execute(() =>
               while !abort.closeRequest do {
-                println(s"Accepting on ${serverSocket.getLocalSocketAddress}")
                 val socket = serverSocket.accept().asInstanceOf[SSLSocket | Null]
                 if socket != null
                 then
@@ -110,16 +109,16 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       peerReplicaId: Uid, // TODO: change type to PublicIdentity
       receiver: Receive[MessageBuffer]
   ) extends Connection[MessageBuffer] {
-    private val outputStream                             = DataOutputStream(socket.getOutputStream)
-    private val inputStream                              = DataInputStream(socket.getInputStream)
-    private lazy val receivedMessageCallback             = receiver.messageHandler(this)
-    override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
-
     try
         socket.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch
         case _: UnsupportedOperationException =>
           println("TCP nodelay not supported on this socket")
+
+    private val outputStream                             = DataOutputStream(socket.getOutputStream)
+    private val inputStream                              = DataInputStream(socket.getInputStream)
+    private lazy val receivedMessageCallback             = receiver.messageHandler(this)
+    override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     override def info: ConnectionInfo = ConnectionInfo(
       "type"          -> "p2ptls",

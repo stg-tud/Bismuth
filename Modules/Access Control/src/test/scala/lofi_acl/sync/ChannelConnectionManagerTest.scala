@@ -3,18 +3,30 @@ package lofi_acl.sync
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
-import lofi_acl.sync.ChannelConnectionManagerTest.{DEBUG, TIMEOUT_MS, buf, unbuf}
+import lofi_acl.sync.ChannelConnectionManagerTest.*
 import munit.FunSuite
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 object ChannelConnectionManagerTest {
-  val DEBUG      = true
+  val DEBUG      = false
   val TIMEOUT_MS = 100
 
   def buf(str: String): MessageBuffer = ArrayMessageBuffer(str.getBytes)
   extension (tpl: (MessageBuffer, PublicIdentity))
       def unbuf: (String, PublicIdentity) = if tpl == null then null else tpl.copy(_1 = String(tpl._1.asArray))
+
+  def waitForUnordered[T](queue: LinkedBlockingQueue[T], expected: Set[T]): Set[T] = {
+    var accumulated = Set.empty[T]
+    while {
+      val next = queue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+      if next == null then return accumulated
+
+      accumulated = accumulated + next
+      expected != accumulated
+    } do {}
+    accumulated
+  }
 }
 
 class ChannelConnectionManagerTest extends FunSuite {
@@ -69,24 +81,15 @@ class ChannelConnectionManagerTest extends FunSuite {
     connManC.connectTo("localhost", connManB.listenPort.get) // C -> B
 
     assertEquals(
-      Set(
-        receiverA.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
-        receiverA.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-      ),
+      waitForUnordered(receiverA.connectionQueue, Set(idB.getPublic, idC.getPublic)),
       Set(idB.getPublic, idC.getPublic)
     )
     assertEquals(
-      Set(
-        receiverB.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
-        receiverB.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-      ),
+      waitForUnordered(receiverB.connectionQueue, Set(idA.getPublic, idC.getPublic)),
       Set(idA.getPublic, idC.getPublic)
     )
     assertEquals(
-      Set(
-        receiverC.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS),
-        receiverC.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-      ),
+      waitForUnordered(receiverC.connectionQueue, Set(idA.getPublic, idB.getPublic)),
       Set(idA.getPublic, idB.getPublic)
     )
 
