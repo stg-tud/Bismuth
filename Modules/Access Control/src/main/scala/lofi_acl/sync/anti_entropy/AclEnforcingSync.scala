@@ -116,6 +116,11 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   def delegatePermission(read: Map[PublicIdentity, PermissionTree], write: Map[PublicIdentity, PermissionTree]): Unit =
     aclAntiEntropy.mutate(Acl(read, write, Set.empty, Set.empty))
 
+  def delegatePermission(acl: Acl): Unit = {
+    require(acl.removed.isEmpty) // Unsupported as of now
+    aclAntiEntropy.mutate(acl)
+  }
+
   def mutate(mutator: State => State): Unit =
     rdtAntiEntropy.localMutation(mutator)
 
