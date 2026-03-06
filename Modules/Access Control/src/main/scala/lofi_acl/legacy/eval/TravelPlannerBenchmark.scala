@@ -2,15 +2,16 @@ package lofi_acl.legacy.eval
 
 import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
+import lofi_acl.evaluation.BenchmarkHelper.*
+import lofi_acl.evaluation.TravelPlanMutator
+import lofi_acl.evaluation.TravelPlanMutator.*
 import lofi_acl.legacy.bft.{BftAclOpGraph, BftFilteringAntiEntropy, ReplicaWithBftAcl, SerializedAclOp}
 import lofi_acl.legacy.eval.SavedTrace.{DeltaTrace, NotificationTrace}
 import lofi_acl.legacy.eval.TravelPlannerBenchmark.*
-import lofi_acl.legacy.eval.TravelPlannerBenchmark.TravelPlanMutator.*
 import lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
@@ -259,27 +260,4 @@ object TravelPlannerBenchmark {
 
     (deltas.slice(0, mutationRoundIndex).toVector, notificationTrace.slice(0, mutationRoundIndex), bench)
   }
-
-  enum TravelPlanMutator:
-      case SET_TITLE
-      case ADD_BUCKET_LIST_ENTRY
-      case SET_BUCKET_LIST_ENTRY_TEXT
-      case REMOVE_BUCKET_LIST_ENTRY
-      case ADD_EXPENSE
-      case REMOVE_EXPENSE
-      case SET_EXPENSE_AMOUNT
-      case SET_EXPENSE_DESCRIPTION
-      case SET_EXPENSE_COMMENT
-
-  def dummy(using random: Random): String = random.alphanumeric.take(20).mkString("")
-
-  def pickOne[V](set: Set[V])(using random: Random): V = set.drop(random.nextInt(set.size)).head
-
-  @tailrec
-  def retryUntilSuccess[T](action: => T): T =
-    try
-      action
-    catch {
-      case _: Throwable => retryUntilSuccess(action)
-    }
 }
