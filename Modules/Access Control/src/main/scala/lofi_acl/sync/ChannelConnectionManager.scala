@@ -6,6 +6,7 @@ import crypto.channels.{P2PTls, PrivateIdentity}
 import de.rmgk.delay.Callback
 import lofi_acl.Debug
 
+import java.net.InetAddress
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -13,6 +14,7 @@ import scala.util.{Failure, Success, Try}
 class ChannelConnectionManager(
     private val privateIdentity: PrivateIdentity,
     messageReceiver: MessageReceiver[MessageBuffer],
+    ifAddress: InetAddress = InetAddress.getLoopbackAddress,
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
 ) extends ConnectionManager {
@@ -78,7 +80,7 @@ class ChannelConnectionManager(
   override def acceptIncomingConnections(): Unit = {
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
-    listener = Some(p2pTls.latentListener(ec))
+    listener = Some(p2pTls.latentListener(ifAddress, 0, ec))
     if !disableLogging then
         println(
           s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${Debug.shorten(localPublicId)}"
