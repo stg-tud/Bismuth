@@ -38,7 +38,11 @@ class ReplicaOfSignedDeltaRdt[Rdt](
   }
 
   override def createInvitation: Invitation =
-    SyncInvitation.createInvite(sync.aclRootOp, localIdentity.getPublic, s"localhost:${sync.listenPort.get}")._2
+    SyncInvitation.createInvite(
+      sync.aclRootOp,
+      localIdentity.getPublic,
+      s"${sync.listenAddress.get._1}:${sync.listenAddress.get._2}"
+    )._2
 
   override def currentState: Rdt = sync.currentState
 

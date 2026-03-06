@@ -41,11 +41,11 @@ class ChannelConnectionManagerTest extends FunSuite {
     val connManA  = ChannelConnectionManager(idA, receiverA, disableLogging = !DEBUG)
     val connManB  = ChannelConnectionManager(idB, receiverB, disableLogging = !DEBUG)
     connManA.acceptIncomingConnections()
-    connManB.connectTo("localhost", connManA.listenPort.get) // B -> A
+    connManB.connectTo(connManA.listenAddress.get)
 
     // Duplicate connection attempts (A -> B)
     connManB.acceptIncomingConnections()
-    connManA.connectTo("localhost", connManB.listenPort.get)
+    connManA.connectTo(connManB.listenAddress.get)
 
     assertEquals(receiverA.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS), idB.getPublic)
     assertEquals(receiverB.connectionQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS), idA.getPublic)
@@ -73,12 +73,12 @@ class ChannelConnectionManagerTest extends FunSuite {
     connManB.acceptIncomingConnections()
     connManC.acceptIncomingConnections()
 
-    connManA.connectTo("localhost", connManB.listenPort.get) // A -> B
-    connManB.connectTo("localhost", connManA.listenPort.get) // B -> A
-    connManC.connectTo("localhost", connManA.listenPort.get) // C -> A
-    connManA.connectTo("localhost", connManC.listenPort.get) // A -> C
-    connManB.connectTo("localhost", connManC.listenPort.get) // B -> C
-    connManC.connectTo("localhost", connManB.listenPort.get) // C -> B
+    connManA.connectTo(connManB.listenAddress.get) // A -> B
+    connManB.connectTo(connManA.listenAddress.get) // B -> A
+    connManC.connectTo(connManA.listenAddress.get) // C -> A
+    connManA.connectTo(connManC.listenAddress.get) // A -> C
+    connManB.connectTo(connManC.listenAddress.get) // B -> C
+    connManC.connectTo(connManB.listenAddress.get) // C -> B
 
     assertEquals(
       waitForUnordered(receiverA.connectionQueue, Set(idB.getPublic, idC.getPublic)),

@@ -60,9 +60,9 @@ class ChannelConnectionManager(
     }
   }
 
-  override def listenPort: Option[Int] = {
+  override def listenAddress: Option[(String, Int)] = {
     if abort.closeRequest then None
-    else listener.map(_.listenPort)
+    else listener.map(listener => listener.ifAddress.getHostAddress -> listener.listenPort)
   }
 
   override def shutdown(): Unit = synchronized {
@@ -78,8 +78,11 @@ class ChannelConnectionManager(
   override def acceptIncomingConnections(): Unit = {
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
-    listener = Some(p2pTls.latentListener(0, ec))
-    if !disableLogging then println(s"Listening on ${listener.get.listenPort} as ${Debug.shorten(localPublicId)}")
+    listener = Some(p2pTls.latentListener(ec))
+    if !disableLogging then
+        println(
+          s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${Debug.shorten(localPublicId)}"
+        )
     listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  =>

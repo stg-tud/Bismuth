@@ -90,7 +90,7 @@ class ReplicaWithBftAcl[RDT](using
     antiEntropy.mutateRdt(dot, deltaMutator(rdtReference.get()._2))
   }
 
-  def address: String = s"localhost:${antiEntropy.listenPort.getOrElse(-1)}"
+  def address: String = s"${antiEntropy.listenAddress._1}:${antiEntropy.listenAddress._2}"
 
   override def createInvitation: BftInvitation =
     BftInvitation(aclRoot, Ed25519Util.generateNewKeyPair, localIdentity.getPublic, address)

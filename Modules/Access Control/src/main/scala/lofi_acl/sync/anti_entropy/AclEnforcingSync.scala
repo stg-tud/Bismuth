@@ -119,7 +119,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   def mutate(mutator: State => State): Unit =
     rdtAntiEntropy.localMutation(mutator)
 
-  def listenPort: Option[Int] = connectionManager.listenPort
+  def listenAddress: Option[(String, Int)] = connectionManager.listenAddress
 
   def start(): Unit =
     connectionManager.acceptIncomingConnections()

@@ -29,6 +29,8 @@ class MockConnectionManager(
     val messageReceiver: MessageReceiver[MessageBuffer],
 )(using registry: MockConnectionRegistry) extends ConnectionManager {
   @volatile var peers: Map[PublicIdentity, MockConnectionManager] = Map.empty
+ 
+  override def listenAddress: Option[(String, Int)] = listenPort.map(("localhost", _))
 
   /** Sends a message to the user and returns true, if a connections exists. Otherwise, discards message and returns false.
     *

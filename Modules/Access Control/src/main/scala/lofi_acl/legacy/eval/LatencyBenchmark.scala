@@ -55,6 +55,7 @@ class SimulatedLatency(val latencyMilliSeconds: Int)(
     override val localUserId: PublicIdentity,
     override val messageReceiver: MessageReceiver[MessageBuffer]
 )(using registry: MockConnectionRegistry) extends MockConnectionManager(localUserId, messageReceiver) {
+  override def listenAddress: Option[(String, Int)]                 = listenPort.map(("localhost", _))
   override def send(user: PublicIdentity, msg: MessageBuffer): Unit = {
     Thread.ofVirtual().start { () =>
       Thread.sleep(latencyMilliSeconds)

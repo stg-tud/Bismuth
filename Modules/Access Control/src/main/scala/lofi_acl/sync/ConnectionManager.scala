@@ -19,11 +19,13 @@ trait ConnectionManager {
 
   def broadcast(messages: Array[MessageBuffer]): Unit
 
-  def listenPort: Option[Int]
+  def listenAddress: Option[(String, Int)]
 
   def shutdown(): Unit
 
   def acceptIncomingConnections(): Unit
+
+  def connectTo(address: (host: String, port: Int)): Unit = connectTo(address.host, address.port)
 
   def connectTo(host: String, port: Int): Unit
 

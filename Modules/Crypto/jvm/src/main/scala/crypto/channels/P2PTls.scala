@@ -9,7 +9,7 @@ import nl.altindag.ssl.pem.util.PemUtils
 import rdts.base.Uid
 
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, IOException}
-import java.net.{SocketException, StandardSocketOptions}
+import java.net.{InetAddress, StandardSocketOptions}
 import java.security.cert.X509Certificate
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
@@ -34,7 +34,13 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       .build()
   }
 
-  def latentListener(listenPort: Int, ec: ExecutionContext): P2PTlsListener = new P2PTlsListener(listenPort, ec)
+  def latentListener(ifAddress: InetAddress, listenPort: Int, ec: ExecutionContext): P2PTlsListener =
+    new P2PTlsListener(ifAddress, listenPort, ec)
+
+  def latentListener(ec: ExecutionContext): P2PTlsListener = {
+    val addr = InetAddress.getLoopbackAddress
+    latentListener(addr, 0, ec)
+  }
 
   def latentConnect(host: String, port: Int, ec: ExecutionContext): LatentConnection[MessageBuffer] =
     (receiver: Receive[MessageBuffer]) =>
@@ -65,12 +71,15 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       }
     }
 
-  class P2PTlsListener private[P2PTls] (_listenPort: Int, executionContext: ExecutionContext)
-      extends LatentConnection[MessageBuffer] {
+  class P2PTlsListener private[P2PTls] (
+      val ifAddress: InetAddress,
+      _listenPort: Int = 0,
+      executionContext: ExecutionContext
+  ) extends LatentConnection[MessageBuffer] {
     require(_listenPort >= 0 && _listenPort <= 0xffff)
 
     private lazy val serverSocket: SSLServerSocket = sslFactory.getSslServerSocketFactory
-      .createServerSocket(_listenPort)
+      .createServerSocket(_listenPort, 0, ifAddress)
       .asInstanceOf[SSLServerSocket]
 
     /** Bind socket if not already bound and query local port.

@@ -140,9 +140,9 @@ class BftFilteringAntiEntropy[RDT](
   }
 
   def start(): Unit = {
-    require(connectionManager.listenPort.isEmpty) // TODO: Allow restart?
+    require(connectionManager.listenAddress.isEmpty) // TODO: Allow restart?
     connectionManager.acceptIncomingConnections()
-    peerAddressCache.updateAndGet(cache => cache + (localPublicId -> ("localhost", connectionManager.listenPort.get)))
+    peerAddressCache.updateAndGet(cache => cache + (localPublicId -> connectionManager.listenAddress.get))
 
     val thread = Thread(() =>
       while !stopped do {
@@ -175,7 +175,7 @@ class BftFilteringAntiEntropy[RDT](
         }
   }
 
-  def listenPort: Option[Int] = connectionManager.listenPort
+  def listenAddress: (String, Int) = connectionManager.listenAddress.get
 
   protected def handleMessage(msg: SyncMsg[RDT], sender: PublicIdentity): Unit = {
     msg match
