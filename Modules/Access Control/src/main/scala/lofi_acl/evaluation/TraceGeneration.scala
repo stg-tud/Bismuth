@@ -1,5 +1,8 @@
 package lofi_acl.evaluation
 
+import crypto.PublicIdentity
+import crypto.channels.{IdentityFactory, PrivateIdentity}
+import lofi_acl.bft.Acl
 import lofi_acl.evaluation.BenchmarkHelper.*
 import lofi_acl.evaluation.TravelPlanMutator.*
 import lofi_acl.travelplanner.TravelPlan
@@ -51,4 +54,34 @@ object TraceGeneration {
             .addOne(SET_EXPENSE_AMOUNT).addOne(SET_EXPENSE_DESCRIPTION).addOne(SET_EXPENSE_COMMENT): Unit
 
       mutators.toArray
+
+  def generateReplicaIds(numReplicas: Int): Array[PrivateIdentity] = {
+    require(numReplicas >= 1)
+    (0 until numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
+  }
+
+  def getAclWithRandomWritePermissions(replicaIds: Array[PublicIdentity])(using random: Random): Acl = {
+    // Pick one to three random permissions
+    def pickRandomPermissions: PermissionTree = {
+      var resultingPerm = PermissionTree.empty
+      // Pick one to three distinct permissions
+      var numPerms         = random.between(1, 4)
+      var remainingChoices = Seq("title", "bucketList", "expenses")
+      while numPerms > 0 do
+          numPerms = numPerms - 1
+          val choice = random.between(0, remainingChoices.size)
+          resultingPerm = resultingPerm.merge(PermissionTree.fromPath(remainingChoices(choice)))
+          remainingChoices = remainingChoices.patch(choice, Nil, 1) // Remove chosen permission
+
+      resultingPerm
+    }
+
+    Acl(
+      // For benchmarks, we require that all replicas are allowed to read everything in order to measure overhead
+      // compared to non-enforcing variant.
+      read = replicaIds.map(id => id -> PermissionTree.allow).toMap,
+      write = replicaIds.map(id => id -> pickRandomPermissions).toMap
+    )
+  }
+
 }
