@@ -63,6 +63,9 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
     // Only tell new peer about our peers (instead of everyone)
     val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(
+      // Tell remote my listen address (important, if we have established a connection)
+      (localIdentity.getPublic -> connectionManager.listenAddress.get) +:
+      // Tell remote about other replicas' addresses
       remoteAddressCache.get().flatMap((id, addrs) => addrs.map(addr => id -> addr)).toSeq
     )))
 
@@ -75,11 +78,14 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       rdtAntiEntropy.receiveDeltas(deltas, filtered, remoteAcl, remote)
     case SyncMsg.AclDeltas(deltas) => aclAntiEntropy.receiveDeltas(deltas, remote)
     case SyncMsg.MyPeersAre(peers) =>
+      val peersAsMap = peers.groupMapReduce(_._1)(kv => Set(kv._2))((l, r) => l ++ r)
+      remoteAddressCache.getAndUpdate(oldMap => Lattice.merge(oldMap, peersAsMap))
+
       val established = connectionManager.connectedPeers
-      println(peers.filterNot((id, _) => established(id)))
-      peers
-        .filterNot((id, _) => established(id) || localIdentity.getPublic == id)
-        .foreach { case (id, (host, port)) => connect(id, host, port) }
+      val newPeers    = peers.filterNot((id, _) => established(id) || localIdentity.getPublic == id)
+      newPeers.foreach { case (id, (host, port)) => connect(id, host, port) }
+
+      Debug.log(s"Learned: ${newPeers.map((id, addr) => Debug.shorten(id) + " " + addr)}")
     case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
     case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>
@@ -146,4 +152,6 @@ object AclEnforcingSync {
 
   given encoder[State: JsonValueCodec]: Encoder[SignedDelta[State]] =
     Encoder.fromJsoniter(using JsoniterCodecs.filterableSignedDeltaCodec)
+
+  given Lattice[Map[PublicIdentity, Set[(String, Int)]]] = Lattice.mapLattice(using Lattice.setLattice)
 }
