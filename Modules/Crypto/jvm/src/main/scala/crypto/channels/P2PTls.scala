@@ -9,7 +9,7 @@ import nl.altindag.ssl.pem.util.PemUtils
 import rdts.base.Uid
 
 import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, IOException}
-import java.net.{InetAddress, StandardSocketOptions}
+import java.net.{InetAddress, InetSocketAddress, SocketAddress, StandardSocketOptions}
 import java.security.cert.X509Certificate
 import javax.net.ssl.{SSLServerSocket, SSLSocket}
 import scala.concurrent.ExecutionContext
@@ -72,7 +72,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     }
 
   class P2PTlsListener private[P2PTls] (
-      val ifAddress: InetAddress,
+      ifAddress: InetAddress,
       _listenPort: Int = 0,
       executionContext: ExecutionContext
   ) extends LatentConnection[MessageBuffer] {
@@ -82,11 +82,8 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       .createServerSocket(_listenPort, 0, ifAddress)
       .asInstanceOf[SSLServerSocket]
 
-    /** Bind socket if not already bound and query local port.
-      *
-      * @return The bound local port
-      */
-    def listenPort: Int = serverSocket.getLocalPort
+    // Binds local address
+    def listenAddress: InetSocketAddress = serverSocket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]
 
     override def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
       Async.fromCallback { abort ?=>
@@ -129,19 +126,28 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     private lazy val receivedMessageCallback             = receiver.messageHandler(this)
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
-    override def info: ConnectionInfo = ConnectionInfo(
-      "type"          -> "p2ptls",
-      "remoteAddress" -> Try { socket.getRemoteSocketAddress.toString }.recover(_.getMessage).get,
-      "localAddress"  -> Try { socket.getLocalSocketAddress.toString }.recover(_.getMessage).get,
-      // Assumption: The listen port is fixed, the initiator port varies
-      "hacky_identifier" -> {
-        val ports = List(
-          authenticatedPeerReplicaId.get.delegate -> socket.getPort,
-          localId.id                              -> socket.getLocalPort
-        )
-        "%s|%s".format(ports.minBy(_._1)._2, ports.maxBy(_._1)._2)
+    override def info: ConnectionInfo = {
+      def socketAddrToString(socketAddr: SocketAddress): String = socketAddr match {
+        case address: InetSocketAddress => address.getHostString + ":" + address.getPort
+        case _                          => ???
       }
-    )
+
+      ConnectionInfo(
+        "type"          -> "p2ptls",
+        "remoteAddress" -> Try { socketAddrToString(socket.getRemoteSocketAddress) }.recover(_.getMessage).get,
+        "localAddress"  -> Try { socketAddrToString(socket.getLocalSocketAddress) }.recover(_.getMessage).get,
+        // Assumption: The listen port is fixed, the initiator port varies
+        "hackyIdentifier" -> {
+          val ports = List(
+            authenticatedPeerReplicaId.get.delegate -> socket.getPort,
+            localId.id                              -> socket.getLocalPort
+          )
+          // Sort tuple of ports based on replica id, should be unique for connection between two devices (though if
+          // there are two replicas with the same replica id, this won't work reliably)
+          "%s|%s".format(ports.minBy(_._1)._2, ports.maxBy(_._1)._2)
+        }
+      )
+    }
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       outputStream.synchronized {
