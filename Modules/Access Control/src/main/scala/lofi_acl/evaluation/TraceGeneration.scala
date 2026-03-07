@@ -6,22 +6,53 @@ import lofi_acl.bft.Acl
 import lofi_acl.evaluation.BenchmarkHelper.*
 import lofi_acl.evaluation.TravelPlanMutator.*
 import lofi_acl.travelplanner.TravelPlan
-import rdts.base.LocalUid
+import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
 object TraceGeneration {
+
+  def generateDeltas(
+      acl: Acl,
+      identities: Array[PublicIdentity],
+      numOpsPerReplica: Int,
+      minMapEntriesPerReplica: Int,
+      maxMapEntriesPerReplica: Int,
+  )(using random: Random): Array[Array[TravelPlan]] = {
+    identities.map { id =>
+      val permittedMutators = TraceGeneration.permittedMutators(acl.write(id))
+      given LocalUid        = LocalUid(Uid(id.id))
+
+      @tailrec
+      def genRec(deltas: List[TravelPlan], accState: TravelPlan, remaining: Int): Array[TravelPlan] = {
+        if remaining > 0 then
+            val delta = TraceGeneration.performRandomRdtAction(
+              permittedMutators,
+              minMapEntriesPerReplica,
+              maxMapEntriesPerReplica,
+              accState
+            )
+            genRec(delta :: deltas, accState.merge(delta), remaining - 1)
+        else deltas.reverse.toArray
+      }
+
+      genRec(Nil, TravelPlan.empty, numOpsPerReplica)
+    }
+  }
+
+  def countDecomposed(trace: Array[TravelPlan]): Int = trace.map(delta => delta.decomposed.size).sum
+
+  def countDecomposed(trace: Array[Array[TravelPlan]]): Int = trace.map(countDecomposed).sum
+
   def performRandomRdtAction(
       permittedMutators: Array[TravelPlanMutator],
-      author: LocalUid,
       minEntriesPerMap: Int,
       maxEntriesPerMap: Int,
       state: TravelPlan,
-  )(using random: Random): TravelPlan = {
-    given LocalUid = author
-
+  )(using random: Random, author: LocalUid): TravelPlan = {
     val delta = retryUntilSuccess { // Need to retry, because removal/update doesn't work on empty collection
       permittedMutators(random.nextInt(permittedMutators.length)) match {
         case SET_TITLE                                                            => state.setTitle(dummy)
