@@ -16,6 +16,7 @@ import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
 
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicReference
 
 class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
@@ -51,6 +52,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     (aclAntiEntropy, rdtAntiEntropy)
   }
 
+  private val remoteAddressCache: AtomicReference[Map[PublicIdentity, Set[(String, Int)]]] = AtomicReference(Map.empty)
+
   protected def onAclChange(delta: Acl): Unit = if rdtAntiEntropy != null then rdtAntiEntropy.onAclChanged(delta)
 
   protected def onConnectionEstablished(newRemote: PublicIdentity): Unit = {
@@ -59,7 +62,9 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     // Notify remote about local RDT state
     val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
     // Only tell new peer about our peers (instead of everyone)
-    val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(connectionManager.peerAddresses.toSeq)))
+    val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(
+      remoteAddressCache.get().flatMap((id, addrs) => addrs.map(addr => id -> addr)).toSeq
+    )))
 
     connectionManager.sendMultiple(newRemote, Array(aclVersionMsg, rdtVersionMsg, peersMsg))
   }
@@ -71,10 +76,10 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     case SyncMsg.AclDeltas(deltas) => aclAntiEntropy.receiveDeltas(deltas, remote)
     case SyncMsg.MyPeersAre(peers) =>
       val established = connectionManager.connectedPeers
-      val newPeers    = peers.filterNot((id, _) => established(id) || localIdentity.getPublic == id)
-      newPeers.foreach { case (id, (host, port)) => connect(id, host, port) }
-
-      Debug.log(s"Discovered: $newPeers")
+      println(peers.filterNot((id, _) => established(id)))
+      peers
+        .filterNot((id, _) => established(id) || localIdentity.getPublic == id)
+        .foreach { case (id, (host, port)) => connect(id, host, port) }
     case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
     case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>
@@ -85,6 +90,12 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   def connect(remoteId: PublicIdentity, host: String, port: Int): Unit = {
     Debug.log(s"Attempting connection to $remoteId ($host:$port)")
     connectionManager.connectTo(host, port)
+    remoteAddressCache.updateAndGet(oldMap =>
+      oldMap.updatedWith(remoteId) {
+        case Some(existingAddresses) => Some(existingAddresses + (host -> port))
+        case None                    => Some(Set(host -> port))
+      }
+    ): Unit
   }
 
   def aclRootOp: BftDelta[Acl] = {

@@ -72,7 +72,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     }
 
   class P2PTlsListener private[P2PTls] (
-      ifAddress: InetAddress,
+      val ifAddress: InetAddress,
       _listenPort: Int = 0,
       executionContext: ExecutionContext
   ) extends LatentConnection[MessageBuffer] {
@@ -82,8 +82,11 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       .createServerSocket(_listenPort, 0, ifAddress)
       .asInstanceOf[SSLServerSocket]
 
-    // Binds local address
-    def listenAddress: InetSocketAddress = serverSocket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]
+    /** Bind socket if not already bound and query local port.
+      *
+      * @return The bound local port
+      */
+    def listenPort: Int = serverSocket.getLocalPort
 
     override def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
       Async.fromCallback { abort ?=>

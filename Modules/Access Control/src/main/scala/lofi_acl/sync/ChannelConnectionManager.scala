@@ -65,7 +65,7 @@ class ChannelConnectionManager(
 
   override def listenAddress: Option[(String, Int)] = {
     if abort.closeRequest then None
-    else listener.map(listener => listener.listenAddress.getHostString -> listener.listenAddress.getPort)
+    else listener.map(listener => listener.ifAddress.getHostAddress -> listener.listenPort)
   }
 
   override def shutdown(): Unit = synchronized {
@@ -82,7 +82,10 @@ class ChannelConnectionManager(
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     listener = Some(p2pTls.latentListener(ifAddress, 0, ec))
-    if !disableLogging then println(s"Listening on ${listener.get.listenAddress} as ${Debug.shorten(localPublicId)}")
+    if !disableLogging then
+        println(
+          s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${Debug.shorten(localPublicId)}"
+        )
     listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)
       case Failure(exception)  =>
@@ -111,15 +114,6 @@ class ChannelConnectionManager(
   }
 
   override def connectedPeers: Set[PublicIdentity] = connections.keySet
-
-  def peerAddresses: Map[PublicIdentity, (String, Int)] = connections.map((id, conn) =>
-      val addrString = conn.info.details("remoteAddress")
-      val separator  = addrString.lastIndexOf(':')
-      require(separator != -1)
-      val host = addrString.substring(0, separator)
-      val port = addrString.substring(separator + 1).toInt
-      id -> (host, port)
-  )
 
   private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
