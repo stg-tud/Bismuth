@@ -19,7 +19,7 @@ object TraceGeneration {
   def generateDeltas(
       acl: Acl,
       identities: Array[PublicIdentity],
-      numOpsPerReplica: Int,
+      numDeltasPerReplica: Int,
       minMapEntriesPerReplica: Int,
       maxMapEntriesPerReplica: Int,
   )(using random: Random): Array[Array[TravelPlan]] = {
@@ -40,7 +40,7 @@ object TraceGeneration {
         else deltas.reverse.toArray
       }
 
-      genRec(Nil, TravelPlan.empty, numOpsPerReplica)
+      genRec(Nil, TravelPlan.empty, numDeltasPerReplica)
     }
   }
 
@@ -146,11 +146,12 @@ case class Trace(
     deltas: Array[Array[TravelPlan]]
 ):
     def computeEndStateVersion(withDecomposition: Boolean): Dots = {
+      // Currently, we decompose deltas in both variants (enforcing and non-enforcing)
       Dots(
         ids.map(id => Uid(id.getPublic.id))
           .zip {
-            (if withDecomposition then deltas.map(TraceGeneration.countDecomposed) else deltas.map(_.length))
-              .map(end => ArrayRanges(Seq(0L -> end)))
+            // (if withDecomposition then deltas.map(TraceGeneration.countDecomposed) else deltas.map(_.length))
+            deltas.map(TraceGeneration.countDecomposed).map(end => ArrayRanges(Seq(0L -> end)))
           }.toMap
       )
     }

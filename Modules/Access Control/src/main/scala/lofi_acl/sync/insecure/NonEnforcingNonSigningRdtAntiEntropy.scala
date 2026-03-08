@@ -17,7 +17,7 @@ class NonEnforcingNonSigningRdtAntiEntropy[State: {Decompose, Lattice, Bottom, F
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
 )(using Encoder[SignedDelta[State]])
-    extends FilteredRdtAntiEntropy[State](localIdentity, _ => (), network, aclAntiEntropy) {
+    extends FilteredRdtAntiEntropy[State](localIdentity, onRdtChange, network, aclAntiEntropy) {
 
   override def onAclChanged(delta: Acl): Unit = ()
 

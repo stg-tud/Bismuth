@@ -9,8 +9,6 @@ import java.util.Base64
 
 /** Container for Ed25519 signature. */
 class Signature private (private val delegate: Array[Byte]) {
-  require(delegate.length == 64)
-
   def toBase64: String = Base64.getEncoder.encodeToString(delegate)
 
   def toArray: Array[Byte] = delegate.clone()

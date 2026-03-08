@@ -1,7 +1,6 @@
 package lofi_acl.evaluation
 
 import crypto.channels.PrivateIdentity
-import lofi_acl.Debug
 import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.sync.ChannelConnectionManager
 import lofi_acl.sync.anti_entropy.AclEnforcingSync
@@ -16,36 +15,49 @@ class MeshBenchmark {}
 object MeshBenchmark {
   private val SEED                            = 42
   private val NUM_REPLICAS                    = 10
-  private val NUM_DELTAS_PER_REPLICA          = 1_000
+  private val NUM_DELTAS_PER_REPLICA          = 10_000
   private val MIN_ENTRIES_PER_MAP_PER_REPLICA = 10
   private val MAX_ENTRIES_PER_MAP_PER_REPLICA = 100
+  private val NUM_REPETITIONS                 = 10
 
-  def main(args: Array[String]): Unit =
-    run(enforcementEnabled = true)
-
-  def run(enforcementEnabled: Boolean): Unit = {
-    given Random                     = Random(SEED)
-    val startBenchmarkCountDownLatch = CountDownLatch(NUM_REPLICAS + 1)
-    val endStateReachedLatch         = CountDownLatch(NUM_REPLICAS)
-
-    val trace = TraceGeneration.generateTrace(
+  def main(args: Array[String]): Unit = {
+    given Random     = Random(SEED)
+    val trace: Trace = TraceGeneration.generateTrace(
       NUM_REPLICAS,
       NUM_DELTAS_PER_REPLICA,
       MIN_ENTRIES_PER_MAP_PER_REPLICA,
       MAX_ENTRIES_PER_MAP_PER_REPLICA
     )
+
+    val results = (0 until NUM_REPETITIONS * 2).map(i =>
+        val enforcementEnabled = i % 2 == 0
+        val runtimeNs          = run(enforcementEnabled, trace)
+        println(
+          s"Full mesh [$i/${NUM_REPETITIONS * 2}]: enforcement=$enforcementEnabled, runtime_ms=${runtimeNs / 1_000_000}"
+        )
+        enforcementEnabled -> runtimeNs
+    )
+
+    println("replicas,deltas_per_replica,enforcing,runtime_ns")
+    results
+      .foreach((enforcementEnabled, runtimeNs) =>
+        // replicas,deltas_per_replica,enforcing,runtime_ns
+        println(s"$NUM_REPLICAS,$NUM_DELTAS_PER_REPLICA,$enforcementEnabled,$runtimeNs")
+      )
+
+  }
+
+  def run(enforcementEnabled: Boolean, trace: Trace): Long = {
+    val startBenchmarkCountDownLatch = CountDownLatch(NUM_REPLICAS + 1)
+    val endStateReachedLatch         = CountDownLatch(NUM_REPLICAS)
+
     val replicas = setup(trace, enforcementEnabled, endStateReachedLatch)
 
-    println("ACL:\n" + Debug.shorten(replicas(0).sync.currentAcl).replace("|", "\n"))
+    Thread.sleep(100) // Give the replicas some time to connect to each other and process all messages
+    // Make sure that all replicas are connected to all others
+    require(replicas.forall(_.sync.connectedPeers.size == NUM_REPLICAS - 1))
 
-    Thread.sleep(1_000)
-    require(replicas.forall(_.sync.connectedPeers.size == 9))
-    // println(replicas.map(r =>
-    //   Debug.shorten(r.identity.getPublic) + ": " + r.sync.connectedPeers.toSeq.map(Debug.shorten).mkString(", ")
-    // ).mkString("\n"))
-
-    println("Starting benchmark")
-
+    // Start benchmark (waits until all are ready)
     replayTrace(replicas, trace.deltas, startBenchmarkCountDownLatch)
 
     // Wait until all threads are ready
@@ -56,9 +68,9 @@ object MeshBenchmark {
     endStateReachedLatch.await()
     val endTime = System.nanoTime()
 
-    println(s"All replicas converged after ${(endTime - startTime) / 1_000_000}ms")
-
     replicas.foreach(_.stop())
+
+    endTime - startTime
   }
 
   private def replayTrace(
@@ -70,8 +82,8 @@ object MeshBenchmark {
     replicas.zipWithIndex
       .foreach((replica, idx) =>
         Thread.startVirtualThread(() =>
-            startLatch.countDown()
-            startLatch.await()
+            startLatch.countDown() // Signal ready to start
+            startLatch.await()     // Wait for all other threads before starting
             replica.applyAllMutations(trace(idx))
         )
       )
@@ -82,7 +94,7 @@ object MeshBenchmark {
       enforcementEnabled: Boolean,
       finishedLatch: CountDownLatch
   ): Array[MeshBenchmarkReplica] = {
-    val endState = trace.computeEndStateVersion(true)
+    val endStateVersion = trace.computeEndStateVersion(enforcementEnabled)
 
     val replicas = trace.ids.map(id =>
       MeshBenchmarkReplica(
@@ -90,7 +102,9 @@ object MeshBenchmark {
         id,
         trace.genesis,
         enforcementEnabled,
-        replica => if endState == replica.sync.stateVersion then finishedLatch.countDown()
+        replica =>
+          if endStateVersion == replica.sync.stateVersion
+          then finishedLatch.countDown()
       )
     )
 

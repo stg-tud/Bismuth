@@ -16,7 +16,6 @@ class NopAclAntiEntropy(
   override def receiveDeltas(deltas: Seq[BftDelta[Acl]], from: PublicIdentity): Unit        = ()
   override def respondToDeltaRequest(missing: Set[Hash], remote: PublicIdentity): Unit      = ()
   override def updatePeerAclKnowledge(remoteHeads: Set[Hash], remote: PublicIdentity): Unit = ()
-
-  override def mutate(delta: Acl): Unit = ???
+  override def mutate(delta: Acl): Unit                                                     = ()
 
 }
