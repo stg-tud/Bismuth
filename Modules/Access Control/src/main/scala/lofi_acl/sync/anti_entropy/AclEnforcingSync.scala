@@ -119,7 +119,10 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
 
   def connectedPeers: Set[PublicIdentity] = connectionManager.connectedPeers
 
-  def delegatePermission(read: Map[PublicIdentity, PermissionTree], write: Map[PublicIdentity, PermissionTree]): Unit =
+  def delegatePermission(
+      read: Map[PublicIdentity, PermissionTree] = Map.empty,
+      write: Map[PublicIdentity, PermissionTree] = Map.empty
+  ): Unit =
     aclAntiEntropy.mutate(Acl(read, write, Set.empty, Set.empty))
 
   def delegatePermission(acl: Acl): Unit = {

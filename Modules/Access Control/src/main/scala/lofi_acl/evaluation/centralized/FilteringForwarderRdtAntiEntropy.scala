@@ -16,13 +16,17 @@ class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filte
     extends FilteredRdtAntiEntropy[State](localIdentity, _ => (), network, aclAntiEntropy) {
 
   override protected def applyVerifiedDeltas(source: PublicIdentity, deltas: Seq[SignedDelta[State]]): Unit = {
+    // TODO: currently merges update into the local state
     super.applyVerifiedDeltas(source, deltas)
-    // Forward deltas unconditionally to everyone except for the source
+    // Avoid sending locally created deltas twice
     if source != localIdentity.getPublic then
-        network.connectedPeers.foreach { remote =>
-          if remote != source
-          then sendDeltasFiltered(deltas, remote)
-        }
+        // Forward deltas unconditionally to everyone except for the source
+        network
+          .connectedPeers
+          .filterNot(_ == source)
+          .foreach { remote =>
+            sendDeltasFiltered(deltas, remote)
+          }
   }
 
 }
