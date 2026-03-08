@@ -1,4 +1,4 @@
-package lofi_acl.sync.insecure
+package lofi_acl.evaluation.insecure
 
 import channels.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -6,7 +6,6 @@ import crypto.channels.PrivateIdentity
 import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.sync.anti_entropy.AclEnforcingSync.encoder
 import lofi_acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
-import lofi_acl.sync.insecure.{NonEnforcingNonSigningRdtAntiEntropy, NopAclAntiEntropy}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter

@@ -1,4 +1,4 @@
-package lofi_acl.sync.insecure
+package lofi_acl.evaluation.insecure
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity

@@ -1,4 +1,4 @@
-package lofi_acl.sync.centralized
+package lofi_acl.evaluation.centralized
 
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}

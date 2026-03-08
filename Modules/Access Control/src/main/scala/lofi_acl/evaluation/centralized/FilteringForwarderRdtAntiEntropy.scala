@@ -1,4 +1,4 @@
-package lofi_acl.sync.centralized
+package lofi_acl.evaluation.centralized
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
