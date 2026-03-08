@@ -1,44 +1,44 @@
 package lofi_acl.evaluation
 
-import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import lofi_acl.bft.{Acl, AclRdt, BftDelta}
+import lofi_acl.Debug
+import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.sync.ChannelConnectionManager
 import lofi_acl.sync.anti_entropy.AclEnforcingSync
 import lofi_acl.sync.insecure.NonEnforcingSync
 import lofi_acl.travelplanner.TravelPlan
 
-import java.util.concurrent.Executors
+import java.util.concurrent.{CountDownLatch, Executors}
 import scala.util.Random
 
 class MeshBenchmark {}
 
 object MeshBenchmark {
-  val SEED                            = 42
-  val NUM_REPLICAS                    = 10
-  val NUM_DELTAS_PER_REPLICA          = 1_000
-  val MIN_ENTRIES_PER_MAP_PER_REPLICA = 10
-  val MAX_ENTRIES_PER_MAP_PER_REPLICA = 100
+  private val SEED                            = 42
+  private val NUM_REPLICAS                    = 10
+  private val NUM_DELTAS_PER_REPLICA          = 1_000
+  private val MIN_ENTRIES_PER_MAP_PER_REPLICA = 10
+  private val MAX_ENTRIES_PER_MAP_PER_REPLICA = 100
 
-  def main(args: Array[String]): Unit = run(enforcementEnabled = true)
+  def main(args: Array[String]): Unit =
+    run(enforcementEnabled = true)
 
   def run(enforcementEnabled: Boolean): Unit = {
-    given Random = Random(SEED)
+    given Random                     = Random(SEED)
+    val startBenchmarkCountDownLatch = CountDownLatch(NUM_REPLICAS + 1)
+    val endStateReachedLatch         = CountDownLatch(NUM_REPLICAS)
 
-    val replicas = setup(enforcementEnabled)
-
-    println(replicas(0).sync.currentAcl)
-
-    val trace = TraceGeneration.generateDeltas(
-      replicas(0).sync.currentAcl,
-      replicas.map(_.identity.getPublic),
+    val trace = TraceGeneration.generateTrace(
+      NUM_REPLICAS,
       NUM_DELTAS_PER_REPLICA,
       MIN_ENTRIES_PER_MAP_PER_REPLICA,
       MAX_ENTRIES_PER_MAP_PER_REPLICA
     )
+    val replicas = setup(trace, enforcementEnabled, endStateReachedLatch)
 
-    // Sleeping should not be needed, as trace generation takes more than enough time for all replicas to connect
-    // Thread.sleep(100)
+    println(Debug.shorten(replicas(0).sync.currentAcl).replace("|", "\n"))
+
+    Thread.sleep(1_000)
     require(replicas.forall(_.sync.connectedPeers.size == 9))
     // println(replicas.map(r =>
     //   Debug.shorten(r.identity.getPublic) + ": " + r.sync.connectedPeers.toSeq.map(Debug.shorten).mkString(", ")
@@ -46,35 +46,69 @@ object MeshBenchmark {
 
     println("Starting benchmark")
 
+    replayTrace(replicas, trace.deltas, startBenchmarkCountDownLatch)
+
+    // Wait until all threads are ready
+    startBenchmarkCountDownLatch.countDown()
+    startBenchmarkCountDownLatch.await()
+
+    val startTime = System.nanoTime()
+    endStateReachedLatch.await()
+    replicas.foreach(r => println(r.sync.stateVersion))
+    val endTime = System.nanoTime()
+
+    println(s"All replicas converged after ${(endTime - startTime) / 1_000_000}ms")
+
+    replicas.foreach(_.stop())
+  }
+
+  private def replayTrace(
+      replicas: Array[MeshBenchmarkReplica],
+      trace: Array[Array[TravelPlan]],
+      startLatch: CountDownLatch
+  ): Unit = {
     Executors.newVirtualThreadPerTaskExecutor()
     replicas.zipWithIndex
       .foreach((replica, idx) =>
         Thread.startVirtualThread(() =>
-            val startTime = System.nanoTime()
+            startLatch.countDown()
+            startLatch.await()
             replica.applyAllMutations(trace(idx))
-            val endTime = System.nanoTime()
-            println(s"Replica$idx submitted everything after ${(endTime - startTime) / 1_000_000}ms")
         )
       )
-
-    // replicas.foreach(_.stop())
   }
 
-  private def setup(enforcementEnabled: Boolean)(using random: Random): Array[MeshBenchmarkReplica] = {
-    val replicaIds = TraceGeneration.generateReplicaIds(NUM_REPLICAS)
-    val genesis    = AclRdt.createSelfSignedRoot(replicaIds(0))
-    // Generate permissions for non-root replicas:
-    val replicas = replicaIds.map(id => MeshBenchmarkReplica("localhost", id, genesis, enforcementEnabled))
+  private def setup(
+      trace: Trace,
+      enforcementEnabled: Boolean,
+      finishedLatch: CountDownLatch
+  ): Array[MeshBenchmarkReplica] = {
+    val endState = trace.computeEndStateVersion(true)
+    println(s"End state: $endState")
+
+    val replicas = trace.ids.map(id =>
+      MeshBenchmarkReplica(
+        "localhost",
+        id,
+        trace.genesis,
+        enforcementEnabled,
+        replica =>
+          if endState == replica.sync.stateVersion then {
+            finishedLatch.countDown()
+            println(Debug.shorten(id.getPublic) + " is done")
+          }
+      )
+    )
 
     // Assign permissions
-    val permissionsToAssign = TraceGeneration.getAclWithRandomWritePermissions(replicaIds.drop(1).map(_.getPublic))
-    replicas(0).sync.delegatePermission(permissionsToAssign)
+    replicas(0).sync.delegatePermission(trace.additionalPermissions)
 
     // Connect to root (should lead to all other replicas connecting to each other)
     replicas.foreach(_.start())
     replicas.foreach { replica =>
       replica.sync.connect(replicas(0).identity.getPublic, "localhost", replicas(0).sync.listenAddress.get._2)
     }
+
     replicas
   }
 }
@@ -83,7 +117,8 @@ class MeshBenchmarkReplica(
     val ifAddress: String,
     val identity: PrivateIdentity,
     aclGenesis: BftDelta[Acl],
-    enforcing: Boolean
+    enforcing: Boolean,
+    onRdtChange: MeshBenchmarkReplica => Unit
 ) {
   val sync: AclEnforcingSync[TravelPlan] = {
     if enforcing then
@@ -91,14 +126,14 @@ class MeshBenchmarkReplica(
           identity,
           (id, recv) => ChannelConnectionManager(id, recv),
           aclGenesis,
-          _ => () // TODO: Hook in here for termination check?
+          _ => onRdtChange(this)
         )
     else
         NonEnforcingSync[TravelPlan](
           identity,
           (id, recv) => ChannelConnectionManager(id, recv),
           aclGenesis,
-          _ => () // TODO: Hook in here for termination check?
+          _ => onRdtChange(this)
         )
   }
 

@@ -2,12 +2,13 @@ package lofi_acl.evaluation
 
 import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import lofi_acl.bft.Acl
+import lofi_acl.bft.{Acl, AclRdt, BftDelta}
 import lofi_acl.evaluation.BenchmarkHelper.*
 import lofi_acl.evaluation.TravelPlanMutator.*
 import lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
+import rdts.time.{ArrayRanges, Dots}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -115,4 +116,41 @@ object TraceGeneration {
     )
   }
 
+  def generateTrace(
+      numReplicas: Int,
+      numDeltasPerReplica: Int,
+      minEntriesPerMapPerReplica: Int,
+      maxEntriesPerMapPerReplica: Int,
+  )(using random: Random): Trace = {
+    val replicaIds = TraceGeneration.generateReplicaIds(numReplicas)
+    val genesis    = AclRdt.createSelfSignedRoot(replicaIds(0))
+
+    // Generate permissions for non-root replicas:
+    val permissionsToAssign = TraceGeneration.getAclWithRandomWritePermissions(replicaIds.drop(1).map(_.getPublic))
+    val trace               = TraceGeneration.generateDeltas(
+      genesis.state.merge(permissionsToAssign),
+      replicaIds.map(_.getPublic),
+      numDeltasPerReplica,
+      minEntriesPerMapPerReplica,
+      maxEntriesPerMapPerReplica
+    )
+
+    Trace(replicaIds, genesis, permissionsToAssign, trace)
+  }
 }
+
+case class Trace(
+    ids: Array[PrivateIdentity],
+    genesis: BftDelta[Acl],
+    additionalPermissions: Acl,
+    deltas: Array[Array[TravelPlan]]
+):
+    def computeEndStateVersion(withDecomposition: Boolean): Dots = {
+      Dots(
+        ids.map(id => Uid(id.getPublic.id))
+          .zip {
+            (if withDecomposition then deltas.map(TraceGeneration.countDecomposed) else deltas.map(_.length))
+              .map(end => ArrayRanges(Seq(0L -> end)))
+          }.toMap
+      )
+    }
