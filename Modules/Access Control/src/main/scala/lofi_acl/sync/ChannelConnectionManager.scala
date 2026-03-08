@@ -70,6 +70,7 @@ class ChannelConnectionManager(
 
   override def shutdown(): Unit = synchronized {
     abort.closeRequest = true
+    listener.get.close()
     val connectionsToClose = connections
     connections = Map.empty
     connectionsToClose.foreach {
@@ -128,7 +129,6 @@ class ChannelConnectionManager(
             case Some(oldConnection) => // Keep session with higher session id
               val oldSessionId = oldConnection.info.details("hackyIdentifier")
               val newSessionId = connection.info.details("hackyIdentifier")
-              assert(oldConnection != connection && oldSessionId != newSessionId)
               if oldSessionId < newSessionId
               then
                   duplicateConnection = Some(oldConnection)

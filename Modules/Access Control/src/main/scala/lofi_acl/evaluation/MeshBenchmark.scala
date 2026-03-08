@@ -36,7 +36,7 @@ object MeshBenchmark {
     )
     val replicas = setup(trace, enforcementEnabled, endStateReachedLatch)
 
-    println(Debug.shorten(replicas(0).sync.currentAcl).replace("|", "\n"))
+    println("ACL:\n" + Debug.shorten(replicas(0).sync.currentAcl).replace("|", "\n"))
 
     Thread.sleep(1_000)
     require(replicas.forall(_.sync.connectedPeers.size == 9))
@@ -54,7 +54,6 @@ object MeshBenchmark {
 
     val startTime = System.nanoTime()
     endStateReachedLatch.await()
-    replicas.foreach(r => println(r.sync.stateVersion))
     val endTime = System.nanoTime()
 
     println(s"All replicas converged after ${(endTime - startTime) / 1_000_000}ms")
@@ -84,7 +83,6 @@ object MeshBenchmark {
       finishedLatch: CountDownLatch
   ): Array[MeshBenchmarkReplica] = {
     val endState = trace.computeEndStateVersion(true)
-    println(s"End state: $endState")
 
     val replicas = trace.ids.map(id =>
       MeshBenchmarkReplica(
@@ -92,11 +90,7 @@ object MeshBenchmark {
         id,
         trace.genesis,
         enforcementEnabled,
-        replica =>
-          if endState == replica.sync.stateVersion then {
-            finishedLatch.countDown()
-            println(Debug.shorten(id.getPublic) + " is done")
-          }
+        replica => if endState == replica.sync.stateVersion then finishedLatch.countDown()
       )
     )
 
