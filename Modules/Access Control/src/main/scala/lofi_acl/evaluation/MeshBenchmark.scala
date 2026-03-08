@@ -33,7 +33,7 @@ object MeshBenchmark {
         val enforcementEnabled = i % 2 == 0
         val runtimeNs          = run(enforcementEnabled, trace)
         println(
-          s"Full mesh [$i/${NUM_REPETITIONS * 2}]: enforcement=$enforcementEnabled, runtime_ms=${runtimeNs / 1_000_000}"
+          s"Full mesh [${i + 1}/${NUM_REPETITIONS * 2}]: enforcement=$enforcementEnabled, runtime_ms=${runtimeNs / 1_000_000}"
         )
         enforcementEnabled -> runtimeNs
     )
@@ -53,7 +53,11 @@ object MeshBenchmark {
 
     val replicas = setup(trace, enforcementEnabled, endStateReachedLatch)
 
-    Thread.sleep(100) // Give the replicas some time to connect to each other and process all messages
+    // Give the replicas some time to connect to each other and process all messages
+    while replicas.exists(_.sync.connectedPeers.size != NUM_REPLICAS - 1)
+    do Thread.sleep(100)
+    Thread.sleep(100)
+
     // Make sure that all replicas are connected to all others
     require(replicas.forall(_.sync.connectedPeers.size == NUM_REPLICAS - 1))
 
