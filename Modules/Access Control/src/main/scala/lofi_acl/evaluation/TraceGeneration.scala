@@ -4,7 +4,7 @@ import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import lofi_acl.bft.{Acl, AclRdt, BftDelta}
 import lofi_acl.evaluation.BenchmarkHelper.*
-import lofi_acl.evaluation.TravelPlanMutator.*
+import lofi_acl.evaluation.TravelPlanMutatorChoice.*
 import lofi_acl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
@@ -49,7 +49,7 @@ object TraceGeneration {
   def countDecomposed(trace: Array[Array[TravelPlan]]): Int = trace.map(countDecomposed).sum
 
   def performRandomRdtAction(
-      permittedMutators: Array[TravelPlanMutator],
+      permittedMutators: Array[TravelPlanMutatorChoice],
       minEntriesPerMap: Int,
       maxEntriesPerMap: Int,
       state: TravelPlan,
@@ -73,8 +73,8 @@ object TraceGeneration {
     delta
   }
 
-  def permittedMutators(writePerm: PermissionTree): Array[TravelPlanMutator] =
-      val mutators = mutable.ListBuffer.empty[TravelPlanMutator]
+  def permittedMutators(writePerm: PermissionTree): Array[TravelPlanMutatorChoice] =
+      val mutators = mutable.ListBuffer.empty[TravelPlanMutatorChoice]
 
       if PermissionTree.fromPath("title") <= writePerm then mutators.addOne(SET_TITLE): Unit
       if PermissionTree.fromPath("bucketList") <= writePerm then

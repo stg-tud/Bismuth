@@ -1,6 +1,6 @@
 package lofi_acl.evaluation
 
-enum TravelPlanMutator:
+enum TravelPlanMutatorChoice:
     case SET_TITLE
     case ADD_BUCKET_LIST_ENTRY
     case SET_BUCKET_LIST_ENTRY_TEXT

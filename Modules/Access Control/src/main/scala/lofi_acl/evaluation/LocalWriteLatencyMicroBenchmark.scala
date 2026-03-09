@@ -17,7 +17,7 @@ import scala.util.Random
 
 object ProfilerEntryPoint {
   def main(args: Array[String]): Unit = {
-    val bench = LocalWriteLatencyBenchmark()
+    val bench = LocalWriteLatencyMicroBenchmark()
 
     val startTime = System.nanoTime()
 
@@ -34,11 +34,8 @@ object ProfilerEntryPoint {
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))
 @State(Scope.Thread)
-//@Warmup(iterations = 4, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
-//@Measurement(iterations = 5, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
-//@Fork(5)
-//@Threads(1)
-class LocalWriteLatencyBenchmark {
+@Fork(3)
+class LocalWriteLatencyMicroBenchmark {
 
   @Benchmark
   def decomposeFilterSign(input: WriteState): Unit = {
@@ -95,8 +92,8 @@ class WriteState {
 
   val remote: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 
-  val deltas: Array[TravelPlan]         = LocalWriteLatencyBenchmark.generateDeltas(using LocalUid(uid))
-  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyBenchmark.getAcl(local, remote)
+  val deltas: Array[TravelPlan]         = LocalWriteLatencyMicroBenchmark.generateDeltas(using LocalUid(uid))
+  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyMicroBenchmark.getAcl(local, remote)
 }
 
 @State(Scope.Thread)
@@ -110,15 +107,15 @@ class ReadState {
   val receiver: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 
   val deltas: Array[Seq[SignedDelta[TravelPlan]]] =
-    LocalWriteLatencyBenchmark.generateDeltas(using LocalUid(authorUid)).map(d =>
+    LocalWriteLatencyMicroBenchmark.generateDeltas(using LocalUid(authorUid)).map(d =>
       d.decomposed
         .map(decomposedDelta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), decomposedDelta))
         .toSeq
     )
-  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyBenchmark.getAcl(author, receiver)
+  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyMicroBenchmark.getAcl(author, receiver)
 }
 
-object LocalWriteLatencyBenchmark {
+object LocalWriteLatencyMicroBenchmark {
   def getAcl(local: PublicIdentity, remote: PublicIdentity): (Acl, Set[Hash]) = {
     val delegation = Acl(
       read = Map(

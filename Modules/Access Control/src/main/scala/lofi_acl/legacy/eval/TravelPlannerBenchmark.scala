@@ -3,8 +3,8 @@ package lofi_acl.legacy.eval
 import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import lofi_acl.evaluation.BenchmarkHelper.*
-import lofi_acl.evaluation.TravelPlanMutator
-import lofi_acl.evaluation.TravelPlanMutator.*
+import lofi_acl.evaluation.TravelPlanMutatorChoice
+import lofi_acl.evaluation.TravelPlanMutatorChoice.*
 import lofi_acl.legacy.bft.{BftAclOpGraph, BftFilteringAntiEntropy, ReplicaWithBftAcl, SerializedAclOp}
 import lofi_acl.legacy.eval.SavedTrace.{DeltaTrace, NotificationTrace}
 import lofi_acl.legacy.eval.TravelPlannerBenchmark.*
@@ -27,7 +27,7 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
   var replicas: Array[ReplicaWithBftAcl[RDT]]                   = scala.compiletime.uninitialized
 
   def performRandomRdtAction(
-      permittedMutators: Array[Array[TravelPlanMutator]],
+      permittedMutators: Array[Array[TravelPlanMutatorChoice]],
       authoringReplica: Int,
       minEntriesPerMap: Int,
       maxEntriesPerMap: Int
@@ -68,9 +68,9 @@ class TravelPlannerBenchmark private[TravelPlannerBenchmark] (
     }
   }
 
-  def permittedMutators: Array[Array[TravelPlanMutator]] = replicas.indices.map(replicaIdx =>
+  def permittedMutators: Array[Array[TravelPlanMutatorChoice]] = replicas.indices.map(replicaIdx =>
       val writePerm = replicas(replicaIdx).currentAcl.write(ids(replicaIdx))
-      val mutators  = mutable.ListBuffer.empty[TravelPlanMutator]
+      val mutators  = mutable.ListBuffer.empty[TravelPlanMutatorChoice]
       if PermissionTree.fromPath("title") <= writePerm then mutators.addOne(SET_TITLE): Unit
       if PermissionTree.fromPath("bucketList") <= writePerm then
           mutators.addOne(ADD_BUCKET_LIST_ENTRY).addOne(REMOVE_BUCKET_LIST_ENTRY)
