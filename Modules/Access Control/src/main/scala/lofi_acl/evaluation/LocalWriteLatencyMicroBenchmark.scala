@@ -31,7 +31,7 @@ object ProfilerEntryPoint {
   }
 }
 
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Array(Mode.AverageTime))
 @State(Scope.Thread)
 @Fork(3)
