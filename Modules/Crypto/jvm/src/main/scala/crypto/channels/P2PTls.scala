@@ -180,7 +180,8 @@ class P2PTls(privateIdentity: PrivateIdentity) {
           while !abort.closeRequest do
               val len   = inputStream.readInt()
               val bytes = inputStream.readNBytes(len)
-              receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
+              if bytes.length == len then receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
+              else throw EOFException(s"Could not read $len bytes for message")
         } catch {
           case ex: Throwable =>
             try close()
