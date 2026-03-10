@@ -10,83 +10,97 @@ import scala.util.Random
 object SimulationBenchmark {
   // TODO: specify total num updates instead of per replica?
   private val SEED                            = 42
-  private val NUM_REPLICAS                    = 10
-  private val NUM_DELTAS_TOTAL                = 10_000 * NUM_REPLICAS
   private val MIN_ENTRIES_PER_MAP_PER_REPLICA = 10
   private val MAX_ENTRIES_PER_MAP_PER_REPLICA = 100
-  private val NUM_REPETITIONS                 = 10
 
   def main(args: Array[String]): Unit = {
-    require(NUM_DELTAS_TOTAL / NUM_REPLICAS * NUM_REPLICAS == NUM_DELTAS_TOTAL)
+    val numReplicas = 10
+    val numDeltas   = 10_000 * numReplicas
+
+    val results = List(5, 10).flatMap { numReplicas =>
+      List(1, 10, 100, 1_000, 10_000).flatMap { numDeltas =>
+        val numDeltasTotal = numDeltas * numReplicas
+        start(numDeltasTotal, numReplicas, numRepetitions = if numDeltas <= 100 then 100 else 10)
+      }
+    }
+
+    // val results = start(numDeltas, numReplicas, numRepetitions = 10)
+    println("replicas,num_deltas_total,centralized,enforcing,runtime_ns")
+    println(results.mkString("\n"))
+  }
+
+  def start(numDeltasTotal: Int, numReplicas: Int, numRepetitions: Int): Seq[String] = {
+    require(numDeltasTotal / numReplicas * numReplicas == numDeltasTotal)
     given Random     = Random(SEED)
     val trace: Trace = TraceGeneration.generateTrace(
-      NUM_REPLICAS,
-      NUM_DELTAS_TOTAL / NUM_REPLICAS,
+      numReplicas,
+      numDeltasTotal / numReplicas,
       MIN_ENTRIES_PER_MAP_PER_REPLICA,
       MAX_ENTRIES_PER_MAP_PER_REPLICA
     )
 
-    val resultsP2p = (0 until NUM_REPETITIONS * 2).map(i =>
-        val enforcementEnabled = i % 2 == 0
-        val runtimeNs          = benchmarkP2p(enforcementEnabled, trace)
+    val results = (0 until numRepetitions * 4).map(i =>
+        val enforceAcl  = (i & 1) == 0
+        val centralized = (i & 2) == 2
+        val runtimeNs   = benchmark(enforceAcl, centralized, trace)
         println(
-          s"Full mesh [${i + 1}/${NUM_REPETITIONS * 2}]: enforcement=$enforcementEnabled, runtime_ms=${runtimeNs / 1_000_000}"
+          s"(numDeltas=$numDeltasTotal,numReplicas=$numReplicas): [${i + 1}/${numRepetitions * 4}] centralized=$centralized, enforcement=$enforceAcl, runtime_ms=${runtimeNs / 1_000_000}"
         )
-        (enforcementEnabled, "p2p", runtimeNs)
-    )
-    val resultsCentralized = (0 until NUM_REPETITIONS).map(i =>
-        val runtimeNs = benchmarkCentralized(trace)
-        println(s"Centralized [${i + 1}/$NUM_REPETITIONS]: runtime_ms=${runtimeNs / 1_000_000}")
-        (true, "centralized", runtimeNs)
+        (enforceAcl, centralized, runtimeNs)
     )
 
-    println("replicas,num_deltas_total,topology,enforcing,runtime_ns")
-    (resultsP2p ++ resultsCentralized)
-      .foreach((enforcementEnabled, topology, runtimeNs) =>
-        println(s"$NUM_REPLICAS,$NUM_DELTAS_TOTAL,$topology,$enforcementEnabled,$runtimeNs")
-      )
-
+    // "replicas,num_deltas_total,centralized,enforcing,runtime_ns"
+    results.map((enforcementEnabled, centralized, runtimeNs) =>
+      s"$numReplicas,$numDeltasTotal,$centralized,$enforcementEnabled,$runtimeNs"
+    )
   }
 
-  def benchmarkP2p(enforcementEnabled: Boolean, trace: Trace): Long = {
-    val endStateReachedLatch = CountDownLatch(NUM_REPLICAS)
+  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace): Long = {
+    if centralized then benchmarkCentralized(enforceAcl, trace)
+    else benchmarkP2p(enforceAcl, trace)
+  }
 
-    val replicas = setupP2pSimulation(trace, enforcementEnabled, endStateReachedLatch)
+  def benchmarkP2p(enforceAcl: Boolean, trace: Trace): Long = {
+    val endStateReachedLatch = CountDownLatch(trace.ids.length)
+
+    val replicas = setupP2pSimulation(trace, enforceAcl, endStateReachedLatch)
 
     // Give the replicas some time to connect to each other and process all messages
-    while replicas.exists(_.sync.connectedPeers.size != NUM_REPLICAS - 1)
+    while replicas.exists(_.sync.connectedPeers.size != replicas.length - 1)
     do Thread.sleep(100)
     Thread.sleep(100)
 
     // Make sure that all replicas are connected to all others
-    require(replicas.forall(_.sync.connectedPeers.size == NUM_REPLICAS - 1))
+    require(replicas.forall(_.sync.connectedPeers.size == replicas.length - 1))
 
-    val runtimeNs = measureSimulationTimeToConvergence(endStateReachedLatch, replicas, trace.deltas)
+    val runtimeNs = measureSimulationTimeToConvergence(endStateReachedLatch, replicas, trace.deltas, replicas.length)
 
     replicas.foreach(_.stop())
 
     runtimeNs
   }
 
-  def benchmarkCentralized(trace: Trace): Long = {
-    val endStateReachedLatch = CountDownLatch(NUM_REPLICAS)
+  def benchmarkCentralized(enforceAcl: Boolean, trace: Trace): Long = {
+    val endStateReachedLatch = CountDownLatch(trace.ids.length)
 
-    val (replicas, relay) = setupCentralizedSimulation(trace, endStateReachedLatch)
+    val (replicas, relay) = setupCentralizedSimulation(trace, endStateReachedLatch, enforceAcl)
 
     // Give the replicas some time to connect to each other and process all messages
-    while relay.sync.connectedPeers.size != NUM_REPLICAS
+    while relay.sync.connectedPeers.size != trace.ids.length
     do Thread.sleep(100)
     Thread.sleep(100)
 
     // Make sure that all replicas are only connected to relay and relay is connected to all others
     require(replicas.forall(_.sync.connectedPeers.size == 1))
-    // Ensure that ACL version is the same on all replicas / relay
-    require(relay.sync.connectedPeers.size == NUM_REPLICAS)
-    require(relay.sync.aclVersion == replicas(0).sync.aclVersion)
-    require(replicas.map(_.sync.aclVersion).toSet.size == 1)
-    require(relay.sync.currentAcl.read(relay.identity.getPublic) == PermissionTree.allow)
 
-    val runtimeNs = measureSimulationTimeToConvergence(endStateReachedLatch, replicas, trace.deltas)
+    if enforceAcl then
+        // Ensure that ACL version is the same on all replicas / relay
+        require(relay.sync.connectedPeers.size == trace.ids.length)
+        require(replicas.forall(_.sync.aclVersion == relay.sync.aclVersion))
+        require(replicas.map(_.sync.aclVersion).toSet.size == 1)
+        require(relay.sync.currentAcl.read(relay.identity.getPublic) == PermissionTree.allow)
+
+    val runtimeNs = measureSimulationTimeToConvergence(endStateReachedLatch, replicas, trace.deltas, trace.ids.length)
 
     replicas.foreach(_.stop())
     relay.stop()
@@ -97,10 +111,11 @@ object SimulationBenchmark {
   def measureSimulationTimeToConvergence(
       stopLatch: CountDownLatch,
       replicas: Array[BenchmarkReplica],
-      deltas: Array[Array[TravelPlan]]
+      deltas: Array[Array[TravelPlan]],
+      numReplicas: Int
   ): Long = {
     // Wait for all replicas + this thread
-    val startLatch = CountDownLatch(NUM_REPLICAS + 1)
+    val startLatch = CountDownLatch(numReplicas + 1)
 
     // Start benchmark (waits until all are ready)
     Executors.newVirtualThreadPerTaskExecutor()
@@ -129,7 +144,7 @@ object SimulationBenchmark {
       enforcementEnabled: Boolean,
       finishedLatch: CountDownLatch
   ): Array[BenchmarkReplica] = {
-    val endStateVersion = trace.computeEndStateVersion(enforcementEnabled)
+    val endStateVersion = trace.computeEndStateVersion
 
     val replicas = trace.ids.map(id =>
       BenchmarkReplica(
@@ -157,11 +172,12 @@ object SimulationBenchmark {
 
   private def setupCentralizedSimulation(
       trace: Trace,
-      finishedLatch: CountDownLatch
+      finishedLatch: CountDownLatch,
+      enforceAcl: Boolean
   ): (Array[BenchmarkReplica], BenchmarkRelayReplica) = {
-    val endStateVersion = trace.computeEndStateVersion(true)
+    val endStateVersion = trace.computeEndStateVersion
     val relayIdentity   = IdentityFactory.createNewIdentity
-    val relay           = BenchmarkRelayReplica("localhost", relayIdentity, trace.genesis)
+    val relay           = BenchmarkRelayReplica("localhost", relayIdentity, trace.genesis, enforceAcl)
     relay.start()
 
     val replicas = trace.ids.map(id =>
@@ -169,7 +185,7 @@ object SimulationBenchmark {
         "localhost",
         id,
         trace.genesis,
-        enforcing = true,
+        enforceAcl,
         replica =>
           if endStateVersion == replica.sync.stateVersion
           then finishedLatch.countDown()
