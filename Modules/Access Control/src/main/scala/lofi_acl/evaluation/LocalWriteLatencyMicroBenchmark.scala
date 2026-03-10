@@ -32,9 +32,8 @@ object ProfilerEntryPoint {
 }
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@BenchmarkMode(Array(Mode.AverageTime))
+@BenchmarkMode(Array(Mode.AverageTime, Mode.SampleTime))
 @State(Scope.Thread)
-@Fork(3)
 class LocalWriteLatencyMicroBenchmark {
 
   @Benchmark
