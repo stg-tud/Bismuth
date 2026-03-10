@@ -17,14 +17,21 @@ object SimulationBenchmark {
     val numReplicas = 10
     val numDeltas   = 10_000 * numReplicas
 
-    val results = List(5, 10).flatMap { numReplicas =>
-      List(1, 10, 100, 1_000, 10_000).flatMap { numDeltas =>
-        val numDeltasTotal = numDeltas * numReplicas
-        start(numDeltasTotal, numReplicas, numRepetitions = if numDeltas <= 100 then 100 else 10)
+    println("Performing 10 warmup runs")
+    start(numDeltasTotal = 100_000, numReplicas = 10, numRepetitions = 10): Unit
+    println("Warmup complete")
+
+    val numReplicaParameters          = List(10)
+    val numDeltasPerReplicaParameters = List(10_000, 100_000)
+    val numRepetitions: Int => Int    = numDeltasPerReplica => if numDeltasPerReplica <= 100 then 200 else 20
+
+    val results = numReplicaParameters.flatMap { numReplicas =>
+      numDeltasPerReplicaParameters.flatMap { numDeltasPerReplica =>
+        val numDeltasTotal = numDeltasPerReplica * numReplicas
+        start(numDeltasTotal, numReplicas, numRepetitions(numDeltasPerReplica))
       }
     }
 
-    // val results = start(numDeltas, numReplicas, numRepetitions = 10)
     println("replicas,num_deltas_total,centralized,enforcing,runtime_ns")
     println(results.mkString("\n"))
   }
