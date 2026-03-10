@@ -6,27 +6,40 @@ import lofi_acl.bft.HashDag.Encoder
 import lofi_acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
+import rdts.time.Dots
 
 class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,
-    onRdtChange: State => Unit,
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
 )(using Encoder[SignedDelta[State]])
     extends FilteredRdtAntiEntropy[State](localIdentity, _ => (), network, aclAntiEntropy) {
 
+  override def localMutation(mutator: State => State): Unit = throw UnsupportedOperationException()
+
   override protected def applyVerifiedDeltas(source: PublicIdentity, deltas: Seq[SignedDelta[State]]): Unit = {
     // TODO: currently merges update into the local state
-    super.applyVerifiedDeltas(source, deltas)
-    // Avoid sending locally created deltas twice
-    if source != localIdentity.getPublic then
-        // Forward deltas unconditionally to everyone except for the source
-        network
-          .connectedPeers
-          .filterNot(_ == source)
-          .foreach { remote =>
-            sendDeltasFiltered(deltas, remote)
-          }
+    var dots: Dots = Dots.empty
+    deltas.foreach { delta =>
+      deltaStore.put(delta.dot, delta)
+      dots = dots.add(delta.dot)
+    }
+
+    if dots.nonEmpty then {
+      currentStateRef.updateAndGet((oldDots, ignored) =>
+        (oldDots.union(dots), ignored) // does not merge into state
+      )
+      missingDots.updateAndGet(missing => missing.diff(dots))
+      filteredDots.updateAndGet(filtered => filtered.diff(dots))
+
+      // Broadcast deltas filtered (but not back to source)
+      network
+        .connectedPeers
+        .filterNot(_ == source)
+        .foreach { remote =>
+          sendDeltasFiltered(deltas, remote)
+        }
+    }
   }
 
 }

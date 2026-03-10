@@ -145,7 +145,7 @@ case class Trace(
     additionalPermissions: Acl,
     deltas: Array[Array[TravelPlan]]
 ):
-    def computeEndStateVersion(withDecomposition: Boolean): Dots = {
+    def computeEndStateVersion: Dots = {
       // Currently, we decompose deltas in both variants (enforcing and non-enforcing)
       Dots(
         ids.map(id => Uid(id.getPublic.id))
