@@ -6,10 +6,15 @@ import lofi_acl.evaluation.centralized.ForwardingSync
 import lofi_acl.sync.ChannelConnectionManager
 import lofi_acl.travelplanner.TravelPlan
 
-class BenchmarkRelayReplica(val ifAddress: String, val identity: PrivateIdentity, aclGenesis: BftDelta[Acl]) {
+class BenchmarkRelayReplica(
+    val ifAddress: String,
+    val identity: PrivateIdentity,
+    aclGenesis: BftDelta[Acl],
+    enforceAcl: Boolean
+) {
   // TODO: Should the relay merge updates into the local state?
   val sync: ForwardingSync[TravelPlan] =
-    ForwardingSync(identity, (id, recv) => ChannelConnectionManager(id, recv), aclGenesis, _ => ())
+    ForwardingSync(identity, (id, recv) => ChannelConnectionManager(id, recv), aclGenesis, enforceAcl)
 
   def start(): Unit = sync.start()
 

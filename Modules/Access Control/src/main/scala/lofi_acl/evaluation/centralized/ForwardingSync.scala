@@ -18,11 +18,15 @@ class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id, receiver),
     aclGenesis: BftDelta[Acl],
-    onRdtChanged: State => Unit
-) extends AclEnforcingSync[State](localIdentity, connectionManagerProvider, aclGenesis, onRdtChanged) {
+    enforceAcl: Boolean
+) extends AclEnforcingSync[State](localIdentity, connectionManagerProvider, aclGenesis, _ => ()) {
   override protected def instantiateAntiEntropy(): (AclAntiEntropy, FilteredRdtAntiEntropy[State]) = {
     val aclAntiEntropy = ForwardingAclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
-    val rdtAntiEntropy = FilteringForwarderRdtAntiEntropy(localIdentity, onRdtChanged, comm, aclAntiEntropy)
+    val rdtAntiEntropy = {
+      if enforceAcl
+      then FilteringForwarderRdtAntiEntropy(localIdentity, comm, aclAntiEntropy)
+      else NonFilteringForwarderRdtAntiEntropy(localIdentity, comm, aclAntiEntropy)
+    }
 
     (aclAntiEntropy, rdtAntiEntropy)
   }

@@ -21,10 +21,11 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
   protected val dotCounter = AtomicLong(0)
   protected val localUid   = Uid(localIdentity.getPublic.id)
 
-  private val currentStateRef: AtomicReference[(Dots, State)] = AtomicReference((Dots.empty, Bottom[State].empty))
-  private val deltaStore                                      = SynchronizedMutableArrayDeltaStore[SignedDelta[State]]()
-  private val filteredDots: AtomicReference[Dots]             = AtomicReference(Dots.empty)
-  private val missingDots: AtomicReference[Dots]              = AtomicReference(Dots.empty)
+  protected val currentStateRef: AtomicReference[(Dots, State)] = AtomicReference((Dots.empty, Bottom[State].empty))
+  protected val deltaStore: SynchronizedMutableArrayDeltaStore[SignedDelta[State]] =
+    SynchronizedMutableArrayDeltaStore[SignedDelta[State]]()
+  protected val filteredDots: AtomicReference[Dots] = AtomicReference(Dots.empty)
+  protected val missingDots: AtomicReference[Dots]  = AtomicReference(Dots.empty)
 
   def currentState: (Dots, State) = currentStateRef.get()
 
@@ -124,7 +125,6 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     } else {                                                      // Remote acl is the same as local acl
       missingDots.updateAndGet(missing => missing.diff(filtered)) // Remove filtered from missing
       val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
-      assert(deltaStore.dots.intersect(newFiltered).isEmpty) // TODO: remove this check at some point
     }
   }
 
