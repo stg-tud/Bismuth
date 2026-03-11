@@ -8,6 +8,7 @@ import lofi_acl.sync.anti_entropy.AclEnforcingSync.encoder
 import lofi_acl.sync.anti_entropy.{AclEnforcingSync, SignedDelta}
 import lofi_acl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
+import rdts.base.Lattice.syntax.merge
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
@@ -22,6 +23,7 @@ object ProfilerEntryPoint {
     val startTime = System.nanoTime()
 
     val state = BenchmarkInput()
+
     0 until 100_000 foreach { _ => bench.decomposeFilterSign(state) }
 
     0 until 100_000 foreach { _ => bench.onlySignFullDelta(state) }
@@ -70,7 +72,7 @@ class LocalOverheadMicroBenchmark {
   @Benchmark
   def onlySignFullDelta(input: BenchmarkInput): SignedDelta[?] = {
     val delta = {
-      val delta = input.deltas(input.counter)
+      val delta = input.recomposedFilteredDeltas(input.counter)
       input.counter = (input.counter + 1) % input.deltas.length
       delta
     }
@@ -81,23 +83,23 @@ class LocalOverheadMicroBenchmark {
   @Benchmark
   def verifyAndFilter(input: BenchmarkInput): AnyRef = {
     val decomposedDeltas = {
-      val delta = input.decomposedDeltas(input.counter)
-      input.counter = (input.counter + 1) % input.decomposedDeltas.length
+      val delta = input.decomposedFilteredDeltas(input.counter)
+      input.counter = (input.counter + 1) % input.decomposedFilteredDeltas.length
       delta
     }
 
     decomposedDeltas.filter(d =>
         val authorWritePerm = input.acl.write.getOrElse(PublicIdentity(d.dot.place.delegate), PermissionTree.empty)
-        d.isSignatureValid
-        && Filter[TravelPlan].isAllowed(d.payload, authorWritePerm)
+        Filter[TravelPlan].isAllowed(d.payload, authorWritePerm)
+        && d.isSignatureValid
     )
   }
 
   @Benchmark
   def onlyVerifyFullDelta(input: BenchmarkInput): Boolean = {
     val signedDelta = {
-      val delta = input.signedDeltas(input.counter)
-      input.counter = (input.counter + 1) % input.decomposedDeltas.length
+      val delta = input.filteredRecomposedSignedDeltas(input.counter)
+      input.counter = (input.counter + 1) % input.decomposedFilteredDeltas.length
       delta
     }
 
@@ -117,19 +119,24 @@ class BenchmarkInput {
 
   val receiver: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 
-  val deltas: Array[TravelPlan] = LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(authorUid))
+  val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(author, receiver)
 
-  val signedDeltas: Array[SignedDelta[TravelPlan]] =
-    deltas.map(delta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), delta))
+  val deltas: Array[TravelPlan] =
+    LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(authorUid))
+      .filterNot(Filter[TravelPlan].filter(_, acl.write(author)).isEmpty)
 
-  val decomposedDeltas: Array[Seq[SignedDelta[TravelPlan]]] =
+  val decomposedFilteredDeltas: Array[Seq[SignedDelta[TravelPlan]]] =
     deltas.map(d =>
       d.decomposed
         .map(decomposedDelta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), decomposedDelta))
         .toSeq
     )
 
-  val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(author, receiver)
+  val recomposedFilteredDeltas: Array[TravelPlan] = decomposedFilteredDeltas
+    .map(decomposed => decomposed.map(_.payload).reduce((l, r) => l.merge(r)))
+
+  val filteredRecomposedSignedDeltas: Array[SignedDelta[TravelPlan]] =
+    recomposedFilteredDeltas.map(delta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), delta))
 }
 
 object LocalOverheadMicroBenchmark {
