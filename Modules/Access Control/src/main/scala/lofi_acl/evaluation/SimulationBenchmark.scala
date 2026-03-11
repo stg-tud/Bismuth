@@ -8,7 +8,6 @@ import java.util.concurrent.{CountDownLatch, Executors}
 import scala.util.Random
 
 object SimulationBenchmark {
-  // TODO: specify total num updates instead of per replica?
   private val SEED                            = 42
   private val MIN_ENTRIES_PER_MAP_PER_REPLICA = 10
   private val MAX_ENTRIES_PER_MAP_PER_REPLICA = 100
@@ -53,6 +52,7 @@ object SimulationBenchmark {
         println(
           s"(numDeltas=$numDeltasTotal,numReplicas=$numReplicas): [${i + 1}/${numRepetitions * 4}] centralized=$centralized, enforcement=$enforceAcl, runtime_ms=${runtimeNs / 1_000_000}"
         )
+
         (enforceAcl, centralized, runtimeNs)
     )
 

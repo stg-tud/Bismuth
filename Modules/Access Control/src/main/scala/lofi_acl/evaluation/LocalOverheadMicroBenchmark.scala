@@ -17,7 +17,7 @@ import scala.util.Random
 
 object ProfilerEntryPoint {
   def main(args: Array[String]): Unit = {
-    val bench = LocalWriteLatencyMicroBenchmark()
+    val bench = LocalOverheadMicroBenchmark()
 
     val startTime = System.nanoTime()
 
@@ -32,9 +32,9 @@ object ProfilerEntryPoint {
 }
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@BenchmarkMode(Array(Mode.AverageTime, Mode.SampleTime))
+@BenchmarkMode(Array(Mode.AverageTime))
 @State(Scope.Thread)
-class LocalWriteLatencyMicroBenchmark {
+class LocalOverheadMicroBenchmark {
 
   @Benchmark
   def decomposeFilterSign(input: WriteState): Unit = {
@@ -91,8 +91,8 @@ class WriteState {
 
   val remote: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 
-  val deltas: Array[TravelPlan]         = LocalWriteLatencyMicroBenchmark.generateDeltas(using LocalUid(uid))
-  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyMicroBenchmark.getAcl(local, remote)
+  val deltas: Array[TravelPlan]         = LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(uid))
+  val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(local, remote)
 }
 
 @State(Scope.Thread)
@@ -106,15 +106,15 @@ class ReadState {
   val receiver: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 
   val deltas: Array[Seq[SignedDelta[TravelPlan]]] =
-    LocalWriteLatencyMicroBenchmark.generateDeltas(using LocalUid(authorUid)).map(d =>
+    LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(authorUid)).map(d =>
       d.decomposed
         .map(decomposedDelta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), decomposedDelta))
         .toSeq
     )
-  val (acl: Acl, aclVersion: Set[Hash]) = LocalWriteLatencyMicroBenchmark.getAcl(author, receiver)
+  val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(author, receiver)
 }
 
-object LocalWriteLatencyMicroBenchmark {
+object LocalOverheadMicroBenchmark {
   def getAcl(local: PublicIdentity, remote: PublicIdentity): (Acl, Set[Hash]) = {
     val delegation = Acl(
       read = Map(
