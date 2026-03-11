@@ -140,10 +140,10 @@ class BenchmarkInput {
 }
 
 object LocalOverheadMicroBenchmark {
-  def getAcl(local: PublicIdentity, remote: PublicIdentity): (Acl, Set[Hash]) = {
+  def getAcl(author: PublicIdentity, remote: PublicIdentity): (Acl, Set[Hash]) = {
     val delegation = Acl(
       read = Map(
-        local  -> PermissionTree.allow,
+        author -> PermissionTree.allow,
         remote -> PermissionTree.fromPathSet(Set(
           "title",
           "bucketList",
@@ -154,14 +154,14 @@ object LocalOverheadMicroBenchmark {
         ))
       ),
       write = Map(
-        local -> PermissionTree.fromPathSet(Set(
+        author -> PermissionTree.fromPathSet(Set(
           "title",
           "bucketList",
           "expenses.inner.*.value.description",
           "expenses.inner.*.value.amount",
           "expenses.inner.*.dots",
-          "expenses.removed"
-          // "expenses.inner.*.value.comment"
+          "expenses.removed",
+          "expenses.inner.*.value.comment"
         ))
       )
     )

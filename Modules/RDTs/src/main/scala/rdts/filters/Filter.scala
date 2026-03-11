@@ -214,9 +214,10 @@ object Filter {
     override def filter(delta: Map[K, V], permission: PermissionTree): Map[K, V] = permission match
         case PermissionTree(ALLOW, _)                       => delta
         case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
+          val wildcard = permission.children.get("*")
           delta.flatMap { case key -> value =>
             mapOfEntryPermissions.get(KeyAsString[K].encode(key)) match
-                case None /* No rule for key -> discard entry */ => None
+                case None                  => wildcard.map(perm => key -> Filter[V].filter(value, perm))
                 case Some(entryPermission) => Some(key -> Filter[V].filter(value, entryPermission))
           }
 
@@ -224,10 +225,11 @@ object Filter {
       permissionTree match
           case PermissionTree(ALLOW, _)                       => true
           case PermissionTree(PARTIAL, mapOfEntryPermissions) =>
+            val wildcard = permissionTree.children.get("*")
             delta.forall { case key -> value =>
               mapOfEntryPermissions.get(KeyAsString[K].encode(key)) match
-                  case None /* No rule for key -> discard entry */ => false
-                  case Some(entryPermission)                       => Filter[V].isAllowed(value, entryPermission)
+                  case None                  => wildcard.exists(perm => Filter[V].isAllowed(value, perm))
+                  case Some(entryPermission) => Filter[V].isAllowed(value, entryPermission)
             }
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
