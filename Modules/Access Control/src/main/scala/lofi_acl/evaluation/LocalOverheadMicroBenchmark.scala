@@ -21,11 +21,14 @@ object ProfilerEntryPoint {
 
     val startTime = System.nanoTime()
 
-    val writeState = WriteState()
-    0 until 100_000 foreach { _ => bench.decomposeFilterSign(writeState) }
+    val state = BenchmarkInput()
+    0 until 100_000 foreach { _ => bench.decomposeFilterSign(state) }
 
-    val readState = ReadState()
-    0 until 100_000 foreach { _ => bench.verifyAndFilter(readState) }
+    0 until 100_000 foreach { _ => bench.onlySignFullDelta(state) }
+
+    0 until 100_000 foreach { _ => bench.verifyAndFilter(state) }
+
+    0 until 100_000 foreach { _ => bench.onlyVerifyFullDelta(state) }
 
     println(s"${(System.nanoTime() - startTime) / 1_000_000}ms")
   }
@@ -37,8 +40,8 @@ object ProfilerEntryPoint {
 class LocalOverheadMicroBenchmark {
 
   @Benchmark
-  def decomposeFilterSign(input: WriteState): Unit = {
-    val localWritePermission = input.acl.write.getOrElse(input.localIdentity.getPublic, PermissionTree.empty)
+  def decomposeFilterSign(input: BenchmarkInput): Unit = {
+    val localWritePermission = input.acl.write.getOrElse(input.authorIdentity.getPublic, PermissionTree.empty)
     val delta                = {
       val delta = input.deltas(input.counter)
       input.counter = (input.counter + 1) % input.deltas.length
@@ -48,14 +51,14 @@ class LocalOverheadMicroBenchmark {
     // We decompose the delta, filter it and then sign each individual part
     val decomposedVerifiedDeltas = delta.decomposed
       .filter(delta => Filter[TravelPlan].isAllowed(delta, localWritePermission)) // Enforce local write permissions
-      .map(decomposedDelta => SignedDelta.fromDelta(input.localIdentity, Dot(input.uid, 42), decomposedDelta))
+      .map(decomposedDelta => SignedDelta.fromDelta(input.authorIdentity, Dot(input.authorUid, 42), decomposedDelta))
       .toSeq
 
     // Usually we would apply the update here, but for this benchmark, we don't
     // …
 
     // Now we filter with the receiving permissions
-    val receiverReadPermission    = input.acl.read.getOrElse(input.remote, PermissionTree.empty)
+    val receiverReadPermission    = input.acl.read.getOrElse(input.receiver, PermissionTree.empty)
     val (allowedDeltas, filtered) =
       decomposedVerifiedDeltas.partition(delta => Filter[TravelPlan].isAllowed(delta.payload, receiverReadPermission))
 
@@ -65,10 +68,21 @@ class LocalOverheadMicroBenchmark {
   }
 
   @Benchmark
-  def verifyAndFilter(input: ReadState): Unit = {
-    val decomposedDeltas = {
+  def onlySignFullDelta(input: BenchmarkInput): SignedDelta[?] = {
+    val delta = {
       val delta = input.deltas(input.counter)
       input.counter = (input.counter + 1) % input.deltas.length
+      delta
+    }
+
+    SignedDelta.fromDelta(input.authorIdentity, Dot(input.authorUid, 42), delta)
+  }
+
+  @Benchmark
+  def verifyAndFilter(input: BenchmarkInput): AnyRef = {
+    val decomposedDeltas = {
+      val delta = input.decomposedDeltas(input.counter)
+      input.counter = (input.counter + 1) % input.decomposedDeltas.length
       delta
     }
 
@@ -76,28 +90,26 @@ class LocalOverheadMicroBenchmark {
         val authorWritePerm = input.acl.write.getOrElse(PublicIdentity(d.dot.place.delegate), PermissionTree.empty)
         d.isSignatureValid
         && Filter[TravelPlan].isAllowed(d.payload, authorWritePerm)
-    ): Unit
+    )
+  }
+
+  @Benchmark
+  def onlyVerifyFullDelta(input: BenchmarkInput): Boolean = {
+    val signedDelta = {
+      val delta = input.signedDeltas(input.counter)
+      input.counter = (input.counter + 1) % input.decomposedDeltas.length
+      delta
+    }
+
+    signedDelta.isSignatureValid
   }
 
 }
 
 @State(Scope.Thread)
-class WriteState {
-  var counter = 0
-
-  val localIdentity: PrivateIdentity = IdentityFactory.createNewIdentity
-  val local: PublicIdentity          = localIdentity.getPublic
-  val uid                            = Uid(localIdentity.getPublic.id)
-
-  val remote: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
-
-  val deltas: Array[TravelPlan]         = LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(uid))
-  val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(local, remote)
-}
-
-@State(Scope.Thread)
-class ReadState {
-  var counter = 0
+class BenchmarkInput {
+  var counter                                     = 0
+  @TearDown(Level.Iteration) def resetCtr(): Unit = counter = 0
 
   val authorIdentity: PrivateIdentity = IdentityFactory.createNewIdentity
   val author: PublicIdentity          = authorIdentity.getPublic
@@ -105,12 +117,18 @@ class ReadState {
 
   val receiver: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 
-  val deltas: Array[Seq[SignedDelta[TravelPlan]]] =
-    LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(authorUid)).map(d =>
+  val deltas: Array[TravelPlan] = LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(authorUid))
+
+  val signedDeltas: Array[SignedDelta[TravelPlan]] =
+    deltas.map(delta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), delta))
+
+  val decomposedDeltas: Array[Seq[SignedDelta[TravelPlan]]] =
+    deltas.map(d =>
       d.decomposed
         .map(decomposedDelta => SignedDelta.fromDelta(authorIdentity, Dot(authorUid, 42), decomposedDelta))
         .toSeq
     )
+
   val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(author, receiver)
 }
 
