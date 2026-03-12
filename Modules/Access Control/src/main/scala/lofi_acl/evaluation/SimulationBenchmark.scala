@@ -24,7 +24,8 @@ object SimulationBenchmark {
     val numDeltasPerReplicaParameters = List(10_000, 100_000)
     val numRepetitions: Int => Int    = numDeltasPerReplica => if numDeltasPerReplica <= 100 then 200 else 20
 
-    var results: List[String] = numReplicaParameters.flatMap { numReplicas =>
+    var results: List[String] = List.empty
+    results ++= numReplicaParameters.flatMap { numReplicas =>
       numDeltasPerReplicaParameters.flatMap { numDeltasPerReplica =>
         val numDeltasTotal = numDeltasPerReplica * numReplicas
         start(numDeltasTotal, numReplicas, numRepetitions(numDeltasPerReplica), delayMillis = None) // Some(0) != None
@@ -63,7 +64,7 @@ object SimulationBenchmark {
         val centralized = (i & 2) == 2
         val runtimeNs   = benchmark(enforceAcl, centralized, trace, delayMillis)
         println(
-          s"(numDeltas=$numDeltasTotal,numReplicas=$numReplicas): [${i + 1}/${numRepetitions * 4}] centralized=$centralized, enforcement=$enforceAcl, runtime_ms=${runtimeNs / 1_000_000}"
+          s"(numDeltas=$numDeltasTotal,numReplicas=$numReplicas): [${i + 1}/${numRepetitions * 4}] centralized=$centralized, enforcement=$enforceAcl, delay_ms=$delayMillis, runtime_ms=${runtimeNs / 1_000_000}"
         )
 
         (enforceAcl, centralized, runtimeNs)
@@ -108,7 +109,7 @@ object SimulationBenchmark {
     // Give the replicas some time to connect to each other and process all messages
     while relay.sync.connectedPeers.size != trace.ids.length
     do Thread.sleep(100)
-    Thread.sleep(100)
+    Thread.sleep(100 + delayMillis.getOrElse(0) * 10)
 
     // Make sure that all replicas are only connected to relay and relay is connected to all others
     require(replicas.forall(_.sync.connectedPeers.size == 1))

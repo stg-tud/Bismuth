@@ -7,7 +7,7 @@ import crypto.channels.PrivateIdentity
 import lofi_acl.JsoniterCodecs.syncMsgCodec
 import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
-import lofi_acl.sync.anti_entropy.AclEnforcingSync.encoder
+import lofi_acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
 import lofi_acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import rdts.base.{Bottom, Decompose, Lattice}
@@ -29,6 +29,11 @@ class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}
     }
 
     (aclAntiEntropy, rdtAntiEntropy)
+  }
+
+  override def handleMessage(msg: AclEnforcingSync.SyncMsg[State], remote: PublicIdentity): Unit = msg match {
+    case SyncMsg.MyPeersAre(_) => ()
+    case _                     => super.handleMessage(msg, remote)
   }
 
   override protected def onConnectionEstablished(newRemote: PublicIdentity): Unit =
