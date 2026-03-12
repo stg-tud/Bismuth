@@ -10,10 +10,10 @@ object SimulationRunner extends CommandApp(
       main = ConfigOpts.config.map: config =>
           if config.warmup > 0 then
               println(s"Performing ${config.warmup} warmup runs")
-              start(config.deltas, config.replicas, config.warmup): Unit
+              start(config.deltas, config.replicas, config.warmup, config.bind): Unit
               println("Warmup complete")
 
-          val results: Seq[String] = start(config.deltas, config.replicas, config.repetitions)
+          val results: Seq[String] = start(config.deltas, config.replicas, config.repetitions, config.bind)
 
           println("replicas,num_deltas_per_replica,centralized,enforcing,runtime_ns")
           println(results.mkString("\n"))
@@ -38,7 +38,7 @@ object ConfigOpts:
 
     val bind: Opts[String] = Opts.option[String](
       "bind",
-      help = "Pattern for IP addresses the replicas bind to. '#' is replaced with the index of the replica.]"
+      help = "Pattern for IP addresses the replicas bind to. '*' is replaced with the index of the replica."
     ).withDefault("127.0.0.1")
 
     val config: Opts[Config] =

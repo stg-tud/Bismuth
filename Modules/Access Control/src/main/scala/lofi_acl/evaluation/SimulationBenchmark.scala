@@ -13,9 +13,7 @@ object SimulationBenchmark {
   private val MIN_ENTRIES_PER_MAP_PER_REPLICA = 10
   private val MAX_ENTRIES_PER_MAP_PER_REPLICA = 100
 
-  private def bindAddress(replicaIndex: Int): InetAddress = InetAddress.getLocalHost
-
-  def start(numDeltasPerReplica: Int, numReplicas: Int, numRepetitions: Int): Seq[String] = {
+  def start(numDeltasPerReplica: Int, numReplicas: Int, numRepetitions: Int, bindPattern: String): Seq[String] = {
     given Random     = Random(SEED)
     val trace: Trace = TraceGeneration.generateTrace(
       numReplicas,
@@ -27,7 +25,7 @@ object SimulationBenchmark {
     val results = (0 until numRepetitions * 4).map(i =>
         val enforceAcl  = (i & 1) == 0
         val centralized = (i & 2) == 2
-        val runtimeNs   = benchmark(enforceAcl, centralized, trace)
+        val runtimeNs   = benchmark(enforceAcl, centralized, trace, bindPattern)
         println(
           s"[${i + 1}/${numRepetitions * 4}] (deltas=$numDeltasPerReplica,numReplicas=$numReplicas,centralized=$centralized,enforcement=$enforceAcl): runtime_ms=${runtimeNs / 1_000_000}"
         )
@@ -41,15 +39,18 @@ object SimulationBenchmark {
     )
   }
 
-  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace): Long = {
-    if centralized then benchmarkCentralized(enforceAcl, trace)
-    else benchmarkP2p(enforceAcl, trace)
+  private def bindAddress(bindPattern: String, i: Int): InetAddress =
+    InetAddress.getByName(bindPattern.replaceAll("\\*", (i + 1).toString))
+
+  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace, bindPattern: String): Long = {
+    if centralized then benchmarkCentralized(enforceAcl, trace, bindPattern)
+    else benchmarkP2p(enforceAcl, trace, bindPattern)
   }
 
-  def benchmarkP2p(enforceAcl: Boolean, trace: Trace): Long = {
+  def benchmarkP2p(enforceAcl: Boolean, trace: Trace, bindPattern: String): Long = {
     val endStateReachedLatch = CountDownLatch(trace.ids.length)
 
-    val replicas = setupP2pSimulation(trace, enforceAcl, endStateReachedLatch)
+    val replicas = setupP2pSimulation(trace, enforceAcl, endStateReachedLatch, bindPattern)
 
     // Give the replicas some time to connect to each other and process all messages
     while replicas.exists(_.sync.connectedPeers.size != replicas.length - 1)
@@ -66,10 +67,10 @@ object SimulationBenchmark {
     runtimeNs
   }
 
-  def benchmarkCentralized(enforceAcl: Boolean, trace: Trace): Long = {
+  def benchmarkCentralized(enforceAcl: Boolean, trace: Trace, bindPattern: String): Long = {
     val endStateReachedLatch = CountDownLatch(trace.ids.length)
 
-    val (replicas, relay) = setupCentralizedSimulation(trace, endStateReachedLatch, enforceAcl)
+    val (replicas, relay) = setupCentralizedSimulation(trace, endStateReachedLatch, enforceAcl, bindPattern)
 
     // Give the replicas some time to connect to each other and process all messages
     while relay.sync.connectedPeers.size != trace.ids.length
@@ -129,12 +130,13 @@ object SimulationBenchmark {
       trace: Trace,
       enforcementEnabled: Boolean,
       finishedLatch: CountDownLatch,
+      bindPattern: String
   ): Array[BenchmarkReplica] = {
     val endStateVersion = trace.computeEndStateVersion
 
     val replicas = trace.ids.zipWithIndex.map((id, idx) =>
       BenchmarkReplica(
-        bindAddress(idx),
+        bindAddress(bindPattern, idx),
         id,
         trace.genesis,
         enforcementEnabled,
@@ -152,7 +154,7 @@ object SimulationBenchmark {
     replicas.foreach { replica =>
       replica.sync.connect(
         replicas(0).identity.getPublic,
-        bindAddress(0).getHostAddress,
+        replicas(0).sync.listenAddress.get._1,
         replicas(0).sync.listenAddress.get._2
       )
     }
@@ -164,10 +166,11 @@ object SimulationBenchmark {
       trace: Trace,
       finishedLatch: CountDownLatch,
       enforceAcl: Boolean,
+      bindPattern: String
   ): (Array[BenchmarkReplica], BenchmarkRelayReplica) = {
     val endStateVersion = trace.computeEndStateVersion
     val relayIdentity   = IdentityFactory.createNewIdentity
-    val relayAddress    = bindAddress(trace.ids.length - 1)
+    val relayAddress    = bindAddress(bindPattern, trace.ids.length - 1)
     val relay           = BenchmarkRelayReplica(relayAddress, relayIdentity, trace.genesis, enforceAcl)
     relay.start()
 
@@ -191,7 +194,11 @@ object SimulationBenchmark {
     // Connect to relay
     replicas.foreach(_.start())
     replicas.foreach { replica =>
-      replica.sync.connect(relayIdentity.getPublic, "localhost", relay.sync.listenAddress.get._2)
+      replica.sync.connect(
+        relayIdentity.getPublic,
+        relay.sync.listenAddress.get._1,
+        relay.sync.listenAddress.get._2
+      )
     }
 
     (replicas, relay)

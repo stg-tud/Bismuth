@@ -14,14 +14,12 @@ class BenchmarkRelayReplica(
     aclGenesis: BftDelta[Acl],
     enforceAcl: Boolean,
 ) {
-  // TODO: Should the relay merge updates into the local state?
-  val sync: ForwardingSync[TravelPlan] =
-    ForwardingSync(
-      identity,
-      (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
-      aclGenesis,
-      enforceAcl
-    )
+  val sync: ForwardingSync[TravelPlan] = ForwardingSync(
+    identity,
+    (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
+    aclGenesis,
+    enforceAcl
+  )
 
   def start(): Unit = sync.start()
 
