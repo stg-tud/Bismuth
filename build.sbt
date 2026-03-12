@@ -194,6 +194,7 @@ lazy val lofiAcl = project.in(file("Modules/Access Control"))
     Dependencies.munitCheck,
     Dependencies.pprint,
     Dependencies.slips,
+    Dependencies.decline,
     libraryDependencies += Dependencies.scalafx,
     // Settings.implicitConversions(), // reswing uses this in a million places for no reason
     javaOptions ++= Seq(

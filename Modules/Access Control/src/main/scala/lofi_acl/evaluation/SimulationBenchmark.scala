@@ -15,36 +15,11 @@ object SimulationBenchmark {
 
   private def bindAddress(replicaIndex: Int): InetAddress = InetAddress.getLocalHost
 
-  def main(args: Array[String]): Unit = {
-    val numReplicas = 10
-    val numDeltas   = 10_000 * numReplicas
-
-    println("Performing 10 warmup runs")
-    start(numDeltasTotal = 100_000, numReplicas = 10, numRepetitions = 10): Unit
-    println("Warmup complete")
-
-    val numReplicaParameters          = List(10)
-    val numDeltasPerReplicaParameters = List(10_000, 100_000)
-    val numRepetitions: Int => Int    = numDeltasPerReplica => if numDeltasPerReplica <= 100 then 200 else 20
-
-    var results: List[String] = List.empty
-    results ++= numReplicaParameters.flatMap { numReplicas =>
-      numDeltasPerReplicaParameters.flatMap { numDeltasPerReplica =>
-        val numDeltasTotal = numDeltasPerReplica * numReplicas
-        start(numDeltasTotal, numReplicas, numRepetitions(numDeltasPerReplica)) // Some(0) != None
-      }
-    }
-
-    println("replicas,num_deltas_total,centralized,enforcing,runtime_ns")
-    println(results.mkString("\n"))
-  }
-
-  def start(numDeltasTotal: Int, numReplicas: Int, numRepetitions: Int): Seq[String] = {
-    require(numDeltasTotal / numReplicas * numReplicas == numDeltasTotal)
+  def start(numDeltasPerReplica: Int, numReplicas: Int, numRepetitions: Int): Seq[String] = {
     given Random     = Random(SEED)
     val trace: Trace = TraceGeneration.generateTrace(
       numReplicas,
-      numDeltasTotal / numReplicas,
+      numDeltasPerReplica,
       MIN_ENTRIES_PER_MAP_PER_REPLICA,
       MAX_ENTRIES_PER_MAP_PER_REPLICA
     )
@@ -54,15 +29,15 @@ object SimulationBenchmark {
         val centralized = (i & 2) == 2
         val runtimeNs   = benchmark(enforceAcl, centralized, trace)
         println(
-          s"(numDeltas=$numDeltasTotal,numReplicas=$numReplicas): [${i + 1}/${numRepetitions * 4}] centralized=$centralized, enforcement=$enforceAcl, runtime_ms=${runtimeNs / 1_000_000}"
+          s"[${i + 1}/${numRepetitions * 4}] (deltas=$numDeltasPerReplica,numReplicas=$numReplicas,centralized=$centralized,enforcement=$enforceAcl): runtime_ms=${runtimeNs / 1_000_000}"
         )
 
         (enforceAcl, centralized, runtimeNs)
     )
 
-    // "replicas,num_deltas_total,delay_ms,centralized,enforcing,runtime_ns"
+    // "replicas,num_deltas_per_replica,delay_ms,centralized,enforcing,runtime_ns"
     results.map((enforcementEnabled, centralized, runtimeNs) =>
-      s"$numReplicas,$numDeltasTotal,$centralized,$enforcementEnabled,$runtimeNs"
+      s"$numReplicas,$numDeltasPerReplica,$centralized,$enforcementEnabled,$runtimeNs"
     )
   }
 
