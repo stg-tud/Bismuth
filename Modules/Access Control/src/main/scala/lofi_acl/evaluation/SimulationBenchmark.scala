@@ -17,25 +17,38 @@ object SimulationBenchmark {
     val numDeltas   = 10_000 * numReplicas
 
     println("Performing 10 warmup runs")
-    start(numDeltasTotal = 100_000, numReplicas = 10, numRepetitions = 10): Unit
+    start(numDeltasTotal = 100_000, numReplicas = 10, numRepetitions = 10, None): Unit
     println("Warmup complete")
 
     val numReplicaParameters          = List(10)
     val numDeltasPerReplicaParameters = List(10_000, 100_000)
     val numRepetitions: Int => Int    = numDeltasPerReplica => if numDeltasPerReplica <= 100 then 200 else 20
 
-    val results = numReplicaParameters.flatMap { numReplicas =>
+    var results: List[String] = numReplicaParameters.flatMap { numReplicas =>
       numDeltasPerReplicaParameters.flatMap { numDeltasPerReplica =>
         val numDeltasTotal = numDeltasPerReplica * numReplicas
-        start(numDeltasTotal, numReplicas, numRepetitions(numDeltasPerReplica))
+        start(numDeltasTotal, numReplicas, numRepetitions(numDeltasPerReplica), delayMillis = None) // Some(0) != None
       }
     }
 
-    println("replicas,num_deltas_total,centralized,enforcing,runtime_ns")
+    println("Performing 10 warmup runs")
+    start(numDeltasTotal = 10, numReplicas = 10, numRepetitions = 10, Some(0)): Unit
+    println("Warmup complete")
+
+    results ++= List(0, 1, 2, 4, 8, 16, 32, 64).flatMap { delayMillis =>
+      List(10).flatMap { numReplicas =>
+        List(10).flatMap { numDeltasPerReplica =>
+          val numDeltasTotal = numDeltasPerReplica * numReplicas
+          start(numDeltasTotal, numReplicas, 200, Some(delayMillis))
+        }
+      }
+    }
+
+    println("replicas,num_deltas_total,delay_ms,centralized,enforcing,runtime_ns")
     println(results.mkString("\n"))
   }
 
-  def start(numDeltasTotal: Int, numReplicas: Int, numRepetitions: Int): Seq[String] = {
+  def start(numDeltasTotal: Int, numReplicas: Int, numRepetitions: Int, delayMillis: Option[Int]): Seq[String] = {
     require(numDeltasTotal / numReplicas * numReplicas == numDeltasTotal)
     given Random     = Random(SEED)
     val trace: Trace = TraceGeneration.generateTrace(
@@ -48,7 +61,7 @@ object SimulationBenchmark {
     val results = (0 until numRepetitions * 4).map(i =>
         val enforceAcl  = (i & 1) == 0
         val centralized = (i & 2) == 2
-        val runtimeNs   = benchmark(enforceAcl, centralized, trace)
+        val runtimeNs   = benchmark(enforceAcl, centralized, trace, delayMillis)
         println(
           s"(numDeltas=$numDeltasTotal,numReplicas=$numReplicas): [${i + 1}/${numRepetitions * 4}] centralized=$centralized, enforcement=$enforceAcl, runtime_ms=${runtimeNs / 1_000_000}"
         )
@@ -56,21 +69,21 @@ object SimulationBenchmark {
         (enforceAcl, centralized, runtimeNs)
     )
 
-    // "replicas,num_deltas_total,centralized,enforcing,runtime_ns"
+    // "replicas,num_deltas_total,delay_ms,centralized,enforcing,runtime_ns"
     results.map((enforcementEnabled, centralized, runtimeNs) =>
-      s"$numReplicas,$numDeltasTotal,$centralized,$enforcementEnabled,$runtimeNs"
+      s"$numReplicas,$numDeltasTotal,${delayMillis.orNull},$centralized,$enforcementEnabled,$runtimeNs"
     )
   }
 
-  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace): Long = {
-    if centralized then benchmarkCentralized(enforceAcl, trace)
-    else benchmarkP2p(enforceAcl, trace)
+  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace, delayMillis: Option[Int]): Long = {
+    if centralized then benchmarkCentralized(enforceAcl, trace, delayMillis)
+    else benchmarkP2p(enforceAcl, trace, delayMillis)
   }
 
-  def benchmarkP2p(enforceAcl: Boolean, trace: Trace): Long = {
+  def benchmarkP2p(enforceAcl: Boolean, trace: Trace, delayMillis: Option[Int]): Long = {
     val endStateReachedLatch = CountDownLatch(trace.ids.length)
 
-    val replicas = setupP2pSimulation(trace, enforceAcl, endStateReachedLatch)
+    val replicas = setupP2pSimulation(trace, enforceAcl, endStateReachedLatch, delayMillis)
 
     // Give the replicas some time to connect to each other and process all messages
     while replicas.exists(_.sync.connectedPeers.size != replicas.length - 1)
@@ -87,10 +100,10 @@ object SimulationBenchmark {
     runtimeNs
   }
 
-  def benchmarkCentralized(enforceAcl: Boolean, trace: Trace): Long = {
+  def benchmarkCentralized(enforceAcl: Boolean, trace: Trace, delayMillis: Option[Int]): Long = {
     val endStateReachedLatch = CountDownLatch(trace.ids.length)
 
-    val (replicas, relay) = setupCentralizedSimulation(trace, endStateReachedLatch, enforceAcl)
+    val (replicas, relay) = setupCentralizedSimulation(trace, endStateReachedLatch, enforceAcl, delayMillis)
 
     // Give the replicas some time to connect to each other and process all messages
     while relay.sync.connectedPeers.size != trace.ids.length
@@ -149,7 +162,8 @@ object SimulationBenchmark {
   private def setupP2pSimulation(
       trace: Trace,
       enforcementEnabled: Boolean,
-      finishedLatch: CountDownLatch
+      finishedLatch: CountDownLatch,
+      delayMillis: Option[Int]
   ): Array[BenchmarkReplica] = {
     val endStateVersion = trace.computeEndStateVersion
 
@@ -161,7 +175,8 @@ object SimulationBenchmark {
         enforcementEnabled,
         replica =>
           if endStateVersion == replica.sync.stateVersion
-          then finishedLatch.countDown()
+          then finishedLatch.countDown(),
+        delayMillis
       )
     )
 
@@ -180,11 +195,12 @@ object SimulationBenchmark {
   private def setupCentralizedSimulation(
       trace: Trace,
       finishedLatch: CountDownLatch,
-      enforceAcl: Boolean
+      enforceAcl: Boolean,
+      delayMillis: Option[Int]
   ): (Array[BenchmarkReplica], BenchmarkRelayReplica) = {
     val endStateVersion = trace.computeEndStateVersion
     val relayIdentity   = IdentityFactory.createNewIdentity
-    val relay           = BenchmarkRelayReplica("localhost", relayIdentity, trace.genesis, enforceAcl)
+    val relay           = BenchmarkRelayReplica("localhost", relayIdentity, trace.genesis, enforceAcl, delayMillis)
     relay.start()
 
     val replicas = trace.ids.map(id =>
@@ -195,7 +211,8 @@ object SimulationBenchmark {
         enforceAcl,
         replica =>
           if endStateVersion == replica.sync.stateVersion
-          then finishedLatch.countDown()
+          then finishedLatch.countDown(),
+        delayMillis
       )
     )
 
