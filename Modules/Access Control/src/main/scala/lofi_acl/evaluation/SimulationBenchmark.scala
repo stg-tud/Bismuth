@@ -37,7 +37,7 @@ object SimulationBenchmark {
 
     results ++= List(0, 1, 2, 4, 8, 16, 32, 64).flatMap { delayMillis =>
       List(10).flatMap { numReplicas =>
-        List(10).flatMap { numDeltasPerReplica =>
+        List(1).flatMap { numDeltasPerReplica =>
           val numDeltasTotal = numDeltasPerReplica * numReplicas
           start(numDeltasTotal, numReplicas, 200, Some(delayMillis))
         }
