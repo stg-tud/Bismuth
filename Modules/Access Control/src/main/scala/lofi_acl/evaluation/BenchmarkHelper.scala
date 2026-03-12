@@ -1,9 +1,5 @@
 package lofi_acl.evaluation
 
-import channels.MessageBuffer
-import crypto.channels.PrivateIdentity
-import lofi_acl.sync.{ChannelConnectionManager, MessageReceiver}
-
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -20,13 +16,5 @@ object BenchmarkHelper {
     catch {
       case _: Throwable => retryUntilSuccess(action)
     }
-
-  def delayedReceiveChannelConnectionManagerProvider(delayMillis: Option[Int])(
-      id: PrivateIdentity,
-      recv: MessageReceiver[MessageBuffer]
-  ): ChannelConnectionManager = ChannelConnectionManager(
-    id,
-    delayMillis.map(delay => DelayedDeliveryMessageReceiver.delay(delay, recv)).getOrElse(recv)
-  )
 
 }

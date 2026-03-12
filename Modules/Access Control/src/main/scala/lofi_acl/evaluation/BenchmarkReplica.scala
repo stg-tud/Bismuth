@@ -3,29 +3,31 @@ package lofi_acl.evaluation
 import crypto.channels.PrivateIdentity
 import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.evaluation.insecure.NonEnforcingSync
+import lofi_acl.sync.ChannelConnectionManager
 import lofi_acl.sync.anti_entropy.AclEnforcingSync
 import lofi_acl.travelplanner.TravelPlan
 
+import java.net.InetAddress
+
 class BenchmarkReplica(
-    val ifAddress: String,
+    val ifAddress: InetAddress,
     val identity: PrivateIdentity,
     aclGenesis: BftDelta[Acl],
     enforcing: Boolean,
     onRdtChange: BenchmarkReplica => Unit,
-    delayMillis: Option[Int]
 ) {
   val sync: AclEnforcingSync[TravelPlan] = {
     if enforcing then
         AclEnforcingSync[TravelPlan](
           identity,
-          BenchmarkHelper.delayedReceiveChannelConnectionManagerProvider(delayMillis),
+          (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
           aclGenesis,
           _ => onRdtChange(this)
         )
     else
         NonEnforcingSync[TravelPlan](
           identity,
-          BenchmarkHelper.delayedReceiveChannelConnectionManagerProvider(delayMillis),
+          (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
           aclGenesis,
           _ => onRdtChange(this)
         )
