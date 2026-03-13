@@ -1,6 +1,7 @@
 package rdts.experiments
 
-import rdts.base.{Lattice, Uid}
+import rdts.base.{Lattice, LocalUid, Uid}
+
 import scala.annotation.tailrec
 
 type Hash = Int
@@ -17,6 +18,18 @@ object Operation {
 }
 
 case class HashDAGAcl(operations: Map[Hash, Operation]) {
+
+  def delegate(p: Path, to: Uid)(using LocalUid): HashDAGAcl =
+    operations.collectFirst {
+      case (hash, Delegation(delegatee = delegatee, path = parentPath))
+          if delegatee == LocalUid.replicaId && parentPath.startsWith(p) => hash
+    } match {
+      case None             => HashDAGAcl.empty
+      case Some(parentHash) =>
+        val op = Delegation(LocalUid.replicaId, to, p, Set(parentHash))
+        HashDAGAcl(Map(op.hash -> op))
+    }
+
   lazy val valid: Set[Operation] = {
     val successors =
       operations.values.flatMap(op => op.predecessors.map(p => (predecessor = p, op = op)))
@@ -26,7 +39,7 @@ case class HashDAGAcl(operations: Map[Hash, Operation]) {
 
     @tailrec
     def fixpoint(current: Set[Operation], visited: Set[Operation]): Set[Operation] = {
-      val newOps = current.flatMap { (op) =>
+      val newOps = current.flatMap { op =>
         successors.getOrElse(op.hash, Set.empty).collect {
           case d: Delegation if op match {
                 case Root(_)                         => true
@@ -44,6 +57,7 @@ case class HashDAGAcl(operations: Map[Hash, Operation]) {
 }
 
 object HashDAGAcl {
+  def empty                          = HashDAGAcl(Map.empty)
   given lattice: Lattice[HashDAGAcl] =
       given Lattice[Operation] = Lattice.assertEquals
       Lattice.derived
