@@ -8,24 +8,52 @@ import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.travelplanner.TravelPlan
 import rdts.filters.PermissionTree
 
+import java.net.InetAddress
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import java.security.KeyPair
+import java.util.concurrent.atomic.AtomicInteger
 import scala.util.Random
 
 class PingPongBenchmark(
-    bindHost: String,
-    port: Int,
-    peers: Option[Seq[(String, Int)]],
-    expectedPeers: Int,
-    trace: Trace
+    val bindHost: String,
+    val listenPort: Int,
+    val initialPeers: Option[Seq[(String, Int)]],
+    val expectedPeers: Int,
+    val trace: Trace,
+    val enforceAcl: Boolean
 ) {
-  given Random = Random(42)
+  def runAsLeader(replicaIndex: Int, warmupIterations: Int, iterations: Int): Unit = {
+    val count: AtomicInteger = AtomicInteger(0)
+    val replica              = BenchmarkReplica(
+      InetAddress.getByName(bindHost),
+      trace.ids(replicaIndex),
+      trace.genesis,
+      enforceAcl,
+      (_, _, _) => ???, // TODO: Add response handler
+      listenPort
+    )
 
-  def runAsLeader(replicaIndex: Int, warmupIterations: Int, iterations: Int): Unit = {}
+    // TODO: add harness
+  }
 
-  def runAsFollower(replicaIndex: Int, trace: Trace): Unit = {}
+  def runAsFollower(replicaIndex: Int, leaderIndex: Int): Unit = {
+    val leaderId             = trace.ids(leaderIndex).getPublic
+    val count: AtomicInteger = AtomicInteger(0)
+    val replica              = BenchmarkReplica(
+      InetAddress.getByName(bindHost),
+      trace.ids(replicaIndex),
+      trace.genesis,
+      enforceAcl,
+      (_, _, _) => ???, // TODO: Add response handler
+      listenPort
+    )
+  }
 
-  def runAsRelay(relayId: PrivateIdentity, trace: Trace): Unit = {}
+  def runAsRelay(relayId: PrivateIdentity): Unit = {
+    val replica = BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort)
+    replica.start()
+    initialPeers.foreach(_.foreach((host, port) => replica.sync.connect(host, port)))
+  }
 
 }
 
