@@ -15,6 +15,7 @@ class ChannelConnectionManager(
     private val privateIdentity: PrivateIdentity,
     messageReceiver: MessageReceiver[MessageBuffer],
     ifAddress: InetAddress = InetAddress.getLoopbackAddress,
+    requestedListenPort: Int = 0,
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
 ) extends ConnectionManager {
@@ -82,7 +83,7 @@ class ChannelConnectionManager(
   override def acceptIncomingConnections(): Unit = {
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
-    listener = Some(p2pTls.latentListener(ifAddress, 0, ec))
+    listener = Some(p2pTls.latentListener(ifAddress, requestedListenPort, ec))
     if !disableLogging then
         println(
           s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${Debug.shorten(localPublicId)}"

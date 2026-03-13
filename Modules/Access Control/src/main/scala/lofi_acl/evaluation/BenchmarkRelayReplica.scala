@@ -13,10 +13,11 @@ class BenchmarkRelayReplica(
     val identity: PrivateIdentity,
     aclGenesis: BftDelta[Acl],
     enforceAcl: Boolean,
+    listenPort: Int = 0
 ) {
   val sync: ForwardingSync[TravelPlan] = ForwardingSync(
     identity,
-    (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
+    (id, recv) => ChannelConnectionManager(id, recv, ifAddress, requestedListenPort = listenPort),
     aclGenesis,
     enforceAcl
   )
