@@ -30,7 +30,8 @@ case class Config(
 object ConfigOpts:
     val replicas: Opts[Int] = Opts.option[Int]("replicas", help = "Number of replicas").withDefault(10)
 
-    val deltas: Opts[Int] = Opts.option[Int]("deltas", help = "Number of deltas per replica").withDefault(1)
+    val deltas: Opts[Int] =
+      Opts.option[Int]("deltas", help = "Number of deltas in total (distributed among replicas)").withDefault(1)
 
     val repetitions: Opts[Int] = Opts.option[Int]("repetitions", help = "Number of runs").withDefault(200)
 
@@ -38,7 +39,8 @@ object ConfigOpts:
 
     val bind: Opts[String] = Opts.option[String](
       "bind",
-      help = "Pattern for IP addresses the replicas bind to. '*' is replaced with the index of the replica."
+      help =
+        "Pattern for IP addresses the replicas bind to. '*' is replaced with the index of the replica (starts at 1)."
     ).withDefault("127.0.0.1")
 
     val config: Opts[Config] =

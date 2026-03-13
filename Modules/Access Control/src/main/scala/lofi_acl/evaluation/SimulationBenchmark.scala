@@ -33,7 +33,7 @@ object SimulationBenchmark {
         (enforceAcl, centralized, runtimeNs)
     )
 
-    // "replicas,num_deltas_per_replica,delay_ms,centralized,enforcing,runtime_ns"
+    // "replicas,num_deltas_per_replica,centralized,enforcing,runtime_ns"
     results.map((enforcementEnabled, centralized, runtimeNs) =>
       s"$numReplicas,$numDeltasPerReplica,$centralized,$enforcementEnabled,$runtimeNs"
     )

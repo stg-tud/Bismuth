@@ -18,7 +18,7 @@ class ChannelConnectionManager(
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
 ) extends ConnectionManager {
-  private val executor: ExecutorService = Executors.newCachedThreadPool()
+  private val executor: ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
   private given ec: ExecutionContext    = {
     if disableLogging
     then ExecutionContext.fromExecutor(executor, _ => ())
