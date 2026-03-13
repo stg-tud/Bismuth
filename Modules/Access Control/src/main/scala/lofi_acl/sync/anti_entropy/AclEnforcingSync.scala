@@ -23,7 +23,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id, receiver),
     aclGenesis: BftDelta[Acl],
-    onRdtChanged: State => Unit
+    onRdtChanged: (Dots, State) => Unit
 ) {
   private val messageHandlerExecutor = Executors.newSingleThreadExecutor() // Executes the message handling logic
   protected val connectionManager: ConnectionManager = {
@@ -102,6 +102,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       if missingRdtDeltas.nonEmpty then rdtAntiEntropy.respondToDeltaRequest(missingRdtDeltas, remote)
       if missingAclDeltas.nonEmpty then aclAntiEntropy.respondToDeltaRequest(missingAclDeltas, remote)
   }
+
+  def connect(host: String, port: Int): Unit = connectionManager.connectTo(host, port)
 
   def connect(remoteId: PublicIdentity, host: String, port: Int): Unit = {
     Debug.log(s"Attempting connection to $remoteId ($host:$port)")

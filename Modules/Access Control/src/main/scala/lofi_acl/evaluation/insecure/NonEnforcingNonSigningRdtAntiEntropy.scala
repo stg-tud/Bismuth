@@ -13,7 +13,7 @@ import scala.annotation.unused
 
 class NonEnforcingNonSigningRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,
-    onRdtChange: State => Unit,
+    onRdtChange: (Dots, State) => Unit,
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
 )(using Encoder[SignedDelta[State]])

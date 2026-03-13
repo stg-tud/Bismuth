@@ -11,25 +11,25 @@ import lofi_acl.sync.anti_entropy.AclEnforcingSync
 import lofi_acl.travelplanner.{Invitation, SyncInvitation}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
-import rdts.time.Dot
+import rdts.time.{Dot, Dots}
 
-class ReplicaOfSignedDeltaRdt[Rdt](
+class ReplicaOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager,
     aclGenesis: BftDelta[Acl],
-    onDeltaReceive: Rdt => Unit = (_: Rdt) => {}, // Consumes a delta
+    onDeltaReceive: (Dots, State) => Unit = (_, _: State) => () // Consumes a delta
 )(using
-    Lattice[Rdt],
-    Bottom[Rdt],
-    JsonValueCodec[Rdt],
-    Filter[Rdt],
-    Decompose[Rdt]
-) extends Replica[Rdt] {
+    Lattice[State],
+    Bottom[State],
+    JsonValueCodec[State],
+    Filter[State],
+    Decompose[State]
+) extends Replica[State] {
 
   val sync = AclEnforcingSync(localIdentity, connectionManagerProvider, aclGenesis, onDeltaReceive)
 
   // TODO: Not used in this instance, refactor
-  override def receivedDelta(dot: Dot, rdt: Rdt): Unit = onDeltaReceive(rdt)
+  override def receivedDelta(dot: Dot, rdt: State): Unit = ???
 
   override def connect(remoteUser: PublicIdentity, connectionString: String): Unit = {
     val remoteAddr = connectionString.split(':')
@@ -44,11 +44,11 @@ class ReplicaOfSignedDeltaRdt[Rdt](
       s"${sync.listenAddress.get._1}:${sync.listenAddress.get._2}"
     )._2
 
-  override def currentState: Rdt = sync.currentState
+  override def currentState: State = sync.currentState
 
   override def currentAcl: monotonic.Acl = sync.currentAcl
 
-  override def mutateState(mutator: Rdt => Rdt): Unit = sync.mutate(mutator)
+  override def mutateState(mutator: State => State): Unit = sync.mutate(mutator)
 
   override def grantPermissions(
       affectedUser: PublicIdentity,

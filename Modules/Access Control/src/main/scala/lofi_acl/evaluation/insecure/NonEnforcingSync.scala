@@ -9,13 +9,14 @@ import lofi_acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdt
 import lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
+import rdts.time.Dots
 
 class NonEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id, receiver),
     aclGenesis: BftDelta[Acl],
-    onRdtChanged: State => Unit
+    onRdtChanged: (Dots, State) => Unit
 ) extends AclEnforcingSync[State](localIdentity, connectionManagerProvider, aclGenesis, onRdtChanged) {
 
   override protected def instantiateAntiEntropy(): (AclAntiEntropy, FilteredRdtAntiEntropy[State]) = {

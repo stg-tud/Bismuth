@@ -6,6 +6,7 @@ import lofi_acl.evaluation.insecure.NonEnforcingSync
 import lofi_acl.sync.ChannelConnectionManager
 import lofi_acl.sync.anti_entropy.AclEnforcingSync
 import lofi_acl.travelplanner.TravelPlan
+import rdts.time.Dots
 
 import java.net.InetAddress
 
@@ -14,22 +15,23 @@ class BenchmarkReplica(
     val identity: PrivateIdentity,
     aclGenesis: BftDelta[Acl],
     enforcing: Boolean,
-    onRdtChange: BenchmarkReplica => Unit,
+    onRdtChange: (Dots, TravelPlan, BenchmarkReplica) => Unit,
+    listenPort: Int = 0,
 ) {
   val sync: AclEnforcingSync[TravelPlan] = {
     if enforcing then
         AclEnforcingSync[TravelPlan](
           identity,
-          (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
+          (id, recv) => ChannelConnectionManager(id, recv, ifAddress, listenPort),
           aclGenesis,
-          _ => onRdtChange(this)
+          (dots, delta) => onRdtChange(dots, delta, this)
         )
     else
         NonEnforcingSync[TravelPlan](
           identity,
-          (id, recv) => ChannelConnectionManager(id, recv, ifAddress),
+          (id, recv) => ChannelConnectionManager(id, recv, ifAddress, listenPort),
           aclGenesis,
-          _ => onRdtChange(this)
+          (dots, delta) => onRdtChange(dots, delta, this)
         )
   }
 

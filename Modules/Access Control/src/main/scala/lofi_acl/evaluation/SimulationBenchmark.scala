@@ -140,7 +140,7 @@ object SimulationBenchmark {
         id,
         trace.genesis,
         enforcementEnabled,
-        replica =>
+        (_, _, replica) =>
           if endStateVersion == replica.sync.stateVersion
           then finishedLatch.countDown(),
       )
@@ -180,7 +180,7 @@ object SimulationBenchmark {
         id,
         trace.genesis,
         enforceAcl,
-        replica =>
+        (_, _, replica) =>
           if endStateVersion == replica.sync.stateVersion
           then finishedLatch.countDown(),
       )

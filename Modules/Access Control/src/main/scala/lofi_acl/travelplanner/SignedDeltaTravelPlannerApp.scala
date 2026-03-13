@@ -64,8 +64,13 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
     def createAsRootOfTrust: TravelPlanModel = {
       val identity        = IdentityFactory.createNewIdentity
       val aclRoot         = AclRdt.createSelfSignedRoot(identity)
-      val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
-        new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, aclRoot, onDeltaReceive)
+      val replicaProvider = (onDeltaReceive: TravelPlan => Unit) =>
+        new ReplicaOfSignedDeltaRdt[TravelPlan](
+          identity,
+          connManProvider,
+          aclRoot,
+          (_, tp: TravelPlan) => onDeltaReceive(tp)
+        )
       TravelPlanModel(identity, replicaProvider)
     }
 
@@ -74,7 +79,12 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
       val aclRoot         = invitation.rootOp
       val identity        = IdentityFactory.fromIdentityKey(invitation.identityKey)
       val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
-        new ReplicaOfSignedDeltaRdt[TravelPlan](identity, connManProvider, aclRoot, onDeltaReceive)
+        new ReplicaOfSignedDeltaRdt[TravelPlan](
+          identity,
+          connManProvider,
+          aclRoot,
+          (_, tp: TravelPlan) => onDeltaReceive(tp)
+        )
       val travelPlanModel = TravelPlanModel(identity, replicaProvider)
       travelPlanModel.addConnection(invitation.inviter, invitation.joinAddress)
       travelPlanModel

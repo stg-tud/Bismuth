@@ -13,7 +13,7 @@ class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filte
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
 )(using Encoder[SignedDelta[State]])
-    extends FilteredRdtAntiEntropy[State](localIdentity, _ => (), network, aclAntiEntropy) {
+    extends FilteredRdtAntiEntropy[State](localIdentity, (_, _) => (), network, aclAntiEntropy) {
 
   override def localMutation(mutator: State => State): Unit = throw UnsupportedOperationException()
 

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
 class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     private val localIdentity: PrivateIdentity,
-    onRdtChange: State => Unit,
+    onRdtChange: (Dots, State) => Unit,
     private val network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
     initialDotValue: Long = 0
@@ -88,7 +88,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       )
       missingDots.updateAndGet(missing => missing.diff(dots))
       filteredDots.updateAndGet(filtered => filtered.diff(dots))
-      onRdtChange(combinedDelta)
+      onRdtChange(dots, combinedDelta)
     }
   }
 
