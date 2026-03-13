@@ -32,7 +32,11 @@ class NonEnforcingNonSigningRdtAntiEntropy[State: {Decompose, Lattice, Bottom, F
       remote: PublicIdentity
   ): Unit =
     // Ignores filtered and remoteAcl metadata, doesn't filter and doesn't verify signatures
-    applyVerifiedDeltas(remote, unverifiedDeltas)
+    applyVerifiedDeltas(
+      remote,
+      // Ignore known deltas:
+      unverifiedDeltas.filterNot(delta => deltaStore.dots.contains(delta.dot))
+    )
 
   override def localMutation(mutator: State => State): Unit =
       // Doesn't filter, doesn't sign

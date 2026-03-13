@@ -102,6 +102,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
 
     // Check signatures and enforce ACL, then apply only verified deltas
     val verifiedDeltas = unverifiedDeltas
+      .filterNot(delta => deltaStore.dots.contains(delta.dot)) // Ignore known deltas
       .filter(delta =>
         delta.isSignatureValid
         && Filter[State].isAllowed(
