@@ -13,8 +13,9 @@ class NonFilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Fi
     localIdentity: PrivateIdentity,
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
+    onDeltasReceived: Dots => Unit = _ => ()
 )(using Encoder[SignedDelta[State]])
-    extends FilteringForwarderRdtAntiEntropy[State](localIdentity, network, aclAntiEntropy) {
+    extends FilteringForwarderRdtAntiEntropy[State](localIdentity, network, aclAntiEntropy, onDeltasReceived) {
 
   override def receiveDeltas(
       unverifiedDeltas: Seq[SignedDelta[State]],

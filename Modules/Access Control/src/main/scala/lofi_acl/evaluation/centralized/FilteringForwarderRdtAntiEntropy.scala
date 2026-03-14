@@ -12,6 +12,7 @@ class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filte
     localIdentity: PrivateIdentity,
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
+    onDeltasReceived: Dots => Unit = _ => ()
 )(using Encoder[SignedDelta[State]])
     extends FilteredRdtAntiEntropy[State](localIdentity, (_, _) => (), network, aclAntiEntropy) {
 
@@ -39,6 +40,8 @@ class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filte
         .foreach { remote =>
           sendDeltasFiltered(deltas, remote)
         }
+
+      onDeltasReceived(dots)
     }
   }
 
