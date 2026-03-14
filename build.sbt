@@ -202,6 +202,14 @@ lazy val lofiAcl = project.in(file("Modules/Access Control"))
       "--sun-misc-unsafe-memory-access=allow",
       "--enable-native-access=ALL-UNNAMED"
     ), // Reduce warnings for JavaFX application
+    assembly / assemblyJarName       := "lofiAcl.jar",
+    assembly / assemblyMergeStrategy := {
+      case "module-info.class"                               => MergeStrategy.discard
+      case "META-INF/versions/9/module-info.class"           => MergeStrategy.discard
+      case p if p.startsWith("META-INF/versions/9/OSGI-INF") => MergeStrategy.discard
+      case p if p.startsWith("META-INF/substrate/config/")   => MergeStrategy.discard
+      case other                                             => MergeStrategy.defaultMergeStrategy(other)
+    }
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
