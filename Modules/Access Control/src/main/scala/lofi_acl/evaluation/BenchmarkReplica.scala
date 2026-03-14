@@ -35,6 +35,8 @@ class BenchmarkReplica(
         )
   }
 
+  def applyMutation(delta: TravelPlan): Unit = sync.mutate(_ => delta)
+
   def applyAllMutations(trace: Array[TravelPlan]): Unit =
     trace.foreach(delta => sync.mutate(_ => delta))
 
