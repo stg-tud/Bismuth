@@ -2,6 +2,7 @@ package lofi_acl.evaluation.centralized
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import lofi_acl.Debug
 import lofi_acl.bft.HashDag.Encoder
 import lofi_acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
@@ -32,6 +33,8 @@ class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filte
       )
       missingDots.updateAndGet(missing => missing.diff(dots))
       filteredDots.updateAndGet(filtered => filtered.diff(dots))
+
+      Debug.log(s"Broadcast: ${Debug.shorten(Dots.from(deltas.map(_.dot)))}")
 
       // Broadcast deltas filtered (but not back to source)
       network

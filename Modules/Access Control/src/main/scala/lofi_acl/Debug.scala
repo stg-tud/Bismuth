@@ -81,6 +81,12 @@ object Debug {
         println(s"${shorten(from)} ? ${shorten(msg)}")
   }
 
+  inline def received(msg: SyncMsg[?], from: PublicIdentity, receiver: PublicIdentity): Unit = {
+    inline if enabled
+    then
+        println(s"${shorten(receiver)}: ${shorten(from)} ? ${shorten(msg)}")
+  }
+
   inline def sent(msg: SyncMsg[?], to: PublicIdentity): Unit = {
     inline if enabled
     then

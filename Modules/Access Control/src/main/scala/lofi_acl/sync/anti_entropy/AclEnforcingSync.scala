@@ -31,7 +31,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       override def receivedMessage(msgBuf: MessageBuffer, fromUser: PublicIdentity): Unit =
         messageHandlerExecutor.execute(() =>
             val msg: SyncMsg[State] = readFromArray(msgBuf.asArray)
-            Debug.received(msg, fromUser)
+            Debug.received(msg, fromUser, localIdentity.getPublic)
             handleMessage(msg, fromUser)
         )
 

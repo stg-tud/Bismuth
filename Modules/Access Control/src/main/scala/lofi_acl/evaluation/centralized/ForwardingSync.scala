@@ -4,6 +4,7 @@ import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import lofi_acl.Debug
 import lofi_acl.JsoniterCodecs.syncMsgCodec
 import lofi_acl.bft.{Acl, BftDelta}
 import lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
@@ -46,4 +47,5 @@ class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}
       // But don't tell remote about peers
 
       connectionManager.sendMultiple(newRemote, Array(aclVersionMsg, rdtVersionMsg))
+      Debug.log(s"Relay is now connected to $newRemote")
 }
