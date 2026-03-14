@@ -1,6 +1,6 @@
 package lofi_acl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.Ed25519Util
 import crypto.channels.{IdentityFactory, PrivateIdentity}
@@ -11,37 +11,40 @@ import rdts.filters.PermissionTree
 import rdts.time.{Dot, Dots}
 
 import java.net.InetAddress
-import java.nio.file.{Files, Paths, StandardOpenOption}
+import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import java.security.KeyPair
+import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicLongArray, AtomicReference}
 import scala.util.Random
 
 class PingPongBenchmark(
     val bindHost: String,
     val listenPort: Int,
-    val initialPeers: Option[Seq[(String, Int)]],
-    val expectedPeers: Int,
+    val initialPeers: Seq[(String, Int)],
     val trace: Trace,
     val enforceAcl: Boolean
 ) {
-  def runAsLeader(replicaIndex: Int, iterations: Int): Unit = {
+  def runAsLeader(iterations: Int, expectedPeers: Int): Unit = {
     val remainingPongDots = AtomicReference[Dots](Dots.empty)
-    val count             = AtomicInteger()
+    val count             = AtomicInteger(0)
     val lastStartTime     = AtomicLong()
     val runtimes          = AtomicLongArray(iterations)
+
+    inline def nextRound(replica: BenchmarkReplica): Unit =
+        val delta = trace.deltas(0)(count.get())
+        remainingPongDots.set(nextRemoteDots(replica))
+        lastStartTime.set(System.nanoTime())
+        replica.applyMutation(delta)
 
     def onReceive(dots: Dots, delta: TravelPlan, replica: BenchmarkReplica): Unit = {
       if remainingPongDots.updateAndGet(_.subtract(dots)).isEmpty then {
         val stopTime = System.nanoTime()
         runtimes.set(count.get(), stopTime - lastStartTime.get())
-        println(s"[${count.get()}/$iterations]: ${runtimes.get(count.get())}")
+        println(s"[${count.get() + 1}/$iterations]: ${runtimes.get(count.get())}")
         if count.incrementAndGet() < runtimes.length then {
           Thread.ofVirtual().start { () =>
             Thread.sleep(10) // Other replicas might still be processing messages
-            val delta = trace.deltas(replicaIndex)(count.get())
-            remainingPongDots.set(nextRemoteDots(replica))
-            lastStartTime.set(System.nanoTime())
-            replica.applyMutation(delta)
+            nextRound(replica)
           }: Unit
         } else {
           printResults(runtimes)
@@ -52,27 +55,47 @@ class PingPongBenchmark(
 
     val replica = BenchmarkReplica(
       InetAddress.getByName(bindHost),
-      trace.ids(replicaIndex),
+      trace.ids(0),
       trace.genesis,
       enforceAcl,
       onReceive,
       listenPort
     )
+    replica.start()
+    replica.sync.delegatePermission(trace.additionalPermissions)
+
+    Thread.sleep(100)
+    initialPeers.foreach((host, port) => replica.sync.connect(host, port))
+    while replica.sync.connectedPeers.size != expectedPeers
+    do {
+      println("Waiting")
+      Thread.sleep(100)
+    }
+    println("Waiting one second")
+    Thread.sleep(1_000)
+    require(replica.sync.connectedPeers.size == expectedPeers)
+
+    println("Starting with benchmark")
+    nextRound(replica)
   }
 
-  def runAsFollower(replicaIndex: Int, leaderIndex: Int, iterations: Int): Unit = {
-    val leaderUid            = Uid(trace.ids(leaderIndex).getPublic.id)
+  def runAsFollower(replicaIndex: Int, iterations: Int): Unit = {
+    require(replicaIndex > 0 && replicaIndex < trace.ids.length)
+    val leaderUid            = Uid(trace.ids(0).getPublic.id)
     val count: AtomicInteger = AtomicInteger(0)
     val deltas               = trace.deltas(replicaIndex)
     val nextPingDot          = AtomicReference(Dot(leaderUid, 0))
+    val done                 = Semaphore(0) // Signals completion of benchmark
 
     def onReceive(dots: Dots, delta: TravelPlan, replica: BenchmarkReplica): Unit =
       if dots.contains(nextPingDot.get()) then {
         replica.applyMutation(deltas(count.getAndIncrement()))
-        if nextPingDot.updateAndGet(_.advance).time == iterations then {
+        nextPingDot.set(replica.sync.stateVersion.nextDot(leaderUid))
+        if count.get() == iterations then {
           Thread.ofVirtual().start(() =>
               Thread.sleep(100)
               replica.stop()
+              done.release()
           ): Unit
         }
       }
@@ -85,25 +108,46 @@ class PingPongBenchmark(
       onReceive,
       listenPort
     )
-  }
-
-  def runAsRelay(relayId: PrivateIdentity): Unit = {
-    val replica = BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort)
     replica.start()
-    initialPeers.foreach(_.foreach((host, port) => replica.sync.connect(host, port)))
+
+    Thread.sleep(100)
+    initialPeers.foreach((host, port) => replica.sync.connect(host, port))
+    done.acquire()
   }
 
-  def nextRemoteDots(replica: BenchmarkReplica): Dots = Dots.from(
-    replica.sync.stateVersion.internal
-      .filterNot(_._1.delegate == replica.identity.getPublic.id)
-      .map((uid, ranges) =>
-        Dot(uid, ranges.next.getOrElse(0.longValue))
-      )
-  )
+  def runAsRelay(relayId: PrivateIdentity, iterations: Int): Unit = {
+    val lastDot = Dot(Uid(trace.ids(0).getPublic.id), iterations - 1)
+    val done    = Semaphore(0) // Signals completion of benchmark
+
+    def onReceive(dots: Dots, replica: BenchmarkRelayReplica): Unit =
+      if dots.contains(lastDot) then
+          Thread.ofVirtual.start { () =>
+            Thread.sleep(1_000)
+            replica.stop()
+            done.release()
+          }: Unit
+
+    val replica =
+      BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort, onReceive)
+    replica.start()
+
+    Thread.sleep(100)
+
+    done.acquire()
+  }
+
+  def nextRemoteDots(replica: BenchmarkReplica): Dots = {
+    val stateVersion = replica.sync.stateVersion
+    Dots.from(
+      trace.ids
+        .map(_.getPublic.id).map(Uid(_))
+        .map { uid => stateVersion.nextDot(uid) }
+    )
+  }
 
   def printResults(measurements: AtomicLongArray): Unit = {
     for i <- 0 until measurements.length() do
-        println(measurements.get(0))
+        println(measurements.get(i))
   }
 }
 
@@ -135,8 +179,14 @@ object CreateAndSaveTrace {
       trace.additionalPermissions,
       trace.deltas
     )
-    Files.write(Paths.get("ping-pong-trace.json"), writeToArray(savedTrace), StandardOpenOption.CREATE_NEW): Unit
+    val filePath =
+      if args.length == 1
+      then Paths.get(args(0))
+      else Paths.get("ping-pong-trace.json")
+    Files.write(filePath, writeToArray(savedTrace), StandardOpenOption.CREATE_NEW): Unit
   }
+
+  def load(path: Path): SavedTrace = readFromStream(Files.newInputStream(path, StandardOpenOption.READ))
 
   case class SavedTrace(
       identities: Array[KeyPair],
