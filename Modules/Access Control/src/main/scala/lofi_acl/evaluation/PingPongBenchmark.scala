@@ -116,23 +116,21 @@ class PingPongBenchmark(
   }
 
   def runAsRelay(relayId: PrivateIdentity, iterations: Int): Unit = {
-    val lastDot = Dot(Uid(trace.ids(0).getPublic.id), iterations - 1)
-    val done    = Semaphore(0) // Signals completion of benchmark
+    val leaderUid = Uid(trace.ids(0).getPublic.id)
+    val count     = AtomicInteger(0)
+    val done      = Semaphore(0) // Signals completion of benchmark
 
     def onReceive(dots: Dots, replica: BenchmarkRelayReplica): Unit =
-      if dots.contains(lastDot) then
-          Thread.ofVirtual.start { () =>
-            Thread.sleep(1_000)
-            replica.stop()
-            done.release()
-          }: Unit
+      if dots.internal.contains(leaderUid) then
+          if count.incrementAndGet() == iterations then
+              Thread.ofVirtual.start { () =>
+                Thread.sleep(1_000)
+                replica.stop()
+                done.release()
+              }: Unit
 
-    val replica =
-      BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort, onReceive)
+    val replica = BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort)
     replica.start()
-
-    Thread.sleep(100)
-
     done.acquire()
   }
 
