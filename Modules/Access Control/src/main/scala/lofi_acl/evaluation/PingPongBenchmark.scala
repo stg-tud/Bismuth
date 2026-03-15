@@ -15,7 +15,7 @@ import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import java.security.KeyPair
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicLongArray, AtomicReference}
-import scala.util.Random
+import scala.util.{Random, Try}
 
 class PingPongBenchmark(
     val bindHost: String,
@@ -24,7 +24,7 @@ class PingPongBenchmark(
     val trace: Trace,
     val enforceAcl: Boolean
 ) {
-  def runAsLeader(iterations: Int, expectedPeers: Int): Unit = {
+  def runAsLeader(iterations: Int, expectedPeers: Int, out: Option[Path]): Unit = {
     val remainingPongDots = AtomicReference[Dots](Dots.empty)
     val count             = AtomicInteger(0)
     val lastStartTime     = AtomicLong()
@@ -47,7 +47,8 @@ class PingPongBenchmark(
             nextRound(replica)
           }: Unit
         } else {
-          printResults(runtimes)
+          println("Done with benchmarks")
+          saveResults(runtimes, out)
           replica.stop()
         }
       }
@@ -67,11 +68,7 @@ class PingPongBenchmark(
     Thread.sleep(100)
     initialPeers.foreach((host, port) => replica.sync.connect(host, port))
     while replica.sync.connectedPeers.size != expectedPeers
-    do {
-      println("Waiting")
-      Thread.sleep(100)
-    }
-    println("Waiting one second")
+    do Thread.sleep(100)
     Thread.sleep(1_000)
     require(replica.sync.connectedPeers.size == expectedPeers)
 
@@ -129,8 +126,11 @@ class PingPongBenchmark(
                 done.release()
               }: Unit
 
-    val replica = BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort)
+    val replica =
+      BenchmarkRelayReplica(InetAddress.getByName(bindHost), relayId, trace.genesis, enforceAcl, listenPort, onReceive)
     replica.start()
+    Thread.sleep(100)
+    initialPeers.foreach((host, port) => replica.sync.connect(host, port))
     done.acquire()
   }
 
@@ -143,9 +143,21 @@ class PingPongBenchmark(
     )
   }
 
-  def printResults(measurements: AtomicLongArray): Unit = {
+  def saveResults(measurements: AtomicLongArray, outOpt: Option[Path]): Unit = {
+    val out = Try {
+      val buf = Files.newBufferedWriter(outOpt.get, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+      println(s"Saving results to ${outOpt.get}")
+      buf
+    }.getOrElse {
+      val tempPath = Files.createTempFile(Paths.get("."), "ping-pong-results", ".txt")
+      val buf      = Files.newBufferedWriter(tempPath, StandardOpenOption.WRITE, StandardOpenOption.WRITE)
+      println(s"Saving results to fallback: $tempPath")
+      buf
+    }
+
     for i <- 0 until measurements.length() do
-        println(measurements.get(i))
+        out.write(s"${measurements.get(i)}\n")
+    out.close()
   }
 }
 

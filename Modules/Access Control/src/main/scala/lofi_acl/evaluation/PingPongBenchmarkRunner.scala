@@ -24,11 +24,11 @@ object PingPongBenchmarkRunner extends CommandApp(
           savedTrace.deltas
         )
         config match
-            case Config(mode, replica, host, port, peers, numPeersExpected, enforceAcl, _, iterations) =>
+            case Config(mode, replica, host, port, peers, numPeersExpected, enforceAcl, _, iterations, out) =>
               val instance = PingPongBenchmark(host, port, peers, trace, enforceAcl)
               mode match {
                 case Relay    => instance.runAsRelay(savedTrace.relayPrivateIdentity, iterations)
-                case Leader   => instance.runAsLeader(iterations, numPeersExpected.get)
+                case Leader   => instance.runAsLeader(iterations, numPeersExpected.get, out)
                 case Follower => instance.runAsFollower(replica.get, iterations)
               }
       }
@@ -50,6 +50,7 @@ object PingPongBenchmarkRunnerArguments {
       enforce: Boolean,
       trace: Path,
       iterations: Int,
+      outFile: Option[Path]
   )
 
   given Argument[Mode] with
@@ -109,33 +110,40 @@ object PingPongBenchmarkRunnerArguments {
     Opts.option[Int]("iterations", help = "Number of iterations.")
       .mapValidated(n => cats.data.Validated.condNel(n > 0, n, "Iterations must be a positive integer."))
 
+  val outOpt: Opts[Option[Path]] =
+    Opts.option[Path]("out", help = "Path to the results file.")
+      .orNone
+
   val configOpts: Opts[Config] =
-    (modeOpt, replicaOpt, hostOpt, portOpt, peerOpts, expectedPeersOpt, enforceOpt, traceOpt, iterationsOpt)
+    (modeOpt, replicaOpt, hostOpt, portOpt, peerOpts, expectedPeersOpt, enforceOpt, traceOpt, iterationsOpt, outOpt)
       .mapN {
-        (modeOpt, replicaOpt, hostOpt, portOpt, peerOpts, expectedPeersOpt, enforceOpt, traceOpt, iterationsOpt) =>
-          (modeOpt, expectedPeersOpt, replicaOpt) match {
-            case (Relay | Leader, _, Some(_)) =>
-              Validated.invalidNel("--replica must not be set when --mode is relay or leader")
-            case (Follower, _, None) =>
-              Validated.invalidNel("--replica must be set when --mode is follower")
-            case (Relay | Follower, Some(_), _) =>
-              Validated.invalidNel("--expected-peers must only be used when --mode is leader")
-            case (Leader, None, _) =>
-              Validated.invalidNel("--expected-peers must be set when --mode is leader")
-            case _ =>
-              Validated.valid(
-                Config(
-                  modeOpt,
-                  replicaOpt,
-                  hostOpt,
-                  portOpt,
-                  peerOpts,
-                  expectedPeersOpt,
-                  enforceOpt,
-                  traceOpt,
-                  iterationsOpt
-                )
-              )
-          }
+        (modeOpt, replicaOpt, hostOpt, portOpt, peerOpts, expectedPeersOpt, enforceOpt, traceOpt, iterationsOpt, out) =>
+          if out.nonEmpty && modeOpt != Leader then Validated.invalidNel("--out must only be used with --mode=leader")
+          else
+              (modeOpt, expectedPeersOpt, replicaOpt) match {
+                case (Relay | Leader, _, Some(_)) =>
+                  Validated.invalidNel("--replica must not be set when --mode is relay or leader")
+                case (Follower, _, None) =>
+                  Validated.invalidNel("--replica must be set when --mode is follower")
+                case (Relay | Follower, Some(_), _) =>
+                  Validated.invalidNel("--expected-peers must only be used when --mode is leader")
+                case (Leader, None, _) =>
+                  Validated.invalidNel("--expected-peers must be set when --mode is leader")
+                case _ =>
+                  Validated.valid(
+                    Config(
+                      modeOpt,
+                      replicaOpt,
+                      hostOpt,
+                      portOpt,
+                      peerOpts,
+                      expectedPeersOpt,
+                      enforceOpt,
+                      traceOpt,
+                      iterationsOpt,
+                      out
+                    )
+                  )
+              }
       }.mapValidated(identity)
 }
