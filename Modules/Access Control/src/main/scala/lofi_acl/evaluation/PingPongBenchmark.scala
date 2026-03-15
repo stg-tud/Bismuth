@@ -155,6 +155,7 @@ class PingPongBenchmark(
       buf
     }
 
+    out.write("runtime_ns")
     for i <- 0 until measurements.length() do
         out.write(s"${measurements.get(i)}\n")
     out.close()
