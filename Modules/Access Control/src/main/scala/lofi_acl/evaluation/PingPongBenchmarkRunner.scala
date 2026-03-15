@@ -100,7 +100,6 @@ object PingPongBenchmarkRunnerArguments {
   val enforceOpt: Opts[Boolean] =
     Opts.flag("enforce", help = "Enforce the ACL.").as(true)
       .orElse(Opts.flag("no-enforce", "Don't enforce the ACL").as(false))
-      .withDefault(true)
 
   val traceOpt: Opts[Path] =
     Opts.option[Path]("trace", help = "Path to the trace to read from.")
