@@ -40,7 +40,7 @@ class PingPongBenchmark(
       if remainingPongDots.updateAndGet(_.subtract(dots)).isEmpty then {
         val stopTime = System.nanoTime()
         runtimes.set(count.get(), stopTime - lastStartTime.get())
-        println(s"[${count.get() + 1}/$iterations]: ${runtimes.get(count.get())}")
+        //println(s"[${count.get() + 1}/$iterations]: ${runtimes.get(count.get())}")
         if count.incrementAndGet() < runtimes.length then {
           Thread.ofVirtual().start { () =>
             Thread.sleep(10) // Other replicas might still be processing messages
