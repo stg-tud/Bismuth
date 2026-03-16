@@ -9,11 +9,11 @@ object Dependencies {
   val bloomFilter = libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13"        % "0.13.1"
   val catsParse   = libraryDependencies += "org.typelevel"            %%% "cats-parse"               % "1.1.0"
   val conscrypt   = libraryDependencies += "org.conscrypt"              % "conscrypt-openjdk-uber"   % "2.5.2"
-  val decline     = libraryDependencies += "com.monovore"             %%% "decline"                  % "2.6.0"
+  val decline     = libraryDependencies += "com.monovore"             %%% "decline"                  % "2.6.1"
   val fansi       = libraryDependencies += "com.lihaoyi"              %%% "fansi"                    % "0.5.1"
   val jetcd       = libraryDependencies += "io.etcd"                    % "jetcd-core"               % "0.8.6"
   val monocleCore = libraryDependencies += "dev.optics"               %%% "monocle-core"             % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"            %%% "munit"                    % "1.2.3"  % Test
+  val munit       = libraryDependencies += "org.scalameta"            %%% "munit"                    % "1.2.4"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"            %%% "munit-scalacheck"         % "1.2.0"  % Test
   val pprint      = libraryDependencies += "com.lihaoyi"              %%% "pprint"                   % "0.9.6"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules"    %% "scala-swing"              % "3.0.0"
@@ -24,7 +24,7 @@ object Dependencies {
   val slips       = libraryDependencies += "de.rmgk.slips"            %%% "partypack"                % "0.17.0"
   val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %%% "core"    % "4.0.19"
   val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.20.0"
-  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.2"
+  val upickle  = libraryDependencies += "com.lihaoyi"                   %%% "upickle" % "4.4.3"
   val ycsb     = libraryDependencies += "site.ycsb"                       % "core"    % "0.17.0"
 
   val ayza = libraryDependencies ++= List(
@@ -45,7 +45,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.1.6"
+    val jettyVersion = "12.1.7"
     libraryDependencies ++= Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
