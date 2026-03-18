@@ -107,6 +107,88 @@ class UndoSuite extends munit.FunSuite {
     assertEquals(aggregator.current.numColumns, 1)
   }
 
+  test("undo removed column restores it locally and across replicas") {
+    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+      .edit(_.addRow().delta, allowUndo = false)
+      .repeatEdit(2, _.addColumn().delta, allowUndo = false)
+      .current
+
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+
+    val removeDelta = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
+    replicaB.accumulate(removeDelta)
+
+    assertEquals(replicaA.current.numColumns, 1)
+    assertEquals(replicaB.current.numColumns, 1)
+
+    val undoDelta = replicaA.undoAndGetDelta().get
+    assertEquals(replicaA.current.numColumns, 2)
+
+    replicaB.accumulate(undoDelta)
+    assertEquals(replicaB.current.numColumns, 2)
+  }
+
+  test("undo removed column is a no-op if merge already kept the column") {
+    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+      .edit(_.addRow().delta, allowUndo = false)
+      .repeatEdit(2, _.addColumn().delta, allowUndo = false)
+      .current
+
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+
+    val removeDelta = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
+    val keepAliveDelta = replicaB.editAndGetDelta()(_.editCell(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), "kept"))
+
+    replicaA.accumulate(keepAliveDelta)
+    replicaB.accumulate(removeDelta)
+
+    assertEquals(replicaA.current.numColumns, 2)
+    assertEquals(replicaB.current.numColumns, 2)
+    assertEquals(replicaA.current.read(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex)).toList, List("kept"))
+
+    val beforeUndo = replicaA.current
+    val undoDelta = replicaA.undoAndGetDelta().get
+
+    assertEquals(replicaA.current, beforeUndo)
+
+    replicaB.accumulate(undoDelta)
+    assertEquals(replicaB.current, beforeUndo)
+  }
+
+  test("undo inserted column is a no-op if merge already deleted that column") {
+    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+      .edit(_.addRow().delta, allowUndo = false)
+      .edit(_.addColumn().delta, allowUndo = false)
+      .current
+
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+
+    val insertDelta = replicaA.editAndGetDelta()(_.insertColumn(0.toColumnIndex).delta)
+    replicaB.accumulate(insertDelta)
+
+    assertEquals(replicaA.current.numColumns, 2)
+    assertEquals(replicaB.current.numColumns, 2)
+
+    val insertedColumnId = replicaA.current.listColumnIds.head
+    val insertedColumnIndex = replicaB.current.getColIndex(insertedColumnId).get
+    val removeInsertedDelta = replicaB.editAndGetDelta()(_.removeColumn(insertedColumnIndex))
+    replicaA.accumulate(removeInsertedDelta)
+
+    assertEquals(replicaA.current.numColumns, 1)
+    assertEquals(replicaB.current.numColumns, 1)
+
+    val beforeUndo = replicaA.current
+    val undoDelta = replicaA.undoAndGetDelta().get
+
+    assertEquals(replicaA.current, beforeUndo)
+
+    replicaB.accumulate(undoDelta)
+    assertEquals(replicaB.current, beforeUndo)
+  }
+
   test("undo row and column moves restores order") {
     val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("replica"))
       .repeatEdit(3, _.addRow().delta)
