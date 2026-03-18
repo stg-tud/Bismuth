@@ -54,7 +54,7 @@ trait SpreadsheetOps[A] {
 
   def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using LocalUid): Spreadsheet[A]
 
-  def editCell(coordinate: SpreadsheetCoordinate, value: A | Null)(using LocalUid): Spreadsheet[A]
+  def editCell(coordinate: SpreadsheetCoordinate, value: A | Null, solveSeenConflict: Boolean = true)(using LocalUid): Spreadsheet[A]
 
   def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A]
 
