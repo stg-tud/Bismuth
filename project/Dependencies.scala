@@ -28,8 +28,8 @@ object Dependencies {
   val ycsb     = libraryDependencies += "site.ycsb"                       % "core"    % "0.17.0"
 
   val ayza = libraryDependencies ++= List(
-    "io.github.hakky54" % "ayza"         % "10.0.3",
-    "io.github.hakky54" % "ayza-for-pem" % "10.0.3",
+    "io.github.hakky54" % "ayza"         % "10.0.4",
+    "io.github.hakky54" % "ayza-for-pem" % "10.0.4",
   )
 
   val bouncyCastle = libraryDependencies ++=
