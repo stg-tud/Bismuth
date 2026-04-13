@@ -22,7 +22,9 @@ case class ArrayMessageBuffer(inner: Array[Byte]) extends MessageBuffer {
   override def asArray: Array[Byte] = inner
 }
 
-class Abort(@volatile var closeRequest: Boolean = false)
+class Abort(@volatile var closeRequest: Boolean = false) {
+  def abort(): Unit = closeRequest = true
+}
 
 type Prod[A] = Async[Abort, A]
 

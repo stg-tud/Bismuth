@@ -111,18 +111,20 @@ class DeltaDissemination[State](
   def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] = {
 
     val preparedConnection: Async[Abort, Connection[Message]] = latentConnection.prepare { from =>
-      {
-        case Success(msg)   => handleMessage(msg, from)
-        case Failure(error) =>
-          error match {
-            case se: SocketException if se.getMessage == "Connection reset" =>
-              println(s"$replicaId: disconnected ${from.info} (${from})")
-            case se: NoMoreDataException =>
-              println(s"$replicaId: disconnected ${from.info} (${from})")
-            case other =>
-              println(s"$replicaId: error during message handling")
-              error.printStackTrace()
-          }
+      new Callback {
+        override def complete(tr: Try[Message]): Unit = tr match {
+          case Success(msg)   => handleMessage(msg, from)
+          case Failure(error) =>
+            error match {
+              case se: SocketException if se.getMessage == "Connection reset" =>
+                println(s"$replicaId: disconnected ${from.info} (${from})")
+              case se: NoMoreDataException =>
+                println(s"$replicaId: disconnected ${from.info} (${from})")
+              case other =>
+                println(s"$replicaId: error during message handling")
+                error.printStackTrace()
+            }
+        }
       }
     }
     Async.provided(globalAbort) {

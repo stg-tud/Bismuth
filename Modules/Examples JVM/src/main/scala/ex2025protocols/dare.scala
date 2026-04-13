@@ -1,6 +1,6 @@
-//> using scala 3.7.2
+//> using scala 3.8.3
 //> using dep "de.tu-darmstadt.stg::rdts:0.37.0+651-afc47005"
-//> using dep "com.lihaoyi::pprint:0.9.3"
+//> using dep "com.lihaoyi::pprint:0.9.6"
 
 package ex2025protocols
 
@@ -8,7 +8,7 @@ import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{GrowOnlyCounter, LastWriterWins}
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 
-/** For this lecuter/exercise, we are going to explore an executable model of a distributed system,
+/** For this lecture/exercise, we are going to explore an executable model of a distributed system,
   * consisting of many of these replicas. Each replica has its own current state, and a replica ID.
   * There is no actual network involved, and it is just a helper
   * to make exploring possible behaviour of a distributed system possible.

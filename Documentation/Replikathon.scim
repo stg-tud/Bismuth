@@ -1,0 +1,57 @@
+= Replikathon
+:date = 2026-04-13
+
+• lib dependency instructions
+• tink scala port???
+	• probaly irrelevant
+
+• Crypto likely unused
+	• bouncy castle is a java Crypto provider now used directly.
+
+• Documentation missing
+	• Channels
+		• connection tracking?
+			how to connect to everyone else, exactly one connection per peer.
+			• probench.data.HeartbeatQuorum (PRDT connection info stuff)
+			• lofi_acl.sync.ChannelConnectionManager
+				caches different addresses for replicas to manage connections
+				Proposal want: send to peer id (instead of ip address or whatever)
+				Thesis opportunity?
+			• authentication
+				in a different module?
+				verified channel based on Java TLS (for read access)
+				(needs some kind of authenticated channel connection)
+• access control -> christian räumt auf
+• crypto -> christian räumt auch auf
+• PRDT state machine replication: ongoing research (julian räumt auf)
+
+
+== Workshop Tutorial
+
+• first steps explanation documentation
+	• how to get started on:
+		• ARDT composition
+		• how to use data dissemination (sync engine)
+	• starter kit code
+	• example types
+		• voting/quorum
+		• social media (todolist)
+• UI?
+	• was zum anschauen wäre gut …
+• do some actual networking?
+• scastie session for replica IDs hacken
+• tabular data type?
+• bring your own usecase?
+
+• ARDT tutorial
+	• social media
+	• products
+	• fromOrdering
+	• custom merges
+		• compaction?
+	• unique IDs
+		• single writer?
+		• Counter
+	• Multi-Version-Register
+	• pick your (data) type
+	• „Build your own CRDT from first principles“ BYOCFFP

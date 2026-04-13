@@ -74,13 +74,17 @@ The RDT library is still being actively researched
 
 Projects are within the `Modules` folder, notable ones include:
 
-* Aead: A wrapper around authenticated encryption with associated data providers for JS & JVM
+* Access Control: (hashDAG bft; travelplanner; current research)
+* BFT: Student project (set reconciliation on bloom filters for BFT crdts)
 * Channels: A minimal send/receive abstraction over various data communication methods (TCP, Websockets, WebRTC, BroadcastChannel)
+* Crypto: A wrapper around authenticated encryption with associated data providers for JS (libsodium) & JVM (tink). Likely unused JVM now uses bouncy castle directly. Probably best for encrypting & signing deltas.
 * Examples: Various case studies
 * Lore: Invariant based coordination reasoning
+	* Compiler Plugin (student project) currently dormant
 * RDTs: Replicated data types, includes both automatic generation of required typeclass for algebraic types, and multiple pre-defined types
 * Reactives: Time-changing values in a transactional dataflow graph.
 * Replication: Combining channels, rdts, and reactives into a out-of-the-box usable framework (kinda).
+* Tabular: Spreadsheet Case Study. PaPoC paper.
 
 
 # Workflow and Git

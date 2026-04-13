@@ -160,7 +160,9 @@ class P2PTls(privateIdentity: PrivateIdentity) {
           )
           // Sort tuple of ports based on replica id, should be unique for connection between two devices (though if
           // there are two replicas with the same replica id, this won't work reliably)
-          "%s|%s".format(ports.minBy(_._1)._2, ports.maxBy(_._1)._2)
+          val minPort = ports.minBy(_._1)._2
+          val maxPort = ports.maxBy(_._1)._2
+          s"$minPort|$maxPort"
         }
       )
     }
