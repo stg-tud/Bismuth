@@ -18,14 +18,3 @@ lazy val root = crossProject(JSPlatform, JVMPlatform)
       "org.scalacheck"    %%% "scalacheck"         % "1.19.0"   % "test"
     )
   )
-
-lazy val benchmarks = (project in file("benchmarks"))
-  .enablePlugins(JmhPlugin, AssemblyPlugin)
-  .settings(
-    name := "benchmarks",
-    scalacOptions ++= Seq("-explain", "-feature"),
-    assembly                   := (assembly dependsOn (Jmh / compile)).value,
-    assembly / mainClass       := Some("org.openjdk.jmh.Main"),
-    assembly / assemblyJarName := "benchmarks.jar"
-  )
-  .dependsOn(root.jvm)
