@@ -10,8 +10,8 @@ trait ForkEventJoinClock[S]:
     def peek: S
     def event: S
     def join(otherStamp: S): S
-    def sync(otherStamp: S): (S, S) = (stamp join otherStamp).fork
+    def sync(otherStamp: S): (S, S) = (stamp `join` otherStamp).fork
     def send: (S, S) =
       val newStamp = stamp.event
       (newStamp, newStamp.peek)
-    def receive(otherStamp: S): S = (stamp join otherStamp).event
+    def receive(otherStamp: S): S = (stamp `join` otherStamp).event

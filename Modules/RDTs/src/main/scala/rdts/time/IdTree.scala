@@ -82,7 +82,7 @@ enum IdTree:
     case (Leaf(1), Leaf(1))               => true
     case (Leaf(1), r)                     => r.max != 0
     case (l, Leaf(1))                     => l.max != 0
-    case (Branch(l1, r1), Branch(l2, r2)) => (l1 overlapsWith l2) || (r1 overlapsWith r2)
+    case (Branch(l1, r1), Branch(l2, r2)) => (l1 `overlapsWith` l2) || (r1 `overlapsWith` r2)
 
 object IdTree {
   val seed: IdTree      = Leaf(1)

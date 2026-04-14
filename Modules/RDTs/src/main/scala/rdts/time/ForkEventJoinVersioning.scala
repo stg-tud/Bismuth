@@ -10,7 +10,7 @@ trait ForkEventJoinVersioning[S] {
     def peek: S
     def event: S
     def join(otherStamp: S): S
-    def sync(otherStamp: S): (S, S) = (stamp join otherStamp).fork
+    def sync(otherStamp: S): (S, S) = (stamp `join` otherStamp).fork
 }
 
 object ForkEventJoinVersioning {

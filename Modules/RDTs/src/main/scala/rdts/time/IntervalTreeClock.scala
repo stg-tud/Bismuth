@@ -43,7 +43,7 @@ object IntervalTreeClock {
       def join(otherStamp: IntervalTreeClock): IntervalTreeClock =
         IntervalTreeClock(
           stamp.idTree + otherStamp.idTree,
-          stamp.eventTree join otherStamp.eventTree
+          stamp.eventTree `join` otherStamp.eventTree
         )
 
       /** Precondition: stamp is not anonymous

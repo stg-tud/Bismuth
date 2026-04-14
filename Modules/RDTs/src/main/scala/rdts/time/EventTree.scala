@@ -32,14 +32,14 @@ sealed trait EventTree:
 
   def join(other: EventTree): EventTree = (this, other) match
     case (Leaf(n1), Leaf(n2))                                      => Leaf(Math.max(n1, n2))
-    case (Leaf(n1), rb @ Branch(_, _, _))                          => Branch(n1, 0, 0) join rb
-    case (lb @ Branch(_, _, _), Leaf(n2))                          => lb join Branch(n2, 0, 0)
-    case (lb @ Branch(n1, _, _), rb @ Branch(n2, _, _)) if n1 > n2 => rb join lb
+    case (Leaf(n1), rb @ Branch(_, _, _))                          => Branch(n1, 0, 0) `join` rb
+    case (lb @ Branch(_, _, _), Leaf(n2))                          => lb `join` Branch(n2, 0, 0)
+    case (lb @ Branch(n1, _, _), rb @ Branch(n2, _, _)) if n1 > n2 => rb `join` lb
     case (Branch(n1, l1, r1), Branch(n2, l2, r2)) =>
       Branch(
         n1,
-        l1 join (l2 lift (n2 - n1)),
-        r1 join (r2 lift (n2 - n1))
+        l1 `join` (l2 `lift` (n2 - n1)),
+        r1 `join` (r2 `lift` (n2 - n1))
       ).normalized
 
   @throws[IllegalArgumentException]("when the id is anonymous")
