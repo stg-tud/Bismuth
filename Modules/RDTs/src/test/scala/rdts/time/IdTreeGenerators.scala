@@ -40,7 +40,7 @@ object IdTreeGenerators {
 
   given genTwoNonOverlappingIdTrees: Gen[(IdTree, IdTree)] = for {
     left  <- genIdTree
-    right <- genIdTree.suchThat(right => !(left overlapsWith right))
+    right <- genIdTree.suchThat(right => !(left `overlapsWith` right))
   } yield (left, right)
 
   private def genIdTreeBranch(maxDepth: Int): Gen[IdTree] = for {

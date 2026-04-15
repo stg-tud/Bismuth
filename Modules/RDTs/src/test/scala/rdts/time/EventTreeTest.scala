@@ -92,26 +92,26 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
   }
 
   "join" should "work for two Leafs" in {
-    (Leaf(1) join Leaf(1)) shouldBe Leaf(1)
-    (Leaf(42) join Leaf(0)) shouldBe Leaf(42)
-    (Leaf(0) join Leaf(1)) shouldBe Leaf(1)
+    (Leaf(1) `join` Leaf(1)) shouldBe Leaf(1)
+    (Leaf(42) `join` Leaf(0)) shouldBe Leaf(42)
+    (Leaf(0) `join` Leaf(1)) shouldBe Leaf(1)
   }
 
   it should "work for Leaf and Branch" in {
-    (Leaf(42) join Branch(2, 4, 5)) shouldBe Leaf(42)
-    (Branch(2, 4, 5) join Leaf(42)) shouldBe Leaf(42)
+    (Leaf(42) `join` Branch(2, 4, 5)) shouldBe Leaf(42)
+    (Branch(2, 4, 5) `join` Leaf(42)) shouldBe Leaf(42)
   }
 
   it should "produce normalized Ids" in {
     forAll(genEventTree, genEventTreeLeaf) { (ev1, ev2) =>
-      val joined = ev1 join ev2
+      val joined = ev1 `join` ev2
       joined shouldBe joined.normalized
     }
   }
 
   it should "be commutative" in {
     forAll(genEventTree, genEventTree) { (ev1, ev2) =>
-      (ev1 join ev2) shouldBe (ev2 join ev1)
+      (ev1 `join` ev2) shouldBe (ev2 `join` ev1)
     }
   }
 

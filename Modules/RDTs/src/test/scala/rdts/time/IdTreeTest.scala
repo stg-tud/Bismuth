@@ -166,7 +166,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   it should "throw an Exception if adding two generated overlapping ids" in {
     forAll(genIdTree, genIdTree) { (left, right) =>
-      whenever(left overlapsWith right) {
+      whenever(left `overlapsWith` right) {
         assertThrows[IllegalArgumentException](left + right)
         assertThrows[IllegalArgumentException](right + left)
       }
@@ -231,7 +231,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   it should "be commutative" in {
     forAll(genIdTree, genIdTree) { (a, b) =>
-      whenever(!(a overlapsWith b)) {
+      whenever(!(a `overlapsWith` b)) {
         a + b shouldBe b + a
       }
     }
@@ -294,22 +294,22 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   "overlapsWith" should "be true for overlapping pair table" in {
     forAll(overlappingIdPairTable) { (left, right) =>
-      left overlapsWith right shouldBe true
-      right overlapsWith left shouldBe true
+      left `overlapsWith` right shouldBe true
+      right `overlapsWith` left shouldBe true
     }
   }
 
   it should "be false for non-overlapping pair table" in {
     forAll(nonOverlappingIdPairs) { case (left, right) =>
-      left overlapsWith right shouldBe false
-      right overlapsWith left shouldBe false
+      left `overlapsWith` right shouldBe false
+      right `overlapsWith` left shouldBe false
     }
   }
 
   it should "be commutative" in {
     forAll(genIdTree, genIdTree) { (left, right) =>
-      whenever(left overlapsWith right) {
-        right overlapsWith left shouldBe true
+      whenever(left `overlapsWith` right) {
+        right `overlapsWith` left shouldBe true
       }
     }
   }

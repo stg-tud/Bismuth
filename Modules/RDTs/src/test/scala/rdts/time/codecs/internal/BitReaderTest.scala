@@ -36,7 +36,7 @@ class BitReaderTest extends AnyFlatSpec {
   }
 }
 
-private[this] object BitReaderTest {
+private object BitReaderTest {
   def byte(s: String): Byte = {
     java.lang.Integer.parseInt(s, 2).byteValue
   }
