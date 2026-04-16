@@ -40,14 +40,4 @@ class DeltaDisseminationTest extends munit.FunSuite {
 
   }
 
-  test("long ???") {
-
-    given JsonValueCodec[Long] = JsonCodecMaker.make
-
-    writeToArray(1405345091900L)
-
-    assert(true)
-
-  }
-
 }
