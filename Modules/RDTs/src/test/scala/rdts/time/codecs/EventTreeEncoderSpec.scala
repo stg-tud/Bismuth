@@ -8,10 +8,10 @@ import codecs.{EncoderSpec, FastEventTreeEncoder}
 
 class EventTreeEncoderSpec extends EncoderSpec[EventTree] {
   def printByteArray(array: Array[Byte]): Unit = {
-    val strings = array.map(byte => {
+    val strings = array.map { byte =>
       val (left, right) = Integer.toBinaryString(byte & 0xff).padTo(8, '0').splitAt(4)
       left + '_' + right
-    })
+    }
     println(strings.mkString("Array(", ", ", ")"))
   }
 }

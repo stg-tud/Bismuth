@@ -13,9 +13,8 @@ trait Encoder[T] {
 
   def writeArray(obj: T): Array[Byte]
 
-  def writeString(obj: T): String = {
+  def writeString(obj: T): String =
     base64Encoder.encodeToString(writeArray(obj))
-  }
 
   def read(buffer: ByteBuffer, length: Int): T
 

@@ -4,10 +4,8 @@ package codecs.internal
 import causality.IdTree
 
 private[codecs] object IdTreeDecoder {
-  def decode(byteArray: Array[Byte]): IdTree = {
+  def decode(byteArray: Array[Byte]): IdTree =
     decode(BitReader(byteArray))
-  }
-
 
   @throws[MatchError]
   def decode(bitReader: BitReader): IdTree = {

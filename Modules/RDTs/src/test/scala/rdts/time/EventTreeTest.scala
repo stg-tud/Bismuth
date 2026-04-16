@@ -87,9 +87,8 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     assert(Branch(2, 5, Branch(1, 2, 3)).sink(2) == Branch(0, 5, Branch(1, 2, 3)))
   }
 
-  it should "refuse sinking beyond 0" in {
-    assertThrows[IllegalArgumentException](Leaf(1).sink(2))
-  }
+  it should "refuse sinking beyond 0" in
+  assertThrows[IllegalArgumentException](Leaf(1).sink(2))
 
   "join" should "work for two Leafs" in {
     (Leaf(1) `join` Leaf(1)) shouldBe Leaf(1)
@@ -440,7 +439,7 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
       ev2 shouldBe ev2.normalized
     }
 
-    forAll(leftSmallerEventTrees) {(ev1,ev2) =>
+    forAll(leftSmallerEventTrees) { (ev1, ev2) =>
       ev1 shouldBe ev1.normalized
       ev2 shouldBe ev2.normalized
     }
@@ -454,7 +453,7 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
   }
 
   it should "true when ev1 == ev2" in {
-    forAll(genEventTree.map(_.normalized)) { (ev) =>
+    forAll(genEventTree.map(_.normalized)) { ev =>
       eventTreePord.lteq(ev, ev) shouldBe true
     }
   }
@@ -489,7 +488,7 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
   it should "be Some(1) or Some(-1) when a <= b xor b <= a" in {
     forAll(genEventTree, genEventTree) { (left, right) =>
       whenever(left <= right ^ right <= left) {
-        if (left <= right) {
+        if left <= right then {
           eventTreePord.tryCompare(left, right) shouldBe Some(-1)
           eventTreePord.tryCompare(right, left) shouldBe Some(1)
         } else {
@@ -508,13 +507,13 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
 
   it should "work for Branches" in {
     forAll(Gen.posNum[Int], Gen.posNum[Int], Gen.posNum[Int]) { (value: Int, leftLeafValue: Int, rightLeafValue: Int) =>
-      val minLeaf = Math.min(leftLeafValue, rightLeafValue)
+      val minLeaf             = Math.min(leftLeafValue, rightLeafValue)
       val normalizedEventTree = Branch(
         value,
         Leaf(leftLeafValue),
         Leaf(rightLeafValue)
       ).normalized
-      if (leftLeafValue == rightLeafValue) {
+      if leftLeafValue == rightLeafValue then {
         normalizedEventTree shouldBe Leaf(value + leftLeafValue)
       } else {
         normalizedEventTree shouldBe Branch(

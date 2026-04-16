@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers.shouldBe
 
 class BitReaderTest extends AnyFlatSpec {
   "readNextIntOfLength" should "work with 0xFF" in {
-    val reader = new BitReader(Array(0xFF.byteValue()))
+    val reader = new BitReader(Array(0xff.byteValue()))
     reader.readNextIntOfLength(8) shouldBe 0xff
     reader.resetPos()
 
@@ -23,11 +23,10 @@ class BitReaderTest extends AnyFlatSpec {
     val reader  = new BitReader(Array(byte("10100001"), byte("10001111")))
     val allBits = "1010000110001111"
 
-    for (startBit <- 0 until 8) {
-      for (lengthOfInt <- 1 until (16 - startBit)) {
-        for (_ <- 0 until startBit) {
-          reader.readNextBit()
-        }
+    for startBit <- 0 until 8 do {
+      for lengthOfInt <- 1 until (16 - startBit) do {
+        for _ <- 0 until startBit do
+            reader.readNextBit()
         reader.readNextIntOfLength(lengthOfInt) shouldBe int(allBits.substring(startBit, startBit + lengthOfInt))
         reader.resetPos()
       }
@@ -37,11 +36,9 @@ class BitReaderTest extends AnyFlatSpec {
 }
 
 private object BitReaderTest {
-  def byte(s: String): Byte = {
+  def byte(s: String): Byte =
     java.lang.Integer.parseInt(s, 2).byteValue
-  }
 
-  def int(s: String): Int = {
+  def int(s: String): Int =
     java.lang.Integer.parseInt(s, 2)
-  }
 }

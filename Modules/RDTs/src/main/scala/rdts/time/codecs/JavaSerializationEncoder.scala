@@ -5,9 +5,8 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, 
 import java.nio.ByteBuffer
 
 given JavaSerializationEncoder[T]: Encoder[T] with {
-  override def write(obj: T, buffer: ByteBuffer): Unit = {
+  override def write(obj: T, buffer: ByteBuffer): Unit =
     buffer.put(writeArray(obj))
-  }
 
   override def writeArray(obj: T): Array[Byte] = {
     val bs: ByteArrayOutputStream = ByteArrayOutputStream()

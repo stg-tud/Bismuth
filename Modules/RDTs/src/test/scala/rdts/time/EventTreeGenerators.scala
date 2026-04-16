@@ -1,9 +1,8 @@
 package com.github.ckuessner
 package causality
 
-import causality.EventTree.{Branch, Leaf, seed}
-import causality.IdTreeGenerators.genIdTree
-
+import com.github.ckuessner.causality.EventTree.{Branch, Leaf, seed}
+import com.github.ckuessner.causality.IdTreeGenerators.genIdTree
 import org.scalacheck.{Arbitrary, Gen}
 
 object EventTreeGenerators {
@@ -15,9 +14,9 @@ object EventTreeGenerators {
   }
 
   private def modifyEventTree(eventTree: Gen[EventTree], numModifications: Int): Gen[EventTree] = {
-    if (numModifications == 0) return eventTree
+    if numModifications == 0 then return eventTree
     for {
-      id <- genIdTree.suchThat(id => !id.isAnonymous)
+      id                <- genIdTree.suchThat(id => !id.isAnonymous)
       modifiedEventTree <- for {
         ev <- modifyEventTree(eventTree, numModifications - 1)
       } yield ev.increment(id)
@@ -44,7 +43,7 @@ object EventTreeGenerators {
   } yield Leaf(value)
 
   private def genEventTreeBranchOrLeaf(maxDepth: Int): Gen[EventTree] = {
-    if (maxDepth == 0) genEventTreeLeaf
+    if maxDepth == 0 then genEventTreeLeaf
     else Gen.oneOf(genEventTreeLeaf, genEventTreeBranch(maxDepth))
   }
 }

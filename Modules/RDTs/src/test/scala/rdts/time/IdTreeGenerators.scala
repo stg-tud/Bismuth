@@ -14,7 +14,7 @@ object IdTreeGenerators {
 
   given genIdTreeShallow: Gen[IdTree] = for {
     maxDepth <- Gen.choose(1, 10)
-    idTree <- Gen.oneOf(genIdTreeLeaf, genIdTreeBranch(maxDepth))
+    idTree   <- Gen.oneOf(genIdTreeLeaf, genIdTreeBranch(maxDepth))
   } yield idTree
 
   given genIdTree: Gen[IdTree] = for {
@@ -28,7 +28,7 @@ object IdTreeGenerators {
   } yield id
 
   private def splitAndChoose(numSplits: Int): Gen[IdTree] =
-    if (numSplits == 0) {
+    if numSplits == 0 then {
       IdTree.seed
     } else {
       for {
@@ -51,7 +51,7 @@ object IdTreeGenerators {
   } yield Branch(leftId, rightId)
 
   private def genIdTreeBranchOrLeaf(maxDepth: Int): Gen[IdTree] = {
-    if (maxDepth == 0) genIdTreeLeaf
+    if maxDepth == 0 then genIdTreeLeaf
     else Gen.oneOf(genIdTreeLeaf, genIdTreeBranch(maxDepth))
   }
 }

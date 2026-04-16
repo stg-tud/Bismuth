@@ -82,13 +82,11 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     assertDoesNotCompile("Leaf(2)")
   }
 
-  "split" should "work for seed" in {
-    assert(seed.split == (Branch(1, 0), Branch(0, 1)))
-  }
+  "split" should "work for seed" in
+  assert(seed.split == (Branch(1, 0), Branch(0, 1)))
 
-  it should "work on anonymous stamps" in {
-    assert(anonymous.split == (Leaf(0), Leaf(0)))
-  }
+  it should "work on anonymous stamps" in
+  assert(anonymous.split == (Leaf(0), Leaf(0)))
 
   it should "work for left hand of branch" in {
     val firstSplit  = seed.split._1
@@ -182,7 +180,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     (Leaf(0) + Branch(Branch(1, 1), 1)) shouldBe Leaf(1)
     (Leaf(0) + Branch(Branch(Branch(1, 1), 1), Branch(1, 1))) shouldBe Leaf(1)
     (Branch(0, Branch(1, Branch(0, Branch(1, Branch(0, 1))))) +
-      Branch(Branch(Branch(1, 1), 1), Branch(0, Branch(1, Branch(0, Branch(1, 0)))))) shouldBe Leaf(1)
+    Branch(Branch(Branch(1, 1), 1), Branch(0, Branch(1, Branch(0, Branch(1, 0)))))) shouldBe Leaf(1)
   }
 
   it should "return a normalized id for non-overlapping id pair table" in {
@@ -218,14 +216,14 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
   it should "be the inverse of split for testIds" in {
     forAll(testIds) { id =>
       id.split match
-        case (l, r) => (l + r) shouldBe id.normalized
+          case (l, r) => (l + r) shouldBe id.normalized
     }
   }
 
   it should "be the inverse of split for generated ids" in {
     forAll(genIdTree) { id =>
       id.split match
-        case (l, r) => (l + r) shouldBe id.normalized
+          case (l, r) => (l + r) shouldBe id.normalized
     }
   }
 
@@ -316,7 +314,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
 
   def partialOrderProperties(id: IdTree): Unit = {
     val normalizedId = id.normalized
-    if (normalizedId != seed) {
+    if normalizedId != seed then {
       idPord.lteq(seed, id) shouldBe false
     } else {
       idPord.lteq(seed, id) shouldBe true
@@ -340,13 +338,11 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     }
   }
 
-  "PartialOrdering[IdTree].lteq" should "work for testIds" in {
-    forAll(testIds)(partialOrderProperties)
-  }
+  "PartialOrdering[IdTree].lteq" should "work for testIds" in
+  forAll(testIds)(partialOrderProperties)
 
-  it should "work for non-normalized test ids" in {
-    forAll(nonNormalizedIds)(partialOrderProperties)
-  }
+  it should "work for non-normalized test ids" in
+  forAll(nonNormalizedIds)(partialOrderProperties)
 
   it should "work for anonymous id" in {
     idPord.lteq(anonymous, anonymous) shouldBe true
@@ -360,17 +356,14 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
     }
   }
 
-  it should "work for normalized generated ids" in {
-    forAll(genIdTreeBySplitting)(partialOrderProperties)
-  }
+  it should "work for normalized generated ids" in
+  forAll(genIdTreeBySplitting)(partialOrderProperties)
 
-  it should "work for ids generated using splitting" in {
-    forAll(genIdTreeBySplitting)(partialOrderProperties)
-  }
+  it should "work for ids generated using splitting" in
+  forAll(genIdTreeBySplitting)(partialOrderProperties)
 
-  it should "work for non-normalized generated ids" in {
-    forAll(genIdTree)(partialOrderProperties)
-  }
+  it should "work for non-normalized generated ids" in
+  forAll(genIdTree)(partialOrderProperties)
 
   it should "work for incomparable ids" in {
     idPord.lteq(Branch(Branch(0, 1), 1), Branch(1, 0)) shouldBe false
@@ -389,7 +382,7 @@ class IdTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks
   it should "be Some(-1) / Some(1) if a <= b && !(b <= a) / b <= a && !(a <= b)" in {
     forAll(genIdTree, genIdTree) { (idA: IdTree, idB: IdTree) =>
       whenever(idPord.lteq(idA, idB) != idPord.lteq(idB, idA)) {
-        if (idPord.lteq(idA, idB)) {
+        if idPord.lteq(idA, idB) then {
           idPord.tryCompare(idA, idB) shouldBe Some(-1)
           idPord.tryCompare(idB, idA) shouldBe Some(1)
         } else {

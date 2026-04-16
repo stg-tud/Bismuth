@@ -4,9 +4,8 @@ package codecs.internal
 import causality.IntervalTreeClock
 
 private[codecs] object IntervalTreeClockDecoder {
-  def decode(byteArray: Array[Byte]): IntervalTreeClock = {
+  def decode(byteArray: Array[Byte]): IntervalTreeClock =
     decode(BitReader(byteArray))
-  }
 
   @throws[MatchError]
   def decode(bitReader: BitReader): IntervalTreeClock = {

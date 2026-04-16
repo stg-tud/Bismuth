@@ -12,7 +12,7 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
   }
 
   def readNextTwoBits(): Int = {
-    if (pos % 8 != 7) {
+    if pos % 8 != 7 then {
       // Both bits in same byte
       val byte: Int = byteArray(pos / 8) & 0xff
       val bits      = (byte >>> (6 - (pos % 8))) & 0x03 // shift so that considered bits are in lowest bit-pos
@@ -29,7 +29,7 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
   }
 
   def readNextIntOfLength(numBits: Int): Int = {
-    if (pos % 8 == 0) return readNextBoundaryAlignedIntOfLength(numBits)
+    if pos % 8 == 0 then return readNextBoundaryAlignedIntOfLength(numBits)
 
     val numUnreadBitsInByte     = 8 - (pos % 8)
     val unreadBitMask           = (1 << numUnreadBitsInByte) - 1
@@ -40,7 +40,7 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
     pos += numUnreadBitsInByte - numTrailingBitsToIgnore
     val remainingBits = numBits - (numUnreadBitsInByte - numTrailingBitsToIgnore)
 
-    if (remainingBits == 0) {
+    if remainingBits == 0 then {
       result
     } else {
       (result << remainingBits) | readNextBoundaryAlignedIntOfLength(remainingBits)
@@ -51,16 +51,16 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
     var result: Int   = 0
     var remainingBits = numBits
 
-    while (remainingBits > 0) {
+    while remainingBits > 0 do {
       val byte: Int = byteArray(pos / 8) & 0xff
 
-      if (remainingBits < 8) {
+      if remainingBits < 8 then {
         result = result << remainingBits
         result = result | (byte >>> (8 - remainingBits))
 
         pos += remainingBits
         remainingBits = 0
-      } else if (numBits >= 8) {
+      } else if numBits >= 8 then {
         result = result << 8
         result = result | byte
 
@@ -80,12 +80,11 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
     */
   def readToNextZeroAndReturnNumberOfBitsRead(): Int = {
     val posBeforeFirstBitRead = pos
-    while (readNextBit() == 1) {}
+    while readNextBit() == 1 do {}
     pos - posBeforeFirstBitRead
   }
 
-  def resetPos(): Unit = {
+  def resetPos(): Unit =
     pos = 0
-  }
 
 }

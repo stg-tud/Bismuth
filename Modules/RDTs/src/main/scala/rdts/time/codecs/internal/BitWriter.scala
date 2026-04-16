@@ -12,12 +12,12 @@ private[internal] class BitWriter {
     assert(number >= 0)
     assert(number < (1.longValue << bits))
 
-    if (pos % 8 == 0) {
+    if pos % 8 == 0 then {
       writeByteAligned(number, bits)
     } else {
       val fillableBitsInCurrentByte = 8 - (pos % 8)
 
-      if (fillableBitsInCurrentByte >= bits) {
+      if fillableBitsInCurrentByte >= bits then {
         val partOfNumberToAdd: Byte = (number << (fillableBitsInCurrentByte - bits)).toByte
         byteArray(pos / 8) = ((byteArray(pos / 8) & 0xff) | (partOfNumberToAdd & 0xff)).toByte
 
@@ -40,7 +40,7 @@ private[internal] class BitWriter {
     assert(number >= 0)
     assert(number < (1.longValue << bits))
 
-    if (bits <= 8) {
+    if bits <= 8 then {
       val byte: Byte = (number << (8 - bits)).toByte
       byteArray.append(byte)
       pos += bits
