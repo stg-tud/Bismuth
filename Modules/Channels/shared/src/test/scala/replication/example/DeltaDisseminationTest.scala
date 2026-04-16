@@ -1,7 +1,7 @@
 package replication.example
 
 import channels.{LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
 
