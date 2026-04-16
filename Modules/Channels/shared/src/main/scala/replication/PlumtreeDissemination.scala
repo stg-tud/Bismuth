@@ -36,7 +36,13 @@ object PlumtreeDissemination {
 
 /** Combined Delta + Plumtree dissemination.
   *
-  * Public surface intentionally mirrors DeltaDissemination for compatibility (`applyDelta`, `receiveCallback`).
+  * Based on Plumtree / "Epidemic Broadcast Trees" (Leitão, Pereira, Rodrigues, 2007):
+  * - eager peers receive full payloads
+  * - lazy peers receive lightweight advertisements
+  * - duplicates trigger prune-like edge demotion
+  *
+  * Delta reconciliation uses Dots/Request semantics from this codebase.
+  * Public surface intentionally mirrors the former DeltaDissemination (`applyDelta`, `receiveCallback`).
   */
 class PlumtreeDissemination[State](
     val replicaId: LocalUid,
