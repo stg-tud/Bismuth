@@ -2,7 +2,6 @@ package lore
 
 import cats.data.NonEmptyList
 import cats.syntax.show.toShow
-import com.monovore.decline.*
 import lore.Parser.ParsingException
 import lore.ast.Term
 import lore.backends.ViperBackend
