@@ -7,7 +7,7 @@ import de.rmgk.delay.{Async, Callback}
 import rdts.base.Lattice.syntax
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.time.Dots
-import replication.DeltaDissemination.pmscodec
+import replication.PlumtreeDissemination.pmscodec
 import replication.JsoniterCodecs.given
 import replication.ProtocolMessage.*
 
@@ -16,13 +16,12 @@ import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
-
 trait Aead {
   def encrypt(plain: Array[Byte], associated: Array[Byte]): Array[Byte]
   def decrypt(cypher: Array[Byte], associated: Array[Byte]): Try[Array[Byte]]
 }
 
-object DeltaDissemination {
+object PlumtreeDissemination {
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
     override def reportFailure(cause: Throwable): Unit = throw cause
@@ -39,12 +38,12 @@ object DeltaDissemination {
   *
   * Public surface intentionally mirrors DeltaDissemination for compatibility (`applyDelta`, `receiveCallback`).
   */
-class DeltaDissemination[State](
+class PlumtreeDissemination[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
     @unused crypto: Option[Aead] = None,
     defaultTimetolive: Int = 0,
-    sendingActor: ExecutionContext = DeltaDissemination.executeImmediately,
+    sendingActor: ExecutionContext = PlumtreeDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
 )(using JsonValueCodec[State]) {
@@ -118,12 +117,12 @@ class DeltaDissemination[State](
         peers = peers.updated(conn, PeerState(conn, PeerRole.Eager))
       }
       // Ask for missing state on new link.
-      send(conn, SentCachedMessage(Request(replicaId.uid, localKnownDeltaContext))(using pmscodec))
+      send(conn, SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec))
     }
   }
 
   def requestData(): Unit = {
-    val msg      = SentCachedMessage(Request(replicaId.uid, localKnownDeltaContext))(using pmscodec)
+    val msg      = SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec)
     val snapshot = lock.synchronized(peers.values.map(_.conn).toList)
     snapshot.foreach(send(_, msg))
   }
@@ -208,9 +207,9 @@ class DeltaDissemination[State](
         case IHave(_, knows) =>
           // If remote knows something we do not, request missing via existing Request mechanism.
           if !(knows <= localKnownDeltaContext) then
-              send(from, SentCachedMessage(Request(replicaId.uid, localKnownDeltaContext))(using pmscodec))
+              send(from, SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec))
 
-        case Request(_, knows) =>
+        case Graft(_, knows) =>
           // Request acts as graft/repair signal: keep requester eager.
           setRole(from, PeerRole.Eager)
 

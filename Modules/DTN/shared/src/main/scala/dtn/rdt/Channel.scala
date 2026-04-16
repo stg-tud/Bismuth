@@ -7,7 +7,7 @@ import dtn.{MonitoringClientInterface, NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.ProtocolMessage
-import replication.ProtocolMessage.{IHave, Payload, Ping, Pong, Prune, Request}
+import replication.ProtocolMessage.{IHave, Payload, Ping, Pong, Prune, Graft}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -24,7 +24,7 @@ class ClientContext[T: JsonValueCodec](
 ) extends Connection[ProtocolMessage[T]] {
   override def send(message: ProtocolMessage[T]): Async[Any, Unit] =
     message match
-        case Request(sender, dots) =>
+        case Graft(sender, dots) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
           // todo: actually there should be no requests being sent anymore then. is that the case?
           operationMode match
@@ -70,14 +70,14 @@ class Channel[T: JsonValueCodec](
 
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
-            case RdtMessageType.Request => cb.succeed(ProtocolMessage.Request(dtnid, dots))
+            case RdtMessageType.Request => cb.succeed(ProtocolMessage.Graft(dtnid, dots))
             case RdtMessageType.Payload => cb.succeed(ProtocolMessage.Payload(dots, readFromArray[T](payload), 0))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
-          case ClientOperationMode.PushAll      => cb.succeed(ProtocolMessage.Request(dtnid, Dots.empty))
+          case ClientOperationMode.PushAll      => cb.succeed(ProtocolMessage.Graft(dtnid, Dots.empty))
           case ClientOperationMode.RequestLater =>
 
       conn

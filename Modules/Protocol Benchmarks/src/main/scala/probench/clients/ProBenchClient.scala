@@ -6,7 +6,7 @@ import probench.data.Codecs.given
 import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{LocalUid, Uid}
 import replication.DeltaStorage.Type
-import replication.{DeltaDissemination, DeltaStorage}
+import replication.{PlumtreeDissemination, DeltaStorage}
 
 import java.util.concurrent.Semaphore
 import scala.collection.mutable
@@ -16,15 +16,15 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   given localUid: LocalUid = LocalUid(name)
 
-  val writeDataManager: DeltaDissemination[ClientCommWrite] =
-    DeltaDissemination(
+  val writeDataManager: PlumtreeDissemination[ClientCommWrite] =
+    PlumtreeDissemination(
       localUid,
       handleIncomingWrite,
       defaultTimetolive = 1,
       deltaStorage = DeltaStorage.getStorage(Type.KeepAll, () => ???)
     )
-  val readDataManager: DeltaDissemination[ClientCommRead] =
-    DeltaDissemination(
+  val readDataManager: PlumtreeDissemination[ClientCommRead] =
+    PlumtreeDissemination(
       localUid,
       handleIncomingRead,
       defaultTimetolive = 1,

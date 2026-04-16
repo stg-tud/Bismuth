@@ -5,15 +5,15 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
 
-import replication.{DeltaDissemination, ProtocolMessage}
+import replication.{PlumtreeDissemination, ProtocolMessage}
 
-class DeltaDisseminationTest extends munit.FunSuite {
+class PlumtreeDisseminationTest extends munit.FunSuite {
   test("basics") {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     // I have no clue why this syntax is still not deprecated xD
-    val dd1, dd2, dd3 = DeltaDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
+    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
 
     val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
 
@@ -44,7 +44,7 @@ class DeltaDisseminationTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val dd1, dd2, dd3 = DeltaDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
+    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
 
     val queue  = LocalMessageQueue[ProtocolMessage[Set[String]]]()
     val queued = QueuedLocalConnection[ProtocolMessage[Set[String]]](queue)

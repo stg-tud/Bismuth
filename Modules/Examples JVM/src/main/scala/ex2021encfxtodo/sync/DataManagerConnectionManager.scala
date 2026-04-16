@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, LegacyKeysetSerialization, RegistryConfiguration}
 import rdts.base.LocalUid
-import replication.DeltaDissemination
+import replication.PlumtreeDissemination
 
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
@@ -39,8 +39,8 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
 
   println(LegacyKeysetSerialization.getKeysetInfo(keyset))
 
-  val dataManager: DeltaDissemination[State] =
-    DeltaDissemination[State](
+  val dataManager: PlumtreeDissemination[State] =
+    PlumtreeDissemination[State](
       replicaId: LocalUid,
       receiveCallback,
       crypto = Some(AeadTranslation(aead))

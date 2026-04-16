@@ -3,7 +3,7 @@ package replication
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Historized, Lattice}
 import rdts.time.Dots
-import replication.DeltaDissemination.pmscodec
+import replication.PlumtreeDissemination.pmscodec
 import replication.DeltaStorage.Type.Discarding
 import replication.ProtocolMessage.Payload
 

@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
-import replication.DeltaDissemination.pmscodec
+import replication.PlumtreeDissemination.pmscodec
 import replication.ProtocolMessage.Payload
 import replication.{CachedMessage, DeltaTreeContext, DotTree, SentCachedMessage}
 

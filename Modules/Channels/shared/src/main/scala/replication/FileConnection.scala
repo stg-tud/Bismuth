@@ -14,7 +14,7 @@ class FileConnection[T](path: Path)(using JsonValueCodec[ProtocolMessage[T]])
     lazy val peer                                           = peerFun
     def send(message: ProtocolMessage[T]): Async[Any, Unit] = Async.fromCallback {
       message match
-          case ProtocolMessage.Request(sender, knows) =>
+          case ProtocolMessage.Graft(sender, knows) =>
             Using(Files.newInputStream(path)) { is =>
               scanJsonValuesFromStream[ProtocolMessage[T]](is) {
                 case pm @ ProtocolMessage.Payload(dots, _, _, _) if !(dots <= knows) =>

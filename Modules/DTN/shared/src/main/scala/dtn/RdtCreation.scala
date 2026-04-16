@@ -7,7 +7,7 @@ import dtn.rdt.{Channel, ClientOperationMode}
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.time.{Dot, Dots}
-import replication.DeltaDissemination
+import replication.PlumtreeDissemination
 
 import scala.annotation.unused
 import scala.util.Random
@@ -28,7 +28,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
+  val dataManager: PlumtreeDissemination[RdtType] = PlumtreeDissemination[RdtType](
     LocalUid.gen(),
     _ => println("replica received new state information"),
   )
@@ -81,7 +81,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   given replicaId: LocalUid = LocalUid.gen()
 
-  val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
+  val dataManager: PlumtreeDissemination[RdtType] = PlumtreeDissemination[RdtType](
     replicaId,
     _ =>
       println("replica received new state information"),
@@ -161,7 +161,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   given replicaId: LocalUid = LocalUid.gen()
 
-  val dataManager: DeltaDissemination[RdtType] = DeltaDissemination[RdtType](
+  val dataManager: PlumtreeDissemination[RdtType] = PlumtreeDissemination[RdtType](
     replicaId,
     (_ => println("replica received new state information")): @unused,
   )

@@ -11,7 +11,7 @@ object ProtocolMessage {
   /** `knows` has to be a subset of the dots known at the sender.
     * The sender of the request should then eventually receive all known missing dots.
     */
-  case class Request(sender: Uid, knows: Dots) extends ProtocolMessage[Nothing]
+  case class Graft(sender: Uid, knows: Dots) extends ProtocolMessage[Nothing]
 
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T

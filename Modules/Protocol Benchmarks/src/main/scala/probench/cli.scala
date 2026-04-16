@@ -5,7 +5,7 @@ import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
 import probench.clients.*
 import rdts.base.Uid
-import replication.{DeltaDissemination, DeltaStorage}
+import replication.{PlumtreeDissemination, DeltaStorage}
 
 import java.net.{DatagramSocket, InetSocketAddress}
 import java.util.Timer
@@ -21,10 +21,10 @@ object cli {
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
   def addRetryingLatentConnection(
-      dataManager: DeltaDissemination[?],
-      connection: LatentConnection[MessageBuffer],
-      delay: Long,
-      tries: Int
+                                   dataManager: PlumtreeDissemination[?],
+                                   connection: LatentConnection[MessageBuffer],
+                                   delay: Long,
+                                   tries: Int
   ): Unit = {
 
     dataManager.prepareBinaryConnection(connection).run {

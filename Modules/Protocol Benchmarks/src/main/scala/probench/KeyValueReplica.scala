@@ -11,7 +11,7 @@ import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
-import replication.{DeltaDissemination, DeltaStorage}
+import replication.{PlumtreeDissemination, DeltaStorage}
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
@@ -71,7 +71,7 @@ class KeyValueReplica(
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    val dataManager: DeltaDissemination[ClusterState] = DeltaDissemination(
+    val dataManager: PlumtreeDissemination[ClusterState] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       defaultTimetolive = 0,
@@ -217,14 +217,14 @@ class KeyValueReplica(
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
-    val dataManagerWrite: DeltaDissemination[ClientCommWrite] = DeltaDissemination(
+    val dataManagerWrite: PlumtreeDissemination[ClientCommWrite] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncomingWrite(delta)),
       defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
     )
-    val dataManagerRead: DeltaDissemination[ClientCommRead] = DeltaDissemination(
+    val dataManagerRead: PlumtreeDissemination[ClientCommRead] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncomingRead(delta)),
       defaultTimetolive = 0,
@@ -282,7 +282,7 @@ class KeyValueReplica(
 
     var alivePeers: Set[Uid] = Set.empty
 
-    val dataManager: DeltaDissemination[ConnInformation] = DeltaDissemination(
+    val dataManager: PlumtreeDissemination[ConnInformation] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       defaultTimetolive = 0,

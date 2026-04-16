@@ -8,7 +8,7 @@ import rdts.syntax.DeltaBuffer
 import rdts.time.Dots
 import reactives.default.*
 
-import replication.DeltaDissemination
+import replication.PlumtreeDissemination
 import replication.JsoniterCodecs.given
 
 object TodoDataManager {
@@ -19,8 +19,8 @@ object TodoDataManager {
   given Lattice[TodoRepState]        = Lattice.derived
   given Bottom[TodoRepState]         = Bottom.derived
 
-  val (receivedCallback, dataManager: DeltaDissemination[TodoRepState]) = Event.fromCallback {
-    DeltaDissemination[TodoRepState](Todolist.replicaId, Event.handle)
+  val (receivedCallback, dataManager: PlumtreeDissemination[TodoRepState]) = Event.fromCallback {
+    PlumtreeDissemination[TodoRepState](Todolist.replicaId, Event.handle)
   }
 
   def hookup[A: Lattice](
