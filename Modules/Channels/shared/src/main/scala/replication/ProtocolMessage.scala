@@ -40,6 +40,15 @@ object ProtocolMessage {
     }
   }
 
+  /** Lazy advertisement for Plumtree-style dissemination.
+    * `knows` summarizes what the sender already has.
+    */
+  case class IHave(sender: Uid, knows: Dots) extends ProtocolMessage[Nothing]
+
+  /** Request sender to move this edge to lazy mode for eager push.
+    */
+  case class Prune(sender: Uid) extends ProtocolMessage[Nothing]
+
   case class Ping(time: Long) extends ProtocolMessage[Nothing]
   case class Pong(time: Long) extends ProtocolMessage[Nothing]
 }

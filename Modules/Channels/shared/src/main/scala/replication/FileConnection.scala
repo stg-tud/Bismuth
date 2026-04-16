@@ -28,8 +28,10 @@ class FileConnection[T](path: Path)(using JsonValueCodec[ProtocolMessage[T]])
             val res = writeToString[ProtocolMessage[T]](pl)
             Files.writeString(path, res + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
             ()
-          case ProtocolMessage.Ping(time) => peer.succeed(ProtocolMessage.Pong(time))
-          case ProtocolMessage.Pong(time) => ()
+          case ProtocolMessage.IHave(_, _) => ()
+          case ProtocolMessage.Prune(_)    => ()
+          case ProtocolMessage.Ping(time)  => peer.succeed(ProtocolMessage.Pong(time))
+          case ProtocolMessage.Pong(time)  => ()
     }
     def close(): Unit = ()
   }

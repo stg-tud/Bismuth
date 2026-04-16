@@ -7,7 +7,7 @@ import dtn.{MonitoringClientInterface, NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.ProtocolMessage
-import replication.ProtocolMessage.{Payload, Ping, Pong, Request}
+import replication.ProtocolMessage.{IHave, Payload, Ping, Pong, Prune, Request}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -41,7 +41,7 @@ class ClientContext[T: JsonValueCodec](
             dots,
             redundantDots
           ).toAsync(using executionContext)
-        case Ping(_) | Pong(_) => Async {}
+        case IHave(_, _) | Prune(_) | Ping(_) | Pong(_) => Async {}
 
   override def close(): Unit = connection.close().onComplete {
     case Failure(f)     => f.printStackTrace()
