@@ -19,7 +19,7 @@ class MultiPaxosSuite extends munit.ScalaCheckSuite {
   override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(100).withMaxSize(500)
 
   property("Multipaxos")(MultiPaxosSpec[Int](
-    logging = true,
+    logging = false,
     minDevices = 3,
     maxDevices = 5,
     proposeFreq = 5,
