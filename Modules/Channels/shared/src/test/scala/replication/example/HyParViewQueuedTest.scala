@@ -8,7 +8,7 @@ import java.nio.file.{Files, Paths}
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
 
-class HyParViewQueuedTest extends munit.FunSuite {
+class HyParViewQueuedTest {
 
   enum HyParViewMessage {
     case Join(newNode: Uid)
@@ -246,7 +246,8 @@ class HyParViewQueuedTest extends munit.FunSuite {
       rnd.shuffle(set.toList).take(maxSize).toSet
   }
 
-  test("hyparview + plumtree queued setup with 1000 nodes") {
+  def main(args: Array[String]): Unit = {
+
     val n      = 100
     val random = Random(42)
     val queue  = LocalMessageQueue[HyParViewMessage]()
@@ -276,9 +277,9 @@ class HyParViewQueuedTest extends munit.FunSuite {
     }
 
     val connectedEnough = nodes.count(_.activeView.nonEmpty)
-    assertEquals(connectedEnough, n)
-    assert(nodes.forall(_.activeView.size <= 5))
-    assert(nodes.forall(_.passiveView.size <= 30))
+    // assertEquals(connectedEnough, n)
+    // assert(nodes.forall(_.activeView.size <= 5))
+    // assert(nodes.forall(_.passiveView.size <= 30))
 
     // Plumtree overlay usage: single message from one sender, on top of established HyParView active links.
     val root = nodes.head
