@@ -18,6 +18,12 @@ class HyParViewQueuedTest extends munit.FunSuite {
     case Disconnect(peer: Uid)
     case Shuffle(origin: Uid, sample: Set[Uid], ttl: Int, sender: Uid)
     case ShuffleReply(from: Uid, sample: Set[Uid])
+
+    // Plumtree overlay messages
+    case Gossip(messageId: String, payload: String, round: Int, sender: Uid)
+    case IHave(messageId: String, round: Int, sender: Uid)
+    case Graft(messageId: String, round: Int, sender: Uid)
+    case Prune(sender: Uid)
   }
   import HyParViewMessage.*
 
@@ -37,13 +43,24 @@ class HyParViewQueuedTest extends munit.FunSuite {
 
     private val abort = Abort()
 
+    // HyParView state
     private val active: mutable.Set[Uid]  = mutable.LinkedHashSet.empty
     private val passive: mutable.Set[Uid] = mutable.LinkedHashSet.empty
-
     private val outgoing: mutable.Map[Uid, Connection[HyParViewMessage]] = mutable.Map.empty
 
-    def activeView: Set[Uid]  = active.toSet
-    def passiveView: Set[Uid] = passive.toSet
+    // Plumtree state (single shared tree, simplified)
+    private val eagerPushPeers: mutable.Set[Uid] = mutable.LinkedHashSet.empty
+    private val lazyPushPeers: mutable.Set[Uid]  = mutable.LinkedHashSet.empty
+    private val receivedMsgs: mutable.Set[String] = mutable.LinkedHashSet.empty
+    private val payloadById: mutable.Map[String, String] = mutable.Map.empty
+    private var localMsgSeq: Long = 0
+
+    def activeView: Set[Uid]      = active.toSet
+    def passiveView: Set[Uid]     = passive.toSet
+    def overlayTreeView: Set[Uid] = eagerPushPeers.toSet
+
+    def deliveredCount: Int = receivedMsgs.size
+    def hasDelivered(messageId: String): Boolean = receivedMsgs.contains(messageId)
 
     private val receive: Receive[HyParViewMessage] = (_: Connection[HyParViewMessage]) => {
       case Success(msg) => handleMessage(msg)
@@ -64,8 +81,19 @@ class HyParViewQueuedTest extends munit.FunSuite {
         val sample = Set(id) ++ randomSubset(active.toSet, shuffleActiveSample) ++ randomSubset(passive.toSet, shufflePassiveSample)
         sendTo(target, Shuffle(id, sample, shuffleRandomWalkLength, id))
 
+    def plumtreeBroadcast(payload: String): String = {
+      localMsgSeq += 1
+      val msgId = s"${Uid.unwrap(id)}:$localMsgSeq"
+      receivedMsgs += msgId
+      payloadById += (msgId -> payload)
+      eagerPush(msgId, payload, round = 0, except = id)
+      lazyPush(msgId, round = 0, except = id)
+      msgId
+    }
+
     private def handleMessage(msg: HyParViewMessage): Unit =
       msg match
+        // -------------------- HyParView --------------------
         case Join(newNode) =>
           addNodeActiveView(newNode)
           active.filterNot(_ == newNode).foreach { n =>
@@ -98,6 +126,8 @@ class HyParViewQueuedTest extends munit.FunSuite {
           if active.contains(peer) then
             active -= peer
             addNodePassiveView(peer)
+            eagerPushPeers -= peer
+            lazyPushPeers -= peer
             healActiveView()
 
         case Shuffle(origin, sample, ttl, sender) =>
@@ -110,6 +140,48 @@ class HyParViewQueuedTest extends munit.FunSuite {
 
         case ShuffleReply(_, sample) =>
           integratePassiveSample(sample)
+
+        // -------------------- Plumtree --------------------
+        case Gossip(messageId, payload, round, sender) =>
+          if !receivedMsgs.contains(messageId) then
+            receivedMsgs += messageId
+            payloadById += (messageId -> payload)
+            // first reception: keep sender eager, forward eager+lazy
+            eagerPushPeers += sender
+            lazyPushPeers -= sender
+            eagerPush(messageId, payload, round + 1, except = sender)
+            lazyPush(messageId, round + 1, except = sender)
+          else
+            // duplicate: prune this edge for eager dissemination
+            eagerPushPeers -= sender
+            lazyPushPeers += sender
+            sendTo(sender, Prune(id))
+
+        case IHave(messageId, round, sender) =>
+          if !receivedMsgs.contains(messageId) then
+            // simplified: immediate graft (no timers)
+            sendTo(sender, Graft(messageId, round, id))
+
+        case Graft(messageId, round, sender) =>
+          eagerPushPeers += sender
+          lazyPushPeers -= sender
+          payloadById.get(messageId).foreach { payload =>
+            sendTo(sender, Gossip(messageId, payload, round + 1, id))
+          }
+
+        case Prune(sender) =>
+          eagerPushPeers -= sender
+          lazyPushPeers += sender
+
+    private def eagerPush(messageId: String, payload: String, round: Int, except: Uid): Unit =
+      eagerPushPeers.filterNot(_ == except).foreach { p =>
+        sendTo(p, Gossip(messageId, payload, round, id))
+      }
+
+    private def lazyPush(messageId: String, round: Int, except: Uid): Unit =
+      lazyPushPeers.filterNot(_ == except).foreach { p =>
+        sendTo(p, IHave(messageId, round, id))
+      }
 
     private def acceptShuffle(origin: Uid, incomingSample: Set[Uid]): Unit =
       val replySample = randomSubset(passive.toSet, incomingSample.size)
@@ -140,6 +212,11 @@ class HyParViewQueuedTest extends munit.FunSuite {
         if active.size >= activeViewSize then dropRandomElementFromActiveView()
         active += node
         passive -= node
+
+        // New active links start eager in Plumtree.
+        eagerPushPeers += node
+        lazyPushPeers -= node
+
         outgoing.getOrElseUpdate(node, connectTo(node))
 
     private def addNodePassiveView(node: Uid): Unit =
@@ -152,6 +229,11 @@ class HyParViewQueuedTest extends munit.FunSuite {
         val n = randomElement(active)
         active -= n
         addNodePassiveView(n)
+
+        // Removed active links are no longer in Plumtree neighbor sets.
+        eagerPushPeers -= n
+        lazyPushPeers -= n
+
         sendTo(n, Disconnect(id))
 
     private def integratePassiveSample(sample: Set[Uid]): Unit =
@@ -164,7 +246,7 @@ class HyParViewQueuedTest extends munit.FunSuite {
       rnd.shuffle(set.toList).take(maxSize).toSet
   }
 
-  test("hyparview queued setup with 1000 nodes") {
+  test("hyparview + plumtree queued setup with 1000 nodes") {
     val n      = 100
     val random = Random(42)
     val queue  = LocalMessageQueue[HyParViewMessage]()
@@ -181,14 +263,14 @@ class HyParViewQueuedTest extends munit.FunSuite {
     nodes.foreach(_.join())
 
     var safety = 0
-    while queue.nonEmpty && safety < 200000 do
+    while queue.nonEmpty && safety < 300000 do
       queue.deliverAll()
       safety += 1
 
     (0 until 8).foreach { _ =>
       nodes.foreach(_.shuffleTick())
       var innerSafety = 0
-      while queue.nonEmpty && innerSafety < 200000 do
+      while queue.nonEmpty && innerSafety < 300000 do
         queue.deliverAll()
         innerSafety += 1
     }
@@ -198,31 +280,60 @@ class HyParViewQueuedTest extends munit.FunSuite {
     assert(nodes.forall(_.activeView.size <= 5))
     assert(nodes.forall(_.passiveView.size <= 30))
 
+    // Plumtree overlay usage: single message from one sender, on top of established HyParView active links.
+    val root = nodes.head
+    val msgId = root.plumtreeBroadcast("hello-plumtree")
+
+    var broadcastSafety = 0
+    while queue.nonEmpty && broadcastSafety < 300000 do
+      queue.deliverAll()
+      broadcastSafety += 1
+
+    assert(nodes.forall(_.hasDelivered(msgId)))
+
     val dotPath = Paths.get("target", "hyparview-queued-1000.dot")
     Files.createDirectories(dotPath.getParent)
-    Files.writeString(dotPath, renderDot(nodes), StandardCharsets.UTF_8)
+    Files.writeString(
+      dotPath,
+      renderDot(nodes, showOverlayTree = true, showActiveSet = false, showPassiveSet = false),
+      StandardCharsets.UTF_8
+    )
   }
 
-  private def renderDot(nodes: Seq[HyParViewNode]): String = {
+  private def renderDot(
+      nodes: Seq[HyParViewNode],
+      showOverlayTree: Boolean,
+      showActiveSet: Boolean,
+      showPassiveSet: Boolean
+  ): String = {
     def edgeKey(a: Uid, b: Uid): (String, String) = {
       val aa = Uid.unwrap(a)
       val bb = Uid.unwrap(b)
       if aa <= bb then (aa, bb) else (bb, aa)
     }
 
-    val activeEdges = mutable.LinkedHashSet.empty[(String, String)]
-    val passiveEdges = mutable.LinkedHashSet.empty[(String, String)]
+    val overlayTreeEdges = mutable.LinkedHashSet.empty[(String, String)]
+    val activeEdges      = mutable.LinkedHashSet.empty[(String, String)]
+    val passiveEdges     = mutable.LinkedHashSet.empty[(String, String)]
 
     nodes.foreach { n =>
-      n.activeView.foreach { to =>
-        if to != n.id then activeEdges += edgeKey(n.id, to)
-      }
-      n.passiveView.foreach { to =>
-        if to != n.id then passiveEdges += edgeKey(n.id, to)
-      }
+      if showOverlayTree then
+        n.overlayTreeView.foreach { to =>
+          if to != n.id then overlayTreeEdges += edgeKey(n.id, to)
+        }
+      if showActiveSet then
+        n.activeView.foreach { to =>
+          if to != n.id then activeEdges += edgeKey(n.id, to)
+        }
+      if showPassiveSet then
+        n.passiveView.foreach { to =>
+          if to != n.id then passiveEdges += edgeKey(n.id, to)
+        }
     }
 
-    // If an edge is active, do not also draw it as passive.
+    // Keep only one style per edge with this precedence: overlay tree > active > passive.
+    activeEdges --= overlayTreeEdges
+    passiveEdges --= overlayTreeEdges
     passiveEdges --= activeEdges
 
     val b = new StringBuilder
@@ -234,13 +345,17 @@ class HyParViewQueuedTest extends munit.FunSuite {
       b.append(s"  \"$id\";\n")
     }
 
+    overlayTreeEdges.foreach { case (a, c) =>
+      b.append(s"  \"$a\" -- \"$c\" [color=forestgreen, penwidth=1.8];\n")
+    }
+
     activeEdges.foreach { case (a, c) =>
       b.append(s"  \"$a\" -- \"$c\";\n")
     }
 
-//    passiveEdges.foreach { case (a, c) =>
-//      b.append(s"  \"$a\" -- \"$c\" [style=dashed];\n")
-//    }
+    passiveEdges.foreach { case (a, c) =>
+      b.append(s"  \"$a\" -- \"$c\" [style=dashed];\n")
+    }
 
     b.append("}\n")
     b.result()
