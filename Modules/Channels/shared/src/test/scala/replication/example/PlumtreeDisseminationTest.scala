@@ -40,6 +40,44 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
 
   }
 
+  test("full mesh queued 5 nodes") {
+
+    given JsonValueCodec[Set[String]] = JsonCodecMaker.make
+
+    val nodes = Vector.fill(5)(PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue))
+
+    val queue = LocalMessageQueue[ProtocolMessage[Set[String]]]()
+
+    for
+        i <- nodes.indices
+        j <- (i + 1) until nodes.size
+    do
+      val link = QueuedLocalConnection[ProtocolMessage[Set[String]]](queue)
+      nodes(i).addObjectConnection(link.server)
+      nodes(j).addObjectConnection(link.client(s"$j->$i"))
+
+    // drain connection setup traffic (initial requests/replies)
+    var setupSafety = 0
+    while queue.nonEmpty && setupSafety < 10000 do
+      queue.deliverAll()
+      setupSafety += 1
+
+    nodes.zipWithIndex.foreach { case (n, idx) =>
+      n.applyDelta(Set(s"v$idx"))
+    }
+
+    var disseminateSafety = 0
+    while queue.nonEmpty && disseminateSafety < 10000 do
+      queue.deliverAll()
+      disseminateSafety += 1
+
+    val expected = Set(Set("v0"), Set("v1"), Set("v2"), Set("v3"), Set("v4"))
+
+    nodes.foreach { n =>
+      assertEquals(n.allPayloads.map(_.payload.data).toSet, expected)
+    }
+  }
+
   test("basics queued") {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
