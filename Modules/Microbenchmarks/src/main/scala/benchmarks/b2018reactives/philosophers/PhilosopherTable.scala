@@ -1,0 +1,94 @@
+package benchmarks.b2018reactives.philosophers
+
+import PhilosopherTable.*
+import org.openjdk.jmh.infra.Blackhole
+
+import java.util.concurrent.atomic.AtomicInteger
+
+class PhilosopherTable(philosopherCount: Int, work: Long)(val engine: reactives.default.type) {
+
+  import engine.*
+
+  val seatings: Seq[Seating] = createTable(philosopherCount)
+
+  val eaten = new AtomicInteger(0)
+
+  seatings.foreach { seating =>
+    seating.vision.observe { state =>
+      if state == Done then {
+        Blackhole.consumeCPU(work)
+      }
+    }
+  }
+
+  def createTable(tableSize: Int): Seq[Seating] = {
+    def mod(n: Int): Int = (n + tableSize) % tableSize
+
+    val phils = for _ <- 0 until tableSize yield Var[Philosopher](Thinking)
+
+    val forks =
+      for i <- 0 until tableSize yield {
+        val nextCircularIndex = mod(i + 1)
+        Signal.lift(phils(i), phils(nextCircularIndex))(calcFork(i.toString, nextCircularIndex.toString))
+      }
+
+    for i <- 0 until tableSize yield {
+      val vision = Signal.lift(forks(i), forks(mod(i - 1)))(calcVision(i.toString))
+      Seating(i, phils(i), forks(i), forks(mod(i - 1)), vision)
+    }
+  }
+
+  def tryEat(seating: Seating): Boolean =
+    engine.transactionWithWrapup(seating.philosopher) { t =>
+      val forksAreFree = t.now(seating.vision) == Ready
+      if forksAreFree then seating.philosopher.admit(Eating)(using t)
+      forksAreFree
+    } /* propagation executes here */ { (forksWereFree, t) =>
+      if forksWereFree then assert(t.now(seating.vision) == Done, "philosopher should be done after turn")
+      forksWereFree
+    }
+
+  // ============================================ Entity Creation =========================================================
+
+  case class Seating(
+      placeNumber: Int,
+      philosopher: Var[Philosopher],
+      leftFork: Signal[Fork],
+      rightFork: Signal[Fork],
+      vision: Signal[Vision]
+  )
+}
+
+object PhilosopherTable {
+
+  def calcFork(leftName: String, rightName: String)(leftState: Philosopher, rightState: Philosopher): Fork =
+    (leftState, rightState) match {
+      case (Thinking, Thinking) => Free
+      case (Eating, _)          => Taken(leftName)
+      case (_, Eating)          => Taken(rightName)
+    }
+
+  def calcVision(ownName: String)(leftFork: Fork, rightFork: Fork): Vision =
+    (leftFork, rightFork) match {
+      case (Free, Free)                         => Ready
+      case (Taken(`ownName`), Taken(`ownName`)) => Done
+      case (Taken(name), _)                     => BlockedBy(name)
+      case (_, Taken(name))                     => BlockedBy(name)
+    }
+
+  // ============================================= Infrastructure ========================================================
+
+  sealed trait Philosopher
+  case object Thinking extends Philosopher
+  case object Eating   extends Philosopher
+
+  sealed trait Fork
+  case object Free               extends Fork
+  case class Taken(name: String) extends Fork
+
+  sealed trait Vision
+  case object Ready                  extends Vision
+  case object Done                   extends Vision
+  case class BlockedBy(name: String) extends Vision
+
+}
