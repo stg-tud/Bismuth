@@ -2,11 +2,21 @@ package webapps.ex2025tabular.app
 
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
-import org.scalajs.dom
+import org.scalajs.dom.document
 import rdts.base.{Lattice, LocalUid}
 import webapps.ex2025tabular.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 
+import scala.scalajs.js.annotation.JSExportTopLevel
+
 object Main {
+
+  @JSExportTopLevel("Tabular")
+  def run(): Unit = {
+    val container = document.getElementById("app")
+    App().renderIntoDOM(container)
+    ()
+  }
+
   case class SpreadsheetData(
       id: Int,
       isOnline: Boolean,
@@ -141,9 +151,4 @@ object Main {
     }
     .build
 
-  def main(args: Array[String]): Unit = {
-    val container = dom.document.getElementById("root")
-    App().renderIntoDOM(container)
-    ()
-  }
 }

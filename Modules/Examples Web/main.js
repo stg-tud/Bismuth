@@ -7,10 +7,11 @@ const modulePromise = useFullopt
 
 // the dynamic import above returns the module object, which is destructured into the components we care about below.
 modulePromise.then(
-	({ Todolist, Calendar, UnitConversion, DebugAdapterSetListener }) => {
+	({ Todolist, Calendar, UnitConversion, Tabular, DebugAdapterSetListener }) => {
 		// Add event listeners
 		document.getElementById("todolist-btn").addEventListener("click", Todolist);
 		document.getElementById("calendar-btn").addEventListener("click", Calendar);
+		document.getElementById("tabular-btn").addEventListener("click", Tabular);
 		document
 			.getElementById("unit-conversion-btn")
 			.addEventListener("click", UnitConversion);
