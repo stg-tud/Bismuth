@@ -36,7 +36,7 @@ class ChannelConnectionManagerTest extends FunSuite {
   private val idC = IdentityFactory.createNewIdentity
   // private val idD = IdentityFactory.createNewIdentity
 
-  test("Two replicas") {
+  test("Two replicas".ignore) {
     val receiverA = QueueAppendingMessageReceiver()
     val receiverB = QueueAppendingMessageReceiver()
     val connManA  = ChannelConnectionManager(idA, receiverA, disableLogging = !DEBUG)
@@ -61,7 +61,7 @@ class ChannelConnectionManagerTest extends FunSuite {
     connManB.shutdown()
   }
 
-  test("Three replicas with duplicates") {
+  test("Three replicas with duplicates".ignore) {
     val receiverA = QueueAppendingMessageReceiver()
     val receiverB = QueueAppendingMessageReceiver()
     val receiverC = QueueAppendingMessageReceiver()

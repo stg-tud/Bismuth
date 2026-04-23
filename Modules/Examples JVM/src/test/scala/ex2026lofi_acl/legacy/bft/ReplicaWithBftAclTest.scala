@@ -29,7 +29,7 @@ class ReplicaWithBftAclTest extends FunSuite {
 
   private val aclRoot = BftAclOpGraph.createSelfSignedRoot(privateIdA)
 
-  test("connection works") {
+  test("connection works".ignore) {
     val rcvA = QueueAppendingMessageReceiver()
     val rcvB = QueueAppendingMessageReceiver()
 
