@@ -1,4 +1,4 @@
-package benchmarks.lattices.delta.crdt
+package benchmarks.b2022lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.{Decompose, LocalUid}

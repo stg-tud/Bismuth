@@ -1,10 +1,10 @@
-package benchmarks.lattices.delta
+package benchmarks.b2022lattices.delta
 
 import org.openjdk.jmh.annotations
 import org.openjdk.jmh.annotations.*
-import rdts.base.Lattice
 import rdts.base.LocalUid.asId
-import rdts.datatypes.ReplicatedList
+import rdts.base.{Lattice, Uid}
+import rdts.datatypes.ReplicatedSet
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.TimeUnit
@@ -16,41 +16,41 @@ import java.util.concurrent.TimeUnit
 @Fork(3)
 @Threads(1)
 @annotations.State(Scope.Thread)
-class DeltaMergeBench {
+class AWSetDeltaMergeBench {
 
   @Param(Array("1", "10", "100", "1000"))
   var size: Long = scala.compiletime.uninitialized
 
-  var fullState: ReplicatedList[Long]         = scala.compiletime.uninitialized
-  var plusOneState: ReplicatedList[Long]      = scala.compiletime.uninitialized
-  var plusOneDeltaState: ReplicatedList[Long] = scala.compiletime.uninitialized
+  var fullState: ReplicatedSet[Long]         = scala.compiletime.uninitialized
+  var plusOneState: ReplicatedSet[Long]      = scala.compiletime.uninitialized
+  var plusOneDeltaState: ReplicatedSet[Long] = scala.compiletime.uninitialized
 
-  def makeCContext(replicaID: String): Dots = {
-    val dots = (0L until size).map(Dot(replicaID.asId.uid, _)).toSet
+  def makeCContext(replicaID: Uid): Dots = {
+    val dots = (0L until size).map(Dot(replicaID, _)).toSet
     Dots.from(dots)
   }
 
   @Setup
   def setup(): Unit = {
-    val baseState = ReplicatedList.empty[Long]
+    val baseState = ReplicatedSet.empty[Long]
 
-    val deltaState = baseState.insertAll(0, 0L to size)(using "".asId)
+    val deltaState = baseState.addAll(using "".asId)(0L to size)
     fullState = Lattice.merge(baseState, deltaState)
 
-    plusOneDeltaState = fullState.insert(0, size)(using "".asId)
+    plusOneDeltaState = fullState.add(using "".asId)(size)
     plusOneState = Lattice.merge(fullState, plusOneDeltaState)
   }
 
   @Benchmark
-  def fullMerge: ReplicatedList[Long] =
+  def fullMerge: ReplicatedSet[Long] =
     Lattice.merge(fullState, plusOneState)
 
   @Benchmark
-  def fullDiff: Option[ReplicatedList[Long]] =
+  def fullDiff: Option[ReplicatedSet[Long]] =
     Lattice.diff(fullState, plusOneState)
 
   @Benchmark
-  def deltaMerge: ReplicatedList[Long] = {
+  def deltaMerge: ReplicatedSet[Long] = {
     Lattice.diff(fullState, plusOneDeltaState) match {
       case Some(stateDiff) =>
         Lattice.merge(fullState, stateDiff)
@@ -59,6 +59,6 @@ class DeltaMergeBench {
   }
 
   @Benchmark
-  def deltaMergeNoDiff: ReplicatedList[Long] =
+  def deltaMergeNoDiff: ReplicatedSet[Long] =
     Lattice.merge(fullState, plusOneDeltaState)
 }

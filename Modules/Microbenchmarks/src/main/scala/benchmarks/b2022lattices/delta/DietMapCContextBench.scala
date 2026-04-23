@@ -1,4 +1,4 @@
-package benchmarks.lattices.delta
+package benchmarks.b2022lattices.delta
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.Uid.asId

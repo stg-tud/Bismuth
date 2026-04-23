@@ -1,4 +1,4 @@
-package benchmarks.lattices.delta.crdt
+package benchmarks.b2022lattices.delta.crdt
 
 import rdts.base.{Decompose, Lattice, LocalUid, Uid}
 

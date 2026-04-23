@@ -1,4 +1,4 @@
-package benchmarks.lattices
+package benchmarks.b2022lattices
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice
