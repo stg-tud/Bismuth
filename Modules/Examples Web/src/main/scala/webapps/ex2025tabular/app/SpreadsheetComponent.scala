@@ -1,7 +1,6 @@
 package webapps.ex2025tabular.app
 
-import com.daimpl.lib.Spreadsheet.SpreadsheetCoordinate
-import com.daimpl.lib.*
+import webapps.ex2025tabular.lib.*
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.CtorType.Summoner.Aux
 import japgolly.scalajs.react.component.Scala.Component
@@ -9,6 +8,7 @@ import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
 import rdts.base.LocalUid
+import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
 
 import scala.scalajs.js.timers
 import scala.scalajs.js.timers.SetTimeoutHandle

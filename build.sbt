@@ -9,8 +9,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   crypto.js,
   crypto.jvm,
   deltalens,
-  dtn.js,
-  dtn.jvm,
   examplesJVM,
   examplesWeb,
   lore.js,
@@ -99,16 +97,6 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
     Dependencies.scalatest,
   )
 
-lazy val dtn = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
-  .in(file("Modules/DTN"))
-  .dependsOn(reactives, rdts, channels)
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.jsoniterScala,
-    Dependencies.sttpCore,
-    Dependencies.borer
-  )
-
 lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(deltalens, reactives.jvm, crypto.jvm, channels.jvm % "compile->compile;test->test")
@@ -119,6 +107,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.akka,
     Dependencies.akkaTestKit,
     Dependencies.bloomFilter,
+    Dependencies.borer,
     Dependencies.bouncyCastle,
     Dependencies.conscrypt,
     Dependencies.decline,
@@ -131,6 +120,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.scalaXml,
     Dependencies.slf4jnop, // for jetty
     Dependencies.slips,
+    Dependencies.sttpCore,
     Dependencies.tink,
     libraryDependencies += Dependencies.scalafx,
     Settings.implicitConversions(), // reswing uses this in a million places for no reason
@@ -143,9 +133,10 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
 
 lazy val examplesWeb = project.in(file("Modules/Examples Web"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(dtn.js, lore.js)
+  .dependsOn(channels.js, rdts.js, lore.js)
   .settings(
     Dependencies.jsoniterScala,
+    Dependencies.munit,
     Dependencies.pprint,
     Dependencies.scalajsDom,
     Dependencies.scalajsReact,

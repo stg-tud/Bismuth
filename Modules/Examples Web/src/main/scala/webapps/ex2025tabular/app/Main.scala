@@ -4,6 +4,7 @@ import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
 import rdts.base.{Lattice, LocalUid}
+import webapps.ex2025tabular.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 
 object Main {
   case class SpreadsheetData(

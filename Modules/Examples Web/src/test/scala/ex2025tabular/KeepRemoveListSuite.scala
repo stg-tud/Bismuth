@@ -3,6 +3,7 @@ package ex2025tabular
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
 import rdts.base.{LocalUid, Uid}
+import webapps.ex2025tabular.lib.KeepRemoveList
 
 final class KeepRemoveListSuite extends FunSuite:
 

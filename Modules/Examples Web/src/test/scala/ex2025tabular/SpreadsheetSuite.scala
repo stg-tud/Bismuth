@@ -1,7 +1,8 @@
 package ex2025tabular
 
-import com.daimpl.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 import rdts.base.{LocalUid, Uid}
+import webapps.ex2025tabular.lib.Spreadsheet.{SpreadsheetCoordinate, Range}
+import webapps.ex2025tabular.lib.*
 
 class SpreadsheetSuite extends munit.FunSuite {
 

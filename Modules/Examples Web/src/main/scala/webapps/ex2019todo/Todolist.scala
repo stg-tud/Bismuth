@@ -1,17 +1,13 @@
 package webapps.ex2019todo
 
-import dtn.rdt.Channel
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.{Element, document, window}
 import rdts.base.{Lattice, LocalUid}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
-import scalatags.JsDom.all.given
 import webapps.WebRTCConnectionView
-import webapps.ex2019todo.TodoDataManager.TodoRepState
 
-import java.util.{Timer, TimerTask}
-import scala.scalajs.js
+import java.util.Timer
 import scala.scalajs.js.annotation.JSExportTopLevel
 
 object Todolist {
@@ -42,7 +38,7 @@ object Todolist {
 
   }
 
-  lazy val dtnConnectorContents: Div = DTNTestConnector.getConnectorContents()
+//  lazy val dtnConnectorContents: Div = DTNTestConnector.getConnectorContents()
 
   lazy val statusInfo: Div = {
     all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
@@ -58,7 +54,7 @@ object Todolist {
 
     container.replaceChildren(contents)
 
-    container.appendChild(dtnConnectorContents)
+//    container.appendChild(dtnConnectorContents)
 
     container.appendChild(webrtc)
 
@@ -70,16 +66,16 @@ object Todolist {
 
 }
 
-object DTNTestConnector {
-  def getConnectorContents(): Div = {
-    val portInput     = all.input(all.placeholder := "dtnd ws port").render
-    val connectButton = all.button(all.onclick := { () =>
-      TodoDataManager.dataManager.addObjectConnection(
-        Channel[TodoRepState]("127.0.0.1", portInput.value.toInt, "app1", scala.concurrent.ExecutionContext.global)
-      )
-    }).render
-    connectButton.textContent = "Connect"
-
-    all.div(portInput, connectButton).render
-  }
-}
+//object DTNTestConnector {
+//  def getConnectorContents(): Div = {
+//    val portInput     = all.input(all.placeholder := "dtnd ws port").render
+//    val connectButton = all.button(all.onclick := { () =>
+//      TodoDataManager.dataManager.addObjectConnection(
+//        Channel[TodoRepState]("127.0.0.1", portInput.value.toInt, "app1", scala.concurrent.ExecutionContext.global)
+//      )
+//    }).render
+//    connectButton.textContent = "Connect"
+//
+//    all.div(portInput, connectButton).render
+//  }
+//}

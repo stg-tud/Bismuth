@@ -1,9 +1,10 @@
 package ex2025tabular
 
-import com.daimpl.lib.ReplicatedUniqueList.MarkerRemovalBehavior
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
 import rdts.base.{LocalUid, Uid}
+import webapps.ex2025tabular.lib.ReplicatedUniqueList
+import webapps.ex2025tabular.lib.ReplicatedUniqueList.MarkerRemovalBehavior
 
 final class ReplicatedUniqueListSuite extends FunSuite:
 
