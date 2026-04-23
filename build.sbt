@@ -24,8 +24,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   reactives.js,
   reactives.jvm,
   reactives.native,
-  tabularApp,
-  tabularLib,
 )
 
 // aggregate projects allow compiling all variants (js, jvm, native) at the same time
@@ -147,10 +145,12 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(dtn.js, lore.js)
   .settings(
-    scala3defaultsExtra,
-    Dependencies.scalatags(),
     Dependencies.jsoniterScala,
     Dependencies.pprint,
+    Dependencies.scalajsDom,
+    Dependencies.scalajsReact,
+    Dependencies.scalatags(),
+    scala3defaultsExtra,
     scalaJSLinkerConfig := {
       scalaJSLinkerConfig.value
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
@@ -284,23 +284,3 @@ lazy val webview = project.in(file("Modules/Webview"))
     }
   )
 
-lazy val tabularApp = project.in(file("Modules/Tabular/app"))
-  .dependsOn(tabularLib)
-  .enablePlugins(ScalaJSPlugin)
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.scalajsDom,
-    Dependencies.scalajsReact,
-    scalaJSUseMainModuleInitializer   := true,
-    Compile / fastOptJS / crossTarget := target.value,
-    Compile / fullOptJS / crossTarget := target.value
-  )
-
-lazy val tabularLib = project.in(file("Modules/Tabular/lib"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js, rdts.js)
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.munit,
-    Dependencies.pprint,
-  )
