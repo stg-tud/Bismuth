@@ -74,7 +74,6 @@ class KeyValueReplica(
     val dataManager: PlumtreeDissemination[ClusterState] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
-      defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)
     )
@@ -220,14 +219,12 @@ class KeyValueReplica(
     val dataManagerWrite: PlumtreeDissemination[ClientCommWrite] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncomingWrite(delta)),
-      defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
     )
     val dataManagerRead: PlumtreeDissemination[ClientCommRead] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncomingRead(delta)),
-      defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
     )
@@ -285,7 +282,6 @@ class KeyValueReplica(
     val dataManager: PlumtreeDissemination[ConnInformation] = PlumtreeDissemination(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
-      defaultTimetolive = 0,
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
     )

@@ -20,14 +20,12 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
     PlumtreeDissemination(
       localUid,
       handleIncomingWrite,
-      defaultTimetolive = 1,
       deltaStorage = DeltaStorage.getStorage(Type.KeepAll, () => ???)
     )
   val readDataManager: PlumtreeDissemination[ClientCommRead] =
     PlumtreeDissemination(
       localUid,
       handleIncomingRead,
-      defaultTimetolive = 1,
       deltaStorage = DeltaStorage.getStorage(Type.KeepAll, () => ???)
     )
 

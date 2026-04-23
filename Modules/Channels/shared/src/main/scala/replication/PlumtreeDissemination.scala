@@ -32,6 +32,29 @@ object PlumtreeDissemination {
     // we use the supertype codec here, this has the consequence of adding the type discriminators even for concrete subtypes of ProtocolMessage, which is generally what we want.
     pmscodecInv.asInstanceOf[JsonValueCodec[T]]
   }
+
+  def factory[State: JsonValueCodec](
+      replicaId: LocalUid,
+      @unused crypto: Option[Aead] = None,
+      sendingActor: ExecutionContext = executeImmediately,
+      globalAbort: => Abort = Abort(),
+      deltaStorage: => DeltaStorage[State] = DiscardingHistory[State](size = 108),
+  )(
+      configure: PlumtreeDissemination[State] => Unit = (_: PlumtreeDissemination[State]) => ()
+  ): DeltaDisseminationFactory[State] = new DeltaDisseminationFactory[State] {
+    override def bind(receiveCallback: State => Unit): DeltaDissemination[State] = {
+      val dissemination = PlumtreeDissemination(
+        replicaId = replicaId,
+        receiveCallback = receiveCallback,
+        crypto = crypto,
+        sendingActor = sendingActor,
+        globalAbort = globalAbort,
+        deltaStorage = deltaStorage,
+      )
+      configure(dissemination)
+      dissemination
+    }
+  }
 }
 
 /** Combined Delta + Plumtree dissemination.
@@ -48,11 +71,10 @@ class PlumtreeDissemination[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
     @unused crypto: Option[Aead] = None,
-    defaultTimetolive: Int = 0,
     sendingActor: ExecutionContext = PlumtreeDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
-)(using JsonValueCodec[State]) {
+)(using JsonValueCodec[State]) extends DeltaDissemination[State] {
 
   type Message = CachedMessage[ProtocolMessage[State]]
 
@@ -64,9 +86,7 @@ class PlumtreeDissemination[State](
 
   case class PeerState(conn: Connection[Message], var role: PeerRole = PeerRole.Eager)
 
-  type ConnectionContext = Connection[Message]
-
-  @volatile private var peers: Map[ConnectionContext, PeerState] = Map.empty
+  @volatile private var peers: Map[Connection[Message], PeerState] = Map.empty
 
   private def cachedMessages(conn: LatentConnection[MessageBuffer]): LatentConnection[Message] =
     LatentConnection.adapt(
@@ -127,13 +147,7 @@ class PlumtreeDissemination[State](
     }
   }
 
-  def requestData(): Unit = {
-    val msg      = SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec)
-    val snapshot = lock.synchronized(peers.values.map(_.conn).toList)
-    snapshot.foreach(send(_, msg))
-  }
-
-  def pingAll(): Unit = {
+  def pingAll(): Unit = synchronized {
     val msg      = SentCachedMessage(Ping(System.nanoTime()))(using pmscodec)
     val snapshot = lock.synchronized(peers.values.map(_.conn).toList)
     snapshot.foreach(send(_, msg))
@@ -143,18 +157,18 @@ class PlumtreeDissemination[State](
 
   @volatile private var localContext: Dots = Dots.empty
 
-  def localKnownDeltaContext: Dots      = localContext
-  def addLocalContext(dots: Dots): Unit = lock.synchronized { localContext = localContext.merge(dots) }
+  private def localKnownDeltaContext: Dots      = localContext
+  private def addLocalContext(dots: Dots): Unit = lock.synchronized { localContext = localContext.merge(dots) }
 
-  def allPayloads: List[CachedMessage[Payload[State]]] = lock.synchronized(deltaStorage.getHistory)
+  def allPayloads: List[CachedMessage[Payload[State]]] = deltaStorage.getHistory
 
-  def rememberPayload(message: CachedMessage[Payload[State]]): Unit =
-    lock.synchronized(deltaStorage.remember(message))
+  private def rememberPayload(message: CachedMessage[Payload[State]]): Unit =
+    deltaStorage.remember(message)
 
-  def applyDelta(delta: State, timetolive: Int = defaultTimetolive): Unit = {
+  override def applyDelta(delta: State): Unit = lock.synchronized {
     val message = lock.synchronized {
       val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
-      val payload = Payload(Dots.single(nextDot), delta, timetolive)
+      val payload = Payload(Dots.single(nextDot), delta)
       addLocalContext(payload.dots)
       val msg = SentCachedMessage(payload)(using pmscodec)
       rememberPayload(msg)
@@ -163,17 +177,17 @@ class PlumtreeDissemination[State](
     disseminate(message)
   }
 
-  private def removePeer(conn: ConnectionContext): Unit =
+  private def removePeer(conn: Connection[Message]): Unit =
     lock.synchronized {
       peers = peers.removed(conn)
     }
 
-  private def setRole(conn: ConnectionContext, role: PeerRole): Unit =
+  private def setRole(conn: Connection[Message], role: PeerRole): Unit =
     lock.synchronized {
       peers.get(conn).foreach(_.role = role)
     }
 
-  private def disseminate(payload: Message, except: Set[ConnectionContext] = Set.empty): Unit = {
+  private def disseminate(payload: Message, except: Set[Connection[Message]] = Set.empty): Unit = {
     val (eagerPeers, lazyPeers) = lock.synchronized {
       val ps = peers.values.filterNot(p => except.contains(p.conn)).toList
       (ps.filter(_.role == PeerRole.Eager).map(_.conn), ps.filter(_.role == PeerRole.Lazy).map(_.conn))
@@ -188,7 +202,7 @@ class PlumtreeDissemination[State](
         lazyPeers.foreach(send(_, ih))
   }
 
-  private def send(conn: ConnectionContext, payload: Message): Unit =
+  private def send(conn: Connection[Message], payload: Message): Unit =
     if globalAbort.closeRequest then ()
     else
         sendingActor.execute { () =>
@@ -198,7 +212,7 @@ class PlumtreeDissemination[State](
           }
         }
 
-  private def handleMessage(msg: Message, from: ConnectionContext): Unit = {
+  private def handleMessage(msg: Message, from: Connection[Message]): Unit = synchronized {
     if globalAbort.closeRequest then return
 
     msg.payload match
@@ -219,12 +233,10 @@ class PlumtreeDissemination[State](
           // Request acts as graft/repair signal: keep requester eager.
           setRole(from, PeerRole.Eager)
 
-          val relevant = lock.synchronized {
-            allPayloads.filterNot(dt => dt.payload.dots <= knows)
-          }
+          val relevant = allPayloads.filterNot(dt => dt.payload.dots <= knows)
           relevant.foreach(send(from, _))
 
-        case payload @ Payload(context, data, _, timetolive) =>
+        case payload @ Payload(context, data, _) =>
           if context <= localKnownDeltaContext then
               // duplicate path => prune sender edge for eager forwarding
               send(from, SentCachedMessage(Prune(replicaId.uid))(using pmscodec))
@@ -239,11 +251,7 @@ class PlumtreeDissemination[State](
           receiveCallback(data)
           setRole(from, PeerRole.Eager)
 
-          if timetolive > 0 then
-              val forwarded = SentCachedMessage(payload.copy(timetolive = timetolive - 1))(using pmscodec)
-              disseminate(forwarded, except = Set(from))
-          else
-              // still lazy-advertise new knowledge
-              disseminate(msg, except = Set(from))
+          val forwarded = SentCachedMessage(payload)(using pmscodec)
+          disseminate(forwarded, except = Set(from))
   }
 }

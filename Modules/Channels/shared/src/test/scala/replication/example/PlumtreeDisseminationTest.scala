@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
 
-import replication.{PlumtreeDissemination, ProtocolMessage}
+import replication.{DeltaDisseminationFactory, PlumtreeDissemination, ProtocolMessage}
 
 class PlumtreeDisseminationTest extends munit.FunSuite {
   test("basics") {
@@ -13,7 +13,7 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     // I have no clue why this syntax is still not deprecated xD
-    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
+    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None)
 
     val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
 
@@ -44,7 +44,7 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val nodes = Vector.fill(5)(PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue))
+    val nodes = Vector.fill(5)(PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None))
 
     val queue = LocalMessageQueue[ProtocolMessage[Set[String]]]()
 
@@ -82,7 +82,7 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue)
+    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None)
 
     val queue  = LocalMessageQueue[ProtocolMessage[Set[String]]]()
     val queued = QueuedLocalConnection[ProtocolMessage[Set[String]]](queue)
@@ -130,6 +130,26 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
       dd3.allPayloads.map(_.payload.data).toSet
     )
 
+  }
+
+  test("factory interface can create an applyDelta handle") {
+
+    given JsonValueCodec[Set[String]] = JsonCodecMaker.make
+
+    val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
+
+    val setup: DeltaDisseminationFactory[Set[String]] =
+      PlumtreeDissemination.factory(LocalUid.gen())(_.addObjectConnection(sync.server))
+
+    var received = List.empty[Set[String]]
+    val dissemination = setup.bind(delta => received = delta :: received)
+
+    val remote = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None)
+    remote.addObjectConnection(sync.client("remote"))
+
+    remote.applyDelta(Set("hello"))
+
+    assertEquals(received.reverse, List(Set("hello")))
   }
 
 }

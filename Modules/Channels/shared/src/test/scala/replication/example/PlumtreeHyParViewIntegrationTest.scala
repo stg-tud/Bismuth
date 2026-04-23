@@ -37,7 +37,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
         edgeKey(a, b) -> QueuedLocalConnection[ProtocolMessage[Set[String]]](dataQueue)
       }).toMap
 
-    val dms = ids.map(_ => PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None, defaultTimetolive = Int.MaxValue))
+    val dms = ids.map(_ => PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None))
 
     val cfg = HyParViewConfig.fromEstimatedNetworkSize(n)
 
@@ -68,6 +68,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
     var dissemination = 0
     while (controlQueue.nonEmpty || dataQueue.nonEmpty) && dissemination < 200000 do
+      println(s"dissemination $dissemination control: ${controlQueue.size} data: ${dataQueue.size} ")
       if controlQueue.nonEmpty then controlQueue.deliverAll()
       if dataQueue.nonEmpty then dataQueue.deliverAll()
       dissemination += 1

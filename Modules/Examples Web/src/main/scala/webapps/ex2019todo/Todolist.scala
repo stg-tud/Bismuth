@@ -28,16 +28,6 @@ object Todolist {
 
   lazy val webrtc: Element = WebRTCConnectionView(TodoDataManager.dataManager).example().render
 
-  lazy val updateTask: Unit = {
-
-    timer.scheduleAtFixedRate(
-      () => TodoDataManager.dataManager.requestData(),
-      1000,
-      1000
-    )
-
-  }
-
 //  lazy val dtnConnectorContents: Div = DTNTestConnector.getConnectorContents()
 
   lazy val statusInfo: Div = {
@@ -60,8 +50,7 @@ object Todolist {
 
     container.appendChild(statusInfo)
 
-    updateTask
-
+    ()
   }
 
 }

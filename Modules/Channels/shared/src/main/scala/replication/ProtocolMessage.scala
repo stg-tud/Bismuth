@@ -16,14 +16,11 @@ object ProtocolMessage {
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T
     */
-  case class Payload[+T](dots: Dots, data: T, redundantDots: Dots, timetolive: Int)
+  case class Payload[+T](dots: Dots, data: T, redundantDots: Dots)
       extends ProtocolMessage[T] {}
   object Payload                 {
-    def apply[T](dots: Dots, data: T, timetolive: Int): Payload[T] =
-      Payload(dots, data, Dots.empty, timetolive)
-
     def apply[T](dots: Dots, data: T): Payload[T] =
-      Payload(dots, data, Dots.empty, timetolive = 0)
+      Payload(dots, data, Dots.empty)
 
     // this kinda makes sense, but kinda does not
     // given [T: Lattice]: Lattice[Payload[T]] = Lattice.derived
