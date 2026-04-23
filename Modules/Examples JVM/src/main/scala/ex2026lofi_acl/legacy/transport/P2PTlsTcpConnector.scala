@@ -1,4 +1,4 @@
-package lofi_acl.transport
+package ex2026lofi_acl.legacy.transport
 
 import crypto.PublicIdentity
 import crypto.channels.{P2PX509TrustManager, PrivateIdentity, X509Util}

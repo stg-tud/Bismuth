@@ -1,4 +1,4 @@
-package lofi_acl.transport
+package ex2026lofi_acl.legacy.transport
 
 import crypto.Ed25519Util
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers

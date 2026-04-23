@@ -2,8 +2,8 @@ package ex2026lofi_acl.legacy.monotonic
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import ex2026lofi_acl.legacy.transport.P2PTlsTcpConnector
 import ex2026lofi_acl.sync.MessageReceiver
-import lofi_acl.transport.P2PTlsTcpConnector
 
 import java.io.{DataInputStream, DataOutputStream, IOException}
 import java.util

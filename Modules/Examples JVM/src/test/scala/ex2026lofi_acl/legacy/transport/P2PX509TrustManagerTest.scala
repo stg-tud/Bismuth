@@ -1,9 +1,8 @@
-package lofi_acl.transport
+package ex2026lofi_acl.legacy.transport
 
 import crypto.Ed25519Util
 import crypto.channels.P2PX509TrustManager
 import crypto.channels.X509Util.toJavaCertificate
-import lofi_acl.transport.X509TestHelper
 import munit.FunSuite
 
 import java.security.cert.{CertificateException, X509Certificate}

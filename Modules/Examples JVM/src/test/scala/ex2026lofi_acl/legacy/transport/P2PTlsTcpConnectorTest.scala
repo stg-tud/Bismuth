@@ -1,7 +1,7 @@
-package lofi_acl.transport
+package ex2026lofi_acl.legacy.transport
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import lofi_acl.transport.X509TestHelper.genCertSignedByWrongKey
+import X509TestHelper.genCertSignedByWrongKey
 import munit.FunSuite
 
 import java.io.IOException
