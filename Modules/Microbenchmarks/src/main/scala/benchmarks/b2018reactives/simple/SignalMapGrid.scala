@@ -1,10 +1,9 @@
 package benchmarks.b2018reactives.simple
 
-import benchmarks.*
-import benchmarks.b2018reactives.{EngineParam, Workload}
 import benchmarks.b2018reactives.philosophers.BusyThreads
+import benchmarks.b2018reactives.{EngineParam, Workload}
 import org.openjdk.jmh.annotations.*
-import reactives.core.{CreationTicket, ReInfo}
+import reactives.core.CreationTicket
 
 import java.util.concurrent.TimeUnit
 

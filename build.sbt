@@ -4,7 +4,6 @@ import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle}
 import scala.scalanative.build.{LTO, Mode}
 
 lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
-  bft,
   channels.js,
   channels.jvm,
   crypto.js,
@@ -49,24 +48,6 @@ lazy val publishedProjects =
     .settings(SettingsLocal.publishSonatype, publish / skip := true)
 
 // projects in alphabetical order
-
-lazy val bft = project.in(file("Modules/BFT"))
-  .enablePlugins(JmhPlugin)
-  .dependsOn(
-    crypto.jvm,
-    examplesJVM,
-    lofiAcl,
-  )
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.munit,
-    Dependencies.jsoniterScala,
-    Dependencies.bouncyCastle,
-    Dependencies.akka,
-    Dependencies.akkaTestKit,
-    Dependencies.bloomFilter,
-    Dependencies.munitCheck,
-  )
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
   .in(file("Modules/Channels"))
@@ -135,11 +116,17 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .dependsOn(deltalens, reactives.jvm, crypto.jvm, channels.jvm % "compile->compile;test->test")
   .settings(
     scala3defaults,
-    javaOutputVersion(17),
+    javaOutputVersion(21),
     fork := true,
+    Dependencies.akka,
+    Dependencies.akkaTestKit,
+    Dependencies.bloomFilter,
+    Dependencies.bouncyCastle,
     Dependencies.conscrypt,
+    Dependencies.decline,
     Dependencies.jetty,
     Dependencies.jsoniterScala,
+    Dependencies.munit,
     Dependencies.munitCheck,
     Dependencies.pprint,
     Dependencies.scalaSwing,
@@ -180,36 +167,6 @@ lazy val examplesWeb = project.in(file("Modules/Examples Web"))
     // examples do not have tests, but still fail to execute them with WASM backend
     test      := {},
     testQuick := {},
-  )
-
-lazy val lofiAcl = project.in(file("Modules/Access Control"))
-  .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, crypto.jvm, channels.jvm % "compile->compile;test->test")
-  .settings(
-    scala3defaults,
-    javaOutputVersion(21),
-    fork := true,
-    // Dependencies.conscrypt,
-    Dependencies.jsoniterScala,
-    Dependencies.munitCheck,
-    Dependencies.pprint,
-    Dependencies.slips,
-    Dependencies.decline,
-    libraryDependencies += Dependencies.scalafx,
-    // Settings.implicitConversions(), // reswing uses this in a million places for no reason
-    javaOptions ++= Seq(
-      "-XX:+IgnoreUnrecognizedVMOptions",
-      "--sun-misc-unsafe-memory-access=allow",
-      "--enable-native-access=ALL-UNNAMED"
-    ), // Reduce warnings for JavaFX application
-    assembly / assemblyJarName       := "lofiAcl.jar",
-    assembly / assemblyMergeStrategy := {
-      case "module-info.class"                               => MergeStrategy.discard
-      case "META-INF/versions/9/module-info.class"           => MergeStrategy.discard
-      case p if p.startsWith("META-INF/versions/9/OSGI-INF") => MergeStrategy.discard
-      case p if p.startsWith("META-INF/substrate/config/")   => MergeStrategy.discard
-      case other                                             => MergeStrategy.defaultMergeStrategy(other)
-    }
   )
 
 lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
@@ -253,7 +210,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm, examplesJVM, lofiAcl)
+  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm, examplesJVM)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,

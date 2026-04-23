@@ -1,6 +1,6 @@
 package benchmarks.b2024cryptoprimitives
 
-import lofi_acl.legacy.encryption.KeyDerivationKey
+import ex2026lofi_acl.legacy.encryption.KeyDerivationKey
 import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit
