@@ -7,8 +7,5 @@ class SourceSymbol[T](
 )
 
 object SourceSymbol:
-    def identity[T](using x: Xorable[T])(using Hashable[T]): SourceSymbol[T] =
-      SourceSymbol.apply(x.zero)
-
     def apply[T](symbol: T)(using Hashable[T]): SourceSymbol[T] =
       new SourceSymbol[T](symbol, symbol.hash, new Mapping(symbol.hash))
