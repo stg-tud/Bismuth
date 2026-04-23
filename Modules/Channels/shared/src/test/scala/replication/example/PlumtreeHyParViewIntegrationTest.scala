@@ -1,82 +1,79 @@
 package replication.example
 
-import channels.{LocalMessageQueue, QueuedLocalConnection}
+import channels.{ConnectionDetails, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{LocalUid, Uid}
-import replication.{PlumtreeDissemination, ProtocolMessage}
-import replication.overlay.{HyParViewOverlay, HyParViewOverlayNode}
-import replication.overlay.HyParViewOverlay.HyParViewConfig
+import replication.PlumtreeDissemination
+import replication.overlay.{HyParViewMultiplexed, HyParViewMultiplexedNode, HyParViewUnified}
 
 import scala.util.Random
 
 class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
-  test("hyparview drives plumtree dissemination") {
-    given JsonValueCodec[Set[String]] = JsonCodecMaker.make
+  given JsonValueCodec[String] = JsonCodecMaker.make
+  given JsonValueCodec[Set[String]] = JsonCodecMaker.make
+  given JsonValueCodec[ConnectionDetails] = JsonCodecMaker.make
+  given JsonValueCodec[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]] =
+    HyParViewMultiplexed.envelopeCodec[Set[String], ConnectionDetails]
 
-    val n = 100
-    val random = Random(7)
+  private def drain(queue: LocalMessageQueue[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]], limit: Int): Unit = {
+    var safety = 0
+    while queue.nonEmpty && safety < limit do
+      queue.deliverAll()
+      safety += 1
+    assert(safety < limit, s"queue did not drain within $limit rounds, remaining=${queue.size}")
+  }
 
-    val controlQueue = LocalMessageQueue[HyParViewOverlay.HyParViewMessage]()
-    val dataQueue    = LocalMessageQueue[ProtocolMessage[Set[String]]]()
+  private def runNetwork(n: Int): Unit = {
+    val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]]()
+    val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]]()
+    val random   = Random(7)
 
     val ids = Vector.tabulate(n)(i => Uid.predefined(s"hp$i"))
-
-    val controlNetwork = ids.map(id => id -> QueuedLocalConnection[HyParViewOverlay.HyParViewMessage](controlQueue)).toMap
-
-    def edgeKey(a: Uid, b: Uid): (Uid, Uid) = if Uid.unwrap(a) <= Uid.unwrap(b) then (a, b) else (b, a)
-
-    val dataNetwork =
-      (for
-          i <- ids.indices
-          j <- (i + 1) until ids.size
-      yield {
-        val a = ids(i)
-        val b = ids(j)
-        edgeKey(a, b) -> QueuedLocalConnection[ProtocolMessage[Set[String]]](dataQueue)
-      }).toMap
-
     val dms = ids.map(_ => PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None))
-
-    val cfg = HyParViewConfig.fromEstimatedNetworkSize(n)
+    val cfg = HyParViewUnified.HyParViewConfig.fromEstimatedNetworkSize(n)
 
     val nodes = ids.zipWithIndex.map { case (id, idx) =>
-      val contact = if idx == 0 then None else Some(ids.head)
-      HyParViewOverlayNode(id, controlNetwork, dataNetwork, dms(idx), contact, random, cfg)
+      val details = registry.registerQueued(Uid.unwrap(id), QueuedLocalConnection(queue))
+      HyParViewMultiplexedNode(
+        HyParViewMultiplexed.PeerRef(id, details),
+        dms(idx),
+        registry.queuedServer(details).get,
+        registry,
+        if idx == 0 then None else Some(ids.head).map(h => ConnectionDetails.QueuedLocal(Uid.unwrap(h))),
+        random,
+        cfg
+      )
     }
 
     nodes.foreach(_.startServer())
-    nodes.foreach(_.join())
-
-    var safety = 0
-    while (controlQueue.nonEmpty || dataQueue.nonEmpty) && safety < 200000 do
-      if controlQueue.nonEmpty then controlQueue.deliverAll()
-      if dataQueue.nonEmpty then dataQueue.deliverAll()
-      safety += 1
+    nodes.head.join()
+    nodes.tail.foreach { node =>
+      node.join()
+      drain(queue, limit = 20000)
+    }
 
     (0 until 5).foreach { _ =>
       nodes.foreach(_.shuffleTick())
-      var inner = 0
-      while (controlQueue.nonEmpty || dataQueue.nonEmpty) && inner < 200000 do
-        if controlQueue.nonEmpty then controlQueue.deliverAll()
-        if dataQueue.nonEmpty then dataQueue.deliverAll()
-        inner += 1
+      drain(queue, limit = 20000)
     }
 
     dms.zipWithIndex.foreach { case (dm, i) => dm.applyDelta(Set(s"x$i")) }
-
-    var dissemination = 0
-    while (controlQueue.nonEmpty || dataQueue.nonEmpty) && dissemination < 200000 do
-      println(s"dissemination $dissemination control: ${controlQueue.size} data: ${dataQueue.size} ")
-      if controlQueue.nonEmpty then controlQueue.deliverAll()
-      if dataQueue.nonEmpty then dataQueue.deliverAll()
-      dissemination += 1
+    drain(queue, limit = 50000)
 
     val expected = ids.indices.map(i => Set(s"x$i")).toSet
-
     dms.foreach { dm =>
       assertEquals(dm.allPayloads.map(_.payload.data).toSet, expected)
     }
+    assert(nodes.count(_.activeView.nonEmpty) >= math.min(2, n))
+  }
+
+  test("multiplexed hyparview drives plumtree on a 10 node network") {
+    runNetwork(10)
+  }
+
+  test("multiplexed hyparview drives plumtree on a 100 node network") {
+    runNetwork(100)
   }
 }

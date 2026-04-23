@@ -3,8 +3,11 @@ package replication.example
 import channels.{LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import rdts.base.Lattice.syntax
 import rdts.base.LocalUid
+import rdts.datatypes.ReplicatedSet
 
+import replication.JsoniterCodecs.given
 import replication.{DeltaDisseminationFactory, PlumtreeDissemination, ProtocolMessage}
 
 class PlumtreeDisseminationTest extends munit.FunSuite {
@@ -150,6 +153,83 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
     remote.applyDelta(Set("hello"))
 
     assertEquals(received.reverse, List(Set("hello")))
+  }
+
+  test("circle of 5 replicas converges for observe remove set operations") {
+
+    given JsonValueCodec[String] = JsonCodecMaker.make
+    given JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
+
+    class Node(val uid: LocalUid) {
+      var state: ReplicatedSet[String] = ReplicatedSet.empty[String]
+      val dissemination: PlumtreeDissemination[ReplicatedSet[String]] =
+        PlumtreeDissemination[ReplicatedSet[String]](
+          uid,
+          delta => state = state.merge(delta),
+          None
+        )
+    }
+
+    val queue = LocalMessageQueue[ProtocolMessage[ReplicatedSet[String]]]()
+
+    def drainAll(): Unit =
+      var safety = 0
+      while queue.nonEmpty && safety < 10000 do
+        queue.deliverAll()
+        safety += 1
+
+    def mkNode(): Node = new Node(LocalUid.gen())
+
+    val nodes = Vector.fill(5)(mkNode())
+
+    for i <- nodes.indices do
+      val link = QueuedLocalConnection[ProtocolMessage[ReplicatedSet[String]]](queue)
+      nodes(i).dissemination.addObjectConnection(link.server)
+      nodes((i + 1) % nodes.size).dissemination.addObjectConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
+
+    def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
+      node.state = node.state.merge(delta)
+      node.dissemination.applyDelta(delta)
+    }
+
+    drainAll()
+
+    publish(nodes(0)) {
+      given LocalUid = nodes(0).uid
+      nodes(0).state.add("apple")
+    }
+    publish(nodes(2)) {
+      given LocalUid = nodes(2).uid
+      nodes(2).state.add("banana")
+    }
+    publish(nodes(4)) {
+      given LocalUid = nodes(4).uid
+      nodes(4).state.add("carrot")
+    }
+
+    drainAll()
+
+    publish(nodes(1))(nodes(1).state.remove("apple"))
+    publish(nodes(3)) {
+      given LocalUid = nodes(3).uid
+      nodes(3).state.add("date")
+    }
+
+    drainAll()
+
+    publish(nodes(0))(nodes(0).state.remove("carrot"))
+    publish(nodes(2)) {
+      given LocalUid = nodes(2).uid
+      nodes(2).state.add("eggplant")
+    }
+
+    drainAll()
+
+    val expected = Set("banana", "date", "eggplant")
+
+    nodes.foreach { node =>
+      assertEquals(node.state.elements, expected)
+    }
   }
 
 }
