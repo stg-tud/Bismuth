@@ -645,7 +645,7 @@ object SpreadsheetComponent {
                 ^.className := "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200",
                 ^.onClick --> backend.closeConflict(),
                 <.div(
-                  ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-scale-in",
+                  ^.className := "bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm tabular-animate-scale-in",
                   ^.onClick ==> {
                     _.stopPropagationCB
                   },
