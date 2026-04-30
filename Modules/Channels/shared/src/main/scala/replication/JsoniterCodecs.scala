@@ -40,6 +40,12 @@ object JsoniterCodecs {
       override def decodeKey(in: JsonReader): Uid           = Uid.predefined(in.readKeyAsString())
       override def encodeKey(x: Uid, out: JsonWriter): Unit = out.writeKey(Uid.unwrap(x))
 
+  given dotCodec: JsonValueCodec[Dot] = bimapCodec[(Uid, Time), Dot](
+    JsonCodecMaker.make,
+    tuple => Dot(tuple._1, tuple._2),
+    dot => (dot.place, dot.time)
+  )
+
   given dotKeyCodec: JsonKeyCodec[Dot] = new JsonKeyCodec[Dot]:
       override def decodeKey(in: JsonReader): Dot = {
         val Seq(uid, time) = in.readKeyAsString().split(":").toSeq

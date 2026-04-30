@@ -47,10 +47,11 @@ lazy val publishedProjects =
 
 lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
   .in(file("Modules/Channels"))
-  .dependsOn(rdts)
+  .dependsOn(rdts % "compile->compile;test->test")
   .settings(
     Settings.scala3defaultsExtra,
     Dependencies.slips,
+    Dependencies.blake3,
     Dependencies.munit,
     Dependencies.munitCheck,
     Dependencies.jsoniterScala,
