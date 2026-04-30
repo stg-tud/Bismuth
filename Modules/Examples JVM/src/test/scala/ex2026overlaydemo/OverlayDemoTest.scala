@@ -1,5 +1,6 @@
 package ex2026overlaydemo
 
+/** vibecoded. dont trust 😉 */
 class OverlayDemoTest extends munit.FunSuite {
 
   private def eventually(timeoutMs: Long = 5000)(cond: => Boolean): Unit = {
@@ -20,19 +21,26 @@ class OverlayDemoTest extends munit.FunSuite {
         server.node.activeView.nonEmpty && client.node.activeView.nonEmpty
       }
 
+      eventually(10000) {
+        val directory = server.node.connectionDirectory
+        directory.get(client.node.localUid.uid).exists(_.elements.exists(peer => peer.uid == server.node.localUid.uid))
+      }
+
+      assert(!server.node.connectionDirectory.keySet.contains(server.node.localUid.uid))
+
       server.node.publishAdd("server-value")
       client.node.publishAdd("client-value")
 
       eventually() {
-        server.node.state.elements == Set("server-value", "client-value") &&
-        client.node.state.elements == Set("server-value", "client-value")
+        server.node.state.values.elements == Set("server-value", "client-value") &&
+        client.node.state.values.elements == Set("server-value", "client-value")
       }
 
       client.node.publishRemove("server-value")
 
       eventually() {
-        server.node.state.elements == Set("client-value") &&
-        client.node.state.elements == Set("client-value")
+        server.node.state.values.elements == Set("client-value") &&
+        client.node.state.values.elements == Set("client-value")
       }
     } finally {
       client.stop()
@@ -40,7 +48,7 @@ class OverlayDemoTest extends munit.FunSuite {
     }
   }
 
-  test("overlay demo supports multiple clients and stdin-style commands") {
+  test("overlay demo supports multiple clients, stdin-style commands, and replicated connection info") {
     val server  = new OverlayDemo.ServerApp("demo-topic-many")
     val client1 = new OverlayDemo.ClientApp(server.coordinationDetails, "demo-topic-many")
     val client2 = new OverlayDemo.ClientApp(server.coordinationDetails, "demo-topic-many")
@@ -53,34 +61,41 @@ class OverlayDemoTest extends munit.FunSuite {
         server.node.activeView.nonEmpty && client1.node.activeView.nonEmpty && client2.node.activeView.nonEmpty
       }
 
+      eventually(10000) {
+        val expectedClients = Set(client1.node.localUid.uid, client2.node.localUid.uid)
+        val directory       = client1.node.connectionDirectory
+        expectedClients.subsetOf(directory.keySet) &&
+        !directory.keySet.contains(server.node.localUid.uid)
+      }
+
       server.node.publishAdd("warmup")
       eventually() {
         val expected = Set("warmup")
-        server.node.state.elements == expected &&
-        client1.node.state.elements == expected &&
-        client2.node.state.elements == expected
+        server.node.state.values.elements == expected &&
+        client1.node.state.values.elements == expected &&
+        client2.node.state.values.elements == expected
       }
       server.node.publishRemove("warmup")
       eventually() {
-        server.node.state.elements.isEmpty && client1.node.state.elements.isEmpty && client2.node.state.elements.isEmpty
+        server.node.state.values.elements.isEmpty && client1.node.state.values.elements.isEmpty && client2.node.state.values.elements.isEmpty
       }
 
       assert(client1.handleInputLine("alpha"))
       eventually() {
         val expected = Set("alpha")
-        server.node.state.elements == expected && client1.node.state.elements == expected && client2.node.state.elements == expected
+        server.node.state.values.elements == expected && client1.node.state.values.elements == expected && client2.node.state.values.elements == expected
       }
 
       assert(client2.handleInputLine("beta"))
       eventually() {
         val expected = Set("alpha", "beta")
-        server.node.state.elements == expected && client1.node.state.elements == expected && client2.node.state.elements == expected
+        server.node.state.values.elements == expected && client1.node.state.values.elements == expected && client2.node.state.values.elements == expected
       }
 
       assert(client1.handleInputLine("-alpha"))
       eventually() {
         val expected = Set("beta")
-        server.node.state.elements == expected && client1.node.state.elements == expected && client2.node.state.elements == expected
+        server.node.state.values.elements == expected && client1.node.state.values.elements == expected && client2.node.state.values.elements == expected
       }
 
       assert(client2.handleInputLine("gamma"))
@@ -88,9 +103,9 @@ class OverlayDemoTest extends munit.FunSuite {
 
       eventually(10000) {
         val expected = Set("beta", "gamma")
-        server.node.state.elements == expected &&
-        client1.node.state.elements == expected &&
-        client2.node.state.elements == expected
+        server.node.state.values.elements == expected &&
+        client1.node.state.values.elements == expected &&
+        client2.node.state.values.elements == expected
       }
     } finally {
       client2.stop()

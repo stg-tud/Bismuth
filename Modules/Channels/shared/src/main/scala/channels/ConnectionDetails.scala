@@ -1,5 +1,7 @@
 package channels
 
+/** vibecoded. dont trust 😉 */
+
 trait ConnectionDetailsResolver[D, T] {
   def connect(details: D, label: String): Option[LatentConnection[T]]
 }
@@ -14,12 +16,14 @@ object ConnectionDetailsResolver {
 
 enum ConnectionDetails {
   case Tcp(host: String, port: Int)
+  case WebSocket(url: String)
+  case WebRtc(signalingUrl: String, peerId: String)
   case QueuedLocal(id: String)
   case SynchronousLocal(id: String)
 }
 
 class LocalConnectionRegistry[T] extends ConnectionDetailsResolver[ConnectionDetails, T] {
-  private var queued: Map[String, QueuedLocalConnection[T]]       = Map.empty
+  private var queued: Map[String, QueuedLocalConnection[T]]            = Map.empty
   private var synchronous: Map[String, SynchronousLocalConnection[T]] = Map.empty
 
   def registerQueued(id: String, connection: QueuedLocalConnection[T] = QueuedLocalConnection[T]()): ConnectionDetails = synchronized {
@@ -52,5 +56,7 @@ class LocalConnectionRegistry[T] extends ConnectionDetailsResolver[ConnectionDet
       case ConnectionDetails.QueuedLocal(id)      => queued.get(id).map(_.client(label))
       case ConnectionDetails.SynchronousLocal(id) => synchronous.get(id).map(_.client(label))
       case ConnectionDetails.Tcp(_, _)            => None
+      case ConnectionDetails.WebSocket(_)         => None
+      case ConnectionDetails.WebRtc(_, _)         => None
   }
 }

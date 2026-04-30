@@ -85,6 +85,7 @@ class HyParViewMultiplexedNode[State, Details](
     rnd: Random,
     config: HyParViewUnified.HyParViewConfig = HyParViewUnified.HyParViewConfig.default,
     debug: Boolean = false,
+    onActiveViewChanged: Set[HyParViewMultiplexed.PeerRef[Details]] => Unit = (_: Set[HyParViewMultiplexed.PeerRef[Details]]) => (),
 ) {
   import HyParViewMultiplexed.*
   import HyParViewUnified.*
@@ -103,6 +104,7 @@ class HyParViewMultiplexedNode[State, Details](
   private val plumtreeIncoming: mutable.LinkedHashMap[Uid, Callback[ProtocolMessage[State]]] = mutable.LinkedHashMap.empty
 
   def activeView: Set[Uid]  = active.keySet.toSet
+  def activePeers: Set[PeerRef[Details]] = active.values.toSet
   def passiveView: Set[Uid] = passive.keySet.toSet
 
   def startServer(): Unit =
@@ -138,6 +140,9 @@ class HyParViewMultiplexedNode[State, Details](
         case Failure(_)                               => ()
       }
     }
+
+  private def publishActiveViewChanged(): Unit =
+    onActiveViewChanged(active.values.toSet)
 
   private def attachPlumtree(peer: Uid, conn: Connection[Envelope[State, Details]]): Unit =
     if !plumtreeAttached.contains(peer) then
@@ -238,6 +243,7 @@ class HyParViewMultiplexedNode[State, Details](
         log(s"recv Disconnect peer=${Uid.unwrap(peer)}")
         if active.contains(peer) then
           val dropped = active.remove(peer).get
+          publishActiveViewChanged()
           addNodePassiveView(dropped)
           healActiveView()
 
@@ -292,6 +298,7 @@ class HyParViewMultiplexedNode[State, Details](
       val conn = ensureConnection(node)
       rememberConnection(node.uid, conn)
       attachPlumtree(node.uid, conn)
+      publishActiveViewChanged()
 
   private def addNodePassiveView(node: PeerRef[Details]): Unit =
     if node.uid != self.uid && !active.contains(node.uid) && !passive.contains(node.uid) then
@@ -305,6 +312,7 @@ class HyParViewMultiplexedNode[State, Details](
       val n    = randomElement(active.keySet.toSet)
       val peer = active.remove(n).get
       log(s"drop active ${Uid.unwrap(n)}")
+      publishActiveViewChanged()
       addNodePassiveView(peer)
       sendMembership(n, Disconnect(self.uid))
 
