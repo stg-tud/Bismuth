@@ -8,15 +8,30 @@ import java.nio.charset.StandardCharsets
 
 /** A simple persistent Merkle search tree for timestamped, already-encoded deltas.
   *
-  * Entries are ordered by `(timestamp, entryHash)`, so timestamps need not be globally unique.
-  * The entry hash is computed over serialized timestamp bytes and serialized payload bytes.
+  * This is a vibe coded implementation based on the following paper, quality is assumed to be low (this implementaiton not the paper).
+  * “Merkle Search Trees: Efficient State-Based CRDTs in Open Networks” by Alex Auvolat and François Taïani.
+  *
+  * Core idea:
+  *   - keep deltas in a search tree ordered by a monotone timestamp-like key
+  *   - hash each leaf and internal node, so the root hash commits to the whole tree
+  *   - when comparing two replicas, first compare root hashes; if they differ, descend only into subtrees whose
+  *     hashes differ
+  *   - if recent updates have large timestamps, they tend to accumulate near one end of the ordered tree, so inserting
+  *     and synchronizing recent deltas can touch only a small number of nodes
+  *
+  * In other words, this combines two properties:
+  *   - a ''search tree'' structure, so entries are ordered by timestamp and nearby timestamps stay near each other
+  *   - a ''Merkle tree'' structure, so equal subtrees can be skipped during synchronization
+  *
+  * This implementation uses `(timestamp, entryHash)` as the total key.
+  * The timestamp gives the search order, while the content hash breaks ties in case two deltas receive the same
+  * timestamp. We still hash the full `(timestamp, encodedDelta)` pair, because timestamps are not assumed to be
+  * globally unique or trustworthy by themselves.
   *
   * The tree stores encoded payload bytes directly and every node can be materialized as a self-contained block,
   * making it straightforward to persist blocks to disk or exchange them over the network.
-  *
-  * Origin of the idea: “Merkle Search Trees: Efficient State-Based CRDTs in Open Networks”
-  * by Alex Auvolat and François Taïani.
-  * File still vibecoded, but less offensively so. <- said the clanker that coded this file.
+  * Updates are implemented persistently by path-copying: inserting, removing, or updating one entry rebuilds only the
+  * nodes on the affected path, while the rest of the tree is shared.
   */
 final case class MerkleSearchTree[K] private (
     rootNode: Option[MerkleSearchTree.Node[K]],
@@ -54,21 +69,30 @@ final case class MerkleSearchTree[K] private (
     if contains(entry.hash) then this
     else {
       val newRoot = rootNode match {
-        case None => Some(Node.Leaf(Vector(entry)))
+        case None       => Some(Node.Leaf(Vector(entry)))
         case Some(root) =>
           val grown = Node.insert(root, entry, normalizedBranchingFactor, keyOrdering)
           Some(if grown.size == 1 then grown.head else Node.Branch(grown))
       }
 
-      copy(rootNode = newRoot, entriesByHash = entriesByHash.updated(entry.hash, entry), branchingFactor = normalizedBranchingFactor)
+      copy(
+        rootNode = newRoot,
+        entriesByHash = entriesByHash.updated(entry.hash, entry),
+        branchingFactor = normalizedBranchingFactor
+      )
     }
 
   def remove(hash: Hash): MerkleSearchTree[K] =
     entriesByHash.get(hash) match {
-      case None => this
+      case None        => this
       case Some(entry) =>
-        val newRoot = rootNode.flatMap(Node.remove(_, entry.key, normalizedBranchingFactor, keyOrdering)).map(Node.normalizeRoot)
-        copy(rootNode = newRoot, entriesByHash = entriesByHash.removed(hash), branchingFactor = normalizedBranchingFactor)
+        val newRoot =
+          rootNode.flatMap(Node.remove(_, entry.key, normalizedBranchingFactor, keyOrdering)).map(Node.normalizeRoot)
+        copy(
+          rootNode = newRoot,
+          entriesByHash = entriesByHash.removed(hash),
+          branchingFactor = normalizedBranchingFactor
+        )
     }
 
   def update[V: JsonValueCodec](hash: Hash, timestamp: K, value: V)(using JsonValueCodec[K]): MerkleSearchTree[K] =
@@ -158,15 +182,15 @@ object MerkleSearchTree {
     final case class Leaf[K](entries: Vector[Entry[K]]) extends Node[K] {
       require(entries.nonEmpty)
 
-      override lazy val minKey: EntryKey[K]        = entries.head.key
-      override lazy val maxKey: EntryKey[K]        = entries.last.key
+      override lazy val minKey: EntryKey[K]          = entries.head.key
+      override lazy val maxKey: EntryKey[K]          = entries.last.key
       override lazy val allEntries: Vector[Entry[K]] = entries
-      override lazy val block: Block               = {
+      override lazy val block: Block                 = {
         val bytes = encodeLeafBlock(entries)
         Block(Hash.blake3(List(bytes)), bytes)
       }
-      override lazy val hash: Hash                 = block.hash
-      override def allBlocks: Vector[Block]       = Vector(block)
+      override lazy val hash: Hash          = block.hash
+      override def allBlocks: Vector[Block] = Vector(block)
     }
 
     final case class Branch[K](children: Vector[Node[K]]) extends Node[K] {
@@ -179,8 +203,8 @@ object MerkleSearchTree {
         val bytes = encodeBranchBlock(children)
         Block(Hash.blake3(List(bytes)), bytes)
       }
-      override lazy val hash: Hash                   = block.hash
-      override lazy val allBlocks: Vector[Block]     = block +: children.flatMap(_.allBlocks)
+      override lazy val hash: Hash               = block.hash
+      override lazy val allBlocks: Vector[Block] = block +: children.flatMap(_.allBlocks)
     }
 
     def normalizeRoot[K](node: Node[K]): Node[K] = node match {
@@ -194,7 +218,12 @@ object MerkleSearchTree {
     def contains[K](node: Node[K], key: EntryKey[K], keyOrdering: Ordering[EntryKey[K]]): Boolean =
       keyOrdering.lteq(node.minKey, key) && keyOrdering.lteq(key, node.maxKey)
 
-    def insert[K](node: Node[K], entry: Entry[K], branchingFactor: Int, keyOrdering: Ordering[EntryKey[K]]): Vector[Node[K]] =
+    def insert[K](
+        node: Node[K],
+        entry: Entry[K],
+        branchingFactor: Int,
+        keyOrdering: Ordering[EntryKey[K]]
+    ): Vector[Node[K]] =
       node match {
         case Leaf(entries) =>
           val updated = insertEntry(entries, entry, keyOrdering)
@@ -208,7 +237,12 @@ object MerkleSearchTree {
           rebalanceChildren(updatedChildren, branchingFactor)
       }
 
-    def remove[K](node: Node[K], key: EntryKey[K], branchingFactor: Int, keyOrdering: Ordering[EntryKey[K]]): Option[Node[K]] =
+    def remove[K](
+        node: Node[K],
+        key: EntryKey[K],
+        branchingFactor: Int,
+        keyOrdering: Ordering[EntryKey[K]]
+    ): Option[Node[K]] =
       node match {
         case Leaf(entries) =>
           val updated = entries.filterNot(_.key == key)
@@ -231,7 +265,11 @@ object MerkleSearchTree {
           }
       }
 
-    private def insertEntry[K](entries: Vector[Entry[K]], entry: Entry[K], keyOrdering: Ordering[EntryKey[K]]): Vector[Entry[K]] = {
+    private def insertEntry[K](
+        entries: Vector[Entry[K]],
+        entry: Entry[K],
+        keyOrdering: Ordering[EntryKey[K]]
+    ): Vector[Entry[K]] = {
       val idx = entries.indexWhere(existing => keyOrdering.gt(existing.key, entry.key))
       if idx < 0 then entries :+ entry else entries.patch(idx, Seq(entry), 0)
     }
@@ -252,10 +290,11 @@ object MerkleSearchTree {
     ): Int = {
       val exact = children.indexWhere(child => contains(child, key, keyOrdering))
       if exact >= 0 then exact
-      else children.indexWhere(child => keyOrdering.lt(key, child.minKey)) match {
-        case -1    => children.size - 1
-        case found => math.max(0, found)
-      }
+      else
+          children.indexWhere(child => keyOrdering.lt(key, child.minKey)) match {
+            case -1    => children.size - 1
+            case found => math.max(0, found)
+          }
     }
 
     private def encodeLeafBlock[K](entries: Vector[Entry[K]]): Array[Byte] =
@@ -282,7 +321,10 @@ object MerkleSearchTree {
       rawEntries: Iterable[(K, V)],
       branchingFactor: Int = 16,
   ): MerkleSearchTree[K] =
-    fromEncodedEntries(rawEntries.iterator.map { case (timestamp, value) => Entry.fromValue(timestamp, value) }.toVector, branchingFactor)
+    fromEncodedEntries(
+      rawEntries.iterator.map { case (timestamp, value) => Entry.fromValue(timestamp, value) }.toVector,
+      branchingFactor
+    )
 
   def fromEncodedEntries[K](
       rawEntries: Iterable[Entry[K]],
@@ -297,8 +339,8 @@ object MerkleSearchTree {
     val entryOrdering = new Ordering[Entry[K]] {
       override def compare(x: Entry[K], y: Entry[K]): Int = keyOrdering.compare(x.key, y.key)
     }
-    val entries       = rawEntries.iterator.toVector.distinctBy(_.hash).sorted(using entryOrdering)
-    val tree          = empty[K](branchingFactor)
+    val entries = rawEntries.iterator.toVector.distinctBy(_.hash).sorted(using entryOrdering)
+    val tree    = empty[K](branchingFactor)
     entries.foldLeft(tree)((acc, entry) => acc.insertEncoded(entry))
   }
 
