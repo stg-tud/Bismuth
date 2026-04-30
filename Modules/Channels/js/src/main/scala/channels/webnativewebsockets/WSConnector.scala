@@ -31,6 +31,7 @@ object WebsocketConnect {
       Async.fromCallback {
 
         val socket = new dom.WebSocket(url)
+        socket.binaryType = "arraybuffer"
 
         socket.onopen = (_: dom.Event) => {
 
