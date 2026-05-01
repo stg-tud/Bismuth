@@ -11,6 +11,7 @@ import replication.{PlumtreeDissemination, ProtocolMessage}
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
 
+/* vibecoded as part of the hyparview experiments */
 object HyParViewMultiplexed {
 
   case class PeerRef[Details](uid: Uid, details: Details)
@@ -66,6 +67,7 @@ object HyParViewUnified {
     case Neighbor(from: HyParViewMultiplexed.PeerRef[Details], highPriority: Boolean)
     case NeighborReply(from: Uid, accepted: Boolean)
     case Disconnect(peer: Uid)
+    case Leave(leaving: HyParViewMultiplexed.PeerRef[Details])
     case Shuffle(
         origin: HyParViewMultiplexed.PeerRef[Details],
         sample: Set[HyParViewMultiplexed.PeerRef[Details]],
@@ -142,6 +144,21 @@ class HyParViewMultiplexedNode[State, Details](
       case Success(_)  => ()
       case Failure(ex) => ex.printStackTrace()
     }
+
+  def stop(graceful: Boolean = true): Unit = {
+    if graceful then
+      val peers = (active.values.toSet ++ passive.values.toSet).filterNot(_.uid == self.uid)
+      peers.foreach(peer => sendMembership(peer, Leave(self)))
+    connections.values.foreach(_.close())
+    active.clear()
+    passive.clear()
+    connections.clear()
+    connectionToPeer.clear()
+    plumtreeAttached.clear()
+    plumtreeIncoming.clear()
+    publishViewChanged()
+    abort.abort()
+  }
 
   private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State, Details]] =
     (conn: Connection[Envelope[State, Details]]) => {
@@ -280,6 +297,10 @@ class HyParViewMultiplexedNode[State, Details](
           addNodePassiveView(dropped)
           healActiveView()
 
+      case Leave(leaving) =>
+        log(s"recv Leave peer=${Uid.unwrap(leaving.uid)}")
+        removePeerCompletely(leaving.uid)
+
       case Shuffle(origin, sample, ttl, sender) =>
         log(s"recv Shuffle origin=${Uid.unwrap(origin.uid)} ttl=$ttl sender=${Uid.unwrap(sender)} sample=${sample.map(p => Uid.unwrap(p.uid))}")
         rememberAdvertisedPeer(origin)
@@ -301,6 +322,20 @@ class HyParViewMultiplexedNode[State, Details](
     val replySample = randomSubset(passive.values.toSet, incomingSample.size)
     sendMembership(origin.uid, ShuffleReply(self.uid, replySample))
     incomingSample.foreach(addNodePassiveView)
+  }
+
+  private def removePeerCompletely(peer: Uid): Unit = {
+    val removedActive  = active.remove(peer).isDefined
+    val removedPassive = passive.remove(peer).isDefined
+    val conn           = connections.remove(peer)
+    conn.foreach(connectionToPeer.remove)
+    plumtreeAttached.remove(peer)
+    plumtreeIncoming.remove(peer)
+    if removedActive || removedPassive || conn.nonEmpty then {
+      publishViewChanged()
+      onPeerDisconnected(peer)
+      healActiveView()
+    }
   }
 
   private def healActiveView(): Unit = {

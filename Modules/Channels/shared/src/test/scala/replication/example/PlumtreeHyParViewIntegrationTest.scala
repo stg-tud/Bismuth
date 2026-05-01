@@ -3,21 +3,75 @@ package replication.example
 import channels.{ConnectionDetails, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{Bottom, LocalUid, Uid}
+import rdts.base.Lattice.syntax
+import replication.JsoniterCodecs
+import replication.JsoniterCodecs.given
 import replication.PlumtreeDissemination
 import replication.overlay.{HyParViewMultiplexed, HyParViewMultiplexedNode, HyParViewUnified}
+import replication.research.OverlayConnectionDirectory
+import replication.research.OverlayConnectionDirectory.{ConnectedPeer, LinkState, NodeInfo}
 
 import scala.util.Random
 
 class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
-  given JsonValueCodec[String] = JsonCodecMaker.make
-  given JsonValueCodec[Set[String]] = JsonCodecMaker.make
-  given JsonValueCodec[ConnectionDetails] = JsonCodecMaker.make
-  given JsonValueCodec[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]] =
-    HyParViewMultiplexed.envelopeCodec[Set[String], ConnectionDetails]
+  type Directory = OverlayConnectionDirectory.Directory[ConnectionDetails]
+  type Envelope  = HyParViewMultiplexed.Envelope[Directory, ConnectionDetails]
 
-  private def drain(queue: LocalMessageQueue[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]], limit: Int): Unit = {
+  given JsonValueCodec[ConnectionDetails] = JsonCodecMaker.make
+  given JsonValueCodec[LinkState] = JsonCodecMaker.make
+  given JsonValueCodec[ConnectedPeer[ConnectionDetails]] = JsonCodecMaker.make
+  given JsonValueCodec[NodeInfo[ConnectionDetails]] = JsonCodecMaker.make
+  given JsonValueCodec[Directory] = JsoniterCodecs.ORMapStateCodec[Uid, NodeInfo[ConnectionDetails]]
+  given JsonValueCodec[Envelope] = HyParViewMultiplexed.envelopeCodec[Directory, ConnectionDetails]
+
+  private final class StateRef(var value: Directory)
+
+  private case class TestNode(
+      id: Uid,
+      localUid: LocalUid,
+      details: ConnectionDetails,
+      dissemination: PlumtreeDissemination[Directory],
+      overlay: HyParViewMultiplexedNode[Directory, ConnectionDetails],
+      stateRef: StateRef,
+  ) {
+    def state: Directory = stateRef.value
+
+    def publishDirectoryDelta(delta: Directory): Unit =
+      if !Bottom.isEmpty(delta) then
+        stateRef.value = stateRef.value.merge(delta)
+        dissemination.applyDelta(delta)
+
+    def publishCurrentView(): Unit = {
+      given LocalUid = localUid
+      publishDirectoryDelta(
+        OverlayConnectionDirectory.updateNodeFromOverlay(
+          state,
+          id,
+          Set(details),
+          overlay.activePeers,
+          overlay.passivePeers,
+        )
+      )
+    }
+
+    def publishLeaveDelta(): Unit = {
+      given LocalUid = localUid
+      publishDirectoryDelta(OverlayConnectionDirectory.removeNodeEverywhere(state, id))
+    }
+
+    def startAndMaybeJoin(): Unit = {
+      overlay.startServer()
+      publishCurrentView()
+      overlay.join()
+    }
+
+    def stopGracefully(): Unit =
+      overlay.stop(graceful = true)
+  }
+
+  private def drain(queue: LocalMessageQueue[Envelope], limit: Int): Unit = {
     var safety = 0
     while queue.nonEmpty && safety < limit do
       queue.deliverAll()
@@ -25,55 +79,101 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     assert(safety < limit, s"queue did not drain within $limit rounds, remaining=${queue.size}")
   }
 
-  private def runNetwork(n: Int): Unit = {
-    val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]]()
-    val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[Set[String], ConnectionDetails]]()
+  private def tickOverlay(nodes: Iterable[TestNode], queue: LocalMessageQueue[Envelope], rounds: Int): Unit =
+    (0 until rounds).foreach { _ =>
+      nodes.foreach(_.overlay.shuffleTick())
+      drain(queue, limit = 20000)
+    }
+
+  private def buildNetwork(n: Int): (LocalMessageQueue[Envelope], Vector[TestNode]) = {
+    val queue    = LocalMessageQueue[Envelope]()
+    val registry = LocalConnectionRegistry[Envelope]()
     val random   = Random(7)
+    val cfg      = HyParViewUnified.HyParViewConfig.fromEstimatedNetworkSize(n)
 
     val ids = Vector.tabulate(n)(i => Uid.predefined(s"hp$i"))
-    val dms = ids.map(_ => PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None))
-    val cfg = HyParViewUnified.HyParViewConfig.fromEstimatedNetworkSize(n)
 
     val nodes = ids.zipWithIndex.map { case (id, idx) =>
-      val details = registry.registerQueued(Uid.unwrap(id), QueuedLocalConnection(queue))
-      HyParViewMultiplexedNode(
-        HyParViewMultiplexed.PeerRef(id, details),
-        dms(idx),
-        registry.queuedServer(details).get,
-        registry,
-        if idx == 0 then None else Some(ids.head).map(h => ConnectionDetails.QueuedLocal(Uid.unwrap(h))),
-        random,
-        cfg
+      val localUid = LocalUid.gen()
+      val stateRef = StateRef(OverlayConnectionDirectory.empty[ConnectionDetails])
+
+      val dissemination = PlumtreeDissemination[Directory](
+        localUid,
+        delta => stateRef.value = stateRef.value.merge(delta),
+        None,
       )
+
+      val details = registry.registerQueued(Uid.unwrap(id), QueuedLocalConnection(queue))
+
+      lazy val node: TestNode = TestNode(
+        id,
+        localUid,
+        details,
+        dissemination,
+        HyParViewMultiplexedNode(
+          HyParViewMultiplexed.PeerRef(id, details),
+          dissemination,
+          registry.queuedServer(details).get,
+          registry,
+          if idx == 0 then None else Some(ConnectionDetails.QueuedLocal(Uid.unwrap(ids.head))),
+          random,
+          cfg,
+          onViewChanged = (_, _) => node.publishCurrentView(),
+          onPeerDisconnected = peer => {
+            given LocalUid = localUid
+            node.publishDirectoryDelta(OverlayConnectionDirectory.removeNodeEverywhere(node.state, peer))
+          },
+        ),
+        stateRef,
+      )
+
+      node
     }
 
-    nodes.foreach(_.startServer())
-    nodes.head.join()
+    (queue, nodes)
+  }
+
+  private def startNetwork(nodes: Vector[TestNode], queue: LocalMessageQueue[Envelope]): Unit = {
+    nodes.head.startAndMaybeJoin()
+    drain(queue, limit = 20000)
+
     nodes.tail.foreach { node =>
-      node.join()
+      node.startAndMaybeJoin()
       drain(queue, limit = 20000)
     }
 
-    (0 until 5).foreach { _ =>
-      nodes.foreach(_.shuffleTick())
-      drain(queue, limit = 20000)
-    }
-
-    dms.zipWithIndex.foreach { case (dm, i) => dm.applyDelta(Set(s"x$i")) }
-    drain(queue, limit = 50000)
-
-    val expected = ids.indices.map(i => Set(s"x$i")).toSet
-    dms.foreach { dm =>
-      assertEquals(dm.allPayloads.map(_.payload.data).toSet, expected)
-    }
-    assert(nodes.count(_.activeView.nonEmpty) >= math.min(2, n))
+    tickOverlay(nodes, queue, rounds = 8)
   }
 
-  test("multiplexed hyparview drives plumtree on a 10 node network") {
-    runNetwork(10)
+  private def assertDirectoryKnows(directory: Directory, expected: Set[Uid]): Unit = {
+    assertEquals(directory.entries.map(_._1).toSet, expected)
   }
 
-  test("multiplexed hyparview drives plumtree on a 100 node network") {
-    runNetwork(100)
+  test("multiplexed hyparview handles join and leave while disseminating the connection directory") {
+    val (queue, nodes) = buildNetwork(10)
+    startNetwork(nodes, queue)
+
+    val allNodeIds = nodes.map(_.id).toSet
+
+    nodes.foreach(node => assertDirectoryKnows(node.state, allNodeIds))
+    assert(nodes.forall(_.overlay.activeView.nonEmpty), "expected every node to have at least one active neighbor after join")
+
+    val leaving   = nodes(4)
+    val survivors = nodes.filterNot(_.id == leaving.id)
+
+    leaving.publishLeaveDelta()
+    drain(queue, limit = 20000)
+    leaving.stopGracefully()
+    drain(queue, limit = 20000)
+
+    tickOverlay(survivors, queue, rounds = 8)
+
+    val survivorIds = survivors.map(_.id).toSet
+    survivors.foreach { node =>
+      assertDirectoryKnows(node.state, survivorIds)
+      assert(!node.overlay.activeView.contains(leaving.id), s"${Uid.unwrap(node.id)} still keeps departed node in active view")
+      assert(!node.overlay.passiveView.contains(leaving.id), s"${Uid.unwrap(node.id)} still keeps departed node in passive view")
+      assert(node.overlay.activeView.nonEmpty, s"${Uid.unwrap(node.id)} lost all active neighbors after leave")
+    }
   }
 }
