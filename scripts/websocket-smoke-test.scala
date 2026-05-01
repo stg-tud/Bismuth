@@ -17,7 +17,7 @@ object WebsocketSmokeTest {
 
     val serverProcess = new java.lang.ProcessBuilder(
       "sbt",
-      "examplesJVM/runMain ex2026niowebsocket.NioWebsocketEchoServer 0"
+      "examplesJVM/runMain ex2026overlaydemo.OverlayDemo"
     )
       .directory(root.toFile)
       .redirectErrorStream(true)
@@ -25,21 +25,30 @@ object WebsocketSmokeTest {
 
     try {
       val serverReader = BufferedReader(InputStreamReader(serverProcess.getInputStream))
-      val port         = readServerPort(serverReader)
-      println(s"[orchestrator] detected server port: $port")
+      val seed         = readSeedConnectionString(serverReader)
+      println(s"[orchestrator] detected seed connection string: $seed")
 
       val modulePath = root.resolve("Modules/Examples Web/target/generated_js/examplesweb-fastopt/main.js").toUri.toString
       val nodeCode =
         s"""
            |const mod = await import(${escapeJs(modulePath)});
-           |const result = await mod.RunNioWebsocketClient(${escapeJs(s"ws://127.0.0.1:$port")});
-           |console.log('[node-client] echoed=' + result);
-           |if (result !== 'hello-from-node-1,hello-from-node-2') {
-           |  throw new Error('unexpected echoed payloads: ' + result);
+           |const seed = ${escapeJs(seed)};
+           |const [a, b] = await Promise.all([
+           |  mod.RunOverlayNetworkObserver(seed, 'observer-a', 'demo-topic'),
+           |  mod.RunOverlayNetworkObserver(seed, 'observer-b', 'demo-topic')
+           |]);
+           |console.log('[node-client-a] ' + a);
+           |console.log('[node-client-b] ' + b);
+           |if (!a.includes('connected url=') || !b.includes('connected url=')) {
+           |  throw new Error('expected both observers to connect using the seed connection string');
            |}
+           |if (!a.includes('snapshot=') || !b.includes('snapshot=')) {
+           |  throw new Error('expected both observers to learn replicated topology from the overlay');
+           |}
+           |process.exit(0);
            |""".stripMargin
 
-      runChecked(root, Seq("node", "--input-type=module", "--eval", nodeCode), "running node websocket client")
+      runChecked(root, Seq("node", "--input-type=module", "--eval", nodeCode), "running parallel overlay observers")
       println("[orchestrator] websocket smoke test passed")
     } finally {
       serverProcess.destroy()
@@ -50,21 +59,18 @@ object WebsocketSmokeTest {
     }
   }
 
-  private def readServerPort(reader: BufferedReader): Int = {
+  private def readSeedConnectionString(reader: BufferedReader): String = {
     val deadline = System.nanoTime() + 30L * 1000L * 1000L * 1000L
     while System.nanoTime() < deadline do {
       val line = reader.readLine()
-      if line == null then throw IllegalStateException("server terminated before announcing its port")
+      if line == null then throw IllegalStateException("server terminated before announcing its seed connection string")
       println(s"[server] $line")
       val normalized = line.replaceAll("\\u001B\\[[;\\d]*[A-Za-z]", "")
-      val marker     = "WS_SERVER_PORT="
+      val marker     = "seed="
       val idx        = normalized.indexOf(marker)
-      if idx >= 0 then {
-        val digits = normalized.drop(idx + marker.length).dropWhile(!_.isDigit).takeWhile(_.isDigit)
-        return digits.toInt
-      }
+      if idx >= 0 then return normalized.drop(idx + marker.length).trim
     }
-    throw IllegalStateException("timed out waiting for websocket server port")
+    throw IllegalStateException("timed out waiting for overlay seed connection string")
   }
 
   private def runChecked(root: Path, command: Seq[String], label: String): Unit = {

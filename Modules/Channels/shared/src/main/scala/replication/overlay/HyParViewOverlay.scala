@@ -85,7 +85,8 @@ class HyParViewMultiplexedNode[State, Details](
     rnd: Random,
     config: HyParViewUnified.HyParViewConfig = HyParViewUnified.HyParViewConfig.default,
     debug: Boolean = false,
-    onActiveViewChanged: Set[HyParViewMultiplexed.PeerRef[Details]] => Unit = (_: Set[HyParViewMultiplexed.PeerRef[Details]]) => (),
+    onViewChanged: (Set[HyParViewMultiplexed.PeerRef[Details]], Set[HyParViewMultiplexed.PeerRef[Details]]) => Unit =
+      (_: Set[HyParViewMultiplexed.PeerRef[Details]], _: Set[HyParViewMultiplexed.PeerRef[Details]]) => (),
 ) {
   import HyParViewMultiplexed.*
   import HyParViewUnified.*
@@ -103,9 +104,10 @@ class HyParViewMultiplexedNode[State, Details](
   private val plumtreeAttached: mutable.Set[Uid] = mutable.LinkedHashSet.empty
   private val plumtreeIncoming: mutable.LinkedHashMap[Uid, Callback[ProtocolMessage[State]]] = mutable.LinkedHashMap.empty
 
-  def activeView: Set[Uid]  = active.keySet.toSet
+  def activeView: Set[Uid]              = active.keySet.toSet
   def activePeers: Set[PeerRef[Details]] = active.values.toSet
-  def passiveView: Set[Uid] = passive.keySet.toSet
+  def passiveView: Set[Uid]             = passive.keySet.toSet
+  def passivePeers: Set[PeerRef[Details]] = passive.values.toSet
 
   def startServer(): Unit =
     localServer.prepare(receive(None)).runIn(abort) {
@@ -129,6 +131,11 @@ class HyParViewMultiplexedNode[State, Details](
       val sample = Set(self) ++ randomSubset(active.values.toSet, config.shuffleActiveSample) ++ randomSubset(passive.values.toSet, config.shufflePassiveSample)
       sendMembership(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid))
 
+  def discoverPeers(peers: Iterable[PeerRef[Details]]): Unit = {
+    peers.foreach(rememberAdvertisedPeer)
+    healActiveView()
+  }
+
   private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State, Details]] =
     (conn: Connection[Envelope[State, Details]]) => {
       expectedPeer.foreach(peer => rememberConnection(peer, conn))
@@ -141,8 +148,8 @@ class HyParViewMultiplexedNode[State, Details](
       }
     }
 
-  private def publishActiveViewChanged(): Unit =
-    onActiveViewChanged(active.values.toSet)
+  private def publishViewChanged(): Unit =
+    onViewChanged(active.values.toSet, passive.values.toSet)
 
   private def attachPlumtree(peer: Uid, conn: Connection[Envelope[State, Details]]): Unit =
     if !plumtreeAttached.contains(peer) then
@@ -169,26 +176,29 @@ class HyParViewMultiplexedNode[State, Details](
     if active.contains(peer) then attachPlumtree(peer, connections(peer))
   }
 
-  private def ensureConnection(peer: PeerRef[Details]): Connection[Envelope[State, Details]] =
-    connections.getOrElseUpdate(peer.uid, {
-      val latent = resolver.connect(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}")
-        .getOrElse(throw IllegalStateException(s"cannot resolve connection details $peer"))
-      var result: Option[Connection[Envelope[State, Details]]] = None
-      latent.prepare(receive(Some(peer.uid))).runIn(abort) {
-        case Success(conn) => result = Some(conn)
-        case Failure(ex)   => throw ex
+  private def ensureConnection(peer: PeerRef[Details]): Option[Connection[Envelope[State, Details]]] =
+    connections.get(peer.uid).orElse {
+      resolver.connect(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}").flatMap { latent =>
+        var result: Option[Connection[Envelope[State, Details]]] = None
+        latent.prepare(receive(Some(peer.uid))).runIn(abort) {
+          case Success(conn) => result = Some(conn)
+          case Failure(ex)   => ex.printStackTrace()
+        }
+        result
       }
-      result.getOrElse(throw IllegalStateException(s"failed to connect ${self.uid.show} -> ${peer.uid.show}"))
-    })
+    }
 
   private def sendMembership(peer: PeerRef[Details], message: HyParViewMessage[Details]): Unit =
     if peer.uid != self.uid then
       log(s"send ${message.getClass.getSimpleName} -> ${Uid.unwrap(peer.uid)}")
-      val conn = ensureConnection(peer)
-      conn.send(Envelope.Membership(message)).run {
-        case Success(_)  => ()
-        case Failure(ex) => ex.printStackTrace()
-      }
+      ensureConnection(peer) match
+        case Some(conn) =>
+          conn.send(Envelope.Membership(message)).run {
+            case Success(_)  => ()
+            case Failure(ex) => ex.printStackTrace()
+          }
+        case None =>
+          log(s"cannot connect to ${Uid.unwrap(peer.uid)} for ${message.getClass.getSimpleName}")
 
   private def sendMembership(peerUid: Uid, message: HyParViewMessage[Details]): Unit =
     if peerUid != self.uid then
@@ -243,7 +253,7 @@ class HyParViewMultiplexedNode[State, Details](
         log(s"recv Disconnect peer=${Uid.unwrap(peer)}")
         if active.contains(peer) then
           val dropped = active.remove(peer).get
-          publishActiveViewChanged()
+          publishViewChanged()
           addNodePassiveView(dropped)
           healActiveView()
 
@@ -292,13 +302,17 @@ class HyParViewMultiplexedNode[State, Details](
   private def addNodeActiveView(node: PeerRef[Details]): Unit =
     if node.uid != self.uid && !active.contains(node.uid) then
       if active.size >= config.activeViewSize then dropRandomElementFromActiveView()
-      log(s"add active ${Uid.unwrap(node.uid)}")
-      active.update(node.uid, node)
-      passive.remove(node.uid)
-      val conn = ensureConnection(node)
-      rememberConnection(node.uid, conn)
-      attachPlumtree(node.uid, conn)
-      publishActiveViewChanged()
+      ensureConnection(node) match
+        case Some(conn) =>
+          log(s"add active ${Uid.unwrap(node.uid)}")
+          active.update(node.uid, node)
+          passive.remove(node.uid)
+          rememberConnection(node.uid, conn)
+          attachPlumtree(node.uid, conn)
+          publishViewChanged()
+        case None =>
+          log(s"cannot activate ${Uid.unwrap(node.uid)} because it is not dialable")
+          addNodePassiveView(node)
 
   private def addNodePassiveView(node: PeerRef[Details]): Unit =
     if node.uid != self.uid && !active.contains(node.uid) && !passive.contains(node.uid) then
@@ -306,13 +320,14 @@ class HyParViewMultiplexedNode[State, Details](
         passive.remove(randomElement(passive.keySet.toSet)): Unit
       log(s"add passive ${Uid.unwrap(node.uid)}")
       passive.update(node.uid, node)
+      publishViewChanged()
 
   private def dropRandomElementFromActiveView(): Unit =
     if active.nonEmpty then
       val n    = randomElement(active.keySet.toSet)
       val peer = active.remove(n).get
       log(s"drop active ${Uid.unwrap(n)}")
-      publishActiveViewChanged()
+      publishViewChanged()
       addNodePassiveView(peer)
       sendMembership(n, Disconnect(self.uid))
 

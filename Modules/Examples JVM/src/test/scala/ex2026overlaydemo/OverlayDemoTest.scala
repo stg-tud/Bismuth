@@ -1,116 +1,114 @@
 package ex2026overlaydemo
 
+import replication.research.OverlayConnectionDirectory
+
 /** vibecoded. dont trust 😉 */
 class OverlayDemoTest extends munit.FunSuite {
 
-  private def eventually(timeoutMs: Long = 5000)(cond: => Boolean): Unit = {
+  private def eventually(timeoutMs: Long = 10000)(cond: => Boolean): Unit = {
     val deadline = System.currentTimeMillis() + timeoutMs
     while System.currentTimeMillis() < deadline && !cond do
       Thread.sleep(20)
     assert(cond)
   }
 
-  test("server and client can exchange replicated set updates over multiplexed hyparview/plumtree") {
-    val server = new OverlayDemo.ServerApp("demo-topic")
-    val client = new OverlayDemo.ClientApp(server.coordinationDetails, "demo-topic")
+  test("nodes replicate self connection info and payload state through plumtree") {
+    val node1 = new OverlayDemo.NodeApp()
+    val node2 = new OverlayDemo.NodeApp(seeds = List(node1.details))
 
     try {
-      client.start()
-
       eventually() {
-        server.node.activeView.nonEmpty && client.node.activeView.nonEmpty
+        node1.node.activeView.nonEmpty && node2.node.activeView.nonEmpty
       }
 
-      eventually(10000) {
-        val directory = server.node.connectionDirectory
-        directory.get(client.node.localUid.uid).exists(_.elements.exists(peer => peer.uid == server.node.localUid.uid))
+      eventually() {
+        val directory1 = node1.node.connectionDirectory
+        val directory2 = node2.node.connectionDirectory
+        Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory1.keySet) &&
+        Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory2.keySet) &&
+        directory1.get(node1.node.localUid.uid).exists(_.selfDetails.elements.contains(node1.details)) &&
+        directory1.get(node2.node.localUid.uid).exists(_.selfDetails.elements.contains(node2.details)) &&
+        directory2.get(node1.node.localUid.uid).exists(_.selfDetails.elements.contains(node1.details)) &&
+        directory2.get(node2.node.localUid.uid).exists(_.selfDetails.elements.contains(node2.details))
       }
 
-      assert(!server.node.connectionDirectory.keySet.contains(server.node.localUid.uid))
-
-      server.node.publishAdd("server-value")
-      client.node.publishAdd("client-value")
+      node1.node.publishAdd("server-value")
+      node2.node.publishAdd("client-value")
 
       eventually() {
-        server.node.state.values.elements == Set("server-value", "client-value") &&
-        client.node.state.values.elements == Set("server-value", "client-value")
+        val expected = Set("server-value", "client-value")
+        node1.node.state.values.elements == expected &&
+        node2.node.state.values.elements == expected
       }
 
-      client.node.publishRemove("server-value")
+      node2.node.publishRemove("server-value")
 
       eventually() {
-        server.node.state.values.elements == Set("client-value") &&
-        client.node.state.values.elements == Set("client-value")
+        val expected = Set("client-value")
+        node1.node.state.values.elements == expected &&
+        node2.node.state.values.elements == expected
       }
     } finally {
-      client.stop()
-      server.stop()
+      node2.stop()
+      node1.stop()
     }
   }
 
-  test("overlay demo supports multiple clients, stdin-style commands, and replicated connection info") {
-    val server  = new OverlayDemo.ServerApp("demo-topic-many")
-    val client1 = new OverlayDemo.ClientApp(server.coordinationDetails, "demo-topic-many")
-    val client2 = new OverlayDemo.ClientApp(server.coordinationDetails, "demo-topic-many")
+  test("nodes learn the whole network from replicated local views and can use that for further overlay connectivity") {
+    val node1 = new OverlayDemo.NodeApp()
+    val node2 = new OverlayDemo.NodeApp(seeds = List(node1.details))
+    val node3 = new OverlayDemo.NodeApp(seeds = List(node2.details))
 
     try {
-      client1.start()
-      client2.start()
+      eventually() {
+        node1.node.activeView.nonEmpty && node2.node.activeView.nonEmpty && node3.node.activeView.nonEmpty
+      }
+
+      eventually(15000) {
+        val expected = Set(node1.node.localUid.uid, node2.node.localUid.uid, node3.node.localUid.uid)
+        val directories = List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
+        directories.forall { directory =>
+          expected.subsetOf(directory.keySet) &&
+          expected.forall { uid =>
+            directory.get(uid).exists(_.selfDetails.elements.nonEmpty)
+          }
+        }
+      }
+
+      eventually(15000) {
+        val directory = node3.node.connectionDirectory
+        directory.get(node1.node.localUid.uid).exists(_.selfDetails.elements.contains(node1.details)) &&
+        directory.get(node2.node.localUid.uid).exists(_.selfDetails.elements.contains(node2.details)) &&
+        directory.get(node3.node.localUid.uid).exists(_.selfDetails.elements.contains(node3.details))
+      }
+
+      eventually(20000) {
+        val allNodes = Set(node1.node.localUid.uid, node2.node.localUid.uid, node3.node.localUid.uid)
+        List(node1, node2, node3).forall { app =>
+          val knownActiveOrPassive = app.node.activeView ++ app.node.passiveView + app.node.localUid.uid
+          allNodes.subsetOf(knownActiveOrPassive)
+        }
+      }
+
+      node1.handleInputLine("alpha")
+      node2.handleInputLine("beta")
+      assert(node3.handleInputLine("gamma"))
+      assert(!node3.handleInputLine("q"))
 
       eventually() {
-        server.node.activeView.nonEmpty && client1.node.activeView.nonEmpty && client2.node.activeView.nonEmpty
+        val expected = Set("alpha", "beta", "gamma")
+        node1.node.state.values.elements == expected &&
+        node2.node.state.values.elements == expected &&
+        node3.node.state.values.elements == expected
       }
 
-      eventually(10000) {
-        val expectedClients = Set(client1.node.localUid.uid, client2.node.localUid.uid)
-        val directory       = client1.node.connectionDirectory
-        expectedClients.subsetOf(directory.keySet) &&
-        !directory.keySet.contains(server.node.localUid.uid)
-      }
-
-      server.node.publishAdd("warmup")
-      eventually() {
-        val expected = Set("warmup")
-        server.node.state.values.elements == expected &&
-        client1.node.state.values.elements == expected &&
-        client2.node.state.values.elements == expected
-      }
-      server.node.publishRemove("warmup")
-      eventually() {
-        server.node.state.values.elements.isEmpty && client1.node.state.values.elements.isEmpty && client2.node.state.values.elements.isEmpty
-      }
-
-      assert(client1.handleInputLine("alpha"))
-      eventually() {
-        val expected = Set("alpha")
-        server.node.state.values.elements == expected && client1.node.state.values.elements == expected && client2.node.state.values.elements == expected
-      }
-
-      assert(client2.handleInputLine("beta"))
-      eventually() {
-        val expected = Set("alpha", "beta")
-        server.node.state.values.elements == expected && client1.node.state.values.elements == expected && client2.node.state.values.elements == expected
-      }
-
-      assert(client1.handleInputLine("-alpha"))
-      eventually() {
-        val expected = Set("beta")
-        server.node.state.values.elements == expected && client1.node.state.values.elements == expected && client2.node.state.values.elements == expected
-      }
-
-      assert(client2.handleInputLine("gamma"))
-      assert(!client2.handleInputLine("q"))
-
-      eventually(10000) {
-        val expected = Set("beta", "gamma")
-        server.node.state.values.elements == expected &&
-        client1.node.state.values.elements == expected &&
-        client2.node.state.values.elements == expected
-      }
+      val directories = List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
+      assert(directories.forall(_.entries.forall((_, info) => info.selfDetails.elements.nonEmpty)))
+      assert(directories.exists(_.entries.exists((_, info) => info.peers.elements.exists(_.state == OverlayConnectionDirectory.LinkState.Active))))
     } finally {
-      client2.stop()
-      client1.stop()
-      server.stop()
+      node3.stop()
+      node2.stop()
+      node1.stop()
     }
   }
 }

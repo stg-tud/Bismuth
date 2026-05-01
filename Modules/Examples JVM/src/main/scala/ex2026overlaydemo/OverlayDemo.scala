@@ -1,14 +1,14 @@
 package ex2026overlaydemo
 
 import channels.*
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
-import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
-import replication.PlumtreeDissemination
-import replication.overlay.{HyParViewMultiplexed, HyParViewMultiplexedNode, HyParViewUnified}
-import replication.research.OverlayConnectionDirectory
+import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given_JsonValueCodec_Uid}
+import replication.overlay.{HyParViewMultiplexed, HyParViewUnified}
+import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
+import replication.research.OverlayNetworkProtocol.DemoState
 
 import java.util.concurrent.Executors
 import scala.util.Random
@@ -18,37 +18,22 @@ object OverlayDemo {
 
   given codecString: JsonValueCodec[String] = JsonCodecMaker.make
   given codecConnectionDetails: JsonValueCodec[ConnectionDetails] = JsonCodecMaker.make
+  given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
   given codecConnectedPeer: JsonValueCodec[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]] = JsonCodecMaker.make
+  given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo[ConnectionDetails]] = JsonCodecMaker.make
   given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
-  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ConnectionDetails]] =
-    AWSetStateCodec[ConnectionDetails]
+  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ConnectionDetails]] = AWSetStateCodec[ConnectionDetails]
   given codecReplicatedSetConnectedPeer: JsonValueCodec[ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]]] =
     AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]]
-  given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]]]] =
-    ORMapStateCodec[Uid, ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]]]
-  given codecCoordinationState: JsonValueCodec[ObserveRemoveMap[String, ReplicatedSet[ConnectionDetails]]] =
-    ORMapStateCodec[String, ReplicatedSet[ConnectionDetails]]
-
-  case class DemoState(
-      values: ReplicatedSet[String],
-      connections: OverlayConnectionDirectory.Directory[ConnectionDetails],
-  )
-  object DemoState {
-    given Bottom[DemoState] = Bottom.derived
-    given Lattice[DemoState] = Lattice.derived
-
-    val empty: DemoState = DemoState(ReplicatedSet.empty, OverlayConnectionDirectory.empty)
-  }
-
+  given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo[ConnectionDetails]]] =
+    ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo[ConnectionDetails]]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] =
     HyParViewMultiplexed.envelopeCodec[DemoState, ConnectionDetails]
 
-  enum CoordinationMessage {
-    case Register(topic: String, details: ConnectionDetails)
-    case Snapshot(state: ObserveRemoveMap[String, ReplicatedSet[ConnectionDetails]])
-  }
-  given codecCoordinationMessage: JsonValueCodec[CoordinationMessage] = JsonCodecMaker.make
+  def connectionString(details: ConnectionDetails): String = writeToString(details)
+
+  def parseConnectionString(str: String): ConnectionDetails = readFromString[ConnectionDetails](str)
 
   def jsonConnection[A: JsonValueCodec](latent: LatentConnection[MessageBuffer], name: String): LatentConnection[A] =
     LatentConnection.adapt[MessageBuffer, A](
@@ -57,52 +42,11 @@ object OverlayDemo {
       name
     )(latent)
 
-  class CoordinationServer(host: String = "127.0.0.1") {
-    private val nio       = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-    private val nioAbort  = Abort()
-    private val nioThread = Executors.newSingleThreadExecutor()
-    private val resolver  = new NioTcpConnectionDetailsResolver(nio)
-    private val uid       = LocalUid.gen()
-    @volatile private var state: ObserveRemoveMap[String, ReplicatedSet[ConnectionDetails]] = ObserveRemoveMap.empty
-
-    val (details, binaryServer) = resolver.listen(host)
-    private val server          = jsonConnection[CoordinationMessage](binaryServer, "coordination-json")
-
-    nioThread.execute(() => nio.loopSelection(nioAbort))
-
-    server.prepare(new Receive[CoordinationMessage] {
-      override def messageHandler(conn: Connection[CoordinationMessage]) = {
-        case scala.util.Success(CoordinationMessage.Register(topic, peerDetails)) =>
-          given LocalUid = uid
-          val current = state.get(topic).getOrElse(ReplicatedSet.empty[ConnectionDetails])
-          val next    = current.merge(current.add(peerDetails))
-          state = state.merge(state.update(topic, next))
-          conn.send(CoordinationMessage.Snapshot(state)).run(_ => ())
-        case _ => ()
-      }
-    }).runIn(nioAbort)(_ => ())
-
-    def registerSeed(topic: String, details: ConnectionDetails): Unit = {
-      given LocalUid = uid
-      val current = state.get(topic).getOrElse(ReplicatedSet.empty[ConnectionDetails])
-      val next    = current.merge(current.add(details))
-      state = state.merge(state.update(topic, next))
-    }
-
-    def stop(): Unit = {
-      nioAbort.abort()
-      nio.selector.wakeup()
-      nioThread.shutdownNow()
-      ()
-    }
-  }
-
   object TopicNode {
     def tcp(
-        topic: String,
         host: String = "127.0.0.1",
         random: Random = Random(0),
-        replicateConnectionInfo: Boolean = false,
+        onDirectoryChanged: OverlayConnectionDirectory.Directory[ConnectionDetails] => Unit = _ => (),
     ): TopicNode = {
       val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
       val nioAbort    = Abort()
@@ -126,7 +70,6 @@ object OverlayDemo {
       nioThread.execute(() => nio.loopSelection(nioAbort))
 
       new TopicNode(
-        topic = topic,
         listenDetails = listenDetails,
         listenEnvelope = listenEnvelope,
         envelopeResolver = envelopeResolver,
@@ -137,149 +80,51 @@ object OverlayDemo {
           ()
         },
         random = random,
-        replicateConnectionInfo = replicateConnectionInfo,
+        config = HyParViewUnified.HyParViewConfig.fromEstimatedNetworkSize(10),
+        onDirectoryChanged = onDirectoryChanged,
       )
     }
   }
 
   class TopicNode(
-      topic: String,
       val listenDetails: ConnectionDetails,
       listenEnvelope: LatentConnection[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]],
       envelopeResolver: ConnectionDetailsResolver[ConnectionDetails, HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]],
       stopTransport: () => Unit,
       random: Random = Random(0),
-      replicateConnectionInfo: Boolean = false,
+      config: HyParViewUnified.HyParViewConfig,
+      onDirectoryChanged: OverlayConnectionDirectory.Directory[ConnectionDetails] => Unit = _ => (),
   ) {
-    val localUid: LocalUid = LocalUid.gen()
-
-    @volatile var state: DemoState = DemoState.empty
-
-    val plumtree: PlumtreeDissemination[DemoState] = PlumtreeDissemination(
-      localUid,
-      delta => state = state.merge(delta),
-      None
+    val core = new OverlayDemoNode(
+      selfDetails = Set(listenDetails),
+      membershipDetails = Some(listenDetails),
+      listenEnvelope = Some(listenEnvelope),
+      envelopeResolver = envelopeResolver,
+      random = random,
+      config = config,
+      onDirectoryChanged = onDirectoryChanged,
     )
 
-    private val selfRef = HyParViewMultiplexed.PeerRef(localUid.uid, listenDetails)
-    private var overlay: Option[HyParViewMultiplexedNode[DemoState, ConnectionDetails]] = None
-
-    private def publishConnectionView(peers: Set[HyParViewMultiplexed.PeerRef[ConnectionDetails]]): Unit =
-      if replicateConnectionInfo then {
-        given LocalUid = localUid
-        val delta = OverlayConnectionDirectory.updateNodePeersFromOverlay(state.connections, localUid.uid, peers)
-        if !Bottom.isEmpty(delta) then {
-          val wrapped = DemoState(ReplicatedSet.empty, delta)
-          state = state.merge(wrapped)
-          plumtree.applyDelta(wrapped)
-        }
-      }
-
-    private def newOverlay(contact: Option[ConnectionDetails]): HyParViewMultiplexedNode[DemoState, ConnectionDetails] =
-      new HyParViewMultiplexedNode(
-        selfRef,
-        plumtree,
-        listenEnvelope,
-        envelopeResolver,
-        contact,
-        random,
-        HyParViewUnified.HyParViewConfig.default,
-        onActiveViewChanged = publishConnectionView,
-      )
-
-    def startAsSeed(): Unit = {
-      val node = newOverlay(None)
-      overlay = Some(node)
-      node.startServer()
-      publishConnectionView(Set.empty)
-    }
-
-    def startAndJoin(contact: ConnectionDetails): Unit = {
-      val node = newOverlay(Some(contact))
-      overlay = Some(node)
-      node.startServer()
-      node.join()
-    }
-
-    def publishAdd(value: String): Unit = {
-      given LocalUid = localUid
-      val delta = state.values.add(value)
-      val wrapped = DemoState(delta, OverlayConnectionDirectory.empty)
-      state = state.merge(wrapped)
-      plumtree.applyDelta(wrapped)
-    }
-
-    def publishRemove(value: String): Unit = {
-      val delta = state.values.remove(value)
-      val wrapped = DemoState(delta, OverlayConnectionDirectory.empty)
-      state = state.merge(wrapped)
-      plumtree.applyDelta(wrapped)
-    }
-
-    def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
-
-    def connectionDirectory: OverlayConnectionDirectory.Directory[ConnectionDetails] = state.connections
-
-    def stop(): Unit = stopTransport()
-  }
-
-  class ServerApp(topic: String, host: String = "127.0.0.1") {
-    val coordination = new CoordinationServer(host)
-    val node         = TopicNode.tcp(topic, host, replicateConnectionInfo = false)
-    node.startAsSeed()
-    coordination.registerSeed(topic, node.listenDetails)
-
-    def coordinationDetails: ConnectionDetails.Tcp = coordination.details
-    def overlayDetails: ConnectionDetails = node.listenDetails
+    def localUid: LocalUid = core.localUid
+    def state: DemoState = core.state
+    def start(seeds: List[ConnectionDetails] = Nil): Unit = core.start(seeds)
+    def publishAdd(value: String): Unit = core.publishAdd(value)
+    def publishRemove(value: String): Unit = core.publishRemove(value)
+    def activeView: Set[Uid] = core.activeView
+    def passiveView: Set[Uid] = core.passiveView
+    def connectionDirectory: OverlayConnectionDirectory.Directory[ConnectionDetails] = core.connectionDirectory
 
     def stop(): Unit = {
-      node.stop()
-      coordination.stop()
+      core.stop()
+      stopTransport()
     }
   }
 
-  class ClientApp(coordinationDetails: ConnectionDetails.Tcp, topic: String, host: String = "127.0.0.1") {
-    val node = TopicNode.tcp(topic, host, replicateConnectionInfo = true)
+  class NodeApp(host: String = "127.0.0.1", seeds: List[ConnectionDetails] = Nil) {
+    val node = TopicNode.tcp(host)
+    node.start(seeds)
 
-    def start(): Unit = {
-      val nio      = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-      val abort    = Abort()
-      val thread   = Executors.newSingleThreadExecutor()
-      val resolver = new NioTcpConnectionDetailsResolver(nio)
-      thread.execute(() => nio.loopSelection(abort))
-
-      val connLatent = jsonConnection[CoordinationMessage](
-        resolver.connect(coordinationDetails, "coord-client").get,
-        "coordination-json"
-      )
-
-      @volatile var snapshot: Option[ObserveRemoveMap[String, ReplicatedSet[ConnectionDetails]]] = None
-
-      connLatent.prepare(new Receive[CoordinationMessage] {
-        override def messageHandler(conn: Connection[CoordinationMessage]) = {
-          case scala.util.Success(CoordinationMessage.Snapshot(state)) => snapshot = Some(state)
-          case _                                                      => ()
-        }
-      }).runIn(abort) {
-        case scala.util.Success(conn) =>
-          conn.send(CoordinationMessage.Register(topic, node.listenDetails)).run(_ => ())
-        case _ => ()
-      }
-
-      var spins = 0
-      while snapshot.isEmpty && spins < 1000 do
-        Thread.sleep(5)
-        spins += 1
-
-      abort.abort()
-      nio.selector.wakeup()
-      thread.shutdownNow()
-
-      val contact = snapshot.flatMap(_.get(topic)).map(_.elements - node.listenDetails).getOrElse(Set.empty).headOption
-      contact match
-        case Some(peer) => node.startAndJoin(peer)
-        case None       => node.startAsSeed()
-    }
+    def details: ConnectionDetails = node.listenDetails
 
     def handleInputLine(line: String): Boolean = {
       val trimmed = line.trim
@@ -303,14 +148,14 @@ object OverlayDemo {
 
   def main(args: Array[String]): Unit =
     args.toList match
-      case "server" :: topic :: Nil =>
-        val server = new ServerApp(topic)
-        println(s"coordination=${server.coordinationDetails} overlay=${server.overlayDetails}")
-      case "client" :: host :: port :: topic :: Nil =>
-        val client = new ClientApp(ConnectionDetails.Tcp(host, port.toInt), topic)
-        client.start()
-        println(s"client overlay=${client.node.listenDetails}")
-        client.runConsole()
+      case Nil =>
+        val node = new NodeApp()
+        println(s"seed=${connectionString(node.details)}")
+        node.runConsole()
+      case seed :: Nil =>
+        val node = new NodeApp(seeds = List(parseConnectionString(seed)))
+        println(s"seed=${connectionString(node.details)}")
+        node.runConsole()
       case _ =>
-        println("usage: server <topic> | client <coord-host> <coord-port> <topic>")
+        println("usage: [<seed-connection-string>]")
 }
