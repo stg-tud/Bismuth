@@ -4,11 +4,12 @@ import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedSet}
+import replication.JsoniterCodecs
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given_JsonValueCodec_Uid}
 import replication.overlay.{HyParViewMultiplexed, HyParViewUnified}
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
-import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.OverlayNetworkProtocol.{DemoState, WebRtcAnswer, WebRtcOffer}
 
 import java.util.Base64
 import java.util.concurrent.Executors
@@ -28,6 +29,16 @@ object OverlayDemo {
     AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo[ConnectionDetails]]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo[ConnectionDetails]]
+  given codecWebRtcOffer: JsonValueCodec[WebRtcOffer] = JsonCodecMaker.make
+  given codecWebRtcAnswer: JsonValueCodec[WebRtcAnswer] = JsonCodecMaker.make
+  given codecOptionWebRtcOffer: JsonValueCodec[Option[WebRtcOffer]] = JsonCodecMaker.make
+  given codecOptionWebRtcAnswer: JsonValueCodec[Option[WebRtcAnswer]] = JsonCodecMaker.make
+  given codecLwwWebRtcOffer: JsonValueCodec[LastWriterWins[Option[WebRtcOffer]]] = JsoniterCodecs.LastWriterWinsCodecWithBottomOptimization[Option[WebRtcOffer]]
+  given codecLwwWebRtcAnswer: JsonValueCodec[LastWriterWins[Option[WebRtcAnswer]]] = JsoniterCodecs.LastWriterWinsCodecWithBottomOptimization[Option[WebRtcAnswer]]
+  given codecWebRtcOffersByPeer: JsonValueCodec[ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcOffer]]]] = ORMapStateCodec[Uid, LastWriterWins[Option[WebRtcOffer]]]
+  given codecWebRtcAnswersByPeer: JsonValueCodec[ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcAnswer]]]] = ORMapStateCodec[Uid, LastWriterWins[Option[WebRtcAnswer]]]
+  given codecWebRtcOffers: JsonValueCodec[ObserveRemoveMap[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcOffer]]]]] = ORMapStateCodec[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcOffer]]]]
+  given codecWebRtcAnswers: JsonValueCodec[ObserveRemoveMap[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcAnswer]]]]] = ORMapStateCodec[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcAnswer]]]]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] =
     HyParViewMultiplexed.envelopeCodec[DemoState, ConnectionDetails]

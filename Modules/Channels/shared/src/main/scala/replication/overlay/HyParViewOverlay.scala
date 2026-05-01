@@ -137,6 +137,12 @@ class HyParViewMultiplexedNode[State, Details](
     healActiveView()
   }
 
+  def addIncomingConnection(latent: LatentConnection[Envelope[State, Details]]): Unit =
+    latent.prepare(receive(None)).runIn(abort) {
+      case Success(_)  => ()
+      case Failure(ex) => ex.printStackTrace()
+    }
+
   private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State, Details]] =
     (conn: Connection[Envelope[State, Details]]) => {
       expectedPeer.foreach(peer => rememberConnection(peer, conn))

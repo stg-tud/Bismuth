@@ -2,17 +2,19 @@ package webapps.ex2026niowebsocket
 
 import channels.*
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
+import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnector}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, HTMLCanvasElement, document, window}
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedSet}
+import replication.{JsoniterCodecs, PlumtreeDissemination, ProtocolMessage}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewMultiplexed
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import replication.research.OverlayConnectionDirectory.LinkState
-import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.OverlayNetworkProtocol.{DemoState, WebRtcAnswer, WebRtcOffer}
 import scalatags.JsDom.all.*
 
 import java.util.Base64
@@ -50,12 +52,23 @@ object OverlayNetworkGraph {
     AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer[ConnectionDetails]]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo[ConnectionDetails]]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo[ConnectionDetails]]
+  given codecWebRtcOffer: JsonValueCodec[WebRtcOffer] = JsonCodecMaker.make
+  given codecWebRtcAnswer: JsonValueCodec[WebRtcAnswer] = JsonCodecMaker.make
+  given codecOptionWebRtcOffer: JsonValueCodec[Option[WebRtcOffer]] = JsonCodecMaker.make
+  given codecOptionWebRtcAnswer: JsonValueCodec[Option[WebRtcAnswer]] = JsonCodecMaker.make
+  given codecLwwWebRtcOffer: JsonValueCodec[LastWriterWins[Option[WebRtcOffer]]] = JsoniterCodecs.LastWriterWinsCodecWithBottomOptimization[Option[WebRtcOffer]]
+  given codecLwwWebRtcAnswer: JsonValueCodec[LastWriterWins[Option[WebRtcAnswer]]] = JsoniterCodecs.LastWriterWinsCodecWithBottomOptimization[Option[WebRtcAnswer]]
+  given codecWebRtcOffersByPeer: JsonValueCodec[ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcOffer]]]] = ORMapStateCodec[Uid, LastWriterWins[Option[WebRtcOffer]]]
+  given codecWebRtcAnswersByPeer: JsonValueCodec[ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcAnswer]]]] = ORMapStateCodec[Uid, LastWriterWins[Option[WebRtcAnswer]]]
+  given codecWebRtcOffers: JsonValueCodec[ObserveRemoveMap[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcOffer]]]]] = ORMapStateCodec[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcOffer]]]]
+  given codecWebRtcAnswers: JsonValueCodec[ObserveRemoveMap[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcAnswer]]]]] = ORMapStateCodec[Uid, ObserveRemoveMap[Uid, LastWriterWins[Option[WebRtcAnswer]]]]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] =
     HyParViewMultiplexed.envelopeCodec[DemoState, ConnectionDetails]
+  given codecProtocolMessage: JsonValueCodec[ProtocolMessage[DemoState]] = PlumtreeDissemination.pmscodec[DemoState, ProtocolMessage[DemoState]]
 
   private enum EdgeKind {
-    case ActiveOverlay, PassiveOverlay
+    case ActiveOverlay, PassiveOverlay, WebRtcDirect
   }
 
   private case class GraphEdge(from: Uid, to: Uid, kind: EdgeKind)
@@ -79,6 +92,10 @@ object OverlayNetworkGraph {
   @volatile private var connectedToSeed: Boolean = false
   @volatile private var currentSeed: Option[ConnectionDetails] = None
   private var currentNode: Option[OverlayDemoNode] = None
+  private val outgoingWebRtc = mutable.Map.empty[Uid, (String, WebRTCConnector, dom.RTCDataChannel)]
+  private val answeredOffers = mutable.Set.empty[(Uid, String)]
+  private val connectedWebRtcPeers = mutable.Set.empty[Uid]
+  private val applyingAnswers = mutable.Set.empty[(Uid, String)]
   private var statusNode: dom.Element | Null = null
   private var debugNode: dom.Element | Null  = null
   private val positions = mutable.Map.empty[Uid, (Double, Double, Double, Double)]
@@ -111,11 +128,116 @@ object OverlayNetworkGraph {
     case ConnectionDetails.QueuedLocal(id)       => s"queued:$id"
     case ConnectionDetails.SynchronousLocal(id)  => s"sync:$id"
 
+  private def attachWebRtcChannel(peerUid: Uid, channel: dom.RTCDataChannel): Unit = {
+    WebRTCConnection.open(channel).run {
+      case scala.util.Success(_) =>
+        connectedWebRtcPeers += peerUid
+        log(s"webrtc channel open peer=${Uid.unwrap(peerUid)}")
+      case scala.util.Failure(err) =>
+        connectedWebRtcPeers -= peerUid
+        log(s"webrtc channel failed peer=${Uid.unwrap(peerUid)} err=${err.getMessage}")
+    }
+    channel.onclose = { (_: dom.Event) =>
+      connectedWebRtcPeers -= peerUid
+      log(s"webrtc channel closed peer=${Uid.unwrap(peerUid)}")
+    }
+  }
+
   private def stopCurrentNode(): Unit = {
     currentNode.foreach(_.stop())
     currentNode = None
+    outgoingWebRtc.clear()
+    answeredOffers.clear()
+    connectedWebRtcPeers.clear()
+    applyingAnswers.clear()
     connectedToSeed = false
     network = OverlayConnectionDirectory.empty
+  }
+
+  private def envelopeConnection(latent: LatentConnection[MessageBuffer]): LatentConnection[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] =
+    LatentConnection.adapt[MessageBuffer, HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]](
+      mb => com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]](mb.asArray),
+      msg => ArrayMessageBuffer(com.github.plokhotnyuk.jsoniter_scala.core.writeToArray(msg)),
+      "webrtc-envelope-json"
+    )(latent)
+
+  private def maybeHandleWebRtc(directory: OverlayConnectionDirectory.Directory[ConnectionDetails], node: OverlayDemoNode): Unit = {
+    val visibleNodes = directory.keySet.map(Uid.unwrap).toList.sorted
+    val visibleOffers = node.state.webRtcOffers.entries.flatMap { (target, perPeer) =>
+      perPeer.entries.flatMap((from, offer) => offer.read.map(v => s"${Uid.unwrap(from)}->${Uid.unwrap(target)}:${v.id.take(12)}"))
+    }.toList.sorted
+    val visibleAnswers = node.state.webRtcAnswers.entries.flatMap { (target, perPeer) =>
+      perPeer.entries.flatMap((from, answer) => answer.read.map(v => s"${Uid.unwrap(from)}->${Uid.unwrap(target)}:${v.offerId.take(12)}"))
+    }.toList.sorted
+    log(s"webrtc scan self=${Uid.unwrap(node.localUid.uid)} visibleNodes=$visibleNodes offers=$visibleOffers answers=$visibleAnswers pending=${outgoingWebRtc.keys.map(Uid.unwrap).toList.sorted} answered=${answeredOffers.toList.map((uid,id) => s"${Uid.unwrap(uid)}:${id.take(12)}").sorted} connected=${connectedWebRtcPeers.map(Uid.unwrap).toList.sorted}")
+
+    node.state.webRtcOffers.get(node.localUid.uid).foreach { offersForSelf =>
+      offersForSelf.entries.foreach { (peerUid, offerLww) =>
+        offerLww.read match
+          case Some(offer) if !answeredOffers((peerUid, offer.id)) =>
+            log(s"webrtc considering targeted offer from=${Uid.unwrap(peerUid)} offer=${offer.id} type=${offer.sdpType}")
+            val connector = WebRTCConnector()
+            val channel = connector.peerConnection.createDataChannel(
+              "overlay-webrtc",
+              new dom.RTCDataChannelInit {
+                negotiated = true
+                id = 23
+              }
+            )
+            connector.lifecycle.run {
+              case scala.util.Success(overview) =>
+                log(s"webrtc answerer lifecycle peer=${Uid.unwrap(peerUid)} gathering=${overview.iceGatheringState} ice=${overview.iceConnectionState} signaling=${overview.signalingState} local=${overview.localSession.nonEmpty} remote=${overview.remoteSession.nonEmpty}")
+              case scala.util.Failure(err) =>
+                log(s"webrtc answerer lifecycle failed peer=${Uid.unwrap(peerUid)} err=${err.getMessage}")
+            }
+            connector.updateRemoteDescription(SessionDescription(offer.sdpType, offer.sdp)).run {
+              case scala.util.Success(overview) =>
+                overview.localSession match
+                  case Some(answer) =>
+                    answeredOffers += ((peerUid, offer.id))
+                    attachWebRtcChannel(peerUid, channel)
+                    node.addOverlayConnection(envelopeConnection(WebRTCConnection.openLatent(channel)))
+                    node.publishWebRtcAnswer(peerUid, WebRtcAnswer(offer.id, answer.descType, answer.sdp))
+                    node.clearWebRtcOffer(node.localUid.uid, peerUid)
+                    log(s"published webrtc answer from=${Uid.unwrap(node.localUid.uid)} to=${Uid.unwrap(peerUid)} offer=${offer.id}")
+                  case None =>
+                    log(s"webrtc no local answer yet for peer=${Uid.unwrap(peerUid)} offer=${offer.id}")
+              case scala.util.Failure(err) =>
+                log(s"failed to answer webrtc offer from=${Uid.unwrap(peerUid)} offer=${offer.id}: ${err.getMessage}")
+            }
+          case Some(offer) =>
+            log(s"webrtc skipping offer from=${Uid.unwrap(peerUid)} offer=${offer.id} alreadyAnswered=${answeredOffers((peerUid, offer.id))}")
+          case None => ()
+      }
+    }
+
+    node.state.webRtcAnswers.get(node.localUid.uid) match
+      case Some(answers) =>
+        answers.entries.foreach { (peerUid, answerLww) =>
+          answerLww.read match
+            case Some(answer) =>
+              outgoingWebRtc.get(peerUid) match
+                case Some((offerId, connector, channel)) if offerId == answer.offerId && !connectedWebRtcPeers(peerUid) && !applyingAnswers((peerUid, offerId)) =>
+                  applyingAnswers += ((peerUid, offerId))
+                  log(s"webrtc applying targeted answer from=${Uid.unwrap(peerUid)} offer=${offerId} type=${answer.sdpType}")
+                  connector.updateRemoteDescription(SessionDescription(answer.sdpType, answer.sdp)).run {
+                    case scala.util.Success(overview) =>
+                      applyingAnswers -= ((peerUid, offerId))
+                      attachWebRtcChannel(peerUid, channel)
+                      node.clearWebRtcAnswer(node.localUid.uid, peerUid)
+                      log(s"completed webrtc answer from=${Uid.unwrap(peerUid)} offer=$offerId ice=${overview.iceConnectionState} signaling=${overview.signalingState}")
+                    case scala.util.Failure(err) =>
+                      applyingAnswers -= ((peerUid, offerId))
+                      log(s"failed to apply webrtc answer from=${Uid.unwrap(peerUid)} offer=${offerId}: ${err.getMessage}")
+                  }
+                case Some((offerId, _, _)) =>
+                  log(s"webrtc ignoring answer from=${Uid.unwrap(peerUid)} answerOffer=${answer.offerId} localOffer=$offerId connected=${connectedWebRtcPeers(peerUid)} applying=${applyingAnswers((peerUid, offerId))}")
+                case None =>
+                  log(s"webrtc saw answer from=${Uid.unwrap(peerUid)} for offer=${answer.offerId} but have no pending outgoing connection")
+            case None => ()
+        }
+      case None =>
+        ()
   }
 
   private def connect(seedConnectionString: String): Unit = {
@@ -123,8 +245,8 @@ object OverlayNetworkGraph {
     val seedDetails = parseConnectionString(seedConnectionString)
     val seedUrl     = websocketUrl(seedDetails)
     val localId     = LocalUid.gen()
-    val membershipDetail = ConnectionDetails.WebRtc("browser", Uid.unwrap(localId.uid))
-    val resolver         = new WebSocketConnectionDetailsResolver[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]
+    val membershipDetail = ConnectionDetails.WebRtc("overlay-demo", Uid.unwrap(localId.uid))
+    val wsResolver       = new WebSocketConnectionDetailsResolver[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]
 
     viewerUid = localId.uid
     currentSeed = Some(seedDetails)
@@ -132,25 +254,68 @@ object OverlayNetworkGraph {
     refreshText()
     log(s"connect requested seed=$seedConnectionString url=$seedUrl")
 
+    var createdNode: OverlayDemoNode | Null = null
+    val resolver = new ConnectionDetailsResolver[ConnectionDetails, HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] {
+      override def connect(details: ConnectionDetails, label: String): Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]] =
+        details match
+          case ConnectionDetails.WebRtc("overlay-demo", peerId) =>
+            Some(new LatentConnection[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] {
+              override def prepare(receiver: Receive[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]) = de.rmgk.delay.Async.fromCallback { abort ?=>
+                val peerUid = Uid.predefined(peerId)
+                val connector = WebRTCConnector()
+                val channel = connector.peerConnection.createDataChannel(
+                  "overlay-webrtc",
+                  new dom.RTCDataChannelInit {
+                    negotiated = true
+                    id = 23
+                  }
+                )
+                val offerId = s"${Uid.unwrap(localId.uid)}-${Uid.unwrap(peerUid)}-${js.Date.now().toLong}-${(math.random() * 1000000).toLong}"
+                outgoingWebRtc.update(peerUid, (offerId, connector, channel))
+                connector.lifecycle.run {
+                  case scala.util.Success(overview) =>
+                    log(s"webrtc local lifecycle self=${Uid.unwrap(localId.uid)} peer=${Uid.unwrap(peerUid)} gathering=${overview.iceGatheringState} ice=${overview.iceConnectionState} signaling=${overview.signalingState} local=${overview.localSession.nonEmpty} remote=${overview.remoteSession.nonEmpty}")
+                  case scala.util.Failure(err) =>
+                    log(s"webrtc local lifecycle failed self=${Uid.unwrap(localId.uid)} peer=${Uid.unwrap(peerUid)} err=${err.getMessage}")
+                }
+                envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
+                  case scala.util.Success(conn) => de.rmgk.delay.Async.handler.succeed(conn)
+                  case scala.util.Failure(err)  => de.rmgk.delay.Async.handler.fail(err)
+                }
+                connector.smartUpdateLocalDescription.run {
+                  case scala.util.Success(sd) =>
+                    createdNode.nn.publishWebRtcOffer(peerUid, WebRtcOffer(offerId, sd.descType, sd.sdp))
+                    log(s"published targeted webrtc offer from=${Uid.unwrap(localId.uid)} to=${Uid.unwrap(peerUid)} offer=$offerId type=${sd.descType} sdpBytes=${sd.sdp.length}")
+                  case scala.util.Failure(err) =>
+                    log(s"failed to create targeted webrtc offer self=${Uid.unwrap(localId.uid)} peer=${Uid.unwrap(peerUid)}: ${err.getMessage}")
+                    de.rmgk.delay.Async.handler.fail(err)
+                }
+              }
+            })
+          case _ => wsResolver.connect(details, label)
+    }
+
     val node = new OverlayDemoNode(
-      selfDetails = Set.empty,
+      selfDetails = Set(membershipDetail),
       membershipDetails = Some(membershipDetail),
       listenEnvelope = None,
       envelopeResolver = resolver,
       onDirectoryChanged = directory => {
         network = directory
         connectedToSeed = true
+        maybeHandleWebRtc(directory, createdNode.nn)
         val active  = directory.get(viewerUid).map(_.peers.elements.count(_.state == LinkState.Active)).getOrElse(0)
         val passive = directory.get(viewerUid).map(_.peers.elements.count(_.state == LinkState.Passive)).getOrElse(0)
-        statusText = s"connected • ${directory.keySet.size} known nodes • active=$active passive=$passive"
+        statusText = s"connected • ${directory.keySet.size} known nodes • active=$active passive=$passive • webrtc=${connectedWebRtcPeers.size}"
         refreshText()
       },
     )
+    createdNode = node
 
     currentNode = Some(node)
     viewerUid = node.localUid.uid
     node.start(List(seedDetails))
-    log(s"overlay node started uid=${Uid.unwrap(viewerUid)} seed=$seedUrl")
+    log(s"overlay node started uid=${Uid.unwrap(viewerUid)} seed=$seedUrl webrtcDetail=${encodeConnectionString(membershipDetail)}")
   }
 
   private def buildGraph(width: Double, height: Double): (Vector[GraphNode], Vector[GraphEdge]) = {
@@ -176,6 +341,12 @@ object OverlayNetworkGraph {
           case LinkState.Passive => "#94a3b8"
         )
       }
+    }
+
+    connectedWebRtcPeers.foreach { peerUid =>
+      edges += GraphEdge(viewerUid, peerUid, EdgeKind.WebRtcDirect)
+      detailsByNode.getOrElseUpdate(peerUid, peerUid.show)
+      colors.update(peerUid, "#34d399")
     }
 
     val uids  = detailsByNode.keySet.toVector.distinct
@@ -252,6 +423,22 @@ object OverlayNetworkGraph {
           b.vx -= fx
           b.vy -= fy
       case GraphEdge(_, _, EdgeKind.PassiveOverlay) => ()
+      case GraphEdge(from, to, EdgeKind.WebRtcDirect) =>
+        for
+          a <- byUid.get(from)
+          b <- byUid.get(to)
+        do
+          val dx = b.x - a.x
+          val dy = b.y - a.y
+          val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
+          val desired = 210.0
+          val pull = (distance - desired) * 0.003
+          val fx = dx * pull / distance
+          val fy = dy * pull / distance
+          a.vx += fx
+          a.vy += fy
+          b.vx -= fx
+          b.vy -= fy
     }
 
     nodes.foreach { node =>
@@ -309,6 +496,10 @@ object OverlayNetworkGraph {
           ctx.strokeStyle = "rgba(148, 163, 184, 0.55)"
           ctx.setLineDash(js.Array(6, 6))
           ctx.lineWidth = 1.25
+        case EdgeKind.WebRtcDirect =>
+          ctx.strokeStyle = "rgba(52, 211, 153, 0.95)"
+          ctx.setLineDash(js.Array())
+          ctx.lineWidth = 2.75
       for
         a <- byUid.get(edge.from)
         b <- byUid.get(edge.to)
@@ -344,8 +535,8 @@ object OverlayNetworkGraph {
     val localId     = LocalUid.gen()
     val resolver    = new WebSocketConnectionDetailsResolver[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]
     val node = new OverlayDemoNode(
-      selfDetails = Set.empty,
-      membershipDetails = Some(ConnectionDetails.WebRtc("browser", Uid.unwrap(localId.uid))),
+      selfDetails = Set(ConnectionDetails.WebRtc("overlay-demo", Uid.unwrap(localId.uid))),
+      membershipDetails = Some(ConnectionDetails.WebRtc("overlay-demo", Uid.unwrap(localId.uid))),
       listenEnvelope = None,
       envelopeResolver = resolver,
       onDirectoryChanged = directory => {
@@ -387,6 +578,19 @@ object OverlayNetworkGraph {
       border := "1px solid #94a3b8",
     ).render
     val connectButton = button("Connect").render
+    val myInfoOut = textarea(
+      readonly := true,
+      rows := 2,
+      width := "100%",
+      backgroundColor := "#0f172a",
+      color := "#cbd5e1",
+      padding := "0.5rem",
+      border := "1px solid #334155",
+      value := "no direct browser connection string yet",
+      onfocus := { (ev: dom.FocusEvent) =>
+        ev.target.asInstanceOf[dom.html.TextArea].select()
+      },
+    ).render
     val status = div(style := "user-select: text;").render
     val debugOut = pre(
       style := "user-select: text;",
@@ -405,7 +609,10 @@ object OverlayNetworkGraph {
       backgroundColor := "#0b1020",
     ).render
 
-    connectButton.onclick = _ => connect(urlInput.value)
+    connectButton.onclick = _ => {
+      myInfoOut.value = s"seed: ${urlInput.value}\n(your webrtc capability string will appear in the log after connect)"
+      connect(urlInput.value)
+    }
 
     val root = div(
       padding := "1rem",
@@ -414,6 +621,7 @@ object OverlayNetworkGraph {
       minHeight := "100vh",
       fontFamily := "sans-serif",
       div(marginBottom := "0.75rem", urlInput, connectButton),
+      div(marginBottom := "0.75rem", myInfoOut),
       status,
       div(marginTop := "1rem", width := "100%", graphCanvas),
       div(marginTop := "0.75rem", debugOut),

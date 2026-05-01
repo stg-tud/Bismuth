@@ -1,14 +1,15 @@
 package replication.research
 
-import channels.{Abort, ConnectionDetails, ConnectionDetailsResolver, LatentConnection}
+import channels.{Abort, ConnectionDetails, ConnectionDetailsResolver, LatentConnection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, LocalUid, Uid}
-import rdts.datatypes.ReplicatedSet
-import replication.PlumtreeDissemination
+import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedSet}
+import replication.{PlumtreeDissemination, ProtocolMessage}
 import replication.overlay.{HyParViewMultiplexed, HyParViewMultiplexedNode, HyParViewUnified}
-import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.OverlayNetworkProtocol.{DemoState, WebRtcAnswer, WebRtcOffer}
 
 import java.util.{Timer, TimerTask}
+import scala.collection.mutable
 import scala.util.Random
 
 /** vibecoded. dont trust 😉 */
@@ -33,15 +34,29 @@ class OverlayDemoNode(
   private val shuffleTimer = Timer(true)
   private val abort        = Abort()
 
-  private def refreshOverlayKnowledge(): Unit = {
+  private def refreshOverlayKnowledge(): Unit =
     onDirectoryChanged(state.connections)
-    overlay.foreach(_.discoverPeers(OverlayConnectionDirectory.knownPeers(state.connections, localUid.uid)))
-  }
+
+  private def webRtcOffersSummary: List[String] =
+    state.webRtcOffers.entries.flatMap { (target, offers) =>
+      offers.entries.flatMap { (from, offer) =>
+        offer.read.map(v => s"${Uid.unwrap(from)}->${Uid.unwrap(target)}:${v.id.take(12)}")
+      }
+    }.toList.sorted
+
+  private def webRtcAnswersSummary: List[String] =
+    state.webRtcAnswers.entries.flatMap { (target, perPeer) =>
+      perPeer.entries.flatMap { (from, answer) =>
+        answer.read.map(v => s"${Uid.unwrap(from)}->${Uid.unwrap(target)}:${v.offerId.take(12)}")
+      }
+    }.toList.sorted
 
   val plumtree: PlumtreeDissemination[DemoState] = PlumtreeDissemination(
     localUid,
     delta => {
       state = state.merge(delta)
+      if !Bottom.isEmpty(delta.webRtcOffers) || !Bottom.isEmpty(delta.webRtcAnswers) then
+        println(s"[overlay-demo-node ${Uid.unwrap(localUid.uid)}] merged webrtc delta offers=${webRtcOffersSummary} answers=${webRtcAnswersSummary}")
       refreshOverlayKnowledge()
     },
     None,
@@ -58,10 +73,10 @@ class OverlayDemoNode(
       localUid.uid,
       selfDetails,
       activePeers,
-      passivePeers,
+      Set.empty,
     )
     if !Bottom.isEmpty(delta) then {
-      val wrapped = DemoState(ReplicatedSet.empty, delta)
+      val wrapped = DemoState(ReplicatedSet.empty, delta, ObserveRemoveMap.empty, ObserveRemoveMap.empty)
       state = state.merge(wrapped)
       refreshOverlayKnowledge()
       plumtree.applyDelta(wrapped)
@@ -72,7 +87,7 @@ class OverlayDemoNode(
     given LocalUid = localUid
     val delta = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
     if !Bottom.isEmpty(delta) then {
-      val wrapped = DemoState(ReplicatedSet.empty, delta)
+      val wrapped = DemoState(ReplicatedSet.empty, delta, ObserveRemoveMap.empty, ObserveRemoveMap.empty)
       state = state.merge(wrapped)
       refreshOverlayKnowledge()
       plumtree.applyDelta(wrapped)
@@ -116,20 +131,74 @@ class OverlayDemoNode(
     seeds.headOption.foreach(_ => node.join())
   }
 
+  private def publishCurrentView(): Unit =
+    publishLocalView(
+      overlay.map(_.activePeers).getOrElse(Set.empty),
+      overlay.map(_.passivePeers).getOrElse(Set.empty),
+    )
+
   def publishAdd(value: String): Unit = {
     given LocalUid = localUid
     val delta   = state.values.add(value)
-    val wrapped = DemoState(delta, OverlayConnectionDirectory.empty)
+    val wrapped = DemoState(delta, OverlayConnectionDirectory.empty, ObserveRemoveMap.empty, ObserveRemoveMap.empty)
     state = state.merge(wrapped)
     plumtree.applyDelta(wrapped)
   }
 
   def publishRemove(value: String): Unit = {
     val delta   = state.values.remove(value)
-    val wrapped = DemoState(delta, OverlayConnectionDirectory.empty)
+    val wrapped = DemoState(delta, OverlayConnectionDirectory.empty, ObserveRemoveMap.empty, ObserveRemoveMap.empty)
     state = state.merge(wrapped)
     plumtree.applyDelta(wrapped)
   }
+
+  def publishWebRtcOffer(target: Uid, offer: WebRtcOffer): Unit = {
+    given LocalUid = localUid
+    val current = state.webRtcOffers.get(target).getOrElse(ObserveRemoveMap.empty[Uid, LastWriterWins[Option[WebRtcOffer]]])
+    val register = current.get(localUid.uid).getOrElse(LastWriterWins.empty[Option[WebRtcOffer]]).write(Some(offer))
+    val next = current.update(localUid.uid, register)
+    val delta = DemoState(ReplicatedSet.empty, OverlayConnectionDirectory.empty, state.webRtcOffers.update(target, next), ObserveRemoveMap.empty)
+    state = state.merge(delta)
+    println(s"[overlay-demo-node ${Uid.unwrap(localUid.uid)}] publish offer target=${Uid.unwrap(target)} id=${offer.id} offers=${webRtcOffersSummary}")
+    plumtree.applyDelta(delta)
+  }
+
+  def clearWebRtcOffer(target: Uid, from: Uid): Unit = {
+    given LocalUid = localUid
+    val current = state.webRtcOffers.get(target).getOrElse(ObserveRemoveMap.empty[Uid, LastWriterWins[Option[WebRtcOffer]]])
+    val register = current.get(from).getOrElse(LastWriterWins.empty[Option[WebRtcOffer]]).write(None)
+    val next = current.update(from, register)
+    val delta = DemoState(ReplicatedSet.empty, OverlayConnectionDirectory.empty, state.webRtcOffers.update(target, next), ObserveRemoveMap.empty)
+    state = state.merge(delta)
+    plumtree.applyDelta(delta)
+  }
+
+  def publishWebRtcAnswer(target: Uid, answer: WebRtcAnswer): Unit = {
+    given LocalUid = localUid
+    val current = state.webRtcAnswers.get(target).getOrElse(ObserveRemoveMap.empty[Uid, LastWriterWins[Option[WebRtcAnswer]]])
+    val register = current.get(localUid.uid).getOrElse(LastWriterWins.empty[Option[WebRtcAnswer]]).write(Some(answer))
+    val next = current.update(localUid.uid, register)
+    val delta = DemoState(ReplicatedSet.empty, OverlayConnectionDirectory.empty, ObserveRemoveMap.empty, state.webRtcAnswers.update(target, next))
+    state = state.merge(delta)
+    println(s"[overlay-demo-node ${Uid.unwrap(localUid.uid)}] publish answer target=${Uid.unwrap(target)} offerId=${answer.offerId} answers=${webRtcAnswersSummary}")
+    plumtree.applyDelta(delta)
+  }
+
+  def clearWebRtcAnswer(target: Uid, from: Uid): Unit = {
+    given LocalUid = localUid
+    val current = state.webRtcAnswers.get(target).getOrElse(ObserveRemoveMap.empty[Uid, LastWriterWins[Option[WebRtcAnswer]]])
+    val register = current.get(from).getOrElse(LastWriterWins.empty[Option[WebRtcAnswer]]).write(None)
+    val next = current.update(from, register)
+    val delta = DemoState(ReplicatedSet.empty, OverlayConnectionDirectory.empty, ObserveRemoveMap.empty, state.webRtcAnswers.update(target, next))
+    state = state.merge(delta)
+    plumtree.applyDelta(delta)
+  }
+
+  def addDisseminationConnection(latent: LatentConnection[ProtocolMessage[DemoState]]): Unit =
+    plumtree.addObjectConnection(latent)
+
+  def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]): Unit =
+    overlay.foreach(_.addIncomingConnection(latent))
 
   def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
 
@@ -141,7 +210,7 @@ class OverlayDemoNode(
     given LocalUid = localUid
     val cleanup = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, localUid.uid)
     if !Bottom.isEmpty(cleanup) then {
-      val wrapped = DemoState(ReplicatedSet.empty, cleanup)
+      val wrapped = DemoState(ReplicatedSet.empty, cleanup, ObserveRemoveMap.empty, ObserveRemoveMap.empty)
       state = state.merge(wrapped)
       refreshOverlayKnowledge()
       plumtree.applyDelta(wrapped)
