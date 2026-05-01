@@ -74,7 +74,7 @@ object HyParViewUnified {
 
     def fromEstimatedNetworkSize(estimatedNetworkSize: Int): HyParViewConfig = {
       val n = math.max(2, estimatedNetworkSize)
-      val active = math.max(2, math.ceil(math.log(n.toDouble) / math.log(2)).toInt + 1)
+      val active = math.max(3, math.ceil(math.log10(n.toDouble)).toInt + 1)
       val passive = active * 6
 
       HyParViewConfig(
@@ -217,9 +217,23 @@ class HyParViewMultiplexedNode[State, Details](
           val peer = expectedPeer.orElse(connectionToPeer.get(conn))
           peer.flatMap(plumtreeIncoming.get).foreach(_.succeed(message))
         case Failure(ex)                              =>
-          expectedPeer.orElse(connectionToPeer.get(conn)).foreach(peer => handleDisconnectedPeer(peer, s"incoming connection closed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"))
+          expectedPeer.orElse(connectionToPeer.get(conn)).foreach { peer =>
+            val reason = s"incoming connection closed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
+            if active.contains(peer) then handleDisconnectedPeer(peer, reason)
+            else cleanupInactiveConnection(peer, conn, reason)
+          }
       }
     }
+
+  private def notePassiveAdded(peer: PeerRef[Details], reason: String): Unit = {
+    println(s"[hyparview] passive added ${Uid.unwrap(peer.uid)} reason=$reason")
+    viewListener.passivePeerAdded(peer)
+  }
+
+  private def notePassiveRemoved(peer: PeerRef[Details], reason: String): Unit = {
+    println(s"[hyparview] passive removed ${Uid.unwrap(peer.uid)} reason=$reason")
+    viewListener.passivePeerRemoved(peer)
+  }
 
   private def enforceDisjointViews(): Unit = {
     val overlap = active.keySet intersect passive.keySet
@@ -227,7 +241,7 @@ class HyParViewMultiplexedNode[State, Details](
       overlap.foreach { uid =>
         passive.remove(uid).foreach { peer =>
           println(s"[hyparview] repair invariant self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(uid)} reason=peer present in both active and passive, dropping passive entry")
-          viewListener.passivePeerRemoved(peer)
+          notePassiveRemoved(peer, "invariant repair: peer also present in active view")
         }
       }
   }
@@ -235,6 +249,15 @@ class HyParViewMultiplexedNode[State, Details](
   private def publishViewChanged(): Unit = {
     enforceDisjointViews()
     onViewChanged(active.values.toSet, passive.values.toSet)
+  }
+
+  private def cleanupInactiveConnection(peer: Uid, conn: Connection[Envelope[State, Details]], reason: String): Unit = {
+    val removedStored = connections.get(peer).contains(conn)
+    if removedStored then
+      connections.remove(peer): Unit
+    connectionToPeer.remove(conn)
+    if removedStored then
+      println(s"[hyparview] drop inactive connection peer=${Uid.unwrap(peer)} reason=$reason keptPassive=${passive.contains(peer)}")
   }
 
   private def handleDisconnectedPeer(peer: Uid, reason: String): Unit = {
@@ -248,7 +271,7 @@ class HyParViewMultiplexedNode[State, Details](
     pendingMembership.remove(peer)
     if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
       removedActivePeer.foreach(viewListener.activePeerRemoved)
-      removedPassivePeer.foreach(viewListener.passivePeerRemoved)
+      removedPassivePeer.foreach(peer => notePassiveRemoved(peer, s"connection failure cleanup: $reason"))
       println(s"[hyparview] remove peer=${Uid.unwrap(peer)} reason=$reason removedActive=${removedActivePeer.nonEmpty} removedPassive=${removedPassivePeer.nonEmpty} hadConnection=${conn.nonEmpty}")
       log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
       publishViewChanged()
@@ -284,11 +307,13 @@ class HyParViewMultiplexedNode[State, Details](
 
   private def startConnection(peer: PeerRef[Details]): Unit =
     if !connections.contains(peer.uid) && !connecting.contains(peer.uid) then
+      println(s"[hyparview] connection attempt self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} details=${peer.details}")
       resolver.connect(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}") match
         case Some(latent) =>
           connecting += peer.uid
           latent.prepare(receive(Some(peer.uid))).runIn(abort) {
             case Success(conn) =>
+              println(s"[hyparview] connection established self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} info=${conn.info.details}")
               connecting -= peer.uid
               rememberConnection(peer.uid, conn)
               if active.contains(peer.uid) then attachPlumtree(peer.uid, connections(peer.uid))
@@ -300,6 +325,7 @@ class HyParViewMultiplexedNode[State, Details](
               handleDisconnectedPeer(peer.uid, s"outgoing connect failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
           }
         case None =>
+          println(s"[hyparview] connection attempt skipped self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} reason=no route details=${peer.details}")
           log(s"cannot connect to ${Uid.unwrap(peer.uid)} because resolver has no route")
 
   private def sendMembership(peer: PeerRef[Details], message: HyParViewMessage[Details]): Unit =
@@ -413,7 +439,7 @@ class HyParViewMultiplexedNode[State, Details](
     pendingMembership.remove(peer)
     if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
       removedActivePeer.foreach(viewListener.activePeerRemoved)
-      removedPassivePeer.foreach(viewListener.passivePeerRemoved)
+      removedPassivePeer.foreach(peer => notePassiveRemoved(peer, "peer left or was removed completely"))
       publishViewChanged()
       onPeerDisconnected(peer)
       healActiveView()
@@ -436,7 +462,7 @@ class HyParViewMultiplexedNode[State, Details](
       if !active.contains(peer.uid) && !passive.contains(peer.uid) then
         log(s"remember peer ${Uid.unwrap(peer.uid)} as passive")
         passive.update(peer.uid, peer)
-        viewListener.passivePeerAdded(peer)
+        notePassiveAdded(peer, "advertised by protocol message")
   }
 
   private def addNodeActiveView(node: PeerRef[Details]): Unit =
@@ -444,7 +470,7 @@ class HyParViewMultiplexedNode[State, Details](
       if active.size >= config.activeViewSize then dropRandomElementFromActiveView()
       if connections.contains(node.uid) || resolver.canConnect(node.details) then
         log(s"add active ${Uid.unwrap(node.uid)}")
-        passive.remove(node.uid).foreach(viewListener.passivePeerRemoved)
+        passive.remove(node.uid).foreach(peer => notePassiveRemoved(peer, "promoted to active view"))
         active.update(node.uid, node)
         viewListener.activePeerAdded(node)
         publishViewChanged()
@@ -460,10 +486,10 @@ class HyParViewMultiplexedNode[State, Details](
   private def addNodePassiveView(node: PeerRef[Details]): Unit =
     if node.uid != self.uid && resolver.canConnect(node.details) && !active.contains(node.uid) && !passive.contains(node.uid) then
       if passive.size >= config.passiveViewSize then
-        passive.remove(randomElement(passive.keySet.toSet)).foreach(viewListener.passivePeerRemoved)
+        passive.remove(randomElement(passive.keySet.toSet)).foreach(peer => notePassiveRemoved(peer, "passive view full: random eviction"))
       log(s"add passive ${Uid.unwrap(node.uid)}")
       passive.update(node.uid, node)
-      viewListener.passivePeerAdded(node)
+      notePassiveAdded(node, "stored in passive view")
       publishViewChanged()
 
   private def dropRandomElementFromActiveView(): Unit =
