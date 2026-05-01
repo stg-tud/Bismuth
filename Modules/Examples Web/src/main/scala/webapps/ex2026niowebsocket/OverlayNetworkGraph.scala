@@ -2,17 +2,20 @@ package webapps.ex2026niowebsocket
 
 import channels.*
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString}
+import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnector}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import de.rmgk.delay.Async
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, HTMLCanvasElement, document, window}
-import rdts.base.{Uid, LocalUid}
+import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewMultiplexed
-import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
+import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, WebRtcSignalingProtocol}
 import replication.research.OverlayConnectionDirectory.LinkState
 import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.WebRtcSignalingProtocol.Message
 import scalatags.JsDom.all.*
 
 import java.util.Base64
@@ -22,6 +25,7 @@ import scala.concurrent.Promise
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 import scala.scalajs.js.annotation.JSExportTopLevel
+import scala.util.{Failure, Success}
 
 /** vibecoded as part of the hyparview experiments */
 object OverlayNetworkGraph {
@@ -40,6 +44,10 @@ object OverlayNetworkGraph {
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]] =
     HyParViewMultiplexed.envelopeCodec[DemoState, Set[ConnectionDetails]]
+  given codecSignalSession: JsonValueCodec[WebRtcSignalingProtocol.Session] = JsonCodecMaker.make
+  given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
+
+  private type Envelope = HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]
 
   private enum EdgeKind {
     case ActiveOverlay, PassiveOverlay
@@ -48,28 +56,42 @@ object OverlayNetworkGraph {
   private case class GraphEdge(from: Uid, to: Uid, kind: EdgeKind)
   private case class GraphNode(uid: Uid, label: String, details: String, var x: Double, var y: Double, var vx: Double, var vy: Double, highlighted: Boolean)
 
-  private val placeholderViewerUid = LocalUid.gen().uid
-  @volatile private var viewerUid: Uid = placeholderViewerUid
+  @volatile private var viewerUid: Option[Uid] = None
   @volatile private var network: OverlayConnectionDirectory.Directory = OverlayConnectionDirectory.empty
   @volatile private var connectionInfoText: String = "waiting for seed url parameter"
+  @volatile private var selfConnectionStringText: String = ""
   private var currentNode: Option[OverlayDemoNode] = None
   private var infoNode: dom.html.TextArea | Null = null
+  private var selfConnectionNode: dom.html.TextArea | Null = null
   private val positions = mutable.Map.empty[Uid, (Double, Double, Double, Double)]
 
-  private def refreshText(): Unit =
+  private def refreshText(): Unit = {
     if infoNode != null then {
       infoNode.nn.value = connectionInfoText
       infoNode.nn.style.height = "auto"
       infoNode.nn.style.height = s"${infoNode.nn.scrollHeight}px"
     }
+    if selfConnectionNode != null then {
+      selfConnectionNode.nn.value = selfConnectionStringText
+      selfConnectionNode.nn.style.height = "auto"
+      selfConnectionNode.nn.style.height = s"${selfConnectionNode.nn.scrollHeight}px"
+    }
+  }
 
   private def parseConnectionString(str: String): ConnectionDetails =
     readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
 
-  private def defaultSeedString: Option[String] = {
+  private def encodeConnectionString(details: ConnectionDetails): String =
+    Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
+
+  private def urlParam(name: String): Option[String] = {
     val url = new dom.URL(window.location.href)
-    Option(url.searchParams.get("seed"))
+    Option(url.searchParams.get(name))
   }
+
+  private def defaultSeedString: Option[String] = urlParam("seed")
+  private def defaultSignalUrl: Option[String]  = urlParam("signal")
+  private def defaultUidString: Option[String]  = urlParam("uid")
 
   private def websocketUrl(details: ConnectionDetails): String = details match
     case ConnectionDetails.Tcp(host, port) => s"ws://$host:$port"
@@ -80,24 +102,162 @@ object OverlayNetworkGraph {
     val lines = directory.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, info) =>
       val active  = info.peers.elements.filter(_.state == LinkState.Active).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val passive = info.peers.elements.filter(_.state == LinkState.Passive).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-      val label   = if uid == viewerUid then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
+      val label   = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
       s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}"
     }
     if lines.nonEmpty then lines.mkString("\n") else "connected, but no replicated overlay state yet"
+  }
+
+  private def envelopeConnection(latent: LatentConnection[MessageBuffer]): LatentConnection[Envelope] =
+    LatentConnection.adapt[MessageBuffer, Envelope](
+      mb => readFromArray[Envelope](mb.asArray),
+      msg => ArrayMessageBuffer(writeToArray(msg)),
+      "webrtc-envelope-json"
+    )(latent)
+
+  private def createRtcConnector(): WebRTCConnector =
+    WebRTCConnector(new dom.RTCConfiguration {
+      iceServers = js.Array[dom.RTCIceServer](new dom.RTCIceServer {
+        urls = js.Array[String]("stun:stun.t-online.de:3478")
+      })
+    })
+
+  private def createOverlayDataChannel(connector: WebRTCConnector): dom.RTCDataChannel =
+    connector.peerConnection.createDataChannel(
+      "overlay-webrtc",
+      new dom.RTCDataChannelInit {
+        negotiated = true
+        id = 23
+      }
+    )
+
+  private final class SignalingClient(url: String, node: OverlayDemoNode) {
+    private val wsResolver = new WebSocketConnectionDetailsResolver[Message]
+    private val abort      = Abort()
+    private var connection: Option[Connection[Message]] = None
+    private val outgoing = mutable.Map.empty[Uid, WebRTCConnector]
+
+    private def send(message: Message): Unit =
+      connection.foreach(_.send(message).run(_ => ()))
+
+    private def handleIncomingOffer(from: Uid, session: WebRtcSignalingProtocol.Session): Unit = {
+      val connector = createRtcConnector()
+      val channel   = createOverlayDataChannel(connector)
+      node.addOverlayConnection(envelopeConnection(WebRTCConnection.openLatent(channel)))
+      connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
+        case Success(_) =>
+          connector.lifecycle.run {
+            case Success(overview) if overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
+              overview.localSession.foreach { answer =>
+                send(Message.Answer(node.localUid.uid, from, WebRtcSignalingProtocol.Session(answer.descType, answer.sdp)))
+              }
+            case Success(_)   => ()
+            case Failure(err) => err.printStackTrace()
+          }
+        case Failure(err) => err.printStackTrace()
+      }
+    }
+
+    private def handleIncomingAnswer(from: Uid, session: WebRtcSignalingProtocol.Session): Unit =
+      outgoing.remove(from).foreach { connector =>
+        connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
+          case Success(_)   => ()
+          case Failure(err) => err.printStackTrace()
+        }
+      }
+
+    def start(): Unit =
+      wsResolver.connect(ConnectionDetails.WebSocket(url), s"webrtc-signaling-${Uid.unwrap(node.localUid.uid)}").foreach {
+        _.prepare { conn =>
+          {
+            case Success(Message.Register(_)) => ()
+            case Success(Message.Offer(from, to, session)) if to == node.localUid.uid => handleIncomingOffer(from, session)
+            case Success(Message.Answer(from, to, session)) if to == node.localUid.uid => handleIncomingAnswer(from, session)
+            case Success(_) => ()
+            case Failure(_) => connection = None
+          }
+        }.runIn(abort) {
+          case Success(conn) =>
+            connection = Some(conn)
+            send(Message.Register(node.localUid.uid))
+          case Failure(err) => err.printStackTrace()
+        }
+      }
+
+    def canConnect(details: ConnectionDetails): Boolean =
+      details match
+        case ConnectionDetails.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && connection.nonEmpty
+        case _                                => false
+
+    def connect(details: ConnectionDetails, label: String): Option[LatentConnection[Envelope]] = details match
+      case ConnectionDetails.WebRtc(peerId) if connection.nonEmpty && peerId != Uid.unwrap(node.localUid.uid) =>
+        val target = Uid.predefined(peerId)
+        Some(new LatentConnection[Envelope] {
+          override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] =
+            Async.fromCallback { abort ?=>
+              val connector = createRtcConnector()
+              val channel   = createOverlayDataChannel(connector)
+              outgoing.update(target, connector)
+              envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
+                case Success(conn) =>
+                  outgoing.remove(target)
+                  Async.handler.succeed(conn)
+                case Failure(err) =>
+                  outgoing.remove(target)
+                  Async.handler.fail(err)
+              }
+              connector.smartUpdateLocalDescription.run {
+                case Success(_) =>
+                  connector.lifecycle.run {
+                    case Success(overview) if overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
+                      overview.localSession match
+                        case Some(offer) =>
+                          send(Message.Offer(node.localUid.uid, target, WebRtcSignalingProtocol.Session(offer.descType, offer.sdp)))
+                        case None =>
+                          outgoing.remove(target)
+                          Async.handler.fail(IllegalStateException("missing local webrtc offer after ice gathering completed"))
+                    case Success(_)   => ()
+                    case Failure(err) =>
+                      outgoing.remove(target)
+                      Async.handler.fail(err)
+                  }
+                case Failure(err) =>
+                  outgoing.remove(target)
+                  Async.handler.fail(err)
+              }
+            }
+        })
+      case _ => None
   }
 
   private def stopCurrentNode(): Unit = {
     currentNode.foreach(_.stop())
     currentNode = None
     network = OverlayConnectionDirectory.empty
+    viewerUid = None
+    selfConnectionStringText = ""
   }
 
   private def connect(seedConnectionString: String): Unit = {
     stopCurrentNode()
     val seedDetails = parseConnectionString(seedConnectionString)
-    val resolver    = ConnectionDetailsResolver.many(new WebSocketConnectionDetailsResolver[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]])
+    val localUid    = defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
+    val signalUrl   = defaultSignalUrl
+    val selfDetails = signalUrl.map(_ => Set(ConnectionDetails.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
+
+    var signalingRef: Option[SignalingClient] = None
+    val webRtcResolver = new ConnectionDetailsResolver[ConnectionDetails, Envelope] {
+      override def canConnect(details: ConnectionDetails): Boolean =
+        signalingRef.exists(_.canConnect(details))
+
+      override def connect(details: ConnectionDetails, label: String): Option[LatentConnection[Envelope]] =
+        signalingRef.flatMap(_.connect(details, label))
+    }
+    val wsResolver = new WebSocketConnectionDetailsResolver[Envelope]
+    val resolver   = ConnectionDetailsResolver.many(ConnectionDetailsResolver.orElse(webRtcResolver, wsResolver))
+
     val node = new OverlayDemoNode(
-      selfDetails = Set.empty,
+      selfDetails = selfDetails,
       listenEnvelope = None,
       envelopeResolver = resolver,
       onStateChanged = state => {
@@ -106,12 +266,20 @@ object OverlayNetworkGraph {
         refreshText()
       },
       printOverlayEventsToStdout = false,
+      localUid = localUid,
     )
 
+    signalingRef = signalUrl.map(url => new SignalingClient(url, node))
     currentNode = Some(node)
-    viewerUid = node.localUid.uid
-    connectionInfoText = s"connecting to ${websocketUrl(seedDetails)}"
+    viewerUid = Some(node.localUid.uid)
+    selfConnectionStringText = selfDetails.headOption match
+      case Some(details) => encodeConnectionString(details)
+      case None          => ""
+    connectionInfoText = signalUrl match
+      case Some(url) => s"connecting to ${websocketUrl(seedDetails)}\nsignaling: $url"
+      case None      => s"connecting to ${websocketUrl(seedDetails)}"
     refreshText()
+    signalingRef.foreach(_.start())
     node.start(List(seedDetails))
   }
 
@@ -120,13 +288,18 @@ object OverlayNetworkGraph {
     val detailsByNode = mutable.LinkedHashMap.empty[Uid, String]
 
     network.entries.foreach { (uid, info) =>
-      detailsByNode.getOrElseUpdate(uid, if uid == viewerUid then "you" else uid.show)
+      val activeCount  = info.peers.elements.count(_.state == LinkState.Active)
+      val passiveCount = info.peers.elements.count(_.state == LinkState.Passive)
+      detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount")
       info.peers.elements.foreach { peer =>
         edges += GraphEdge(uid, peer.uid, peer.state match
           case LinkState.Active  => EdgeKind.ActiveOverlay
           case LinkState.Passive => EdgeKind.PassiveOverlay
         )
-        detailsByNode.getOrElseUpdate(peer.uid, peer.uid.show)
+        detailsByNode.getOrElseUpdate(peer.uid, peer.state match
+          case LinkState.Active  => "active peer"
+          case LinkState.Passive => "passive peer"
+        )
       }
     }
 
@@ -140,13 +313,13 @@ object OverlayNetworkGraph {
       val (x, y, vx, vy) = positions.getOrElse(uid, (initialX, initialY, 0.0, 0.0))
       GraphNode(
         uid = uid,
-        label = if uid == viewerUid then "you" else Uid.unwrap(uid),
-        details = detailsByNode.getOrElse(uid, uid.show),
+        label = if viewerUid.contains(uid) then "you" else Uid.unwrap(uid),
+        details = detailsByNode.getOrElse(uid, ""),
         x = x,
         y = y,
         vx = vx,
         vy = vy,
-        highlighted = uid == viewerUid,
+        highlighted = viewerUid.contains(uid),
       )
     }
     (nodes, edges.toVector)
@@ -259,19 +432,22 @@ object OverlayNetworkGraph {
       ctx.fillStyle = "#e2e8f0"
       ctx.font = "10px sans-serif"
       ctx.fillText(node.label.take(12), node.x + 10, node.y - 2)
-      ctx.fillStyle = "#94a3b8"
-      ctx.font = "9px sans-serif"
-      ctx.fillText(node.details.take(72), node.x + 10, node.y + 9)
+      if node.details.nonEmpty then {
+        ctx.fillStyle = "#94a3b8"
+        ctx.font = "9px sans-serif"
+        ctx.fillText(node.details.take(72), node.x + 10, node.y + 9)
+      }
     }
   }
 
   @JSExportTopLevel("RunOverlayNetworkObserver")
   def runObserver(seedConnectionString: String, observerName: String, topic: String = "unused"): js.Promise[String] = {
-    val done   = Promise[String]()
-    val buffer = mutable.ArrayBuffer.empty[String]
+    val done        = Promise[String]()
+    val buffer      = mutable.ArrayBuffer.empty[String]
     val seedDetails = parseConnectionString(seedConnectionString)
     val seedUrl     = websocketUrl(seedDetails)
-    val resolver    = ConnectionDetailsResolver.many(new WebSocketConnectionDetailsResolver[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]])
+    val localUid    = LocalUid.gen()
+    val resolver    = ConnectionDetailsResolver.many(new WebSocketConnectionDetailsResolver[Envelope])
     val node = new OverlayDemoNode(
       selfDetails = Set.empty,
       listenEnvelope = None,
@@ -285,11 +461,13 @@ object OverlayNetworkGraph {
         val line = s"observer=$observerName snapshot=$rendered"
         println(line)
         buffer += line
-        if state.connections.keySet.nonEmpty then
+        if state.connections.keySet.nonEmpty then {
           done.trySuccess(buffer.mkString("\n"))
           ()
+        }
       },
       printOverlayEventsToStdout = false,
+      localUid = localUid,
     )
 
     val line = s"observer=$observerName connected url=$seedUrl uid=${Uid.unwrap(node.localUid.uid)}"
@@ -317,6 +495,16 @@ object OverlayNetworkGraph {
       border := "1px solid #334155",
       onfocus := { (ev: dom.FocusEvent) => ev.target.asInstanceOf[dom.html.TextArea].select() },
     ).render
+    val selfConnectionOut = textarea(
+      readonly := true,
+      rows := 1,
+      width := "100%",
+      backgroundColor := "#0f172a",
+      color := "#cbd5e1",
+      padding := "0.5rem",
+      border := "1px solid #334155",
+      onfocus := { (ev: dom.FocusEvent) => ev.target.asInstanceOf[dom.html.TextArea].select() },
+    ).render
     val graphCanvas = canvas(
       width := "100%",
       height := "72vh",
@@ -333,19 +521,20 @@ object OverlayNetworkGraph {
       fontFamily := "sans-serif",
       display := "flex",
       flexDirection := "column",
-      div(flex := "1 1 auto", minHeight := "70vh", width := "100%", graphCanvas),
+      div(flex := "1 1 auto", minHeight := "78vh", width := "100%", graphCanvas),
+      div(marginTop := "0.75rem", flex := "0 0 auto", selfConnectionOut),
       div(marginTop := "0.75rem", flex := "0 0 auto", infoOut),
     ).render
 
     container.replaceChildren(root)
     infoNode = infoOut
+    selfConnectionNode = selfConnectionOut
     refreshText()
 
     defaultSeedString match
-      case Some(seed) =>
-        connect(seed)
+      case Some(seed) => connect(seed)
       case None =>
-        connectionInfoText = "missing ?seed=<connection-string> in the url"
+        connectionInfoText = "missing ?seed=<connection-string> in the url\noptional: ?signal=<ws-url>&uid=<peer-uid>"
         refreshText()
 
     val ctx = graphCanvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]

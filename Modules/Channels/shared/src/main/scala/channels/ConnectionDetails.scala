@@ -30,7 +30,7 @@ object ConnectionDetailsResolver {
 enum ConnectionDetails {
   case Tcp(host: String, port: Int)
   case WebSocket(url: String)
-  case WebRtc(signalingUrl: String, peerId: String)
+  case WebRtc(peerId: String)
   case QueuedLocal(id: String)
   case SynchronousLocal(id: String)
 }
@@ -39,7 +39,7 @@ object ConnectionDetails {
   def describe(details: ConnectionDetails): String = details match
     case Tcp(host, port)              => s"tcp:$host:$port"
     case WebSocket(url)               => s"ws:$url"
-    case WebRtc(signalingUrl, peerId) => s"webrtc:$peerId@$signalingUrl"
+    case WebRtc(peerId)               => s"webrtc:$peerId"
     case QueuedLocal(id)              => s"queued:$id"
     case SynchronousLocal(id)         => s"sync:$id"
 }
@@ -79,7 +79,7 @@ class LocalConnectionRegistry[T] extends ConnectionDetailsResolver[ConnectionDet
       case ConnectionDetails.SynchronousLocal(id) => synchronous.contains(id)
       case ConnectionDetails.Tcp(_, _)            => false
       case ConnectionDetails.WebSocket(_)         => false
-      case ConnectionDetails.WebRtc(_, _)         => false
+      case ConnectionDetails.WebRtc(_)            => false
   }
 
   override def connect(details: ConnectionDetails, label: String): Option[LatentConnection[T]] = synchronized {
@@ -88,6 +88,6 @@ class LocalConnectionRegistry[T] extends ConnectionDetailsResolver[ConnectionDet
       case ConnectionDetails.SynchronousLocal(id) => synchronous.get(id).map(_.client(label))
       case ConnectionDetails.Tcp(_, _)            => None
       case ConnectionDetails.WebSocket(_)         => None
-      case ConnectionDetails.WebRtc(_, _)         => None
+      case ConnectionDetails.WebRtc(_)            => None
   }
 }

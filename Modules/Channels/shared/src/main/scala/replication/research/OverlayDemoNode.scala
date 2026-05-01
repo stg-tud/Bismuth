@@ -23,9 +23,8 @@ class OverlayDemoNode(
     config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
     onStateChanged: DemoState => Unit = _ => (),
     printOverlayEventsToStdout: Boolean = false,
+    val localUid: LocalUid = LocalUid.gen(),
 )(using JsonValueCodec[DemoState]) {
-
-  val localUid: LocalUid = LocalUid.gen()
 
   @volatile var state: DemoState = DemoState.empty
 
@@ -130,6 +129,9 @@ class OverlayDemoNode(
     publish(DemoState(state.values.remove(value), OverlayConnectionDirectory.empty))
 
   def shuffleTick(): Unit = overlay.foreach(_.shuffleTick())
+
+  def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]): Unit =
+    overlay.foreach(_.addIncomingConnection(latent))
 
   def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
 

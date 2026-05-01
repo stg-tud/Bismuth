@@ -1,6 +1,5 @@
 package channels.webrtc
 
-import de.rmgk.delay
 import de.rmgk.delay.{Async, toAsync}
 import org.scalajs.dom
 import org.scalajs.dom.*
@@ -47,16 +46,6 @@ object WebRTCConnector {
 class WebRTCConnector(configuration: dom.RTCConfiguration) {
 
   val peerConnection = new dom.RTCPeerConnection(configuration)
-
-  peerConnection.addEventListener(
-    "negotiationneeded",
-    (_: dom.Event) =>
-      smartUpdateLocalDescription.run {
-        case Failure(ex) =>
-          throw ex
-        case _ =>
-      }
-  )
 
   /** Might yell at you if called multiple times with incompatible sessions.
     * Better just throw away the whole peer connection on retry.
