@@ -52,9 +52,9 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
 
-  private def removePeerEverywhere(peer: Uid): Unit = {
+  private def removeDisconnectedConnection(peer: Uid): Unit = {
     given LocalUid = localUid
-    val delta = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, peer)
+    val delta = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
 
@@ -97,7 +97,7 @@ class OverlayDemoNode(
       random,
       config,
       viewListener = HyParViewViewListener.combine(overlayTracker, overlayLogger),
-      onPeerDisconnected = removePeerEverywhere,
+      onPeerDisconnected = removeDisconnectedConnection,
     )
 
   private def startShuffleTask(): Unit =
@@ -117,6 +117,9 @@ class OverlayDemoNode(
     startShuffleTask()
     seeds.headOption.foreach(_ => node.join())
   }
+
+  def joinSeed(seed: ConnectionDetails): Unit =
+    overlay.foreach(_.join(Set(seed)))
 
   def selfConnectionDetails: Set[ConnectionDetails] = selfDetails
 

@@ -78,8 +78,11 @@ object OverlayNetworkGraph {
     }
   }
 
-  private def parseConnectionString(str: String): ConnectionDetails =
-    readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
+  private def parseConnectionString(str: String): ConnectionDetails = {
+    val trimmed = str.trim
+    if trimmed.startsWith("{") then readFromString[ConnectionDetails](trimmed)
+    else readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(trimmed), java.nio.charset.StandardCharsets.UTF_8))
+  }
 
   private def encodeConnectionString(details: ConnectionDetails): String =
     Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
@@ -93,19 +96,30 @@ object OverlayNetworkGraph {
   private def defaultSignalUrl: Option[String]  = urlParam("signal")
   private def defaultUidString: Option[String]  = urlParam("uid")
 
-  private def websocketUrl(details: ConnectionDetails): String = details match
+  private def describeSeed(details: ConnectionDetails): String = details match
     case ConnectionDetails.Tcp(host, port) => s"ws://$host:$port"
     case ConnectionDetails.WebSocket(url)  => url
-    case other                             => throw IllegalArgumentException(s"unsupported seed details for web app: $other")
+    case ConnectionDetails.WebRtc(peerId)  => s"webrtc:$peerId"
+    case other                             => ConnectionDetails.describe(other)
 
   private def renderConnectionInfo(directory: OverlayConnectionDirectory.Directory): String = {
-    val lines = directory.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, info) =>
+    val localStatus = currentNode match
+      case Some(node) =>
+        val active  = node.activeView.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+        val passive = node.passiveView.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+        s"local hyparview\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}"
+      case None =>
+        "local hyparview\n  active: -\n  passive: -"
+
+    val replicated = directory.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, info) =>
       val active  = info.peers.elements.filter(_.state == LinkState.Active).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val passive = info.peers.elements.filter(_.state == LinkState.Passive).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val label   = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
       s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}"
     }
-    if lines.nonEmpty then lines.mkString("\n") else "connected, but no replicated overlay state yet"
+
+    if replicated.nonEmpty then (localStatus +: replicated).mkString("\n")
+    else s"$localStatus\nconnected, but no replicated overlay state yet"
   }
 
   private def envelopeConnection(latent: LatentConnection[MessageBuffer]): LatentConnection[Envelope] =
@@ -131,7 +145,7 @@ object OverlayNetworkGraph {
       }
     )
 
-  private final class SignalingClient(url: String, node: OverlayDemoNode) {
+  private final class SignalingClient(url: String, node: OverlayDemoNode, onRegistered: () => Unit) {
     private val wsResolver = new WebSocketConnectionDetailsResolver[Message]
     private val abort      = Abort()
     private var connection: Option[Connection[Message]] = None
@@ -143,12 +157,14 @@ object OverlayNetworkGraph {
     private def handleIncomingOffer(from: Uid, session: WebRtcSignalingProtocol.Session): Unit = {
       val connector = createRtcConnector()
       val channel   = createOverlayDataChannel(connector)
+      var sentAnswer = false
       node.addOverlayConnection(envelopeConnection(WebRTCConnection.openLatent(channel)))
       connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
         case Success(_) =>
           connector.lifecycle.run {
-            case Success(overview) if overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
+            case Success(overview) if !sentAnswer && overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
               overview.localSession.foreach { answer =>
+                sentAnswer = true
                 send(Message.Answer(node.localUid.uid, from, WebRtcSignalingProtocol.Session(answer.descType, answer.sdp)))
               }
             case Success(_)   => ()
@@ -180,6 +196,7 @@ object OverlayNetworkGraph {
           case Success(conn) =>
             connection = Some(conn)
             send(Message.Register(node.localUid.uid))
+            onRegistered()
           case Failure(err) => err.printStackTrace()
         }
       }
@@ -197,10 +214,10 @@ object OverlayNetworkGraph {
             Async.fromCallback { abort ?=>
               val connector = createRtcConnector()
               val channel   = createOverlayDataChannel(connector)
+              var sentOffer = false
               outgoing.update(target, connector)
               envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
                 case Success(conn) =>
-                  outgoing.remove(target)
                   Async.handler.succeed(conn)
                 case Failure(err) =>
                   outgoing.remove(target)
@@ -209,9 +226,10 @@ object OverlayNetworkGraph {
               connector.smartUpdateLocalDescription.run {
                 case Success(_) =>
                   connector.lifecycle.run {
-                    case Success(overview) if overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
+                    case Success(overview) if !sentOffer && overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
                       overview.localSession match
                         case Some(offer) =>
+                          sentOffer = true
                           send(Message.Offer(node.localUid.uid, target, WebRtcSignalingProtocol.Session(offer.descType, offer.sdp)))
                         case None =>
                           outgoing.remove(target)
@@ -238,9 +256,9 @@ object OverlayNetworkGraph {
     selfConnectionStringText = ""
   }
 
-  private def connect(seedConnectionString: String): Unit = {
+  private def connect(seedConnectionString: Option[String]): Unit = {
     stopCurrentNode()
-    val seedDetails = parseConnectionString(seedConnectionString)
+    val seedDetails = seedConnectionString.filter(_.nonEmpty).map(parseConnectionString)
     val localUid    = defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
     val signalUrl   = defaultSignalUrl
     val selfDetails = signalUrl.map(_ => Set(ConnectionDetails.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
@@ -265,22 +283,33 @@ object OverlayNetworkGraph {
         connectionInfoText = renderConnectionInfo(state.connections)
         refreshText()
       },
-      printOverlayEventsToStdout = false,
+      printOverlayEventsToStdout = true,
       localUid = localUid,
     )
 
-    signalingRef = signalUrl.map(url => new SignalingClient(url, node))
+    val joinAfterSignal = () => seedDetails.foreach {
+      case seed: ConnectionDetails.WebRtc =>
+        connectionInfoText = s"${connectionInfoText}\nsignaling registered, trying webrtc seed ${describeSeed(seed)}"
+        refreshText()
+        node.joinSeed(seed)
+      case _ => ()
+    }
+    signalingRef = signalUrl.map(url => new SignalingClient(url, node, joinAfterSignal))
     currentNode = Some(node)
     viewerUid = Some(node.localUid.uid)
     selfConnectionStringText = selfDetails.headOption match
       case Some(details) => encodeConnectionString(details)
       case None          => ""
-    connectionInfoText = signalUrl match
-      case Some(url) => s"connecting to ${websocketUrl(seedDetails)}\nsignaling: $url"
-      case None      => s"connecting to ${websocketUrl(seedDetails)}"
+    connectionInfoText = (seedDetails, signalUrl) match
+      case (Some(seed: ConnectionDetails.WebRtc), Some(url)) => s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before join"
+      case (Some(seed: ConnectionDetails.WebRtc), None)      => s"starting peer\nseed: ${describeSeed(seed)}\nmissing signaling server url (?signal=ws://... required for WebRTC seed)"
+      case (Some(seed), Some(url))                           => s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url"
+      case (Some(seed), None)                                => s"starting peer\nseed: ${describeSeed(seed)}"
+      case (None, Some(url))                                 => s"starting peer\nsignaling: $url"
+      case (None, None)                                      => "starting peer"
     refreshText()
     signalingRef.foreach(_.start())
-    node.start(List(seedDetails))
+    node.start(seedDetails.filterNot(_.isInstanceOf[ConnectionDetails.WebRtc]).toList)
   }
 
   private def buildGraph(width: Double, height: Double): (Vector[GraphNode], Vector[GraphEdge]) = {
@@ -445,7 +474,7 @@ object OverlayNetworkGraph {
     val done        = Promise[String]()
     val buffer      = mutable.ArrayBuffer.empty[String]
     val seedDetails = parseConnectionString(seedConnectionString)
-    val seedUrl     = websocketUrl(seedDetails)
+    val seedUrl     = describeSeed(seedDetails)
     val localUid    = LocalUid.gen()
     val resolver    = ConnectionDetailsResolver.many(new WebSocketConnectionDetailsResolver[Envelope])
     val node = new OverlayDemoNode(
@@ -531,10 +560,11 @@ object OverlayNetworkGraph {
     selfConnectionNode = selfConnectionOut
     refreshText()
 
-    defaultSeedString match
-      case Some(seed) => connect(seed)
-      case None =>
-        connectionInfoText = "missing ?seed=<connection-string> in the url\noptional: ?signal=<ws-url>&uid=<peer-uid>"
+    try connect(defaultSeedString)
+    catch
+      case ex: Throwable =>
+        connectionInfoText =
+          s"failed to parse/connect seed\nexpected ?seed=<base64-connection-string> or ?seed=<raw-json-ConnectionDetails>\noptional: ?signal=<ws-url>&uid=<peer-uid>\n${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
         refreshText()
 
     val ctx = graphCanvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]

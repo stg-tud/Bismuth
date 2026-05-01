@@ -135,6 +135,8 @@ class HyParViewMultiplexedNode[State, Details](
   private val connectionToPeer: mutable.LinkedHashMap[Connection[Envelope[State, Details]], Uid] = mutable.LinkedHashMap.empty
   private val plumtreeAttached: mutable.Set[Uid] = mutable.LinkedHashSet.empty
   private val plumtreeIncoming: mutable.LinkedHashMap[Uid, Callback[ProtocolMessage[State]]] = mutable.LinkedHashMap.empty
+  private val connecting: mutable.Set[Uid] = mutable.LinkedHashSet.empty
+  private val pendingMembership: mutable.LinkedHashMap[Uid, Vector[HyParViewMessage[Details]]] = mutable.LinkedHashMap.empty
 
   def activeView: Set[Uid]              = active.keySet.toSet
   def activePeers: Set[PeerRef[Details]] = active.values.toSet
@@ -148,14 +150,29 @@ class HyParViewMultiplexedNode[State, Details](
     }
 
   def join(): Unit =
-    contactNode.foreach { contact =>
-      resolver.connect(contact, s"${Uid.unwrap(self.uid)}-join").foreach { latent =>
+    contactNode.foreach(join)
+
+  def join(contact: Details): Unit =
+    val contactDesc = contact.toString
+    resolver.connect(contact, s"${Uid.unwrap(self.uid)}-join") match
+      case Some(latent) =>
+        println(s"[hyparview] join attempt self=${Uid.unwrap(self.uid)} contact=$contactDesc")
         latent.prepare(receive(None)).runIn(abort) {
-          case Success(conn) => conn.send(Envelope.Membership(Join(self))).run(_ => ())
-          case Failure(ex)   => ex.printStackTrace()
+          case Success(conn) =>
+            println(s"[hyparview] join transport ready self=${Uid.unwrap(self.uid)} contact=$contactDesc")
+            conn.send(Envelope.Membership(Join(self))).run {
+              case Success(_) =>
+                println(s"[hyparview] join sent self=${Uid.unwrap(self.uid)} contact=$contactDesc")
+              case Failure(ex) =>
+                ex.printStackTrace()
+                println(s"[hyparview] join send failed self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+              }
+          case Failure(ex) =>
+            ex.printStackTrace()
+            println(s"[hyparview] join failed self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
         }
-      }
-    }
+      case None =>
+        println(s"[hyparview] join skipped self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=no route to contact")
 
   def shuffleTick(): Unit =
     if active.nonEmpty then
@@ -185,6 +202,8 @@ class HyParViewMultiplexedNode[State, Details](
     connectionToPeer.clear()
     plumtreeAttached.clear()
     plumtreeIncoming.clear()
+    connecting.clear()
+    pendingMembership.clear()
     publishViewChanged()
     abort.abort()
   }
@@ -197,25 +216,41 @@ class HyParViewMultiplexedNode[State, Details](
         case Success(Envelope.Dissemination(message)) =>
           val peer = expectedPeer.orElse(connectionToPeer.get(conn))
           peer.flatMap(plumtreeIncoming.get).foreach(_.succeed(message))
-        case Failure(_)                               =>
-          expectedPeer.orElse(connectionToPeer.get(conn)).foreach(handleDisconnectedPeer)
+        case Failure(ex)                              =>
+          expectedPeer.orElse(connectionToPeer.get(conn)).foreach(peer => handleDisconnectedPeer(peer, s"incoming connection closed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"))
       }
     }
 
-  private def publishViewChanged(): Unit =
-    onViewChanged(active.values.toSet, passive.values.toSet)
+  private def enforceDisjointViews(): Unit = {
+    val overlap = active.keySet intersect passive.keySet
+    if overlap.nonEmpty then
+      overlap.foreach { uid =>
+        passive.remove(uid).foreach { peer =>
+          println(s"[hyparview] repair invariant self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(uid)} reason=peer present in both active and passive, dropping passive entry")
+          viewListener.passivePeerRemoved(peer)
+        }
+      }
+  }
 
-  private def handleDisconnectedPeer(peer: Uid): Unit = {
+  private def publishViewChanged(): Unit = {
+    enforceDisjointViews()
+    onViewChanged(active.values.toSet, passive.values.toSet)
+  }
+
+  private def handleDisconnectedPeer(peer: Uid, reason: String): Unit = {
     val removedActivePeer  = active.remove(peer)
     val removedPassivePeer = passive.remove(peer)
     val conn               = connections.remove(peer)
     conn.foreach(connectionToPeer.remove)
     plumtreeAttached.remove(peer)
     plumtreeIncoming.remove(peer)
+    connecting.remove(peer)
+    pendingMembership.remove(peer)
     if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
       removedActivePeer.foreach(viewListener.activePeerRemoved)
       removedPassivePeer.foreach(viewListener.passivePeerRemoved)
-      log(s"disconnect peer=${Uid.unwrap(peer)}")
+      println(s"[hyparview] remove peer=${Uid.unwrap(peer)} reason=$reason removedActive=${removedActivePeer.nonEmpty} removedPassive=${removedPassivePeer.nonEmpty} hadConnection=${conn.nonEmpty}")
+      log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
       publishViewChanged()
       onPeerDisconnected(peer)
       healActiveView()
@@ -247,31 +282,40 @@ class HyParViewMultiplexedNode[State, Details](
     if active.contains(peer) then attachPlumtree(peer, connections(peer))
   }
 
-  private def ensureConnection(peer: PeerRef[Details]): Option[Connection[Envelope[State, Details]]] =
-    connections.get(peer.uid).orElse {
-      resolver.connect(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}").flatMap { latent =>
-        var result: Option[Connection[Envelope[State, Details]]] = None
-        latent.prepare(receive(Some(peer.uid))).runIn(abort) {
-          case Success(conn) => result = Some(conn)
-          case Failure(ex)   => ex.printStackTrace()
-        }
-        result
-      }
-    }
+  private def startConnection(peer: PeerRef[Details]): Unit =
+    if !connections.contains(peer.uid) && !connecting.contains(peer.uid) then
+      resolver.connect(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}") match
+        case Some(latent) =>
+          connecting += peer.uid
+          latent.prepare(receive(Some(peer.uid))).runIn(abort) {
+            case Success(conn) =>
+              connecting -= peer.uid
+              rememberConnection(peer.uid, conn)
+              if active.contains(peer.uid) then attachPlumtree(peer.uid, connections(peer.uid))
+              pendingMembership.remove(peer.uid).getOrElse(Vector.empty).foreach(sendMembership(peer, _))
+            case Failure(ex) =>
+              connecting -= peer.uid
+              pendingMembership.remove(peer.uid)
+              ex.printStackTrace()
+              handleDisconnectedPeer(peer.uid, s"outgoing connect failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+          }
+        case None =>
+          log(s"cannot connect to ${Uid.unwrap(peer.uid)} because resolver has no route")
 
   private def sendMembership(peer: PeerRef[Details], message: HyParViewMessage[Details]): Unit =
     if peer.uid != self.uid then
       log(s"send ${message.getClass.getSimpleName} -> ${Uid.unwrap(peer.uid)}")
-      ensureConnection(peer) match
+      connections.get(peer.uid) match
         case Some(conn) =>
           conn.send(Envelope.Membership(message)).run {
             case Success(_)  => ()
             case Failure(ex) =>
               ex.printStackTrace()
-              handleDisconnectedPeer(peer.uid)
+              handleDisconnectedPeer(peer.uid, s"membership send failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
           }
         case None =>
-          log(s"cannot connect to ${Uid.unwrap(peer.uid)} for ${message.getClass.getSimpleName}")
+          pendingMembership.update(peer.uid, pendingMembership.getOrElse(peer.uid, Vector.empty) :+ message)
+          startConnection(peer)
 
   private def sendMembership(peerUid: Uid, message: HyParViewMessage[Details]): Unit =
     if peerUid != self.uid then
@@ -365,6 +409,8 @@ class HyParViewMultiplexedNode[State, Details](
     conn.foreach(connectionToPeer.remove)
     plumtreeAttached.remove(peer)
     plumtreeIncoming.remove(peer)
+    connecting.remove(peer)
+    pendingMembership.remove(peer)
     if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
       removedActivePeer.foreach(viewListener.activePeerRemoved)
       removedPassivePeer.foreach(viewListener.passivePeerRemoved)
@@ -380,8 +426,6 @@ class HyParViewMultiplexedNode[State, Details](
     while active.size < config.activeViewSize && passive.nonEmpty && attempts < passive.size do
       val candidateId = randomElement(passive.keySet.toSet)
       val candidate   = passive(candidateId)
-      passive.remove(candidateId)
-      viewListener.passivePeerRemoved(candidate)
       log(s"heal attempt -> ${Uid.unwrap(candidateId)} high=${active.isEmpty}")
       sendMembership(candidate, Neighbor(self, highPriority = active.isEmpty))
       attempts += 1
@@ -391,26 +435,27 @@ class HyParViewMultiplexedNode[State, Details](
     if peer.uid != self.uid && resolver.canConnect(peer.details) then
       if !active.contains(peer.uid) && !passive.contains(peer.uid) then
         log(s"remember peer ${Uid.unwrap(peer.uid)} as passive")
-      val existed = passive.contains(peer.uid)
-      passive.getOrElseUpdate(peer.uid, peer): Unit
-      if !existed then viewListener.passivePeerAdded(peer)
+        passive.update(peer.uid, peer)
+        viewListener.passivePeerAdded(peer)
   }
 
   private def addNodeActiveView(node: PeerRef[Details]): Unit =
     if node.uid != self.uid && !active.contains(node.uid) then
       if active.size >= config.activeViewSize then dropRandomElementFromActiveView()
-      ensureConnection(node) match
-        case Some(conn) =>
-          log(s"add active ${Uid.unwrap(node.uid)}")
-          active.update(node.uid, node)
-          passive.remove(node.uid).foreach(viewListener.passivePeerRemoved)
-          viewListener.activePeerAdded(node)
+      if connections.contains(node.uid) || resolver.canConnect(node.details) then
+        log(s"add active ${Uid.unwrap(node.uid)}")
+        passive.remove(node.uid).foreach(viewListener.passivePeerRemoved)
+        active.update(node.uid, node)
+        viewListener.activePeerAdded(node)
+        publishViewChanged()
+        connections.get(node.uid).foreach { conn =>
           rememberConnection(node.uid, conn)
           attachPlumtree(node.uid, conn)
-          publishViewChanged()
-        case None =>
-          log(s"cannot activate ${Uid.unwrap(node.uid)} because it is not dialable")
-          addNodePassiveView(node)
+        }
+        if !connections.contains(node.uid) then startConnection(node)
+      else
+        log(s"cannot activate ${Uid.unwrap(node.uid)} because it is not dialable and no live connection exists")
+        addNodePassiveView(node)
 
   private def addNodePassiveView(node: PeerRef[Details]): Unit =
     if node.uid != self.uid && resolver.canConnect(node.details) && !active.contains(node.uid) && !passive.contains(node.uid) then

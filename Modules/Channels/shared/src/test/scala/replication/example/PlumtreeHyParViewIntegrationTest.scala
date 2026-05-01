@@ -96,11 +96,13 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     drain(queue, limit = 20000)
     tickOverlay(survivors, queue, rounds = 8)
 
-    val survivorIds = nodes.filterNot(_._1 == leavingId).map(_._1).toSet
     survivors.foreach { node =>
-      assertDirectoryKnows(node.connectionDirectory, survivorIds)
       assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in active view")
       assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view")
+      assert(
+        !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.elements.exists(_.uid == leavingId)),
+        s"${Uid.unwrap(node.localUid.uid)} still reports departed node in replicated local view"
+      )
       assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after leave")
     }
   }
