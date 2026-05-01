@@ -4,52 +4,37 @@ import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.overlay.HyParViewMultiplexed
 
-/** vibecoded. dont trust 😉 */
-
+/** vibecoded as part of the hyparview experiments */
 object OverlayConnectionDirectory {
 
   enum LinkState {
     case Active, Passive
   }
 
-  case class ConnectedPeer[Details](uid: Uid, details: Details, state: LinkState)
+  case class ConnectedPeer(uid: Uid, state: LinkState)
 
-  case class NodeInfo[Details](
-      selfDetails: ReplicatedSet[Details],
-      peers: ReplicatedSet[ConnectedPeer[Details]],
+  case class NodeInfo(
+      peers: ReplicatedSet[ConnectedPeer],
   )
   object NodeInfo {
-    given [Details]: Bottom[NodeInfo[Details]]  = Bottom.derived
-    given [Details]: Lattice[NodeInfo[Details]] = Lattice.derived
+    given Bottom[NodeInfo]  = Bottom.derived
+    given Lattice[NodeInfo] = Lattice.derived
   }
 
-  type Directory[Details] = ObserveRemoveMap[Uid, NodeInfo[Details]]
+  type Directory = ObserveRemoveMap[Uid, NodeInfo]
 
-  def empty[Details]: Directory[Details] = ObserveRemoveMap.empty
+  val empty: Directory = ObserveRemoveMap.empty
 
-  def emptyNodeInfo[Details]: NodeInfo[Details] =
-    NodeInfo(ReplicatedSet.empty, ReplicatedSet.empty)
+  def emptyNodeInfo: NodeInfo =
+    NodeInfo(ReplicatedSet.empty)
 
-  def updateNode[Details](
-      state: Directory[Details],
+  def updateNode(
+      state: Directory,
       node: Uid,
-      selfDetails: Iterable[Details],
-      peers: Iterable[ConnectedPeer[Details]],
-  )(using LocalUid): Directory[Details] = {
-    val current        = state.get(node).getOrElse(emptyNodeInfo)
-    val desiredDetails = selfDetails.toSet
-    val desiredPeers   = peers.toSet
-
-    val detailsAfterRemove = {
-      val toRemove = current.selfDetails.elements -- desiredDetails
-      if toRemove.nonEmpty then current.selfDetails.merge(current.selfDetails.removeAll(toRemove))
-      else current.selfDetails
-    }
-    val nextDetails = {
-      val toAdd = desiredDetails -- detailsAfterRemove.elements
-      if toAdd.nonEmpty then detailsAfterRemove.merge(detailsAfterRemove.addAll(toAdd))
-      else detailsAfterRemove
-    }
+      peers: Iterable[ConnectedPeer],
+  )(using LocalUid): Directory = {
+    val current      = state.get(node).getOrElse(emptyNodeInfo)
+    val desiredPeers = peers.toSet
 
     val peersAfterRemove = {
       val toRemove = current.peers.elements -- desiredPeers
@@ -62,80 +47,59 @@ object OverlayConnectionDirectory {
       else peersAfterRemove
     }
 
-    val desired = NodeInfo(nextDetails, nextPeers)
+    val desired = NodeInfo(nextPeers)
 
     if desired == current && state.contains(node) then empty
     else state.update(node, desired)
   }
 
-  def updateNodePeers[Details](
-      state: Directory[Details],
+  def updateNodePeers(
+      state: Directory,
       node: Uid,
-      peers: Iterable[ConnectedPeer[Details]],
-  )(using LocalUid): Directory[Details] = {
-    val current = state.get(node).getOrElse(emptyNodeInfo)
-    updateNode(state, node, current.selfDetails.elements, peers)
-  }
-
-  def updateNodeDetails[Details](
-      state: Directory[Details],
-      node: Uid,
-      selfDetails: Iterable[Details],
-  )(using LocalUid): Directory[Details] = {
-    val current = state.get(node).getOrElse(emptyNodeInfo)
-    updateNode(state, node, selfDetails, current.peers.elements)
-  }
+      peers: Iterable[ConnectedPeer],
+  )(using LocalUid): Directory =
+    updateNode(state, node, peers)
 
   def updateNodeFromOverlay[Details](
-      state: Directory[Details],
+      state: Directory,
       node: Uid,
-      selfDetails: Iterable[Details],
-      activePeers: Iterable[HyParViewMultiplexed.PeerRef[Details]],
-      passivePeers: Iterable[HyParViewMultiplexed.PeerRef[Details]],
-  )(using LocalUid): Directory[Details] =
+      activePeers: Iterable[HyParViewMultiplexed.PeerRef[Set[Details]]],
+      passivePeers: Iterable[HyParViewMultiplexed.PeerRef[Set[Details]]],
+  )(using LocalUid): Directory =
     updateNode(
       state,
       node,
-      selfDetails,
-      activePeers.iterator.map(peer => ConnectedPeer(peer.uid, peer.details, LinkState.Active)).toSet ++
-        passivePeers.iterator.map(peer => ConnectedPeer(peer.uid, peer.details, LinkState.Passive)).toSet
+      activePeers.iterator.map(peer => ConnectedPeer(peer.uid, LinkState.Active)).toSet ++
+        passivePeers.iterator.map(peer => ConnectedPeer(peer.uid, LinkState.Passive)).toSet
     )
 
-  def removePeerReferences[Details](
-      state: Directory[Details],
+  def removePeerReferences(
+      state: Directory,
       node: Uid,
       peer: Uid,
-  )(using LocalUid): Directory[Details] = {
-    val current = state.get(node).getOrElse(emptyNodeInfo)
+  )(using LocalUid): Directory = {
+    val current        = state.get(node).getOrElse(emptyNodeInfo)
     val remainingPeers = current.peers.elements.filterNot(_.uid == peer)
-    updateNode(state, node, current.selfDetails.elements, remainingPeers)
+    updateNode(state, node, remainingPeers)
   }
 
-  def removeConnectionBothDirections[Details](
-      state: Directory[Details],
+  def removeConnectionBothDirections(
+      state: Directory,
       left: Uid,
       right: Uid,
-  )(using LocalUid): Directory[Details] = {
+  )(using LocalUid): Directory = {
     val afterLeft  = state.merge(removePeerReferences(state, left, right))
     val afterRight = afterLeft.merge(removePeerReferences(afterLeft, right, left))
     afterRight
   }
 
-  def removeNodeEverywhere[Details](
-      state: Directory[Details],
+  def removeNodeEverywhere(
+      state: Directory,
       node: Uid,
-  )(using LocalUid): Directory[Details] = {
+  )(using LocalUid): Directory = {
     val withoutRefs = state.entries.foldLeft(state) { case (acc, (owner, _)) =>
       acc.merge(removePeerReferences(acc, owner, node))
     }
     withoutRefs.merge(withoutRefs.remove(node))
   }
-
-  def knownPeers[Details](state: Directory[Details], selfUid: Uid): Set[HyParViewMultiplexed.PeerRef[Details]] =
-    state.entries.iterator
-      .filterNot((uid, _) => uid == selfUid)
-      .flatMap { (uid, info) =>
-        info.selfDetails.elements.toList.sortBy(_.toString).headOption.map(details => HyParViewMultiplexed.PeerRef(uid, details))
-      }
-      .toSet
 }

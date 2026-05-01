@@ -7,7 +7,7 @@ import replication.research.OverlayNetworkProtocol.DemoState
 
 import scala.util.Random
 
-/** vibecoded. dont trust 😉 */
+/** vibecoded as part of the hyparview experiments */
 class OverlayDemoTest extends munit.FunSuite {
 
   private val queueLimit = 20000
@@ -19,13 +19,13 @@ class OverlayDemoTest extends munit.FunSuite {
     assert(cond)
   }
 
-  private def noReferencesTo(directory: OverlayConnectionDirectory.Directory[ConnectionDetails], removed: Set[rdts.base.Uid]): Boolean =
+  private def noReferencesTo(directory: OverlayConnectionDirectory.Directory, removed: Set[rdts.base.Uid]): Boolean =
     !directory.keySet.exists(removed.contains) &&
       directory.entries.forall((_, info) => info.peers.elements.forall(peer => !removed.contains(peer.uid)))
 
   private class QueuedFixture {
-    val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]()
-    val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]()
+    val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]()
+    val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]()
     private var nextId = 0
 
     def newNode(seeds: List[ConnectionDetails] = Nil): OverlayDemo.NodeApp = {
@@ -77,11 +77,7 @@ class OverlayDemoTest extends munit.FunSuite {
         val directory1 = node1.node.connectionDirectory
         val directory2 = node2.node.connectionDirectory
         Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory1.keySet) &&
-        Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory2.keySet) &&
-        directory1.get(node1.node.localUid.uid).exists(_.selfDetails.elements.contains(node1.details)) &&
-        directory1.get(node2.node.localUid.uid).exists(_.selfDetails.elements.contains(node2.details)) &&
-        directory2.get(node1.node.localUid.uid).exists(_.selfDetails.elements.contains(node1.details)) &&
-        directory2.get(node2.node.localUid.uid).exists(_.selfDetails.elements.contains(node2.details))
+        Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory2.keySet)
       })
 
       node1.node.publishAdd("server-value")
@@ -128,20 +124,7 @@ class OverlayDemoTest extends munit.FunSuite {
         fx.drain()
         val expected = Set(node1.node.localUid.uid, node2.node.localUid.uid, node3.node.localUid.uid)
         val directories = List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
-        directories.forall { directory =>
-          expected.subsetOf(directory.keySet) &&
-          expected.forall { uid =>
-            directory.get(uid).exists(_.selfDetails.elements.nonEmpty)
-          }
-        }
-      }, rounds = 5000)
-
-      eventually({
-        fx.drain()
-        val directory = node3.node.connectionDirectory
-        directory.get(node1.node.localUid.uid).exists(_.selfDetails.elements.contains(node1.details)) &&
-        directory.get(node2.node.localUid.uid).exists(_.selfDetails.elements.contains(node2.details)) &&
-        directory.get(node3.node.localUid.uid).exists(_.selfDetails.elements.contains(node3.details))
+        directories.forall(directory => expected.subsetOf(directory.keySet))
       }, rounds = 5000)
 
       eventually({
@@ -167,7 +150,6 @@ class OverlayDemoTest extends munit.FunSuite {
       })
 
       val directories = List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
-      assert(directories.forall(_.entries.forall((_, info) => info.selfDetails.elements.nonEmpty)))
       assert(directories.exists(_.entries.exists((_, info) => info.peers.elements.exists(_.state == OverlayConnectionDirectory.LinkState.Active))))
     } finally {
       node3.stop()

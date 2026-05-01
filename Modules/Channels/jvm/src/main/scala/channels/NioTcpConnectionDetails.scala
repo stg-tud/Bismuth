@@ -3,6 +3,11 @@ package channels
 import java.net.InetSocketAddress
 
 class NioTcpConnectionDetailsResolver(nio: NioTCP) extends ConnectionDetailsResolver[ConnectionDetails, MessageBuffer] {
+  override def canConnect(details: ConnectionDetails): Boolean =
+    details match
+      case ConnectionDetails.Tcp(_, _) => true
+      case _                           => false
+
   def listen(host: String = "127.0.0.1", port: Int = 0): (ConnectionDetails.Tcp, LatentConnection[MessageBuffer]) = {
     val socketFactory = nio.defaultServerSocketChannel(InetSocketAddress(host, port))
     val probe         = socketFactory()

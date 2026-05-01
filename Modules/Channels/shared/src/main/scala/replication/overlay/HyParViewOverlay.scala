@@ -28,6 +28,34 @@ object HyParViewMultiplexed {
       : JsonValueCodec[HyParViewUnified.HyParViewMessage[Details]] = JsonCodecMaker.make
 }
 
+trait HyParViewViewListener[Details] {
+  def activePeerAdded(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = ()
+  def activePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = ()
+  def passivePeerAdded(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = ()
+  def passivePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = ()
+}
+
+object HyParViewViewListener {
+  def noop[Details]: HyParViewViewListener[Details] = new HyParViewViewListener[Details] {}
+
+  def combine[Details](listeners: HyParViewViewListener[Details]*): HyParViewViewListener[Details] = new HyParViewViewListener[Details] {
+    override def activePeerAdded(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = listeners.foreach(_.activePeerAdded(peer))
+    override def activePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = listeners.foreach(_.activePeerRemoved(peer))
+    override def passivePeerAdded(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = listeners.foreach(_.passivePeerAdded(peer))
+    override def passivePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = listeners.foreach(_.passivePeerRemoved(peer))
+  }
+
+  def printToStdout[Details](describe: Details => String): HyParViewViewListener[Details] = new HyParViewViewListener[Details] {
+    private def show(peer: HyParViewMultiplexed.PeerRef[Details]): String =
+      s"${Uid.unwrap(peer.uid)} (${describe(peer.details)})"
+
+    override def activePeerAdded(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = println(s"[hyparview] active connected ${show(peer)}")
+    override def activePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = println(s"[hyparview] active disconnected ${show(peer)}")
+    override def passivePeerAdded(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = println(s"[hyparview] passive added ${show(peer)}")
+    override def passivePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Details]): Unit = println(s"[hyparview] passive removed ${show(peer)}")
+  }
+}
+
 object HyParViewUnified {
 
   /** Configuration for simplified HyParView overlay maintenance. */
@@ -89,6 +117,7 @@ class HyParViewMultiplexedNode[State, Details](
     debug: Boolean = false,
     onViewChanged: (Set[HyParViewMultiplexed.PeerRef[Details]], Set[HyParViewMultiplexed.PeerRef[Details]]) => Unit =
       (_: Set[HyParViewMultiplexed.PeerRef[Details]], _: Set[HyParViewMultiplexed.PeerRef[Details]]) => (),
+    viewListener: HyParViewViewListener[Details] = HyParViewViewListener.noop,
     onPeerDisconnected: Uid => Unit = (_: Uid) => (),
 ) {
   import HyParViewMultiplexed.*
@@ -177,13 +206,15 @@ class HyParViewMultiplexedNode[State, Details](
     onViewChanged(active.values.toSet, passive.values.toSet)
 
   private def handleDisconnectedPeer(peer: Uid): Unit = {
-    val removedActive  = active.remove(peer).isDefined
-    val removedPassive = passive.remove(peer).isDefined
-    val conn           = connections.remove(peer)
+    val removedActivePeer  = active.remove(peer)
+    val removedPassivePeer = passive.remove(peer)
+    val conn               = connections.remove(peer)
     conn.foreach(connectionToPeer.remove)
     plumtreeAttached.remove(peer)
     plumtreeIncoming.remove(peer)
-    if removedActive || removedPassive || conn.nonEmpty then {
+    if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
+      removedActivePeer.foreach(viewListener.activePeerRemoved)
+      removedPassivePeer.foreach(viewListener.passivePeerRemoved)
       log(s"disconnect peer=${Uid.unwrap(peer)}")
       publishViewChanged()
       onPeerDisconnected(peer)
@@ -235,7 +266,9 @@ class HyParViewMultiplexedNode[State, Details](
         case Some(conn) =>
           conn.send(Envelope.Membership(message)).run {
             case Success(_)  => ()
-            case Failure(ex) => ex.printStackTrace()
+            case Failure(ex) =>
+              ex.printStackTrace()
+              handleDisconnectedPeer(peer.uid)
           }
         case None =>
           log(s"cannot connect to ${Uid.unwrap(peer.uid)} for ${message.getClass.getSimpleName}")
@@ -293,6 +326,7 @@ class HyParViewMultiplexedNode[State, Details](
         log(s"recv Disconnect peer=${Uid.unwrap(peer)}")
         if active.contains(peer) then
           val dropped = active.remove(peer).get
+          viewListener.activePeerRemoved(dropped)
           publishViewChanged()
           addNodePassiveView(dropped)
           healActiveView()
@@ -325,13 +359,15 @@ class HyParViewMultiplexedNode[State, Details](
   }
 
   private def removePeerCompletely(peer: Uid): Unit = {
-    val removedActive  = active.remove(peer).isDefined
-    val removedPassive = passive.remove(peer).isDefined
-    val conn           = connections.remove(peer)
+    val removedActivePeer  = active.remove(peer)
+    val removedPassivePeer = passive.remove(peer)
+    val conn               = connections.remove(peer)
     conn.foreach(connectionToPeer.remove)
     plumtreeAttached.remove(peer)
     plumtreeIncoming.remove(peer)
-    if removedActive || removedPassive || conn.nonEmpty then {
+    if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
+      removedActivePeer.foreach(viewListener.activePeerRemoved)
+      removedPassivePeer.foreach(viewListener.passivePeerRemoved)
       publishViewChanged()
       onPeerDisconnected(peer)
       healActiveView()
@@ -345,16 +381,19 @@ class HyParViewMultiplexedNode[State, Details](
       val candidateId = randomElement(passive.keySet.toSet)
       val candidate   = passive(candidateId)
       passive.remove(candidateId)
+      viewListener.passivePeerRemoved(candidate)
       log(s"heal attempt -> ${Uid.unwrap(candidateId)} high=${active.isEmpty}")
       sendMembership(candidate, Neighbor(self, highPriority = active.isEmpty))
       attempts += 1
   }
 
   private def rememberAdvertisedPeer(peer: PeerRef[Details]): Unit = {
-    if peer.uid != self.uid then
+    if peer.uid != self.uid && resolver.canConnect(peer.details) then
       if !active.contains(peer.uid) && !passive.contains(peer.uid) then
         log(s"remember peer ${Uid.unwrap(peer.uid)} as passive")
+      val existed = passive.contains(peer.uid)
       passive.getOrElseUpdate(peer.uid, peer): Unit
+      if !existed then viewListener.passivePeerAdded(peer)
   }
 
   private def addNodeActiveView(node: PeerRef[Details]): Unit =
@@ -364,7 +403,8 @@ class HyParViewMultiplexedNode[State, Details](
         case Some(conn) =>
           log(s"add active ${Uid.unwrap(node.uid)}")
           active.update(node.uid, node)
-          passive.remove(node.uid)
+          passive.remove(node.uid).foreach(viewListener.passivePeerRemoved)
+          viewListener.activePeerAdded(node)
           rememberConnection(node.uid, conn)
           attachPlumtree(node.uid, conn)
           publishViewChanged()
@@ -373,17 +413,19 @@ class HyParViewMultiplexedNode[State, Details](
           addNodePassiveView(node)
 
   private def addNodePassiveView(node: PeerRef[Details]): Unit =
-    if node.uid != self.uid && !active.contains(node.uid) && !passive.contains(node.uid) then
+    if node.uid != self.uid && resolver.canConnect(node.details) && !active.contains(node.uid) && !passive.contains(node.uid) then
       if passive.size >= config.passiveViewSize then
-        passive.remove(randomElement(passive.keySet.toSet)): Unit
+        passive.remove(randomElement(passive.keySet.toSet)).foreach(viewListener.passivePeerRemoved)
       log(s"add passive ${Uid.unwrap(node.uid)}")
       passive.update(node.uid, node)
+      viewListener.passivePeerAdded(node)
       publishViewChanged()
 
   private def dropRandomElementFromActiveView(): Unit =
     if active.nonEmpty then
       val n    = randomElement(active.keySet.toSet)
       val peer = active.remove(n).get
+      viewListener.activePeerRemoved(peer)
       log(s"drop active ${Uid.unwrap(n)}")
       publishViewChanged()
       addNodePassiveView(peer)

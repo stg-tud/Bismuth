@@ -1,16 +1,29 @@
 package channels
 
-/** vibecoded. dont trust 😉 */
+/** vibecoded as part of the hyparview experiments */
 
 trait ConnectionDetailsResolver[D, T] {
+  def canConnect(details: D): Boolean
   def connect(details: D, label: String): Option[LatentConnection[T]]
 }
 
 object ConnectionDetailsResolver {
   def orElse[D, T](resolvers: ConnectionDetailsResolver[D, T]*): ConnectionDetailsResolver[D, T] =
     new ConnectionDetailsResolver[D, T] {
+      override def canConnect(details: D): Boolean =
+        resolvers.exists(_.canConnect(details))
+
       override def connect(details: D, label: String): Option[LatentConnection[T]] =
         resolvers.iterator.map(_.connect(details, label)).collectFirst { case Some(value) => value }
+    }
+
+  def many[D, T](resolver: ConnectionDetailsResolver[D, T]): ConnectionDetailsResolver[Set[D], T] =
+    new ConnectionDetailsResolver[Set[D], T] {
+      override def canConnect(details: Set[D]): Boolean =
+        details.exists(resolver.canConnect)
+
+      override def connect(details: Set[D], label: String): Option[LatentConnection[T]] =
+        details.iterator.map(resolver.connect(_, label)).collectFirst { case Some(value) => value }
     }
 }
 
@@ -20,6 +33,15 @@ enum ConnectionDetails {
   case WebRtc(signalingUrl: String, peerId: String)
   case QueuedLocal(id: String)
   case SynchronousLocal(id: String)
+}
+
+object ConnectionDetails {
+  def describe(details: ConnectionDetails): String = details match
+    case Tcp(host, port)              => s"tcp:$host:$port"
+    case WebSocket(url)               => s"ws:$url"
+    case WebRtc(signalingUrl, peerId) => s"webrtc:$peerId@$signalingUrl"
+    case QueuedLocal(id)              => s"queued:$id"
+    case SynchronousLocal(id)         => s"sync:$id"
 }
 
 class LocalConnectionRegistry[T] extends ConnectionDetailsResolver[ConnectionDetails, T] {
@@ -49,6 +71,15 @@ class LocalConnectionRegistry[T] extends ConnectionDetailsResolver[ConnectionDet
     details match
       case ConnectionDetails.SynchronousLocal(id) => synchronous.get(id).map(_.server)
       case _                                      => None
+  }
+
+  override def canConnect(details: ConnectionDetails): Boolean = synchronized {
+    details match
+      case ConnectionDetails.QueuedLocal(id)      => queued.contains(id)
+      case ConnectionDetails.SynchronousLocal(id) => synchronous.contains(id)
+      case ConnectionDetails.Tcp(_, _)            => false
+      case ConnectionDetails.WebSocket(_)         => false
+      case ConnectionDetails.WebRtc(_, _)         => false
   }
 
   override def connect(details: ConnectionDetails, label: String): Option[LatentConnection[T]] = synchronized {

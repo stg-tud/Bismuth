@@ -5,6 +5,12 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 
 /** vibecoded. dont trust 😉 */
 class WebSocketConnectionDetailsResolver[T: JsonValueCodec] extends ConnectionDetailsResolver[ConnectionDetails, T] {
+  override def canConnect(details: ConnectionDetails): Boolean =
+    details match
+      case ConnectionDetails.WebSocket(_) => true
+      case ConnectionDetails.Tcp(_, _)    => true
+      case _                              => false
+
 
   private def jsonConnection(latent: LatentConnection[MessageBuffer], name: String): LatentConnection[T] =
     LatentConnection.adapt[MessageBuffer, T](
