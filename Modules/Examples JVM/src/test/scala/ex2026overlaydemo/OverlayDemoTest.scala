@@ -3,7 +3,9 @@ package ex2026overlaydemo
 import channels.{ConnectionDetails, LocalConnectionRegistry, LocalMessageQueue}
 import replication.overlay.HyParViewMultiplexed
 import replication.research.OverlayConnectionDirectory
+import replication.research.OverlayConnectionDirectory.LinkState
 import replication.research.OverlayNetworkProtocol.DemoState
+import rdts.base.Uid
 
 import scala.util.Random
 
@@ -19,9 +21,54 @@ class OverlayDemoTest extends munit.FunSuite {
     assert(cond)
   }
 
-  private def noReferencesTo(directory: OverlayConnectionDirectory.Directory, removed: Set[rdts.base.Uid]): Boolean =
-    !directory.keySet.exists(removed.contains) &&
-      directory.entries.forall((_, info) => info.peers.elements.forall(peer => !removed.contains(peer.uid)))
+  private def localInfoMatchesNode(app: OverlayDemo.NodeApp): Boolean = {
+    val localUid = app.node.localUid.uid
+    app.node.connectionDirectory.get(localUid).exists { info =>
+      val replicatedActive = info.peers.elements.collect { case OverlayConnectionDirectory.ConnectedPeer(uid, LinkState.Active) => uid }
+      val replicatedPassive = info.peers.elements.collect { case OverlayConnectionDirectory.ConnectedPeer(uid, LinkState.Passive) => uid }
+      val replicatedEager = info.eagerPeers.elements
+      replicatedActive == app.node.activeView &&
+      replicatedPassive == app.node.passiveView &&
+      replicatedEager == app.node.eagerView &&
+      replicatedEager.subsetOf(replicatedActive)
+    }
+  }
+
+  private def eagerEdgesFormForest(directory: OverlayConnectionDirectory.Directory): Boolean = {
+    val eagerByNode = directory.entries.iterator.map { (uid, info) =>
+      val activePeers = info.peers.elements.collect { case OverlayConnectionDirectory.ConnectedPeer(peerUid, LinkState.Active) => peerUid }
+      uid -> (activePeers intersect info.eagerPeers.elements)
+    }.toMap
+
+    val undirectedEdges = eagerByNode.iterator.flatMap { (left, peers) =>
+      peers.iterator.collect {
+        case right if eagerByNode.getOrElse(right, Set.empty).contains(left) =>
+          if Uid.unwrap(left) <= Uid.unwrap(right) then (left, right) else (right, left)
+      }
+    }.toSet
+
+    val adjacency = undirectedEdges.foldLeft(Map.empty[Uid, Set[Uid]]) { case (acc, (left, right)) =>
+      acc
+        .updated(left, acc.getOrElse(left, Set.empty) + right)
+        .updated(right, acc.getOrElse(right, Set.empty) + left)
+    }
+
+    def dfs(current: Uid, parent: Option[Uid], visited: Set[Uid]): (Boolean, Set[Uid]) = {
+      val nextVisited = visited + current
+      adjacency.getOrElse(current, Set.empty).foldLeft((true, nextVisited)) {
+        case ((false, seen), _) => (false, seen)
+        case ((true, seen), neighbor) if parent.contains(neighbor) => (true, seen)
+        case ((true, seen), neighbor) if seen.contains(neighbor) => (false, seen)
+        case ((true, seen), neighbor) => dfs(neighbor, Some(current), seen)
+      }
+    }
+
+    adjacency.keys.foldLeft((true, Set.empty[Uid])) {
+      case ((false, visited), _) => (false, visited)
+      case ((true, visited), uid) if visited.contains(uid) => (true, visited)
+      case ((true, visited), uid) => dfs(uid, None, visited)
+    }._1
+  }
 
   private class QueuedFixture {
     val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]()
@@ -158,44 +205,71 @@ class OverlayDemoTest extends munit.FunSuite {
     }
   }
 
-  test("living nodes eventually remove all references to stopped nodes from the replicated connection directory") {
+  test("replicated local active passive and eager info matches node state and eager edges form a forest") {
     val fx    = QueuedFixture()
     val node1 = fx.newNode()
     fx.settle()
     val node2 = fx.newNode(seeds = List(node1.details))
     fx.settle()
-    val node3 = fx.newNode(seeds = List(node2.details))
-    fx.settle()
-    val node4 = fx.newNode(seeds = List(node1.details))
-
-    val living     = List(node1, node2)
-    val removed    = List(node3, node4)
-    val removedUids = removed.map(_.node.localUid.uid).toSet
+    val node3 = fx.newNode(seeds = List(node1.details))
 
     try {
       eventually({
-        fx.drain()
-        val expected = Set(node1.node.localUid.uid, node2.node.localUid.uid, node3.node.localUid.uid, node4.node.localUid.uid)
-        living.forall(app => expected.subsetOf(app.node.connectionDirectory.keySet))
+        fx.settle(20)
+        List(node1, node2, node3).forall(app => app.node.activeView.nonEmpty)
       }, rounds = 8000)
 
-      fx.settle(20)
-      node4.stop()
-      fx.settle(20)
-      node3.stop()
+      node1.node.publishAdd("alpha")
+      node2.node.publishAdd("beta")
+      node3.node.publishAdd("gamma")
 
       eventually({
-        fx.drain()
-        living.forall { app =>
-          val directory = app.node.connectionDirectory
-          noReferencesTo(directory, removedUids)
-        }
+        fx.settle(30)
+        val expected = Set("alpha", "beta", "gamma")
+        List(node1, node2, node3).forall(_.node.state.values.elements == expected)
       }, rounds = 12000)
+
+      eventually({
+        fx.settle(20)
+        val apps = List(node1, node2, node3)
+        apps.forall(localInfoMatchesNode)
+      }, rounds = 12000)
+
     } finally {
-      try node4.stop() catch case _: Throwable => ()
-      try node3.stop() catch case _: Throwable => ()
+      node3.stop()
       node2.stop()
       node1.stop()
     }
   }
+
+  test("replicated eager edges form a tree on a two node network") {
+    val fx    = QueuedFixture()
+    val node1 = fx.newNode()
+    fx.settle()
+    val node2 = fx.newNode(seeds = List(node1.details))
+
+    try {
+      eventually({
+        fx.settle(20)
+        node1.node.activeView.nonEmpty && node2.node.activeView.nonEmpty
+      }, rounds = 8000)
+
+      node1.node.publishAdd("alpha")
+      node2.node.publishAdd("beta")
+
+      eventually({
+        fx.settle(30)
+        val expected = Set("alpha", "beta")
+        node1.node.state.values.elements == expected &&
+        node2.node.state.values.elements == expected &&
+        localInfoMatchesNode(node1) &&
+        localInfoMatchesNode(node2) &&
+        eagerEdgesFormForest(node1.node.connectionDirectory)
+      }, rounds = 12000)
+    } finally {
+      node2.stop()
+      node1.stop()
+    }
+  }
+
 }

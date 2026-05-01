@@ -156,23 +156,23 @@ class HyParViewMultiplexedNode[State, Details](
     val contactDesc = contact.toString
     resolver.connect(contact, s"${Uid.unwrap(self.uid)}-join") match
       case Some(latent) =>
-        println(s"[hyparview] join attempt self=${Uid.unwrap(self.uid)} contact=$contactDesc")
+        log(s"join attempt self=${Uid.unwrap(self.uid)} contact=$contactDesc")
         latent.prepare(receive(None)).runIn(abort) {
           case Success(conn) =>
-            println(s"[hyparview] join transport ready self=${Uid.unwrap(self.uid)} contact=$contactDesc")
+            log(s"join transport ready self=${Uid.unwrap(self.uid)} contact=$contactDesc")
             conn.send(Envelope.Membership(Join(self))).run {
               case Success(_) =>
-                println(s"[hyparview] join sent self=${Uid.unwrap(self.uid)} contact=$contactDesc")
+                log(s"join sent self=${Uid.unwrap(self.uid)} contact=$contactDesc")
               case Failure(ex) =>
                 ex.printStackTrace()
-                println(s"[hyparview] join send failed self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+                log(s"join send failed self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
               }
           case Failure(ex) =>
             ex.printStackTrace()
-            println(s"[hyparview] join failed self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+            log(s"join failed self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
         }
       case None =>
-        println(s"[hyparview] join skipped self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=no route to contact")
+        log(s"join skipped self=${Uid.unwrap(self.uid)} contact=$contactDesc reason=no route to contact")
 
   def shuffleTick(): Unit =
     if active.nonEmpty then
@@ -226,12 +226,12 @@ class HyParViewMultiplexedNode[State, Details](
     }
 
   private def notePassiveAdded(peer: PeerRef[Details], reason: String): Unit = {
-    println(s"[hyparview] passive added ${Uid.unwrap(peer.uid)} reason=$reason")
+    log(s"passive added ${Uid.unwrap(peer.uid)} reason=$reason")
     viewListener.passivePeerAdded(peer)
   }
 
   private def notePassiveRemoved(peer: PeerRef[Details], reason: String): Unit = {
-    println(s"[hyparview] passive removed ${Uid.unwrap(peer.uid)} reason=$reason")
+    log(s"passive removed ${Uid.unwrap(peer.uid)} reason=$reason")
     viewListener.passivePeerRemoved(peer)
   }
 
@@ -240,7 +240,7 @@ class HyParViewMultiplexedNode[State, Details](
     if overlap.nonEmpty then
       overlap.foreach { uid =>
         passive.remove(uid).foreach { peer =>
-          println(s"[hyparview] repair invariant self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(uid)} reason=peer present in both active and passive, dropping passive entry")
+          log(s"repair invariant self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(uid)} reason=peer present in both active and passive, dropping passive entry")
           notePassiveRemoved(peer, "invariant repair: peer also present in active view")
         }
       }
@@ -257,7 +257,7 @@ class HyParViewMultiplexedNode[State, Details](
       connections.remove(peer): Unit
     connectionToPeer.remove(conn)
     if removedStored then
-      println(s"[hyparview] drop inactive connection peer=${Uid.unwrap(peer)} reason=$reason keptPassive=${passive.contains(peer)}")
+      log(s"drop inactive connection peer=${Uid.unwrap(peer)} reason=$reason keptPassive=${passive.contains(peer)}")
   }
 
   private def handleDisconnectedPeer(peer: Uid, reason: String): Unit = {
@@ -272,7 +272,7 @@ class HyParViewMultiplexedNode[State, Details](
     if removedActivePeer.nonEmpty || removedPassivePeer.nonEmpty || conn.nonEmpty then {
       removedActivePeer.foreach(viewListener.activePeerRemoved)
       removedPassivePeer.foreach(peer => notePassiveRemoved(peer, s"connection failure cleanup: $reason"))
-      println(s"[hyparview] remove peer=${Uid.unwrap(peer)} reason=$reason removedActive=${removedActivePeer.nonEmpty} removedPassive=${removedPassivePeer.nonEmpty} hadConnection=${conn.nonEmpty}")
+      log(s"remove peer=${Uid.unwrap(peer)} reason=$reason removedActive=${removedActivePeer.nonEmpty} removedPassive=${removedPassivePeer.nonEmpty} hadConnection=${conn.nonEmpty}")
       log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
       publishViewChanged()
       onPeerDisconnected(peer)
@@ -307,13 +307,13 @@ class HyParViewMultiplexedNode[State, Details](
 
   private def startConnection(peer: PeerRef[Details]): Unit =
     if !connections.contains(peer.uid) && !connecting.contains(peer.uid) then
-      println(s"[hyparview] connection attempt self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} details=${peer.details}")
+      log(s"connection attempt self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} details=${peer.details}")
       resolver.connect(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}") match
         case Some(latent) =>
           connecting += peer.uid
           latent.prepare(receive(Some(peer.uid))).runIn(abort) {
             case Success(conn) =>
-              println(s"[hyparview] connection established self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} info=${conn.info.details}")
+              log(s"connection established self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} info=${conn.info.details}")
               connecting -= peer.uid
               rememberConnection(peer.uid, conn)
               if active.contains(peer.uid) then attachPlumtree(peer.uid, connections(peer.uid))
@@ -325,7 +325,7 @@ class HyParViewMultiplexedNode[State, Details](
               handleDisconnectedPeer(peer.uid, s"outgoing connect failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
           }
         case None =>
-          println(s"[hyparview] connection attempt skipped self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} reason=no route details=${peer.details}")
+          log(s"connection attempt skipped self=${Uid.unwrap(self.uid)} peer=${Uid.unwrap(peer.uid)} reason=no route details=${peer.details}")
           log(s"cannot connect to ${Uid.unwrap(peer.uid)} because resolver has no route")
 
   private def sendMembership(peer: PeerRef[Details], message: HyParViewMessage[Details]): Unit =
