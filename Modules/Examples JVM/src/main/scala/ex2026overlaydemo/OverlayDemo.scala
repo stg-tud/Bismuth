@@ -10,6 +10,7 @@ import replication.overlay.{HyParViewMultiplexed, HyParViewUnified}
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import replication.research.OverlayNetworkProtocol.DemoState
 
+import java.util.Base64
 import java.util.concurrent.Executors
 import scala.util.Random
 
@@ -31,9 +32,11 @@ object OverlayDemo {
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]] =
     HyParViewMultiplexed.envelopeCodec[DemoState, ConnectionDetails]
 
-  def connectionString(details: ConnectionDetails): String = writeToString(details)
+  def connectionString(details: ConnectionDetails): String =
+    Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
 
-  def parseConnectionString(str: String): ConnectionDetails = readFromString[ConnectionDetails](str)
+  def parseConnectionString(str: String): ConnectionDetails =
+    readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
 
   def jsonConnection[A: JsonValueCodec](latent: LatentConnection[MessageBuffer], name: String): LatentConnection[A] =
     LatentConnection.adapt[MessageBuffer, A](
@@ -41,6 +44,19 @@ object OverlayDemo {
       a => ArrayMessageBuffer(writeToArray(a)),
       name
     )(latent)
+
+  trait OverlayNodeRuntime {
+    def localUid: LocalUid
+    def state: DemoState
+    def start(seeds: List[ConnectionDetails] = Nil): Unit
+    def publishAdd(value: String): Unit
+    def publishRemove(value: String): Unit
+    def activeView: Set[Uid]
+    def passiveView: Set[Uid]
+    def connectionDirectory: OverlayConnectionDirectory.Directory[ConnectionDetails]
+    def selfConnectionDetails: Set[ConnectionDetails]
+    def stop(): Unit
+  }
 
   object TopicNode {
     def tcp(
@@ -84,6 +100,26 @@ object OverlayDemo {
         onDirectoryChanged = onDirectoryChanged,
       )
     }
+
+    def queued(
+        registry: LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]],
+        id: String,
+        queue: LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]],
+        random: Random = Random(0),
+        onDirectoryChanged: OverlayConnectionDirectory.Directory[ConnectionDetails] => Unit = _ => (),
+    ): TopicNode = {
+      val details        = registry.registerQueued(id, QueuedLocalConnection(queue))
+      val listenEnvelope = registry.queuedServer(details).get
+      new TopicNode(
+        listenDetails = details,
+        listenEnvelope = listenEnvelope,
+        envelopeResolver = registry,
+        stopTransport = () => (),
+        random = random,
+        config = HyParViewUnified.HyParViewConfig.fromEstimatedNetworkSize(10),
+        onDirectoryChanged = onDirectoryChanged,
+      )
+    }
   }
 
   class TopicNode(
@@ -94,7 +130,7 @@ object OverlayDemo {
       random: Random = Random(0),
       config: HyParViewUnified.HyParViewConfig,
       onDirectoryChanged: OverlayConnectionDirectory.Directory[ConnectionDetails] => Unit = _ => (),
-  ) {
+  ) extends OverlayNodeRuntime {
     val core = new OverlayDemoNode(
       selfDetails = Set(listenDetails),
       membershipDetails = Some(listenDetails),
@@ -113,6 +149,7 @@ object OverlayDemo {
     def activeView: Set[Uid] = core.activeView
     def passiveView: Set[Uid] = core.passiveView
     def connectionDirectory: OverlayConnectionDirectory.Directory[ConnectionDetails] = core.connectionDirectory
+    def selfConnectionDetails: Set[ConnectionDetails] = Set(listenDetails)
 
     def stop(): Unit = {
       core.stop()
@@ -120,11 +157,10 @@ object OverlayDemo {
     }
   }
 
-  class NodeApp(host: String = "127.0.0.1", seeds: List[ConnectionDetails] = Nil) {
-    val node = TopicNode.tcp(host)
+  class NodeApp(val node: OverlayNodeRuntime, seeds: List[ConnectionDetails] = Nil) {
     node.start(seeds)
 
-    def details: ConnectionDetails = node.listenDetails
+    def details: ConnectionDetails = node.selfConnectionDetails.head
 
     def handleInputLine(line: String): Boolean = {
       val trimmed = line.trim
@@ -149,11 +185,11 @@ object OverlayDemo {
   def main(args: Array[String]): Unit =
     args.toList match
       case Nil =>
-        val node = new NodeApp()
+        val node = new NodeApp(TopicNode.tcp())
         println(s"seed=${connectionString(node.details)}")
         node.runConsole()
       case seed :: Nil =>
-        val node = new NodeApp(seeds = List(parseConnectionString(seed)))
+        val node = new NodeApp(TopicNode.tcp(), seeds = List(parseConnectionString(seed)))
         println(s"seed=${connectionString(node.details)}")
         node.runConsole()
       case _ =>

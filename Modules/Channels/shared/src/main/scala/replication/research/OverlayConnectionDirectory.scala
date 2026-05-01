@@ -101,6 +101,36 @@ object OverlayConnectionDirectory {
         passivePeers.iterator.map(peer => ConnectedPeer(peer.uid, peer.details, LinkState.Passive)).toSet
     )
 
+  def removePeerReferences[Details](
+      state: Directory[Details],
+      node: Uid,
+      peer: Uid,
+  )(using LocalUid): Directory[Details] = {
+    val current = state.get(node).getOrElse(emptyNodeInfo)
+    val remainingPeers = current.peers.elements.filterNot(_.uid == peer)
+    updateNode(state, node, current.selfDetails.elements, remainingPeers)
+  }
+
+  def removeConnectionBothDirections[Details](
+      state: Directory[Details],
+      left: Uid,
+      right: Uid,
+  )(using LocalUid): Directory[Details] = {
+    val afterLeft  = state.merge(removePeerReferences(state, left, right))
+    val afterRight = afterLeft.merge(removePeerReferences(afterLeft, right, left))
+    afterRight
+  }
+
+  def removeNodeEverywhere[Details](
+      state: Directory[Details],
+      node: Uid,
+  )(using LocalUid): Directory[Details] = {
+    val withoutRefs = state.entries.foldLeft(state) { case (acc, (owner, _)) =>
+      acc.merge(removePeerReferences(acc, owner, node))
+    }
+    withoutRefs.merge(withoutRefs.remove(node))
+  }
+
   def knownPeers[Details](state: Directory[Details], selfUid: Uid): Set[HyParViewMultiplexed.PeerRef[Details]] =
     state.entries.iterator
       .filterNot((uid, _) => uid == selfUid)

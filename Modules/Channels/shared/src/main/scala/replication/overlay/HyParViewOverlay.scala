@@ -87,6 +87,7 @@ class HyParViewMultiplexedNode[State, Details](
     debug: Boolean = false,
     onViewChanged: (Set[HyParViewMultiplexed.PeerRef[Details]], Set[HyParViewMultiplexed.PeerRef[Details]]) => Unit =
       (_: Set[HyParViewMultiplexed.PeerRef[Details]], _: Set[HyParViewMultiplexed.PeerRef[Details]]) => (),
+    onPeerDisconnected: Uid => Unit = (_: Uid) => (),
 ) {
   import HyParViewMultiplexed.*
   import HyParViewUnified.*
@@ -144,12 +145,28 @@ class HyParViewMultiplexedNode[State, Details](
         case Success(Envelope.Dissemination(message)) =>
           val peer = expectedPeer.orElse(connectionToPeer.get(conn))
           peer.flatMap(plumtreeIncoming.get).foreach(_.succeed(message))
-        case Failure(_)                               => ()
+        case Failure(_)                               =>
+          expectedPeer.orElse(connectionToPeer.get(conn)).foreach(handleDisconnectedPeer)
       }
     }
 
   private def publishViewChanged(): Unit =
     onViewChanged(active.values.toSet, passive.values.toSet)
+
+  private def handleDisconnectedPeer(peer: Uid): Unit = {
+    val removedActive  = active.remove(peer).isDefined
+    val removedPassive = passive.remove(peer).isDefined
+    val conn           = connections.remove(peer)
+    conn.foreach(connectionToPeer.remove)
+    plumtreeAttached.remove(peer)
+    plumtreeIncoming.remove(peer)
+    if removedActive || removedPassive || conn.nonEmpty then {
+      log(s"disconnect peer=${Uid.unwrap(peer)}")
+      publishViewChanged()
+      onPeerDisconnected(peer)
+      healActiveView()
+    }
+  }
 
   private def attachPlumtree(peer: Uid, conn: Connection[Envelope[State, Details]]): Unit =
     if !plumtreeAttached.contains(peer) then

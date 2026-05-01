@@ -2,7 +2,7 @@ package webapps.ex2026niowebsocket
 
 import channels.*
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, HTMLCanvasElement, document, window}
@@ -15,6 +15,7 @@ import replication.research.OverlayConnectionDirectory.LinkState
 import replication.research.OverlayNetworkProtocol.DemoState
 import scalatags.JsDom.all.*
 
+import java.util.Base64
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Promise
@@ -87,9 +88,15 @@ object OverlayNetworkGraph {
     if debugNode != null then debugNode.nn.textContent = logs.mkString("\n")
   }
 
+  private def encodeConnectionString(details: ConnectionDetails): String =
+    Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
+
+  private def parseConnectionString(str: String): ConnectionDetails =
+    readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
+
   private def defaultSeedString: String = {
     val url = new dom.URL(window.location.href)
-    Option(url.searchParams.get("seed")).getOrElse("{\"type\":\"Tcp\",\"host\":\"127.0.0.1\",\"port\":8080}")
+    Option(url.searchParams.get("seed")).getOrElse(encodeConnectionString(ConnectionDetails.Tcp("127.0.0.1", 8080)))
   }
 
   private def websocketUrl(details: ConnectionDetails): String = details match
@@ -113,7 +120,7 @@ object OverlayNetworkGraph {
 
   private def connect(seedConnectionString: String): Unit = {
     stopCurrentNode()
-    val seedDetails = readFromString[ConnectionDetails](seedConnectionString)
+    val seedDetails = parseConnectionString(seedConnectionString)
     val seedUrl     = websocketUrl(seedDetails)
     val localId     = LocalUid.gen()
     val membershipDetail = ConnectionDetails.WebRtc("browser", Uid.unwrap(localId.uid))
@@ -204,38 +211,47 @@ object OverlayNetworkGraph {
       case Seq(a, b) =>
         val dx = b.x - a.x
         val dy = b.y - a.y
-        val distanceSq = math.max(200.0, dx * dx + dy * dy)
-        val force = 350.0 / distanceSq
-        val fx = dx * force / math.sqrt(distanceSq)
-        val fy = dy * force / math.sqrt(distanceSq)
-        a.vx -= fx
-        a.vy -= fy
-        b.vx += fx
-        b.vy += fy
+        val distanceSq = math.max(1.0, dx * dx + dy * dy)
+        val distance = math.sqrt(distanceSq)
+        val repulsion = 1800.0 / (distanceSq + 80.0)
+        val fxRepel = dx * repulsion / math.max(1.0, distance)
+        val fyRepel = dy * repulsion / math.max(1.0, distance)
+        a.vx -= fxRepel
+        a.vy -= fyRepel
+        b.vx += fxRepel
+        b.vy += fyRepel
+
+        val minDistance = 46.0
+        if distance < minDistance then {
+          val push = (minDistance - distance) * 0.06
+          val fxPush = dx * push / math.max(1.0, distance)
+          val fyPush = dy * push / math.max(1.0, distance)
+          a.vx -= fxPush
+          a.vy -= fyPush
+          b.vx += fxPush
+          b.vy += fyPush
+        }
       case _ => ()
     }
 
-    edges.foreach { edge =>
-      for
-        a <- byUid.get(edge.from)
-        b <- byUid.get(edge.to)
-      do
-        val dx = b.x - a.x
-        val dy = b.y - a.y
-        val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
-        val desired = edge.kind match
-          case EdgeKind.ActiveOverlay  => 120.0
-          case EdgeKind.PassiveOverlay => 180.0
-        val stiffness = edge.kind match
-          case EdgeKind.ActiveOverlay  => 0.012
-          case EdgeKind.PassiveOverlay => 0.004
-        val pull = (distance - desired) * stiffness
-        val fx = dx * pull / distance
-        val fy = dy * pull / distance
-        a.vx += fx
-        a.vy += fy
-        b.vx -= fx
-        b.vy -= fy
+    edges.foreach {
+      case GraphEdge(from, to, EdgeKind.ActiveOverlay) =>
+        for
+          a <- byUid.get(from)
+          b <- byUid.get(to)
+        do
+          val dx = b.x - a.x
+          val dy = b.y - a.y
+          val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
+          val desired = 170.0
+          val pull = (distance - desired) * 0.005
+          val fx = dx * pull / distance
+          val fy = dy * pull / distance
+          a.vx += fx
+          a.vy += fy
+          b.vx -= fx
+          b.vy -= fy
+      case GraphEdge(_, _, EdgeKind.PassiveOverlay) => ()
     }
 
     nodes.foreach { node =>
@@ -245,16 +261,16 @@ object OverlayNetworkGraph {
         node.vx = 0
         node.vy = 0
       } else {
-        node.vx += (centerX - node.x) * 0.004
-        node.vy += (centerY - node.y) * 0.004
+        node.vx += (centerX - node.x) * 0.0015
+        node.vy += (centerY - node.y) * 0.0015
 
         if node.x < margin then node.vx += (margin - node.x) * 0.03
         if node.x > width - margin then node.vx -= (node.x - (width - margin)) * 0.03
         if node.y < margin then node.vy += (margin - node.y) * 0.03
         if node.y > height - margin then node.vy -= (node.y - (height - margin)) * 0.03
 
-        node.vx *= 0.82
-        node.vy *= 0.82
+        node.vx *= 0.88
+        node.vy *= 0.88
         node.x += node.vx
         node.y += node.vy
       }
@@ -323,7 +339,7 @@ object OverlayNetworkGraph {
   def runObserver(seedConnectionString: String, observerName: String, topic: String = "unused"): js.Promise[String] = {
     val done   = Promise[String]()
     val buffer = mutable.ArrayBuffer.empty[String]
-    val seedDetails = readFromString[ConnectionDetails](seedConnectionString)
+    val seedDetails = parseConnectionString(seedConnectionString)
     val seedUrl     = websocketUrl(seedDetails)
     val localId     = LocalUid.gen()
     val resolver    = new WebSocketConnectionDetailsResolver[HyParViewMultiplexed.Envelope[DemoState, ConnectionDetails]]

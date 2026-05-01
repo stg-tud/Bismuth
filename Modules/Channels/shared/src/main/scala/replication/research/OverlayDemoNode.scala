@@ -68,6 +68,17 @@ class OverlayDemoNode(
     }
   }
 
+  private def handleDisconnectedPeer(peer: Uid): Unit = {
+    given LocalUid = localUid
+    val delta = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
+    if !Bottom.isEmpty(delta) then {
+      val wrapped = DemoState(ReplicatedSet.empty, delta)
+      state = state.merge(wrapped)
+      refreshOverlayKnowledge()
+      plumtree.applyDelta(wrapped)
+    }
+  }
+
   private def newOverlay(contact: Option[ConnectionDetails]): HyParViewMultiplexedNode[DemoState, ConnectionDetails] =
     new HyParViewMultiplexedNode(
       selfRef,
@@ -81,6 +92,7 @@ class OverlayDemoNode(
       random,
       config,
       onViewChanged = publishLocalView,
+      onPeerDisconnected = handleDisconnectedPeer,
     )
 
   private def startShuffleTask(): Unit =
@@ -126,6 +138,14 @@ class OverlayDemoNode(
   def connectionDirectory: OverlayConnectionDirectory.Directory[ConnectionDetails] = state.connections
 
   def stop(): Unit = {
+    given LocalUid = localUid
+    val cleanup = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, localUid.uid)
+    if !Bottom.isEmpty(cleanup) then {
+      val wrapped = DemoState(ReplicatedSet.empty, cleanup)
+      state = state.merge(wrapped)
+      refreshOverlayKnowledge()
+      plumtree.applyDelta(wrapped)
+    }
     abort.abort()
     shuffleTimer.cancel()
   }
