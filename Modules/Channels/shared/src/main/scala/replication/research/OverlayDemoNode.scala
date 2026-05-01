@@ -48,6 +48,7 @@ class OverlayDemoNode(
       localUid.uid,
       overlay.map(_.activePeers).getOrElse(Set.empty),
       overlay.map(_.passivePeers).getOrElse(Set.empty),
+      plumtree.eagerPeers,
     )
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
@@ -82,6 +83,7 @@ class OverlayDemoNode(
     },
     None,
     globalAbort = abort,
+    onPeerRolesChanged = () => publishLocalView(),
   )
 
   private def newOverlay(seed: Option[ConnectionDetails]) =
@@ -139,6 +141,8 @@ class OverlayDemoNode(
   def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
 
   def passiveView: Set[Uid] = overlay.map(_.passiveView).getOrElse(Set.empty)
+
+  def eagerView: Set[Uid] = plumtree.eagerPeers
 
   def connectionDirectory: OverlayConnectionDirectory.Directory = state.connections
 

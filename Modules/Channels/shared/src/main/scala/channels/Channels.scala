@@ -79,6 +79,8 @@ object LatentConnection {
     override def info: ConnectionInfo =
       ConnectionInfo(acc.info.details.updatedWith("encoding")(v => v.map(_ + name).orElse(Some(name))))
 
+    override def authenticatedPeerReplicaId: Option[Uid] = acc.authenticatedPeerReplicaId
+
     override def send(message: B): Async[Any, Unit] =
       acc.send(encode(message))
 

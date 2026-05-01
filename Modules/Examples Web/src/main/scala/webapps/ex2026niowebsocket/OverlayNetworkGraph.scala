@@ -50,7 +50,7 @@ object OverlayNetworkGraph {
   private type Envelope = HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]
 
   private enum EdgeKind {
-    case ActiveOverlay, PassiveOverlay
+    case EagerOverlay, ActiveOverlay, PassiveOverlay
   }
 
   private case class GraphEdge(from: Uid, to: Uid, kind: EdgeKind)
@@ -107,15 +107,17 @@ object OverlayNetworkGraph {
       case Some(node) =>
         val active  = node.activeView.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
         val passive = node.passiveView.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-        s"local hyparview\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}"
+        val eager   = node.eagerView.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+        s"local hyparview\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}"
       case None =>
         "local hyparview\n  active: -\n  passive: -"
 
     val replicated = directory.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, info) =>
       val active  = info.peers.elements.filter(_.state == LinkState.Active).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val passive = info.peers.elements.filter(_.state == LinkState.Passive).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+      val eager   = info.eagerPeers.elements.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val label   = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
-      s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}"
+      s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}"
     }
 
     if replicated.nonEmpty then (localStatus +: replicated).mkString("\n")
@@ -319,16 +321,32 @@ object OverlayNetworkGraph {
     network.entries.foreach { (uid, info) =>
       val activeCount  = info.peers.elements.count(_.state == LinkState.Active)
       val passiveCount = info.peers.elements.count(_.state == LinkState.Passive)
-      detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount")
+      val eagerCount   = info.eagerPeers.elements.size
+      detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount eager=$eagerCount")
       info.peers.elements.foreach { peer =>
-        edges += GraphEdge(uid, peer.uid, peer.state match
-          case LinkState.Active  => EdgeKind.ActiveOverlay
-          case LinkState.Passive => EdgeKind.PassiveOverlay
-        )
+        val kind = peer.state match
+          case LinkState.Active if info.eagerPeers.elements.contains(peer.uid) => EdgeKind.EagerOverlay
+          case LinkState.Active                                                => EdgeKind.ActiveOverlay
+          case LinkState.Passive                                               => EdgeKind.PassiveOverlay
+        edges += GraphEdge(uid, peer.uid, kind)
         detailsByNode.getOrElseUpdate(peer.uid, peer.state match
           case LinkState.Active  => "active peer"
           case LinkState.Passive => "passive peer"
         )
+      }
+    }
+
+    currentNode.foreach { node =>
+      viewerUid.foreach { selfUid =>
+        val localEager = node.eagerView intersect node.activeView
+        localEager.foreach { peerUid =>
+          val activeEdge = GraphEdge(selfUid, peerUid, EdgeKind.ActiveOverlay)
+          edges.remove(activeEdge)
+          if !edges.exists(edge => edge.from == selfUid && edge.to == peerUid && edge.kind == EdgeKind.EagerOverlay) then
+            edges += GraphEdge(selfUid, peerUid, EdgeKind.EagerOverlay)
+          detailsByNode.getOrElseUpdate(selfUid, s"active=${node.activeView.size} passive=${node.passiveView.size} eager=${node.eagerView.size}")
+          detailsByNode.getOrElseUpdate(peerUid, "eager peer")
+        }
       }
     }
 
@@ -377,6 +395,22 @@ object OverlayNetworkGraph {
     }
 
     edges.foreach {
+      case GraphEdge(from, to, EdgeKind.EagerOverlay) =>
+        for
+          a <- byUid.get(from)
+          b <- byUid.get(to)
+        do
+          val dx = b.x - a.x
+          val dy = b.y - a.y
+          val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
+          val desired = 170.0
+          val pull = (distance - desired) * 0.005
+          val fx = dx * pull / distance
+          val fy = dy * pull / distance
+          a.vx += fx
+          a.vy += fy
+          b.vx -= fx
+          b.vy -= fy
       case GraphEdge(from, to, EdgeKind.ActiveOverlay) =>
         for
           a <- byUid.get(from)
@@ -433,6 +467,10 @@ object OverlayNetworkGraph {
 
     edges.foreach { edge =>
       edge.kind match
+        case EdgeKind.EagerOverlay =>
+          ctx.strokeStyle = "rgba(34, 197, 94, 0.95)"
+          ctx.setLineDash(js.Array())
+          ctx.lineWidth = 3.0
         case EdgeKind.ActiveOverlay =>
           ctx.strokeStyle = "rgba(96, 165, 250, 0.85)"
           ctx.setLineDash(js.Array())
@@ -485,7 +523,8 @@ object OverlayNetworkGraph {
         val rendered = state.connections.entries.map { (uid, info) =>
           val active  = info.peers.elements.filter(_.state == LinkState.Active).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
           val passive = info.peers.elements.filter(_.state == LinkState.Passive).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-          s"${Uid.unwrap(uid)} -> active=[${active.mkString(",")}] passive=[${passive.mkString(",")}]"
+          val eager   = info.eagerPeers.elements.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+          s"${Uid.unwrap(uid)} -> active=[${active.mkString(",")}] passive=[${passive.mkString(",")}] eager=[${eager.mkString(",")}]"
         }.toList.sorted.mkString("; ")
         val line = s"observer=$observerName snapshot=$rendered"
         println(line)

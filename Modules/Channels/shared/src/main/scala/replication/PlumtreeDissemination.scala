@@ -74,6 +74,7 @@ class PlumtreeDissemination[State](
     sendingActor: ExecutionContext = PlumtreeDissemination.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
+    onPeerRolesChanged: () => Unit = () => (),
 )(using JsonValueCodec[State]) extends DeltaDissemination[State] {
 
   type Message = CachedMessage[ProtocolMessage[State]]
@@ -142,6 +143,7 @@ class PlumtreeDissemination[State](
       lock.synchronized {
         peers = peers.updated(conn, PeerState(conn, PeerRole.Eager))
       }
+      onPeerRolesChanged()
       // Ask for missing state on new link.
       send(conn, SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec))
     }
@@ -177,15 +179,31 @@ class PlumtreeDissemination[State](
     disseminate(message)
   }
 
+  def eagerPeers: Set[Uid] = lock.synchronized {
+    peers.values.collect { case PeerState(conn, PeerRole.Eager) => conn.authenticatedPeerReplicaId }.flatten.toSet
+  }
+
+  def lazyPeers: Set[Uid] = lock.synchronized {
+    peers.values.collect { case PeerState(conn, PeerRole.Lazy) => conn.authenticatedPeerReplicaId }.flatten.toSet
+  }
+
   private def removePeer(conn: Connection[Message]): Unit =
     lock.synchronized {
       peers = peers.removed(conn)
     }
+    onPeerRolesChanged()
 
-  private def setRole(conn: Connection[Message], role: PeerRole): Unit =
+  private def setRole(conn: Connection[Message], role: PeerRole): Unit = {
+    var changed = false
     lock.synchronized {
-      peers.get(conn).foreach(_.role = role)
+      peers.get(conn).foreach { state =>
+        if state.role != role then
+          state.role = role
+          changed = true
+      }
     }
+    if changed then onPeerRolesChanged()
+  }
 
   private def disseminate(payload: Message, except: Set[Connection[Message]] = Set.empty): Unit = {
     val (eagerPeers, lazyPeers) = lock.synchronized {
