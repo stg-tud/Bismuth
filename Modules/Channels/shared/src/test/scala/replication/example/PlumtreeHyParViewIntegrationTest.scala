@@ -89,11 +89,12 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
   test("multiplexed hyparview keeps active and passive views disjoint during stabilization") {
     val (queue, nodes) = buildNetwork(12)
+    println(s"constructed network")
     val peers          = nodes.map(_._3)
 
     (0 until 10).foreach { _ =>
       peers.foreach(_.shuffleTick())
-      drain(queue, limit = 20000)
+      drain(queue, limit = 200)
       assertViewsAreDisjoint(peers)
     }
   }

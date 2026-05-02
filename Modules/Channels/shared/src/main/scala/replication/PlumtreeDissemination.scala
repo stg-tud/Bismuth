@@ -1,14 +1,15 @@
 package replication
 
 import channels.*
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
-import rdts.base.Lattice.syntax
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{LocalUid, Uid}
 import rdts.time.Dots
-import replication.PlumtreeDissemination.pmscodec
 import replication.JsoniterCodecs.given
+import replication.PlumtreeBroadcast.Event.Disseminate
+import replication.PlumtreeBroadcast.{Event, Peer}
+import replication.PlumtreeDissemination.pmscodec
 import replication.ProtocolMessage.*
 
 import java.net.SocketException
@@ -29,7 +30,6 @@ object PlumtreeDissemination {
 
   def pmscodec[State: JsonValueCodec, T <: ProtocolMessage[State]]: JsonValueCodec[T] = {
     val pmscodecInv: JsonValueCodec[ProtocolMessage[State]] = JsonCodecMaker.make
-    // we use the supertype codec here, this has the consequence of adding the type discriminators even for concrete subtypes of ProtocolMessage, which is generally what we want.
     pmscodecInv.asInstanceOf[JsonValueCodec[T]]
   }
 
@@ -59,13 +59,9 @@ object PlumtreeDissemination {
 
 /** Combined Delta + Plumtree dissemination.
   *
-  * Based on Plumtree / "Epidemic Broadcast Trees" (Leitão, Pereira, Rodrigues, 2007):
-  * - eager peers receive full payloads
-  * - lazy peers receive lightweight advertisements
-  * - duplicates trigger prune-like edge demotion
-  *
-  * Delta reconciliation uses Dots/Request semantics from this codebase.
-  * Public surface intentionally mirrors the former DeltaDissemination (`applyDelta`, `receiveCallback`).
+  * Network/state-machine split:
+  * - [[PlumtreeBroadcast]] tracks immutable Plumtree eager/lazy roles and protocol transitions.
+  * - this class maps concrete connections to abstract peers and handles payload storage / callback side effects.
   */
 class PlumtreeDissemination[State](
     val replicaId: LocalUid,
@@ -77,23 +73,21 @@ class PlumtreeDissemination[State](
     onPeerRolesChanged: () => Unit = () => (),
 )(using JsonValueCodec[State]) extends DeltaDissemination[State] {
 
-  type Message = CachedMessage[ProtocolMessage[State]]
+  type Message = ProtocolMessage[State]
 
   given LocalUid = replicaId
 
-  enum PeerRole {
-    case Eager, Lazy
-  }
+  val lock: AnyRef = new {}
 
-  case class PeerState(conn: Connection[Message], var role: PeerRole = PeerRole.Eager)
+  @volatile private var connections: Map[Peer, Connection[Message]] = Map.empty
+  @volatile private var peersByConnection: Map[Connection[Message], Peer] = Map.empty
+  @volatile private var plumtree: PlumtreeBroadcast[State] = PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
-  @volatile private var peers: Map[Connection[Message], PeerState] = Map.empty
-
-  private def cachedMessages(conn: LatentConnection[MessageBuffer]): LatentConnection[Message] =
+  private def objectMessages(conn: LatentConnection[MessageBuffer]): LatentConnection[Message] =
     LatentConnection.adapt(
-      (mb: MessageBuffer) => ReceivedCachedMessage[ProtocolMessage[State]](mb)(using pmscodec),
-      (pm: Message) => pm.messageBuffer,
-      "json caching"
+      (mb: MessageBuffer) => readFromArray[ProtocolMessage[State]](mb.asArray)(using pmscodec),
+      (pm: Message) => ArrayMessageBuffer(writeToArray(pm)(using pmscodec)),
+      "plumtree protocol serialization"
     )(conn)
 
   private def printExceptionHandler: Callback[Any] =
@@ -109,14 +103,10 @@ class PlumtreeDissemination[State](
     prepareObjectConnection(latentConnection).run(printExceptionHandler)
 
   def prepareBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Async[Any, Unit] =
-    prepareLatentConnection(cachedMessages(latentConnection))
+    prepareLatentConnection(objectMessages(latentConnection))
 
   def prepareObjectConnection(latentConnection: LatentConnection[ProtocolMessage[State]]): Async[Any, Unit] =
-    prepareLatentConnection(LatentConnection.adapt[ProtocolMessage[State], Message](
-      pm => SentCachedMessage(pm)(using pmscodec),
-      cm => cm.payload,
-      "message serialization"
-    )(latentConnection))
+    prepareLatentConnection(latentConnection)
 
   def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] = {
     val preparedConnection: Async[Abort, Connection[Message]] = latentConnection.prepare { from =>
@@ -140,136 +130,101 @@ class PlumtreeDissemination[State](
 
     Async.provided(globalAbort) {
       val conn = preparedConnection.bind
-      lock.synchronized {
-        peers = peers.updated(conn, PeerState(conn, PeerRole.Eager))
-      }
-      onPeerRolesChanged()
-      // Ask for missing state on new link.
-      send(conn, SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec))
+      applyResult(registerConnection(conn))
     }
   }
 
   def pingAll(): Unit = synchronized {
-    val msg      = SentCachedMessage(Ping(System.nanoTime()))(using pmscodec)
-    val snapshot = lock.synchronized(peers.values.map(_.conn).toList)
-    snapshot.foreach(send(_, msg))
+    val snapshot = lock.synchronized(connections.values.toList)
+    snapshot.foreach(send(_, Ping(System.nanoTime())))
   }
 
-  val lock: AnyRef = new {}
+  private def localKnownDeltaContext: Dots = lock.synchronized(plumtree.localContext)
 
-  @volatile private var localContext: Dots = Dots.empty
+  def allPayloads: List[CachedMessage[Payload[State]]] =
+    lock.synchronized(plumtree.deltaStorage.getHistory.map(SentCachedMessage(_)(using pmscodec)))
 
-  private def localKnownDeltaContext: Dots      = localContext
-  private def addLocalContext(dots: Dots): Unit = lock.synchronized { localContext = localContext.merge(dots) }
-
-  def allPayloads: List[CachedMessage[Payload[State]]] = deltaStorage.getHistory
-
-  private def rememberPayload(message: CachedMessage[Payload[State]]): Unit =
-    deltaStorage.remember(message)
-
-  override def applyDelta(delta: State): Unit = lock.synchronized {
-    val message = lock.synchronized {
-      val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
-      val payload = Payload(Dots.single(nextDot), delta)
-      addLocalContext(payload.dots)
-      val msg = SentCachedMessage(payload)(using pmscodec)
-      rememberPayload(msg)
-      msg
-    }
-    disseminate(message)
+  override def applyDelta(delta: State): Unit = {
+    val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
+    val payload = Payload(Dots.single(nextDot), delta)
+    val result = lock.synchronized(plumtree.broadcast(payload))
+    applyResult(result)
   }
 
-  def eagerPeers: Set[Uid] = lock.synchronized {
-    peers.values.collect { case PeerState(conn, PeerRole.Eager) => conn.authenticatedPeerReplicaId }.flatten.toSet
-  }
+  def eagerPeers: Set[Uid] = lock.synchronized(plumtree.eagerPeers)
 
-  def lazyPeers: Set[Uid] = lock.synchronized {
-    peers.values.collect { case PeerState(conn, PeerRole.Lazy) => conn.authenticatedPeerReplicaId }.flatten.toSet
-  }
-
-  private def removePeer(conn: Connection[Message]): Unit =
-    lock.synchronized {
-      peers = peers.removed(conn)
-    }
-    onPeerRolesChanged()
-
-  private def setRole(conn: Connection[Message], role: PeerRole): Unit = {
-    var changed = false
-    lock.synchronized {
-      peers.get(conn).foreach { state =>
-        if state.role != role then
-          state.role = role
-          changed = true
-      }
+  private def removePeer(conn: Connection[Message]): Unit = {
+    val changed = lock.synchronized {
+      peersByConnection.get(conn) match
+        case Some(peer) =>
+          val existed = connections.contains(peer)
+          connections = connections.removed(peer)
+          peersByConnection = peersByConnection.removed(conn)
+          val before = plumtree
+          plumtree = plumtree.removePeer(peer)
+          existed || before != plumtree
+        case None => false
     }
     if changed then onPeerRolesChanged()
   }
 
-  private def disseminate(payload: Message, except: Set[Connection[Message]] = Set.empty): Unit = {
-    val (eagerPeers, lazyPeers) = lock.synchronized {
-      val ps = peers.values.filterNot(p => except.contains(p.conn)).toList
-      (ps.filter(_.role == PeerRole.Eager).map(_.conn), ps.filter(_.role == PeerRole.Lazy).map(_.conn))
+  private def registerConnection(conn: Connection[Message]): PlumtreeBroadcast.Result[State] =
+    lock.synchronized {
+      peersByConnection.get(conn) match
+        case Some(peer) =>
+          connections = connections.updated(peer, conn)
+          PlumtreeBroadcast.Result(plumtree, Nil)
+        case None =>
+          val peer = Peer(conn.authenticatedPeerReplicaId.getOrElse(LocalUid.gen().uid))
+          connections = connections.updated(peer, conn)
+          peersByConnection = peersByConnection.updated(conn, peer)
+          plumtree.addPeer(peer)
     }
 
-    // eager push full payload
-    eagerPeers.foreach(send(_, payload))
-
-    // lazy push IHave context summary
-    if lazyPeers.nonEmpty then
-        val ih = SentCachedMessage(IHave(replicaId.uid, localKnownDeltaContext))(using pmscodec)
-        lazyPeers.foreach(send(_, ih))
+  private def applyResult(result: PlumtreeBroadcast.Result[State]): Unit = {
+    val (events, changed) = lock.synchronized {
+      val before = plumtree
+      plumtree = result.state
+      (result.events, before != plumtree)
+    }
+    if changed then onPeerRolesChanged()
+    events.foreach(handleEvent)
   }
+
+  private def handleEvent(event: Event[State]): Unit =
+    event match
+      case Event.Deliver(payload) =>
+        receiveCallback(payload.data)
+      case Disseminate(peers, message) =>
+        send(peers, message)
+
+  private def send(peers: List[Peer], payload: Message): Unit =
+    peers.foreach(peer => send(peer, payload))
+
+  private def send(peer: Peer, payload: Message): Unit =
+    lock.synchronized(connections.get(peer)).foreach(send(_, payload))
 
   private def send(conn: Connection[Message], payload: Message): Unit =
     if globalAbort.closeRequest then ()
     else
-        sendingActor.execute { () =>
-          conn.send(payload).run {
-            case Success(_) => ()
-            case Failure(_) => removePeer(conn)
-          }
+      sendingActor.execute { () =>
+        conn.send(payload).run {
+          case Success(_) => ()
+          case Failure(_) => removePeer(conn)
         }
+      }
 
   private def handleMessage(msg: Message, from: Connection[Message]): Unit = synchronized {
     if globalAbort.closeRequest then return
 
-    msg.payload match
-        case Ping(time) =>
-          send(from, SentCachedMessage(Pong(time))(using pmscodec))
+    val peer = lock.synchronized(peersByConnection.get(from)) match
+      case Some(existing) => existing
+      case None =>
+        val registration = registerConnection(from)
+        applyResult(registration)
+        lock.synchronized(peersByConnection(from))
 
-        case Pong(_) => ()
-
-        case Prune(_) =>
-          setRole(from, PeerRole.Lazy)
-
-        case IHave(_, knows) =>
-          // If remote knows something we do not, request missing via existing Request mechanism.
-          if !(knows <= localKnownDeltaContext) then
-              send(from, SentCachedMessage(Graft(replicaId.uid, localKnownDeltaContext))(using pmscodec))
-
-        case Graft(_, knows) =>
-          // Request acts as graft/repair signal: keep requester eager.
-          setRole(from, PeerRole.Eager)
-
-          val relevant = allPayloads.filterNot(dt => dt.payload.dots <= knows)
-          relevant.foreach(send(from, _))
-
-        case payload @ Payload(context, data, _) =>
-          if context <= localKnownDeltaContext then
-              // duplicate path => prune sender edge for eager forwarding
-              send(from, SentCachedMessage(Prune(replicaId.uid))(using pmscodec))
-              setRole(from, PeerRole.Lazy)
-              return
-
-          lock.synchronized {
-            addLocalContext(context)
-            rememberPayload(msg.asInstanceOf[CachedMessage[Payload[State]]])
-          }
-
-          receiveCallback(data)
-          setRole(from, PeerRole.Eager)
-
-          val forwarded = SentCachedMessage(payload)(using pmscodec)
-          disseminate(forwarded, except = Set(from))
+    val result = lock.synchronized(plumtree.handleMessage(peer, msg))
+    applyResult(result)
   }
 }

@@ -118,6 +118,8 @@ class HyParViewMultiplexedNode[State](
     }
 
   def stop(): Unit = {
+    val knownPeers = (membership.active.toSet ++ membership.passive.toSet).filterNot(_.uid == self.uid)
+    knownPeers.foreach(sendDisconnectAnnouncement)
     connections.values.foreach(_.close())
     connections.clear()
     connectionToPeer.clear()
@@ -130,6 +132,26 @@ class HyParViewMultiplexedNode[State](
     abort.abort()
   }
 
+  private def sendDisconnectAnnouncement(peer: PeerRef): Unit =
+    connections.get(peer.uid) match
+      case Some(conn) =>
+        conn.send(Envelope.Membership(HyParViewMessage.Disconnect(self.uid))).run {
+          case Success(_) => ()
+          case Failure(_) => ()
+        }
+      case None =>
+        connectToPeerDetails(peer.channelConnectors, s"${Uid.unwrap(self.uid)}-leave-${Uid.unwrap(peer.uid)}").foreach { latent =>
+          val tempAbort = Abort()
+          latent.prepare(receive(Some(peer.uid))).runIn(tempAbort) {
+            case Success(conn) =>
+              conn.send(Envelope.Membership(HyParViewMessage.Disconnect(self.uid))).run {
+                case Success(_) => conn.close()
+                case Failure(_) => conn.close()
+              }
+            case Failure(_) => ()
+          }
+        }
+
   private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State]] =
     (conn: Connection[Envelope[State]]) => {
       expectedPeer.foreach(peer => rememberConnection(peer, conn))
@@ -137,7 +159,9 @@ class HyParViewMultiplexedNode[State](
         case Success(Envelope.Membership(message)) =>
           val sender = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferSender(message))
           sender.foreach(rememberPeerIdentity(_, conn))
-          applyTransition(membership.receive(message))
+          message match
+            case HyParViewMessage.Disconnect(peer) => applyTransition(membership.peerLost(peer))
+            case _                                => applyTransition(membership.receive(message))
         case Success(Envelope.Dissemination(message)) =>
           val peer = expectedPeer.orElse(connectionToPeer.get(conn))
           peer.flatMap(plumtreeIncoming.get).foreach(_.succeed(message))

@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import replication.PlumtreeDissemination
+import replication.{PlumtreeDissemination, StateDeltaStorage}
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
@@ -40,7 +40,7 @@ class OverlayDemoNode(
         emitStateChanged()
         plumtree.applyDelta(delta)
 
-  private def publishLocalView(): Unit = {
+  private def refreshLocalView(replicate: Boolean): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.updateNodeFromOverlay(
       state.connections,
@@ -49,14 +49,23 @@ class OverlayDemoNode(
       overlay.map(_.passivePeers).getOrElse(Set.empty),
       plumtree.eagerPeers,
     )
-    if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
+    if !Bottom.isEmpty(delta) then
+      if replicate then publish(DemoState(ReplicatedSet.empty, delta))
+      else {
+        state = state.merge(DemoState(ReplicatedSet.empty, delta))
+        emitStateChanged()
+      }
   }
+
+  private def publishLocalView(): Unit = refreshLocalView(replicate = true)
 
   private def removeDisconnectedConnection(peer: Uid): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
+
+  private var onPlumtreePeerRolesChanged: () => Unit = () => ()
 
   private val plumtree: PlumtreeDissemination[DemoState] = PlumtreeDissemination(
     localUid,
@@ -66,7 +75,8 @@ class OverlayDemoNode(
     },
     None,
     globalAbort = abort,
-    onPeerRolesChanged = () => publishLocalView(),
+    deltaStorage = StateDeltaStorage(() => state),
+    onPeerRolesChanged = () => onPlumtreePeerRolesChanged(),
   )
 
   private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
@@ -97,6 +107,7 @@ class OverlayDemoNode(
   def start(seeds: List[ChannelConnectDescriptor] = Nil): Unit = {
     val node = newOverlay(seeds.headOption)
     overlay = Some(node)
+    onPlumtreePeerRolesChanged = () => ()
     listenEnvelope.foreach(_ => node.startServer())
     publishLocalView()
     startShuffleTask()
@@ -111,10 +122,13 @@ class OverlayDemoNode(
   def publishAdd(value: String): Unit = {
     given LocalUid = localUid
     publish(DemoState(state.values.add(value), OverlayConnectionDirectory.empty))
+    publishLocalView()
   }
 
-  def publishRemove(value: String): Unit =
+  def publishRemove(value: String): Unit = {
     publish(DemoState(state.values.remove(value), OverlayConnectionDirectory.empty))
+    publishLocalView()
+  }
 
   def shuffleTick(): Unit = overlay.foreach(_.shuffleTick())
 
