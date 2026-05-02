@@ -3,7 +3,7 @@ package replication
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
 import replication.DotTreeNode.RootNode
-import replication.ProtocolMessage.Payload
+import replication.PlumtreeMessage.Payload
 
 import scala.annotation.tailrec
 
@@ -427,24 +427,6 @@ class DeltaTreeContext[State](selfUid: Uid) {
 
   override def toString: String = s"${tree}"
   def toTreeLikeString: String  = tree.toTreeLikeString
-
-  /** update the latest dot emitted here known by the peer
-    *
-    * @param peerUid         the uid of the peer
-    * @param lastKnownDots   the latest known dot of all peers from the peer
-    * @return true if the peer is up to date
-    */
-  def updateKnowledgeOfPeer(peerUid: Uid, lastKnownDots: Dots): Unit = {
-    var updatedKnowledge = false
-    lastKnownDots.peers.foreach { knownPeerUid =>
-      val lastKnownDot = lastKnownDots.clockOf(knownPeerUid)
-      if tree.updateKnowledgeOfPeer(peerUid, lastKnownDot.get) then updatedKnowledge = true
-    }
-
-    if updatedKnowledge then tree.collapseGeneralKnowledge()
-  }
-
-  def getSelfKnowledge: Dots = tree.getCausalBarriersAsDots
 
   def getPredecessors(dot: Dot): List[Dot] = tree.getNodeOfDot(dot) match {
     case Some(node: DotTreeNode.Node) => tree.getPredecessors(node.predecessorNode, List.empty)

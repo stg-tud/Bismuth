@@ -8,8 +8,8 @@ import rdts.time.Dots
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Disseminate
 import replication.PlumtreeBroadcast.{Event, Peer}
-import replication.ProtocolMessage.Payload
-import replication.{DeltaStorage, PlumtreeBroadcast, ProtocolMessage}
+import replication.PlumtreeMessage.Payload
+import replication.{DeltaStorage, PlumtreeBroadcast, PlumtreeMessage}
 
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
@@ -19,7 +19,7 @@ object HyParViewMultiplexed {
 
   enum Envelope[State] {
     case Membership(message: HyParViewUnified.HyParViewMessage)
-    case Dissemination(message: ProtocolMessage[State])
+    case Dissemination(message: PlumtreeMessage[State])
   }
 
   def envelopeCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
@@ -198,11 +198,11 @@ class HyParViewMultiplexedNode[State](
       case HyParViewMessage.Shuffle(_, _, _, sender)      => Some(sender)
       case HyParViewMessage.ShuffleReply(from, _)         => Some(from)
 
-  private def inferDisseminationSender(message: ProtocolMessage[State]): Option[Uid] =
+  private def inferDisseminationSender(message: PlumtreeMessage[State]): Option[Uid] =
     message match
-      case ProtocolMessage.Graft(sender, _) => Some(sender)
-      case ProtocolMessage.IHave(sender, _) => Some(sender)
-      case ProtocolMessage.Prune(sender)    => Some(sender)
+      case PlumtreeMessage.Graft(sender, _) => Some(sender)
+      case PlumtreeMessage.IHave(sender, _) => Some(sender)
+      case PlumtreeMessage.Prune(sender)    => Some(sender)
       case _                                => None
 
   private def applyTransition(result: Result): Unit = {

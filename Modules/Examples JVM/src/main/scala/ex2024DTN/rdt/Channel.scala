@@ -7,8 +7,8 @@ import ex2024DTN.MonitoringClientInterface
 import ex2024DTN.{NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.ProtocolMessage
-import replication.ProtocolMessage.{Graft, IHave, Payload, Ping, Pong, Prune}
+import replication.{BroadcastIO, PlumtreeMessage}
+import replication.PlumtreeMessage.{Graft, IHave, Payload, Prune}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -22,10 +22,11 @@ class ClientContext[T: JsonValueCodec](
     connection: Client,
     executionContext: ExecutionContext,
     operationMode: ClientOperationMode
-) extends Connection[ProtocolMessage[T]] {
-  override def send(message: ProtocolMessage[T]): Async[Any, Unit] =
+) extends Connection[BroadcastIO.Message[T]] {
+  override def send(message: BroadcastIO.Message[T]): Async[Any, Unit] =
     message match
-        case Graft(sender, dots) =>
+        case BroadcastIO.Message.Ping(_) | BroadcastIO.Message.Pong(_) => Async {}
+        case BroadcastIO.Message.Protocol(Graft(sender, dots)) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
           // todo: actually there should be no requests being sent anymore then. is that the case?
           operationMode match
@@ -35,14 +36,14 @@ class ClientContext[T: JsonValueCodec](
                   executionContext
                 )
           Sync { () }
-        case Payload(dots, data, redundantDots) =>
+        case BroadcastIO.Message.Protocol(Payload(dots, data, redundantDots)) =>
           connection.send(
             RdtMessageType.Payload,
             writeToArray[T](data),
             dots,
             redundantDots
           ).toAsync(using executionContext)
-        case IHave(_, _) | Prune(_) | Ping(_) | Pong(_) => Async {}
+        case BroadcastIO.Message.Protocol(IHave(_, _) | Prune(_)) => Async {}
 
   override def close(): Unit = connection.close().onComplete {
     case Failure(f)     => f.printStackTrace()
@@ -57,13 +58,13 @@ class Channel[T: JsonValueCodec](
     ec: ExecutionContext,
     monitoringClient: MonitoringClientInterface = NoMonitoringClient,
     operationMode: ClientOperationMode = ClientOperationMode.PushAll
-) extends LatentConnection[ProtocolMessage[T]] {
+) extends LatentConnection[BroadcastIO.Message[T]] {
 
   // We use a local dtnid instead of a remote replica ID to signify that the local DTNd is the one providing information.
   // If the local dtnd could be stopped and restarted without loosing data, this id should remain the same for performance reasons, but it will be correct even if it changes.
   val dtnid: Uid = Uid.gen()
 
-  override def prepare(receiver: Receive[ProtocolMessage[T]]): Async[Abort, Connection[ProtocolMessage[T]]] =
+  override def prepare(receiver: Receive[BroadcastIO.Message[T]]): Async[Abort, Connection[BroadcastIO.Message[T]]] =
     Async {
       val client: Client = Client(host, port, appName, monitoringClient).toAsync(using ec).bind
       val conn           = ClientContext[T](client, ec, operationMode)
@@ -71,14 +72,14 @@ class Channel[T: JsonValueCodec](
 
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
-            case RdtMessageType.Request => cb.succeed(ProtocolMessage.Graft(dtnid, dots))
-            case RdtMessageType.Payload => cb.succeed(ProtocolMessage.Payload(dots, readFromArray[T](payload)))
+            case RdtMessageType.Request => cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Graft(dtnid, dots)))
+            case RdtMessageType.Payload => cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Payload(dots, readFromArray[T](payload))))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
-          case ClientOperationMode.PushAll      => cb.succeed(ProtocolMessage.Graft(dtnid, Dots.empty))
+          case ClientOperationMode.PushAll      => cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Graft(dtnid, Dots.empty)))
           case ClientOperationMode.RequestLater =>
 
       conn

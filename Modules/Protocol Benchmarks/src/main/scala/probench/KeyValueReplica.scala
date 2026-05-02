@@ -10,7 +10,7 @@ import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import replication.DeltaStorage.Type.*
-import replication.ProtocolMessage.Payload
+import replication.PlumtreeMessage.Payload
 import replication.{BroadcastIO, DeltaStorage}
 
 import java.util.concurrent.ConcurrentLinkedQueue

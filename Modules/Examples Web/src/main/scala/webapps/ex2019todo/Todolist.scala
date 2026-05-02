@@ -59,7 +59,7 @@ object Todolist {
 //  def getConnectorContents(): Div = {
 //    val portInput     = all.input(all.placeholder := "dtnd ws port").render
 //    val connectButton = all.button(all.onclick := { () =>
-//      TodoDataManager.dataManager.addObjectConnection(
+//      TodoDataManager.dataManager.addConnection(
 //        Channel[TodoRepState]("127.0.0.1", portInput.value.toInt, "app1", scala.concurrent.ExecutionContext.global)
 //      )
 //    }).render

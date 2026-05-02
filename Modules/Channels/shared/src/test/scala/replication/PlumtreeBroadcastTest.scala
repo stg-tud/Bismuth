@@ -5,13 +5,13 @@ import rdts.base.Uid
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event
 import replication.PlumtreeBroadcast.Peer
-import replication.ProtocolMessage.Payload
+import replication.PlumtreeMessage.Payload
 
 import scala.collection.mutable
 
 class PlumtreeBroadcastTest extends FunSuite {
 
-  private case class WireMessage(from: String, to: String, message: ProtocolMessage[String])
+  private case class WireMessage(from: String, to: String, message: PlumtreeMessage[String])
 
   private class Network(initialNodes: Iterable[String]) {
     private val ids = mutable.LinkedHashSet.from(initialNodes)
@@ -78,11 +78,11 @@ class PlumtreeBroadcastTest extends FunSuite {
     }
 
     private def applyResult(
-        owner: String,
-        result: PlumtreeBroadcast.Result[String],
-        deliveredBy: Option[mutable.LinkedHashMap[String, Option[String]]] = None,
-        incomingFrom: String = "",
-        incomingMessage: ProtocolMessage[String] | Null = null,
+                             owner: String,
+                             result: PlumtreeBroadcast.Result[String],
+                             deliveredBy: Option[mutable.LinkedHashMap[String, Option[String]]] = None,
+                             incomingFrom: String = "",
+                             incomingMessage: PlumtreeMessage[String] | Null = null,
     ): Unit = {
       nodes = nodes.updated(owner, result.state)
       if incomingMessage != null then incomingMessage match
@@ -101,7 +101,7 @@ class PlumtreeBroadcastTest extends FunSuite {
           peers.foreach { peer =>
             val to = Uid.unwrap(peer.uid)
             if ids.contains(to) && adjacency.get(owner).exists(_.contains(to)) then
-              queue.enqueue(WireMessage(owner, to, message.asInstanceOf[ProtocolMessage[String]]))
+              queue.enqueue(WireMessage(owner, to, message.asInstanceOf[PlumtreeMessage[String]]))
           }
       }
     }

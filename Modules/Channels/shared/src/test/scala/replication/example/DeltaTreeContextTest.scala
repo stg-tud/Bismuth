@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
 import replication.BroadcastIO.pmscodec
-import replication.ProtocolMessage.Payload
+import replication.PlumtreeMessage.Payload
 import replication.{CachedMessage, DeltaTreeContext, DotTree, SentCachedMessage}
 
 class DeltaTreeContextTest extends munit.FunSuite {

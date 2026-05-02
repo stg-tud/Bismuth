@@ -8,7 +8,7 @@ import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedSet
 
 import replication.JsoniterCodecs.given
-import replication.{DeltaDisseminationFactory, BroadcastIO, ProtocolMessage}
+import replication.{DeltaDisseminationFactory, BroadcastIO}
 
 class BroadcastIOTest extends munit.FunSuite {
   test("basics") {
@@ -18,11 +18,11 @@ class BroadcastIOTest extends munit.FunSuite {
     // I have no clue why this syntax is still not deprecated xD
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
-    val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
+    val sync = SynchronousLocalConnection[BroadcastIO.Message[Set[String]]]()
 
-    dd2.addObjectConnection(sync.client("2"))
-    dd1.addObjectConnection(sync.server)
-    dd3.addObjectConnection(sync.client("3"))
+    dd2.addConnection(sync.client("2"))
+    dd1.addConnection(sync.server)
+    dd3.addConnection(sync.client("3"))
 
     dd1.pingAll()
     dd2.pingAll()
@@ -49,15 +49,15 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val nodes = Vector.fill(5)(BroadcastIO[Set[String]](LocalUid.gen(), _ => ()))
 
-    val queue = LocalMessageQueue[ProtocolMessage[Set[String]]]()
+    val queue = LocalMessageQueue[BroadcastIO.Message[Set[String]]]()
 
     for
         i <- nodes.indices
         j <- (i + 1) until nodes.size
     do
-      val link = QueuedLocalConnection[ProtocolMessage[Set[String]]](queue)
-      nodes(i).addObjectConnection(link.server)
-      nodes(j).addObjectConnection(link.client(s"$j->$i"))
+      val link = QueuedLocalConnection[BroadcastIO.Message[Set[String]]](queue)
+      nodes(i).addConnection(link.server)
+      nodes(j).addConnection(link.client(s"$j->$i"))
 
     // drain connection setup traffic (initial requests/replies)
     var setupSafety = 0
@@ -87,12 +87,12 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
-    val queue  = LocalMessageQueue[ProtocolMessage[Set[String]]]()
-    val queued = QueuedLocalConnection[ProtocolMessage[Set[String]]](queue)
+    val queue  = LocalMessageQueue[BroadcastIO.Message[Set[String]]]()
+    val queued = QueuedLocalConnection[BroadcastIO.Message[Set[String]]](queue)
 
-    dd2.addObjectConnection(queued.client("2"))
-    dd1.addObjectConnection(queued.server)
-    dd3.addObjectConnection(queued.client("3"))
+    dd2.addConnection(queued.client("2"))
+    dd1.addConnection(queued.server)
+    dd3.addConnection(queued.client("3"))
 
     def deliverAndPrint(): Unit =
       val log = false
@@ -139,16 +139,16 @@ class BroadcastIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
+    val sync = SynchronousLocalConnection[BroadcastIO.Message[Set[String]]]()
 
     val setup: DeltaDisseminationFactory[Set[String]] =
-      BroadcastIO.factory(LocalUid.gen())(_.addObjectConnection(sync.server))
+      BroadcastIO.factory(LocalUid.gen())(_.addConnection(sync.server))
 
     var received = List.empty[Set[String]]
     val dissemination = setup.bind(delta => received = delta :: received)
 
     val remote = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
-    remote.addObjectConnection(sync.client("remote"))
+    remote.addConnection(sync.client("remote"))
 
     remote.applyDelta(Set("hello"))
 
@@ -169,7 +169,7 @@ class BroadcastIOTest extends munit.FunSuite {
         )
     }
 
-    val queue = LocalMessageQueue[ProtocolMessage[ReplicatedSet[String]]]()
+    val queue = LocalMessageQueue[BroadcastIO.Message[ReplicatedSet[String]]]()
 
     def drainAll(): Unit =
       var safety = 0
@@ -182,9 +182,9 @@ class BroadcastIOTest extends munit.FunSuite {
     val nodes = Vector.fill(5)(mkNode())
 
     for i <- nodes.indices do
-      val link = QueuedLocalConnection[ProtocolMessage[ReplicatedSet[String]]](queue)
-      nodes(i).dissemination.addObjectConnection(link.server)
-      nodes((i + 1) % nodes.size).dissemination.addObjectConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
+      val link = QueuedLocalConnection[BroadcastIO.Message[ReplicatedSet[String]]](queue)
+      nodes(i).dissemination.addConnection(link.server)
+      nodes((i + 1) % nodes.size).dissemination.addConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
 
     def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
       node.state = node.state.merge(delta)

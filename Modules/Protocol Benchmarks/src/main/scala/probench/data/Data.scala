@@ -6,8 +6,8 @@ import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, Vote, Voting}
-import replication.ProtocolMessage
-import replication.ProtocolMessage.Payload
+import replication.PlumtreeMessage
+import replication.PlumtreeMessage.Payload
 
 enum KVOperation[Key, Value] {
   def key: Key
@@ -47,7 +47,7 @@ object Codecs {
   // codecs
   given JsonValueCodec[ClusterState] =
   JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given clusterCodec: JsonValueCodec[ProtocolMessage[ClusterState]] =
+  given clusterCodec: JsonValueCodec[PlumtreeMessage[ClusterState]] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   given JsonValueCodec[ClientCommRead] = JsonCodecMaker.make
   given JsonValueCodec[ClientCommWrite] = JsonCodecMaker.make

@@ -3,7 +3,7 @@ package replication
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Historized, Lattice}
 import rdts.time.Dots
-import replication.ProtocolMessage.Payload
+import replication.PlumtreeMessage.Payload
 
 import scala.collection.immutable.Queue
 

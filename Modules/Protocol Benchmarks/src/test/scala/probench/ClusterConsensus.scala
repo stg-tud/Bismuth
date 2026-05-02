@@ -4,7 +4,7 @@ import probench.clients.ProBenchClient
 import probench.data.{ClientCommRead, ClientCommWrite, ClusterState, KVOperation}
 import rdts.base.{LocalUid, Uid}
 import rdts.protocols.Participants
-import replication.ProtocolMessage
+import replication.BroadcastIO
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
@@ -19,23 +19,23 @@ class ClusterConsensus extends munit.FunSuite {
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
-    primary.cluster.dataManager.addObjectConnection(connection.server)
-    secondaries.foreach { node => node.cluster.dataManager.addObjectConnection(connection.client(node.uid.toString)) }
-    val connection2 = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
-    secondaries.head.cluster.dataManager.addObjectConnection(connection2.server)
-    secondaries(1).cluster.dataManager.addObjectConnection(connection2.client(secondaries(1).uid.toString))
+    val connection = channels.SynchronousLocalConnection[BroadcastIO.Message[ClusterState]]()
+    primary.cluster.dataManager.addConnection(connection.server)
+    secondaries.foreach { node => node.cluster.dataManager.addConnection(connection.client(node.uid.toString)) }
+    val connection2 = channels.SynchronousLocalConnection[BroadcastIO.Message[ClusterState]]()
+    secondaries.head.cluster.dataManager.addConnection(connection2.server)
+    secondaries(1).cluster.dataManager.addConnection(connection2.client(secondaries(1).uid.toString))
 
-    val clientConnectionWrite = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommWrite]]()
-    val clientConnectionRead = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommRead]]()
+    val clientConnectionWrite = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommWrite]]()
+    val clientConnectionRead = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommRead]]()
 
-    primary.client.dataManagerWrite.addObjectConnection(clientConnectionWrite.server)
-    primary.client.dataManagerRead.addObjectConnection(clientConnectionRead.server)
+    primary.client.dataManagerWrite.addConnection(clientConnectionWrite.server)
+    primary.client.dataManagerRead.addConnection(clientConnectionRead.server)
 
     val clientUid = Uid.gen()
     val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
-    client.writeDataManager.addObjectConnection(clientConnectionWrite.client(clientUid.toString))
-    client.readDataManager.addObjectConnection(clientConnectionRead.client(clientUid.toString))
+    client.writeDataManager.addConnection(clientConnectionWrite.client(clientUid.toString))
+    client.readDataManager.addConnection(clientConnectionRead.client(clientUid.toString))
 
     client.printResults = false
 
@@ -106,19 +106,19 @@ class ClusterConsensus extends munit.FunSuite {
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = channels.SynchronousLocalConnection[ProtocolMessage[ClusterState]]()
-    primary.cluster.dataManager.addObjectConnection(connection.server)
+    val connection = channels.SynchronousLocalConnection[BroadcastIO.Message[ClusterState]]()
+    primary.cluster.dataManager.addConnection(connection.server)
 
-    val clientConnectionWrites = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommWrite]]()
-    val clientConnectionReads  = channels.SynchronousLocalConnection[ProtocolMessage[ClientCommRead]]()
+    val clientConnectionWrites = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommWrite]]()
+    val clientConnectionReads  = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommRead]]()
 
-    primary.client.dataManagerWrite.addObjectConnection(clientConnectionWrites.server)
-    primary.client.dataManagerRead.addObjectConnection(clientConnectionReads.server)
+    primary.client.dataManagerWrite.addConnection(clientConnectionWrites.server)
+    primary.client.dataManagerRead.addConnection(clientConnectionReads.server)
 
     val clientUid = Uid.gen()
     val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
-    client.writeDataManager.addObjectConnection(clientConnectionWrites.client(clientUid.toString))
-    client.readDataManager.addObjectConnection(clientConnectionReads.client(clientUid.toString))
+    client.writeDataManager.addConnection(clientConnectionWrites.client(clientUid.toString))
+    client.readDataManager.addConnection(clientConnectionReads.client(clientUid.toString))
 
     client.printResults = false
 
