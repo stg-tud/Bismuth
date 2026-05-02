@@ -144,10 +144,6 @@ final case class HyParViewStateMachine(
             next.withPromotionIfNeeded(Nil)
           case None => Result(this, Nil)
 
-      case Leave(leaving) =>
-        // Implementation extension: treat explicit leave like a detected peer loss.
-        peerLost(leaving.uid)
-
       case Shuffle(origin, sample, ttl, sender) =>
         // Paper shuffle walk: intermediate hops only forward; the endpoint replies and merges the received sample.
         val remembered = sample.foldLeft(rememberPeer(origin))((state, peer) => state.rememberPeer(peer))

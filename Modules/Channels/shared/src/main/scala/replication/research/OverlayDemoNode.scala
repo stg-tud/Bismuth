@@ -137,7 +137,7 @@ class OverlayDemoNode(
       emitStateChanged()
       plumtree.applyDelta(DemoState(ReplicatedSet.empty, cleanup))
     }
-    overlay.foreach(_.stop(graceful = true))
+    overlay.foreach(_.stop())
     abort.abort()
     timer.cancel()
   }

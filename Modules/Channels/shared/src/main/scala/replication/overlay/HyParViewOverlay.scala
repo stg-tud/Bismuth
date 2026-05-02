@@ -53,7 +53,6 @@ object HyParViewUnified {
     case Neighbor(from: PeerRef, highPriority: Boolean)
     case NeighborReply(from: Uid, accepted: Boolean)
     case Disconnect(peer: Uid)
-    case Leave(leaving: PeerRef)
     case Shuffle(origin: PeerRef, sample: Set[PeerRef], ttl: Int, sender: Uid)
     case ShuffleReply(from: Uid, sample: Set[PeerRef])
   }
@@ -118,8 +117,7 @@ class HyParViewMultiplexedNode[State](
       case Failure(ex) => ex.printStackTrace()
     }
 
-  def stop(graceful: Boolean = true): Unit = {
-    if graceful then (membership.activePeers ++ membership.passivePeers).filterNot(_.uid == self.uid).foreach(peer => sendMembership(peer, HyParViewMessage.Leave(self)))
+  def stop(): Unit = {
     connections.values.foreach(_.close())
     connections.clear()
     connectionToPeer.clear()
@@ -162,7 +160,6 @@ class HyParViewMultiplexedNode[State](
       case HyParViewMessage.Neighbor(from, _)             => Some(from.uid)
       case HyParViewMessage.NeighborReply(from, _)        => Some(from)
       case HyParViewMessage.Disconnect(_)                 => None
-      case HyParViewMessage.Leave(leaving)                => Some(leaving.uid)
       case HyParViewMessage.Shuffle(_, _, _, sender)      => Some(sender)
       case HyParViewMessage.ShuffleReply(from, _)         => Some(from)
 
