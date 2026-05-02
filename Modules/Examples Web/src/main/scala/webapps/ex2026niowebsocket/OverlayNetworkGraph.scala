@@ -12,6 +12,7 @@ import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewMultiplexed
+import replication.research
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, SignalingClient, SignalingServer}
 import replication.research.OverlayConnectionDirectory.LinkState
 import replication.research.OverlayNetworkProtocol.DemoState
@@ -45,7 +46,6 @@ object OverlayNetworkGraph {
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] =
     HyParViewMultiplexed.envelopeCodec[DemoState]
   given codecSignalSession: JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
-   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
 
   private type Envelope = HyParViewMultiplexed.Envelope[DemoState]
@@ -155,7 +155,7 @@ object OverlayNetworkGraph {
     private val wsResolver = new WebSocketConnectionDetailsResolver[Message]
     private val outgoing = mutable.Map.empty[Uid, WebRTCConnector]
 
-    private val client = new replication.research.SignalingClient(
+    private lazy val client: research.SignalingClient = new replication.research.SignalingClient(
       server = ChannelConnectDescriptor.WebSocket(url),
       resolver = wsResolver,
       localUid = node.localUid.uid,
