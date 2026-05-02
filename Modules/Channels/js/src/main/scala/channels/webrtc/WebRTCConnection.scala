@@ -37,12 +37,12 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
       }
     }
 
-    channel.onerror = { (_: dom.Event) =>
-      Async.handler.fail(WebRTCReceiveFailed(s"channel error label=${channel.label} id=${channel.id} state=${channel.readyState} bufferedAmount=${channel.bufferedAmount}"))
+    channel.onerror = { (evt: dom.Event) =>
+      Async.handler.fail(WebRTCReceiveFailed(s"channel error: $evt"))
     }
 
-    channel.onclose = { (_: dom.Event) =>
-      Async.handler.fail(WebRTCReceiveFailed(s"channel closed label=${channel.label} id=${channel.id} state=${channel.readyState} bufferedAmount=${channel.bufferedAmount}"))
+    channel.onclose = { (evt: dom.Event) =>
+      Async.handler.fail(WebRTCReceiveFailed(s"channel closed: $evt"))
     }
 
     channel.readyState match
@@ -106,12 +106,12 @@ object WebRTCConnection {
           }
         }
 
-        channel.onerror = { (_: dom.Event) =>
-          handler.fail(WebRTCReceiveFailed(s"channel error label=${channel.label} id=${channel.id} state=${channel.readyState} bufferedAmount=${channel.bufferedAmount}"))
+        channel.onerror = { (evt: dom.Event) =>
+          handler.fail(WebRTCReceiveFailed(s"channel error: $evt"))
         }
 
-        channel.onclose = { (_: dom.Event) =>
-          handler.fail(WebRTCReceiveFailed(s"channel closed label=${channel.label} id=${channel.id} state=${channel.readyState} bufferedAmount=${channel.bufferedAmount}"))
+        channel.onclose = { (evt: dom.Event) =>
+          handler.fail(WebRTCReceiveFailed(s"channel closed: $evt"))
         }
 
         channel.readyState match
