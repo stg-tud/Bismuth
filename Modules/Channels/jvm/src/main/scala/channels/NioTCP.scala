@@ -403,7 +403,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
         attachment
       case Some(request) =>
         println(s"websocket handshake request: $request")
-        clientChannel.write(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request)))
+        writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
         val connected = ensureWebSocketConnected(clientChannel, attachment)
 
         attachment.primary.compact()
@@ -452,7 +452,14 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
             reporter.received(state.len)
             val frame = WebsocketProtocol.tryParsePayload(state, value)
             println(s"websocket frame: $frame")
-            handleWebsocketMessage(state, frame, attachment, clientChannel, key).copy(secondary = null, protocol = ProtocolState.WebSocket(None))
+            assert(
+              attachment.secondary == null || attachment.secondary.position() == 0,
+              "secondary buffer should be empty"
+            )
+            handleWebsocketMessage(state, frame, attachment, clientChannel, key).copy(
+              secondary = null,
+              protocol = ProtocolState.WebSocket(None)
+            )
           case None =>
             attachment.primary.reset()
             attachment.primary.compact()
