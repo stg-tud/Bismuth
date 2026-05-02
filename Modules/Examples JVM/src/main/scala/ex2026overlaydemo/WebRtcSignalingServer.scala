@@ -3,20 +3,18 @@ package ex2026overlaydemo
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.Uid
 import replication.JsoniterCodecs.given
-import replication.research.WebRtcSignalingProtocol
-import replication.research.WebRtcSignalingProtocol.Message
+import replication.research.SignalingProtocol.Message
+import replication.research.{SignalingProtocol, SignalingServer}
 
 import java.net.BindException
 import java.util.concurrent.Executors
-import scala.collection.mutable
-import scala.util.{Failure, Success}
 
 /** vibecoded as part of the hyparview experiments */
 object WebRtcSignalingServer {
 
-  given JsonValueCodec[WebRtcSignalingProtocol.Session] = JsonCodecMaker.make
+  given JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
+  given JsonValueCodec[SignalingProtocol.Session] = JsonCodecMaker.make
   given JsonValueCodec[Message] = JsonCodecMaker.make
 
   def main(args: Array[String]): Unit = {
@@ -47,39 +45,8 @@ object WebRtcSignalingServer {
             case _: BindException => listen(0)
         case None => listen(0)
 
-    val clientsByUid = mutable.Map.empty[Uid, Connection[Message]]
-    val uidByConn    = mutable.Map.empty[Connection[Message], Uid]
-
-    def disconnect(conn: Connection[Message]): Unit = {
-      uidByConn.remove(conn).foreach(clientsByUid.remove)
-      conn.close()
-    }
-
-    server.prepare { conn =>
-      var registered: Option[Uid] = None
-      {
-        case Success(Message.Register(uid)) =>
-          registered.foreach(clientsByUid.remove)
-          clientsByUid.update(uid, conn)
-          uidByConn.update(conn, uid)
-          registered = Some(uid)
-          println(s"[webrtc-signaling] register ${Uid.unwrap(uid)}")
-
-        case Success(msg @ Message.Offer(from, to, _)) =>
-          clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))
-          println(s"[webrtc-signaling] offer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
-
-        case Success(msg @ Message.Answer(from, to, _)) =>
-          clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))
-          println(s"[webrtc-signaling] answer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
-
-        case Failure(_) =>
-          disconnect(conn)
-      }
-    }.runIn(nioAbort) {
-      case Success(_)  => ()
-      case Failure(ex) => ex.printStackTrace()
-    }
+    val signaling = SignalingServer(debug = true)
+    signaling.addIncomingConnection(server)
 
     nioThread.execute(() => nio.loopSelection(nioAbort))
     println(s"signal=ws://${listenDetails.host}:${listenDetails.port}")

@@ -2,10 +2,6 @@ package replication
 
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import rdts.base.Historized.MetaDelta
-import rdts.base.Uid
-import rdts.time.Dots
-
 
 trait CachedMessage[+T] {
   def messageBuffer: MessageBuffer
