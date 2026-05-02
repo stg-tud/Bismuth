@@ -42,6 +42,7 @@ object WebsocketProtocol {
     else {
       val headerBytes = new Array[Byte](end - start)
       buffer.get(headerBytes)
+      buffer.position(end + headerEnd.length)
       parseHandshakeHeaderBytes(headerBytes).tap { h =>
         println(s"parsed header: $h")
       }
