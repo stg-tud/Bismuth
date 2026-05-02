@@ -60,7 +60,6 @@ final case class HyParViewStateMachine(
   def passiveView: Set[Uid]     = passive.iterator.map(_.uid).toSet
   def activePeers: Set[PeerRef] = active.toSet
   def passivePeers: Set[PeerRef] = passive.toSet
-  def knownPeer(uid: Uid): Option[PeerRef] = known.get(uid)
 
   def initiateJoin(details: Set[ChannelConnectDescriptor]): Result =
     Result(this, List(Action.SendJoin(details, Join(self))))

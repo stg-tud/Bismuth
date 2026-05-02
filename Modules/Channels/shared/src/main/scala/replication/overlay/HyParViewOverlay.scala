@@ -12,9 +12,7 @@ import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
 
 object HyParViewMultiplexed {
-  type Details = Set[ChannelConnectDescriptor]
-
-  case class PeerRef(uid: Uid, details: Details)
+  case class PeerRef(uid: Uid, channelConnectors: Set[ChannelConnectDescriptor])
 
   enum Envelope[State] {
     case Membership(message: HyParViewUnified.HyParViewMessage)
@@ -84,7 +82,7 @@ class HyParViewMultiplexedNode[State](
     self,
     config,
     (_, upperExclusive) => rnd.nextInt(upperExclusive),
-    peer => peer.details.exists(resolver.canConnect) || peer.uid == self.uid,
+    peer => peer.channelConnectors.exists(resolver.canConnect) || peer.uid == self.uid,
   )
 
   private val connections = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
@@ -249,7 +247,7 @@ class HyParViewMultiplexedNode[State](
 
   private def startConnection(peer: PeerRef): Unit =
     if !connections.contains(peer.uid) && !connecting.contains(peer.uid) then
-      connectToPeerDetails(peer.details, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}") match
+      connectToPeerDetails(peer.channelConnectors, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}") match
         case Some(latent) =>
           connecting += peer.uid
           latent.prepare(receive(Some(peer.uid))).runIn(abort) {

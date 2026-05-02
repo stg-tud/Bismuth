@@ -22,7 +22,7 @@ class HyParViewStateMachineTest extends FunSuite {
 
   private def peer(name: String): PeerRef = PeerRef(Uid.predefined(name), Set(ChannelConnectDescriptor.QueuedLocal(name)))
   private def machine(selfName: String = "self", config: HyParViewConfig = cfg): HyParViewStateMachine =
-    HyParViewStateMachine.empty(peer(selfName), config, (_, _) => 0, canConnectTo = _.details.nonEmpty)
+    HyParViewStateMachine.empty(peer(selfName), config, (_, _) => 0, canConnectTo = _.channelConnectors.nonEmpty)
 
   private def sent(actions: List[Action]): List[(PeerRef, Any)] =
     actions.collect { case Action.Send(to, message) => (to, message) }
