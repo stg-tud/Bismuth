@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.Base64
+import scala.util.chaining.scalaUtilChainingOps
 
 sealed trait WebsocketFrame
 
@@ -32,12 +33,18 @@ object WebsocketProtocol {
 
   def tryParseHandshake(buffer: ByteBuffer): Option[HandshakeRequest] = {
     val start = buffer.position()
-    val end   = indexOf(buffer, headerEnd)
+    println(s"limit: ${buffer.limit()}, position: ${buffer.position()}, remaining: ${buffer.remaining()}")
+    println(s"trying to parse handshake at $start")
+    val end = buffer.array().indexOfSlice(headerEnd, start)
+    println(s"end of header is $end, ${end - start} bytes, ${buffer.remaining()} bytes remaining")
+    println(s"limit: ${buffer.limit()}, position: ${buffer.position()}, remaining: ${buffer.remaining()}")
     if end < 0 then None
     else {
       val headerBytes = new Array[Byte](end - start)
       buffer.get(headerBytes)
-      parseHandshakeHeaderBytes(headerBytes)
+      parseHandshakeHeaderBytes(headerBytes).tap { h =>
+        println(s"parsed header: $h")
+      }
     }
   }
 
@@ -63,47 +70,48 @@ object WebsocketProtocol {
   case class WebsocketHeader(len: Int, mask: Array[Byte], fin: Boolean, opcode: Int)
 
   def tryParseHeader(buffer: ByteBuffer): Option[WebsocketHeader] = {
-    if buffer.remaining() < 2 then None
-    else {
-      val firstByte  = buffer.get()
-      val secondByte = buffer.get()
+    println(s"trying to parse header with ${buffer.remaining()} bytes remaining:")
+    if buffer.remaining() < 2 then return None
+    val firstByte  = buffer.get() & 0xff
+    val secondByte = buffer.get() & 0xff
 
-      val fin    = (firstByte & 0x80) != 0
-      val opcode = firstByte & 0x0f
-      val masked = (secondByte & 0x80) != 0
-      val lenTag = secondByte & 0x7f
+    val fin    = (firstByte & 0x80) != 0
+    val opcode = firstByte & 0x0f
+    val masked = (secondByte & 0x80) != 0
+    val lenTag = secondByte & 0x7f
 
-      var offset              = 2
-      val payloadLength: Long = lenTag match {
-        case 126 =>
-          if buffer.remaining() < 2 then return None
-          val len = buffer.getShort
-          offset += 2
-          len.toLong
-        case 127 =>
-          if buffer.remaining() < 8 then return None
-          val len = buffer.getLong()
-          offset += 8
-          len
-        case other => other.toLong
-      }
+    println(s"fin: $fin, opcode: $opcode, masked: $masked, lenTag: $lenTag")
 
-      if payloadLength < 0 || payloadLength > Int.MaxValue then
-          throw IllegalStateException(s"unsupported websocket payload length: $payloadLength")
+    var offset              = 2
+    val payloadLength: Long = lenTag match {
+      case 126 =>
+        if buffer.remaining() < 2 then return None
+        val len = buffer.getShort
+        offset += 2
+        len.toLong
+      case 127 =>
+        if buffer.remaining() < 8 then return None
+        val len = buffer.getLong()
+        offset += 8
+        len
+      case other => other.toLong
+    }
 
-      val maskKeyLength = if masked then 4 else 0
-      if buffer.remaining() < maskKeyLength then return None
+    if payloadLength < 0 || payloadLength > Int.MaxValue then
+        throw IllegalStateException(s"unsupported websocket payload length: $payloadLength")
 
-      val maskKey =
-          val arr = Array[Byte](0, 0, 0, 0)
-          if masked then
+    val maskKeyLength = if masked then 4 else 0
+    if buffer.remaining() < maskKeyLength then return None
+
+    val maskKey =
+        val arr = Array[Byte](0, 0, 0, 0)
+        if masked then
             buffer.get(arr)
             ()
-          arr
-      offset += maskKeyLength
+        arr
+    offset += maskKeyLength
 
-      Some(WebsocketHeader(len = payloadLength.toInt, mask = maskKey, fin = fin, opcode = opcode))
-    }
+    Some(WebsocketHeader(len = payloadLength.toInt, mask = maskKey, fin = fin, opcode = opcode))
   }
 
   def tryParsePayload(header: WebsocketHeader, payload: Array[Byte]): WebsocketFrame = {
@@ -173,9 +181,9 @@ object WebsocketProtocol {
 
   private def parseHandshakeHeaderBytes(headerBytes: Array[Byte]): Option[HandshakeRequest] = {
     val headerText = new String(headerBytes, StandardCharsets.US_ASCII)
-    val lines      = headerText.split("\\r\\n").toList
+    val lines      = headerText.split("\r\n").toList
     lines match {
-      case requestLine :: rest if requestLine.startsWith("GET ") =>
+      case requestLine :: rest =>
         val path    = requestLine.drop(4).takeWhile(_ != ' ')
         val headers = rest.collect {
           case line if line.contains(":") =>
@@ -187,21 +195,4 @@ object WebsocketProtocol {
     }
   }
 
-  private def indexOf(haystack: ByteBuffer, needle: Array[Byte]): Int = {
-    if needle.isEmpty then haystack.position()
-    else {
-      val start = haystack.position()
-      val end   = haystack.limit()
-      var at    = start
-      while at <= end - needle.length do
-          var i     = 0
-          var found = true
-          while found && i < needle.length do
-              found = haystack.get(at + i) == needle(i)
-              i += 1
-          if found then return at
-          at += 1
-      -1
-    }
-  }
 }
