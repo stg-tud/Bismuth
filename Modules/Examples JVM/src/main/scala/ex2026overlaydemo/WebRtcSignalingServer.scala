@@ -4,8 +4,8 @@ import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import replication.JsoniterCodecs.given
-import replication.research.SignalingProtocol.Message
-import replication.research.{SignalingProtocol, SignalingServer}
+import replication.research.SignalingServer.Message
+import replication.research.SignalingServer
 
 import java.net.BindException
 import java.util.concurrent.Executors
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors
 object WebRtcSignalingServer {
 
   given JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
-  given JsonValueCodec[SignalingProtocol.Session] = JsonCodecMaker.make
+  given JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
   given JsonValueCodec[Message] = JsonCodecMaker.make
 
   def main(args: Array[String]): Unit = {

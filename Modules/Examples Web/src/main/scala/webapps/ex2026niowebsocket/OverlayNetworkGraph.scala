@@ -12,10 +12,10 @@ import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewMultiplexed
-import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, WebRtcSignalingProtocol}
+import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, SignalingClient, SignalingServer}
 import replication.research.OverlayConnectionDirectory.LinkState
 import replication.research.OverlayNetworkProtocol.DemoState
-import replication.research.WebRtcSignalingProtocol.Message
+import replication.research.SignalingServer.Message
 import scalatags.JsDom.all.*
 
 import java.util.Base64
@@ -44,7 +44,8 @@ object OverlayNetworkGraph {
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] =
     HyParViewMultiplexed.envelopeCodec[DemoState]
-  given codecSignalSession: JsonValueCodec[WebRtcSignalingProtocol.Session] = JsonCodecMaker.make
+  given codecSignalSession: JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
+   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
 
   private type Envelope = HyParViewMultiplexed.Envelope[DemoState]
@@ -143,16 +144,42 @@ object OverlayNetworkGraph {
       }
     )
 
-  private final class SignalingClient(url: String, node: OverlayDemoNode, onRegistered: () => Unit) {
+  private final class SignalingClient(
+      url: String,
+      topic: String,
+      node: OverlayDemoNode,
+      selfDetails: Set[ChannelConnectDescriptor],
+      initialSeed: Option[Uid],
+      onRegistered: () => Unit,
+  ) {
     private val wsResolver = new WebSocketConnectionDetailsResolver[Message]
-    private val abort      = Abort()
-    private var connection: Option[Connection[Message]] = None
     private val outgoing = mutable.Map.empty[Uid, WebRTCConnector]
 
-    private def send(message: Message): Unit =
-      connection.foreach(_.send(message).run(_ => ()))
+    private val client = new replication.research.SignalingClient(
+      server = ChannelConnectDescriptor.WebSocket(url),
+      resolver = wsResolver,
+      localUid = node.localUid.uid,
+      initialAnnouncements = Map(topic -> selfDetails),
+      onRegistered = () => {
+        client.lookupTopic(topic)
+        initialSeed.foreach(client.lookupPeer)
+        onRegistered()
+      },
+      onPeerInfo = (uid, topics) =>
+        topics.values.foreach { descriptors =>
+          if uid != node.localUid.uid && descriptors.nonEmpty then
+            node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
+        },
+      onTopicInfo = (_, peers) =>
+        node.discoverPeers(peers.iterator.collect {
+          case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
+            HyParViewMultiplexed.PeerRef(uid, descriptors)
+        }.toList),
+      onOffer = (from, session) => handleIncomingOffer(from, session),
+      onAnswer = (from, session) => handleIncomingAnswer(from, session),
+    )
 
-    private def handleIncomingOffer(from: Uid, session: WebRtcSignalingProtocol.Session): Unit = {
+    private def handleIncomingOffer(from: Uid, session: SignalingServer.Session): Unit = {
       val connector = createRtcConnector()
       val channel   = createOverlayDataChannel(connector)
       var sentAnswer = false
@@ -163,7 +190,7 @@ object OverlayNetworkGraph {
             case Success(overview) if !sentAnswer && overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
               overview.localSession.foreach { answer =>
                 sentAnswer = true
-                send(Message.Answer(node.localUid.uid, from, WebRtcSignalingProtocol.Session(answer.descType, answer.sdp)))
+                client.answer(from, SignalingServer.Session(answer.descType, answer.sdp))
               }
             case Success(_)   => ()
             case Failure(err) => err.printStackTrace()
@@ -172,7 +199,7 @@ object OverlayNetworkGraph {
       }
     }
 
-    private def handleIncomingAnswer(from: Uid, session: WebRtcSignalingProtocol.Session): Unit =
+    private def handleIncomingAnswer(from: Uid, session: SignalingServer.Session): Unit =
       outgoing.remove(from).foreach { connector =>
         connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
           case Success(_)   => ()
@@ -180,32 +207,15 @@ object OverlayNetworkGraph {
         }
       }
 
-    def start(): Unit =
-      wsResolver.connect(ChannelConnectDescriptor.WebSocket(url), s"webrtc-signaling-${Uid.unwrap(node.localUid.uid)}").foreach {
-        _.prepare { conn =>
-          {
-            case Success(Message.Register(_)) => ()
-            case Success(Message.Offer(from, to, session)) if to == node.localUid.uid => handleIncomingOffer(from, session)
-            case Success(Message.Answer(from, to, session)) if to == node.localUid.uid => handleIncomingAnswer(from, session)
-            case Success(_) => ()
-            case Failure(_) => connection = None
-          }
-        }.runIn(abort) {
-          case Success(conn) =>
-            connection = Some(conn)
-            send(Message.Register(node.localUid.uid))
-            onRegistered()
-          case Failure(err) => err.printStackTrace()
-        }
-      }
+    def start(): Unit = client.start()
 
     def canConnect(details: ChannelConnectDescriptor): Boolean =
       details match
-        case ChannelConnectDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && connection.nonEmpty
+        case ChannelConnectDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
         case _                                => false
 
     def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[Envelope]] = details match
-      case ChannelConnectDescriptor.WebRtc(peerId) if connection.nonEmpty && peerId != Uid.unwrap(node.localUid.uid) =>
+      case ChannelConnectDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
         val target = Uid.predefined(peerId)
         Some(new LatentConnection[Envelope] {
           override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] =
@@ -228,7 +238,7 @@ object OverlayNetworkGraph {
                       overview.localSession match
                         case Some(offer) =>
                           sentOffer = true
-                          send(Message.Offer(node.localUid.uid, target, WebRtcSignalingProtocol.Session(offer.descType, offer.sdp)))
+                          client.offer(target, SignalingServer.Session(offer.descType, offer.sdp))
                         case None =>
                           outgoing.remove(target)
                           Async.handler.fail(IllegalStateException("missing local webrtc offer after ice gathering completed"))
@@ -259,6 +269,7 @@ object OverlayNetworkGraph {
     val seedDetails = seedConnectionString.filter(_.nonEmpty).map(parseConnectionString)
     val localUid    = defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
     val signalUrl   = defaultSignalUrl
+    val signalingTopic = "overlay-demo"
     val selfDetails = signalUrl.map(_ => Set(ChannelConnectDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
 
     var signalingRef: Option[SignalingClient] = None
@@ -294,12 +305,12 @@ object OverlayNetworkGraph {
 
     val joinAfterSignal = () => seedDetails.foreach {
       case seed: ChannelConnectDescriptor.WebRtc =>
-        connectionInfoText = s"${connectionInfoText}\nsignaling registered, trying webrtc seed ${describeSeed(seed)}"
+        connectionInfoText = s"${connectionInfoText}\nsignaling registered, discovering webrtc seed ${describeSeed(seed)}"
         refreshText()
-        node.joinSeed(seed)
       case _ => ()
     }
-    signalingRef = signalUrl.map(url => new SignalingClient(url, node, joinAfterSignal))
+    val seedUid = seedDetails.collect { case ChannelConnectDescriptor.WebRtc(peerId) => Uid.predefined(peerId) }
+    signalingRef = signalUrl.map(url => new SignalingClient(url, signalingTopic, node, selfDetails, seedUid, joinAfterSignal))
     currentNode = Some(node)
     viewerUid = Some(node.localUid.uid)
     selfConnectionStringText = selfDetails.headOption match

@@ -52,6 +52,7 @@ class SignalingServer(
   private def disconnect(conn: Connection[Message]): Unit = {
     uidByConn.remove(conn).foreach { uid =>
       clientsByUid.remove(uid)
+      announcementsByUid.remove(uid)
       log(s"disconnect ${Uid.unwrap(uid)}")
     }
     conn.close()
@@ -60,6 +61,7 @@ class SignalingServer(
   private def register(uid: Uid, conn: Connection[Message]): Unit = {
     uidByConn.get(conn).filter(_ != uid).foreach { previous =>
       clientsByUid.remove(previous)
+      announcementsByUid.remove(previous)
     }
     clientsByUid.get(uid).filterNot(_ == conn).foreach(disconnect)
     uidByConn.update(conn, uid)

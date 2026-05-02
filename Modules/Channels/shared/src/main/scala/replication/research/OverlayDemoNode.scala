@@ -107,6 +107,9 @@ class OverlayDemoNode(
   def joinSeed(seed: ChannelConnectDescriptor): Unit =
     overlay.foreach(_.join(Set(seed)))
 
+  def discoverPeers(peers: Iterable[replication.overlay.HyParViewMultiplexed.PeerRef]): Unit =
+    overlay.foreach(_.discoverPeers(peers))
+
   def selfConnectionDetails: Set[ChannelConnectDescriptor] = selfDetails
 
   def publishAdd(value: String): Unit = {
