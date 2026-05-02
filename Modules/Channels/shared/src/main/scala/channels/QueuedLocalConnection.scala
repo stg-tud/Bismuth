@@ -2,19 +2,22 @@ package channels
 
 import de.rmgk.delay.{Async, Callback, Promise}
 
+import scala.util.{Failure, Success, Try}
+
+case class ConnectionClosedException(msg: String) extends Exception(msg)
 
 /** A manually-driven message queue for local connections.
   *
   * `send` only enqueues message delivery. Messages are delivered when `deliverOne()` / `deliverAll()` is called.
   */
 class LocalMessageQueue[T] {
-  private var queue: List[(receiver: Callback[T], message: T)] = Nil
+  private var queue: List[(receiver: Callback[T], message: Try[T])] = Nil
 
-  def enqueue(receiver: Callback[T], value: T): Unit = synchronized {
+  def enqueue(receiver: Callback[T], value: Try[T]): Unit = synchronized {
     queue = (receiver, value) :: queue
   }
 
-  def elements: List[T] = synchronized(queue).map(_.message)
+  def elements: List[Try[T]] = synchronized(queue).map(_.message)
 
   def size: Int = synchronized(queue.size)
 
@@ -33,7 +36,7 @@ class LocalMessageQueue[T] {
       current
     }
 
-    toDeliver.foreach { case (receiver, value) => receiver.succeed(value) }
+    toDeliver.foreach { case (receiver, value) => receiver.complete(value) }
     toDeliver.size
   }
 }
@@ -61,9 +64,12 @@ class QueuedLocalConnection[T](val messageQueue: LocalMessageQueue[T] = LocalMes
     object toServer extends Connection[T] {
       def send(msg: T): Async[Any, Unit] = Async {
         val cb = toServerMessages.async.bind
-        messageQueue.enqueue(cb, msg)
+        messageQueue.enqueue(cb, Success(msg))
       }
-      override def close(): Unit = ()
+      override def close(): Unit = Async {
+        val cb = toServerMessages.async.bind
+        messageQueue.enqueue(cb, Failure(ConnectionClosedException("closed")))
+      }.runIn(()) { _ => () }
       override def toString: String = s"From[$id]"
     }
 
@@ -71,9 +77,9 @@ class QueuedLocalConnection[T](val messageQueue: LocalMessageQueue[T] = LocalMes
       val callback = receiver.messageHandler(toServer)
 
       val toClient = new Connection[T] {
-        override def close(): Unit                      = ()
+        override def close(): Unit = messageQueue.enqueue(callback, Failure(ConnectionClosedException("closed")))
         override def send(message: T): Async[Any, Unit] = Async {
-          messageQueue.enqueue(callback, message)
+          messageQueue.enqueue(callback, Success(message))
         }
         override def toString: String = s"To[$id]"
       }
