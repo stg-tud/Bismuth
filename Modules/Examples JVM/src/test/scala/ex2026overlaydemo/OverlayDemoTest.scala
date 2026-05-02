@@ -1,12 +1,13 @@
 package ex2026overlaydemo
 
-import channels.{ConnectionDetails, LocalConnectionRegistry, LocalMessageQueue}
+import channels.{ChannelConnectDescriptor, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
 import replication.overlay.HyParViewMultiplexed
 import replication.research.OverlayConnectionDirectory
 import replication.research.OverlayConnectionDirectory.LinkState
 import replication.research.OverlayNetworkProtocol.DemoState
 import rdts.base.Uid
 
+import scala.collection.mutable
 import scala.util.Random
 
 /** vibecoded as part of the hyparview experiments */
@@ -71,18 +72,19 @@ class OverlayDemoTest extends munit.FunSuite {
   }
 
   private class QueuedFixture {
-    val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]()
-    val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]()
+    val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState]]()
+    val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection[HyParViewMultiplexed.Envelope[DemoState]]]
+    val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState]](queued)
     private var nextId = 0
 
-    def newNode(seeds: List[ConnectionDetails] = Nil): OverlayDemo.NodeApp = {
+    def newNode(seeds: List[ChannelConnectDescriptor] = Nil): OverlayDemo.NodeApp = {
       val id   = s"queued-$nextId"
       nextId += 1
+      queued.update(id, QueuedLocalConnection(queue))
       new OverlayDemo.NodeApp(
         OverlayDemo.TopicNode.queued(
           registry = registry,
           id = id,
-          queue = queue,
           random = Random(nextId),
         ),
         seeds = seeds,

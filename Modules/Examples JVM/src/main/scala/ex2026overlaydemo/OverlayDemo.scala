@@ -21,25 +21,25 @@ import scala.util.Random
 object OverlayDemo {
 
   given codecString: JsonValueCodec[String] = JsonCodecMaker.make
-  given codecConnectionDetails: JsonValueCodec[ConnectionDetails] = JsonCodecMaker.make
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
   given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
   given codecConnectedPeer: JsonValueCodec[OverlayConnectionDirectory.ConnectedPeer] = JsonCodecMaker.make
   given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
   given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
-  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ConnectionDetails]] = AWSetStateCodec[ConnectionDetails]
+  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] = AWSetStateCodec[ChannelConnectDescriptor]
   given codecReplicatedSetConnectedPeer: JsonValueCodec[ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer]] =
     AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
-  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]] =
-    HyParViewMultiplexed.envelopeCodec[DemoState, Set[ConnectionDetails]]
+  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] =
+    HyParViewMultiplexed.envelopeCodec[DemoState]
 
-  def connectionString(details: ConnectionDetails): String =
+  def connectionString(details: ChannelConnectDescriptor): String =
     Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
 
-  def parseConnectionString(str: String): ConnectionDetails =
-    readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
+  def parseConnectionString(str: String): ChannelConnectDescriptor =
+    readFromString[ChannelConnectDescriptor](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
 
   def jsonConnection[A: JsonValueCodec](latent: LatentConnection[MessageBuffer], name: String): LatentConnection[A] =
     LatentConnection.adapt[MessageBuffer, A](
@@ -67,7 +67,7 @@ object OverlayDemo {
       val nioThread   = Executors.newSingleThreadExecutor()
       val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-      def listen(port: Int): (ConnectionDetails.Tcp, LatentConnection[MessageBuffer]) =
+      def listen(port: Int): (ChannelConnectDescriptor.Tcp, LatentConnection[MessageBuffer]) =
         nioResolver.listen(host, port)
 
       val (listenDetails, listenBinary) =
@@ -78,15 +78,15 @@ object OverlayDemo {
               case _: BindException => listen(0)
           case None => listen(0)
 
-      val listenEnvelope = jsonConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]](listenBinary, "overlay-json")
-      val envelopeResolver = ConnectionDetailsResolver.many(new ConnectionDetailsResolver[ConnectionDetails, HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]] {
-        override def canConnect(details: ConnectionDetails): Boolean =
+      val listenEnvelope = jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](listenBinary, "overlay-json")
+      val envelopeResolver = new ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]] {
+        override def canConnect(details: ChannelConnectDescriptor): Boolean =
           nioResolver.canConnect(details)
 
-        override def connect(details: ConnectionDetails, label: String)
-            : Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]] =
-          nioResolver.connect(details, label).map(jsonConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]( _, "overlay-json"))
-      })
+        override def connect(details: ChannelConnectDescriptor, label: String)
+            : Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]] =
+          nioResolver.connect(details, label).map(jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](_, "overlay-json"))
+      }
 
       nioThread.execute(() => nio.loopSelection(nioAbort))
 
@@ -109,19 +109,18 @@ object OverlayDemo {
     }
 
     def queued(
-        registry: LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]],
+        registry: LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState]],
         id: String,
-        queue: LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]],
         random: Random = Random(0),
         config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
         onStateChanged: DemoState => Unit = _ => (),
     ): TopicNode = {
-      val details        = registry.registerQueued(id, QueuedLocalConnection(queue))
+      val details        = ChannelConnectDescriptor.QueuedLocal(id)
       val listenEnvelope = registry.queuedServer(details).get
       val node = new OverlayDemoNode(
         selfDetails = Set(details),
         listenEnvelope = Some(listenEnvelope),
-        envelopeResolver = ConnectionDetailsResolver.many(registry),
+        envelopeResolver = registry,
         random = random,
         config = config,
         onStateChanged = onStateChanged,
@@ -138,11 +137,11 @@ object OverlayDemo {
     }
   }
 
-  class NodeApp(val runtime: OverlayNodeRuntime, seeds: List[ConnectionDetails] = Nil) {
+  class NodeApp(val runtime: OverlayNodeRuntime, seeds: List[ChannelConnectDescriptor] = Nil) {
     val node: OverlayDemoNode = runtime.node
     node.start(seeds)
 
-    def details: ConnectionDetails = node.selfConnectionDetails.head
+    def details: ChannelConnectDescriptor = node.selfConnectionDetails.head
 
     def handleInputLine(line: String): Boolean = {
       val trimmed = line.trim

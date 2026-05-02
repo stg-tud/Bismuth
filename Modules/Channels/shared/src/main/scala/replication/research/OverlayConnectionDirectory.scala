@@ -67,19 +67,11 @@ object OverlayConnectionDirectory {
     else state.update(node, desired)
   }
 
-  def updateNodePeers(
+  def updateNodeFromOverlay(
       state: Directory,
       node: Uid,
-      peers: Iterable[ConnectedPeer],
-      eagerPeers: Iterable[Uid],
-  )(using LocalUid): Directory =
-    updateNode(state, node, peers, eagerPeers)
-
-  def updateNodeFromOverlay[Details](
-      state: Directory,
-      node: Uid,
-      activePeers: Iterable[HyParViewMultiplexed.PeerRef[Set[Details]]],
-      passivePeers: Iterable[HyParViewMultiplexed.PeerRef[Set[Details]]],
+      activePeers: Iterable[HyParViewMultiplexed.PeerRef],
+      passivePeers: Iterable[HyParViewMultiplexed.PeerRef],
       eagerPeers: Iterable[Uid],
   )(using LocalUid): Directory =
     updateNode(

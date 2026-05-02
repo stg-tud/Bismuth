@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ConnectionDetails, ConnectionDetailsResolver, LatentConnection}
+import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, LatentConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
@@ -8,7 +8,6 @@ import rdts.datatypes.ReplicatedSet
 import replication.PlumtreeDissemination
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
-import replication.overlay.HyParViewViewListener
 import replication.research.OverlayNetworkProtocol.DemoState
 
 import java.util.{Timer, TimerTask}
@@ -16,34 +15,34 @@ import scala.util.Random
 
 /** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
-    selfDetails: Set[ConnectionDetails],
-    listenEnvelope: Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]],
-    envelopeResolver: ConnectionDetailsResolver[Set[ConnectionDetails], HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]],
-    random: Random = Random(0),
-    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-    onStateChanged: DemoState => Unit = _ => (),
-    printOverlayEventsToStdout: Boolean = false,
-    val localUid: LocalUid = LocalUid.gen(),
+                       selfDetails: Set[ChannelConnectDescriptor],
+                       listenEnvelope: Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]],
+                       envelopeResolver: ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]],
+                       random: Random = Random(0),
+                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+                       onStateChanged: DemoState => Unit = _ => (),
+                       printOverlayEventsToStdout: Boolean = false,
+                       val localUid: LocalUid = LocalUid.gen(),
 )(using JsonValueCodec[DemoState]) {
 
   @volatile var state: DemoState = DemoState.empty
 
-  private val selfRef  = HyParViewMultiplexed.PeerRef(localUid.uid, selfDetails)
-  private val abort    = Abort()
-  private val timer    = Timer(true)
-  private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState, Set[ConnectionDetails]]] = None
+  private val selfRef = HyParViewMultiplexed.PeerRef(localUid.uid, selfDetails)
+  private val abort   = Abort()
+  private val timer   = Timer(true)
+  private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState]] = None
 
   private def emitStateChanged(): Unit = onStateChanged(state)
 
   private def publish(delta: DemoState): Unit =
     if !Bottom.isEmpty(delta) then
-      state = state.merge(delta)
-      emitStateChanged()
-      plumtree.applyDelta(delta)
+        state = state.merge(delta)
+        emitStateChanged()
+        plumtree.applyDelta(delta)
 
   private def publishLocalView(): Unit = {
     given LocalUid = localUid
-    val delta = OverlayConnectionDirectory.updateNodeFromOverlay(
+    val delta      = OverlayConnectionDirectory.updateNodeFromOverlay(
       state.connections,
       localUid.uid,
       overlay.map(_.activePeers).getOrElse(Set.empty),
@@ -55,25 +54,9 @@ class OverlayDemoNode(
 
   private def removeDisconnectedConnection(peer: Uid): Unit = {
     given LocalUid = localUid
-    val delta = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
+    val delta      = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
-
-  private def overlayLogger: HyParViewViewListener[Set[ConnectionDetails]] =
-    if !printOverlayEventsToStdout then HyParViewViewListener.noop
-    else
-      HyParViewViewListener.printToStdout { details =>
-        if details.isEmpty then "(undialable)"
-        else details.toList.sortBy(ConnectionDetails.describe).map(ConnectionDetails.describe).mkString(", ")
-      }
-
-  private def overlayTracker: HyParViewViewListener[Set[ConnectionDetails]] =
-    new HyParViewViewListener[Set[ConnectionDetails]] {
-      override def activePeerAdded(peer: HyParViewMultiplexed.PeerRef[Set[ConnectionDetails]]): Unit      = publishLocalView()
-      override def activePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Set[ConnectionDetails]]): Unit    = publishLocalView()
-      override def passivePeerAdded(peer: HyParViewMultiplexed.PeerRef[Set[ConnectionDetails]]): Unit     = publishLocalView()
-      override def passivePeerRemoved(peer: HyParViewMultiplexed.PeerRef[Set[ConnectionDetails]]): Unit   = publishLocalView()
-    }
 
   private val plumtree: PlumtreeDissemination[DemoState] = PlumtreeDissemination(
     localUid,
@@ -86,19 +69,19 @@ class OverlayDemoNode(
     onPeerRolesChanged = () => publishLocalView(),
   )
 
-  private def newOverlay(seed: Option[ConnectionDetails]) =
+  private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
     new replication.overlay.HyParViewMultiplexedNode(
       selfRef,
       plumtree,
-      listenEnvelope.getOrElse(new LatentConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]] {
-        override def prepare(receiver: channels.Receive[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]) =
+      listenEnvelope.getOrElse(new LatentConnection[HyParViewMultiplexed.Envelope[DemoState]] {
+        override def prepare(receiver: channels.Receive[HyParViewMultiplexed.Envelope[DemoState]]) =
           throw UnsupportedOperationException("no local server configured for this overlay node")
       }),
       envelopeResolver,
       seed.map(Set(_)),
       random,
       config,
-      viewListener = HyParViewViewListener.combine(overlayTracker, overlayLogger),
+      onViewChanged = (_, _) => publishLocalView(),
       onPeerDisconnected = removeDisconnectedConnection,
     )
 
@@ -111,7 +94,7 @@ class OverlayDemoNode(
       1000L,
     )
 
-  def start(seeds: List[ConnectionDetails] = Nil): Unit = {
+  def start(seeds: List[ChannelConnectDescriptor] = Nil): Unit = {
     val node = newOverlay(seeds.headOption)
     overlay = Some(node)
     listenEnvelope.foreach(_ => node.startServer())
@@ -120,10 +103,10 @@ class OverlayDemoNode(
     seeds.headOption.foreach(_ => node.join())
   }
 
-  def joinSeed(seed: ConnectionDetails): Unit =
+  def joinSeed(seed: ChannelConnectDescriptor): Unit =
     overlay.foreach(_.join(Set(seed)))
 
-  def selfConnectionDetails: Set[ConnectionDetails] = selfDetails
+  def selfConnectionDetails: Set[ChannelConnectDescriptor] = selfDetails
 
   def publishAdd(value: String): Unit = {
     given LocalUid = localUid
@@ -135,7 +118,7 @@ class OverlayDemoNode(
 
   def shuffleTick(): Unit = overlay.foreach(_.shuffleTick())
 
-  def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]]): Unit =
+  def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]): Unit =
     overlay.foreach(_.addIncomingConnection(latent))
 
   def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
@@ -148,7 +131,7 @@ class OverlayDemoNode(
 
   def stop(): Unit = {
     given LocalUid = localUid
-    val cleanup = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, localUid.uid)
+    val cleanup    = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, localUid.uid)
     if !Bottom.isEmpty(cleanup) then {
       state = state.merge(DemoState(ReplicatedSet.empty, cleanup))
       emitStateChanged()

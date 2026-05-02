@@ -31,23 +31,23 @@ import scala.util.{Failure, Success}
 object OverlayNetworkGraph {
 
   given codecString: JsonValueCodec[String] = JsonCodecMaker.make
-  given codecConnectionDetails: JsonValueCodec[ConnectionDetails] = JsonCodecMaker.make
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
   given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
   given codecConnectedPeer: JsonValueCodec[OverlayConnectionDirectory.ConnectedPeer] = JsonCodecMaker.make
   given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
   given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
-  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ConnectionDetails]] = AWSetStateCodec[ConnectionDetails]
+  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] = AWSetStateCodec[ChannelConnectDescriptor]
   given codecReplicatedSetConnectedPeer: JsonValueCodec[ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer]] =
     AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
-  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]] =
-    HyParViewMultiplexed.envelopeCodec[DemoState, Set[ConnectionDetails]]
+  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] =
+    HyParViewMultiplexed.envelopeCodec[DemoState]
   given codecSignalSession: JsonValueCodec[WebRtcSignalingProtocol.Session] = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
 
-  private type Envelope = HyParViewMultiplexed.Envelope[DemoState, Set[ConnectionDetails]]
+  private type Envelope = HyParViewMultiplexed.Envelope[DemoState]
 
   private enum EdgeKind {
     case EagerOverlay, ActiveOverlay, PassiveOverlay
@@ -78,13 +78,13 @@ object OverlayNetworkGraph {
     }
   }
 
-  private def parseConnectionString(str: String): ConnectionDetails = {
+  private def parseConnectionString(str: String): ChannelConnectDescriptor = {
     val trimmed = str.trim
-    if trimmed.startsWith("{") then readFromString[ConnectionDetails](trimmed)
-    else readFromString[ConnectionDetails](String(Base64.getUrlDecoder.decode(trimmed), java.nio.charset.StandardCharsets.UTF_8))
+    if trimmed.startsWith("{") then readFromString[ChannelConnectDescriptor](trimmed)
+    else readFromString[ChannelConnectDescriptor](String(Base64.getUrlDecoder.decode(trimmed), java.nio.charset.StandardCharsets.UTF_8))
   }
 
-  private def encodeConnectionString(details: ConnectionDetails): String =
+  private def encodeConnectionString(details: ChannelConnectDescriptor): String =
     Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
 
   private def urlParam(name: String): Option[String] = {
@@ -96,11 +96,7 @@ object OverlayNetworkGraph {
   private def defaultSignalUrl: Option[String]  = urlParam("signal")
   private def defaultUidString: Option[String]  = urlParam("uid")
 
-  private def describeSeed(details: ConnectionDetails): String = details match
-    case ConnectionDetails.Tcp(host, port) => s"ws://$host:$port"
-    case ConnectionDetails.WebSocket(url)  => url
-    case ConnectionDetails.WebRtc(peerId)  => s"webrtc:$peerId"
-    case other                             => ConnectionDetails.describe(other)
+  private def describeSeed(details: ChannelConnectDescriptor): String = details.toString
 
   private def renderConnectionInfo(directory: OverlayConnectionDirectory.Directory): String = {
     val localStatus = currentNode match
@@ -185,7 +181,7 @@ object OverlayNetworkGraph {
       }
 
     def start(): Unit =
-      wsResolver.connect(ConnectionDetails.WebSocket(url), s"webrtc-signaling-${Uid.unwrap(node.localUid.uid)}").foreach {
+      wsResolver.connect(ChannelConnectDescriptor.WebSocket(url), s"webrtc-signaling-${Uid.unwrap(node.localUid.uid)}").foreach {
         _.prepare { conn =>
           {
             case Success(Message.Register(_)) => ()
@@ -203,13 +199,13 @@ object OverlayNetworkGraph {
         }
       }
 
-    def canConnect(details: ConnectionDetails): Boolean =
+    def canConnect(details: ChannelConnectDescriptor): Boolean =
       details match
-        case ConnectionDetails.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && connection.nonEmpty
+        case ChannelConnectDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && connection.nonEmpty
         case _                                => false
 
-    def connect(details: ConnectionDetails, label: String): Option[LatentConnection[Envelope]] = details match
-      case ConnectionDetails.WebRtc(peerId) if connection.nonEmpty && peerId != Uid.unwrap(node.localUid.uid) =>
+    def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[Envelope]] = details match
+      case ChannelConnectDescriptor.WebRtc(peerId) if connection.nonEmpty && peerId != Uid.unwrap(node.localUid.uid) =>
         val target = Uid.predefined(peerId)
         Some(new LatentConnection[Envelope] {
           override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] =
@@ -263,18 +259,25 @@ object OverlayNetworkGraph {
     val seedDetails = seedConnectionString.filter(_.nonEmpty).map(parseConnectionString)
     val localUid    = defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
     val signalUrl   = defaultSignalUrl
-    val selfDetails = signalUrl.map(_ => Set(ConnectionDetails.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
+    val selfDetails = signalUrl.map(_ => Set(ChannelConnectDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
 
     var signalingRef: Option[SignalingClient] = None
-    val webRtcResolver = new ConnectionDetailsResolver[ConnectionDetails, Envelope] {
-      override def canConnect(details: ConnectionDetails): Boolean =
-        signalingRef.exists(_.canConnect(details))
-
-      override def connect(details: ConnectionDetails, label: String): Option[LatentConnection[Envelope]] =
-        signalingRef.flatMap(_.connect(details, label))
-    }
     val wsResolver = new WebSocketConnectionDetailsResolver[Envelope]
-    val resolver   = ConnectionDetailsResolver.many(ConnectionDetailsResolver.orElse(webRtcResolver, wsResolver))
+    val resolver = new ChannelResolver[Envelope] {
+      override def canConnect(details: ChannelConnectDescriptor): Boolean =
+        details match
+          case ChannelConnectDescriptor.WebRtc(_)    => signalingRef.exists(_.canConnect(details))
+          case ChannelConnectDescriptor.WebSocket(_) => wsResolver.canConnect(details)
+          case ChannelConnectDescriptor.Tcp(_, _)    => wsResolver.canConnect(details)
+          case _                                     => false
+
+      override def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[Envelope]] =
+        details match
+          case ChannelConnectDescriptor.WebRtc(_)    => signalingRef.flatMap(_.connect(details, label))
+          case ChannelConnectDescriptor.WebSocket(_) => wsResolver.connect(details, label)
+          case ChannelConnectDescriptor.Tcp(_, _)    => wsResolver.connect(details, label)
+          case _                                     => None
+    }
 
     val node = new OverlayDemoNode(
       selfDetails = selfDetails,
@@ -290,7 +293,7 @@ object OverlayNetworkGraph {
     )
 
     val joinAfterSignal = () => seedDetails.foreach {
-      case seed: ConnectionDetails.WebRtc =>
+      case seed: ChannelConnectDescriptor.WebRtc =>
         connectionInfoText = s"${connectionInfoText}\nsignaling registered, trying webrtc seed ${describeSeed(seed)}"
         refreshText()
         node.joinSeed(seed)
@@ -303,15 +306,15 @@ object OverlayNetworkGraph {
       case Some(details) => encodeConnectionString(details)
       case None          => ""
     connectionInfoText = (seedDetails, signalUrl) match
-      case (Some(seed: ConnectionDetails.WebRtc), Some(url)) => s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before join"
-      case (Some(seed: ConnectionDetails.WebRtc), None)      => s"starting peer\nseed: ${describeSeed(seed)}\nmissing signaling server url (?signal=ws://... required for WebRTC seed)"
+      case (Some(seed: ChannelConnectDescriptor.WebRtc), Some(url)) => s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before join"
+      case (Some(seed: ChannelConnectDescriptor.WebRtc), None)      => s"starting peer\nseed: ${describeSeed(seed)}\nmissing signaling server url (?signal=ws://... required for WebRTC seed)"
       case (Some(seed), Some(url))                           => s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url"
       case (Some(seed), None)                                => s"starting peer\nseed: ${describeSeed(seed)}"
       case (None, Some(url))                                 => s"starting peer\nsignaling: $url"
       case (None, None)                                      => "starting peer"
     refreshText()
     signalingRef.foreach(_.start())
-    node.start(seedDetails.filterNot(_.isInstanceOf[ConnectionDetails.WebRtc]).toList)
+    node.start(seedDetails.filterNot(_.isInstanceOf[ChannelConnectDescriptor.WebRtc]).toList)
   }
 
   private def buildGraph(width: Double, height: Double): (Vector[GraphNode], Vector[GraphEdge]) = {
@@ -514,7 +517,7 @@ object OverlayNetworkGraph {
     val seedDetails = parseConnectionString(seedConnectionString)
     val seedUrl     = describeSeed(seedDetails)
     val localUid    = LocalUid.gen()
-    val resolver    = ConnectionDetailsResolver.many(new WebSocketConnectionDetailsResolver[Envelope])
+    val resolver    = new WebSocketConnectionDetailsResolver[Envelope]
     val node = new OverlayDemoNode(
       selfDetails = Set.empty,
       listenEnvelope = None,
