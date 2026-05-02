@@ -11,7 +11,7 @@ import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
-import replication.{PlumtreeDissemination, DeltaStorage}
+import replication.{BroadcastIO, DeltaStorage}
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
@@ -71,7 +71,7 @@ class KeyValueReplica(
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    val dataManager: PlumtreeDissemination[ClusterState] = PlumtreeDissemination(
+    val dataManager: BroadcastIO[ClusterState] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,
@@ -216,13 +216,13 @@ class KeyValueReplica(
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
-    val dataManagerWrite: PlumtreeDissemination[ClientCommWrite] = PlumtreeDissemination(
+    val dataManagerWrite: BroadcastIO[ClientCommWrite] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncomingWrite(delta)),
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
     )
-    val dataManagerRead: PlumtreeDissemination[ClientCommRead] = PlumtreeDissemination(
+    val dataManagerRead: BroadcastIO[ClientCommRead] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncomingRead(delta)),
       sendingActor = sendingActor,
@@ -279,7 +279,7 @@ class KeyValueReplica(
 
     var alivePeers: Set[Uid] = Set.empty
 
-    val dataManager: PlumtreeDissemination[ConnInformation] = PlumtreeDissemination(
+    val dataManager: BroadcastIO[ConnInformation] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,

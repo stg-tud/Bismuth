@@ -9,7 +9,7 @@ import de.rmgk.delay.{Async, Callback}
 import org.scalajs.dom
 import org.scalajs.dom.*
 import org.scalajs.dom.html.Table
-import replication.PlumtreeDissemination
+import replication.BroadcastIO
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
 
@@ -31,7 +31,7 @@ given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 
-class WebRTCConnectionView[S](val dataManager: PlumtreeDissemination[S]) {
+class WebRTCConnectionView[S](val dataManager: BroadcastIO[S]) {
 
   // label seems mostly for auto negotiation
   val channelLabel = "webrtc-channel"

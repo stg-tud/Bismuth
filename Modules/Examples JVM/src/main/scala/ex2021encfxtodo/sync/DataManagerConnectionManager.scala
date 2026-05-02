@@ -5,11 +5,12 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, LegacyKeysetSerialization, RegistryConfiguration}
 import rdts.base.LocalUid
-import replication.PlumtreeDissemination
+import replication.BroadcastIO
 
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.{ExecutorService, Executors}
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.chaining.scalaUtilChainingOps
 import scala.util.{Random, Try}
@@ -35,15 +36,14 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
 
   private val keyset =
     CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(Files.newInputStream(keysetFilePath)))
-  private val aead: Aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[Aead])
+  @unused private val aead: Aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[Aead])
 
   println(LegacyKeysetSerialization.getKeysetInfo(keyset))
 
-  val dataManager: PlumtreeDissemination[State] =
-    PlumtreeDissemination[State](
+  val dataManager: BroadcastIO[State] =
+    BroadcastIO[State](
       replicaId: LocalUid,
       receiveCallback,
-      crypto = Some(AeadTranslation(aead))
     )
 
   val port: Int = Random.nextInt(10000) + 50000

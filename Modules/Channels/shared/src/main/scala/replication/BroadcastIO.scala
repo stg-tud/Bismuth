@@ -9,20 +9,14 @@ import rdts.time.Dots
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Disseminate
 import replication.PlumtreeBroadcast.{Event, Peer}
-import replication.PlumtreeDissemination.pmscodec
+import replication.BroadcastIO.pmscodec
 import replication.ProtocolMessage.*
 
 import java.net.SocketException
-import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
-trait Aead {
-  def encrypt(plain: Array[Byte], associated: Array[Byte]): Array[Byte]
-  def decrypt(cypher: Array[Byte], associated: Array[Byte]): Try[Array[Byte]]
-}
-
-object PlumtreeDissemination {
+object BroadcastIO {
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
     override def reportFailure(cause: Throwable): Unit = throw cause
@@ -35,18 +29,16 @@ object PlumtreeDissemination {
 
   def factory[State: JsonValueCodec](
       replicaId: LocalUid,
-      @unused crypto: Option[Aead] = None,
       sendingActor: ExecutionContext = executeImmediately,
       globalAbort: => Abort = Abort(),
       deltaStorage: => DeltaStorage[State] = DiscardingHistory[State](size = 108),
   )(
-      configure: PlumtreeDissemination[State] => Unit = (_: PlumtreeDissemination[State]) => ()
+      configure: BroadcastIO[State] => Unit = (_: BroadcastIO[State]) => ()
   ): DeltaDisseminationFactory[State] = new DeltaDisseminationFactory[State] {
     override def bind(receiveCallback: State => Unit): DeltaDissemination[State] = {
-      val dissemination = PlumtreeDissemination(
+      val dissemination = BroadcastIO(
         replicaId = replicaId,
         receiveCallback = receiveCallback,
-        crypto = crypto,
         sendingActor = sendingActor,
         globalAbort = globalAbort,
         deltaStorage = deltaStorage,
@@ -63,25 +55,22 @@ object PlumtreeDissemination {
   * - [[PlumtreeBroadcast]] tracks immutable Plumtree eager/lazy roles and protocol transitions.
   * - this class maps concrete connections to abstract peers and handles payload storage / callback side effects.
   */
-class PlumtreeDissemination[State](
+class BroadcastIO[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
-    @unused crypto: Option[Aead] = None,
-    sendingActor: ExecutionContext = PlumtreeDissemination.executeImmediately,
+    sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
-    onPeerRolesChanged: () => Unit = () => (),
 )(using JsonValueCodec[State]) extends DeltaDissemination[State] {
 
   type Message = ProtocolMessage[State]
 
-  given LocalUid = replicaId
-
   val lock: AnyRef = new {}
 
-  @volatile private var connections: Map[Peer, Connection[Message]] = Map.empty
+  @volatile private var connections: Map[Peer, Connection[Message]]       = Map.empty
   @volatile private var peersByConnection: Map[Connection[Message], Peer] = Map.empty
-  @volatile private var plumtree: PlumtreeBroadcast[State] = PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
+  @volatile private var plumtree: PlumtreeBroadcast[State]                =
+    PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
   private def objectMessages(conn: LatentConnection[MessageBuffer]): LatentConnection[Message] =
     LatentConnection.adapt(
@@ -147,38 +136,35 @@ class PlumtreeDissemination[State](
   override def applyDelta(delta: State): Unit = {
     val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
     val payload = Payload(Dots.single(nextDot), delta)
-    val result = lock.synchronized(plumtree.broadcast(payload))
+    val result  = lock.synchronized(plumtree.broadcast(payload))
     applyResult(result)
   }
-
-  def eagerPeers: Set[Uid] = lock.synchronized(plumtree.eagerPeers)
 
   private def removePeer(conn: Connection[Message]): Unit = {
     val changed = lock.synchronized {
       peersByConnection.get(conn) match
-        case Some(peer) =>
-          val existed = connections.contains(peer)
-          connections = connections.removed(peer)
-          peersByConnection = peersByConnection.removed(conn)
-          val before = plumtree
-          plumtree = plumtree.removePeer(peer)
-          existed || before != plumtree
-        case None => false
+          case Some(peer) =>
+            val existed = connections.contains(peer)
+            connections = connections.removed(peer)
+            peersByConnection = peersByConnection.removed(conn)
+            val before = plumtree
+            plumtree = plumtree.removePeer(peer)
+            existed || before != plumtree
+          case None => false
     }
-    if changed then onPeerRolesChanged()
   }
 
   private def registerConnection(conn: Connection[Message]): PlumtreeBroadcast.Result[State] =
     lock.synchronized {
       peersByConnection.get(conn) match
-        case Some(peer) =>
-          connections = connections.updated(peer, conn)
-          PlumtreeBroadcast.Result(plumtree, Nil)
-        case None =>
-          val peer = Peer(conn.authenticatedPeerReplicaId.getOrElse(LocalUid.gen().uid))
-          connections = connections.updated(peer, conn)
-          peersByConnection = peersByConnection.updated(conn, peer)
-          plumtree.addPeer(peer)
+          case Some(peer) =>
+            connections = connections.updated(peer, conn)
+            PlumtreeBroadcast.Result(plumtree, Nil)
+          case None =>
+            val peer = Peer(conn.authenticatedPeerReplicaId.getOrElse(LocalUid.gen().uid))
+            connections = connections.updated(peer, conn)
+            peersByConnection = peersByConnection.updated(conn, peer)
+            plumtree.addPeer(peer)
     }
 
   private def applyResult(result: PlumtreeBroadcast.Result[State]): Unit = {
@@ -187,42 +173,35 @@ class PlumtreeDissemination[State](
       plumtree = result.state
       (result.events, before != plumtree)
     }
-    if changed then onPeerRolesChanged()
     events.foreach(handleEvent)
   }
 
   private def handleEvent(event: Event[State]): Unit =
     event match
-      case Event.Deliver(payload) =>
-        receiveCallback(payload.data)
-      case Disseminate(peers, message) =>
-        send(peers, message)
-
-  private def send(peers: List[Peer], payload: Message): Unit =
-    peers.foreach(peer => send(peer, payload))
-
-  private def send(peer: Peer, payload: Message): Unit =
-    lock.synchronized(connections.get(peer)).foreach(send(_, payload))
+        case Event.Deliver(payload) =>
+          receiveCallback(payload.data)
+        case Disseminate(peers, message) =>
+          peers.foreach(peer => lock.synchronized(connections.get(peer)).foreach(send(_, message)))
 
   private def send(conn: Connection[Message], payload: Message): Unit =
     if globalAbort.closeRequest then ()
     else
-      sendingActor.execute { () =>
-        conn.send(payload).run {
-          case Success(_) => ()
-          case Failure(_) => removePeer(conn)
+        sendingActor.execute { () =>
+          conn.send(payload).run {
+            case Success(_) => ()
+            case Failure(_) => removePeer(conn)
+          }
         }
-      }
 
   private def handleMessage(msg: Message, from: Connection[Message]): Unit = synchronized {
     if globalAbort.closeRequest then return
 
     val peer = lock.synchronized(peersByConnection.get(from)) match
-      case Some(existing) => existing
-      case None =>
-        val registration = registerConnection(from)
-        applyResult(registration)
-        lock.synchronized(peersByConnection(from))
+        case Some(existing) => existing
+        case None           =>
+          val registration = registerConnection(from)
+          applyResult(registration)
+          lock.synchronized(peersByConnection(from))
 
     val result = lock.synchronized(plumtree.handleMessage(peer, msg))
     applyResult(result)

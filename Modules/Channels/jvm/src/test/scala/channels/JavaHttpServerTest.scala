@@ -7,7 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import com.sun.net.httpserver.HttpServer
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.MultiVersionRegister
-import replication.PlumtreeDissemination
+import replication.BroadcastIO
 
 import java.net.http.HttpClient
 import java.net.{InetSocketAddress, URI}
@@ -43,7 +43,7 @@ object JavaHttpServerTest2 {
 
     val serverId = LocalUid.gen()
 
-    val serverDiss = PlumtreeDissemination[MultiVersionRegister[String]](
+    val serverDiss = BroadcastIO[MultiVersionRegister[String]](
       serverId,
       delta => println(s"server received: $delta")
     )
@@ -59,7 +59,7 @@ object JavaHttpServerTest2 {
 
     val clientId = LocalUid.gen()
 
-    val clientDiss = PlumtreeDissemination[MultiVersionRegister[String]](
+    val clientDiss = BroadcastIO[MultiVersionRegister[String]](
       clientId,
       delta => println(s"client received: $delta")
     )

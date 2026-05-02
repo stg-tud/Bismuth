@@ -3,10 +3,13 @@ package replication.overlay
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.rmgk.delay.{Async, Callback, Sync}
 import rdts.base.Uid
+import rdts.time.Dots
 import replication.JsoniterCodecs.given
-import replication.{PlumtreeDissemination, ProtocolMessage}
+import replication.PlumtreeBroadcast.Event.Disseminate
+import replication.PlumtreeBroadcast.{Event, Peer}
+import replication.ProtocolMessage.Payload
+import replication.{DeltaStorage, PlumtreeBroadcast, ProtocolMessage}
 
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
@@ -60,14 +63,16 @@ object HyParViewUnified {
 
 class HyParViewMultiplexedNode[State](
                                        val self: HyParViewMultiplexed.PeerRef,
-                                       plumtree: PlumtreeDissemination[State],
+                                       receiveCallback: State => Unit,
                                        localServer: LatentConnection[HyParViewMultiplexed.Envelope[State]],
                                        resolver: ChannelResolver[HyParViewMultiplexed.Envelope[State]],
                                        contactNode: Option[Set[ChannelConnectDescriptor]],
                                        rnd: Random,
+                                       deltaStorage: DeltaStorage[State],
                                        config: HyParViewUnified.HyParViewConfig = HyParViewUnified.HyParViewConfig.default,
                                        debug: Boolean = false,
                                        onViewChanged: (HyParViewStateMachine, HyParViewStateMachine) => Unit = (_, _) => (),
+                                       onPeerRolesChanged: () => Unit = () => (),
                                        onPeerDisconnected: Uid => Unit = (_: Uid) => (),
 ) {
   import HyParViewMultiplexed.*
@@ -86,16 +91,21 @@ class HyParViewMultiplexedNode[State](
 
   private val connections = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
   private val connectionToPeer = mutable.LinkedHashMap.empty[Connection[Envelope[State]], Uid]
-  private val plumtreeAttached = mutable.LinkedHashSet.empty[Uid]
-  private val plumtreeIncoming = mutable.LinkedHashMap.empty[Uid, Callback[ProtocolMessage[State]]]
   private val connecting = mutable.LinkedHashSet.empty[Uid]
   private val pendingMembership = mutable.LinkedHashMap.empty[Uid, Vector[HyParViewMessage]]
+  private var plumtree = PlumtreeBroadcast[State](self.uid, deltaStorage = deltaStorage)
 
   def state: HyParViewStateMachine = membership
   def activeView: Set[Uid] = membership.activeView
   def activePeers: Set[PeerRef] = membership.activePeers
   def passiveView: Set[Uid] = membership.passiveView
   def passivePeers: Set[PeerRef] = membership.passivePeers
+  def eagerView: Set[Uid] = plumtree.eagerPeers
+
+  def applyDelta(delta: State): Unit = {
+    val nextDot = plumtree.localContext.nextDot(self.uid)
+    applyPlumtreeResult(plumtree.broadcast(Payload(Dots.single(nextDot), delta)))
+  }
 
   def startServer(): Unit =
     localServer.prepare(receive(None)).runIn(abort) {
@@ -123,8 +133,6 @@ class HyParViewMultiplexedNode[State](
     connections.values.foreach(_.close())
     connections.clear()
     connectionToPeer.clear()
-    plumtreeAttached.clear()
-    plumtreeIncoming.clear()
     connecting.clear()
     pendingMembership.clear()
     val before = membership
@@ -163,8 +171,11 @@ class HyParViewMultiplexedNode[State](
             case HyParViewMessage.Disconnect(peer) => applyTransition(membership.peerLost(peer))
             case _                                => applyTransition(membership.receive(message))
         case Success(Envelope.Dissemination(message)) =>
-          val peer = expectedPeer.orElse(connectionToPeer.get(conn))
-          peer.flatMap(plumtreeIncoming.get).foreach(_.succeed(message))
+          val peer = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferDisseminationSender(message))
+          peer.foreach { uid =>
+            rememberPeerIdentity(uid, conn)
+            applyPlumtreeResult(plumtree.handleMessage(Peer(uid), message))
+          }
         case Failure(ex) =>
           expectedPeer.orElse(connectionToPeer.get(conn)).foreach { peer =>
             val reason = s"incoming connection closed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
@@ -187,6 +198,13 @@ class HyParViewMultiplexedNode[State](
       case HyParViewMessage.Shuffle(_, _, _, sender)      => Some(sender)
       case HyParViewMessage.ShuffleReply(from, _)         => Some(from)
 
+  private def inferDisseminationSender(message: ProtocolMessage[State]): Option[Uid] =
+    message match
+      case ProtocolMessage.Graft(sender, _) => Some(sender)
+      case ProtocolMessage.IHave(sender, _) => Some(sender)
+      case ProtocolMessage.Prune(sender)    => Some(sender)
+      case _                                => None
+
   private def applyTransition(result: Result): Unit = {
     val before = membership
     membership = result.state
@@ -200,19 +218,17 @@ class HyParViewMultiplexedNode[State](
   private def syncViewSideEffects(before: HyParViewStateMachine, after: HyParViewStateMachine): Unit = {
     val removedActive = before.activePeers -- after.activePeers
     val removedAny = (before.activePeers ++ before.passivePeers).map(_.uid) -- (after.activePeers ++ after.passivePeers).map(_.uid)
+    val plumtreeBefore = plumtree
     removedAny.foreach { uid =>
-      plumtreeAttached.remove(uid)
-      plumtreeIncoming.remove(uid)
+      plumtree = plumtree.removePeer(Peer(uid))
     }
     removedActive.foreach(peer => log(s"active removed ${Uid.unwrap(peer.uid)}"))
     (after.activePeers -- before.activePeers).foreach { peer =>
       log(s"active added ${Uid.unwrap(peer.uid)}")
-      connections.get(peer.uid).foreach { conn =>
-        rememberConnection(peer.uid, conn)
-        attachPlumtree(peer.uid, conn)
-      }
-      if !connections.contains(peer.uid) then startConnection(peer)
+      if connections.contains(peer.uid) then applyPlumtreeResult(plumtree.addPeer(Peer(peer.uid)))
+      else startConnection(peer)
     }
+    if plumtreeBefore != plumtree then onPeerRolesChanged()
     if before != after then onViewChanged(before, after)
   }
 
@@ -227,39 +243,21 @@ class HyParViewMultiplexedNode[State](
     val hadMembership = membership.activeView.contains(peer) || membership.passiveView.contains(peer)
     val conn = connections.remove(peer)
     conn.foreach(connectionToPeer.remove)
-    plumtreeAttached.remove(peer)
-    plumtreeIncoming.remove(peer)
+    val plumtreeBefore = plumtree
+    plumtree = plumtree.removePeer(Peer(peer))
     connecting.remove(peer)
     pendingMembership.remove(peer)
     applyTransition(membership.peerLost(peer))
+    if plumtreeBefore != plumtree then onPeerRolesChanged()
     if hadMembership || conn.nonEmpty then {
       log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
       onPeerDisconnected(peer)
     }
   }
 
-  private def attachPlumtree(peer: Uid, conn: Connection[Envelope[State]]): Unit =
-    if !plumtreeAttached.contains(peer) then
-      plumtreeAttached += peer
-      val latent = new LatentConnection[ProtocolMessage[State]] {
-        override def prepare(receiver: Receive[ProtocolMessage[State]]): Async[Abort, Connection[ProtocolMessage[State]]] =
-          Sync {
-            val wrapped = new Connection[ProtocolMessage[State]] {
-              override def info: ConnectionInfo = conn.info
-              override def authenticatedPeerReplicaId: Option[Uid] = Some(peer)
-              override def send(message: ProtocolMessage[State]) = conn.send(Envelope.Dissemination(message))
-              override def close(): Unit = conn.close()
-            }
-            plumtreeIncoming.update(peer, receiver.messageHandler(wrapped))
-            wrapped
-          }
-      }
-      plumtree.addObjectConnection(latent)
-
   private def rememberConnection(peer: Uid, conn: Connection[Envelope[State]]): Unit = {
     connectionToPeer.update(conn, peer)
-    connections.getOrElseUpdate(peer, conn)
-    if membership.activeView.contains(peer) then attachPlumtree(peer, connections(peer))
+    connections.getOrElseUpdate(peer, conn): Unit
   }
 
   private def connectToPeerDetails(details: Set[ChannelConnectDescriptor], label: String): Option[LatentConnection[Envelope[State]]] =
@@ -274,7 +272,7 @@ class HyParViewMultiplexedNode[State](
             case Success(conn) =>
               connecting -= peer.uid
               rememberConnection(peer.uid, conn)
-              if membership.activeView.contains(peer.uid) then attachPlumtree(peer.uid, connections(peer.uid))
+              if membership.activeView.contains(peer.uid) then applyPlumtreeResult(plumtree.addPeer(Peer(peer.uid)))
               pendingMembership.remove(peer.uid).getOrElse(Vector.empty).foreach(sendMembership(peer, _))
             case Failure(ex) =>
               connecting -= peer.uid
@@ -310,4 +308,26 @@ class HyParViewMultiplexedNode[State](
           case Failure(ex) => ex.printStackTrace()
         }
       case None => log(s"join skipped self=${Uid.unwrap(self.uid)} reason=no route to contact")
+
+  private def applyPlumtreeResult(result: PlumtreeBroadcast.Result[State]): Unit = {
+    val changed = plumtree != result.state
+    plumtree = result.state
+    if changed then onPeerRolesChanged()
+    result.events.foreach(handlePlumtreeEvent)
+  }
+
+  private def handlePlumtreeEvent(event: Event[State]): Unit =
+    event match
+      case Event.Deliver(payload) => receiveCallback(payload.data)
+      case Disseminate(peers, message) =>
+        peers.foreach { peer =>
+          connections.get(peer.uid).foreach { conn =>
+            conn.send(Envelope.Dissemination(message)).run {
+              case Success(_) => ()
+              case Failure(ex) =>
+                ex.printStackTrace()
+                handleDisconnectedPeer(peer.uid, s"dissemination send failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+            }
+          }
+        }
 }

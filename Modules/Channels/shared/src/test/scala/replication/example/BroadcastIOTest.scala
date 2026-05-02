@@ -8,15 +8,15 @@ import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedSet
 
 import replication.JsoniterCodecs.given
-import replication.{DeltaDisseminationFactory, PlumtreeDissemination, ProtocolMessage}
+import replication.{DeltaDisseminationFactory, BroadcastIO, ProtocolMessage}
 
-class PlumtreeDisseminationTest extends munit.FunSuite {
+class BroadcastIOTest extends munit.FunSuite {
   test("basics") {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     // I have no clue why this syntax is still not deprecated xD
-    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None)
+    val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
     val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
 
@@ -47,7 +47,7 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val nodes = Vector.fill(5)(PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None))
+    val nodes = Vector.fill(5)(BroadcastIO[Set[String]](LocalUid.gen(), _ => ()))
 
     val queue = LocalMessageQueue[ProtocolMessage[Set[String]]]()
 
@@ -85,7 +85,7 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val dd1, dd2, dd3 = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None)
+    val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
     val queue  = LocalMessageQueue[ProtocolMessage[Set[String]]]()
     val queued = QueuedLocalConnection[ProtocolMessage[Set[String]]](queue)
@@ -142,12 +142,12 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
     val sync = SynchronousLocalConnection[ProtocolMessage[Set[String]]]()
 
     val setup: DeltaDisseminationFactory[Set[String]] =
-      PlumtreeDissemination.factory(LocalUid.gen())(_.addObjectConnection(sync.server))
+      BroadcastIO.factory(LocalUid.gen())(_.addObjectConnection(sync.server))
 
     var received = List.empty[Set[String]]
     val dissemination = setup.bind(delta => received = delta :: received)
 
-    val remote = PlumtreeDissemination[Set[String]](LocalUid.gen(), _ => (), None)
+    val remote = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
     remote.addObjectConnection(sync.client("remote"))
 
     remote.applyDelta(Set("hello"))
@@ -162,11 +162,10 @@ class PlumtreeDisseminationTest extends munit.FunSuite {
 
     class Node(val uid: LocalUid) {
       var state: ReplicatedSet[String] = ReplicatedSet.empty[String]
-      val dissemination: PlumtreeDissemination[ReplicatedSet[String]] =
-        PlumtreeDissemination[ReplicatedSet[String]](
+      val dissemination: BroadcastIO[ReplicatedSet[String]] =
+        BroadcastIO[ReplicatedSet[String]](
           uid,
-          delta => state = state.merge(delta),
-          None
+          delta => state = state.merge(delta)
         )
     }
 

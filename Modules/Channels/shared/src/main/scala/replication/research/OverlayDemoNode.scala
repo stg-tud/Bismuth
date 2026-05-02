@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import replication.{PlumtreeDissemination, StateDeltaStorage}
+import replication.StateDeltaStorage
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
@@ -38,7 +38,7 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then
         state = state.merge(delta)
         emitStateChanged()
-        plumtree.applyDelta(delta)
+        overlay.foreach(_.applyDelta(delta))
 
   private def refreshLocalView(replicate: Boolean): Unit = {
     given LocalUid = localUid
@@ -47,7 +47,7 @@ class OverlayDemoNode(
       localUid.uid,
       overlay.map(_.activePeers).getOrElse(Set.empty),
       overlay.map(_.passivePeers).getOrElse(Set.empty),
-      plumtree.eagerPeers,
+      overlay.map(_.eagerView).getOrElse(Set.empty),
     )
     if !Bottom.isEmpty(delta) then
       if replicate then publish(DemoState(ReplicatedSet.empty, delta))
@@ -65,24 +65,13 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
 
-  private var onPlumtreePeerRolesChanged: () => Unit = () => ()
-
-  private val plumtree: PlumtreeDissemination[DemoState] = PlumtreeDissemination(
-    localUid,
-    delta => {
-      state = state.merge(delta)
-      emitStateChanged()
-    },
-    None,
-    globalAbort = abort,
-    deltaStorage = StateDeltaStorage(() => state),
-    onPeerRolesChanged = () => onPlumtreePeerRolesChanged(),
-  )
-
   private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
-    new replication.overlay.HyParViewMultiplexedNode(
+    new replication.overlay.HyParViewMultiplexedNode[DemoState](
       selfRef,
-      plumtree,
+      (delta: DemoState) => {
+        state = state.merge(delta)
+        emitStateChanged()
+      },
       listenEnvelope.getOrElse(new LatentConnection[HyParViewMultiplexed.Envelope[DemoState]] {
         override def prepare(receiver: channels.Receive[HyParViewMultiplexed.Envelope[DemoState]]) =
           throw UnsupportedOperationException("no local server configured for this overlay node")
@@ -90,8 +79,10 @@ class OverlayDemoNode(
       envelopeResolver,
       seed.map(Set(_)),
       random,
+      StateDeltaStorage(() => state),
       config,
       onViewChanged = (_, _) => publishLocalView(),
+      onPeerRolesChanged = () => refreshLocalView(replicate = false),
       onPeerDisconnected = removeDisconnectedConnection,
     )
 
@@ -107,7 +98,6 @@ class OverlayDemoNode(
   def start(seeds: List[ChannelConnectDescriptor] = Nil): Unit = {
     val node = newOverlay(seeds.headOption)
     overlay = Some(node)
-    onPlumtreePeerRolesChanged = () => ()
     listenEnvelope.foreach(_ => node.startServer())
     publishLocalView()
     startShuffleTask()
@@ -139,7 +129,7 @@ class OverlayDemoNode(
 
   def passiveView: Set[Uid] = overlay.map(_.passiveView).getOrElse(Set.empty)
 
-  def eagerView: Set[Uid] = plumtree.eagerPeers
+  def eagerView: Set[Uid] = overlay.map(_.eagerView).getOrElse(Set.empty)
 
   def connectionDirectory: OverlayConnectionDirectory.Directory = state.connections
 
@@ -149,7 +139,7 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(cleanup) then {
       state = state.merge(DemoState(ReplicatedSet.empty, cleanup))
       emitStateChanged()
-      plumtree.applyDelta(DemoState(ReplicatedSet.empty, cleanup))
+      overlay.foreach(_.applyDelta(DemoState(ReplicatedSet.empty, cleanup)))
     }
     overlay.foreach(_.stop())
     abort.abort()

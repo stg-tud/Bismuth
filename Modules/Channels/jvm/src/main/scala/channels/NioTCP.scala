@@ -2,7 +2,7 @@ package channels
 
 import channels.NioTCP.*
 import de.rmgk.delay.{Async, Callback, Sync}
-import replication.{Compression, PlumtreeDissemination}
+import replication.{Compression, BroadcastIO}
 
 import java.io.ByteArrayOutputStream
 import java.net.{SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
@@ -102,7 +102,7 @@ object ConcurrencyHelper {
 
         ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
-        PlumtreeDissemination.executeImmediately
+        BroadcastIO.executeImmediately
   }
 
   def makePooledExecutor() = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
