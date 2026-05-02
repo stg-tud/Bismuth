@@ -128,7 +128,6 @@ class HyParViewMultiplexedNode[State](
     connecting.clear()
     pendingMembership.clear()
     val before = membership
-    membership = membership.reset
     onViewChanged(before, membership)
     abort.abort()
   }

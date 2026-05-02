@@ -61,9 +61,11 @@ final case class HyParViewStateMachine(
   def activePeers: Set[PeerRef] = active.toSet
   def passivePeers: Set[PeerRef] = passive.toSet
 
+  /** Paper bootstrap step: send `Join` to a known contact node. */
   def initiateJoin(details: Set[ChannelConnectDescriptor]): Result =
     Result(this, List(Action.SendJoin(details, Join(self))))
 
+  /** Paper passive-view maintenance step: initiate one shuffle through a random active peer. */
   def shuffleTick(): Result =
     if active.isEmpty then Result(this, Nil)
     else
@@ -71,11 +73,13 @@ final case class HyParViewStateMachine(
       val sample = Set(self) ++ randomSubset(active.toSet, config.shuffleActiveSample) ++ randomSubset(passive.toSet, config.shufflePassiveSample)
       Result(copy(pendingShuffleSamples = pendingShuffleSamples.updated(target.uid, sample)), List(Action.Send(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid))))
 
+  /** Implementation hook: learn externally discovered peers by placing dialable ones in the passive view, then try to heal the active view. */
   def discoverPeers(peers: Set[PeerRef]): Result = {
     val next = peers.foldLeft(this)((state, peer) => state.rememberPeer(peer).addPassiveIfEligible(peer))
     next.withPromotionIfNeeded(Nil)
   }
 
+  /** Paper active-view repair step: remove a failed peer and try to promote a replacement from the passive view. */
   def peerLost(peer: Uid): Result = {
     val next = copy(
       known = known.removed(peer).updated(self.uid, self),
@@ -87,17 +91,18 @@ final case class HyParViewStateMachine(
     next.withPromotionIfNeeded(Nil)
   }
 
-  def reset: HyParViewStateMachine = HyParViewStateMachine.empty(self, config, randomIndex, canConnectTo)
-
+  /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
   def receive(message: HyParViewMessage): Result =
     message match
       case Join(newNode) =>
+        // Paper join handling at the contact: add the newcomer to active and start forwarding `ForwardJoin` through current active peers.
         val afterRemember = rememberPeer(newNode)
         val (afterActive, activeActions) = afterRemember.addActive(newNode)
         val forwardActions = afterActive.active.filterNot(_.uid == newNode.uid).map(peer => Action.Send(peer, ForwardJoin(newNode, config.activeRandomWalkLength, self.uid))).toList
         Result(afterActive, activeActions ::: Action.Send(newNode, Neighbor(self, highPriority = true)) :: forwardActions)
 
       case ForwardJoin(newNode, ttl, sender) =>
+        // Paper random-walk join propagation: maybe add to passive at PRWL, stop at ttl==0 or singleton active view, otherwise keep forwarding.
         val afterRemember = rememberPeer(newNode)
         if newNode.uid == self.uid then Result(afterRemember, Nil)
         else if ttl == 0 || afterRemember.active.size <= 1 then
@@ -114,6 +119,7 @@ final case class HyParViewStateMachine(
             Result(next, actions :+ Action.Send(newNode, Neighbor(self, highPriority = true)))
 
       case Neighbor(from, highPriority) =>
+        // Paper active-view repair handshake: high priority always accepted, low priority only if there is a free active slot.
         val afterRemember = rememberPeer(from)
         val accepted = highPriority || afterRemember.active.size < config.activeViewSize
         if accepted then
@@ -122,6 +128,7 @@ final case class HyParViewStateMachine(
         else Result(afterRemember, List(Action.Send(from, NeighborReply(self.uid, accepted = false))))
 
       case NeighborReply(from, accepted) =>
+        // Paper promotion result: accepted peers move to active; rejected peers stay passive.
         val base = copy(pendingPromotions = pendingPromotions - from)
         val (next, actions) =
           if accepted then known.get(from).map(base.addActive).getOrElse((base, Nil))
@@ -130,6 +137,7 @@ final case class HyParViewStateMachine(
         else Result(next, actions)
 
       case Disconnect(peer) =>
+        // Paper symmetric-link maintenance: a dropped active neighbor is removed from active and retained as a passive backup.
         active.find(_.uid == peer) match
           case Some(dropped) =>
             val next = copy(active = active.filterNot(_.uid == peer), pendingPromotions = pendingPromotions - peer).addPassiveIfEligible(dropped)
@@ -137,9 +145,11 @@ final case class HyParViewStateMachine(
           case None => Result(this, Nil)
 
       case Leave(leaving) =>
+        // Implementation extension: treat explicit leave like a detected peer loss.
         peerLost(leaving.uid)
 
       case Shuffle(origin, sample, ttl, sender) =>
+        // Paper shuffle walk: intermediate hops only forward; the endpoint replies and merges the received sample.
         val remembered = sample.foldLeft(rememberPeer(origin))((state, peer) => state.rememberPeer(peer))
         if ttl > 0 && remembered.active.size > 1 then
           val nextPeers = remembered.active.filterNot(_.uid == sender)
@@ -148,6 +158,7 @@ final case class HyParViewStateMachine(
         else remembered.acceptShuffle(origin, sample)
 
       case ShuffleReply(from, sample) =>
+        // Paper shuffle completion at the initiator: merge the reply sample, preferring eviction of entries previously sent to the peer.
         val remembered = sample.foldLeft(this)((state, peer) => state.rememberPeer(peer))
         val next = remembered.mergeShuffleSample(sample, remembered.pendingShuffleSamples.getOrElse(from, Set.empty)).copy(
           pendingShuffleSamples = remembered.pendingShuffleSamples.removed(from)
