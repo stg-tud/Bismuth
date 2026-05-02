@@ -2,14 +2,13 @@ package channels
 
 import channels.NioTCP.*
 import de.rmgk.delay.{Async, Callback, Sync}
-import replication.{Compression, BroadcastIO}
+import replication.{BroadcastIO, Compression}
 
-import java.io.ByteArrayOutputStream
 import java.net.{SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
-import java.util.concurrent.{ExecutorService, Executors}
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -57,12 +56,15 @@ object NioTCP {
 
   /** Per-socket protocol mode.
     *
-    * New inbound sockets start in [[Inspecting]] so we can sniff the first bytes.
+    * New inbound sockets start in [[AwaitingPlainSizeOrWebsocket]] so we can sniff the first bytes.
     * After that, each connection independently continues either as normal length-prefixed NioTCP traffic,
     * or as a websocket handshake followed by websocket frames.
     */
   enum ProtocolState {
-    case Inspecting, Plain, WebSocketHandshake, WebSocket
+    case AwaitingPlainSizeOrWebsocket
+    case Plain(len: Int)
+    case WebSocketHandshake
+    case WebSocket
   }
 
   /** Per-connection attachment stored on the selector key.
@@ -80,10 +82,11 @@ object NioTCP {
   case class ReceiveAttachment(
       connectCallback: Callback[Connection[MessageBuffer]] | Null,
       incoming: Receive[MessageBuffer],
-      protocol: ProtocolState = ProtocolState.Inspecting,
+      protocol: ProtocolState = ProtocolState.AwaitingPlainSizeOrWebsocket,
       connection: Connection[MessageBuffer] | Null = null,
       messageCallback: Callback[MessageBuffer] | Null = null,
-      buffered: Array[Byte] = Array.emptyByteArray,
+      primary: ByteBuffer = ByteBuffer.allocate(1024),
+      secondary: ByteBuffer | Null = null,
       fragments: Vector[Array[Byte]] = Vector.empty,
       fragmentOpcode: Option[Int] = None,
   )
@@ -119,9 +122,6 @@ object ConcurrencyHelper {
   */
 class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = null) {
   inline val compression: false = false
-
-  private val sniffLength    = 4
-  private val readBufferSize = 8192
 
   val selector: Selector = Selector.open()
 
@@ -221,7 +221,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
     clientChannel.register(
       selector,
       SelectionKey.OP_READ,
-      ReceiveAttachment(null, incoming, ProtocolState.Plain, conn, callback)
+      ReceiveAttachment(null, incoming, ProtocolState.AwaitingPlainSizeOrWebsocket, conn, callback)
     )
     selector.wakeup()
 
@@ -308,68 +308,89 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       clientChannel: SocketChannel,
       attachment: ReceiveAttachment
   ): Unit = {
-    val updated = attachment.copy(buffered = attachment.buffered ++ readAvailable(clientChannel))
-    val next    = updated.protocol match {
-      case ProtocolState.Inspecting         => handleInspecting(clientChannel, updated)
-      case ProtocolState.Plain              => handlePlain(updated)
-      case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(clientChannel, updated)
-      case ProtocolState.WebSocket          => handleWebSocket(updated, clientChannel, key)
+    val target =
+      if attachment.secondary == null
+      then Array(attachment.primary)
+      else Array(attachment.primary, attachment.secondary)
+    val read = clientChannel.read(target)
+
+    attachment.primary.flip()
+
+    val next = attachment.protocol match {
+      case ProtocolState.AwaitingPlainSizeOrWebsocket =>
+
+        if attachment.primary.remaining() < 4 then
+            attachment.primary.compact()
+            attachment
+        else
+            val len = attachment.primary.getInt
+            if len == WebsocketProtocol.handshakePrefix then
+                handleWebSocketHandshake(clientChannel, attachment.copy(protocol = ProtocolState.WebSocketHandshake))
+            else
+                attachment.primary.compact()
+                handlePlain(
+                  len,
+                  ensurePlainConnected(clientChannel, attachment.copy(protocol = ProtocolState.Plain(len)))
+                )
+      case ProtocolState.Plain(len)         => handlePlain(len, attachment)
+      case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(clientChannel, attachment)
+      case ProtocolState.WebSocket          => handleWebSocket(attachment, clientChannel, key)
     }
     key.attach(next)
+    if read == -1 then throw NoMoreDataException("remaining channel is empty")
+    if attachment.primary.remaining() != 1024 then handleReadable(key, clientChannel, next)
     ()
   }
 
-  private def handleInspecting(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment = {
-    if attachment.buffered.length < sniffLength then attachment
-    else if WebsocketProtocol.looksLikeHandshake(attachment.buffered) then
-        handleWebSocketHandshake(clientChannel, attachment.copy(protocol = ProtocolState.WebSocketHandshake))
-    else
-        handlePlain(ensurePlainConnected(clientChannel, attachment.copy(protocol = ProtocolState.Plain)))
-  }
+  def totalAvailable(attachment: ReceiveAttachment): Int =
+    if attachment.secondary == null then attachment.primary.remaining()
+    else attachment.primary.remaining() + attachment.secondary.remaining()
 
-  private def handlePlain(attachment: ReceiveAttachment): ReceiveAttachment = {
+  private def handlePlain(len: Int, attachment: ReceiveAttachment): ReceiveAttachment = {
     val callback = attachment.messageCallback.nn
-    var buffer   = attachment.buffered
 
-    while
-        if buffer.length < 4 then false
-        else {
-          val len = ByteBuffer.wrap(buffer, 0, 4).getInt
-          if len < 0 then throw IllegalStateException(s"negative frame size: $len")
-          if buffer.length < 4 + len then false
-          else {
-            val encodedBytes = java.util.Arrays.copyOfRange(buffer, 4, 4 + len)
-            buffer = java.util.Arrays.copyOfRange(buffer, 4 + len, buffer.length)
-            pool.execute { () =>
-              reporter.received(len + 4)
-              val decompressedBytes = if compression then Compression.decompress(encodedBytes) else encodedBytes
-              callback.succeed(ArrayMessageBuffer(decompressedBytes))
-            }
-            true
-          }
+    attachment.primary.flip()
+    if attachment.secondary != null then { attachment.secondary.flip(); () }
+
+    val available = totalAvailable(attachment)
+
+    if available >= len then
+        val buffer = new Array[Byte](len)
+        attachment.primary.get(buffer)
+        if attachment.secondary != null then
+            attachment.secondary.get(buffer, 1024, len - 1024)
+            assert(attachment.secondary.remaining() == 0, "secondary buffer should be empty")
+            ()
+
+        pool.execute { () =>
+          reporter.received(len + 4)
+          val decompressedBytes = if compression then Compression.decompress(buffer) else buffer
+          callback.succeed(ArrayMessageBuffer(decompressedBytes))
         }
-    do ()
 
-    attachment.copy(buffered = buffer)
+        attachment.primary.compact()
+        attachment.copy(secondary = null, protocol = ProtocolState.AwaitingPlainSizeOrWebsocket)
+    else
+        attachment
   }
 
   private def handleWebSocketHandshake(
       clientChannel: SocketChannel,
       attachment: ReceiveAttachment
-  ): ReceiveAttachment = {
-    WebsocketProtocol.tryParseHandshake(attachment.buffered) match {
-      case None                      => attachment.copy(protocol = ProtocolState.WebSocketHandshake)
-      case Some((request, consumed)) =>
-        writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
-        val connected = ensureWebSocketConnected(clientChannel, attachment.copy(protocol = ProtocolState.WebSocket))
-        handleWebSocket(
-          connected.copy(buffered =
-            java.util.Arrays.copyOfRange(attachment.buffered, consumed, attachment.buffered.length)
-          ),
-          clientChannel,
-          null,
-        )
-    }
+  ): ReceiveAttachment = { ???
+//    WebsocketProtocol.tryParseHandshake(attachment.buffered) match {
+//      case None                      => attachment.copy(protocol = ProtocolState.WebSocketHandshake)
+//      case Some((request, consumed)) =>
+//        writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
+//        val connected = ensureWebSocketConnected(clientChannel, attachment.copy(protocol = ProtocolState.WebSocket))
+//        handleWebSocket(
+//          connected.copy(buffered =
+//            java.util.Arrays.copyOfRange(attachment.buffered, consumed, attachment.buffered.length)
+//          ),
+//          clientChannel,
+//          null,
+//        )
+//    }
   }
 
   private def handleWebSocket(
@@ -378,7 +399,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       key: SelectionKey | Null
   ): ReceiveAttachment = {
     val callback       = attachment.messageCallback.nn
-    var buffer         = attachment.buffered
+    var buffer: Array[Byte]         = ???
     var fragments      = attachment.fragments
     var fragmentOpcode = attachment.fragmentOpcode
     var continue       = true
@@ -439,7 +460,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
             }
         }
 
-    attachment.copy(buffered = buffer, fragments = fragments, fragmentOpcode = fragmentOpcode)
+    attachment.copy(fragments = fragments, fragmentOpcode = fragmentOpcode)
   }
 
   private def ensurePlainConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
@@ -451,36 +472,14 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       attachment.copy(connection = conn, messageCallback = callback)
     }
 
-  private def ensureWebSocketConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
-    if attachment.connection != null && attachment.messageCallback != null then attachment
-    else {
-      val conn     = WebSocketConnection(clientChannel)
-      val callback = attachment.incoming.messageHandler(conn)
-      if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
-      attachment.copy(connection = conn, messageCallback = callback)
-    }
-
-  private def readAvailable(clientChannel: SocketChannel): Array[Byte] = {
-    val target = ByteArrayOutputStream()
-    val buffer = ByteBuffer.allocate(readBufferSize)
-    var done   = false
-
-    while !done do {
-      buffer.clear()
-      clientChannel.read(buffer) match {
-        case -1 if target.size() == 0 => throw NoMoreDataException("remaining channel is empty")
-        case -1                       => done = true
-        case 0                        => done = true
-        case n                        =>
-          buffer.flip()
-          val chunk = new Array[Byte](n)
-          buffer.get(chunk)
-          target.write(chunk)
-      }
-    }
-
-    target.toByteArray
-  }
+//  private def ensureWebSocketConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
+//    if attachment.connection != null && attachment.messageCallback != null then attachment
+//    else {
+//      val conn     = WebSocketConnection(clientChannel)
+//      val callback = attachment.incoming.messageHandler(conn)
+//      if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
+//      attachment.copy(connection = conn, messageCallback = callback)
+//    }
 
   private def writeFully(clientChannel: SocketChannel, buffers: Array[ByteBuffer]): Unit = {
     while buffers.exists(_.hasRemaining()) do {

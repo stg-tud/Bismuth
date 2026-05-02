@@ -20,18 +20,17 @@ case class PongFrame(data: Array[Byte])                  extends ControlFrame
 case class ReservedFrame(opcode: Int, data: Array[Byte]) extends WebsocketFrame
 
 object WebsocketProtocol {
-  private val handshakePrefix = "GET ".getBytes(StandardCharsets.US_ASCII)
-  private val headerEnd       = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII)
-  private val websocketGuid   = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  val handshakePrefix: Int =
+      val bytes = "GET ".getBytes(StandardCharsets.US_ASCII)
+      ByteBuffer.wrap(bytes).getInt
+  val headerEnd: Array[Byte] = "\r\n\r\n".getBytes(StandardCharsets.US_ASCII)
+  val websocketGuid: String  = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
   final case class HandshakeRequest(path: String, headers: Map[String, String]) {
     def header(name: String): Option[String] = headers.get(name.toLowerCase)
   }
 
   final case class ParsedFrame(frame: WebsocketFrame, consumed: Int)
-
-  def looksLikeHandshake(prefix: Array[Byte]): Boolean =
-    prefix.length >= handshakePrefix.length && handshakePrefix.indices.forall(i => prefix(i) == handshakePrefix(i))
 
   def tryParseHandshake(buffer: Array[Byte]): Option[(HandshakeRequest, Int)] = {
     val end = indexOf(buffer, headerEnd)
