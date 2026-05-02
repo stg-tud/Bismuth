@@ -91,6 +91,35 @@ class SignalingServerTest extends FunSuite {
     assertEquals(fx.server.topicPeers("topic-1"), Map.empty)
   }
 
+  test("topic lookup returns at most requested number of random peers") {
+    val fx = Fixture()
+    val ids = List("a", "b", "c", "d").map(Uid.predefined)
+
+    ids.foreach { uid =>
+      SignalingClient(
+        server = fx.serverDetails,
+        resolver = fx.resolverFor(Uid.unwrap(uid)),
+        localUid = uid,
+        initialAnnouncements = Map("topic-1" -> Set(ChannelConnectDescriptor.WebRtc(Uid.unwrap(uid)))),
+      ).start()
+    }
+
+    var lookedUp: Map[Uid, Set[ChannelConnectDescriptor]] = Map.empty
+    val observer = SignalingClient(
+      server = fx.serverDetails,
+      resolver = fx.resolverFor("observer"),
+      localUid = Uid.predefined("observer"),
+      initialAnnouncements = Map.empty,
+      onTopicInfo = (_, peers) => lookedUp = peers,
+    )
+    observer.start()
+    observer.lookupTopic("topic-1", 3)
+
+    fx.drain()
+    assertEquals(lookedUp.size, 3)
+    assert(lookedUp.keySet.subsetOf(ids.toSet))
+  }
+
   test("server relays webrtc offer and answer through signaling clients") {
     val fx = Fixture()
     val a = Uid.predefined("a")

@@ -5,7 +5,7 @@ import rdts.base.Uid
 import replication.research.SignalingServer.Message
 
 import scala.collection.mutable
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
 object SignalingServer {
   case class Session(descType: String, sdp: String)
@@ -15,7 +15,7 @@ object SignalingServer {
     case Announce(topic: String, descriptors: Set[ChannelConnectDescriptor])
     case LookupPeer(requestId: Uid, uid: Uid)
     case PeerInfo(requestId: Uid, uid: Uid, topics: Map[String, Set[ChannelConnectDescriptor]])
-    case LookupTopic(requestId: Uid, topic: String)
+    case LookupTopic(requestId: Uid, topic: String, count: Int)
     case TopicInfo(requestId: Uid, topic: String, peers: Map[Uid, Set[ChannelConnectDescriptor]])
     case Offer(from: Uid, to: Uid, session: Session)
     case Answer(from: Uid, to: Uid, session: Session)
@@ -23,7 +23,8 @@ object SignalingServer {
 }
 
 class SignalingServer(
-    debug: Boolean
+    debug: Boolean,
+    random: Random = Random(0),
 ) {
   private val abort = Abort()
 
@@ -48,6 +49,9 @@ class SignalingServer(
     announcementsByUid.iterator.collect {
       case (uid, topics) if topics.contains(topic) => uid -> topics(topic)
     }.toMap
+
+  def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ChannelConnectDescriptor]] =
+    random.shuffle(topicPeers(topic).toVector).take(math.max(0, count)).toMap
 
   private def disconnect(conn: Connection[Message]): Unit = {
     uidByConn.remove(conn).foreach { uid =>
@@ -84,8 +88,8 @@ class SignalingServer(
         case Success(Message.LookupPeer(requestId, uid)) =>
           conn.send(Message.PeerInfo(requestId, uid, peerTopics(uid))).run(_ => ())
 
-        case Success(Message.LookupTopic(requestId, topic)) =>
-          conn.send(Message.TopicInfo(requestId, topic, topicPeers(topic))).run(_ => ())
+        case Success(Message.LookupTopic(requestId, topic, count)) =>
+          conn.send(Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count))).run(_ => ())
 
         case Success(msg @ Message.Offer(from, to, _)) if uidByConn.get(conn).contains(from) =>
           clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))

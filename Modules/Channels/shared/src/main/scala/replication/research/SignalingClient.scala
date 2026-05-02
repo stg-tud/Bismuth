@@ -64,8 +64,8 @@ class SignalingClient(
   def lookupPeer(uid: Uid): Unit =
     send(Message.LookupPeer(Uid.gen(), uid))
 
-  def lookupTopic(topic: String): Unit =
-    send(Message.LookupTopic(Uid.gen(), topic))
+  def lookupTopic(topic: String, count: Int = Int.MaxValue): Unit =
+    send(Message.LookupTopic(Uid.gen(), topic, count))
 
   def offer(to: Uid, session: Session): Unit =
     send(Message.Offer(localUid, to, session))
