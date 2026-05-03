@@ -8,9 +8,9 @@ import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
-import replication.research.SignalingServer.Message
-import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, SignalingClient, SignalingServer}
 import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.SignalingServer.Message
+import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, SignalingClient}
 
 import java.net.BindException
 import java.util.Base64
@@ -19,23 +19,6 @@ import scala.util.Random
 
 /** vibecoded as part of the hyparview experiments */
 object OverlayDemo {
-
-  given codecString: JsonValueCodec[String] = JsonCodecMaker.make
-  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
-  given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
-  given codecPeerStates: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.LinkState]] =
-    ORMapStateCodec[Uid, OverlayConnectionDirectory.LinkState]
-  given codecReplicatedSetUid: JsonValueCodec[ReplicatedSet[Uid]] = AWSetStateCodec[Uid]
-  given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
-  given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
-  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] = AWSetStateCodec[ChannelConnectDescriptor]
-  given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
-    ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
-  given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
-  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] =
-    HyParViewMultiplexed.envelopeCodec[DemoState]
-  given codecSignalingSession: JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
-  given codecSignalingMessage: JsonValueCodec[Message] = JsonCodecMaker.make
 
   def connectionString(details: ChannelConnectDescriptor): String =
     Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))

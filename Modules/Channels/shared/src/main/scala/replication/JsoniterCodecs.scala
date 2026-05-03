@@ -1,10 +1,14 @@
 package replication
 
+import channels.ChannelConnectDescriptor
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.*
 import rdts.time.*
+import replication.overlay.HyParViewMultiplexed
+import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.SignalingServer.Message
 
 object JsoniterCodecs {
 
@@ -112,4 +116,10 @@ object JsoniterCodecs {
   given RGAStateCodec[E: JsonValueCodec]: JsonValueCodec[ReplicatedList[E]] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
+  /** case studies */
+
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor]               = JsonCodecMaker.make
+  given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
+  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] = JsonCodecMaker.make
+  given codecSignalMessage: JsonValueCodec[Message]                                    = JsonCodecMaker.make
 }

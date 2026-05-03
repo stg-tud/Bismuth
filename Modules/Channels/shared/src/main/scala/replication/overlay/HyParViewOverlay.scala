@@ -1,11 +1,8 @@
 package replication.overlay
 
 import channels.*
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Disseminate
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.Payload
@@ -22,8 +19,6 @@ object HyParViewMultiplexed {
     case Dissemination(message: PlumtreeMessage[State])
   }
 
-  def envelopeCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
-  given membershipCodec: JsonValueCodec[HyParViewUnified.HyParViewMessage] = JsonCodecMaker.make
 }
 
 object HyParViewUnified {

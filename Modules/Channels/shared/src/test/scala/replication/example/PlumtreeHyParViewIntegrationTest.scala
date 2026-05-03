@@ -28,8 +28,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
-  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] =
-    HyParViewMultiplexed.envelopeCodec[DemoState]
+  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] = JsonCodecMaker.make
 
   type Envelope = HyParViewMultiplexed.Envelope[DemoState]
 
