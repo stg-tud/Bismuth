@@ -2,15 +2,12 @@ package ex2026overlaydemo
 
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.Uid
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
-import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
+import replication.JsoniterCodecs.given
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.SignalingServer.Message
-import replication.research.{OverlayConnectionDirectory, OverlayDemoNode, SignalingClient}
+import replication.research.{OverlayDemoNode, SignalingClient}
 
 import java.net.BindException
 import java.util.Base64
@@ -21,10 +18,15 @@ import scala.util.Random
 object OverlayDemo {
 
   def connectionString(details: ChannelConnectDescriptor): String =
-    Base64.getUrlEncoder.withoutPadding.encodeToString(writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8))
+    Base64.getUrlEncoder.withoutPadding.encodeToString(
+      writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8)
+    )
 
   def parseConnectionString(str: String): ChannelConnectDescriptor =
-    readFromString[ChannelConnectDescriptor](String(Base64.getUrlDecoder.decode(str), java.nio.charset.StandardCharsets.UTF_8))
+    readFromString[ChannelConnectDescriptor](String(
+      Base64.getUrlDecoder.decode(str),
+      java.nio.charset.StandardCharsets.UTF_8
+    ))
 
   def jsonConnection[A: JsonValueCodec](latent: LatentConnection[MessageBuffer], name: String): LatentConnection[A] =
     LatentConnection.adapt[MessageBuffer, A](
@@ -37,7 +39,6 @@ object OverlayDemo {
     def node: OverlayDemoNode
     def stop(): Unit
   }
-
 
   object TopicNode {
     def tcp(
@@ -60,20 +61,23 @@ object OverlayDemo {
 
       val (listenDetails, listenBinary) =
         preferredPort match
-          case Some(port) =>
-            try listen(port)
-            catch
-              case _: BindException => listen(0)
-          case None => listen(0)
+            case Some(port) =>
+              try listen(port)
+              catch
+                  case _: BindException => listen(0)
+            case None => listen(0)
 
-      val listenEnvelope = jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](listenBinary, "overlay-json")
+      val listenEnvelope   = jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](listenBinary, "overlay-json")
       val envelopeResolver = new ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]] {
         override def canConnect(details: ChannelConnectDescriptor): Boolean =
           nioResolver.canConnect(details)
 
         override def connect(details: ChannelConnectDescriptor, label: String)
             : Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]] =
-          nioResolver.connect(details, label).map(jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](_, "overlay-json"))
+          nioResolver.connect(
+            details,
+            label
+          ).map(jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](_, "overlay-json"))
       }
 
       nioThread.execute(() => nio.loopSelection(nioAbort))
@@ -106,25 +110,28 @@ object OverlayDemo {
           onPeerInfo = (uid, topics) =>
             topics.values.foreach { descriptors =>
               if uid != node.localUid.uid && descriptors.nonEmpty then
-                node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
+                  node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
             },
         )
       }
       signaling.foreach { s =>
         s.start()
         s.lookupTopic(signalingTopic).run {
-          case scala.util.Success(_) => ()
+          case scala.util.Success(_)   => ()
           case scala.util.Failure(err) => err.printStackTrace()
         }
       }
 
-      new TopicNode(node, () => {
-        signaling.foreach(_.stop())
-        nioAbort.abort()
-        nio.selector.wakeup()
-        nioThread.shutdownNow()
-        ()
-      })
+      new TopicNode(
+        node,
+        () => {
+          signaling.foreach(_.stop())
+          nioAbort.abort()
+          nio.selector.wakeup()
+          nioThread.shutdownNow()
+          ()
+        }
+      )
     }
 
     def queued(
@@ -136,7 +143,7 @@ object OverlayDemo {
     ): TopicNode = {
       val details        = ChannelConnectDescriptor.QueuedLocal(id)
       val listenEnvelope = registry.queuedServer(details).get
-      val node = new OverlayDemoNode(
+      val node           = new OverlayDemoNode(
         selfDetails = Set(details),
         listenEnvelope = Some(listenEnvelope),
         envelopeResolver = registry,
@@ -167,8 +174,8 @@ object OverlayDemo {
       if trimmed == "q" then false
       else {
         if trimmed.nonEmpty then
-          if trimmed.startsWith("-") then node.publishRemove(trimmed.drop(1))
-          else node.publishAdd(trimmed)
+            if trimmed.startsWith("-") then node.publishRemove(trimmed.drop(1))
+            else node.publishAdd(trimmed)
         true
       }
     }
@@ -176,7 +183,7 @@ object OverlayDemo {
     def runConsole(lines: Iterator[String] = scala.io.Source.stdin.getLines()): Unit = {
       var continue = true
       while continue && lines.hasNext do
-        continue = handleInputLine(lines.next())
+          continue = handleInputLine(lines.next())
     }
 
     def stop(): Unit = runtime.stop()
@@ -184,21 +191,30 @@ object OverlayDemo {
 
   def main(args: Array[String]): Unit = {
     val (preferredPort, signal, topic, seed) = args.toList match
-      case Nil => (None, None, "overlay-demo", None)
-      case seed :: Nil => (None, None, "overlay-demo", Some(parseConnectionString(seed)))
-      case "--port" :: port :: Nil => (Some(port.toInt), None, "overlay-demo", None)
-      case "--port" :: port :: seed :: Nil => (Some(port.toInt), None, "overlay-demo", Some(parseConnectionString(seed)))
-      case "--signal" :: signal :: Nil => (None, Some(parseConnectionString(signal)), "overlay-demo", None)
-      case "--signal" :: signal :: "--topic" :: topic :: Nil => (None, Some(parseConnectionString(signal)), topic, None)
-      case "--port" :: port :: "--signal" :: signal :: Nil => (Some(port.toInt), Some(parseConnectionString(signal)), "overlay-demo", None)
-      case "--port" :: port :: "--signal" :: signal :: seed :: Nil => (Some(port.toInt), Some(parseConnectionString(signal)), "overlay-demo", Some(parseConnectionString(seed)))
-      case "--port" :: port :: "--signal" :: signal :: "--topic" :: topic :: Nil => (Some(port.toInt), Some(parseConnectionString(signal)), topic, None)
-      case "--port" :: port :: "--signal" :: signal :: "--topic" :: topic :: seed :: Nil => (Some(port.toInt), Some(parseConnectionString(signal)), topic, Some(parseConnectionString(seed)))
-      case _ =>
-        println("usage: [--port <port>] [--signal <connection-string>] [--topic <topic>] [<seed-connection-string>]")
-        return
+        case Nil                             => (None, None, "overlay-demo", None)
+        case seed :: Nil                     => (None, None, "overlay-demo", Some(parseConnectionString(seed)))
+        case "--port" :: port :: Nil         => (Some(port.toInt), None, "overlay-demo", None)
+        case "--port" :: port :: seed :: Nil =>
+          (Some(port.toInt), None, "overlay-demo", Some(parseConnectionString(seed)))
+        case "--signal" :: signal :: Nil => (None, Some(parseConnectionString(signal)), "overlay-demo", None)
+        case "--signal" :: signal :: "--topic" :: topic :: Nil =>
+          (None, Some(parseConnectionString(signal)), topic, None)
+        case "--port" :: port :: "--signal" :: signal :: Nil =>
+          (Some(port.toInt), Some(parseConnectionString(signal)), "overlay-demo", None)
+        case "--port" :: port :: "--signal" :: signal :: seed :: Nil =>
+          (Some(port.toInt), Some(parseConnectionString(signal)), "overlay-demo", Some(parseConnectionString(seed)))
+        case "--port" :: port :: "--signal" :: signal :: "--topic" :: topic :: Nil =>
+          (Some(port.toInt), Some(parseConnectionString(signal)), topic, None)
+        case "--port" :: port :: "--signal" :: signal :: "--topic" :: topic :: seed :: Nil =>
+          (Some(port.toInt), Some(parseConnectionString(signal)), topic, Some(parseConnectionString(seed)))
+        case _ =>
+          println("usage: [--port <port>] [--signal <connection-string>] [--topic <topic>] [<seed-connection-string>]")
+          return
 
-    val node = new NodeApp(TopicNode.tcp(preferredPort = preferredPort, signalingServer = signal, signalingTopic = topic), seeds = seed.toList)
+    val node = new NodeApp(
+      TopicNode.tcp(preferredPort = preferredPort, signalingServer = signal, signalingTopic = topic),
+      seeds = seed.toList
+    )
     println(s"seed=${connectionString(node.details)}")
     node.runConsole()
   }
