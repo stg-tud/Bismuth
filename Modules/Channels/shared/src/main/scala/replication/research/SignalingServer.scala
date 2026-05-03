@@ -34,6 +34,14 @@ class SignalingServer(
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
+  private def sendLogged(conn: Connection[Message], label: => String, msg: Message): Unit = {
+    log(s"sending $label: $msg")
+    conn.send(msg).run {
+      case Success(_)  => log(s"sent $label")
+      case Failure(ex) => log(s"failed $label ex=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+    }
+  }
+
   def stop(): Unit = abort.abort()
 
   def addIncomingConnection(latent: LatentConnection[Message]): Unit =
@@ -86,17 +94,21 @@ class SignalingServer(
           }
 
         case Success(Message.LookupPeer(requestId, uid)) =>
-          conn.send(Message.PeerInfo(requestId, uid, peerTopics(uid))).run(_ => ())
+          val topics = peerTopics(uid)
+          log(s"lookup-peer requestId=${Uid.unwrap(requestId)} uid=${Uid.unwrap(uid)} topics=${topics.keySet.mkString(",")}")
+          sendLogged(conn, s"peer-info uid=${Uid.unwrap(uid)} requestId=${Uid.unwrap(requestId)}", Message.PeerInfo(requestId, uid, topics))
 
         case Success(Message.LookupTopic(requestId, topic, count)) =>
-          conn.send(Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count))).run(_ => ())
+          val peers = randomTopicPeers(topic, count)
+          log(s"lookup-topic requestId=${Uid.unwrap(requestId)} topic=$topic count=$count peers=${peers.keySet.map(Uid.unwrap).mkString(",")}")
+          sendLogged(conn, s"topic-info topic=$topic requestId=${Uid.unwrap(requestId)} peers=${peers.size}", Message.TopicInfo(requestId, topic, peers))
 
         case Success(msg @ Message.Offer(from, to, _)) if uidByConn.get(conn).contains(from) =>
-          clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))
+          clientsByUid.get(to).foreach(target => sendLogged(target, s"offer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}", msg))
           log(s"offer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
 
         case Success(msg @ Message.Answer(from, to, _)) if uidByConn.get(conn).contains(from) =>
-          clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))
+          clientsByUid.get(to).foreach(target => sendLogged(target, s"answer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}", msg))
           log(s"answer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
 
         case Success(_) => ()
