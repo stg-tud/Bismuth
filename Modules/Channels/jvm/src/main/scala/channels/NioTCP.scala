@@ -284,31 +284,7 @@ class NioTCP(pool: ExecutionContext) {
     val initialBytes = totalAvailable(attachment)
 
     val next = attachment.protocol match {
-      case ProtocolState.Init =>
-
-        if attachment.primary.remaining() < 4 then
-            attachment.primary.compact()
-            attachment
-        else
-            val len = attachment.primary.getInt
-            if len == WebsocketProtocol.handshakePrefix then
-                handleWebSocketHandshake(clientChannel, attachment.copy(protocol = ProtocolState.WebSocketHandshake))
-            else
-                require(len < MessageBuffer.maxPayloadSize, "message too large")
-                attachment.primary.compact()
-                val upat =
-                  if len > 1024
-                  then attachment.copy(secondary = ByteBuffer.allocate(len - 1024), protocol = ProtocolState.Plain(len))
-                  else attachment.copy(protocol = ProtocolState.Plain(len))
-
-                val conn     = NioTCPConnection(clientChannel)
-                val callback = upat.incoming.messageHandler(conn)
-                if upat.connectCallback != null then upat.connectCallback.succeed(conn)
-                val withCallback = upat.copy(messageCallback = callback)
-                handlePlain(
-                  len,
-                  withCallback
-                )
+      case ProtocolState.Init               => handleInitial(clientChannel, attachment)
       case ProtocolState.Plain(len)         => handlePlain(len, attachment)
       case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(clientChannel, attachment)
       case ps: ProtocolState.WebSocket      => handleWebSocket(ps, attachment, clientChannel, key)
@@ -319,6 +295,32 @@ class NioTCP(pool: ExecutionContext) {
     val recurse       = bufferedAfter > 0 && bufferedAfter < initialBytes
     if recurse then handleReadable(key, clientChannel, next)
     ()
+  }
+
+  private def handleInitial(clientChannel: SocketChannel, attachment: ReceiveAttachment) = {
+    if attachment.primary.remaining() < 4 then
+        attachment.primary.compact()
+        attachment
+    else
+        val len = attachment.primary.getInt
+        if len == WebsocketProtocol.handshakePrefix then
+            handleWebSocketHandshake(clientChannel, attachment.copy(protocol = ProtocolState.WebSocketHandshake))
+        else
+            require(len < MessageBuffer.maxPayloadSize, "message too large")
+            attachment.primary.compact()
+            val upat =
+              if len > 1024
+              then attachment.copy(secondary = ByteBuffer.allocate(len - 1024), protocol = ProtocolState.Plain(len))
+              else attachment.copy(protocol = ProtocolState.Plain(len))
+
+            val conn     = NioTCPConnection(clientChannel)
+            val callback = upat.incoming.messageHandler(conn)
+            if upat.connectCallback != null then upat.connectCallback.succeed(conn)
+            val withCallback = upat.copy(messageCallback = callback)
+            handlePlain(
+              len,
+              withCallback
+            )
   }
 
   def totalAvailable(attachment: ReceiveAttachment): Int =
