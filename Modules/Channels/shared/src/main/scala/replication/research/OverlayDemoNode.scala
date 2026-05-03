@@ -139,8 +139,8 @@ class OverlayDemoNode(
           overlay.foreach(_.repairTick())
         }
       },
-      500L,
-      500L,
+      2000L,
+      2000L,
     )
     timer.schedule(
       new TimerTask {
