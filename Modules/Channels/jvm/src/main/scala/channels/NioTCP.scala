@@ -8,46 +8,11 @@ import replication.BroadcastIO
 import java.net.{SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.control.NonFatal
 
-class ChannelTrafficReporter {
-  val receivedBytes: AtomicLong = AtomicLong()
-  val sentBytes: AtomicLong     = AtomicLong()
-  val receivedCount: AtomicLong = AtomicLong()
-  val sentCount: AtomicLong     = AtomicLong()
-  val maxReceived: AtomicLong   = AtomicLong()
-  val maxSent: AtomicLong       = AtomicLong()
-
-  def reset(): Unit = {
-    receivedBytes.set(0)
-    sentBytes.set(0)
-    receivedCount.set(0)
-    sentCount.set(0)
-    maxSent.set(0)
-    maxReceived.set(0)
-  }
-
-  def report(): String =
-    s"received:\n  ${receivedCount.get()} messages\n  ${maxReceived.get()} max\n  ${receivedBytes.get()} bytes\nsent:\n  ${sentCount.get()} messages\n  ${maxSent.get()} max\n  ${sentBytes.get()} bytes"
-}
-object ChannelTrafficReporter {
-  extension (reporter: ChannelTrafficReporter | Null) {
-    inline def received(size: Long): Unit = if reporter != null then
-        reporter.maxReceived.accumulateAndGet(size, Math.max)
-        reporter.receivedBytes.addAndGet(size)
-        reporter.receivedCount.incrementAndGet()
-        ()
-    inline def send(size: Long): Unit = if reporter != null then
-        reporter.maxSent.accumulateAndGet(size, Math.max)
-        reporter.sentBytes.addAndGet(size)
-        reporter.sentCount.incrementAndGet()
-        ()
-  }
-}
 
 object NioTCP {
   case class AcceptAttachment(
@@ -121,7 +86,7 @@ object ConcurrencyHelper {
   * [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = null) {
+class NioTCP(pool: ExecutionContext) {
   inline val compression: false = false
 
   val selector: Selector = Selector.open()
@@ -180,7 +145,6 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       sizeBuffer.flip()
 
       writeFully(clientChannel, Array(sizeBuffer, ByteBuffer.wrap(bytes)))
-      reporter.send(messageLength + 4)
       ()
     }
 
@@ -199,7 +163,6 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       val payload = message.asArray
       val frame   = WebsocketProtocol.encodeBinaryFrame(payload)
       writeFully(clientChannel, Array(ByteBuffer.wrap(frame)))
-      reporter.send(frame.length)
       ()
     }
 
@@ -372,7 +335,6 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       case Some(buffer) =>
 
         pool.execute { () =>
-          reporter.received(len + 4)
           callback.succeed(ArrayMessageBuffer(buffer))
         }
 
@@ -450,7 +412,6 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       case Some(state) =>
         grabPayload(state.len, attachment) match {
           case Some(value) =>
-            reporter.received(state.len)
             val frame = WebsocketProtocol.tryParsePayload(state, value)
             assert(
               attachment.secondary == null || !attachment.secondary.hasRemaining,

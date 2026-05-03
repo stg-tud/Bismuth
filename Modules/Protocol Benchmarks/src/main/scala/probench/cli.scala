@@ -185,9 +185,7 @@ object cli {
               commitReads = commitReads.value
             )
 
-          val reporter = if reporting.value then ChannelTrafficReporter() else null
-
-          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor(), reporter)
+          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor())
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           val clientPortVal = clientPort.value
@@ -211,17 +209,7 @@ object cli {
             peerPortVal + 1
           ))))
 
-//          Timer().schedule(() => node.cluster.dataManager.pingAll(), 1000, 1000)
-          if reporter != null then
-              Timer().schedule(
-                () => {
-                  println(s"client ${node.uid}")
-                  println(reporter.report())
-                  reporter.reset()
-                },
-                1000,
-                1000
-              )
+
           Timer().schedule(
             () =>
               node.connInf.sendHeartbeat(): Unit,
