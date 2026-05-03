@@ -3,7 +3,7 @@ package replication
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Send
-import replication.PlumtreeBroadcast.PeerRole.Lazy
+import replication.PlumtreeBroadcast.PeerRole.{Eager, Lazy}
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
 import replication.PlumtreeMessage.*
 
@@ -124,10 +124,7 @@ final case class PlumtreeBroadcast[State](
           Result(withRole(from, PeerRole.Lazy), Nil)
 
         case IHave(_, knows) =>
-          Result(copy(remoteContext = remoteContext.updatedWith(from){
-            case None =>  Some(knows)
-            case Some(ex) => Some(ex `merge` knows)
-          }), Nil)
+          Result(withRemoteKnowledge(from, knows), Nil)
 
         case Graft(_, knows) =>
           // Repair: promote sender back to eager and replay what it is missing.
@@ -148,9 +145,16 @@ final case class PlumtreeBroadcast[State](
               val next: PlumtreeBroadcast[State] = copy(
                 localContext = localContext.merge(context),
                 deltaStorage = deltaStorage.remember(payload),
-              ).withRole(from, PeerRole.Eager)
+              ).withRemoteKnowledge(from, context).withRole(from, Eager)
               val forwarded = next.disseminate(payload, except = Set(from))
               forwarded.copy(events = Event.Deliver(payload) +: forwarded.events)
+
+  private def withRemoteKnowledge(from: Peer, knows: Dots) = {
+    copy(remoteContext = remoteContext.updatedWith(from) {
+      case None => Some(knows)
+      case Some(ex) => Some(ex `merge` knows)
+    })
+  }
 
   private def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
     copy(peerRoles = peerRoles.updated(peer, role))
