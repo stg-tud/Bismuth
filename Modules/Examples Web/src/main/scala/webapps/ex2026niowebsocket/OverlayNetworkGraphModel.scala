@@ -110,32 +110,6 @@ object OverlayNetworkGraphModel {
       }
     }
 
-    for
-        selfUid <- viewerUid
-        views   <- localViews
-    do
-        val localEager = views.eager intersect views.active
-        localEager.foreach { peerUid =>
-          val activeEdge = GraphEdge(selfUid, peerUid, EdgeKind.ActiveOverlay, 1.0)
-          edges.filterInPlace(edge =>
-            !(edge.from == activeEdge.from && edge.to == activeEdge.to && edge.kind == activeEdge.kind)
-          )
-          if !edges.exists(edge => edge.from == selfUid && edge.to == peerUid && edge.kind == EdgeKind.EagerOverlay)
-          then
-              edges += GraphEdge(
-                selfUid,
-                peerUid,
-                EdgeKind.EagerOverlay,
-                math.min(opacityByNode.getOrElse(selfUid, 1.0), opacityByNode.getOrElse(peerUid, unknownNodeOpacity))
-              )
-          detailsByNode.getOrElseUpdate(
-            selfUid,
-            s"active=${views.active.size} passive=${views.passive.size} eager=${views.eager.size}"
-          )
-          detailsByNode.getOrElseUpdate(peerUid, "eager peer")
-          opacityByNode.update(selfUid, 1.0)
-        }
-
     val filteredEdges =
       edges.iterator.map {
         case GraphEdge(from, to, EdgeKind.PassiveOverlay, opacity) =>
