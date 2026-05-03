@@ -47,12 +47,12 @@ class MerkleSearchTreeTest extends munit.ScalaCheckSuite {
 
   property("missingFrom returns exactly the missing causal-time entries") {
     forAll(Gen.listOf(implicitly[Arbitrary[ExampleData]].arbitrary), Gen.chooseNum(0, 20)) { (values, keep) =>
-      val entries      = causalEntries(values)
-      val local        = MerkleSearchTree.fromEntries(entries, branchingFactor = 4)
-      val remoteInput  = entries.take(keep)
-      val remote       = MerkleSearchTree.fromEntries(remoteInput, branchingFactor = 4)
-      val expected     = local.entries.filterNot(entry => remote.contains(entry.hash)).map(_.hash).toSet
-      val actual       = local.missingFrom(remote).map(_.hash).toSet
+      val entries     = causalEntries(values)
+      val local       = MerkleSearchTree.fromEntries(entries, branchingFactor = 4)
+      val remoteInput = entries.take(keep)
+      val remote      = MerkleSearchTree.fromEntries(remoteInput, branchingFactor = 4)
+      val expected    = local.entries.filterNot(entry => remote.contains(entry.hash)).map(_.hash).toSet
+      val actual      = local.missingFrom(remote).map(_.hash).toSet
 
       actual == expected && remote.missingFrom(local).isEmpty
     }
@@ -64,7 +64,7 @@ class MerkleSearchTreeTest extends munit.ScalaCheckSuite {
       .insert(CausalTime(2, 0, 0), ExampleData(Set("b")))
       .insert(CausalTime(3, 0, 0), ExampleData(Set("c")))
 
-    val second = t0.entries(1)
+    val second  = t0.entries(1)
     val updated = t0.update(second.hash, CausalTime(4, 0, 0), ExampleData(Set("bb")))
     val removed = updated.remove(t0.entries.head.hash)
 

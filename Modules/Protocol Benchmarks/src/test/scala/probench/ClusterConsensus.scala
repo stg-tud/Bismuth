@@ -27,7 +27,7 @@ class ClusterConsensus extends munit.FunSuite {
     secondaries(1).cluster.dataManager.addConnection(connection2.client(secondaries(1).uid.toString))
 
     val clientConnectionWrite = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommWrite]]()
-    val clientConnectionRead = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommRead]]()
+    val clientConnectionRead  = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommRead]]()
 
     primary.client.dataManagerWrite.addConnection(clientConnectionWrite.server)
     primary.client.dataManagerRead.addConnection(clientConnectionRead.server)
@@ -43,10 +43,10 @@ class ClusterConsensus extends munit.FunSuite {
     client.read("test")
 
     def repairAll(rounds: Int = 4): Unit =
-      var i = 0
-      while i < rounds do
-        nodes.foreach(_.cluster.dataManager.repairTick())
-        i += 1
+        var i = 0
+        while i < rounds do
+            nodes.foreach(_.cluster.dataManager.repairTick())
+            i += 1
 
     repairAll()
 
@@ -145,7 +145,7 @@ class ClusterConsensus extends munit.FunSuite {
 //    for n <- Range(0,100) do {
 //      Await.ready(client.writeWithResult(n.toString, "value"), 5.seconds)
 //    }
-    val f = Future.traverse(Range(0,1000))(n => client.writeWithResult(n.toString, "value"))
+    val f = Future.traverse(Range(0, 1000))(n => client.writeWithResult(n.toString, "value"))
     Await.ready(f, 5.seconds)
 
     assertEquals(primary.cluster.state.closedRounds.size, 1000)

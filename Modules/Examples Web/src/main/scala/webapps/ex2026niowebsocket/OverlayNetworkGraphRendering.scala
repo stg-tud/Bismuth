@@ -25,7 +25,13 @@ object OverlayNetworkGraphRendering {
     (logicalWidth, logicalHeight)
   }
 
-  def renderGraph(ctx: CanvasRenderingContext2D, width: Double, height: Double, nodes: Vector[GraphNode], edges: Vector[GraphEdge]): Unit = {
+  def renderGraph(
+      ctx: CanvasRenderingContext2D,
+      width: Double,
+      height: Double,
+      nodes: Vector[GraphNode],
+      edges: Vector[GraphEdge]
+  ): Unit = {
     ctx.fillStyle = "#0b1020"
     ctx.fillRect(0, 0, width, height)
 
@@ -33,26 +39,26 @@ object OverlayNetworkGraphRendering {
 
     edges.foreach { edge =>
       edge.kind match
-        case EdgeKind.EagerOverlay =>
-          ctx.strokeStyle = rgba(34, 197, 94, 0.95 * edge.opacity)
-          ctx.setLineDash(js.Array())
-          ctx.lineWidth = 3.0
-        case EdgeKind.ActiveOverlay =>
-          ctx.strokeStyle = rgba(96, 165, 250, 0.85 * edge.opacity)
-          ctx.setLineDash(js.Array())
-          ctx.lineWidth = 2.0
-        case EdgeKind.PassiveOverlay =>
-          ctx.strokeStyle = rgba(148, 163, 184, 0.55 * edge.opacity)
-          ctx.fillStyle = rgba(148, 163, 184, 0.75 * edge.opacity)
-          ctx.setLineDash(js.Array(6, 6))
-          ctx.lineWidth = 1.25
+          case EdgeKind.EagerOverlay =>
+            ctx.strokeStyle = rgba(34, 197, 94, 0.95 * edge.opacity)
+            ctx.setLineDash(js.Array())
+            ctx.lineWidth = 3.0
+          case EdgeKind.ActiveOverlay =>
+            ctx.strokeStyle = rgba(96, 165, 250, 0.85 * edge.opacity)
+            ctx.setLineDash(js.Array())
+            ctx.lineWidth = 2.0
+          case EdgeKind.PassiveOverlay =>
+            ctx.strokeStyle = rgba(148, 163, 184, 0.55 * edge.opacity)
+            ctx.fillStyle = rgba(148, 163, 184, 0.75 * edge.opacity)
+            ctx.setLineDash(js.Array(6, 6))
+            ctx.lineWidth = 1.25
       for
-        a <- byUid.get(edge.from)
-        b <- byUid.get(edge.to)
+          a <- byUid.get(edge.from)
+          b <- byUid.get(edge.to)
       do
-        edge.kind match
-          case EdgeKind.PassiveOverlay => renderPassiveArrow(ctx, a.x, a.y, b.x, b.y)
-          case _                       => renderLine(ctx, a.x, a.y, b.x, b.y)
+          edge.kind match
+              case EdgeKind.PassiveOverlay => renderPassiveArrow(ctx, a.x, a.y, b.x, b.y)
+              case _                       => renderLine(ctx, a.x, a.y, b.x, b.y)
     }
     ctx.setLineDash(js.Array())
 
@@ -75,25 +81,37 @@ object OverlayNetworkGraphRendering {
     }
   }
 
-  private def renderLine(ctx: CanvasRenderingContext2D, fromX: Double, fromY: Double, toX: Double, toY: Double): Unit = {
+  private def renderLine(
+      ctx: CanvasRenderingContext2D,
+      fromX: Double,
+      fromY: Double,
+      toX: Double,
+      toY: Double
+  ): Unit = {
     ctx.beginPath()
     ctx.moveTo(fromX, fromY)
     ctx.lineTo(toX, toY)
     ctx.stroke()
   }
 
-  private def renderPassiveArrow(ctx: CanvasRenderingContext2D, fromX: Double, fromY: Double, toX: Double, toY: Double): Unit = {
-    val dx = toX - fromX
-    val dy = toY - fromY
-    val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
-    val ux = dx / distance
-    val uy = dy / distance
+  private def renderPassiveArrow(
+      ctx: CanvasRenderingContext2D,
+      fromX: Double,
+      fromY: Double,
+      toX: Double,
+      toY: Double
+  ): Unit = {
+    val dx          = toX - fromX
+    val dy          = toY - fromY
+    val distance    = math.max(1.0, math.sqrt(dx * dx + dy * dy))
+    val ux          = dx / distance
+    val uy          = dy / distance
     val startOffset = 10.0
     val endDistance = math.max(startOffset + 8.0, distance * 0.5)
-    val startX = fromX + ux * startOffset
-    val startY = fromY + uy * startOffset
-    val endX = fromX + ux * endDistance
-    val endY = fromY + uy * endDistance
+    val startX      = fromX + ux * startOffset
+    val startY      = fromY + uy * startOffset
+    val endX        = fromX + ux * endDistance
+    val endY        = fromY + uy * endDistance
 
     ctx.beginPath()
     ctx.moveTo(startX, startY)
@@ -101,10 +119,10 @@ object OverlayNetworkGraphRendering {
     ctx.stroke()
 
     val arrowSize = 6.0
-    val leftX = endX - ux * arrowSize - uy * arrowSize * 0.6
-    val leftY = endY - uy * arrowSize + ux * arrowSize * 0.6
-    val rightX = endX - ux * arrowSize + uy * arrowSize * 0.6
-    val rightY = endY - uy * arrowSize - ux * arrowSize * 0.6
+    val leftX     = endX - ux * arrowSize - uy * arrowSize * 0.6
+    val leftY     = endY - uy * arrowSize + ux * arrowSize * 0.6
+    val rightX    = endX - ux * arrowSize + uy * arrowSize * 0.6
+    val rightY    = endY - uy * arrowSize - ux * arrowSize * 0.6
 
     ctx.beginPath()
     ctx.moveTo(endX, endY)

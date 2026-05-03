@@ -43,7 +43,8 @@ final case class NoHistory[State]() extends DeltaStorage[State] {
   override def remember(message: Payload[State]): DeltaStorage[State] = this
 }
 
-final case class DiscardingHistory[State](size: Int, pastPayloads: Queue[Payload[State]] = Queue.empty) extends DeltaStorage[State] {
+final case class DiscardingHistory[State](size: Int, pastPayloads: Queue[Payload[State]] = Queue.empty)
+    extends DeltaStorage[State] {
 
   override def getHistory: List[Payload[State]] = pastPayloads.toList
 
@@ -54,7 +55,9 @@ final case class DiscardingHistory[State](size: Int, pastPayloads: Queue[Payload
 
 }
 
-final case class StateDeltaStorage[State: JsonValueCodec](getState: () => State, dots: Dots = Dots.empty)(using Lattice[Dots]) extends DeltaStorage[State] {
+final case class StateDeltaStorage[State: JsonValueCodec](getState: () => State, dots: Dots = Dots.empty)(using
+    Lattice[Dots]
+) extends DeltaStorage[State] {
 
   override def getHistory: List[Payload[State]] =
     List(Payload(dots, getState()))
@@ -84,16 +87,17 @@ final case class MergingHistory[State: JsonValueCodec](
   override def remember(message: Payload[State]): DeltaStorage[State] = {
     val nextHistory = message :: history
     if nextHistory.sizeIs >= blockSize then
-      copy(
-        mergedHistory = nextHistory.reduce(Lattice.merge) :: mergedHistory,
-        history = List.empty,
-      )
+        copy(
+          mergedHistory = nextHistory.reduce(Lattice.merge) :: mergedHistory,
+          history = List.empty,
+        )
     else copy(history = nextHistory)
   }
 
 }
 
-final case class NonRedundantHistory[State: {JsonValueCodec, Historized}](history: Set[Payload[State]] = Set.empty) extends DeltaStorage[State] {
+final case class NonRedundantHistory[State: {JsonValueCodec, Historized}](history: Set[Payload[State]] = Set.empty)
+    extends DeltaStorage[State] {
 
   override def getHistory: List[Payload[State]] = history.toList
 
@@ -103,7 +107,9 @@ final case class NonRedundantHistory[State: {JsonValueCodec, Historized}](histor
       if !dots.contains(bufferedDelta.dots) then dots.union(bufferedDelta.redundantDots) else dots
     )
 
-    copy(history = history.filterNot(p => redundantDots.contains(p.dots)) + message.copy(redundantDots = redundantDeltas))
+    copy(history =
+      history.filterNot(p => redundantDots.contains(p.dots)) + message.copy(redundantDots = redundantDeltas)
+    )
   }
 
 }

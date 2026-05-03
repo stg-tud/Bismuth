@@ -115,12 +115,12 @@ final case class PlumtreeBroadcast[State](
   }
 
   def repairTick(): Result[State] = {
-    val older = missingByAge.lift(1).getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
+    val older       = missingByAge.lift(1).getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
     val nextBuckets = Vector(
       Map.empty[Peer, Dots],
       missingByAge.headOption.getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
     )
-    val next = copy(missingByAge = nextBuckets)
+    val next   = copy(missingByAge = nextBuckets)
     val grafts = older.keys.toList.map(peer => Disseminate(peer :: Nil, Graft(self, localContext)))
     Result(next, grafts)
   }
@@ -142,7 +142,7 @@ final case class PlumtreeBroadcast[State](
         case IHave(_, knows) =>
           // Record potentially missing knowledge and let repairTick decide when to graft.
           if !(knows <= localContext) then
-              val youngest = missingByAge.headOption.getOrElse(Map.empty)
+              val youngest        = missingByAge.headOption.getOrElse(Map.empty)
               val updatedYoungest = youngest.updatedWith(from) {
                 case Some(existing) => Some(existing.union(knows))
                 case None           => Some(knows)

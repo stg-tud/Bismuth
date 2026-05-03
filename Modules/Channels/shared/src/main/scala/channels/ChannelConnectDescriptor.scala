@@ -18,16 +18,16 @@ enum ChannelConnectDescriptor {
 class LocalConnectionRegistry[T](queued: collection.Map[String, QueuedLocalConnection[T]]) extends ChannelResolver[T] {
   def queuedServer(details: ChannelConnectDescriptor): Option[LatentConnection[T]] =
     details match
-      case ChannelConnectDescriptor.QueuedLocal(id) => queued.get(id).map(_.server)
-      case _                                        => None
+        case ChannelConnectDescriptor.QueuedLocal(id) => queued.get(id).map(_.server)
+        case _                                        => None
 
   override def canConnect(details: ChannelConnectDescriptor): Boolean =
     details match
-      case ChannelConnectDescriptor.QueuedLocal(id) => queued.contains(id)
-      case _                                        => false
+        case ChannelConnectDescriptor.QueuedLocal(id) => queued.contains(id)
+        case _                                        => false
 
   override def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[T]] =
     details match
-      case ChannelConnectDescriptor.QueuedLocal(id) => queued.get(id).map(_.client(label))
-      case _                                        => None
+        case ChannelConnectDescriptor.QueuedLocal(id) => queued.get(id).map(_.client(label))
+        case _                                        => None
 }

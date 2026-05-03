@@ -15,15 +15,15 @@ import scala.util.Random
 
 /** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
-                       selfDetails: Set[ChannelConnectDescriptor],
-                       listenEnvelope: Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]],
-                       envelopeResolver: ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]],
-                       random: Random = Random(0),
-                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-                       onStateChanged: DemoState => Unit = _ => (),
-                       printOverlayEventsToStdout: Boolean = false,
-                       runBackgroundTasks: Boolean = true,
-                       val localUid: LocalUid = LocalUid.gen(),
+    selfDetails: Set[ChannelConnectDescriptor],
+    listenEnvelope: Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]],
+    envelopeResolver: ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]],
+    random: Random = Random(0),
+    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+    onStateChanged: DemoState => Unit = _ => (),
+    printOverlayEventsToStdout: Boolean = false,
+    runBackgroundTasks: Boolean = true,
+    val localUid: LocalUid = LocalUid.gen(),
 )(using JsonValueCodec[DemoState]) {
 
   @volatile var state: DemoState = DemoState.empty
@@ -32,16 +32,15 @@ class OverlayDemoNode(
   private val abort   = Abort()
   private val timer   = Timer(true)
   private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState]] = None
-  private var mismatchChecksInRow = 0
+  private var mismatchChecksInRow                                                      = 0
 
   private val heartbeatIntervalMillis = 10_000L
   private val staleNodeAfterMillis    = 30_000L
 
   private def nowMillis(): Long = System.currentTimeMillis()
 
-  private def emitStateChanged(): Unit = {
+  private def emitStateChanged(): Unit =
     onStateChanged(state)
-  }
 
   private def publish(delta: DemoState): Unit =
     if !Bottom.isEmpty(delta) then
@@ -60,11 +59,11 @@ class OverlayDemoNode(
       nowMillis(),
     )
     if !Bottom.isEmpty(delta) then
-      if replicate then publish(DemoState(ReplicatedSet.empty, delta))
-      else {
-        state = state.merge(DemoState(ReplicatedSet.empty, delta))
-        emitStateChanged()
-      }
+        if replicate then publish(DemoState(ReplicatedSet.empty, delta))
+        else {
+          state = state.merge(DemoState(ReplicatedSet.empty, delta))
+          emitStateChanged()
+        }
   }
 
   private def publishLocalView(): Unit = refreshLocalView(replicate = true)
@@ -83,9 +82,9 @@ class OverlayDemoNode(
     else {
       mismatchChecksInRow += 1
       if mismatchChecksInRow >= 3 then
-        Console.err.println(
-          s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
-        )
+          Console.err.println(
+            s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
+          )
     }
   }
 

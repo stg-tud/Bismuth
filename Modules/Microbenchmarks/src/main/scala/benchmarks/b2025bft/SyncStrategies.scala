@@ -9,7 +9,7 @@ import ex2025ribltbft.dag.Event
 import ex2025ribltbft.datatypes.{ORSet, Op, Replica}
 import ex2025ribltbft.riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
 import ex2025ribltbft.riblt.RIBLT
-import ex2025ribltbft.riblt.RIBLT.{given_JsonValueCodec_CodedSymbol}
+import ex2025ribltbft.riblt.RIBLT.given_JsonValueCodec_CodedSymbol
 
 import java.io.ByteArrayOutputStream
 import java.security.{PrivateKey, PublicKey}

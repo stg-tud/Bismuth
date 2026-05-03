@@ -3,7 +3,7 @@ package channels
 import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
 import de.rmgk.delay.{Async, Callback, Sync}
-import replication.{BroadcastIO}
+import replication.BroadcastIO
 
 import java.net.{SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
@@ -172,8 +172,8 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
-      val bytes           = message.asArray
-      val messageLength   = bytes.length
+      val bytes         = message.asArray
+      val messageLength = bytes.length
 
       val sizeBuffer = ByteBuffer.allocate(4)
       sizeBuffer.putInt(messageLength)
@@ -318,7 +318,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
     attachment.primary.flip()
     attachment.protocol match {
       case ProtocolState.WebSocket(Some(_)) if attachment.secondary != null => attachment.secondary.flip()
-      case _ => ()
+      case _                                                                => ()
     }
     val initialBytes = totalAvailable(attachment)
 
@@ -465,8 +465,8 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
             attachment.primary.reset()
             attachment.primary.compact()
             if attachment.secondary != null then
-              attachment.secondary.compact()
-              ()
+                attachment.secondary.compact()
+                ()
             attachment
         }
     }

@@ -55,15 +55,15 @@ class BroadcastIOTest extends munit.FunSuite {
         i <- nodes.indices
         j <- (i + 1) until nodes.size
     do
-      val link = QueuedLocalConnection[BroadcastIO.Message[Set[String]]](queue)
-      nodes(i).addConnection(link.server)
-      nodes(j).addConnection(link.client(s"$j->$i"))
+        val link = QueuedLocalConnection[BroadcastIO.Message[Set[String]]](queue)
+        nodes(i).addConnection(link.server)
+        nodes(j).addConnection(link.client(s"$j->$i"))
 
     // drain connection setup traffic (initial requests/replies)
     var setupSafety = 0
     while queue.nonEmpty && setupSafety < 10000 do
-      queue.deliverAll()
-      setupSafety += 1
+        queue.deliverAll()
+        setupSafety += 1
 
     nodes.zipWithIndex.foreach { case (n, idx) =>
       n.applyDelta(Set(s"v$idx"))
@@ -71,8 +71,8 @@ class BroadcastIOTest extends munit.FunSuite {
 
     var disseminateSafety = 0
     while queue.nonEmpty && disseminateSafety < 10000 do
-      queue.deliverAll()
-      disseminateSafety += 1
+        queue.deliverAll()
+        disseminateSafety += 1
 
     val expected = Set(Set("v0"), Set("v1"), Set("v2"), Set("v3"), Set("v4"))
 
@@ -95,15 +95,15 @@ class BroadcastIOTest extends munit.FunSuite {
     dd3.addConnection(queued.client("3"))
 
     def deliverAndPrint(): Unit =
-      val log = false
-      if log then
-        println("delivering:")
-        queue.elements.foreach(e => println(s"  $e"))
-      queue.deliverAll()
-      if log then
-        println("enqueued: ")
-        queue.elements.foreach(e => println(s"  $e"))
-        println("")
+        val log = false
+        if log then
+            println("delivering:")
+            queue.elements.foreach(e => println(s"  $e"))
+        queue.deliverAll()
+        if log then
+            println("enqueued: ")
+            queue.elements.foreach(e => println(s"  $e"))
+            println("")
 
     deliverAndPrint()
     dd1.pingAll()
@@ -111,8 +111,6 @@ class BroadcastIOTest extends munit.FunSuite {
     dd2.pingAll()
     dd3.pingAll()
     deliverAndPrint()
-
-
 
     dd1.applyDelta(Set("a"))
     deliverAndPrint()
@@ -144,7 +142,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val setup: DeltaDisseminationFactory[Set[String]] =
       BroadcastIO.factory(LocalUid.gen())(_.addConnection(sync.server))
 
-    var received = List.empty[Set[String]]
+    var received      = List.empty[Set[String]]
     val dissemination = setup.bind(delta => received = delta :: received)
 
     val remote = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
@@ -157,11 +155,11 @@ class BroadcastIOTest extends munit.FunSuite {
 
   test("circle of 5 replicas converges for observe remove set operations") {
 
-    given JsonValueCodec[String] = JsonCodecMaker.make
+    given JsonValueCodec[String]                = JsonCodecMaker.make
     given JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
 
     class Node(val uid: LocalUid) {
-      var state: ReplicatedSet[String] = ReplicatedSet.empty[String]
+      var state: ReplicatedSet[String]                      = ReplicatedSet.empty[String]
       val dissemination: BroadcastIO[ReplicatedSet[String]] =
         BroadcastIO[ReplicatedSet[String]](
           uid,
@@ -172,25 +170,25 @@ class BroadcastIOTest extends munit.FunSuite {
     val queue = LocalMessageQueue[BroadcastIO.Message[ReplicatedSet[String]]]()
 
     def drainAll(nodes: => Vector[Node]): Unit =
-      var safety = 0
-      var continue = true
-      while continue && safety < 10000 do
-        while queue.nonEmpty && safety < 10000 do
-          queue.deliverAll()
-          safety += 1
-        val queueWasEmpty = !queue.nonEmpty
-        nodes.foreach(_.dissemination.repairTick())
-        continue = !queueWasEmpty || queue.nonEmpty
-      assert(safety < 10000, s"queue did not quiesce, remaining=${queue.size}")
+        var safety   = 0
+        var continue = true
+        while continue && safety < 10000 do
+            while queue.nonEmpty && safety < 10000 do
+                queue.deliverAll()
+                safety += 1
+            val queueWasEmpty = !queue.nonEmpty
+            nodes.foreach(_.dissemination.repairTick())
+            continue = !queueWasEmpty || queue.nonEmpty
+        assert(safety < 10000, s"queue did not quiesce, remaining=${queue.size}")
 
     def mkNode(): Node = new Node(LocalUid.gen())
 
     val nodes = Vector.fill(5)(mkNode())
 
     for i <- nodes.indices do
-      val link = QueuedLocalConnection[BroadcastIO.Message[ReplicatedSet[String]]](queue)
-      nodes(i).dissemination.addConnection(link.server)
-      nodes((i + 1) % nodes.size).dissemination.addConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
+        val link = QueuedLocalConnection[BroadcastIO.Message[ReplicatedSet[String]]](queue)
+        nodes(i).dissemination.addConnection(link.server)
+        nodes((i + 1) % nodes.size).dissemination.addConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
 
     def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
       node.state = node.state.merge(delta)

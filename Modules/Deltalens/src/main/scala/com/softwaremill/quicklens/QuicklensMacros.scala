@@ -112,8 +112,8 @@ object QuicklensMacros {
 
     extension (symbols: Seq[PathSymbol])
         def toPathTree: PathTree = symbols match
-            case Nil              => PathTree.Empty
-            case (symbol :: tail) => PathTree.Node(Seq(symbol -> Seq(tail.toPathTree)))
+            case Nil            => PathTree.Empty
+            case symbol :: tail => PathTree.Node(Seq(symbol -> Seq(tail.toPathTree)))
 
     enum PathSymbol {
       case Field(name: String)

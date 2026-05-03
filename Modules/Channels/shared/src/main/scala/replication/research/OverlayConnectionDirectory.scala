@@ -12,7 +12,7 @@ object OverlayConnectionDirectory {
     case Passive, Active
   }
 
-  given Bottom[LinkState] = Bottom.provide(LinkState.Passive)
+  given Bottom[LinkState]  = Bottom.provide(LinkState.Passive)
   given Lattice[LinkState] = Lattice.sumLattice
   given Bottom[Long]       = Bottom.provide(0L)
   given Lattice[Long]      = Lattice.fromOrdering[Long]
@@ -113,7 +113,7 @@ object OverlayConnectionDirectory {
       state,
       node,
       activePeers.iterator.map(peer => peer.uid -> LinkState.Active).toMap ++
-        passivePeers.iterator.map(peer => peer.uid -> LinkState.Passive).toMap,
+      passivePeers.iterator.map(peer => peer.uid -> LinkState.Passive).toMap,
       eagerPeers.toSet,
       lastSeenMillis,
     )

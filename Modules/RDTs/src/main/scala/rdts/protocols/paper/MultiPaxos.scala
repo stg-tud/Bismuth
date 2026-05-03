@@ -23,7 +23,7 @@ case class MultiPaxos[A](
     private def currentPaxos = rounds.value
 
     def closedRounds: Map[Long, A] = log
-    def nextDecisionRound = rounds.counter
+    def nextDecisionRound          = rounds.counter
 
     // public API
     def leader(using Participants): Option[Uid] = currentPaxos.currentRound match

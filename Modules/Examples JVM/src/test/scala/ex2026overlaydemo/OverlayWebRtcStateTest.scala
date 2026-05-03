@@ -13,8 +13,8 @@ class OverlayWebRtcStateTest extends munit.FunSuite {
   private def drain(queue: LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState]], limit: Int = 20000): Unit = {
     var safety = 0
     while queue.nonEmpty && safety < limit do
-      queue.deliverAll()
-      safety += 1
+        queue.deliverAll()
+        safety += 1
     assert(safety < limit, s"queue did not drain within $limit rounds, remaining=${queue.size}")
   }
 
@@ -25,7 +25,8 @@ class OverlayWebRtcStateTest extends munit.FunSuite {
 
     val node1 = new OverlayDemo.NodeApp(OverlayDemo.TopicNode.queued(registry, "n1", Random(1)))
     drain(queue)
-    val node2 = new OverlayDemo.NodeApp(OverlayDemo.TopicNode.queued(registry, "n2", Random(2)), seeds = List(node1.details))
+    val node2 =
+      new OverlayDemo.NodeApp(OverlayDemo.TopicNode.queued(registry, "n2", Random(2)), seeds = List(node1.details))
     drain(queue)
     drain(queue)
     drain(queue)

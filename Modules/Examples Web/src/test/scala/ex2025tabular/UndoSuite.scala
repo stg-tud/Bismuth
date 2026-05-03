@@ -139,8 +139,9 @@ class UndoSuite extends munit.FunSuite {
     val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
     val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
 
-    val removeDelta = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
-    val keepAliveDelta = replicaB.editAndGetDelta()(_.editCell(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), "kept"))
+    val removeDelta    = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
+    val keepAliveDelta =
+      replicaB.editAndGetDelta()(_.editCell(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), "kept"))
 
     replicaA.accumulate(keepAliveDelta)
     replicaB.accumulate(removeDelta)
@@ -150,7 +151,7 @@ class UndoSuite extends munit.FunSuite {
     assertEquals(replicaA.current.read(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex)).toList, List("kept"))
 
     val beforeUndo = replicaA.current
-    val undoDelta = replicaA.undoAndGetDelta().get
+    val undoDelta  = replicaA.undoAndGetDelta().get
 
     assertEquals(replicaA.current, beforeUndo)
 
@@ -173,7 +174,7 @@ class UndoSuite extends munit.FunSuite {
     assertEquals(replicaA.current.numColumns, 2)
     assertEquals(replicaB.current.numColumns, 2)
 
-    val insertedColumnId = replicaA.current.listColumnIds.head
+    val insertedColumnId    = replicaA.current.listColumnIds.head
     val insertedColumnIndex = replicaB.current.getColIndex(insertedColumnId).get
     val removeInsertedDelta = replicaB.editAndGetDelta()(_.removeColumn(insertedColumnIndex))
     replicaA.accumulate(removeInsertedDelta)
@@ -182,7 +183,7 @@ class UndoSuite extends munit.FunSuite {
     assertEquals(replicaB.current.numColumns, 1)
 
     val beforeUndo = replicaA.current
-    val undoDelta = replicaA.undoAndGetDelta().get
+    val undoDelta  = replicaA.undoAndGetDelta().get
 
     assertEquals(replicaA.current, beforeUndo)
 
@@ -213,7 +214,8 @@ class UndoSuite extends munit.FunSuite {
 
   test("undo range add and remove restores range state") {
     val rangeId = RangeId(Uid("undo-range"))
-    val range = Range(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), SpreadsheetCoordinate(1.toRowIndex, 1.toColumnIndex))
+    val range   =
+      Range(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), SpreadsheetCoordinate(1.toRowIndex, 1.toColumnIndex))
 
     val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("replica"))
       .repeatEdit(2, _.addRow().delta)

@@ -240,7 +240,7 @@ class KeyValueReplica(
           replicaActor.execute(() =>
             writeQueue.removeIf {
               case (_, ClientCommWrite.WriteReq(i, _)) => i == id
-            } : Unit
+            }: Unit
           )
       }
     }

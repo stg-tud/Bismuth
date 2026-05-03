@@ -19,8 +19,6 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 /** vibecoded as part of the hyparview experiments */
 object OverlayNetworkGraph {
 
-
-
   @volatile private var viewerUid: Option[Uid]                        = None
   @volatile private var network: OverlayConnectionDirectory.Directory = OverlayConnectionDirectory.empty
   @volatile private var connectionInfoText: String                    = "waiting for seed url parameter"

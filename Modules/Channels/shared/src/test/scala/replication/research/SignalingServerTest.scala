@@ -7,55 +7,55 @@ import replication.research.SignalingServer.Message
 
 class SignalingServerTest extends FunSuite {
 
-  private final class Fixture {
+  final private class Fixture {
     val serverDetails = ChannelConnectDescriptor.SynchronousLocal("signal")
-    val server = SignalingServer(debug = false)
+    val server        = SignalingServer(debug = false)
 
     def resolverFor(id: String): ChannelResolver[Message] = new ChannelResolver[Message] {
-      override def canConnect(details: ChannelConnectDescriptor): Boolean = details == serverDetails
+      override def canConnect(details: ChannelConnectDescriptor): Boolean    = details == serverDetails
       override def connect(details: ChannelConnectDescriptor, label: String) =
         if details == serverDetails then
-          val link = SynchronousLocalConnection[Message]()
-          server.addIncomingConnection(link.server)
-          Some(link.client(s"$id:$label"))
+            val link = SynchronousLocalConnection[Message]()
+            server.addIncomingConnection(link.server)
+            Some(link.client(s"$id:$label"))
         else None
     }
 
     def drain(limit: Int = 1000): Unit = ()
   }
 
-  private final class QueuedFixture {
+  final private class QueuedFixture {
     val serverDetails = ChannelConnectDescriptor.QueuedLocal("signal")
-    val server = SignalingServer(debug = false)
-    val queue = LocalMessageQueue[Message]()
+    val server        = SignalingServer(debug = false)
+    val queue         = LocalMessageQueue[Message]()
 
     def resolverFor(id: String): ChannelResolver[Message] = new ChannelResolver[Message] {
-      override def canConnect(details: ChannelConnectDescriptor): Boolean = details == serverDetails
+      override def canConnect(details: ChannelConnectDescriptor): Boolean    = details == serverDetails
       override def connect(details: ChannelConnectDescriptor, label: String) =
         if details == serverDetails then
-          val link = QueuedLocalConnection[Message](queue)
-          server.addIncomingConnection(link.server)
-          Some(link.client(s"$id:$label"))
+            val link = QueuedLocalConnection[Message](queue)
+            server.addIncomingConnection(link.server)
+            Some(link.client(s"$id:$label"))
         else None
     }
 
     def drain(limit: Int = 1000): Unit = {
       var remaining = limit
       while queue.nonEmpty && remaining > 0 do
-        queue.deliverAll()
-        remaining -= 1
+          queue.deliverAll()
+          remaining -= 1
       assert(remaining > 0, s"queued signaling fixture did not drain within $limit rounds")
     }
   }
 
   test("client announces descriptors and can query topic and peer info") {
-    val fx = Fixture()
-    val a = Uid.predefined("a")
-    val b = Uid.predefined("b")
+    val fx       = Fixture()
+    val a        = Uid.predefined("a")
+    val b        = Uid.predefined("b")
     val aDetails = Set(ChannelConnectDescriptor.QueuedLocal("a"), ChannelConnectDescriptor.WebRtc("a"))
     val bDetails = Set(ChannelConnectDescriptor.QueuedLocal("b"))
 
-    var aTopic: Map[Uid, Set[ChannelConnectDescriptor]] = Map.empty
+    var aTopic: Map[Uid, Set[ChannelConnectDescriptor]]   = Map.empty
     var bPeer: Map[String, Set[ChannelConnectDescriptor]] = Map.empty
 
     val clientA = SignalingClient(
@@ -89,8 +89,8 @@ class SignalingServerTest extends FunSuite {
   }
 
   test("server replaces old announcement state when the same uid reconnects") {
-    val fx = Fixture()
-    val a = Uid.predefined("a")
+    val fx      = Fixture()
+    val a       = Uid.predefined("a")
     val details = Set(ChannelConnectDescriptor.QueuedLocal("a"))
 
     val first = SignalingClient(
@@ -116,7 +116,7 @@ class SignalingServerTest extends FunSuite {
   }
 
   test("topic lookup returns at most requested number of random peers") {
-    val fx = Fixture()
+    val fx  = Fixture()
     val ids = List("a", "b", "c", "d").map(Uid.predefined)
 
     ids.foreach { uid =>
@@ -129,7 +129,7 @@ class SignalingServerTest extends FunSuite {
     }
 
     var lookedUp: Map[Uid, Set[ChannelConnectDescriptor]] = Map.empty
-    val observer = SignalingClient(
+    val observer                                          = SignalingClient(
       server = fx.serverDetails,
       resolver = fx.resolverFor("observer"),
       localUid = Uid.predefined("observer"),
@@ -145,8 +145,8 @@ class SignalingServerTest extends FunSuite {
   }
 
   test("disconnect removes announced peers from topic lookups and peer state") {
-    val fx = QueuedFixture()
-    val a = Uid.predefined("a")
+    val fx      = QueuedFixture()
+    val a       = Uid.predefined("a")
     val details = Set(ChannelConnectDescriptor.WebRtc("a"))
 
     val client = SignalingClient(
@@ -173,10 +173,10 @@ class SignalingServerTest extends FunSuite {
 
   test("server relays webrtc offer and answer through signaling clients") {
     val fx = Fixture()
-    val a = Uid.predefined("a")
-    val b = Uid.predefined("b")
+    val a  = Uid.predefined("a")
+    val b  = Uid.predefined("b")
 
-    var seenOffer: Option[(Uid, SignalingServer.Session)] = None
+    var seenOffer: Option[(Uid, SignalingServer.Session)]  = None
     var seenAnswer: Option[(Uid, SignalingServer.Session)] = None
 
     val clientA = SignalingClient(
@@ -192,8 +192,8 @@ class SignalingServerTest extends FunSuite {
       localUid = b,
       initialAnnouncements = Map.empty,
       onOffer = (from, session) =>
-        seenOffer = Some(from -> session)
-        clientB.answer(from, SignalingServer.Session("answer", "sdp-answer")).run(_ => ()),
+          seenOffer = Some(from -> session)
+          clientB.answer(from, SignalingServer.Session("answer", "sdp-answer")).run(_ => ()),
     )
 
     clientA.start()

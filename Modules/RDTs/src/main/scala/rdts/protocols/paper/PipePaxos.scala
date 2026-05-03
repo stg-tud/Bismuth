@@ -52,7 +52,7 @@ case class PipePaxos[A](
             Map(round.round -> Open(round.paxos.phase2a(value)))
           ) // phase 2a already checks if I am the leader
         case None =>
-          val rounded = addRound()
+          val rounded  = addRound()
           val proposed = rounded.maxPaxos.paxos.phase2a(value)
           rounded `merge` PipePaxos(Map(rounded.maxRound -> Open(proposed)))
 

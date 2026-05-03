@@ -6,7 +6,7 @@ import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
 import rdts.protocols.paper.MultipaxosPhase.LeaderElection
-import rdts.protocols.{Participants}
+import rdts.protocols.Participants
 import rdts.protocols.paper.MultiPaxos
 
 import scala.util.Try
@@ -16,7 +16,8 @@ extension [A](s1: Seq[A])
 
 class MultiPaxosSuite extends munit.ScalaCheckSuite {
 
-  override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(100).withMaxSize(500)
+  override def scalaCheckTestParameters: Parameters =
+    StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(100).withMaxSize(500)
 
   property("Multipaxos")(MultiPaxosSpec[Int](
     logging = false,

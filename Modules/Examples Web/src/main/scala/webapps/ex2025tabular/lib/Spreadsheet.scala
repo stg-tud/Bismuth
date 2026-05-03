@@ -29,13 +29,13 @@ case class Spreadsheet[A](
     )
 
     def removeValueFromConflict(rowId: RowId, colId: ColumnId, value: A)(using LocalUid): Spreadsheet[A] =
-      val newContent = rowAndColIdPairToContent.transform(rowId, colId) {
-          case None => None
+        val newContent = rowAndColIdPairToContent.transform(rowId, colId) {
+          case None      => None
           case Some(set) => Some(set.remove(value))
-      }
-      Spreadsheet[A](
-        rowAndColIdPairToContent = newContent
-      )
+        }
+        Spreadsheet[A](
+          rowAndColIdPairToContent = newContent
+        )
   }
 
   lazy val internal = SpreadsheetInternal()
@@ -92,7 +92,9 @@ case class Spreadsheet[A](
         rangeIds = rangeIds
       )
 
-  def editCell(coordinate: SpreadsheetCoordinate, value: A | Null, solveSeenConflict: Boolean = true)(using LocalUid): Spreadsheet[A] = {
+  def editCell(coordinate: SpreadsheetCoordinate, value: A | Null, solveSeenConflict: Boolean = true)(using
+      LocalUid
+  ): Spreadsheet[A] = {
     val rowId      = rowIds.readAt(coordinate.rowIdx).get
     val colId      = colIds.readAt(coordinate.colIdx).get
     val newContent =
@@ -104,7 +106,7 @@ case class Spreadsheet[A](
             case None      => Some(ReplicatedSet.empty.add(value.asInstanceOf[A]))
             case Some(set) =>
               var delta = set.add(value.asInstanceOf[A])
-              if (solveSeenConflict) delta = set.removeBy(_ != value) `merge` delta
+              if solveSeenConflict then delta = set.removeBy(_ != value) `merge` delta
               Some(delta)
       }
     Spreadsheet[A](
@@ -164,7 +166,9 @@ case class Spreadsheet[A](
         case Some(idx) => removeColumn(idx)
         case None      => this
 
-  def editCellById(rowId: RowId, colId: ColumnId, value: A | Null, solveSeenConflict: Boolean = true)(using LocalUid): Spreadsheet[A] =
+  def editCellById(rowId: RowId, colId: ColumnId, value: A | Null, solveSeenConflict: Boolean = true)(using
+      LocalUid
+  ): Spreadsheet[A] =
     (getRowIndex(rowId), getColIndex(colId)) match
         case (Some(rIdx), Some(cIdx)) =>
           editCell(SpreadsheetCoordinate(rIdx, cIdx), value, solveSeenConflict)

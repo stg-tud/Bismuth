@@ -16,18 +16,19 @@ import scala.util.Random
 
 class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
-  given codecString: JsonValueCodec[String] = JsonCodecMaker.make
-  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
+  given codecString: JsonValueCodec[String]                                  = JsonCodecMaker.make
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor]     = JsonCodecMaker.make
   given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
   given codecPeerStates: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.LinkState]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.LinkState]
-  given codecReplicatedSetUid: JsonValueCodec[ReplicatedSet[Uid]] = AWSetStateCodec[Uid]
+  given codecReplicatedSetUid: JsonValueCodec[ReplicatedSet[Uid]]          = AWSetStateCodec[Uid]
   given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
-  given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
-  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] = AWSetStateCodec[ChannelConnectDescriptor]
+  given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]]    = AWSetStateCodec[String]
+  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] =
+    AWSetStateCodec[ChannelConnectDescriptor]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
-  given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
+  given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] = JsonCodecMaker.make
 
   type Envelope = HyParViewMultiplexed.Envelope[DemoState]
@@ -35,9 +36,12 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
   private def drain(queue: LocalMessageQueue[Envelope], limit: Int): Unit = {
     var safety = 0
     while queue.nonEmpty && safety < limit do
-      queue.deliverAll()
-      safety += 1
-    assert(safety < limit, s"queue did not drain within $limit rounds, remaining=${queue.size}, messages=${queue.elements.take(10)}")
+        queue.deliverAll()
+        safety += 1
+    assert(
+      safety < limit,
+      s"queue did not drain within $limit rounds, remaining=${queue.size}, messages=${queue.elements.take(10)}"
+    )
   }
 
   private def tickOverlay(nodes: Iterable[OverlayDemoNode], queue: LocalMessageQueue[Envelope], rounds: Int): Unit =
@@ -46,7 +50,8 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
       drain(queue, limit = 20000)
     }
 
-  private def buildNetwork(n: Int): (LocalMessageQueue[Envelope], Vector[(Uid, ChannelConnectDescriptor, OverlayDemoNode)]) = {
+  private def buildNetwork(n: Int)
+      : (LocalMessageQueue[Envelope], Vector[(Uid, ChannelConnectDescriptor, OverlayDemoNode)]) = {
     val queue    = LocalMessageQueue[Envelope]()
     val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection[Envelope]]
     val registry = LocalConnectionRegistry[Envelope](queued)
@@ -57,10 +62,10 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     val ids = Vector.tabulate(n)(i => Uid.predefined(s"hp$i"))
 
     val nodes = ids.zipWithIndex.map { case (id, idx) =>
-      val details        = ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(id))
+      val details = ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(id))
       queued.update(Uid.unwrap(id), QueuedLocalConnection(queue))
       val listenEnvelope = registry.queuedServer(details).get
-      val node = new OverlayDemoNode(
+      val node           = new OverlayDemoNode(
         selfDetails = Set(details),
         listenEnvelope = Some(listenEnvelope),
         envelopeResolver = resolver,
@@ -69,7 +74,8 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
         printOverlayEventsToStdout = false,
         runBackgroundTasks = false,
       )
-      val seeds = if idx == 0 then Nil else List(ids.head).map(uid => ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(uid)))
+      val seeds =
+        if idx == 0 then Nil else List(ids.head).map(uid => ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(uid)))
       node.start(seeds)
       drain(queue, limit = 20000)
       (node.localUid.uid, details, node)
@@ -120,8 +126,14 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
       tickOverlay(survivors, queue, rounds = 8)
 
       survivors.foreach { node =>
-        assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in active view")
-        assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view")
+        assert(
+          !node.activeView.contains(leavingId),
+          s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in active view"
+        )
+        assert(
+          !node.passiveView.contains(leavingId),
+          s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view"
+        )
         assert(
           !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.contains(leavingId)),
           s"${Uid.unwrap(node.localUid.uid)} still reports departed node in replicated local view"
@@ -148,9 +160,18 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
       tickOverlay(survivors, queue, rounds = 10)
 
       survivors.foreach { node =>
-        assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in active view")
-        assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in passive view")
-        assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after bootstrap leave")
+        assert(
+          !node.activeView.contains(leavingId),
+          s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in active view"
+        )
+        assert(
+          !node.passiveView.contains(leavingId),
+          s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in passive view"
+        )
+        assert(
+          node.activeView.nonEmpty,
+          s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after bootstrap leave"
+        )
       }
       assertViewsAreDisjoint(survivors)
     } finally peers.foreach(_.stop())

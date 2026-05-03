@@ -369,9 +369,9 @@ object SpreadsheetComponent {
           r >= minRow && r <= maxRow && c >= minCol && c <= maxCol
 
       def onBoundary(
-                      range: Spreadsheet.Range,
-                      r: RowIndex,
-                      c: ColumnIndex
+          range: Spreadsheet.Range,
+          r: RowIndex,
+          c: ColumnIndex
       ): (Boolean, Boolean, Boolean, Boolean) = {
         val minRow = math.min(range.from.rowIdx, range.to.rowIdx)
         val maxRow = math.max(range.from.rowIdx, range.to.rowIdx)

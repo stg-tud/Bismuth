@@ -55,7 +55,7 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
         case RTCDataChannelState.closed =>
           rtcDebug(channel, "receive() found channel already closed")
           Async.handler.fail(WebRTCReceiveFailed("channel already closed"))
-        case _                          =>
+        case _ =>
 
   }
   def send(message: MessageBuffer): Async[Any, Unit] =
@@ -138,7 +138,7 @@ object WebRTCConnection {
             case RTCDataChannelState.closed =>
               rtcDebug(channel, "latent succeedConnection found channel already closed")
               handler.fail(WebRTCReceiveFailed("channel already closed"))
-            case _                          =>
+            case _ =>
       }
 
       connector

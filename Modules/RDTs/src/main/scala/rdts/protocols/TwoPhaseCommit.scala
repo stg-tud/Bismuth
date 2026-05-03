@@ -21,7 +21,7 @@ case class TwoPhaseCommit[A](
     def commitRequest(tx: A)(using LocalUid, Participants): TwoPhaseCommit[A] =
       // check if there is a transaction ongoing
       transaction match
-          case None => TwoPhaseCommit(Some(tx), voting = voting.voteFor(Prepare))
+          case None    => TwoPhaseCommit(Some(tx), voting = voting.voteFor(Prepare))
           case Some(_) => TwoPhaseCommit()
 
     // as a participant, vote for commit in the request phase

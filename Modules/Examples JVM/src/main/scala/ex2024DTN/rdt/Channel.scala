@@ -26,7 +26,7 @@ class ClientContext[T: JsonValueCodec](
   override def send(message: BroadcastIO.Message[T]): Async[Any, Unit] =
     message match
         case BroadcastIO.Message.Ping(_) | BroadcastIO.Message.Pong(_) => Async {}
-        case BroadcastIO.Message.Protocol(Graft(sender, dots)) =>
+        case BroadcastIO.Message.Protocol(Graft(sender, dots))         =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
           // todo: actually there should be no requests being sent anymore then. is that the case?
           operationMode match
@@ -73,13 +73,15 @@ class Channel[T: JsonValueCodec](
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
             case RdtMessageType.Request => cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Graft(dtnid, dots)))
-            case RdtMessageType.Payload => cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Payload(dots, readFromArray[T](payload))))
+            case RdtMessageType.Payload =>
+              cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Payload(dots, readFromArray[T](payload))))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
-          case ClientOperationMode.PushAll      => cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Graft(dtnid, Dots.empty)))
+          case ClientOperationMode.PushAll =>
+            cb.succeed(BroadcastIO.Message.Protocol(PlumtreeMessage.Graft(dtnid, Dots.empty)))
           case ClientOperationMode.RequestLater =>
 
       conn

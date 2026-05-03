@@ -19,7 +19,8 @@ class BenchmarkRelayReplica(
 ) {
   val sync: ForwardingSync[TravelPlan] = ForwardingSync(
     identity,
-    (id, recv) => ChannelConnectionManager(id, recv, ifAddress, requestedListenPort = listenPort),// disableLogging = false),
+    (id, recv) =>
+      ChannelConnectionManager(id, recv, ifAddress, requestedListenPort = listenPort), // disableLogging = false),
     aclGenesis,
     enforceAcl,
     dots => onRdtChanged(dots, this)

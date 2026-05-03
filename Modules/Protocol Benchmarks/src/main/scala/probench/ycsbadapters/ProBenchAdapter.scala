@@ -68,17 +68,17 @@ class ProBenchAdapter extends DB {
   private var operationTimeout: FiniteDuration   = 1.seconds
   private var endpoints: Array[(String, String)] = Array.empty
   private var currentEndpointIndex: Int          = -1
-  private val initialBackoff: Long = 0
-  private var backoff: Long = initialBackoff
+  private val initialBackoff: Long               = 0
+  private var backoff: Long                      = initialBackoff
 
-  private def connectToNextEndpoint(): Boolean =  {
+  private def connectToNextEndpoint(): Boolean = {
     if currentEndpointIndex == 0 && endpoints.length == 1 then {
       println("no more endpoints to try. All known endpoints have failed")
       return false
     } else if currentEndpointIndex + 1 < endpoints.length then
-      currentEndpointIndex = currentEndpointIndex + 1
+        currentEndpointIndex = currentEndpointIndex + 1
     else
-      currentEndpointIndex = 0 // start from beginning
+        currentEndpointIndex = 0 // start from beginning
 
     val (ip, port) = endpoints(currentEndpointIndex)
     println(s"ensuring connection to $ip:$port")
@@ -97,7 +97,7 @@ class ProBenchAdapter extends DB {
   override def init(): Unit = {
     val props: Properties = getProperties
     if props.stringPropertyNames.contains("pb.op-timeout") then
-      operationTimeout = Integer.parseInt(props.getProperty("pb.op-timeout")).seconds
+        operationTimeout = Integer.parseInt(props.getProperty("pb.op-timeout")).seconds
     endpoints = props.getProperty("pb.endpoints").split(" ").map(e =>
         val s = e.split(":")
         (s(0), s(1))
@@ -117,7 +117,7 @@ class ProBenchAdapter extends DB {
         case exception: concurrent.TimeoutException =>
           println(s"failed to write sth")
           exception.printStackTrace()
-          connectToNextEndpoint(): Unit  // try with next endpoint
+          connectToNextEndpoint(): Unit // try with next endpoint
           Status.ERROR
   }
 

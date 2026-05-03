@@ -20,24 +20,24 @@ type ConnInformation = HeartbeatQuorum
 type ClusterState    = MultiPaxos[ClientCommWrite.WriteReq]
 
 enum ClientCommRead:
-  case ReadReq(id: Uid, kvOperation: KVOperation.Read[String,String])
-  case ReadRes(id: Uid, value: String)
+    case ReadReq(id: Uid, kvOperation: KVOperation.Read[String, String])
+    case ReadRes(id: Uid, value: String)
 enum ClientCommWrite:
-  case WriteReq(id: Uid, kvOperation: KVOperation.Write[String,String])
-  case WriteRes(id: Uid, value: String)
-  
+    case WriteReq(id: Uid, kvOperation: KVOperation.Write[String, String])
+    case WriteRes(id: Uid, value: String)
+
 object ClientComm {
   given l1: Lattice[Payload[ClientCommWrite]] =
-    given Lattice[Int] = Lattice.fromOrdering
-    given Lattice[ClientCommWrite] = Lattice.assertEquals
+      given Lattice[Int]             = Lattice.fromOrdering
+      given Lattice[ClientCommWrite] = Lattice.assertEquals
 
-    Lattice.derived
+      Lattice.derived
 
   given l2: Lattice[Payload[ClientCommRead]] =
-    given Lattice[Int] = Lattice.fromOrdering
-    given Lattice[ClientCommRead] = Lattice.assertEquals
+      given Lattice[Int]            = Lattice.fromOrdering
+      given Lattice[ClientCommRead] = Lattice.assertEquals
 
-    Lattice.derived
+      Lattice.derived
 }
 
 object Codecs {
@@ -46,10 +46,10 @@ object Codecs {
 
   // codecs
   given JsonValueCodec[ClusterState] =
-  JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   given clusterCodec: JsonValueCodec[PlumtreeMessage[ClusterState]] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given JsonValueCodec[ClientCommRead] = JsonCodecMaker.make
+  given JsonValueCodec[ClientCommRead]  = JsonCodecMaker.make
   given JsonValueCodec[ClientCommWrite] = JsonCodecMaker.make
   given JsonValueCodec[ConnInformation] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))

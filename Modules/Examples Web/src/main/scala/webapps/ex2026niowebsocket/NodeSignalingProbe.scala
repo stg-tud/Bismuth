@@ -26,11 +26,11 @@ object NodeSignalingProbe {
       topic: String = "overlay-demo",
       uidString: String = s"node-signaling-probe-${js.Date.now().toLong}",
       timeoutMs: Int = 5000,
-  ): js.Promise[String] =
+  ): js.Promise[String] = {
     js.Promise[String] { (resolve, reject) =>
-      val resolver = new WebSocketConnectionDetailsResolver[Message]
-      val localUid = Uid.predefined(uidString)
-      var completed = false
+      val resolver                                = new WebSocketConnectionDetailsResolver[Message]
+      val localUid                                = Uid.predefined(uidString)
+      var completed                               = false
       var timeoutHandle: Option[SetTimeoutHandle] = None
 
       def finish(result: => String): Unit =
@@ -63,14 +63,15 @@ object NodeSignalingProbe {
           log(s"registered uid=$uidString, looking up topic '$topic'")
           client.lookupTopic(topic, 8).run {
             case Success(_)   => ()
-            case Failure(err) => fail(s"lookupTopic failed: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
+            case Failure(err) =>
+              fail(s"lookupTopic failed: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
           }
         },
         onTopicInfo = (foundTopic, peers) => {
           log(s"received topic info for '$foundTopic' with peers=${peers.keySet.map(Uid.unwrap).mkString(",")}")
           if foundTopic == topic then
-            if peers.contains(localUid) then finish(s"topic-info:$uidString:${peers.size}")
-            else fail(s"topic info for '$topic' did not include local uid '$uidString'")
+              if peers.contains(localUid) then finish(s"topic-info:$uidString:${peers.size}")
+              else fail(s"topic info for '$topic' did not include local uid '$uidString'")
         },
         onPeerInfo = (uid, topics) =>
           log(s"received peer info for ${Uid.unwrap(uid)} with topics=${topics.keySet.mkString(",")}"),
@@ -87,4 +88,5 @@ object NodeSignalingProbe {
 
       client.start()
     }
+  }
 }

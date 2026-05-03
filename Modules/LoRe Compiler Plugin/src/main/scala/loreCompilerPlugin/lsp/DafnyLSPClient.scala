@@ -116,16 +116,16 @@ class DafnyLSPClient(logLevel: LogLevel = LogLevel.None) {
   }
 
   /** Reads an JSON-RPC message from the language server by first reading the header until the two CRLF
-     * sequences ("\r\n\r\n") are found, and then reading the JSON payload of the expected length.
-     * This ignores any Content-Type headers, if included, and only processes Content-Length.
-     * If there are no messages to be read, this will block until there is one.
-     *
-     * @return The read message.
-     */
+    * sequences ("\r\n\r\n") are found, and then reading the JSON payload of the expected length.
+    * This ignores any Content-Type headers, if included, and only processes Content-Length.
+    * If there are no messages to be read, this will block until there is one.
+    *
+    * @return The read message.
+    */
   private def readStringMessage(): String = {
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Reading a message from the language server...")
     val proc: Process = process.getOrElse(throw new Error("LSP Client not initialized"))
-    val is = new BufferedInputStream(proc.getInputStream)
+    val is            = new BufferedInputStream(proc.getInputStream)
 
     if logLevel.isLevelOrHigher(LogLevel.Verbose) then println("Reading header from stdout...")
     val headerBytes: ArrayBuffer[Byte] = new ArrayBuffer[Byte]()

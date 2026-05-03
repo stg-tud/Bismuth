@@ -190,7 +190,9 @@ class BroadcastIO[State](
         case Event.Deliver(payload) =>
           receiveCallback(payload.data)
         case Disseminate(peers, message) =>
-          peers.foreach(peer => lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Message.Protocol(message))))
+          peers.foreach(peer =>
+            lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Message.Protocol(message)))
+          )
 
   private def send(conn: Connection[Message], payload: Message): Unit =
     if globalAbort.closeRequest then ()
@@ -213,12 +215,12 @@ class BroadcastIO[State](
           lock.synchronized(peersByConnection(from))
 
     msg match
-      case BroadcastIO.Message.Ping(time) =>
-        send(from, BroadcastIO.Message.Pong(time))
-      case BroadcastIO.Message.Pong(_) =>
-        ()
-      case BroadcastIO.Message.Protocol(protocol) =>
-        val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
-        applyResult(result)
+        case BroadcastIO.Message.Ping(time) =>
+          send(from, BroadcastIO.Message.Pong(time))
+        case BroadcastIO.Message.Pong(_) =>
+          ()
+        case BroadcastIO.Message.Protocol(protocol) =>
+          val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
+          applyResult(result)
   }
 }

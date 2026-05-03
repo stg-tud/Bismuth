@@ -20,7 +20,9 @@ object OverlayNetworkGraphNetworking {
 
   type Envelope = HyParViewMultiplexed.Envelope[DemoState]
 
-  def envelopeConnection(latent: LatentConnection[MessageBuffer])(using JsonValueCodec[Envelope]): LatentConnection[Envelope] =
+  def envelopeConnection(latent: LatentConnection[MessageBuffer])(using
+      JsonValueCodec[Envelope]
+  ): LatentConnection[Envelope] =
     LatentConnection.adapt[MessageBuffer, Envelope](
       mb => readFromArray[Envelope](mb.asArray),
       msg => ArrayMessageBuffer(writeToArray(msg)),
@@ -45,7 +47,8 @@ object OverlayNetworkGraphNetworking {
       )
 
     def closeChannel(reason: String): Unit =
-      if channel.readyState != dom.RTCDataChannelState.closed && channel.readyState != dom.RTCDataChannelState.closing then {
+      if channel.readyState != dom.RTCDataChannelState.closed && channel.readyState != dom.RTCDataChannelState.closing
+      then {
         logState(s"closing data channel due to $reason")
         channel.close()
       }
@@ -53,19 +56,28 @@ object OverlayNetworkGraphNetworking {
     logState("installed failure propagation")
 
     var pollHandle = 0
-    pollHandle = dom.window.setInterval(() => {
-      if channel.readyState == dom.RTCDataChannelState.connecting then logState("poll")
-      else dom.window.clearInterval(pollHandle)
-    }, 1000)
+    pollHandle = dom.window.setInterval(
+      () => {
+        if channel.readyState == dom.RTCDataChannelState.connecting then logState("poll")
+        else dom.window.clearInterval(pollHandle)
+      },
+      1000
+    )
 
-    channel.addEventListener("open", (_: dom.Event) => {
-      logState("data channel open")
-      dom.window.clearInterval(pollHandle)
-    })
-    channel.addEventListener("close", (_: dom.Event) => {
-      logState("data channel close")
-      dom.window.clearInterval(pollHandle)
-    })
+    channel.addEventListener(
+      "open",
+      (_: dom.Event) => {
+        logState("data channel open")
+        dom.window.clearInterval(pollHandle)
+      }
+    )
+    channel.addEventListener(
+      "close",
+      (_: dom.Event) => {
+        logState("data channel close")
+        dom.window.clearInterval(pollHandle)
+      }
+    )
     channel.addEventListener("error", (_: dom.Event) => logState("data channel error"))
 
     connector.peerConnection.addEventListener(
@@ -74,10 +86,10 @@ object OverlayNetworkGraphNetworking {
         val state = connector.peerConnection.iceConnectionState
         logState(s"iceconnectionstatechange -> $state")
         state match
-          case dom.RTCIceConnectionState.failed       => closeChannel("ice failed")
-          case dom.RTCIceConnectionState.disconnected => closeChannel("ice disconnected")
-          case dom.RTCIceConnectionState.closed       => closeChannel("ice closed")
-          case _                                      => ()
+            case dom.RTCIceConnectionState.failed       => closeChannel("ice failed")
+            case dom.RTCIceConnectionState.disconnected => closeChannel("ice disconnected")
+            case dom.RTCIceConnectionState.closed       => closeChannel("ice closed")
+            case _                                      => ()
       }
     )
 
@@ -97,8 +109,8 @@ object OverlayNetworkGraphNetworking {
         val state = connectionStateString
         logState(s"connectionstatechange -> $state")
         state match
-          case "failed" | "disconnected" | "closed" => closeChannel(s"peer connection state=$state")
-          case _                                        => ()
+            case "failed" | "disconnected" | "closed" => closeChannel(s"peer connection state=$state")
+            case _                                    => ()
       }
     )
   }
@@ -134,8 +146,8 @@ object OverlayNetworkGraphNetworking {
         fail: Throwable => Unit,
     )
 
-    private val wsResolver = new WebSocketConnectionDetailsResolver[Message]
-    private val outgoing   = mutable.Map.empty[Uid, OutgoingAttempt]
+    private val wsResolver                            = new WebSocketConnectionDetailsResolver[Message]
+    private val outgoing                              = mutable.Map.empty[Uid, OutgoingAttempt]
     private var rediscoveryHandle: js.UndefOr[js.Any] = js.undefined
     private var lastLookupAtMillis                    = 0.0
     private val answerTimeoutMillis                   = 15000
@@ -146,14 +158,16 @@ object OverlayNetworkGraphNetworking {
         case Success(_)   => ()
         case Failure(err) => logFailure("lookupTopic failed", err)
       }
-      initialSeed.foreach(uid => client.lookupPeer(uid).run {
-        case Success(_)   => ()
-        case Failure(err) => logFailure(s"lookupPeer failed uid=${Uid.unwrap(uid)}", err)
-      })
+      initialSeed.foreach(uid =>
+        client.lookupPeer(uid).run {
+          case Success(_)   => ()
+          case Failure(err) => logFailure(s"lookupPeer failed uid=${Uid.unwrap(uid)}", err)
+        }
+      )
     }
 
     private def maybeRediscover(): Unit = {
-      val now = dom.window.performance.now()
+      val now      = dom.window.performance.now()
       val isolated = node.activeView.isEmpty && node.passiveView.isEmpty
       if client.isConnected && isolated && now - lastLookupAtMillis >= 3000 then lookupNow()
     }
@@ -170,7 +184,7 @@ object OverlayNetworkGraphNetworking {
       onPeerInfo = (uid, topics) =>
         topics.values.foreach { descriptors =>
           if uid != node.localUid.uid && descriptors.nonEmpty then
-            node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
+              node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
         },
       onTopicInfo = (_, peers) =>
         node.discoverPeers(peers.iterator.collect {
@@ -235,54 +249,64 @@ object OverlayNetworkGraphNetworking {
 
     def canConnect(details: ChannelConnectDescriptor): Boolean =
       details match
-        case ChannelConnectDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
-        case _                                       => false
+          case ChannelConnectDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
+          case _                                       => false
 
     def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[Envelope]] = details match
-      case ChannelConnectDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
-        val target = Uid.predefined(peerId)
-        Some(new LatentConnection[Envelope] {
-          override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] =
-            Async.fromCallback { abort ?=>
-              val connector = createRtcConnector()
-              val channel   = createOverlayDataChannel(connector)
-              var sentOffer = false
-              def failAttempt(err: Throwable): Unit = {
-                outgoing.remove(target).foreach(a => dom.window.clearTimeout(a.timeoutHandle))
-                try channel.close() catch case _: Throwable => ()
-                try connector.peerConnection.close() catch case _: Throwable => ()
-                Async.handler.fail(err)
-              }
-              envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
-                case Success(conn) =>
-                  Async.handler.succeed(conn)
-                case Failure(err) =>
-                  failAttempt(err)
-              }
-              connector.smartUpdateLocalDescription.run {
-                case Success(_) =>
-                  connector.lifecycle.run {
-                    case Success(overview) if !sentOffer && overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
-                      overview.localSession match
-                        case Some(offer) =>
-                          sentOffer = true
-                          val timeoutHandle = dom.window.setTimeout(() => {
-                            failAttempt(WebRTCConnectionFailed(s"timed out waiting for answer from ${Uid.unwrap(target)}"))
-                          }, answerTimeoutMillis)
-                          outgoing.update(target, OutgoingAttempt(connector, channel, timeoutHandle, failAttempt))
-                          client.offer(target, SignalingServer.Session(offer.descType, offer.sdp)).run {
-                            case Success(_)   => ()
-                            case Failure(err) => failAttempt(err)
-                          }
-                        case None =>
-                          failAttempt(IllegalStateException("missing local webrtc offer after ice gathering completed"))
-                    case Success(_)   => ()
-                    case Failure(err) => failAttempt(err)
-                  }
-                case Failure(err) => failAttempt(err)
+        case ChannelConnectDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
+          val target = Uid.predefined(peerId)
+          Some(new LatentConnection[Envelope] {
+            override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] = {
+              Async.fromCallback { abort ?=>
+                val connector                         = createRtcConnector()
+                val channel                           = createOverlayDataChannel(connector)
+                var sentOffer                         = false
+                def failAttempt(err: Throwable): Unit = {
+                  outgoing.remove(target).foreach(a => dom.window.clearTimeout(a.timeoutHandle))
+                  try channel.close()
+                  catch case _: Throwable => ()
+                  try connector.peerConnection.close()
+                  catch case _: Throwable => ()
+                  Async.handler.fail(err)
+                }
+                envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
+                  case Success(conn) =>
+                    Async.handler.succeed(conn)
+                  case Failure(err) =>
+                    failAttempt(err)
+                }
+                connector.smartUpdateLocalDescription.run {
+                  case Success(_) =>
+                    connector.lifecycle.run {
+                      case Success(overview)
+                          if !sentOffer && overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
+                        overview.localSession match
+                            case Some(offer) =>
+                              sentOffer = true
+                              val timeoutHandle = dom.window.setTimeout(
+                                () =>
+                                  failAttempt(
+                                    WebRTCConnectionFailed(s"timed out waiting for answer from ${Uid.unwrap(target)}")
+                                  ),
+                                answerTimeoutMillis
+                              )
+                              outgoing.update(target, OutgoingAttempt(connector, channel, timeoutHandle, failAttempt))
+                              client.offer(target, SignalingServer.Session(offer.descType, offer.sdp)).run {
+                                case Success(_)   => ()
+                                case Failure(err) => failAttempt(err)
+                              }
+                            case None =>
+                              failAttempt(
+                                IllegalStateException("missing local webrtc offer after ice gathering completed")
+                              )
+                      case Success(_)   => ()
+                      case Failure(err) => failAttempt(err)
+                    }
+                  case Failure(err) => failAttempt(err)
+                }
               }
             }
-        })
-      case _ => None
+          })
+        case _ => None
   }
 }

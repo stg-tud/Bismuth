@@ -25,7 +25,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     aclGenesis: BftDelta[Acl],
     onRdtChanged: (Dots, State) => Unit
 ) {
-  private val messageHandlerExecutor = Executors.newVirtualThreadPerTaskExecutor() // Executes the message handling logic
+  private val messageHandlerExecutor =
+    Executors.newVirtualThreadPerTaskExecutor() // Executes the message handling logic
   protected val connectionManager: ConnectionManager = {
     val msgReceiver = new MessageReceiver[MessageBuffer] {
       override def receivedMessage(msgBuf: MessageBuffer, fromUser: PublicIdentity): Unit =

@@ -14,32 +14,34 @@ class SignalingClient(
     localUid: Uid,
     initialAnnouncements: Map[String, Set[ChannelConnectDescriptor]],
     onRegistered: () => Unit = () => (),
-    onPeerInfo: (Uid, Map[String, Set[ChannelConnectDescriptor]]) => Unit = (_: Uid, _: Map[String, Set[ChannelConnectDescriptor]]) => (),
-    onTopicInfo: (String, Map[Uid, Set[ChannelConnectDescriptor]]) => Unit = (_: String, _: Map[Uid, Set[ChannelConnectDescriptor]]) => (),
+    onPeerInfo: (Uid, Map[String, Set[ChannelConnectDescriptor]]) => Unit =
+      (_: Uid, _: Map[String, Set[ChannelConnectDescriptor]]) => (),
+    onTopicInfo: (String, Map[Uid, Set[ChannelConnectDescriptor]]) => Unit =
+      (_: String, _: Map[Uid, Set[ChannelConnectDescriptor]]) => (),
     onOffer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
     onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
     onDisconnected: () => Unit = () => (),
 ) {
-  private val abort = Abort()
+  private val abort                                   = Abort()
   private var connection: Option[Connection[Message]] = None
-  private val announcements = mutable.LinkedHashMap.from(initialAnnouncements)
+  private val announcements                           = mutable.LinkedHashMap.from(initialAnnouncements)
 
   private def send(message: Message): Async[Any, Unit] =
     connection match
-      case Some(conn) => conn.send(message)
-      case None       => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
+        case Some(conn) => conn.send(message)
+        case None => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
 
   def start(): Unit =
     resolver.connect(server, s"signal-${Uid.unwrap(localUid)}").foreach {
       _.prepare { _ =>
         {
-          case Success(Message.Register(_)) => ()
-          case Success(Message.PeerInfo(_, uid, topics)) => onPeerInfo(uid, topics)
-          case Success(Message.TopicInfo(_, topic, peers)) => onTopicInfo(topic, peers)
-          case Success(Message.Offer(from, to, session)) if to == localUid => onOffer(from, session)
+          case Success(Message.Register(_))                                 => ()
+          case Success(Message.PeerInfo(_, uid, topics))                    => onPeerInfo(uid, topics)
+          case Success(Message.TopicInfo(_, topic, peers))                  => onTopicInfo(topic, peers)
+          case Success(Message.Offer(from, to, session)) if to == localUid  => onOffer(from, session)
           case Success(Message.Answer(from, to, session)) if to == localUid => onAnswer(from, session)
-          case Success(_) => ()
-          case Failure(_) =>
+          case Success(_)                                                   => ()
+          case Failure(_)                                                   =>
             connection = None
             onDisconnected()
         }
