@@ -2,7 +2,7 @@ package replication
 
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.PlumtreeBroadcast.Event.Disseminate
+import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeMessage.*
 
 sealed trait PlumtreeMessage[+T]
@@ -16,8 +16,7 @@ object PlumtreeMessage {
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T
     */
-  case class Payload[+T](dots: Dots, data: T)
-      extends PlumtreeMessage[T]
+  case class Payload[+T](dots: Dots, data: T) extends PlumtreeMessage[T]
 
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.
@@ -34,14 +33,14 @@ object PlumtreeBroadcast {
   final case class Peer(uid: Uid)
 
   /** Paper: `Eager` ↔ `eagerPushPeers`, `Lazy` ↔ `lazyPushPeers`. */
-  enum PeerRole {
-    case Eager, Lazy
-  }
+  enum PeerRole { case Eager, Lazy }
 
-  /** Paper: `Deliver` ↔ `Deliver(m)`, `Disseminate` ↔ `Send(...)`. */
+  /** Paper: `Deliver` ↔ `Deliver(m)`, `Send` ↔ `Send(...)`.
+    * Deliver is to the local system.
+    */
   enum Event[+State] {
     case Deliver(payload: Payload[State])
-    case Disseminate(peers: List[Peer], payload: PlumtreeMessage[State])
+    case Send(peers: List[Peer], payload: PlumtreeMessage[State])
   }
 
   final case class Result[State](
@@ -75,7 +74,7 @@ final case class PlumtreeBroadcast[State](
   /** Algorithm 3 `NeighborUp(node)`. Adds the peer as eager and requests missing history. */
   def addPeer(peer: Peer): Result[State] = {
     val next: PlumtreeBroadcast[State] = copy(peerRoles = peerRoles.updated(peer, PeerRole.Eager))
-    Result(next, List(Disseminate(peer :: Nil, Graft(self, localContext))))
+    Result(next, List(Send(peer :: Nil, Graft(self, localContext))))
   }
 
   /** Algorithm 3 `NeighborDown(node)`. */
@@ -86,12 +85,12 @@ final case class PlumtreeBroadcast[State](
     )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
-  def broadcast(payload: Payload[State], except: Set[Peer] = Set.empty): Result[State] = {
+  def broadcast(payload: Payload[State]): Result[State] = {
     val next: PlumtreeBroadcast[State] = copy(
       localContext = localContext.merge(payload.dots),
       deltaStorage = deltaStorage.remember(payload),
     ).clearSatisfiedMissing
-    next.disseminate(payload, except)
+    next.disseminate(payload, Set.empty)
   }
 
   def repairTick(): Result[State] = {
@@ -101,7 +100,7 @@ final case class PlumtreeBroadcast[State](
       missingByAge.headOption.getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
     )
     val next   = copy(missingByAge = nextBuckets)
-    val grafts = older.keys.toList.map(peer => Disseminate(peer :: Nil, Graft(self, localContext)))
+    val grafts = older.keys.toList.map(peer => Send(peer :: Nil, Graft(self, localContext)))
     Result(next, grafts)
   }
 
@@ -138,12 +137,12 @@ final case class PlumtreeBroadcast[State](
               println(
                 s"plumtree graft unsatisfied from=$from local=${next.localContext} knows=$knows storage=${next.deltaStorage.getClass.getSimpleName}"
               )
-          Result(next, relevant.map(payload => Disseminate(from :: Nil, payload)))
+          Result(next, relevant.map(payload => Send(from :: Nil, payload)))
 
         case payload @ Payload(context, _) =>
           if context <= localContext then
               // Duplicate eager path: demote this edge and ask the sender to prune too.
-              Result(withRole(from, PeerRole.Lazy), List(Disseminate(from :: Nil, Prune(self))))
+              Result(withRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune(self))))
           else
               // First delivery: remember, keep sender eager, deliver, and forward.
               val next: PlumtreeBroadcast[State] = copy(
@@ -165,9 +164,9 @@ final case class PlumtreeBroadcast[State](
     val eager      = recipients.filter(peer => peerRoles.get(peer).contains(PeerRole.Eager)).toList
     val lazyPeers  = recipients.filter(peer => peerRoles.get(peer).contains(PeerRole.Lazy)).toList
 
-    val eagerSend = Option.when(eager.nonEmpty)(Disseminate(eager, payload: PlumtreeMessage[State]))
+    val eagerSend = Option.when(eager.nonEmpty)(Send(eager, payload: PlumtreeMessage[State]))
     val lazySend  =
-      Option.when(lazyPeers.nonEmpty)(Disseminate(lazyPeers, IHave(self, localContext): PlumtreeMessage[State]))
+      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(self, payload.dots): PlumtreeMessage[State]))
 
     Result(this, List(eagerSend, lazySend).flatten)
   }

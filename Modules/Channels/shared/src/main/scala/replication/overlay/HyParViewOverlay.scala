@@ -3,7 +3,7 @@ package replication.overlay
 import channels.*
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.PlumtreeBroadcast.Event.Disseminate
+import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.Payload
 import replication.{DeltaStorage, PlumtreeBroadcast, PlumtreeMessage}
@@ -364,7 +364,7 @@ class HyParViewMultiplexedNode[State](
   private def handlePlumtreeEvent(event: Event[State]): Unit =
     event match
         case Event.Deliver(payload)      => receiveCallback(payload.data)
-        case Disseminate(peers, message) =>
+        case Send(peers, message) =>
           peers.foreach { peer =>
             connections.get(peer.uid).foreach { conn =>
               conn.send(Envelope.Dissemination(message)).run {

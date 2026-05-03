@@ -106,7 +106,7 @@ class PlumtreeBroadcastTest extends FunSuite {
 
       result.events.foreach {
         case Event.Deliver(_)                  => ()
-        case Event.Disseminate(peers, message) =>
+        case Event.Send(peers, message) =>
           peers.foreach { peer =>
             val to = Uid.unwrap(peer.uid)
             if ids.contains(to) && adjacency.get(owner).exists(_.contains(to)) then

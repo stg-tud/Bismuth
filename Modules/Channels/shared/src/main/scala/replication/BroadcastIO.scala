@@ -7,7 +7,7 @@ import de.rmgk.delay.{Async, Callback}
 import rdts.base.LocalUid
 import rdts.time.Dots
 import replication.JsoniterCodecs.given
-import replication.PlumtreeBroadcast.Event.Disseminate
+import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.*
 
@@ -188,7 +188,7 @@ class BroadcastIO[State](
     event match
         case Event.Deliver(payload) =>
           receiveCallback(payload.data)
-        case Disseminate(peers, message) =>
+        case Send(peers, message) =>
           peers.foreach(peer =>
             lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Message.Protocol(message)))
           )
