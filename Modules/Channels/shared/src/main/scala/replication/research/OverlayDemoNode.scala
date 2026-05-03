@@ -47,15 +47,18 @@ class OverlayDemoNode(
         emitStateChanged()
         overlay.foreach(_.applyDelta(delta))
 
-  private def refreshLocalView(replicate: Boolean): Unit = {
+  private def refreshLocalView(replicate: Boolean, updateTimestamp: Boolean): Unit = {
     given LocalUid = localUid
-    val delta      = OverlayConnectionDirectory.updateNodeFromOverlay(
+    val lastSeenMillis =
+      if updateTimestamp then nowMillis()
+      else state.connections.get(localUid.uid).map(_.lastSeenMillis).getOrElse(0L)
+    val delta          = OverlayConnectionDirectory.updateNodeFromOverlay(
       state.connections,
       localUid.uid,
       overlay.map(_.activePeers).getOrElse(Set.empty),
       overlay.map(_.passivePeers).getOrElse(Set.empty),
       overlay.map(_.eagerView).getOrElse(Set.empty),
-      nowMillis(),
+      lastSeenMillis,
     )
     if !Bottom.isEmpty(delta) then
         if replicate then publish(DemoState(ReplicatedSet.empty, delta))
@@ -65,7 +68,8 @@ class OverlayDemoNode(
         }
   }
 
-  private def publishLocalView(): Unit = refreshLocalView(replicate = true)
+  private def publishLocalView(): Unit = refreshLocalView(replicate = true, updateTimestamp = true)
+  private def publishLocalViewWithoutHeartbeat(): Unit = refreshLocalView(replicate = true, updateTimestamp = false)
 
   private def expectedLocalView: OverlayConnectionDirectory.ViewSnapshot =
     OverlayConnectionDirectory.ViewSnapshot(
@@ -120,8 +124,8 @@ class OverlayDemoNode(
       random,
       StateDeltaStorage(() => state),
       config,
-      onViewChanged = (_, _) => publishLocalView(),
-      onPeerRolesChanged = () => refreshLocalView(replicate = false),
+      onViewChanged = (_, _) => publishLocalViewWithoutHeartbeat(),
+      onPeerRolesChanged = () => refreshLocalView(replicate = false, updateTimestamp = false),
       onPeerDisconnected = removeDisconnectedConnection,
     )
 
@@ -134,8 +138,8 @@ class OverlayDemoNode(
           overlay.foreach(_.repairTick())
         }
       },
-      5000L,
-      5000L,
+      500L,
+      500L,
     )
     timer.schedule(
       new TimerTask {
@@ -176,19 +180,19 @@ class OverlayDemoNode(
   def publishAdd(value: String): Unit = {
     given LocalUid = localUid
     publish(DemoState(state.values.add(value), OverlayConnectionDirectory.empty))
-    publishLocalView()
+    publishLocalViewWithoutHeartbeat()
   }
 
   def publishRemove(value: String): Unit = {
     publish(DemoState(state.values.remove(value), OverlayConnectionDirectory.empty))
-    publishLocalView()
+    publishLocalViewWithoutHeartbeat()
   }
 
   def shuffleTick(): Unit = {
     overlay.foreach(_.promotionTick())
     overlay.foreach(_.shuffleTick())
     overlay.foreach(_.repairTick())
-    publishLocalView()
+    publishLocalViewWithoutHeartbeat()
   }
 
   def repairTick(): Unit = overlay.foreach(_.repairTick())
