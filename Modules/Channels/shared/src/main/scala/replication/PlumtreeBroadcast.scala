@@ -3,7 +3,6 @@ package replication
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Send
-import replication.PlumtreeBroadcast.PeerRole.{Eager, Lazy}
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
 import replication.PlumtreeMessage.*
 
@@ -122,6 +121,7 @@ final case class PlumtreeBroadcast[State](
     * - `Graft`: Algorithm 2 repair and replay
     */
   def handleMessage(from: Peer, message: PlumtreeMessage[State]): Result[State] =
+    assert(peerRoles.contains(from), s"received message from unknown peer $from")
     // TODO: so, we kinda ignore all of the peer info in the messages, and instead rely on the external one.
     //   Is that what we should do?
     message match
@@ -163,6 +163,7 @@ final case class PlumtreeBroadcast[State](
     })
   }
 
+  /** roles are only added/removed by the add/remove peer methods, so here we only change it if a role exists */
   private def withChangedRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
     copy(peerRoles = peerRoles.updatedWith(peer) {
       case None  => None
