@@ -49,7 +49,6 @@ object NioTCP {
       connectCallback: Callback[Connection[MessageBuffer]] | Null,
       incoming: Receive[MessageBuffer],
       protocol: ProtocolState = ProtocolState.Init,
-      connection: Connection[MessageBuffer] | Null = null,
       messageCallback: Callback[MessageBuffer] | Null = null,
       primary: ByteBuffer = ByteBuffer.allocate(1024),
       secondary: ByteBuffer | Null = null,
@@ -185,7 +184,7 @@ class NioTCP(pool: ExecutionContext) {
     clientChannel.register(
       selector,
       SelectionKey.OP_READ,
-      ReceiveAttachment(null, incoming, ProtocolState.Init, conn, callback)
+      ReceiveAttachment(null, incoming, ProtocolState.Init, callback)
     )
     selector.wakeup()
 
@@ -498,21 +497,21 @@ class NioTCP(pool: ExecutionContext) {
   }
 
   private def ensurePlainConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
-    if attachment.connection != null && attachment.messageCallback != null then attachment
+    if attachment.messageCallback != null then attachment
     else {
       val conn     = NioTCPConnection(clientChannel)
       val callback = attachment.incoming.messageHandler(conn)
       if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
-      attachment.copy(connection = conn, messageCallback = callback)
+      attachment.copy(messageCallback = callback)
     }
 
   private def ensureWebSocketConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
-    if attachment.connection != null && attachment.messageCallback != null then attachment
+    if attachment.messageCallback != null then attachment
     else {
       val conn     = WebSocketConnection(clientChannel)
       val callback = attachment.incoming.messageHandler(conn)
       if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
-      attachment.copy(connection = conn, messageCallback = callback)
+      attachment.copy(messageCallback = callback)
     }
 
   private def writeFully(clientChannel: SocketChannel, buffers: Array[ByteBuffer]): Unit = {
