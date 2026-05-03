@@ -175,8 +175,18 @@ object OverlayNetworkGraphModel {
     val centerY = height / 2
     val margin  = 50.0
 
-    nodes.combinations(2).foreach {
-      case Seq(a, b) =>
+    val eagerNeighborsByNode = mutable.Map.empty[Uid, mutable.LinkedHashSet[Uid]]
+    edges.foreach {
+      case GraphEdge(from, to, EdgeKind.EagerOverlay, _) =>
+        eagerNeighborsByNode.getOrElseUpdate(from, mutable.LinkedHashSet.empty) += to
+        eagerNeighborsByNode.getOrElseUpdate(to, mutable.LinkedHashSet.empty) += from
+      case _ => ()
+    }
+
+    nodes.indices.foreach { i =>
+      ((i + 1) until nodes.size).foreach { j =>
+        val a          = nodes(i)
+        val b          = nodes(j)
         val dx         = b.x - a.x
         val dy         = b.y - a.y
         val distanceSq = math.max(1.0, dx * dx + dy * dy)
@@ -188,11 +198,11 @@ object OverlayNetworkGraphModel {
         a.vy -= fyRepel
         b.vx += fxRepel
         b.vy += fyRepel
-      case _ => ()
+      }
     }
 
     edges.foreach {
-      case GraphEdge(from, to, EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay, _) =>
+      case GraphEdge(from, to, kind @ (EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay), _) =>
         for
             a <- byUid.get(from)
             b <- byUid.get(to)
@@ -200,15 +210,65 @@ object OverlayNetworkGraphModel {
             val dx       = b.x - a.x
             val dy       = b.y - a.y
             val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
-            val desired  = 170.0
-            val pull     = (distance - desired) * 0.005
-            val fx       = dx * pull / distance
-            val fy       = dy * pull / distance
+            val (desired, strength) =
+              if kind == EdgeKind.EagerOverlay then (135.0, 0.0085)
+              else (290.0, 0.0006)
+            val pull = (distance - desired) * strength
+            val fx   = dx * pull / distance
+            val fy   = dy * pull / distance
             a.vx += fx
             a.vy += fy
             b.vx -= fx
             b.vy -= fy
       case GraphEdge(_, _, EdgeKind.PassiveOverlay, _) => ()
+    }
+
+    eagerNeighborsByNode.foreach { (uid, neighbors) =>
+      byUid.get(uid).foreach { center =>
+        val spokeNodes: Vector[GraphNode] = neighbors.iterator.flatMap(byUid.get).toVector
+        val spokeCount = spokeNodes.size
+        if spokeCount >= 2 then {
+          val desiredAngle = math.Pi * 2 / spokeCount.toDouble
+          val ordered = spokeNodes
+            .map { other =>
+              val angle = math.atan2(other.y - center.y, other.x - center.x)
+              (other, angle)
+            }
+            .sortBy(_._2)
+
+          ordered.indices.foreach { idx =>
+            val (current, currentAngle) = ordered(idx)
+            val (next, nextAngleRaw)    = ordered((idx + 1) % ordered.size)
+            val nextAngle =
+              if idx + 1 < ordered.size then nextAngleRaw
+              else nextAngleRaw + math.Pi * 2
+            val gap = nextAngle - currentAngle
+            if gap < desiredAngle then {
+              val deficit        = desiredAngle - gap
+              val spreadStrength = deficit * 0.032
+
+              val currentDx = current.x - center.x
+              val currentDy = current.y - center.y
+              val currentDistance = math.max(1.0, math.sqrt(currentDx * currentDx + currentDy * currentDy))
+              val currentTx       = -currentDy / currentDistance
+              val currentTy       = currentDx / currentDistance
+
+              val nextDx = next.x - center.x
+              val nextDy = next.y - center.y
+              val nextDistance = math.max(1.0, math.sqrt(nextDx * nextDx + nextDy * nextDy))
+              val nextTx       = -nextDy / nextDistance
+              val nextTy       = nextDx / nextDistance
+
+              current.vx -= currentTx * spreadStrength
+              current.vy -= currentTy * spreadStrength
+              next.vx += nextTx * spreadStrength
+              next.vy += nextTy * spreadStrength
+              center.vx += (currentTx - nextTx) * spreadStrength * 0.22
+              center.vy += (currentTy - nextTy) * spreadStrength * 0.22
+            }
+          }
+        }
+      }
     }
 
     nodes.foreach { node =>
