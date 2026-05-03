@@ -73,6 +73,16 @@ final case class HyParViewStateMachine(
       val sample = Set(self) ++ randomSubset(active.toSet, config.shuffleActiveSample) ++ randomSubset(passive.toSet, config.shufflePassiveSample)
       Result(copy(pendingShuffleSamples = pendingShuffleSamples.updated(target.uid, sample)), List(Action.Send(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid))))
 
+  /** Local liveness/progress hook: if we are under target active view size, retry promotion from the passive view.
+    * This is useful when attempted promotions get stuck or when the active set has shrunk but is not yet empty.
+    */
+  def promotionTick(): Result =
+    if active.size >= config.activeViewSize || passive.isEmpty then Result(this, Nil)
+    else {
+      val reset = copy(pendingPromotions = Set.empty)
+      reset.withPromotionIfNeeded(Nil)
+    }
+
   /** Implementation hook: learn externally discovered peers by placing dialable ones in the passive view, then try to heal the active view. */
   def discoverPeers(peers: Set[PeerRef]): Result = {
     val next = peers.foldLeft(this)((state, peer) => state.rememberPeer(peer).addPassiveIfEligible(peer))

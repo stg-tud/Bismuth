@@ -12,6 +12,7 @@ import replication.research.{SignalingClient, SignalingServer}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 import scala.scalajs.js.timers.{SetTimeoutHandle, clearTimeout, setTimeout}
+import scala.util.{Failure, Success}
 
 object NodeSignalingProbe {
 
@@ -60,7 +61,10 @@ object NodeSignalingProbe {
         initialAnnouncements = Map(topic -> Set(ChannelConnectDescriptor.WebRtc(uidString))),
         onRegistered = () => {
           log(s"registered uid=$uidString, looking up topic '$topic'")
-          client.lookupTopic(topic, 8)
+          client.lookupTopic(topic, 8).run {
+            case Success(_)   => ()
+            case Failure(err) => fail(s"lookupTopic failed: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
+          }
         },
         onTopicInfo = (foundTopic, peers) => {
           log(s"received topic info for '$foundTopic' with peers=${peers.keySet.map(Uid.unwrap).mkString(",")}")

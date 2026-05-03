@@ -119,6 +119,15 @@ class HyParViewMultiplexedNode[State](
     applyTransition(membership.initiateJoin(contact))
 
   def shuffleTick(): Unit = applyTransition(membership.shuffleTick())
+  def promotionTick(): Unit = {
+    applyTransition(membership.promotionTick())
+    val missingActiveSlots = math.max(0, config.activeViewSize - membership.activeView.size)
+    if missingActiveSlots > 0 then
+      membership.passivePeers.iterator
+        .filterNot(peer => connections.contains(peer.uid) || connecting.contains(peer.uid))
+        .take(missingActiveSlots)
+        .foreach(ensurePromotionAttempt)
+  }
   def discoverPeers(peers: Iterable[PeerRef]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
 
   def addIncomingConnection(latent: LatentConnection[Envelope[State]]): Unit =
@@ -262,6 +271,17 @@ class HyParViewMultiplexedNode[State](
 
   private def connectToPeerDetails(details: Set[ChannelConnectDescriptor], label: String): Option[LatentConnection[Envelope[State]]] =
     details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label)))
+
+  private def ensurePromotionAttempt(peer: PeerRef): Unit = {
+    val existing = pendingMembership.getOrElse(peer.uid, Vector.empty)
+    val highPriority = membership.activeView.isEmpty
+    val alreadyQueued = existing.exists {
+      case HyParViewMessage.Neighbor(from, hp) if from.uid == self.uid && hp == highPriority => true
+      case _                                                                                  => false
+    }
+    if !alreadyQueued then pendingMembership.update(peer.uid, existing :+ HyParViewMessage.Neighbor(self, highPriority = highPriority))
+    startConnection(peer)
+  }
 
   private def startConnection(peer: PeerRef): Unit =
     if !connections.contains(peer.uid) && !connecting.contains(peer.uid) then

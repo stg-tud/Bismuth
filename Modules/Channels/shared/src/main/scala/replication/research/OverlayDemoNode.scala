@@ -113,7 +113,10 @@ class OverlayDemoNode(
   private def startBackgroundTasks(): Unit = {
     timer.schedule(
       new TimerTask {
-        override def run(): Unit = overlay.foreach(_.shuffleTick())
+        override def run(): Unit = {
+          overlay.foreach(_.promotionTick())
+          overlay.foreach(_.shuffleTick())
+        }
       },
       1000L,
       1000L,
@@ -156,6 +159,7 @@ class OverlayDemoNode(
   }
 
   def shuffleTick(): Unit = {
+    overlay.foreach(_.promotionTick())
     overlay.foreach(_.shuffleTick())
     publishLocalView()
   }

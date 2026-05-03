@@ -60,12 +60,19 @@ object WebsocketConnect {
               socket.close()
               callback.fail(new WebsocketException("Error during websocket communication"))
 
+          socket.onclose = (_: dom.CloseEvent) =>
+              callback.fail(new WebsocketException(s"Websocket closed during communication code=${socket.readyState}"))
+
           Async.handler.succeed(connect)
         }
 
         socket.onerror = (_: dom.Event) =>
             socket.close()
             Async.handler.fail(new WebsocketException("Websocket failed to connect"))
+
+        socket.onclose = (event: dom.CloseEvent) =>
+            if socket.readyState != dom.WebSocket.OPEN then
+              Async.handler.fail(new WebsocketException(s"Websocket closed before connect code=${event.code} reason=${event.reason}"))
       }
     }
   }

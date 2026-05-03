@@ -522,6 +522,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
       case CloseFrame(_, _) =>
         try writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
         catch case _: Throwable => ()
+        callback.fail(NoMoreDataException("websocket closed"))
         clientChannel.close()
         if key != null then {
           key.cancel()

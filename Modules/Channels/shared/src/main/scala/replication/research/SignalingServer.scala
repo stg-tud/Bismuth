@@ -34,6 +34,14 @@ class SignalingServer(
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
+  private def sendOrDisconnect(conn: Connection[Message], msg: Message)(onFailure: => Unit = disconnect(conn)): Unit =
+    conn.send(msg).run {
+      case Success(_)  => ()
+      case Failure(ex) =>
+        log(s"send failed ex=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+        onFailure
+    }
+
   def stop(): Unit = abort.abort()
 
   def addIncomingConnection(latent: LatentConnection[Message]): Unit =
@@ -86,17 +94,17 @@ class SignalingServer(
           }
 
         case Success(Message.LookupPeer(requestId, uid)) =>
-          conn.send(Message.PeerInfo(requestId, uid, peerTopics(uid))).run(_ => ())
+          sendOrDisconnect(conn, Message.PeerInfo(requestId, uid, peerTopics(uid)))()
 
         case Success(Message.LookupTopic(requestId, topic, count)) =>
-          conn.send(Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count))).run(_ => ())
+          sendOrDisconnect(conn, Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count)))()
 
         case Success(msg @ Message.Offer(from, to, _)) if uidByConn.get(conn).contains(from) =>
-          clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))
+          clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
           log(s"offer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
 
         case Success(msg @ Message.Answer(from, to, _)) if uidByConn.get(conn).contains(from) =>
-          clientsByUid.get(to).foreach(_.send(msg).run(_ => ()))
+          clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
           log(s"answer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
 
         case Success(_) => ()

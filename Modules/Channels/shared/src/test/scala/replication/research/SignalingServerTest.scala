@@ -78,8 +78,8 @@ class SignalingServerTest extends FunSuite {
     fx.drain()
     fx.drain()
 
-    clientA.lookupTopic("topic-1")
-    clientB.lookupPeer(a)
+    clientA.lookupTopic("topic-1").run(_ => ())
+    clientB.lookupPeer(a).run(_ => ())
     fx.drain()
     fx.drain()
 
@@ -137,7 +137,7 @@ class SignalingServerTest extends FunSuite {
       onTopicInfo = (_, peers) => lookedUp = peers,
     )
     observer.start()
-    observer.lookupTopic("topic-1", 3)
+    observer.lookupTopic("topic-1", 3).run(_ => ())
 
     fx.drain()
     assertEquals(lookedUp.size, 3)
@@ -158,7 +158,7 @@ class SignalingServerTest extends FunSuite {
 
     client.start()
     fx.drain()
-    client.announce("topic-1", details)
+    client.announce("topic-1", details).run(_ => ())
     fx.drain()
     assertEquals(fx.server.topicPeers("topic-1"), Map(a -> details))
     assertEquals(fx.server.peerTopics(a), Map("topic-1" -> details))
@@ -193,7 +193,7 @@ class SignalingServerTest extends FunSuite {
       initialAnnouncements = Map.empty,
       onOffer = (from, session) =>
         seenOffer = Some(from -> session)
-        clientB.answer(from, SignalingServer.Session("answer", "sdp-answer")),
+        clientB.answer(from, SignalingServer.Session("answer", "sdp-answer")).run(_ => ()),
     )
 
     clientA.start()
@@ -201,7 +201,7 @@ class SignalingServerTest extends FunSuite {
     fx.drain()
     fx.drain()
 
-    clientA.offer(b, SignalingServer.Session("offer", "sdp-offer"))
+    clientA.offer(b, SignalingServer.Session("offer", "sdp-offer")).run(_ => ())
     fx.drain()
     fx.drain()
 

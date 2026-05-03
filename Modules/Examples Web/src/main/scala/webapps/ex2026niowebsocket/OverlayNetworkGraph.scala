@@ -48,6 +48,7 @@ object OverlayNetworkGraph {
   @volatile private var connectionInfoText: String = "waiting for seed url parameter"
   @volatile private var selfConnectionStringText: String = ""
   private var currentNode: Option[OverlayDemoNode] = None
+  private var currentSignalingBridge: Option[WebRtcSignalingBridge] = None
   private var infoNode: dom.html.TextArea | Null = null
   private var selfConnectionNode: dom.html.TextArea | Null = null
   private val positions = mutable.Map.empty[Uid, (Double, Double, Double, Double)]
@@ -95,6 +96,8 @@ object OverlayNetworkGraph {
   }
 
   private def stopCurrentNode(): Unit = {
+    currentSignalingBridge.foreach(_.stop())
+    currentSignalingBridge = None
     currentNode.foreach(_.stop())
     currentNode = None
     network = OverlayConnectionDirectory.empty
@@ -135,6 +138,7 @@ object OverlayNetworkGraph {
     }
 
     signalingRef = signalUrl.map(url => new WebRtcSignalingBridge(url, signalingTopic, node, selfDetails, requestedSeedId, 3, joinAfterSignal))
+    currentSignalingBridge = signalingRef
     currentNode = Some(node)
     viewerUid = Some(node.localUid.uid)
     selfConnectionStringText = selfDetails.headOption.map(encodeConnectionString).getOrElse("")

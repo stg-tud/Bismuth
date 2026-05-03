@@ -1,6 +1,7 @@
 package replication.research
 
 import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, Connection}
+import de.rmgk.delay.{Async, Sync}
 import rdts.base.Uid
 import replication.research.SignalingServer.{Message, Session}
 
@@ -23,8 +24,10 @@ class SignalingClient(
   private var connection: Option[Connection[Message]] = None
   private val announcements = mutable.LinkedHashMap.from(initialAnnouncements)
 
-  private def send(message: Message): Unit =
-    connection.foreach(_.send(message).run(_ => ()))
+  private def send(message: Message): Async[Any, Unit] =
+    connection match
+      case Some(conn) => conn.send(message)
+      case None       => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
 
   def start(): Unit =
     resolver.connect(server, s"signal-${Uid.unwrap(localUid)}").foreach {
@@ -43,9 +46,17 @@ class SignalingClient(
       }.runIn(abort) {
         case Success(conn) =>
           connection = Some(conn)
-          send(Message.Register(localUid))
-          announcements.foreach { case (topic, descriptors) => send(Message.Announce(topic, descriptors)) }
-          onRegistered()
+          send(Message.Register(localUid)).run {
+            case Success(_) =>
+              announcements.foreach { case (topic, descriptors) =>
+                send(Message.Announce(topic, descriptors)).run(_ => ())
+              }
+              onRegistered()
+            case Failure(err) =>
+              connection = None
+              conn.close()
+              err.printStackTrace()
+          }
         case Failure(err) => err.printStackTrace()
       }
     }
@@ -56,21 +67,21 @@ class SignalingClient(
     abort.abort()
   }
 
-  def announce(topic: String, descriptors: Set[ChannelConnectDescriptor]): Unit = {
+  def announce(topic: String, descriptors: Set[ChannelConnectDescriptor]): Async[Any, Unit] = {
     announcements.update(topic, descriptors)
     send(Message.Announce(topic, descriptors))
   }
 
-  def lookupPeer(uid: Uid): Unit =
+  def lookupPeer(uid: Uid): Async[Any, Unit] =
     send(Message.LookupPeer(Uid.gen(), uid))
 
-  def lookupTopic(topic: String, count: Int = Int.MaxValue): Unit =
+  def lookupTopic(topic: String, count: Int = Int.MaxValue): Async[Any, Unit] =
     send(Message.LookupTopic(Uid.gen(), topic, count))
 
-  def offer(to: Uid, session: Session): Unit =
+  def offer(to: Uid, session: Session): Async[Any, Unit] =
     send(Message.Offer(localUid, to, session))
 
-  def answer(to: Uid, session: Session): Unit =
+  def answer(to: Uid, session: Session): Async[Any, Unit] =
     send(Message.Answer(localUid, to, session))
 
   def isConnected: Boolean = connection.nonEmpty

@@ -129,7 +129,10 @@ object OverlayDemo {
       }
       signaling.foreach { s =>
         s.start()
-        s.lookupTopic(signalingTopic)
+        s.lookupTopic(signalingTopic).run {
+          case scala.util.Success(_) => ()
+          case scala.util.Failure(err) => err.printStackTrace()
+        }
       }
 
       new TopicNode(node, () => {

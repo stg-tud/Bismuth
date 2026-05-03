@@ -3,7 +3,7 @@ package webapps.ex2026niowebsocket
 import channels.*
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
 import de.rmgk.delay.Async
-import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnector}
+import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnectionFailed, WebRTCConnector}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import org.scalajs.dom
 import rdts.base.Uid
@@ -34,14 +34,86 @@ object OverlayNetworkGraphNetworking {
       })
     })
 
-  def createOverlayDataChannel(connector: WebRTCConnector): dom.RTCDataChannel =
-    connector.peerConnection.createDataChannel(
+  private def installPeerFailurePropagation(connector: WebRTCConnector, channel: dom.RTCDataChannel): Unit = {
+    def connectionStateString: String =
+      try connector.peerConnection.asInstanceOf[js.Dynamic].connectionState.asInstanceOf[String]
+      catch case _: Throwable => "<unsupported>"
+
+    def logState(prefix: String): Unit =
+      println(
+        s"[webrtc-pc channel=${channel.label}] $prefix channel=${channel.readyState} iceGathering=${connector.peerConnection.iceGatheringState} ice=${connector.peerConnection.iceConnectionState} signaling=${connector.peerConnection.signalingState} connection=${connectionStateString}"
+      )
+
+    def closeChannel(reason: String): Unit =
+      if channel.readyState != dom.RTCDataChannelState.closed && channel.readyState != dom.RTCDataChannelState.closing then {
+        logState(s"closing data channel due to $reason")
+        channel.close()
+      }
+
+    logState("installed failure propagation")
+
+    var pollHandle = 0
+    pollHandle = dom.window.setInterval(() => {
+      if channel.readyState == dom.RTCDataChannelState.connecting then logState("poll")
+      else dom.window.clearInterval(pollHandle)
+    }, 1000)
+
+    channel.addEventListener("open", (_: dom.Event) => {
+      logState("data channel open")
+      dom.window.clearInterval(pollHandle)
+    })
+    channel.addEventListener("close", (_: dom.Event) => {
+      logState("data channel close")
+      dom.window.clearInterval(pollHandle)
+    })
+    channel.addEventListener("error", (_: dom.Event) => logState("data channel error"))
+
+    connector.peerConnection.addEventListener(
+      "iceconnectionstatechange",
+      (_: dom.Event) => {
+        val state = connector.peerConnection.iceConnectionState
+        logState(s"iceconnectionstatechange -> $state")
+        state match
+          case dom.RTCIceConnectionState.failed       => closeChannel("ice failed")
+          case dom.RTCIceConnectionState.disconnected => closeChannel("ice disconnected")
+          case dom.RTCIceConnectionState.closed       => closeChannel("ice closed")
+          case _                                      => ()
+      }
+    )
+
+    connector.peerConnection.addEventListener(
+      "signalingstatechange",
+      (_: dom.Event) => logState(s"signalingstatechange -> ${connector.peerConnection.signalingState}")
+    )
+
+    connector.peerConnection.addEventListener(
+      "icegatheringstatechange",
+      (_: dom.Event) => logState(s"icegatheringstatechange -> ${connector.peerConnection.iceGatheringState}")
+    )
+
+    connector.peerConnection.addEventListener(
+      "connectionstatechange",
+      (_: dom.Event) => {
+        val state = connectionStateString
+        logState(s"connectionstatechange -> $state")
+        state match
+          case "failed" | "disconnected" | "closed" => closeChannel(s"peer connection state=$state")
+          case _                                        => ()
+      }
+    )
+  }
+
+  def createOverlayDataChannel(connector: WebRTCConnector): dom.RTCDataChannel = {
+    val channel = connector.peerConnection.createDataChannel(
       "overlay-webrtc",
       new dom.RTCDataChannelInit {
         negotiated = true
         id = 23
       }
     )
+    installPeerFailurePropagation(connector, channel)
+    channel
+  }
 
   final class WebRtcSignalingBridge(
       url: String,
@@ -52,8 +124,36 @@ object OverlayNetworkGraphNetworking {
       topicLookupCount: Int,
       onRegistered: () => Unit,
   )(using JsonValueCodec[Envelope], JsonValueCodec[Message]) {
+    private case class OutgoingAttempt(
+        connector: WebRTCConnector,
+        channel: dom.RTCDataChannel,
+        timeoutHandle: Int,
+        fail: Throwable => Unit,
+    )
+
     private val wsResolver = new WebSocketConnectionDetailsResolver[Message]
-    private val outgoing   = mutable.Map.empty[Uid, WebRTCConnector]
+    private val outgoing   = mutable.Map.empty[Uid, OutgoingAttempt]
+    private var rediscoveryHandle: js.UndefOr[js.Any] = js.undefined
+    private var lastLookupAtMillis                    = 0.0
+    private val answerTimeoutMillis                   = 15000
+
+    private def lookupNow(): Unit = {
+      lastLookupAtMillis = dom.window.performance.now()
+      client.lookupTopic(topic, topicLookupCount).run {
+        case Success(_)   => ()
+        case Failure(err) => err.printStackTrace()
+      }
+      initialSeed.foreach(uid => client.lookupPeer(uid).run {
+        case Success(_)   => ()
+        case Failure(err) => err.printStackTrace()
+      })
+    }
+
+    private def maybeRediscover(): Unit = {
+      val now = dom.window.performance.now()
+      val isolated = node.activeView.isEmpty && node.passiveView.isEmpty
+      if client.isConnected && isolated && now - lastLookupAtMillis >= 3000 then lookupNow()
+    }
 
     private lazy val client: SignalingClient = new SignalingClient(
       server = ChannelConnectDescriptor.WebSocket(url),
@@ -61,8 +161,7 @@ object OverlayNetworkGraphNetworking {
       localUid = node.localUid.uid,
       initialAnnouncements = Map(topic -> selfDetails),
       onRegistered = () => {
-        client.lookupTopic(topic, topicLookupCount)
-        initialSeed.foreach(client.lookupPeer)
+        lookupNow()
         onRegistered()
       },
       onPeerInfo = (uid, topics) =>
@@ -90,7 +189,10 @@ object OverlayNetworkGraphNetworking {
             case Success(overview) if !sentAnswer && overview.iceGatheringState == dom.RTCIceGatheringState.complete =>
               overview.localSession.foreach { answer =>
                 sentAnswer = true
-                client.answer(from, SignalingServer.Session(answer.descType, answer.sdp))
+                client.answer(from, SignalingServer.Session(answer.descType, answer.sdp)).run {
+                  case Success(_)   => ()
+                  case Failure(err) => err.printStackTrace()
+                }
               }
             case Success(_)   => ()
             case Failure(err) => err.printStackTrace()
@@ -100,14 +202,33 @@ object OverlayNetworkGraphNetworking {
     }
 
     private def handleIncomingAnswer(from: Uid, session: SignalingServer.Session): Unit =
-      outgoing.remove(from).foreach { connector =>
-        connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
+      outgoing.remove(from).foreach { attempt =>
+        dom.window.clearTimeout(attempt.timeoutHandle)
+        attempt.connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
           case Success(_)   => ()
-          case Failure(err) => err.printStackTrace()
+          case Failure(err) =>
+            attempt.channel.close()
+            attempt.connector.peerConnection.close()
+            err.printStackTrace()
         }
       }
 
-    def start(): Unit = client.start()
+    def start(): Unit = {
+      client.start()
+      rediscoveryHandle = dom.window.setInterval(() => maybeRediscover(), 1000)
+    }
+
+    def stop(): Unit = {
+      rediscoveryHandle.foreach(handle => dom.window.clearInterval(handle.asInstanceOf[Int]))
+      rediscoveryHandle = js.undefined
+      outgoing.values.foreach { attempt =>
+        dom.window.clearTimeout(attempt.timeoutHandle)
+        attempt.channel.close()
+        attempt.connector.peerConnection.close()
+      }
+      outgoing.clear()
+      client.stop()
+    }
 
     def canConnect(details: ChannelConnectDescriptor): Boolean =
       details match
@@ -123,13 +244,17 @@ object OverlayNetworkGraphNetworking {
               val connector = createRtcConnector()
               val channel   = createOverlayDataChannel(connector)
               var sentOffer = false
-              outgoing.update(target, connector)
+              def failAttempt(err: Throwable): Unit = {
+                outgoing.remove(target).foreach(a => dom.window.clearTimeout(a.timeoutHandle))
+                try channel.close() catch case _: Throwable => ()
+                try connector.peerConnection.close() catch case _: Throwable => ()
+                Async.handler.fail(err)
+              }
               envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
                 case Success(conn) =>
                   Async.handler.succeed(conn)
                 case Failure(err) =>
-                  outgoing.remove(target)
-                  Async.handler.fail(err)
+                  failAttempt(err)
               }
               connector.smartUpdateLocalDescription.run {
                 case Success(_) =>
@@ -138,18 +263,20 @@ object OverlayNetworkGraphNetworking {
                       overview.localSession match
                         case Some(offer) =>
                           sentOffer = true
-                          client.offer(target, SignalingServer.Session(offer.descType, offer.sdp))
+                          val timeoutHandle = dom.window.setTimeout(() => {
+                            failAttempt(WebRTCConnectionFailed(s"timed out waiting for answer from ${Uid.unwrap(target)}"))
+                          }, answerTimeoutMillis)
+                          outgoing.update(target, OutgoingAttempt(connector, channel, timeoutHandle, failAttempt))
+                          client.offer(target, SignalingServer.Session(offer.descType, offer.sdp)).run {
+                            case Success(_)   => ()
+                            case Failure(err) => failAttempt(err)
+                          }
                         case None =>
-                          outgoing.remove(target)
-                          Async.handler.fail(IllegalStateException("missing local webrtc offer after ice gathering completed"))
+                          failAttempt(IllegalStateException("missing local webrtc offer after ice gathering completed"))
                     case Success(_)   => ()
-                    case Failure(err) =>
-                      outgoing.remove(target)
-                      Async.handler.fail(err)
+                    case Failure(err) => failAttempt(err)
                   }
-                case Failure(err) =>
-                  outgoing.remove(target)
-                  Async.handler.fail(err)
+                case Failure(err) => failAttempt(err)
               }
             }
         })

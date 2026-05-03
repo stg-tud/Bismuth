@@ -12,8 +12,12 @@ import scala.scalajs.js.typedarray.ArrayBuffer
 class WebRTCReceiveFailed(message: String)    extends Exception(message)
 class WebRTCConnectionFailed(message: String) extends Exception(message)
 
+private def rtcDebug(channel: dom.RTCDataChannel, message: => String): Unit =
+  println(s"[webrtc channel=${channel.label} id=${channel.id} state=${channel.readyState}] $message")
+
 class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBuffer] {
   def receive: Prod[MessageBuffer] = Async.fromCallback {
+    rtcDebug(channel, "receive() registered handlers")
     channel.onmessage = { (event: dom.MessageEvent) =>
       event.data match {
         case data: ArrayBuffer =>
@@ -38,15 +42,19 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
     }
 
     channel.onerror = { (evt: dom.Event) =>
+      rtcDebug(channel, s"receive handler saw error event=$evt")
       Async.handler.fail(WebRTCReceiveFailed(s"channel error: $evt"))
     }
 
     channel.onclose = { (evt: dom.Event) =>
+      rtcDebug(channel, s"receive handler saw close event=$evt")
       Async.handler.fail(WebRTCReceiveFailed(s"channel closed: $evt"))
     }
 
     channel.readyState match
-        case RTCDataChannelState.closed => Async.handler.fail(WebRTCReceiveFailed("channel already closed"))
+        case RTCDataChannelState.closed =>
+          rtcDebug(channel, "receive() found channel already closed")
+          Async.handler.fail(WebRTCReceiveFailed("channel already closed"))
         case _                          =>
 
   }
@@ -58,20 +66,29 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBu
 
 object WebRTCConnection {
   def open(channel: dom.RTCDataChannel): Async[Any, WebRTCConnection] = Async.fromCallback {
+    rtcDebug(channel, "open() called")
     channel.readyState match {
       case dom.RTCDataChannelState.connecting =>
-        // strange fix for strange issue with Chromium
-        // val handle = js.timers.setTimeout(1.day) { channel.readyState; () }
-
+        rtcDebug(channel, "open() waiting for onopen/onerror/onclose")
         channel.onopen = { (_: dom.Event) =>
-          // js.timers.clearTimeout(handle)
+          rtcDebug(channel, "open() succeeded via onopen")
           Async.handler.succeed(new WebRTCConnection(channel))
+        }
+        channel.onerror = { (evt: dom.Event) =>
+          rtcDebug(channel, s"open() failed via onerror event=$evt")
+          Async.handler.fail(new WebRTCConnectionFailed(s"channel error before open: $evt"))
+        }
+        channel.onclose = { (evt: dom.Event) =>
+          rtcDebug(channel, s"open() failed via onclose event=$evt")
+          Async.handler.fail(new WebRTCConnectionFailed(s"channel closed before open: $evt"))
         }
 
       case dom.RTCDataChannelState.open =>
+        rtcDebug(channel, "open() succeeded immediately")
         Async.handler.succeed(new WebRTCConnection(channel))
 
       case dom.RTCDataChannelState.closing | dom.RTCDataChannelState.closed =>
+        rtcDebug(channel, "open() failed immediately because channel is closing/closed")
         Async.handler.fail(new WebRTCConnectionFailed("channel closed"))
     }
   }
@@ -79,6 +96,7 @@ object WebRTCConnection {
   def openLatent(channel: dom.RTCDataChannel): LatentConnection[MessageBuffer] = new LatentConnection {
 
     def succeedConnection(incoming: Receive[MessageBuffer]): WebRTCConnection = {
+      rtcDebug(channel, "openLatent.succeedConnection() installing message handlers")
       val connector = new WebRTCConnection(channel)
       val handler   = incoming.messageHandler(connector)
 
@@ -107,15 +125,19 @@ object WebRTCConnection {
         }
 
         channel.onerror = { (evt: dom.Event) =>
+          rtcDebug(channel, s"latent receive handler saw error event=$evt")
           handler.fail(WebRTCReceiveFailed(s"channel error: $evt"))
         }
 
         channel.onclose = { (evt: dom.Event) =>
+          rtcDebug(channel, s"latent receive handler saw close event=$evt")
           handler.fail(WebRTCReceiveFailed(s"channel closed: $evt"))
         }
 
         channel.readyState match
-            case RTCDataChannelState.closed => handler.fail(WebRTCReceiveFailed("channel already closed"))
+            case RTCDataChannelState.closed =>
+              rtcDebug(channel, "latent succeedConnection found channel already closed")
+              handler.fail(WebRTCReceiveFailed("channel already closed"))
             case _                          =>
       }
 
@@ -124,21 +146,30 @@ object WebRTCConnection {
 
     override def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
       Async.fromCallback {
+        rtcDebug(channel, "openLatent.prepare() called")
 
         channel.readyState match {
           case dom.RTCDataChannelState.connecting =>
-            // strange fix for strange issue with Chromium
-            // val handle = js.timers.setTimeout(1.day) { channel.readyState; () }
-
+            rtcDebug(channel, "openLatent.prepare() waiting for onopen/onerror/onclose")
             channel.onopen = { (_: dom.Event) =>
-              // js.timers.clearTimeout(handle)
+              rtcDebug(channel, "openLatent.prepare() succeeded via onopen")
               Async.handler.succeed(succeedConnection(incomingHandler))
+            }
+            channel.onerror = { (evt: dom.Event) =>
+              rtcDebug(channel, s"openLatent.prepare() failed via onerror event=$evt")
+              Async.handler.fail(new WebRTCConnectionFailed(s"channel error before open: $evt"))
+            }
+            channel.onclose = { (evt: dom.Event) =>
+              rtcDebug(channel, s"openLatent.prepare() failed via onclose event=$evt")
+              Async.handler.fail(new WebRTCConnectionFailed(s"channel closed before open: $evt"))
             }
 
           case dom.RTCDataChannelState.open =>
+            rtcDebug(channel, "openLatent.prepare() succeeded immediately")
             Async.handler.succeed(succeedConnection(incomingHandler))
 
           case dom.RTCDataChannelState.closing | dom.RTCDataChannelState.closed =>
+            rtcDebug(channel, "openLatent.prepare() failed immediately because channel is closing/closed")
             Async.handler.fail(new WebRTCConnectionFailed("channel closed"))
         }
       }
