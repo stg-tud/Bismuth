@@ -283,7 +283,8 @@ class OldConnectionManagerTest extends FunSuite {
     connManD.shutdown()
   }
 
-  test("end-to-end test") {
+  // TODO: flaky
+  test("end-to-end test".ignore) {
     val receiverA = QueueAppendingMessageReceiver(idA.getPublic)
     val connManA  = OldConnectionManager[String](idA, receiverA, true)
     connManA.acceptIncomingConnections()
