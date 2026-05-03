@@ -102,7 +102,6 @@ final case class PlumtreeBroadcast[State](
   def tickGrafts(): Result[State] = {
     val haveMissing = remoteContextSnapshot.collect:
         case (peer, context) if peerRoles.get(peer).contains(Lazy) && context.inflates(localContext) => peer
-    println(s"tick grafts: $haveMissing")
     val grafts = Random.shuffle(haveMissing).take(1).map(peer => Send(List(peer), Graft(self, localContext)))
     val next   = copy(remoteContextSnapshot = remoteContext)
     Result(next, grafts.toSeq)
