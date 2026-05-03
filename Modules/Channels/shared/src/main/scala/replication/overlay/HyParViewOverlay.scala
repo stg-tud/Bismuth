@@ -92,11 +92,13 @@ class HyParViewMultiplexedNode[State](
     peer => peer.channelConnectors.exists(resolver.canConnect) || peer.uid == self.uid,
   )
 
-  private val connections       = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
-  private val connectionToPeer  = mutable.LinkedHashMap.empty[Connection[Envelope[State]], Uid]
-  private val connecting        = mutable.LinkedHashSet.empty[Uid]
-  private val pendingMembership = mutable.LinkedHashMap.empty[Uid, Vector[HyParViewMessage]]
-  private var plumtree          = PlumtreeBroadcast[State](self.uid, deltaStorage = deltaStorage)
+  private val connections              = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
+  private val connectionToPeer         = mutable.LinkedHashMap.empty[Connection[Envelope[State]], Uid]
+  private val lastIncomingMessageAtMs  = mutable.LinkedHashMap.empty[Uid, Long]
+  private val connecting               = mutable.LinkedHashSet.empty[Uid]
+  private val pendingMembership        = mutable.LinkedHashMap.empty[Uid, Vector[HyParViewMessage]]
+  private var plumtree                 = PlumtreeBroadcast[State](self.uid, deltaStorage = deltaStorage)
+  private val activeConnectionTimeoutMs = 30_000L
 
   def state: HyParViewStateMachine = membership
   def activeView: Set[Uid]         = membership.activeView
@@ -134,7 +136,10 @@ class HyParViewMultiplexedNode[State](
           .take(missingActiveSlots)
           .foreach(ensurePromotionAttempt)
   }
-  def repairTick(): Unit                            = applyPlumtreeResult(plumtree.tickGrafts())
+  def repairTick(): Unit = {
+    timeoutSilentActiveConnections()
+    applyPlumtreeResult(plumtree.tickGrafts())
+  }
   def discoverPeers(peers: Iterable[PeerRef]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
 
   def addIncomingConnection(latent: LatentConnection[Envelope[State]]): Unit =
@@ -149,6 +154,7 @@ class HyParViewMultiplexedNode[State](
     connections.values.foreach(_.close())
     connections.clear()
     connectionToPeer.clear()
+    lastIncomingMessageAtMs.clear()
     connecting.clear()
     pendingMembership.clear()
     val before = membership
@@ -185,7 +191,10 @@ class HyParViewMultiplexedNode[State](
       {
         case Success(Envelope.Membership(message)) =>
           val sender = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferSender(message))
-          sender.foreach(rememberPeerIdentity(_, conn))
+          sender.foreach { uid =>
+            rememberPeerIdentity(uid, conn)
+            noteIncomingMessage(uid)
+          }
           message match
               case HyParViewMessage.Disconnect(peer) => applyTransition(membership.peerLost(peer))
               case _                                 => applyTransition(membership.receive(message))
@@ -193,6 +202,7 @@ class HyParViewMultiplexedNode[State](
           val peer = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferDisseminationSender(message))
           peer.foreach { uid =>
             rememberPeerIdentity(uid, conn)
+            noteIncomingMessage(uid)
             applyPlumtreeResult(plumtree.handleMessage(Peer(uid), message))
           }
         case Failure(ex) =>
@@ -257,6 +267,7 @@ class HyParViewMultiplexedNode[State](
     val removedStored = connections.get(peer).contains(conn)
     if removedStored then connections.remove(peer): Unit
     connectionToPeer.remove(conn)
+    lastIncomingMessageAtMs.remove(peer)
     if removedStored then
         log(
           s"drop inactive connection peer=${Uid.unwrap(peer)} reason=$reason keptPassive=${membership.passiveView.contains(peer)}"
@@ -267,6 +278,7 @@ class HyParViewMultiplexedNode[State](
     val hadMembership = membership.activeView.contains(peer) || membership.passiveView.contains(peer)
     val conn          = connections.remove(peer)
     conn.foreach(connectionToPeer.remove)
+    lastIncomingMessageAtMs.remove(peer)
     val plumtreeBefore = plumtree
     plumtree = plumtree.removePeer(Peer(peer))
     connecting.remove(peer)
@@ -282,6 +294,23 @@ class HyParViewMultiplexedNode[State](
   private def rememberConnection(peer: Uid, conn: Connection[Envelope[State]]): Unit = {
     connectionToPeer.update(conn, peer)
     connections.getOrElseUpdate(peer, conn): Unit
+    lastIncomingMessageAtMs.getOrElseUpdate(peer, System.currentTimeMillis())
+    ()
+  }
+
+  private def noteIncomingMessage(peer: Uid): Unit =
+    lastIncomingMessageAtMs.update(peer, System.currentTimeMillis())
+
+  private def timeoutSilentActiveConnections(): Unit = {
+    val now          = System.currentTimeMillis()
+    val timedOutPeers = membership.activeView.iterator.filter { peer =>
+      connections.contains(peer) && now - lastIncomingMessageAtMs.getOrElse(peer, now) >= activeConnectionTimeoutMs
+    }.toList
+
+    timedOutPeers.foreach { peer =>
+      log(s"disconnect peer=${Uid.unwrap(peer)} reason=no incoming message for ${activeConnectionTimeoutMs}ms")
+      handleDisconnectedPeer(peer, s"no incoming message for ${activeConnectionTimeoutMs}ms")
+    }
   }
 
   private def connectToPeerDetails(
