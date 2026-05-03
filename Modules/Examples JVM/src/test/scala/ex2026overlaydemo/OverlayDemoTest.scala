@@ -17,7 +17,7 @@ class OverlayDemoTest extends munit.FunSuite {
   private def localInfoMatchesNode(app: OverlayDemo.NodeApp): Boolean = {
     val localUid = app.node.localUid.uid
     app.node.connectionDirectory.get(localUid).exists { info =>
-      val replicated = OverlayConnectionDirectory.snapshot(info)
+      val replicated = OverlayConnectionDirectory.snapshot(info.value)
       replicated.active == app.node.activeView &&
       replicated.passive == app.node.passiveView &&
       replicated.eager == app.node.eagerView &&
@@ -27,8 +27,8 @@ class OverlayDemoTest extends munit.FunSuite {
 
   private def eagerEdgesFormForest(directory: OverlayConnectionDirectory.Directory): Boolean = {
     val eagerByNode = directory.entries.iterator.map { (uid, info) =>
-      val snapshot = OverlayConnectionDirectory.snapshot(info)
-      uid -> (snapshot.active intersect snapshot.eager)
+      val snapshot = OverlayConnectionDirectory.snapshot(info.value)
+      uid -> (snapshot.active.intersect(snapshot.eager))
     }.toMap
 
     val undirectedEdges = eagerByNode.iterator.flatMap { (left, peers) =>
@@ -158,7 +158,7 @@ class OverlayDemoTest extends munit.FunSuite {
       val directories =
         List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
       assert(directories.exists(_.entries.exists((_, info) =>
-        OverlayConnectionDirectory.snapshot(info).active.nonEmpty
+        OverlayConnectionDirectory.snapshot(info.value).active.nonEmpty
       )))
     } finally {
       node3.stop()

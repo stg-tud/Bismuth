@@ -135,7 +135,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
           s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view"
         )
         assert(
-          !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.contains(leavingId)),
+          !node.connectionDirectory.get(node.localUid.uid).exists(_.value.peers.contains(leavingId)),
           s"${Uid.unwrap(node.localUid.uid)} still reports departed node in replicated local view"
         )
         assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after leave")
