@@ -194,20 +194,6 @@ class NioTCP(pool: ExecutionContext) {
     conn
   }
 
-  def readN(n: Int, clientChannel: SocketChannel): ByteBuffer = {
-    val buffer    = ByteBuffer.allocate(n)
-    var bytesRead = 0
-    while bytesRead < n do {
-      val result = clientChannel.read(buffer)
-      if result == -1 then {
-        throw NoMoreDataException("remaining channel is empty")
-      }
-      bytesRead += result
-    }
-    buffer.flip()
-    buffer
-  }
-
   def connect(
       bindsocket: () => SocketChannel,
   ): LatentConnection[MessageBuffer] =
