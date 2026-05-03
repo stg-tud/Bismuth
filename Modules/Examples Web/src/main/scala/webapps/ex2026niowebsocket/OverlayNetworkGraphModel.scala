@@ -84,13 +84,25 @@ object OverlayNetworkGraphModel {
         detailsByNode.getOrElseUpdate(peerUid, "eager peer")
       }
 
-    val eagerPairs = edges.iterator.collect {
-      case GraphEdge(from, to, EdgeKind.EagerOverlay) => (from, to)
-    }.toSet
-    val filteredEdges = edges.iterator.filter {
-      case GraphEdge(from, to, EdgeKind.ActiveOverlay) => !eagerPairs.contains((from, to))
-      case _                                           => true
-    }.toVector
+    val canonicalOverlayEdges = mutable.LinkedHashMap.empty[(Uid, Uid), EdgeKind]
+    val passiveEdges          = mutable.ArrayBuffer.empty[GraphEdge]
+
+    edges.iterator.foreach {
+      case GraphEdge(from, to, EdgeKind.PassiveOverlay) =>
+        passiveEdges += GraphEdge(from, to, EdgeKind.PassiveOverlay)
+
+      case GraphEdge(from, to, kind @ (EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay)) =>
+        val key =
+          if Uid.unwrap(from) <= Uid.unwrap(to) then (from, to)
+          else (to, from)
+        val mergedKind = (canonicalOverlayEdges.get(key), kind) match
+          case (Some(EdgeKind.EagerOverlay), _) | (_, EdgeKind.EagerOverlay) => EdgeKind.EagerOverlay
+          case _                                                              => EdgeKind.ActiveOverlay
+        canonicalOverlayEdges.update(key, mergedKind)
+    }
+
+    val filteredEdges =
+      canonicalOverlayEdges.iterator.map { case ((from, to), kind) => GraphEdge(from, to, kind) }.toVector ++ passiveEdges.toVector
 
     val uids  = detailsByNode.keySet.toVector.distinct
     val known = uids.toSet

@@ -1,3 +1,0 @@
-package ex2026overlaydemo
-
-object WebRtcSignalingServerIntegrationTest

@@ -11,7 +11,7 @@ import java.net.BindException
 import java.util.concurrent.Executors
 
 /** vibecoded as part of the hyparview experiments */
-object WebRtcSignalingServer {
+object SignalingServerCli {
 
   given JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
   given JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
