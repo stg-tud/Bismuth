@@ -33,19 +33,13 @@ object WebsocketProtocol {
 
   def tryParseHandshake(buffer: ByteBuffer): Option[HandshakeRequest] = {
     val start = buffer.position()
-    println(s"limit: ${buffer.limit()}, position: ${buffer.position()}, remaining: ${buffer.remaining()}")
-    println(s"trying to parse handshake at $start")
-    val end = buffer.array().indexOfSlice(headerEnd, start)
-    println(s"end of header is $end, ${end - start} bytes, ${buffer.remaining()} bytes remaining")
-    println(s"limit: ${buffer.limit()}, position: ${buffer.position()}, remaining: ${buffer.remaining()}")
+    val end   = buffer.array().indexOfSlice(headerEnd, start)
     if end < 0 then None
     else {
       val headerBytes = new Array[Byte](end - start)
       buffer.get(headerBytes)
       buffer.position(end + headerEnd.length)
-      parseHandshakeHeaderBytes(headerBytes).tap { h =>
-        println(s"parsed header: $h")
-      }
+      parseHandshakeHeaderBytes(headerBytes)
     }
   }
 
@@ -71,7 +65,6 @@ object WebsocketProtocol {
   case class WebsocketHeader(len: Int, mask: Array[Byte], fin: Boolean, opcode: Int)
 
   def tryParseHeader(buffer: ByteBuffer): Option[WebsocketHeader] = {
-    println(s"trying to parse header with ${buffer.remaining()} bytes remaining:")
     if buffer.remaining() < 2 then return None
     val firstByte  = buffer.get() & 0xff
     val secondByte = buffer.get() & 0xff
@@ -81,19 +74,14 @@ object WebsocketProtocol {
     val masked = (secondByte & 0x80) != 0
     val lenTag = secondByte & 0x7f
 
-    println(s"fin: $fin, opcode: $opcode, masked: $masked, lenTag: $lenTag")
-
-    var offset              = 2
     val payloadLength: Long = lenTag match {
       case 126 =>
         if buffer.remaining() < 2 then return None
         val len = buffer.getShort
-        offset += 2
         len.toLong
       case 127 =>
         if buffer.remaining() < 8 then return None
         val len = buffer.getLong()
-        offset += 8
         len
       case other => other.toLong
     }
@@ -110,7 +98,6 @@ object WebsocketProtocol {
             buffer.get(arr)
             ()
         arr
-    offset += maskKeyLength
 
     Some(WebsocketHeader(len = payloadLength.toInt, mask = maskKey, fin = fin, opcode = opcode))
   }
