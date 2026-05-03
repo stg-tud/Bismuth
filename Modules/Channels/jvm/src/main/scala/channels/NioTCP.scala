@@ -13,7 +13,6 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.control.NonFatal
 
-
 object NioTCP {
   case class AcceptAttachment(
       callback: Callback[Connection[MessageBuffer]],
@@ -301,9 +300,14 @@ class NioTCP(pool: ExecutionContext) {
                   if len > 1024
                   then attachment.copy(secondary = ByteBuffer.allocate(len - 1024), protocol = ProtocolState.Plain(len))
                   else attachment.copy(protocol = ProtocolState.Plain(len))
+
+                val conn     = NioTCPConnection(clientChannel)
+                val callback = upat.incoming.messageHandler(conn)
+                if upat.connectCallback != null then upat.connectCallback.succeed(conn)
+                val withCallback = upat.copy(messageCallback = callback)
                 handlePlain(
                   len,
-                  ensurePlainConnected(clientChannel, upat)
+                  withCallback
                 )
       case ProtocolState.Plain(len)         => handlePlain(len, attachment)
       case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(clientChannel, attachment)
@@ -373,7 +377,10 @@ class NioTCP(pool: ExecutionContext) {
         attachment
       case Some(request) =>
         writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
-        val connected = ensureWebSocketConnected(clientChannel, attachment)
+        val conn     = WebSocketConnection(clientChannel)
+        val callback = attachment.incoming.messageHandler(conn)
+        if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
+        val connected = attachment.copy(messageCallback = callback)
 
         attachment.primary.compact()
 
@@ -495,24 +502,6 @@ class NioTCP(pool: ExecutionContext) {
 
     attachment.copy(fragments = fragments, fragmentOpcode = fragmentOpcode)
   }
-
-  private def ensurePlainConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
-    if attachment.messageCallback != null then attachment
-    else {
-      val conn     = NioTCPConnection(clientChannel)
-      val callback = attachment.incoming.messageHandler(conn)
-      if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
-      attachment.copy(messageCallback = callback)
-    }
-
-  private def ensureWebSocketConnected(clientChannel: SocketChannel, attachment: ReceiveAttachment): ReceiveAttachment =
-    if attachment.messageCallback != null then attachment
-    else {
-      val conn     = WebSocketConnection(clientChannel)
-      val callback = attachment.incoming.messageHandler(conn)
-      if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
-      attachment.copy(messageCallback = callback)
-    }
 
   private def writeFully(clientChannel: SocketChannel, buffers: Array[ByteBuffer]): Unit = {
     while buffers.exists(_.hasRemaining()) do {
