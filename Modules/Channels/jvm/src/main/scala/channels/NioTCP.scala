@@ -3,7 +3,7 @@ package channels
 import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
 import de.rmgk.delay.{Async, Callback, Sync}
-import replication.{BroadcastIO, Compression}
+import replication.{BroadcastIO}
 
 import java.net.{SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
@@ -173,14 +173,13 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val bytes           = message.asArray
-      val compressedBytes = if compression then Compression.compress(bytes) else bytes
-      val messageLength   = compressedBytes.length
+      val messageLength   = bytes.length
 
       val sizeBuffer = ByteBuffer.allocate(4)
       sizeBuffer.putInt(messageLength)
       sizeBuffer.flip()
 
-      writeFully(clientChannel, Array(sizeBuffer, ByteBuffer.wrap(compressedBytes)))
+      writeFully(clientChannel, Array(sizeBuffer, ByteBuffer.wrap(bytes)))
       reporter.send(messageLength + 4)
       ()
     }
@@ -374,8 +373,7 @@ class NioTCP(pool: ExecutionContext, reporter: ChannelTrafficReporter | Null = n
 
         pool.execute { () =>
           reporter.received(len + 4)
-          val decompressedBytes = if compression then Compression.decompress(buffer) else buffer
-          callback.succeed(ArrayMessageBuffer(decompressedBytes))
+          callback.succeed(ArrayMessageBuffer(buffer))
         }
 
         attachment.primary.compact()

@@ -1,16 +1,11 @@
 package webapps.ex2026niowebsocket
 
 import channels.*
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToString}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, document, window}
 import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.given
-import replication.overlay.HyParViewMultiplexed
-import replication.research.OverlayNetworkProtocol.DemoState
-import replication.research.SignalingServer.Message
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import scalatags.JsDom.all.*
 import webapps.ex2026niowebsocket.OverlayNetworkGraphModel.LocalViews
