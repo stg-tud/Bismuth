@@ -310,9 +310,9 @@ class HyParViewMultiplexedNode[State](
       case None => log(s"join skipped self=${Uid.unwrap(self.uid)} reason=no route to contact")
 
   private def applyPlumtreeResult(result: PlumtreeBroadcast.Result[State]): Unit = {
-    val changed = plumtree != result.state
+    val rolesChanged = plumtree.peerRoles != result.state.peerRoles
     plumtree = result.state
-    if changed then onPeerRolesChanged()
+    if rolesChanged then onPeerRolesChanged()
     result.events.foreach(handlePlumtreeEvent)
   }
 
