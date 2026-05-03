@@ -32,16 +32,15 @@ class ClientContext[T: JsonValueCodec](
           operationMode match
               case ClientOperationMode.PushAll      => Sync { () }
               case ClientOperationMode.RequestLater =>
-                connection.send(RdtMessageType.Request, Array(), dots, Dots.empty).toAsync(using
+                connection.send(RdtMessageType.Request, Array(), dots).toAsync(using
                   executionContext
                 )
           Sync { () }
-        case BroadcastIO.Message.Protocol(Payload(dots, data, redundantDots)) =>
+        case BroadcastIO.Message.Protocol(Payload(dots, data)) =>
           connection.send(
             RdtMessageType.Payload,
             writeToArray[T](data),
-            dots,
-            redundantDots
+            dots
           ).toAsync(using executionContext)
         case BroadcastIO.Message.Protocol(IHave(_, _) | Prune(_)) => Async {}
 

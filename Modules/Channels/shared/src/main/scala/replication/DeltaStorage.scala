@@ -1,7 +1,6 @@
 package replication
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import rdts.base.{Historized, Lattice}
+import rdts.base.Lattice
 import rdts.time.Dots
 import replication.PlumtreeMessage.Payload
 
@@ -25,7 +24,7 @@ object DeltaStorage {
     case NoHistory
   }
 
-  def getStorage[State: JsonValueCodec](t: Type, getState: () => State)(using
+  def getStorage[State](t: Type, getState: () => State)(using
       Lattice[Payload[State]]
   ): DeltaStorage[State] = t match {
     case Type.Discarding(maxSize) => DiscardingHistory(maxSize)
@@ -55,7 +54,7 @@ final case class DiscardingHistory[State](size: Int, pastPayloads: Queue[Payload
 
 }
 
-final case class StateDeltaStorage[State: JsonValueCodec](getState: () => State, dots: Dots = Dots.empty)(using
+final case class StateDeltaStorage[State](getState: () => State, dots: Dots = Dots.empty)(using
     Lattice[Dots]
 ) extends DeltaStorage[State] {
 
@@ -76,7 +75,7 @@ final case class KeepAllHistory[State](history: List[Payload[State]] = List.empt
 
 }
 
-final case class MergingHistory[State: JsonValueCodec](
+final case class MergingHistory[State](
     blockSize: Int,
     mergedHistory: List[Payload[State]] = List.empty,
     history: List[Payload[State]] = List.empty,
@@ -92,24 +91,6 @@ final case class MergingHistory[State: JsonValueCodec](
           history = List.empty,
         )
     else copy(history = nextHistory)
-  }
-
-}
-
-final case class NonRedundantHistory[State: {JsonValueCodec, Historized}](history: Set[Payload[State]] = Set.empty)
-    extends DeltaStorage[State] {
-
-  override def getHistory: List[Payload[State]] = history.toList
-
-  override def remember(message: Payload[State]): DeltaStorage[State] = {
-    val redundantDeltas: Dots = history.toMetaDeltas.getRedundantDeltas(message.data)
-    val redundantDots: Dots   = history.foldLeft(Dots.empty)((dots, bufferedDelta) =>
-      if !dots.contains(bufferedDelta.dots) then dots.union(bufferedDelta.redundantDots) else dots
-    )
-
-    copy(history =
-      history.filterNot(p => redundantDots.contains(p.dots)) + message.copy(redundantDots = redundantDeltas)
-    )
   }
 
 }

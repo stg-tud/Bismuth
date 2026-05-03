@@ -1,6 +1,5 @@
 package replication
 
-import rdts.base.Historized.MetaDelta
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Disseminate
@@ -17,23 +16,8 @@ object PlumtreeMessage {
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T
     */
-  case class Payload[+T](dots: Dots, data: T, redundantDots: Dots)
-      extends PlumtreeMessage[T] {}
-  object Payload                 {
-    def apply[T](dots: Dots, data: T): Payload[T] =
-      Payload(dots, data, Dots.empty)
-
-    extension [T](payloads: Iterable[Payload[T]]) {
-      inline def getAllDots: Dots =
-        payloads.foldLeft(Dots.empty)((dots, payload) => dots.union(payload.dots.union(payload.redundantDots)))
-
-      inline def mapDeltas[A](f: T => A): Iterable[Payload[A]] =
-        payloads.map(bufferedPayload => bufferedPayload.copy(data = f(bufferedPayload.data)))
-
-      inline def toMetaDeltas: Iterable[MetaDelta[T]] =
-        payloads.map(payload => MetaDelta(payload.dots, payload.data, payload.redundantDots))
-    }
-  }
+  case class Payload[+T](dots: Dots, data: T)
+      extends PlumtreeMessage[T]
 
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.
@@ -156,7 +140,7 @@ final case class PlumtreeBroadcast[State](
               )
           Result(next, relevant.map(payload => Disseminate(from :: Nil, payload)))
 
-        case payload @ Payload(context, _, _) =>
+        case payload @ Payload(context, _) =>
           if context <= localContext then
               // Duplicate eager path: demote this edge and ask the sender to prune too.
               Result(withRole(from, PeerRole.Lazy), List(Disseminate(from :: Nil, Prune(self))))

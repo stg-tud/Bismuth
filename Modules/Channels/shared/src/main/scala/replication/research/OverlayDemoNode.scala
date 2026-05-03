@@ -1,7 +1,6 @@
 package replication.research
 
 import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, LatentConnection}
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
@@ -24,7 +23,7 @@ class OverlayDemoNode(
     printOverlayEventsToStdout: Boolean = false,
     runBackgroundTasks: Boolean = true,
     val localUid: LocalUid = LocalUid.gen(),
-)(using JsonValueCodec[DemoState]) {
+) {
 
   @volatile var state: DemoState = DemoState.empty
 

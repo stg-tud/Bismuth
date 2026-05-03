@@ -36,12 +36,6 @@ object Historized {
     def apply[T](ids: Dots, delta: T): MetaDelta[T] = MetaDelta(ids, delta, Dots.empty)
 
     extension [T](metaDeltas: Iterable[MetaDelta[T]]) {
-      inline def getAllDots: Dots =
-        metaDeltas.foldLeft(Dots.empty)((dots, metaDelta) => dots.union(metaDelta.id.union(metaDelta.redundantDots)))
-
-      inline def mapDeltas[A](f: T => A): Iterable[MetaDelta[A]] =
-        metaDeltas.map(bufferedDelta => bufferedDelta.copy(delta = f(bufferedDelta.delta)))
-
       inline def getRedundantDeltas(delta: T)(using Historized[T]): Dots =
         metaDeltas.foldLeft(Dots.empty)((dots, bufferedDelta) =>
             val redundantDeltas =
