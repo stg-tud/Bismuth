@@ -284,10 +284,11 @@ class NioTCP(pool: ExecutionContext) {
     val initialBytes = totalAvailable(attachment)
 
     val next = attachment.protocol match {
-      case ProtocolState.Init               => handleInitial(clientChannel, attachment)
-      case ProtocolState.Plain(len)         => handlePlain(len, attachment)
-      case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(clientChannel, attachment)
-      case ps: ProtocolState.WebSocket      => handleWebSocket(ps, attachment, clientChannel, key)
+      case ProtocolState.Init                => handleInitial(clientChannel, attachment)
+      case ProtocolState.Plain(len)          => handlePlain(len, attachment)
+      case ProtocolState.WebSocketHandshake  => handleWebSocketHandshake(clientChannel, attachment)
+      case ProtocolState.WebSocket(None)     => handleWebsocketHeader(attachment)
+      case ProtocolState.WebSocket(Some(wh)) => handleWebsocketBody(attachment, clientChannel, key, wh)
     }
     key.attach(next)
     if read == -1 then throw NoMoreDataException("remaining channel is empty")
@@ -392,54 +393,52 @@ class NioTCP(pool: ExecutionContext) {
     }
   }
 
-  private def handleWebSocket(
-      state: ProtocolState.WebSocket,
+  private def handleWebsocketBody(
       attachment: ReceiveAttachment,
       clientChannel: SocketChannel,
-      key: SelectionKey | Null
-  ): ReceiveAttachment = {
-
+      key: SelectionKey | Null,
+      state: WebsocketHeader
+  ) = {
     attachment.primary.mark()
-
-    state.header match {
+    grabPayload(state.len, attachment) match {
+      case Some(value) =>
+        val frame = WebsocketProtocol.tryParsePayload(state, value)
+        assert(
+          attachment.secondary == null || !attachment.secondary.hasRemaining,
+          "secondary buffer should be fully consumed"
+        )
+        attachment.primary.compact()
+        handleWebsocketMessage(state, frame, attachment, clientChannel, key).copy(
+          secondary = null,
+          protocol = ProtocolState.WebSocket(None)
+        )
       case None =>
-        WebsocketProtocol.tryParseHeader(attachment.primary) match {
-          case None =>
-            attachment.primary.reset()
-            attachment.primary.compact()
-            attachment
-          case Some(value) =>
-            attachment.primary.compact()
-            require(value.len < MessageBuffer.maxPayloadSize, "message too large")
-            if value.len > 1024
-            then
-                attachment.copy(
-                  protocol = ProtocolState.WebSocket(Some(value)),
-                  secondary = ByteBuffer.allocate(value.len - 1024)
-                )
-            else attachment.copy(protocol = ProtocolState.WebSocket(Some(value)))
-        }
-      case Some(state) =>
-        grabPayload(state.len, attachment) match {
-          case Some(value) =>
-            val frame = WebsocketProtocol.tryParsePayload(state, value)
-            assert(
-              attachment.secondary == null || !attachment.secondary.hasRemaining,
-              "secondary buffer should be fully consumed"
+        attachment.primary.reset()
+        attachment.primary.compact()
+        if attachment.secondary != null then
+            attachment.secondary.compact()
+            ()
+        attachment
+    }
+  }
+
+  private def handleWebsocketHeader(attachment: ReceiveAttachment) = {
+    attachment.primary.mark()
+    WebsocketProtocol.tryParseHeader(attachment.primary) match {
+      case None =>
+        attachment.primary.reset()
+        attachment.primary.compact()
+        attachment
+      case Some(value) =>
+        attachment.primary.compact()
+        require(value.len < MessageBuffer.maxPayloadSize, "message too large")
+        if value.len > 1024
+        then
+            attachment.copy(
+              protocol = ProtocolState.WebSocket(Some(value)),
+              secondary = ByteBuffer.allocate(value.len - 1024)
             )
-            attachment.primary.compact()
-            handleWebsocketMessage(state, frame, attachment, clientChannel, key).copy(
-              secondary = null,
-              protocol = ProtocolState.WebSocket(None)
-            )
-          case None =>
-            attachment.primary.reset()
-            attachment.primary.compact()
-            if attachment.secondary != null then
-                attachment.secondary.compact()
-                ()
-            attachment
-        }
+        else attachment.copy(protocol = ProtocolState.WebSocket(Some(value)))
     }
   }
 
