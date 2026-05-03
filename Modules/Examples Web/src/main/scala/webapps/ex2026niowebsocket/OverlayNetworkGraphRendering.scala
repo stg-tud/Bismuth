@@ -58,7 +58,8 @@ object OverlayNetworkGraphRendering {
       do
           edge.kind match
               case EdgeKind.PassiveOverlay => renderPassiveArrow(ctx, a.x, a.y, b.x, b.y)
-              case _                       => renderLine(ctx, a.x, a.y, b.x, b.y)
+              case EdgeKind.ActiveOverlay  => renderHalfLine(ctx, a.x, a.y, b.x, b.y)
+              case EdgeKind.EagerOverlay   => renderHalfLine(ctx, a.x, a.y, b.x, b.y)
     }
     ctx.setLineDash(js.Array())
 
@@ -81,20 +82,7 @@ object OverlayNetworkGraphRendering {
     }
   }
 
-  private def renderLine(
-      ctx: CanvasRenderingContext2D,
-      fromX: Double,
-      fromY: Double,
-      toX: Double,
-      toY: Double
-  ): Unit = {
-    ctx.beginPath()
-    ctx.moveTo(fromX, fromY)
-    ctx.lineTo(toX, toY)
-    ctx.stroke()
-  }
-
-  private def renderPassiveArrow(
+  private def renderHalfLine(
       ctx: CanvasRenderingContext2D,
       fromX: Double,
       fromY: Double,
@@ -117,6 +105,28 @@ object OverlayNetworkGraphRendering {
     ctx.moveTo(startX, startY)
     ctx.lineTo(endX, endY)
     ctx.stroke()
+  }
+
+  private def renderPassiveArrow(
+      ctx: CanvasRenderingContext2D,
+      fromX: Double,
+      fromY: Double,
+      toX: Double,
+      toY: Double
+  ): Unit = {
+    val dx          = toX - fromX
+    val dy          = toY - fromY
+    val distance    = math.max(1.0, math.sqrt(dx * dx + dy * dy))
+    val ux          = dx / distance
+    val uy          = dy / distance
+    val startOffset = 10.0
+    val endDistance = math.max(startOffset + 8.0, distance * 0.5)
+    val startX      = fromX + ux * startOffset
+    val startY      = fromY + uy * startOffset
+    val endX        = fromX + ux * endDistance
+    val endY        = fromY + uy * endDistance
+
+    renderHalfLine(ctx, fromX, fromY, toX, toY)
 
     val arrowSize = 6.0
     val leftX     = endX - ux * arrowSize - uy * arrowSize * 0.6

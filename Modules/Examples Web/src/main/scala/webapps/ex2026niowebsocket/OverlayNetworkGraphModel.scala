@@ -136,36 +136,27 @@ object OverlayNetworkGraphModel {
           opacityByNode.update(selfUid, 1.0)
         }
 
-    val canonicalOverlayEdges = mutable.LinkedHashMap.empty[(Uid, Uid), (EdgeKind, Double)]
-    val passiveEdges          = mutable.ArrayBuffer.empty[GraphEdge]
-
-    edges.iterator.foreach {
-      case GraphEdge(from, to, EdgeKind.PassiveOverlay, opacity) =>
-        passiveEdges += GraphEdge(
-          from,
-          to,
-          EdgeKind.PassiveOverlay,
-          math.min(opacity, opacityByNode.getOrElse(to, 1.0))
-        )
-
-      case GraphEdge(from, to, kind @ (EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay), opacity) =>
-        val key =
-          if Uid.unwrap(from) <= Uid.unwrap(to) then (from, to)
-          else (to, from)
-        val mergedKind = (canonicalOverlayEdges.get(key).map(_._1), kind) match
-            case (Some(EdgeKind.EagerOverlay), _) | (_, EdgeKind.EagerOverlay) => EdgeKind.EagerOverlay
-            case _                                                             => EdgeKind.ActiveOverlay
-        val mergedOpacity = canonicalOverlayEdges.get(key).map(_._2).fold(math.min(
-          opacityByNode.getOrElse(from, unknownNodeOpacity),
-          opacityByNode.getOrElse(to, unknownNodeOpacity)
-        ))(existing => math.min(existing, opacity))
-        canonicalOverlayEdges.update(key, (mergedKind, mergedOpacity))
-    }
-
     val filteredEdges =
-      canonicalOverlayEdges.iterator.map { case ((from, to), (kind, opacity)) =>
-        GraphEdge(from, to, kind, opacity)
-      }.toVector ++ passiveEdges.toVector
+      edges.iterator.map {
+        case GraphEdge(from, to, EdgeKind.PassiveOverlay, opacity) =>
+          GraphEdge(
+            from,
+            to,
+            EdgeKind.PassiveOverlay,
+            math.min(opacity, opacityByNode.getOrElse(to, 1.0))
+          )
+
+        case GraphEdge(from, to, kind @ (EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay), opacity) =>
+          GraphEdge(
+            from,
+            to,
+            kind,
+            math.min(
+              opacity,
+              math.min(opacityByNode.getOrElse(from, unknownNodeOpacity), opacityByNode.getOrElse(to, unknownNodeOpacity))
+            )
+          )
+      }.toVector
 
     val uids  = detailsByNode.keySet.toVector.distinct
     val known = uids.toSet
