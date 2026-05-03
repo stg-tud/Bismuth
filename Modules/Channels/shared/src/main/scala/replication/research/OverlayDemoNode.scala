@@ -32,7 +32,10 @@ class OverlayDemoNode(
   private val timer   = Timer(true)
   private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState]] = None
 
-  private def emitStateChanged(): Unit = onStateChanged(state)
+  private def emitStateChanged(): Unit = {
+    onStateChanged(state)
+    checkReplicatedLocalView()
+  }
 
   private def publish(delta: DemoState): Unit =
     if !Bottom.isEmpty(delta) then
@@ -59,6 +62,22 @@ class OverlayDemoNode(
 
   private def publishLocalView(): Unit = refreshLocalView(replicate = true)
 
+  private def expectedLocalView: OverlayConnectionDirectory.ViewSnapshot =
+    OverlayConnectionDirectory.ViewSnapshot(
+      active = overlay.map(_.activeView).getOrElse(Set.empty),
+      passive = overlay.map(_.passiveView).getOrElse(Set.empty),
+      eager = overlay.map(_.eagerView).getOrElse(Set.empty),
+    ).normalized
+
+  private def checkReplicatedLocalView(): Unit = {
+    val expected = expectedLocalView
+    val replicated = OverlayConnectionDirectory.snapshot(state.connections, localUid.uid)
+    if replicated != expected then
+      Console.err.println(
+        s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
+      )
+  }
+
   private def removeDisconnectedConnection(peer: Uid): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
@@ -82,11 +101,11 @@ class OverlayDemoNode(
       StateDeltaStorage(() => state),
       config,
       onViewChanged = (_, _) => publishLocalView(),
-      onPeerRolesChanged = () => refreshLocalView(replicate = false),
+      onPeerRolesChanged = () => publishLocalView(),
       onPeerDisconnected = removeDisconnectedConnection,
     )
 
-  private def startShuffleTask(): Unit =
+  private def startBackgroundTasks(): Unit = {
     timer.schedule(
       new TimerTask {
         override def run(): Unit = overlay.foreach(_.shuffleTick())
@@ -94,13 +113,21 @@ class OverlayDemoNode(
       1000L,
       1000L,
     )
+    timer.schedule(
+      new TimerTask {
+        override def run(): Unit = checkReplicatedLocalView()
+      },
+      1000L,
+      1000L,
+    )
+  }
 
   def start(seeds: List[ChannelConnectDescriptor] = Nil): Unit = {
     val node = newOverlay(seeds.headOption)
     overlay = Some(node)
     listenEnvelope.foreach(_ => node.startServer())
     publishLocalView()
-    startShuffleTask()
+    startBackgroundTasks()
     seeds.headOption.foreach(_ => node.join())
   }
 

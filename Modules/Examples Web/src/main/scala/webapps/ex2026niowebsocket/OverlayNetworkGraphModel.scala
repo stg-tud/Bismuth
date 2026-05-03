@@ -31,9 +31,10 @@ object OverlayNetworkGraphModel {
         "local hyparview\n  active: -\n  passive: -\n  eager: -"
 
     val replicated = directory.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, info) =>
-      val active  = info.peers.elements.filter(_.state == LinkState.Active).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-      val passive = info.peers.elements.filter(_.state == LinkState.Passive).map(_.uid).toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-      val eager   = info.eagerPeers.elements.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+      val snapshot = OverlayConnectionDirectory.snapshot(info)
+      val active  = snapshot.active.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+      val passive = snapshot.passive.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+      val eager   = snapshot.eager.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val label   = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
       s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}"
     }
@@ -54,15 +55,17 @@ object OverlayNetworkGraphModel {
     val detailsByNode = mutable.LinkedHashMap.empty[Uid, String]
 
     directory.entries.foreach { (uid, info) =>
-      val activeCount  = info.peers.elements.count(_.state == LinkState.Active)
-      val passiveCount = info.peers.elements.count(_.state == LinkState.Passive)
-      val eagerCount   = info.eagerPeers.elements.size
+      val snapshot = OverlayConnectionDirectory.snapshot(info)
+      val activeCount  = snapshot.active.size
+      val passiveCount = snapshot.passive.size
+      val eagerCount   = snapshot.eager.size
       detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount eager=$eagerCount")
-      info.peers.elements.foreach { peer =>
+      (snapshot.active.map(peerUid => OverlayConnectionDirectory.ConnectedPeer(peerUid, LinkState.Active)) ++
+        snapshot.passive.map(peerUid => OverlayConnectionDirectory.ConnectedPeer(peerUid, LinkState.Passive))).foreach { peer =>
         val kind = peer.state match
-          case LinkState.Active if info.eagerPeers.elements.contains(peer.uid) => EdgeKind.EagerOverlay
-          case LinkState.Active                                                => EdgeKind.ActiveOverlay
-          case LinkState.Passive                                               => EdgeKind.PassiveOverlay
+          case LinkState.Active if snapshot.eager.contains(peer.uid) => EdgeKind.EagerOverlay
+          case LinkState.Active                                      => EdgeKind.ActiveOverlay
+          case LinkState.Passive                                     => EdgeKind.PassiveOverlay
         edges += GraphEdge(uid, peer.uid, kind)
         detailsByNode.getOrElseUpdate(peer.uid, peer.state match
           case LinkState.Active  => "active peer"

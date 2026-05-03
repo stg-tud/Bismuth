@@ -13,6 +13,19 @@ object OverlayConnectionDirectory {
 
   case class ConnectedPeer(uid: Uid, state: LinkState)
 
+  case class ViewSnapshot(
+      active: Set[Uid],
+      passive: Set[Uid],
+      eager: Set[Uid],
+  ) {
+    def normalized: ViewSnapshot = {
+      val activeOnly  = active
+      val passiveOnly = passive -- activeOnly
+      val eagerOnly   = eager intersect activeOnly
+      ViewSnapshot(activeOnly, passiveOnly, eagerOnly)
+    }
+  }
+
   case class NodeInfo(
       peers: ReplicatedSet[ConnectedPeer],
       eagerPeers: ReplicatedSet[Uid],
@@ -29,15 +42,36 @@ object OverlayConnectionDirectory {
   def emptyNodeInfo: NodeInfo =
     NodeInfo(ReplicatedSet.empty, ReplicatedSet.empty)
 
+  def snapshot(info: NodeInfo): ViewSnapshot = {
+    val active  = info.peers.elements.collect { case ConnectedPeer(uid, LinkState.Active) => uid }
+    val passive = info.peers.elements.collect { case ConnectedPeer(uid, LinkState.Passive) => uid }
+    val eager   = info.eagerPeers.elements
+    ViewSnapshot(active, passive, eager).normalized
+  }
+
+  def snapshot(state: Directory, node: Uid): ViewSnapshot =
+    state.get(node).map(snapshot).getOrElse(ViewSnapshot(Set.empty, Set.empty, Set.empty))
+
+  private def snapshotPeers(snapshot: ViewSnapshot): Set[ConnectedPeer] = {
+    val normalized = snapshot.normalized
+    normalized.active.map(uid => ConnectedPeer(uid, LinkState.Active)) ++
+    normalized.passive.map(uid => ConnectedPeer(uid, LinkState.Passive))
+  }
+
   def updateNode(
       state: Directory,
       node: Uid,
       peers: Iterable[ConnectedPeer],
       eagerPeers: Iterable[Uid],
   )(using LocalUid): Directory = {
-    val current           = state.get(node).getOrElse(emptyNodeInfo)
-    val desiredPeers      = peers.toSet
-    val desiredEagerPeers = eagerPeers.toSet
+    val current = state.get(node).getOrElse(emptyNodeInfo)
+    val desiredSnapshot = ViewSnapshot(
+      active = peers.collect { case ConnectedPeer(uid, LinkState.Active) => uid }.toSet,
+      passive = peers.collect { case ConnectedPeer(uid, LinkState.Passive) => uid }.toSet,
+      eager = eagerPeers.toSet,
+    ).normalized
+    val desiredPeers      = snapshotPeers(desiredSnapshot)
+    val desiredEagerPeers = desiredSnapshot.eager
 
     val peersAfterRemove = {
       val toRemove = current.peers.elements -- desiredPeers
