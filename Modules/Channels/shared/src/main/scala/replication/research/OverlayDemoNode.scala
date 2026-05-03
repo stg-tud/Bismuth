@@ -34,6 +34,11 @@ class OverlayDemoNode(
   private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState]] = None
   private var mismatchChecksInRow = 0
 
+  private val heartbeatIntervalMillis = 10_000L
+  private val staleNodeAfterMillis    = 30_000L
+
+  private def nowMillis(): Long = System.currentTimeMillis()
+
   private def emitStateChanged(): Unit = {
     onStateChanged(state)
   }
@@ -52,6 +57,7 @@ class OverlayDemoNode(
       overlay.map(_.activePeers).getOrElse(Set.empty),
       overlay.map(_.passivePeers).getOrElse(Set.empty),
       overlay.map(_.eagerView).getOrElse(Set.empty),
+      nowMillis(),
     )
     if !Bottom.isEmpty(delta) then
       if replicate then publish(DemoState(ReplicatedSet.empty, delta))
@@ -89,6 +95,17 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
   }
 
+  private def pruneStaleReplicatedNodes(): Unit = {
+    given LocalUid = localUid
+    val delta      = OverlayConnectionDirectory.pruneStaleNodes(
+      state.connections,
+      nowMillis(),
+      staleNodeAfterMillis,
+      localUid.uid,
+    )
+    if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
+  }
+
   private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
     new replication.overlay.HyParViewMultiplexedNode[DemoState](
       selfRef,
@@ -120,6 +137,16 @@ class OverlayDemoNode(
       },
       1000L,
       1000L,
+    )
+    timer.schedule(
+      new TimerTask {
+        override def run(): Unit = {
+          publishLocalView()
+          pruneStaleReplicatedNodes()
+        }
+      },
+      heartbeatIntervalMillis,
+      heartbeatIntervalMillis,
     )
     timer.schedule(
       new TimerTask {

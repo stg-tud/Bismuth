@@ -8,6 +8,9 @@ import scala.scalajs.js
 
 object OverlayNetworkGraphRendering {
 
+  private def rgba(r: Int, g: Int, b: Int, a: Double): String =
+    s"rgba($r, $g, $b, ${math.max(0.0, math.min(1.0, a))})"
+
   def syncCanvasResolution(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): (Double, Double) = {
     val dpr           = math.max(1.0, dom.window.devicePixelRatio)
     val logicalWidth  = math.max(300.0, canvas.clientWidth.toDouble)
@@ -31,16 +34,16 @@ object OverlayNetworkGraphRendering {
     edges.foreach { edge =>
       edge.kind match
         case EdgeKind.EagerOverlay =>
-          ctx.strokeStyle = "rgba(34, 197, 94, 0.95)"
+          ctx.strokeStyle = rgba(34, 197, 94, 0.95 * edge.opacity)
           ctx.setLineDash(js.Array())
           ctx.lineWidth = 3.0
         case EdgeKind.ActiveOverlay =>
-          ctx.strokeStyle = "rgba(96, 165, 250, 0.85)"
+          ctx.strokeStyle = rgba(96, 165, 250, 0.85 * edge.opacity)
           ctx.setLineDash(js.Array())
           ctx.lineWidth = 2.0
         case EdgeKind.PassiveOverlay =>
-          ctx.strokeStyle = "rgba(148, 163, 184, 0.55)"
-          ctx.fillStyle = "rgba(148, 163, 184, 0.75)"
+          ctx.strokeStyle = rgba(148, 163, 184, 0.55 * edge.opacity)
+          ctx.fillStyle = rgba(148, 163, 184, 0.75 * edge.opacity)
           ctx.setLineDash(js.Array(6, 6))
           ctx.lineWidth = 1.25
       for
@@ -55,15 +58,17 @@ object OverlayNetworkGraphRendering {
 
     nodes.foreach { node =>
       ctx.beginPath()
-      ctx.fillStyle = if node.highlighted then "#fde68a" else "#60a5fa"
+      ctx.fillStyle =
+        if node.highlighted then rgba(253, 230, 138, node.opacity)
+        else rgba(96, 165, 250, node.opacity)
       ctx.arc(node.x, node.y, 8, 0, math.Pi * 2)
       ctx.fill()
 
-      ctx.fillStyle = "#e2e8f0"
+      ctx.fillStyle = rgba(226, 232, 240, node.opacity)
       ctx.font = "10px sans-serif"
       ctx.fillText(node.label.take(12), node.x + 10, node.y - 2)
       if node.details.nonEmpty then {
-        ctx.fillStyle = "#94a3b8"
+        ctx.fillStyle = rgba(148, 163, 184, node.opacity)
         ctx.font = "9px sans-serif"
         ctx.fillText(node.details.take(72), node.x + 10, node.y + 9)
       }

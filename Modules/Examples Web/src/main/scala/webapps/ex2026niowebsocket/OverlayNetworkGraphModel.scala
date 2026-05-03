@@ -7,12 +7,25 @@ import scala.collection.mutable
 
 object OverlayNetworkGraphModel {
 
+  private val maxReplicatedNodeAgeMillis = 30_000L
+
+  private def ageLabel(lastSeenMillis: Long): String = {
+    val ageSeconds = math.max(0L, (System.currentTimeMillis() - lastSeenMillis) / 1000L)
+    s"${ageSeconds}s ago"
+  }
+
+  private def nodeOpacity(lastSeenMillis: Long): Double = {
+    val age = math.max(0L, System.currentTimeMillis() - lastSeenMillis).toDouble
+    val t   = math.min(1.0, age / maxReplicatedNodeAgeMillis.toDouble)
+    1.0 - 0.9 * t
+  }
+
   enum EdgeKind {
     case EagerOverlay, ActiveOverlay, PassiveOverlay
   }
 
-  case class GraphEdge(from: Uid, to: Uid, kind: EdgeKind)
-  case class GraphNode(uid: Uid, label: String, details: String, var x: Double, var y: Double, var vx: Double, var vy: Double, highlighted: Boolean)
+  case class GraphEdge(from: Uid, to: Uid, kind: EdgeKind, opacity: Double)
+  case class GraphNode(uid: Uid, label: String, details: String, var x: Double, var y: Double, var vx: Double, var vy: Double, highlighted: Boolean, opacity: Double)
   case class LocalViews(active: Set[Uid], passive: Set[Uid], eager: Set[Uid])
 
   def renderConnectionInfo(
@@ -35,7 +48,7 @@ object OverlayNetworkGraphModel {
       val passive = snapshot.passive.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val eager   = snapshot.eager.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val label   = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
-      s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}"
+      s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${if passive.nonEmpty then passive.mkString(", ") else "-"}\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}\n  last seen: ${ageLabel(info.lastSeenMillis)}"
     }
 
     if replicated.nonEmpty then (localStatus +: replicated).mkString("\n")
@@ -50,22 +63,27 @@ object OverlayNetworkGraphModel {
       width: Double,
       height: Double,
   ): (Vector[GraphNode], Vector[GraphEdge]) = {
-    val edges         = mutable.LinkedHashSet.empty[GraphEdge]
-    val detailsByNode = mutable.LinkedHashMap.empty[Uid, String]
+    val edges          = mutable.LinkedHashSet.empty[GraphEdge]
+    val detailsByNode  = mutable.LinkedHashMap.empty[Uid, String]
+    val opacityByNode  = mutable.LinkedHashMap.from(
+      directory.entries.iterator.map { (uid, info) => uid -> nodeOpacity(info.lastSeenMillis) }
+    )
+    val unknownNodeOpacity = 0.1
 
     directory.entries.foreach { (uid, info) =>
       val snapshot = OverlayConnectionDirectory.snapshot(info)
       val activeCount  = snapshot.active.size
       val passiveCount = snapshot.passive.size
       val eagerCount   = snapshot.eager.size
-      detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount eager=$eagerCount")
+      val opacity      = opacityByNode(uid)
+      detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount eager=$eagerCount lastSeen=${ageLabel(info.lastSeenMillis)}")
       snapshot.active.foreach { peerUid =>
         val kind = if snapshot.eager.contains(peerUid) then EdgeKind.EagerOverlay else EdgeKind.ActiveOverlay
-        edges += GraphEdge(uid, peerUid, kind)
+        edges += GraphEdge(uid, peerUid, kind, math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
         detailsByNode.getOrElseUpdate(peerUid, "active peer")
       }
       snapshot.passive.foreach { peerUid =>
-        edges += GraphEdge(uid, peerUid, EdgeKind.PassiveOverlay)
+        edges += GraphEdge(uid, peerUid, EdgeKind.PassiveOverlay, math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
         detailsByNode.getOrElseUpdate(peerUid, "passive peer")
       }
     }
@@ -76,33 +94,35 @@ object OverlayNetworkGraphModel {
     do
       val localEager = views.eager intersect views.active
       localEager.foreach { peerUid =>
-        val activeEdge = GraphEdge(selfUid, peerUid, EdgeKind.ActiveOverlay)
-        edges.remove(activeEdge)
+        val activeEdge = GraphEdge(selfUid, peerUid, EdgeKind.ActiveOverlay, 1.0)
+        edges.filterInPlace(edge => !(edge.from == activeEdge.from && edge.to == activeEdge.to && edge.kind == activeEdge.kind))
         if !edges.exists(edge => edge.from == selfUid && edge.to == peerUid && edge.kind == EdgeKind.EagerOverlay) then
-          edges += GraphEdge(selfUid, peerUid, EdgeKind.EagerOverlay)
+          edges += GraphEdge(selfUid, peerUid, EdgeKind.EagerOverlay, math.min(opacityByNode.getOrElse(selfUid, 1.0), opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
         detailsByNode.getOrElseUpdate(selfUid, s"active=${views.active.size} passive=${views.passive.size} eager=${views.eager.size}")
         detailsByNode.getOrElseUpdate(peerUid, "eager peer")
+        opacityByNode.update(selfUid, 1.0)
       }
 
-    val canonicalOverlayEdges = mutable.LinkedHashMap.empty[(Uid, Uid), EdgeKind]
+    val canonicalOverlayEdges = mutable.LinkedHashMap.empty[(Uid, Uid), (EdgeKind, Double)]
     val passiveEdges          = mutable.ArrayBuffer.empty[GraphEdge]
 
     edges.iterator.foreach {
-      case GraphEdge(from, to, EdgeKind.PassiveOverlay) =>
-        passiveEdges += GraphEdge(from, to, EdgeKind.PassiveOverlay)
+      case GraphEdge(from, to, EdgeKind.PassiveOverlay, opacity) =>
+        passiveEdges += GraphEdge(from, to, EdgeKind.PassiveOverlay, math.min(opacity, opacityByNode.getOrElse(to, 1.0)))
 
-      case GraphEdge(from, to, kind @ (EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay)) =>
+      case GraphEdge(from, to, kind @ (EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay), opacity) =>
         val key =
           if Uid.unwrap(from) <= Uid.unwrap(to) then (from, to)
           else (to, from)
-        val mergedKind = (canonicalOverlayEdges.get(key), kind) match
+        val mergedKind = (canonicalOverlayEdges.get(key).map(_._1), kind) match
           case (Some(EdgeKind.EagerOverlay), _) | (_, EdgeKind.EagerOverlay) => EdgeKind.EagerOverlay
           case _                                                              => EdgeKind.ActiveOverlay
-        canonicalOverlayEdges.update(key, mergedKind)
+        val mergedOpacity = canonicalOverlayEdges.get(key).map(_._2).fold(math.min(opacityByNode.getOrElse(from, unknownNodeOpacity), opacityByNode.getOrElse(to, unknownNodeOpacity)))(existing => math.min(existing, opacity))
+        canonicalOverlayEdges.update(key, (mergedKind, mergedOpacity))
     }
 
     val filteredEdges =
-      canonicalOverlayEdges.iterator.map { case ((from, to), kind) => GraphEdge(from, to, kind) }.toVector ++ passiveEdges.toVector
+      canonicalOverlayEdges.iterator.map { case ((from, to), (kind, opacity)) => GraphEdge(from, to, kind, opacity) }.toVector ++ passiveEdges.toVector
 
     val uids  = detailsByNode.keySet.toVector.distinct
     val known = uids.toSet
@@ -121,6 +141,7 @@ object OverlayNetworkGraphModel {
         vx = vx,
         vy = vy,
         highlighted = viewerUid.contains(uid),
+        opacity = opacityByNode.getOrElse(uid, unknownNodeOpacity),
       )
     }
     (nodes, filteredEdges)
@@ -149,7 +170,7 @@ object OverlayNetworkGraphModel {
     }
 
     edges.foreach {
-      case GraphEdge(from, to, EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay) =>
+      case GraphEdge(from, to, EdgeKind.EagerOverlay | EdgeKind.ActiveOverlay, _) =>
         for
           a <- byUid.get(from)
           b <- byUid.get(to)
@@ -165,7 +186,7 @@ object OverlayNetworkGraphModel {
           a.vy += fy
           b.vx -= fx
           b.vy -= fy
-      case GraphEdge(_, _, EdgeKind.PassiveOverlay) => ()
+      case GraphEdge(_, _, EdgeKind.PassiveOverlay, _) => ()
     }
 
     nodes.foreach { node =>
