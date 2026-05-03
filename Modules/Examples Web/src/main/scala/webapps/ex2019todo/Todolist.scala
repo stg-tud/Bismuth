@@ -32,7 +32,7 @@ object Todolist {
 
   lazy val statusInfo: Div = {
     all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
-        val state = TodoDataManager.dataManager.allPayloads.map(_.payload.data).reduceOption(Lattice.merge)
+        val state = TodoDataManager.dataManager.allPayloads.map(_.data).reduceOption(Lattice.merge)
         all.pre(all.stringFrag(pprint.apply(state).plainText)).render
     ).hold(all.span.render))
   }

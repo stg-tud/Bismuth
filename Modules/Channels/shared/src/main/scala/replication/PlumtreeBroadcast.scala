@@ -6,6 +6,7 @@ import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Disseminate
 import replication.PlumtreeMessage.*
 
+sealed trait PlumtreeMessage[+T]
 object PlumtreeMessage {
 
   /** `knows` has to be a subset of the dots known at the sender.
@@ -21,9 +22,6 @@ object PlumtreeMessage {
   object Payload                 {
     def apply[T](dots: Dots, data: T): Payload[T] =
       Payload(dots, data, Dots.empty)
-
-    // this kinda makes sense, but kinda does not
-    // given [T: Lattice]: Lattice[Payload[T]] = Lattice.derived
 
     extension [T](payloads: Iterable[Payload[T]]) {
       inline def getAllDots: Dots =
@@ -45,8 +43,6 @@ object PlumtreeMessage {
   /** Request sender to move this edge to lazy mode for eager push. */
   case class Prune(sender: Uid) extends PlumtreeMessage[Nothing]
 }
-
-sealed trait PlumtreeMessage[+T]
 
 object PlumtreeBroadcast {
 
