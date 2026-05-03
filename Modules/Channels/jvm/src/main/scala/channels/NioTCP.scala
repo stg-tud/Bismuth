@@ -296,6 +296,7 @@ class NioTCP(pool: ExecutionContext) {
             if len == WebsocketProtocol.handshakePrefix then
                 handleWebSocketHandshake(clientChannel, attachment.copy(protocol = ProtocolState.WebSocketHandshake))
             else
+                require(len < MessageBuffer.maxPayloadSize, "message too large")
                 attachment.primary.compact()
                 val upat =
                   if len > 1024
@@ -401,6 +402,7 @@ class NioTCP(pool: ExecutionContext) {
             attachment
           case Some(value) =>
             attachment.primary.compact()
+            require(value.len < MessageBuffer.maxPayloadSize, "message too large")
             if value.len > 1024
             then
                 attachment.copy(

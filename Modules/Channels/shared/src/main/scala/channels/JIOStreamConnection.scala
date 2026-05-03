@@ -11,7 +11,7 @@ class JioInputStreamAdapter(in: InputStream) {
 
   def readNext(): MessageBuffer = {
     val size = inputStream.readInt()
-
+    require(size <= MessageBuffer.maxPayloadSize, "Message too large")
     val bytes = new Array[Byte](size)
     inputStream.readFully(bytes, 0, size)
 

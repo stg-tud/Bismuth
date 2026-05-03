@@ -16,9 +16,11 @@ object MessageBuffer {
   given Conversion[String, MessageBuffer] = str => ArrayMessageBuffer(str.getBytes(StandardCharsets.UTF_8))
   given Conversion[MessageBuffer, String] = buf => new String(buf.asArray, StandardCharsets.UTF_8)
 
+  val maxPayloadSize: Int = 1 << 24
 }
 
 case class ArrayMessageBuffer(inner: Array[Byte]) extends MessageBuffer {
+  require(inner.length < MessageBuffer.maxPayloadSize, "message too large")
   override def asArray: Array[Byte] = inner
 }
 

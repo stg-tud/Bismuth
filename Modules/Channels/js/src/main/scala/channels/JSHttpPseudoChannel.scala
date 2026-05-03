@@ -72,6 +72,7 @@ object JSHttpPseudoChannel {
 
           if buffer.length >= 4 then
               val len = ByteBuffer.wrap(buffer.slice(0, 4)).getInt()
+              require(len < MessageBuffer.maxPayloadSize, "Message too large")
               if buffer.length >= len + 4 then
                   val mb = ArrayMessageBuffer(buffer.slice(4, len + 4))
                   buffer = buffer.slice(len + 4, buffer.length)
