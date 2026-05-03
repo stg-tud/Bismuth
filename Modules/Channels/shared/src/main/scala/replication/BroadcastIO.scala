@@ -136,7 +136,7 @@ class BroadcastIO[State](
   }
 
   def repairTick(): Unit = {
-    val result = lock.synchronized(plumtree.repairTick())
+    val result = lock.synchronized(plumtree.tickGrafts())
     applyResult(result)
   }
 

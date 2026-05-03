@@ -3,6 +3,7 @@ package replication
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Send
+import replication.PlumtreeBroadcast.{Peer, PeerRole}
 import replication.PlumtreeMessage.*
 
 sealed trait PlumtreeMessage[+T]
@@ -45,7 +46,7 @@ object PlumtreeBroadcast {
 
   final case class Result[State](
       state: PlumtreeBroadcast[State],
-      events: List[Event[State]],
+      events: Seq[Event[State]],
   )
 }
 
@@ -63,9 +64,10 @@ object PlumtreeBroadcast {
 final case class PlumtreeBroadcast[State](
     self: Uid,
     localContext: Dots = Dots.empty,
+    remoteContext: Map[Peer, Dots] = Map.empty,
     deltaStorage: DeltaStorage[State] = NoHistory(),
-    peerRoles: Map[PlumtreeBroadcast.Peer, PlumtreeBroadcast.PeerRole] = Map.empty,
-    missingByAge: Vector[Map[PlumtreeBroadcast.Peer, Dots]] = Vector(Map.empty, Map.empty),
+    peerRoles: Map[Peer, PeerRole] = Map.empty,
+    remoteContextSnapshot: Map[Peer, Dots] = Map.empty,
 ) {
   import PlumtreeBroadcast.*
 
@@ -81,7 +83,7 @@ final case class PlumtreeBroadcast[State](
   def removePeer(peer: Peer): PlumtreeBroadcast[State] =
     copy(
       peerRoles = peerRoles.removed(peer),
-      missingByAge = missingByAge.map(_.removed(peer))
+      remoteContext = remoteContext.removed(peer)
     )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
@@ -89,19 +91,17 @@ final case class PlumtreeBroadcast[State](
     val next: PlumtreeBroadcast[State] = copy(
       localContext = localContext.merge(payload.dots),
       deltaStorage = deltaStorage.remember(payload),
-    ).clearSatisfiedMissing
+    )
     next.disseminate(payload, Set.empty)
   }
 
-  def repairTick(): Result[State] = {
-    val older       = missingByAge.lift(1).getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
-    val nextBuckets = Vector(
-      Map.empty[Peer, Dots],
-      missingByAge.headOption.getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
-    )
-    val next   = copy(missingByAge = nextBuckets)
-    val grafts = older.keys.toList.map(peer => Send(peer :: Nil, Graft(self, localContext)))
-    Result(next, grafts)
+  /** The paper manages some timeouts after IHave messages, we instead check that the local context catches up between any two tick grafts calls. */
+  def tickGrafts(): Result[State] = {
+    val haveMissing = remoteContextSnapshot.collect:
+        case (peer, context) if context.inflates(localContext) => peer
+    val grafts = haveMissing.map(peer => Send(List(peer), Graft(self, localContext)))
+    val next   = copy(remoteContextSnapshot = remoteContext)
+    Result(next, grafts.toSeq)
   }
 
   /** Incoming message handler.
@@ -113,21 +113,18 @@ final case class PlumtreeBroadcast[State](
     * - `Graft`: Algorithm 2 repair and replay
     */
   def handleMessage(from: Peer, message: PlumtreeMessage[State]): Result[State] =
+    // TODO: so, we kinda ignore all of the peer info in the messages, and instead rely on the external one.
+    //   Is that what we should do?
     message match
         case Prune(_) =>
           // Duplicate eager delivery: demote this edge to lazy.
           Result(withRole(from, PeerRole.Lazy), Nil)
 
         case IHave(_, knows) =>
-          // Record potentially missing knowledge and let repairTick decide when to graft.
-          if !(knows <= localContext) then
-              val youngest        = missingByAge.headOption.getOrElse(Map.empty)
-              val updatedYoungest = youngest.updatedWith(from) {
-                case Some(existing) => Some(existing.union(knows))
-                case None           => Some(knows)
-              }
-              Result(copy(missingByAge = missingByAge.updated(0, updatedYoungest)), Nil)
-          else Result(this, Nil)
+          Result(copy(remoteContext = remoteContext.updatedWith(from){
+            case None =>  Some(knows)
+            case Some(ex) => Some(ex `merge` knows)
+          }), Nil)
 
         case Graft(_, knows) =>
           // Repair: promote sender back to eager and replay what it is missing.
@@ -148,15 +145,12 @@ final case class PlumtreeBroadcast[State](
               val next: PlumtreeBroadcast[State] = copy(
                 localContext = localContext.merge(context),
                 deltaStorage = deltaStorage.remember(payload),
-              ).withRole(from, PeerRole.Eager).clearSatisfiedMissing
+              ).withRole(from, PeerRole.Eager)
               val forwarded = next.disseminate(payload, except = Set(from))
-              forwarded.copy(events = Event.Deliver(payload) :: forwarded.events)
+              forwarded.copy(events = Event.Deliver(payload) +: forwarded.events)
 
   private def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
     copy(peerRoles = peerRoles.updated(peer, role))
-
-  private def clearSatisfiedMissing: PlumtreeBroadcast[State] =
-    copy(missingByAge = missingByAge.map(_.filter { case (_, knows) => !(knows <= localContext) }))
 
   /** Send payload on eager edges and `IHave` on lazy edges. */
   private def disseminate(payload: Payload[State], except: Set[Peer]): Result[State] = {

@@ -134,7 +134,7 @@ class HyParViewMultiplexedNode[State](
           .take(missingActiveSlots)
           .foreach(ensurePromotionAttempt)
   }
-  def repairTick(): Unit                            = applyPlumtreeResult(plumtree.repairTick())
+  def repairTick(): Unit                            = applyPlumtreeResult(plumtree.tickGrafts())
   def discoverPeers(peers: Iterable[PeerRef]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
 
   def addIncomingConnection(latent: LatentConnection[Envelope[State]]): Unit =

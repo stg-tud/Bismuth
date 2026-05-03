@@ -9,10 +9,12 @@ import replication.PlumtreeMessage.Payload
 
 import scala.collection.mutable
 
+/** vibecoded */
 class PlumtreeBroadcastTest extends FunSuite {
 
   private case class WireMessage(from: String, to: String, message: PlumtreeMessage[String])
 
+  // TODO: okay, great, the clanker learned that one should always add its own custom network implementation 🫠
   private class Network(initialNodes: Iterable[String]) {
     private val ids       = mutable.LinkedHashSet.from(initialNodes)
     private val adjacency = mutable.LinkedHashMap.empty[String, mutable.LinkedHashSet[String]]
@@ -78,7 +80,7 @@ class PlumtreeBroadcastTest extends FunSuite {
                   applyResult(to, result, Some(deliveredBy), from, message)
           val queueWasEmptyBeforeRepair = queue.isEmpty
           ids.foreach { id =>
-            applyResult(id, nodes(id).repairTick(), Some(deliveredBy))
+            applyResult(id, nodes(id).tickGrafts(), Some(deliveredBy))
           }
           if queueWasEmptyBeforeRepair && queue.isEmpty then idleRepairRounds += 1
           else idleRepairRounds = 0
@@ -105,7 +107,7 @@ class PlumtreeBroadcastTest extends FunSuite {
               case _ => ()
 
       result.events.foreach {
-        case Event.Deliver(_)                  => ()
+        case Event.Deliver(_)           => ()
         case Event.Send(peers, message) =>
           peers.foreach { peer =>
             val to = Uid.unwrap(peer.uid)
