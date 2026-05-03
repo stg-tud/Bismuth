@@ -73,13 +73,14 @@ class OverlayDemoTest extends munit.FunSuite {
     val queue    = LocalMessageQueue[HyParViewMultiplexed.Envelope[DemoState]]()
     val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection[HyParViewMultiplexed.Envelope[DemoState]]]
     val registry = LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState]](queued)
+    private val apps = mutable.ArrayBuffer.empty[OverlayDemo.NodeApp]
     private var nextId = 0
 
     def newNode(seeds: List[ChannelConnectDescriptor] = Nil): OverlayDemo.NodeApp = {
       val id   = s"queued-$nextId"
       nextId += 1
       queued.update(id, QueuedLocalConnection(queue))
-      new OverlayDemo.NodeApp(
+      val app = new OverlayDemo.NodeApp(
         OverlayDemo.TopicNode.queued(
           registry = registry,
           id = id,
@@ -87,6 +88,8 @@ class OverlayDemoTest extends munit.FunSuite {
         ),
         seeds = seeds,
       )
+      apps += app
+      app
     }
 
     def drain(limit: Int = queueLimit): Unit = {
@@ -100,6 +103,8 @@ class OverlayDemoTest extends munit.FunSuite {
     def settle(rounds: Int = 6): Unit =
       var i = 0
       while i < rounds do
+        drain()
+        apps.foreach(_.node.shuffleTick())
         drain()
         i += 1
       drain()

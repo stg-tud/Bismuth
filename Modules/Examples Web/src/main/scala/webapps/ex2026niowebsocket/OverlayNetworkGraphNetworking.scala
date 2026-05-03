@@ -124,6 +124,9 @@ object OverlayNetworkGraphNetworking {
       topicLookupCount: Int,
       onRegistered: () => Unit,
   )(using JsonValueCodec[Envelope], JsonValueCodec[Message]) {
+    private def logFailure(context: String, err: Throwable): Unit =
+      println(s"[overlay-signaling] $context: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
+
     private case class OutgoingAttempt(
         connector: WebRTCConnector,
         channel: dom.RTCDataChannel,
@@ -141,11 +144,11 @@ object OverlayNetworkGraphNetworking {
       lastLookupAtMillis = dom.window.performance.now()
       client.lookupTopic(topic, topicLookupCount).run {
         case Success(_)   => ()
-        case Failure(err) => err.printStackTrace()
+        case Failure(err) => logFailure("lookupTopic failed", err)
       }
       initialSeed.foreach(uid => client.lookupPeer(uid).run {
         case Success(_)   => ()
-        case Failure(err) => err.printStackTrace()
+        case Failure(err) => logFailure(s"lookupPeer failed uid=${Uid.unwrap(uid)}", err)
       })
     }
 
@@ -191,13 +194,13 @@ object OverlayNetworkGraphNetworking {
                 sentAnswer = true
                 client.answer(from, SignalingServer.Session(answer.descType, answer.sdp)).run {
                   case Success(_)   => ()
-                  case Failure(err) => err.printStackTrace()
+                  case Failure(err) => logFailure(s"answer failed to ${Uid.unwrap(from)}", err)
                 }
               }
             case Success(_)   => ()
-            case Failure(err) => err.printStackTrace()
+            case Failure(err) => logFailure(s"incoming offer lifecycle failed from ${Uid.unwrap(from)}", err)
           }
-        case Failure(err) => err.printStackTrace()
+        case Failure(err) => logFailure(s"updateRemoteDescription failed from ${Uid.unwrap(from)}", err)
       }
     }
 
@@ -209,7 +212,7 @@ object OverlayNetworkGraphNetworking {
           case Failure(err) =>
             attempt.channel.close()
             attempt.connector.peerConnection.close()
-            err.printStackTrace()
+            logFailure(s"apply answer failed from ${Uid.unwrap(from)}", err)
         }
       }
 

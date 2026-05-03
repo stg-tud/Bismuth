@@ -68,12 +68,20 @@ class PlumtreeBroadcastTest extends FunSuite {
 
     private def drain(deliveredBy: mutable.LinkedHashMap[String, Option[String]]): Unit = {
       var safety = 0
-      while queue.nonEmpty && safety < 10000 do
-        val WireMessage(from, to, message) = queue.dequeue()
-        safety += 1
-        if ids.contains(from) && ids.contains(to) && adjacency.get(from).exists(_.contains(to)) then
-          val result = nodes(to).handleMessage(Peer(Uid.predefined(from)), message)
-          applyResult(to, result, Some(deliveredBy), from, message)
+      var idleRepairRounds = 0
+      while idleRepairRounds < 2 && safety < 10000 do
+        while queue.nonEmpty && safety < 10000 do
+          val WireMessage(from, to, message) = queue.dequeue()
+          safety += 1
+          if ids.contains(from) && ids.contains(to) && adjacency.get(from).exists(_.contains(to)) then
+            val result = nodes(to).handleMessage(Peer(Uid.predefined(from)), message)
+            applyResult(to, result, Some(deliveredBy), from, message)
+        val queueWasEmptyBeforeRepair = queue.isEmpty
+        ids.foreach { id =>
+          applyResult(id, nodes(id).repairTick(), Some(deliveredBy))
+        }
+        if queueWasEmptyBeforeRepair && queue.isEmpty then idleRepairRounds += 1
+        else idleRepairRounds = 0
       assert(safety < 10000, s"message queue did not quiesce, remaining=${queue.size}")
     }
 

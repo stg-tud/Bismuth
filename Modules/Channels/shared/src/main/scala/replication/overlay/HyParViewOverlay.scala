@@ -107,10 +107,13 @@ class HyParViewMultiplexedNode[State](
     applyPlumtreeResult(plumtree.broadcast(Payload(Dots.single(nextDot), delta)))
   }
 
+  private def logFailure(context: String, ex: Throwable): Unit =
+    log(s"$context: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
+
   def startServer(): Unit =
     localServer.prepare(receive(None)).runIn(abort) {
       case Success(_) => ()
-      case Failure(ex) => ex.printStackTrace()
+      case Failure(ex) => logFailure("server stopped", ex)
     }
 
   def join(): Unit = contactNode.foreach(join)
@@ -128,12 +131,13 @@ class HyParViewMultiplexedNode[State](
         .take(missingActiveSlots)
         .foreach(ensurePromotionAttempt)
   }
+  def repairTick(): Unit = applyPlumtreeResult(plumtree.repairTick())
   def discoverPeers(peers: Iterable[PeerRef]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
 
   def addIncomingConnection(latent: LatentConnection[Envelope[State]]): Unit =
     latent.prepare(receive(None)).runIn(abort) {
       case Success(_) => ()
-      case Failure(ex) => ex.printStackTrace()
+      case Failure(ex) => logFailure("incoming connection failed", ex)
     }
 
   def stop(): Unit = {
@@ -297,7 +301,7 @@ class HyParViewMultiplexedNode[State](
             case Failure(ex) =>
               connecting -= peer.uid
               pendingMembership.remove(peer.uid)
-              ex.printStackTrace()
+              logFailure(s"outgoing connect failed peer=${Uid.unwrap(peer.uid)}", ex)
               handleDisconnectedPeer(peer.uid, s"outgoing connect failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
           }
         case None => log(s"cannot connect to ${Uid.unwrap(peer.uid)} because resolver has no route")
@@ -309,7 +313,7 @@ class HyParViewMultiplexedNode[State](
           conn.send(Envelope.Membership(message)).run {
             case Success(_) => ()
             case Failure(ex) =>
-              ex.printStackTrace()
+              logFailure(s"membership send failed peer=${Uid.unwrap(peer.uid)}", ex)
               handleDisconnectedPeer(peer.uid, s"membership send failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
           }
         case None =>
@@ -323,9 +327,9 @@ class HyParViewMultiplexedNode[State](
           case Success(conn) =>
             conn.send(Envelope.Membership(message)).run {
               case Success(_) => ()
-              case Failure(ex) => ex.printStackTrace()
+              case Failure(ex) => logFailure("join send failed", ex)
             }
-          case Failure(ex) => ex.printStackTrace()
+          case Failure(ex) => logFailure("join connection failed", ex)
         }
       case None => log(s"join skipped self=${Uid.unwrap(self.uid)} reason=no route to contact")
 
@@ -345,7 +349,7 @@ class HyParViewMultiplexedNode[State](
             conn.send(Envelope.Dissemination(message)).run {
               case Success(_) => ()
               case Failure(ex) =>
-                ex.printStackTrace()
+                logFailure(s"dissemination send failed peer=${Uid.unwrap(peer.uid)}", ex)
                 handleDisconnectedPeer(peer.uid, s"dissemination send failed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
             }
           }

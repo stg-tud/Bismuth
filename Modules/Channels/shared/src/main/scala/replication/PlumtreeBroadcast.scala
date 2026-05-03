@@ -86,6 +86,7 @@ final case class PlumtreeBroadcast[State](
     localContext: Dots = Dots.empty,
     deltaStorage: DeltaStorage[State] = NoHistory(),
     peerRoles: Map[PlumtreeBroadcast.Peer, PlumtreeBroadcast.PeerRole] = Map.empty,
+    missingByAge: Vector[Map[PlumtreeBroadcast.Peer, Dots]] = Vector(Map.empty, Map.empty),
 ) {
   import PlumtreeBroadcast.*
 
@@ -99,15 +100,29 @@ final case class PlumtreeBroadcast[State](
 
   /** Algorithm 3 `NeighborDown(node)`. */
   def removePeer(peer: Peer): PlumtreeBroadcast[State] =
-    copy(peerRoles = peerRoles.removed(peer))
+    copy(
+      peerRoles = peerRoles.removed(peer),
+      missingByAge = missingByAge.map(_.removed(peer))
+    )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
   def broadcast(payload: Payload[State], except: Set[Peer] = Set.empty): Result[State] = {
     val next: PlumtreeBroadcast[State] = copy(
       localContext = localContext.merge(payload.dots),
       deltaStorage = deltaStorage.remember(payload),
-    )
+    ).clearSatisfiedMissing
     next.disseminate(payload, except)
+  }
+
+  def repairTick(): Result[State] = {
+    val older = missingByAge.lift(1).getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
+    val nextBuckets = Vector(
+      Map.empty[Peer, Dots],
+      missingByAge.headOption.getOrElse(Map.empty).filter { case (_, knows) => !(knows <= localContext) }
+    )
+    val next = copy(missingByAge = nextBuckets)
+    val grafts = older.keys.toList.map(peer => Disseminate(peer :: Nil, Graft(self, localContext)))
+    Result(next, grafts)
   }
 
   /** Incoming message handler.
@@ -125,8 +140,14 @@ final case class PlumtreeBroadcast[State](
           Result(withRole(from, PeerRole.Lazy), Nil)
 
         case IHave(_, knows) =>
-          // If the sender advertises dots beyond localContext, request repair.
-          if !(knows <= localContext) then Result(this, List(Disseminate(from :: Nil, Graft(self, localContext))))
+          // Record potentially missing knowledge and let repairTick decide when to graft.
+          if !(knows <= localContext) then
+              val youngest = missingByAge.headOption.getOrElse(Map.empty)
+              val updatedYoungest = youngest.updatedWith(from) {
+                case Some(existing) => Some(existing.union(knows))
+                case None           => Some(knows)
+              }
+              Result(copy(missingByAge = missingByAge.updated(0, updatedYoungest)), Nil)
           else Result(this, Nil)
 
         case Graft(_, knows) =>
@@ -148,12 +169,15 @@ final case class PlumtreeBroadcast[State](
               val next: PlumtreeBroadcast[State] = copy(
                 localContext = localContext.merge(context),
                 deltaStorage = deltaStorage.remember(payload),
-              ).withRole(from, PeerRole.Eager)
+              ).withRole(from, PeerRole.Eager).clearSatisfiedMissing
               val forwarded = next.disseminate(payload, except = Set(from))
               forwarded.copy(events = Event.Deliver(payload) :: forwarded.events)
 
   private def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
     copy(peerRoles = peerRoles.updated(peer, role))
+
+  private def clearSatisfiedMissing: PlumtreeBroadcast[State] =
+    copy(missingByAge = missingByAge.map(_.filter { case (_, knows) => !(knows <= localContext) }))
 
   /** Send payload on eager edges and `IHave` on lazy edges. */
   private def disseminate(payload: Payload[State], except: Set[Peer]): Result[State] = {

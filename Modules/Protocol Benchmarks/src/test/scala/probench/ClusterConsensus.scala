@@ -42,6 +42,14 @@ class ClusterConsensus extends munit.FunSuite {
     client.write("test", "Hi")
     client.read("test")
 
+    def repairAll(rounds: Int = 4): Unit =
+      var i = 0
+      while i < rounds do
+        nodes.foreach(_.cluster.dataManager.repairTick())
+        i += 1
+
+    repairAll()
+
     assertEquals(nodes(0).cluster.state, nodes(1).cluster.state)
     assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)
     assertEquals(nodes(2).cluster.state, nodes(0).cluster.state)

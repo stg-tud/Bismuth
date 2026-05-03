@@ -171,11 +171,17 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val queue = LocalMessageQueue[BroadcastIO.Message[ReplicatedSet[String]]]()
 
-    def drainAll(): Unit =
+    def drainAll(nodes: => Vector[Node]): Unit =
       var safety = 0
-      while queue.nonEmpty && safety < 10000 do
-        queue.deliverAll()
-        safety += 1
+      var continue = true
+      while continue && safety < 10000 do
+        while queue.nonEmpty && safety < 10000 do
+          queue.deliverAll()
+          safety += 1
+        val queueWasEmpty = !queue.nonEmpty
+        nodes.foreach(_.dissemination.repairTick())
+        continue = !queueWasEmpty || queue.nonEmpty
+      assert(safety < 10000, s"queue did not quiesce, remaining=${queue.size}")
 
     def mkNode(): Node = new Node(LocalUid.gen())
 
@@ -191,7 +197,7 @@ class BroadcastIOTest extends munit.FunSuite {
       node.dissemination.applyDelta(delta)
     }
 
-    drainAll()
+    drainAll(nodes)
 
     publish(nodes(0)) {
       given LocalUid = nodes(0).uid
@@ -206,7 +212,7 @@ class BroadcastIOTest extends munit.FunSuite {
       nodes(4).state.add("carrot")
     }
 
-    drainAll()
+    drainAll(nodes)
 
     publish(nodes(1))(nodes(1).state.remove("apple"))
     publish(nodes(3)) {
@@ -214,7 +220,7 @@ class BroadcastIOTest extends munit.FunSuite {
       nodes(3).state.add("date")
     }
 
-    drainAll()
+    drainAll(nodes)
 
     publish(nodes(0))(nodes(0).state.remove("carrot"))
     publish(nodes(2)) {
@@ -222,7 +228,7 @@ class BroadcastIOTest extends munit.FunSuite {
       nodes(2).state.add("eggplant")
     }
 
-    drainAll()
+    drainAll(nodes)
 
     val expected = Set("banana", "date", "eggplant")
 

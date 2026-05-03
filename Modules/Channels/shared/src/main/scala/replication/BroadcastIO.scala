@@ -136,6 +136,11 @@ class BroadcastIO[State](
     snapshot.foreach(send(_, BroadcastIO.Message.Ping(System.nanoTime())))
   }
 
+  def repairTick(): Unit = {
+    val result = lock.synchronized(plumtree.repairTick())
+    applyResult(result)
+  }
+
   private def localKnownDeltaContext: Dots = lock.synchronized(plumtree.localContext)
 
   def allPayloads: List[CachedMessage[Payload[State]]] =

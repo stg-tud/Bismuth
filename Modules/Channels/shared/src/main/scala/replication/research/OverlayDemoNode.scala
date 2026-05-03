@@ -133,6 +133,7 @@ class OverlayDemoNode(
         override def run(): Unit = {
           overlay.foreach(_.promotionTick())
           overlay.foreach(_.shuffleTick())
+          overlay.foreach(_.repairTick())
         }
       },
       1000L,
@@ -188,8 +189,11 @@ class OverlayDemoNode(
   def shuffleTick(): Unit = {
     overlay.foreach(_.promotionTick())
     overlay.foreach(_.shuffleTick())
+    overlay.foreach(_.repairTick())
     publishLocalView()
   }
+
+  def repairTick(): Unit = overlay.foreach(_.repairTick())
 
   def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]): Unit =
     overlay.foreach(_.addIncomingConnection(latent))
