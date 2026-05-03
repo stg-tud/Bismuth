@@ -41,76 +41,44 @@ object OverlayNetworkGraphNetworking {
       try connector.peerConnection.asInstanceOf[js.Dynamic].connectionState.asInstanceOf[String]
       catch case _: Throwable => "<unsupported>"
 
-    def logState(prefix: String): Unit =
-      println(
-        s"[webrtc-pc channel=${channel.label}] $prefix channel=${channel.readyState} iceGathering=${connector.peerConnection.iceGatheringState} ice=${connector.peerConnection.iceConnectionState} signaling=${connector.peerConnection.signalingState} connection=${connectionStateString}"
-      )
-
-    def closeChannel(reason: String): Unit =
+    def closeChannel(): Unit =
       if channel.readyState != dom.RTCDataChannelState.closed && channel.readyState != dom.RTCDataChannelState.closing
-      then {
-        logState(s"closing data channel due to $reason")
-        channel.close()
-      }
-
-    logState("installed failure propagation")
+      then channel.close()
 
     var pollHandle = 0
     pollHandle = dom.window.setInterval(
       () => {
-        if channel.readyState == dom.RTCDataChannelState.connecting then logState("poll")
-        else dom.window.clearInterval(pollHandle)
+        if channel.readyState != dom.RTCDataChannelState.connecting then dom.window.clearInterval(pollHandle)
       },
       1000
     )
 
-    channel.addEventListener(
-      "open",
-      (_: dom.Event) => {
-        logState("data channel open")
-        dom.window.clearInterval(pollHandle)
-      }
-    )
-    channel.addEventListener(
-      "close",
-      (_: dom.Event) => {
-        logState("data channel close")
-        dom.window.clearInterval(pollHandle)
-      }
-    )
-    channel.addEventListener("error", (_: dom.Event) => logState("data channel error"))
+    channel.addEventListener("open", (_: dom.Event) => dom.window.clearInterval(pollHandle))
+    channel.addEventListener("close", (_: dom.Event) => dom.window.clearInterval(pollHandle))
+    channel.addEventListener("error", (_: dom.Event) => ())
 
     connector.peerConnection.addEventListener(
       "iceconnectionstatechange",
       (_: dom.Event) => {
         val state = connector.peerConnection.iceConnectionState
-        logState(s"iceconnectionstatechange -> $state")
         state match
-            case dom.RTCIceConnectionState.failed       => closeChannel("ice failed")
-            case dom.RTCIceConnectionState.disconnected => closeChannel("ice disconnected")
-            case dom.RTCIceConnectionState.closed       => closeChannel("ice closed")
+            case dom.RTCIceConnectionState.failed       => closeChannel()
+            case dom.RTCIceConnectionState.disconnected => closeChannel()
+            case dom.RTCIceConnectionState.closed       => closeChannel()
             case _                                      => ()
       }
     )
 
-    connector.peerConnection.addEventListener(
-      "signalingstatechange",
-      (_: dom.Event) => logState(s"signalingstatechange -> ${connector.peerConnection.signalingState}")
-    )
-
-    connector.peerConnection.addEventListener(
-      "icegatheringstatechange",
-      (_: dom.Event) => logState(s"icegatheringstatechange -> ${connector.peerConnection.iceGatheringState}")
-    )
+    connector.peerConnection.addEventListener("signalingstatechange", (_: dom.Event) => ())
+    connector.peerConnection.addEventListener("icegatheringstatechange", (_: dom.Event) => ())
 
     connector.peerConnection.addEventListener(
       "connectionstatechange",
       (_: dom.Event) => {
         val state = connectionStateString
-        logState(s"connectionstatechange -> $state")
         state match
-            case "failed" | "disconnected" | "closed" => closeChannel(s"peer connection state=$state")
-            case _                                    => ()
+            case "failed" | "disconnected" | "closed" => closeChannel()
+            case _                                        => ()
       }
     )
   }

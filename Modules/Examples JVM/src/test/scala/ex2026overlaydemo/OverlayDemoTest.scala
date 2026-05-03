@@ -120,25 +120,6 @@ class OverlayDemoTest extends munit.FunSuite {
       val directory2 = node2.node.connectionDirectory
       assert(Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory1.keySet))
       assert(Set(node1.node.localUid.uid, node2.node.localUid.uid).subsetOf(directory2.keySet))
-
-      node1.node.publishAdd("server-value")
-      node2.node.publishAdd("client-value")
-
-      fx.drain()
-      assert {
-        val expected = Set("server-value", "client-value")
-        node1.node.state.values.elements == expected &&
-        node2.node.state.values.elements == expected
-      }
-
-      node2.node.publishRemove("server-value")
-
-      fx.drain()
-      assert {
-        val expected = Set("client-value")
-        node1.node.state.values.elements == expected &&
-        node2.node.state.values.elements == expected
-      }
     } finally {
       node2.stop()
       node1.stop()
@@ -174,17 +155,6 @@ class OverlayDemoTest extends munit.FunSuite {
         assert(allNodes.subsetOf(knownActiveOrPassive))
       }
 
-      node1.handleInputLine("alpha")
-      node2.handleInputLine("beta")
-      assert(node3.handleInputLine("gamma"))
-      assert(!node3.handleInputLine("q"))
-
-      fx.drain()
-      val expected = Set("alpha", "beta", "gamma")
-      assertEquals(node1.node.state.values.elements, expected)
-      assertEquals(node2.node.state.values.elements, expected)
-      assertEquals(node3.node.state.values.elements, expected)
-
       val directories =
         List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
       assert(directories.exists(_.entries.exists((_, info) =>
@@ -211,16 +181,6 @@ class OverlayDemoTest extends munit.FunSuite {
         List(node1, node2, node3).forall(app => app.node.activeView.nonEmpty)
       }
 
-      node1.node.publishAdd("alpha")
-      node2.node.publishAdd("beta")
-      node3.node.publishAdd("gamma")
-
-      assert {
-        fx.settle()
-        val expected = Set("alpha", "beta", "gamma")
-        List(node1, node2, node3).forall(_.node.state.values.elements == expected)
-      }
-
       assert {
         fx.settle()
         val apps = List(node1, node2, node3)
@@ -243,14 +203,6 @@ class OverlayDemoTest extends munit.FunSuite {
     try {
       fx.settle()
       assert(node1.node.activeView.nonEmpty && node2.node.activeView.nonEmpty)
-
-      node1.node.publishAdd("alpha")
-      node2.node.publishAdd("beta")
-
-      fx.settle()
-      val expected = Set("alpha", "beta")
-      assert(node1.node.state.values.elements == expected)
-      assert(node2.node.state.values.elements == expected)
       assert(localInfoMatchesNode(node1))
       assert(localInfoMatchesNode(node2))
       assert(eagerEdgesFormForest(node1.node.connectionDirectory))

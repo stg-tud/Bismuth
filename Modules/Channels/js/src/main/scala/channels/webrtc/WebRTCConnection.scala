@@ -13,7 +13,7 @@ class WebRTCReceiveFailed(message: String)    extends Exception(message)
 class WebRTCConnectionFailed(message: String) extends Exception(message)
 
 private def rtcDebug(channel: dom.RTCDataChannel, message: => String): Unit =
-  println(s"[webrtc channel=${channel.label} id=${channel.id} state=${channel.readyState}] $message")
+  ()
 
 class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBuffer] {
   def receive: Prod[MessageBuffer] = Async.fromCallback {

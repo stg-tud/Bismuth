@@ -10,8 +10,9 @@ object OverlayNetworkGraphModel {
   private val maxReplicatedNodeAgeMillis = 30_000L
 
   private def ageLabel(lastSeenMillis: Long): String = {
-    val ageSeconds = math.max(0L, (System.currentTimeMillis() - lastSeenMillis) / 1000L)
-    s"${ageSeconds}s ago"
+    val ageMillis = math.max(0L, System.currentTimeMillis() - lastSeenMillis)
+    if ageMillis < 10_000L then f"${ageMillis / 1000.0}%.3fs ago"
+    else s"${ageMillis / 1000L}s ago"
   }
 
   private def nodeOpacity(lastSeenMillis: Long): Double = {
@@ -36,7 +37,7 @@ object OverlayNetworkGraphModel {
       highlighted: Boolean,
       opacity: Double
   )
-  case class LocalViews(active: Set[Uid], passive: Set[Uid], eager: Set[Uid])
+  case class LocalViews(active: Set[Uid], passive: Set[Uid], eager: Set[Uid], lastIncomingMessageTimes: Map[Uid, Long])
 
   def renderConnectionInfo(
       directory: OverlayConnectionDirectory.Directory,
@@ -45,7 +46,10 @@ object OverlayNetworkGraphModel {
   ): String = {
     val localStatus = localViews match
         case Some(views) =>
-          val active  = views.active.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+          val active = views.active.toList.sortBy(Uid.unwrap).map { uid =>
+            val suffix = views.lastIncomingMessageTimes.get(uid).map(ts => s" (${ageLabel(ts)})").getOrElse(" (never)")
+            Uid.unwrap(uid) + suffix
+          }
           val passive = views.passive.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
           val eager   = views.eager.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
           s"local hyparview\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${
@@ -55,14 +59,14 @@ object OverlayNetworkGraphModel {
           "local hyparview\n  active: -\n  passive: -\n  eager: -"
 
     val replicated = directory.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, info) =>
-      val snapshot = OverlayConnectionDirectory.snapshot(info)
+      val snapshot = OverlayConnectionDirectory.snapshot(info.value)
       val active   = snapshot.active.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val passive  = snapshot.passive.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val eager    = snapshot.eager.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
       val label    = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
       s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${
           if passive.nonEmpty then passive.mkString(", ") else "-"
-        }\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}\n  last seen: ${ageLabel(info.lastSeenMillis)}"
+        }\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}\n  last seen: ${ageLabel(info.value.lastSeenMillis)}"
     }
 
     if replicated.nonEmpty then (localStatus +: replicated).mkString("\n")
@@ -80,24 +84,26 @@ object OverlayNetworkGraphModel {
     val edges         = mutable.LinkedHashSet.empty[GraphEdge]
     val detailsByNode = mutable.LinkedHashMap.empty[Uid, String]
     val opacityByNode = mutable.LinkedHashMap.from(
-      directory.entries.iterator.map { (uid, info) => uid -> nodeOpacity(info.lastSeenMillis) }
+      directory.entries.iterator.map { (uid, info) => uid -> nodeOpacity(info.value.lastSeenMillis) }
     )
     val unknownNodeOpacity = 0.1
 
     directory.entries.foreach { (uid, info) =>
-      val snapshot     = OverlayConnectionDirectory.snapshot(info)
+      val snapshot     = OverlayConnectionDirectory.snapshot(info.value)
       val activeCount  = snapshot.active.size
       val passiveCount = snapshot.passive.size
       val eagerCount   = snapshot.eager.size
       val opacity      = opacityByNode(uid)
       detailsByNode.update(
         uid,
-        s"active=$activeCount passive=$passiveCount eager=$eagerCount lastSeen=${ageLabel(info.lastSeenMillis)}"
+        s"active=$activeCount passive=$passiveCount eager=$eagerCount lastSeen=${ageLabel(info.value.lastSeenMillis)}"
       )
       snapshot.active.foreach { peerUid =>
         val kind = if snapshot.eager.contains(peerUid) then EdgeKind.EagerOverlay else EdgeKind.ActiveOverlay
         edges += GraphEdge(uid, peerUid, kind, math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
-        detailsByNode.getOrElseUpdate(peerUid, "active peer")
+        if opacityByNode.contains(peerUid) then
+          detailsByNode.getOrElseUpdate(peerUid, "active peer")
+          ()
       }
       snapshot.passive.foreach { peerUid =>
         edges += GraphEdge(
@@ -106,7 +112,9 @@ object OverlayNetworkGraphModel {
           EdgeKind.PassiveOverlay,
           math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity))
         )
-        detailsByNode.getOrElseUpdate(peerUid, "passive peer")
+        if opacityByNode.contains(peerUid) then
+          detailsByNode.getOrElseUpdate(peerUid, "passive peer")
+          ()
       }
     }
 

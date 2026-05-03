@@ -173,9 +173,6 @@ object OverlayDemo {
       val trimmed = line.trim
       if trimmed == "q" then false
       else {
-        if trimmed.nonEmpty then
-            if trimmed.startsWith("-") then node.publishRemove(trimmed.drop(1))
-            else node.publishAdd(trimmed)
         true
       }
     }

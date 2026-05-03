@@ -3,7 +3,6 @@ package replication.research
 import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, LatentConnection}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
-import rdts.datatypes.ReplicatedSet
 import replication.StateDeltaStorage
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
@@ -51,7 +50,7 @@ class OverlayDemoNode(
     given LocalUid = localUid
     val lastSeenMillis =
       if updateTimestamp then nowMillis()
-      else state.connections.get(localUid.uid).map(_.lastSeenMillis).getOrElse(0L)
+      else state.connections.get(localUid.uid).map(_.value.lastSeenMillis).getOrElse(0L)
     val delta          = OverlayConnectionDirectory.updateNodeFromOverlay(
       state.connections,
       localUid.uid,
@@ -61,9 +60,9 @@ class OverlayDemoNode(
       lastSeenMillis,
     )
     if !Bottom.isEmpty(delta) then
-        if replicate then publish(DemoState(ReplicatedSet.empty, delta))
+        if replicate then publish(DemoState(delta))
         else {
-          state = state.merge(DemoState(ReplicatedSet.empty, delta))
+          state = state.merge(DemoState(delta))
           emitStateChanged()
         }
   }
@@ -84,17 +83,19 @@ class OverlayDemoNode(
     if replicated == expected then mismatchChecksInRow = 0
     else {
       mismatchChecksInRow += 1
-      if mismatchChecksInRow >= 3 then
+      if mismatchChecksInRow >= 3 then {
           Console.err.println(
             s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
           )
+          publishLocalViewWithoutHeartbeat()
+      }
     }
   }
 
   private def removeDisconnectedConnection(peer: Uid): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
-    if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
+    if !Bottom.isEmpty(delta) then publish(DemoState(delta))
   }
 
   private def pruneStaleReplicatedNodes(): Unit = {
@@ -105,7 +106,7 @@ class OverlayDemoNode(
       staleNodeAfterMillis,
       localUid.uid,
     )
-    if !Bottom.isEmpty(delta) then publish(DemoState(ReplicatedSet.empty, delta))
+    if !Bottom.isEmpty(delta) then publish(DemoState(delta))
   }
 
   private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
@@ -177,17 +178,6 @@ class OverlayDemoNode(
 
   def selfConnectionDetails: Set[ChannelConnectDescriptor] = selfDetails
 
-  def publishAdd(value: String): Unit = {
-    given LocalUid = localUid
-    publish(DemoState(state.values.add(value), OverlayConnectionDirectory.empty))
-    publishLocalViewWithoutHeartbeat()
-  }
-
-  def publishRemove(value: String): Unit = {
-    publish(DemoState(state.values.remove(value), OverlayConnectionDirectory.empty))
-    publishLocalViewWithoutHeartbeat()
-  }
-
   def shuffleTick(): Unit = {
     overlay.foreach(_.promotionTick())
     overlay.foreach(_.shuffleTick())
@@ -206,15 +196,17 @@ class OverlayDemoNode(
 
   def eagerView: Set[Uid] = overlay.map(_.eagerView).getOrElse(Set.empty)
 
+  def lastIncomingMessageTimes: Map[Uid, Long] = overlay.map(_.lastIncomingMessageTimes).getOrElse(Map.empty)
+
   def connectionDirectory: OverlayConnectionDirectory.Directory = state.connections
 
   def stop(): Unit = {
     given LocalUid = localUid
     val cleanup    = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, localUid.uid)
     if !Bottom.isEmpty(cleanup) then {
-      state = state.merge(DemoState(ReplicatedSet.empty, cleanup))
+      state = state.merge(DemoState(cleanup))
       emitStateChanged()
-      overlay.foreach(_.applyDelta(DemoState(ReplicatedSet.empty, cleanup)))
+      overlay.foreach(_.applyDelta(DemoState(cleanup)))
     }
     overlay.foreach(_.stop())
     abort.abort()
