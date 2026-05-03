@@ -22,6 +22,7 @@ class OverlayDemoNode(
                        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
                        onStateChanged: DemoState => Unit = _ => (),
                        printOverlayEventsToStdout: Boolean = false,
+                       runBackgroundTasks: Boolean = true,
                        val localUid: LocalUid = LocalUid.gen(),
 )(using JsonValueCodec[DemoState]) {
 
@@ -31,10 +32,10 @@ class OverlayDemoNode(
   private val abort   = Abort()
   private val timer   = Timer(true)
   private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState]] = None
+  private var mismatchChecksInRow = 0
 
   private def emitStateChanged(): Unit = {
     onStateChanged(state)
-    checkReplicatedLocalView()
   }
 
   private def publish(delta: DemoState): Unit =
@@ -70,12 +71,16 @@ class OverlayDemoNode(
     ).normalized
 
   private def checkReplicatedLocalView(): Unit = {
-    val expected = expectedLocalView
+    val expected   = expectedLocalView
     val replicated = OverlayConnectionDirectory.snapshot(state.connections, localUid.uid)
-    if replicated != expected then
-      Console.err.println(
-        s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
-      )
+    if replicated == expected then mismatchChecksInRow = 0
+    else {
+      mismatchChecksInRow += 1
+      if mismatchChecksInRow >= 3 then
+        Console.err.println(
+          s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
+        )
+    }
   }
 
   private def removeDisconnectedConnection(peer: Uid): Unit = {
@@ -101,7 +106,7 @@ class OverlayDemoNode(
       StateDeltaStorage(() => state),
       config,
       onViewChanged = (_, _) => publishLocalView(),
-      onPeerRolesChanged = () => publishLocalView(),
+      onPeerRolesChanged = () => refreshLocalView(replicate = false),
       onPeerDisconnected = removeDisconnectedConnection,
     )
 
@@ -127,7 +132,7 @@ class OverlayDemoNode(
     overlay = Some(node)
     listenEnvelope.foreach(_ => node.startServer())
     publishLocalView()
-    startBackgroundTasks()
+    if runBackgroundTasks then startBackgroundTasks()
     seeds.headOption.foreach(_ => node.join())
   }
 
@@ -150,7 +155,10 @@ class OverlayDemoNode(
     publishLocalView()
   }
 
-  def shuffleTick(): Unit = overlay.foreach(_.shuffleTick())
+  def shuffleTick(): Unit = {
+    overlay.foreach(_.shuffleTick())
+    publishLocalView()
+  }
 
   def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]): Unit =
     overlay.foreach(_.addIncomingConnection(latent))

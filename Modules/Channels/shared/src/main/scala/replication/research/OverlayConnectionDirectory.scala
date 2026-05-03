@@ -73,10 +73,12 @@ object OverlayConnectionDirectory {
       else current.peers
     }
     val withPassive = desired.passive.foldLeft(peersAfterRemove) { (acc, uid) =>
-      acc.merge(acc.update(uid, LinkState.Passive))
+      if acc.get(uid).contains(LinkState.Passive) then acc
+      else acc.merge(acc.update(uid, LinkState.Passive))
     }
     val nextPeers = desired.active.foldLeft(withPassive) { (acc, uid) =>
-      acc.merge(acc.update(uid, LinkState.Active))
+      if acc.get(uid).contains(LinkState.Active) then acc
+      else acc.merge(acc.update(uid, LinkState.Active))
     }
 
     val eagerAfterRemove = {

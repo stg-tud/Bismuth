@@ -68,6 +68,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
         random = random,
         config = cfg,
         printOverlayEventsToStdout = false,
+        runBackgroundTasks = false,
       )
       val seeds = if idx == 0 then Nil else List(ids.head).map(uid => ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(uid)))
       node.start(seeds)
@@ -89,65 +90,70 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
   test("multiplexed hyparview keeps active and passive views disjoint during stabilization") {
     val (queue, nodes) = buildNetwork(12)
-    println(s"constructed network")
     val peers          = nodes.map(_._3)
 
-    (0 until 10).foreach { _ =>
-      peers.foreach(_.shuffleTick())
-      drain(queue, limit = 200)
-      assertViewsAreDisjoint(peers)
-    }
+    try {
+      (0 until 10).foreach { _ =>
+        peers.foreach(_.shuffleTick())
+        drain(queue, limit = 200)
+        assertViewsAreDisjoint(peers)
+      }
+    } finally peers.foreach(_.stop())
   }
 
   test("multiplexed hyparview handles join and leave while disseminating the connection directory") {
     val (queue, nodes) = buildNetwork(10)
     val peers          = nodes.map(_._3)
 
-    tickOverlay(peers, queue, rounds = 8)
+    try {
+      tickOverlay(peers, queue, rounds = 8)
 
-    val allNodeIds = nodes.map(_._1).toSet
-    peers.foreach(node => assertDirectoryKnows(node.connectionDirectory, allNodeIds))
-    assert(peers.forall(_.activeView.nonEmpty), "expected every node to have at least one active neighbor after join")
+      val allNodeIds = nodes.map(_._1).toSet
+      peers.foreach(node => assertDirectoryKnows(node.connectionDirectory, allNodeIds))
+      assert(peers.forall(_.activeView.nonEmpty), "expected every node to have at least one active neighbor after join")
 
-    val leaving   = nodes(4)._3
-    val leavingId = nodes(4)._1
-    val survivors = nodes.filterNot(_._1 == leavingId).map(_._3)
+      val leaving   = nodes(4)._3
+      val leavingId = nodes(4)._1
+      val survivors = nodes.filterNot(_._1 == leavingId).map(_._3)
 
-    leaving.stop()
-    drain(queue, limit = 20000)
-    tickOverlay(survivors, queue, rounds = 8)
+      leaving.stop()
+      drain(queue, limit = 20000)
+      tickOverlay(survivors, queue, rounds = 8)
 
-    survivors.foreach { node =>
-      assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in active view")
-      assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view")
-      assert(
-        !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.contains(leavingId)),
-        s"${Uid.unwrap(node.localUid.uid)} still reports departed node in replicated local view"
-      )
-      assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after leave")
-    }
+      survivors.foreach { node =>
+        assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in active view")
+        assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view")
+        assert(
+          !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.contains(leavingId)),
+          s"${Uid.unwrap(node.localUid.uid)} still reports departed node in replicated local view"
+        )
+        assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after leave")
+      }
+    } finally peers.foreach(_.stop())
   }
 
   test("multiplexed hyparview heals after the bootstrap node leaves") {
     val (queue, nodes) = buildNetwork(10)
     val peers          = nodes.map(_._3)
 
-    tickOverlay(peers, queue, rounds = 8)
-    assertViewsAreDisjoint(peers)
+    try {
+      tickOverlay(peers, queue, rounds = 8)
+      assertViewsAreDisjoint(peers)
 
-    val leaving   = nodes.head._3
-    val leavingId = nodes.head._1
-    val survivors = nodes.tail.map(_._3)
+      val leaving   = nodes.head._3
+      val leavingId = nodes.head._1
+      val survivors = nodes.tail.map(_._3)
 
-    leaving.stop()
-    drain(queue, limit = 20000)
-    tickOverlay(survivors, queue, rounds = 10)
+      leaving.stop()
+      drain(queue, limit = 20000)
+      tickOverlay(survivors, queue, rounds = 10)
 
-    survivors.foreach { node =>
-      assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in active view")
-      assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in passive view")
-      assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after bootstrap leave")
-    }
-    assertViewsAreDisjoint(survivors)
+      survivors.foreach { node =>
+        assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in active view")
+        assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps bootstrap node in passive view")
+        assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after bootstrap leave")
+      }
+      assertViewsAreDisjoint(survivors)
+    } finally peers.foreach(_.stop())
   }
 }
