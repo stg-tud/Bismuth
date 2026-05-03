@@ -9,7 +9,6 @@ import rdts.time.Dots
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Disseminate
 import replication.PlumtreeBroadcast.{Event, Peer}
-import replication.BroadcastIO.pmscodec
 import replication.PlumtreeMessage.*
 
 import java.net.SocketException
@@ -143,8 +142,8 @@ class BroadcastIO[State](
 
   private def localKnownDeltaContext: Dots = lock.synchronized(plumtree.localContext)
 
-  def allPayloads: List[CachedMessage[Payload[State]]] =
-    lock.synchronized(plumtree.deltaStorage.getHistory.map(SentCachedMessage(_)(using pmscodec)))
+  def allPayloads: List[Payload[State]] =
+    lock.synchronized(plumtree.deltaStorage.getHistory)
 
   override def applyDelta(delta: State): Unit = {
     val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)

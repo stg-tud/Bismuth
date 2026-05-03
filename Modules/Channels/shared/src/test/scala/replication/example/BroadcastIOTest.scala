@@ -3,12 +3,8 @@ package replication.example
 import channels.{LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.Lattice.syntax
-import rdts.base.LocalUid
-import rdts.datatypes.ReplicatedSet
-
 import replication.JsoniterCodecs.given
-import replication.{DeltaDisseminationFactory, BroadcastIO}
+import replication.{BroadcastIO, DeltaDisseminationFactory}
 
 class BroadcastIOTest extends munit.FunSuite {
   test("basics") {
@@ -33,12 +29,12 @@ class BroadcastIOTest extends munit.FunSuite {
     dd3.applyDelta(Set("c"))
 
     assertEquals(
-      dd1.allPayloads.map(_.payload.data).toSet,
-      dd2.allPayloads.map(_.payload.data).toSet
+      dd1.allPayloads.map(_.data).toSet,
+      dd2.allPayloads.map(_.data).toSet
     )
     assertEquals(
-      dd2.allPayloads.map(_.payload.data).toSet,
-      dd3.allPayloads.map(_.payload.data).toSet
+      dd2.allPayloads.map(_.data).toSet,
+      dd3.allPayloads.map(_.data).toSet
     )
 
   }
@@ -77,7 +73,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val expected = Set(Set("v0"), Set("v1"), Set("v2"), Set("v3"), Set("v4"))
 
     nodes.foreach { n =>
-      assertEquals(n.allPayloads.map(_.payload.data).toSet, expected)
+      assertEquals(n.allPayloads.map(_.data).toSet, expected)
     }
   }
 
@@ -123,12 +119,12 @@ class BroadcastIOTest extends munit.FunSuite {
     deliverAndPrint()
 
     assertEquals(
-      dd1.allPayloads.map(_.payload.data).toSet,
-      dd2.allPayloads.map(_.payload.data).toSet
+      dd1.allPayloads.map(_.data).toSet,
+      dd2.allPayloads.map(_.data).toSet
     )
     assertEquals(
-      dd2.allPayloads.map(_.payload.data).toSet,
-      dd3.allPayloads.map(_.payload.data).toSet
+      dd2.allPayloads.map(_.data).toSet,
+      dd3.allPayloads.map(_.data).toSet
     )
 
   }
