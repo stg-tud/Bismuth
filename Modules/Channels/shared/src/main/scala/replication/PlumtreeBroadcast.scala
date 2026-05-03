@@ -100,11 +100,17 @@ final case class PlumtreeBroadcast[State](
 
   /** The paper manages some timeouts after IHave messages, we instead check that the local context catches up between any two tick grafts calls. */
   def tickGrafts(): Result[State] = {
+    // note, this may very well select already active peers, which is doen to backfill in case of missing state
     val haveMissing = remoteContextSnapshot.collect:
-        case (peer, context) if peerRoles.get(peer).contains(Lazy) && context.inflates(localContext) => peer
-    val grafts = Random.shuffle(haveMissing).take(1).map(peer => Send(List(peer), Graft(self, localContext)))
-    val next   = copy(remoteContextSnapshot = remoteContext)
-    Result(next, grafts.toSeq)
+        case (peer, context) if context.inflates(localContext) => peer
+    Random.shuffle(haveMissing).headOption match {
+      case None          => Result(copy(remoteContextSnapshot = remoteContext), Nil)
+      case Some(missing) =>
+        val graft = Send(List(missing), Graft(self, localContext))
+        val next  = copy(remoteContextSnapshot = remoteContext).withChangedRole(missing, PeerRole.Eager)
+        Result(next, List(graft))
+    }
+
   }
 
   /** Incoming message handler.
@@ -121,43 +127,47 @@ final case class PlumtreeBroadcast[State](
     message match
         case Prune(_) =>
           // Duplicate eager delivery: demote this edge to lazy.
-          Result(withRole(from, PeerRole.Lazy), Nil)
+          Result(withChangedRole(from, PeerRole.Lazy), Nil)
 
         case IHave(_, knows) =>
           Result(withRemoteKnowledge(from, knows), Nil)
 
         case Graft(_, knows) =>
           // Repair: promote sender back to eager and replay what it is missing.
-          val next     = withRole(from, PeerRole.Eager)
+          val next     = withChangedRole(from, PeerRole.Eager).withRemoteKnowledge(from, knows)
           val relevant = next.deltaStorage.getHistory.filterNot(payload => payload.dots <= knows)
           if relevant.isEmpty && !(next.localContext <= knows) then
               println(
                 s"plumtree graft unsatisfied from=$from local=${next.localContext} knows=$knows storage=${next.deltaStorage.getClass.getSimpleName}"
               )
-          Result(next, relevant.map(payload => Send(from :: Nil, payload)))
+          val replayed = relevant.map(payload => Send(from :: Nil, payload))
+          Result(next, replayed)
 
         case payload @ Payload(context, _) =>
           if context <= localContext then
               // Duplicate eager path: demote this edge and ask the sender to prune too.
-              Result(withRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune(self))))
+              Result(withChangedRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune(self))))
           else
               // First delivery: remember, keep sender eager, deliver, and forward.
               val next: PlumtreeBroadcast[State] = copy(
                 localContext = localContext.merge(context),
                 deltaStorage = deltaStorage.remember(payload),
-              ).withRemoteKnowledge(from, context).withRole(from, Eager)
+              ).withRemoteKnowledge(from, context).withChangedRole(from, PeerRole.Eager)
               val forwarded = next.disseminate(payload, except = Set(from))
               forwarded.copy(events = Event.Deliver(payload) +: forwarded.events)
 
   private def withRemoteKnowledge(from: Peer, knows: Dots) = {
     copy(remoteContext = remoteContext.updatedWith(from) {
-      case None => Some(knows)
+      case None     => Some(knows)
       case Some(ex) => Some(ex `merge` knows)
     })
   }
 
-  private def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
-    copy(peerRoles = peerRoles.updated(peer, role))
+  private def withChangedRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
+    copy(peerRoles = peerRoles.updatedWith(peer) {
+      case None  => None
+      case other => Some(role)
+    })
 
   /** Send payload on eager edges and `IHave` on lazy edges. */
   private def disseminate(payload: Payload[State], except: Set[Peer]): Result[State] = {
