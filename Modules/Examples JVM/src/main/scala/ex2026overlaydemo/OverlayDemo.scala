@@ -5,7 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
-import replication.JsoniterCodecs
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewMultiplexed
 import replication.overlay.HyParViewUnified.HyParViewConfig
@@ -24,12 +23,12 @@ object OverlayDemo {
   given codecString: JsonValueCodec[String] = JsonCodecMaker.make
   given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
   given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
-  given codecConnectedPeer: JsonValueCodec[OverlayConnectionDirectory.ConnectedPeer] = JsonCodecMaker.make
+  given codecPeerStates: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.LinkState]] =
+    ORMapStateCodec[Uid, OverlayConnectionDirectory.LinkState]
+  given codecReplicatedSetUid: JsonValueCodec[ReplicatedSet[Uid]] = AWSetStateCodec[Uid]
   given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
   given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
   given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] = AWSetStateCodec[ChannelConnectDescriptor]
-  given codecReplicatedSetConnectedPeer: JsonValueCodec[ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer]] =
-    AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make

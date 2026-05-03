@@ -1,6 +1,7 @@
 package replication.research
 
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.Lattice.syntax.merge
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.overlay.HyParViewMultiplexed
 
@@ -8,10 +9,11 @@ import replication.overlay.HyParViewMultiplexed
 object OverlayConnectionDirectory {
 
   enum LinkState {
-    case Active, Passive
+    case Passive, Active
   }
 
-  case class ConnectedPeer(uid: Uid, state: LinkState)
+  given Bottom[LinkState] = Bottom.provide(LinkState.Passive)
+  given Lattice[LinkState] = Lattice.sumLattice
 
   case class ViewSnapshot(
       active: Set[Uid],
@@ -27,7 +29,7 @@ object OverlayConnectionDirectory {
   }
 
   case class NodeInfo(
-      peers: ReplicatedSet[ConnectedPeer],
+      peers: ObserveRemoveMap[Uid, LinkState],
       eagerPeers: ReplicatedSet[Uid],
   )
   object NodeInfo {
@@ -40,11 +42,11 @@ object OverlayConnectionDirectory {
   val empty: Directory = ObserveRemoveMap.empty
 
   def emptyNodeInfo: NodeInfo =
-    NodeInfo(ReplicatedSet.empty, ReplicatedSet.empty)
+    NodeInfo(ObserveRemoveMap.empty, ReplicatedSet.empty)
 
   def snapshot(info: NodeInfo): ViewSnapshot = {
-    val active  = info.peers.elements.collect { case ConnectedPeer(uid, LinkState.Active) => uid }
-    val passive = info.peers.elements.collect { case ConnectedPeer(uid, LinkState.Passive) => uid }
+    val active  = info.peers.entries.collect { case (uid, LinkState.Active) => uid }.toSet
+    val passive = info.peers.entries.collect { case (uid, LinkState.Passive) => uid }.toSet
     val eager   = info.eagerPeers.elements
     ViewSnapshot(active, passive, eager).normalized
   }
@@ -52,53 +54,45 @@ object OverlayConnectionDirectory {
   def snapshot(state: Directory, node: Uid): ViewSnapshot =
     state.get(node).map(snapshot).getOrElse(ViewSnapshot(Set.empty, Set.empty, Set.empty))
 
-  private def snapshotPeers(snapshot: ViewSnapshot): Set[ConnectedPeer] = {
-    val normalized = snapshot.normalized
-    normalized.active.map(uid => ConnectedPeer(uid, LinkState.Active)) ++
-    normalized.passive.map(uid => ConnectedPeer(uid, LinkState.Passive))
-  }
-
   def updateNode(
       state: Directory,
       node: Uid,
-      peers: Iterable[ConnectedPeer],
-      eagerPeers: Iterable[Uid],
+      peers: Map[Uid, LinkState],
+      eagerPeers: Set[Uid],
   )(using LocalUid): Directory = {
     val current = state.get(node).getOrElse(emptyNodeInfo)
-    val desiredSnapshot = ViewSnapshot(
-      active = peers.collect { case ConnectedPeer(uid, LinkState.Active) => uid }.toSet,
-      passive = peers.collect { case ConnectedPeer(uid, LinkState.Passive) => uid }.toSet,
-      eager = eagerPeers.toSet,
+    val desired = ViewSnapshot(
+      active = peers.collect { case (uid, LinkState.Active) => uid }.toSet,
+      passive = peers.collect { case (uid, LinkState.Passive) => uid }.toSet,
+      eager = eagerPeers,
     ).normalized
-    val desiredPeers      = snapshotPeers(desiredSnapshot)
-    val desiredEagerPeers = desiredSnapshot.eager
 
     val peersAfterRemove = {
-      val toRemove = current.peers.elements -- desiredPeers
+      val toRemove = current.peers.keySet -- desired.active -- desired.passive
       if toRemove.nonEmpty then current.peers.merge(current.peers.removeAll(toRemove))
       else current.peers
     }
-    val nextPeers = {
-      val toAdd = desiredPeers -- peersAfterRemove.elements
-      if toAdd.nonEmpty then peersAfterRemove.merge(peersAfterRemove.addAll(toAdd))
-      else peersAfterRemove
+    val withPassive = desired.passive.foldLeft(peersAfterRemove) { (acc, uid) =>
+      acc.merge(acc.update(uid, LinkState.Passive))
+    }
+    val nextPeers = desired.active.foldLeft(withPassive) { (acc, uid) =>
+      acc.merge(acc.update(uid, LinkState.Active))
     }
 
     val eagerAfterRemove = {
-      val toRemove = current.eagerPeers.elements -- desiredEagerPeers
+      val toRemove = current.eagerPeers.elements -- desired.eager
       if toRemove.nonEmpty then current.eagerPeers.merge(current.eagerPeers.removeAll(toRemove))
       else current.eagerPeers
     }
     val nextEager = {
-      val toAdd = desiredEagerPeers -- eagerAfterRemove.elements
+      val toAdd = desired.eager -- eagerAfterRemove.elements
       if toAdd.nonEmpty then eagerAfterRemove.merge(eagerAfterRemove.addAll(toAdd))
       else eagerAfterRemove
     }
 
-    val desired = NodeInfo(nextPeers, nextEager)
-
-    if desired == current && state.contains(node) then empty
-    else state.update(node, desired)
+    val next = NodeInfo(nextPeers, nextEager)
+    if next == current && state.contains(node) then empty
+    else state.update(node, next)
   }
 
   def updateNodeFromOverlay(
@@ -111,9 +105,9 @@ object OverlayConnectionDirectory {
     updateNode(
       state,
       node,
-      activePeers.iterator.map(peer => ConnectedPeer(peer.uid, LinkState.Active)).toSet ++
-        passivePeers.iterator.map(peer => ConnectedPeer(peer.uid, LinkState.Passive)).toSet,
-      eagerPeers
+      activePeers.iterator.map(peer => peer.uid -> LinkState.Active).toMap ++
+        passivePeers.iterator.map(peer => peer.uid -> LinkState.Passive).toMap,
+      eagerPeers.toSet
     )
 
   def removePeerReferences(
@@ -122,8 +116,8 @@ object OverlayConnectionDirectory {
       peer: Uid,
   )(using LocalUid): Directory = {
     val current        = state.get(node).getOrElse(emptyNodeInfo)
-    val remainingPeers = current.peers.elements.filterNot(_.uid == peer)
-    updateNode(state, node, remainingPeers, current.eagerPeers.elements.filterNot(_ == peer))
+    val remainingPeers = current.peers.entries.filterNot(_._1 == peer).toMap
+    updateNode(state, node, remainingPeers, current.eagerPeers.elements - peer)
   }
 
   def removeConnectionBothDirections(

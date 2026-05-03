@@ -25,20 +25,18 @@ class OverlayDemoTest extends munit.FunSuite {
   private def localInfoMatchesNode(app: OverlayDemo.NodeApp): Boolean = {
     val localUid = app.node.localUid.uid
     app.node.connectionDirectory.get(localUid).exists { info =>
-      val replicatedActive = info.peers.elements.collect { case OverlayConnectionDirectory.ConnectedPeer(uid, LinkState.Active) => uid }
-      val replicatedPassive = info.peers.elements.collect { case OverlayConnectionDirectory.ConnectedPeer(uid, LinkState.Passive) => uid }
-      val replicatedEager = info.eagerPeers.elements
-      replicatedActive == app.node.activeView &&
-      replicatedPassive == app.node.passiveView &&
-      replicatedEager == app.node.eagerView &&
-      replicatedEager.subsetOf(replicatedActive)
+      val replicated = OverlayConnectionDirectory.snapshot(info)
+      replicated.active == app.node.activeView &&
+      replicated.passive == app.node.passiveView &&
+      replicated.eager == app.node.eagerView &&
+      replicated.eager.subsetOf(replicated.active)
     }
   }
 
   private def eagerEdgesFormForest(directory: OverlayConnectionDirectory.Directory): Boolean = {
     val eagerByNode = directory.entries.iterator.map { (uid, info) =>
-      val activePeers = info.peers.elements.collect { case OverlayConnectionDirectory.ConnectedPeer(peerUid, LinkState.Active) => peerUid }
-      uid -> (activePeers intersect info.eagerPeers.elements)
+      val snapshot = OverlayConnectionDirectory.snapshot(info)
+      uid -> (snapshot.active intersect snapshot.eager)
     }.toMap
 
     val undirectedEdges = eagerByNode.iterator.flatMap { (left, peers) =>
@@ -199,7 +197,7 @@ class OverlayDemoTest extends munit.FunSuite {
       })
 
       val directories = List(node1.node.connectionDirectory, node2.node.connectionDirectory, node3.node.connectionDirectory)
-      assert(directories.exists(_.entries.exists((_, info) => info.peers.elements.exists(_.state == OverlayConnectionDirectory.LinkState.Active))))
+      assert(directories.exists(_.entries.exists((_, info) => OverlayConnectionDirectory.snapshot(info).active.nonEmpty)))
     } finally {
       node3.stop()
       node2.stop()

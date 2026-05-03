@@ -19,12 +19,12 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
   given codecString: JsonValueCodec[String] = JsonCodecMaker.make
   given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
   given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
-  given codecConnectedPeer: JsonValueCodec[OverlayConnectionDirectory.ConnectedPeer] = JsonCodecMaker.make
+  given codecPeerStates: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.LinkState]] =
+    ORMapStateCodec[Uid, OverlayConnectionDirectory.LinkState]
+  given codecReplicatedSetUid: JsonValueCodec[ReplicatedSet[Uid]] = AWSetStateCodec[Uid]
   given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
   given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
   given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] = AWSetStateCodec[ChannelConnectDescriptor]
-  given codecReplicatedSetConnectedPeer: JsonValueCodec[ReplicatedSet[OverlayConnectionDirectory.ConnectedPeer]] =
-    AWSetStateCodec[OverlayConnectionDirectory.ConnectedPeer]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
   given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
@@ -121,7 +121,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
       assert(!node.activeView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in active view")
       assert(!node.passiveView.contains(leavingId), s"${Uid.unwrap(node.localUid.uid)} still keeps departed node in passive view")
       assert(
-        !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.elements.exists(_.uid == leavingId)),
+        !node.connectionDirectory.get(node.localUid.uid).exists(_.peers.contains(leavingId)),
         s"${Uid.unwrap(node.localUid.uid)} still reports departed node in replicated local view"
       )
       assert(node.activeView.nonEmpty, s"${Uid.unwrap(node.localUid.uid)} lost all active neighbors after leave")

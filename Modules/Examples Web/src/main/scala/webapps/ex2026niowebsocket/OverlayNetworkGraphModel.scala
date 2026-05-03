@@ -2,7 +2,6 @@ package webapps.ex2026niowebsocket
 
 import rdts.base.Uid
 import replication.research.OverlayConnectionDirectory
-import replication.research.OverlayConnectionDirectory.LinkState
 
 import scala.collection.mutable
 
@@ -60,17 +59,14 @@ object OverlayNetworkGraphModel {
       val passiveCount = snapshot.passive.size
       val eagerCount   = snapshot.eager.size
       detailsByNode.update(uid, s"active=$activeCount passive=$passiveCount eager=$eagerCount")
-      (snapshot.active.map(peerUid => OverlayConnectionDirectory.ConnectedPeer(peerUid, LinkState.Active)) ++
-        snapshot.passive.map(peerUid => OverlayConnectionDirectory.ConnectedPeer(peerUid, LinkState.Passive))).foreach { peer =>
-        val kind = peer.state match
-          case LinkState.Active if snapshot.eager.contains(peer.uid) => EdgeKind.EagerOverlay
-          case LinkState.Active                                      => EdgeKind.ActiveOverlay
-          case LinkState.Passive                                     => EdgeKind.PassiveOverlay
-        edges += GraphEdge(uid, peer.uid, kind)
-        detailsByNode.getOrElseUpdate(peer.uid, peer.state match
-          case LinkState.Active  => "active peer"
-          case LinkState.Passive => "passive peer"
-        )
+      snapshot.active.foreach { peerUid =>
+        val kind = if snapshot.eager.contains(peerUid) then EdgeKind.EagerOverlay else EdgeKind.ActiveOverlay
+        edges += GraphEdge(uid, peerUid, kind)
+        detailsByNode.getOrElseUpdate(peerUid, "active peer")
+      }
+      snapshot.passive.foreach { peerUid =>
+        edges += GraphEdge(uid, peerUid, EdgeKind.PassiveOverlay)
+        detailsByNode.getOrElseUpdate(peerUid, "passive peer")
       }
     }
 
