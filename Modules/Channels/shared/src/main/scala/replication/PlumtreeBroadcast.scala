@@ -3,8 +3,11 @@ package replication
 import rdts.base.Uid
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Send
+import replication.PlumtreeBroadcast.PeerRole.Lazy
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
 import replication.PlumtreeMessage.*
+
+import scala.util.Random
 
 sealed trait PlumtreeMessage[+T]
 object PlumtreeMessage {
@@ -98,8 +101,9 @@ final case class PlumtreeBroadcast[State](
   /** The paper manages some timeouts after IHave messages, we instead check that the local context catches up between any two tick grafts calls. */
   def tickGrafts(): Result[State] = {
     val haveMissing = remoteContextSnapshot.collect:
-        case (peer, context) if context.inflates(localContext) => peer
-    val grafts = haveMissing.map(peer => Send(List(peer), Graft(self, localContext)))
+        case (peer, context) if peerRoles.get(peer).contains(Lazy) && context.inflates(localContext) => peer
+    println(s"tick grafts: $haveMissing")
+    val grafts = Random.shuffle(haveMissing).take(1).map(peer => Send(List(peer), Graft(self, localContext)))
     val next   = copy(remoteContextSnapshot = remoteContext)
     Result(next, grafts.toSeq)
   }
