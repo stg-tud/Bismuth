@@ -256,6 +256,7 @@ class HyParViewMultiplexedNode[State](
     removedActive.foreach(peer => log(s"active removed ${Uid.unwrap(peer.uid)}"))
     (after.activePeers -- before.activePeers).foreach { peer =>
       log(s"active added ${Uid.unwrap(peer.uid)}")
+      lastIncomingMessageAtMs.getOrElseUpdate(peer.uid, System.currentTimeMillis())
       if connections.contains(peer.uid) then applyPlumtreeResult(plumtree.addPeer(Peer(peer.uid)))
       else startConnection(peer)
     }
@@ -302,9 +303,10 @@ class HyParViewMultiplexedNode[State](
     lastIncomingMessageAtMs.update(peer, System.currentTimeMillis())
 
   private def timeoutSilentActiveConnections(): Unit = {
-    val now          = System.currentTimeMillis()
+    val now           = System.currentTimeMillis()
     val timedOutPeers = membership.activeView.iterator.filter { peer =>
-      connections.contains(peer) && now - lastIncomingMessageAtMs.getOrElse(peer, now) >= activeConnectionTimeoutMs
+      !connecting.contains(peer) &&
+      now - lastIncomingMessageAtMs.getOrElse(peer, now) >= activeConnectionTimeoutMs
     }.toList
 
     timedOutPeers.foreach { peer =>
