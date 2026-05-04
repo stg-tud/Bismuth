@@ -1,9 +1,9 @@
 package com.github.ckuessner
 package causality
 
-import com.github.ckuessner.causality.EventTree.{Branch, Leaf, seed, given}
-import com.github.ckuessner.causality.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
-import com.github.ckuessner.causality.IdTreeGenerators.genIdTree
+import causality.EventTree.{Branch, Leaf, seed, given}
+import causality.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
+import causality.IdTreeGenerators.genIdTree
 import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*

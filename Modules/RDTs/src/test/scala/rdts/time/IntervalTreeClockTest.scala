@@ -1,7 +1,7 @@
 package com.github.ckuessner
 package causality
 
-import com.github.ckuessner.causality.IntervalTreeClockGenerators.genIntervalTreeClock
+import causality.IntervalTreeClockGenerators.genIntervalTreeClock
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*
 

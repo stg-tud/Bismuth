@@ -2,7 +2,7 @@ package com.github.ckuessner
 package codecs
 
 import causality.IdTree
-import codecs.EncoderSpec
+import codecs.CodecSpec
 import causality.IdTreeGenerators.genIdTree
 
-class IdTreeEncoderSpec extends EncoderSpec[IdTree] {}
+class IdTreeCodecSpec extends CodecSpec[IdTree] {}

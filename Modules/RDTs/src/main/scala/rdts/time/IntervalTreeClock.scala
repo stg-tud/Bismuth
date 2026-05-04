@@ -2,12 +2,44 @@ package com.github.ckuessner
 package causality
 
 import causality.EventTree.given
-import causality.IdTree.{*, given}
-import causality.IntervalTreeClock.given
 
-import scala.math
+case class IntervalTreeClock(idTree: IdTree, eventTree: EventTree):
+    def fork: (IntervalTreeClock, IntervalTreeClock) =
+        val (id1, id2) = idTree.split
+        (IntervalTreeClock(id1, eventTree), IntervalTreeClock(id2, eventTree))
 
-case class IntervalTreeClock(idTree: IdTree, eventTree: EventTree)
+    @throws[IllegalArgumentException]("when the ids overlap")
+    def join(otherStamp: IntervalTreeClock): IntervalTreeClock =
+      IntervalTreeClock(
+        idTree + otherStamp.idTree,
+        eventTree `join` otherStamp.eventTree
+      )
+
+    /** Precondition: stamp is not anonymous
+      *
+      * @return
+      * An IntervalTreeClock (i,e') such that e' = e + f * i
+      */
+    @throws[IllegalArgumentException]("when the id is anonymous")
+    def event: IntervalTreeClock = {
+      if idTree.isAnonymous then {
+        throw IllegalArgumentException("Cannot perform events on an anonymous stamp")
+      } else {
+        copy(eventTree = eventTree.increment(idTree))
+      }
+    }
+
+    def peek: IntervalTreeClock = IntervalTreeClock(IdTree.anonymous, eventTree)
+
+    def sync(otherStamp: IntervalTreeClock): (IntervalTreeClock, IntervalTreeClock) =
+      (this `join` otherStamp).fork
+
+    def send: (IntervalTreeClock, IntervalTreeClock) =
+        val newStamp = event
+        (newStamp, newStamp.peek)
+
+    def receive(otherStamp: IntervalTreeClock): IntervalTreeClock =
+      (this `join` otherStamp).event
 
 object IntervalTreeClock {
   given NormalForm[IntervalTreeClock] with
@@ -28,40 +60,4 @@ object IntervalTreeClock {
     override def tryCompare(x: IntervalTreeClock, y: IntervalTreeClock): Option[Int] =
       summon[PartialOrdering[EventTree]].tryCompare(x.eventTree, y.eventTree)
   }
-
-  given Clock: ForkEventJoinClock[IntervalTreeClock] with
-      val seed: IntervalTreeClock = IntervalTreeClock(IdTree.seed, EventTree.seed)
-
-      override val ordering: PartialOrdering[IntervalTreeClock] = pOrd
-
-      extension (stamp: IntervalTreeClock)
-          def fork: (IntervalTreeClock, IntervalTreeClock) =
-              val (id1, id2) = stamp.idTree.split
-              (IntervalTreeClock(id1, stamp.eventTree), IntervalTreeClock(id2, stamp.eventTree))
-
-          @throws[IllegalArgumentException]("when the ids overlap")
-          def join(otherStamp: IntervalTreeClock): IntervalTreeClock =
-            IntervalTreeClock(
-              stamp.idTree + otherStamp.idTree,
-              stamp.eventTree `join` otherStamp.eventTree
-            )
-
-          /** Precondition: stamp is not anonymous
-            *
-            * @return
-            *   An IntervalTreeClock (i,e') such that e' = e + f * i
-            */
-          @throws[IllegalArgumentException]("when the id is anonymous")
-          def event: IntervalTreeClock = {
-            if stamp.idTree.isAnonymous then {
-              throw IllegalArgumentException("Cannot perform events on an anonymous stamp")
-            } else {
-              stamp.copy(eventTree = stamp.eventTree.increment(stamp.idTree))
-            }
-          }
-
-          def peek: IntervalTreeClock = IntervalTreeClock(IdTree.anonymous, stamp.eventTree)
 }
-
-trait NormalForm[T]:
-    extension (tree: T) def normalized: T

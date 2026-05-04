@@ -6,7 +6,7 @@ import codecs.internal.{EventTreeDecoder, EventTreeEncoder}
 
 import java.nio.ByteBuffer
 
-given FastEventTreeEncoder: Encoder[EventTree] with {
+given EventTreeCodec: Codec[EventTree] with {
   override def write(eventTree: EventTree, buffer: ByteBuffer): Unit =
     buffer.put(writeArray(eventTree))
 

@@ -1,12 +1,12 @@
 package com.github.ckuessner
 package codecs
 
-import causality.{IdTree, IntervalTreeClock}
+import causality.IdTree
 import codecs.internal.{IdTreeDecoder, IdTreeEncoder}
 
 import java.nio.ByteBuffer
 
-given FastIdTreeEncoder: Encoder[IdTree] with {
+given IdTreeCodec: Codec[IdTree] with {
   override def write(idTree: IdTree, buffer: ByteBuffer): Unit =
     buffer.put(writeArray(idTree))
 

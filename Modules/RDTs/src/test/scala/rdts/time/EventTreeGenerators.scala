@@ -1,9 +1,9 @@
 package com.github.ckuessner
 package causality
 
-import com.github.ckuessner.causality.EventTree.{Branch, Leaf, seed}
-import com.github.ckuessner.causality.IdTreeGenerators.genIdTree
-import org.scalacheck.{Arbitrary, Gen}
+import causality.EventTree.{Branch, Leaf, seed}
+import causality.IdTreeGenerators.genIdTree
+import org.scalacheck.Gen
 
 object EventTreeGenerators {
   given genEventTree: Gen[EventTree] = {

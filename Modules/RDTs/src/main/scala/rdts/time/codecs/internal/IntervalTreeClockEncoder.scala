@@ -1,7 +1,7 @@
 package com.github.ckuessner
 package codecs.internal
 
-import causality.{IdTree, IntervalTreeClock}
+import causality.IntervalTreeClock
 
 private[codecs] object IntervalTreeClockEncoder {
   def encode(itc: IntervalTreeClock): Array[Byte] = {
