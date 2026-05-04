@@ -98,7 +98,7 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
   test("join produces normalized Ids") {
     forAll(genEventTree, genEventTreeLeaf) { (ev1, ev2) =>
       val joined = ev1 `join` ev2
-      assertEquals(joined, joined.normalized)
+      assertEquals(joined, joined.normalize)
     }
   }
 
@@ -180,14 +180,14 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
   }
 
   test("fill returns same reference if equal to EventTree for generated EventTree and Id") {
-    forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
+    forAll(genEventTree.map(_.normalize), genIdTree.suchThat(!_.isAnonymous).map(_.normalize)) { (ev, id) =>
       val evFilled = ev.fill(id)
       evFilled == ev ==> assert(evFilled eq ev)
     }
   }
 
   test("fill produces a greater EventTree according to PartialOrdering") {
-    forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
+    forAll(genEventTree.map(_.normalize), genIdTree.suchThat(!_.isAnonymous).map(_.normalize)) { (ev, id) =>
       val evFilled = ev.fill(id)
       !(evFilled eq ev) ==> {
         assert(isNormalized(evFilled))
@@ -326,7 +326,7 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
 
     eventsAndIds.foreach { (ev, id, expectedEv) =>
       assert(isNormalized(ev))
-      assertEquals(id.normalized, id)
+      assertEquals(id.normalize, id)
       assert(isNormalized(expectedEv))
     }
 
@@ -336,7 +336,7 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
   }
 
   test("grow returns EventTree that is larger according to PartialOrdering") {
-    forAll(genEventTree.map(_.normalized), genIdTree.map(_.normalized).suchThat(!_.isAnonymous)) { (ev, id) =>
+    forAll(genEventTree.map(_.normalize), genIdTree.map(_.normalize).suchThat(!_.isAnonymous)) { (ev, id) =>
       val evFilled = ev.fill(id)
       assertEquals(eventTreePord.tryCompare(evFilled.grow(id)._1, evFilled), Some(1))
       assertEquals(eventTreePord.tryCompare(evFilled, evFilled.grow(id)._1), Some(-1))
@@ -346,12 +346,12 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
   test("increment returns normalized EventTree that is greater according to PartialOrdering") {
     forAll(genEventTree, genIdTree.suchThat(!_.isAnonymous)) { (ev, id) =>
       val incEv = ev.increment(id)
-      assertEquals(incEv, incEv.normalized)
+      assertEquals(incEv, incEv.normalize)
       assertEquals(eventTreePord.tryCompare(incEv, ev), Some(1))
       assertEquals(eventTreePord.tryCompare(ev, incEv), Some(-1))
 
       val incIncEv = incEv.increment(id)
-      assertEquals(incIncEv, incIncEv.normalized)
+      assertEquals(incIncEv, incIncEv.normalize)
       assertEquals(eventTreePord.tryCompare(incIncEv, ev), Some(1))
       assertEquals(eventTreePord.tryCompare(incIncEv, incEv), Some(1))
       assertEquals(eventTreePord.tryCompare(incEv, incIncEv), Some(-1))
@@ -425,13 +425,13 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
 
   test("PartialOrderingEventTree test data are normalized") {
     incomparableEventTrees.foreach { (ev1, ev2) =>
-      assertEquals(ev1, ev1.normalized)
-      assertEquals(ev2, ev2.normalized)
+      assertEquals(ev1, ev1.normalize)
+      assertEquals(ev2, ev2.normalize)
     }
 
     leftSmallerEventTrees.foreach { (ev1, ev2) =>
-      assertEquals(ev1, ev1.normalized)
-      assertEquals(ev2, ev2.normalized)
+      assertEquals(ev1, ev1.normalize)
+      assertEquals(ev2, ev2.normalize)
     }
   }
 
@@ -443,7 +443,7 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
   }
 
   test("PartialOrderingEventTree.lteq is true when ev1 == ev2") {
-    forAll(genEventTree.map(_.normalized)) { ev =>
+    forAll(genEventTree.map(_.normalize)) { ev =>
       assert(eventTreePord.lteq(ev, ev))
     }
   }
@@ -491,14 +491,14 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
 
   test("NormalForm[EventTree] works for Leaves") {
     forAll(Gen.posNum[Int]) { n =>
-      assertEquals(Leaf(n).normalized, Leaf(n))
+      assertEquals(Leaf(n).normalize, Leaf(n))
     }
   }
 
   test("NormalForm[EventTree] works for Branches") {
     forAll(Gen.posNum[Int], Gen.posNum[Int], Gen.posNum[Int]) { (value: Int, leftLeafValue: Int, rightLeafValue: Int) =>
       val minLeaf             = Math.min(leftLeafValue, rightLeafValue)
-      val normalizedEventTree = Branch(value, Leaf(leftLeafValue), Leaf(rightLeafValue)).normalized
+      val normalizedEventTree = Branch(value, Leaf(leftLeafValue), Leaf(rightLeafValue)).normalize
       if leftLeafValue == rightLeafValue then {
         assertEquals(normalizedEventTree, Leaf(value + leftLeafValue))
       } else {
@@ -525,29 +525,29 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
     )
 
     nestedEventTrees.foreach { (ev, expectedNormalForm) =>
-      assertEquals(ev.normalized, expectedNormalForm)
+      assertEquals(ev.normalize, expectedNormalForm)
     }
   }
 
   test("NormalForm[EventTree] produces normalized trees for generated EventTrees") {
     forAll(genEventTree) { ev =>
-      assert(isNormalized(ev.normalized))
+      assert(isNormalized(ev.normalize))
     }
 
     forAll(genRandomEventTree) { ev =>
-      assert(isNormalized(ev.normalized))
+      assert(isNormalized(ev.normalize))
     }
   }
 
   test("NormalForm[EventTree] returns this reference if already normalized") {
     forAll(genEventTree) { evTree =>
-      val normalizedEv = evTree.normalized
-      assert(normalizedEv eq normalizedEv.normalized)
+      val normalizedEv = evTree.normalize
+      assert(normalizedEv eq normalizedEv.normalize)
     }
 
     forAll(genRandomEventTree) { evTree =>
-      val normalizedEv = evTree.normalized
-      assert(normalizedEv eq normalizedEv.normalized)
+      val normalizedEv = evTree.normalize
+      assert(normalizedEv eq normalizedEv.normalize)
     }
   }
 }

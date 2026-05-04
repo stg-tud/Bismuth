@@ -2,7 +2,7 @@ package rdts.time
 
 import rdts.time.IdTree.splitNormalizedIdTree
 
-import scala.annotation.{tailrec, targetName}
+import scala.annotation.targetName
 
 enum IdTree:
     case Leaf(value: 0 | 1)
@@ -14,7 +14,7 @@ enum IdTree:
       *   A tuple of non-overlapping child ids.
       */
     def split: (IdTree, IdTree) =
-      splitNormalizedIdTree(this.normalized)
+      splitNormalizedIdTree(this.normalize)
 
     /** Add two non-overlapping id trees, resulting in one normalized IdTree.
       * @throws IllegalArgumentException
@@ -28,11 +28,11 @@ enum IdTree:
     @targetName("add")
     def +(otherId: IdTree): IdTree = (this, otherId) match
         case (Leaf(0), otherId) =>
-          otherId.normalized match {
+          otherId.normalize match {
             case Leaf(0)         => this // Prefer left part of tree
             case otherNormalized => otherNormalized
           }
-        case (id, Leaf(0))                    => id.normalized
+        case (id, Leaf(0))                    => id.normalize
         case (Branch(l1, r1), Branch(l2, r2)) =>
           val l = l1 + l2
           val r = r1 + r2
@@ -48,7 +48,7 @@ enum IdTree:
               Branch(l, r)
           }
         case (l, r) =>
-          (l.normalized, r.normalized) match {
+          (l.normalize, r.normalize) match {
             case (l @ Leaf(1), Leaf(0)) => l
             case (Leaf(0), r @ Leaf(1)) => r
             case _                      => throw IllegalArgumentException("Cannot add two overlapping IdTrees")
@@ -117,11 +117,11 @@ object IdTree {
 
   given NormalForm[IdTree] with
       extension (tree: IdTree)
-          def normalized: IdTree = tree match
+          def normalize: IdTree = tree match
               case Leaf(_)                                    => tree // Reuse reference if nothing has changed
               case Branch(l @ Leaf(i1), Leaf(i2)) if i1 == i2 => l
               case Branch(l, r)                               =>
-                (l.normalized, r.normalized) match
+                (l.normalize, r.normalize) match
                     case (Leaf(lNormVal), Leaf(rNormVal)) if lNormVal == rNormVal => Leaf(lNormVal)
                     case (lNorm, rNorm) if (l eq lNorm) && (r eq rNorm)           =>
                       tree // Reuse reference if nothing has changed

@@ -10,9 +10,9 @@ class IntervalTreeClockTest extends ScalaCheckSuite {
 
   property("NormalForm[IntervalTreeClock]") {
     forAll(genIntervalTreeClock) { itc =>
-      val normalizedItc = itc.normalized
-      assertEquals(normalizedItc.idTree, itc.idTree.normalized)
-      assertEquals(normalizedItc.eventTree, itc.eventTree.normalized)
+      val normalizedItc = itc.normalize
+      assertEquals(normalizedItc.idTree, itc.idTree.normalize)
+      assertEquals(normalizedItc.eventTree, itc.eventTree.normalize)
     }
   }
 

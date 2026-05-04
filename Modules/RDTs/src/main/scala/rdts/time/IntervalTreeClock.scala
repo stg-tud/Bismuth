@@ -43,9 +43,9 @@ case class IntervalTreeClock(idTree: IdTree, eventTree: EventTree):
 object IntervalTreeClock {
   given NormalForm[IntervalTreeClock] with
       extension (itc: IntervalTreeClock)
-          def normalized: IntervalTreeClock =
-              val idTreeNormalized    = itc.idTree.normalized
-              val eventTreeNormalized = itc.eventTree.normalized
+          def normalize: IntervalTreeClock =
+              val idTreeNormalized    = itc.idTree.normalize
+              val eventTreeNormalized = itc.eventTree.normalize
               if (idTreeNormalized eq itc.idTree) && (eventTreeNormalized eq itc.eventTree) then {
                 itc
               } else {

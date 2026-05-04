@@ -1,10 +1,7 @@
 package rdts.time.codecs.internal
 
-import rdts.time.{EventTree, IdTree}
+import rdts.time.IdTree
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
 private[codecs] object IdTreeEncoder {

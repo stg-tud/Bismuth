@@ -128,8 +128,8 @@ class IdTreeTest extends ScalaCheckSuite {
   property("split produces normalized ids") {
     forAll(genIdTree) { id =>
       val (left, right) = id.split
-      assertEquals(left, left.normalized)
-      assertEquals(right, right.normalized)
+      assertEquals(left, left.normalize)
+      assertEquals(right, right.normalize)
     }
   }
 
@@ -177,22 +177,22 @@ class IdTreeTest extends ScalaCheckSuite {
 
   test("add returns a normalized id for non-overlapping id pair table") {
     nonOverlappingIdPairs.foreach { case (left, right) =>
-      assertEquals(left + right, (left + right).normalized)
-      assertEquals(right + left, (left + right).normalized)
+      assertEquals(left + right, (left + right).normalize)
+      assertEquals(right + left, (left + right).normalize)
     }
   }
 
   property("add returns a normalized id for generated non-overlapping id pairs") {
     forAll(genTwoNonOverlappingIdTrees) { case (left, right) =>
-      assertEquals(left + right, (left + right).normalized)
-      assertEquals(right + left, (left + right).normalized)
+      assertEquals(left + right, (left + right).normalize)
+      assertEquals(right + left, (left + right).normalize)
     }
   }
 
   property("add returns normalized ids for generated pairs") {
     forAll(genTwoNonOverlappingIdTrees) { (left, right) =>
       val sum = left + right
-      assertEquals(sum, sum.normalized)
+      assertEquals(sum, sum.normalize)
     }
   }
 
@@ -208,14 +208,14 @@ class IdTreeTest extends ScalaCheckSuite {
   test("split is the inverse of add for testIds") {
     testIds.foreach { id =>
       id.split match
-          case (l, r) => assertEquals(l + r, id.normalized)
+          case (l, r) => assertEquals(l + r, id.normalize)
     }
   }
 
   property("split is the inverse of add for generated ids") {
     forAll(genIdTree) { id =>
       id.split match
-          case (l, r) => assertEquals(l + r, id.normalized)
+          case (l, r) => assertEquals(l + r, id.normalize)
     }
   }
 
@@ -227,42 +227,42 @@ class IdTreeTest extends ScalaCheckSuite {
 
   test("add returns normalizedId reference when adding normalizedId + anonymousEquivalent") {
     forAll(genIdTree) { id =>
-      val normalizedId = id.normalized
+      val normalizedId = id.normalize
       assert((normalizedId + Branch(Branch(0, 0), Branch(Branch(0, Branch(0, Branch(0, 0))), 0))) eq normalizedId)
     }
   }
 
   property("add returns normalizedId reference when adding anonymous + normalizedId") {
     forAll(genIdTree) { id =>
-      val normalizedId = id.normalized
+      val normalizedId = id.normalize
       (normalizedId != anonymous) ==> assert((anonymous + normalizedId) eq normalizedId)
     }
   }
 
   test("NormalForm[IdTree] normalizes to 1 if Tree is all 1s") {
-    assertEquals(Leaf(1).normalized, Leaf(1))
-    assertEquals(Branch(1, 1).normalized, Leaf(1))
-    assertEquals(Branch(Branch(1, 1), 1).normalized, Leaf(1))
-    assertEquals(Branch(1, Branch(1, 1)).normalized, Leaf(1))
-    assertEquals(Branch(1, Branch(Branch(1, 1), 1)).normalized, Leaf(1))
+    assertEquals(Leaf(1).normalize, Leaf(1))
+    assertEquals(Branch(1, 1).normalize, Leaf(1))
+    assertEquals(Branch(Branch(1, 1), 1).normalize, Leaf(1))
+    assertEquals(Branch(1, Branch(1, 1)).normalize, Leaf(1))
+    assertEquals(Branch(1, Branch(Branch(1, 1), 1)).normalize, Leaf(1))
   }
 
   test("NormalForm[IdTree] normalizes to 0 if Tree is all 0s") {
-    assertEquals(Leaf(0).normalized, Leaf(0))
-    assertEquals(Branch(0, 0).normalized, Leaf(0))
-    assertEquals(Branch(Branch(0, 0), 0).normalized, Leaf(0))
-    assertEquals(Branch(0, Branch(0, 0)).normalized, Leaf(0))
-    assertEquals(Branch(0, Branch(Branch(0, 0), 0)).normalized, Leaf(0))
+    assertEquals(Leaf(0).normalize, Leaf(0))
+    assertEquals(Branch(0, 0).normalize, Leaf(0))
+    assertEquals(Branch(Branch(0, 0), 0).normalize, Leaf(0))
+    assertEquals(Branch(0, Branch(0, 0)).normalize, Leaf(0))
+    assertEquals(Branch(0, Branch(Branch(0, 0), 0)).normalize, Leaf(0))
   }
 
   test("NormalForm[IdTree] normalizes nested id tree correctly") {
     val id = Branch(Branch(1, 1), Branch(Branch(0, Branch(1, Branch(1, 1))), 0))
-    assertEquals(id.normalized, Branch(1, Branch(Branch(0, 1), 0)))
+    assertEquals(id.normalize, Branch(1, Branch(Branch(0, 1), 0)))
   }
 
   property("NormalForm[IdTree] provides equal ids according to PartialOrdering[IdTree]") {
     forAll(genIdTree) { id =>
-      val normalizedId = id.normalized
+      val normalizedId = id.normalize
       (normalizedId != id) ==>
       assertEquals(idPord.tryCompare(normalizedId, id), Some(0))
     }
@@ -270,8 +270,8 @@ class IdTreeTest extends ScalaCheckSuite {
 
   test("NormalForm[IdTree] returns this reference if already normalized") {
     forAll(genIdTree) { id =>
-      val normalizedId = id.normalized
-      assert(normalizedId eq normalizedId.normalized)
+      val normalizedId = id.normalize
+      assert(normalizedId eq normalizedId.normalize)
     }
   }
 
@@ -296,7 +296,7 @@ class IdTreeTest extends ScalaCheckSuite {
   }
 
   private def partialOrderProperties(id: IdTree): Unit = {
-    val normalizedId = id.normalized
+    val normalizedId = id.normalize
     if normalizedId != seed then {
       assertEquals(idPord.lteq(seed, id), false)
     } else {

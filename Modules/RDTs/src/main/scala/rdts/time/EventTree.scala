@@ -39,7 +39,7 @@ sealed trait EventTree:
             n1,
             l1 `join` (l2 `lift` (n2 - n1)),
             r1 `join` (r2 `lift` (n2 - n1))
-          ).normalized
+          ).normalize
 
     @throws[IllegalArgumentException]("when the id is anonymous")
     def increment(id: IdTree): EventTree = {
@@ -47,8 +47,8 @@ sealed trait EventTree:
         throw IllegalArgumentException("Cannot increment an EventTree by the anonymous IdTree")
       }
 
-      val normalizedId        = id.normalized
-      val normalizedEventTree = this.normalized
+      val normalizedId        = id.normalize
+      val normalizedEventTree = this.normalize
 
       val filledEventTree = normalizedEventTree.fill(normalizedId)
 
@@ -79,7 +79,7 @@ sealed trait EventTree:
               n,
               elFilled,
               erFilled
-            ).normalized
+            ).normalize
           }
         case (IdTree.Branch(il, IdTree.Leaf(1)), e @ EventTree.Branch(n, el, er)) =>
           val elFilled = el.fill(il)
@@ -91,7 +91,7 @@ sealed trait EventTree:
               n,
               elFilled,
               erFilled
-            ).normalized
+            ).normalize
           }
         case (IdTree.Branch(il, ir), e @ EventTree.Branch(n, el, er)) =>
           val elFilled = el.fill(il)
@@ -103,7 +103,7 @@ sealed trait EventTree:
               n,
               elFilled,
               erFilled
-            ).normalized
+            ).normalize
           }
 
     private[time] def grow(id: IdTree): (EventTree, Int) = (id, this) match
@@ -123,7 +123,7 @@ sealed trait EventTree:
           if elGrowCost < erGrowCost then (Branch(n, elGrown, er), elGrowCost + 1)
           else (Branch(n, el, erGrown), erGrowCost + 1)
         case (IdTree.Leaf(1), ev) =>
-          ev.normalized.fill(IdTree.Leaf(1)).grow(IdTree.Leaf(1))
+          ev.normalize.fill(IdTree.Leaf(1)).grow(IdTree.Leaf(1))
         case (IdTree.Leaf(0), _) =>
           throw IllegalArgumentException("Cannot grow by anonymous id")
 
@@ -167,10 +167,10 @@ object EventTree {
 
   given NormalForm[EventTree] with
       extension (tree: EventTree)
-          def normalized: EventTree = tree match {
+          def normalize: EventTree = tree match {
             case Leaf(_)         => tree // Already normalized
             case Branch(n, l, r) =>
-              val (lNorm, rNorm) = (l.normalized, r.normalized)
+              val (lNorm, rNorm) = (l.normalize, r.normalize)
               val min            = (lNorm, rNorm) match {
                 case (Leaf(m1), Leaf(m2)) if m1 == m2     => return Leaf(n + m1)
                 case (Leaf(m1), Leaf(m2))                 => Math.min(m1, m2)
