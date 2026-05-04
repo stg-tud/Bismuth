@@ -1,25 +1,19 @@
 package com.github.ckuessner
 package causality
 
-import causality.EventTree.{Branch, Leaf, seed, given}
-import causality.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
-import causality.IdTreeGenerators.genIdTree
-
+import com.github.ckuessner.causality.EventTree.{Branch, Leaf, seed, given}
+import com.github.ckuessner.causality.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
+import com.github.ckuessner.causality.IdTreeGenerators.genIdTree
+import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.matchers.should.Matchers.shouldBe
-import org.scalatest.prop.{TableFor2, TableFor3}
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import org.scalacheck.Prop.*
 
-import scala.annotation.tailrec
 import scala.language.implicitConversions
 
-class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks {
+class EventTreeTest extends FunSuite with ScalaCheckSuite {
   private val eventTreePord = EventTree.partialOrdering
 
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    PropertyCheckConfiguration(maxDiscardedFactor = 20.0)
+  override def scalaCheckTestParameters = super.scalaCheckTestParameters.withMaxDiscardRatio(20)
 
   final def isNormalized(eventTree: EventTree): Boolean = eventTree match {
     case Leaf(_)                         => true
@@ -30,115 +24,115 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     case _                               => false
   }
 
-  "Leaf" should "only accept positive values" in {
-    assertThrows[IllegalArgumentException](Leaf(-1))
-    assertThrows[IllegalArgumentException](Leaf(-401))
+  test("Leaf only accepts positive values") {
+    intercept[IllegalArgumentException](Leaf(-1))
+    intercept[IllegalArgumentException](Leaf(-401))
   }
 
-  "Branch" should "only accept positive values" in {
-    assertThrows[IllegalArgumentException](Branch(-1, 23, 4))
-    assertThrows[IllegalArgumentException](Branch(-1234, 0, 0))
+  test("Branch only accepts positive values") {
+    intercept[IllegalArgumentException](Branch(-1, 23, 4))
+    intercept[IllegalArgumentException](Branch(-1234, 0, 0))
   }
 
-  "min" should "work for Leaf(n)" in {
-    assert(seed.min == 0)
-    assert(Leaf(1).min == 1)
-    assert(Leaf(42).min == 42)
+  test("min works for Leaf(n)") {
+    assertEquals(seed.min, 0)
+    assertEquals(Leaf(1).min, 1)
+    assertEquals(Leaf(42).min, 42)
   }
 
-  it should "work for branch" in {
-    assert(Branch(2, 1, 2).min == 3)
-    assert(Branch(2, Branch(1, 2, 4), 2).min == 4)
+  test("min works for Branch") {
+    assertEquals(Branch(2, 1, 2).min, 3)
+    assertEquals(Branch(2, Branch(1, 2, 4), 2).min, 4)
   }
 
-  "max" should "work for Leaf(n)" in {
-    assert(seed.max == 0)
-    assert(Leaf(1).max == 1)
-    assert(Leaf(42).max == 42)
+  test("max works for Leaf(n)") {
+    assertEquals(seed.max, 0)
+    assertEquals(Leaf(1).max, 1)
+    assertEquals(Leaf(42).max, 42)
   }
 
-  it should "work for branch" in {
-    assert(Branch(2, 1, 2).max == 4)
-    assert(Branch(2, Branch(1, 2, 4), 2).max == 7)
+  test("max works for Branch") {
+    assertEquals(Branch(2, 1, 2).max, 4)
+    assertEquals(Branch(2, Branch(1, 2, 4), 2).max, 7)
   }
 
-  "lift" should "work for Leaf" in {
-    assert(Leaf(1).lift(1) == Leaf(2))
-    assert(Leaf(2).lift(5) == Leaf(7))
+  test("lift works for Leaf") {
+    assertEquals(Leaf(1).lift(1), Leaf(2))
+    assertEquals(Leaf(2).lift(5), Leaf(7))
   }
 
-  it should "work for simple Branch" in {
-    assert(Branch(1, 2, 2).lift(1) == Branch(2, 2, 2))
-    assert(Branch(7, 0, 3).lift(4) == Branch(11, 0, 3))
+  test("lift works for simple Branch") {
+    assertEquals(Branch(1, 2, 2).lift(1), Branch(2, 2, 2))
+    assertEquals(Branch(7, 0, 3).lift(4), Branch(11, 0, 3))
   }
 
-  it should "work for nested Branch" in {
-    assert(Branch(1, Branch(2, 0, 4), 2).lift(1) == Branch(2, Branch(2, 0, 4), 2))
-    assert(Branch(7, 0, Branch(2, 0, 4)).lift(4) == Branch(11, 0, Branch(2, 0, 4)))
+  test("lift works for nested Branch") {
+    assertEquals(Branch(1, Branch(2, 0, 4), 2).lift(1), Branch(2, Branch(2, 0, 4), 2))
+    assertEquals(Branch(7, 0, Branch(2, 0, 4)).lift(4), Branch(11, 0, Branch(2, 0, 4)))
   }
 
-  "sink" should "work for Leaf" in {
-    assert(Leaf(1).sink(1) == Leaf(0))
-    assert(Leaf(5).sink(2) == Leaf(3))
+  test("sink works for Leaf") {
+    assertEquals(Leaf(1).sink(1), Leaf(0))
+    assertEquals(Leaf(5).sink(2), Leaf(3))
   }
 
-  it should "work for Branch" in {
-    assert(Branch(2, 4, 1).sink(2) == Branch(0, 4, 1))
-    assert(Branch(2, 5, Branch(1, 2, 3)).sink(2) == Branch(0, 5, Branch(1, 2, 3)))
+  test("sink works for Branch") {
+    assertEquals(Branch(2, 4, 1).sink(2), Branch(0, 4, 1))
+    assertEquals(Branch(2, 5, Branch(1, 2, 3)).sink(2), Branch(0, 5, Branch(1, 2, 3)))
   }
 
-  it should "refuse sinking beyond 0" in
-  assertThrows[IllegalArgumentException](Leaf(1).sink(2))
-
-  "join" should "work for two Leafs" in {
-    (Leaf(1) `join` Leaf(1)) shouldBe Leaf(1)
-    (Leaf(42) `join` Leaf(0)) shouldBe Leaf(42)
-    (Leaf(0) `join` Leaf(1)) shouldBe Leaf(1)
+  test("sink refuses sinking beyond 0") {
+    intercept[IllegalArgumentException](Leaf(1).sink(2))
   }
 
-  it should "work for Leaf and Branch" in {
-    (Leaf(42) `join` Branch(2, 4, 5)) shouldBe Leaf(42)
-    (Branch(2, 4, 5) `join` Leaf(42)) shouldBe Leaf(42)
+  test("join works for two Leafs") {
+    assertEquals(Leaf(1) `join` Leaf(1), Leaf(1))
+    assertEquals(Leaf(42) `join` Leaf(0), Leaf(42))
+    assertEquals(Leaf(0) `join` Leaf(1), Leaf(1))
   }
 
-  it should "produce normalized Ids" in {
+  test("join works for Leaf and Branch") {
+    assertEquals(Leaf(42) `join` Branch(2, 4, 5), Leaf(42))
+    assertEquals(Branch(2, 4, 5) `join` Leaf(42), Leaf(42))
+  }
+
+  test("join produces normalized Ids") {
     forAll(genEventTree, genEventTreeLeaf) { (ev1, ev2) =>
       val joined = ev1 `join` ev2
-      joined shouldBe joined.normalized
+      assertEquals(joined, joined.normalized)
     }
   }
 
-  it should "be commutative" in {
+  test("join is commutative") {
     forAll(genEventTree, genEventTree) { (ev1, ev2) =>
-      (ev1 `join` ev2) shouldBe (ev2 `join` ev1)
+      assertEquals(ev1 `join` ev2, ev2 `join` ev1)
     }
   }
 
-  "fill" should "return same reference if not fillable" in {
-    val eventsAndIds = Table(
-      ("eventTree", "idTree"),
-      (Leaf(1), IdTree.Leaf(0)),
-      (Leaf(0), IdTree.Leaf(1)),
-      (Leaf(42), IdTree.Leaf(1)),
-      (Branch(0, 1, 0), IdTree.Branch(0, IdTree.Branch(1, 0))),
-      (Branch(1, 3, 0), IdTree.Leaf(0)),
-      (Branch(1, 0, 3), IdTree.Leaf(0)),
-      (Branch(1, 3, 0), IdTree.Branch(1, 0)),
-      (Branch(1, 0, 3), IdTree.Branch(0, 1)),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(0, 1)),
-      (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0)),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0)),
-      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, IdTree.Branch(1, 0))),
-      (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0)))
-    )
-
-    forAll(eventsAndIds) { (ev, id) =>
+  for (ev, id) <- List(
+        // ("eventTree", "idTree"),
+        (Leaf(1), IdTree.Leaf(0)),
+        (Leaf(0), IdTree.Leaf(1)),
+        (Leaf(42), IdTree.Leaf(1)),
+        (Branch(0, 1, 0), IdTree.Branch(0, IdTree.Branch(1, 0))),
+        (Branch(1, 3, 0), IdTree.Leaf(0)),
+        (Branch(1, 0, 3), IdTree.Leaf(0)),
+        (Branch(1, 3, 0), IdTree.Branch(1, 0)),
+        (Branch(1, 0, 3), IdTree.Branch(0, 1)),
+        (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(0, 1)),
+        (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0)),
+        (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0)),
+        (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, IdTree.Branch(1, 0))),
+        (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0)))
+      )
+  do {
+    test(s"ev.fill(id) returns same reference for ev=$ev, id=$id") {
       assert(ev eq ev.fill(id))
     }
   }
 
-  val fillTestTable: TableFor3[Branch, IdTree, EventTree] = Table(
-    ("eventTree", "idTree", "expectedFilledEventTree"),
+  private val fillTestTable = List(
+    // ("eventTree", "idTree", "expectedFilledEventTree"),
     (Branch(1, 3, 0), IdTree.Leaf(1), Leaf(4)),
     (Branch(1, 0, 3), IdTree.Leaf(1), Leaf(4)),
     (Branch(1, Branch(0, 0, 4), 4), IdTree.Leaf(1), Leaf(5)),
@@ -177,61 +171,58 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     )
   )
 
-  it should "simplify the EventTree if possible" in {
-    forAll(fillTestTable) { (ev, id, expectedEvFilled) =>
+  for (ev, id, expectedEvFilled) <- fillTestTable do {
+    test(s"fill simplifies the EventTree for ev=$ev, id=$id") {
       val evFilled = ev.fill(id)
-      evFilled shouldBe expectedEvFilled
-      eventTreePord.tryCompare(evFilled, ev) shouldBe Some(1)
-      eventTreePord.tryCompare(ev, evFilled) shouldBe Some(-1)
+      assertEquals(evFilled, expectedEvFilled)
+      assertEquals(eventTreePord.tryCompare(evFilled, ev), Some(1))
+      assertEquals(eventTreePord.tryCompare(ev, evFilled), Some(-1))
     }
   }
 
-  it should "return same reference if equal to EventTree for generated EventTree and Id" in {
+  test("fill returns same reference if equal to EventTree for generated EventTree and Id") {
     forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
       val evFilled = ev.fill(id)
-      whenever(evFilled == ev) {
-        assert(evFilled eq ev)
+      evFilled == ev ==> assert(evFilled eq ev)
+    }
+  }
+
+  test("fill produces a greater EventTree according to PartialOrdering") {
+    forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
+      val evFilled = ev.fill(id)
+      !(evFilled eq ev) ==> {
+        assert(isNormalized(evFilled))
+        assertEquals(eventTreePord.tryCompare(evFilled, ev), Some(1))
+        assertEquals(eventTreePord.tryCompare(ev, evFilled), Some(-1))
       }
     }
   }
 
-  it should "be greater according to PartialOrdering after successful fill" in {
-    forAll(genEventTree.map(_.normalized), genIdTree.suchThat(!_.isAnonymous).map(_.normalized)) { (ev, id) =>
-      val evFilled = ev.fill(id)
-      whenever(!(evFilled eq ev)) {
-        isNormalized(evFilled) shouldBe true // Assumption of PartialOrdering
-        eventTreePord.tryCompare(evFilled, ev) shouldBe Some(1)
-        eventTreePord.tryCompare(ev, evFilled) shouldBe Some(-1)
-      }
-    }
-  }
-
-  "grow" should "work for non-fillable examples and IdTree with single 1-Leaf" in {
-    val eventsAndIds = Table(
-      ("eventTree", "idTree", "expectedGrownEventTree"),
-      (Leaf(0), IdTree.Leaf(1), Leaf(1)),
-      (Leaf(42), IdTree.Leaf(1), Leaf(43)),
-      (Branch(1, 3, 0), IdTree.Branch(1, 0), Branch(1, 4, 0)),
-      (Branch(1, 0, 3), IdTree.Branch(0, 1), Branch(1, 0, 4)),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(0, 1), Branch(1, Branch(0, 3, 0), 4)),
-      (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0), Branch(1, 4, Branch(0, 3, 0))),
-      (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0), Branch(1, Branch(0, 4, 0), 3)),
-      (
-        Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
-        IdTree.Branch(0, IdTree.Branch(1, 0)),
-        Branch(0, Branch(0, 0, 2), Branch(0, 3, 0))
+  for (ev, id, expectedEv) <- List(
+        // ("eventTree", "idTree", "expectedGrownEventTree"),
+        (Leaf(0), IdTree.Leaf(1), Leaf(1)),
+        (Leaf(42), IdTree.Leaf(1), Leaf(43)),
+        (Branch(1, 3, 0), IdTree.Branch(1, 0), Branch(1, 4, 0)),
+        (Branch(1, 0, 3), IdTree.Branch(0, 1), Branch(1, 0, 4)),
+        (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(0, 1), Branch(1, Branch(0, 3, 0), 4)),
+        (Branch(1, 3, Branch(0, 3, 0)), IdTree.Branch(1, 0), Branch(1, 4, Branch(0, 3, 0))),
+        (Branch(1, Branch(0, 3, 0), 3), IdTree.Branch(IdTree.Branch(1, 0), 0), Branch(1, Branch(0, 4, 0), 3)),
+        (
+          Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)),
+          IdTree.Branch(0, IdTree.Branch(1, 0)),
+          Branch(0, Branch(0, 0, 2), Branch(0, 3, 0))
+        )
       )
-    )
-
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.grow(id)._1 shouldBe expectedEv
-      ev.increment(id) shouldBe expectedEv
+  do {
+    test(s"grow works for non-fillable examples and IdTree with single 1-Leaf for $ev, $id") {
+      assertEquals(ev.grow(id)._1, expectedEv)
+      assertEquals(ev.increment(id), expectedEv)
     }
   }
 
-  it should "work when needing to split a Leaf" in {
-    val eventsAndIds = Table(
-      ("eventTree", "idTree", "expectedGrownEventTree"),
+  test("grow works when needing to split a Leaf") {
+    val eventsAndIds = List(
+      // ("eventTree", "idTree", "expectedGrownEventTree"),
       (Leaf(0), IdTree.Branch(0, 1), Branch(0, 0, 1)),
       (Leaf(0), IdTree.Branch(1, 0), Branch(0, 1, 0)),
       (Leaf(1), IdTree.Branch(0, 1), Branch(1, 0, 1)),
@@ -240,24 +231,22 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
       (Branch(42, 99, 0), IdTree.Branch(IdTree.Branch(1, 0), 0), Branch(42, Branch(99, 1, 0), 0))
     )
 
-    // Test if test inputs are not fillable
-    forAll(eventsAndIds) { (ev, id, _) =>
-      ev.fill(id) shouldBe ev
+    eventsAndIds.foreach { (ev, id, _) =>
+      assertEquals(ev.fill(id), ev)
     }
 
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.grow(id)._1 shouldBe expectedEv
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
+      assertEquals(ev.grow(id)._1, expectedEv)
     }
 
-    // Sanity check
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.increment(id) shouldBe expectedEv
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
+      assertEquals(ev.increment(id), expectedEv)
     }
   }
 
-  it should "prefer increment closest to root for IdTree with multiple 1-leafs" in {
-    val eventsAndIds = Table(
-      ("eventTree", "idTree", "expectedGrownEventTree"),
+  test("grow prefers increment closest to root for IdTree with multiple 1-leafs") {
+    val eventsAndIds = List(
+      // ("eventTree", "idTree", "expectedGrownEventTree"),
       // Two 1-leafs
       (
         Branch(0, 0, Branch(0, 0, 1)),
@@ -301,24 +290,24 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     )
 
     // Test if inputs are not fillable and expectedEv is normalized
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.fill(id) shouldBe ev
-      isNormalized(expectedEv) shouldBe true
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
+      assertEquals(ev, ev.fill(id))
+      assert(isNormalized(expectedEv))
     }
 
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.grow(id)._1 shouldBe expectedEv
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
+      assertEquals(ev.grow(id)._1, expectedEv)
     }
 
     // Also check if increment is correct
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.increment(id) shouldBe expectedEv
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
+      assertEquals(ev.increment(id), expectedEv)
     }
   }
 
-  it should "prefer increments over branching" in {
-    val eventsAndIds = Table(
-      ("eventTree", "idTree", "expectedGrownEventTree"),
+  test("grow prefers increments over branching") {
+    val eventsAndIds = List(
+      // ("eventTree", "idTree", "expectedGrownEventTree"),
       (
         Branch(0, Branch(0, 0, Branch(0, 0, 1)), Branch(0, 0, 1)),
         IdTree.Branch(IdTree.Branch(0, IdTree.Branch(0, 1)), IdTree.Branch(0, 1)),
@@ -336,77 +325,80 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
       )
     )
 
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
       assert(isNormalized(ev))
-      assert(id.normalized == id)
+      assertEquals(id.normalized, id)
       assert(isNormalized(expectedEv))
     }
 
-    forAll(eventsAndIds) { (ev, id, expectedEv) =>
-      ev.grow(id)._1 shouldBe expectedEv
+    eventsAndIds.foreach { (ev, id, expectedEv) =>
+      assertEquals(ev.grow(id)._1, expectedEv)
     }
   }
 
-  it should "return EventTree that is larger according to PartialOrdering" in {
+  test("grow returns EventTree that is larger according to PartialOrdering") {
     forAll(genEventTree.map(_.normalized), genIdTree.map(_.normalized).suchThat(!_.isAnonymous)) { (ev, id) =>
       val evFilled = ev.fill(id)
-      eventTreePord.tryCompare(evFilled.grow(id)._1, evFilled) shouldBe Some(1)
-      eventTreePord.tryCompare(evFilled, evFilled.grow(id)._1) shouldBe Some(-1)
+      assertEquals(eventTreePord.tryCompare(evFilled.grow(id)._1, evFilled), Some(1))
+      assertEquals(eventTreePord.tryCompare(evFilled, evFilled.grow(id)._1), Some(-1))
     }
   }
 
-  "increment" should "return normalized EventTree that is greater according to PartialOrdering" in {
+  test("increment returns normalized EventTree that is greater according to PartialOrdering") {
     forAll(genEventTree, genIdTree.suchThat(!_.isAnonymous)) { (ev, id) =>
       val incEv = ev.increment(id)
-      incEv shouldBe incEv.normalized
-      eventTreePord.tryCompare(incEv, ev) shouldBe Some(1)
-      eventTreePord.tryCompare(ev, incEv) shouldBe Some(-1)
+      assertEquals(incEv, incEv.normalized)
+      assertEquals(eventTreePord.tryCompare(incEv, ev), Some(1))
+      assertEquals(eventTreePord.tryCompare(ev, incEv), Some(-1))
 
       val incIncEv = incEv.increment(id)
-      incIncEv shouldBe incIncEv.normalized
-      eventTreePord.tryCompare(incIncEv, ev) shouldBe Some(1)
-      eventTreePord.tryCompare(incIncEv, incEv) shouldBe Some(1)
-      eventTreePord.tryCompare(incEv, incIncEv) shouldBe Some(-1)
+      assertEquals(incIncEv, incIncEv.normalized)
+      assertEquals(eventTreePord.tryCompare(incIncEv, ev), Some(1))
+      assertEquals(eventTreePord.tryCompare(incIncEv, incEv), Some(1))
+      assertEquals(eventTreePord.tryCompare(incEv, incIncEv), Some(-1))
     }
   }
 
-  it should "throw an Exception when passing anonymous id" in {
+  test("increment throws an exception when passing anonymous id") {
     forAll(genEventTree) { ev =>
-      assertThrows[IllegalArgumentException](ev.increment(IdTree.anonymous))
-      assertThrows[IllegalArgumentException](ev.increment(IdTree.anonymous.split._1))
-      assertThrows[IllegalArgumentException](ev.increment(IdTree.anonymous.split._2))
+      intercept[IllegalArgumentException](ev.increment(IdTree.anonymous))
+      intercept[IllegalArgumentException](ev.increment(IdTree.anonymous.split._1))
+      intercept[IllegalArgumentException](ev.increment(IdTree.anonymous.split._2)): Unit
     }
   }
 
-  it should "only fill event tree if possible" in {
-    Branch(0, 1, 0).increment(1) shouldBe Leaf(1)
-    Branch(0, 1, 0).increment(IdTree.Branch(0, 1)) shouldBe Leaf(1)
-    Branch(0, Branch(0, 1, 1), 0).increment(IdTree.Branch(0, 1)) shouldBe Leaf(1)
+  test("increment only fills event tree if possible") {
+    assertEquals(Branch(0, 1, 0).increment(1), Leaf(1))
+    assertEquals(Branch(0, 1, 0).increment(IdTree.Branch(0, 1)), Leaf(1))
+    assertEquals(Branch(0, Branch(0, 1, 1), 0).increment(IdTree.Branch(0, 1)), Leaf(1))
 
-    Branch(42, Branch(0, 0, 1), Branch(0, 0, 1))
-      .increment(
-        IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0))
-      ) shouldBe Branch(42, Branch(0, 0, 1), 1)
+    assertEquals(
+      Branch(42, Branch(0, 0, 1), Branch(0, 0, 1))
+        .increment(
+          IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0))
+        ),
+      Branch(42, Branch(0, 0, 1), 1)
+    )
   }
 
-  it should "only fill event tree for successful fill examples" in {
-    forAll(fillTestTable) { (ev, id, _) =>
-      ev.increment(id) shouldBe ev.fill(id)
+  test("increment only fills event tree for successful fill examples") {
+    fillTestTable.foreach { (ev, id, _) =>
+      assertEquals(ev.increment(id), ev.fill(id))
     }
   }
 
-  it should "grow event tree if fill not possible and event tree not normalized" in {
-    Branch(0, 1, 1).increment(1) shouldBe Leaf(2)
-    Branch(1, 1, 1).increment(1) shouldBe Leaf(3)
+  test("increment grows event tree if fill not possible and event tree not normalized") {
+    assertEquals(Branch(0, 1, 1).increment(1), Leaf(2))
+    assertEquals(Branch(1, 1, 1).increment(1), Leaf(3))
   }
 
-  it should "grow event tree if fill not possible" in {
-    Leaf(1).increment(1) shouldBe Leaf(2)
-    Branch(0, 1, Branch(0, 1, 0)).increment(IdTree.Branch(1, 0)) shouldBe Branch(0, 2, Branch(0, 1, 0))
+  test("increment grows event tree if fill not possible") {
+    assertEquals(Leaf(1).increment(1), Leaf(2))
+    assertEquals(Branch(0, 1, Branch(0, 1, 0)).increment(IdTree.Branch(1, 0)), Branch(0, 2, Branch(0, 1, 0)))
   }
 
-  val incomparableEventTrees: TableFor2[EventTree, EventTree] = Table(
-    ("ev1", "ev2"),
+  private val incomparableEventTrees = List(
+    // ("ev1", "ev2"),
     (Branch(0, 1, 0), Branch(0, 0, 1)),
     (Branch(2, 1, 0), Branch(2, 0, 1)),
     (Branch(2, 1, Branch(0, 0, 1)), Branch(2, 0, 1)),
@@ -417,8 +409,8 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     (Leaf(22), Branch(21, 0, 2))
   )
 
-  val leftSmallerEventTrees: TableFor2[EventTree, EventTree] = Table(
-    ("ev1", "ev2"),
+  private val leftSmallerEventTrees = List(
+    // ("ev1", "ev2"),
     (Leaf(0), Leaf(1)),
     (Leaf(0), Leaf(42)),
     (Leaf(21), Leaf(42)),
@@ -432,102 +424,100 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
     (Branch(21, Branch(20, 1, Branch(0, 0, 2)), Branch(0, 1, 0)), Branch(21, Branch(21, 0, 1), Branch(0, 1, 0))),
   )
 
-  "PartialOrderingEventTree test data" should "be normalized" in {
-    // Assumption of PartialOrdering
-    forAll(incomparableEventTrees) { (ev1, ev2) =>
-      ev1 shouldBe ev1.normalized
-      ev2 shouldBe ev2.normalized
+  test("PartialOrderingEventTree test data are normalized") {
+    incomparableEventTrees.foreach { (ev1, ev2) =>
+      assertEquals(ev1, ev1.normalized)
+      assertEquals(ev2, ev2.normalized)
     }
 
-    forAll(leftSmallerEventTrees) { (ev1, ev2) =>
-      ev1 shouldBe ev1.normalized
-      ev2 shouldBe ev2.normalized
-    }
-  }
-
-  "PartialOrderingEventTree.lteq" should "work for incomparable EventTrees" in {
-    forAll(incomparableEventTrees) { (ev1, ev2) =>
-      ev1 <= ev2 shouldBe false
-      ev2 <= ev1 shouldBe false
+    leftSmallerEventTrees.foreach { (ev1, ev2) =>
+      assertEquals(ev1, ev1.normalized)
+      assertEquals(ev2, ev2.normalized)
     }
   }
 
-  it should "true when ev1 == ev2" in {
+  test("PartialOrderingEventTree.lteq works for incomparable EventTrees") {
+    incomparableEventTrees.foreach { (ev1, ev2) =>
+      assert(!(ev1 <= ev2))
+      assert(!(ev2 <= ev1))
+    }
+  }
+
+  test("PartialOrderingEventTree.lteq is true when ev1 == ev2") {
     forAll(genEventTree.map(_.normalized)) { ev =>
-      eventTreePord.lteq(ev, ev) shouldBe true
+      assert(eventTreePord.lteq(ev, ev))
     }
   }
 
-  it should "be true when left smaller right and vice versa" in {
-    forAll(leftSmallerEventTrees) { (ev1, ev2) =>
+  test("PartialOrderingEventTree.lteq is true when left smaller right and vice versa") {
+    leftSmallerEventTrees.foreach { (ev1, ev2) =>
       assert(ev1 <= ev2)
       assert(!(ev2 <= ev1))
     }
   }
 
-  "PartialOrderingEventTree.tryCompare" should "work for incomparable EventTrees" in {
-    forAll(incomparableEventTrees) { (ev1, ev2) =>
-      eventTreePord.tryCompare(ev1, ev2) shouldBe None
-      eventTreePord.tryCompare(ev2, ev1) shouldBe None
+  test("PartialOrderingEventTree.tryCompare works for incomparable EventTrees") {
+    incomparableEventTrees.foreach { (ev1, ev2) =>
+      assertEquals(eventTreePord.tryCompare(ev1, ev2), None)
+      assertEquals(eventTreePord.tryCompare(ev2, ev1), None)
     }
   }
 
-  it should "be true when left smaller right and vice versa" in {
-    forAll(leftSmallerEventTrees) { (ev1, ev2) =>
-      eventTreePord.tryCompare(ev1, ev2) shouldBe Some(-1)
-      eventTreePord.tryCompare(ev2, ev1) shouldBe Some(1)
+  test("PartialOrderingEventTree.tryCompare is true when left smaller right and vice versa") {
+    leftSmallerEventTrees.foreach { (ev1, ev2) =>
+      assertEquals(eventTreePord.tryCompare(ev1, ev2), Some(-1))
+      assertEquals(eventTreePord.tryCompare(ev2, ev1), Some(1))
     }
   }
 
-  it should "be Some(0) when a == b" in {
+  test("PartialOrderingEventTree.tryCompare is Some(0) when a == b") {
     forAll(genEventTree) { ev =>
-      eventTreePord.tryCompare(ev, ev) shouldBe Some(0)
+      assertEquals(eventTreePord.tryCompare(ev, ev), Some(0))
     }
   }
 
-  it should "be Some(1) or Some(-1) when a <= b xor b <= a" in {
+  test("PartialOrderingEventTree.tryCompare is Some(1) or Some(-1) when a <= b xor b <= a") {
     forAll(genEventTree, genEventTree) { (left, right) =>
-      whenever(left <= right ^ right <= left) {
+      ((left <= right) ^ (right <= left)) ==> {
         if left <= right then {
-          eventTreePord.tryCompare(left, right) shouldBe Some(-1)
-          eventTreePord.tryCompare(right, left) shouldBe Some(1)
+          assertEquals(eventTreePord.tryCompare(left, right), Some(-1))
+          assertEquals(eventTreePord.tryCompare(right, left), Some(1))
         } else {
-          eventTreePord.tryCompare(left, right) shouldBe Some(1)
-          eventTreePord.tryCompare(right, left) shouldBe Some(-1)
+          assertEquals(eventTreePord.tryCompare(left, right), Some(1))
+          assertEquals(eventTreePord.tryCompare(right, left), Some(-1))
         }
       }
     }
   }
 
-  "NormalForm[EventTree]" should "work for Leaves" in {
-    forAll(Gen.posNum[Int]) { (n: Int) =>
-      Leaf(n).normalized shouldBe Leaf(n)
+  test("NormalForm[EventTree] works for Leaves") {
+    forAll(Gen.posNum[Int]) { n =>
+      assertEquals(Leaf(n).normalized, Leaf(n))
     }
   }
 
-  it should "work for Branches" in {
+  test("NormalForm[EventTree] works for Branches") {
     forAll(Gen.posNum[Int], Gen.posNum[Int], Gen.posNum[Int]) { (value: Int, leftLeafValue: Int, rightLeafValue: Int) =>
       val minLeaf             = Math.min(leftLeafValue, rightLeafValue)
-      val normalizedEventTree = Branch(
-        value,
-        Leaf(leftLeafValue),
-        Leaf(rightLeafValue)
-      ).normalized
+      val normalizedEventTree = Branch(value, Leaf(leftLeafValue), Leaf(rightLeafValue)).normalized
       if leftLeafValue == rightLeafValue then {
-        normalizedEventTree shouldBe Leaf(value + leftLeafValue)
+        assertEquals(normalizedEventTree, Leaf(value + leftLeafValue))
       } else {
-        normalizedEventTree shouldBe Branch(
-          value + minLeaf,
-          leftLeafValue - minLeaf,
-          rightLeafValue - minLeaf
+        assertEquals(
+          normalizedEventTree,
+          Branch(
+            value + minLeaf,
+            leftLeafValue - minLeaf,
+            rightLeafValue - minLeaf
+          )
         )
       }
     }
   }
 
-  it should "work for nested examples" in {
-    val nestedEventTrees = Table(
-      ("event", "expectedNormalForm"),
+  test("NormalForm[EventTree] works for nested examples") {
+    val nestedEventTrees = List(
+      // ("event", "expectedNormalForm"),
       Branch(0, Branch(0, 0, 0), Leaf(0))           -> Leaf(0),
       Branch(2, Branch(8, 9, 10), Branch(3, 3, 10)) -> Branch(8, Branch(11, 0, 1), Branch(0, 0, 7)),
       Branch(2, Branch(8, 0, 10), Branch(3, 3, 10)) -> Branch(8, Branch(2, 0, 10), Branch(0, 0, 7)),
@@ -535,22 +525,22 @@ class EventTreeTest extends AnyFlatSpec with Matchers with ScalaCheckPropertyChe
       Branch(3, Branch(2, Branch(2, 2, 2), Leaf(4)), Branch(0, Leaf(6), Branch(0, 6, 6))) -> Leaf(9)
     )
 
-    forAll(nestedEventTrees) { (id, expectedNormalForm) =>
-      id.normalized shouldBe expectedNormalForm
+    nestedEventTrees.foreach { (ev, expectedNormalForm) =>
+      assertEquals(ev.normalized, expectedNormalForm)
     }
   }
 
-  it should "produce event trees that are normalized for generated EventTrees" in {
+  test("NormalForm[EventTree] produces normalized trees for generated EventTrees") {
     forAll(genEventTree) { ev =>
-      isNormalized(ev.normalized)
+      assert(isNormalized(ev.normalized))
     }
 
     forAll(genRandomEventTree) { ev =>
-      isNormalized(ev.normalized)
+      assert(isNormalized(ev.normalized))
     }
   }
 
-  it should "return `this` reference if already normalized" in {
+  test("NormalForm[EventTree] returns this reference if already normalized") {
     forAll(genEventTree) { evTree =>
       val normalizedEv = evTree.normalized
       assert(normalizedEv eq normalizedEv.normalized)

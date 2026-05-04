@@ -1,22 +1,21 @@
 package com.github.ckuessner
 package codecs
 
+import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import org.scalacheck.Prop.*
 
 import java.nio.ByteBuffer
 
-trait EncoderSpec[T: Encoder: Gen] extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks {
+trait EncoderSpec[T: {Encoder, Gen}] extends FunSuite with ScalaCheckSuite {
   val encoder: Encoder[T] = summon[Encoder[T]]
   val tGen: Gen[T]        = summon[Gen[T]]
 
-  "readArray" should "be the inverse of writeArray" in {
+  property("readArray should be the inverse of writeArray") {
     forAll(tGen) { (obj: T) =>
       val encoded = encoder.writeArray(obj)
       val decoded = encoder.readArray(encoded)
-      decoded shouldBe obj
+      assertEquals(decoded, obj)
     }
   }
 }
@@ -24,14 +23,14 @@ trait EncoderSpec[T: Encoder: Gen] extends AnyFlatSpec with Matchers with ScalaC
 trait FixedSizeEncoderSpec[T: FixedSizeEncoder] extends EncoderSpec[T] {
   val fixedSizeEncoder: FixedSizeEncoder[T] = summon[FixedSizeEncoder[T]]
 
-  "read" should "be the inverse of write" in {
+  property("read should be the inverse of write") {
     forAll(tGen) { (obj: T) =>
       val bufferSize = fixedSizeEncoder.BYTES
       val byteBuffer = ByteBuffer.allocate(bufferSize)
       encoder.write(obj, byteBuffer)
       val readOnlyBuffer = ByteBuffer.wrap(byteBuffer.array()).asReadOnlyBuffer()
       val decoded        = encoder.read(readOnlyBuffer, bufferSize)
-      decoded shouldBe obj
+      assertEquals(decoded, obj)
     }
   }
 }
@@ -39,14 +38,14 @@ trait FixedSizeEncoderSpec[T: FixedSizeEncoder] extends EncoderSpec[T] {
 trait VariableSizeEncoderSpec[T: VariableSizeEncoder] extends EncoderSpec[T] {
   val variableSizeEncoder: VariableSizeEncoder[T] = summon[VariableSizeEncoder[T]]
 
-  "read" should "be the inverse of write" in {
+  property("read should be the inverse of write") {
     forAll(tGen) { (obj: T) =>
       val bufferSize = variableSizeEncoder.BYTES(obj)
       val byteBuffer = ByteBuffer.allocate(bufferSize)
       encoder.write(obj, byteBuffer)
       val readOnlyBuffer = ByteBuffer.wrap(byteBuffer.array()).asReadOnlyBuffer()
       val decoded        = encoder.read(readOnlyBuffer, bufferSize)
-      decoded shouldBe obj
+      assertEquals(decoded, obj)
     }
   }
 }
