@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
-import causality.EventTree
-import codecs.internal.{EventTreeDecoder, EventTreeEncoder}
+import rdts.time.EventTree
+import rdts.time.codecs.internal.{EventTreeDecoder, EventTreeEncoder}
 
 import java.nio.ByteBuffer
 

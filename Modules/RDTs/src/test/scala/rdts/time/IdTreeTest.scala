@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.IdTree.{Branch, Leaf, anonymous, seed, given}
-import causality.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees, normalizedBaseCases}
+import rdts.time.IdTree.{Branch, Leaf, anonymous, seed, given}
+import rdts.time.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees, normalizedBaseCases}
 
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*

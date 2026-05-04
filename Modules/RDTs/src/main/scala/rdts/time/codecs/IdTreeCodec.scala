@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
-import causality.IdTree
-import codecs.internal.{IdTreeDecoder, IdTreeEncoder}
+import rdts.time.IdTree
+import rdts.time.codecs.internal.{IdTreeDecoder, IdTreeEncoder}
 
 import java.nio.ByteBuffer
 

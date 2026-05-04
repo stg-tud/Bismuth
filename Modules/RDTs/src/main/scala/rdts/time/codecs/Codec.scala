@@ -1,5 +1,4 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
 import java.nio.ByteBuffer
 import java.util.Base64

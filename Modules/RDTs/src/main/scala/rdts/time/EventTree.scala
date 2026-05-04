@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.EventTree.{Branch, Leaf, MAX_DEPTH, given}
-import causality.IdTree
+import rdts.time.EventTree.{Branch, Leaf, MAX_DEPTH, given}
+import rdts.time.IdTree
 
 import scala.annotation.targetName
 import scala.language.implicitConversions

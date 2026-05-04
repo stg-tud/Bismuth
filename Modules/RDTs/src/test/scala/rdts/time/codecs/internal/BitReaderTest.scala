@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
-import codecs.internal.BitReaderTest.{byte, int}
+import rdts.time.codecs.internal.BitReaderTest.{byte, int}
 import munit.FunSuite
 
 class BitReaderTest extends FunSuite {

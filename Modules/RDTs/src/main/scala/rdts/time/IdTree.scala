@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.IdTree.splitNormalizedIdTree
+import rdts.time.IdTree.splitNormalizedIdTree
 
 import scala.annotation.{tailrec, targetName}
 

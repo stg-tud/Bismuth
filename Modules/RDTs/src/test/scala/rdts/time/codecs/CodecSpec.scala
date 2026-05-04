@@ -1,5 +1,4 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
 import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen

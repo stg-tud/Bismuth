@@ -1,10 +1,9 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
-import causality.EventTree
-import causality.EventTree.{Branch, Leaf}
-import causality.EventTreeGenerators.genEventTree
-import codecs.{CodecSpec, EventTreeCodec}
+import rdts.time.EventTree
+import rdts.time.EventTree.{Branch, Leaf}
+import rdts.time.EventTreeGenerators.genEventTree
+import rdts.time.codecs.{CodecSpec, EventTreeCodec}
 
 class EventTreeCodecSpec extends CodecSpec[EventTree] {
   def printByteArray(array: Array[Byte]): Unit = {

@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.EventTree.given
+import rdts.time.EventTree.given
 
 case class IntervalTreeClock(idTree: IdTree, eventTree: EventTree):
     def fork: (IntervalTreeClock, IntervalTreeClock) =

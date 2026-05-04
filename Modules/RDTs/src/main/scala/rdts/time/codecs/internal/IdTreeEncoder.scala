@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
-import causality.{EventTree, IdTree}
+import rdts.time.{EventTree, IdTree}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

@@ -1,9 +1,8 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.EventTree.{Branch, Leaf, seed, given}
-import causality.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
-import causality.IdTreeGenerators.genIdTree
+import rdts.time.EventTree.{Branch, Leaf, seed, given}
+import rdts.time.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
+import rdts.time.IdTreeGenerators.genIdTree
 import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*

@@ -1,5 +1,4 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable

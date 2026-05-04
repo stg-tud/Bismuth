@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.EventTree.{Branch, Leaf, seed}
-import causality.IdTreeGenerators.genIdTree
+import rdts.time.EventTree.{Branch, Leaf, seed}
+import rdts.time.IdTreeGenerators.genIdTree
 import org.scalacheck.Gen
 
 object EventTreeGenerators {

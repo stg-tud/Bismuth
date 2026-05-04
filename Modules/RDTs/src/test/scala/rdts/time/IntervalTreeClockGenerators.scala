@@ -1,5 +1,4 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
 import org.scalacheck.Gen
 

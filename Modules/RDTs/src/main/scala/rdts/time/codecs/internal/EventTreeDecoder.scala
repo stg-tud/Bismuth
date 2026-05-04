@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
-import causality.EventTree
+import rdts.time.EventTree
 
 import scala.language.implicitConversions
 

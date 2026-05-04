@@ -1,5 +1,4 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
 private[internal] class BitReader(private val byteArray: Array[Byte]) {
   private var pos = 0

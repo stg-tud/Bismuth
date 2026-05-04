@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
-import causality.IdTree
-import codecs.CodecSpec
-import causality.IdTreeGenerators.genIdTree
+import rdts.time.IdTree
+import rdts.time.codecs.CodecSpec
+import rdts.time.IdTreeGenerators.genIdTree
 
 class IdTreeCodecSpec extends CodecSpec[IdTree] {}

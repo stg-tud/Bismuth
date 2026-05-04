@@ -1,8 +1,7 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
-import causality.IdTree
-import causality.IdTree.{Branch, Leaf}
+import rdts.time.IdTree
+import rdts.time.IdTree.{Branch, Leaf}
 
 import munit.FunSuite
 

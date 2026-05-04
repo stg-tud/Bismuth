@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
-import causality.IntervalTreeClock
+import rdts.time.IntervalTreeClock
 
 import java.nio.ByteBuffer
 

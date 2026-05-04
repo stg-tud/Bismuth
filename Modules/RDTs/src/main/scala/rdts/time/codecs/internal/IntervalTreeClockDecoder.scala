@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
-import causality.IntervalTreeClock
+import rdts.time.IntervalTreeClock
 
 private[codecs] object IntervalTreeClockDecoder {
   def decode(byteArray: Array[Byte]): IntervalTreeClock =

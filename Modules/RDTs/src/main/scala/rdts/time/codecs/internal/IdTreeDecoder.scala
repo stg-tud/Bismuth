@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package codecs.internal
+package rdts.time.codecs.internal
 
-import causality.IdTree
+import rdts.time.IdTree
 
 private[codecs] object IdTreeDecoder {
   def decode(byteArray: Array[Byte]): IdTree =

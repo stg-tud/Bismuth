@@ -1,7 +1,6 @@
-package com.github.ckuessner
-package causality
+package rdts.time
 
-import causality.IdTree.{Branch, Leaf, anonymous, seed}
+import rdts.time.IdTree.{Branch, Leaf, anonymous, seed}
 
 import org.scalacheck.{Arbitrary, Gen}
 

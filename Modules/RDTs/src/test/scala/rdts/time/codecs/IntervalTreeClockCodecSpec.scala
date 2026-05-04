@@ -1,9 +1,8 @@
-package com.github.ckuessner
-package codecs
+package rdts.time.codecs
 
-import causality.IntervalTreeClock
-import causality.IntervalTreeClockGenerators.genIntervalTreeClock
-import codecs.IntervalTreeClockCodec
+import rdts.time.IntervalTreeClock
+import rdts.time.IntervalTreeClockGenerators.genIntervalTreeClock
+import rdts.time.codecs.IntervalTreeClockCodec
 
 class IntervalTreeClockCodecSpec
     extends CodecSpec[IntervalTreeClock](using IntervalTreeClockCodec, genIntervalTreeClock) {}
