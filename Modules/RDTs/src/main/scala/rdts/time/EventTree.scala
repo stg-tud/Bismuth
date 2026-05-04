@@ -65,7 +65,7 @@ sealed trait EventTree:
       * @return
       *   The filled IdTree or this, if not filled
       */
-    private[causality] def fill(id: IdTree): EventTree = (id, this) match
+    private[time] def fill(id: IdTree): EventTree = (id, this) match
         case (IdTree.Leaf(0), e)                                                  => e // No change
         case (IdTree.Leaf(1), e @ Branch(_, _, _))                                => Leaf(e.max)
         case (_, e @ EventTree.Leaf(_))                                           => e // No change
@@ -106,7 +106,7 @@ sealed trait EventTree:
             ).normalized
           }
 
-    private[causality] def grow(id: IdTree): (EventTree, Int) = (id, this) match
+    private[time] def grow(id: IdTree): (EventTree, Int) = (id, this) match
         case (IdTree.Leaf(1), EventTree.Leaf(n)) => (Leaf(n + 1), 0)
         case (i, EventTree.Leaf(n))              =>
           val (eGrown, cost) = EventTree.Branch(n, 0, 0).grow(i)

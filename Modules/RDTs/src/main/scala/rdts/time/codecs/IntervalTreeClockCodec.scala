@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 
 given IntervalTreeClockCodec: Codec[IntervalTreeClock] with {
   override def write(itc: IntervalTreeClock, buffer: ByteBuffer): Unit =
-    buffer.put(writeArray(itc))
+    buffer.put(writeArray(itc)): Unit
 
   override def writeArray(itc: IntervalTreeClock): Array[Byte] =
     internal.IntervalTreeClockEncoder.encode(itc)

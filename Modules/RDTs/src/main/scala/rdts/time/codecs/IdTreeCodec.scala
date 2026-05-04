@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 
 given IdTreeCodec: Codec[IdTree] with {
   override def write(idTree: IdTree, buffer: ByteBuffer): Unit =
-    buffer.put(writeArray(idTree))
+    buffer.put(writeArray(idTree)): Unit
 
   override def writeArray(idTree: IdTree): Array[Byte] =
     IdTreeEncoder.encode(idTree).toByteArray

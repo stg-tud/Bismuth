@@ -46,7 +46,7 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
     }
   }
 
-  private inline def readNextBoundaryAlignedIntOfLength(numBits: Int): Int = {
+  private def readNextBoundaryAlignedIntOfLength(numBits: Int): Int = {
     var result: Int   = 0
     var remainingBits = numBits
 
