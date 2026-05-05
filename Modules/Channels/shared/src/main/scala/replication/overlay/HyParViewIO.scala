@@ -72,9 +72,6 @@ class HyParViewIO[State](
     deltaStorage: DeltaStorage[State],
     config: HyParViewIO.HyParViewConfig = HyParViewIO.HyParViewConfig.default,
     debug: Boolean = false,
-    onViewChanged: (HyParViewStateMachine, HyParViewStateMachine) => Unit = (_, _) => (),
-    onPeerRolesChanged: () => Unit = () => (),
-    onPeerDisconnected: Uid => Unit = (_: Uid) => (),
 ) {
 
   private val abort                     = Abort()
@@ -98,9 +95,6 @@ class HyParViewIO[State](
       membership.activeView.contains(peer) || membership.passiveView.contains(peer) || connecting.contains(peer),
       s"peer=${Uid.unwrap(peer)} $context"
     )
-
-  private def checkPeerKnownToPlumtree(peer: Uid, context: => String): Unit =
-    checkInvariant(plumtree.peerRoles.contains(Peer(peer)), s"peer=${Uid.unwrap(peer)} $context")
 
   private def ensurePlumtreePeerForActiveConnection(peer: Uid, context: => String): Unit =
     if membership.activeView.contains(peer) && !plumtree.peerRoles.contains(Peer(peer)) then {
@@ -183,7 +177,6 @@ class HyParViewIO[State](
     connecting.clear()
     pendingMembership.clear()
     val before = membership
-    onViewChanged(before, membership)
     abort.abort()
   }
 
@@ -319,8 +312,6 @@ class HyParViewIO[State](
       if connections.contains(peer.uid) then applyPlumtreeResult(plumtree.addPeer(Peer(peer.uid)))
       else startConnection(peer)
     }
-    if plumtreeBefore != plumtree then onPeerRolesChanged()
-    if before != after then onViewChanged(before, after)
   }
 
   private def cleanupInactiveConnection(peer: Uid, conn: Connection[Envelope[State]], reason: String): Unit = {
@@ -344,10 +335,8 @@ class HyParViewIO[State](
     connecting.remove(peer)
     pendingMembership.remove(peer)
     applyTransition(membership.peerLost(peer))
-    if plumtreeBefore != plumtree then onPeerRolesChanged()
     if hadMembership || conn.nonEmpty then {
       log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
-      onPeerDisconnected(peer)
     }
   }
 
@@ -463,7 +452,6 @@ class HyParViewIO[State](
   private def applyPlumtreeResult(result: PlumtreeBroadcast.Result[State]): Unit = {
     val rolesChanged = plumtree.peerRoles != result.state.peerRoles
     plumtree = result.state
-    if rolesChanged then onPeerRolesChanged()
     result.events.foreach(handlePlumtreeEvent)
   }
 
@@ -472,12 +460,6 @@ class HyParViewIO[State](
         case Event.Deliver(payload) => receiveCallback(payload.data)
         case Send(peers, message)   =>
           peers.foreach { peer =>
-            ensurePlumtreePeerForActiveConnection(peer.uid, s"before sending dissemination $message")
-            checkPeerKnownToPlumtree(peer.uid, s"sending dissemination $message")
-            checkInvariant(
-              membership.activeView.contains(peer.uid) || membership.passiveView.contains(peer.uid),
-              s"sending dissemination to non-overlay peer=${Uid.unwrap(peer.uid)} message=$message"
-            )
             connections.get(peer.uid).foreach { conn =>
               conn.send(Envelope.Dissemination(message)).run {
                 case Success(_)  => ()

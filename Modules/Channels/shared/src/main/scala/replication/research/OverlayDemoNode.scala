@@ -69,12 +69,6 @@ class OverlayDemoNode(
   private def publishLocalView(): Unit = refreshLocalView(replicate = true, updateTimestamp = true)
   private def publishLocalViewWithoutHeartbeat(): Unit = refreshLocalView(replicate = true, updateTimestamp = false)
 
-  private def removeDisconnectedConnection(peer: Uid): Unit = {
-    given LocalUid = localUid
-    val delta      = OverlayConnectionDirectory.removeConnectionBothDirections(state.connections, localUid.uid, peer)
-    if !Bottom.isEmpty(delta) then publish(DemoState(delta))
-  }
-
   private def pruneStaleReplicatedNodes(): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.pruneStaleNodes(
@@ -102,9 +96,6 @@ class OverlayDemoNode(
       random,
       StateDeltaStorage(() => state),
       config,
-      onViewChanged = (_, _) => publishLocalViewWithoutHeartbeat(),
-      onPeerRolesChanged = () => refreshLocalView(replicate = false, updateTimestamp = false),
-      onPeerDisconnected = removeDisconnectedConnection,
     )
 
   private def startBackgroundTasks(): Unit = {
