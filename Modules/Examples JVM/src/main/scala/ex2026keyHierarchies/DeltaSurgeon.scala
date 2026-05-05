@@ -1,4 +1,4 @@
-package replication.acl.encryption
+package ex2026keyHierarchies
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}

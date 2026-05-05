@@ -1,4 +1,4 @@
-package replication.acl.encryption
+package ex2026keyHierarchies
 
 case class EncryptedDeltaParts(inner: Map[String, EncryptedDeltaParts] | Array[Byte]) {
   def isEmpty: Boolean = inner.isInstanceOf[Map[?, ?]] && inner.asInstanceOf[Map[?, ?]].isEmpty

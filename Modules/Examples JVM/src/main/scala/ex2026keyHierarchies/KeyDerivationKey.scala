@@ -1,7 +1,7 @@
-package replication.acl.encryption
+package ex2026keyHierarchies
 
 import crypto.Ed25519Util
-import KeyDerivationKey.*
+import ex2026keyHierarchies.KeyDerivationKey.*
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.crypto.util.DigestFactory

@@ -3,10 +3,10 @@ package ex2026lofi_acl.legacy.encryption
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import crypto.{Ed25519Util, PublicIdentity}
 import KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
+import ex2026keyHierarchies.KeyDerivationKey
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dot
-import replication.acl.encryption.KeyDerivationKey
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64

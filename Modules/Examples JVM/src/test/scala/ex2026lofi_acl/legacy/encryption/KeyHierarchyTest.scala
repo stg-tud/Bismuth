@@ -3,11 +3,11 @@ package ex2026lofi_acl.legacy.encryption
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.{Ed25519Util, PublicIdentity}
+import ex2026keyHierarchies.{DeltaSurgeon, FullKeyHierarchy, KeyDerivationKey, KeyHierarchy}
 import munit.FunSuite
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.time.Dot
-import replication.acl.encryption.{DeltaSurgeon, FullKeyHierarchy, KeyDerivationKey, KeyHierarchy}
 
 case class CompoundTest(a: LastWriterWins[Option[String]], b: String)
 
@@ -17,7 +17,7 @@ class KeyHierarchyTest extends FunSuite {
   given DeltaSurgeon[String]                = DeltaSurgeon.ofTerminalValue
 
   private given lwwSurgeon: DeltaSurgeon[LastWriterWins[Option[String]]] = {
-    import replication.acl.encryption.DeltaSurgeon.given
+    import DeltaSurgeon.given
     DeltaSurgeon.lwwDeltaSurgeon[Option[String]]
   }
 

@@ -1,7 +1,7 @@
 package benchmarks.b2024cryptoprimitives
 
+import ex2026keyHierarchies.KeyDerivationKey
 import org.openjdk.jmh.annotations.*
-import replication.acl.encryption.KeyDerivationKey
 
 import java.util.concurrent.TimeUnit
 

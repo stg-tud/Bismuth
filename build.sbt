@@ -59,18 +59,10 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     Settings.jsEnvDom,
     Dependencies.scalajsDom,
     Dependencies.scalatags(),
-    // commonjs module allows tests to find libsodium-wrappers installed in the root project
-    Test / scalaJSLinkerConfig := {
-      (Test / scalaJSLinkerConfig).value
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
-    Test / jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv()
   )
   .jvmSettings(
     Test / fork := true,
-    Dependencies.bouncyCastle,
     Dependencies.ayza,
-    Dependencies.tink,
   )
 
 lazy val deltalens = project.in(file("Modules/Deltalens"))
@@ -92,7 +84,6 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     Dependencies.akkaTestKit,
     Dependencies.bloomFilter,
     Dependencies.borer,
-    Dependencies.bouncyCastle,
     Dependencies.conscrypt,
     Dependencies.decline,
     Dependencies.jetty,
@@ -258,4 +249,3 @@ lazy val webview = project.in(file("Modules/Webview"))
       SettingsLocal.osSpecificWebviewConfig(d)
     }
   )
-

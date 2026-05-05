@@ -1,4 +1,4 @@
-package crypto
+package ex2026tink
 
 import com.google.crypto.tink.subtle.{ChaCha20Poly1305, X25519}
 import munit.FunSuite
