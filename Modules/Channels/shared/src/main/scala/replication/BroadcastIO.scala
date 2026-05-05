@@ -29,8 +29,8 @@ object BroadcastIO {
 
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
 
-
-  def objectMessages[State: JsonValueCodec](conn: LatentConnection[MessageBuffer]): LatentConnection[BroadcastIO.Message[State]] =
+  def objectMessages[State: JsonValueCodec](conn: LatentConnection[MessageBuffer])
+      : LatentConnection[BroadcastIO.Message[State]] =
     LatentConnection.adapt(
       (mb: MessageBuffer) => readFromArray[BroadcastIO.Message[State]](mb.asArray)(using BroadcastIO.messageCodec),
       (pm: BroadcastIO.Message[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
@@ -61,8 +61,6 @@ class BroadcastIO[State](
   @volatile private var plumtree: PlumtreeBroadcast[State]                =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
-
-
   private def printExceptionHandler: Callback[Any] =
       case Failure(ex) =>
         println("exception during connection activation")
@@ -75,29 +73,28 @@ class BroadcastIO[State](
   def addConnection(latentConnection: LatentConnection[Message]): Unit =
     prepareLatentConnection(latentConnection).run(printExceptionHandler)
 
-  def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] = {
-    val preparedConnection: Async[Abort, Connection[Message]] = latentConnection.prepare { from =>
-      new Callback {
-        override def complete(tr: Try[Message]): Unit = tr match {
-          case Success(msg)   => handleMessage(msg, from)
-          case Failure(error) =>
-            error match {
-              case se: SocketException if se.getMessage == "Connection reset" =>
-                println(s"$replicaId: disconnected ${from.info} (${from})")
-              case _: NoMoreDataException =>
-                println(s"$replicaId: disconnected ${from.info} (${from})")
-              case _ =>
-                println(s"$replicaId: error during message handling")
-                error.printStackTrace()
-            }
-            removePeer(from)
-        }
-      }
+  def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] =
+    Async.provided(globalAbort) {
+      val conn = latentConnection.prepare { connectionReceiver }.bind
+      applyResult(registerConnection(conn))
     }
 
-    Async.provided(globalAbort) {
-      val conn = preparedConnection.bind
-      applyResult(registerConnection(conn))
+  private val connectionReceiver: Receive[Message] = new Receive[Message] {
+    override def messageHandler(conn: Connection[Message]): Callback[Message] = new Callback {
+      override def complete(tr: Try[Message]): Unit = tr match {
+        case Success(msg)   => handleMessage(msg, conn)
+        case Failure(error) =>
+          error match {
+            case se: SocketException if se.getMessage == "Connection reset" =>
+              println(s"$replicaId: disconnected ${conn.info} (${conn})")
+            case _: NoMoreDataException =>
+              println(s"$replicaId: disconnected ${conn.info} (${conn})")
+            case _ =>
+              println(s"$replicaId: error during message handling")
+              error.printStackTrace()
+          }
+          removePeer(conn)
+      }
     }
   }
 
