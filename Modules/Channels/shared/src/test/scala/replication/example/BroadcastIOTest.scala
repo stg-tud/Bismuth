@@ -131,25 +131,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
   }
 
-  test("factory interface can create an applyDelta handle") {
 
-    given JsonValueCodec[Set[String]] = JsonCodecMaker.make
-
-    val sync = SynchronousLocalConnection[BroadcastIO.Message[Set[String]]]()
-
-    val setup: DeltaDisseminationFactory[Set[String]] =
-      BroadcastIO.factory(LocalUid.gen())(_.addConnection(sync.server))
-
-    var received      = List.empty[Set[String]]
-    val dissemination = setup.bind(delta => received = delta :: received)
-
-    val remote = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
-    remote.addConnection(sync.client("remote"))
-
-    remote.applyDelta(Set("hello"))
-
-    assertEquals(received.reverse, List(Set("hello")))
-  }
 
   test("circle of 5 replicas converges for observe remove set operations") {
 

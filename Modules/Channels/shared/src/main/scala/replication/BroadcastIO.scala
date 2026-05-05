@@ -27,33 +27,7 @@ object BroadcastIO {
     override def reportFailure(cause: Throwable): Unit = throw cause
   }
 
-  def pmscodec[State: JsonValueCodec, T <: PlumtreeMessage[State]]: JsonValueCodec[T] = {
-    val pmscodecInv: JsonValueCodec[PlumtreeMessage[State]] = JsonCodecMaker.make
-    pmscodecInv.asInstanceOf[JsonValueCodec[T]]
-  }
-
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
-
-  def factory[State: JsonValueCodec](
-      replicaId: LocalUid,
-      sendingActor: ExecutionContext = executeImmediately,
-      globalAbort: => Abort = Abort(),
-      deltaStorage: => DeltaStorage[State] = DiscardingHistory[State](size = 108),
-  )(
-      configure: BroadcastIO[State] => Unit = (_: BroadcastIO[State]) => ()
-  ): DeltaDisseminationFactory[State] = new DeltaDisseminationFactory[State] {
-    override def bind(receiveCallback: State => Unit): DeltaDissemination[State] = {
-      val dissemination = BroadcastIO(
-        replicaId = replicaId,
-        receiveCallback = receiveCallback,
-        sendingActor = sendingActor,
-        globalAbort = globalAbort,
-        deltaStorage = deltaStorage,
-      )
-      configure(dissemination)
-      dissemination
-    }
-  }
 }
 
 /** Combined Delta + Plumtree dissemination.
