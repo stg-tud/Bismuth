@@ -34,10 +34,10 @@ object BroadcastIO {
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
   def objectMessages[State: JsonValueCodec](conn: LatentConnection[MessageBuffer])
-      : LatentConnection[BroadcastIO.Envelope[State]] =
+      : LatentConnection[Envelope[State]] =
     LatentConnection.adapt(
-      (mb: MessageBuffer) => readFromArray[BroadcastIO.Envelope[State]](mb.asArray)(using BroadcastIO.messageCodec),
-      (pm: BroadcastIO.Envelope[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
+      (mb: MessageBuffer) => readFromArray[Envelope[State]](mb.asArray)(using BroadcastIO.messageCodec),
+      (pm: Envelope[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
       "broadcast io serialization"
     )(conn)
 }
@@ -51,19 +51,17 @@ object BroadcastIO {
 class BroadcastIO[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
-    resolver: ChannelResolver[BroadcastIO.Envelope[State]] = ChannelResolver.disconnected[Envelope[State]],
+    resolver: ChannelResolver[Envelope[State]] = ChannelResolver.disconnected[Envelope[State]],
     sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
     @volatile private var overlay: OverlayController = OverlayController.none
 )(using val stateCodec: JsonValueCodec[State]) {
 
-  type Message = BroadcastIO.Envelope[State]
-
   val lock: AnyRef = new {}
 
-  @volatile private var connections: Map[Peer, Connection[Message]]       = Map.empty
-  @volatile private var peersByConnection: Map[Connection[Message], Peer] = Map.empty
+  @volatile private var connections: Map[Peer, Connection[Envelope[State]]]       = Map.empty
+  @volatile private var peersByConnection: Map[Connection[Envelope[State]], Peer] = Map.empty
   @volatile private var plumtree: PlumtreeBroadcast[State]                =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
@@ -74,20 +72,17 @@ class BroadcastIO[State](
       case Success(_) => ()
 
   def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit =
-    prepareLatentConnection(BroadcastIO.objectMessages(latentConnection)).run(printExceptionHandler)
+    addConnection(BroadcastIO.objectMessages(latentConnection))
 
-  def addConnection(latentConnection: LatentConnection[Message]): Unit =
-    prepareLatentConnection(latentConnection).run(printExceptionHandler)
-
-  def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] =
+  def addConnection(latentConnection: LatentConnection[Envelope[State]]): Unit =
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
       applyRoutingResult(registerConnection(conn))
-    }
+    }.run(printExceptionHandler)
 
-  private val connectionReceiver: Receive[Message] = new Receive[Message] {
-    override def messageHandler(conn: Connection[Message]): Callback[Message] = new Callback {
-      override def complete(tr: Try[Message]): Unit = tr match {
+  private val connectionReceiver: Receive[Envelope[State]] = new Receive[Envelope[State]] {
+    override def messageHandler(conn: Connection[Envelope[State]]): Callback[Envelope[State]] = new Callback {
+      override def complete(tr: Try[Envelope[State]]): Unit = tr match {
         case Success(msg)   => handleMessage(msg, conn)
         case Failure(error) =>
           error match {
@@ -106,7 +101,7 @@ class BroadcastIO[State](
 
   def pingAll(): Unit = synchronized {
     val snapshot = lock.synchronized(connections.values.toList)
-    snapshot.foreach(send(_, BroadcastIO.Envelope.Ping(System.nanoTime())))
+    snapshot.foreach(send(_, Envelope.Ping(System.nanoTime())))
   }
 
   def repairTick(): Unit = {
@@ -126,7 +121,7 @@ class BroadcastIO[State](
     applyRoutingResult(result)
   }
 
-  private def removePeer(conn: Connection[Message]): Unit = {
+  private def removePeer(conn: Connection[Envelope[State]]): Unit = {
     lock.synchronized {
       peersByConnection.get(conn) match
           case Some(peer) =>
@@ -137,7 +132,7 @@ class BroadcastIO[State](
     }
   }
 
-  private def registerConnection(conn: Connection[Message]): PlumtreeBroadcast.Result[State] =
+  private def registerConnection(conn: Connection[Envelope[State]]): PlumtreeBroadcast.Result[State] =
     lock.synchronized {
       peersByConnection.get(conn) match
           case Some(peer) =>
@@ -164,7 +159,7 @@ class BroadcastIO[State](
           receiveCallback(payload.data)
         case Send(peers, message) =>
           peers.foreach(peer =>
-            lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Envelope.Protocol(message)))
+            lock.synchronized(connections.get(peer)).foreach(send(_, Envelope.Protocol(message)))
           )
 
   private def applyOverlayResult(next: OverlayController, actions: List[OverlayController.OverlayAction]): Unit = {
@@ -174,7 +169,7 @@ class BroadcastIO[State](
     actions.foreach(handleOverlayAction)
   }
 
-  private def connectAndSend(details: Iterable[ChannelConnectInfo], label: String, payload: Message): Unit =
+  private def connectAndSend(details: Iterable[ChannelConnectInfo], label: String, payload: Envelope[State]): Unit =
     details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label))) match
         case Some(latentConnection) =>
           Async.provided(globalAbort) {
@@ -189,13 +184,13 @@ class BroadcastIO[State](
     action match
         case OverlayController.OverlayAction.Send(to, message) =>
           lock.synchronized(connections.get(Peer(to.uid))) match
-              case Some(conn) => send(conn, BroadcastIO.Envelope.Membership(message))
+              case Some(conn) => send(conn, Envelope.Membership(message))
               case None       =>
-                connectAndSend(to.channelConnectors, s"$replicaId->${to.uid}", BroadcastIO.Envelope.Membership(message))
+                connectAndSend(to.channelConnectors, s"$replicaId->${to.uid}", Envelope.Membership(message))
         case OverlayController.OverlayAction.SendJoin(details, message) =>
-          connectAndSend(details, s"$replicaId-join", BroadcastIO.Envelope.Membership(message))
+          connectAndSend(details, s"$replicaId-join", Envelope.Membership(message))
 
-  private def send(conn: Connection[Message], payload: Message): Unit =
+  private def send(conn: Connection[Envelope[State]], payload: Envelope[State]): Unit =
     if globalAbort.closeRequest then ()
     else
         sendingActor.execute { () =>
@@ -205,7 +200,7 @@ class BroadcastIO[State](
           }
         }
 
-  private def handleMessage(msg: Message, from: Connection[Message]): Unit = synchronized {
+  private def handleMessage(msg: Envelope[State], from: Connection[Envelope[State]]): Unit = synchronized {
     if globalAbort.closeRequest then return
 
     val peer = lock.synchronized(peersByConnection.get(from)) match
@@ -216,14 +211,14 @@ class BroadcastIO[State](
           lock.synchronized(peersByConnection(from))
 
     msg match
-        case BroadcastIO.Envelope.Ping(time) =>
-          send(from, BroadcastIO.Envelope.Pong(time))
-        case BroadcastIO.Envelope.Pong(_) =>
+        case Envelope.Ping(time) =>
+          send(from, Envelope.Pong(time))
+        case Envelope.Pong(_) =>
           ()
-        case BroadcastIO.Envelope.Membership(message) =>
+        case Envelope.Membership(message) =>
           val (next, actions) = lock.synchronized(overlay.receiveActions(message))
           applyOverlayResult(next, actions)
-        case BroadcastIO.Envelope.Protocol(protocol) =>
+        case Envelope.Protocol(protocol) =>
           val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
           applyRoutingResult(result)
   }

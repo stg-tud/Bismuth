@@ -13,7 +13,6 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.annotation.unused
 import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex
-import scala.util.{Failure, Success}
 
 object cli {
 
@@ -27,16 +26,8 @@ object cli {
       tries: Int
   ): Unit = {
 
-    dataManager.prepareLatentConnection(BroadcastIO.objectMessages(connection)(using dataManager.stateCodec)).run {
-      case Success(_)  => ()
-      case Failure(ex) =>
-        println(s"Failed to connect to $connection, retrying in $delay ms, retries: $tries")
-        if tries > 0 then
-            Thread.sleep(delay)
-            addRetryingLatentConnection(dataManager, connection, delay, tries - 1)
-        else
-            throw ex
-    }
+    // TODO, does not actually retry anymore 😬
+    dataManager.addBinaryConnection(connection)
 
   }
 
