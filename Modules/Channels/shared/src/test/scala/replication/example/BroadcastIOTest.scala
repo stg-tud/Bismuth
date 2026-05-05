@@ -16,7 +16,7 @@ class BroadcastIOTest extends munit.FunSuite {
     // I have no clue why this syntax is still not deprecated xD
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
-    val sync = SynchronousLocalConnection[BroadcastIO.Message[Set[String]]]()
+    val sync = SynchronousLocalConnection[BroadcastIO.Envelope[Set[String]]]()
 
     dd2.addConnection(sync.client("2"))
     dd1.addConnection(sync.server)
@@ -47,13 +47,13 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val nodes = Vector.fill(5)(BroadcastIO[Set[String]](LocalUid.gen(), _ => ()))
 
-    val queue = LocalMessageQueue[BroadcastIO.Message[Set[String]]]()
+    val queue = LocalMessageQueue[BroadcastIO.Envelope[Set[String]]]()
 
     for
         i <- nodes.indices
         j <- (i + 1) until nodes.size
     do
-        val link = QueuedLocalConnection[BroadcastIO.Message[Set[String]]](queue)
+        val link = QueuedLocalConnection[BroadcastIO.Envelope[Set[String]]](queue)
         nodes(i).addConnection(link.server)
         nodes(j).addConnection(link.client(s"$j->$i"))
 
@@ -85,8 +85,8 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
-    val queue  = LocalMessageQueue[BroadcastIO.Message[Set[String]]]()
-    val queued = QueuedLocalConnection[BroadcastIO.Message[Set[String]]](queue)
+    val queue  = LocalMessageQueue[BroadcastIO.Envelope[Set[String]]]()
+    val queued = QueuedLocalConnection[BroadcastIO.Envelope[Set[String]]](queue)
 
     dd2.addConnection(queued.client("2"))
     dd1.addConnection(queued.server)
@@ -147,7 +147,7 @@ class BroadcastIOTest extends munit.FunSuite {
         )
     }
 
-    val queue = LocalMessageQueue[BroadcastIO.Message[ReplicatedSet[String]]]()
+    val queue = LocalMessageQueue[BroadcastIO.Envelope[ReplicatedSet[String]]]()
 
     def drainAll(nodes: => Vector[Node]): Unit =
         var safety   = 0
@@ -166,7 +166,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val nodes = Vector.fill(5)(mkNode())
 
     for i <- nodes.indices do
-        val link = QueuedLocalConnection[BroadcastIO.Message[ReplicatedSet[String]]](queue)
+        val link = QueuedLocalConnection[BroadcastIO.Envelope[ReplicatedSet[String]]](queue)
         nodes(i).dissemination.addConnection(link.server)
         nodes((i + 1) % nodes.size).dissemination.addConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
 

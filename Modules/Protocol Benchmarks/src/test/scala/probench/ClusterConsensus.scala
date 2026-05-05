@@ -19,15 +19,15 @@ class ClusterConsensus extends munit.FunSuite {
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = channels.SynchronousLocalConnection[BroadcastIO.Message[ClusterState]]()
+    val connection = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClusterState]]()
     primary.cluster.dataManager.addConnection(connection.server)
     secondaries.foreach { node => node.cluster.dataManager.addConnection(connection.client(node.uid.toString)) }
-    val connection2 = channels.SynchronousLocalConnection[BroadcastIO.Message[ClusterState]]()
+    val connection2 = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClusterState]]()
     secondaries.head.cluster.dataManager.addConnection(connection2.server)
     secondaries(1).cluster.dataManager.addConnection(connection2.client(secondaries(1).uid.toString))
 
-    val clientConnectionWrite = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommWrite]]()
-    val clientConnectionRead  = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommRead]]()
+    val clientConnectionWrite = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClientCommWrite]]()
+    val clientConnectionRead  = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClientCommRead]]()
 
     primary.client.dataManagerWrite.addConnection(clientConnectionWrite.server)
     primary.client.dataManagerRead.addConnection(clientConnectionRead.server)
@@ -111,11 +111,11 @@ class ClusterConsensus extends munit.FunSuite {
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = channels.SynchronousLocalConnection[BroadcastIO.Message[ClusterState]]()
+    val connection = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClusterState]]()
     primary.cluster.dataManager.addConnection(connection.server)
 
-    val clientConnectionWrites = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommWrite]]()
-    val clientConnectionReads  = channels.SynchronousLocalConnection[BroadcastIO.Message[ClientCommRead]]()
+    val clientConnectionWrites = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClientCommWrite]]()
+    val clientConnectionReads  = channels.SynchronousLocalConnection[BroadcastIO.Envelope[ClientCommRead]]()
 
     primary.client.dataManagerWrite.addConnection(clientConnectionWrites.server)
     primary.client.dataManagerRead.addConnection(clientConnectionReads.server)

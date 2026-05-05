@@ -10,13 +10,16 @@ import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.*
+import replication.overlay.HyParViewStateMachine
+import replication.overlay.HyParViewStateMachine.HyParViewMessage
 
 import java.net.SocketException
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object BroadcastIO {
-  enum Message[+State] {
+  enum Envelope[+State] {
+    case Membership(message: HyParViewMessage)
     case Protocol(message: PlumtreeMessage[State])
     case Ping(time: Long)
     case Pong(time: Long)
@@ -27,13 +30,13 @@ object BroadcastIO {
     override def reportFailure(cause: Throwable): Unit = throw cause
   }
 
-  def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
+  def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
   def objectMessages[State: JsonValueCodec](conn: LatentConnection[MessageBuffer])
-      : LatentConnection[BroadcastIO.Message[State]] =
+      : LatentConnection[BroadcastIO.Envelope[State]] =
     LatentConnection.adapt(
-      (mb: MessageBuffer) => readFromArray[BroadcastIO.Message[State]](mb.asArray)(using BroadcastIO.messageCodec),
-      (pm: BroadcastIO.Message[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
+      (mb: MessageBuffer) => readFromArray[BroadcastIO.Envelope[State]](mb.asArray)(using BroadcastIO.messageCodec),
+      (pm: BroadcastIO.Envelope[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
       "broadcast io serialization"
     )(conn)
 }
@@ -52,12 +55,13 @@ class BroadcastIO[State](
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
 )(using val stateCodec: JsonValueCodec[State]) {
 
-  type Message = BroadcastIO.Message[State]
+  type Message = BroadcastIO.Envelope[State]
 
   val lock: AnyRef = new {}
 
   @volatile private var connections: Map[Peer, Connection[Message]]       = Map.empty
   @volatile private var peersByConnection: Map[Connection[Message], Peer] = Map.empty
+  @volatile private var hyparview: Option[HyParViewStateMachine]          = None
   @volatile private var plumtree: PlumtreeBroadcast[State]                =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
@@ -100,7 +104,7 @@ class BroadcastIO[State](
 
   def pingAll(): Unit = synchronized {
     val snapshot = lock.synchronized(connections.values.toList)
-    snapshot.foreach(send(_, BroadcastIO.Message.Ping(System.nanoTime())))
+    snapshot.foreach(send(_, BroadcastIO.Envelope.Ping(System.nanoTime())))
   }
 
   def repairTick(): Unit = {
@@ -158,7 +162,7 @@ class BroadcastIO[State](
           receiveCallback(payload.data)
         case Send(peers, message) =>
           peers.foreach(peer =>
-            lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Message.Protocol(message)))
+            lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Envelope.Protocol(message)))
           )
 
   private def send(conn: Connection[Message], payload: Message): Unit =
@@ -182,11 +186,13 @@ class BroadcastIO[State](
           lock.synchronized(peersByConnection(from))
 
     msg match
-        case BroadcastIO.Message.Ping(time) =>
-          send(from, BroadcastIO.Message.Pong(time))
-        case BroadcastIO.Message.Pong(_) =>
+        case BroadcastIO.Envelope.Ping(time) =>
+          send(from, BroadcastIO.Envelope.Pong(time))
+        case BroadcastIO.Envelope.Pong(_) =>
           ()
-        case BroadcastIO.Message.Protocol(protocol) =>
+        case BroadcastIO.Envelope.Membership(_) =>
+          ()
+        case BroadcastIO.Envelope.Protocol(protocol) =>
           val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
           applyResult(result)
   }
