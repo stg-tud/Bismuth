@@ -3,10 +3,10 @@ package replication.example
 import channels.{LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import replication.JsoniterCodecs.given
-import replication.{BroadcastIO, DeltaDisseminationFactory}
 import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedSet
+import replication.BroadcastIO
+import replication.JsoniterCodecs.given
 
 class BroadcastIOTest extends munit.FunSuite {
   test("basics") {

@@ -42,7 +42,7 @@ class BroadcastIO[State](
     sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
-)(using JsonValueCodec[State]) extends DeltaDissemination[State] {
+)(using JsonValueCodec[State]) {
 
   type Message = BroadcastIO.Message[State]
 
@@ -119,7 +119,7 @@ class BroadcastIO[State](
   def allPayloads: List[Payload[State]] =
     lock.synchronized(plumtree.deltaStorage.getHistory)
 
-  override def applyDelta(delta: State): Unit = {
+  def applyDelta(delta: State): Unit = {
     val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
     val payload = Payload(Dots.single(nextDot), delta)
     val result  = lock.synchronized(plumtree.broadcast(payload))
