@@ -1,10 +1,10 @@
 package replication.research
 
+import channels.PeerConnectInfo
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.Lattice.syntax.merge
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.time.CausalTime
-import replication.overlay.HyParViewIO
 
 /** vibecoded as part of the hyparview experiments */
 object OverlayConnectionDirectory {
@@ -73,12 +73,12 @@ object OverlayConnectionDirectory {
   }
 
   def updateNodeFromOverlay(
-      state: Directory,
-      node: Uid,
-      activePeers: Iterable[HyParViewIO.PeerRef],
-      passivePeers: Iterable[HyParViewIO.PeerRef],
-      eagerPeers: Iterable[Uid],
-      lastSeenMillis: Long,
+                             state: Directory,
+                             node: Uid,
+                             activePeers: Iterable[PeerConnectInfo],
+                             passivePeers: Iterable[PeerConnectInfo],
+                             eagerPeers: Iterable[Uid],
+                             lastSeenMillis: Long,
   )(using LocalUid): Directory =
     updateNode(
       state,

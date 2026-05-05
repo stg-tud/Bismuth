@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, Connection}
+import channels.{Abort, ChannelConnectInfo, ChannelResolver, Connection}
 import de.rmgk.delay.{Async, Sync}
 import rdts.base.Uid
 import replication.research.SignalingServer.{Message, Session}
@@ -9,18 +9,18 @@ import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 class SignalingClient(
-    server: ChannelConnectDescriptor,
-    resolver: ChannelResolver[Message],
-    localUid: Uid,
-    initialAnnouncements: Map[String, Set[ChannelConnectDescriptor]],
-    onRegistered: () => Unit = () => (),
-    onPeerInfo: (Uid, Map[String, Set[ChannelConnectDescriptor]]) => Unit =
-      (_: Uid, _: Map[String, Set[ChannelConnectDescriptor]]) => (),
-    onTopicInfo: (String, Map[Uid, Set[ChannelConnectDescriptor]]) => Unit =
-      (_: String, _: Map[Uid, Set[ChannelConnectDescriptor]]) => (),
-    onOffer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
-    onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
-    onDisconnected: () => Unit = () => (),
+                       server: ChannelConnectInfo,
+                       resolver: ChannelResolver[Message],
+                       localUid: Uid,
+                       initialAnnouncements: Map[String, Set[ChannelConnectInfo]],
+                       onRegistered: () => Unit = () => (),
+                       onPeerInfo: (Uid, Map[String, Set[ChannelConnectInfo]]) => Unit =
+      (_: Uid, _: Map[String, Set[ChannelConnectInfo]]) => (),
+                       onTopicInfo: (String, Map[Uid, Set[ChannelConnectInfo]]) => Unit =
+      (_: String, _: Map[Uid, Set[ChannelConnectInfo]]) => (),
+                       onOffer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
+                       onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
+                       onDisconnected: () => Unit = () => (),
 ) {
   private val abort                                   = Abort()
   private var connection: Option[Connection[Message]] = None
@@ -69,7 +69,7 @@ class SignalingClient(
     abort.abort()
   }
 
-  def announce(topic: String, descriptors: Set[ChannelConnectDescriptor]): Async[Any, Unit] = {
+  def announce(topic: String, descriptors: Set[ChannelConnectInfo]): Async[Any, Unit] = {
     announcements.update(topic, descriptors)
     send(Message.Announce(topic, descriptors))
   }

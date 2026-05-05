@@ -8,70 +8,29 @@ import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.Payload
 import replication.overlay.HyParViewIO.*
 import replication.overlay.HyParViewStateMachine.*
-import replication.{DeltaStorage, PlumtreeBroadcast, PlumtreeMessage}
+import replication.{DeltaStorage, PlumtreeBroadcast, PlumtreeMessage, overlay}
 
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
 
 object HyParViewIO {
-
-  case class PeerRef(uid: Uid, channelConnectors: Set[ChannelConnectDescriptor])
-
   enum Envelope[State] {
-    case Membership(message: HyParViewIO.HyParViewMessage)
+    case Membership(message: HyParViewMessage)
     case Dissemination(message: PlumtreeMessage[State])
   }
 
-  case class HyParViewConfig(
-      activeViewSize: Int,
-      passiveViewSize: Int,
-      activeRandomWalkLength: Int,
-      passiveRandomWalkLength: Int,
-      shuffleRandomWalkLength: Int,
-      shuffleActiveSample: Int,
-      shufflePassiveSample: Int,
-  )
-
-  object HyParViewConfig {
-    val default: HyParViewConfig = fromEstimatedNetworkSize(10_000)
-
-    def fromEstimatedNetworkSize(estimatedNetworkSize: Int): HyParViewConfig = {
-      val n       = math.max(2, estimatedNetworkSize)
-      val active  = math.max(3, math.ceil(math.log10(n.toDouble)).toInt + 1)
-      val passive = active * 6
-      HyParViewConfig(
-        active,
-        passive,
-        active + 1,
-        math.max(1, (active + 1) / 2),
-        active,
-        math.min(3, math.max(1, active - 1)),
-        4
-      )
-    }
-  }
-
-  enum HyParViewMessage {
-    case Join(newNode: PeerRef)
-    case ForwardJoin(newNode: PeerRef, ttl: Int, sender: Uid)
-    case Neighbor(from: PeerRef, highPriority: Boolean)
-    case NeighborReply(from: Uid, accepted: Boolean)
-    case Disconnect(peer: Uid)
-    case Shuffle(origin: PeerRef, sample: Set[PeerRef], ttl: Int, sender: Uid)
-    case ShuffleReply(from: Uid, sample: Set[PeerRef])
-  }
 }
 
 class HyParViewIO[State](
-    val self: HyParViewIO.PeerRef,
-    receiveCallback: State => Unit,
-    localServer: LatentConnection[HyParViewIO.Envelope[State]],
-    resolver: ChannelResolver[HyParViewIO.Envelope[State]],
-    contactNode: Option[Set[ChannelConnectDescriptor]],
-    rnd: Random,
-    deltaStorage: DeltaStorage[State],
-    config: HyParViewIO.HyParViewConfig = HyParViewIO.HyParViewConfig.default,
-    debug: Boolean = false,
+                          val self: PeerConnectInfo,
+                          receiveCallback: State => Unit,
+                          localServer: LatentConnection[HyParViewIO.Envelope[State]],
+                          resolver: ChannelResolver[HyParViewIO.Envelope[State]],
+                          contactNode: Option[Set[ChannelConnectInfo]],
+                          rnd: Random,
+                          deltaStorage: DeltaStorage[State],
+                          config: HyParViewConfig = HyParViewConfig.default,
+                          debug: Boolean = false,
 ) {
 
   private val abort                     = Abort()
@@ -119,9 +78,9 @@ class HyParViewIO[State](
 
   def state: HyParViewStateMachine             = membership
   def activeView: Set[Uid]                     = membership.activeView
-  def activePeers: Set[PeerRef]                = membership.activePeers
+  def activePeers: Set[PeerConnectInfo]                = membership.activePeers
   def passiveView: Set[Uid]                    = membership.passiveView
-  def passivePeers: Set[PeerRef]               = membership.passivePeers
+  def passivePeers: Set[PeerConnectInfo]               = membership.passivePeers
   def eagerView: Set[Uid]                      = plumtree.eagerPeers
   def lastIncomingMessageTimes: Map[Uid, Long] = lastIncomingMessageAtMs.toMap
 
@@ -141,7 +100,7 @@ class HyParViewIO[State](
 
   def join(): Unit = contactNode.foreach(join)
 
-  def join(contact: Set[ChannelConnectDescriptor]): Unit =
+  def join(contact: Set[ChannelConnectInfo]): Unit =
     applyTransition(membership.initiateJoin(contact))
 
   def shuffleTick(): Unit   = applyTransition(membership.shuffleTick())
@@ -159,7 +118,7 @@ class HyParViewIO[State](
     timeoutSilentActiveConnections()
     applyPlumtreeResult(plumtree.tickGrafts())
   }
-  def discoverPeers(peers: Iterable[PeerRef]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
+  def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
 
   def addIncomingConnection(latent: LatentConnection[Envelope[State]]): Unit =
     latent.prepare(receive(None)).runIn(abort) {
@@ -180,7 +139,7 @@ class HyParViewIO[State](
     abort.abort()
   }
 
-  private def sendDisconnectAnnouncement(peer: PeerRef): Unit =
+  private def sendDisconnectAnnouncement(peer: PeerConnectInfo): Unit =
     connections.get(peer.uid) match
         case Some(conn) =>
           conn.send(Envelope.Membership(HyParViewMessage.Disconnect(self.uid))).run {
@@ -379,12 +338,12 @@ class HyParViewIO[State](
   }
 
   private def connectToPeerDetails(
-      details: Set[ChannelConnectDescriptor],
-      label: String
+                                    details: Set[ChannelConnectInfo],
+                                    label: String
   ): Option[LatentConnection[Envelope[State]]] =
     details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label)))
 
-  private def ensurePromotionAttempt(peer: PeerRef): Unit = {
+  private def ensurePromotionAttempt(peer: PeerConnectInfo): Unit = {
     val existing      = pendingMembership.getOrElse(peer.uid, Vector.empty)
     val highPriority  = membership.activeView.isEmpty
     val alreadyQueued = existing.exists {
@@ -396,7 +355,7 @@ class HyParViewIO[State](
     startConnection(peer)
   }
 
-  private def startConnection(peer: PeerRef): Unit =
+  private def startConnection(peer: PeerConnectInfo): Unit =
     if !connections.contains(peer.uid) && !connecting.contains(peer.uid) then
         connectToPeerDetails(peer.channelConnectors, s"${Uid.unwrap(self.uid)}->${Uid.unwrap(peer.uid)}") match
             case Some(latent) =>
@@ -418,7 +377,7 @@ class HyParViewIO[State](
               }
             case None => log(s"cannot connect to ${Uid.unwrap(peer.uid)} because resolver has no route")
 
-  private def sendMembership(peer: PeerRef, message: HyParViewMessage): Unit =
+  private def sendMembership(peer: PeerConnectInfo, message: HyParViewMessage): Unit =
     if peer.uid != self.uid then
         checkPeerKnownToOverlay(peer.uid, s"sending membership $message")
         connections.get(peer.uid) match
@@ -436,7 +395,7 @@ class HyParViewIO[State](
               pendingMembership.update(peer.uid, pendingMembership.getOrElse(peer.uid, Vector.empty) :+ message)
               startConnection(peer)
 
-  private def sendJoin(details: Set[ChannelConnectDescriptor], message: HyParViewMessage): Unit =
+  private def sendJoin(details: Set[ChannelConnectInfo], message: HyParViewMessage): Unit =
     connectToPeerDetails(details, s"${Uid.unwrap(self.uid)}-join") match
         case Some(latent) =>
           latent.prepare(receive(None)).runIn(abort) {

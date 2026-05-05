@@ -1,13 +1,13 @@
 package replication.example
 
-import channels.{ChannelConnectDescriptor, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
+import channels.{ChannelConnectInfo, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
 import replication.overlay.HyParViewIO
-import replication.overlay.HyParViewIO.HyParViewConfig
+import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import replication.research.OverlayNetworkProtocol.DemoState
 
@@ -17,15 +17,15 @@ import scala.util.Random
 class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
   given codecString: JsonValueCodec[String]                                  = JsonCodecMaker.make
-  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor]     = JsonCodecMaker.make
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectInfo]     = JsonCodecMaker.make
   given codecLinkState: JsonValueCodec[OverlayConnectionDirectory.LinkState] = JsonCodecMaker.make
   given codecPeerStates: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.LinkState]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.LinkState]
   given codecReplicatedSetUid: JsonValueCodec[ReplicatedSet[Uid]]          = AWSetStateCodec[Uid]
   given codecNodeInfo: JsonValueCodec[OverlayConnectionDirectory.NodeInfo] = JsonCodecMaker.make
   given codecReplicatedSetString: JsonValueCodec[ReplicatedSet[String]]    = AWSetStateCodec[String]
-  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectDescriptor]] =
-    AWSetStateCodec[ChannelConnectDescriptor]
+  given codecReplicatedSetConnectionDetails: JsonValueCodec[ReplicatedSet[ChannelConnectInfo]] =
+    AWSetStateCodec[ChannelConnectInfo]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
   given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
@@ -51,7 +51,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     }
 
   private def buildNetwork(n: Int)
-      : (LocalMessageQueue[Envelope], Vector[(Uid, ChannelConnectDescriptor, OverlayDemoNode)]) = {
+      : (LocalMessageQueue[Envelope], Vector[(Uid, ChannelConnectInfo, OverlayDemoNode)]) = {
     val queue    = LocalMessageQueue[Envelope]()
     val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection[Envelope]]
     val registry = LocalConnectionRegistry[Envelope](queued)
@@ -62,7 +62,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     val ids = Vector.tabulate(n)(i => Uid.predefined(s"hp$i"))
 
     val nodes = ids.zipWithIndex.map { case (id, idx) =>
-      val details = ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(id))
+      val details = ChannelConnectInfo.QueuedLocal(Uid.unwrap(id))
       queued.update(Uid.unwrap(id), QueuedLocalConnection(queue))
       val listenEnvelope = registry.queuedServer(details).get
       val node           = new OverlayDemoNode(
@@ -75,7 +75,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
         runBackgroundTasks = false,
       )
       val seeds =
-        if idx == 0 then Nil else List(ids.head).map(uid => ChannelConnectDescriptor.QueuedLocal(Uid.unwrap(uid)))
+        if idx == 0 then Nil else List(ids.head).map(uid => ChannelConnectInfo.QueuedLocal(Uid.unwrap(uid)))
       node.start(seeds)
       drain(queue, limit = 20000)
       (node.localUid.uid, details, node)

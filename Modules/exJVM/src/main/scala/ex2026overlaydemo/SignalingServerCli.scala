@@ -13,7 +13,7 @@ import java.util.concurrent.Executors
 /** vibecoded as part of the hyparview experiments */
 object SignalingServerCli {
 
-  given JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
+  given JsonValueCodec[ChannelConnectInfo] = JsonCodecMaker.make
   given JsonValueCodec[SignalingServer.Session]  = JsonCodecMaker.make
   given JsonValueCodec[Message]                  = JsonCodecMaker.make
 
@@ -32,7 +32,7 @@ object SignalingServerCli {
     val nioThread   = Executors.newSingleThreadExecutor()
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-    def listen(port: Int): (ChannelConnectDescriptor.Tcp, LatentConnection[Message]) = {
+    def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection[Message]) = {
       val (details, latent) = nioResolver.listen(host, port)
       (details, OverlayDemo.jsonConnection[Message](latent, "webrtc-signaling-json"))
     }

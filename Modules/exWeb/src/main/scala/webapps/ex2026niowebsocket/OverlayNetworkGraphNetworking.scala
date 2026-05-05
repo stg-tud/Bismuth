@@ -96,13 +96,13 @@ object OverlayNetworkGraphNetworking {
   }
 
   final class WebRtcSignalingBridge(
-      url: String,
-      topic: String,
-      node: OverlayDemoNode,
-      selfDetails: Set[ChannelConnectDescriptor],
-      initialSeed: Option[Uid],
-      topicLookupCount: Int,
-      onRegistered: () => Unit,
+                                     url: String,
+                                     topic: String,
+                                     node: OverlayDemoNode,
+                                     selfDetails: Set[ChannelConnectInfo],
+                                     initialSeed: Option[Uid],
+                                     topicLookupCount: Int,
+                                     onRegistered: () => Unit,
   )(using JsonValueCodec[Envelope], JsonValueCodec[Message]) {
     private def logFailure(context: String, err: Throwable): Unit =
       println(s"[overlay-signaling] $context: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
@@ -141,7 +141,7 @@ object OverlayNetworkGraphNetworking {
     }
 
     private lazy val client: SignalingClient = new SignalingClient(
-      server = ChannelConnectDescriptor.WebSocket(url),
+      server = ChannelConnectInfo.WebSocket(url),
       resolver = wsResolver,
       localUid = node.localUid.uid,
       initialAnnouncements = Map(topic -> selfDetails),
@@ -152,12 +152,12 @@ object OverlayNetworkGraphNetworking {
       onPeerInfo = (uid, topics) =>
         topics.values.foreach { descriptors =>
           if uid != node.localUid.uid && descriptors.nonEmpty then
-              node.discoverPeers(HyParViewIO.PeerRef(uid, descriptors) :: Nil)
+              node.discoverPeers(PeerConnectInfo(uid, descriptors) :: Nil)
         },
       onTopicInfo = (_, peers) =>
         node.discoverPeers(peers.iterator.collect {
           case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
-            HyParViewIO.PeerRef(uid, descriptors)
+            PeerConnectInfo(uid, descriptors)
         }.toList),
       onOffer = (from, session) => handleIncomingOffer(from, session),
       onAnswer = (from, session) => handleIncomingAnswer(from, session),
@@ -215,13 +215,13 @@ object OverlayNetworkGraphNetworking {
       client.stop()
     }
 
-    def canConnect(details: ChannelConnectDescriptor): Boolean =
+    def canConnect(details: ChannelConnectInfo): Boolean =
       details match
-          case ChannelConnectDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
+          case ChannelConnectInfo.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
           case _                                       => false
 
-    def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[Envelope]] = details match
-        case ChannelConnectDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
+    def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[Envelope]] = details match
+        case ChannelConnectInfo.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
           val target = Uid.predefined(peerId)
           Some(new LatentConnection[Envelope] {
             override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] = {

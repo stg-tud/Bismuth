@@ -1,11 +1,11 @@
 package replication.research
 
-import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, LatentConnection}
+import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, PeerConnectInfo}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import replication.StateDeltaStorage
 import replication.overlay.HyParViewIO
-import replication.overlay.HyParViewIO.HyParViewConfig
+import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 
 import java.util.{Timer, TimerTask}
@@ -13,20 +13,20 @@ import scala.util.Random
 
 /** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
-    selfDetails: Set[ChannelConnectDescriptor],
-    listenEnvelope: Option[LatentConnection[HyParViewIO.Envelope[DemoState]]],
-    envelopeResolver: ChannelResolver[HyParViewIO.Envelope[DemoState]],
-    random: Random = Random(0),
-    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-    onStateChanged: DemoState => Unit = _ => (),
-    printOverlayEventsToStdout: Boolean = false,
-    runBackgroundTasks: Boolean = true,
-    val localUid: LocalUid = LocalUid.gen(),
+                       selfDetails: Set[ChannelConnectInfo],
+                       listenEnvelope: Option[LatentConnection[HyParViewIO.Envelope[DemoState]]],
+                       envelopeResolver: ChannelResolver[HyParViewIO.Envelope[DemoState]],
+                       random: Random = Random(0),
+                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+                       onStateChanged: DemoState => Unit = _ => (),
+                       printOverlayEventsToStdout: Boolean = false,
+                       runBackgroundTasks: Boolean = true,
+                       val localUid: LocalUid = LocalUid.gen(),
 ) {
 
   @volatile var state: DemoState = DemoState.empty
 
-  private val selfRef = HyParViewIO.PeerRef(localUid.uid, selfDetails)
+  private val selfRef = PeerConnectInfo(localUid.uid, selfDetails)
   private val abort   = Abort()
   private val timer   = Timer(true)
   private var overlay: Option[replication.overlay.HyParViewIO[DemoState]] = None
@@ -80,7 +80,7 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then publish(DemoState(delta))
   }
 
-  private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
+  private def newOverlay(seed: Option[ChannelConnectInfo]) =
     new replication.overlay.HyParViewIO[DemoState](
       selfRef,
       (delta: DemoState) => {
@@ -122,7 +122,7 @@ class OverlayDemoNode(
     )
   }
 
-  def start(seeds: List[ChannelConnectDescriptor] = Nil): Unit = {
+  def start(seeds: List[ChannelConnectInfo] = Nil): Unit = {
     val node = newOverlay(seeds.headOption)
     overlay = Some(node)
     listenEnvelope.foreach(_ => node.startServer())
@@ -131,13 +131,13 @@ class OverlayDemoNode(
     seeds.headOption.foreach(_ => node.join())
   }
 
-  def joinSeed(seed: ChannelConnectDescriptor): Unit =
+  def joinSeed(seed: ChannelConnectInfo): Unit =
     overlay.foreach(_.join(Set(seed)))
 
-  def discoverPeers(peers: Iterable[replication.overlay.HyParViewIO.PeerRef]): Unit =
+  def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit =
     overlay.foreach(_.discoverPeers(peers))
 
-  def selfConnectionDetails: Set[ChannelConnectDescriptor] = selfDetails
+  def selfConnectionDetails: Set[ChannelConnectInfo] = selfDetails
 
   def shuffleTick(): Unit = {
     overlay.foreach(_.promotionTick())

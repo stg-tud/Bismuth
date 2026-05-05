@@ -1,6 +1,6 @@
 package replication
 
-import channels.ChannelConnectDescriptor
+import channels.ChannelConnectInfo
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Uid}
@@ -118,7 +118,7 @@ object JsoniterCodecs {
 
   /** case studies */
 
-  given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor]               = JsonCodecMaker.make
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectInfo]               = JsonCodecMaker.make
   given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
   given codecOverlayEnvelope: JsonValueCodec[HyParViewIO.Envelope[DemoState]] = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message]                                    = JsonCodecMaker.make

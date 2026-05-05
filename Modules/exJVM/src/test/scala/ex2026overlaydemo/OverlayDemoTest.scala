@@ -1,6 +1,6 @@
 package ex2026overlaydemo
 
-import channels.{ChannelConnectDescriptor, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
+import channels.{ChannelConnectInfo, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
 import rdts.base.Uid
 import replication.overlay.HyParViewIO
 import replication.research.OverlayConnectionDirectory
@@ -68,7 +68,7 @@ class OverlayDemoTest extends munit.FunSuite {
     private val apps   = mutable.ArrayBuffer.empty[OverlayDemo.NodeApp]
     private var nextId = 0
 
-    def newNode(seeds: List[ChannelConnectDescriptor] = Nil): OverlayDemo.NodeApp = {
+    def newNode(seeds: List[ChannelConnectInfo] = Nil): OverlayDemo.NodeApp = {
       val id = s"queued-$nextId"
       nextId += 1
       queued.update(id, QueuedLocalConnection(queue))

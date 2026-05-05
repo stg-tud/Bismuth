@@ -1,12 +1,11 @@
 package replication.overlay
 
-import channels.ChannelConnectDescriptor
+import channels.{ChannelConnectInfo, PeerConnectInfo}
 import munit.FunSuite
 import rdts.base.Uid
-import replication.overlay.HyParViewIO.PeerRef
 import replication.overlay.HyParViewStateMachine.Action
-import replication.overlay.HyParViewIO.HyParViewConfig
-import replication.overlay.HyParViewIO.HyParViewMessage.*
+import replication.overlay.HyParViewStateMachine.HyParViewConfig
+import replication.overlay.HyParViewStateMachine.HyParViewMessage.*
 
 class HyParViewStateMachineTest extends FunSuite {
 
@@ -20,12 +19,12 @@ class HyParViewStateMachineTest extends FunSuite {
     shufflePassiveSample = 2,
   )
 
-  private def peer(name: String): PeerRef =
-    PeerRef(Uid.predefined(name), Set(ChannelConnectDescriptor.QueuedLocal(name)))
+  private def peer(name: String): PeerConnectInfo =
+    PeerConnectInfo(Uid.predefined(name), Set(ChannelConnectInfo.QueuedLocal(name)))
   private def machine(selfName: String = "self", config: HyParViewConfig = cfg): HyParViewStateMachine =
     HyParViewStateMachine.empty(peer(selfName), config, (_, _) => 0, canConnectTo = _.channelConnectors.nonEmpty)
 
-  private def sent(actions: List[Action]): List[(PeerRef, Any)] =
+  private def sent(actions: List[Action]): List[(PeerConnectInfo, Any)] =
     actions.collect { case Action.Send(to, message) => (to, message) }
 
   test("receive join adds the new node to active view and forwards join through current active peers") {
@@ -169,7 +168,7 @@ class HyParViewStateMachineTest extends FunSuite {
 
   test("undialable peers are filtered from passive learning") {
     val dialable   = peer("dialable")
-    val undialable = PeerRef(Uid.predefined("undialable"), Set.empty)
+    val undialable = PeerConnectInfo(Uid.predefined("undialable"), Set.empty)
     val sm         = machine().discoverPeers(Set(dialable, undialable)).state
     assert(sm.passiveView.contains(dialable.uid))
     assert(!sm.passiveView.contains(undialable.uid))

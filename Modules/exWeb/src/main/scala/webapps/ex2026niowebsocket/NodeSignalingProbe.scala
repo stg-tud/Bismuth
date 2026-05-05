@@ -1,6 +1,6 @@
 package webapps.ex2026niowebsocket
 
-import channels.ChannelConnectDescriptor
+import channels.ChannelConnectInfo
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 
 object NodeSignalingProbe {
 
-  given JsonValueCodec[ChannelConnectDescriptor] = JsonCodecMaker.make
+  given JsonValueCodec[ChannelConnectInfo] = JsonCodecMaker.make
   given JsonValueCodec[SignalingServer.Session]  = JsonCodecMaker.make
   given JsonValueCodec[Message]                  = JsonCodecMaker.make
 
@@ -55,10 +55,10 @@ object NodeSignalingProbe {
         println(s"[node-signaling-probe] $message")
 
       lazy val client: SignalingClient = new SignalingClient(
-        server = ChannelConnectDescriptor.WebSocket(signalUrl),
+        server = ChannelConnectInfo.WebSocket(signalUrl),
         resolver = resolver,
         localUid = localUid,
-        initialAnnouncements = Map(topic -> Set(ChannelConnectDescriptor.WebRtc(uidString))),
+        initialAnnouncements = Map(topic -> Set(ChannelConnectInfo.WebRtc(uidString))),
         onRegistered = () => {
           log(s"registered uid=$uidString, looking up topic '$topic'")
           client.lookupTopic(topic, 8).run {

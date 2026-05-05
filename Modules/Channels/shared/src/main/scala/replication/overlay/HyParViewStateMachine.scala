@@ -1,11 +1,10 @@
 package replication.overlay
 
-import channels.ChannelConnectDescriptor
+import channels.{ChannelConnectInfo, PeerConnectInfo}
 import rdts.base.Uid
-import replication.overlay.HyParViewIO.PeerRef
-import replication.overlay.HyParViewIO.HyParViewConfig
-import replication.overlay.HyParViewIO.HyParViewMessage
-import replication.overlay.HyParViewIO.HyParViewMessage.*
+import replication.overlay.HyParViewStateMachine.HyParViewConfig
+import replication.overlay.HyParViewStateMachine.HyParViewMessage
+import replication.overlay.HyParViewStateMachine.HyParViewMessage.*
 
 /** Immutable membership state machine for HyParView.
   *
@@ -17,18 +16,58 @@ import replication.overlay.HyParViewIO.HyParViewMessage.*
   */
 object HyParViewStateMachine {
 
+
+  case class HyParViewConfig(
+      activeViewSize: Int,
+      passiveViewSize: Int,
+      activeRandomWalkLength: Int,
+      passiveRandomWalkLength: Int,
+      shuffleRandomWalkLength: Int,
+      shuffleActiveSample: Int,
+      shufflePassiveSample: Int,
+  )
+
+  object HyParViewConfig {
+    val default: HyParViewConfig = fromEstimatedNetworkSize(10_000)
+
+    def fromEstimatedNetworkSize(estimatedNetworkSize: Int): HyParViewConfig = {
+      val n       = math.max(2, estimatedNetworkSize)
+      val active  = math.max(3, math.ceil(math.log10(n.toDouble)).toInt + 1)
+      val passive = active * 6
+      HyParViewConfig(
+        active,
+        passive,
+        active + 1,
+        math.max(1, (active + 1) / 2),
+        active,
+        math.min(3, math.max(1, active - 1)),
+        4
+      )
+    }
+  }
+
+  enum HyParViewMessage {
+    case Join(newNode: PeerConnectInfo)
+    case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
+    case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
+    case NeighborReply(from: Uid, accepted: Boolean)
+    case Disconnect(peer: Uid)
+    case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
+    case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo])
+  }
+
   enum Action {
-    case Send(to: PeerRef, message: HyParViewMessage)
-    case SendJoin(details: Set[ChannelConnectDescriptor], message: HyParViewMessage)
+    case Send(to: PeerConnectInfo, message: HyParViewMessage)
+    case SendJoin(details: Set[ChannelConnectInfo], message: HyParViewMessage)
   }
 
   final case class Result(state: HyParViewStateMachine, actions: List[Action])
 
   def empty(
-      self: PeerRef,
-      config: HyParViewConfig,
-      randomIndex: (Int, Int) => Int,
-      canConnectTo: PeerRef => Boolean,
+             self: PeerConnectInfo,
+             config: HyParViewConfig,
+             randomIndex: (Int, Int) => Int,
+             canConnectTo: PeerConnectInfo => Boolean,
   ): HyParViewStateMachine =
     HyParViewStateMachine(
       self = self,
@@ -44,25 +83,25 @@ object HyParViewStateMachine {
 }
 
 final case class HyParViewStateMachine(
-    self: PeerRef,
-    config: HyParViewConfig,
-    known: Map[Uid, PeerRef],
-    active: Vector[PeerRef],
-    passive: Vector[PeerRef],
-    pendingPromotions: Set[Uid],
-    pendingShuffleSamples: Map[Uid, Set[PeerRef]],
-    randomIndex: (Int, Int) => Int,
-    canConnectTo: PeerRef => Boolean,
+                                        self: PeerConnectInfo,
+                                        config: HyParViewConfig,
+                                        known: Map[Uid, PeerConnectInfo],
+                                        active: Vector[PeerConnectInfo],
+                                        passive: Vector[PeerConnectInfo],
+                                        pendingPromotions: Set[Uid],
+                                        pendingShuffleSamples: Map[Uid, Set[PeerConnectInfo]],
+                                        randomIndex: (Int, Int) => Int,
+                                        canConnectTo: PeerConnectInfo => Boolean,
 ) {
   import HyParViewStateMachine.*
 
   def activeView: Set[Uid]       = active.iterator.map(_.uid).toSet
   def passiveView: Set[Uid]      = passive.iterator.map(_.uid).toSet
-  def activePeers: Set[PeerRef]  = active.toSet
-  def passivePeers: Set[PeerRef] = passive.toSet
+  def activePeers: Set[PeerConnectInfo]  = active.toSet
+  def passivePeers: Set[PeerConnectInfo] = passive.toSet
 
   /** Paper bootstrap step: send `Join` to a known contact node. */
-  def initiateJoin(details: Set[ChannelConnectDescriptor]): Result =
+  def initiateJoin(details: Set[ChannelConnectInfo]): Result =
     Result(this, List(Action.SendJoin(details, Join(self))))
 
   /** Paper passive-view maintenance step: initiate one shuffle through a random active peer. */
@@ -90,7 +129,7 @@ final case class HyParViewStateMachine(
     }
 
   /** Implementation hook: learn externally discovered peers by placing dialable ones in the passive view, then try to heal the active view. */
-  def discoverPeers(peers: Set[PeerRef]): Result = {
+  def discoverPeers(peers: Set[PeerConnectInfo]): Result = {
     val next = peers.foldLeft(this)((state, peer) => state.rememberPeer(peer).addPassiveIfEligible(peer))
     next.withPromotionIfNeeded(Nil)
   }
@@ -195,10 +234,10 @@ final case class HyParViewStateMachine(
           next.withPromotionIfNeeded(Nil)
   }
 
-  private def rememberPeer(peer: PeerRef): HyParViewStateMachine =
+  private def rememberPeer(peer: PeerConnectInfo): HyParViewStateMachine =
     if peer.uid == self.uid then this else copy(known = known.updated(peer.uid, peer))
 
-  private def addActive(peer: PeerRef): (HyParViewStateMachine, List[Action]) =
+  private def addActive(peer: PeerConnectInfo): (HyParViewStateMachine, List[Action]) =
     if peer.uid == self.uid || active.exists(_.uid == peer.uid) || !canConnectTo(peer) then (this, Nil)
     else
         val (evictedState, evictedActions) =
@@ -211,7 +250,7 @@ final case class HyParViewStateMachine(
         )
         (next, evictedActions)
 
-  private def addPassiveIfEligible(peer: PeerRef): HyParViewStateMachine =
+  private def addPassiveIfEligible(peer: PeerConnectInfo): HyParViewStateMachine =
     if peer.uid == self.uid || !canConnectTo(peer) || active.exists(_.uid == peer.uid) || passive.exists(
           _.uid == peer.uid
         )
@@ -228,13 +267,13 @@ final case class HyParViewStateMachine(
         val next    = copy(active = active.filterNot(_.uid == dropped.uid)).addPassiveIfEligible(dropped)
         (next, List(Action.Send(dropped, Disconnect(self.uid))))
 
-  private def acceptShuffle(origin: PeerRef, incomingSample: Set[PeerRef]): Result = {
+  private def acceptShuffle(origin: PeerConnectInfo, incomingSample: Set[PeerConnectInfo]): Result = {
     val replySample = randomSubset(passive.toSet, incomingSample.size)
     val next        = mergeShuffleSample(incomingSample, replySample)
     Result(next, List(Action.Send(origin, ShuffleReply(self.uid, replySample))))
   }
 
-  private def mergeShuffleSample(incomingSample: Set[PeerRef], sentToPeer: Set[PeerRef]): HyParViewStateMachine = {
+  private def mergeShuffleSample(incomingSample: Set[PeerConnectInfo], sentToPeer: Set[PeerConnectInfo]): HyParViewStateMachine = {
     val preferredVictims = sentToPeer.map(_.uid)
     incomingSample.foldLeft(this) { (state, peer) =>
       if peer.uid == self.uid || !state.canConnectTo(peer) || state.active.exists(

@@ -4,7 +4,7 @@ import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
 import replication.JsoniterCodecs.given
 import replication.overlay.HyParViewIO
-import replication.overlay.HyParViewIO.HyParViewConfig
+import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.SignalingServer.Message
 import replication.research.{OverlayDemoNode, SignalingClient}
@@ -17,13 +17,13 @@ import scala.util.Random
 /** vibecoded as part of the hyparview experiments */
 object OverlayDemo {
 
-  def connectionString(details: ChannelConnectDescriptor): String =
+  def connectionString(details: ChannelConnectInfo): String =
     Base64.getUrlEncoder.withoutPadding.encodeToString(
       writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8)
     )
 
-  def parseConnectionString(str: String): ChannelConnectDescriptor =
-    readFromString[ChannelConnectDescriptor](String(
+  def parseConnectionString(str: String): ChannelConnectInfo =
+    readFromString[ChannelConnectInfo](String(
       Base64.getUrlDecoder.decode(str),
       java.nio.charset.StandardCharsets.UTF_8
     ))
@@ -42,21 +42,21 @@ object OverlayDemo {
 
   object TopicNode {
     def tcp(
-        host: String = "127.0.0.1",
-        preferredPort: Option[Int] = None,
-        signalingServer: Option[ChannelConnectDescriptor] = None,
-        signalingTopic: String = "overlay-demo",
-        random: Random = Random(0),
-        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-        printOverlayEventsToStdout: Boolean = true,
-        onStateChanged: DemoState => Unit = _ => (),
+             host: String = "127.0.0.1",
+             preferredPort: Option[Int] = None,
+             signalingServer: Option[ChannelConnectInfo] = None,
+             signalingTopic: String = "overlay-demo",
+             random: Random = Random(0),
+             config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+             printOverlayEventsToStdout: Boolean = true,
+             onStateChanged: DemoState => Unit = _ => (),
     ): TopicNode = {
       val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
       val nioAbort    = Abort()
       val nioThread   = Executors.newSingleThreadExecutor()
       val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-      def listen(port: Int): (ChannelConnectDescriptor.Tcp, LatentConnection[MessageBuffer]) =
+      def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection[MessageBuffer]) =
         nioResolver.listen(host, port)
 
       val (listenDetails, listenBinary) =
@@ -69,10 +69,10 @@ object OverlayDemo {
 
       val listenEnvelope   = jsonConnection[HyParViewIO.Envelope[DemoState]](listenBinary, "overlay-json")
       val envelopeResolver = new ChannelResolver[HyParViewIO.Envelope[DemoState]] {
-        override def canConnect(details: ChannelConnectDescriptor): Boolean =
+        override def canConnect(details: ChannelConnectInfo): Boolean =
           nioResolver.canConnect(details)
 
-        override def connect(details: ChannelConnectDescriptor, label: String)
+        override def connect(details: ChannelConnectInfo, label: String)
             : Option[LatentConnection[HyParViewIO.Envelope[DemoState]]] =
           nioResolver.connect(
             details,
@@ -92,8 +92,8 @@ object OverlayDemo {
         printOverlayEventsToStdout = printOverlayEventsToStdout,
       )
       val signalingResolver = new ChannelResolver[Message] {
-        override def canConnect(details: ChannelConnectDescriptor): Boolean = nioResolver.canConnect(details)
-        override def connect(details: ChannelConnectDescriptor, label: String): Option[LatentConnection[Message]] =
+        override def canConnect(details: ChannelConnectInfo): Boolean = nioResolver.canConnect(details)
+        override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[Message]] =
           nioResolver.connect(details, label).map(jsonConnection[Message](_, "signaling-json"))
       }
       val signaling = signalingServer.map { server =>
@@ -105,12 +105,12 @@ object OverlayDemo {
           onTopicInfo = (_, peers) =>
             node.discoverPeers(peers.iterator.collect {
               case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
-                HyParViewIO.PeerRef(uid, descriptors)
+                PeerConnectInfo(uid, descriptors)
             }.toList),
           onPeerInfo = (uid, topics) =>
             topics.values.foreach { descriptors =>
               if uid != node.localUid.uid && descriptors.nonEmpty then
-                  node.discoverPeers(HyParViewIO.PeerRef(uid, descriptors) :: Nil)
+                  node.discoverPeers(PeerConnectInfo(uid, descriptors) :: Nil)
             },
         )
       }
@@ -141,7 +141,7 @@ object OverlayDemo {
         config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
         onStateChanged: DemoState => Unit = _ => (),
     ): TopicNode = {
-      val details        = ChannelConnectDescriptor.QueuedLocal(id)
+      val details        = ChannelConnectInfo.QueuedLocal(id)
       val listenEnvelope = registry.queuedServer(details).get
       val node           = new OverlayDemoNode(
         selfDetails = Set(details),
@@ -163,11 +163,11 @@ object OverlayDemo {
     }
   }
 
-  class NodeApp(val runtime: OverlayNodeRuntime, seeds: List[ChannelConnectDescriptor] = Nil) {
+  class NodeApp(val runtime: OverlayNodeRuntime, seeds: List[ChannelConnectInfo] = Nil) {
     val node: OverlayDemoNode = runtime.node
     node.start(seeds)
 
-    def details: ChannelConnectDescriptor = node.selfConnectionDetails.head
+    def details: ChannelConnectInfo = node.selfConnectionDetails.head
 
     def handleInputLine(line: String): Boolean = {
       val trimmed = line.trim

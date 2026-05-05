@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ChannelConnectDescriptor, Connection, LatentConnection, Receive}
+import channels.{Abort, ChannelConnectInfo, Connection, LatentConnection, Receive}
 import rdts.base.Uid
 import replication.research.SignalingServer.Message
 
@@ -12,11 +12,11 @@ object SignalingServer {
 
   enum Message {
     case Register(uid: Uid)
-    case Announce(topic: String, descriptors: Set[ChannelConnectDescriptor])
+    case Announce(topic: String, descriptors: Set[ChannelConnectInfo])
     case LookupPeer(requestId: Uid, uid: Uid)
-    case PeerInfo(requestId: Uid, uid: Uid, topics: Map[String, Set[ChannelConnectDescriptor]])
+    case PeerInfo(requestId: Uid, uid: Uid, topics: Map[String, Set[ChannelConnectInfo]])
     case LookupTopic(requestId: Uid, topic: String, count: Int)
-    case TopicInfo(requestId: Uid, topic: String, peers: Map[Uid, Set[ChannelConnectDescriptor]])
+    case TopicInfo(requestId: Uid, topic: String, peers: Map[Uid, Set[ChannelConnectInfo]])
     case Offer(from: Uid, to: Uid, session: Session)
     case Answer(from: Uid, to: Uid, session: Session)
   }
@@ -30,7 +30,7 @@ class SignalingServer(
 
   private val clientsByUid       = mutable.Map.empty[Uid, Connection[Message]]
   private val uidByConn          = mutable.Map.empty[Connection[Message], Uid]
-  private val announcementsByUid = mutable.Map.empty[Uid, Map[String, Set[channels.ChannelConnectDescriptor]]]
+  private val announcementsByUid = mutable.Map.empty[Uid, Map[String, Set[channels.ChannelConnectInfo]]]
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
@@ -50,15 +50,15 @@ class SignalingServer(
       case Failure(ex) => ex.printStackTrace()
     }
 
-  def peerTopics(uid: Uid): Map[String, Set[channels.ChannelConnectDescriptor]] =
+  def peerTopics(uid: Uid): Map[String, Set[channels.ChannelConnectInfo]] =
     announcementsByUid.getOrElse(uid, Map.empty)
 
-  def topicPeers(topic: String): Map[Uid, Set[channels.ChannelConnectDescriptor]] =
+  def topicPeers(topic: String): Map[Uid, Set[channels.ChannelConnectInfo]] =
     announcementsByUid.iterator.collect {
       case (uid, topics) if topics.contains(topic) => uid -> topics(topic)
     }.toMap
 
-  def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ChannelConnectDescriptor]] =
+  def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ChannelConnectInfo]] =
     random.shuffle(topicPeers(topic).toVector).take(math.max(0, count)).toMap
 
   private def disconnect(conn: Connection[Message]): Unit = {
