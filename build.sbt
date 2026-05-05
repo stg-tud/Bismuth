@@ -6,8 +6,6 @@ import scala.scalanative.build.{LTO, Mode}
 lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
   channels.js,
   channels.jvm,
-  crypto.js,
-  crypto.jvm,
   deltalens,
   examplesJVM,
   examplesWeb,
@@ -61,34 +59,18 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     Settings.jsEnvDom,
     Dependencies.scalajsDom,
     Dependencies.scalatags(),
+    // commonjs module allows tests to find libsodium-wrappers installed in the root project
+    Test / scalaJSLinkerConfig := {
+      (Test / scalaJSLinkerConfig).value
+        .withModuleKind(ModuleKind.CommonJSModule)
+    },
+    Test / jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv()
   )
   .jvmSettings(
     Test / fork := true,
     Dependencies.bouncyCastle,
     Dependencies.ayza,
     Dependencies.tink,
-  )
-
-lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"))
-  .dependsOn(
-    rdts,
-    channels % "compile->compile;test->test",
-  )
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.munit,
-    Dependencies.munitCheck,
-    Dependencies.slips,
-    Dependencies.jsoniterScala,
-  )
-  .jvmSettings(
-
-  ).jsSettings(
-    // commonjs module allows tests to find libsodium-wrappers installed in the root project
-    Test / scalaJSLinkerConfig := {
-      (Test / scalaJSLinkerConfig).value
-        .withModuleKind(ModuleKind.CommonJSModule)
-    },
   )
 
 lazy val deltalens = project.in(file("Modules/Deltalens"))
@@ -101,7 +83,7 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
 
 lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, reactives.jvm, crypto.jvm, channels.jvm % "compile->compile;test->test")
+  .dependsOn(deltalens, reactives.jvm, channels.jvm % "compile->compile;test->test")
   .settings(
     scala3defaults,
     javaOutputVersion(21),
@@ -203,7 +185,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, crypto.jvm, examplesJVM)
+  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, examplesJVM)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,
