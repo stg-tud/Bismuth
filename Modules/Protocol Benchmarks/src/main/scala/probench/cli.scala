@@ -27,7 +27,7 @@ object cli {
       tries: Int
   ): Unit = {
 
-    dataManager.prepareBinaryConnection(connection).run {
+    dataManager.prepareLatentConnection(BroadcastIO.objectMessages(connection)(using dataManager.stateCodec)).run {
       case Success(_)  => ()
       case Failure(ex) =>
         println(s"Failed to connect to $connection, retrying in $delay ms, retries: $tries")

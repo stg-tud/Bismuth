@@ -28,6 +28,14 @@ object BroadcastIO {
   }
 
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
+
+
+  def objectMessages[State: JsonValueCodec](conn: LatentConnection[MessageBuffer]): LatentConnection[BroadcastIO.Message[State]] =
+    LatentConnection.adapt(
+      (mb: MessageBuffer) => readFromArray[BroadcastIO.Message[State]](mb.asArray)(using BroadcastIO.messageCodec),
+      (pm: BroadcastIO.Message[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
+      "broadcast io serialization"
+    )(conn)
 }
 
 /** Combined Delta + Plumtree dissemination.
@@ -42,7 +50,7 @@ class BroadcastIO[State](
     sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
-)(using JsonValueCodec[State]) {
+)(using val stateCodec: JsonValueCodec[State]) {
 
   type Message = BroadcastIO.Message[State]
 
@@ -53,12 +61,7 @@ class BroadcastIO[State](
   @volatile private var plumtree: PlumtreeBroadcast[State]                =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
-  private def objectMessages(conn: LatentConnection[MessageBuffer]): LatentConnection[Message] =
-    LatentConnection.adapt(
-      (mb: MessageBuffer) => readFromArray[Message](mb.asArray)(using BroadcastIO.messageCodec),
-      (pm: Message) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
-      "broadcast io serialization"
-    )(conn)
+
 
   private def printExceptionHandler: Callback[Any] =
       case Failure(ex) =>
@@ -67,16 +70,10 @@ class BroadcastIO[State](
       case Success(_) => ()
 
   def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit =
-    prepareBinaryConnection(latentConnection).run(printExceptionHandler)
+    prepareLatentConnection(BroadcastIO.objectMessages(latentConnection)).run(printExceptionHandler)
 
   def addConnection(latentConnection: LatentConnection[Message]): Unit =
-    prepareConnection(latentConnection).run(printExceptionHandler)
-
-  def prepareBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Async[Any, Unit] =
-    prepareLatentConnection(objectMessages(latentConnection))
-
-  def prepareConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] =
-    prepareLatentConnection(latentConnection)
+    prepareLatentConnection(latentConnection).run(printExceptionHandler)
 
   def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] = {
     val preparedConnection: Async[Abort, Connection[Message]] = latentConnection.prepare { from =>
