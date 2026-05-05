@@ -3,9 +3,9 @@ package replication.overlay
 import channels.{ChannelConnectInfo, PeerConnectInfo}
 import munit.FunSuite
 import rdts.base.Uid
-import replication.overlay.HyParViewStateMachine.Action
+import replication.overlay.OverlayController.OverlayAction
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
-import replication.overlay.HyParViewStateMachine.HyParViewMessage.*
+import replication.overlay.OverlayController.OverlayMessage.*
 
 class HyParViewStateMachineTest extends FunSuite {
 
@@ -24,8 +24,8 @@ class HyParViewStateMachineTest extends FunSuite {
   private def machine(selfName: String = "self", config: HyParViewConfig = cfg): HyParViewStateMachine =
     HyParViewStateMachine.empty(peer(selfName), config, (_, _) => 0, canConnectTo = _.channelConnectors.nonEmpty)
 
-  private def sent(actions: List[Action]): List[(PeerConnectInfo, Any)] =
-    actions.collect { case Action.Send(to, message) => (to, message) }
+  private def sent(actions: List[OverlayAction]): List[(PeerConnectInfo, Any)] =
+    actions.collect { case OverlayAction.Send(to, message) => (to, message) }
 
   test("receive join adds the new node to active view and forwards join through current active peers") {
     val sm = machine()

@@ -6,12 +6,13 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.LocalUid
 import rdts.time.Dots
+import replication.BroadcastIO.Envelope
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.*
-import replication.overlay.HyParViewStateMachine
-import replication.overlay.HyParViewStateMachine.HyParViewMessage
+import replication.overlay.OverlayController
+import replication.overlay.OverlayController.OverlayMessage
 
 import java.net.SocketException
 import scala.concurrent.ExecutionContext
@@ -19,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 
 object BroadcastIO {
   enum Envelope[+State] {
-    case Membership(message: HyParViewMessage)
+    case Membership(message: OverlayMessage)
     case Protocol(message: PlumtreeMessage[State])
     case Ping(time: Long)
     case Pong(time: Long)
@@ -50,9 +51,11 @@ object BroadcastIO {
 class BroadcastIO[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
+    resolver: ChannelResolver[BroadcastIO.Envelope[State]] = ChannelResolver.disconnected[Envelope[State]],
     sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
+    @volatile private var overlay: OverlayController = OverlayController.none
 )(using val stateCodec: JsonValueCodec[State]) {
 
   type Message = BroadcastIO.Envelope[State]
@@ -61,7 +64,6 @@ class BroadcastIO[State](
 
   @volatile private var connections: Map[Peer, Connection[Message]]       = Map.empty
   @volatile private var peersByConnection: Map[Connection[Message], Peer] = Map.empty
-  @volatile private var hyparview: Option[HyParViewStateMachine]          = None
   @volatile private var plumtree: PlumtreeBroadcast[State]                =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
@@ -80,7 +82,7 @@ class BroadcastIO[State](
   def prepareLatentConnection(latentConnection: LatentConnection[Message]): Async[Any, Unit] =
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
-      applyResult(registerConnection(conn))
+      applyRoutingResult(registerConnection(conn))
     }
 
   private val connectionReceiver: Receive[Message] = new Receive[Message] {
@@ -109,7 +111,7 @@ class BroadcastIO[State](
 
   def repairTick(): Unit = {
     val result = lock.synchronized(plumtree.tickGrafts())
-    applyResult(result)
+    applyRoutingResult(result)
   }
 
   private def localKnownDeltaContext: Dots = lock.synchronized(plumtree.localContext)
@@ -121,7 +123,7 @@ class BroadcastIO[State](
     val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
     val payload = Payload(Dots.single(nextDot), delta)
     val result  = lock.synchronized(plumtree.broadcast(payload))
-    applyResult(result)
+    applyRoutingResult(result)
   }
 
   private def removePeer(conn: Connection[Message]): Unit = {
@@ -148,15 +150,15 @@ class BroadcastIO[State](
             plumtree.addPeer(peer)
     }
 
-  private def applyResult(result: PlumtreeBroadcast.Result[State]): Unit = {
+  private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
     val events = lock.synchronized {
       plumtree = result.state
       result.events
     }
-    events.foreach(handleEvent)
+    events.foreach(handleRoutingEvent)
   }
 
-  private def handleEvent(event: Event[State]): Unit =
+  private def handleRoutingEvent(event: Event[State]): Unit =
     event match
         case Event.Deliver(payload) =>
           receiveCallback(payload.data)
@@ -164,6 +166,34 @@ class BroadcastIO[State](
           peers.foreach(peer =>
             lock.synchronized(connections.get(peer)).foreach(send(_, BroadcastIO.Envelope.Protocol(message)))
           )
+
+  private def applyOverlayResult(next: OverlayController, actions: List[OverlayController.OverlayAction]): Unit = {
+    lock.synchronized {
+      overlay = next
+    }
+    actions.foreach(handleOverlayAction)
+  }
+
+  private def connectAndSend(details: Iterable[ChannelConnectInfo], label: String, payload: Message): Unit =
+    details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label))) match
+        case Some(latentConnection) =>
+          Async.provided(globalAbort) {
+            val conn = latentConnection.prepare { connectionReceiver }.bind
+            applyRoutingResult(registerConnection(conn))
+            send(conn, payload)
+          }.run(printExceptionHandler)
+        case None =>
+          ()
+
+  private def handleOverlayAction(action: OverlayController.OverlayAction): Unit =
+    action match
+        case OverlayController.OverlayAction.Send(to, message) =>
+          lock.synchronized(connections.get(Peer(to.uid))) match
+              case Some(conn) => send(conn, BroadcastIO.Envelope.Membership(message))
+              case None       =>
+                connectAndSend(to.channelConnectors, s"$replicaId->${to.uid}", BroadcastIO.Envelope.Membership(message))
+        case OverlayController.OverlayAction.SendJoin(details, message) =>
+          connectAndSend(details, s"$replicaId-join", BroadcastIO.Envelope.Membership(message))
 
   private def send(conn: Connection[Message], payload: Message): Unit =
     if globalAbort.closeRequest then ()
@@ -182,7 +212,7 @@ class BroadcastIO[State](
         case Some(existing) => existing
         case None           =>
           val registration = registerConnection(from)
-          applyResult(registration)
+          applyRoutingResult(registration)
           lock.synchronized(peersByConnection(from))
 
     msg match
@@ -190,10 +220,11 @@ class BroadcastIO[State](
           send(from, BroadcastIO.Envelope.Pong(time))
         case BroadcastIO.Envelope.Pong(_) =>
           ()
-        case BroadcastIO.Envelope.Membership(_) =>
-          ()
+        case BroadcastIO.Envelope.Membership(message) =>
+          val (next, actions) = lock.synchronized(overlay.receiveActions(message))
+          applyOverlayResult(next, actions)
         case BroadcastIO.Envelope.Protocol(protocol) =>
           val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
-          applyResult(result)
+          applyRoutingResult(result)
   }
 }

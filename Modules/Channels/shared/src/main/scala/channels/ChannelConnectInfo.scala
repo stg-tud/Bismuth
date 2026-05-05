@@ -9,6 +9,13 @@ trait ChannelResolver[T] {
   def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[T]]
 }
 
+object ChannelResolver {
+  def disconnected[T] =  new ChannelResolver[T] {
+    override def canConnect(details: ChannelConnectInfo): Boolean = false
+    override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[T]] = None
+  }
+}
+
 case class PeerConnectInfo(uid: Uid, channelConnectors: Set[ChannelConnectInfo])
 
 enum ChannelConnectInfo {

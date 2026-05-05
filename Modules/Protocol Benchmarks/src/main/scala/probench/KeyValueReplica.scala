@@ -71,7 +71,7 @@ class KeyValueReplica(
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    val dataManager: BroadcastIO[ClusterState] = BroadcastIO(
+    val dataManager: BroadcastIO[ClusterState] = BroadcastIO[ClusterState](
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,

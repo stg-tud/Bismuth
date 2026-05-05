@@ -3,8 +3,33 @@ package replication.overlay
 import channels.{ChannelConnectInfo, PeerConnectInfo}
 import rdts.base.Uid
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
-import replication.overlay.HyParViewStateMachine.HyParViewMessage
-import replication.overlay.HyParViewStateMachine.HyParViewMessage.*
+import replication.overlay.OverlayController.OverlayMessage.*
+import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
+
+trait OverlayController {
+  def receiveActions(message: OverlayMessage): (OverlayController, List[OverlayAction])
+}
+
+object OverlayController {
+  object none extends OverlayController {
+    override def receiveActions(message: OverlayMessage): (OverlayController, List[OverlayAction]) = (this, Nil)
+  }
+
+  enum OverlayMessage {
+    case Join(newNode: PeerConnectInfo)
+    case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
+    case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
+    case NeighborReply(from: Uid, accepted: Boolean)
+    case Disconnect(peer: Uid)
+    case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
+    case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo])
+  }
+
+  enum OverlayAction {
+    case Send(to: PeerConnectInfo, message: OverlayMessage)
+    case SendJoin(to: Set[ChannelConnectInfo], message: OverlayMessage)
+  }
+}
 
 /** Immutable membership state machine for HyParView.
   *
@@ -15,7 +40,6 @@ import replication.overlay.HyParViewStateMachine.HyParViewMessage.*
   *   This particularly affects passive-view learning from forwarded joins and shuffles.
   */
 object HyParViewStateMachine {
-
 
   case class HyParViewConfig(
       activeViewSize: Int,
@@ -46,28 +70,13 @@ object HyParViewStateMachine {
     }
   }
 
-  enum HyParViewMessage {
-    case Join(newNode: PeerConnectInfo)
-    case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
-    case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
-    case NeighborReply(from: Uid, accepted: Boolean)
-    case Disconnect(peer: Uid)
-    case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
-    case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo])
-  }
-
-  enum Action {
-    case Send(to: PeerConnectInfo, message: HyParViewMessage)
-    case SendJoin(details: Set[ChannelConnectInfo], message: HyParViewMessage)
-  }
-
-  final case class Result(state: HyParViewStateMachine, actions: List[Action])
+  final case class Result(state: HyParViewStateMachine, actions: List[OverlayAction])
 
   def empty(
-             self: PeerConnectInfo,
-             config: HyParViewConfig,
-             randomIndex: (Int, Int) => Int,
-             canConnectTo: PeerConnectInfo => Boolean,
+      self: PeerConnectInfo,
+      config: HyParViewConfig,
+      randomIndex: (Int, Int) => Int,
+      canConnectTo: PeerConnectInfo => Boolean,
   ): HyParViewStateMachine =
     HyParViewStateMachine(
       self = self,
@@ -83,26 +92,26 @@ object HyParViewStateMachine {
 }
 
 final case class HyParViewStateMachine(
-                                        self: PeerConnectInfo,
-                                        config: HyParViewConfig,
-                                        known: Map[Uid, PeerConnectInfo],
-                                        active: Vector[PeerConnectInfo],
-                                        passive: Vector[PeerConnectInfo],
-                                        pendingPromotions: Set[Uid],
-                                        pendingShuffleSamples: Map[Uid, Set[PeerConnectInfo]],
-                                        randomIndex: (Int, Int) => Int,
-                                        canConnectTo: PeerConnectInfo => Boolean,
-) {
+    self: PeerConnectInfo,
+    config: HyParViewConfig,
+    known: Map[Uid, PeerConnectInfo],
+    active: Vector[PeerConnectInfo],
+    passive: Vector[PeerConnectInfo],
+    pendingPromotions: Set[Uid],
+    pendingShuffleSamples: Map[Uid, Set[PeerConnectInfo]],
+    randomIndex: (Int, Int) => Int,
+    canConnectTo: PeerConnectInfo => Boolean,
+) extends OverlayController {
   import HyParViewStateMachine.*
 
-  def activeView: Set[Uid]       = active.iterator.map(_.uid).toSet
-  def passiveView: Set[Uid]      = passive.iterator.map(_.uid).toSet
+  def activeView: Set[Uid]               = active.iterator.map(_.uid).toSet
+  def passiveView: Set[Uid]              = passive.iterator.map(_.uid).toSet
   def activePeers: Set[PeerConnectInfo]  = active.toSet
   def passivePeers: Set[PeerConnectInfo] = passive.toSet
 
   /** Paper bootstrap step: send `Join` to a known contact node. */
   def initiateJoin(details: Set[ChannelConnectInfo]): Result =
-    Result(this, List(Action.SendJoin(details, Join(self))))
+    Result(this, List(OverlayAction.SendJoin(details, Join(self))))
 
   /** Paper passive-view maintenance step: initiate one shuffle through a random active peer. */
   def shuffleTick(): Result =
@@ -115,7 +124,7 @@ final case class HyParViewStateMachine(
         )
         Result(
           copy(pendingShuffleSamples = pendingShuffleSamples.updated(target.uid, sample)),
-          List(Action.Send(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid)))
+          List(OverlayAction.Send(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid)))
         )
 
   /** Local liveness/progress hook: if we are under target active view size, retry promotion from the passive view.
@@ -147,18 +156,23 @@ final case class HyParViewStateMachine(
   }
 
   /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
-  def receive(message: HyParViewMessage): Result = {
+  override def receiveActions(message: OverlayMessage): (OverlayController, List[OverlayAction]) = {
+    val result = receive(message)
+    (result.state, result.actions)
+  }
+
+  def receive(message: OverlayMessage): Result = {
     message match
         case Join(newNode) =>
           // Paper join handling at the contact: add the newcomer to active and start forwarding `ForwardJoin` through current active peers.
           val afterRemember                = rememberPeer(newNode)
           val (afterActive, activeActions) = afterRemember.addActive(newNode)
           val forwardActions               = afterActive.active.filterNot(_.uid == newNode.uid).map(peer =>
-            Action.Send(peer, ForwardJoin(newNode, config.activeRandomWalkLength, self.uid))
+            OverlayAction.Send(peer, ForwardJoin(newNode, config.activeRandomWalkLength, self.uid))
           ).toList
           Result(
             afterActive,
-            activeActions ::: Action.Send(newNode, Neighbor(self, highPriority = true)) :: forwardActions
+            activeActions ::: OverlayAction.Send(newNode, Neighbor(self, highPriority = true)) :: forwardActions
           )
 
         case ForwardJoin(newNode, ttl, sender) =>
@@ -167,7 +181,7 @@ final case class HyParViewStateMachine(
           if newNode.uid == self.uid then Result(afterRemember, Nil)
           else if ttl == 0 || afterRemember.active.size <= 1 then
               val (next, actions) = afterRemember.addActive(newNode)
-              Result(next, actions :+ Action.Send(newNode, Neighbor(self, highPriority = true)))
+              Result(next, actions :+ OverlayAction.Send(newNode, Neighbor(self, highPriority = true)))
           else
               val withPassive =
                 if ttl == config.passiveRandomWalkLength then afterRemember.addPassiveIfEligible(newNode)
@@ -176,11 +190,11 @@ final case class HyParViewStateMachine(
               if nextPeers.nonEmpty then
                   Result(
                     withPassive,
-                    List(Action.Send(withPassive.choose(nextPeers), ForwardJoin(newNode, ttl - 1, self.uid)))
+                    List(OverlayAction.Send(withPassive.choose(nextPeers), ForwardJoin(newNode, ttl - 1, self.uid)))
                   )
               else
                   val (next, actions) = withPassive.addActive(newNode)
-                  Result(next, actions :+ Action.Send(newNode, Neighbor(self, highPriority = true)))
+                  Result(next, actions :+ OverlayAction.Send(newNode, Neighbor(self, highPriority = true)))
 
         case Neighbor(from, highPriority) =>
           // Paper active-view repair handshake: high priority always accepted, low priority only if there is a free active slot.
@@ -188,8 +202,8 @@ final case class HyParViewStateMachine(
           val accepted      = highPriority || afterRemember.active.size < config.activeViewSize
           if accepted then
               val (next, actions) = afterRemember.addActive(from)
-              Result(next, actions :+ Action.Send(from, NeighborReply(self.uid, accepted = true)))
-          else Result(afterRemember, List(Action.Send(from, NeighborReply(self.uid, accepted = false))))
+              Result(next, actions :+ OverlayAction.Send(from, NeighborReply(self.uid, accepted = true)))
+          else Result(afterRemember, List(OverlayAction.Send(from, NeighborReply(self.uid, accepted = false))))
 
         case NeighborReply(from, accepted) =>
           // Paper promotion result: accepted peers move to active; rejected peers stay passive.
@@ -219,7 +233,7 @@ final case class HyParViewStateMachine(
               if nextPeers.nonEmpty then
                   Result(
                     remembered,
-                    List(Action.Send(remembered.choose(nextPeers), Shuffle(origin, sample, ttl - 1, self.uid)))
+                    List(OverlayAction.Send(remembered.choose(nextPeers), Shuffle(origin, sample, ttl - 1, self.uid)))
                   )
               else remembered.acceptShuffle(origin, sample)
           else remembered.acceptShuffle(origin, sample)
@@ -237,7 +251,7 @@ final case class HyParViewStateMachine(
   private def rememberPeer(peer: PeerConnectInfo): HyParViewStateMachine =
     if peer.uid == self.uid then this else copy(known = known.updated(peer.uid, peer))
 
-  private def addActive(peer: PeerConnectInfo): (HyParViewStateMachine, List[Action]) =
+  private def addActive(peer: PeerConnectInfo): (HyParViewStateMachine, List[OverlayAction]) =
     if peer.uid == self.uid || active.exists(_.uid == peer.uid) || !canConnectTo(peer) then (this, Nil)
     else
         val (evictedState, evictedActions) =
@@ -260,20 +274,23 @@ final case class HyParViewStateMachine(
           if passive.size >= config.passiveViewSize then passive.filterNot(_.uid == choose(passive).uid) else passive
         copy(passive = trimmed :+ peer, known = known.updated(peer.uid, peer))
 
-  private def dropRandomActive(): (HyParViewStateMachine, List[Action]) =
+  private def dropRandomActive(): (HyParViewStateMachine, List[OverlayAction]) =
     if active.isEmpty then (this, Nil)
     else
         val dropped = choose(active)
         val next    = copy(active = active.filterNot(_.uid == dropped.uid)).addPassiveIfEligible(dropped)
-        (next, List(Action.Send(dropped, Disconnect(self.uid))))
+        (next, List(OverlayAction.Send(dropped, Disconnect(self.uid))))
 
   private def acceptShuffle(origin: PeerConnectInfo, incomingSample: Set[PeerConnectInfo]): Result = {
     val replySample = randomSubset(passive.toSet, incomingSample.size)
     val next        = mergeShuffleSample(incomingSample, replySample)
-    Result(next, List(Action.Send(origin, ShuffleReply(self.uid, replySample))))
+    Result(next, List(OverlayAction.Send(origin, ShuffleReply(self.uid, replySample))))
   }
 
-  private def mergeShuffleSample(incomingSample: Set[PeerConnectInfo], sentToPeer: Set[PeerConnectInfo]): HyParViewStateMachine = {
+  private def mergeShuffleSample(
+      incomingSample: Set[PeerConnectInfo],
+      sentToPeer: Set[PeerConnectInfo]
+  ): HyParViewStateMachine = {
     val preferredVictims = sentToPeer.map(_.uid)
     incomingSample.foldLeft(this) { (state, peer) =>
       if peer.uid == self.uid || !state.canConnectTo(peer) || state.active.exists(
@@ -295,14 +312,14 @@ final case class HyParViewStateMachine(
     copy(passive = passive.filterNot(_.uid == victim.uid))
   }
 
-  private def withPromotionIfNeeded(existingActions: List[Action]): Result =
+  private def withPromotionIfNeeded(existingActions: List[OverlayAction]): Result =
     if active.size >= config.activeViewSize then Result(this, existingActions)
     else
         passive.find(peer => !pendingPromotions.contains(peer.uid)) match
             case Some(candidate) =>
               Result(
                 copy(pendingPromotions = pendingPromotions + candidate.uid),
-                existingActions :+ Action.Send(candidate, Neighbor(self, highPriority = active.isEmpty))
+                existingActions :+ OverlayAction.Send(candidate, Neighbor(self, highPriority = active.isEmpty))
               )
             case None => Result(this, existingActions)
 
