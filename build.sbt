@@ -7,8 +7,8 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   channels.js,
   channels.jvm,
   deltalens,
-  examplesJVM,
-  examplesWeb,
+  exJVM,
+  exWeb,
   lore.js,
   lore.jvm,
   loreCompilerPlugin,
@@ -73,7 +73,7 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
     Dependencies.scalatest,
   )
 
-lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
+lazy val exJVM = project.in(file("Modules/exJVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(deltalens, reactives.jvm, channels.jvm % "compile->compile;test->test")
   .settings(
@@ -106,7 +106,7 @@ lazy val examplesJVM = project.in(file("Modules/Examples JVM"))
     ), // Reduce warnings for JavaFX application
   )
 
-lazy val examplesWeb = project.in(file("Modules/Examples Web"))
+lazy val exWeb = project.in(file("Modules/exWeb"))
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(channels.js, rdts.js, lore.js)
   .settings(
@@ -176,7 +176,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, examplesJVM)
+  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, exJVM)
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,
