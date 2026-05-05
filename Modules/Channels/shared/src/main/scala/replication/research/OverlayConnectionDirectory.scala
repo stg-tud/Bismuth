@@ -22,14 +22,7 @@ object OverlayConnectionDirectory {
       active: Set[Uid],
       passive: Set[Uid],
       eager: Set[Uid],
-  ) {
-    def normalized: ViewSnapshot = {
-      val activeOnly  = active
-      val passiveOnly = passive -- activeOnly
-      val eagerOnly   = eager intersect activeOnly
-      ViewSnapshot(activeOnly, passiveOnly, eagerOnly)
-    }
-  }
+  )
 
   case class NodeInfo(
       lastSeenMillis: Long,
@@ -51,7 +44,7 @@ object OverlayConnectionDirectory {
     val active  = info.peers.collect { case (uid, LinkState.Active | LinkState.Eager) => uid }.toSet
     val passive = info.peers.collect { case (uid, LinkState.Passive) => uid }.toSet
     val eager   = info.peers.collect { case (uid, LinkState.Eager) => uid }.toSet
-    ViewSnapshot(active, passive, eager).normalized
+    ViewSnapshot(active, passive, eager)
   }
 
   def snapshot(state: Directory, node: Uid): ViewSnapshot =
@@ -68,7 +61,7 @@ object OverlayConnectionDirectory {
       active = peers.collect { case (uid, LinkState.Active | LinkState.Eager) => uid }.toSet,
       passive = peers.collect { case (uid, LinkState.Passive) => uid }.toSet,
       eager = eagerPeers,
-    ).normalized
+    )
 
     val nextPeers =
       desired.passive.iterator.map(_ -> LinkState.Passive).toMap ++

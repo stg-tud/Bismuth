@@ -30,7 +30,6 @@ class OverlayDemoNode(
   private val abort   = Abort()
   private val timer   = Timer(true)
   private var overlay: Option[replication.overlay.HyParViewIO[DemoState]] = None
-  private var mismatchChecksInRow                                                      = 0
 
   private val heartbeatIntervalMillis = 10_000L
   private val staleNodeAfterMillis    = 30_000L
@@ -69,28 +68,6 @@ class OverlayDemoNode(
 
   private def publishLocalView(): Unit = refreshLocalView(replicate = true, updateTimestamp = true)
   private def publishLocalViewWithoutHeartbeat(): Unit = refreshLocalView(replicate = true, updateTimestamp = false)
-
-  private def expectedLocalView: OverlayConnectionDirectory.ViewSnapshot =
-    OverlayConnectionDirectory.ViewSnapshot(
-      active = overlay.map(_.activeView).getOrElse(Set.empty),
-      passive = overlay.map(_.passiveView).getOrElse(Set.empty),
-      eager = overlay.map(_.eagerView).getOrElse(Set.empty),
-    ).normalized
-
-  private def checkReplicatedLocalView(): Unit = {
-    val expected   = expectedLocalView
-    val replicated = OverlayConnectionDirectory.snapshot(state.connections, localUid.uid)
-    if replicated == expected then mismatchChecksInRow = 0
-    else {
-      mismatchChecksInRow += 1
-      if mismatchChecksInRow >= 3 then {
-          Console.err.println(
-            s"[overlay-state-mismatch ${Uid.unwrap(localUid.uid)}] local(active=${expected.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${expected.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${expected.eager.map(Uid.unwrap).toList.sorted.mkString(",")}) != replicated(active=${replicated.active.map(Uid.unwrap).toList.sorted.mkString(",")}; passive=${replicated.passive.map(Uid.unwrap).toList.sorted.mkString(",")}; eager=${replicated.eager.map(Uid.unwrap).toList.sorted.mkString(",")})"
-          )
-          publishLocalViewWithoutHeartbeat()
-      }
-    }
-  }
 
   private def removeDisconnectedConnection(peer: Uid): Unit = {
     given LocalUid = localUid
@@ -151,13 +128,6 @@ class OverlayDemoNode(
       },
       heartbeatIntervalMillis,
       heartbeatIntervalMillis,
-    )
-    timer.schedule(
-      new TimerTask {
-        override def run(): Unit = checkReplicatedLocalView()
-      },
-      1000L,
-      1000L,
     )
   }
 
