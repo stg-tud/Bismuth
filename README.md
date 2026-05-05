@@ -60,14 +60,14 @@ and is useful in many contexts such as traditional user interfaces, concurrent a
 
 * Homepage: <http://www.rescala-lang.com/>
 * Usage Manual: <http://www.rescala-lang.com/manual>
-* Maven Artifacts: https://index.scala-lang.org/rescala-lang/rescala/artifacts/rescala?pre-releases=false
+* Maven Artifacts: https://index.scala-lang.org/stg-tud/bismuth/artifacts/reactives?pre-releases=false
 
 # Replicated Data Types (ARDTs)
 
 The RDT library is still being actively researched
 
 * primary paper introducing the concept: https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ECOOP.2023.14
-* Maven Artifacts: https://index.scala-lang.org/rescala-lang/rescala/artifacts/kofre?pre-releases=false
+* Maven Artifacts: https://index.scala-lang.org/stg-tud/bismuth/artifacts/rdts?pre-releases=false
 
 
 # Repository Module Overview
