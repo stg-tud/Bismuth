@@ -2,7 +2,7 @@ package ex2026lofi_acl.travelplanner.model
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.legacy.monotonic.Acl
+import ex2026lofi_acl.bft.Acl
 import ex2026lofi_acl.sync.Replica
 import ex2026lofi_acl.travelplanner.{Invitation, TravelPlan}
 import ex2026lofi_acl.travelplanner.TravelPlan.given

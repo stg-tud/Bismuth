@@ -1,7 +1,7 @@
 package ex2026lofi_acl.sync
 
 import crypto.PublicIdentity
-import ex2026lofi_acl.legacy.monotonic.Acl
+import ex2026lofi_acl.bft.Acl
 import ex2026lofi_acl.travelplanner.Invitation
 import rdts.filters.PermissionTree
 import rdts.time.Dot

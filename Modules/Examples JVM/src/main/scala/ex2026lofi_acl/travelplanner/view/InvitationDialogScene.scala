@@ -1,7 +1,7 @@
 package ex2026lofi_acl.travelplanner.view
 
 import crypto.PublicIdentity
-import ex2026lofi_acl.legacy.monotonic.Acl
+import ex2026lofi_acl.bft.Acl
 import ex2026lofi_acl.travelplanner.{Invitation, TravelPlan}
 import ex2026lofi_acl.travelplanner.model.TravelPlanModel
 import rdts.filters.PermissionTree
