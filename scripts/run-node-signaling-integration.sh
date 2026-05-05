@@ -4,13 +4,13 @@ set ROOT_DIR (cd (dirname (status filename))/..; pwd)
 set PORT 9001
 set SIGNAL_HOST 127.0.0.1
 set SIGNAL_URL ws://$SIGNAL_HOST:$PORT
-set GENERATED_MAIN "$ROOT_DIR/Modules/Examples Web/target/generated_js/examplesweb-fastopt/main.js"
-set NODE_SCRIPT "$ROOT_DIR/Modules/Examples JVM/src/test/resources/ex2026overlaydemo/node-signaling-probe.mjs"
+set GENERATED_MAIN "$ROOT_DIR/Modules/exWeb/target/generated_js/exweb-fastopt/main.js"
+set NODE_SCRIPT "$ROOT_DIR/Modules/exJVM/src/test/resources/ex2026overlaydemo/node-signaling-probe.mjs"
 
 cd "$ROOT_DIR"
 
 echo "[1/3] building Scala.js bundle for node probe"
-sbt --client examplesWeb/fastLinkJS
+sbt --client exWeb/fastLinkJS
 
 # echo "[2/3] starting signaling server on $SIGNAL_URL"
 # setsid sbt "examplesJVM/runMain ex2026overlaydemo.WebRtcSignalingServer --port $PORT" &

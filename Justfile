@@ -21,21 +21,21 @@ sonaRelease sbtOpts="":
 	sbt {{sbtOpts}} 'sonaRelease'
 
 runSimpleCaseStudy sbtOpts="":
-	sbt {{sbtOpts}} 'examplesJVM / run'
+	sbt {{sbtOpts}} 'exJVM / run'
 
 webappsServe:
-	npm --prefix "Modules/Examples Web/" install --no-package-lock
-	"Modules/Examples Web/node_modules/vite/bin/vite.js" "Modules/Examples Web/"
+	npm --prefix "Modules/exWeb/" install --no-package-lock
+	"Modules/exWeb/node_modules/vite/bin/vite.js" "Modules/exWeb/"
 
 webappsBundle:
-	npm --prefix "Modules/Examples Web/" install --no-package-lock
-	sbt --client examplesWeb/fullLinkJS
-	mkdir -p "Modules/Examples Web/target/generated_js/examplesweb-fastopt/"
-	touch "Modules/Examples Web/target/generated_js/examplesweb-fastopt/main.js"
-	"Modules/Examples Web/node_modules/vite/bin/vite.js" build "Modules/Examples Web/" --outDir "target/dist"
+	npm --prefix "Modules/exWeb/" install --no-package-lock
+	sbt --client exWeb/fullLinkJS
+	mkdir -p "Modules/exWeb/target/generated_js/exweb-fastopt/"
+	touch "Modules/exWeb/target/generated_js/exweb-fastopt/main.js"
+	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "target/dist"
 
 webappsWebview: webappsBundle
-	sbt --client 'webview / run "Modules/Examples Web/target/dist/index.html"'
+	sbt --client 'webview / run "Modules/exWeb/target/dist/index.html"'
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}

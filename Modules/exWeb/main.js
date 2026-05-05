@@ -2,8 +2,8 @@
 // when running this file directly in the browser without bundling, we fall back to using the fastopt variant
 const useFullopt = import.meta.env?.PROD;
 const modulePromise = useFullopt
-	? import("./target/generated_js/examplesweb-opt/main.js")
-	: import("./target/generated_js/examplesweb-fastopt/main.js");
+	? import("./target/generated_js/exweb-opt/main.js")
+	: import("./target/generated_js/exweb-fastopt/main.js");
 
 // the dynamic import above returns the module object, which is destructured into the components we care about below.
 modulePromise.then(
