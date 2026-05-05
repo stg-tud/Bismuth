@@ -62,7 +62,7 @@ class BroadcastIO[State](
 
   @volatile private var connections: Map[Peer, Connection[Envelope[State]]]       = Map.empty
   @volatile private var peersByConnection: Map[Connection[Envelope[State]], Peer] = Map.empty
-  @volatile private var plumtree: PlumtreeBroadcast[State]                =
+  @volatile private var plumtree: PlumtreeBroadcast[State]                        =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
   private def printExceptionHandler: Callback[Any] =
@@ -205,16 +205,11 @@ class BroadcastIO[State](
 
     val peer = lock.synchronized(peersByConnection.get(from)) match
         case Some(existing) => existing
-        case None           =>
-          val registration = registerConnection(from)
-          applyRoutingResult(registration)
-          lock.synchronized(peersByConnection(from))
+        case None           => throw new IllegalStateException(s"received message from unknown connection $from")
 
     msg match
-        case Envelope.Ping(time) =>
-          send(from, Envelope.Pong(time))
-        case Envelope.Pong(_) =>
-          ()
+        case Envelope.Ping(time)          => send(from, Envelope.Pong(time))
+        case Envelope.Pong(_)             => ()
         case Envelope.Membership(message) =>
           val (next, actions) = lock.synchronized(overlay.receiveActions(message))
           applyOverlayResult(next, actions)
