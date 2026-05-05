@@ -1,4 +1,4 @@
-package ex2026lofi_acl.bft
+package replication.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import HashDag.{Delta, Encoder, Hashable}

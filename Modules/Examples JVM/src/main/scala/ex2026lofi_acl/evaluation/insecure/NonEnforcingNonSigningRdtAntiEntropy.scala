@@ -2,12 +2,12 @@ package ex2026lofi_acl.evaluation.insecure
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, Hash}
-import ex2026lofi_acl.bft.HashDag.Encoder
-import ex2026lofi_acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
+import replication.acl.bft.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.{Dot, Dots}
+import replication.acl.bft.{Acl, Hash}
+import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 import scala.annotation.unused
 

@@ -3,7 +3,7 @@ package ex2026lofi_acl.sync
 import channels.MessageBuffer
 import crypto.PublicIdentity
 import ex2026lofi_acl.Debug
-import ex2026lofi_acl.sync.MessageReceiver
+import replication.acl.sync.MessageReceiver
 
 import java.util.concurrent.LinkedBlockingQueue
 

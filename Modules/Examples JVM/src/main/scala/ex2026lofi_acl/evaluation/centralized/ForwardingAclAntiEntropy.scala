@@ -2,8 +2,8 @@ package ex2026lofi_acl.evaluation.centralized
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, BftDelta}
-import ex2026lofi_acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator}
+import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator}
 
 class ForwardingAclAntiEntropy(
     id: PrivateIdentity,

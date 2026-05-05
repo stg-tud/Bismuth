@@ -1,18 +1,18 @@
-package ex2026lofi_acl.sync.anti_entropy
+package replication.acl.sync.anti_entropy
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.Signature
-import ex2026lofi_acl.bft.HashDag.Encoder
+import replication.acl.bft.HashDag.Encoder
 import rdts.time.Dot
+import replication.acl.bft.Signature
 
 case class SignedDelta[State](
     dot: Dot,
-    signature: Signature,
+    signature: Option[Signature],
     payload: State
 ) {
   def isSignatureValid(using encoder: Encoder[SignedDelta[State]]): Boolean =
-    signature.verify(PublicIdentity(dot.place.delegate).publicKey, encoder(this.copy(signature = null)))
+    signature.get.verify(PublicIdentity(dot.place.delegate).publicKey, encoder(this.copy(signature = None)))
 }
 
 object SignedDelta {
@@ -20,7 +20,7 @@ object SignedDelta {
       using encoder: Encoder[SignedDelta[State]]
   ): SignedDelta[State] = {
     require(authorKey.getPublic.id == dot.place.delegate)
-    val delta = SignedDelta(dot, null, state)
-    delta.copy(signature = Signature.compute(encoder(delta), authorKey.identityKey.getPrivate))
+    val delta = SignedDelta(dot, None, state)
+    delta.copy(signature = Some(Signature.compute(encoder(delta), authorKey.identityKey.getPrivate)))
   }
 }

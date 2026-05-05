@@ -1,8 +1,8 @@
 package rdts.time
 
-import rdts.time.IdTree.{Branch, Leaf, anonymous, seed}
+import rdts.time.IdTree.{Branch, Leaf}
 
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{Gen}
 
 import scala.language.implicitConversions
 

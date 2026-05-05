@@ -3,9 +3,9 @@ package ex2026lofi_acl.sync
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
-import ex2026lofi_acl.sync.ChannelConnectionManager
 import ChannelConnectionManagerTest.*
 import munit.FunSuite
+import replication.acl.sync.ChannelConnectionManager
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 

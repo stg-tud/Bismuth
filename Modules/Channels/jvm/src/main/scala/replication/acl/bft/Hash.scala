@@ -1,4 +1,4 @@
-package ex2026lofi_acl.bft
+package replication.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 
@@ -39,7 +39,7 @@ object Hash {
 
       override def encodeValue(x: Hash, out: JsonWriter): Unit = out.writeBase64Val(x.delegate, true)
 
-      override def nullValue: Hash = null
+      override def nullValue: Hash = null.asInstanceOf[Hash]
 
   given hashKeyCodec: JsonKeyCodec[Hash]:
       override def decodeKey(in: JsonReader): Hash = new Hash(in.readBase64AsBytes(Array.empty))

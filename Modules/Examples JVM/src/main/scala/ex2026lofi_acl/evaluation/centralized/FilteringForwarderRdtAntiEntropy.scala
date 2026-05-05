@@ -3,11 +3,11 @@ package ex2026lofi_acl.evaluation.centralized
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import ex2026lofi_acl.Debug
-import ex2026lofi_acl.bft.HashDag.Encoder
-import ex2026lofi_acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
+import replication.acl.bft.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
+import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,

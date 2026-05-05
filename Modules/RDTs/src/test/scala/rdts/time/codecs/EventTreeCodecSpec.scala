@@ -1,7 +1,6 @@
 package rdts.time.codecs
 
 import rdts.time.EventTree
-import rdts.time.EventTree.{Branch, Leaf}
 import rdts.time.EventTreeGenerators.genEventTree
 import rdts.time.codecs.{CodecSpec, EventTreeCodec}
 

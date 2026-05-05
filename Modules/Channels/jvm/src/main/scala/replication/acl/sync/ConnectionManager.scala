@@ -1,4 +1,4 @@
-package ex2026lofi_acl.sync
+package replication.acl.sync
 
 import channels.MessageBuffer
 import crypto.PublicIdentity

@@ -1,15 +1,15 @@
-package ex2026lofi_acl
+package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.PublicIdentity
-import ex2026lofi_acl.bft.{Hash, Signature}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
-import ex2026lofi_acl.sync.anti_entropy.SignedDelta
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecs.given
+import replication.acl.bft.{Hash, Signature}
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
+import replication.acl.sync.anti_entropy.SignedDelta
+import JsoniterCodecs.given
 
-object JsoniterCodecs {
+object JsoniterCodecsJvm {
   given pubIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:
       override def decodeKey(in: JsonReader): PublicIdentity               = PublicIdentity(in.readKeyAsString())
       override def encodeKey(pubId: PublicIdentity, out: JsonWriter): Unit = out.writeKey(pubId.id)

@@ -1,4 +1,4 @@
-package ex2026lofi_acl.bft
+package replication.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import crypto.Ed25519Util
@@ -41,7 +41,7 @@ object Signature {
         if x eq null then out.writeNull()
         else out.writeBase64Val(x.delegate, true)
       }
-      override def nullValue: Signature = null
+      override def nullValue: Signature = null.asInstanceOf[Signature]
 
   given signatureKeyCodec: JsonKeyCodec[Signature]:
       override def decodeKey(in: JsonReader): Signature           = new Signature(in.readBase64AsBytes(Array.empty))

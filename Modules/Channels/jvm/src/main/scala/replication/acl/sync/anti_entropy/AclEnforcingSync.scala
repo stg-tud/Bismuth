@@ -1,19 +1,19 @@
-package ex2026lofi_acl.sync.anti_entropy
+package replication.acl.sync.anti_entropy
 
 import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.JsoniterCodecs.syncMsgCodec
-import ex2026lofi_acl.bft.HashDag.Encoder
-import ex2026lofi_acl.bft.{Acl, BftDelta, Hash}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
-import ex2026lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
-import ex2026lofi_acl.{Debug, JsoniterCodecs}
+import replication.acl.bft.HashDag.Encoder
+import AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
+import AclEnforcingSync.{SyncMsg, encoder}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
+import replication.JsoniterCodecsJvm
+import replication.acl.bft.{Acl, BftDelta, Hash}
+import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import replication.JsoniterCodecsJvm.given
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
@@ -26,13 +26,13 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     onRdtChanged: (Dots, State) => Unit
 ) {
   private val messageHandlerExecutor =
-    Executors.newVirtualThreadPerTaskExecutor() // Executes the message handling logic
-  protected val connectionManager: ConnectionManager = {
+    Executors.newCachedThreadPool() // Executes the message handling logic
+  protected lazy val connectionManager: ConnectionManager = {
     val msgReceiver = new MessageReceiver[MessageBuffer] {
       override def receivedMessage(msgBuf: MessageBuffer, fromUser: PublicIdentity): Unit =
         messageHandlerExecutor.execute(() =>
             val msg: SyncMsg[State] = readFromArray(msgBuf.asArray)
-            Debug.received(msg, fromUser, localIdentity.getPublic)
+            // Debug.received(msg, fromUser, localIdentity.getPublic)
             handleMessage(msg, fromUser)
         )
 
@@ -42,8 +42,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     connectionManagerProvider(localIdentity, msgReceiver)
   }
 
-  protected val comm                             = ConnectionManagerCommunicator(connectionManager)
-  protected val (aclAntiEntropy, rdtAntiEntropy) = instantiateAntiEntropy()
+  protected lazy val comm                             = ConnectionManagerCommunicator(connectionManager)
+  protected lazy val (aclAntiEntropy, rdtAntiEntropy) = instantiateAntiEntropy()
 
   protected def instantiateAntiEntropy(): (AclAntiEntropy, FilteredRdtAntiEntropy[State]) = {
     val aclAntiEntropy                                = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)
@@ -96,7 +96,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
           )))
           connectionManager.broadcast(Array(peersMsg))
 
-      Debug.log(s"Learned: ${newPeers.map((id, addr) => Debug.shorten(id) + " " + addr)}")
+      // Debug.log(s"Learned: ${newPeers.map((id, addr) => Debug.shorten(id) + " " + addr)}")
     case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
     case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>
@@ -107,7 +107,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
   def connect(host: String, port: Int): Unit = connectionManager.connectTo(host, port)
 
   def connect(remoteId: PublicIdentity, host: String, port: Int): Unit = {
-    Debug.log(s"Attempting connection to $remoteId ($host:$port)")
+    // Debug.log(s"Attempting connection to $remoteId ($host:$port)")
     connectionManager.connectTo(host, port)
     remoteAddressCache.updateAndGet(oldMap =>
       oldMap.updatedWith(remoteId) {
@@ -167,7 +167,7 @@ object AclEnforcingSync {
       case SendMe(dataDeltas: Dots, aclDeltas: Set[Hash])
 
   given encoder[State: JsonValueCodec]: Encoder[SignedDelta[State]] =
-    Encoder.fromJsoniter(using JsoniterCodecs.filterableSignedDeltaCodec)
+    Encoder.fromJsoniter(using JsoniterCodecsJvm.filterableSignedDeltaCodec)
 
   given Lattice[Map[PublicIdentity, Set[(String, Int)]]] = Lattice.mapLattice(using Lattice.setLattice)
 }

@@ -5,15 +5,15 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import ex2026lofi_acl.Debug
-import ex2026lofi_acl.JsoniterCodecs.syncMsgCodec
-import ex2026lofi_acl.bft.{Acl, BftDelta}
-import ex2026lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
-import ex2026lofi_acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
+import replication.JsoniterCodecsJvm.syncMsgCodec
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
+import replication.acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
+import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import replication.acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 
 class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

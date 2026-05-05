@@ -1,4 +1,4 @@
-package ex2026lofi_acl.bft
+package replication.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
@@ -52,18 +52,18 @@ object AclRdt {
   def createSelfSignedRoot(rootIdentity: PrivateIdentity): BftDelta[Acl] = {
     val id       = rootIdentity.getPublic
     val unsigned = BftDelta(
-      null,
+      None,
       id,
       Acl(Map(id -> PermissionTree.allow), Map(id -> PermissionTree.allow), Set.empty, Set(id)),
       Set.empty
     )
     unsigned.copy(
-      signature = Signature.compute(writeToArray(unsigned), rootIdentity.identityKey.getPrivate)
+      signature = Some(Signature.compute(writeToArray(unsigned), rootIdentity.identityKey.getPrivate))
     )
   }
 
   given JsonValueCodec[BftDelta[Acl]] = {
-    import ex2026lofi_acl.JsoniterCodecs.given
+    import replication.JsoniterCodecsJvm.given
     JsonCodecMaker.make(
       CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
     )

@@ -1,13 +1,13 @@
-package ex2026lofi_acl.sync.anti_entropy
+package replication.acl.sync.anti_entropy
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, Hash}
-import ex2026lofi_acl.sync.SynchronizedMutableArrayDeltaStore
-import ex2026lofi_acl.bft.HashDag.Encoder
+import replication.acl.bft.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
+import replication.acl.bft.{Acl, Hash}
+import replication.acl.sync.SynchronizedMutableArrayDeltaStore
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
@@ -83,9 +83,9 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     }
 
     if dots.nonEmpty then {
-      currentStateRef.updateAndGet((oldDots, oldState) =>
+      currentStateRef.updateAndGet{ case (oldDots, oldState) =>
         (oldDots.union(dots), oldState.merge(combinedDelta))
-      )
+      }
       missingDots.updateAndGet(missing => missing.diff(dots))
       filteredDots.updateAndGet(filtered => filtered.diff(dots))
       onRdtChange(dots, combinedDelta)

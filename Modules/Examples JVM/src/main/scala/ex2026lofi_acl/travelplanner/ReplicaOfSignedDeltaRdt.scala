@@ -4,12 +4,12 @@ import channels.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, BftDelta}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync
-import ex2026lofi_acl.sync.{ConnectionManager, MessageReceiver, Replica}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
+import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.sync.{ConnectionManager, MessageReceiver}
+import replication.acl.sync.anti_entropy.AclEnforcingSync
 
 class ReplicaOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,

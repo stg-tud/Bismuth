@@ -1,4 +1,4 @@
-package ex2026lofi_acl.bft
+package replication.acl.bft
 
 import HashDag.Delta
 

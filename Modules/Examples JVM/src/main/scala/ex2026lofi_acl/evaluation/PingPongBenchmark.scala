@@ -4,11 +4,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.Ed25519Util
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import ex2026lofi_acl.bft.{Acl, BftDelta}
 import ex2026lofi_acl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.filters.PermissionTree
 import rdts.time.{Dot, Dots}
+import replication.acl.bft.{Acl, BftDelta}
 
 import java.net.InetAddress
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
@@ -221,6 +221,7 @@ object CreateAndSaveTrace {
     override def nullValue: KeyPair = null
   }
 
-  import ex2026lofi_acl.JsoniterCodecs.given
+  import replication.JsoniterCodecs.given
+  import replication.JsoniterCodecsJvm.given
   given JsonValueCodec[SavedTrace] = JsonCodecMaker.make
 }

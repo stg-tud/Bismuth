@@ -64,6 +64,9 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
   )
   .jvmSettings(
     Test / fork := true,
+    Dependencies.bouncyCastle,
+    Dependencies.ayza,
+    Dependencies.tink,
   )
 
 lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"))
@@ -79,9 +82,7 @@ lazy val crypto = crossProject(JSPlatform, JVMPlatform).in(file("Modules/Crypto"
     Dependencies.jsoniterScala,
   )
   .jvmSettings(
-    Dependencies.bouncyCastle,
-    Dependencies.ayza,
-    Dependencies.tink,
+
   ).jsSettings(
     // commonjs module allows tests to find libsodium-wrappers installed in the root project
     Test / scalaJSLinkerConfig := {

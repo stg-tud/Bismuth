@@ -1,14 +1,12 @@
 package rdts.time
 
 import rdts.time.IdTree.{Branch, Leaf, anonymous, seed, given}
-import rdts.time.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees, normalizedBaseCases}
+import rdts.time.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees}
 
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*
-import org.scalacheck.{Arbitrary, Gen}
 
 import scala.language.implicitConversions
-import scala.math
 
 class IdTreeTest extends ScalaCheckSuite {
 

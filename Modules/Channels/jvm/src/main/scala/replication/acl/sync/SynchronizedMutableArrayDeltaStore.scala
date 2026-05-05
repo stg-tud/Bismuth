@@ -1,4 +1,4 @@
-package ex2026lofi_acl.sync
+package replication.acl.sync
 
 import SynchronizedMutableArrayDeltaStore.{calculateResize, resize}
 import rdts.time.{Dot, Dots}

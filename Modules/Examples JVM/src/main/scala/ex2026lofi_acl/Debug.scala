@@ -2,14 +2,14 @@ package ex2026lofi_acl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.PublicIdentity
-import ex2026lofi_acl.bft.AclRdt.given_JsonValueCodec_BftDelta
-import ex2026lofi_acl.bft.{Acl, BftDelta, Hash, Signature}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
-import ex2026lofi_acl.sync.anti_entropy.SignedDelta
+import replication.acl.bft.AclRdt.given_JsonValueCodec_BftDelta
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
 import ex2026lofi_acl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
+import replication.acl.bft.{Acl, BftDelta, Hash, Signature}
+import replication.acl.sync.anti_entropy.SignedDelta
 
 object Debug {
   inline val enabled = false

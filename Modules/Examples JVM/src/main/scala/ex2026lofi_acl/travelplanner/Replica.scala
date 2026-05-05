@@ -1,10 +1,9 @@
-package ex2026lofi_acl.sync
+package ex2026lofi_acl.travelplanner
 
 import crypto.PublicIdentity
-import ex2026lofi_acl.bft.Acl
-import ex2026lofi_acl.travelplanner.Invitation
 import rdts.filters.PermissionTree
 import rdts.time.Dot
+import replication.acl.bft.Acl
 
 // TODO: Probably should be refactored away
 trait Replica[RDT] {

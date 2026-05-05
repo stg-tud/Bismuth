@@ -1,9 +1,9 @@
 package ex2026lofi_acl.sync
 
-import ex2026lofi_acl.sync.SynchronizedMutableArrayDeltaStore
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dot
+import replication.acl.sync.SynchronizedMutableArrayDeltaStore
 
 class SynchronizedMutableArrayDeltaStoreTest extends FunSuite {
 

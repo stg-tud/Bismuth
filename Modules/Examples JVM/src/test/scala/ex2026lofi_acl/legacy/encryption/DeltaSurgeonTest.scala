@@ -2,13 +2,13 @@ package ex2026lofi_acl.legacy.encryption
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import ex2026lofi_acl.legacy.encryption.{DeltaSurgeon, IsolatedDeltaParts}
 import DeltaSurgeonTest.{optionSurgeon, given}
 import munit.FunSuite
 import rdts.base.Bottom
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.PermissionTree
 import rdts.filters.PermissionTree.{allow, empty}
+import replication.acl.encryption.{DeltaSurgeon, IsolatedDeltaParts}
 
 case class A(a: String, b: B)
 case class B(c: String)

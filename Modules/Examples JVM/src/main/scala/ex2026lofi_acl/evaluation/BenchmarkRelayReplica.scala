@@ -1,11 +1,11 @@
 package ex2026lofi_acl.evaluation
 
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, BftDelta}
 import ex2026lofi_acl.evaluation.centralized.ForwardingSync
-import ex2026lofi_acl.sync.ChannelConnectionManager
 import ex2026lofi_acl.travelplanner.TravelPlan
 import rdts.time.Dots
+import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.sync.ChannelConnectionManager
 
 import java.net.InetAddress
 

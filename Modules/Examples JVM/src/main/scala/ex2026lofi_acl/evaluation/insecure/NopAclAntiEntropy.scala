@@ -2,8 +2,8 @@ package ex2026lofi_acl.evaluation.insecure
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, BftDelta, Hash}
-import ex2026lofi_acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator}
+import replication.acl.bft.{Acl, BftDelta, Hash}
+import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator}
 
 class NopAclAntiEntropy(
     id: PrivateIdentity,

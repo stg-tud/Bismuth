@@ -1,4 +1,4 @@
-package ex2026lofi_acl.bft
+package replication.acl.bft
 
 import crypto.Ed25519Util
 import crypto.channels.PrivateIdentity
@@ -19,10 +19,10 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
       delta: State,
       hashDag: HashDag[BftDelta[State], State]
   ): HashDag[BftDelta[State], State] =
-      val emptySigDelta = BftDelta(null, publicId, delta, hashDag.heads)
+      val emptySigDelta = BftDelta(None, publicId, delta, hashDag.heads)
       val encodedDelta  = encoder(emptySigDelta)
       val signature     = Signature.unsafeFromArray(Ed25519Util.sign(encodedDelta, privateKey))
-      val signedDelta   = emptySigDelta.copy(signature = signature)
+      val signedDelta   = emptySigDelta.copy(signature = Some(signature))
 
       require(invariants(Hashable[BftDelta[State]].hash(signedDelta), signedDelta, hashDag))
       hashDag.add(signedDelta) match {
@@ -54,7 +54,7 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
   }
 
   private inline def isSignatureValid(delta: BftDelta[State]): Boolean =
-    delta.signature.verify(delta.author.publicKey, encoder(delta.copy(signature = null)))
+    delta.signature.get.verify(delta.author.publicKey, encoder(delta.copy(signature = None)))
 
 }
 

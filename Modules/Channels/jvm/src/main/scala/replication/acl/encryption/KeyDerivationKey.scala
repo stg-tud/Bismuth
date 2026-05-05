@@ -1,4 +1,4 @@
-package ex2026lofi_acl.legacy.encryption
+package replication.acl.encryption
 
 import crypto.Ed25519Util
 import KeyDerivationKey.*

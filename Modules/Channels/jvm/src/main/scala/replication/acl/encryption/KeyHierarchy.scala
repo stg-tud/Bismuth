@@ -1,4 +1,4 @@
-package ex2026lofi_acl.legacy.encryption
+package replication.acl.encryption
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import rdts.time.Dot

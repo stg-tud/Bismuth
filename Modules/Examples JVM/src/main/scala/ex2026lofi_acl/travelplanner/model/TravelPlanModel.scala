@@ -2,13 +2,12 @@ package ex2026lofi_acl.travelplanner.model
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.Acl
-import ex2026lofi_acl.sync.Replica
-import ex2026lofi_acl.travelplanner.{Invitation, TravelPlan}
+import ex2026lofi_acl.travelplanner.{Invitation, Replica, TravelPlan}
 import ex2026lofi_acl.travelplanner.TravelPlan.given
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree
+import replication.acl.bft.Acl
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer

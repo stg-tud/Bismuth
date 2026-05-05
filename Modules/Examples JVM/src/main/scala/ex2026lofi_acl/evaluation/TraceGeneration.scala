@@ -5,10 +5,10 @@ import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026lofi_acl.travelplanner.TravelPlan
 import BenchmarkHelper.*
 import TravelPlanMutatorChoice.*
-import ex2026lofi_acl.bft.{Acl, AclRdt, BftDelta}
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
 import rdts.time.{ArrayRanges, Dots}
+import replication.acl.bft.{Acl, AclRdt, BftDelta}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

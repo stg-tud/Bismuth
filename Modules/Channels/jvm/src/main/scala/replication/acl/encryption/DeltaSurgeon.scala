@@ -1,4 +1,4 @@
-package ex2026lofi_acl.legacy.encryption
+package replication.acl.encryption
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}

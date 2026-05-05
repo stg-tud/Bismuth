@@ -3,13 +3,13 @@ package ex2026lofi_acl.evaluation.insecure
 import channels.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.{Acl, BftDelta}
-import ex2026lofi_acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.encoder
-import ex2026lofi_acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
+import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
+import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import replication.acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 
 class NonEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

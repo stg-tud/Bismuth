@@ -1,10 +1,9 @@
-package ex2026lofi_acl.sync
+package replication.acl.sync
 
 import channels.{Abort, Connection, MessageBuffer, Receive}
 import crypto.PublicIdentity
 import crypto.channels.{P2PTls, PrivateIdentity}
 import de.rmgk.delay.Callback
-import ex2026lofi_acl.Debug
 
 import java.net.InetAddress
 import java.util.concurrent.{ExecutorService, Executors}
@@ -49,7 +48,7 @@ class ChannelConnectionManager(
           messages.foreach { message =>
             connection.send(message).runIn(abort) {
               case Success(_) => if !disableLogging then
-                    println(s"Successfully sent msg: ${String(message.asArray)} to ${Debug.shorten(remotePeerId)}")
+                    println(s"Successfully sent msg: ${String(message.asArray)} to ${remotePeerId}")
               case Failure(exception) =>
                 if !disableLogging then exception.printStackTrace()
                 onSocketFailure(remotePeerId, connection)
@@ -86,7 +85,7 @@ class ChannelConnectionManager(
     listener = Some(p2pTls.latentListener(ifAddress, requestedListenPort, ec))
     if !disableLogging then
         println(
-          s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${Debug.shorten(localPublicId)}"
+          s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${localPublicId}"
         )
     listener.get.prepare(receiveMessageHandler).runIn(abort) {
       case Success(connection) => trackConnection(connection)

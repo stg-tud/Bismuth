@@ -3,9 +3,9 @@ package ex2026lofi_acl.travelplanner
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Ed25519Util, PublicIdentity}
-import ex2026lofi_acl.bft.AclRdt.given_JsonValueCodec_BftDelta
+import replication.acl.bft.AclRdt.given_JsonValueCodec_BftDelta
 import SyncInvitation.base64Encoder
-import ex2026lofi_acl.bft.{Acl, BftDelta}
+import replication.acl.bft.{Acl, BftDelta}
 
 import java.security.KeyPair
 import java.util.Base64

@@ -2,16 +2,16 @@ package ex2026lofi_acl.evaluation
 
 import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import ex2026lofi_acl.bft.AclRdt.given_Encoder_BftDelta
-import ex2026lofi_acl.bft.{Acl, AclRdt, BftDelta, Hash, HashDag}
-import ex2026lofi_acl.sync.anti_entropy.{AclEnforcingSync, SignedDelta}
-import ex2026lofi_acl.sync.anti_entropy.AclEnforcingSync.encoder
+import replication.acl.bft.AclRdt.given_Encoder_BftDelta
+import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
 import ex2026lofi_acl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
+import replication.acl.bft.{Acl, AclRdt, BftDelta, Hash, HashDag}
+import replication.acl.sync.anti_entropy.{AclEnforcingSync, SignedDelta}
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random

@@ -1,11 +1,11 @@
-package ex2026lofi_acl.sync.anti_entropy
+package replication.acl.sync.anti_entropy
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026lofi_acl.bft.AclRdt.given_Encoder_BftDelta
-import ex2026lofi_acl.bft.HashDag.Hashable
-import ex2026lofi_acl.bft.{Acl, AclRdt, BftDelta, Hash, HashDag, HashDagSync}
+import replication.acl.bft.AclRdt.given_Encoder_BftDelta
+import replication.acl.bft.HashDag.Hashable
 import rdts.base.Bottom
+import replication.acl.bft.{Acl, AclRdt, BftDelta, Hash, HashDag, HashDagSync}
 
 import java.util.concurrent.atomic.AtomicReference
 
@@ -52,7 +52,7 @@ class AclAntiEntropy(
                 cumulativeDelta = cumulativeDelta.merge(delta.state)
                 changed = true;
                 hashDag = updatedHashDag
-                currentAclRef.updateAndGet((_, acl) => (hashDag.heads, acl.merge(delta.state)))
+                currentAclRef.updateAndGet{case (_, acl) => (hashDag.heads, acl.merge(delta.state))}
                 false // Remove applied delta from queue
             }
           } catch {
@@ -100,10 +100,10 @@ class AclAntiEntropy(
   }
 
   def mutate(delta: Acl): Unit = {
-    var toDisseminate: Hash = null
+    var toDisseminate: Hash| Null = null
     synchronized {
       hashDag = aclRdt.mutate(delta, hashDag) // Throws an exception if delta is illegal
-      currentAclRef.updateAndGet { (_, acl) => hashDag.heads -> acl.merge(delta) }
+      currentAclRef.updateAndGet { case (_, acl) => hashDag.heads -> acl.merge(delta) }
       assert(hashDag.heads.size == 1)
       toDisseminate = hashDag.heads.head
     }
@@ -113,7 +113,7 @@ class AclAntiEntropy(
 
     // Broadcast change
     network.connectedPeers.foreach { remote =>
-      network.sendDeltas(Seq(hashDag.deltas(toDisseminate)), remote)
+      network.sendDeltas(Seq(hashDag.deltas(toDisseminate.nn)), remote)
     }
   }
 }
