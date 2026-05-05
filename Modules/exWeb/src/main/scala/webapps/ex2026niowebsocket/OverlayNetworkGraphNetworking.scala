@@ -7,7 +7,7 @@ import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnectionFa
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import org.scalajs.dom
 import rdts.base.Uid
-import replication.overlay.HyParViewMultiplexed
+import replication.overlay.{HyParViewIO}
 import replication.research.{OverlayDemoNode, SignalingClient, SignalingServer}
 import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.SignalingServer.Message
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 
 object OverlayNetworkGraphNetworking {
 
-  type Envelope = HyParViewMultiplexed.Envelope[DemoState]
+  type Envelope = HyParViewIO.Envelope[DemoState]
 
   def envelopeConnection(latent: LatentConnection[MessageBuffer])(using
       JsonValueCodec[Envelope]
@@ -152,12 +152,12 @@ object OverlayNetworkGraphNetworking {
       onPeerInfo = (uid, topics) =>
         topics.values.foreach { descriptors =>
           if uid != node.localUid.uid && descriptors.nonEmpty then
-              node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
+              node.discoverPeers(HyParViewIO.PeerRef(uid, descriptors) :: Nil)
         },
       onTopicInfo = (_, peers) =>
         node.discoverPeers(peers.iterator.collect {
           case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
-            HyParViewMultiplexed.PeerRef(uid, descriptors)
+            HyParViewIO.PeerRef(uid, descriptors)
         }.toList),
       onOffer = (from, session) => handleIncomingOffer(from, session),
       onAnswer = (from, session) => handleIncomingAnswer(from, session),

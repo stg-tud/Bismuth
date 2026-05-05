@@ -3,10 +3,10 @@ package replication.overlay
 import channels.ChannelConnectDescriptor
 import munit.FunSuite
 import rdts.base.Uid
-import replication.overlay.HyParViewMultiplexed.PeerRef
+import replication.overlay.HyParViewIO.PeerRef
 import replication.overlay.HyParViewStateMachine.Action
-import replication.overlay.HyParViewUnified.HyParViewConfig
-import replication.overlay.HyParViewUnified.HyParViewMessage.*
+import replication.overlay.HyParViewIO.HyParViewConfig
+import replication.overlay.HyParViewIO.HyParViewMessage.*
 
 class HyParViewStateMachineTest extends FunSuite {
 

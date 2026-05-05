@@ -4,8 +4,8 @@ import channels.{Abort, ChannelConnectDescriptor, ChannelResolver, LatentConnect
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import replication.StateDeltaStorage
-import replication.overlay.HyParViewMultiplexed
-import replication.overlay.HyParViewUnified.HyParViewConfig
+import replication.overlay.HyParViewIO
+import replication.overlay.HyParViewIO.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 
 import java.util.{Timer, TimerTask}
@@ -14,8 +14,8 @@ import scala.util.Random
 /** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
     selfDetails: Set[ChannelConnectDescriptor],
-    listenEnvelope: Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]],
-    envelopeResolver: ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]],
+    listenEnvelope: Option[LatentConnection[HyParViewIO.Envelope[DemoState]]],
+    envelopeResolver: ChannelResolver[HyParViewIO.Envelope[DemoState]],
     random: Random = Random(0),
     config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
     onStateChanged: DemoState => Unit = _ => (),
@@ -26,10 +26,10 @@ class OverlayDemoNode(
 
   @volatile var state: DemoState = DemoState.empty
 
-  private val selfRef = HyParViewMultiplexed.PeerRef(localUid.uid, selfDetails)
+  private val selfRef = HyParViewIO.PeerRef(localUid.uid, selfDetails)
   private val abort   = Abort()
   private val timer   = Timer(true)
-  private var overlay: Option[replication.overlay.HyParViewMultiplexedNode[DemoState]] = None
+  private var overlay: Option[replication.overlay.HyParViewIO[DemoState]] = None
   private var mismatchChecksInRow                                                      = 0
 
   private val heartbeatIntervalMillis = 10_000L
@@ -110,14 +110,14 @@ class OverlayDemoNode(
   }
 
   private def newOverlay(seed: Option[ChannelConnectDescriptor]) =
-    new replication.overlay.HyParViewMultiplexedNode[DemoState](
+    new replication.overlay.HyParViewIO[DemoState](
       selfRef,
       (delta: DemoState) => {
         state = state.merge(delta)
         emitStateChanged()
       },
-      listenEnvelope.getOrElse(new LatentConnection[HyParViewMultiplexed.Envelope[DemoState]] {
-        override def prepare(receiver: channels.Receive[HyParViewMultiplexed.Envelope[DemoState]]) =
+      listenEnvelope.getOrElse(new LatentConnection[HyParViewIO.Envelope[DemoState]] {
+        override def prepare(receiver: channels.Receive[HyParViewIO.Envelope[DemoState]]) =
           throw UnsupportedOperationException("no local server configured for this overlay node")
       }),
       envelopeResolver,
@@ -173,7 +173,7 @@ class OverlayDemoNode(
   def joinSeed(seed: ChannelConnectDescriptor): Unit =
     overlay.foreach(_.join(Set(seed)))
 
-  def discoverPeers(peers: Iterable[replication.overlay.HyParViewMultiplexed.PeerRef]): Unit =
+  def discoverPeers(peers: Iterable[replication.overlay.HyParViewIO.PeerRef]): Unit =
     overlay.foreach(_.discoverPeers(peers))
 
   def selfConnectionDetails: Set[ChannelConnectDescriptor] = selfDetails
@@ -187,7 +187,7 @@ class OverlayDemoNode(
 
   def repairTick(): Unit = overlay.foreach(_.repairTick())
 
-  def addOverlayConnection(latent: LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]): Unit =
+  def addOverlayConnection(latent: LatentConnection[HyParViewIO.Envelope[DemoState]]): Unit =
     overlay.foreach(_.addIncomingConnection(latent))
 
   def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)

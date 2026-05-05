@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.*
 import rdts.time.*
-import replication.overlay.HyParViewMultiplexed
+import replication.overlay.HyParViewIO
 import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.SignalingServer.Message
 
@@ -120,6 +120,6 @@ object JsoniterCodecs {
 
   given codecConnectionDetails: JsonValueCodec[ChannelConnectDescriptor]               = JsonCodecMaker.make
   given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
-  given codecOverlayEnvelope: JsonValueCodec[HyParViewMultiplexed.Envelope[DemoState]] = JsonCodecMaker.make
+  given codecOverlayEnvelope: JsonValueCodec[HyParViewIO.Envelope[DemoState]] = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message]                                    = JsonCodecMaker.make
 }

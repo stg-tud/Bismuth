@@ -2,10 +2,10 @@ package replication.overlay
 
 import channels.ChannelConnectDescriptor
 import rdts.base.Uid
-import replication.overlay.HyParViewMultiplexed.PeerRef
-import replication.overlay.HyParViewUnified.HyParViewConfig
-import replication.overlay.HyParViewUnified.HyParViewMessage
-import replication.overlay.HyParViewUnified.HyParViewMessage.*
+import replication.overlay.HyParViewIO.PeerRef
+import replication.overlay.HyParViewIO.HyParViewConfig
+import replication.overlay.HyParViewIO.HyParViewMessage
+import replication.overlay.HyParViewIO.HyParViewMessage.*
 
 /** Immutable membership state machine for HyParView.
   *

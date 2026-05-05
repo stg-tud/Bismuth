@@ -6,23 +6,21 @@ import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.Payload
+import replication.overlay.HyParViewIO.*
+import replication.overlay.HyParViewStateMachine.*
 import replication.{DeltaStorage, PlumtreeBroadcast, PlumtreeMessage}
 
 import scala.collection.mutable
 import scala.util.{Failure, Random, Success}
 
-object HyParViewMultiplexed {
+object HyParViewIO {
+
   case class PeerRef(uid: Uid, channelConnectors: Set[ChannelConnectDescriptor])
 
   enum Envelope[State] {
-    case Membership(message: HyParViewUnified.HyParViewMessage)
+    case Membership(message: HyParViewIO.HyParViewMessage)
     case Dissemination(message: PlumtreeMessage[State])
   }
-
-}
-
-object HyParViewUnified {
-  import HyParViewMultiplexed.PeerRef
 
   case class HyParViewConfig(
       activeViewSize: Int,
@@ -64,23 +62,20 @@ object HyParViewUnified {
   }
 }
 
-class HyParViewMultiplexedNode[State](
-    val self: HyParViewMultiplexed.PeerRef,
+class HyParViewIO[State](
+    val self: HyParViewIO.PeerRef,
     receiveCallback: State => Unit,
-    localServer: LatentConnection[HyParViewMultiplexed.Envelope[State]],
-    resolver: ChannelResolver[HyParViewMultiplexed.Envelope[State]],
+    localServer: LatentConnection[HyParViewIO.Envelope[State]],
+    resolver: ChannelResolver[HyParViewIO.Envelope[State]],
     contactNode: Option[Set[ChannelConnectDescriptor]],
     rnd: Random,
     deltaStorage: DeltaStorage[State],
-    config: HyParViewUnified.HyParViewConfig = HyParViewUnified.HyParViewConfig.default,
+    config: HyParViewIO.HyParViewConfig = HyParViewIO.HyParViewConfig.default,
     debug: Boolean = false,
     onViewChanged: (HyParViewStateMachine, HyParViewStateMachine) => Unit = (_, _) => (),
     onPeerRolesChanged: () => Unit = () => (),
     onPeerDisconnected: Uid => Unit = (_: Uid) => (),
 ) {
-  import HyParViewMultiplexed.*
-  import HyParViewStateMachine.*
-  import HyParViewUnified.*
 
   private val abort                     = Abort()
   private def log(msg: => String): Unit = if debug then println(s"[hyparview ${Uid.unwrap(self.uid)}] $msg")
@@ -120,20 +115,20 @@ class HyParViewMultiplexedNode[State](
     peer => peer.channelConnectors.exists(resolver.canConnect) || peer.uid == self.uid,
   )
 
-  private val connections              = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
-  private val connectionToPeer         = mutable.LinkedHashMap.empty[Connection[Envelope[State]], Uid]
-  private val lastIncomingMessageAtMs  = mutable.LinkedHashMap.empty[Uid, Long]
-  private val connecting               = mutable.LinkedHashSet.empty[Uid]
-  private val pendingMembership        = mutable.LinkedHashMap.empty[Uid, Vector[HyParViewMessage]]
-  private var plumtree                 = PlumtreeBroadcast[State](self.uid, deltaStorage = deltaStorage)
+  private val connections               = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
+  private val connectionToPeer          = mutable.LinkedHashMap.empty[Connection[Envelope[State]], Uid]
+  private val lastIncomingMessageAtMs   = mutable.LinkedHashMap.empty[Uid, Long]
+  private val connecting                = mutable.LinkedHashSet.empty[Uid]
+  private val pendingMembership         = mutable.LinkedHashMap.empty[Uid, Vector[HyParViewMessage]]
+  private var plumtree                  = PlumtreeBroadcast[State](self.uid, deltaStorage = deltaStorage)
   private val activeConnectionTimeoutMs = 30_000L
 
-  def state: HyParViewStateMachine = membership
-  def activeView: Set[Uid]         = membership.activeView
-  def activePeers: Set[PeerRef]    = membership.activePeers
-  def passiveView: Set[Uid]        = membership.passiveView
-  def passivePeers: Set[PeerRef]   = membership.passivePeers
-  def eagerView: Set[Uid]          = plumtree.eagerPeers
+  def state: HyParViewStateMachine             = membership
+  def activeView: Set[Uid]                     = membership.activeView
+  def activePeers: Set[PeerRef]                = membership.activePeers
+  def passiveView: Set[Uid]                    = membership.passiveView
+  def passivePeers: Set[PeerRef]               = membership.passivePeers
+  def eagerView: Set[Uid]                      = plumtree.eagerPeers
   def lastIncomingMessageTimes: Map[Uid, Long] = lastIncomingMessageAtMs.toMap
 
   def applyDelta(delta: State): Unit = {
@@ -215,8 +210,8 @@ class HyParViewMultiplexedNode[State](
             }
           }
 
-  private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State]] =
-    (conn: Connection[Envelope[State]]) => {
+  private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State]] = {
+    (conn: Connection[Envelope[State]]) =>
       expectedPeer.foreach(peer => rememberConnection(peer, conn))
       {
         case Success(Envelope.Membership(message)) =>
@@ -245,9 +240,11 @@ class HyParViewMultiplexedNode[State](
                         handleDisconnectedPeer(uid, s"plumtree assertion on incoming dissemination: ${ex.getMessage}")
                     }
                 else {
-                    log(s"dropping dissemination from non-plumtree peer=${Uid.unwrap(uid)} message=$message :: ${dumpOverlayState()}")
-                    if !membership.passiveView.contains(uid) then
-                        handleDisconnectedPeer(uid, s"received dissemination from unknown plumtree peer")
+                  log(
+                    s"dropping dissemination from non-plumtree peer=${Uid.unwrap(uid)} message=$message :: ${dumpOverlayState()}"
+                  )
+                  if !membership.passiveView.contains(uid) then
+                      handleDisconnectedPeer(uid, s"received dissemination from unknown plumtree peer")
                 }
               case None =>
                 log(s"received dissemination from unknown sender message=$message :: ${dumpOverlayState()}")
@@ -259,7 +256,7 @@ class HyParViewMultiplexedNode[State](
             else cleanupInactiveConnection(peer, conn, reason)
           }
       }
-    }
+  }
 
   private def rememberPeerIdentity(peer: Uid, conn: Connection[Envelope[State]]): Unit =
     rememberConnection(peer, conn)
@@ -358,7 +355,10 @@ class HyParViewMultiplexedNode[State](
     connectionToPeer.update(conn, peer)
     connections.getOrElseUpdate(peer, conn): Unit
     lastIncomingMessageAtMs.getOrElseUpdate(peer, System.currentTimeMillis())
-    checkInvariant(!membership.activeView.contains(peer) || plumtree.peerRoles.contains(Peer(peer)) || connecting.contains(peer), s"remembered active connection without plumtree peer=${Uid.unwrap(peer)}")
+    checkInvariant(
+      !membership.activeView.contains(peer) || plumtree.peerRoles.contains(Peer(peer)) || connecting.contains(peer),
+      s"remembered active connection without plumtree peer=${Uid.unwrap(peer)}"
+    )
     ()
   }
 
@@ -469,12 +469,15 @@ class HyParViewMultiplexedNode[State](
 
   private def handlePlumtreeEvent(event: Event[State]): Unit =
     event match
-        case Event.Deliver(payload)      => receiveCallback(payload.data)
-        case Send(peers, message) =>
+        case Event.Deliver(payload) => receiveCallback(payload.data)
+        case Send(peers, message)   =>
           peers.foreach { peer =>
             ensurePlumtreePeerForActiveConnection(peer.uid, s"before sending dissemination $message")
             checkPeerKnownToPlumtree(peer.uid, s"sending dissemination $message")
-            checkInvariant(membership.activeView.contains(peer.uid) || membership.passiveView.contains(peer.uid), s"sending dissemination to non-overlay peer=${Uid.unwrap(peer.uid)} message=$message")
+            checkInvariant(
+              membership.activeView.contains(peer.uid) || membership.passiveView.contains(peer.uid),
+              s"sending dissemination to non-overlay peer=${Uid.unwrap(peer.uid)} message=$message"
+            )
             connections.get(peer.uid).foreach { conn =>
               conn.send(Envelope.Dissemination(message)).run {
                 case Success(_)  => ()

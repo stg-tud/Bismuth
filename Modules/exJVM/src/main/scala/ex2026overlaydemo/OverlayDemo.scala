@@ -3,8 +3,8 @@ package ex2026overlaydemo
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
 import replication.JsoniterCodecs.given
-import replication.overlay.HyParViewMultiplexed
-import replication.overlay.HyParViewUnified.HyParViewConfig
+import replication.overlay.HyParViewIO
+import replication.overlay.HyParViewIO.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.SignalingServer.Message
 import replication.research.{OverlayDemoNode, SignalingClient}
@@ -67,17 +67,17 @@ object OverlayDemo {
                   case _: BindException => listen(0)
             case None => listen(0)
 
-      val listenEnvelope   = jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](listenBinary, "overlay-json")
-      val envelopeResolver = new ChannelResolver[HyParViewMultiplexed.Envelope[DemoState]] {
+      val listenEnvelope   = jsonConnection[HyParViewIO.Envelope[DemoState]](listenBinary, "overlay-json")
+      val envelopeResolver = new ChannelResolver[HyParViewIO.Envelope[DemoState]] {
         override def canConnect(details: ChannelConnectDescriptor): Boolean =
           nioResolver.canConnect(details)
 
         override def connect(details: ChannelConnectDescriptor, label: String)
-            : Option[LatentConnection[HyParViewMultiplexed.Envelope[DemoState]]] =
+            : Option[LatentConnection[HyParViewIO.Envelope[DemoState]]] =
           nioResolver.connect(
             details,
             label
-          ).map(jsonConnection[HyParViewMultiplexed.Envelope[DemoState]](_, "overlay-json"))
+          ).map(jsonConnection[HyParViewIO.Envelope[DemoState]](_, "overlay-json"))
       }
 
       nioThread.execute(() => nio.loopSelection(nioAbort))
@@ -105,12 +105,12 @@ object OverlayDemo {
           onTopicInfo = (_, peers) =>
             node.discoverPeers(peers.iterator.collect {
               case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
-                HyParViewMultiplexed.PeerRef(uid, descriptors)
+                HyParViewIO.PeerRef(uid, descriptors)
             }.toList),
           onPeerInfo = (uid, topics) =>
             topics.values.foreach { descriptors =>
               if uid != node.localUid.uid && descriptors.nonEmpty then
-                  node.discoverPeers(HyParViewMultiplexed.PeerRef(uid, descriptors) :: Nil)
+                  node.discoverPeers(HyParViewIO.PeerRef(uid, descriptors) :: Nil)
             },
         )
       }
@@ -135,7 +135,7 @@ object OverlayDemo {
     }
 
     def queued(
-        registry: LocalConnectionRegistry[HyParViewMultiplexed.Envelope[DemoState]],
+        registry: LocalConnectionRegistry[HyParViewIO.Envelope[DemoState]],
         id: String,
         random: Random = Random(0),
         config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
