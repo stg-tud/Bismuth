@@ -22,8 +22,6 @@ object BroadcastIO {
   enum Envelope[+State] {
     case Membership(message: OverlayMessage)
     case Protocol(message: PlumtreeMessage[State])
-    case Ping(time: Long)
-    case Pong(time: Long)
   }
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
@@ -96,7 +94,7 @@ class BroadcastIO[State](
 
   def pingAll(): Unit = synchronized {
     val snapshot = lock.synchronized(plumtree.peerRoles.keys.flatMap(peer => overlay.connectionFor(peer.uid)).toList)
-    snapshot.foreach(send(_, Envelope.Ping(System.nanoTime())))
+    snapshot.foreach(send(_, Envelope.Membership(OverlayMessage.Ping(System.nanoTime()))))
   }
 
   def repairTick(): Unit = {
@@ -116,13 +114,14 @@ class BroadcastIO[State](
     applyRoutingResult(result)
   }
 
-  /** Remove a failed connection from overlay bookkeeping and, if it was associated with a peer, from Plumtree as well. */
+  /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */
   private def removePeer(conn: Connection): Unit = {
-    lock.synchronized {
-      val (nextOverlay, removedPeer) = overlay.removeConnection(conn)
+    val actions = lock.synchronized {
+      val (nextOverlay, actions) = overlay.removeConnection(conn)
       overlay = nextOverlay
-      removedPeer.foreach(uid => plumtree = plumtree.removePeer(Peer(uid)))
+      actions
     }
+    actions.foreach(handleOverlayAction)
   }
 
   /** Attach a newly established connection to the overlay state.
@@ -172,13 +171,14 @@ class BroadcastIO[State](
 
   private def handleOverlayAction(action: OverlayController.OverlayAction): Unit =
     action match
-        case OverlayController.OverlayAction.Send(to, connection, message) =>
-          connection.orElse(lock.synchronized(overlay.connectionFor(to.uid))) match
-              case Some(conn) => send(conn, Envelope.Membership(message))
-              case None       =>
-                connectAndSend(to.channelConnectors, s"$replicaId->${to.uid}", Envelope.Membership(message))
+        case OverlayController.OverlayAction.Send(connection, message) =>
+          send(connection, Envelope.Membership(message))
         case OverlayController.OverlayAction.SendJoin(details, message) =>
           connectAndSend(details, s"$replicaId-join", Envelope.Membership(message))
+        case OverlayController.OverlayAction.ActiveConnectionAdded(peer) =>
+          lock.synchronized { plumtree = plumtree.addPeer(Peer(peer)).state }
+        case OverlayController.OverlayAction.ActiveConnectionRemoved(peer) =>
+          lock.synchronized { plumtree = plumtree.removePeer(Peer(peer)) }
 
   private def send(conn: Connection, payload: Envelope[State]): Unit =
     if globalAbort.closeRequest then ()
@@ -198,8 +198,6 @@ class BroadcastIO[State](
         case None           => throw new IllegalStateException(s"received message from unknown connection $from")
 
     msg match
-        case Envelope.Ping(time)          => send(from, Envelope.Pong(time))
-        case Envelope.Pong(_)             => ()
         case Envelope.Membership(message) =>
           val (next, actions) = lock.synchronized(overlay.receiveActions(message, from))
           applyOverlayResult(next, actions)

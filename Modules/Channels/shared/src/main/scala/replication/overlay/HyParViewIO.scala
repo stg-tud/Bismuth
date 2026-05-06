@@ -2,6 +2,7 @@ package replication.overlay
 
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import de.rmgk.delay.Async
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.time.Dots
@@ -186,8 +187,7 @@ class HyParViewIO[State](
                   noteIncomingMessage(uid)
                   checkPeerKnownToOverlay(uid, s"received membership $message")
                 }
-                message match
-                    case _ => applyTransition(membership.receive(message))
+                applyTransition(membership.receive(message, conn))
               case Envelope.Dissemination(message: PlumtreeMessage[State] @unchecked) =>
                 val peer = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferDisseminationSender(message))
                 peer match
@@ -236,6 +236,7 @@ class HyParViewIO[State](
         case OverlayMessage.Disconnect(_)             => None
         case OverlayMessage.Shuffle(_, _, _, sender)  => Some(sender)
         case OverlayMessage.ShuffleReply(from, _)     => Some(from)
+        case OverlayMessage.Ping(_) | OverlayMessage.Pong(_) => None
 
   private def inferDisseminationSender(message: PlumtreeMessage[State]): Option[Uid] =
     message match
@@ -248,8 +249,14 @@ class HyParViewIO[State](
     val before = membership
     membership = result.state
     result.actions.foreach {
-      case OverlayAction.Send(to, _, message)   => sendMembership(to, message)
-      case OverlayAction.SendJoin(details, msg) => sendJoin(details, msg)
+      case OverlayAction.Send(connection, message) =>
+        connection.send(HyParViewIO.encodeEnvelope(Envelope.Membership(message))).run {
+          case Success(_)  => ()
+          case Failure(ex) => logFailure(s"membership send failed on existing connection", ex)
+        }
+      case OverlayAction.SendJoin(details, msg)        => sendJoin(details, msg)
+      case OverlayAction.ActiveConnectionAdded(peer)   => plumtree = plumtree.addPeer(Peer(peer)).state
+      case OverlayAction.ActiveConnectionRemoved(peer) => plumtree = plumtree.removePeer(Peer(peer))
     }
     syncViewSideEffects(before, membership)
   }
@@ -307,7 +314,11 @@ class HyParViewIO[State](
     plumtree = plumtree.removePeer(Peer(peer))
     connecting.remove(peer)
     pendingMembership.remove(peer)
-    applyTransition(membership.receive(OverlayMessage.Disconnect(peer)))
+    val disconnectConn = conn.getOrElse(new Connection {
+      override def send(message: MessageBuffer): Async[Any, Unit] = Async {}
+      override def close(): Unit = ()
+    })
+    applyTransition(membership.receive(OverlayMessage.Disconnect(peer), disconnectConn))
     if hadMembership || conn.nonEmpty then {
       log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
     }
