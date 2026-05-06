@@ -33,8 +33,9 @@ object BroadcastIO {
 
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
-  def decodeEnevlop[State: JsonValueCodec](messageBuffer: MessageBuffer) =
+  def decodeEnevlop[State: JsonValueCodec](messageBuffer: MessageBuffer): Envelope[State] =
     readFromArray[Envelope[State]](messageBuffer.asArray)(using BroadcastIO.messageCodec)
+
   def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State]) =
     ArrayMessageBuffer(writeToArray(envelope)(using BroadcastIO.messageCodec))
 }
@@ -57,9 +58,9 @@ class BroadcastIO[State](
 
   val lock: AnyRef = new {}
 
-  @volatile private var connections: Map[Peer, Connection] = Map.empty
+  @volatile private var connections: Map[Peer, Connection]       = Map.empty
   @volatile private var peersByConnection: Map[Connection, Peer] = Map.empty
-  @volatile private var plumtree: PlumtreeBroadcast[State] =
+  @volatile private var plumtree: PlumtreeBroadcast[State]       =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
   private def printExceptionHandler: Callback[Any] =
