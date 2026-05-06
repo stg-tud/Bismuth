@@ -94,15 +94,15 @@ class OverlayDemoNode(
 
   private def newOverlay() = {
     val stateMachine = HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)
-    new BroadcastIO[DemoState](
+    BroadcastIO[DemoState](
       localUid,
       (delta: DemoState) => {
         state = state.merge(delta)
         emitStateChanged()
       },
-      envelopeResolver,
+      overlay = Some(stateMachine),
+      resolver = envelopeResolver,
       globalAbort = abort,
-      overlay = stateMachine,
     )
   }
 

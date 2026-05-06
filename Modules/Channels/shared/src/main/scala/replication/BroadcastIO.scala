@@ -11,7 +11,7 @@ import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.*
-import replication.overlay.OverlayController
+import replication.overlay.{DirectConnectionOverlay, OverlayController}
 import replication.overlay.OverlayController.OverlayMessage
 
 import java.net.SocketException
@@ -23,6 +23,26 @@ object BroadcastIO {
     case Membership(message: OverlayMessage)
     case Protocol(message: PlumtreeMessage[State])
   }
+
+  def apply[State](
+      replicaId: LocalUid,
+      receiveCallback: State => Unit,
+      overlay: Option[OverlayController] = None,
+      resolver: ChannelResolver = ChannelResolver.disconnected,
+      sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
+      globalAbort: Abort = Abort(),
+      deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
+  )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
+    new BroadcastIO[State](
+      replicaId = replicaId,
+      receiveCallback = receiveCallback,
+      overlay = overlay.getOrElse(DirectConnectionOverlay(PeerConnectInfo(replicaId.uid, Set.empty))),
+      resolver = resolver,
+      sendingActor = sendingActor,
+      globalAbort = globalAbort,
+      deltaStorage = deltaStorage,
+    )
+
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
@@ -48,11 +68,11 @@ object BroadcastIO {
 class BroadcastIO[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
-    resolver: ChannelResolver = ChannelResolver.disconnected,
-    sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
-    val globalAbort: Abort = Abort(),
-    val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
-    @volatile private var overlay: OverlayController = OverlayController.none
+    @volatile private var overlay: OverlayController,
+    resolver: ChannelResolver,
+    sendingActor: ExecutionContext,
+    val globalAbort: Abort,
+    val deltaStorage: DeltaStorage[State],
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef = new {}
@@ -74,7 +94,7 @@ class BroadcastIO[State](
   def addBinaryConnection(latentConnection: LatentConnection): Unit =
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
-      applyRoutingResult(registerConnection(conn))
+      registerConnection(conn)
     }.run(printExceptionHandler)
 
   private val connectionReceiver: Receive = new Receive {
@@ -145,11 +165,14 @@ class BroadcastIO[State](
   /** Attach a newly established connection to the overlay state.
     * Peer identity is learned later from HyParView control-plane messages carried on that connection.
     */
-  private def registerConnection(conn: Connection): PlumtreeBroadcast.Result[State] =
-    lock.synchronized {
-      overlay = overlay.registerConnection(conn)
-      PlumtreeBroadcast.Result(plumtree, Nil)
+  private def registerConnection(conn: Connection): Unit = {
+    val actions = lock.synchronized {
+      val (next, actions) = overlay.registerConnection(conn)
+      overlay = next
+      actions
     }
+    actions.foreach(handleOverlayAction)
+  }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
     val events = lock.synchronized {
@@ -181,7 +204,7 @@ class BroadcastIO[State](
         case Some(latentConnection) =>
           Async.provided(globalAbort) {
             val conn = latentConnection.prepare { connectionReceiver }.bind
-            applyRoutingResult(registerConnection(conn))
+            registerConnection(conn)
             send(conn, payload)
           }.run(printExceptionHandler)
         case None =>

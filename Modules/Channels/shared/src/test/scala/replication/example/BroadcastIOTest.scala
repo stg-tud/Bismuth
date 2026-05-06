@@ -14,7 +14,10 @@ class BroadcastIOTest extends munit.FunSuite {
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
     // I have no clue why this syntax is still not deprecated xD
-    val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
+    val dd1, dd2, dd3 = {
+      val uid = LocalUid.gen()
+      BroadcastIO[Set[String]](uid, _ => ())
+    }
 
     val sync = SynchronousLocalConnection()
 
@@ -130,8 +133,6 @@ class BroadcastIOTest extends munit.FunSuite {
     )
 
   }
-
-
 
   test("circle of 5 replicas converges for observe remove set operations") {
 

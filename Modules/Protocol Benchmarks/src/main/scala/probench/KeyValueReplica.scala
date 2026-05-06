@@ -71,7 +71,7 @@ class KeyValueReplica(
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
-    val dataManager: BroadcastIO[ClusterState] = BroadcastIO[ClusterState](
+    lazy val dataManager: BroadcastIO[ClusterState] = BroadcastIO[ClusterState](
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,
@@ -216,13 +216,13 @@ class KeyValueReplica(
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
-    val dataManagerWrite: BroadcastIO[ClientCommWrite] = BroadcastIO(
+    lazy val dataManagerWrite: BroadcastIO[ClientCommWrite] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncomingWrite(delta)),
       sendingActor = sendingActor,
       deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
     )
-    val dataManagerRead: BroadcastIO[ClientCommRead] = BroadcastIO(
+    lazy val dataManagerRead: BroadcastIO[ClientCommRead] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncomingRead(delta)),
       sendingActor = sendingActor,

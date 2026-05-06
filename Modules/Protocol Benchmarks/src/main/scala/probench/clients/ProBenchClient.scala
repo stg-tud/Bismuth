@@ -1,12 +1,10 @@
 package probench.clients
 
 import probench.data
-import probench.data.ClientComm.given
 import probench.data.Codecs.given
 import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{LocalUid, Uid}
-import replication.DeltaStorage.Type
-import replication.{BroadcastIO, DeltaStorage}
+import replication.{BroadcastIO, KeepAllHistory}
 
 import java.util.concurrent.Semaphore
 import scala.collection.mutable
@@ -16,27 +14,27 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
   given localUid: LocalUid = LocalUid(name)
 
-  val writeDataManager: BroadcastIO[ClientCommWrite] =
-    BroadcastIO(
-      localUid,
-      handleIncomingWrite,
-      deltaStorage = DeltaStorage.getStorage(Type.KeepAll, () => ???)
-    )
-  val readDataManager: BroadcastIO[ClientCommRead] =
-    BroadcastIO(
-      localUid,
-      handleIncomingRead,
-      deltaStorage = DeltaStorage.getStorage(Type.KeepAll, () => ???)
-    )
-
-  inline def log(inline msg: String): Unit =
-    if false then println(s"[$name] $msg")
-
   val requestSemaphore = new Semaphore(0)
 
   val currentStateLock: AnyRef = new {}
 
   private val promises: mutable.HashMap[Uid, Promise[String]] = mutable.HashMap.empty[Uid, Promise[String]]
+
+  val writeDataManager: BroadcastIO[ClientCommWrite] =
+    BroadcastIO(
+      localUid,
+      handleIncomingWrite,
+      deltaStorage = KeepAllHistory()
+    )
+  val readDataManager: BroadcastIO[ClientCommRead] =
+    BroadcastIO(
+      localUid,
+      handleIncomingRead,
+      deltaStorage = KeepAllHistory()
+    )
+
+  inline def log(inline msg: String): Unit =
+    if false then println(s"[$name] $msg")
 
   def readWithResult(key: String): Future[String] =
       val id                              = Uid.gen()
