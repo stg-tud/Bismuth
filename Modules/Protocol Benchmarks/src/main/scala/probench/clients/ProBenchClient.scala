@@ -4,7 +4,7 @@ import probench.data
 import probench.data.Codecs.given
 import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{LocalUid, Uid}
-import replication.{BroadcastIO, KeepAllHistory}
+import replication.{BroadcastIO, KeepAllHistory, PlumtreeBroadcast}
 
 import java.util.concurrent.Semaphore
 import scala.collection.mutable
@@ -24,13 +24,13 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
     BroadcastIO(
       localUid,
       handleIncomingWrite,
-      deltaStorage = KeepAllHistory()
+      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = KeepAllHistory()))
     )
   val readDataManager: BroadcastIO[ClientCommRead] =
     BroadcastIO(
       localUid,
       handleIncomingRead,
-      deltaStorage = KeepAllHistory()
+      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = KeepAllHistory()))
     )
 
   inline def log(inline msg: String): Unit =

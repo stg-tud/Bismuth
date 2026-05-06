@@ -31,7 +31,7 @@ object BroadcastIO {
       resolver: ChannelResolver = ChannelResolver.disconnected,
       sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
       globalAbort: Abort = Abort(),
-      deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
+      broadcast: Option[PlumtreeBroadcast[State]] = None,
   )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
     new BroadcastIO[State](
       replicaId = replicaId,
@@ -40,9 +40,8 @@ object BroadcastIO {
       resolver = resolver,
       sendingActor = sendingActor,
       globalAbort = globalAbort,
-      deltaStorage = deltaStorage,
+      plumtree = broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 108)))
     )
-
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
@@ -72,13 +71,10 @@ class BroadcastIO[State](
     resolver: ChannelResolver,
     sendingActor: ExecutionContext,
     val globalAbort: Abort,
-    val deltaStorage: DeltaStorage[State],
+    @volatile private var plumtree: PlumtreeBroadcast[State]
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef = new {}
-
-  @volatile private var plumtree: PlumtreeBroadcast[State] =
-    PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
   def overlayController: OverlayController = overlay
 
@@ -241,7 +237,7 @@ class BroadcastIO[State](
         case Envelope.Protocol(protocol) =>
           val peer = lock.synchronized(overlay.peerForConnection(from).map(Peer.apply)) match
               case Some(existing) => existing
-              case None           => throw new IllegalStateException(s"received protocol message from unknown connection $from")
+              case None => throw new IllegalStateException(s"received protocol message from unknown connection $from")
           val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
           applyRoutingResult(result)
   }

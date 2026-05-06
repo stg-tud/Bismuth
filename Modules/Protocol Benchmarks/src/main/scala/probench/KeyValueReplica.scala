@@ -11,7 +11,7 @@ import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import replication.DeltaStorage.Type.*
 import replication.PlumtreeMessage.Payload
-import replication.{BroadcastIO, DeltaStorage}
+import replication.{BroadcastIO, DeltaStorage, PlumtreeBroadcast}
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable
@@ -75,7 +75,7 @@ class KeyValueReplica(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)
+      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)))
     )
 
     def handleIncoming(delta: ClusterState): Unit = currentStateLock.synchronized {
@@ -220,13 +220,13 @@ class KeyValueReplica(
       localUid,
       delta => replicaActor.execute(() => handleIncomingWrite(delta)),
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
+      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
     lazy val dataManagerRead: BroadcastIO[ClientCommRead] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncomingRead(delta)),
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)
+      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
 
     def handleIncomingWrite(delta: ClientCommWrite): Unit = {
@@ -283,7 +283,12 @@ class KeyValueReplica(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,
-      deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
+      broadcast = Some(
+        PlumtreeBroadcast(
+          localUid.uid,
+          deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
+        )
+      )
     )
 
     def handleIncoming(delta: ConnInformation): Unit = {
