@@ -40,7 +40,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val b  = peer("b")
     val n  = peer("new")
 
-    val s1     = sm.discoverPeers(Set(a, b)).state
+    val s1     = sm.discoverPeersResult(Set(a, b)).state
     val s2     = s1.receive(NeighborReply(a.uid, accepted = true), dummyConn).state
     val s3     = s2.receive(NeighborReply(b.uid, accepted = true), dummyConn).state
     val result = s3.receive(Join(n), dummyConn)
@@ -57,7 +57,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val a      = peer("a")
     val b      = peer("b")
     val n      = peer("new")
-    val s1     = sm.discoverPeers(Set(a, b)).state
+    val s1 = sm.discoverPeersResult(Set(a, b)).state
     val s2     = s1.receive(NeighborReply(a.uid, accepted = true), dummyConn).state
     val s3     = s2.receive(NeighborReply(b.uid, accepted = true), dummyConn).state
     val result = s3.receive(ForwardJoin(n, cfg.passiveRandomWalkLength, a.uid), dummyConn)
@@ -80,7 +80,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val c  = peer("c")
     val d  = peer("d")
     val sm = machine()
-      .discoverPeers(Set(a, b, c)).state
+      .discoverPeersResult(Set(a, b, c)).state
       .receive(NeighborReply(a.uid, true), dummyConn).state
       .receive(NeighborReply(b.uid, true), dummyConn).state
       .receive(NeighborReply(c.uid, true), dummyConn).state
@@ -95,7 +95,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val b  = peer("b")
     val c  = peer("c")
     val sm = machine()
-      .discoverPeers(Set(a, b, c)).state
+      .discoverPeersResult(Set(a, b, c)).state
       .receive(NeighborReply(a.uid, true), dummyConn).state
       .receive(NeighborReply(b.uid, true), dummyConn).state
       .receive(NeighborReply(c.uid, true), dummyConn).state
@@ -108,7 +108,8 @@ class HyParViewStateMachineTest extends FunSuite {
 
   test("synthetic disconnect removes the peer from active membership state") {
     val a  = peer("a")
-    val sm = machine().discoverPeers(Set(a)).state.receive(NeighborReply(a.uid, true), dummyConn).state
+    val sm = machine().discoverPeersResult(Set(a)).state
+      .receive(NeighborReply(a.uid, true), dummyConn).state
     val result = sm.receive(Disconnect(a.uid), dummyConn)
     assert(!result.state.activeView.contains(a.uid))
     assert(result.state.passiveView.contains(a.uid))
@@ -117,7 +118,8 @@ class HyParViewStateMachineTest extends FunSuite {
   test("shuffle tick sends a shuffle to an active peer and includes self in the sample") {
     val a       = peer("a")
     val p       = peer("p")
-    val sm      = machine().discoverPeers(Set(a, p)).state.receive(NeighborReply(a.uid, true), dummyConn).state
+    val sm = machine().discoverPeersResult(Set(a, p)).state
+      .receive(NeighborReply(a.uid, true), dummyConn).state
     val result  = sm.shuffleTick()
     val shuffle = sent(result.actions).collectFirst { case msg @ Shuffle(_, _, _, _) => msg }.get
     assert(shuffle.sample.exists(_.uid == sm.self.uid))
@@ -128,7 +130,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val b  = peer("b")
     val x  = peer("x")
     val sm = machine(config = cfg.copy(activeViewSize = 2))
-      .discoverPeers(Set(a, b)).state
+      .discoverPeersResult(Set(a, b)).state
       .receive(NeighborReply(a.uid, true), dummyConn).state
       .receive(NeighborReply(b.uid, true), dummyConn).state
     val result = sm.receive(Shuffle(x, Set(x), 1, a.uid), dummyConn)
@@ -141,7 +143,8 @@ class HyParViewStateMachineTest extends FunSuite {
     val p1     = peer("p1")
     val p2     = peer("p2")
     val x      = peer("x")
-    val sm     = machine().discoverPeers(Set(a, p1, p2)).state.receive(NeighborReply(a.uid, true), dummyConn).state
+    val sm = machine().discoverPeersResult(Set(a, p1, p2)).state
+      .receive(NeighborReply(a.uid, true), dummyConn).state
     val result = sm.receive(Shuffle(a, Set(x), 0, a.uid), dummyConn)
     assert(result.state.passiveView.contains(x.uid))
     assert(sent(result.actions).exists { case ShuffleReply(_, _) => true; case _ => false })
@@ -157,11 +160,11 @@ class HyParViewStateMachineTest extends FunSuite {
     val p4  = peer("p4")
     val p5  = peer("p5")
     val x   = peer("x")
-    val sm0 = machine(config = shuffleCfg)
-      .discoverPeers(Set(a, p1, p2, p3, p4)).state
+    val s1 = machine(config = shuffleCfg)
+      .discoverPeersResult(Set(a, p1, p2, p3, p4)).state
       .receive(NeighborReply(a.uid, true), dummyConn).state
-      .discoverPeers(Set(p5)).state
-    val afterTick = sm0.shuffleTick().state
+    val s2 = s1.discoverPeersResult(Set(p5)).state
+    val afterTick = s2.shuffleTick().state
     val before    = afterTick.passiveView
     val result    = afterTick.receive(ShuffleReply(a.uid, Set(x)), dummyConn)
     assert(result.state.passiveView.contains(x.uid))
@@ -172,7 +175,7 @@ class HyParViewStateMachineTest extends FunSuite {
   test("undialable peers are filtered from passive learning") {
     val dialable   = peer("dialable")
     val undialable = PeerConnectInfo(Uid.predefined("undialable"), Set.empty)
-    val sm         = machine().discoverPeers(Set(dialable, undialable)).state
+    val sm    = machine().discoverPeersResult(Set(dialable, undialable)).state
     assert(sm.passiveView.contains(dialable.uid))
     assert(!sm.passiveView.contains(undialable.uid))
   }

@@ -3,8 +3,10 @@ package replication.research
 import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, PeerConnectInfo}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
-import replication.StateDeltaStorage
+import replication.BroadcastIO
+import replication.PlumtreeBroadcast.Peer
 import replication.JsoniterCodecs.codecDemoState
+import replication.overlay.HyParViewStateMachine
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 
@@ -29,10 +31,9 @@ class OverlayDemoNode(
   private val selfRef = PeerConnectInfo(localUid.uid, selfDetails)
   private val abort   = Abort()
   private val timer   = Timer(true)
-  private var overlay: Option[replication.overlay.HyParViewIO[DemoState]] = None
+  private var broadcastIO: Option[BroadcastIO[DemoState]] = None
 
   private val heartbeatIntervalMillis = 10_000L
-  private val staleNodeAfterMillis    = 30_000L
 
   private def nowMillis(): Long = System.currentTimeMillis()
 
@@ -43,19 +44,32 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then
         state = state.merge(delta)
         emitStateChanged()
-        overlay.foreach(_.applyDelta(delta))
+        broadcastIO.foreach(_.applyDelta(delta))
 
   private def refreshLocalView(replicate: Boolean, updateTimestamp: Boolean): Unit = {
     given LocalUid = localUid
     val lastSeenMillis =
       if updateTimestamp then nowMillis()
       else state.connections.get(localUid.uid).map(_.value.lastSeenMillis).getOrElse(0L)
-    val delta          = OverlayConnectionDirectory.updateNodeFromOverlay(
+    val activePeers   = broadcastIO.flatMap(io =>
+      io.overlayController match
+          case hyp: HyParViewStateMachine => Some(hyp.activePeers)
+          case _                         => None
+    ).getOrElse(Set.empty)
+    val passivePeers  = broadcastIO.flatMap(io =>
+      io.overlayController match
+          case hyp: HyParViewStateMachine => Some(hyp.passivePeers)
+          case _                         => None
+    ).getOrElse(Set.empty)
+    val eagerView     = broadcastIO.map(io => io.plumtreeState.peerRoles.collect {
+      case (Peer(uid), _) => uid
+    }.toSet).getOrElse(Set.empty)
+    val delta         = OverlayConnectionDirectory.updateNodeFromOverlay(
       state.connections,
       localUid.uid,
-      overlay.map(_.activePeers).getOrElse(Set.empty),
-      overlay.map(_.passivePeers).getOrElse(Set.empty),
-      overlay.map(_.eagerView).getOrElse(Set.empty),
+      activePeers,
+      passivePeers,
+      eagerView,
       lastSeenMillis,
     )
     if !Bottom.isEmpty(delta) then
@@ -67,45 +81,36 @@ class OverlayDemoNode(
   }
 
   private def publishLocalView(): Unit = refreshLocalView(replicate = true, updateTimestamp = true)
-  private def publishLocalViewWithoutHeartbeat(): Unit = refreshLocalView(replicate = true, updateTimestamp = false)
-
   private def pruneStaleReplicatedNodes(): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.pruneStaleNodes(
       state.connections,
       nowMillis(),
-      staleNodeAfterMillis,
+      30_000L,
       localUid.uid,
     )
     if !Bottom.isEmpty(delta) then publish(DemoState(delta))
   }
 
-  private def newOverlay(seed: Option[ChannelConnectInfo]) =
-    new replication.overlay.HyParViewIO[DemoState](
-      selfRef,
+  private def newOverlay() = {
+    val stateMachine = HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)
+    new BroadcastIO[DemoState](
+      localUid,
       (delta: DemoState) => {
         state = state.merge(delta)
         emitStateChanged()
       },
-      listenEnvelope.getOrElse(new LatentConnection {
-        override def prepare(receiver: channels.Receive) =
-          throw UnsupportedOperationException("no local server configured for this overlay node")
-      }),
       envelopeResolver,
-      seed.map(Set(_)),
-      random,
-      StateDeltaStorage(() => state),
-      config,
+      globalAbort = abort,
+      overlay = stateMachine,
     )
+  }
 
   private def startBackgroundTasks(): Unit = {
     timer.schedule(
       new TimerTask {
-        override def run(): Unit = {
-          overlay.foreach(_.promotionTick())
-          overlay.foreach(_.shuffleTick())
-          overlay.foreach(_.repairTick())
-        }
+        override def run(): Unit =
+          broadcastIO.foreach(_.repairTick())
       },
       2000L,
       2000L,
@@ -123,41 +128,43 @@ class OverlayDemoNode(
   }
 
   def start(seeds: List[ChannelConnectInfo] = Nil): Unit = {
-    val node = newOverlay(seeds.headOption)
-    overlay = Some(node)
-    listenEnvelope.foreach(_ => node.startServer())
+    val node = newOverlay()
+    broadcastIO = Some(node)
+    listenEnvelope.foreach(node.addBinaryConnection)
+    seeds.foreach(detail => node.discover(Set(PeerConnectInfo(localUid.uid, Set(detail)))))
     publishLocalView()
     if runBackgroundTasks then startBackgroundTasks()
-    seeds.headOption.foreach(_ => node.join())
   }
 
-  def joinSeed(seed: ChannelConnectInfo): Unit =
-    overlay.foreach(_.join(Set(seed)))
-
   def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit =
-    overlay.foreach(_.discoverPeers(peers))
+    broadcastIO.foreach(_.discover(peers.toSet))
 
   def selfConnectionDetails: Set[ChannelConnectInfo] = selfDetails
 
-  def shuffleTick(): Unit = {
-    overlay.foreach(_.promotionTick())
-    overlay.foreach(_.shuffleTick())
-    overlay.foreach(_.repairTick())
-    publishLocalViewWithoutHeartbeat()
-  }
+  def shuffleTick(): Unit = broadcastIO.foreach(_.repairTick())
 
-  def repairTick(): Unit = overlay.foreach(_.repairTick())
+  def repairTick(): Unit = broadcastIO.foreach(_.repairTick())
 
   def addOverlayConnection(latent: LatentConnection): Unit =
-    overlay.foreach(_.addIncomingConnection(latent))
+    broadcastIO.foreach(_.addBinaryConnection(latent))
 
-  def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
+  def activeView: Set[Uid] = broadcastIO.flatMap(io =>
+    io.overlayController match
+        case hyp: HyParViewStateMachine => Some(hyp.activeView)
+        case _                         => None
+  ).getOrElse(Set.empty)
 
-  def passiveView: Set[Uid] = overlay.map(_.passiveView).getOrElse(Set.empty)
+  def passiveView: Set[Uid] = broadcastIO.flatMap(io =>
+    io.overlayController match
+        case hyp: HyParViewStateMachine => Some(hyp.passiveView)
+        case _                         => None
+  ).getOrElse(Set.empty)
 
-  def eagerView: Set[Uid] = overlay.map(_.eagerView).getOrElse(Set.empty)
+  def eagerView: Set[Uid] = broadcastIO.map(io => io.plumtreeState.peerRoles.collect {
+    case (Peer(uid), _) => uid
+  }.toSet).getOrElse(Set.empty)
 
-  def lastIncomingMessageTimes: Map[Uid, Long] = overlay.map(_.lastIncomingMessageTimes).getOrElse(Map.empty)
+  def lastIncomingMessageTimes: Map[Uid, Long] = Map.empty
 
   def connectionDirectory: OverlayConnectionDirectory.Directory = state.connections
 
@@ -167,9 +174,8 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(cleanup) then {
       state = state.merge(DemoState(cleanup))
       emitStateChanged()
-      overlay.foreach(_.applyDelta(DemoState(cleanup)))
+      broadcastIO.foreach(_.applyDelta(DemoState(cleanup)))
     }
-    overlay.foreach(_.stop())
     abort.abort()
     timer.cancel()
   }

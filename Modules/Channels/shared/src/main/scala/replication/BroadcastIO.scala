@@ -60,6 +60,10 @@ class BroadcastIO[State](
   @volatile private var plumtree: PlumtreeBroadcast[State] =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
+  def overlayController: OverlayController = overlay
+
+  def plumtreeState: PlumtreeBroadcast[State] = plumtree
+
   private def printExceptionHandler: Callback[Any] =
       case Failure(ex) =>
         println("exception during connection activation")
@@ -97,9 +101,23 @@ class BroadcastIO[State](
     snapshot.foreach(send(_, Envelope.Membership(OverlayMessage.Ping(System.nanoTime()))))
   }
 
+  /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
   def repairTick(): Unit = {
+    val actions = lock.synchronized {
+      val (next, a) = overlay.tick()
+      overlay = next
+      a
+    }
+    actions.foreach(handleOverlayAction)
+
     val result = lock.synchronized(plumtree.tickGrafts())
     applyRoutingResult(result)
+  }
+
+  /** Register externally discovered peers with the overlay. */
+  def discover(peers: Set[PeerConnectInfo]): Unit = {
+    val (next, actions) = overlay.discoverPeers(peers)
+    applyOverlayResult(next, actions)
   }
 
   private def localKnownDeltaContext: Dots = lock.synchronized(plumtree.localContext)

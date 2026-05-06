@@ -6,7 +6,7 @@ import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnectionFa
 import de.rmgk.delay.Async
 import org.scalajs.dom
 import rdts.base.Uid
-import replication.overlay.HyParViewIO
+import replication.BroadcastIO
 import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.{OverlayDemoNode, SignalingClient, SignalingServer}
 
@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 
 object OverlayNetworkGraphNetworking {
 
-  type Envelope = HyParViewIO.Envelope[DemoState]
+  type Envelope = BroadcastIO.Envelope[DemoState]
 
   def createRtcConnector(): WebRTCConnector =
     WebRTCConnector(new dom.RTCConfiguration {

@@ -119,6 +119,6 @@ object JsoniterCodecs {
 
   given codecConnectionDetails: JsonValueCodec[ChannelConnectInfo]               = JsonCodecMaker.make
   given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
-  // given codecOverlayEnvelope: JsonValueCodec[HyParViewIO.Envelope[DemoState]] = JsonCodecMaker.make
+  // given codecOverlayEnvelope: JsonValueCodec[BroadcastIO.Envelope[DemoState]] = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message]                                    = JsonCodecMaker.make
 }

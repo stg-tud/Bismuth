@@ -6,7 +6,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import replication.JsoniterCodecs.{AWSetStateCodec, ORMapStateCodec, given}
-import replication.overlay.HyParViewIO
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import replication.research.OverlayNetworkProtocol.DemoState
@@ -28,10 +27,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     AWSetStateCodec[ChannelConnectInfo]
   given codecDirectoryState: JsonValueCodec[ObserveRemoveMap[Uid, OverlayConnectionDirectory.NodeInfo]] =
     ORMapStateCodec[Uid, OverlayConnectionDirectory.NodeInfo]
-  given codecDemoState: JsonValueCodec[DemoState]                                      = JsonCodecMaker.make
-  given codecOverlayEnvelope: JsonValueCodec[HyParViewIO.Envelope[DemoState]] = JsonCodecMaker.make
-
-  type Envelope = HyParViewIO.Envelope[DemoState]
+  given codecDemoState: JsonValueCodec[DemoState] = JsonCodecMaker.make
 
   private def drain(queue: LocalMessageQueue, limit: Int): Unit = {
     var safety = 0
