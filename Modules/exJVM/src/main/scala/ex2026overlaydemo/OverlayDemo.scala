@@ -28,7 +28,7 @@ object OverlayDemo {
       java.nio.charset.StandardCharsets.UTF_8
     ))
 
-  def jsonConnection[A: JsonValueCodec](latent: LatentConnection[MessageBuffer], name: String): LatentConnection[A] =
+  def jsonConnection[A: JsonValueCodec](latent: LatentConnection, name: String): LatentConnection =
     LatentConnection.adapt[MessageBuffer, A](
       mb => readFromArray[A](mb.asArray),
       a => ArrayMessageBuffer(writeToArray(a)),
@@ -56,7 +56,7 @@ object OverlayDemo {
       val nioThread   = Executors.newSingleThreadExecutor()
       val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-      def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection[MessageBuffer]) =
+      def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection) =
         nioResolver.listen(host, port)
 
       val (listenDetails, listenBinary) =
@@ -67,13 +67,13 @@ object OverlayDemo {
                   case _: BindException => listen(0)
             case None => listen(0)
 
-      val listenEnvelope   = jsonConnection[HyParViewIO.Envelope[DemoState]](listenBinary, "overlay-json")
-      val envelopeResolver = new ChannelResolver[HyParViewIO.Envelope[DemoState]] {
+      val listenEnvelope   = jsonConnection(listenBinary, "overlay-json")
+      val envelopeResolver = new ChannelResolver {
         override def canConnect(details: ChannelConnectInfo): Boolean =
           nioResolver.canConnect(details)
 
         override def connect(details: ChannelConnectInfo, label: String)
-            : Option[LatentConnection[HyParViewIO.Envelope[DemoState]]] =
+            : Option[LatentConnection] =
           nioResolver.connect(
             details,
             label
@@ -91,9 +91,9 @@ object OverlayDemo {
         onStateChanged = onStateChanged,
         printOverlayEventsToStdout = printOverlayEventsToStdout,
       )
-      val signalingResolver = new ChannelResolver[Message] {
+      val signalingResolver = new ChannelResolver {
         override def canConnect(details: ChannelConnectInfo): Boolean = nioResolver.canConnect(details)
-        override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[Message]] =
+        override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
           nioResolver.connect(details, label).map(jsonConnection[Message](_, "signaling-json"))
       }
       val signaling = signalingServer.map { server =>
@@ -135,7 +135,7 @@ object OverlayDemo {
     }
 
     def queued(
-        registry: LocalConnectionRegistry[HyParViewIO.Envelope[DemoState]],
+        registry: LocalConnectionRegistry,
         id: String,
         random: Random = Random(0),
         config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),

@@ -13,8 +13,8 @@ import scala.scalajs.js.typedarray.ArrayBuffer
 class BroadcastException(message: String, val event: MessageEvent) extends Exception(message)
 
 object BroadcastChannelConnector {
-  def named(name: String): LatentConnection[MessageBuffer] = new LatentConnection {
-    override def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
+  def named(name: String): LatentConnection = new LatentConnection {
+    override def prepare(incomingHandler: Receive): Async[Abort, Connection] = Async {
 
       val bc         = new BroadcastChannel(name)
       val connection = BroadcastChannelConnection(bc)
@@ -42,7 +42,7 @@ object BroadcastChannelConnector {
   }
 }
 
-class BroadcastChannelConnection(bc: BroadcastChannel) extends Connection[MessageBuffer] {
+class BroadcastChannelConnection(bc: BroadcastChannel) extends Connection {
 
   def send(message: MessageBuffer): delay.Async[Any, Unit] =
     Sync(bc.postMessage(message.asArrayBuffer))

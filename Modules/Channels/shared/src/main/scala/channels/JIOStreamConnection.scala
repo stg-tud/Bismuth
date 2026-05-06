@@ -45,7 +45,7 @@ class JioOutputStreamAdapter(out: OutputStream) {
 }
 
 class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Unit)
-    extends Connection[MessageBuffer] {
+    extends Connection {
 
   // socket streams
 
@@ -62,7 +62,7 @@ class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Uni
 
   // frame parsing
 
-  def loopHandler(handler: Receive[MessageBuffer]): Unit =
+  def loopHandler(handler: Receive): Unit =
     inputStream.loopReceive(handler.messageHandler(this))
 
 }

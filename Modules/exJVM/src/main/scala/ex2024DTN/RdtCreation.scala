@@ -39,7 +39,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
       monitoringClient: MonitoringClientInterface,
       operationMode: ClientOperationMode
   ): Unit = {
-    dataManager.addConnection(Channel[RdtType](
+    dataManager.addBinaryConnection(Channel[RdtType](
       host,
       port,
       "app1",
@@ -103,7 +103,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
       monitoringClient: MonitoringClientInterface,
       operationMode: ClientOperationMode
   ): Unit = {
-    dataManager.addConnection(Channel[RdtType](
+    dataManager.addBinaryConnection(Channel[RdtType](
       host,
       port,
       "app1",
@@ -177,7 +177,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
       monitoringClient: MonitoringClientInterface,
       operationMode: ClientOperationMode
   ): Unit = {
-    dataManager.addConnection(Channel[RdtType](
+    dataManager.addBinaryConnection(Channel[RdtType](
       host,
       port,
       "app1",

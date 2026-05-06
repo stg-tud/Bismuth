@@ -15,7 +15,7 @@ class WebRTCConnectionFailed(message: String) extends Exception(message)
 private def rtcDebug(channel: dom.RTCDataChannel, message: => String): Unit =
   ()
 
-class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection[MessageBuffer] {
+class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection {
   def receive: Prod[MessageBuffer] = Async.fromCallback {
     rtcDebug(channel, "receive() registered handlers")
     channel.onmessage = { (event: dom.MessageEvent) =>
@@ -93,9 +93,9 @@ object WebRTCConnection {
     }
   }
 
-  def openLatent(channel: dom.RTCDataChannel): LatentConnection[MessageBuffer] = new LatentConnection {
+  def openLatent(channel: dom.RTCDataChannel): LatentConnection = new LatentConnection {
 
-    def succeedConnection(incoming: Receive[MessageBuffer]): WebRTCConnection = {
+    def succeedConnection(incoming: Receive): WebRTCConnection = {
       rtcDebug(channel, "openLatent.succeedConnection() installing message handlers")
       val connector = new WebRTCConnection(channel)
       val handler   = incoming.messageHandler(connector)
@@ -144,7 +144,7 @@ object WebRTCConnection {
       connector
     }
 
-    override def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
+    override def prepare(incomingHandler: Receive): Async[Abort, Connection] =
       Async.fromCallback {
         rtcDebug(channel, "openLatent.prepare() called")
 

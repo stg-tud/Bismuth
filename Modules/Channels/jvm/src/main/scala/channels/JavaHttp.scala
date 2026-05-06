@@ -13,14 +13,14 @@ import scala.util.{Failure, Success}
 
 object JavaHttp {
 
-  class SSEServerConnection(out: JioOutputStreamAdapter) extends Connection[MessageBuffer] {
+  class SSEServerConnection(out: JioOutputStreamAdapter) extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Async { out.send(message) }
     override def close(): Unit                                  = out.outputStream.close()
   }
 
-  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection[MessageBuffer] {
+  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection {
 
-    def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async.fromCallback {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async.fromCallback {
       addHandler { (exchange: HttpExchange) =>
         val responseHeaders = exchange.getResponseHeaders
         responseHeaders.add("Content-Type", "text/event-stream")
@@ -43,8 +43,8 @@ object JavaHttp {
     }
   }
 
-  class SSEClientConnection(client: HttpClient, uri: URI, receiver: Receive[MessageBuffer], ec: ExecutionContext)
-      extends Connection[MessageBuffer] {
+  class SSEClientConnection(client: HttpClient, uri: URI, receiver: Receive, ec: ExecutionContext)
+      extends Connection {
 
     lazy val handler: Callback[MessageBuffer] = receiver.messageHandler(this)
 
@@ -92,9 +92,9 @@ object JavaHttp {
   }
 
   class SSEClient(client: HttpClient, uri: URI, ec: ExecutionContext)
-      extends LatentConnection[MessageBuffer] {
+      extends LatentConnection {
 
-    def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async {
       val conn = SSEClientConnection(client, uri, receiver, ec)
       conn.send(ArrayMessageBuffer(Array.emptyByteArray)).bind
       conn

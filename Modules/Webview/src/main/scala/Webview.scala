@@ -78,7 +78,7 @@ object WebviewNativeChannel {
 
   given JsonValueCodec[List[String]] = JsonCodecMaker.make
 
-  class WebviewConnectionContext(w: WebView) extends Connection[MessageBuffer] {
+  class WebviewConnectionContext(w: WebView) extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val b64 = new String(java.util.Base64.getEncoder.encode(message.asArray))
       w.eval(s"""webview_channel_receive('$b64')""")
@@ -86,8 +86,8 @@ object WebviewNativeChannel {
     override def close(): Unit = ()
   }
 
-  def listen(w: WebView): LatentConnection[MessageBuffer] = new LatentConnection {
-    def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Sync {
+  def listen(w: WebView): LatentConnection = new LatentConnection {
+    def prepare(incomingHandler: Receive): Async[Abort, Connection] = Sync {
       val conn = WebviewConnectionContext(w)
       val cb   = incomingHandler.messageHandler(conn)
       w.bind(

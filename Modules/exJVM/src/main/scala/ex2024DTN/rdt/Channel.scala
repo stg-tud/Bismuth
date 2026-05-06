@@ -22,7 +22,7 @@ class ClientContext[T: JsonValueCodec](
     connection: Client,
     executionContext: ExecutionContext,
     operationMode: ClientOperationMode
-) extends Connection[BroadcastIO.Envelope[T]] {
+) extends Connection {
   override def send(message: BroadcastIO.Envelope[T]): Async[Any, Unit] =
     message match
         case BroadcastIO.Envelope.Membership(_)                         => Async {}
@@ -58,13 +58,13 @@ class Channel[T: JsonValueCodec](
     ec: ExecutionContext,
     monitoringClient: MonitoringClientInterface = NoMonitoringClient,
     operationMode: ClientOperationMode = ClientOperationMode.PushAll
-) extends LatentConnection[BroadcastIO.Envelope[T]] {
+) extends LatentConnection {
 
   // We use a local dtnid instead of a remote replica ID to signify that the local DTNd is the one providing information.
   // If the local dtnd could be stopped and restarted without loosing data, this id should remain the same for performance reasons, but it will be correct even if it changes.
   val dtnid: Uid = Uid.gen()
 
-  override def prepare(receiver: Receive[BroadcastIO.Envelope[T]]): Async[Abort, Connection[BroadcastIO.Envelope[T]]] =
+  override def prepare(receiver: Receive): Async[Abort, Connection] =
     Async {
       val client: Client = Client(host, port, appName, monitoringClient).toAsync(using ec).bind
       val conn           = ClientContext[T](client, ec, operationMode)

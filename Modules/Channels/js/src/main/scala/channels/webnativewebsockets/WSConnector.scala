@@ -11,7 +11,7 @@ import scala.scalajs.js.typedarray.ArrayBuffer
 
 class WebsocketException(msg: String) extends IOException(msg)
 
-class WebsocketConnect(socket: dom.WebSocket) extends Connection[MessageBuffer] {
+class WebsocketConnect(socket: dom.WebSocket) extends Connection {
 
   def open(): Boolean = socket.readyState == dom.WebSocket.OPEN
 
@@ -25,9 +25,9 @@ class WebsocketConnect(socket: dom.WebSocket) extends Connection[MessageBuffer] 
 
 object WebsocketConnect {
 
-  def connect(url: String): LatentConnection[MessageBuffer] = new LatentConnection {
+  def connect(url: String): LatentConnection = new LatentConnection {
 
-    override def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = {
+    override def prepare(incomingHandler: Receive): Async[Abort, Connection] = {
       Async.fromCallback {
 
         val socket = new dom.WebSocket(url)

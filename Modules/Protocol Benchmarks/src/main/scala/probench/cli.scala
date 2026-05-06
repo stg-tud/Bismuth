@@ -21,7 +21,7 @@ object cli {
 
   def addRetryingLatentConnection(
       dataManager: BroadcastIO[?],
-      connection: LatentConnection[MessageBuffer],
+      connection: LatentConnection,
       delay: Long,
       tries: Int
   ): Unit = {

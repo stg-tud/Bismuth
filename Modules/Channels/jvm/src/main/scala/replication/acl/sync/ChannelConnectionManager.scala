@@ -28,7 +28,7 @@ class ChannelConnectionManager(
   private val localPublicId                                     = privateIdentity.getPublic
   @volatile private var listener: Option[p2pTls.P2PTlsListener] = None
   // Stores multiple connections
-  @volatile private var connections: Map[PublicIdentity, Connection[MessageBuffer]] = Map.empty
+  @volatile private var connections: Map[PublicIdentity, Connection] = Map.empty
 
   /** Sends a message to the user and returns true, if a connections exists. Otherwise, discards message and returns false.
     *
@@ -116,13 +116,13 @@ class ChannelConnectionManager(
 
   override def connectedPeers: Set[PublicIdentity] = connections.keySet
 
-  private def trackConnection(connection: Connection[MessageBuffer]): Unit = {
+  private def trackConnection(connection: Connection): Unit = {
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
       case Some(`localPublicId`) =>
         if !disableLogging then println("Refusing attempt to track connection to myself")
         connection.close()
       case Some(remotePeerId) =>
-        var duplicateConnection: Option[Connection[MessageBuffer]] = None
+        var duplicateConnection: Option[Connection] = None
         synchronized {
           connections = connections.updatedWith(remotePeerId) {
             case None                => Some(connection)
@@ -152,7 +152,7 @@ class ChannelConnectionManager(
     }
   }
 
-  private val receiveMessageHandler: Receive[MessageBuffer] = (connection: Connection[MessageBuffer]) => {
+  private val receiveMessageHandler: Receive = (connection: Connection) => {
     val remotePeerId = PublicIdentity(connection.authenticatedPeerReplicaId.get.delegate)
     {
       case Success(msg)       => messageReceiver.receivedMessage(msg, remotePeerId)
@@ -163,7 +163,7 @@ class ChannelConnectionManager(
     }
   }
 
-  private def onSocketFailure(remotePeerId: PublicIdentity, failedConnection: Connection[MessageBuffer]): Unit = {
+  private def onSocketFailure(remotePeerId: PublicIdentity, failedConnection: Connection): Unit = {
     var socketWasAlreadyRemoved = false
     synchronized {
       connections = connections.updatedWith(remotePeerId) {

@@ -1,8 +1,10 @@
 package replication.research
 
-import channels.{Abort, ChannelConnectInfo, ChannelResolver, Connection}
+import channels.{Abort, ArrayMessageBuffer, ChannelConnectInfo, ChannelResolver, Connection}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Sync}
 import rdts.base.Uid
+import replication.JsoniterCodecs.given
 import replication.research.SignalingServer.{Message, Session}
 
 import scala.collection.mutable
@@ -10,7 +12,7 @@ import scala.util.{Failure, Success}
 
 class SignalingClient(
                        server: ChannelConnectInfo,
-                       resolver: ChannelResolver[Message],
+                       resolver: ChannelResolver,
                        localUid: Uid,
                        initialAnnouncements: Map[String, Set[ChannelConnectInfo]],
                        onRegistered: () => Unit = () => (),
@@ -22,26 +24,28 @@ class SignalingClient(
                        onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
                        onDisconnected: () => Unit = () => (),
 ) {
-  private val abort                                   = Abort()
-  private var connection: Option[Connection[Message]] = None
+  private val abort                         = Abort()
+  private var connection: Option[Connection] = None
   private val announcements                           = mutable.LinkedHashMap.from(initialAnnouncements)
 
   private def send(message: Message): Async[Any, Unit] =
     connection match
-        case Some(conn) => conn.send(message)
+        case Some(conn) => conn.send(ArrayMessageBuffer(writeToArray(message)))
         case None => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
 
   def start(): Unit =
     resolver.connect(server, s"signal-${Uid.unwrap(localUid)}").foreach {
       _.prepare { _ =>
         {
-          case Success(Message.Register(_))                                 => ()
-          case Success(Message.PeerInfo(_, uid, topics))                    => onPeerInfo(uid, topics)
-          case Success(Message.TopicInfo(_, topic, peers))                  => onTopicInfo(topic, peers)
-          case Success(Message.Offer(from, to, session)) if to == localUid  => onOffer(from, session)
-          case Success(Message.Answer(from, to, session)) if to == localUid => onAnswer(from, session)
-          case Success(_)                                                   => ()
-          case Failure(_)                                                   =>
+          case Success(buffer) =>
+            readFromArray[Message](buffer.asArray) match
+                case Message.Register(_)                                 => ()
+                case Message.PeerInfo(_, uid, topics)                    => onPeerInfo(uid, topics)
+                case Message.TopicInfo(_, topic, peers)                  => onTopicInfo(topic, peers)
+                case Message.Offer(from, to, session) if to == localUid  => onOffer(from, session)
+                case Message.Answer(from, to, session) if to == localUid => onAnswer(from, session)
+                case _                                                   => ()
+          case Failure(_)     =>
             connection = None
             onDisconnected()
         }

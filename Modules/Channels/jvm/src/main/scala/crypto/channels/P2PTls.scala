@@ -42,8 +42,8 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     latentListener(addr, 0, ec)
   }
 
-  def latentConnect(host: String, port: Int, ec: ExecutionContext): LatentConnection[MessageBuffer] =
-    (receiver: Receive[MessageBuffer]) =>
+  def latentConnect(host: String, port: Int, ec: ExecutionContext): LatentConnection =
+    (receiver: Receive) =>
       Async[Abort] {
         val socket = sslFactory.getSslSocketFactory
           .createSocket(host, port)
@@ -75,7 +75,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       val ifAddress: InetAddress,
       _listenPort: Int = 0,
       executionContext: ExecutionContext
-  ) extends LatentConnection[MessageBuffer] {
+  ) extends LatentConnection {
     require(_listenPort >= 0 && _listenPort <= 0xffff)
 
     private lazy val serverSocket: SSLServerSocket = sslFactory.getSslServerSocketFactory
@@ -88,7 +88,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       */
     def listenPort: Int = serverSocket.getLocalPort
 
-    override def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = {
+    override def prepare(receiver: Receive): Async[Abort, Connection] = {
       Async.fromCallback { (abort: Abort) ?=>
         try
             serverSocket // binds port if required
@@ -129,8 +129,8 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       private val socket: SSLSocket,
       private val localId: PublicIdentity,
       peerReplicaId: Uid, // TODO: change type to PublicIdentity
-      receiver: Receive[MessageBuffer]
-  ) extends Connection[MessageBuffer] {
+      receiver: Receive
+  ) extends Connection {
     try
         socket.setOption(StandardSocketOptions.TCP_NODELAY, true)
     catch

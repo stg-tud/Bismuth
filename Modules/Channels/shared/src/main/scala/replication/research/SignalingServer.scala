@@ -1,7 +1,9 @@
 package replication.research
 
-import channels.{Abort, ChannelConnectInfo, Connection, LatentConnection, Receive}
+import channels.{Abort, ArrayMessageBuffer, ChannelConnectInfo, Connection, LatentConnection, Receive}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Uid
+import replication.JsoniterCodecs.given
 import replication.research.SignalingServer.Message
 
 import scala.collection.mutable
@@ -28,14 +30,14 @@ class SignalingServer(
 ) {
   private val abort = Abort()
 
-  private val clientsByUid       = mutable.Map.empty[Uid, Connection[Message]]
-  private val uidByConn          = mutable.Map.empty[Connection[Message], Uid]
+  private val clientsByUid       = mutable.Map.empty[Uid, Connection]
+  private val uidByConn          = mutable.Map.empty[Connection, Uid]
   private val announcementsByUid = mutable.Map.empty[Uid, Map[String, Set[channels.ChannelConnectInfo]]]
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
-  private def sendOrDisconnect(conn: Connection[Message], msg: Message)(onFailure: => Unit = disconnect(conn)): Unit =
-    conn.send(msg).run {
+  private def sendOrDisconnect(conn: Connection, msg: Message)(onFailure: => Unit = disconnect(conn)): Unit =
+    conn.send(ArrayMessageBuffer(writeToArray(msg))).run {
       case Success(_)  => ()
       case Failure(ex) =>
         log(s"send failed ex=${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}")
@@ -44,7 +46,7 @@ class SignalingServer(
 
   def stop(): Unit = abort.abort()
 
-  def addIncomingConnection(latent: LatentConnection[Message]): Unit =
+  def addIncomingConnection(latent: LatentConnection): Unit =
     latent.prepare(receive).runIn(abort) {
       case Success(_)  => ()
       case Failure(ex) => ex.printStackTrace()
@@ -61,7 +63,7 @@ class SignalingServer(
   def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ChannelConnectInfo]] =
     random.shuffle(topicPeers(topic).toVector).take(math.max(0, count)).toMap
 
-  private def disconnect(conn: Connection[Message]): Unit = {
+  private def disconnect(conn: Connection): Unit = {
     uidByConn.remove(conn).foreach { uid =>
       clientsByUid.remove(uid)
       announcementsByUid.remove(uid)
@@ -70,7 +72,7 @@ class SignalingServer(
     conn.close()
   }
 
-  private def register(uid: Uid, conn: Connection[Message]): Unit = {
+  private def register(uid: Uid, conn: Connection): Unit = {
     uidByConn.get(conn).filter(_ != uid).foreach { previous =>
       clientsByUid.remove(previous)
       announcementsByUid.remove(previous)
@@ -81,36 +83,36 @@ class SignalingServer(
     log(s"register ${Uid.unwrap(uid)}")
   }
 
-  private def receive: Receive[Message] =
-    (conn: Connection[Message]) => {
-      {
-        case Success(Message.Register(uid)) =>
-          register(uid, conn)
+  private def receive: Receive =
+    (conn: Connection) => {
+      case Success(buffer) =>
+        readFromArray[Message](buffer.asArray) match
+            case Message.Register(uid) =>
+              register(uid, conn)
 
-        case Success(Message.Announce(topic, descriptors)) =>
-          uidByConn.get(conn).foreach { uid =>
-            announcementsByUid.update(uid, announcementsByUid.getOrElse(uid, Map.empty).updated(topic, descriptors))
-            log(s"announce uid=${Uid.unwrap(uid)} topic=$topic descriptors=${descriptors.size}")
-          }
+            case Message.Announce(topic, descriptors) =>
+              uidByConn.get(conn).foreach { uid =>
+                announcementsByUid.update(uid, announcementsByUid.getOrElse(uid, Map.empty).updated(topic, descriptors))
+                log(s"announce uid=${Uid.unwrap(uid)} topic=$topic descriptors=${descriptors.size}")
+              }
 
-        case Success(Message.LookupPeer(requestId, uid)) =>
-          sendOrDisconnect(conn, Message.PeerInfo(requestId, uid, peerTopics(uid)))()
+            case Message.LookupPeer(requestId, uid) =>
+              sendOrDisconnect(conn, Message.PeerInfo(requestId, uid, peerTopics(uid)))()
 
-        case Success(Message.LookupTopic(requestId, topic, count)) =>
-          sendOrDisconnect(conn, Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count)))()
+            case Message.LookupTopic(requestId, topic, count) =>
+              sendOrDisconnect(conn, Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count)))()
 
-        case Success(msg @ Message.Offer(from, to, _)) if uidByConn.get(conn).contains(from) =>
-          clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
-          log(s"offer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
+            case msg @ Message.Offer(from, to, _) if uidByConn.get(conn).contains(from) =>
+              clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
+              log(s"offer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
 
-        case Success(msg @ Message.Answer(from, to, _)) if uidByConn.get(conn).contains(from) =>
-          clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
-          log(s"answer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
+            case msg @ Message.Answer(from, to, _) if uidByConn.get(conn).contains(from) =>
+              clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
+              log(s"answer ${Uid.unwrap(from)} -> ${Uid.unwrap(to)}")
 
-        case Success(_) => ()
+            case _ => ()
 
-        case Failure(_) =>
-          disconnect(conn)
-      }
+      case Failure(_) =>
+        disconnect(conn)
     }
 }

@@ -15,8 +15,8 @@ import scala.util.control.NonFatal
 
 object NioTCP {
   case class AcceptAttachment(
-      callback: Callback[Connection[MessageBuffer]],
-      incoming: Receive[MessageBuffer],
+      callback: Callback[Connection],
+      incoming: Receive,
   )
 
   case class WebSocketState(
@@ -51,8 +51,8 @@ object NioTCP {
     *   - `WebSocketState` in the protocol holds `fragments` and `fragmentOpcode` for fragmented websocket messages
     */
   case class ReceiveAttachment(
-      connectCallback: Callback[Connection[MessageBuffer]] | Null,
-      incoming: Receive[MessageBuffer],
+      connectCallback: Callback[Connection] | Null,
+      incoming: Receive,
       protocol: ProtocolState = ProtocolState.Init,
       messageCallback: Callback[MessageBuffer] | Null = null,
       primary: ByteBuffer = ByteBuffer.allocate(1024),
@@ -130,7 +130,7 @@ class NioTCP(pool: ExecutionContext) {
     selector.selectedKeys().clear()
   }
 
-  class NioTCPConnection(clientChannel: SocketChannel) extends Connection[MessageBuffer] {
+  class NioTCPConnection(clientChannel: SocketChannel) extends Connection {
 
     override val info: ConnectionInfo = ConnectionInfo(
       "type"          -> "niotcp",
@@ -153,7 +153,7 @@ class NioTCP(pool: ExecutionContext) {
     override def close(): Unit = clientChannel.close()
   }
 
-  class WebSocketConnection(clientChannel: SocketChannel) extends Connection[MessageBuffer] {
+  class WebSocketConnection(clientChannel: SocketChannel) extends Connection {
 
     override val info: ConnectionInfo = ConnectionInfo(
       "type"          -> "websocket",
@@ -177,7 +177,7 @@ class NioTCP(pool: ExecutionContext) {
 
   def handleConnection(
       clientChannel: SocketChannel,
-      incoming: Receive[MessageBuffer],
+      incoming: Receive,
   ): NioTCPConnection = {
 
     configureChannel(clientChannel)
@@ -196,9 +196,9 @@ class NioTCP(pool: ExecutionContext) {
 
   def connect(
       bindsocket: () => SocketChannel,
-  ): LatentConnection[MessageBuffer] =
+  ): LatentConnection =
     new LatentConnection {
-      override def prepare(incoming: Receive[MessageBuffer]): Async[Any, Connection[MessageBuffer]] =
+      override def prepare(incoming: Receive): Async[Any, Connection] =
         Async.fromCallback {
           try
               Async.handler.succeed {
@@ -238,14 +238,14 @@ class NioTCP(pool: ExecutionContext) {
 
   def listen(
       bindsocket: () => ServerSocketChannel,
-  ): LatentConnection[MessageBuffer] =
+  ): LatentConnection =
     new LatentConnection {
-      override def prepare(incoming: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
+      override def prepare(incoming: Receive): Async[Abort, Connection] =
         Async.fromCallback { abort ?=>
           try {
             val serverChannel: ServerSocketChannel = bindsocket()
 
-            val callback = Async.handler[Connection[MessageBuffer]]
+            val callback = Async.handler[Connection]
             serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(callback, incoming))
             selector.wakeup()
             ()

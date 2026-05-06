@@ -33,7 +33,7 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
 
   type Envelope = HyParViewIO.Envelope[DemoState]
 
-  private def drain(queue: LocalMessageQueue[Envelope], limit: Int): Unit = {
+  private def drain(queue: LocalMessageQueue, limit: Int): Unit = {
     var safety = 0
     while queue.nonEmpty && safety < limit do
         queue.deliverAll()
@@ -44,17 +44,17 @@ class PlumtreeHyParViewIntegrationTest extends munit.FunSuite {
     )
   }
 
-  private def tickOverlay(nodes: Iterable[OverlayDemoNode], queue: LocalMessageQueue[Envelope], rounds: Int): Unit =
+  private def tickOverlay(nodes: Iterable[OverlayDemoNode], queue: LocalMessageQueue, rounds: Int): Unit =
     (0 until rounds).foreach { _ =>
       nodes.foreach(_.shuffleTick())
       drain(queue, limit = 20000)
     }
 
   private def buildNetwork(n: Int)
-      : (LocalMessageQueue[Envelope], Vector[(Uid, ChannelConnectInfo, OverlayDemoNode)]) = {
-    val queue    = LocalMessageQueue[Envelope]()
-    val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection[Envelope]]
-    val registry = LocalConnectionRegistry[Envelope](queued)
+      : (LocalMessageQueue, Vector[(Uid, ChannelConnectInfo, OverlayDemoNode)]) = {
+    val queue    = LocalMessageQueue()
+    val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection]
+    val registry = LocalConnectionRegistry(queued)
     val random   = Random(7)
     val cfg      = HyParViewConfig.fromEstimatedNetworkSize(n)
     val resolver = registry

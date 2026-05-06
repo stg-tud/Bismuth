@@ -12,8 +12,8 @@ import scala.util.chaining.scalaUtilChainingOps
 
 object JSHttpPseudoChannel {
 
-  class SSEPseudoConnection(uri: String, receiver: Receive[MessageBuffer])
-      extends Connection[MessageBuffer] {
+  class SSEPseudoConnection(uri: String, receiver: Receive)
+      extends Connection {
 
     lazy val resultCallback: Callback[MessageBuffer] = receiver.messageHandler(this)
 
@@ -85,8 +85,8 @@ object JSHttpPseudoChannel {
 
   }
 
-  def connect(uri: String): LatentConnection[MessageBuffer] = new LatentConnection[MessageBuffer] {
-    def prepare(receiver: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Async {
+  def connect(uri: String): LatentConnection = new LatentConnection {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async {
 
       val conn = new SSEPseudoConnection(uri, receiver)
 

@@ -1,28 +1,20 @@
 package channels.webnativewebsockets
 
-import channels.{ArrayMessageBuffer, ChannelConnectInfo, ChannelResolver, LatentConnection, MessageBuffer}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import channels.{ChannelConnectInfo, ChannelResolver, LatentConnection}
 
 /** vibecoded. dont trust 😉 */
-class WebSocketConnectionDetailsResolver[T: JsonValueCodec] extends ChannelResolver[T] {
+class WebSocketConnectionDetailsResolver extends ChannelResolver {
   override def canConnect(details: ChannelConnectInfo): Boolean =
     details match
         case ChannelConnectInfo.WebSocket(_) => true
         case ChannelConnectInfo.Tcp(_, _)    => true
         case _                                     => false
 
-  private def jsonConnection(latent: LatentConnection[MessageBuffer], name: String): LatentConnection[T] =
-    LatentConnection.adapt[MessageBuffer, T](
-      mb => readFromArray[T](mb.asArray),
-      value => ArrayMessageBuffer(writeToArray(value)),
-      name
-    )(latent)
-
-  override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[T]] =
+  override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
     details match
         case ChannelConnectInfo.WebSocket(url) =>
-          Some(jsonConnection(WebsocketConnect.connect(url), s"websocket-json:$label"))
+          Some(WebsocketConnect.connect(url))
         case ChannelConnectInfo.Tcp(host, port) =>
-          Some(jsonConnection(WebsocketConnect.connect(s"ws://$host:$port"), s"websocket-json:$label"))
+          Some(WebsocketConnect.connect(s"ws://$host:$port"))
         case _ => None
 }

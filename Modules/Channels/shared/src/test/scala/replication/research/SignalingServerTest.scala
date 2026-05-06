@@ -3,7 +3,6 @@ package replication.research
 import channels.{ChannelConnectInfo, ChannelResolver, LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
 import munit.FunSuite
 import rdts.base.Uid
-import replication.research.SignalingServer.Message
 
 class SignalingServerTest extends FunSuite {
 
@@ -11,11 +10,11 @@ class SignalingServerTest extends FunSuite {
     val serverDetails = ChannelConnectInfo.SynchronousLocal("signal")
     val server        = SignalingServer(debug = false)
 
-    def resolverFor(id: String): ChannelResolver[Message] = new ChannelResolver[Message] {
+    def resolverFor(id: String): ChannelResolver = new ChannelResolver {
       override def canConnect(details: ChannelConnectInfo): Boolean    = details == serverDetails
       override def connect(details: ChannelConnectInfo, label: String) =
         if details == serverDetails then
-            val link = SynchronousLocalConnection[Message]()
+            val link = SynchronousLocalConnection()
             server.addIncomingConnection(link.server)
             Some(link.client(s"$id:$label"))
         else None
@@ -27,13 +26,13 @@ class SignalingServerTest extends FunSuite {
   final private class QueuedFixture {
     val serverDetails = ChannelConnectInfo.QueuedLocal("signal")
     val server        = SignalingServer(debug = false)
-    val queue         = LocalMessageQueue[Message]()
+    val queue         = LocalMessageQueue()
 
-    def resolverFor(id: String): ChannelResolver[Message] = new ChannelResolver[Message] {
+    def resolverFor(id: String): ChannelResolver = new ChannelResolver {
       override def canConnect(details: ChannelConnectInfo): Boolean    = details == serverDetails
       override def connect(details: ChannelConnectInfo, label: String) =
         if details == serverDetails then
-            val link = QueuedLocalConnection[Message](queue)
+            val link = QueuedLocalConnection(queue)
             server.addIncomingConnection(link.server)
             Some(link.client(s"$id:$label"))
         else None

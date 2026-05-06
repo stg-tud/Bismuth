@@ -32,7 +32,7 @@ object SignalingServerCli {
     val nioThread   = Executors.newSingleThreadExecutor()
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-    def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection[Message]) = {
+    def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection) = {
       val (details, latent) = nioResolver.listen(host, port)
       (details, OverlayDemo.jsonConnection[Message](latent, "webrtc-signaling-json"))
     }

@@ -15,7 +15,7 @@ object TCP {
 
   def handleConnection(
       socket: Socket,
-      incoming: Receive[MessageBuffer],
+      incoming: Receive,
       executionContext: ExecutionContext
   ): JIOStreamConnection = {
     socket.setTcpNoDelay(true)
@@ -28,9 +28,9 @@ object TCP {
   def defaultSocket(socketAddress: InetSocketAddress): () => Socket =
     () => new Socket(socketAddress.getAddress, socketAddress.getPort)
 
-  def connect(bindsocket: () => Socket, executionContext: ExecutionContext): LatentConnection[MessageBuffer] =
+  def connect(bindsocket: () => Socket, executionContext: ExecutionContext): LatentConnection =
     new LatentConnection {
-      override def prepare(incoming: Receive[MessageBuffer]): Async[Any, Connection[MessageBuffer]] =
+      override def prepare(incoming: Receive): Async[Any, Connection] =
         TCP.syncAttempt {
           TCP.handleConnection(bindsocket(), incoming, executionContext)
         }
@@ -50,9 +50,9 @@ object TCP {
     socket
   }
 
-  def listen(bindsocket: () => ServerSocket, executionContext: ExecutionContext): LatentConnection[MessageBuffer] =
+  def listen(bindsocket: () => ServerSocket, executionContext: ExecutionContext): LatentConnection =
     new LatentConnection {
-      override def prepare(incoming: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
+      override def prepare(incoming: Receive): Async[Abort, Connection] =
         Async.fromCallback { abort ?=>
           try
 

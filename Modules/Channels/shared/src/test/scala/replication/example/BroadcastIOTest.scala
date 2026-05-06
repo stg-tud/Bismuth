@@ -16,11 +16,11 @@ class BroadcastIOTest extends munit.FunSuite {
     // I have no clue why this syntax is still not deprecated xD
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
-    val sync = SynchronousLocalConnection[BroadcastIO.Envelope[Set[String]]]()
+    val sync = SynchronousLocalConnection()
 
-    dd2.addConnection(sync.client("2"))
-    dd1.addConnection(sync.server)
-    dd3.addConnection(sync.client("3"))
+    dd2.addBinaryConnection(sync.client("2"))
+    dd1.addBinaryConnection(sync.server)
+    dd3.addBinaryConnection(sync.client("3"))
 
     dd1.pingAll()
     dd2.pingAll()
@@ -47,15 +47,15 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val nodes = Vector.fill(5)(BroadcastIO[Set[String]](LocalUid.gen(), _ => ()))
 
-    val queue = LocalMessageQueue[BroadcastIO.Envelope[Set[String]]]()
+    val queue = LocalMessageQueue()
 
     for
         i <- nodes.indices
         j <- (i + 1) until nodes.size
     do
-        val link = QueuedLocalConnection[BroadcastIO.Envelope[Set[String]]](queue)
-        nodes(i).addConnection(link.server)
-        nodes(j).addConnection(link.client(s"$j->$i"))
+        val link = QueuedLocalConnection(queue)
+        nodes(i).addBinaryConnection(link.server)
+        nodes(j).addBinaryConnection(link.client(s"$j->$i"))
 
     // drain connection setup traffic (initial requests/replies)
     var setupSafety = 0
@@ -85,12 +85,12 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
-    val queue  = LocalMessageQueue[BroadcastIO.Envelope[Set[String]]]()
-    val queued = QueuedLocalConnection[BroadcastIO.Envelope[Set[String]]](queue)
+    val queue  = LocalMessageQueue()
+    val queued = QueuedLocalConnection(queue)
 
-    dd2.addConnection(queued.client("2"))
-    dd1.addConnection(queued.server)
-    dd3.addConnection(queued.client("3"))
+    dd2.addBinaryConnection(queued.client("2"))
+    dd1.addBinaryConnection(queued.server)
+    dd3.addBinaryConnection(queued.client("3"))
 
     def deliverAndPrint(): Unit =
         val log = false
@@ -147,7 +147,7 @@ class BroadcastIOTest extends munit.FunSuite {
         )
     }
 
-    val queue = LocalMessageQueue[BroadcastIO.Envelope[ReplicatedSet[String]]]()
+    val queue = LocalMessageQueue()
 
     def drainAll(nodes: => Vector[Node]): Unit =
         var safety   = 0
@@ -166,9 +166,9 @@ class BroadcastIOTest extends munit.FunSuite {
     val nodes = Vector.fill(5)(mkNode())
 
     for i <- nodes.indices do
-        val link = QueuedLocalConnection[BroadcastIO.Envelope[ReplicatedSet[String]]](queue)
-        nodes(i).dissemination.addConnection(link.server)
-        nodes((i + 1) % nodes.size).dissemination.addConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
+        val link = QueuedLocalConnection(queue)
+        nodes(i).dissemination.addBinaryConnection(link.server)
+        nodes((i + 1) % nodes.size).dissemination.addBinaryConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
 
     def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
       node.state = node.state.merge(delta)

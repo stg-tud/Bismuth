@@ -9,15 +9,15 @@ import de.rmgk.delay.{Async, Callback, Promise, Sync}
   * It does not matter if the server or client is started first, connection is established immediately when the second one joins the connection.
   */
 // You like callback hell? Definitely callback hell.
-class SynchronousLocalConnection[T] {
+class SynchronousLocalConnection {
 
   /** The server prepares by fullfillling the [[connectionEstablished]] promise, which contains a callback that allwows any number of clients to connect. The inner callback contains the [[Connection]] the server sends on, as well as a promise that the server completes immediately with it’s own receive handler. */
-  object server extends LatentConnection[T] {
+  object server extends LatentConnection {
 
-    case class Establish(serverSendsOn: Connection[T], clientConnectionSendsTo: Promise[Callback[T]])
+    case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive[T]): Async[Abort, Connection[T]] = Async.fromCallback[Establish] {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.messageHandler(connChan.serverSendsOn))
@@ -26,15 +26,15 @@ class SynchronousLocalConnection[T] {
   }
 
   /** Clients create both the client side and server side connection object. */
-  def client(id: String): LatentConnection[T] = new LatentConnection[T] {
+  def client(id: String): LatentConnection = new LatentConnection {
 
     /** This promise is send (unfullfilled) to the server, to be completed with the callback that handles received messages on the server side.
       * Thus, once completed, the inner callback directly executes whatever handler code was passed to the server.
       */
-    val toServerMessages: Promise[Callback[T]] = Promise()
+    val toServerMessages: Promise[Callback[MessageBuffer]] = Promise()
 
-    object toServer extends Connection[T] {
-      def send(msg: T): Async[Any, Unit] = Async {
+    object toServer extends Connection {
+      def send(msg: MessageBuffer): Async[Any, Unit] = Async {
         val cb = toServerMessages.async.bind
         cb.succeed(msg)
       }
@@ -43,13 +43,13 @@ class SynchronousLocalConnection[T] {
       override def toString: String = s"From[$id]"
     }
 
-    def prepare(receiver: Receive[T]): Async[Abort, Connection[T]] = Async {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async {
       val callback = receiver.messageHandler(toServer)
 
       /* This is the connection that is passed to the server, which just calls the callback defined by the handler. */
-      val toClient = new Connection[T] {
-        override def close(): Unit                      = ()
-        override def send(message: T): Async[Any, Unit] = Sync {
+      val toClient = new Connection {
+        override def close(): Unit = ()
+        override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
           callback.succeed(message)
         }
         override def toString: String = s"To[$id]"

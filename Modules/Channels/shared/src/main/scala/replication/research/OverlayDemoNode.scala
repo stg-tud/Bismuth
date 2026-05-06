@@ -4,6 +4,7 @@ import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, P
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import replication.StateDeltaStorage
+import replication.JsoniterCodecs.codecDemoState
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 
@@ -13,8 +14,8 @@ import scala.util.Random
 /** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
                        selfDetails: Set[ChannelConnectInfo],
-                       listenEnvelope: Option[LatentConnection[HyParViewIO.Envelope[DemoState]]],
-                       envelopeResolver: ChannelResolver[HyParViewIO.Envelope[DemoState]],
+                       listenEnvelope: Option[LatentConnection],
+                       envelopeResolver: ChannelResolver,
                        random: Random = Random(0),
                        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
                        onStateChanged: DemoState => Unit = _ => (),
@@ -86,8 +87,8 @@ class OverlayDemoNode(
         state = state.merge(delta)
         emitStateChanged()
       },
-      listenEnvelope.getOrElse(new LatentConnection[HyParViewIO.Envelope[DemoState]] {
-        override def prepare(receiver: channels.Receive[HyParViewIO.Envelope[DemoState]]) =
+      listenEnvelope.getOrElse(new LatentConnection {
+        override def prepare(receiver: channels.Receive) =
           throw UnsupportedOperationException("no local server configured for this overlay node")
       }),
       envelopeResolver,
@@ -147,7 +148,7 @@ class OverlayDemoNode(
 
   def repairTick(): Unit = overlay.foreach(_.repairTick())
 
-  def addOverlayConnection(latent: LatentConnection[HyParViewIO.Envelope[DemoState]]): Unit =
+  def addOverlayConnection(latent: LatentConnection): Unit =
     overlay.foreach(_.addIncomingConnection(latent))
 
   def activeView: Set[Uid] = overlay.map(_.activeView).getOrElse(Set.empty)
