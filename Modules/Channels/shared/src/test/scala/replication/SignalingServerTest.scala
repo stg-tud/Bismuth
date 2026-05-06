@@ -1,8 +1,9 @@
-package replication.research
+package replication
 
 import channels.{ChannelConnectInfo, ChannelResolver, LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
 import munit.FunSuite
 import rdts.base.Uid
+import replication.research.{SignalingClient, SignalingServer}
 
 class SignalingServerTest extends FunSuite {
 
