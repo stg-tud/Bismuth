@@ -36,23 +36,23 @@ object ConnectionInfo {
 }
 
 /** Connections are bidirectional. Receiving is handled by the incoming handler of the latent connection. */
-trait Connection[T] {
+trait Connection {
   // TODO: currently not consistently implemented
   def info: ConnectionInfo                    = ConnectionInfo(Map.empty)
   def authenticatedPeerReplicaId: Option[Uid] = None
-  def send(message: T): Async[Any, Unit]
+  def send(message: MessageBuffer): Async[Any, Unit]
   def close(): Unit
 }
 
 /** Provides a specification how to handle messages, given a connection context.
   * Failure calls on the callback generally indicate connection errors on the receiver side.
   */
-trait Receive[T] {
+trait Receive {
 
   /** The provided connection is not guaranteed to be useable until the first message is received.
     * If you want to initiate sending messages on this connection, use the value returned by the prepare call of the latent connection instead.
     */
-  def messageHandler(answers: Connection[T]): Callback[T]
+  def messageHandler(answers: Connection): Callback[MessageBuffer]
 }
 
 /** Contains all the information required to try and establish a bidirectional connection.
@@ -61,7 +61,7 @@ trait Receive[T] {
   *
   * Implementations should make it safe to establish multiple times, though the semantics of that is unclear.
   */
-trait LatentConnection[T] {
+trait LatentConnection {
 
   /** The returned async, when run, should establish connections with the given callback atomically.
     * That is, no messages should be lost during setup.
@@ -72,40 +72,40 @@ trait LatentConnection[T] {
     *
     * The async may produce multiple connections and will run `receiver` for each of them.
     */
-  def prepare(receiver: Receive[T]): Async[Abort, Connection[T]]
+  def prepare(receiver: Receive): Async[Abort, Connection]
 }
 
 object LatentConnection {
 
-  class EncodingConnection[A, B](encode: B => A, name: String, acc: Connection[A]) extends Connection[B] {
-    override def info: ConnectionInfo =
-      ConnectionInfo(acc.info.details.updatedWith("encoding")(v => v.map(_ + name).orElse(Some(name))))
+//  class EncodingConnection[A, B](encode: B => A, name: String, acc: Connection[A]) extends Connection[B] {
+//    override def info: ConnectionInfo =
+//      ConnectionInfo(acc.info.details.updatedWith("encoding")(v => v.map(_ + name).orElse(Some(name))))
+//
+//    override def authenticatedPeerReplicaId: Option[Uid] = acc.authenticatedPeerReplicaId
+//
+//    override def send(message: B): Async[Any, Unit] =
+//      acc.send(encode(message))
+//
+//    override def close(): Unit = acc.close()
+//  }
 
-    override def authenticatedPeerReplicaId: Option[Uid] = acc.authenticatedPeerReplicaId
-
-    override def send(message: B): Async[Any, Unit] =
-      acc.send(encode(message))
-
-    override def close(): Unit = acc.close()
-  }
-
-  def adapt[A, B](
-      decode: A => B,
-      encode: B => A,
-      name: String
-  )(latentConnection: LatentConnection[A]): LatentConnection[B] = {
-    new LatentConnection[B] {
-      def prepare(receiver: Receive[B]): Async[Abort, Connection[B]] =
-        Async[Abort] {
-          val conn = Async.bind {
-            latentConnection.prepare { conn =>
-              val mapped = EncodingConnection(encode, name, conn)
-              val cb     = receiver.messageHandler(mapped)
-              rs => cb.complete(rs.map(decode))
-            }
-          }
-          EncodingConnection(encode, name, conn)
-        }
-    }
-  }
+//  def adapt[A, B](
+//      decode: A => B,
+//      encode: B => A,
+//      name: String
+//  )(latentConnection: LatentConnection[A]): LatentConnection[B] = {
+//    new LatentConnection[B] {
+//      def prepare(receiver: Receive[B]): Async[Abort, Connection] =
+//        Async[Abort] {
+//          val conn = Async.bind {
+//            latentConnection.prepare { conn =>
+//              val mapped = EncodingConnection(encode, name, conn)
+//              val cb     = receiver.messageHandler(mapped)
+//              rs => cb.complete(rs.map(decode))
+//            }
+//          }
+//          EncodingConnection(encode, name, conn)
+//        }
+//    }
+//  }
 }

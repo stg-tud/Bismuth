@@ -4,7 +4,6 @@ import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, P
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import replication.StateDeltaStorage
-import replication.overlay.HyParViewIO
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
 

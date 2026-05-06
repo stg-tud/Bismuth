@@ -4,15 +4,15 @@ import rdts.base.Uid
 
 /** vibecoded as part of the hyparview experiments */
 
-trait ChannelResolver[T] {
+trait ChannelResolver {
   def canConnect(details: ChannelConnectInfo): Boolean
-  def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[T]]
+  def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection]
 }
 
 object ChannelResolver {
-  def disconnected[T] =  new ChannelResolver[T] {
+  def disconnected =  new ChannelResolver {
     override def canConnect(details: ChannelConnectInfo): Boolean = false
-    override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[T]] = None
+    override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] = None
   }
 }
 
@@ -26,8 +26,8 @@ enum ChannelConnectInfo {
   case SynchronousLocal(id: String)
 }
 
-class LocalConnectionRegistry[T](queued: collection.Map[String, QueuedLocalConnection[T]]) extends ChannelResolver[T] {
-  def queuedServer(details: ChannelConnectInfo): Option[LatentConnection[T]] =
+class LocalConnectionRegistry(queued: collection.Map[String, QueuedLocalConnection]) extends ChannelResolver {
+  def queuedServer(details: ChannelConnectInfo): Option[LatentConnection] =
     details match
         case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.server)
         case _                                        => None
@@ -37,7 +37,7 @@ class LocalConnectionRegistry[T](queued: collection.Map[String, QueuedLocalConne
         case ChannelConnectInfo.QueuedLocal(id) => queued.contains(id)
         case _                                        => false
 
-  override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[T]] =
+  override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
     details match
         case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.client(label))
         case _                                        => None

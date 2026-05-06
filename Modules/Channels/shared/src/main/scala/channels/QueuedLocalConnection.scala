@@ -10,14 +10,14 @@ case class ConnectionClosedException(msg: String) extends Exception(msg)
   *
   * `send` only enqueues message delivery. Messages are delivered when `deliverOne()` / `deliverAll()` is called.
   */
-class LocalMessageQueue[T] {
-  private var queue: List[(receiver: Callback[T], message: Try[T])] = Nil
+class LocalMessageQueue {
+  private var queue: List[(receiver: Callback[MessageBuffer], message: Try[MessageBuffer])] = Nil
 
-  def enqueue(receiver: Callback[T], value: Try[T]): Unit = synchronized {
+  def enqueue(receiver: Callback[MessageBuffer], value: Try[MessageBuffer]): Unit = synchronized {
     queue = (receiver, value) :: queue
   }
 
-  def elements: List[Try[T]] = synchronized(queue).map(_.message)
+  def elements: List[Try[MessageBuffer]] = synchronized(queue).map(_.message)
 
   def size: Int = synchronized(queue.size)
 
@@ -42,14 +42,14 @@ class LocalMessageQueue[T] {
 }
 
 /** Like [[SynchronousLocalConnection]], but message delivery is queued and manually executed. */
-class QueuedLocalConnection[T](val messageQueue: LocalMessageQueue[T] = LocalMessageQueue[T]()) {
+class QueuedLocalConnection(val messageQueue: LocalMessageQueue = LocalMessageQueue()) {
 
-  object server extends LatentConnection[T] {
+  object server extends LatentConnection {
 
-    case class Establish(serverSendsOn: Connection[T], clientConnectionSendsTo: Promise[Callback[T]])
+    case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive[T]): Async[Abort, Connection[T]] = Async.fromCallback[Establish] {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.messageHandler(connChan.serverSendsOn))
@@ -57,12 +57,12 @@ class QueuedLocalConnection[T](val messageQueue: LocalMessageQueue[T] = LocalMes
     }
   }
 
-  def client(id: String): LatentConnection[T] = new LatentConnection[T] {
+  def client(id: String): LatentConnection = new LatentConnection {
 
-    val toServerMessages: Promise[Callback[T]] = Promise()
+    val toServerMessages: Promise[Callback[MessageBuffer]] = Promise()
 
-    object toServer extends Connection[T] {
-      def send(msg: T): Async[Any, Unit] = Async {
+    object toServer extends Connection {
+      def send(msg: MessageBuffer): Async[Any, Unit] = Async {
         val cb = toServerMessages.async.bind
         messageQueue.enqueue(cb, Success(msg))
       }
@@ -73,12 +73,12 @@ class QueuedLocalConnection[T](val messageQueue: LocalMessageQueue[T] = LocalMes
       override def toString: String = s"From[$id]"
     }
 
-    def prepare(receiver: Receive[T]): Async[Abort, Connection[T]] = Async {
+    def prepare(receiver: Receive): Async[Abort, Connection] = Async {
       val callback = receiver.messageHandler(toServer)
 
-      val toClient = new Connection[T] {
+      val toClient = new Connection {
         override def close(): Unit = messageQueue.enqueue(callback, Failure(ConnectionClosedException("closed")))
-        override def send(message: T): Async[Any, Unit] = Async {
+        override def send(message: MessageBuffer): Async[Any, Unit] = Async {
           messageQueue.enqueue(callback, Success(message))
         }
         override def toString: String = s"To[$id]"

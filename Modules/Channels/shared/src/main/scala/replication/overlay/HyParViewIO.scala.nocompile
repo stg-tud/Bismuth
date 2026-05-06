@@ -12,7 +12,7 @@ import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 import replication.{DeltaStorage, PlumtreeBroadcast, PlumtreeMessage, overlay}
 
 import scala.collection.mutable
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Try}
 
 object HyParViewIO {
   enum Envelope[State] {
@@ -25,8 +25,8 @@ object HyParViewIO {
 class HyParViewIO[State](
     val self: PeerConnectInfo,
     receiveCallback: State => Unit,
-    localServer: LatentConnection[HyParViewIO.Envelope[State]],
-    resolver: ChannelResolver[HyParViewIO.Envelope[State]],
+    localServer: LatentConnection,
+    resolver: ChannelResolver,
     contactNode: Option[Set[ChannelConnectInfo]],
     rnd: Random,
     deltaStorage: DeltaStorage[State],
@@ -69,8 +69,8 @@ class HyParViewIO[State](
     peer => peer.channelConnectors.exists(resolver.canConnect) || peer.uid == self.uid,
   )
 
-  private val connections               = mutable.LinkedHashMap.empty[Uid, Connection[Envelope[State]]]
-  private val connectionToPeer          = mutable.LinkedHashMap.empty[Connection[Envelope[State]], Uid]
+  private val connections               = mutable.LinkedHashMap.empty[Uid, Connection]
+  private val connectionToPeer          = mutable.LinkedHashMap.empty[Connection, Uid]
   private val lastIncomingMessageAtMs   = mutable.LinkedHashMap.empty[Uid, Long]
   private val connecting                = mutable.LinkedHashSet.empty[Uid]
   private val pendingMembership         = mutable.LinkedHashMap.empty[Uid, Vector[OverlayController.OverlayMessage]]
@@ -121,7 +121,7 @@ class HyParViewIO[State](
   }
   def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit = applyTransition(membership.discoverPeers(peers.toSet))
 
-  def addIncomingConnection(latent: LatentConnection[Envelope[State]]): Unit =
+  def addIncomingConnection(latent: LatentConnection): Unit =
     latent.prepare(receive(None)).runIn(abort) {
       case Success(_)  => ()
       case Failure(ex) => logFailure("incoming connection failed", ex)
@@ -143,7 +143,7 @@ class HyParViewIO[State](
   private def sendDisconnectAnnouncement(peer: PeerConnectInfo): Unit =
     connections.get(peer.uid) match
         case Some(conn) =>
-          conn.send(Envelope.Membership(OverlayMessage.Disconnect(self.uid))).run {
+          conn.send(??? /*Envelope.Membership(OverlayMessage.Disconnect(self.uid))*/ ).run {
             case Success(_) => ()
             case Failure(_) => ()
           }
@@ -155,7 +155,7 @@ class HyParViewIO[State](
             val tempAbort = Abort()
             latent.prepare(receive(Some(peer.uid))).runIn(tempAbort) {
               case Success(conn) =>
-                conn.send(Envelope.Membership(OverlayMessage.Disconnect(self.uid))).run {
+                conn.send(??? /*Envelope.Membership(OverlayMessage.Disconnect(self.uid))*/ ).run {
                   case Success(_) => conn.close()
                   case Failure(_) => conn.close()
                 }
@@ -163,55 +163,59 @@ class HyParViewIO[State](
             }
           }
 
-  private def receive(expectedPeer: Option[Uid]): Receive[Envelope[State]] = {
-    (conn: Connection[Envelope[State]]) =>
+  private def receive(expectedPeer: Option[Uid]): Receive = {
+    (conn: Connection) =>
       expectedPeer.foreach(peer => rememberConnection(peer, conn))
-      {
-        case Success(Envelope.Membership(message)) =>
-          val sender = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferSender(message))
-          sender.foreach { uid =>
-            rememberPeerIdentity(uid, conn)
-            noteIncomingMessage(uid)
-            checkPeerKnownToOverlay(uid, s"received membership $message")
-          }
-          message match
-              case OverlayMessage.Disconnect(peer) => applyTransition(membership.peerLost(peer))
-              case _                                 => applyTransition(membership.receive(message))
-        case Success(Envelope.Dissemination(message)) =>
-          val peer = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferDisseminationSender(message))
-          peer match
-              case Some(uid) =>
-                rememberPeerIdentity(uid, conn)
-                noteIncomingMessage(uid)
-                checkPeerKnownToOverlay(uid, s"received dissemination $message")
-                ensurePlumtreePeerForActiveConnection(uid, s"before receiving dissemination $message")
-                if plumtree.peerRoles.contains(Peer(uid)) then
-                    try applyPlumtreeResult(plumtree.handleMessage(Peer(uid), message))
-                    catch {
-                      case ex: AssertionError =>
-                        log(s"plumtree assertion for peer=${Uid.unwrap(uid)} message=$message :: ${dumpOverlayState()}")
-                        handleDisconnectedPeer(uid, s"plumtree assertion on incoming dissemination: ${ex.getMessage}")
-                    }
-                else {
-                  log(
-                    s"dropping dissemination from non-plumtree peer=${Uid.unwrap(uid)} message=$message :: ${dumpOverlayState()}"
-                  )
-                  if !membership.passiveView.contains(uid) then
-                      handleDisconnectedPeer(uid, s"received dissemination from unknown plumtree peer")
-                }
-              case None =>
-                log(s"received dissemination from unknown sender message=$message :: ${dumpOverlayState()}")
-        case Failure(ex) =>
-          expectedPeer.orElse(connectionToPeer.get(conn)).foreach { peer =>
-            val reason =
-              s"incoming connection closed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
-            if membership.activeView.contains(peer) then handleDisconnectedPeer(peer, reason)
-            else cleanupInactiveConnection(peer, conn, reason)
-          }
+      buffer => {
+        buffer.asInstanceOf[Try[Envelope[State]]] match {
+          case Success(Envelope.Membership(message)) =>
+            val sender = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferSender(message))
+            sender.foreach { uid =>
+              rememberPeerIdentity(uid, conn)
+              noteIncomingMessage(uid)
+              checkPeerKnownToOverlay(uid, s"received membership $message")
+            }
+            message match
+                case OverlayMessage.Disconnect(peer) => applyTransition(membership.peerLost(peer))
+                case _                               => applyTransition(membership.receive(message))
+          case Success(Envelope.Dissemination(message)) =>
+            val peer = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferDisseminationSender(message))
+            peer match
+                case Some(uid) =>
+                  rememberPeerIdentity(uid, conn)
+                  noteIncomingMessage(uid)
+                  checkPeerKnownToOverlay(uid, s"received dissemination $message")
+                  ensurePlumtreePeerForActiveConnection(uid, s"before receiving dissemination $message")
+                  if plumtree.peerRoles.contains(Peer(uid)) then
+                      try applyPlumtreeResult(plumtree.handleMessage(Peer(uid), message))
+                      catch {
+                        case ex: AssertionError =>
+                          log(
+                            s"plumtree assertion for peer=${Uid.unwrap(uid)} message=$message :: ${dumpOverlayState()}"
+                          )
+                          handleDisconnectedPeer(uid, s"plumtree assertion on incoming dissemination: ${ex.getMessage}")
+                      }
+                  else {
+                    log(
+                      s"dropping dissemination from non-plumtree peer=${Uid.unwrap(uid)} message=$message :: ${dumpOverlayState()}"
+                    )
+                    if !membership.passiveView.contains(uid) then
+                        handleDisconnectedPeer(uid, s"received dissemination from unknown plumtree peer")
+                  }
+                case None =>
+                  log(s"received dissemination from unknown sender message=$message :: ${dumpOverlayState()}")
+          case Failure(ex) =>
+            expectedPeer.orElse(connectionToPeer.get(conn)).foreach { peer =>
+              val reason =
+                s"incoming connection closed: ${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
+              if membership.activeView.contains(peer) then handleDisconnectedPeer(peer, reason)
+              else cleanupInactiveConnection(peer, conn, reason)
+            }
+        }
       }
   }
 
-  private def rememberPeerIdentity(peer: Uid, conn: Connection[Envelope[State]]): Unit =
+  private def rememberPeerIdentity(peer: Uid, conn: Connection): Unit =
     rememberConnection(peer, conn)
 
   private def inferSender(message: OverlayMessage): Option[Uid] =
@@ -274,7 +278,7 @@ class HyParViewIO[State](
     }
   }
 
-  private def cleanupInactiveConnection(peer: Uid, conn: Connection[Envelope[State]], reason: String): Unit = {
+  private def cleanupInactiveConnection(peer: Uid, conn: Connection, reason: String): Unit = {
     val removedStored = connections.get(peer).contains(conn)
     if removedStored then connections.remove(peer): Unit
     connectionToPeer.remove(conn)
@@ -300,7 +304,7 @@ class HyParViewIO[State](
     }
   }
 
-  private def rememberConnection(peer: Uid, conn: Connection[Envelope[State]]): Unit = {
+  private def rememberConnection(peer: Uid, conn: Connection): Unit = {
     connectionToPeer.update(conn, peer)
     connections.getOrElseUpdate(peer, conn): Unit
     lastIncomingMessageAtMs.getOrElseUpdate(peer, System.currentTimeMillis())
@@ -341,7 +345,7 @@ class HyParViewIO[State](
   private def connectToPeerDetails(
       details: Set[ChannelConnectInfo],
       label: String
-  ): Option[LatentConnection[Envelope[State]]] =
+  ): Option[LatentConnection] =
     details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label)))
 
   private def ensurePromotionAttempt(peer: PeerConnectInfo): Unit = {
@@ -349,7 +353,7 @@ class HyParViewIO[State](
     val highPriority  = membership.activeView.isEmpty
     val alreadyQueued = existing.exists {
       case OverlayMessage.Neighbor(from, hp) if from.uid == self.uid && hp == highPriority => true
-      case _                                                                                 => false
+      case _                                                                               => false
     }
     if !alreadyQueued then
         pendingMembership.update(peer.uid, existing :+ OverlayMessage.Neighbor(self, highPriority = highPriority))

@@ -33,13 +33,10 @@ object BroadcastIO {
 
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
-  def objectMessages[State: JsonValueCodec](conn: LatentConnection[MessageBuffer])
-      : LatentConnection[Envelope[State]] =
-    LatentConnection.adapt(
-      (mb: MessageBuffer) => readFromArray[Envelope[State]](mb.asArray)(using BroadcastIO.messageCodec),
-      (pm: Envelope[State]) => ArrayMessageBuffer(writeToArray(pm)(using BroadcastIO.messageCodec)),
-      "broadcast io serialization"
-    )(conn)
+  def decodeEnevlop[State: JsonValueCodec](messageBuffer: MessageBuffer) =
+    readFromArray[Envelope[State]](messageBuffer.asArray)(using BroadcastIO.messageCodec)
+  def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State]) =
+    ArrayMessageBuffer(writeToArray(envelope)(using BroadcastIO.messageCodec))
 }
 
 /** Combined Delta + Plumtree dissemination.
@@ -51,7 +48,7 @@ object BroadcastIO {
 class BroadcastIO[State](
     val replicaId: LocalUid,
     receiveCallback: State => Unit,
-    resolver: ChannelResolver[Envelope[State]] = ChannelResolver.disconnected[Envelope[State]],
+    resolver: ChannelResolver = ChannelResolver.disconnected,
     sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
     val globalAbort: Abort = Abort(),
     val deltaStorage: DeltaStorage[State] = DiscardingHistory[State](size = 108),
@@ -60,8 +57,8 @@ class BroadcastIO[State](
 
   val lock: AnyRef = new {}
 
-  @volatile private var connections: Map[Peer, Connection[Envelope[State]]]       = Map.empty
-  @volatile private var peersByConnection: Map[Connection[Envelope[State]], Peer] = Map.empty
+  @volatile private var connections: Map[Peer, Connection]       = Map.empty
+  @volatile private var peersByConnection: Map[Connection, Peer] = Map.empty
   @volatile private var plumtree: PlumtreeBroadcast[State]                        =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
@@ -71,19 +68,16 @@ class BroadcastIO[State](
         ex.printStackTrace()
       case Success(_) => ()
 
-  def addBinaryConnection(latentConnection: LatentConnection[MessageBuffer]): Unit =
-    addConnection(BroadcastIO.objectMessages(latentConnection))
-
-  def addConnection(latentConnection: LatentConnection[Envelope[State]]): Unit =
+  def addBinaryConnection(latentConnection: LatentConnection): Unit =
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
       applyRoutingResult(registerConnection(conn))
     }.run(printExceptionHandler)
 
-  private val connectionReceiver: Receive[Envelope[State]] = new Receive[Envelope[State]] {
-    override def messageHandler(conn: Connection[Envelope[State]]): Callback[Envelope[State]] = new Callback {
-      override def complete(tr: Try[Envelope[State]]): Unit = tr match {
-        case Success(msg)   => handleMessage(msg, conn)
+  private val connectionReceiver: Receive = new Receive {
+    override def messageHandler(conn: Connection): Callback[MessageBuffer] = new Callback {
+      override def complete(tr: Try[MessageBuffer]): Unit = tr match {
+        case Success(msg)   => handleMessage(BroadcastIO.decodeEnevlop(msg), conn)
         case Failure(error) =>
           error match {
             case se: SocketException if se.getMessage == "Connection reset" =>
@@ -121,7 +115,7 @@ class BroadcastIO[State](
     applyRoutingResult(result)
   }
 
-  private def removePeer(conn: Connection[Envelope[State]]): Unit = {
+  private def removePeer(conn: Connection): Unit = {
     lock.synchronized {
       peersByConnection.get(conn) match
           case Some(peer) =>
@@ -132,7 +126,7 @@ class BroadcastIO[State](
     }
   }
 
-  private def registerConnection(conn: Connection[Envelope[State]]): PlumtreeBroadcast.Result[State] =
+  private def registerConnection(conn: Connection): PlumtreeBroadcast.Result[State] =
     lock.synchronized {
       peersByConnection.get(conn) match
           case Some(peer) =>
@@ -190,17 +184,17 @@ class BroadcastIO[State](
         case OverlayController.OverlayAction.SendJoin(details, message) =>
           connectAndSend(details, s"$replicaId-join", Envelope.Membership(message))
 
-  private def send(conn: Connection[Envelope[State]], payload: Envelope[State]): Unit =
+  private def send(conn: Connection, payload: Envelope[State]): Unit =
     if globalAbort.closeRequest then ()
     else
         sendingActor.execute { () =>
-          conn.send(payload).run {
+          conn.send(BroadcastIO.encodeEnvelope(payload)).run {
             case Success(_) => ()
             case Failure(_) => removePeer(conn)
           }
         }
 
-  private def handleMessage(msg: Envelope[State], from: Connection[Envelope[State]]): Unit = synchronized {
+  private def handleMessage(msg: Envelope[State], from: Connection): Unit = synchronized {
     if globalAbort.closeRequest then return
 
     val peer = lock.synchronized(peersByConnection.get(from)) match
