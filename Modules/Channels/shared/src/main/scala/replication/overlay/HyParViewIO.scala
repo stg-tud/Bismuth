@@ -138,7 +138,7 @@ class HyParViewIO[State](
     }
 
   def stop(): Unit = {
-    val knownPeers = (membership.active.toSet ++ membership.passive.toSet).filterNot(_.uid == self.uid)
+    val knownPeers = (membership.activePeers ++ membership.passivePeers).filterNot(_.uid == self.uid)
     knownPeers.foreach(sendDisconnectAnnouncement)
     connections.values.foreach(_.close())
     connections.clear()
@@ -187,8 +187,7 @@ class HyParViewIO[State](
                   checkPeerKnownToOverlay(uid, s"received membership $message")
                 }
                 message match
-                    case OverlayMessage.Disconnect(peer) => applyTransition(membership.peerLost(peer))
-                    case _                               => applyTransition(membership.receive(message))
+                    case _ => applyTransition(membership.receive(message))
               case Envelope.Dissemination(message: PlumtreeMessage[State] @unchecked) =>
                 val peer = expectedPeer.orElse(connectionToPeer.get(conn)).orElse(inferDisseminationSender(message))
                 peer match
@@ -249,7 +248,7 @@ class HyParViewIO[State](
     val before = membership
     membership = result.state
     result.actions.foreach {
-      case OverlayAction.Send(to, message)      => sendMembership(to, message)
+      case OverlayAction.Send(to, _, message)   => sendMembership(to, message)
       case OverlayAction.SendJoin(details, msg) => sendJoin(details, msg)
     }
     syncViewSideEffects(before, membership)
@@ -308,7 +307,7 @@ class HyParViewIO[State](
     plumtree = plumtree.removePeer(Peer(peer))
     connecting.remove(peer)
     pendingMembership.remove(peer)
-    applyTransition(membership.peerLost(peer))
+    applyTransition(membership.receive(OverlayMessage.Disconnect(peer)))
     if hadMembership || conn.nonEmpty then {
       log(s"disconnect peer=${Uid.unwrap(peer)} reason=$reason")
     }

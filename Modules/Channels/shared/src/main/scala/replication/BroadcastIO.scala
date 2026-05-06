@@ -44,7 +44,8 @@ object BroadcastIO {
   *
   * Network/state-machine split:
   * - [[PlumtreeBroadcast]] tracks immutable Plumtree eager/lazy roles and protocol transitions.
-  * - this class maps concrete connections to abstract peers and handles payload storage / callback side effects.
+  * - the overlay controller owns the mapping between abstract peers and concrete [[Connection]] objects.
+  * - this class handles payload storage, message encoding/decoding, and callback side effects.
   */
 class BroadcastIO[State](
     val replicaId: LocalUid,
@@ -58,9 +59,7 @@ class BroadcastIO[State](
 
   val lock: AnyRef = new {}
 
-  @volatile private var connections: Map[Peer, Connection]       = Map.empty
-  @volatile private var peersByConnection: Map[Connection, Peer] = Map.empty
-  @volatile private var plumtree: PlumtreeBroadcast[State]       =
+  @volatile private var plumtree: PlumtreeBroadcast[State] =
     PlumtreeBroadcast(replicaId.uid, deltaStorage = deltaStorage)
 
   private def printExceptionHandler: Callback[Any] =
@@ -69,6 +68,7 @@ class BroadcastIO[State](
         ex.printStackTrace()
       case Success(_) => ()
 
+  /** Register a transport that already speaks raw [[MessageBuffer]] frames for [[BroadcastIO.Envelope]]. */
   def addBinaryConnection(latentConnection: LatentConnection): Unit =
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
@@ -95,7 +95,7 @@ class BroadcastIO[State](
   }
 
   def pingAll(): Unit = synchronized {
-    val snapshot = lock.synchronized(connections.values.toList)
+    val snapshot = lock.synchronized(plumtree.peerRoles.keys.flatMap(peer => overlay.connectionFor(peer.uid)).toList)
     snapshot.foreach(send(_, Envelope.Ping(System.nanoTime())))
   }
 
@@ -116,28 +116,22 @@ class BroadcastIO[State](
     applyRoutingResult(result)
   }
 
+  /** Remove a failed connection from overlay bookkeeping and, if it was associated with a peer, from Plumtree as well. */
   private def removePeer(conn: Connection): Unit = {
     lock.synchronized {
-      peersByConnection.get(conn) match
-          case Some(peer) =>
-            connections = connections.removed(peer)
-            peersByConnection = peersByConnection.removed(conn)
-            plumtree = plumtree.removePeer(peer)
-          case None => ()
+      val (nextOverlay, removedPeer) = overlay.removeConnection(conn)
+      overlay = nextOverlay
+      removedPeer.foreach(uid => plumtree = plumtree.removePeer(Peer(uid)))
     }
   }
 
+  /** Attach a newly established connection to the overlay state.
+    * Peer identity is learned later from HyParView control-plane messages carried on that connection.
+    */
   private def registerConnection(conn: Connection): PlumtreeBroadcast.Result[State] =
     lock.synchronized {
-      peersByConnection.get(conn) match
-          case Some(peer) =>
-            connections = connections.updated(peer, conn)
-            PlumtreeBroadcast.Result(plumtree, Nil)
-          case None =>
-            val peer = Peer(conn.authenticatedPeerReplicaId.getOrElse(LocalUid.gen().uid))
-            connections = connections.updated(peer, conn)
-            peersByConnection = peersByConnection.updated(conn, peer)
-            plumtree.addPeer(peer)
+      overlay = overlay.registerConnection(conn)
+      PlumtreeBroadcast.Result(plumtree, Nil)
     }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
@@ -154,7 +148,7 @@ class BroadcastIO[State](
           receiveCallback(payload.data)
         case Send(peers, message) =>
           peers.foreach(peer =>
-            lock.synchronized(connections.get(peer)).foreach(send(_, Envelope.Protocol(message)))
+            lock.synchronized(overlay.connectionFor(peer.uid)).foreach(send(_, Envelope.Protocol(message)))
           )
 
   private def applyOverlayResult(next: OverlayController, actions: List[OverlayController.OverlayAction]): Unit = {
@@ -164,6 +158,7 @@ class BroadcastIO[State](
     actions.foreach(handleOverlayAction)
   }
 
+  /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
   private def connectAndSend(details: Iterable[ChannelConnectInfo], label: String, payload: Envelope[State]): Unit =
     details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label))) match
         case Some(latentConnection) =>
@@ -177,8 +172,8 @@ class BroadcastIO[State](
 
   private def handleOverlayAction(action: OverlayController.OverlayAction): Unit =
     action match
-        case OverlayController.OverlayAction.Send(to, message) =>
-          lock.synchronized(connections.get(Peer(to.uid))) match
+        case OverlayController.OverlayAction.Send(to, connection, message) =>
+          connection.orElse(lock.synchronized(overlay.connectionFor(to.uid))) match
               case Some(conn) => send(conn, Envelope.Membership(message))
               case None       =>
                 connectAndSend(to.channelConnectors, s"$replicaId->${to.uid}", Envelope.Membership(message))
@@ -198,7 +193,7 @@ class BroadcastIO[State](
   private def handleMessage(msg: Envelope[State], from: Connection): Unit = synchronized {
     if globalAbort.closeRequest then return
 
-    val peer = lock.synchronized(peersByConnection.get(from)) match
+    val peer = lock.synchronized(overlay.peerForConnection(from).map(Peer.apply)) match
         case Some(existing) => existing
         case None           => throw new IllegalStateException(s"received message from unknown connection $from")
 
@@ -206,7 +201,7 @@ class BroadcastIO[State](
         case Envelope.Ping(time)          => send(from, Envelope.Pong(time))
         case Envelope.Pong(_)             => ()
         case Envelope.Membership(message) =>
-          val (next, actions) = lock.synchronized(overlay.receiveActions(message))
+          val (next, actions) = lock.synchronized(overlay.receiveActions(message, from))
           applyOverlayResult(next, actions)
         case Envelope.Protocol(protocol) =>
           val result = lock.synchronized(plumtree.handleMessage(peer, protocol))

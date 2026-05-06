@@ -25,7 +25,7 @@ class HyParViewStateMachineTest extends FunSuite {
     HyParViewStateMachine.empty(peer(selfName), config, (_, _) => 0, canConnectTo = _.channelConnectors.nonEmpty)
 
   private def sent(actions: List[OverlayAction]): List[(PeerConnectInfo, Any)] =
-    actions.collect { case OverlayAction.Send(to, message) => (to, message) }
+    actions.collect { case OverlayAction.Send(to, _, message) => (to, message) }
 
   test("receive join adds the new node to active view and forwards join through current active peers") {
     val sm = machine()
@@ -102,12 +102,12 @@ class HyParViewStateMachineTest extends FunSuite {
     assert(sent(result.actions).exists { case (_, Neighbor(_, false)) => true; case _ => false })
   }
 
-  test("peer loss removes the peer from membership state") {
-    val a      = peer("a")
-    val sm     = machine().discoverPeers(Set(a)).state
-    val result = sm.peerLost(a.uid)
+  test("synthetic disconnect removes the peer from active membership state") {
+    val a  = peer("a")
+    val sm = machine().discoverPeers(Set(a)).state.receive(NeighborReply(a.uid, true)).state
+    val result = sm.receive(Disconnect(a.uid))
     assert(!result.state.activeView.contains(a.uid))
-    assert(!result.state.passiveView.contains(a.uid))
+    assert(result.state.passiveView.contains(a.uid))
   }
 
   test("shuffle tick sends a shuffle to an active peer and includes self in the sample") {
