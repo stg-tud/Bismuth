@@ -211,15 +211,14 @@ class BroadcastIO[State](
   private def handleMessage(msg: Envelope[State], from: Connection): Unit = synchronized {
     if globalAbort.closeRequest then return
 
-    val peer = lock.synchronized(overlay.peerForConnection(from).map(Peer.apply)) match
-        case Some(existing) => existing
-        case None           => throw new IllegalStateException(s"received message from unknown connection $from")
-
     msg match
         case Envelope.Membership(message) =>
           val (next, actions) = lock.synchronized(overlay.receiveActions(message, from))
           applyOverlayResult(next, actions)
         case Envelope.Protocol(protocol) =>
+          val peer = lock.synchronized(overlay.peerForConnection(from).map(Peer.apply)) match
+              case Some(existing) => existing
+              case None           => throw new IllegalStateException(s"received protocol message from unknown connection $from")
           val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
           applyRoutingResult(result)
   }
