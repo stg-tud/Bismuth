@@ -40,7 +40,8 @@ object BroadcastIO {
       resolver = resolver,
       sendingActor = sendingActor,
       globalAbort = globalAbort,
-      plumtree = broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 108)))
+      plumtree =
+        broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 108)))
     )
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
@@ -101,7 +102,7 @@ class BroadcastIO[State](
           error match {
             case se: SocketException if se.getMessage == "Connection reset" =>
               println(s"$replicaId: disconnected ${conn.info} (${conn})")
-            case _: NoMoreDataException =>
+            case _: (NoMoreDataException | ConnectionClosedException) =>
               println(s"$replicaId: disconnected ${conn.info} (${conn})")
             case _ =>
               println(s"$replicaId: error during message handling")
@@ -213,7 +214,8 @@ class BroadcastIO[State](
         case OverlayController.OverlayAction.SendJoin(details, message) =>
           connectAndSend(details, s"$replicaId-join", Envelope.Membership(message))
         case OverlayController.OverlayAction.ActiveConnectionAdded(peer) =>
-          lock.synchronized { plumtree = plumtree.addPeer(Peer(peer)).state }
+          val result = lock.synchronized(plumtree.addPeer(Peer(peer)))
+          applyRoutingResult(result)
         case OverlayController.OverlayAction.ActiveConnectionRemoved(peer) =>
           lock.synchronized { plumtree = plumtree.removePeer(Peer(peer)) }
 
@@ -235,10 +237,31 @@ class BroadcastIO[State](
           val (next, actions) = lock.synchronized(overlay.receiveActions(message, from))
           applyOverlayResult(next, actions)
         case Envelope.Protocol(protocol) =>
-          val peer = lock.synchronized(overlay.peerForConnection(from).map(Peer.apply)) match
-              case Some(existing) => existing
-              case None => throw new IllegalStateException(s"received protocol message from unknown connection $from")
-          val result = lock.synchronized(plumtree.handleMessage(peer, protocol))
+          val result = lock.synchronized {
+            val peer = overlay.peerForConnection(from).map(Peer.apply).orElse(protocolSender(protocol).map(Peer.apply))
+            peer match
+                case Some(existing) =>
+                  // NOTE:
+                  // DirectConnectionOverlay currently marks a peer active as soon as it replies with NeighborReply.
+                  // That immediately triggers Plumtree `addPeer`, which emits a `Graft`.
+                  // This `Graft` can reach the remote side before that side has processed enough overlay traffic to have the
+                  // sender installed in its Plumtree peer roles / active broadcast peers.
+                  // Ideally the overlay handshake would delay activation until both sides have observed each other as active.
+                  // Until that is fixed, we defensively fall back to the sender encoded in the protocol message.
+                  val seeded =
+                    if plumtree.peerRoles.contains(existing) then plumtree
+                    else plumtree.addPeer(existing).state
+                  seeded.handleMessage(existing, protocol)
+                case None =>
+                  throw new IllegalStateException(s"received protocol message $msg from unknown connection $from")
+          }
           applyRoutingResult(result)
   }
+
+  private def protocolSender(message: PlumtreeMessage[State]): Option[rdts.base.Uid] =
+    message match
+        case Graft(sender, _) => Some(sender)
+        case IHave(sender, _) => Some(sender)
+        case Prune(sender)    => Some(sender)
+        case Payload(_, _)    => None
 }

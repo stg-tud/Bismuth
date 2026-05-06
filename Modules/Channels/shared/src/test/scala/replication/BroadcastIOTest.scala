@@ -256,7 +256,7 @@ class BroadcastIOTest extends munit.FunSuite {
     Vector(n0, n1, n2).foreach(_.discover(Vector(n3)))
     drain()
 
-    assertEquals(n3.io.allPayloads.map(_.data).toSet, Set.empty)
+    assertEquals(n3.io.allPayloads.map(_.data).toSet, initialExpected)
 
     Vector(n0, n2, n3).foreach(_.closeConnectionTo(n1))
     n1.closeConnectionTo(n0)
@@ -269,12 +269,11 @@ class BroadcastIOTest extends munit.FunSuite {
     n3.io.applyDelta(Set("after-3"))
     drain()
 
-    val incumbentsExpected = initialExpected ++ Set(Set("after-0"), Set("after-3"))
-    Vector(n0, n2).foreach { node =>
-      assertEquals(node.io.allPayloads.map(_.data).toSet, incumbentsExpected)
+    val survivingExpected = initialExpected ++ Set(Set("after-0"), Set("after-3"))
+    Vector(n0, n2, n3).foreach { node =>
+      assertEquals(node.io.allPayloads.map(_.data).toSet, survivingExpected)
     }
 
-    assertEquals(n3.io.allPayloads.map(_.data).toSet, Set(Set("after-0"), Set("after-3")))
     assertEquals(n1.io.allPayloads.map(_.data).toSet, initialExpected)
   }
 
