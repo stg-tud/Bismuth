@@ -1,11 +1,12 @@
 package replication
 
-import channels.{LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
+import channels.{ChannelConnectInfo, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection, SynchronousLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedSet
 import replication.JsoniterCodecs.given
+import replication.overlay.DirectConnectionOverlay
 
 class BroadcastIOTest extends munit.FunSuite {
   test("basics") {
@@ -131,6 +132,150 @@ class BroadcastIOTest extends munit.FunSuite {
       dd3.allPayloads.map(_.data).toSet
     )
 
+  }
+
+  test("discover + queued-local connection info forms connections and disseminates without direct wiring") {
+
+    given JsonValueCodec[Set[String]] = JsonCodecMaker.make
+
+    val queue = LocalMessageQueue()
+    val links = Map(
+      "n0" -> QueuedLocalConnection(queue),
+      "n1" -> QueuedLocalConnection(queue),
+      "n2" -> QueuedLocalConnection(queue),
+    )
+    val resolver = LocalConnectionRegistry(links)
+
+    final case class Node(id: String) {
+      val uid: LocalUid = LocalUid.gen()
+      val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
+      val io = BroadcastIO[Set[String]](
+        uid,
+        _ => (),
+        overlay = Some(DirectConnectionOverlay(selfInfo)),
+        resolver = resolver,
+      )
+    }
+
+    val nodes = Vector(Node("n0"), Node("n1"), Node("n2"))
+
+    nodes.foreach { node =>
+      node.io.addBinaryConnection(resolver.queuedServer(node.selfInfo.channelConnectors.head).get)
+    }
+
+    nodes.foreach { node =>
+      val others = nodes.filterNot(_.uid == node.uid).map(_.selfInfo).toSet
+      node.io.discover(others)
+    }
+
+    def drain(maxRounds: Int = 100): Unit = {
+      var rounds = 0
+      while queue.nonEmpty && rounds < maxRounds do
+          queue.deliverAll()
+          rounds += 1
+      assert(rounds < maxRounds, s"queue did not quiesce, remaining=${queue.size}")
+    }
+
+    drain()
+
+    nodes.zipWithIndex.foreach { case (node, idx) =>
+      node.io.applyDelta(Set(s"v$idx"))
+      drain()
+    }
+
+    val expected = Set(Set("v0"), Set("v1"), Set("v2"))
+    nodes.foreach { node =>
+      assertEquals(node.io.allPayloads.map(_.data).toSet, expected)
+    }
+  }
+
+  test("late joins backfill history and disconnected nodes stop participating") {
+
+    given JsonValueCodec[Set[String]] = JsonCodecMaker.make
+
+    val queue = LocalMessageQueue()
+    val links = Map(
+      "n0" -> QueuedLocalConnection(queue),
+      "n1" -> QueuedLocalConnection(queue),
+      "n2" -> QueuedLocalConnection(queue),
+      "n3" -> QueuedLocalConnection(queue),
+    )
+    val resolver = LocalConnectionRegistry(links)
+
+    final case class Node(id: String) {
+      val uid: LocalUid = LocalUid.gen()
+      val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
+      val io = BroadcastIO[Set[String]](
+        uid,
+        _ => (),
+        overlay = Some(DirectConnectionOverlay(selfInfo)),
+        resolver = resolver,
+      )
+
+      def startListening(): Unit =
+        io.addBinaryConnection(resolver.queuedServer(selfInfo.channelConnectors.head).get)
+
+      def discover(peers: Iterable[Node]): Unit =
+        io.discover(peers.iterator.map(_.selfInfo).toSet)
+
+      def closeConnectionTo(other: Node): Unit =
+        io.overlayController.asInstanceOf[DirectConnectionOverlay].active.get(other.uid.uid).foreach(_.close())
+    }
+
+    def drain(maxRounds: Int = 200): Unit = {
+      var rounds = 0
+      while queue.nonEmpty && rounds < maxRounds do
+          queue.deliverAll()
+          rounds += 1
+      assert(rounds < maxRounds, s"queue did not quiesce, remaining=${queue.size}")
+    }
+
+    val n0 = Node("n0")
+    val n1 = Node("n1")
+    val n2 = Node("n2")
+    val n3 = Node("n3")
+
+    Vector(n0, n1, n2).foreach(_.startListening())
+    Vector(n0, n1, n2).foreach { node =>
+      node.discover(Vector(n0, n1, n2).filterNot(_ == node))
+    }
+    drain()
+
+    n0.io.applyDelta(Set("before-0"))
+    drain()
+    n1.io.applyDelta(Set("before-1"))
+    drain()
+
+    val initialExpected = Set(Set("before-0"), Set("before-1"))
+    Vector(n0, n1, n2).foreach { node =>
+      assertEquals(node.io.allPayloads.map(_.data).toSet, initialExpected)
+    }
+
+    n3.startListening()
+    n3.discover(Vector(n0, n1, n2))
+    Vector(n0, n1, n2).foreach(_.discover(Vector(n3)))
+    drain()
+
+    assertEquals(n3.io.allPayloads.map(_.data).toSet, Set.empty)
+
+    Vector(n0, n2, n3).foreach(_.closeConnectionTo(n1))
+    n1.closeConnectionTo(n0)
+    n1.closeConnectionTo(n2)
+    n1.closeConnectionTo(n3)
+    drain()
+
+    n0.io.applyDelta(Set("after-0"))
+    drain()
+    n3.io.applyDelta(Set("after-3"))
+    drain()
+
+    val incumbentsExpected = initialExpected ++ Set(Set("after-0"), Set("after-3"))
+    Vector(n0, n2).foreach { node =>
+      assertEquals(node.io.allPayloads.map(_.data).toSet, incumbentsExpected)
+    }
+
+    assertEquals(n3.io.allPayloads.map(_.data).toSet, Set(Set("after-0"), Set("after-3")))
+    assertEquals(n1.io.allPayloads.map(_.data).toSet, initialExpected)
   }
 
   test("circle of 5 replicas converges for observe remove set operations") {

@@ -6,6 +6,7 @@ import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
 case class DirectConnectionOverlay(
     self: PeerConnectInfo,
+    known: Map[Uid, PeerConnectInfo] = Map.empty,
     active: Map[Uid, Connection] = Map.empty,
     unknownConnections: Set[Connection] = Set.empty,
 ) extends OverlayController {
@@ -18,11 +19,21 @@ case class DirectConnectionOverlay(
           List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true)))
         )
 
+  override def discoverPeers(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
+    val next = copy(known = known ++ peers.iterator.filterNot(_.uid == self.uid).map(p => p.uid -> p))
+    val actions = peers.toList.collect {
+      case peer if peer.uid != self.uid && !active.contains(peer.uid) =>
+        OverlayAction.SendJoin(peer.channelConnectors, OverlayMessage.Neighbor(self, highPriority = true))
+    }
+    (next, actions)
+  }
+
   override def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) =
     message match
         case OverlayMessage.Neighbor(peer, _) =>
           val wasKnown = active.contains(peer.uid)
           val next     = copy(
+            known = known.updated(peer.uid, peer),
             active = active.updated(peer.uid, from),
             unknownConnections = unknownConnections - from
           )
