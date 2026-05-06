@@ -13,7 +13,7 @@ object WebviewAdapterChannel {
   @JSExportTopLevel("webview_channel_receive")
   def receive(msg: String): String = receiveCallback(msg)
 
-  object WebviewConnectionContext extends Connection[MessageBuffer] {
+  object WebviewConnectionContext extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val b64 = new String(java.util.Base64.getEncoder.encode(message.asArray))
       if !js.isUndefined(scala.scalajs.js.Dynamic.global.webview_channel_send) then
@@ -27,8 +27,8 @@ object WebviewAdapterChannel {
     override def close(): Unit = ()
   }
 
-  def listen(): LatentConnection[MessageBuffer] = new LatentConnection {
-    def prepare(incomingHandler: Receive[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] = Sync {
+  def listen(): LatentConnection = new LatentConnection {
+    def prepare(incomingHandler: Receive): Async[Abort, Connection] = Sync {
       val conn = WebviewConnectionContext
       val cb   = incomingHandler.messageHandler(conn)
       receiveCallback = { (msg: String) =>

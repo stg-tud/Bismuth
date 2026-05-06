@@ -74,6 +74,9 @@ class BroadcastIO[State](
       applyRoutingResult(registerConnection(conn))
     }.run(printExceptionHandler)
 
+  def addConnection(latentConnection: LatentConnection): Unit =
+    addBinaryConnection(latentConnection)
+
   private val connectionReceiver: Receive = new Receive {
     override def messageHandler(conn: Connection): Callback[MessageBuffer] = new Callback {
       override def complete(tr: Try[MessageBuffer]): Unit = tr match {

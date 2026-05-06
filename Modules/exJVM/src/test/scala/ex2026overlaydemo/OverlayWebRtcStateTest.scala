@@ -1,8 +1,6 @@
 package ex2026overlaydemo
 
 import channels.{LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
-import replication.overlay.HyParViewIO
-import replication.research.OverlayNetworkProtocol.DemoState
 
 import scala.collection.mutable
 import scala.util.Random
@@ -10,7 +8,7 @@ import scala.util.Random
 /** vibecoded as part of the hyparview experiments */
 class OverlayWebRtcStateTest extends munit.FunSuite {
 
-  private def drain(queue: LocalMessageQueue[HyParViewIO.Envelope[DemoState]], limit: Int = 20000): Unit = {
+  private def drain(queue: LocalMessageQueue, limit: Int = 20000): Unit = {
     var safety = 0
     while queue.nonEmpty && safety < limit do
         queue.deliverAll()
@@ -19,9 +17,9 @@ class OverlayWebRtcStateTest extends munit.FunSuite {
   }
 
   test("queued overlay demo nodes can still join without webrtc support") {
-    val queue    = LocalMessageQueue[HyParViewIO.Envelope[DemoState]]()
+    val queue    = LocalMessageQueue()
     val queued   = mutable.LinkedHashMap("n1" -> QueuedLocalConnection(queue), "n2" -> QueuedLocalConnection(queue))
-    val registry = LocalConnectionRegistry[HyParViewIO.Envelope[DemoState]](queued)
+    val registry = LocalConnectionRegistry(queued)
 
     val node1 = new OverlayDemo.NodeApp(OverlayDemo.TopicNode.queued(registry, "n1", Random(1)))
     drain(queue)

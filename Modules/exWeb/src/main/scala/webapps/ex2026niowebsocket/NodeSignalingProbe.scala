@@ -28,7 +28,7 @@ object NodeSignalingProbe {
       timeoutMs: Int = 5000,
   ): js.Promise[String] = {
     js.Promise[String] { (resolve, reject) =>
-      val resolver                                = new WebSocketConnectionDetailsResolver[Message]
+      val resolver                                = new WebSocketConnectionDetailsResolver
       val localUid                                = Uid.predefined(uidString)
       var completed                               = false
       var timeoutHandle: Option[SetTimeoutHandle] = None

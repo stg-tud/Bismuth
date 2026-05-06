@@ -34,7 +34,7 @@ object SignalingServerCli {
 
     def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection) = {
       val (details, latent) = nioResolver.listen(host, port)
-      (details, OverlayDemo.jsonConnection[Message](latent, "webrtc-signaling-json"))
+      (details, latent)
     }
 
     val (listenDetails, server) =

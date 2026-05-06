@@ -1,6 +1,6 @@
 package ex2024DTN.rdt
 
-import channels.{Abort, Connection, LatentConnection, Receive}
+import channels.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 import ex2024DTN.MonitoringClientInterface
@@ -23,8 +23,8 @@ class ClientContext[T: JsonValueCodec](
     executionContext: ExecutionContext,
     operationMode: ClientOperationMode
 ) extends Connection {
-  override def send(message: BroadcastIO.Envelope[T]): Async[Any, Unit] =
-    message match
+  override def send(message: MessageBuffer): Async[Any, Unit] =
+    BroadcastIO.decodeEnevlop[T](message) match
         case BroadcastIO.Envelope.Membership(_)                         => Async {}
         case BroadcastIO.Envelope.Ping(_) | BroadcastIO.Envelope.Pong(_) => Async {}
         case BroadcastIO.Envelope.Protocol(Graft(sender, dots))         =>
@@ -72,16 +72,17 @@ class Channel[T: JsonValueCodec](
 
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
-            case RdtMessageType.Request => cb.succeed(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(dtnid, dots)))
+            case RdtMessageType.Request =>
+              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(dtnid, dots))))
             case RdtMessageType.Payload =>
-              cb.succeed(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Payload(dots, readFromArray[T](payload))))
+              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Payload(dots, readFromArray[T](payload)))))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
           case ClientOperationMode.PushAll =>
-            cb.succeed(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(dtnid, Dots.empty)))
+            cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(dtnid, Dots.empty))))
           case ClientOperationMode.RequestLater =>
 
       conn

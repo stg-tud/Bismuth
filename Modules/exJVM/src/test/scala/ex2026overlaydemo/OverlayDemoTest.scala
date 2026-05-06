@@ -2,9 +2,7 @@ package ex2026overlaydemo
 
 import channels.{ChannelConnectInfo, LocalConnectionRegistry, LocalMessageQueue, QueuedLocalConnection}
 import rdts.base.Uid
-import replication.overlay.HyParViewIO
 import replication.research.OverlayConnectionDirectory
-import replication.research.OverlayNetworkProtocol.DemoState
 
 import scala.collection.mutable
 import scala.util.Random
@@ -62,9 +60,9 @@ class OverlayDemoTest extends munit.FunSuite {
   }
 
   private class QueuedFixture {
-    val queue    = LocalMessageQueue[HyParViewIO.Envelope[DemoState]]()
-    val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection[HyParViewIO.Envelope[DemoState]]]
-    val registry = LocalConnectionRegistry[HyParViewIO.Envelope[DemoState]](queued)
+    val queue    = LocalMessageQueue()
+    val queued   = mutable.LinkedHashMap.empty[String, QueuedLocalConnection]
+    val registry = LocalConnectionRegistry(queued)
     private val apps   = mutable.ArrayBuffer.empty[OverlayDemo.NodeApp]
     private var nextId = 0
 

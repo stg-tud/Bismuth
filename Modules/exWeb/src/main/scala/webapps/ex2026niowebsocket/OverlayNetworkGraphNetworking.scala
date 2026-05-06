@@ -2,15 +2,13 @@ package webapps.ex2026niowebsocket
 
 import channels.*
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
-import de.rmgk.delay.Async
 import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnectionFailed, WebRTCConnector}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import de.rmgk.delay.Async
 import org.scalajs.dom
 import rdts.base.Uid
-import replication.overlay.{HyParViewIO}
-import replication.research.{OverlayDemoNode, SignalingClient, SignalingServer}
+import replication.overlay.HyParViewIO
 import replication.research.OverlayNetworkProtocol.DemoState
-import replication.research.SignalingServer.Message
+import replication.research.{OverlayDemoNode, SignalingClient, SignalingServer}
 
 import scala.collection.mutable
 import scala.scalajs.js
@@ -19,15 +17,6 @@ import scala.util.{Failure, Success}
 object OverlayNetworkGraphNetworking {
 
   type Envelope = HyParViewIO.Envelope[DemoState]
-
-  def envelopeConnection(latent: LatentConnection[MessageBuffer])(using
-      JsonValueCodec[Envelope]
-  ): LatentConnection[Envelope] =
-    LatentConnection.adapt[MessageBuffer, Envelope](
-      mb => readFromArray[Envelope](mb.asArray),
-      msg => ArrayMessageBuffer(writeToArray(msg)),
-      "webrtc-envelope-json"
-    )(latent)
 
   def createRtcConnector(): WebRTCConnector =
     WebRTCConnector(new dom.RTCConfiguration {
@@ -103,7 +92,7 @@ object OverlayNetworkGraphNetworking {
                                      initialSeed: Option[Uid],
                                      topicLookupCount: Int,
                                      onRegistered: () => Unit,
-  )(using JsonValueCodec[Envelope], JsonValueCodec[Message]) {
+  ) {
     private def logFailure(context: String, err: Throwable): Unit =
       println(s"[overlay-signaling] $context: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
 
@@ -114,7 +103,7 @@ object OverlayNetworkGraphNetworking {
         fail: Throwable => Unit,
     )
 
-    private val wsResolver                            = new WebSocketConnectionDetailsResolver[Message]
+    private val wsResolver                            = new WebSocketConnectionDetailsResolver
     private val outgoing                              = mutable.Map.empty[Uid, OutgoingAttempt]
     private var rediscoveryHandle: js.UndefOr[js.Any] = js.undefined
     private var lastLookupAtMillis                    = 0.0
@@ -167,7 +156,7 @@ object OverlayNetworkGraphNetworking {
       val connector  = createRtcConnector()
       val channel    = createOverlayDataChannel(connector)
       var sentAnswer = false
-      node.addOverlayConnection(envelopeConnection(WebRTCConnection.openLatent(channel)))
+      node.addOverlayConnection(WebRTCConnection.openLatent(channel))
       connector.updateRemoteDescription(SessionDescription(session.descType, session.sdp)).run {
         case Success(_) =>
           connector.lifecycle.run {
@@ -220,11 +209,11 @@ object OverlayNetworkGraphNetworking {
           case ChannelConnectInfo.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
           case _                                       => false
 
-    def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[Envelope]] = details match
+    def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] = details match
         case ChannelConnectInfo.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
           val target = Uid.predefined(peerId)
-          Some(new LatentConnection[Envelope] {
-            override def prepare(receiver: Receive[Envelope]): Async[Abort, Connection[Envelope]] = {
+          Some(new LatentConnection {
+            override def prepare(receiver: Receive): Async[Abort, Connection] = {
               Async.fromCallback { abort ?=>
                 val connector                         = createRtcConnector()
                 val channel                           = createOverlayDataChannel(connector)
@@ -237,7 +226,7 @@ object OverlayNetworkGraphNetworking {
                   catch case _: Throwable => ()
                   Async.handler.fail(err)
                 }
-                envelopeConnection(WebRTCConnection.openLatent(channel)).prepare(receiver).runIn(abort) {
+                WebRTCConnection.openLatent(channel).prepare(receiver).runIn(abort) {
                   case Success(conn) =>
                     Async.handler.succeed(conn)
                   case Failure(err) =>

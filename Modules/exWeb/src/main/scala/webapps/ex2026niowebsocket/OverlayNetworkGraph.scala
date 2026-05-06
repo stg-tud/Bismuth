@@ -9,11 +9,10 @@ import replication.JsoniterCodecs.given
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import scalatags.JsDom.all.*
 import webapps.ex2026niowebsocket.OverlayNetworkGraphModel.LocalViews
-import webapps.ex2026niowebsocket.OverlayNetworkGraphNetworking.{Envelope, WebRtcSignalingBridge}
+import webapps.ex2026niowebsocket.OverlayNetworkGraphNetworking.WebRtcSignalingBridge
 
 import java.util.Base64
 import scala.collection.mutable
-import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 
 /** vibecoded as part of the hyparview experiments */
@@ -99,11 +98,11 @@ object OverlayNetworkGraph {
     val requestedSeedId = seedDetails.collect { case ChannelConnectInfo.WebRtc(peerId) => Uid.predefined(peerId) }
 
     var signalingRef: Option[WebRtcSignalingBridge] = None
-    val resolver                                    = new ChannelResolver[Envelope] {
+    val resolver                                    = new ChannelResolver {
       override def canConnect(details: ChannelConnectInfo): Boolean =
         signalingRef.exists(_.canConnect(details))
 
-      override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection[Envelope]] =
+      override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
         signalingRef.flatMap(_.connect(details, label))
     }
 

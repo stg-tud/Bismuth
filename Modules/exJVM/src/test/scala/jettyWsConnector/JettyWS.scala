@@ -39,9 +39,9 @@ class JettyWsListener(val server: Server) {
 
   val handlers = new ContextHandlerCollection()
 
-  def listen(pathSpec: PathSpec, context: ContextHandler = new ContextHandler()): LatentConnection[MessageBuffer] =
+  def listen(pathSpec: PathSpec, context: ContextHandler = new ContextHandler()): LatentConnection =
     new LatentConnection {
-      override def prepare(incomingHandler: ChannelHandler[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
+      override def prepare(incomingHandler: ChannelHandler): Async[Abort, Connection] =
         Async.fromCallback {
 
           val webSocketHandler = WebSocketUpgradeHandler.from(
@@ -61,8 +61,8 @@ class JettyWsListener(val server: Server) {
     }
 
   def webSocketCreator(
-      incoming: ChannelHandler[MessageBuffer],
-      delayCallback: DelayCallback[Connection[MessageBuffer]]
+      incoming: ChannelHandler,
+      delayCallback: DelayCallback[Connection]
   ): WebSocketCreator =
     new WebSocketCreator {
       override def createWebSocket(
@@ -77,15 +77,15 @@ class JettyWsListener(val server: Server) {
 
 object JettyWsConnection {
 
-  def connect(uri: URI): LatentConnection[MessageBuffer] = new LatentConnection {
-    override def prepare(incomingHandler: ChannelHandler[MessageBuffer]): Async[Abort, Connection[MessageBuffer]] =
-      Async.fromCallback[Connection[MessageBuffer]] {
+  def connect(uri: URI): LatentConnection = new LatentConnection {
+    override def prepare(incomingHandler: ChannelHandler): Async[Abort, Connection] =
+      Async.fromCallback[Connection] {
 
         val client = new WebSocketClient()
         client.start()
         // this returns a future
         client.connect(
-          new JettyWsHandler(incomingHandler, Async.handler[Connection[MessageBuffer]]),
+          new JettyWsHandler(incomingHandler, Async.handler[Connection]),
           uri
         ).toAsync.run {
           sess =>
@@ -94,7 +94,7 @@ object JettyWsConnection {
   }
 }
 
-class JettySessionWrapper(session: Session) extends Connection[MessageBuffer] {
+class JettySessionWrapper(session: Session) extends Connection {
 
   override def close(): Unit =
     session.close()
@@ -111,8 +111,8 @@ class JettySessionWrapper(session: Session) extends Connection[MessageBuffer] {
 }
 
 class JettyWsHandler(
-    incoming: ChannelHandler[MessageBuffer],
-    connectionEstablished: DelayCallback[Connection[MessageBuffer]]
+    incoming: ChannelHandler,
+    connectionEstablished: DelayCallback[Connection]
 ) extends Listener.Abstract {
 
   @volatile private var internalCallback: DelayCallback[MessageBuffer] = scala.compiletime.uninitialized

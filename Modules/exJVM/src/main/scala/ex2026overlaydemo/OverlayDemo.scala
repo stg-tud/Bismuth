@@ -1,12 +1,10 @@
 package ex2026overlaydemo
 
 import channels.*
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromString, writeToArray, writeToString}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import replication.JsoniterCodecs.given
-import replication.overlay.HyParViewIO
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayNetworkProtocol.DemoState
-import replication.research.SignalingServer.Message
 import replication.research.{OverlayDemoNode, SignalingClient}
 
 import java.net.BindException
@@ -27,13 +25,6 @@ object OverlayDemo {
       Base64.getUrlDecoder.decode(str),
       java.nio.charset.StandardCharsets.UTF_8
     ))
-
-  def jsonConnection[A: JsonValueCodec](latent: LatentConnection, name: String): LatentConnection =
-    LatentConnection.adapt[MessageBuffer, A](
-      mb => readFromArray[A](mb.asArray),
-      a => ArrayMessageBuffer(writeToArray(a)),
-      name
-    )(latent)
 
   trait OverlayNodeRuntime {
     def node: OverlayDemoNode
@@ -67,7 +58,7 @@ object OverlayDemo {
                   case _: BindException => listen(0)
             case None => listen(0)
 
-      val listenEnvelope   = jsonConnection(listenBinary, "overlay-json")
+      val listenEnvelope   = listenBinary
       val envelopeResolver = new ChannelResolver {
         override def canConnect(details: ChannelConnectInfo): Boolean =
           nioResolver.canConnect(details)
@@ -77,7 +68,7 @@ object OverlayDemo {
           nioResolver.connect(
             details,
             label
-          ).map(jsonConnection[HyParViewIO.Envelope[DemoState]](_, "overlay-json"))
+          )
       }
 
       nioThread.execute(() => nio.loopSelection(nioAbort))
@@ -94,7 +85,7 @@ object OverlayDemo {
       val signalingResolver = new ChannelResolver {
         override def canConnect(details: ChannelConnectInfo): Boolean = nioResolver.canConnect(details)
         override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
-          nioResolver.connect(details, label).map(jsonConnection[Message](_, "signaling-json"))
+          nioResolver.connect(details, label)
       }
       val signaling = signalingServer.map { server =>
         new SignalingClient(
