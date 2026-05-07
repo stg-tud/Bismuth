@@ -322,23 +322,14 @@ final case class HyParViewStateMachine(
     else
         passive.find(peer => !pendingConnections.exists(_.expectedPeer.contains(peer.uid))) match
             case Some(candidate) =>
-              connectionFor(candidate.uid) match
-                  case Some(conn) =>
-                    Result(
-                      copy(pendingConnections =
-                        pendingConnections :+ PendingConnection(Some(candidate.uid), Some(conn))
-                      ),
-                      existingActions :+ OverlayAction.Send(conn, Neighbor(self, highPriority = active.isEmpty))
-                    )
-                  case None =>
-                    Result(
-                      copy(pendingConnections = pendingConnections :+ PendingConnection(Some(candidate.uid), None)),
-                      existingActions :+ OverlayAction.SendJoin(
-                        candidate.channelConnectors,
-                        candidate.uid,
-                        Neighbor(self, highPriority = active.isEmpty)
-                      )
-                    )
+              Result(
+                copy(pendingConnections = pendingConnections :+ PendingConnection(Some(candidate.uid), None)),
+                existingActions :+ OverlayAction.SendJoin(
+                  candidate.channelConnectors,
+                  candidate.uid,
+                  Neighbor(self, highPriority = active.isEmpty)
+                )
+              )
             case None => Result(this, existingActions)
 
   private def choose[A](values: Vector[A]): A = values(randomIndex(0, values.size))
