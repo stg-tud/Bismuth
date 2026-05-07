@@ -4,7 +4,7 @@ import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
-import rdts.base.LocalUid
+import rdts.base.{LocalUid, Uid}
 import rdts.time.Dots
 import replication.BroadcastIO.Envelope
 import replication.JsoniterCodecs.given
@@ -20,8 +20,8 @@ import scala.util.{Failure, Success, Try}
 
 object BroadcastIO {
   enum Envelope[+State] {
-    case Membership(message: OverlayMessage)
-    case Protocol(message: PlumtreeMessage[State])
+    case Membership(sender: Uid, message: OverlayMessage)
+    case Protocol(sender: Uid, message: PlumtreeMessage[State])
   }
 
   def apply[State](
@@ -113,70 +113,59 @@ class BroadcastIO[State](
     }
   }
 
-  def pingAll(): Unit = synchronized {
-    val snapshot = lock.synchronized(plumtree.peerRoles.keys.flatMap(peer => overlay.connectionFor(peer.uid)).toList)
-    snapshot.foreach(send(_, Envelope.Membership(OverlayMessage.Ping(System.nanoTime()))))
+  def pingAll(): Unit = lock.synchronized {
+    val snapshot = plumtree.peerRoles.keys.flatMap(peer => overlay.connectionFor(peer.uid)).toList
+    snapshot.foreach(send(_, Envelope.Membership(replicaId.uid, OverlayMessage.Ping(System.nanoTime()))))
   }
 
   /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
-  def repairTick(): Unit = {
-    val actions = lock.synchronized {
-      val (next, a) = overlay.tick()
-      overlay = next
-      a
-    }
+  def repairTick(): Unit = lock.synchronized {
+    val actions =
+        val (next, a) = overlay.tick()
+        overlay = next
+        a
     actions.foreach(handleOverlayAction)
 
-    val result = lock.synchronized(plumtree.tickGrafts())
-    applyRoutingResult(result)
+    applyRoutingResult:
+      plumtree.tickGrafts()
   }
 
   /** Register externally discovered peers with the overlay. */
-  def discover(peers: Set[PeerConnectInfo]): Unit = {
-    val (next, actions) = overlay.discoverPeers(peers)
-    applyOverlayResult(next, actions)
+  def discover(peers: Set[PeerConnectInfo]): Unit = lock.synchronized {
+    applyOverlayResult(overlay.discoverPeers(peers))
   }
 
-  private def localKnownDeltaContext: Dots = lock.synchronized(plumtree.localContext)
+  private def localKnownDeltaContext: Dots = plumtree.localContext
 
   def allPayloads: List[Payload[State]] =
     lock.synchronized(plumtree.deltaStorage.getHistory)
 
-  def applyDelta(delta: State): Unit = {
+  def applyDelta(delta: State): Unit = lock.synchronized {
     val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
     val payload = Payload(Dots.single(nextDot), delta)
-    val result  = lock.synchronized(plumtree.broadcast(payload))
-    applyRoutingResult(result)
+    applyRoutingResult:
+      plumtree.broadcast(payload)
   }
 
   /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */
-  private def removePeer(conn: Connection): Unit = {
-    val actions = lock.synchronized {
-      val (nextOverlay, actions) = overlay.removeConnection(conn)
-      overlay = nextOverlay
-      actions
-    }
+  private def removePeer(conn: Connection): Unit = lock.synchronized {
+    val (nextOverlay, actions) = overlay.removeConnection(conn)
+    overlay = nextOverlay
     actions.foreach(handleOverlayAction)
   }
 
   /** Attach a newly established connection to the overlay state.
     * Peer identity is learned later from HyParView control-plane messages carried on that connection.
     */
-  private def registerConnection(conn: Connection): Unit = {
-    val actions = lock.synchronized {
-      val (next, actions) = overlay.registerConnection(conn)
-      overlay = next
-      actions
-    }
+  private def registerConnection(conn: Connection): Unit = lock.synchronized {
+    val (next, actions) = overlay.registerConnection(conn)
+    overlay = next
     actions.foreach(handleOverlayAction)
   }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
-    val events = lock.synchronized {
-      plumtree = result.state
-      result.events
-    }
-    events.foreach(handleRoutingEvent)
+    plumtree = result.state
+    result.events.foreach(handleRoutingEvent)
   }
 
   private def handleRoutingEvent(event: Event[State]): Unit =
@@ -185,14 +174,15 @@ class BroadcastIO[State](
           receiveCallback(payload.data)
         case Send(peers, message) =>
           peers.foreach(peer =>
-            lock.synchronized(overlay.connectionFor(peer.uid)).foreach(send(_, Envelope.Protocol(message)))
+            overlay.connectionFor(peer.uid).foreach(send(
+              _,
+              Envelope.Protocol(replicaId.uid, message)
+            ))
           )
 
-  private def applyOverlayResult(next: OverlayController, actions: List[OverlayController.OverlayAction]): Unit = {
-    lock.synchronized {
-      overlay = next
-    }
-    actions.foreach(handleOverlayAction)
+  private def applyOverlayResult(result: (next: OverlayController, actions: List[OverlayController.OverlayAction])): Unit = {
+    overlay = result.next
+    result.actions.foreach(handleOverlayAction)
   }
 
   /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
@@ -210,14 +200,15 @@ class BroadcastIO[State](
   private def handleOverlayAction(action: OverlayController.OverlayAction): Unit =
     action match
         case OverlayController.OverlayAction.Send(connection, message) =>
-          send(connection, Envelope.Membership(message))
+          send(connection, Envelope.Membership(replicaId.uid, message))
         case OverlayController.OverlayAction.SendJoin(details, message) =>
-          connectAndSend(details, s"$replicaId-join", Envelope.Membership(message))
+          connectAndSend(details, s"$replicaId-join", Envelope.Membership(replicaId.uid, message))
         case OverlayController.OverlayAction.ActiveConnectionAdded(peer) =>
-          val result = lock.synchronized(plumtree.addPeer(Peer(peer)))
-          applyRoutingResult(result)
+          val result = plumtree.addPeer(Peer(peer))
+          applyRoutingResult:
+            result
         case OverlayController.OverlayAction.ActiveConnectionRemoved(peer) =>
-          lock.synchronized { plumtree = plumtree.removePeer(Peer(peer)) }
+          plumtree = plumtree.removePeer(Peer(peer))
 
   private def send(conn: Connection, payload: Envelope[State]): Unit =
     if globalAbort.closeRequest then ()
@@ -229,39 +220,12 @@ class BroadcastIO[State](
           }
         }
 
-  private def handleMessage(msg: Envelope[State], from: Connection): Unit = synchronized {
+  private def handleMessage(msg: Envelope[State], from: Connection): Unit = lock.synchronized {
     if globalAbort.closeRequest then return
-
     msg match
-        case Envelope.Membership(message) =>
-          val (next, actions) = lock.synchronized(overlay.receiveActions(message, from))
-          applyOverlayResult(next, actions)
-        case Envelope.Protocol(protocol) =>
-          val result = lock.synchronized {
-            val peer = overlay.peerForConnection(from).map(Peer.apply).orElse(protocolSender(protocol).map(Peer.apply))
-            peer match
-                case Some(existing) =>
-                  // NOTE:
-                  // DirectConnectionOverlay currently marks a peer active as soon as it replies with NeighborReply.
-                  // That immediately triggers Plumtree `addPeer`, which emits a `Graft`.
-                  // This `Graft` can reach the remote side before that side has processed enough overlay traffic to have the
-                  // sender installed in its Plumtree peer roles / active broadcast peers.
-                  // Ideally the overlay handshake would delay activation until both sides have observed each other as active.
-                  // Until that is fixed, we defensively fall back to the sender encoded in the protocol message.
-                  val seeded =
-                    if plumtree.peerRoles.contains(existing) then plumtree
-                    else plumtree.addPeer(existing).state
-                  seeded.handleMessage(existing, protocol)
-                case None =>
-                  throw new IllegalStateException(s"received protocol message $msg from unknown connection $from")
-          }
-          applyRoutingResult(result)
+        case Envelope.Membership(sender, message) =>
+          applyOverlayResult(overlay.receiveActions(message, from))
+        case Envelope.Protocol(sender, protocol) =>
+          applyRoutingResult(plumtree.handleMessage(Peer(sender), protocol))
   }
-
-  private def protocolSender(message: PlumtreeMessage[State]): Option[rdts.base.Uid] =
-    message match
-        case Graft(sender, _) => Some(sender)
-        case IHave(sender, _) => Some(sender)
-        case Prune(sender)    => Some(sender)
-        case Payload(_, _)    => None
 }
