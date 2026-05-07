@@ -22,9 +22,6 @@ trait OverlayController {
   /** Lookup the currently known connection for a peer, if one is attached to an active-view entry. */
   def connectionFor(peer: Uid): Option[Connection] = None
 
-  /** Reverse lookup from connection object to peer identity, if known. */
-  def peerForConnection(conn: Connection): Option[Uid] = None
-
   /** Overlay lifecycle tick: periodic maintenance (promotion, shuffle, etc.). */
   def tick(): (OverlayController, List[OverlayAction]) = (this, Nil)
 

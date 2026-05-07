@@ -202,9 +202,6 @@ final case class HyParViewStateMachine(
   override def connectionFor(peer: Uid): Option[Connection] =
     active.find(_.peer.uid == peer).map(_.connection)
 
-  override def peerForConnection(conn: Connection): Option[Uid] =
-    active.find(_.connection == conn).map(_.peer.uid)
-
   private def rememberPeer(peer: PeerConnectInfo): HyParViewStateMachine =
     if peer.uid == self.uid then this else copy(known = known.updated(peer.uid, peer))
 

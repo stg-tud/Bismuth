@@ -83,7 +83,4 @@ case class DirectConnectionOverlay(
 
   override def connectionFor(peer: Uid): Option[Connection] = active.get(peer)
 
-  override def peerForConnection(conn: Connection): Option[Uid] =
-    active.collectFirst { case (peer, c) if c == conn => peer }
-      .orElse(identifiedConnections.get(conn))
 }
