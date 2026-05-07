@@ -25,10 +25,6 @@ class BroadcastIOTest extends munit.FunSuite {
     dd1.addBinaryConnection(sync.server)
     dd3.addBinaryConnection(sync.client("3"))
 
-    dd1.pingAll()
-    dd2.pingAll()
-    dd3.pingAll()
-
     dd1.applyDelta(Set("a"))
     dd2.applyDelta(Set("b"))
     dd3.applyDelta(Set("c"))
@@ -107,10 +103,7 @@ class BroadcastIOTest extends munit.FunSuite {
             println("")
 
     deliverAndPrint()
-    dd1.pingAll()
     deliverAndPrint()
-    dd2.pingAll()
-    dd3.pingAll()
     deliverAndPrint()
 
     dd1.applyDelta(Set("a"))

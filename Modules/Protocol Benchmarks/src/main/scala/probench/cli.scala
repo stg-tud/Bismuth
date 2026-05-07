@@ -250,7 +250,6 @@ object cli {
           node.cluster.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value), ec))
           node.connInf.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value + 1), ec))
 
-          Timer().schedule(() => node.cluster.dataManager.pingAll(), 1000, 1000)
 
           cluster.value.foreach { (ip, port) =>
             node.cluster.dataManager.addBinaryConnection(UDP.connect(

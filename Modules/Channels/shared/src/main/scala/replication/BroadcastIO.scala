@@ -113,10 +113,6 @@ class BroadcastIO[State](
     }
   }
 
-  def pingAll(): Unit = lock.synchronized {
-    val snapshot = plumtree.peerRoles.keys.flatMap(peer => overlay.connectionFor(peer.uid)).toList
-    snapshot.foreach(send(_, Envelope.Membership(replicaId.uid, OverlayMessage.Ping(System.nanoTime()))))
-  }
 
   /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
   def repairTick(): Unit = lock.synchronized {
