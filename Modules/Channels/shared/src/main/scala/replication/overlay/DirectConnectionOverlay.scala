@@ -12,8 +12,6 @@ case class DirectConnectionOverlay(
     unknownConnections: Set[Connection] = Set.empty,
 ) extends OverlayController {
 
-  
-
   override def discoverPeers(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
     val next    = copy(known = known ++ peers.iterator.filterNot(_.uid == self.uid).map(p => p.uid -> p))
     val actions = peers.toList.collect {
@@ -23,15 +21,18 @@ case class DirectConnectionOverlay(
     (next, actions)
   }
 
-  override def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) = {
+  override def receiveActions(
+      message: OverlayMessage,
+      conn: Connection
+  ): (OverlayController, List[OverlayAction]) = {
     message match
         case OverlayMessage.Neighbor(peer, _) =>
           val wasKnown = active.contains(peer.uid)
           val next     = copy(
             known = known.updated(peer.uid, peer),
-            active = active.updated(peer.uid, from),
-            identifiedConnections = identifiedConnections.updated(from, peer.uid),
-            unknownConnections = unknownConnections - from
+            active = active.updated(peer.uid, conn),
+            identifiedConnections = identifiedConnections.updated(conn, peer.uid),
+            unknownConnections = unknownConnections - conn
           )
           // NOTE:
           // This overlay currently promotes the sender to `active` as soon as a Neighbor request is received,
@@ -40,21 +41,21 @@ case class DirectConnectionOverlay(
           // immediate `Graft`. The remote side may receive that `Graft` before its own overlay/plumtree activation
           // has completed. BroadcastIO therefore contains a temporary fallback for early protocol messages.
           // A cleaner fix would make activation a true two-sided handshake.
-          val actions = List(OverlayAction.Send(from, OverlayMessage.NeighborReply(self.uid, accepted = true))) :::
+          val actions = List(OverlayAction.Send(conn, OverlayMessage.NeighborReply(self.uid, accepted = true))) :::
             Option.when(!wasKnown)(OverlayAction.ActiveConnectionAdded(peer.uid)).toList
           (next, actions)
 
         case OverlayMessage.NeighborReply(peer, accepted) if accepted =>
           val wasKnown = active.contains(peer)
           val next     = copy(
-            active = active.updated(peer, from),
-            identifiedConnections = identifiedConnections.updated(from, peer),
-            unknownConnections = unknownConnections - from
+            active = active.updated(peer, conn),
+            identifiedConnections = identifiedConnections.updated(conn, peer),
+            unknownConnections = unknownConnections - conn
           )
           (next, Option.when(!wasKnown)(OverlayAction.ActiveConnectionAdded(peer)).toList)
 
         case OverlayMessage.Ping(time) =>
-          (this, List(OverlayAction.Send(from, OverlayMessage.Pong(time))))
+          (this, List(OverlayAction.Send(conn, OverlayMessage.Pong(time))))
 
         case OverlayMessage.Pong(_) =>
           (this, Nil)
@@ -63,7 +64,10 @@ case class DirectConnectionOverlay(
           (this, Nil)
   }
 
-  override def removeConnection(conn: Connection, connectInfo: Option[channels.ChannelConnectInfo] = None): (OverlayController, List[OverlayAction]) =
+  override def removeConnection(
+      conn: Connection,
+      connectInfo: Option[channels.ChannelConnectInfo] = None
+  ): (OverlayController, List[OverlayAction]) =
     active.find(_._2 == conn) match
         case Some((peer, _)) =>
           (

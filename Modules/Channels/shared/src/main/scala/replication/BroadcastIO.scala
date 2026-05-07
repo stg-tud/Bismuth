@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 
 object BroadcastIO {
   enum Envelope[+State] {
-    case Membership(sender: Uid, message: OverlayMessage)
+    case Membership(message: OverlayMessage)
     case Protocol(sender: Uid, message: PlumtreeMessage[State])
   }
 
@@ -76,8 +76,7 @@ class BroadcastIO[State](
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef = new {}
-  private val connectionDetails: scala.collection.mutable.Map[Connection, Option[ChannelConnectInfo]] =
-    scala.collection.mutable.Map.empty
+  @volatile private var connectionDetails: Map[Connection, Option[ChannelConnectInfo]] = Map.empty
 
   def overlayController: OverlayController = overlay
 
@@ -142,7 +141,8 @@ class BroadcastIO[State](
 
   /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */
   private def removePeer(conn: Connection): Unit = lock.synchronized {
-    val info = connectionDetails.remove(conn).flatten
+    val info = connectionDetails.get(conn).flatten
+    connectionDetails = connectionDetails.removed(conn)
     val (nextOverlay, actions) = overlay.removeConnection(conn, info)
     overlay = nextOverlay
     actions.foreach(handleOverlayAction)
@@ -152,10 +152,10 @@ class BroadcastIO[State](
     * DirectConnectionOverlay also needs an initial Neighbor handshake on newly attached transports.
     */
   private def registerConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): Unit = lock.synchronized {
-    connectionDetails.update(conn, connectInfo)
+    connectionDetails = connectionDetails.updated(conn, connectInfo)
     overlay match
         case direct: DirectConnectionOverlay =>
-          send(conn, Envelope.Membership(replicaId.uid, OverlayMessage.Neighbor(direct.self, highPriority = true)))
+          send(conn, Envelope.Membership(OverlayMessage.Neighbor(direct.self, highPriority = true)))
         case _ => ()
   }
 
@@ -201,9 +201,9 @@ class BroadcastIO[State](
   private def handleOverlayAction(action: OverlayAction): Unit =
     action match
         case OverlayAction.Send(connection, message) =>
-          send(connection, Envelope.Membership(replicaId.uid, message))
+          send(connection, Envelope.Membership(message))
         case OverlayAction.SendJoin(details, expectedPeer, message) =>
-          connectAndSend(details, expectedPeer, Envelope.Membership(replicaId.uid, message))
+          connectAndSend(details, expectedPeer, Envelope.Membership(message))
         case OverlayAction.Disconnect(connection) =>
           connection.close()
           removePeer(connection)
@@ -223,11 +223,11 @@ class BroadcastIO[State](
           }
         }
 
-  private def handleMessage(msg: Envelope[State], from: Connection): Unit = lock.synchronized {
+  private def handleMessage(msg: Envelope[State], conn: Connection): Unit = lock.synchronized {
     if globalAbort.closeRequest then return
     msg match
-        case Envelope.Membership(sender, message) =>
-          applyOverlayResult(overlay.receiveActions(message, from))
+        case Envelope.Membership(message) =>
+          applyOverlayResult(overlay.receiveActions(message, conn))
         case Envelope.Protocol(sender, protocol) =>
           applyRoutingResult(plumtree.handleMessage(Peer(sender), protocol))
   }

@@ -10,7 +10,7 @@ trait OverlayController {
     * If a concrete connection is supplied, the controller may learn which peer sent the message and attach that
     * opaque connection handle to the corresponding active-view entry.
     */
-  def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) =
+  def receiveActions(message: OverlayMessage, conn: Connection): (OverlayController, List[OverlayAction]) =
     (this, Nil)
 
   /** Remove a connection and optionally provide the connect info used to establish it, if known.
