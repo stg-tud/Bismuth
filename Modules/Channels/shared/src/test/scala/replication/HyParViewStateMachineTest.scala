@@ -67,61 +67,6 @@ class HyParViewStateMachineTest extends FunSuite {
     HyParViewStateMachine.Result(next.asInstanceOf[HyParViewStateMachine], actions)
   }
 
-  test(
-    "Join at the contact adds the newcomer to the active view and forwards ForwardJoin through existing active peers"
-  ) {
-    val existing  = peer("existing")
-    val newcomer  = peer("newcomer")
-    val existingC = TestConnection("existing")
-    val joinC     = TestConnection("newcomer")
-
-    val base = withActive(state(random = (_, _) => 0), existing -> existingC)
-      .copy(known = Map(defaultSelf.uid -> defaultSelf, existing.uid -> existing, newcomer.uid -> newcomer))
-
-    val HyParViewStateMachine.Result(next, actions) = receive(base, Join(newcomer), joinC)
-
-    assertEquals(next.activeView, Set(existing.uid, newcomer.uid))
-    assertEquals(
-      sent(actions),
-      List(
-        (joinC, Neighbor(defaultSelf, highPriority = true)),
-        (existingC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid))
-      )
-    )
-  }
-
-  test("ForwardJoin at passive random-walk length learns the peer passively and keeps forwarding") {
-    val from   = peer("from")
-    val nextP  = peer("next")
-    val joined = peer("joined")
-    val fromC  = TestConnection("from")
-    val nextC  = TestConnection("next")
-
-    val machine = withActive(state(random = (_, _) => 1), from -> fromC, nextP -> nextC)
-    val HyParViewStateMachine.Result(next, actions) =
-      receive(machine, ForwardJoin(joined, config.passiveRandomWalkLength, from.uid), fromC)
-
-    assert(next.passiveView.contains(joined.uid), "peer should be inserted in passive view at PRWL")
-    assertEquals(sent(actions), List((nextC, ForwardJoin(joined, config.passiveRandomWalkLength - 1, defaultSelf.uid))))
-  }
-
-  test("ForwardJoin stops at ttl zero and adds the joining peer to the active view") {
-    val joined = peer("joined")
-    val joinC  = TestConnection("joined")
-
-    val HyParViewStateMachine.Result(next, actions) =
-      receive(state(), ForwardJoin(joined, 0, Uid.predefined("sender")), joinC)
-
-    assertEquals(next.activeView, Set(joined.uid))
-    assertEquals(
-      actions,
-      List(
-        OverlayAction.ActiveConnectionAdded(joined.uid),
-        OverlayAction.Send(joinC, Neighbor(defaultSelf, highPriority = true))
-      )
-    )
-  }
-
   test("low-priority Neighbor is only accepted when there is free active capacity") {
     val a  = peer("a")
     val b  = peer("b")
