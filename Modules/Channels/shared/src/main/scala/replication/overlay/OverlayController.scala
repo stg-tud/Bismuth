@@ -39,15 +39,12 @@ object OverlayController {
     case NeighborReply(from: Uid, accepted: Boolean)
     case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
     case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo])
-    case Ping(time: Long)
-    case Pong(time: Long)
 
     def getSender: Option[Uid] = this match
         case Neighbor(from, _)         => Some(from.uid)
         case NeighborReply(from, _)    => Some(from)
         case Shuffle(_, _, _, sender)  => Some(sender)
         case ShuffleReply(from, _)     => Some(from)
-        case Ping(_) | Pong(_)         => None
   }
 
   enum OverlayAction {

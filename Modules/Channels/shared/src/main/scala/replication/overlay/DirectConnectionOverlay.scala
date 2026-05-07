@@ -54,12 +54,6 @@ case class DirectConnectionOverlay(
           )
           (next, Option.when(!wasKnown)(OverlayAction.ActiveConnectionAdded(peer)).toList)
 
-        case OverlayMessage.Ping(time) =>
-          (this, List(OverlayAction.Send(conn, OverlayMessage.Pong(time))))
-
-        case OverlayMessage.Pong(_) =>
-          (this, Nil)
-
         case _ =>
           (this, Nil)
   }

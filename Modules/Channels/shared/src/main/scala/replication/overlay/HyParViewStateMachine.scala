@@ -180,12 +180,6 @@ final case class HyParViewStateMachine(
             )
           Result(next, Nil)
 
-        case Ping(time) =>
-          // Respond to keep‑alive pings with a pong on the same connection.
-          Result(this, List(OverlayAction.Send(from, Pong(time))))
-        case Pong(_) =>
-          // Pongs are purely a heartbeat mechanism; no state change needed.
-          Result(this, Nil)
   }
 
   override def removeConnection(
