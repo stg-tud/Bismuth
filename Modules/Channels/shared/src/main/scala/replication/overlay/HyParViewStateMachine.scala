@@ -208,7 +208,7 @@ final case class HyParViewStateMachine(
           val base            = clearPendingPeer(fromPeer)
           val (next, actions) =
             if accepted then
-              known.get(fromPeer).flatMap(peer => conn.map(c => base.addActive(peer, c))).getOrElse((base, Nil))
+                known.get(fromPeer).flatMap(peer => conn.map(c => base.addActive(peer, c))).getOrElse((base, Nil))
             else known.get(fromPeer).map(peer => (base.addPassiveIfEligible(peer), Nil)).getOrElse((base, Nil))
           Result(next, actions)
 
@@ -227,7 +227,7 @@ final case class HyParViewStateMachine(
         case ShuffleReply(fromPeer, sample) =>
           // Paper shuffle completion at the initiator: merge the reply sample, preferring eviction of entries previously sent to the peer.
           val remembered = sample.foldLeft(this)((state, peer) => state.rememberPeer(peer))
-          val next =
+          val next       =
             remembered.mergeShuffleSample(sample, remembered.pendingShuffleSamples.getOrElse(fromPeer, Set.empty)).copy(
               pendingShuffleSamples = remembered.pendingShuffleSamples.removed(fromPeer)
             )
@@ -241,18 +241,21 @@ final case class HyParViewStateMachine(
           Result(this, Nil)
   }
 
-  override def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): (OverlayController, List[OverlayAction]) =
-    if peerForConnection(conn).nonEmpty || pendingConnections.exists(_.connection.contains(conn)) then (this, Nil)
-    else {
-      val updatedPending = expectedPeer match
-          case Some(peer) if pendingConnections.exists(pc => pc.expectedPeer.contains(peer) && pc.connection.isEmpty) =>
-            pendingConnections.map(pc =>
-              if pc.expectedPeer.contains(peer) && pc.connection.isEmpty then pc.copy(connection = Some(conn)) else pc
-            )
-          case _ =>
-            pendingConnections :+ PendingConnection(expectedPeer, Some(conn))
-      (copy(pendingConnections = updatedPending), Nil)
-    }
+  override def registerConnection(
+      conn: Connection,
+      expectedPeer: Option[Uid] = None
+  ): (OverlayController, List[OverlayAction]) = {
+    assert(peerForConnection(conn).isEmpty, "Connection already registered")
+    assert(!pendingConnections.exists(_.connection.contains(conn)), "connection already pending")
+    val updatedPending = expectedPeer match
+        case Some(peer) if pendingConnections.exists(pc => pc.expectedPeer.contains(peer) && pc.connection.isEmpty) =>
+          pendingConnections.map(pc =>
+            if pc.expectedPeer.contains(peer) && pc.connection.isEmpty then pc.copy(connection = Some(conn)) else pc
+          )
+        case _ =>
+          pendingConnections :+ PendingConnection(expectedPeer, Some(conn))
+    (copy(pendingConnections = updatedPending), Nil)
+  }
 
   override def removeConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
     active.find(_.connection == conn) match
@@ -260,7 +263,8 @@ final case class HyParViewStateMachine(
           val next = clearPendingConnection(conn)
             .copy(active = active.filterNot(_.peer.uid == activePeer.peer.uid))
             .addPassiveIfEligible(activePeer.peer)
-          val Result(promoted, actions) = next.withPromotionIfNeeded(List(OverlayAction.ActiveConnectionRemoved(activePeer.peer.uid)))
+          val Result(promoted, actions) =
+            next.withPromotionIfNeeded(List(OverlayAction.ActiveConnectionRemoved(activePeer.peer.uid)))
           (promoted, actions)
         case None =>
           pendingConnections.find(_.connection.contains(conn)).flatMap(_.expectedPeer).flatMap(known.get) match
@@ -278,9 +282,11 @@ final case class HyParViewStateMachine(
   private def attachConnection(peer: Uid, conn: Connection): HyParViewStateMachine = {
     val updatedPending =
       if pendingConnections.exists(pc => pc.connection.contains(conn) || pc.expectedPeer.contains(peer)) then
-        pendingConnections.map(pc =>
-          if pc.connection.contains(conn) || pc.expectedPeer.contains(peer) then PendingConnection(Some(peer), Some(conn)) else pc
-        )
+          pendingConnections.map(pc =>
+            if pc.connection.contains(conn) || pc.expectedPeer.contains(peer) then
+                PendingConnection(Some(peer), Some(conn))
+            else pc
+          )
       else pendingConnections
     copy(
       active = active.map(ap => if ap.peer.uid == peer then ap.copy(connection = conn) else ap),
@@ -368,7 +374,9 @@ final case class HyParViewStateMachine(
               connectionFor(candidate.uid) match
                   case Some(conn) =>
                     Result(
-                      copy(pendingConnections = pendingConnections :+ PendingConnection(Some(candidate.uid), Some(conn))),
+                      copy(pendingConnections =
+                        pendingConnections :+ PendingConnection(Some(candidate.uid), Some(conn))
+                      ),
                       existingActions :+ OverlayAction.Send(conn, Neighbor(self, highPriority = active.isEmpty))
                     )
                   case None =>
