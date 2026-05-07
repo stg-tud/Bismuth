@@ -6,6 +6,13 @@ import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
 trait OverlayController {
 
+  /** Called when a raw connection becomes available and should be activated for this overlay.
+    * HyParView does nothing here because it identifies peers from received protocol messages.
+    * Simpler overlays may use this to emit an initial handshake.
+    */
+  def activateConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
+    (this, Nil)
+
   /** Handle one overlay control-plane message and return the next controller state plus side-effect actions.
     * If a concrete connection is supplied, the controller may learn which peer sent the message and attach that
     * opaque connection handle to the corresponding active-view entry.
