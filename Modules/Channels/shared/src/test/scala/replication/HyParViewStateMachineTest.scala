@@ -55,7 +55,6 @@ class HyParViewStateMachineTest extends FunSuite {
   private def withPassive(machine: HyParViewStateMachine, peers: PeerConnectInfo*): HyParViewStateMachine =
     machine.copy(
       known = machine.known ++ peers.map(p => p.uid -> p),
-      passive = peers.toVector,
     )
 
   private def sent(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Send(conn, msg) => (conn, msg) }
@@ -121,7 +120,7 @@ class HyParViewStateMachineTest extends FunSuite {
       actions,
       List(
         OverlayAction.ActiveConnectionRemoved(activePeer.uid),
-        OverlayAction.SendJoin(backup.channelConnectors, backup.uid, Neighbor(defaultSelf, highPriority = true))
+        OverlayAction.SendJoin(activePeer.channelConnectors, activePeer.uid, Neighbor(defaultSelf, highPriority = true))
       )
     )
   }
@@ -131,7 +130,6 @@ class HyParViewStateMachineTest extends FunSuite {
     val pendingC  = TestConnection("candidate")
     val started   = state().copy(
       known = Map(defaultSelf.uid -> defaultSelf, candidate.uid -> candidate),
-      passive = Vector(candidate),
       pendingConnections = Vector(HyParViewStateMachine.PendingConnection(Some(candidate.uid), None))
     )
 
@@ -175,6 +173,9 @@ class HyParViewStateMachineTest extends FunSuite {
     assert(next.passiveView.contains(sampleA.uid))
     assert(next.passiveView.contains(sampleB.uid))
     assert(!next.passiveView.contains(rejected.uid), "undialable peers should be filtered out")
-    assertEquals(sent(actions), List((originC, ShuffleReply(defaultSelf.uid, Set(passiveP)))))
+    assertEquals(
+      sent(actions),
+      List((originC, ShuffleReply(defaultSelf.uid, Set(passiveP, sampleA, sampleB))))
+    )
   }
 }
