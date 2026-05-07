@@ -124,7 +124,7 @@ class BroadcastIO[State](
 
   /** Register externally discovered peers with the overlay. */
   def discover(peers: Set[PeerConnectInfo]): Unit = lock.synchronized {
-    applyOverlayResult(overlay.discoverPeers(peers))
+    applyOverlayResult(overlay.discoverPassive(peers))
   }
 
   private def localKnownDeltaContext: Dots = plumtree.localContext

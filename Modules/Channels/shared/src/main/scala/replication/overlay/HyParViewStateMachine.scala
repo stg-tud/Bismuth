@@ -128,7 +128,7 @@ final case class HyParViewStateMachine(
     (shuffled, a1 ::: a2)
   }
 
-  override def discoverPeers(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
+  override def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
     val next = peers.foldLeft(this)((state, peer) => state.rememberPeer(peer))
     (next, Nil)
   }

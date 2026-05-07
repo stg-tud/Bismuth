@@ -29,7 +29,7 @@ trait OverlayController {
   def tick(): (OverlayController, List[OverlayAction]) = (this, Nil)
 
   /** Learn externally discovered peers. */
-  def discoverPeers(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = (this, Nil)
+  def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = (this, Nil)
 }
 
 object OverlayController {
