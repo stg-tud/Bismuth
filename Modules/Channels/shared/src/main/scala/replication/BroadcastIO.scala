@@ -93,6 +93,12 @@ class BroadcastIO[State](
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
       registerConnection(conn, None)
+      // todo hmm. a lot of existing code assumes it can just add a connection and it will be immediately active
+      //   however, we now always do a handshake to get the peer UID. this method does not know if we connecting, or if the connection happened because someone connected to us so we dont really want to inform the overlay, because we cant tell it enough useful information. we also should not unconditionally send neighbor requests as that is wasteful because they are *answeer:*
+      overlay match
+        case direct: DirectConnectionOverlay =>
+          send(conn, Envelope.Membership(OverlayMessage.Neighbor(direct.self, highPriority = true)))
+        case _ => ()
     }.run(printExceptionHandler)
 
   private val connectionReceiver: Receive = new Receive {
@@ -153,10 +159,6 @@ class BroadcastIO[State](
     */
   private def registerConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): Unit = lock.synchronized {
     connectionDetails = connectionDetails.updated(conn, connectInfo)
-    overlay match
-        case direct: DirectConnectionOverlay =>
-          send(conn, Envelope.Membership(OverlayMessage.Neighbor(direct.self, highPriority = true)))
-        case _ => ()
   }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
