@@ -3,10 +3,6 @@ package channels
 import java.net.InetSocketAddress
 
 class NioTcpConnectionDetailsResolver(nio: NioTCP) extends ChannelResolver {
-  override def canConnect(details: ChannelConnectInfo): Boolean =
-    details match
-        case ChannelConnectInfo.Tcp(_, _) => true
-        case _                            => false
 
   def listen(
       host: String = "127.0.0.1",

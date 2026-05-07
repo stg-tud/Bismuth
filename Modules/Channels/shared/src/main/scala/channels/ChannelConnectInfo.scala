@@ -5,13 +5,11 @@ import rdts.base.Uid
 /** vibecoded as part of the hyparview experiments */
 
 trait ChannelResolver {
-  def canConnect(details: ChannelConnectInfo): Boolean
   def connect(details: ChannelConnectInfo): Option[LatentConnection]
 }
 
 object ChannelResolver {
   def disconnected = new ChannelResolver {
-    override def canConnect(details: ChannelConnectInfo): Boolean                              = false
     override def connect(details: ChannelConnectInfo): Option[LatentConnection] = None
   }
 }
@@ -31,11 +29,6 @@ class LocalConnectionRegistry(queued: collection.Map[String, QueuedLocalConnecti
     details match
         case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.server)
         case _                                  => None
-
-  override def canConnect(details: ChannelConnectInfo): Boolean =
-    details match
-        case ChannelConnectInfo.QueuedLocal(id) => queued.contains(id)
-        case _                                  => false
 
   override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
     details match

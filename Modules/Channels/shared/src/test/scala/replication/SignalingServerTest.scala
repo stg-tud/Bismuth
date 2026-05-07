@@ -1,6 +1,6 @@
 package replication
 
-import channels.{ChannelConnectInfo, ChannelResolver, LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
+import channels.{ChannelConnectInfo, ChannelResolver, LatentConnection, LocalMessageQueue, QueuedLocalConnection, SynchronousLocalConnection}
 import munit.FunSuite
 import rdts.base.Uid
 import replication.research.{SignalingClient, SignalingServer}
@@ -12,10 +12,10 @@ class SignalingServerTest extends FunSuite {
     val server        = SignalingServer(debug = false)
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
-      override def canConnect(details: ChannelConnectInfo): Boolean    = details == serverDetails
-      override def connect(details: ChannelConnectInfo) =
+      override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
         if details == serverDetails then
             val link = SynchronousLocalConnection()
+            // TODO this is highly dubious, connect should not have side effects
             server.addIncomingConnection(link.server)
             Some(link.client(s"$id"))
         else None
@@ -30,7 +30,6 @@ class SignalingServerTest extends FunSuite {
     val queue         = LocalMessageQueue()
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
-      override def canConnect(details: ChannelConnectInfo): Boolean    = details == serverDetails
       override def connect(details: ChannelConnectInfo) =
         if details == serverDetails then
             val link = QueuedLocalConnection(queue)

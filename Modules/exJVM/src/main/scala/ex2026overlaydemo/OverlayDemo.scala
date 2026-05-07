@@ -59,14 +59,7 @@ object OverlayDemo {
             case None => listen(0)
 
       val listenEnvelope   = listenBinary
-      val envelopeResolver = new ChannelResolver {
-        override def canConnect(details: ChannelConnectInfo): Boolean =
-          nioResolver.canConnect(details)
-
-        override def connect(details: ChannelConnectInfo)
-            : Option[LatentConnection] =
-          nioResolver.connect(details)
-      }
+      val envelopeResolver = nioResolver
 
       nioThread.execute(() => nio.loopSelection(nioAbort))
 
@@ -79,11 +72,7 @@ object OverlayDemo {
         onStateChanged = onStateChanged,
         printOverlayEventsToStdout = printOverlayEventsToStdout,
       )
-      val signalingResolver = new ChannelResolver {
-        override def canConnect(details: ChannelConnectInfo): Boolean = nioResolver.canConnect(details)
-        override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
-          nioResolver.connect(details)
-      }
+      val signalingResolver = nioResolver
       val signaling = signalingServer.map { server =>
         new SignalingClient(
           server = server,
