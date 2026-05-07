@@ -59,6 +59,7 @@ class HyParViewStateMachineTest extends FunSuite {
     )
 
   private def sent(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Send(conn, msg) => (conn, msg) }
+  private def disconnects(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Disconnect(conn) => conn }
 
   private def receive(machine: HyParViewStateMachine, msg: OverlayController.OverlayMessage, from: Connection)
       : HyParViewStateMachine.Result = {
@@ -133,7 +134,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(sent(acceptActions), List((cC, NeighborReply(defaultSelf.uid, accepted = true))))
   }
 
-  test("high-priority Neighbor is always accepted and may evict an existing active peer with Disconnect") {
+  test("high-priority Neighbor is always accepted and may evict an existing active peer by closing the connection") {
     val a  = peer("a")
     val b  = peer("b")
     val c  = peer("c")
@@ -146,23 +147,18 @@ class HyParViewStateMachineTest extends FunSuite {
 
     assertEquals(next.activeView, Set(b.uid, c.uid))
     assert(next.passiveView.contains(a.uid), "evicted active peer should become a passive backup")
-    assertEquals(
-      actions,
-      List(
-        OverlayAction.ActiveConnectionRemoved(a.uid),
-        OverlayAction.Send(aC, Disconnect(defaultSelf.uid)),
-        OverlayAction.Send(cC, NeighborReply(defaultSelf.uid, accepted = true))
-      )
-    )
+    assertEquals(disconnects(actions), List(aC))
+    assertEquals(sent(actions), List((cC, NeighborReply(defaultSelf.uid, accepted = true))))
   }
 
-  test("Disconnect removes the peer from active and keeps it in passive as a backup") {
+  test("removeConnection demotes an active peer to passive and triggers replacement promotion") {
     val activePeer = peer("active")
     val backup     = peer("backup")
     val activeC    = TestConnection("active")
 
-    val machine                                     = withPassive(withActive(state(), activePeer -> activeC), backup)
-    val HyParViewStateMachine.Result(next, actions) = receive(machine, Disconnect(activePeer.uid), activeC)
+    val machine = withPassive(withActive(state(), activePeer -> activeC), backup)
+    val (next0, actions) = machine.removeConnection(activeC)
+    val next             = next0.asInstanceOf[HyParViewStateMachine]
 
     assertEquals(next.activeView, Set.empty)
     assert(next.passiveView.contains(activePeer.uid))
@@ -171,9 +167,24 @@ class HyParViewStateMachineTest extends FunSuite {
       actions,
       List(
         OverlayAction.ActiveConnectionRemoved(activePeer.uid),
-        OverlayAction.SendJoin(backup.channelConnectors, Neighbor(defaultSelf, highPriority = true))
+        OverlayAction.SendJoin(backup.channelConnectors, backup.uid, Neighbor(defaultSelf, highPriority = true))
       )
     )
+  }
+
+  test("removeConnection for a failed pending promotion removes that peer from passive and clears pending state") {
+    val candidate  = peer("candidate")
+    val pendingC   = TestConnection("candidate")
+    val base       = withPassive(state(), candidate)
+    val registered = base.registerConnection(pendingC, Some(candidate.uid))._1.asInstanceOf[HyParViewStateMachine]
+    val machine    = registered.copy(pendingPromotions = Set(candidate.uid))
+
+    val (next0, actions) = machine.removeConnection(pendingC)
+    val next             = next0.asInstanceOf[HyParViewStateMachine]
+
+    assertEquals(actions, Nil)
+    assert(!next.passiveView.contains(candidate.uid))
+    assert(!next.pendingPromotions.contains(candidate.uid))
   }
 
   test("shuffle replies at the endpoint and merges connectable samples into the passive view") {

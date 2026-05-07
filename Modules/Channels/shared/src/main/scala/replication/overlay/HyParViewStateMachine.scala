@@ -71,6 +71,7 @@ object HyParViewStateMachine {
       pendingPromotions = Set.empty,
       pendingShuffleSamples = Map.empty,
       unknownConnections = Vector.empty,
+      expectedConnections = Map.empty,
       randomIndex = randomIndex,
       canConnectTo = canConnectTo,
     )
@@ -85,6 +86,7 @@ final case class HyParViewStateMachine(
     pendingPromotions: Set[Uid],
     pendingShuffleSamples: Map[Uid, Set[PeerConnectInfo]],
     unknownConnections: Vector[Connection],
+    expectedConnections: Map[Connection, Uid],
     randomIndex: (Int, Int) => Int,
     canConnectTo: PeerConnectInfo => Boolean,
 ) extends OverlayController {
@@ -206,17 +208,6 @@ final case class HyParViewStateMachine(
             else known.get(fromPeer).map(peer => (base.addPassiveIfEligible(peer), Nil)).getOrElse((base, Nil))
           if accepted then next.withPromotionIfNeeded(actions) else Result(next, actions)
 
-        case Disconnect(peer) =>
-          // Paper symmetric-link maintenance: a dropped active neighbor is removed from active and retained as a passive backup.
-          active.find(_.peer.uid == peer) match
-              case Some(dropped) =>
-                val next = copy(
-                  active = active.filterNot(_.peer.uid == peer),
-                  pendingPromotions = pendingPromotions - peer
-                ).addPassiveIfEligible(dropped.peer)
-                next.withPromotionIfNeeded(disconnectActionsFor(dropped))
-              case None => Result(this, Nil)
-
         case Shuffle(origin, sample, ttl, sender) =>
           // Paper shuffle walk: intermediate hops only forward; the endpoint replies and merges the received sample.
           val remembered = sample.foldLeft(rememberPeer(origin))((state, peer) => state.rememberPeer(peer))
@@ -246,20 +237,48 @@ final case class HyParViewStateMachine(
           Result(this, Nil)
   }
 
-  override def registerConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
+  override def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): (OverlayController, List[OverlayAction]) =
     if peerForConnection(conn).nonEmpty || unknownConnections.contains(conn) then (this, Nil)
-    else (copy(unknownConnections = unknownConnections :+ conn), Nil)
+    else
+        (
+          copy(
+            unknownConnections = unknownConnections :+ conn,
+            expectedConnections = expectedPeer.fold(expectedConnections)(peer => expectedConnections.updated(conn, peer))
+          ),
+          Nil
+        )
 
   override def removeConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
     active.find(_.connection.contains(conn)) match
         case Some(activePeer) =>
           val next = copy(
-            active = active.map(ap => if ap.peer.uid == activePeer.peer.uid then ap.copy(connection = None) else ap),
-            unknownConnections = unknownConnections.filterNot(_ == conn)
-          )
-          (next, List(OverlayAction.ActiveConnectionRemoved(activePeer.peer.uid)))
+            active = active.filterNot(_.peer.uid == activePeer.peer.uid),
+            pendingPromotions = pendingPromotions - activePeer.peer.uid,
+            unknownConnections = unknownConnections.filterNot(_ == conn),
+            expectedConnections = expectedConnections.removed(conn)
+          ).addPassiveIfEligible(activePeer.peer)
+          val Result(promoted, actions) = next.withPromotionIfNeeded(List(OverlayAction.ActiveConnectionRemoved(activePeer.peer.uid)))
+          (promoted, actions)
         case None =>
-          (copy(unknownConnections = unknownConnections.filterNot(_ == conn)), Nil)
+          expectedConnections.get(conn).flatMap(known.get) match
+              case Some(peer) =>
+                (
+                  copy(
+                    passive = passive.filterNot(_.uid == peer.uid),
+                    pendingPromotions = pendingPromotions - peer.uid,
+                    unknownConnections = unknownConnections.filterNot(_ == conn),
+                    expectedConnections = expectedConnections.removed(conn)
+                  ),
+                  Nil
+                )
+              case None =>
+                (
+                  copy(
+                    unknownConnections = unknownConnections.filterNot(_ == conn),
+                    expectedConnections = expectedConnections.removed(conn)
+                  ),
+                  Nil
+                )
 
   override def connectionFor(peer: Uid): Option[Connection] =
     active.find(_.peer.uid == peer).flatMap(_.connection)
@@ -272,7 +291,8 @@ final case class HyParViewStateMachine(
       active = active.map(ap =>
         if ap.connection.contains(conn) && ap.peer.uid != peer then ap.copy(connection = None) else ap
       ),
-      unknownConnections = unknownConnections.filterNot(_ == conn)
+      unknownConnections = unknownConnections.filterNot(_ == conn),
+      expectedConnections = expectedConnections.removed(conn)
     )
     stripped.copy(active =
       stripped.active.map(ap => if ap.peer.uid == peer then ap.copy(connection = Some(conn)) else ap)
@@ -316,7 +336,7 @@ final case class HyParViewStateMachine(
       val next    = copy(active = active.filterNot(_.peer.uid == dropped.peer.uid)).addPassiveIfEligible(dropped.peer)
       (
         next,
-        disconnectActionsFor(dropped) ::: dropped.connection.toList.map(OverlayAction.Send(_, Disconnect(self.uid)))
+        dropped.connection.toList.map(OverlayAction.Disconnect(_))
       )
     }
 
@@ -367,13 +387,11 @@ final case class HyParViewStateMachine(
                       copy(pendingPromotions = pendingPromotions + candidate.uid),
                       existingActions :+ OverlayAction.SendJoin(
                         candidate.channelConnectors,
+                        candidate.uid,
                         Neighbor(self, highPriority = active.isEmpty)
                       )
                     )
             case None => Result(this, existingActions)
-
-  private def disconnectActionsFor(activePeer: ActivePeer): List[OverlayAction] =
-    activePeer.connection.toList.map(_ => OverlayAction.ActiveConnectionRemoved(activePeer.peer.uid))
 
   private def choose[A](values: Vector[A]): A = values(randomIndex(0, values.size))
 

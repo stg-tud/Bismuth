@@ -12,7 +12,7 @@ case class DirectConnectionOverlay(
     unknownConnections: Set[Connection] = Set.empty,
 ) extends OverlayController {
 
-  override def registerConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
+  override def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): (OverlayController, List[OverlayAction]) =
     if unknownConnections.contains(conn) || active.values.exists(_ == conn) then (this, Nil)
     else
         (
@@ -24,7 +24,7 @@ case class DirectConnectionOverlay(
     val next    = copy(known = known ++ peers.iterator.filterNot(_.uid == self.uid).map(p => p.uid -> p))
     val actions = peers.toList.collect {
       case peer if peer.uid != self.uid && !active.contains(peer.uid) =>
-        OverlayAction.SendJoin(peer.channelConnectors, OverlayMessage.Neighbor(self, highPriority = true))
+        OverlayAction.SendJoin(peer.channelConnectors, peer.uid, OverlayMessage.Neighbor(self, highPriority = true))
     }
     (next, actions)
   }
@@ -58,13 +58,6 @@ case class DirectConnectionOverlay(
             unknownConnections = unknownConnections - from
           )
           (next, Option.when(!wasKnown)(OverlayAction.ActiveConnectionAdded(peer)).toList)
-
-        case OverlayMessage.Disconnect(peer) =>
-          active.get(peer) match
-              case Some(_) =>
-                (copy(active = active.removed(peer)), List(OverlayAction.ActiveConnectionRemoved(peer)))
-              case None =>
-                (this, Nil)
 
         case OverlayMessage.Ping(time) =>
           (this, List(OverlayAction.Send(from, OverlayMessage.Pong(time))))

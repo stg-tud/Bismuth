@@ -12,7 +12,7 @@ import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.*
 import replication.overlay.{DirectConnectionOverlay, OverlayController}
-import replication.overlay.OverlayController.OverlayMessage
+import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
 import java.net.SocketException
 import scala.concurrent.ExecutionContext
@@ -148,8 +148,8 @@ class BroadcastIO[State](
   /** Attach a newly established connection to the overlay state.
     * Peer identity is learned later from HyParView control-plane messages carried on that connection.
     */
-  private def registerConnection(conn: Connection): Unit = lock.synchronized {
-    val (next, actions) = overlay.registerConnection(conn)
+  private def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): Unit = lock.synchronized {
+    val (next, actions) = overlay.registerConnection(conn, expectedPeer)
     overlay = next
     actions.foreach(handleOverlayAction)
   }
@@ -171,34 +171,41 @@ class BroadcastIO[State](
             ))
           )
 
-  private def applyOverlayResult(result: (next: OverlayController, actions: List[OverlayController.OverlayAction]))
+  private def applyOverlayResult(result: (next: OverlayController, actions: List[OverlayAction]))
       : Unit = {
     overlay = result.next
     result.actions.foreach(handleOverlayAction)
   }
 
   /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
-  private def connectAndSend(details: Iterable[ChannelConnectInfo], payload: Envelope[State]): Unit =
+  private def connectAndSend(
+      details: Iterable[ChannelConnectInfo],
+      expectedPeer: Uid,
+      payload: Envelope[State]
+  ): Unit =
     details.iterator.flatMap(detail => resolver.connect(detail)).nextOption() match
         case Some(latentConnection) =>
           Async.provided(globalAbort) {
             val conn = latentConnection.prepare { connectionReceiver }.bind
-            registerConnection(conn)
+            registerConnection(conn, Some(expectedPeer))
             send(conn, payload)
           }.run(printExceptionHandler)
         case None =>
           ()
 
-  private def handleOverlayAction(action: OverlayController.OverlayAction): Unit =
+  private def handleOverlayAction(action: OverlayAction): Unit =
     action match
-        case OverlayController.OverlayAction.Send(connection, message) =>
+        case OverlayAction.Send(connection, message) =>
           send(connection, Envelope.Membership(replicaId.uid, message))
-        case OverlayController.OverlayAction.SendJoin(details, message) =>
-          connectAndSend(details, Envelope.Membership(replicaId.uid, message))
-        case OverlayController.OverlayAction.ActiveConnectionAdded(peer) =>
+        case OverlayAction.SendJoin(details, expectedPeer, message) =>
+          connectAndSend(details, expectedPeer, Envelope.Membership(replicaId.uid, message))
+        case OverlayAction.Disconnect(connection) =>
+          connection.close()
+          removePeer(connection)
+        case OverlayAction.ActiveConnectionAdded(peer) =>
           applyRoutingResult:
               plumtree.addPeer(Peer(peer))
-        case OverlayController.OverlayAction.ActiveConnectionRemoved(peer) =>
+        case OverlayAction.ActiveConnectionRemoved(peer) =>
           plumtree = plumtree.removePeer(Peer(peer))
 
   private def send(conn: Connection, payload: Envelope[State]): Unit =

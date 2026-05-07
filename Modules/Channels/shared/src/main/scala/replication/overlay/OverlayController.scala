@@ -13,8 +13,11 @@ trait OverlayController {
   def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) =
     (this, Nil)
 
-  /** Register a newly established connection before the remote peer identity is known. */
-  def registerConnection(conn: Connection): (OverlayController, List[OverlayAction]) = (this, Nil)
+  /** Register a newly established connection before the remote peer identity is known.
+    * `expectedPeer` is an optional hint for outgoing dials where the caller already knows which peer it is trying to reach.
+    */
+  def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): (OverlayController, List[OverlayAction]) =
+    (this, Nil)
 
   /** Remove a connection previously registered with the controller and return resulting actions. */
   def removeConnection(conn: Connection): (OverlayController, List[OverlayAction]) = (this, Nil)
@@ -39,7 +42,6 @@ object OverlayController {
     case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
     case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
     case NeighborReply(from: Uid, accepted: Boolean)
-    case Disconnect(peer: Uid)
     case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
     case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo])
     case Ping(time: Long)
@@ -50,7 +52,6 @@ object OverlayController {
         case ForwardJoin(_, _, sender) => Some(sender)
         case Neighbor(from, _)         => Some(from.uid)
         case NeighborReply(from, _)    => Some(from)
-        case Disconnect(peer)          => Some(peer)
         case Shuffle(_, _, _, sender)  => Some(sender)
         case ShuffleReply(from, _)     => Some(from)
         case Ping(_) | Pong(_)         => None
@@ -64,7 +65,10 @@ object OverlayController {
     case Send(connection: Connection, message: OverlayMessage)
 
     /** Bootstrap-only send where no peer identity is known yet, only raw connection details. */
-    case SendJoin(to: Set[ChannelConnectInfo], message: OverlayMessage)
+    case SendJoin(to: Set[ChannelConnectInfo], expectedPeer: Uid, message: OverlayMessage)
+
+    /** Close a live transport connection; the resulting closure must be fed back through `removeConnection`. */
+    case Disconnect(connection: Connection)
 
     /** Notify the caller that a peer now has an active attached connection. */
     case ActiveConnectionAdded(peer: Uid)
