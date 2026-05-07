@@ -369,7 +369,13 @@ final case class HyParViewStateMachine(
                       existingActions :+ OverlayAction.Send(conn, Neighbor(self, highPriority = active.isEmpty))
                     )
                   case None =>
-                    Result(this, existingActions)
+                    Result(
+                      copy(pendingPromotions = pendingPromotions + candidate.uid),
+                      existingActions :+ OverlayAction.SendJoin(
+                        candidate.channelConnectors,
+                        Neighbor(self, highPriority = active.isEmpty)
+                      )
+                    )
             case None => Result(this, existingActions)
 
   private def disconnectActionsFor(activePeer: ActivePeer): List[OverlayAction] =

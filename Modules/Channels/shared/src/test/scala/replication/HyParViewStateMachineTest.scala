@@ -167,7 +167,13 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(next.activeView, Set.empty)
     assert(next.passiveView.contains(activePeer.uid))
     assert(next.passiveView.contains(backup.uid))
-    assertEquals(actions, List(OverlayAction.ActiveConnectionRemoved(activePeer.uid)))
+    assertEquals(
+      actions,
+      List(
+        OverlayAction.ActiveConnectionRemoved(activePeer.uid),
+        OverlayAction.SendJoin(backup.channelConnectors, Neighbor(defaultSelf, highPriority = true))
+      )
+    )
   }
 
   test("shuffle replies at the endpoint and merges connectable samples into the passive view") {
