@@ -127,7 +127,7 @@ class BroadcastIO[State](
     actions.foreach(handleOverlayAction)
 
     applyRoutingResult:
-      plumtree.tickGrafts()
+        plumtree.tickGrafts()
   }
 
   /** Register externally discovered peers with the overlay. */
@@ -144,7 +144,7 @@ class BroadcastIO[State](
     val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
     val payload = Payload(Dots.single(nextDot), delta)
     applyRoutingResult:
-      plumtree.broadcast(payload)
+        plumtree.broadcast(payload)
   }
 
   /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */
@@ -180,7 +180,8 @@ class BroadcastIO[State](
             ))
           )
 
-  private def applyOverlayResult(result: (next: OverlayController, actions: List[OverlayController.OverlayAction])): Unit = {
+  private def applyOverlayResult(result: (next: OverlayController, actions: List[OverlayController.OverlayAction]))
+      : Unit = {
     overlay = result.next
     result.actions.foreach(handleOverlayAction)
   }
@@ -204,9 +205,8 @@ class BroadcastIO[State](
         case OverlayController.OverlayAction.SendJoin(details, message) =>
           connectAndSend(details, s"$replicaId-join", Envelope.Membership(replicaId.uid, message))
         case OverlayController.OverlayAction.ActiveConnectionAdded(peer) =>
-          val result = plumtree.addPeer(Peer(peer))
           applyRoutingResult:
-            result
+              plumtree.addPeer(Peer(peer))
         case OverlayController.OverlayAction.ActiveConnectionRemoved(peer) =>
           plumtree = plumtree.removePeer(Peer(peer))
 
