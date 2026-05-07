@@ -200,7 +200,7 @@ final case class HyParViewStateMachine(
           (promoted, actions)
         case None =>
           connectInfo.flatMap(info => known.valuesIterator.find(_.channelConnectors.contains(info))) match
-              case Some(peer) if pendingConnections.exists(_.peer.uid == peer.uid) =>
+              case Some(peer) =>
                 (forgetPeer(peer.uid), Nil)
               case _ =>
                 (this, Nil)
