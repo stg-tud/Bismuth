@@ -1,6 +1,6 @@
 package replication.overlay
 
-import channels.{Connection, PeerConnectInfo}
+import channels.{ChannelConnectInfo, Connection, PeerConnectInfo}
 import rdts.base.Uid
 import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
@@ -9,8 +9,20 @@ case class DirectConnectionOverlay(
     active: Map[Uid, Connection] = Map.empty,
 ) extends OverlayController {
 
-  override def activateConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
-    (this, List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))))
+  override def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
+    val actions = peers.iterator.collect {
+      case peer if peer.uid != self.uid && !active.contains(peer.uid) =>
+        OverlayAction.SendJoin(peer.channelConnectors, peer.uid, OverlayMessage.Neighbor(self, highPriority = true))
+    }.toList
+    (this, actions)
+  }
+
+  override def activateConnection(
+      conn: Connection,
+      connectInfo: Option[ChannelConnectInfo]
+  ): (OverlayController, List[OverlayAction]) =
+    if connectInfo.nonEmpty then (this, Nil)
+    else (this, List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))))
 
   override def receiveActions(
       message: OverlayMessage,

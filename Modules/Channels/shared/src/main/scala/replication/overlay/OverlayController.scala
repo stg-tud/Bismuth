@@ -10,7 +10,7 @@ trait OverlayController {
     * HyParView does nothing here because it identifies peers from received protocol messages.
     * Simpler overlays may use this to emit an initial handshake.
     */
-  def activateConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
+  def activateConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): (OverlayController, List[OverlayAction]) =
     (this, Nil)
 
   /** Handle one overlay control-plane message and return the next controller state plus side-effect actions.

@@ -151,7 +151,7 @@ class BroadcastIO[State](
   /** Track a newly established connection and the optional connect info used to create it. */
   private def registerConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): Unit = lock.synchronized {
     connectionDetails = connectionDetails.updated(conn, connectInfo)
-    applyOverlayResult(overlay.activateConnection(conn))
+    applyOverlayResult(overlay.activateConnection(conn, connectInfo))
   }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
