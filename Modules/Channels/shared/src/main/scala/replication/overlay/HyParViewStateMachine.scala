@@ -131,12 +131,6 @@ final case class HyParViewStateMachine(
     (promoted.state, promoted.actions)
   }
 
-  /** Package-visible wrapper for tests that need the concrete type. */
-  private[overlay] def discoverPeersResult(peers: Set[PeerConnectInfo]): Result = {
-    val next = peers.foldLeft(this)((state, peer) => state.rememberPeer(peer).addPassiveIfEligible(peer))
-    next.withPromotionIfNeeded(Nil)
-  }
-
   /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
   override def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) = {
     val attached = message.getSender.map(attachConnection(_, from)).getOrElse(this)
