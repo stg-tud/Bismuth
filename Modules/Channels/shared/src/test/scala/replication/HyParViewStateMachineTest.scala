@@ -49,7 +49,7 @@ class HyParViewStateMachineTest extends FunSuite {
   private def withActive(machine: HyParViewStateMachine, peers: (PeerConnectInfo, Connection)*): HyParViewStateMachine =
     machine.copy(
       known = machine.known ++ peers.map((p, _) => p.uid -> p),
-      active = peers.map((p, c) => ActivePeer(p, Some(c))).toVector,
+      active = peers.map((p, c) => ActivePeer(p, c)).toVector,
     )
 
   private def withPassive(machine: HyParViewStateMachine, peers: PeerConnectInfo*): HyParViewStateMachine =
@@ -83,7 +83,10 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(next.activeView, Set(existing.uid, newcomer.uid))
     assertEquals(
       sent(actions),
-      List((existingC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid)))
+      List(
+        (joinC, Neighbor(defaultSelf, highPriority = true)),
+        (existingC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid))
+      )
     )
   }
 
@@ -110,7 +113,13 @@ class HyParViewStateMachineTest extends FunSuite {
       receive(state(), ForwardJoin(joined, 0, Uid.predefined("sender")), joinC)
 
     assertEquals(next.activeView, Set(joined.uid))
-    assertEquals(actions, Nil)
+    assertEquals(
+      actions,
+      List(
+        OverlayAction.ActiveConnectionAdded(joined.uid),
+        OverlayAction.Send(joinC, Neighbor(defaultSelf, highPriority = true))
+      )
+    )
   }
 
   test("low-priority Neighbor is only accepted when there is free active capacity") {
@@ -172,19 +181,36 @@ class HyParViewStateMachineTest extends FunSuite {
     )
   }
 
+  test("registerConnection attaches to existing pending peer entry instead of duplicating it") {
+    val candidate = peer("candidate")
+    val pendingC  = TestConnection("candidate")
+    val started   = state().copy(
+      known = Map(defaultSelf.uid -> defaultSelf, candidate.uid -> candidate),
+      passive = Vector(candidate),
+      pendingConnections = Vector(HyParViewStateMachine.PendingConnection(Some(candidate.uid), None))
+    )
+
+    val registered = started.registerConnection(pendingC, Some(candidate.uid))._1.asInstanceOf[HyParViewStateMachine]
+
+    assertEquals(registered.pendingConnections.count(_.expectedPeer.contains(candidate.uid)), 1)
+    assertEquals(registered.pendingConnections.count(pc => pc.expectedPeer.contains(candidate.uid) && pc.connection.contains(pendingC)), 1)
+  }
+
   test("removeConnection for a failed pending promotion removes that peer from passive and clears pending state") {
     val candidate  = peer("candidate")
     val pendingC   = TestConnection("candidate")
     val base       = withPassive(state(), candidate)
     val registered = base.registerConnection(pendingC, Some(candidate.uid))._1.asInstanceOf[HyParViewStateMachine]
-    val machine    = registered.copy(pendingPromotions = Set(candidate.uid))
+    val machine    = registered
+
+    assert(machine.pendingConnections.exists(_.expectedPeer.contains(candidate.uid)))
 
     val (next0, actions) = machine.removeConnection(pendingC)
     val next             = next0.asInstanceOf[HyParViewStateMachine]
 
     assertEquals(actions, Nil)
     assert(!next.passiveView.contains(candidate.uid))
-    assert(!next.pendingPromotions.contains(candidate.uid))
+    assert(!next.pendingConnections.exists(_.expectedPeer.contains(candidate.uid)))
   }
 
   test("shuffle replies at the endpoint and merges connectable samples into the passive view") {
