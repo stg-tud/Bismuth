@@ -113,15 +113,10 @@ class BroadcastIO[State](
     }
   }
 
-
   /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
   def repairTick(): Unit = lock.synchronized {
-    val actions =
-        val (next, a) = overlay.tick()
-        overlay = next
-        a
-    actions.foreach(handleOverlayAction)
-
+    applyOverlayResult:
+        overlay.tick()
     applyRoutingResult:
         plumtree.tickGrafts()
   }
