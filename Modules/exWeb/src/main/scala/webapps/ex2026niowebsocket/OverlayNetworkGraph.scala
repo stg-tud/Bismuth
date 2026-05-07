@@ -104,8 +104,8 @@ object OverlayNetworkGraph {
       override def canConnect(details: ChannelConnectInfo): Boolean =
         signalingRef.exists(_.canConnect(details))
 
-      override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
-        signalingRef.flatMap(_.connect(details, label))
+      override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
+        signalingRef.flatMap(_.connect(details))
     }
 
     val node = new OverlayDemoNode(

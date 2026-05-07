@@ -13,11 +13,11 @@ class SignalingServerTest extends FunSuite {
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
       override def canConnect(details: ChannelConnectInfo): Boolean    = details == serverDetails
-      override def connect(details: ChannelConnectInfo, label: String) =
+      override def connect(details: ChannelConnectInfo) =
         if details == serverDetails then
             val link = SynchronousLocalConnection()
             server.addIncomingConnection(link.server)
-            Some(link.client(s"$id:$label"))
+            Some(link.client(s"$id"))
         else None
     }
 
@@ -31,11 +31,11 @@ class SignalingServerTest extends FunSuite {
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
       override def canConnect(details: ChannelConnectInfo): Boolean    = details == serverDetails
-      override def connect(details: ChannelConnectInfo, label: String) =
+      override def connect(details: ChannelConnectInfo) =
         if details == serverDetails then
             val link = QueuedLocalConnection(queue)
             server.addIncomingConnection(link.server)
-            Some(link.client(s"$id:$label"))
+            Some(link.client(s"$id"))
         else None
     }
 

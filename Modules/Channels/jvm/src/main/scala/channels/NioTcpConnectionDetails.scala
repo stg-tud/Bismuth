@@ -22,7 +22,7 @@ class NioTcpConnectionDetailsResolver(nio: NioTCP) extends ChannelResolver {
     )
   }
 
-  override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
+  override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
     details match
         case ChannelConnectInfo.Tcp(host, port) =>
           Some(nio.connect(nio.defaultSocketChannel(InetSocketAddress(host, port))))

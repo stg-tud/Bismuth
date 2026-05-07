@@ -34,7 +34,7 @@ class SignalingClient(
         case None => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
 
   def start(): Unit =
-    resolver.connect(server, s"signal-${Uid.unwrap(localUid)}").foreach {
+    resolver.connect(server).foreach {
       _.prepare { _ =>
         {
           case Success(buffer) =>

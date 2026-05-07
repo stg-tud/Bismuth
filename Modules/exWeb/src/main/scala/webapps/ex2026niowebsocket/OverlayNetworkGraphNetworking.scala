@@ -208,7 +208,7 @@ object OverlayNetworkGraphNetworking {
           case ChannelConnectInfo.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
           case _                                 => false
 
-    def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] = details match
+    def connect(details: ChannelConnectInfo): Option[LatentConnection] = details match
         case ChannelConnectInfo.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
           val target = Uid.predefined(peerId)
           Some(new LatentConnection {

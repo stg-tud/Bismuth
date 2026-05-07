@@ -178,8 +178,8 @@ class BroadcastIO[State](
   }
 
   /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
-  private def connectAndSend(details: Iterable[ChannelConnectInfo], label: String, payload: Envelope[State]): Unit =
-    details.iterator.collectFirst(Function.unlift(detail => resolver.connect(detail, label))) match
+  private def connectAndSend(details: Iterable[ChannelConnectInfo], payload: Envelope[State]): Unit =
+    details.iterator.flatMap(detail => resolver.connect(detail)).nextOption() match
         case Some(latentConnection) =>
           Async.provided(globalAbort) {
             val conn = latentConnection.prepare { connectionReceiver }.bind
@@ -194,7 +194,7 @@ class BroadcastIO[State](
         case OverlayController.OverlayAction.Send(connection, message) =>
           send(connection, Envelope.Membership(replicaId.uid, message))
         case OverlayController.OverlayAction.SendJoin(details, message) =>
-          connectAndSend(details, s"$replicaId-join", Envelope.Membership(replicaId.uid, message))
+          connectAndSend(details, Envelope.Membership(replicaId.uid, message))
         case OverlayController.OverlayAction.ActiveConnectionAdded(peer) =>
           applyRoutingResult:
               plumtree.addPeer(Peer(peer))

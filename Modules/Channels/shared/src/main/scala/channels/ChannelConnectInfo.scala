@@ -6,13 +6,13 @@ import rdts.base.Uid
 
 trait ChannelResolver {
   def canConnect(details: ChannelConnectInfo): Boolean
-  def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection]
+  def connect(details: ChannelConnectInfo): Option[LatentConnection]
 }
 
 object ChannelResolver {
   def disconnected = new ChannelResolver {
     override def canConnect(details: ChannelConnectInfo): Boolean                              = false
-    override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] = None
+    override def connect(details: ChannelConnectInfo): Option[LatentConnection] = None
   }
 }
 
@@ -37,8 +37,8 @@ class LocalConnectionRegistry(queued: collection.Map[String, QueuedLocalConnecti
         case ChannelConnectInfo.QueuedLocal(id) => queued.contains(id)
         case _                                  => false
 
-  override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
+  override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
     details match
-        case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.client(label))
+        case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.client(id))
         case _                                  => None
 }
