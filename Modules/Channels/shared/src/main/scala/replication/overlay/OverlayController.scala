@@ -38,8 +38,6 @@ trait OverlayController {
 object OverlayController {
 
   enum OverlayMessage {
-    case Join(newNode: PeerConnectInfo)
-    case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
     case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
     case NeighborReply(from: Uid, accepted: Boolean)
     case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
@@ -48,8 +46,6 @@ object OverlayController {
     case Pong(time: Long)
 
     def getSender: Option[Uid] = this match
-        case Join(newNode)             => Some(newNode.uid)
-        case ForwardJoin(_, _, sender) => Some(sender)
         case Neighbor(from, _)         => Some(from.uid)
         case NeighborReply(from, _)    => Some(from)
         case Shuffle(_, _, _, sender)  => Some(sender)

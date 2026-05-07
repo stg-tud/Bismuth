@@ -144,55 +144,6 @@ final case class HyParViewStateMachine(
 
   def receive(message: OverlayMessage, from: Connection): Result = {
     message match
-        case Join(newNode) =>
-          // Paper join handling at the contact: add the newcomer to active and start forwarding `ForwardJoin` through current active peers.
-          val afterRemember                = rememberPeer(newNode)
-          val (afterActive, activeActions) = afterRemember.addActive(newNode, from)
-          val forwardActions               = afterActive.active.filterNot(_.peer.uid == newNode.uid).flatMap(peer =>
-            List(OverlayAction.Send(peer.connection, ForwardJoin(newNode, config.activeRandomWalkLength, self.uid)))
-          ).toList
-          Result(
-            afterActive,
-            activeActions ::: afterActive.connectionFor(newNode.uid).toList.map(OverlayAction.Send(
-              _,
-              Neighbor(self, highPriority = true)
-            )) ::: forwardActions
-          )
-
-        case ForwardJoin(newNode, ttl, sender) =>
-          // Paper random-walk join propagation: maybe add to passive at PRWL, stop at ttl==0 or singleton active view, otherwise keep forwarding.
-          val afterRemember = rememberPeer(newNode)
-          if newNode.uid == self.uid then Result(afterRemember, Nil)
-          else if ttl == 0 || afterRemember.active.size <= 1 then {
-            val (next, actions) = afterRemember.addActive(newNode, from)
-            Result(
-              next,
-              actions ::: next.connectionFor(newNode.uid).toList.map(OverlayAction.Send(
-                _,
-                Neighbor(self, highPriority = true)
-              ))
-            )
-          } else {
-            val withPassive = if ttl == config.passiveRandomWalkLength then afterRemember.addPassiveIfEligible(newNode)
-            else afterRemember
-            val nextPeers = Random.shuffle(withPassive.active.filterNot(_.peer.uid == sender))
-            nextPeers.headOption match
-                case Some(target) =>
-                  Result(
-                    withPassive,
-                    List(OverlayAction.Send(target.connection, ForwardJoin(newNode, ttl - 1, self.uid)))
-                  )
-                case None =>
-                  val (next, actions) = withPassive.addActive(newNode, from)
-                  Result(
-                    next,
-                    actions ::: next.connectionFor(newNode.uid).toList.map(OverlayAction.Send(
-                      _,
-                      Neighbor(self, highPriority = true)
-                    ))
-                  )
-          }
-
         case Neighbor(fromPeer, highPriority) =>
           // Paper active-view repair handshake: high priority always accepted, low priority only if there is a free active slot.
           val afterRemember = rememberPeer(fromPeer)
