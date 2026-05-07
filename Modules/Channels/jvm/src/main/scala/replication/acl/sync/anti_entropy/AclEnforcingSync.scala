@@ -96,7 +96,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
           )))
           connectionManager.broadcast(Array(peersMsg))
 
-      // Debug.log(s"Learned: ${newPeers.map((id, addr) => Debug.shorten(id) + " " + addr)}")
+    // Debug.log(s"Learned: ${newPeers.map((id, addr) => Debug.shorten(id) + " " + addr)}")
     case SyncMsg.MyRdtVersionIs(remoteDataDeltas) => rdtAntiEntropy.updatePeerDeltaKnowledge(remoteDataDeltas, remote)
     case SyncMsg.MyAclVersionIs(remoteAclHeads)   => aclAntiEntropy.updatePeerAclKnowledge(remoteAclHeads, remote)
     case SyncMsg.SendMe(missingRdtDeltas, missingAclDeltas) =>

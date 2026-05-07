@@ -16,9 +16,9 @@ import scala.util.{Failure, Success}
 
 object NodeSignalingProbe {
 
-  given JsonValueCodec[ChannelConnectInfo] = JsonCodecMaker.make
-  given JsonValueCodec[SignalingServer.Session]  = JsonCodecMaker.make
-  given JsonValueCodec[Message]                  = JsonCodecMaker.make
+  given JsonValueCodec[ChannelConnectInfo]      = JsonCodecMaker.make
+  given JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
+  given JsonValueCodec[Message]                 = JsonCodecMaker.make
 
   @JSExportTopLevel("NodeSignalingProbe")
   def run(

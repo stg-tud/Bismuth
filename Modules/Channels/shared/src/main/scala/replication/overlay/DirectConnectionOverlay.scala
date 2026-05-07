@@ -21,7 +21,7 @@ case class DirectConnectionOverlay(
         )
 
   override def discoverPeers(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
-    val next = copy(known = known ++ peers.iterator.filterNot(_.uid == self.uid).map(p => p.uid -> p))
+    val next    = copy(known = known ++ peers.iterator.filterNot(_.uid == self.uid).map(p => p.uid -> p))
     val actions = peers.toList.collect {
       case peer if peer.uid != self.uid && !active.contains(peer.uid) =>
         OverlayAction.SendJoin(peer.channelConnectors, OverlayMessage.Neighbor(self, highPriority = true))
@@ -29,11 +29,11 @@ case class DirectConnectionOverlay(
     (next, actions)
   }
 
-  override def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) =
+  override def receiveActions(message: OverlayMessage, from: Connection): (OverlayController, List[OverlayAction]) = {
     message match
         case OverlayMessage.Neighbor(peer, _) =>
           val wasKnown = active.contains(peer.uid)
-          val next = copy(
+          val next     = copy(
             known = known.updated(peer.uid, peer),
             active = active.updated(peer.uid, from),
             identifiedConnections = identifiedConnections.updated(from, peer.uid),
@@ -74,6 +74,7 @@ case class DirectConnectionOverlay(
 
         case _ =>
           (this, Nil)
+  }
 
   override def removeConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
     active.find(_._2 == conn) match

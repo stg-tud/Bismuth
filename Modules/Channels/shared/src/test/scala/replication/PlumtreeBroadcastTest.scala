@@ -27,11 +27,11 @@ class PlumtreeBroadcastTest extends FunSuite {
       peerRoles = Map(
         eagerA -> PeerRole.Eager,
         eagerB -> PeerRole.Eager,
-        lazyA -> PeerRole.Lazy,
+        lazyA  -> PeerRole.Lazy,
       )
     )
 
-    val msg                = payload(self, 0, "v1")
+    val msg                                    = payload(self, 0, "v1")
     val PlumtreeBroadcast.Result(next, events) = state.broadcast(msg)
 
     assert(next.localContext.contains(msg.dots))
@@ -52,11 +52,11 @@ class PlumtreeBroadcastTest extends FunSuite {
       peerRoles = Map(
         sender -> PeerRole.Lazy,
         eagerA -> PeerRole.Eager,
-        lazyA -> PeerRole.Lazy,
+        lazyA  -> PeerRole.Lazy,
       )
     )
 
-    val msg                = payload(Uid.predefined("origin"), 0, "hello")
+    val msg                                    = payload(Uid.predefined("origin"), 0, "hello")
     val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, msg)
 
     assert(next.localContext.contains(msg.dots))
@@ -72,7 +72,7 @@ class PlumtreeBroadcastTest extends FunSuite {
   }
 
   test("duplicate eager payload is treated as a non-tree edge and answered with Prune") {
-    val msg = payload(Uid.predefined("origin"), 0, "hello")
+    val msg   = payload(Uid.predefined("origin"), 0, "hello")
     val state = PlumtreeBroadcast[String](
       self,
       localContext = msg.dots,
@@ -102,7 +102,7 @@ class PlumtreeBroadcastTest extends FunSuite {
   test("IHave updates remote knowledge and a subsequent graft tick requests repair from a peer that knows more") {
     val local  = Dots.single(self, 0)
     val remote = local.merge(Dots.single(missing.uid, 0))
-    val state = PlumtreeBroadcast[String](
+    val state  = PlumtreeBroadcast[String](
       self,
       localContext = local,
       deltaStorage = NoHistory[String](),
@@ -125,8 +125,8 @@ class PlumtreeBroadcastTest extends FunSuite {
   }
 
   test("Graft promotes sender back to eager and replays only the payloads missing from knows") {
-    val p0 = payload(self, 0, "a")
-    val p1 = payload(self, 1, "b")
+    val p0    = payload(self, 0, "a")
+    val p1    = payload(self, 1, "b")
     val state = PlumtreeBroadcast[String](
       self,
       localContext = p0.dots.merge(p1.dots),

@@ -65,7 +65,9 @@ object OverlayConnectionDirectory {
 
     val nextPeers =
       desired.passive.iterator.map(_ -> LinkState.Passive).toMap ++
-      desired.active.iterator.map(uid => uid -> (if desired.eager.contains(uid) then LinkState.Eager else LinkState.Active)).toMap
+      desired.active.iterator.map(uid =>
+        uid -> (if desired.eager.contains(uid) then LinkState.Eager else LinkState.Active)
+      ).toMap
 
     val next = NodeInfo(lastSeenMillis, nextPeers)
     if state.get(node).exists(_.value == next) then empty
@@ -73,12 +75,12 @@ object OverlayConnectionDirectory {
   }
 
   def updateNodeFromOverlay(
-                             state: Directory,
-                             node: Uid,
-                             activePeers: Iterable[PeerConnectInfo],
-                             passivePeers: Iterable[PeerConnectInfo],
-                             eagerPeers: Iterable[Uid],
-                             lastSeenMillis: Long,
+      state: Directory,
+      node: Uid,
+      activePeers: Iterable[PeerConnectInfo],
+      passivePeers: Iterable[PeerConnectInfo],
+      eagerPeers: Iterable[Uid],
+      lastSeenMillis: Long,
   )(using LocalUid): Directory =
     updateNode(
       state,

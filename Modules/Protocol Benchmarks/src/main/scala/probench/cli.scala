@@ -24,12 +24,10 @@ object cli {
       connection: LatentConnection,
       delay: Long,
       tries: Int
-  ): Unit = {
+  ): Unit =
 
     // TODO, does not actually retry anymore 😬
     dataManager.addBinaryConnection(connection)
-
-  }
 
   def main(args: Array[String]): Unit = {
 
@@ -199,7 +197,6 @@ object cli {
             "0",
             peerPortVal + 1
           ))))
-
 
           Timer().schedule(
             () =>

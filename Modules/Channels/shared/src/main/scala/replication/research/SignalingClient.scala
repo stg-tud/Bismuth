@@ -11,22 +11,22 @@ import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 class SignalingClient(
-                       server: ChannelConnectInfo,
-                       resolver: ChannelResolver,
-                       localUid: Uid,
-                       initialAnnouncements: Map[String, Set[ChannelConnectInfo]],
-                       onRegistered: () => Unit = () => (),
-                       onPeerInfo: (Uid, Map[String, Set[ChannelConnectInfo]]) => Unit =
+    server: ChannelConnectInfo,
+    resolver: ChannelResolver,
+    localUid: Uid,
+    initialAnnouncements: Map[String, Set[ChannelConnectInfo]],
+    onRegistered: () => Unit = () => (),
+    onPeerInfo: (Uid, Map[String, Set[ChannelConnectInfo]]) => Unit =
       (_: Uid, _: Map[String, Set[ChannelConnectInfo]]) => (),
-                       onTopicInfo: (String, Map[Uid, Set[ChannelConnectInfo]]) => Unit =
+    onTopicInfo: (String, Map[Uid, Set[ChannelConnectInfo]]) => Unit =
       (_: String, _: Map[Uid, Set[ChannelConnectInfo]]) => (),
-                       onOffer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
-                       onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
-                       onDisconnected: () => Unit = () => (),
+    onOffer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
+    onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
+    onDisconnected: () => Unit = () => (),
 ) {
-  private val abort                         = Abort()
+  private val abort                          = Abort()
   private var connection: Option[Connection] = None
-  private val announcements                           = mutable.LinkedHashMap.from(initialAnnouncements)
+  private val announcements                  = mutable.LinkedHashMap.from(initialAnnouncements)
 
   private def send(message: Message): Async[Any, Unit] =
     connection match
@@ -45,7 +45,7 @@ class SignalingClient(
                 case Message.Offer(from, to, session) if to == localUid  => onOffer(from, session)
                 case Message.Answer(from, to, session) if to == localUid => onAnswer(from, session)
                 case _                                                   => ()
-          case Failure(_)     =>
+          case Failure(_) =>
             connection = None
             onDisconnected()
         }

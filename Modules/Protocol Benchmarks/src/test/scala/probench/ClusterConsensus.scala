@@ -42,9 +42,8 @@ class ClusterConsensus extends munit.FunSuite {
     client.read("test")
 
     nodes.foreach: v =>
-      v.cluster.dataManager.repairTick()
-      v.cluster.dataManager.repairTick()
-
+        v.cluster.dataManager.repairTick()
+        v.cluster.dataManager.repairTick()
 
     assertEquals(nodes(0).cluster.state, nodes(1).cluster.state)
     assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)

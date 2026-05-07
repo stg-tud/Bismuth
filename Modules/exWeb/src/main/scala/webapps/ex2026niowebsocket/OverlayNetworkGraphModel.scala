@@ -102,8 +102,8 @@ object OverlayNetworkGraphModel {
         val kind = if snapshot.eager.contains(peerUid) then EdgeKind.EagerOverlay else EdgeKind.ActiveOverlay
         edges += GraphEdge(uid, peerUid, kind, math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
         if opacityByNode.contains(peerUid) then
-          detailsByNode.getOrElseUpdate(peerUid, "active peer")
-          ()
+            detailsByNode.getOrElseUpdate(peerUid, "active peer")
+            ()
       }
       snapshot.passive.foreach { peerUid =>
         edges += GraphEdge(
@@ -113,8 +113,8 @@ object OverlayNetworkGraphModel {
           math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity))
         )
         if opacityByNode.contains(peerUid) then
-          detailsByNode.getOrElseUpdate(peerUid, "passive peer")
-          ()
+            detailsByNode.getOrElseUpdate(peerUid, "passive peer")
+            ()
       }
     }
 
@@ -135,7 +135,10 @@ object OverlayNetworkGraphModel {
             kind,
             math.min(
               opacity,
-              math.min(opacityByNode.getOrElse(from, unknownNodeOpacity), opacityByNode.getOrElse(to, unknownNodeOpacity))
+              math.min(
+                opacityByNode.getOrElse(from, unknownNodeOpacity),
+                opacityByNode.getOrElse(to, unknownNodeOpacity)
+              )
             )
           )
       }.toVector
@@ -207,9 +210,9 @@ object OverlayNetworkGraphModel {
             a <- byUid.get(from)
             b <- byUid.get(to)
         do
-            val dx       = b.x - a.x
-            val dy       = b.y - a.y
-            val distance = math.max(1.0, math.sqrt(dx * dx + dy * dy))
+            val dx                  = b.x - a.x
+            val dy                  = b.y - a.y
+            val distance            = math.max(1.0, math.sqrt(dx * dx + dy * dy))
             val (desired, strength) =
               if kind == EdgeKind.EagerOverlay then (135.0, 0.0085)
               else (290.0, 0.0006)
@@ -226,10 +229,10 @@ object OverlayNetworkGraphModel {
     eagerNeighborsByNode.foreach { (uid, neighbors) =>
       byUid.get(uid).foreach { center =>
         val spokeNodes: Vector[GraphNode] = neighbors.iterator.flatMap(byUid.get).toVector
-        val spokeCount = spokeNodes.size
+        val spokeCount                    = spokeNodes.size
         if spokeCount >= 2 then {
           val desiredAngle = math.Pi * 2 / spokeCount.toDouble
-          val ordered = spokeNodes
+          val ordered      = spokeNodes
             .map { other =>
               val angle = math.atan2(other.y - center.y, other.x - center.x)
               (other, angle)
@@ -239,7 +242,7 @@ object OverlayNetworkGraphModel {
           ordered.indices.foreach { idx =>
             val (current, currentAngle) = ordered(idx)
             val (next, nextAngleRaw)    = ordered((idx + 1) % ordered.size)
-            val nextAngle =
+            val nextAngle               =
               if idx + 1 < ordered.size then nextAngleRaw
               else nextAngleRaw + math.Pi * 2
             val gap = nextAngle - currentAngle
@@ -247,14 +250,14 @@ object OverlayNetworkGraphModel {
               val deficit        = desiredAngle - gap
               val spreadStrength = deficit * 0.032
 
-              val currentDx = current.x - center.x
-              val currentDy = current.y - center.y
+              val currentDx       = current.x - center.x
+              val currentDy       = current.y - center.y
               val currentDistance = math.max(1.0, math.sqrt(currentDx * currentDx + currentDy * currentDy))
               val currentTx       = -currentDy / currentDistance
               val currentTy       = currentDx / currentDistance
 
-              val nextDx = next.x - center.x
-              val nextDy = next.y - center.y
+              val nextDx       = next.x - center.x
+              val nextDy       = next.y - center.y
               val nextDistance = math.max(1.0, math.sqrt(nextDx * nextDx + nextDy * nextDy))
               val nextTx       = -nextDy / nextDistance
               val nextTy       = nextDx / nextDistance

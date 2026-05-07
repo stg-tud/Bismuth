@@ -2,7 +2,7 @@ package rdts.time
 
 import rdts.time.IdTree.{Branch, Leaf}
 
-import org.scalacheck.{Gen}
+import org.scalacheck.Gen
 
 import scala.language.implicitConversions
 

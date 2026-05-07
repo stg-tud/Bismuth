@@ -74,14 +74,20 @@ class Channel[T: JsonValueCodec](
             case RdtMessageType.Request =>
               cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(dtnid, dots))))
             case RdtMessageType.Payload =>
-              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Payload(dots, readFromArray[T](payload)))))
+              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Payload(
+                dots,
+                readFromArray[T](payload)
+              ))))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
           case ClientOperationMode.PushAll =>
-            cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(dtnid, Dots.empty))))
+            cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(PlumtreeMessage.Graft(
+              dtnid,
+              Dots.empty
+            ))))
           case ClientOperationMode.RequestLater =>
 
       conn

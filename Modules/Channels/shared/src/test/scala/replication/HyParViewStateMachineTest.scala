@@ -11,11 +11,11 @@ import replication.overlay.{HyParViewStateMachine, OverlayController}
 
 class HyParViewStateMachineTest extends FunSuite {
 
-  private final case class TestConnection(name: String) extends Connection {
-    override def info: ConnectionInfo = ConnectionInfo("name" -> name)
+  final private case class TestConnection(name: String) extends Connection {
+    override def info: ConnectionInfo                                    = ConnectionInfo("name" -> name)
     override def send(message: channels.MessageBuffer): Async[Any, Unit] = Async(())
-    override def close(): Unit = ()
-    override def toString: String = s"TestConnection($name)"
+    override def close(): Unit                                           = ()
+    override def toString: String                                        = s"TestConnection($name)"
   }
 
   private val defaultSelf = peer("self")
@@ -66,7 +66,9 @@ class HyParViewStateMachineTest extends FunSuite {
     HyParViewStateMachine.Result(next.asInstanceOf[HyParViewStateMachine], actions)
   }
 
-  test("Join at the contact adds the newcomer to the active view and forwards ForwardJoin through existing active peers") {
+  test(
+    "Join at the contact adds the newcomer to the active view and forwards ForwardJoin through existing active peers"
+  ) {
     val existing  = peer("existing")
     val newcomer  = peer("newcomer")
     val existingC = TestConnection("existing")
@@ -78,7 +80,10 @@ class HyParViewStateMachineTest extends FunSuite {
     val HyParViewStateMachine.Result(next, actions) = receive(base, Join(newcomer), joinC)
 
     assertEquals(next.activeView, Set(existing.uid, newcomer.uid))
-    assertEquals(sent(actions), List((existingC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid))))
+    assertEquals(
+      sent(actions),
+      List((existingC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid)))
+    )
   }
 
   test("ForwardJoin at passive random-walk length learns the peer passively and keeps forwarding") {
@@ -100,7 +105,8 @@ class HyParViewStateMachineTest extends FunSuite {
     val joined = peer("joined")
     val joinC  = TestConnection("joined")
 
-    val HyParViewStateMachine.Result(next, actions) = receive(state(), ForwardJoin(joined, 0, Uid.predefined("sender")), joinC)
+    val HyParViewStateMachine.Result(next, actions) =
+      receive(state(), ForwardJoin(joined, 0, Uid.predefined("sender")), joinC)
 
     assertEquals(next.activeView, Set(joined.uid))
     assertEquals(actions, Nil)
@@ -120,8 +126,9 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(rejected.activeView, Set(a.uid, b.uid))
     assertEquals(sent(rejectActions), List((cC, NeighborReply(defaultSelf.uid, accepted = false))))
 
-    val withSpace = withActive(state(), a -> aC)
-    val HyParViewStateMachine.Result(accepted, acceptActions) = receive(withSpace, Neighbor(c, highPriority = false), cC)
+    val withSpace                                             = withActive(state(), a -> aC)
+    val HyParViewStateMachine.Result(accepted, acceptActions) =
+      receive(withSpace, Neighbor(c, highPriority = false), cC)
     assertEquals(accepted.activeView, Set(a.uid, c.uid))
     assertEquals(sent(acceptActions), List((cC, NeighborReply(defaultSelf.uid, accepted = true))))
   }
@@ -134,7 +141,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val bC = TestConnection("b")
     val cC = TestConnection("c")
 
-    val full = withActive(state(random = (_, _) => 0), a -> aC, b -> bC)
+    val full                                        = withActive(state(random = (_, _) => 0), a -> aC, b -> bC)
     val HyParViewStateMachine.Result(next, actions) = receive(full, Neighbor(c, highPriority = true), cC)
 
     assertEquals(next.activeView, Set(b.uid, c.uid))
@@ -154,7 +161,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val backup     = peer("backup")
     val activeC    = TestConnection("active")
 
-    val machine = withPassive(withActive(state(), activePeer -> activeC), backup)
+    val machine                                     = withPassive(withActive(state(), activePeer -> activeC), backup)
     val HyParViewStateMachine.Result(next, actions) = receive(machine, Disconnect(activePeer.uid), activeC)
 
     assertEquals(next.activeView, Set.empty)

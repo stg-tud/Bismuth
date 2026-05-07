@@ -149,7 +149,7 @@ class BroadcastIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: LocalUid = LocalUid.gen()
       val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
-      val io = BroadcastIO[Set[String]](
+      val io            = BroadcastIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(DirectConnectionOverlay(selfInfo)),
@@ -205,7 +205,7 @@ class BroadcastIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: LocalUid = LocalUid.gen()
       val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
-      val io = BroadcastIO[Set[String]](
+      val io            = BroadcastIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(DirectConnectionOverlay(selfInfo)),

@@ -129,7 +129,7 @@ class SignalingServerTest extends FunSuite {
     }
 
     var lookedUp: Map[Uid, Set[ChannelConnectInfo]] = Map.empty
-    val observer                                          = SignalingClient(
+    val observer                                    = SignalingClient(
       server = fx.serverDetails,
       resolver = fx.resolverFor("observer"),
       localUid = Uid.predefined("observer"),

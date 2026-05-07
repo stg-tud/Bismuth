@@ -52,7 +52,7 @@ class AclAntiEntropy(
                 cumulativeDelta = cumulativeDelta.merge(delta.state)
                 changed = true;
                 hashDag = updatedHashDag
-                currentAclRef.updateAndGet{case (_, acl) => (hashDag.heads, acl.merge(delta.state))}
+                currentAclRef.updateAndGet { case (_, acl) => (hashDag.heads, acl.merge(delta.state)) }
                 false // Remove applied delta from queue
             }
           } catch {
@@ -100,7 +100,7 @@ class AclAntiEntropy(
   }
 
   def mutate(delta: Acl): Unit = {
-    var toDisseminate: Hash| Null = null
+    var toDisseminate: Hash | Null = null
     synchronized {
       hashDag = aclRdt.mutate(delta, hashDag) // Throws an exception if delta is illegal
       currentAclRef.updateAndGet { case (_, acl) => hashDag.heads -> acl.merge(delta) }

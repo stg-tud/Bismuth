@@ -83,7 +83,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     }
 
     if dots.nonEmpty then {
-      currentStateRef.updateAndGet{ case (oldDots, oldState) =>
+      currentStateRef.updateAndGet { case (oldDots, oldState) =>
         (oldDots.union(dots), oldState.merge(combinedDelta))
       }
       missingDots.updateAndGet(missing => missing.diff(dots))

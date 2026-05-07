@@ -36,9 +36,8 @@ object OverlayNetworkGraphNetworking {
 
     var pollHandle = 0
     pollHandle = dom.window.setInterval(
-      () => {
-        if channel.readyState != dom.RTCDataChannelState.connecting then dom.window.clearInterval(pollHandle)
-      },
+      () =>
+        if channel.readyState != dom.RTCDataChannelState.connecting then dom.window.clearInterval(pollHandle),
       1000
     )
 
@@ -67,7 +66,7 @@ object OverlayNetworkGraphNetworking {
         val state = connectionStateString
         state match
             case "failed" | "disconnected" | "closed" => closeChannel()
-            case _                                        => ()
+            case _                                    => ()
       }
     )
   }
@@ -85,13 +84,13 @@ object OverlayNetworkGraphNetworking {
   }
 
   final class WebRtcSignalingBridge(
-                                     url: String,
-                                     topic: String,
-                                     node: OverlayDemoNode,
-                                     selfDetails: Set[ChannelConnectInfo],
-                                     initialSeed: Option[Uid],
-                                     topicLookupCount: Int,
-                                     onRegistered: () => Unit,
+      url: String,
+      topic: String,
+      node: OverlayDemoNode,
+      selfDetails: Set[ChannelConnectInfo],
+      initialSeed: Option[Uid],
+      topicLookupCount: Int,
+      onRegistered: () => Unit,
   ) {
     private def logFailure(context: String, err: Throwable): Unit =
       println(s"[overlay-signaling] $context: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
@@ -207,7 +206,7 @@ object OverlayNetworkGraphNetworking {
     def canConnect(details: ChannelConnectInfo): Boolean =
       details match
           case ChannelConnectInfo.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
-          case _                                       => false
+          case _                                 => false
 
     def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] = details match
         case ChannelConnectInfo.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>

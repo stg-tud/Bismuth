@@ -33,14 +33,14 @@ object OverlayDemo {
 
   object TopicNode {
     def tcp(
-             host: String = "127.0.0.1",
-             preferredPort: Option[Int] = None,
-             signalingServer: Option[ChannelConnectInfo] = None,
-             signalingTopic: String = "overlay-demo",
-             random: Random = Random(0),
-             config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-             printOverlayEventsToStdout: Boolean = true,
-             onStateChanged: DemoState => Unit = _ => (),
+        host: String = "127.0.0.1",
+        preferredPort: Option[Int] = None,
+        signalingServer: Option[ChannelConnectInfo] = None,
+        signalingTopic: String = "overlay-demo",
+        random: Random = Random(0),
+        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+        printOverlayEventsToStdout: Boolean = true,
+        onStateChanged: DemoState => Unit = _ => (),
     ): TopicNode = {
       val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
       val nioAbort    = Abort()

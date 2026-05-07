@@ -10,8 +10,8 @@ trait ChannelResolver {
 }
 
 object ChannelResolver {
-  def disconnected =  new ChannelResolver {
-    override def canConnect(details: ChannelConnectInfo): Boolean = false
+  def disconnected = new ChannelResolver {
+    override def canConnect(details: ChannelConnectInfo): Boolean                              = false
     override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] = None
   }
 }
@@ -30,15 +30,15 @@ class LocalConnectionRegistry(queued: collection.Map[String, QueuedLocalConnecti
   def queuedServer(details: ChannelConnectInfo): Option[LatentConnection] =
     details match
         case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.server)
-        case _                                        => None
+        case _                                  => None
 
   override def canConnect(details: ChannelConnectInfo): Boolean =
     details match
         case ChannelConnectInfo.QueuedLocal(id) => queued.contains(id)
-        case _                                        => false
+        case _                                  => false
 
   override def connect(details: ChannelConnectInfo, label: String): Option[LatentConnection] =
     details match
         case ChannelConnectInfo.QueuedLocal(id) => queued.get(id).map(_.client(label))
-        case _                                        => None
+        case _                                  => None
 }

@@ -68,7 +68,9 @@ object OverlayNetworkGraph {
   private def describeSeed(details: ChannelConnectInfo): String = details.toString
 
   private def localViews: Option[LocalViews] =
-    currentNode.map(node => LocalViews(node.activeView, node.passiveView, node.eagerView, node.lastIncomingMessageTimes))
+    currentNode.map(node =>
+      LocalViews(node.activeView, node.passiveView, node.eagerView, node.lastIncomingMessageTimes)
+    )
 
   private def updateDisplayedState(directory: OverlayConnectionDirectory.Directory): Unit = {
     network = directory

@@ -180,7 +180,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       inputStream.synchronized {
         try {
           while !abort.closeRequest do
-              val len   = inputStream.readInt()
+              val len = inputStream.readInt()
               require(len < MessageBuffer.maxPayloadSize, "Message too large")
               val bytes = inputStream.readNBytes(len)
               if bytes.length == len then receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))

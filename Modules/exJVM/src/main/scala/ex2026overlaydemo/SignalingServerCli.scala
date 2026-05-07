@@ -13,9 +13,9 @@ import java.util.concurrent.Executors
 /** vibecoded as part of the hyparview experiments */
 object SignalingServerCli {
 
-  given JsonValueCodec[ChannelConnectInfo] = JsonCodecMaker.make
-  given JsonValueCodec[SignalingServer.Session]  = JsonCodecMaker.make
-  given JsonValueCodec[Message]                  = JsonCodecMaker.make
+  given JsonValueCodec[ChannelConnectInfo]      = JsonCodecMaker.make
+  given JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
+  given JsonValueCodec[Message]                 = JsonCodecMaker.make
 
   def main(args: Array[String]): Unit = {
     val (host, preferredPort) = args.toList match

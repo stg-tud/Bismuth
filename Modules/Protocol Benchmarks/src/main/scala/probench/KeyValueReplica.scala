@@ -75,7 +75,8 @@ class KeyValueReplica(
       localUid,
       delta => replicaActor.execute(() => handleIncoming(delta)),
       sendingActor = sendingActor,
-      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)))
+      broadcast =
+        Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)))
     )
 
     def handleIncoming(delta: ClusterState): Unit = currentStateLock.synchronized {
@@ -220,13 +221,15 @@ class KeyValueReplica(
       localUid,
       delta => replicaActor.execute(() => handleIncomingWrite(delta)),
       sendingActor = sendingActor,
-      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
+      broadcast =
+        Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
     lazy val dataManagerRead: BroadcastIO[ClientCommRead] = BroadcastIO(
       localUid,
       delta => replicaActor.execute(() => handleIncomingRead(delta)),
       sendingActor = sendingActor,
-      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
+      broadcast =
+        Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
 
     def handleIncomingWrite(delta: ClientCommWrite): Unit = {

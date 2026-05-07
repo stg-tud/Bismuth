@@ -15,22 +15,22 @@ import scala.util.Random
 
 /** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
-                       selfDetails: Set[ChannelConnectInfo],
-                       listenEnvelope: Option[LatentConnection],
-                       envelopeResolver: ChannelResolver,
-                       random: Random = Random(0),
-                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-                       onStateChanged: DemoState => Unit = _ => (),
-                       printOverlayEventsToStdout: Boolean = false,
-                       runBackgroundTasks: Boolean = true,
-                       val localUid: LocalUid = LocalUid.gen(),
+    selfDetails: Set[ChannelConnectInfo],
+    listenEnvelope: Option[LatentConnection],
+    envelopeResolver: ChannelResolver,
+    random: Random = Random(0),
+    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+    onStateChanged: DemoState => Unit = _ => (),
+    printOverlayEventsToStdout: Boolean = false,
+    runBackgroundTasks: Boolean = true,
+    val localUid: LocalUid = LocalUid.gen(),
 ) {
 
   @volatile var state: DemoState = DemoState.empty
 
-  private val selfRef = PeerConnectInfo(localUid.uid, selfDetails)
-  private val abort   = Abort()
-  private val timer   = Timer(true)
+  private val selfRef                                     = PeerConnectInfo(localUid.uid, selfDetails)
+  private val abort                                       = Abort()
+  private val timer                                       = Timer(true)
   private var broadcastIO: Option[BroadcastIO[DemoState]] = None
 
   private val heartbeatIntervalMillis = 10_000L
@@ -47,24 +47,26 @@ class OverlayDemoNode(
         broadcastIO.foreach(_.applyDelta(delta))
 
   private def refreshLocalView(replicate: Boolean, updateTimestamp: Boolean): Unit = {
-    given LocalUid = localUid
+    given LocalUid     = localUid
     val lastSeenMillis =
       if updateTimestamp then nowMillis()
       else state.connections.get(localUid.uid).map(_.value.lastSeenMillis).getOrElse(0L)
-    val activePeers   = broadcastIO.flatMap(io =>
+    val activePeers = broadcastIO.flatMap(io =>
       io.overlayController match
           case hyp: HyParViewStateMachine => Some(hyp.activePeers)
-          case _                         => None
+          case _                          => None
     ).getOrElse(Set.empty)
-    val passivePeers  = broadcastIO.flatMap(io =>
+    val passivePeers = broadcastIO.flatMap(io =>
       io.overlayController match
           case hyp: HyParViewStateMachine => Some(hyp.passivePeers)
-          case _                         => None
+          case _                          => None
     ).getOrElse(Set.empty)
-    val eagerView     = broadcastIO.map(io => io.plumtreeState.peerRoles.collect {
-      case (Peer(uid), _) => uid
-    }.toSet).getOrElse(Set.empty)
-    val delta         = OverlayConnectionDirectory.updateNodeFromOverlay(
+    val eagerView = broadcastIO.map(io =>
+      io.plumtreeState.peerRoles.collect {
+        case (Peer(uid), _) => uid
+      }.toSet
+    ).getOrElse(Set.empty)
+    val delta = OverlayConnectionDirectory.updateNodeFromOverlay(
       state.connections,
       localUid.uid,
       activePeers,
@@ -80,7 +82,7 @@ class OverlayDemoNode(
         }
   }
 
-  private def publishLocalView(): Unit = refreshLocalView(replicate = true, updateTimestamp = true)
+  private def publishLocalView(): Unit          = refreshLocalView(replicate = true, updateTimestamp = true)
   private def pruneStaleReplicatedNodes(): Unit = {
     given LocalUid = localUid
     val delta      = OverlayConnectionDirectory.pruneStaleNodes(
@@ -151,18 +153,20 @@ class OverlayDemoNode(
   def activeView: Set[Uid] = broadcastIO.flatMap(io =>
     io.overlayController match
         case hyp: HyParViewStateMachine => Some(hyp.activeView)
-        case _                         => None
+        case _                          => None
   ).getOrElse(Set.empty)
 
   def passiveView: Set[Uid] = broadcastIO.flatMap(io =>
     io.overlayController match
         case hyp: HyParViewStateMachine => Some(hyp.passiveView)
-        case _                         => None
+        case _                          => None
   ).getOrElse(Set.empty)
 
-  def eagerView: Set[Uid] = broadcastIO.map(io => io.plumtreeState.peerRoles.collect {
-    case (Peer(uid), _) => uid
-  }.toSet).getOrElse(Set.empty)
+  def eagerView: Set[Uid] = broadcastIO.map(io =>
+    io.plumtreeState.peerRoles.collect {
+      case (Peer(uid), _) => uid
+    }.toSet
+  ).getOrElse(Set.empty)
 
   def lastIncomingMessageTimes: Map[Uid, Long] = Map.empty
 
