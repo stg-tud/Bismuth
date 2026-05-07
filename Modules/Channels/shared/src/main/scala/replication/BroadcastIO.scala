@@ -76,6 +76,8 @@ class BroadcastIO[State](
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef = new {}
+  private val connectionDetails: scala.collection.mutable.Map[Connection, Option[ChannelConnectInfo]] =
+    scala.collection.mutable.Map.empty
 
   def overlayController: OverlayController = overlay
 
@@ -91,7 +93,7 @@ class BroadcastIO[State](
   def addBinaryConnection(latentConnection: LatentConnection): Unit =
     Async.provided(globalAbort) {
       val conn = latentConnection.prepare { connectionReceiver }.bind
-      registerConnection(conn)
+      registerConnection(conn, None)
     }.run(printExceptionHandler)
 
   private val connectionReceiver: Receive = new Receive {
@@ -140,18 +142,21 @@ class BroadcastIO[State](
 
   /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */
   private def removePeer(conn: Connection): Unit = lock.synchronized {
-    val (nextOverlay, actions) = overlay.removeConnection(conn)
+    val info = connectionDetails.remove(conn).flatten
+    val (nextOverlay, actions) = overlay.removeConnection(conn, info)
     overlay = nextOverlay
     actions.foreach(handleOverlayAction)
   }
 
-  /** Attach a newly established connection to the overlay state.
-    * Peer identity is learned later from HyParView control-plane messages carried on that connection.
+  /** Track a newly established connection and the optional connect info used to create it.
+    * DirectConnectionOverlay also needs an initial Neighbor handshake on newly attached transports.
     */
-  private def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): Unit = lock.synchronized {
-    val (next, actions) = overlay.registerConnection(conn, expectedPeer)
-    overlay = next
-    actions.foreach(handleOverlayAction)
+  private def registerConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): Unit = lock.synchronized {
+    connectionDetails.update(conn, connectInfo)
+    overlay match
+        case direct: DirectConnectionOverlay =>
+          send(conn, Envelope.Membership(replicaId.uid, OverlayMessage.Neighbor(direct.self, highPriority = true)))
+        case _ => ()
   }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
@@ -183,11 +188,11 @@ class BroadcastIO[State](
       expectedPeer: Uid,
       payload: Envelope[State]
   ): Unit =
-    details.iterator.flatMap(detail => resolver.connect(detail)).nextOption() match
-        case Some(latentConnection) =>
+    details.iterator.flatMap(detail => resolver.connect(detail).map(detail -> _)).nextOption() match
+        case Some((detail, latentConnection)) =>
           Async.provided(globalAbort) {
             val conn = latentConnection.prepare { connectionReceiver }.bind
-            registerConnection(conn, Some(expectedPeer))
+            registerConnection(conn, Some(detail))
             send(conn, payload)
           }.run(printExceptionHandler)
         case None =>

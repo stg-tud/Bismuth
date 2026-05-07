@@ -12,13 +12,7 @@ case class DirectConnectionOverlay(
     unknownConnections: Set[Connection] = Set.empty,
 ) extends OverlayController {
 
-  override def registerConnection(conn: Connection, expectedPeer: Option[Uid] = None): (OverlayController, List[OverlayAction]) =
-    if unknownConnections.contains(conn) || active.values.exists(_ == conn) then (this, Nil)
-    else
-        (
-          copy(unknownConnections = unknownConnections + conn),
-          List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true)))
-        )
+  
 
   override def discoverPeers(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
     val next    = copy(known = known ++ peers.iterator.filterNot(_.uid == self.uid).map(p => p.uid -> p))
@@ -69,7 +63,7 @@ case class DirectConnectionOverlay(
           (this, Nil)
   }
 
-  override def removeConnection(conn: Connection): (OverlayController, List[OverlayAction]) =
+  override def removeConnection(conn: Connection, connectInfo: Option[channels.ChannelConnectInfo] = None): (OverlayController, List[OverlayAction]) =
     active.find(_._2 == conn) match
         case Some((peer, _)) =>
           (

@@ -125,35 +125,22 @@ class HyParViewStateMachineTest extends FunSuite {
     )
   }
 
-  test("registerConnection attaches to existing pending peer entry instead of duplicating it") {
-    val candidate = peer("candidate")
-    val pendingC  = TestConnection("candidate")
-    val started   = state().copy(
-      known = Map(defaultSelf.uid -> defaultSelf, candidate.uid -> candidate),
-      pendingConnections = Vector(HyParViewStateMachine.PendingConnection(Some(candidate.uid), None))
-    )
-
-    val registered = started.registerConnection(pendingC, Some(candidate.uid))._1.asInstanceOf[HyParViewStateMachine]
-
-    assertEquals(registered.pendingConnections.count(_.expectedPeer.contains(candidate.uid)), 1)
-    assertEquals(registered.pendingConnections.count(pc => pc.expectedPeer.contains(candidate.uid) && pc.connection.contains(pendingC)), 1)
-  }
-
   test("removeConnection for a failed pending promotion removes that peer from passive and clears pending state") {
     val candidate  = peer("candidate")
     val pendingC   = TestConnection("candidate")
-    val base       = withPassive(state(), candidate)
-    val registered = base.registerConnection(pendingC, Some(candidate.uid))._1.asInstanceOf[HyParViewStateMachine]
-    val machine    = registered
+    val connectInfo = candidate.channelConnectors.head
+    val machine    = withPassive(state(), candidate).copy(
+      pendingConnections = Vector(HyParViewStateMachine.PendingConnection(candidate))
+    )
 
-    assert(machine.pendingConnections.exists(_.expectedPeer.contains(candidate.uid)))
+    assert(machine.pendingConnections.exists(_.peer.uid == candidate.uid))
 
-    val (next0, actions) = machine.removeConnection(pendingC)
+    val (next0, actions) = machine.removeConnection(pendingC, Some(connectInfo))
     val next             = next0.asInstanceOf[HyParViewStateMachine]
 
     assertEquals(actions, Nil)
     assert(!next.passiveView.contains(candidate.uid))
-    assert(!next.pendingConnections.exists(_.expectedPeer.contains(candidate.uid)))
+    assert(!next.pendingConnections.exists(_.peer.uid == candidate.uid))
   }
 
   test("shuffle replies at the endpoint and merges connectable samples into the passive view") {
