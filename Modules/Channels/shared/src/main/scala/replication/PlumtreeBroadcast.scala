@@ -14,7 +14,7 @@ object PlumtreeMessage {
   /** `knows` has to be a subset of the dots known at the sender.
     * The sender of the request should then eventually receive all known missing dots.
     */
-  case class Graft(sender: Uid, knows: Dots) extends PlumtreeMessage[Nothing]
+  case class Graft(knows: Dots) extends PlumtreeMessage[Nothing]
 
   /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
     * then a.data <= b.data according to the lattice of T
@@ -24,10 +24,10 @@ object PlumtreeMessage {
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.
     */
-  case class IHave(sender: Uid, knows: Dots) extends PlumtreeMessage[Nothing]
+  case class IHave(knows: Dots) extends PlumtreeMessage[Nothing]
 
   /** Request sender to move this edge to lazy mode for eager push. */
-  case class Prune(sender: Uid) extends PlumtreeMessage[Nothing]
+  case object Prune extends PlumtreeMessage[Nothing]
 }
 
 object PlumtreeBroadcast {
@@ -78,7 +78,7 @@ final case class PlumtreeBroadcast[State](
   /** Algorithm 3 `NeighborUp(node)`. Adds the peer as eager and requests missing history. */
   def addPeer(peer: Peer): Result[State] = {
     val next: PlumtreeBroadcast[State] = copy(peerRoles = peerRoles.updated(peer, PeerRole.Eager))
-    Result(next, List(Send(peer :: Nil, Graft(self, localContext))))
+    Result(next, List(Send(peer :: Nil, Graft(localContext))))
   }
 
   /** Algorithm 3 `NeighborDown(node)`. */
@@ -104,7 +104,7 @@ final case class PlumtreeBroadcast[State](
     Random.shuffle(haveMissing).headOption match {
       case None          => Result(copy(remoteContextSnapshot = remoteContext), Nil)
       case Some(missing) =>
-        val graft = Send(List(missing), Graft(self, localContext))
+        val graft = Send(List(missing), Graft(localContext))
         val next  = copy(remoteContextSnapshot = remoteContext).withChangedRole(missing, PeerRole.Eager)
         Result(next, List(graft))
     }
@@ -124,14 +124,14 @@ final case class PlumtreeBroadcast[State](
       // TODO: so, we kinda ignore all of the peer info in the messages, and instead rely on the external one.
       //   Is that what we should do?
       message match
-          case Prune(_) =>
+          case Prune =>
             // Duplicate eager delivery: demote this edge to lazy.
             Result(withChangedRole(from, PeerRole.Lazy), Nil)
 
-          case IHave(_, knows) =>
+          case IHave(knows) =>
             Result(withRemoteKnowledge(from, knows), Nil)
 
-          case Graft(_, knows) =>
+          case Graft(knows) =>
             // Repair: promote sender back to eager and replay what it is missing.
             val next     = withChangedRole(from, PeerRole.Eager).withRemoteKnowledge(from, knows)
             val relevant = next.deltaStorage.getHistory.filterNot(payload => payload.dots <= knows)
@@ -145,7 +145,7 @@ final case class PlumtreeBroadcast[State](
           case payload @ Payload(context, _) =>
             if context <= localContext then
                 // Duplicate eager path: demote this edge and ask the sender to prune too.
-                Result(withChangedRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune(self))))
+                Result(withChangedRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune)))
             else
                 // First delivery: remember, keep sender eager, deliver, and forward.
                 val next: PlumtreeBroadcast[State] = copy(
@@ -177,7 +177,7 @@ final case class PlumtreeBroadcast[State](
 
     val eagerSend = Option.when(eager.nonEmpty)(Send(eager, payload: PlumtreeMessage[State]))
     val lazySend  =
-      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(self, payload.dots): PlumtreeMessage[State]))
+      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.dots): PlumtreeMessage[State]))
 
     Result(this, List(eagerSend, lazySend).flatten)
   }

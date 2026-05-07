@@ -40,7 +40,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       events.toList,
       List(
         Send(List(eagerA, eagerB), msg),
-        Send(List(lazyA), IHave(self, msg.dots))
+        Send(List(lazyA), IHave(msg.dots))
       )
     )
   }
@@ -66,7 +66,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       List(
         Event.Deliver(msg),
         Send(List(eagerA), msg),
-        Send(List(lazyA), IHave(self, msg.dots))
+        Send(List(lazyA), IHave(msg.dots))
       )
     )
   }
@@ -83,7 +83,7 @@ class PlumtreeBroadcastTest extends FunSuite {
     val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, msg)
 
     assertEquals(next.peerRoles(sender), PeerRole.Lazy, "")
-    assertEquals(events.toList, List(Send(List(sender), Prune(self))))
+    assertEquals(events.toList, List(Send(List(sender), Prune)))
   }
 
   test("Prune demotes the corresponding edge to lazy") {
@@ -93,7 +93,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       peerRoles = Map(sender -> PeerRole.Eager)
     )
 
-    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, Prune(sender.uid))
+    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, Prune)
 
     assertEquals(next.peerRoles(sender), PeerRole.Lazy, "")
     assertEquals(events.toList, Nil)
@@ -110,7 +110,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       remoteContextSnapshot = Map(missing -> local)
     )
 
-    val PlumtreeBroadcast.Result(afterIHave, noEvents) = state.handleMessage(missing, IHave(missing.uid, remote))
+    val PlumtreeBroadcast.Result(afterIHave, noEvents) = state.handleMessage(missing, IHave(remote))
     assertEquals(noEvents.toList, Nil)
     assertEquals(afterIHave.remoteContext(missing), remote, "")
 
@@ -121,7 +121,7 @@ class PlumtreeBroadcastTest extends FunSuite {
 
     val PlumtreeBroadcast.Result(afterSecondTick, secondTickEvents) = afterFirstTick.tickGrafts()
     assertEquals(afterSecondTick.peerRoles(missing), PeerRole.Eager, "")
-    assertEquals(secondTickEvents.toList, List(Send(List(missing), Graft(self, local))))
+    assertEquals(secondTickEvents.toList, List(Send(List(missing), Graft(local))))
   }
 
   test("Graft promotes sender back to eager and replays only the payloads missing from knows") {
@@ -134,7 +134,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       peerRoles = Map(sender -> PeerRole.Lazy)
     )
 
-    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, Graft(sender.uid, p0.dots))
+    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, Graft(p0.dots))
 
     assertEquals(next.peerRoles(sender), PeerRole.Eager, "")
     assertEquals(next.remoteContext(sender), p0.dots, "")
@@ -148,6 +148,6 @@ class PlumtreeBroadcastTest extends FunSuite {
     val PlumtreeBroadcast.Result(next, events) = state.addPeer(eagerA)
 
     assertEquals(next.peerRoles(eagerA), PeerRole.Eager, "")
-    assertEquals(events.toList, List(Send(List(eagerA), Graft(self, local))))
+    assertEquals(events.toList, List(Send(List(eagerA), Graft(local))))
   }
 }

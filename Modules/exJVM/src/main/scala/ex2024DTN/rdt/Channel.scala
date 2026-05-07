@@ -25,8 +25,8 @@ class ClientContext[T: JsonValueCodec](
 ) extends Connection {
   override def send(message: MessageBuffer): Async[Any, Unit] =
     BroadcastIO.decodeEnevlop[T](message) match
-        case BroadcastIO.Envelope.Membership(sender, _)                 => Async {}
-        case BroadcastIO.Envelope.Protocol(_, Graft(sender, dots)) =>
+        case BroadcastIO.Envelope.Membership(sender, _)    => Async {}
+        case BroadcastIO.Envelope.Protocol(_, Graft(dots)) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
           // todo: actually there should be no requests being sent anymore then. is that the case?
           operationMode match
@@ -42,7 +42,7 @@ class ClientContext[T: JsonValueCodec](
             writeToArray[T](data),
             dots
           ).toAsync(using executionContext)
-        case BroadcastIO.Envelope.Protocol(_, IHave(_, _) | Prune(_)) => Async {}
+        case BroadcastIO.Envelope.Protocol(_, IHave(_) | Prune) => Async {}
 
   override def close(): Unit = connection.close().onComplete {
     case Failure(f)     => f.printStackTrace()
@@ -72,22 +72,25 @@ class Channel[T: JsonValueCodec](
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
             case RdtMessageType.Request =>
-              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(dtnid, PlumtreeMessage.Graft(dtnid, dots))))
+              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(dtnid, PlumtreeMessage.Graft(dots))))
             case RdtMessageType.Payload =>
-              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(dtnid, PlumtreeMessage.Payload(
-                dots,
-                readFromArray[T](payload)
-              ))))
+              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(
+                dtnid,
+                PlumtreeMessage.Payload(
+                  dots,
+                  readFromArray[T](payload)
+                )
+              )))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
           case ClientOperationMode.PushAll =>
-            cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(dtnid, PlumtreeMessage.Graft(
+            cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Protocol(
               dtnid,
-              Dots.empty
-            ))))
+              PlumtreeMessage.Graft(Dots.empty)
+            )))
           case ClientOperationMode.RequestLater =>
 
       conn
