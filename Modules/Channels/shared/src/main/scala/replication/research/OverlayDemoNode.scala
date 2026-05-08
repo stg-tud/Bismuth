@@ -2,11 +2,12 @@ package replication.research
 
 import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, PeerConnectInfo}
 import rdts.base.Lattice.syntax
-import rdts.base.{Bottom, LocalUid, Uid}
-import replication.BroadcastIO
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import replication.JsoniterCodecs.given
+import replication.PlumtreeMessage.Payload
 import replication.overlay.HyParViewStateMachine
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
+import replication.{BroadcastIO, MergingHistory, PlumtreeBroadcast}
 
 import java.util.{Timer, TimerTask}
 import scala.util.Random
@@ -21,7 +22,7 @@ class OverlayDemoNode(
     printOverlayEventsToStdout: Boolean = false,
     runBackgroundTasks: Boolean = true,
     val localUid: LocalUid = LocalUid.gen(),
-) {
+)(using Lattice[Payload[OverlayStatusProtocol.Status]]) {
 
   @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty
 
@@ -51,6 +52,8 @@ class OverlayDemoNode(
       overlay = Some(HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)),
       resolver = envelopeResolver,
       globalAbort = abort,
+      broadcast =
+        Some(PlumtreeBroadcast(localUid.uid, deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)))
     )
 
   private def startBackgroundTasks(): Unit = {

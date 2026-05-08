@@ -1,6 +1,6 @@
 package replication
 
-import rdts.base.Uid
+import rdts.base.{Lattice, Uid}
 import rdts.time.Dots
 import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
@@ -20,6 +20,9 @@ object PlumtreeMessage {
     * then a.data <= b.data according to the lattice of T
     */
   case class Payload[+T](dots: Dots, data: T) extends PlumtreeMessage[T]
+
+  given [T: Lattice] => Lattice[Payload[T]] = Lattice.derived
+
 
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.

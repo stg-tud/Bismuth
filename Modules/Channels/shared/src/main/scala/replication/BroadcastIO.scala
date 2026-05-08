@@ -41,7 +41,7 @@ object BroadcastIO {
       sendingActor = sendingActor,
       globalAbort = globalAbort,
       plumtree =
-        broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 100000)))
+        broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 1000)))
     )
 
   val executeImmediately: ExecutionContext = new ExecutionContext {

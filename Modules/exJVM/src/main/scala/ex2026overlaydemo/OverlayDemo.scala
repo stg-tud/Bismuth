@@ -3,6 +3,7 @@ package ex2026overlaydemo
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import replication.JsoniterCodecs.given
+import replication.PlumtreeMessage
 import replication.research.OverlayStatusProtocol.Status
 import replication.research.{OverlayDemoNode, SignalingClient}
 
