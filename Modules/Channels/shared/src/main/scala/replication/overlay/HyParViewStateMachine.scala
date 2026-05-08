@@ -96,7 +96,6 @@ final case class HyParViewStateMachine(
     ).toSet
   def passiveView: Set[Uid] = passivePeers.iterator.map(_.uid).toSet
 
-
   /** Paper passive-view maintenance step: initiate one shuffle through a random active peer. */
   def shuffleTick(): Result =
     choose(active) match
@@ -146,15 +145,21 @@ final case class HyParViewStateMachine(
         case Join(newNode) =>
           // Paper join contact handling: the contact immediately activates the newcomer on the incoming
           // connection and forwards `ForwardJoin` along its current active view to seed additional peers.
-          val remembered                = rememberPeer(newNode)
-          val existingTargets           = remembered.active.filterNot(_.peer.uid == newNode.uid)
-          val forwardActions            = existingTargets.map(target =>
+          val remembered      = rememberPeer(newNode)
+          val existingTargets = remembered.active.filterNot(_.peer.uid == newNode.uid)
+          val forwardActions  = existingTargets.map(target =>
             OverlayAction.Send(
               target.connection,
               ForwardJoin(newNode, config.activeRandomWalkLength, self.uid)
             )
           ).toList
-          Result(remembered, OverlayAction.Send(from, OverlayMessage.Neighbor(self, false)) :: forwardActions)
+          Result(
+            remembered,
+            OverlayAction.Send(
+              from,
+              OverlayMessage.Neighbor(self, highPriority = remembered.active.isEmpty)
+            ) :: forwardActions
+          )
 
         case ForwardJoin(newNode, ttl, sender) =>
           // Paper forwarded-join random walk: intermediate hops remember the newcomer, optionally add it
