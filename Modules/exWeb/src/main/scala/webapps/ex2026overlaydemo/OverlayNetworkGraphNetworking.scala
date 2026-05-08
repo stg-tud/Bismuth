@@ -1,4 +1,4 @@
-package webapps.ex2026niowebsocket
+package webapps.ex2026overlaydemo
 
 import channels.*
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver

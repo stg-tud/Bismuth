@@ -1,8 +1,8 @@
-package webapps.ex2026niowebsocket
+package webapps.ex2026overlaydemo
 
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, HTMLCanvasElement}
-import webapps.ex2026niowebsocket.OverlayNetworkGraphModel.{EdgeKind, GraphEdge, GraphNode}
+import webapps.ex2026overlaydemo.OverlayNetworkGraphModel.{EdgeKind, GraphEdge, GraphNode}
 
 import scala.scalajs.js
 

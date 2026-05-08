@@ -1,4 +1,4 @@
-package webapps.ex2026niowebsocket
+package webapps.ex2026overlaydemo
 
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
@@ -8,8 +8,8 @@ import rdts.base.{LocalUid, Uid}
 import replication.JsoniterCodecs.given
 import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
 import scalatags.JsDom.all.*
-import webapps.ex2026niowebsocket.OverlayNetworkGraphModel.LocalViews
-import webapps.ex2026niowebsocket.OverlayNetworkGraphNetworking.WebRtcSignalingBridge
+import webapps.ex2026overlaydemo.OverlayNetworkGraphModel.LocalViews
+import webapps.ex2026overlaydemo.OverlayNetworkGraphNetworking.WebRtcSignalingBridge
 
 import java.util.Base64
 import scala.collection.mutable

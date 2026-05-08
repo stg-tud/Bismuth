@@ -1,4 +1,4 @@
-package webapps.ex2026niowebsocket
+package webapps.ex2026overlaydemo
 
 import rdts.base.Uid
 import replication.research.OverlayConnectionDirectory
