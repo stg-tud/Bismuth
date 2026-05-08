@@ -39,7 +39,11 @@ class SignalingClient(
         {
           case Success(buffer) =>
             readFromArray[Message](buffer.asArray) match
-                case Message.Register(_)                                 => ()
+                case Message.Register(_)                                 =>
+                  announcements.foreach { case (topic, descriptors) =>
+                    send(Message.Announce(topic, descriptors)).run(_ => ())
+                  }
+                  onRegistered()
                 case Message.PeerInfo(_, uid, topics)                    => onPeerInfo(uid, topics)
                 case Message.TopicInfo(_, topic, peers)                  => onTopicInfo(topic, peers)
                 case Message.Offer(from, to, session) if to == localUid  => onOffer(from, session)
@@ -53,11 +57,7 @@ class SignalingClient(
         case Success(conn) =>
           connection = Some(conn)
           send(Message.Register(localUid)).run {
-            case Success(_) =>
-              announcements.foreach { case (topic, descriptors) =>
-                send(Message.Announce(topic, descriptors)).run(_ => ())
-              }
-              onRegistered()
+            case Success(_) => ()
             case Failure(err) =>
               connection = None
               conn.close()

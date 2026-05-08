@@ -51,4 +51,7 @@ case class DirectConnectionOverlay(
 
   override def connectionFor(peer: Uid): Option[Connection] = active.get(peer)
 
+  override def join(contact: PeerConnectInfo): (OverlayController, List[OverlayAction]) =
+    discoverPassive(Set(contact))
+
 }

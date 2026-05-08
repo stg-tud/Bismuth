@@ -3,8 +3,7 @@ package ex2026overlaydemo
 import channels.*
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import replication.JsoniterCodecs.given
-import replication.overlay.HyParViewStateMachine.HyParViewConfig
-import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.OverlayStatusProtocol.Status
 import replication.research.{OverlayDemoNode, SignalingClient}
 
 import java.net.BindException
@@ -38,9 +37,8 @@ object OverlayDemo {
         signalingServer: Option[ChannelConnectInfo] = None,
         signalingTopic: String = "overlay-demo",
         random: Random = Random(0),
-        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
         printOverlayEventsToStdout: Boolean = true,
-        onStateChanged: DemoState => Unit = _ => (),
+        onStateChanged: Status => Unit = _ => (),
     ): TopicNode = {
       val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
       val nioAbort    = Abort()
@@ -67,8 +65,6 @@ object OverlayDemo {
         selfDetails = Set(listenDetails),
         listenEnvelope = Some(listenEnvelope),
         envelopeResolver = envelopeResolver,
-        random = random,
-        config = config,
         onStateChanged = onStateChanged,
         printOverlayEventsToStdout = printOverlayEventsToStdout,
       )
@@ -80,14 +76,14 @@ object OverlayDemo {
           localUid = node.localUid.uid,
           initialAnnouncements = Map(signalingTopic -> node.selfConnectionDetails),
           onTopicInfo = (_, peers) =>
-            node.discoverPeers(peers.iterator.collect {
+            peers.iterator.collect {
               case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
                 PeerConnectInfo(uid, descriptors)
-            }.toList),
+            }.toList.foreach(node.bootstrapVia),
           onPeerInfo = (uid, topics) =>
             topics.values.foreach { descriptors =>
               if uid != node.localUid.uid && descriptors.nonEmpty then
-                  node.discoverPeers(PeerConnectInfo(uid, descriptors) :: Nil)
+                  node.bootstrapVia(PeerConnectInfo(uid, descriptors))
             },
         )
       }
@@ -115,8 +111,7 @@ object OverlayDemo {
         registry: LocalConnectionRegistry,
         id: String,
         random: Random = Random(0),
-        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-        onStateChanged: DemoState => Unit = _ => (),
+        onStateChanged: Status => Unit = _ => (),
     ): TopicNode = {
       val details        = ChannelConnectInfo.QueuedLocal(id)
       val listenEnvelope = registry.queuedServer(details).get
@@ -124,8 +119,6 @@ object OverlayDemo {
         selfDetails = Set(details),
         listenEnvelope = Some(listenEnvelope),
         envelopeResolver = registry,
-        random = random,
-        config = config,
         onStateChanged = onStateChanged,
         printOverlayEventsToStdout = false,
       )
@@ -135,7 +128,6 @@ object OverlayDemo {
 
   class TopicNode(val node: OverlayDemoNode, stopTransport: () => Unit) extends OverlayNodeRuntime {
     def stop(): Unit = {
-      node.stop()
       stopTransport()
     }
   }

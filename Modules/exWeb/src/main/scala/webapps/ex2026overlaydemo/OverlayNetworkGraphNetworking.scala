@@ -7,7 +7,7 @@ import de.rmgk.delay.Async
 import org.scalajs.dom
 import rdts.base.Uid
 import replication.BroadcastIO
-import replication.research.OverlayNetworkProtocol.DemoState
+import replication.research.OverlayStatusProtocol.Status
 import replication.research.{OverlayDemoNode, SignalingClient, SignalingServer}
 
 import scala.collection.mutable
@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 
 object OverlayNetworkGraphNetworking {
 
-  type Envelope = BroadcastIO.Envelope[DemoState]
+  type Envelope = BroadcastIO.Envelope[Status]
 
   def createRtcConnector(): WebRTCConnector =
     WebRTCConnector(new dom.RTCConfiguration {
@@ -89,7 +89,6 @@ object OverlayNetworkGraphNetworking {
       node: OverlayDemoNode,
       selfDetails: Set[ChannelConnectInfo],
       initialSeed: Option[Uid],
-      topicLookupCount: Int,
       onRegistered: () => Unit,
   ) {
     private def logFailure(context: String, err: Throwable): Unit =
@@ -110,16 +109,17 @@ object OverlayNetworkGraphNetworking {
 
     private def lookupNow(): Unit = {
       lastLookupAtMillis = dom.window.performance.now()
-      client.lookupTopic(topic, topicLookupCount).run {
-        case Success(_)   => ()
-        case Failure(err) => logFailure("lookupTopic failed", err)
-      }
-      initialSeed.foreach(uid =>
-        client.lookupPeer(uid).run {
-          case Success(_)   => ()
-          case Failure(err) => logFailure(s"lookupPeer failed uid=${Uid.unwrap(uid)}", err)
-        }
-      )
+      initialSeed match
+          case Some(uid) =>
+            client.lookupPeer(uid).run {
+              case Success(_)   => ()
+              case Failure(err) => logFailure(s"lookupPeer failed uid=${Uid.unwrap(uid)}", err)
+            }
+          case None =>
+            client.lookupTopic(topic, 1).run {
+              case Success(_)   => ()
+              case Failure(err) => logFailure("lookupTopic failed", err)
+            }
     }
 
     private def maybeRediscover(): Unit = {
@@ -140,13 +140,13 @@ object OverlayNetworkGraphNetworking {
       onPeerInfo = (uid, topics) =>
         topics.values.foreach { descriptors =>
           if uid != node.localUid.uid && descriptors.nonEmpty then
-              node.discoverPeers(PeerConnectInfo(uid, descriptors) :: Nil)
+              node.bootstrapVia(PeerConnectInfo(uid, descriptors))
         },
       onTopicInfo = (_, peers) =>
-        node.discoverPeers(peers.iterator.collect {
+        peers.iterator.collectFirst {
           case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
             PeerConnectInfo(uid, descriptors)
-        }.toList),
+        }.foreach(node.bootstrapVia),
       onOffer = (from, session) => handleIncomingOffer(from, session),
       onAnswer = (from, session) => handleIncomingAnswer(from, session),
     )

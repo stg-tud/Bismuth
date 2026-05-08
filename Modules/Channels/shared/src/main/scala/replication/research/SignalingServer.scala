@@ -89,6 +89,7 @@ class SignalingServer(
         readFromArray[Message](buffer.asArray) match
             case Message.Register(uid) =>
               register(uid, conn)
+              sendOrDisconnect(conn, Message.Register(uid))()
 
             case Message.Announce(topic, descriptors) =>
               uidByConn.get(conn).foreach { uid =>

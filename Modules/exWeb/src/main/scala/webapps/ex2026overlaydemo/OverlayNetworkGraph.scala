@@ -6,7 +6,7 @@ import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, document, window}
 import rdts.base.{LocalUid, Uid}
 import replication.JsoniterCodecs.given
-import replication.research.{OverlayConnectionDirectory, OverlayDemoNode}
+import replication.research.{OverlayDemoNode, OverlayStatusProtocol}
 import scalatags.JsDom.all.*
 import webapps.ex2026overlaydemo.OverlayNetworkGraphModel.LocalViews
 import webapps.ex2026overlaydemo.OverlayNetworkGraphNetworking.WebRtcSignalingBridge
@@ -18,8 +18,8 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 /** vibecoded as part of the hyparview experiments */
 object OverlayNetworkGraph {
 
-  @volatile private var viewerUid: Option[Uid]                        = None
-  @volatile private var network: OverlayConnectionDirectory.Directory = OverlayConnectionDirectory.empty
+  @volatile private var viewerUid: Option[Uid]                  = None
+  @volatile private var network: OverlayStatusProtocol.Status   = OverlayStatusProtocol.empty
   @volatile private var connectionInfoText: String                    = "waiting for seed url parameter"
   @volatile private var selfConnectionStringText: String              = ""
   private var currentNode: Option[OverlayDemoNode]                    = None
@@ -72,18 +72,17 @@ object OverlayNetworkGraph {
       LocalViews(node.activeView, node.passiveView, node.eagerView, node.lastIncomingMessageTimes)
     )
 
-  private def updateDisplayedState(directory: OverlayConnectionDirectory.Directory): Unit = {
-    network = directory
-    connectionInfoText = OverlayNetworkGraphModel.renderConnectionInfo(directory, viewerUid, localViews)
+  private def updateDisplayedState(status: OverlayStatusProtocol.Status): Unit = {
+    network = status
+    connectionInfoText = OverlayNetworkGraphModel.renderConnectionInfo(status, viewerUid, localViews)
     refreshText()
   }
 
   private def stopCurrentNode(): Unit = {
     currentSignalingBridge.foreach(_.stop())
     currentSignalingBridge = None
-    currentNode.foreach(_.stop())
     currentNode = None
-    network = OverlayConnectionDirectory.empty
+    network = OverlayStatusProtocol.empty
     viewerUid = None
     selfConnectionStringText = ""
   }
@@ -109,7 +108,7 @@ object OverlayNetworkGraph {
       selfDetails = selfDetails,
       listenEnvelope = None,
       envelopeResolver = resolver,
-      onStateChanged = state => updateDisplayedState(state.connections),
+      onStateChanged = updateDisplayedState,
       printOverlayEventsToStdout = true,
       localUid = localUid,
     )
@@ -121,7 +120,7 @@ object OverlayNetworkGraph {
       }
 
     signalingRef = signalUrl.map(url =>
-      new WebRtcSignalingBridge(url, signalingTopic, node, selfDetails, requestedSeedId, 3, joinAfterSignal)
+      new WebRtcSignalingBridge(url, signalingTopic, node, selfDetails, requestedSeedId, joinAfterSignal)
     )
     currentSignalingBridge = signalingRef
     currentNode = Some(node)
@@ -130,7 +129,7 @@ object OverlayNetworkGraph {
 
     connectionInfoText = (seedDetails, signalUrl) match
         case (Some(seed: ChannelConnectInfo.WebRtc), Some(url)) =>
-          s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before discovery"
+          s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before bootstrap lookup"
         case (Some(seed: ChannelConnectInfo.WebRtc), None) =>
           s"starting peer\nseed: ${describeSeed(seed)}\nmissing signaling server url (?signal=ws://... required for WebRTC seed discovery)"
         case (Some(seed), _) =>

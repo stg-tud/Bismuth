@@ -4,125 +4,65 @@ import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, P
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import replication.BroadcastIO
-import replication.PlumtreeBroadcast.Peer
-import replication.JsoniterCodecs.codecDemoState
-import replication.overlay.HyParViewStateMachine
-import replication.overlay.HyParViewStateMachine.HyParViewConfig
-import replication.research.OverlayNetworkProtocol.DemoState
+import replication.JsoniterCodecs.given
+import replication.overlay.DirectConnectionOverlay
 
 import java.util.{Timer, TimerTask}
-import scala.util.Random
 
-/** vibecoded as part of the hyparview experiments */
 class OverlayDemoNode(
     selfDetails: Set[ChannelConnectInfo],
     listenEnvelope: Option[LatentConnection],
     envelopeResolver: ChannelResolver,
-    random: Random = Random(0),
-    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-    onStateChanged: DemoState => Unit = _ => (),
+    onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
     printOverlayEventsToStdout: Boolean = false,
     runBackgroundTasks: Boolean = true,
     val localUid: LocalUid = LocalUid.gen(),
 ) {
 
-  @volatile var state: DemoState = DemoState.empty
+  @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty
 
   private val selfRef                                     = PeerConnectInfo(localUid.uid, selfDetails)
   private val abort                                       = Abort()
   private val timer                                       = Timer(true)
-  private var broadcastIO: Option[BroadcastIO[DemoState]] = None
+  private var broadcastIO: Option[BroadcastIO[OverlayStatusProtocol.Status]] = None
 
-  private val heartbeatIntervalMillis = 10_000L
+  private val heartbeatIntervalMillis = 2_000L
 
   private def nowMillis(): Long = System.currentTimeMillis()
 
   private def emitStateChanged(): Unit =
     onStateChanged(state)
 
-  private def publish(delta: DemoState): Unit =
+  private def publish(delta: OverlayStatusProtocol.Status): Unit =
     if !Bottom.isEmpty(delta) then
         state = state.merge(delta)
         emitStateChanged()
         broadcastIO.foreach(_.applyDelta(delta))
 
-  private def refreshLocalView(replicate: Boolean, updateTimestamp: Boolean): Unit = {
-    given LocalUid     = localUid
-    val lastSeenMillis =
-      if updateTimestamp then nowMillis()
-      else state.connections.get(localUid.uid).map(_.value.lastSeenMillis).getOrElse(0L)
-    val activePeers = broadcastIO.flatMap(io =>
-      io.overlayController match
-          case hyp: HyParViewStateMachine => Some(hyp.activePeers)
-          case _                          => None
-    ).getOrElse(Set.empty)
-    val passivePeers = broadcastIO.flatMap(io =>
-      io.overlayController match
-          case hyp: HyParViewStateMachine => Some(hyp.passivePeers)
-          case _                          => None
-    ).getOrElse(Set.empty)
-    val eagerView = broadcastIO.map(io =>
-      io.plumtreeState.peerRoles.collect {
-        case (Peer(uid), _) => uid
-      }.toSet
-    ).getOrElse(Set.empty)
-    val delta = OverlayConnectionDirectory.updateNodeFromOverlay(
-      state.connections,
-      localUid.uid,
-      activePeers,
-      passivePeers,
-      eagerView,
-      lastSeenMillis,
-    )
-    if !Bottom.isEmpty(delta) then
-        if replicate then publish(DemoState(delta))
-        else {
-          state = state.merge(DemoState(delta))
-          emitStateChanged()
-        }
-  }
-
-  private def publishLocalView(): Unit          = refreshLocalView(replicate = true, updateTimestamp = true)
-  private def pruneStaleReplicatedNodes(): Unit = {
-    given LocalUid = localUid
-    val delta      = OverlayConnectionDirectory.pruneStaleNodes(
-      state.connections,
-      nowMillis(),
-      30_000L,
-      localUid.uid,
-    )
-    if !Bottom.isEmpty(delta) then publish(DemoState(delta))
-  }
-
-  private def newOverlay() = {
-    val stateMachine = HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)
-    BroadcastIO[DemoState](
+  private def newOverlay() =
+    BroadcastIO[OverlayStatusProtocol.Status](
       localUid,
-      (delta: DemoState) => {
+      delta => {
         state = state.merge(delta)
         emitStateChanged()
       },
-      overlay = Some(stateMachine),
+      overlay = Some(DirectConnectionOverlay(selfRef)),
       resolver = envelopeResolver,
       globalAbort = abort,
     )
-  }
 
   private def startBackgroundTasks(): Unit = {
     timer.schedule(
       new TimerTask {
         override def run(): Unit =
-          broadcastIO.foreach(_.repairTick())
+          repairTick()
       },
-      2000L,
-      2000L,
+      1000L,
+      1000L,
     )
     timer.schedule(
       new TimerTask {
-        override def run(): Unit = {
-          publishLocalView()
-          pruneStaleReplicatedNodes()
-        }
+        override def run(): Unit = overlayInfoTick()
       },
       heartbeatIntervalMillis,
       heartbeatIntervalMillis,
@@ -133,53 +73,43 @@ class OverlayDemoNode(
     val node = newOverlay()
     broadcastIO = Some(node)
     listenEnvelope.foreach(node.addBinaryConnection)
-    seeds.foreach(detail => node.discover(Set(PeerConnectInfo(localUid.uid, Set(detail)))))
-    publishLocalView()
+    seeds.foreach(detail => bootstrapVia(PeerConnectInfo(Uid.gen(), Set(detail))))
+    overlayInfoTick()
     if runBackgroundTasks then startBackgroundTasks()
   }
+
+  def bootstrapVia(peer: PeerConnectInfo): Unit =
+    broadcastIO.foreach(_.bootstrapVia(peer))
 
   def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit =
     broadcastIO.foreach(_.discover(peers.toSet))
 
   def selfConnectionDetails: Set[ChannelConnectInfo] = selfDetails
 
-  def shuffleTick(): Unit = broadcastIO.foreach(_.repairTick())
-
   def repairTick(): Unit = broadcastIO.foreach(_.repairTick())
+
+  def overlayInfoTick(): Unit = {
+    broadcastIO.foreach { io =>
+      given LocalUid = localUid
+      publish(OverlayStatusProtocol.statusDelta(state, io, nowMillis()))
+    }
+  }
 
   def addOverlayConnection(latent: LatentConnection): Unit =
     broadcastIO.foreach(_.addBinaryConnection(latent))
 
-  def activeView: Set[Uid] = broadcastIO.flatMap(io =>
-    io.overlayController match
-        case hyp: HyParViewStateMachine => Some(hyp.activeView)
-        case _                          => None
-  ).getOrElse(Set.empty)
+  def activeView: Set[Uid] = broadcastIO.collect {
+    case io if io.overlayController.isInstanceOf[DirectConnectionOverlay] =>
+      io.overlayController.asInstanceOf[DirectConnectionOverlay].active.keySet
+  }.getOrElse(Set.empty)
 
-  def passiveView: Set[Uid] = broadcastIO.flatMap(io =>
-    io.overlayController match
-        case hyp: HyParViewStateMachine => Some(hyp.passiveView)
-        case _                          => None
-  ).getOrElse(Set.empty)
+  def passiveView: Set[Uid] = Set.empty
 
-  def eagerView: Set[Uid] = broadcastIO.map(io =>
-    io.plumtreeState.peerRoles.collect {
-      case (Peer(uid), _) => uid
-    }.toSet
-  ).getOrElse(Set.empty)
+  def eagerView: Set[Uid] = broadcastIO.map(_.plumtreeState.eagerPeers).getOrElse(Set.empty)
 
   def lastIncomingMessageTimes: Map[Uid, Long] = Map.empty
 
-  def connectionDirectory: OverlayConnectionDirectory.Directory = state.connections
-
   def stop(): Unit = {
-    given LocalUid = localUid
-    val cleanup    = OverlayConnectionDirectory.removeNodeEverywhere(state.connections, localUid.uid)
-    if !Bottom.isEmpty(cleanup) then {
-      state = state.merge(DemoState(cleanup))
-      emitStateChanged()
-      broadcastIO.foreach(_.applyDelta(DemoState(cleanup)))
-    }
     abort.abort()
     timer.cancel()
   }

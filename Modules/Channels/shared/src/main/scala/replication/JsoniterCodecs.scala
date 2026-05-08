@@ -6,7 +6,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.*
 import rdts.time.*
-import replication.research.OverlayNetworkProtocol.DemoState
 import replication.research.SignalingServer.Message
 
 object JsoniterCodecs {
@@ -118,6 +117,5 @@ object JsoniterCodecs {
   /** case studies */
 
   given codecConnectionDetails: JsonValueCodec[ChannelConnectInfo] = JsonCodecMaker.make
-  given codecDemoState: JsonValueCodec[DemoState]                  = JsonCodecMaker.make
   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
 }
