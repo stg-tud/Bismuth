@@ -30,8 +30,6 @@ class OverlayDemoNode(
   private val timer                                       = Timer(true)
   private var broadcastIO: Option[BroadcastIO[OverlayStatusProtocol.Status]] = None
 
-  private val heartbeatIntervalMillis = 2_000L
-
   private def nowMillis(): Long = System.currentTimeMillis()
 
   private def emitStateChanged(): Unit =
@@ -68,8 +66,8 @@ class OverlayDemoNode(
       new TimerTask {
         override def run(): Unit = overlayInfoTick()
       },
-      heartbeatIntervalMillis,
-      heartbeatIntervalMillis,
+      100L,
+      100L,
     )
   }
 
