@@ -8,7 +8,7 @@ import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import replication.BroadcastIO
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
-import replication.overlay.DirectConnectionOverlay
+import replication.overlay.{DirectConnectionOverlay, HyParViewStateMachine}
 
 object OverlayStatusProtocol {
 
@@ -41,17 +41,20 @@ object OverlayStatusProtocol {
   given JsonValueCodec[Status] = summon[JsonValueCodec[ObserveRemoveMap[Uid, LocalView]]]
 
   def localViewOf[State](io: BroadcastIO[State], timestamp: Long)(using LocalUid): LocalView = {
-    val directPeers = io.overlayController match
-        case overlay: DirectConnectionOverlay => overlay.active.keySet
-        case _                                => Set.empty[Uid]
+    val (activePeers, passivePeers) = io.overlayController match
+        case overlay: HyParViewStateMachine => (overlay.activeView, overlay.passiveView)
+        case overlay: DirectConnectionOverlay => (overlay.active.keySet, Set.empty[Uid])
+        case _                                => (Set.empty[Uid], Set.empty[Uid])
 
-    val peerStates = directPeers.iterator.map { uid =>
-      val state = io.plumtreeState.peerRoles.get(Peer(uid)) match
-          case Some(PeerRole.Eager) => PeerState.Eager
-          case Some(PeerRole.Lazy)  => PeerState.Lazy
-          case None                 => PeerState.Passive
-      uid -> state
-    }.toList
+    val peerStates =
+      (passivePeers.iterator.map(_ -> PeerState.Passive) ++
+        activePeers.iterator.map { uid =>
+          val state = io.plumtreeState.peerRoles.get(Peer(uid)) match
+              case Some(PeerRole.Lazy)  => PeerState.Lazy
+              case Some(PeerRole.Eager) => PeerState.Eager
+              case None                 => PeerState.Eager
+          uid -> state
+        }).toList
 
     val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) { case (acc, (uid, state)) =>
       acc.merge(acc.update(uid, LastWriterWins.now(state)))

@@ -5,14 +5,18 @@ import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, LocalUid, Uid}
 import replication.BroadcastIO
 import replication.JsoniterCodecs.given
-import replication.overlay.DirectConnectionOverlay
+import replication.overlay.HyParViewStateMachine
+import replication.overlay.HyParViewStateMachine.HyParViewConfig
 
 import java.util.{Timer, TimerTask}
+import scala.util.Random
 
 class OverlayDemoNode(
     selfDetails: Set[ChannelConnectInfo],
     listenEnvelope: Option[LatentConnection],
     envelopeResolver: ChannelResolver,
+    random: Random = Random(0),
+    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
     onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
     printOverlayEventsToStdout: Boolean = false,
     runBackgroundTasks: Boolean = true,
@@ -46,7 +50,7 @@ class OverlayDemoNode(
         state = state.merge(delta)
         emitStateChanged()
       },
-      overlay = Some(DirectConnectionOverlay(selfRef)),
+      overlay = Some(HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)),
       resolver = envelopeResolver,
       globalAbort = abort,
     )
@@ -99,11 +103,14 @@ class OverlayDemoNode(
     broadcastIO.foreach(_.addBinaryConnection(latent))
 
   def activeView: Set[Uid] = broadcastIO.collect {
-    case io if io.overlayController.isInstanceOf[DirectConnectionOverlay] =>
-      io.overlayController.asInstanceOf[DirectConnectionOverlay].active.keySet
+    case io if io.overlayController.isInstanceOf[HyParViewStateMachine] =>
+      io.overlayController.asInstanceOf[HyParViewStateMachine].activeView
   }.getOrElse(Set.empty)
 
-  def passiveView: Set[Uid] = Set.empty
+  def passiveView: Set[Uid] = broadcastIO.collect {
+    case io if io.overlayController.isInstanceOf[HyParViewStateMachine] =>
+      io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView
+  }.getOrElse(Set.empty)
 
   def eagerView: Set[Uid] = broadcastIO.map(_.plumtreeState.eagerPeers).getOrElse(Set.empty)
 
