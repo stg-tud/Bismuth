@@ -148,14 +148,13 @@ final case class HyParViewStateMachine(
           // connection and forwards `ForwardJoin` along its current active view to seed additional peers.
           val remembered                = rememberPeer(newNode)
           val existingTargets           = remembered.active.filterNot(_.peer.uid == newNode.uid)
-          val (next, activationActions) = remembered.addActive(newNode, from)
           val forwardActions            = existingTargets.map(target =>
             OverlayAction.Send(
               target.connection,
               ForwardJoin(newNode, config.activeRandomWalkLength, self.uid)
             )
           ).toList
-          Result(next, activationActions ::: forwardActions)
+          Result(remembered, OverlayAction.Send(from, OverlayMessage.Neighbor(self, false)) :: forwardActions)
 
         case ForwardJoin(newNode, ttl, sender) =>
           // Paper forwarded-join random walk: intermediate hops remember the newcomer, optionally add it
