@@ -104,6 +104,23 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(sent(actions), List((cC, NeighborReply(defaultSelf.uid, accepted = true))))
   }
 
+  test("promotion chooses a random eligible passive peer, not the first one") {
+    val a = peer("a")
+    val b = peer("b")
+    val c = peer("c")
+
+    val machine = withPassive(state(random = (_, _) => 1), a, b, c)
+    val HyParViewStateMachine.Result(next, actions) = machine.promotionTick()
+
+    assertEquals(next.pendingConnections.map(_.peer.uid), Vector(b.uid))
+    assertEquals(
+      actions,
+      List(
+        OverlayAction.SendJoin(b.channelConnectors, b.uid, Neighbor(defaultSelf, highPriority = true))
+      )
+    )
+  }
+
   test("removeConnection demotes an active peer to passive and triggers replacement promotion") {
     val activePeer = peer("active")
     val backup     = peer("backup")

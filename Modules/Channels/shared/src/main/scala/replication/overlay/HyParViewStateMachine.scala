@@ -105,21 +105,20 @@ final case class HyParViewStateMachine(
 
   /** Paper passive-view maintenance step: initiate one shuffle through a random active peer. */
   def shuffleTick(): Result =
-    if active.isEmpty then Result(this, Nil)
-    else {
-      val target = choose(active)
-      val sample = Set(self) ++ randomSubset(
-        active.iterator.map(_.peer).toSet,
-        config.shuffleActiveSample
-      ) ++ randomSubset(passivePeers, config.shufflePassiveSample)
-      Result(
-        copy(pendingShuffleSamples = pendingShuffleSamples.updated(target.peer.uid, sample)),
-        List(OverlayAction.Send(
-          target.connection,
-          Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid)
-        ))
-      )
-    }
+    choose(active) match
+        case None         => Result(this, Nil)
+        case Some(target) =>
+          val sample = Set(self) ++ randomSubset(
+            active.iterator.map(_.peer).toSet,
+            config.shuffleActiveSample
+          ) ++ randomSubset(passivePeers, config.shufflePassiveSample)
+          Result(
+            copy(pendingShuffleSamples = pendingShuffleSamples.updated(target.peer.uid, sample)),
+            List(OverlayAction.Send(
+              target.connection,
+              Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid)
+            ))
+          )
 
   /** Overlay lifecycle tick: retry promotion first, then run passive-view shuffle maintenance. */
   override def tick(): (OverlayController, List[OverlayAction]) = {
@@ -134,8 +133,7 @@ final case class HyParViewStateMachine(
   }
 
   /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
-  override def receiveActions(message: OverlayMessage, conn: Connection
-  ): (OverlayController, List[OverlayAction]) = {
+  override def receiveActions(message: OverlayMessage, conn: Connection): (OverlayController, List[OverlayAction]) = {
     val result = receive(message, conn)
     (result.state, result.actions)
   }
@@ -218,12 +216,11 @@ final case class HyParViewStateMachine(
     }
 
   private def dropRandomActive(): (HyParViewStateMachine, List[OverlayAction]) =
-    if active.isEmpty then (this, Nil)
-    else {
-      val dropped = choose(active)
-      val next    = copy(active = active.filterNot(_.peer.uid == dropped.peer.uid))
-      (next, List(OverlayAction.Disconnect(dropped.connection)))
-    }
+    choose(active) match
+        case None          => (this, Nil)
+        case Some(dropped) =>
+          val next = copy(active = active.filterNot(_.peer.uid == dropped.peer.uid))
+          (next, List(OverlayAction.Disconnect(dropped.connection)))
 
   private def acceptShuffle(origin: PeerConnectInfo, incomingSample: Set[PeerConnectInfo]): Result = {
     val replySample = randomSubset(passivePeers, incomingSample.size)
@@ -255,18 +252,18 @@ final case class HyParViewStateMachine(
     copy(known = known.removed(peer)).clearPendingPeer(peer)
 
   private def trimKnownPassiveIfNeeded(preferredVictims: Set[Uid]): HyParViewStateMachine = {
-    val passive = passivePeers.toVector
+    val passive = passivePeers.toIndexedSeq
     if passive.size <= config.passiveViewSize then this
-    else {
-      val victim = passive.find(p => preferredVictims.contains(p.uid)).getOrElse(choose(passive))
-      forgetPeer(victim.uid)
-    }
+    else
+        passive.find(p => preferredVictims.contains(p.uid)).orElse(choose(passive)) match
+            case Some(victim) => forgetPeer(victim.uid)
+            case None         => this
   }
 
   private def withPromotionIfNeeded(existingActions: List[OverlayAction]): Result =
     if active.size >= config.activeViewSize then Result(this, existingActions)
     else
-        passivePeers.find(peer => !pendingConnections.exists(_.peer.uid == peer.uid)) match
+        choose(passivePeers.filterNot(peer => pendingConnections.exists(_.peer.uid == peer.uid)).toIndexedSeq) match
             case Some(candidate) =>
               Result(
                 copy(pendingConnections = pendingConnections :+ PendingConnection(candidate)),
@@ -278,7 +275,8 @@ final case class HyParViewStateMachine(
               )
             case None => Result(this, existingActions)
 
-  private def choose[A](values: Vector[A]): A = values(randomIndex(0, values.size))
+  private def choose[A](values: Seq[A]): Option[A] =
+    Option.when(values.nonEmpty)(values(randomIndex(0, values.size)))
 
   private def randomSubset[A](values: Set[A], maxSize: Int): Set[A] = {
     val vec   = values.toVector
