@@ -127,6 +127,11 @@ class BroadcastIO[State](
     applyOverlayResult(overlay.discoverPassive(peers))
   }
 
+  /** Initiate overlay-native bootstrap through a contact peer. */
+  def bootstrapVia(contact: PeerConnectInfo): Unit = lock.synchronized {
+    applyOverlayResult(overlay.join(contact))
+  }
+
   private def localKnownDeltaContext: Dots = plumtree.localContext
 
   def allPayloads: List[Payload[State]] =

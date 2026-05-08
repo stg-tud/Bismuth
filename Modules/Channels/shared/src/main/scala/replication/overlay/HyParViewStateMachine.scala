@@ -132,6 +132,16 @@ final case class HyParViewStateMachine(
     (next, Nil)
   }
 
+  override def join(contact: PeerConnectInfo): (OverlayController, List[OverlayAction]) =
+    if contact.uid == self.uid || !canConnectTo(contact) then (this, Nil)
+    else {
+      val next = rememberPeer(contact)
+      (
+        next,
+        List(OverlayAction.SendJoin(contact.channelConnectors, contact.uid, Join(self)))
+      )
+    }
+
   /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
   override def receiveActions(message: OverlayMessage, conn: Connection): (OverlayController, List[OverlayAction]) = {
     val result = receive(message, conn)
@@ -140,6 +150,53 @@ final case class HyParViewStateMachine(
 
   def receive(message: OverlayMessage, from: Connection): Result = {
     message match
+        case Join(newNode) =>
+          val remembered                = rememberPeer(newNode)
+          val existingTargets           = remembered.active.filterNot(_.peer.uid == newNode.uid)
+          val (next, activationActions) = remembered.addActive(newNode, from)
+          val forwardActions            = existingTargets.map(target =>
+            OverlayAction.Send(
+              target.connection,
+              ForwardJoin(newNode, config.activeRandomWalkLength, self.uid)
+            )
+          ).toList
+          Result(next, activationActions ::: forwardActions)
+
+        case ForwardJoin(newNode, ttl, sender) =>
+          def sendJoin(nextState: HyParViewStateMachine) = {
+            Result(
+              nextState,
+              List(
+                OverlayAction.SendJoin(
+                  newNode.channelConnectors,
+                  newNode.uid,
+                  Neighbor(self, highPriority = nextState.active.isEmpty)
+                )
+              )
+            )
+          }
+
+          if newNode.uid == self.uid then Result(this, Nil)
+          else if ttl == 0 || active.size <= 1 then
+              val remembered = rememberPeer(newNode)
+              sendJoin(remembered)
+          else {
+            val withPassive =
+              if ttl == config.passiveRandomWalkLength && canConnectTo(newNode)
+              then rememberPeer(newNode)
+              else this
+
+            val nextHop = choose(withPassive.active.filterNot(_.peer.uid == sender))
+            nextHop match
+                case Some(target) =>
+                  Result(
+                    withPassive,
+                    List(OverlayAction.Send(target.connection, ForwardJoin(newNode, ttl - 1, self.uid)))
+                  )
+                case None =>
+                  sendJoin(withPassive)
+          }
+
         case Neighbor(fromPeer, highPriority) =>
           // Paper active-view repair handshake: high priority always accepted, low priority only if there is a free active slot.
           val afterRemember = rememberPeer(fromPeer)
@@ -161,7 +218,7 @@ final case class HyParViewStateMachine(
           // Paper shuffle walk: intermediate hops only forward; the endpoint replies and merges the received sample.
           val remembered = sample.foldLeft(rememberPeer(origin))((state, peer) => state.rememberPeer(peer))
           if ttl > 0 && remembered.active.size > 1 then
-              Random.shuffle(remembered.active.filterNot(_.peer.uid == sender)).headOption match
+              choose(remembered.active.filterNot(_.peer.uid == sender)) match
                   case Some(target) => Result(
                       remembered,
                       List(OverlayAction.Send(target.connection, Shuffle(origin, sample, ttl - 1, self.uid)))
