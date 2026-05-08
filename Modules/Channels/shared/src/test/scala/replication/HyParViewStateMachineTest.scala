@@ -81,7 +81,7 @@ class HyParViewStateMachineTest extends FunSuite {
     )
   }
 
-  test("Join activates the newcomer on the incoming connection and forwards ForwardJoin to existing active peers") {
+  test("Join asks the newcomer to establish the contact edge and forwards ForwardJoin to existing active peers") {
     val a         = peer("a")
     val newcomer  = peer("newcomer")
     val aC        = TestConnection("a")
@@ -90,9 +90,15 @@ class HyParViewStateMachineTest extends FunSuite {
     val machine = withActive(state(), a -> aC)
     val HyParViewStateMachine.Result(next, actions) = receive(machine, Join(newcomer), newcomerC)
 
-    assertEquals(next.activeView, Set(a.uid, newcomer.uid))
-    assertEquals(sent(actions), List((aC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid))))
-    assert(actions.contains(OverlayAction.ActiveConnectionAdded(newcomer.uid)))
+    assertEquals(next.activeView, Set(a.uid))
+    assert(next.passiveView.contains(newcomer.uid))
+    assertEquals(
+      sent(actions),
+      List(
+        (newcomerC, Neighbor(defaultSelf, false)),
+        (aC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid))
+      )
+    )
   }
 
   test("ForwardJoin at ttl zero initiates direct Neighbor establishment with the newcomer") {
