@@ -6,8 +6,6 @@ import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.overlay.OverlayController.OverlayMessage.*
 import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
-import scala.util.Random
-
 /** Immutable membership state machine for HyParView.
   *
   * Deviations from the paper:
@@ -98,10 +96,6 @@ final case class HyParViewStateMachine(
     ).toSet
   def passiveView: Set[Uid] = passivePeers.iterator.map(_.uid).toSet
 
-  /** Local liveness/progress hook: if we are under target active view size, retry promotion from the passive view. */
-  def promotionTick(): Result =
-    if active.size >= config.activeViewSize || passivePeers.isEmpty then Result(this, Nil)
-    else withPromotionIfNeeded(Nil)
 
   /** Paper passive-view maintenance step: initiate one shuffle through a random active peer. */
   def shuffleTick(): Result =
@@ -122,9 +116,8 @@ final case class HyParViewStateMachine(
 
   /** Overlay lifecycle tick: retry promotion first, then run passive-view shuffle maintenance. */
   override def tick(): (OverlayController, List[OverlayAction]) = {
-    val Result(promoted, a1) = promotionTick()
-    val Result(shuffled, a2) = promoted.shuffleTick()
-    (shuffled, a1 ::: a2)
+    val Result(shuffled, a2) = shuffleTick()
+    (shuffled, a2)
   }
 
   override def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
@@ -151,6 +144,8 @@ final case class HyParViewStateMachine(
   def receive(message: OverlayMessage, from: Connection): Result = {
     message match
         case Join(newNode) =>
+          // Paper join contact handling: the contact immediately activates the newcomer on the incoming
+          // connection and forwards `ForwardJoin` along its current active view to seed additional peers.
           val remembered                = rememberPeer(newNode)
           val existingTargets           = remembered.active.filterNot(_.peer.uid == newNode.uid)
           val (next, activationActions) = remembered.addActive(newNode, from)
@@ -163,6 +158,9 @@ final case class HyParViewStateMachine(
           Result(next, activationActions ::: forwardActions)
 
         case ForwardJoin(newNode, ttl, sender) =>
+          // Paper forwarded-join random walk: intermediate hops remember the newcomer, optionally add it
+          // to the passive view at PRWL, and either forward to another active peer or terminate by
+          // initiating a direct Neighbor handshake with the newcomer.
           def sendJoin(nextState: HyParViewStateMachine) = {
             Result(
               nextState,

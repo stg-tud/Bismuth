@@ -58,12 +58,69 @@ class HyParViewStateMachineTest extends FunSuite {
     )
 
   private def sent(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Send(conn, msg) => (conn, msg) }
+  private def sentJoin(actions: List[OverlayAction]) =
+    actions.collect { case OverlayAction.SendJoin(details, expectedPeer, msg) => (details, expectedPeer, msg) }
   private def disconnects(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Disconnect(conn) => conn }
 
   private def receive(machine: HyParViewStateMachine, msg: OverlayController.OverlayMessage, from: Connection)
       : HyParViewStateMachine.Result = {
     val (next, actions) = machine.receiveActions(msg, from)
     HyParViewStateMachine.Result(next.asInstanceOf[HyParViewStateMachine], actions)
+  }
+
+  test("join(contact) emits a Join message to the contact") {
+    val contact = peer("contact")
+
+    val (next0, actions) = state().join(contact)
+    val next             = next0.asInstanceOf[HyParViewStateMachine]
+
+    assert(next.passiveView.contains(contact.uid))
+    assertEquals(
+      sentJoin(actions),
+      List((contact.channelConnectors, contact.uid, Join(defaultSelf)))
+    )
+  }
+
+  test("Join activates the newcomer on the incoming connection and forwards ForwardJoin to existing active peers") {
+    val a         = peer("a")
+    val newcomer  = peer("newcomer")
+    val aC        = TestConnection("a")
+    val newcomerC = TestConnection("newcomer")
+
+    val machine = withActive(state(), a -> aC)
+    val HyParViewStateMachine.Result(next, actions) = receive(machine, Join(newcomer), newcomerC)
+
+    assertEquals(next.activeView, Set(a.uid, newcomer.uid))
+    assertEquals(sent(actions), List((aC, ForwardJoin(newcomer, config.activeRandomWalkLength, defaultSelf.uid))))
+    assert(actions.contains(OverlayAction.ActiveConnectionAdded(newcomer.uid)))
+  }
+
+  test("ForwardJoin at ttl zero initiates direct Neighbor establishment with the newcomer") {
+    val newNode = peer("new")
+    val hopC    = TestConnection("hop")
+
+    val HyParViewStateMachine.Result(next, actions) = receive(state(), ForwardJoin(newNode, 0, peer("sender").uid), hopC)
+
+    assert(next.passiveView.contains(newNode.uid))
+    assertEquals(
+      sentJoin(actions),
+      List((newNode.channelConnectors, newNode.uid, Neighbor(defaultSelf, highPriority = true)))
+    )
+  }
+
+  test("ForwardJoin at PRWL remembers the newcomer passively and forwards to another active peer") {
+    val a       = peer("a")
+    val b       = peer("b")
+    val newNode = peer("new")
+    val aC      = TestConnection("a")
+    val bC      = TestConnection("b")
+
+    val machine = withActive(state(), a -> aC, b -> bC)
+    val HyParViewStateMachine.Result(next, actions) =
+      receive(machine, ForwardJoin(newNode, config.passiveRandomWalkLength, sender = a.uid), aC)
+
+    assert(next.passiveView.contains(newNode.uid))
+    assertEquals(sent(actions), List((bC, ForwardJoin(newNode, config.passiveRandomWalkLength - 1, defaultSelf.uid))))
   }
 
   test("low-priority Neighbor is only accepted when there is free active capacity") {
@@ -104,22 +161,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(sent(actions), List((cC, NeighborReply(defaultSelf.uid, accepted = true))))
   }
 
-  test("promotion chooses a random eligible passive peer, not the first one") {
-    val a = peer("a")
-    val b = peer("b")
-    val c = peer("c")
 
-    val machine = withPassive(state(random = (_, _) => 1), a, b, c)
-    val HyParViewStateMachine.Result(next, actions) = machine.promotionTick()
-
-    assertEquals(next.pendingConnections.map(_.peer.uid), Vector(b.uid))
-    assertEquals(
-      actions,
-      List(
-        OverlayAction.SendJoin(b.channelConnectors, b.uid, Neighbor(defaultSelf, highPriority = true))
-      )
-    )
-  }
 
   test("removeConnection demotes an active peer to passive and triggers replacement promotion") {
     val activePeer = peer("active")

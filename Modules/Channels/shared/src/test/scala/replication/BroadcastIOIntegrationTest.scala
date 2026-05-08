@@ -60,8 +60,8 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
       val lineNeighbors = Vector(i - 1, i + 1)
         .filter(j => j >= 0 && j < nodes.size)
         .map(nodes(_).selfInfo)
-        .toSet
-      nodes(i).io.discover(lineNeighbors)
+        .toVector
+      lineNeighbors.foreach(nodes(i).io.bootstrapVia)
     }
 
     def drainQueue(maxSteps: Int = 2000): Unit = {
