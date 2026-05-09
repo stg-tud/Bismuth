@@ -193,10 +193,10 @@ object OverlayNetworkGraphNetworking {
           case ConnectionDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
           case _                                 => false
 
-    def connect(details: ConnectionDescriptor): Option[LatentConnection] = details match
+    def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = details match
         case ConnectionDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
           val target = Uid.predefined(peerId)
-          Some(new LatentConnection {
+          Some(new LatentConnection[Connection] {
             override def prepare(receiver: Receive): Async[Abort, Connection] = {
               Async.fromCallback { abort ?=>
                 val connector                         = createRtcConnector()

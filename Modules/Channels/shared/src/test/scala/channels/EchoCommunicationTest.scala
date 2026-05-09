@@ -8,8 +8,8 @@ import scala.concurrent.ExecutionContext
 import scala.util.Failure
 
 trait EchoCommunicationTest[Info](
-    serverConn: ExecutionContext => (Info, LatentConnection),
-    clientConn: ExecutionContext => Info => LatentConnection
+    serverConn: ExecutionContext => (Info, LatentConnection[ConnectionDescriptor]),
+    clientConn: ExecutionContext => Info => LatentConnection[Connection]
 ) extends munit.FunSuite {
 
   // need an execution context that generates new tasks as TCP does lots of blocking
@@ -37,13 +37,13 @@ trait EchoCommunicationTest[Info](
 
     val (info, serverLatent) = serverConn(ec)
 
-    val echoServer: Prod[Connection] =
+    val echoServer: Async[Abort, ConnectionDescriptor] =
       serverLatent.prepare: conn =>
           printErrors: mb =>
               trace("server received; echoing")
               conn.send(mb).runToFuture(())
 
-    val client: Prod[Connection] =
+    val client: Async[Abort, Connection] =
       clientConn.apply(ec).apply(info).prepare: conn =>
           printErrors: mb =>
               trace("client received")

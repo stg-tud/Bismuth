@@ -63,6 +63,6 @@ class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Uni
   // frame parsing
 
   def loopHandler(handler: Receive): Unit =
-    inputStream.loopReceive(handler.messageHandler(this))
+    inputStream.loopReceive(handler.connectionEstablished(this))
 
 }

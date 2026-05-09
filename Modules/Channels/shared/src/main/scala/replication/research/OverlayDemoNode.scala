@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ConnectionDescriptor, ChannelResolver, LatentConnection, PeerConnectInfo}
+import channels.{Abort, Connection, ConnectionDescriptor, ChannelResolver, LatentConnection, PeerConnectInfo}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import replication.JsoniterCodecs.given
@@ -14,7 +14,7 @@ import scala.util.Random
 
 class OverlayDemoNode(
                        selfDetails: Set[ConnectionDescriptor],
-                       listenEnvelope: Option[LatentConnection],
+                       listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
                        envelopeResolver: ChannelResolver,
                        random: Random = Random(0),
                        config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
@@ -77,7 +77,7 @@ class OverlayDemoNode(
   def start(seeds: List[ConnectionDescriptor] = Nil): Unit = {
     val node = newOverlay()
     broadcastIO = Some(node)
-    listenEnvelope.foreach(node.addBinaryConnection)
+    listenEnvelope.foreach(node.addServerConnection)
     seeds.foreach(detail => bootstrapVia(PeerConnectInfo(Uid.gen(), Set(detail))))
     overlayInfoTick()
     if runBackgroundTasks then startBackgroundTasks()
@@ -100,8 +100,8 @@ class OverlayDemoNode(
     }
   }
 
-  def addOverlayConnection(latent: LatentConnection): Unit =
-    broadcastIO.foreach(_.addBinaryConnection(latent))
+  def addOverlayConnection(latent: LatentConnection[Connection]): Unit =
+    broadcastIO.foreach(_.addClientConnection(latent))
 
   def activeView: Set[Uid] = broadcastIO.collect {
     case io if io.overlayController.isInstanceOf[HyParViewStateMachine] =>

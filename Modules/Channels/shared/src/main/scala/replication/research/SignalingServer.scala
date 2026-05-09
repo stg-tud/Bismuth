@@ -40,7 +40,7 @@ class SignalingServer(
 
   def stop(): Unit = abort.abort()
 
-  def addIncomingConnection(latent: LatentConnection): Unit =
+  def addIncomingConnection(latent: LatentConnection[?]): Unit =
     latent.prepare(receive).runIn(abort) {
       case Success(_)  => ()
       case Failure(ex) => ex.printStackTrace()

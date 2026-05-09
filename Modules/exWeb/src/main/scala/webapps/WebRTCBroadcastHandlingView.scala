@@ -132,7 +132,7 @@ class WebRTCConnectionView[S](val dataManager: BroadcastIO[S]) {
       }
     )
 
-    dataManager.addBinaryConnection(WebRTCConnection.openLatent(channel))
+    dataManager.addClientConnection(WebRTCConnection.openLatent(channel))
 
   }
 

@@ -22,12 +22,13 @@ object JavaHttpServerTest {
 
     val conn = SSEServer(handler => server.createContext("/channel", handler))
 
-    conn.prepare(inc => msg => println(msg)).runIn(Abort()):
+    conn.prepare { conn =>
+      println("received connection, replying")
+      conn.send("yay!".convert).runIn(Abort())(res => println(res))
+      msg => println(msg)
+    }.runIn(Abort()):
         case Failure(ex)   => ex.printStackTrace()
         case Success(conn) =>
-          println("received connection, replying")
-          conn.send("yay!".convert).runIn(Abort())(res => println(res))
-
     server.start()
 
   }
@@ -48,7 +49,7 @@ object JavaHttpServerTest2 {
       delta => println(s"server received: $delta")
     )
 
-    serverDiss.addBinaryConnection(SSEServer(handler => server.createContext("/channel", handler)))
+    serverDiss.addServerConnection(SSEServer(handler => server.createContext("/channel", handler)))
 
     serverDiss.applyDelta(MultiVersionRegister.of("Hello! from the server")(using serverId))
 
@@ -66,7 +67,7 @@ object JavaHttpServerTest2 {
 
     val client = HttpClient.newHttpClient()
     val ec     = ExecutionContext.global
-    clientDiss.addBinaryConnection(JavaHttp.SSEClient(client, new URI(s"http://localhost:$port/channel"), ec))
+    clientDiss.addClientConnection(JavaHttp.SSEClient(client, new URI(s"http://localhost:$port/channel"), ec))
 
     clientDiss.applyDelta(MultiVersionRegister.of("Hello!")(using clientId))
 

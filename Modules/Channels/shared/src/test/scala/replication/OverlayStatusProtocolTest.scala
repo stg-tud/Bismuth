@@ -34,8 +34,8 @@ class OverlayStatusProtocolTest extends FunSuite {
 
   private def connect(queue: LocalMessageQueue, left: Node, right: Node, label: String): Unit = {
     val link = QueuedLocalConnection(queue)
-    left.io.addBinaryConnection(link.server)
-    right.io.addBinaryConnection(link.client(label))
+    left.io.addServerConnection(link.server)
+    right.io.addClientConnection(link.client(label))
   }
 
   private def drain(queue: LocalMessageQueue, limit: Int = 1000): Unit = {
@@ -108,7 +108,7 @@ class OverlayStatusProtocolTest extends FunSuite {
       )
 
       def startListening(): Unit =
-        io.addBinaryConnection(resolver.queuedServer(selfInfo.channelConnectors.head).get)
+        io.addServerConnection(resolver.queuedServer(selfInfo.channelConnectors.head).get)
 
       def bootstrapVia(peer: PeerConnectInfo): Unit =
         io.bootstrapVia(peer)

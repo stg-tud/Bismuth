@@ -13,13 +13,13 @@ import scala.scalajs.js.typedarray.ArrayBuffer
 class BroadcastException(message: String, val event: MessageEvent) extends Exception(message)
 
 object BroadcastChannelConnector {
-  def named(name: String): LatentConnection = new LatentConnection {
+  def named(name: String): LatentConnection[Connection] = new LatentConnection[Connection] {
     override def prepare(incomingHandler: Receive): Async[Abort, Connection] = Async {
 
       val bc         = new BroadcastChannel(name)
       val connection = BroadcastChannelConnection(bc)
 
-      val handler = incomingHandler.messageHandler(connection)
+      val handler = incomingHandler.connectionEstablished(connection)
 
       bc.onmessage = (event: dom.MessageEvent) =>
         event.data match

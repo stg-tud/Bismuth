@@ -28,8 +28,8 @@ object TCP {
   def defaultSocket(socketAddress: InetSocketAddress): () => Socket =
     () => new Socket(socketAddress.getAddress, socketAddress.getPort)
 
-  def connect(bindsocket: () => Socket, executionContext: ExecutionContext): LatentConnection =
-    new LatentConnection {
+  def connect(bindsocket: () => Socket, executionContext: ExecutionContext): LatentConnection[Connection] =
+    new LatentConnection[Connection] {
       override def prepare(incoming: Receive): Async[Any, Connection] =
         TCP.syncAttempt {
           TCP.handleConnection(bindsocket(), incoming, executionContext)
@@ -50,13 +50,17 @@ object TCP {
     socket
   }
 
-  def listen(bindsocket: () => ServerSocket, executionContext: ExecutionContext): LatentConnection =
-    new LatentConnection {
-      override def prepare(incoming: Receive): Async[Abort, Connection] =
+  def listen(
+      bindsocket: () => ServerSocket,
+      executionContext: ExecutionContext
+  ): LatentConnection[ConnectionDescriptor] =
+    new LatentConnection[ConnectionDescriptor] {
+      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor] =
         Async.fromCallback { abort ?=>
           try
 
               val socket = bindsocket()
+              Async.handler.succeed(ConnectionDescriptor.Tcp(socket.getInetAddress.getHostAddress, socket.getLocalPort))
 
               executionContext.execute { () =>
                 try
@@ -64,9 +68,8 @@ object TCP {
                     val connection = socket.accept()
                     if connection != null
                     then
-                        Async.handler.succeed {
-                          TCP.handleConnection(connection, incoming, executionContext)
-                        }
+                        TCP.handleConnection(connection, incoming, executionContext)
+                        ()
                   }
                 catch {
                   case exception: SocketException =>

@@ -32,8 +32,8 @@ class BroadcastIOAeadTest extends FunSuite {
     val dd2 = BroadcastIO[Set[String]](LocalUid.gen(), received2 += _, aead = aead)
 
     val sync = SynchronousLocalConnection()
-    dd1.addBinaryConnection(sync.server)
-    dd2.addBinaryConnection(sync.client("2"))
+    dd1.addServerConnection(sync.server)
+    dd2.addClientConnection(sync.client("2"))
 
     dd1.applyDelta(Set("secret"))
 

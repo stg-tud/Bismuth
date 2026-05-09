@@ -1,6 +1,6 @@
 package replication
 
-import channels.{Abort, ConnectionDescriptor, ChannelResolver, LatentConnection, SynchronousLocalConnection}
+import channels.{Abort, Connection, ConnectionDescriptor, ChannelResolver, LatentConnection, SynchronousLocalConnection}
 import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.Uid
@@ -23,7 +23,7 @@ class SignalingServerTest extends FunSuite {
     val server        = SignalingServer(debug = false)
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
-      override def connect(details: ConnectionDescriptor): Option[LatentConnection] =
+      override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
         if details == serverDetails then
             val link = SynchronousLocalConnection()
             server.addIncomingConnection(link.server)

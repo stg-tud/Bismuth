@@ -27,10 +27,10 @@ object WebviewAdapterChannel {
     override def close(): Unit = ()
   }
 
-  def listen(): LatentConnection = new LatentConnection {
+  def listen(): LatentConnection[Connection] = new LatentConnection[Connection] {
     def prepare(incomingHandler: Receive): Async[Abort, Connection] = Sync {
       val conn = WebviewConnectionContext
-      val cb   = incomingHandler.messageHandler(conn)
+      val cb   = incomingHandler.connectionEstablished(conn)
       receiveCallback = { (msg: String) =>
         val bytes = java.util.Base64.getDecoder.decode(msg)
         cb.succeed(ArrayMessageBuffer(bytes))

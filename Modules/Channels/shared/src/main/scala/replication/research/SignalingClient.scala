@@ -1,8 +1,8 @@
 package replication.research
 
-import channels.{Abort, ArrayMessageBuffer, ConnectionDescriptor, ChannelResolver, Connection, Receive}
+import channels.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import de.rmgk.delay.Async
+import de.rmgk.delay.{Async, Callback}
 import rdts.base.Uid
 import replication.JsoniterCodecs.given
 import replication.research.SignalingServer.{Message, Session}
@@ -34,7 +34,7 @@ class SignalingClient(
     pendingOffers.clear()
   }
 
-  private val receive: Receive = (_: Connection) => {
+  private def receive(conn: Connection): Callback[MessageBuffer] = {
     case Success(buffer) =>
       readFromArray[Message](buffer.asArray) match
           case Message.TopicInfo(requestId, _, peers) =>
@@ -78,16 +78,13 @@ class SignalingClient(
                   promise.future.onComplete(Async.handler.complete)
                   resolver.connect(server) match
                       case Some(latent) =>
-                        latent.prepare(receive).runIn(abort) {
+                        latent.prepare(receive(_)).runIn(abort) {
                           case Success(conn) =>
                             synchronized {
                               connection = Some(conn)
                             }
                             promise.trySuccess(conn): Unit
                           case Failure(err) =>
-                            synchronized {
-                              connecting = None
-                            }
                             promise.tryFailure(err): Unit
                         }
                       case None =>

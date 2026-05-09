@@ -53,7 +53,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     }
 
     nodes.foreach { node =>
-      node.io.addBinaryConnection(resolver.queuedServer(node.selfInfo.channelConnectors.head).get)
+      node.io.addServerConnection(resolver.queuedServer(node.selfInfo.channelConnectors.head).get)
     }
 
     nodes.indices.foreach { i =>

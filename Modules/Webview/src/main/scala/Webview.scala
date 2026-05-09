@@ -41,7 +41,7 @@ object Webview {
     val dataManager = BroadcastIO[TodoRepState](LocalUid.gen(), receiveCallback)
 
     val w = WebView()
-    dataManager.addBinaryConnection(WebviewNativeChannel.listen(w))
+    dataManager.addClientConnection(WebviewNativeChannel.listen(w))
     w.navigate(Path.of(args.head).toUri)
 
     w.run()
@@ -86,10 +86,10 @@ object WebviewNativeChannel {
     override def close(): Unit = ()
   }
 
-  def listen(w: WebView): LatentConnection = new LatentConnection {
+  def listen(w: WebView): LatentConnection[Connection] = new LatentConnection[Connection] {
     def prepare(incomingHandler: Receive): Async[Abort, Connection] = Sync {
       val conn = WebviewConnectionContext(w)
-      val cb   = incomingHandler.messageHandler(conn)
+      val cb   = incomingHandler.connectionEstablished(conn)
       w.bind(
         "webview_channel_send",
         { msg =>

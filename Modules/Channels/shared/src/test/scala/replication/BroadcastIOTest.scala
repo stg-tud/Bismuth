@@ -21,9 +21,9 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val sync = SynchronousLocalConnection()
 
-    dd2.addBinaryConnection(sync.client("2"))
-    dd1.addBinaryConnection(sync.server)
-    dd3.addBinaryConnection(sync.client("3"))
+    dd2.addClientConnection(sync.client("2"))
+    dd1.addServerConnection(sync.server)
+    dd3.addClientConnection(sync.client("3"))
 
     dd1.applyDelta(Set("a"))
     dd2.applyDelta(Set("b"))
@@ -53,8 +53,8 @@ class BroadcastIOTest extends munit.FunSuite {
         j <- (i + 1) until nodes.size
     do
         val link = QueuedLocalConnection(queue)
-        nodes(i).addBinaryConnection(link.server)
-        nodes(j).addBinaryConnection(link.client(s"$j->$i"))
+        nodes(i).addServerConnection(link.server)
+        nodes(j).addClientConnection(link.client(s"$j->$i"))
 
     // drain connection setup traffic (initial requests/replies)
     var setupSafety = 0
@@ -87,9 +87,9 @@ class BroadcastIOTest extends munit.FunSuite {
     val queue  = LocalMessageQueue()
     val queued = QueuedLocalConnection(queue)
 
-    dd2.addBinaryConnection(queued.client("2"))
-    dd1.addBinaryConnection(queued.server)
-    dd3.addBinaryConnection(queued.client("3"))
+    dd2.addClientConnection(queued.client("2"))
+    dd1.addServerConnection(queued.server)
+    dd3.addClientConnection(queued.client("3"))
 
     def deliverAndPrint(): Unit =
         val log = false
@@ -153,7 +153,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val nodes = Vector(Node("n0"), Node("n1"), Node("n2"))
 
     nodes.foreach { node =>
-      node.io.addBinaryConnection(resolver.queuedServer(node.selfInfo.channelConnectors.head).get)
+      node.io.addServerConnection(resolver.queuedServer(node.selfInfo.channelConnectors.head).get)
     }
 
     nodes.foreach { node =>
@@ -206,7 +206,7 @@ class BroadcastIOTest extends munit.FunSuite {
       )
 
       def startListening(): Unit =
-        io.addBinaryConnection(resolver.queuedServer(selfInfo.channelConnectors.head).get)
+        io.addServerConnection(resolver.queuedServer(selfInfo.channelConnectors.head).get)
 
       def discover(peers: Iterable[Node]): Unit =
         io.discover(peers.iterator.map(_.selfInfo).toSet)
@@ -304,8 +304,8 @@ class BroadcastIOTest extends munit.FunSuite {
 
     for i <- nodes.indices do
         val link = QueuedLocalConnection(queue)
-        nodes(i).dissemination.addBinaryConnection(link.server)
-        nodes((i + 1) % nodes.size).dissemination.addBinaryConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
+        nodes(i).dissemination.addServerConnection(link.server)
+        nodes((i + 1) % nodes.size).dissemination.addClientConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
 
     def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
       node.state = node.state.merge(delta)

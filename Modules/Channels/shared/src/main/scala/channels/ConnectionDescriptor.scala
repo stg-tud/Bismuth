@@ -8,6 +8,7 @@ import scala.util.Try
 enum ConnectionDescriptor {
   case Tcp(host: String, port: Int)
   case Udp(host: String, port: Int)
+  case Unix(path: String)
   case TcpWebSocket(host: String, port: Int)
   case WebSocket(url: String)
   case WebRtc(peerId: String)
@@ -17,6 +18,7 @@ enum ConnectionDescriptor {
   def asUrl: String = this match
       case ConnectionDescriptor.Tcp(host, port)          => s"tcp://$host:$port"
       case ConnectionDescriptor.Udp(host, port)          => s"udp://$host:$port"
+      case ConnectionDescriptor.Unix(path)               => s"unix://$path"
       case ConnectionDescriptor.TcpWebSocket(host, port) => s"tcp+ws://$host:$port"
       case ConnectionDescriptor.WebSocket(url)           => url
       case ConnectionDescriptor.WebRtc(peerId)           => s"webrtc://$peerId"
@@ -40,6 +42,10 @@ object ConnectionDescriptor {
                 host <- Option(uri.getHost)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield Udp(host, port)
+          case "unix" =>
+            Option(uri.getHost)
+              .orElse(Option(uri.getPath).filter(_.nonEmpty).map(_.stripPrefix("/")))
+              .map(Unix.apply)
           case "tcp+ws" =>
             for
                 host <- Option(uri.getHost)

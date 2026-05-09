@@ -24,7 +24,7 @@ object SignalingServerCli {
     val nioThread   = Executors.newSingleThreadExecutor()
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-    def listen(port: Int): (ConnectionDescriptor.TcpWebSocket, LatentConnection) = {
+    def listen(port: Int): (ConnectionDescriptor.TcpWebSocket, LatentConnection[ConnectionDescriptor]) = {
       val (details, latent) = nioResolver.listen(host, port)
       (details, latent)
     }

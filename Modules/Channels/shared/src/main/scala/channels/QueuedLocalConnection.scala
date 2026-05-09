@@ -44,20 +44,21 @@ class LocalMessageQueue {
 /** Like [[SynchronousLocalConnection]], but message delivery is queued and manually executed. */
 class QueuedLocalConnection(val messageQueue: LocalMessageQueue = LocalMessageQueue()) {
 
-  object server extends LatentConnection {
+  object server extends LatentConnection[ConnectionDescriptor] {
 
     case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive): Async[Abort, Connection] = Async.fromCallback[Establish] {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
-      connChan.clientConnectionSendsTo.succeed(receiver.messageHandler(connChan.serverSendsOn))
-      connChan.serverSendsOn
+      connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
+      // TODO: maybe we can put the actual client connection in here … ?
+      ConnectionDescriptor.QueuedLocal("server")
     }
   }
 
-  def client(id: String): LatentConnection = new LatentConnection {
+  def client(id: String): LatentConnection[Connection] = new LatentConnection[Connection] {
 
     val toServerMessages: Promise[Callback[MessageBuffer]] = Promise()
 
@@ -74,7 +75,7 @@ class QueuedLocalConnection(val messageQueue: LocalMessageQueue = LocalMessageQu
     }
 
     def prepare(receiver: Receive): Async[Abort, Connection] = Async {
-      val callback = receiver.messageHandler(toServer)
+      val callback = receiver.connectionEstablished(toServer)
 
       val toClient = new Connection {
         override def close(): Unit = messageQueue.enqueue(callback, Failure(ConnectionClosedException("closed")))

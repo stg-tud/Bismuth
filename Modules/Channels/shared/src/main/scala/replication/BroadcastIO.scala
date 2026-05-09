@@ -80,7 +80,7 @@ class BroadcastIO[State](
     val aead: Aead
 )(using val stateCodec: JsonValueCodec[State]) {
 
-  val lock: AnyRef                                                                     = new {}
+  val lock: AnyRef                                                                       = new {}
   @volatile private var connectionDetails: Map[Connection, Option[ConnectionDescriptor]] = Map.empty
 
   def overlayController: OverlayController = overlay
@@ -93,36 +93,53 @@ class BroadcastIO[State](
         ex.printStackTrace()
       case Success(_) => ()
 
-  /** Register a transport that already speaks raw [[MessageBuffer]] frames for [[BroadcastIO.Envelope]]. */
-  def addBinaryConnection(latentConnection: LatentConnection): Unit =
+  private def updateOwnConnectionDescriptor(descriptor: ConnectionDescriptor): Unit = lock.synchronized {
+    overlay match
+        case direct: DirectConnectionOverlay =>
+          val updatedSelf = direct.self.copy(channelConnectors = direct.self.channelConnectors + descriptor)
+          overlay = direct.copy(self = updatedSelf)
+        case _ => ()
+  }
+
+  /** Register an outgoing/client transport that yields a usable [[Connection]]. */
+  def addClientConnection(latentConnection: LatentConnection[Connection]): Unit =
     Async.provided(globalAbort) {
-      val conn = latentConnection.prepare { connectionReceiver }.bind
-      registerConnection(conn, None)
+      bindConnection(latentConnection).bind
     }.run(printExceptionHandler)
 
-  private val connectionReceiver: Receive = new Receive {
-    override def messageHandler(conn: Connection): Callback[MessageBuffer] = new Callback {
-      override def complete(tr: Try[MessageBuffer]): Unit = tr match {
-        case Success(msg) =>
-          BroadcastIO.decodeEnvelope(msg, aead) match
-              case Success(decoded) => handleMessage(decoded, conn)
-              case Failure(error)   =>
-                println(s"$replicaId: error during message handling")
-                error.printStackTrace()
-                removePeer(conn)
-        case Failure(error) =>
-          error match {
-            case se: SocketException if se.getMessage == "Connection reset" =>
-              println(s"$replicaId: disconnected ${conn.info} (${conn})")
-            case _: (NoMoreDataException | ConnectionClosedException) =>
-              println(s"$replicaId: disconnected ${conn.info} (${conn})")
-            case _ =>
-              println(s"$replicaId: error during message handling")
-              error.printStackTrace()
-          }
-          removePeer(conn)
-      }
+  /** Register an incoming/server transport and learn its published local [[ConnectionDescriptor]]. */
+  def addServerConnection(latentConnection: LatentConnection[ConnectionDescriptor]): Unit =
+    Async.provided(globalAbort) {
+      val descriptor = bindConnection(latentConnection).bind
+      updateOwnConnectionDescriptor(descriptor)
+    }.run(printExceptionHandler)
+
+  private def bindConnection[T](latentConnection: LatentConnection[T]) = {
+    latentConnection.prepare { (conn: Connection) =>
+      registerConnection(conn, None)
+      messageReceiver(conn)
     }
+  }
+
+  private def messageReceiver(conn: Connection): Callback[MessageBuffer] = {
+    case Success(msg) =>
+      BroadcastIO.decodeEnvelope(msg, aead) match
+          case Success(decoded) => handleMessage(decoded, conn)
+          case Failure(error)   =>
+            println(s"$replicaId: error during message handling")
+            error.printStackTrace()
+            removePeer(conn)
+    case Failure(error) =>
+      error match {
+        case se: SocketException if se.getMessage == "Connection reset" =>
+          println(s"$replicaId: disconnected ${conn.info} (${conn})")
+        case _: (NoMoreDataException | ConnectionClosedException) =>
+          println(s"$replicaId: disconnected ${conn.info} (${conn})")
+        case _ =>
+          println(s"$replicaId: error during message handling")
+          error.printStackTrace()
+      }
+      removePeer(conn)
   }
 
   /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
@@ -165,10 +182,11 @@ class BroadcastIO[State](
   }
 
   /** Track a newly established connection and the optional connect info used to create it. */
-  private def registerConnection(conn: Connection, connectInfo: Option[ConnectionDescriptor]): Unit = lock.synchronized {
-    connectionDetails = connectionDetails.updated(conn, connectInfo)
-    applyOverlayResult(overlay.activateConnection(conn, connectInfo))
-  }
+  private def registerConnection(conn: Connection, connectInfo: Option[ConnectionDescriptor]): Unit =
+    lock.synchronized {
+      connectionDetails = connectionDetails.updated(conn, connectInfo)
+      applyOverlayResult(overlay.activateConnection(conn, connectInfo))
+    }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
     plumtree = result.state
@@ -193,16 +211,26 @@ class BroadcastIO[State](
     result.actions.foreach(handleOverlayAction)
   }
 
+  /** Resolve and establish an outgoing connection for the given descriptor, registering it with that descriptor. */
+  def addOutgoingConnection(connectInfo: ConnectionDescriptor): Unit =
+    resolver.connect(connectInfo) match
+        case Some(latentConnection) =>
+          Async.provided(globalAbort) {
+            val conn = latentConnection.prepare((conn: Connection) => messageReceiver(conn)).bind
+            registerConnection(conn, Some(connectInfo))
+          }.run(printExceptionHandler)
+        case None => ()
+
   /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
   private def connectAndSend(
-                              details: Iterable[ConnectionDescriptor],
-                              expectedPeer: Uid,
-                              payload: Envelope[State]
+      details: Iterable[ConnectionDescriptor],
+      expectedPeer: Uid,
+      payload: Envelope[State]
   ): Unit =
     details.iterator.flatMap(detail => resolver.connect(detail).map(detail -> _)).nextOption() match
         case Some((detail, latentConnection)) =>
           Async.provided(globalAbort) {
-            val conn = latentConnection.prepare { connectionReceiver }.bind
+            val conn = latentConnection.prepare((conn: Connection) => messageReceiver(conn)).bind
             registerConnection(conn, Some(detail))
             send(conn, payload)
           }.run(printExceptionHandler)

@@ -15,7 +15,6 @@ import scala.util.control.NonFatal
 
 object NioTCP {
   case class AcceptAttachment(
-      callback: Callback[Connection],
       incoming: Receive,
   )
 
@@ -51,7 +50,6 @@ object NioTCP {
     *   - `WebSocketState` in the protocol holds `fragments` and `fragmentOpcode` for fragmented websocket messages
     */
   case class ReceiveAttachment(
-      connectCallback: Callback[Connection] | Null,
       incoming: Receive,
       protocol: ProtocolState = ProtocolState.Init,
       messageCallback: Callback[MessageBuffer] | Null = null,
@@ -64,7 +62,7 @@ object NioTCP {
   extension [T](broadcast: BroadcastIO[T])
       def serveNioLoop(): Unit = {
         val niotcp = new NioTCP()
-        broadcast.addBinaryConnection(niotcp.listen(niotcp.defaultServerSocketChannel(new InetSocketAddress(0))))
+        broadcast.addServerConnection(niotcp.listen(niotcp.defaultServerSocketChannel(new InetSocketAddress(0))))
         niotcp.loopSelection(broadcast.globalAbort)
       }
 
@@ -124,7 +122,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
               clientChannel.register(
                 selector,
                 SelectionKey.OP_READ,
-                ReceiveAttachment(attachment.callback, attachment.incoming)
+                ReceiveAttachment(attachment.incoming)
               )
               selector.wakeup()
               ()
@@ -138,10 +136,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().clear()
   }
 
-  private def socketConnectInfo(address: SocketAddress): Option[ConnectionDescriptor.Tcp] =
+  private def socketConnectInfo(address: SocketAddress): Option[ConnectionDescriptor] =
     address match
-        case isa: InetSocketAddress => Some(ConnectionDescriptor.Tcp(isa.getHostString, isa.getPort))
-        case _                      => None
+        case isa: InetSocketAddress       => Some(ConnectionDescriptor.Tcp(isa.getHostString, isa.getPort))
+        case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
+        case _                            => None
 
   class NioTCPConnection(clientChannel: SocketChannel) extends Connection {
 
@@ -190,14 +189,13 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   def connect(
       bindsocket: () => SocketChannel,
-  ): LatentConnection =
-    new LatentConnection {
+  ): LatentConnection[Connection] =
+    new LatentConnection[Connection] {
       override def prepare(incoming: Receive): Async[Any, Connection] =
         Async.fromCallback {
           try
-              Async.handler.succeed {
-                handleConnectTo(bindsocket(), incoming)
-              }
+              val conn = handleConnectTo(bindsocket(), incoming)
+              Async.handler.succeed(conn)
           catch case NonFatal(exception) => Async.handler.fail(exception)
         }
     }
@@ -210,11 +208,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     configureChannel(clientChannel)
 
     val conn     = NioTCPConnection(clientChannel)
-    val callback = incoming.messageHandler(conn)
+    val callback = incoming.connectionEstablished(conn)
     clientChannel.register(
       selector,
       SelectionKey.OP_READ,
-      ReceiveAttachment(null, incoming, ProtocolState.Init, callback)
+      ReceiveAttachment(incoming, ProtocolState.Init, callback)
     )
     selector.wakeup()
 
@@ -251,16 +249,21 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   def listen(
       bindsocket: () => ServerSocketChannel,
-  ): LatentConnection =
-    new LatentConnection {
-      override def prepare(incoming: Receive): Async[Abort, Connection] =
+  ): LatentConnection[ConnectionDescriptor] =
+    new LatentConnection[ConnectionDescriptor] {
+      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor] =
         Async.fromCallback { abort ?=>
           try {
             val serverChannel: ServerSocketChannel = bindsocket()
 
-            val callback = Async.handler[Connection]
-            serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(callback, incoming))
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(incoming))
             selector.wakeup()
+
+            socketConnectInfo(serverChannel.getLocalAddress) match {
+              case Some(value) => Async.handler.succeed(value)
+              case None        => Async.handler.fail(new IllegalStateException("unknown socket address type"))
+            }
+
             ()
           } catch
               case NonFatal(ex) => Async.handler.fail(ex)
@@ -324,8 +327,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
               if upat.messageCallback != null then upat
               else
                   val conn     = NioTCPConnection(clientChannel)
-                  val callback = upat.incoming.messageHandler(conn)
-                  if upat.connectCallback != null then upat.connectCallback.succeed(conn)
+                  val callback = upat.incoming.connectionEstablished(conn)
                   upat.copy(messageCallback = callback)
             handlePlain(
               len,
@@ -393,8 +395,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
           if attachment.messageCallback != null then attachment
           else
               val conn     = WebSocketConnection(clientChannel)
-              val callback = attachment.incoming.messageHandler(conn)
-              if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
+              val callback = attachment.incoming.connectionEstablished(conn)
               attachment.copy(messageCallback = callback)
 
         attachment.primary.compact()
@@ -537,7 +538,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     key.attachment() match {
       case attachment: ReceiveAttachment =>
         if attachment.messageCallback != null then attachment.messageCallback.fail(ex)
-        else if attachment.connectCallback != null then attachment.connectCallback.fail(ex)
         else ()
       case _ => ()
     }

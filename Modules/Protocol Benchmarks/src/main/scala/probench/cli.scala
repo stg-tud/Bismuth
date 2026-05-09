@@ -19,15 +19,15 @@ object cli {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
-  def addRetryingLatentConnection(
+  def addRetryingLatentConnection[A](
       dataManager: BroadcastIO[?],
-      connection: LatentConnection,
+      connection: LatentConnection[A],
       delay: Long,
       tries: Int
   ): Unit =
 
     // TODO, does not actually retry anymore 😬
-    dataManager.addBinaryConnection(connection)
+    dataManager.addClientConnection(connection.asInstanceOf[LatentConnection[Connection]])
 
   def main(args: Array[String]): Unit = {
 
@@ -178,22 +178,22 @@ object cli {
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           val clientPortVal = clientPort.value
-          node.client.dataManagerWrite.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+          node.client.dataManagerWrite.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
             "0",
             clientPortVal
           ))))
-          node.client.dataManagerRead.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+          node.client.dataManagerRead.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
             "0",
             clientPortVal - 1
           ))))
 
           val peerPortVal = peerPort.value
 
-          node.cluster.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+          node.cluster.dataManager.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
             "0",
             peerPortVal
           ))))
-          node.connInf.dataManager.addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+          node.connInf.dataManager.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
             "0",
             peerPortVal + 1
           ))))
@@ -246,18 +246,18 @@ object cli {
           val node =
             KeyValueReplica(name.value, initialClusterIds.value.toSet, deltaStorageType = deltaStorageType.value)
 
-          node.client.dataManagerWrite.addBinaryConnection(UDP.listen(() => new DatagramSocket(clientPort.value), ec))
-          node.cluster.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value), ec))
-          node.connInf.dataManager.addBinaryConnection(UDP.listen(() => new DatagramSocket(peerPort.value + 1), ec))
+          node.client.dataManagerWrite.addServerConnection(UDP.listen(() => new DatagramSocket(clientPort.value), ec))
+          node.cluster.dataManager.addServerConnection(UDP.listen(() => new DatagramSocket(peerPort.value), ec))
+          node.connInf.dataManager.addServerConnection(UDP.listen(() => new DatagramSocket(peerPort.value + 1), ec))
 
 
           cluster.value.foreach { (ip, port) =>
-            node.cluster.dataManager.addBinaryConnection(UDP.connect(
+            node.cluster.dataManager.addClientConnection(UDP.connect(
               InetSocketAddress(ip, port),
               () => new DatagramSocket(),
               ec
             ))
-            node.connInf.dataManager.addBinaryConnection(UDP.connect(
+            node.connInf.dataManager.addClientConnection(UDP.connect(
               InetSocketAddress(ip, port + 1),
               () => new DatagramSocket(),
               ec
@@ -290,7 +290,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          client.writeDataManager.addBinaryConnection(UDP.connect(
+          client.writeDataManager.addClientConnection(UDP.connect(
             InetSocketAddress(ip, port),
             () => new DatagramSocket(),
             ec

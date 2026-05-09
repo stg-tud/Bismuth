@@ -42,9 +42,9 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     latentListener(addr, 0, ec)
   }
 
-  def latentConnect(host: String, port: Int, ec: ExecutionContext): LatentConnection =
-    (receiver: Receive) =>
-      Async[Abort] {
+  def latentConnect(host: String, port: Int, ec: ExecutionContext): LatentConnection[Connection] =
+    new LatentConnection[Connection] {
+      override def prepare(receiver: Receive): Async[Abort, Connection] = Async[Abort] {
         val socket = sslFactory.getSslSocketFactory
           .createSocket(host, port)
           .asInstanceOf[SSLSocket]
@@ -53,6 +53,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
         ec.execute(() => conn.receiveLoopBlocking())
         conn
       }
+    }
 
   private def startHandshake(socket: SSLSocket): Async[Abort, PublicIdentity] =
     Async.fromCallback {
@@ -75,7 +76,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       val ifAddress: InetAddress,
       _listenPort: Int = 0,
       executionContext: ExecutionContext
-  ) extends LatentConnection {
+  ) extends LatentConnection[ConnectionDescriptor] {
     require(_listenPort >= 0 && _listenPort <= 0xffff)
 
     private lazy val serverSocket: SSLServerSocket = sslFactory.getSslServerSocketFactory
@@ -88,7 +89,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       */
     def listenPort: Int = serverSocket.getLocalPort
 
-    override def prepare(receiver: Receive): Async[Abort, Connection] = {
+    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = {
       Async.fromCallback { (abort: Abort) ?=>
         try
             serverSocket // binds port if required
@@ -100,7 +101,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
                     startHandshake(socket).map { (abort: Abort) ?=> peerIdentity =>
                       val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
                       executionContext.execute(() => conn.receiveLoopBlocking())
-                      conn
+                      conn.info.local.getOrElse(ConnectionDescriptor.Tcp(ifAddress.getHostAddress, listenPort))
                     }.runIn(summon)(Async.handler)
                   } catch {
                     case ex: SocketException if abort.closeRequest => ()
@@ -139,7 +140,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
 
     private val outputStream                             = DataOutputStream(socket.getOutputStream)
     private val inputStream                              = DataInputStream(socket.getInputStream)
-    private lazy val receivedMessageCallback             = receiver.messageHandler(this)
+    private lazy val receivedMessageCallback             = receiver.connectionEstablished(this)
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     override def info: ConnectionInfo = {

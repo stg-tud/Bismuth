@@ -16,7 +16,7 @@ private def rtcDebug(channel: dom.RTCDataChannel, message: => String): Unit =
   ()
 
 class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection {
-  def receive: Prod[MessageBuffer] = Async.fromCallback {
+  def receive: Async[Abort, MessageBuffer] = Async.fromCallback {
     rtcDebug(channel, "receive() registered handlers")
     channel.onmessage = { (event: dom.MessageEvent) =>
       event.data match {
@@ -93,12 +93,12 @@ object WebRTCConnection {
     }
   }
 
-  def openLatent(channel: dom.RTCDataChannel): LatentConnection = new LatentConnection {
+  def openLatent(channel: dom.RTCDataChannel): LatentConnection[Connection] = new LatentConnection[Connection] {
 
     def succeedConnection(incoming: Receive): WebRTCConnection = {
       rtcDebug(channel, "openLatent.succeedConnection() installing message handlers")
       val connector = new WebRTCConnection(channel)
-      val handler   = incoming.messageHandler(connector)
+      val handler   = incoming.connectionEstablished(connector)
 
       {
         channel.onmessage = { (event: dom.MessageEvent) =>

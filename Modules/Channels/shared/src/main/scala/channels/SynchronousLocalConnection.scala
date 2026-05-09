@@ -12,21 +12,22 @@ import de.rmgk.delay.{Async, Callback, Promise, Sync}
 class SynchronousLocalConnection {
 
   /** The server prepares by fullfillling the [[connectionEstablished]] promise, which contains a callback that allwows any number of clients to connect. The inner callback contains the [[Connection]] the server sends on, as well as a promise that the server completes immediately with it’s own receive handler. */
-  object server extends LatentConnection {
+  object server extends LatentConnection[ConnectionDescriptor] {
 
     case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive): Async[Abort, Connection] = Async.fromCallback[Establish] {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
-      connChan.clientConnectionSendsTo.succeed(receiver.messageHandler(connChan.serverSendsOn))
-      connChan.serverSendsOn
+      connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
+      // TODO: return the client?
+      ConnectionDescriptor.SynchronousLocal("server")
     }
   }
 
   /** Clients create both the client side and server side connection object. */
-  def client(id: String): LatentConnection = new LatentConnection {
+  def client(id: String): LatentConnection[Connection] = new LatentConnection[Connection] {
 
     /** This promise is send (unfullfilled) to the server, to be completed with the callback that handles received messages on the server side.
       * Thus, once completed, the inner callback directly executes whatever handler code was passed to the server.
@@ -44,7 +45,7 @@ class SynchronousLocalConnection {
     }
 
     def prepare(receiver: Receive): Async[Abort, Connection] = Async {
-      val callback = receiver.messageHandler(toServer)
+      val callback = receiver.connectionEstablished(toServer)
 
       /* This is the connection that is passed to the server, which just calls the callback defined by the handler. */
       val toClient = new Connection {

@@ -5,12 +5,12 @@ import rdts.base.Uid
 /** vibecoded as part of the hyparview experiments */
 
 trait ChannelResolver {
-  def connect(details: ConnectionDescriptor): Option[LatentConnection]
+  def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]]
 }
 
 object ChannelResolver {
   def disconnected = new ChannelResolver {
-    override def connect(details: ConnectionDescriptor): Option[LatentConnection] = None
+    override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = None
   }
 }
 
@@ -21,12 +21,12 @@ case class PeerConnectInfo(uid: Uid, channelConnectors: Set[ConnectionDescriptor
 
 
 class LocalConnectionRegistry(queued: collection.Map[String, QueuedLocalConnection]) extends ChannelResolver {
-  def queuedServer(details: ConnectionDescriptor): Option[LatentConnection] =
+  def queuedServer(details: ConnectionDescriptor): Option[LatentConnection[ConnectionDescriptor]] =
     details match
         case ConnectionDescriptor.QueuedLocal(id) => queued.get(id).map(_.server)
         case _                                  => None
 
-  override def connect(details: ConnectionDescriptor): Option[LatentConnection] =
+  override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
     details match
         case ConnectionDescriptor.QueuedLocal(id) => queued.get(id).map(_.client(id))
         case _                                  => None

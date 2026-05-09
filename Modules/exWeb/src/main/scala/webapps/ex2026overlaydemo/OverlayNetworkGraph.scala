@@ -100,7 +100,7 @@ object OverlayNetworkGraph {
 
     var signalingRef: Option[WebRtcSignalingBridge] = None
     val resolver                                    = new ChannelResolver {
-      override def connect(details: ConnectionDescriptor): Option[LatentConnection] =
+      override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
         signalingRef.flatMap(_.connect(details))
     }
 

@@ -1,92 +1,86 @@
 package channels
 
-import channels.*
-import de.rmgk.delay.{Async, Callback, Sync}
+import de.rmgk.delay.{Async, Callback}
 
 import java.net.{DatagramPacket, DatagramSocket, InetSocketAddress, SocketAddress, SocketTimeoutException}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 object UDP {
-  def listen(socketFactory: () => DatagramSocket, executionContext: ExecutionContext): UDPPseudoConnection =
-    new UDPPseudoConnection(socketFactory, executionContext, Async.fromCallback(()))
+  def listen(
+      socketFactory: () => DatagramSocket,
+      executionContext: ExecutionContext
+  ): LatentConnection[ConnectionDescriptor] =
+    new Listener(socketFactory, executionContext)
 
   def connect(
       target: SocketAddress,
       socketFactory: () => DatagramSocket,
       executionContext: ExecutionContext
-  ): UDPPseudoConnection =
-    new UDPPseudoConnection(socketFactory, executionContext, Sync(target))
-}
+  ): LatentConnection[Connection] =
+    new Client(target, socketFactory, executionContext)
 
-class UDPPseudoConnection(
-    socketFactory: () => DatagramSocket,
-    executionContext: ExecutionContext,
-    initializeOutbound: Async[Any, SocketAddress],
-) extends LatentConnection {
-  override def prepare(receiver: Receive): Async[Abort, Connection] = {
-    Async.fromCallback[Connection] {
+  abstract private class Base(socketFactory: () => DatagramSocket, executionContext: ExecutionContext) {
+    protected def startReceiver(datagramSocket: DatagramSocket, receiver: Receive)(using Abort): Unit = {
+      val receiveBuffer = new Array[Byte](1 << 16)
+      val connections   = mutable.Map.empty[SocketAddress, (UDPDatagramWrapper, Callback[MessageBuffer])]
 
-      val datagramSocket = socketFactory()
-      val receiveBuffer  = new Array[Byte](1 << 16)
+      def getOrCreateConnection(sa: SocketAddress): (UDPDatagramWrapper, Callback[MessageBuffer]) =
+        connections.synchronized {
+          connections.getOrElseUpdate(
+            sa, {
+              val conn = UDPDatagramWrapper(sa, datagramSocket)
+              conn -> receiver.connectionEstablished(conn)
+            }
+          )
+        }
 
-      val connectionSuccess: Callback[Connection] = Async.handler[Connection]
-
-      val connections: mutable.Map[SocketAddress, (UDPDatagramWrapper, Callback[MessageBuffer])] = mutable.Map.empty
-
-      def getOrCreateConnection(sa: SocketAddress) = connections.synchronized {
-        connections.getOrElseUpdate(
-          sa, {
-            val dw = UDPDatagramWrapper(sa, datagramSocket)
-            connectionSuccess.succeed(dw)
-            val cb = receiver.messageHandler(dw)
-            (dw, cb)
-          }
-        )
-      }
-
-      def receiveLoop(abort: Abort): Unit = {
-        // 1 << 16 should be slightly larger than the max UDP/IP packets
-        try { // scalafmt does not understand this without braces
+      executionContext.execute { () =>
+        try {
           try {
-            while !abort.closeRequest do
+            while !summon[Abort].closeRequest do
                 val packet = new DatagramPacket(receiveBuffer, receiveBuffer.length)
-                try
-                    datagramSocket.receive(packet)
-
-                    val sa = packet.getSocketAddress
-
-                    val (conn, receiveCallback) = getOrCreateConnection(sa)
-
-                    receiveCallback.succeed(ArrayMessageBuffer(packet.getData.slice(
-                      packet.getOffset,
-                      packet.getLength
-                    )))
-                catch case _: SocketTimeoutException => ()
+                try {
+                  datagramSocket.receive(packet)
+                  val (_, callback) = getOrCreateConnection(packet.getSocketAddress)
+                  callback.succeed(ArrayMessageBuffer(packet.getData.slice(
+                    packet.getOffset,
+                    packet.getOffset + packet.getLength
+                  )))
+                } catch case _: SocketTimeoutException => ()
           } finally datagramSocket.close()
-        } catch
-            case NonFatal(e) =>
-              connections.values.foreach: (_, cb) =>
-                  cb.fail(e)
+        } catch {
+          case NonFatal(e) =>
+            connections.values.foreach((_, callback) => callback.fail(e))
+        }
       }
+    }
 
-      executionContext.execute(() => receiveLoop(summon[Abort]))
+  }
 
-      initializeOutbound.run:
-          case Success(target) =>
-            getOrCreateConnection(target)
-            ()
-          case Failure(exception) => connectionSuccess.fail(exception)
-
+  private class Listener(socketFactory: () => DatagramSocket, executionContext: ExecutionContext)
+      extends Base(socketFactory, executionContext), LatentConnection[ConnectionDescriptor] {
+    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async {
+      val datagramSocket = socketFactory()
+      startReceiver(datagramSocket, receiver)
+      ConnectionDescriptor.Udp(datagramSocket.getLocalAddress.getHostAddress, datagramSocket.getLocalPort)
     }
   }
 
+  private class Client(target: SocketAddress, socketFactory: () => DatagramSocket, executionContext: ExecutionContext)
+      extends Base(socketFactory, executionContext), LatentConnection[Connection] {
+    override def prepare(receiver: Receive): Async[Abort, Connection] = Async {
+      val datagramSocket = socketFactory()
+      val conn           = UDPDatagramWrapper(target, datagramSocket)
+      receiver.connectionEstablished(conn)
+      startReceiver(datagramSocket, receiver)
+      conn
+    }
+  }
 }
 
-class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
-    extends Connection {
+class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket) extends Connection {
 
   override val info: ConnectionInfo =
     (datagramSocket.getLocalSocketAddress, target) match
@@ -104,15 +98,10 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
         case _ => ConnectionInfo("type" -> "udp")
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {
-    // Create a packet with the message, server address, and port
-    val sendPacket: DatagramPacket =
-        val outArray = message.asArray
-        new DatagramPacket(outArray, outArray.length, target)
-
-    // Send the packet to the server
+    val outArray   = message.asArray
+    val sendPacket = new DatagramPacket(outArray, outArray.length, target)
     datagramSocket.send(sendPacket)
   }
 
   override def close(): Unit = datagramSocket.close()
-
 }

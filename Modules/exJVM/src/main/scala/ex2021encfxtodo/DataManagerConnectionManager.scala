@@ -48,7 +48,7 @@ class DataManagerConnectionManager[State: JsonValueCodec](
       aead = AeadTranslation(aead),
     )
 
-  dataManager.addBinaryConnection(listener)
+  dataManager.addServerConnection(listener)
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
   signalingThread.execute(() => signalingNio.loopSelection(dataManager.globalAbort))
 

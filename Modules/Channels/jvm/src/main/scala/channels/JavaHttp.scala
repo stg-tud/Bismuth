@@ -18,9 +18,9 @@ object JavaHttp {
     override def close(): Unit                                  = out.outputStream.close()
   }
 
-  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection {
+  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection[ConnectionDescriptor] {
 
-    def prepare(receiver: Receive): Async[Abort, Connection] = Async.fromCallback {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async {
       addHandler { (exchange: HttpExchange) =>
         val responseHeaders = exchange.getResponseHeaders
         responseHeaders.add("Content-Type", "text/event-stream")
@@ -34,19 +34,19 @@ object JavaHttp {
 
         val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
 
-        val cb = receiver.messageHandler(conn)
+        val cb = receiver.connectionEstablished(conn)
 
         val amb = ArrayMessageBuffer(exchange.getRequestBody.readAllBytes())
         if amb.inner.nonEmpty then cb.succeed(amb)
-        Async.handler.succeed(conn)
       }
+      ConnectionDescriptor.WebSocket("sse://server")
     }
   }
 
   class SSEClientConnection(client: HttpClient, uri: URI, receiver: Receive, ec: ExecutionContext)
       extends Connection {
 
-    lazy val handler: Callback[MessageBuffer] = receiver.messageHandler(this)
+    lazy val handler: Callback[MessageBuffer] = receiver.connectionEstablished(this)
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Async {
       val sseRequest = HttpRequest.newBuilder()
@@ -92,7 +92,7 @@ object JavaHttp {
   }
 
   class SSEClient(client: HttpClient, uri: URI, ec: ExecutionContext)
-      extends LatentConnection {
+      extends LatentConnection[Connection] {
 
     def prepare(receiver: Receive): Async[Abort, Connection] = Async {
       val conn = SSEClientConnection(client, uri, receiver, ec)

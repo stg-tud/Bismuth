@@ -3,12 +3,11 @@ package ex2024DTN.rdt
 import channels.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
-import ex2024DTN.MonitoringClientInterface
-import ex2024DTN.{NoMonitoringClient, RdtMessageType}
+import ex2024DTN.{MonitoringClientInterface, NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.{Aead, BroadcastIO, PlumtreeMessage}
 import replication.PlumtreeMessage.{Graft, IHave, Payload, Prune}
+import replication.{Aead, BroadcastIO, PlumtreeMessage}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -55,7 +54,7 @@ class Channel[T: JsonValueCodec](
     ec: ExecutionContext,
     monitoringClient: MonitoringClientInterface = NoMonitoringClient,
     operationMode: ClientOperationMode = ClientOperationMode.PushAll
-) extends LatentConnection {
+) extends LatentConnection[Connection] {
 
   // We use a local dtnid instead of a remote replica ID to signify that the local DTNd is the one providing information.
   // If the local dtnd could be stopped and restarted without loosing data, this id should remain the same for performance reasons, but it will be correct even if it changes.
@@ -65,7 +64,7 @@ class Channel[T: JsonValueCodec](
     Async {
       val client: Client = Client(host, port, appName, monitoringClient).toAsync(using ec).bind
       val conn           = ClientContext[T](client, ec, operationMode)
-      val cb             = receiver.messageHandler(conn)
+      val cb             = receiver.connectionEstablished(conn)
 
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match

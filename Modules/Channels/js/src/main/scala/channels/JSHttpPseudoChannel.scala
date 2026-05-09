@@ -15,7 +15,7 @@ object JSHttpPseudoChannel {
   class SSEPseudoConnection(uri: String, receiver: Receive)
       extends Connection {
 
-    lazy val resultCallback: Callback[MessageBuffer] = receiver.messageHandler(this)
+    lazy val resultCallback: Callback[MessageBuffer] = receiver.connectionEstablished(this)
 
     var currentAbort: AbortController | Null = null
 
@@ -85,12 +85,9 @@ object JSHttpPseudoChannel {
 
   }
 
-  def connect(uri: String): LatentConnection = new LatentConnection {
+  def connect(uri: String): LatentConnection[Connection] = new LatentConnection[Connection] {
     def prepare(receiver: Receive): Async[Abort, Connection] = Async {
-
-      val conn = new SSEPseudoConnection(uri, receiver)
-
-      conn
+      new SSEPseudoConnection(uri, receiver)
     }
 
   }

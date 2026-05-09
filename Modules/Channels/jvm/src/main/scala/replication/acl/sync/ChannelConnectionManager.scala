@@ -87,8 +87,10 @@ class ChannelConnectionManager(
         println(
           s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${localPublicId}"
         )
-    listener.get.prepare(receiveMessageHandler).runIn(abort) {
-      case Success(connection) => trackConnection(connection)
+    listener.get.prepare{ conn =>
+      receiveMessageHandler(conn)
+    }.runIn(abort) {
+      case Success(_) =>
       case Failure(exception)  =>
         // Connection not established yet, don't need to remove/close anything
         if !disableLogging then exception.printStackTrace()
@@ -97,9 +99,9 @@ class ChannelConnectionManager(
 
   override def connectTo(host: String, port: Int): Unit = {
     if !disableLogging then println(s"Attempting to connect to $host:$port")
-    p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler).runIn(abort) {
-      case Success(connection) => trackConnection(connection)
-      case Failure(exception)  => if !disableLogging then exception.printStackTrace()
+    p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler(_)).runIn(abort) {
+      case Success(_)         => ()
+      case Failure(exception) => if !disableLogging then exception.printStackTrace()
     }
   }
 
@@ -152,15 +154,17 @@ class ChannelConnectionManager(
     }
   }
 
-  private val receiveMessageHandler: Receive = (connection: Connection) => {
+  private def receiveMessageHandler(connection: Connection): Callback[MessageBuffer] = {
+    trackConnection(connection)
     val remotePeerId = PublicIdentity(connection.authenticatedPeerReplicaId.get.delegate)
-    {
+
+    new Callback[MessageBuffer] { def complete(result: Try[MessageBuffer]) = result match {
       case Success(msg)       => messageReceiver.receivedMessage(msg, remotePeerId)
       case Failure(exception) =>
         if !disableLogging
         then println(s"Closing connection with $remotePeerId at ${connection.info}, because of $exception")
         onSocketFailure(remotePeerId, connection)
-    }
+    }}
   }
 
   private def onSocketFailure(remotePeerId: PublicIdentity, failedConnection: Connection): Unit = {

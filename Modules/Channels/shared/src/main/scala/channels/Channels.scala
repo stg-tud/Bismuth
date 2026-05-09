@@ -28,8 +28,6 @@ class Abort(@volatile var closeRequest: Boolean = false) {
   def abort(): Unit = closeRequest = true
 }
 
-type Prod[A] = Async[Abort, A]
-
 /** Connections are bidirectional. Receiving is handled by the incoming handler of the latent connection. */
 trait Connection {
   // TODO: currently not consistently implemented
@@ -47,7 +45,7 @@ trait Receive {
   /** The provided connection is not guaranteed to be useable until the first message is received.
     * If you want to initiate sending messages on this connection, use the value returned by the prepare call of the latent connection instead.
     */
-  def messageHandler(answers: Connection): Callback[MessageBuffer]
+  def connectionEstablished(answers: Connection): Callback[MessageBuffer]
 }
 
 /** Contains all the information required to try and establish a bidirectional connection.
@@ -56,7 +54,7 @@ trait Receive {
   *
   * Implementations should make it safe to establish multiple times, though the semantics of that is unclear.
   */
-trait LatentConnection {
+trait LatentConnection[+A] {
 
   /** The returned async, when run, should establish connections with the given callback atomically.
     * That is, no messages should be lost during setup.
@@ -67,5 +65,5 @@ trait LatentConnection {
     *
     * The async may produce multiple connections and will run `receiver` for each of them.
     */
-  def prepare(receiver: Receive): Async[Abort, Connection]
+  def prepare(receiver: Receive): Async[Abort, A]
 }
