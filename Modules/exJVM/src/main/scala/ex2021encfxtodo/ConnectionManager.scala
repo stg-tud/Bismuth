@@ -37,7 +37,7 @@ class ConnectionManager[State: JsonValueCodec](
     BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = receiveCallback,
-      overlay = Some(DirectConnectionOverlay(PeerConnectInfo(replicaId.uid, Set.empty))),
+      overlay = Some(DirectConnectionOverlay(PeerConnectInfo(replicaId.uid))),
       resolver = nioResolver,
       globalAbort = globalAbort,
       aead = AeadTranslation(aead),
