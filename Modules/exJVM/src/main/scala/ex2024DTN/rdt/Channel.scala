@@ -24,7 +24,7 @@ class ClientContext[T: JsonValueCodec](
     operationMode: ClientOperationMode
 ) extends Connection {
   override def send(message: MessageBuffer): Async[Any, Unit] =
-    BroadcastIO.decodeEnevlop[T](message) match
+    BroadcastIO.decodeEnvelope[T](message) match
         case BroadcastIO.Envelope.Membership(_)    => Async {}
         case BroadcastIO.Envelope.Broadcast(_, Graft(dots)) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.

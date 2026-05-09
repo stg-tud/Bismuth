@@ -51,7 +51,7 @@ object BroadcastIO {
 
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
-  def decodeEnevlop[State: JsonValueCodec](messageBuffer: MessageBuffer): Envelope[State] =
+  def decodeEnvelope[State: JsonValueCodec](messageBuffer: MessageBuffer): Envelope[State] =
     readFromArray[Envelope[State]](messageBuffer.asArray)(using BroadcastIO.messageCodec)
 
   def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State]) =
@@ -98,7 +98,7 @@ class BroadcastIO[State](
   private val connectionReceiver: Receive = new Receive {
     override def messageHandler(conn: Connection): Callback[MessageBuffer] = new Callback {
       override def complete(tr: Try[MessageBuffer]): Unit = tr match {
-        case Success(msg)   => handleMessage(BroadcastIO.decodeEnevlop(msg), conn)
+        case Success(msg)   => handleMessage(BroadcastIO.decodeEnvelope(msg), conn)
         case Failure(error) =>
           error match {
             case se: SocketException if se.getMessage == "Connection reset" =>
