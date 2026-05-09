@@ -1,6 +1,6 @@
 package ex2021encfxtodo
 
-import channels.{Abort, ConnectionDescriptor, ConcurrencyHelper, NioTCP, NioTcpConnectionDetailsResolver, PeerConnectInfo}
+import channels.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver, PeerConnectInfo}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, RegistryConfiguration}
@@ -29,28 +29,22 @@ class DataManagerConnectionManager[State: JsonValueCodec](
   private val aead        = loadOrCreateDemoAead()
   private val globalAbort = Abort()
 
-  private val nio: NioTCP                      = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-  private val nioThread: ExecutorService       = java.util.concurrent.Executors.newSingleThreadExecutor()
-  private val nioResolver                      = new NioTcpConnectionDetailsResolver(nio)
-  private val (listenDetails, listener)        = nioResolver.listen("127.0.0.1", 0)
-  private val selfInfo                         = PeerConnectInfo(replicaId.uid, Set(listenDetails))
-  private val signalingNio: NioTCP             = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-  private val signalingThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
-  private val signalingResolver                = new NioTcpConnectionDetailsResolver(signalingNio)
+  private val nio: NioTCP                = new NioTCP()
+  private val nioThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
+  private val nioResolver                = new NioTcpConnectionDetailsResolver(nio)
 
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = receiveCallback,
-      overlay = Some(DirectConnectionOverlay(selfInfo)),
+      overlay = Some(DirectConnectionOverlay(PeerConnectInfo(replicaId.uid, Set.empty))),
       resolver = nioResolver,
       globalAbort = globalAbort,
       aead = AeadTranslation(aead),
     )
 
-  dataManager.addServerConnection(listener)
+  dataManager.addServerConnection(nio.listen())
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
-  signalingThread.execute(() => signalingNio.loopSelection(dataManager.globalAbort))
 
   def stateChanged(newState: State): Unit =
     dataManager.applyDelta(newState)
@@ -60,10 +54,10 @@ class DataManagerConnectionManager[State: JsonValueCodec](
         case Some(server) =>
           SignalingClient(
             server = server,
-            resolver = signalingResolver,
+            resolver = nioResolver,
             localUid = replicaId.uid,
             abort = dataManager.globalAbort,
-          ).announce(Topic, Set(listenDetails)).run {
+          ).announce(Topic, dataManager.selfConnectionDescriptors).run {
             case scala.util.Success(peers) =>
               dataManager.discover(
                 peers.iterator
@@ -79,9 +73,7 @@ class DataManagerConnectionManager[State: JsonValueCodec](
 
   def stop(): Unit = {
     dataManager.globalAbort.closeRequest = true
-    signalingNio.selector.wakeup()
     nio.selector.wakeup()
-    signalingThread.shutdownNow()
     nioThread.shutdownNow()
     ()
   }

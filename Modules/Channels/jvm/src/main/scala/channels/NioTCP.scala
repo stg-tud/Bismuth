@@ -247,6 +247,8 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     socket
   }
 
+  def listen(): LatentConnection[ConnectionDescriptor] = listen(defaultServerSocketChannel(new InetSocketAddress(0)))
+
   def listen(
       bindsocket: () => ServerSocketChannel,
   ): LatentConnection[ConnectionDescriptor] =

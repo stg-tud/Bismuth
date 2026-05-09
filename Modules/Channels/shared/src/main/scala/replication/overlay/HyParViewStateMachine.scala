@@ -1,6 +1,6 @@
 package replication.overlay
 
-import channels.{Connection, PeerConnectInfo}
+import channels.{Connection, ConnectionDescriptor, PeerConnectInfo}
 import rdts.base.Uid
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.overlay.OverlayController.OverlayMessage.*
@@ -87,6 +87,13 @@ final case class HyParViewStateMachine(
     canConnectTo: PeerConnectInfo => Boolean,
 ) extends OverlayController {
   import HyParViewStateMachine.*
+
+  override def addSelfConnectionDescriptor(descriptor: ConnectionDescriptor): OverlayController = {
+    val updatedSelf = self.copy(channelConnectors = self.channelConnectors + descriptor)
+    copy(self = updatedSelf, known = known.updated(updatedSelf.uid, updatedSelf))
+  }
+
+  override def selfConnectionDescriptors: Set[ConnectionDescriptor] = self.channelConnectors
 
   def activeView: Set[Uid]               = active.iterator.map(_.peer.uid).toSet
   def activePeers: Set[PeerConnectInfo]  = active.iterator.map(_.peer).toSet

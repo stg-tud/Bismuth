@@ -87,6 +87,8 @@ class BroadcastIO[State](
 
   def plumtreeState: PlumtreeBroadcast[State] = plumtree
 
+  def selfConnectionDescriptors: Set[ConnectionDescriptor] = overlay.selfConnectionDescriptors
+
   private def printExceptionHandler: Callback[Any] =
       case Failure(ex) =>
         println("exception during connection activation")
@@ -94,11 +96,7 @@ class BroadcastIO[State](
       case Success(_) => ()
 
   private def updateOwnConnectionDescriptor(descriptor: ConnectionDescriptor): Unit = lock.synchronized {
-    overlay match
-        case direct: DirectConnectionOverlay =>
-          val updatedSelf = direct.self.copy(channelConnectors = direct.self.channelConnectors + descriptor)
-          overlay = direct.copy(self = updatedSelf)
-        case _ => ()
+    overlay = overlay.addSelfConnectionDescriptor(descriptor)
   }
 
   /** Register an outgoing/client transport that yields a usable [[Connection]]. */

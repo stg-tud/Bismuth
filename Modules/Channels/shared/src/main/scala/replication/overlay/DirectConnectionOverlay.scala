@@ -9,6 +9,11 @@ case class DirectConnectionOverlay(
     active: Map[Uid, Connection] = Map.empty,
 ) extends OverlayController {
 
+  override def addSelfConnectionDescriptor(descriptor: ConnectionDescriptor): OverlayController =
+    copy(self = self.copy(channelConnectors = self.channelConnectors + descriptor))
+
+  override def selfConnectionDescriptors: Set[ConnectionDescriptor] = self.channelConnectors
+
   override def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
     val actions = peers.iterator.collect {
       case peer if peer.uid != self.uid && !active.contains(peer.uid) =>

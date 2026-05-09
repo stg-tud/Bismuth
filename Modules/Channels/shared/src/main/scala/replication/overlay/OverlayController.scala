@@ -32,6 +32,12 @@ trait OverlayController {
   ): (OverlayController, List[OverlayAction]) =
     (this, Nil)
 
+  /** Update the set of self-advertised connection descriptors. */
+  def addSelfConnectionDescriptor(descriptor: ConnectionDescriptor): OverlayController = this
+
+  /** Get the currently advertised self connection descriptors. */
+  def selfConnectionDescriptors: Set[ConnectionDescriptor] = Set.empty
+
   /** Lookup the currently known connection for a peer, if one is attached to an active-view entry. */
   def connectionFor(peer: Uid): Option[Connection] = None
 
