@@ -48,8 +48,6 @@ class KeyValueReplica(
 
   val currentStateLock: AnyRef     = new {}
   val connInfStateLock: AnyRef     = new {}
-  val clientReadStateLock: AnyRef  = new {}
-  val clientWriteStateLock: AnyRef = new {}
 
   private val kvCache = mutable.HashMap[String, String]()
 
