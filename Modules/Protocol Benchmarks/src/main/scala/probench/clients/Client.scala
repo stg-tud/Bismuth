@@ -85,8 +85,6 @@ trait Client(name: Uid, logTimings: Boolean) {
 
     println("Warmup")
 
-    val warmupStart = System.currentTimeMillis()
-
     mode match
         case BenchmarkOpType.Read  => randomMultiGet("key%n", warmup, min, max)
         case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", warmup, min, max)
