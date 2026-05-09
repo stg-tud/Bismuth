@@ -23,15 +23,16 @@ sonaRelease sbtOpts="":
 runSimpleCaseStudy sbtOpts="":
 	sbt {{sbtOpts}} 'exJVM / run'
 
-webappsServe:
+webappsPrepare:
 	npm --prefix "Modules/exWeb/" install --no-package-lock
+	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
+	sbt --client exWeb/fastLinkJS
+	sbt --client exWeb/fullLinkJS
+
+webappsServe: webappsPrepare
 	"Modules/exWeb/node_modules/vite/bin/vite.js" "Modules/exWeb/"
 
-webappsBundle:
-	npm --prefix "Modules/exWeb/" install --no-package-lock
-	sbt --client exWeb/fullLinkJS
-	mkdir -p "Modules/exWeb/target/generated_js/exweb-fastopt/"
-	touch "Modules/exWeb/target/generated_js/exweb-fastopt/main.js"
+webappsBundle: webappsPrepare
 	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "target/dist"
 
 webappsWebview: webappsBundle

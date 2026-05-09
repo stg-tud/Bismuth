@@ -1,4 +1,4 @@
-FROM docker.io/eclipse-temurin:21-jdk-noble
+FROM docker.io/eclipse-temurin:25-jdk-resolute
 
 RUN apt-get update && apt-get --yes upgrade
 
@@ -16,6 +16,9 @@ RUN apt-get install --yes --no-install-recommends pkg-config libgtk-3-dev libweb
 
 # install git for codespaces
 RUN apt-get install --yes --no-install-recommends git
+
+# install curl
+RUN apt-get install --yes --no-install-recommends curl
 
 RUN curl https://raw.githubusercontent.com/sbt/sbt/2293bddfefe382a48c1672df4e009bd7c5df32f4/sbt -o /usr/bin/sbt && \
 	chmod +x /usr/bin/sbt

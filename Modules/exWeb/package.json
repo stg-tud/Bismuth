@@ -1,8 +1,10 @@
 {
 	"type": "module",
+	"dependencies": {
+		"react-dom": "18.2.0"
+	},
 	"devDependencies": {
 		"vite": "8.0.10",
-		"vite-plugin-singlefile": "2.3.3",
-		"react-dom": "18.2.0"
+		"vite-plugin-singlefile": "2.3.3"
 	}
 }
