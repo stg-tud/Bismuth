@@ -7,7 +7,8 @@ authors:
 	git shortlog --summary --numbered
 
 test sbtOpts="":
-	npm install --no-package-lock
+	# npm install --no-package-lock
+	deno install --node-modules-dir=auto
 	sbt {{sbtOpts}} test
 
 publishLocal sbtOpts="":
@@ -24,7 +25,8 @@ runSimpleCaseStudy sbtOpts="":
 	sbt {{sbtOpts}} 'exJVM / run'
 
 webappsPrepare:
-	npm --prefix "Modules/exWeb/" install --no-package-lock
+	# npm --prefix "Modules/exWeb/" install --no-package-lock
+	cd "Modules/exWeb/" && deno install --node-modules-dir=auto
 	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
 	sbt --client exWeb/fastLinkJS
 	sbt --client exWeb/fullLinkJS
