@@ -32,7 +32,7 @@ class ClusterConsensus extends munit.FunSuite {
     primary.client.dataManagerRead.addBinaryConnection(clientConnectionRead.server)
 
     val clientUid = Uid.gen()
-    val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
+    val client    = ProBenchClient(clientUid, logTimings = false)
     client.writeDataManager.addBinaryConnection(clientConnectionWrite.client(clientUid.toString))
     client.readDataManager.addBinaryConnection(clientConnectionRead.client(clientUid.toString))
 
@@ -119,7 +119,7 @@ class ClusterConsensus extends munit.FunSuite {
     primary.client.dataManagerRead.addBinaryConnection(clientConnectionReads.server)
 
     val clientUid = Uid.gen()
-    val client    = ProBenchClient(clientUid, blocking = true, logTimings = false)
+    val client    = ProBenchClient(clientUid, logTimings = false)
     client.writeDataManager.addBinaryConnection(clientConnectionWrites.client(clientUid.toString))
     client.readDataManager.addBinaryConnection(clientConnectionReads.client(clientUid.toString))
 

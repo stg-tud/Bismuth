@@ -10,7 +10,7 @@ import java.util.concurrent.Semaphore
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
-class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolean) extends Client(name, logTimings) {
+class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, logTimings) {
 
   given localUid: LocalUid = LocalUid(name)
 
