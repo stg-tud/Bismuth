@@ -47,8 +47,8 @@ trait OverlayController {
   /** Learn externally discovered peers. */
   def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = (this, Nil)
 
-  /** Initiate an overlay-native join/bootstrap through a contact peer. */
-  def join(contact: PeerConnectInfo): (OverlayController, List[OverlayAction]) = (this, Nil)
+  /** Initiate an overlay-native join/bootstrap through a single connection descriptor. */
+  def bootstrapVia(contact: ConnectionDescriptor): (OverlayController, List[OverlayAction]) = (this, Nil)
 }
 
 object OverlayController {

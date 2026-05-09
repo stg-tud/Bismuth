@@ -58,7 +58,7 @@ class HyParViewStateMachineTest extends FunSuite {
     )
 
   private def sent(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Send(conn, msg) => (conn, msg) }
-  private def sentJoin(actions: List[OverlayAction]) =
+  private def sentBootstrapVia(actions: List[OverlayAction]) =
     actions.collect { case OverlayAction.SendJoin(details, expectedPeer, msg) => (details, expectedPeer, msg) }
   private def disconnects(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Disconnect(conn) =>
     conn
@@ -73,13 +73,13 @@ class HyParViewStateMachineTest extends FunSuite {
   test("join(contact) emits a Join message to the contact") {
     val contact = peer("contact")
 
-    val (next0, actions) = state().join(contact)
+    val (next0, actions) = state().bootstrapVia(contact.channelConnectors.head)
     val next             = next0.asInstanceOf[HyParViewStateMachine]
 
-    assert(next.passiveView.contains(contact.uid))
+    assertEquals(next.passiveView, Set.empty)
     assertEquals(
-      sentJoin(actions),
-      List((contact.channelConnectors, contact.uid, Join(defaultSelf)))
+      sentBootstrapVia(actions),
+      List((Set(contact.channelConnectors.head), defaultSelf.uid, Join(defaultSelf)))
     )
   }
 
@@ -112,7 +112,7 @@ class HyParViewStateMachineTest extends FunSuite {
 
     assert(next.passiveView.contains(newNode.uid))
     assertEquals(
-      sentJoin(actions),
+      sentBootstrapVia(actions),
       List((newNode.channelConnectors, newNode.uid, Neighbor(defaultSelf, highPriority = true)))
     )
   }

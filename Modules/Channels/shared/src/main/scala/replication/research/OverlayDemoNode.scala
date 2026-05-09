@@ -81,12 +81,12 @@ class OverlayDemoNode(
     val node = newOverlay()
     broadcastIO = Some(node)
     listenEnvelope.foreach(node.addServerConnection)
-    seeds.foreach(detail => bootstrapVia(PeerConnectInfo(Uid.gen(), Set(detail))))
+    seeds.foreach(detail => bootstrapVia(detail))
     overlayInfoTick()
     if runBackgroundTasks then startBackgroundTasks()
   }
 
-  def bootstrapVia(peer: PeerConnectInfo): Unit =
+  def bootstrapVia(peer: ConnectionDescriptor): Unit =
     broadcastIO.foreach(_.bootstrapVia(peer))
 
   def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit =

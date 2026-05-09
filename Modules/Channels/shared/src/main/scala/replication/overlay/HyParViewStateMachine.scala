@@ -131,15 +131,11 @@ final case class HyParViewStateMachine(
     (next, Nil)
   }
 
-  override def join(contact: PeerConnectInfo): (OverlayController, List[OverlayAction]) =
-    if contact.uid == self.uid || !canConnectTo(contact) then (this, Nil)
-    else {
-      val next = rememberPeer(contact)
-      (
-        next,
-        List(OverlayAction.SendJoin(contact.channelConnectors, contact.uid, Join(self)))
-      )
-    }
+  override def bootstrapVia(contact: ConnectionDescriptor): (OverlayController, List[OverlayAction]) =
+    (
+      this,
+      List(OverlayAction.SendJoin(Set(contact), self.uid, Join(self)))
+    )
 
   /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
   override def receiveActions(message: OverlayMessage, conn: Connection): (OverlayController, List[OverlayAction]) = {

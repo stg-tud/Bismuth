@@ -1,41 +1,56 @@
 package replication.research
 
-import channels.{Abort, ArrayMessageBuffer, ConnectionDescriptor, Connection, LatentConnection, Receive}
+import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Uid
 import replication.JsoniterCodecs.given
 import replication.research.SignalingServer.Message
 
 import scala.collection.mutable
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Success}
 
 object SignalingServer {
   case class Session(descType: String, sdp: String)
 
   enum Message {
-    case Announce(uid: Uid, requestId: Uid, topic: String, descriptors: Set[ConnectionDescriptor], count: Int)
-    case TopicInfo(requestId: Uid, topic: String, peers: Map[Uid, Set[ConnectionDescriptor]])
+    case Register(uid: Uid)
     case Offer(from: Uid, to: Uid, session: Session)
     case Answer(from: Uid, to: Uid, session: Session)
   }
 }
 
-class SignalingServer(
-    debug: Boolean,
-    random: Random = Random(0),
-) {
+class SignalingServer(debug: Boolean) {
   private val abort = Abort()
-
-  private val clientsByUid       = mutable.Map.empty[Uid, Connection]
-  private val uidByConn          = mutable.Map.empty[Connection, Uid]
-  private val announcementsByUid = mutable.Map.empty[Uid, Map[String, Set[channels.ConnectionDescriptor]]]
+  private val clientsByUid = mutable.Map.empty[Uid, Connection]
+  private val uidByConn    = mutable.Map.empty[Connection, Uid]
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
-  private def sendOrDisconnect(conn: Connection, msg: Message)(onFailure: => Unit = disconnect(conn)): Unit =
+  private def disconnect(conn: Connection): Unit = {
+    uidByConn.remove(conn).foreach { uid =>
+      clientsByUid.remove(uid)
+      log(s"disconnect ${Uid.unwrap(uid)}")
+    }
+    conn.close()
+  }
+
+  private def sendOrDisconnect(conn: Connection, msg: Message): Unit =
     conn.send(ArrayMessageBuffer(writeToArray(msg))).run {
       case Success(_) => ()
-      case Failure(_) => onFailure
+      case Failure(_) => disconnect(conn)
+    }
+
+  private def register(uid: Uid, conn: Connection): Unit = {
+    uidByConn.get(conn).filter(_ != uid).foreach(clientsByUid.remove)
+    clientsByUid.get(uid).filterNot(_ == conn).foreach(disconnect)
+    uidByConn.update(conn, uid)
+    clientsByUid.update(uid, conn)
+  }
+
+  private def relay(conn: Connection, from: Uid, to: Uid, msg: Message): Unit =
+    if uidByConn.get(conn).contains(from) || !uidByConn.contains(conn) then {
+      register(from, conn)
+      clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg))
     }
 
   def stop(): Unit = abort.abort()
@@ -46,47 +61,13 @@ class SignalingServer(
       case Failure(ex) => ex.printStackTrace()
     }
 
-  def topicPeers(topic: String): Map[Uid, Set[channels.ConnectionDescriptor]] =
-    announcementsByUid.iterator.collect {
-      case (uid, topics) if topics.contains(topic) => uid -> topics(topic)
-    }.toMap
-
-  def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ConnectionDescriptor]] =
-    random.shuffle(topicPeers(topic).toVector).take(math.max(0, count)).toMap
-
-  private def disconnect(conn: Connection): Unit = {
-    uidByConn.remove(conn).foreach { uid =>
-      clientsByUid.remove(uid)
-      announcementsByUid.remove(uid)
-      log(s"disconnect ${Uid.unwrap(uid)}")
-    }
-    conn.close()
-  }
-
-  private def register(uid: Uid, conn: Connection): Unit = {
-    uidByConn.get(conn).filter(_ != uid).foreach { previous =>
-      clientsByUid.remove(previous)
-      announcementsByUid.remove(previous)
-    }
-    clientsByUid.get(uid).filterNot(_ == conn).foreach(disconnect)
-    uidByConn.update(conn, uid)
-    clientsByUid.update(uid, conn)
-  }
-
   private val receive: Receive =
     (conn: Connection) => {
       case Success(buffer) =>
         readFromArray[Message](buffer.asArray) match
-            case Message.Announce(uid, requestId, topic, descriptors, count) =>
-              register(uid, conn)
-              announcementsByUid.update(uid, announcementsByUid.getOrElse(uid, Map.empty).updated(topic, descriptors))
-              sendOrDisconnect(conn, Message.TopicInfo(requestId, topic, randomTopicPeers(topic, count)))()
-            case msg @ Message.Offer(from, to, _) if uidByConn.get(conn).contains(from) =>
-              clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
-            case msg @ Message.Answer(from, to, _) if uidByConn.get(conn).contains(from) =>
-              clientsByUid.get(to).foreach(target => sendOrDisconnect(target, msg)())
-            case _ => ()
-
+            case Message.Register(uid)             => register(uid, conn)
+            case msg @ Message.Offer(from, to, _)  => relay(conn, from, to, msg)
+            case msg @ Message.Answer(from, to, _) => relay(conn, from, to, msg)
       case Failure(_) =>
         disconnect(conn)
     }

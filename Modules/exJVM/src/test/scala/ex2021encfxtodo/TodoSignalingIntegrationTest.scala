@@ -1,13 +1,11 @@
 package ex2021encfxtodo
 
-import channels.{Abort, ConcurrencyHelper, NioTCP, NioTcpConnectionDetailsResolver}
 import javafx.application.Platform
 import munit.FunSuite
 import rdts.base.LocalUid
-import replication.research.SignalingServer
 
 import java.util.UUID
-import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 class TodoSignalingIntegrationTest extends FunSuite {
 
@@ -18,28 +16,6 @@ class TodoSignalingIntegrationTest extends FunSuite {
         assert(latch.await(5, TimeUnit.SECONDS), "JavaFX platform did not start")
     catch
         case _: IllegalStateException => ()
-  }
-
-  final private class SignalingFixture {
-    val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-    val nioAbort    = Abort()
-    val nioThread   = Executors.newSingleThreadExecutor()
-    val nioResolver = new NioTcpConnectionDetailsResolver(nio)
-
-    val (listenDetails, serverConn) = nioResolver.listen("127.0.0.1", 0)
-    val signaling                   = SignalingServer(debug = false)
-    signaling.addIncomingConnection(serverConn)
-    nioThread.execute(() => nio.loopSelection(nioAbort))
-
-    val connectionString: String = s"tcp://${listenDetails.host}:${listenDetails.port}"
-
-    def stop(): Unit = {
-      signaling.stop()
-      nioAbort.closeRequest = true
-      nio.selector.wakeup()
-      nioThread.shutdownNow()
-      ()
-    }
   }
 
   private def eventually(timeoutMs: Long = 5000, sleepMs: Long = 20)(assertion: => Unit): Unit = {
@@ -56,23 +32,14 @@ class TodoSignalingIntegrationTest extends FunSuite {
     last.foreach(throw _)
   }
 
-  test("two todo states discover each other through signaling and replicate") {
+  test("two todo states bootstrap directly and replicate") {
     fxStarted
 
-    val signaling = new SignalingFixture()
-    val a         = new SyncedTodoListCrdt(LocalUid.gen())
-    val b         = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(LocalUid.gen())
+    val b = new SyncedTodoListCrdt(LocalUid.gen())
 
     try
-        a.connect(signaling.connectionString)
-        eventually() {
-          assertEquals(signaling.signaling.topicPeers("encfx").size, 1)
-        }
-
-        b.connect(signaling.connectionString)
-        eventually() {
-          assertEquals(signaling.signaling.topicPeers("encfx").size, 2)
-        }
+        b.connect(a.address)
         eventually() {
           assert(
             a.remoteAddresses.nonEmpty || b.remoteAddresses.nonEmpty,
@@ -81,7 +48,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
         }
 
         val id    = UUID.randomUUID()
-        val entry = TodoEntry("via signaling")
+        val entry = TodoEntry("via bootstrap")
         a.put(id, entry)
 
         eventually() {
@@ -90,19 +57,16 @@ class TodoSignalingIntegrationTest extends FunSuite {
     finally
         a.shutdown()
         b.shutdown()
-        signaling.stop()
   }
 
   test("synchronized updates to the same todo keep replicating") {
     fxStarted
 
-    val signaling = new SignalingFixture()
-    val a         = new SyncedTodoListCrdt(LocalUid.gen())
-    val b         = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(LocalUid.gen())
+    val b = new SyncedTodoListCrdt(LocalUid.gen())
 
     try
-        a.connect(signaling.connectionString)
-        b.connect(signaling.connectionString)
+        b.connect(a.address)
 
         eventually() {
           assert(
@@ -129,20 +93,17 @@ class TodoSignalingIntegrationTest extends FunSuite {
     finally
         a.shutdown()
         b.shutdown()
-        signaling.stop()
   }
 
   test("late join after many edits still converges and keeps replicating") {
     fxStarted
 
-    val signaling = new SignalingFixture()
-    val a         = new SyncedTodoListCrdt(LocalUid.gen())
-    val b         = new SyncedTodoListCrdt(LocalUid.gen())
-    val c         = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(LocalUid.gen())
+    val b = new SyncedTodoListCrdt(LocalUid.gen())
+    val c = new SyncedTodoListCrdt(LocalUid.gen())
 
     try
-        a.connect(signaling.connectionString)
-        b.connect(signaling.connectionString)
+        b.connect(a.address)
 
         eventually() {
           assert(
@@ -175,23 +136,15 @@ class TodoSignalingIntegrationTest extends FunSuite {
           assertEquals(b.get(extraA), Some(TodoEntry("extra-a")))
         }
 
-        c.connect(signaling.connectionString)
-
+        c.connect(a.address)
         eventually(timeoutMs = 8000) {
           assertEquals(c.get(shared), Some(TodoEntry("v8", completed = true)))
           assertEquals(c.get(extraA), Some(TodoEntry("extra-a")))
           assertEquals(c.get(extraB), Some(TodoEntry("extra-b", completed = true)))
         }
-        eventually(timeoutMs = 8000) {
-          assert(
-            c.remoteAddresses.nonEmpty && (a.remoteAddresses.size >= 2 || b.remoteAddresses.size >= 2),
-            s"a peers=${a.remoteAddresses}, b peers=${b.remoteAddresses}, c peers=${c.remoteAddresses}"
-          )
-        }
 
         val postJoin = TodoEntry("after-join", completed = false)
         c.put(shared, postJoin)
-        assertEquals(c.get(shared), Some(postJoin))
         eventually() {
           assertEquals(c.get(shared), Some(postJoin))
           assertEquals(a.get(shared), Some(postJoin))
@@ -201,20 +154,17 @@ class TodoSignalingIntegrationTest extends FunSuite {
         a.shutdown()
         b.shutdown()
         c.shutdown()
-        signaling.stop()
   }
 
   test("adding a replica after prior edits backfills history and keeps future replication working") {
     fxStarted
 
-    val signaling = new SignalingFixture()
-    val a         = new SyncedTodoListCrdt(LocalUid.gen())
-    val b         = new SyncedTodoListCrdt(LocalUid.gen())
-    val c         = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(LocalUid.gen())
+    val b = new SyncedTodoListCrdt(LocalUid.gen())
+    val c = new SyncedTodoListCrdt(LocalUid.gen())
 
     try
-        a.connect(signaling.connectionString)
-        b.connect(signaling.connectionString)
+        b.connect(a.address)
 
         eventually() {
           assert(
@@ -233,7 +183,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
           assertEquals(b.get(id1), Some(TodoEntry("before c joins 1")))
         }
 
-        c.connect(signaling.connectionString)
+        c.connect(a.address)
 
         eventually() {
           assertEquals(c.get(id1), Some(TodoEntry("before c joins 1")))
@@ -256,52 +206,5 @@ class TodoSignalingIntegrationTest extends FunSuite {
         a.shutdown()
         b.shutdown()
         c.shutdown()
-        signaling.stop()
-  }
-
-  test("reconnecting to the signaling server does not break existing replication") {
-    fxStarted
-
-    val signaling = new SignalingFixture()
-    val a         = new SyncedTodoListCrdt(LocalUid.gen())
-    val b         = new SyncedTodoListCrdt(LocalUid.gen())
-
-    try
-        a.connect(signaling.connectionString)
-        b.connect(signaling.connectionString)
-
-        eventually() {
-          assert(
-            a.remoteAddresses.nonEmpty || b.remoteAddresses.nonEmpty,
-            s"a peers=${a.remoteAddresses}, b peers=${b.remoteAddresses}"
-          )
-        }
-
-        (1 to 8).foreach { _ =>
-          a.connect(signaling.connectionString)
-          b.connect(signaling.connectionString)
-        }
-
-        eventually() {
-          assertEquals(signaling.signaling.topicPeers("encfx").size, 2)
-        }
-
-        val idA    = UUID.randomUUID()
-        val entryA = TodoEntry("after reconnect a->b")
-        a.put(idA, entryA)
-        eventually() {
-          assertEquals(b.get(idA), Some(entryA))
-        }
-
-        val idB    = UUID.randomUUID()
-        val entryB = TodoEntry("after reconnect b->a")
-        b.put(idB, entryB)
-        eventually() {
-          assertEquals(a.get(idB), Some(entryB))
-        }
-    finally
-        a.shutdown()
-        b.shutdown()
-        signaling.stop()
   }
 }

@@ -4,7 +4,7 @@ import channels.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueu
 import munit.FunSuite
 import rdts.base.Lattice.syntax.merge
 import rdts.base.LocalUid
-import replication.overlay.DirectConnectionOverlay
+import replication.overlay.FullMeshOverlay
 import replication.overlay.HyParViewStateMachine
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
 import replication.research.OverlayStatusProtocol
@@ -21,7 +21,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     val io: BroadcastIO[Status] = BroadcastIO[Status](
       uid,
       delta => status = status.merge(delta),
-      overlay = Some(DirectConnectionOverlay(selfInfo)),
+      overlay = Some(FullMeshOverlay(selfInfo)),
     )
 
     def publishStatus(round: Long): Unit = {
@@ -110,7 +110,7 @@ class OverlayStatusProtocolTest extends FunSuite {
       def startListening(): Unit =
         io.addServerConnection(resolver.queuedServer(selfInfo.channelConnectors.head).get)
 
-      def bootstrapVia(peer: PeerConnectInfo): Unit =
+      def bootstrapVia(peer: ConnectionDescriptor): Unit =
         io.bootstrapVia(peer)
 
       def publishStatus(round: Long): Unit = {
@@ -133,7 +133,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     nodes.indices.foreach { i =>
       Vector(i - 1, i + 1)
         .filter(j => j >= 0 && j < nodes.size)
-        .map(nodes(_).selfInfo)
+        .map(nodes(_).selfInfo.channelConnectors.head)
         .foreach(nodes(i).bootstrapVia)
     }
 

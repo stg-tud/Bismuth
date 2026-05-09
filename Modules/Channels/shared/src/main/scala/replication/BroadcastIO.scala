@@ -11,7 +11,7 @@ import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.Event.Send
 import replication.PlumtreeBroadcast.{Event, Peer}
 import replication.PlumtreeMessage.*
-import replication.overlay.{DirectConnectionOverlay, OverlayController}
+import replication.overlay.{FullMeshOverlay, OverlayController}
 import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
 import java.net.SocketException
@@ -37,7 +37,7 @@ object BroadcastIO {
     new BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = receiveCallback,
-      overlay = overlay.getOrElse(DirectConnectionOverlay(PeerConnectInfo(replicaId.uid, Set.empty))),
+      overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(replicaId.uid, Set.empty))),
       resolver = resolver,
       sendingActor = sendingActor,
       globalAbort = globalAbort,
@@ -153,9 +153,9 @@ class BroadcastIO[State](
     applyOverlayResult(overlay.discoverPassive(peers))
   }
 
-  /** Initiate overlay-native bootstrap through a contact peer. */
-  def bootstrapVia(contact: PeerConnectInfo): Unit = lock.synchronized {
-    applyOverlayResult(overlay.join(contact))
+  /** Initiate overlay-native bootstrap through a single descriptor. */
+  def bootstrapVia(contact: ConnectionDescriptor): Unit = lock.synchronized {
+    applyOverlayResult(overlay.bootstrapVia(contact))
   }
 
   private def localKnownDeltaContext: Dots = plumtree.localContext

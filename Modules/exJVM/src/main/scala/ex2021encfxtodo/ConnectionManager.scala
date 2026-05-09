@@ -6,8 +6,7 @@ import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, RegistryConfiguration}
 import rdts.base.LocalUid
 import replication.BroadcastIO
-import replication.overlay.DirectConnectionOverlay
-import replication.research.SignalingClient
+import replication.overlay.FullMeshOverlay
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.ExecutorService
@@ -29,47 +28,36 @@ class ConnectionManager[State: JsonValueCodec](
   private val aead        = loadOrCreateDemoAead()
   private val globalAbort = Abort()
 
-  private val nio: NioTCP                = new NioTCP()
-  private val nioThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
-  private val nioResolver                = new NioTcpConnectionDetailsResolver(nio)
+  private val nio: NioTCP                              = new NioTCP()
+  private val nioThread: ExecutorService               = java.util.concurrent.Executors.newSingleThreadExecutor()
+  private val nioResolver                              = new NioTcpConnectionDetailsResolver(nio)
+  private val (listenDescriptor, listener)             = nioResolver.listen("127.0.0.1", 0)
 
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = receiveCallback,
-      overlay = Some(DirectConnectionOverlay(PeerConnectInfo(replicaId.uid))),
+      overlay = Some(FullMeshOverlay(PeerConnectInfo(replicaId.uid, Set(listenDescriptor)))),
       resolver = nioResolver,
       globalAbort = globalAbort,
       aead = AeadTranslation(aead),
     )
 
-  dataManager.addServerConnection(nio.listen())
+  dataManager.addServerConnection(listener)
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
 
   def stateChanged(newState: State): Unit =
     dataManager.applyDelta(newState)
 
-  def connectToSignalingServer(connectionString: String): Unit =
+  def connectionString: String =
+    dataManager.selfConnectionDescriptors.headOption.getOrElse(listenDescriptor).toString
+
+  def connectTo(connectionString: String): Unit =
     ConnectionDescriptor.parse(connectionString) match
-        case Some(server) =>
-          SignalingClient(
-            server = server,
-            resolver = nioResolver,
-            localUid = replicaId.uid,
-            abort = dataManager.globalAbort,
-          ).announce(Topic, dataManager.selfConnectionDescriptors).run {
-            case scala.util.Success(peers) =>
-              dataManager.discover(
-                peers.iterator
-                  .filterNot(_._1 == replicaId.uid)
-                  .map((uid, infos) => PeerConnectInfo(uid, infos))
-                  .toSet
-              )
-            case scala.util.Failure(err) =>
-              Console.err.println(s"Failed to connect via signaling server: ${err.getMessage}")
-          }
+        case Some(descriptor) =>
+          dataManager.bootstrapVia(descriptor)
         case _ =>
-          Console.err.println(s"Invalid signaling server connection string: $connectionString")
+          Console.err.println(s"Invalid bootstrap connection string: $connectionString")
 
   def stop(): Unit = {
     dataManager.globalAbort.closeRequest = true
@@ -80,13 +68,11 @@ class ConnectionManager[State: JsonValueCodec](
 
   def remoteAddresses: Set[String] =
     dataManager.overlayController match
-        case overlay: DirectConnectionOverlay => overlay.active.keySet.map(_.delegate)
+        case overlay: FullMeshOverlay => overlay.active.keySet.map(_.delegate)
         case _                                => Set.empty
 }
 
 object ConnectionManager {
-  private val Topic = "encfx"
-
   private def loadOrCreateDemoAead(): Aead = {
     AeadConfig.register()
     val keysetFilePath: Path = Path.of("demokey.json")

@@ -32,7 +32,7 @@ class TodoListApp extends JFXApp3 {
     }
 
     val connectionTextField = new TextField {
-      promptText = "replica@remote"
+      promptText = "bootstrap via tcp://host:port"
       hgrow = Priority.Always
     }
 

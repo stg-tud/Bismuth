@@ -59,7 +59,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     nodes.indices.foreach { i =>
       val lineNeighbors = Vector(i - 1, i + 1)
         .filter(j => j >= 0 && j < nodes.size)
-        .map(nodes(_).selfInfo)
+        .map(nodes(_).selfInfo.channelConnectors.head)
         .toVector
       lineNeighbors.foreach(nodes(i).io.bootstrapVia)
     }

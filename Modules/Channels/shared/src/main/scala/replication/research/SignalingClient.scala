@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer, Receive}
+import channels.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.Uid
@@ -21,26 +21,19 @@ class SignalingClient(
 )(using ec: ExecutionContext = ExecutionContext.global) {
   private var connection: Option[Connection]          = None
   private var connecting: Option[Promise[Connection]] = None
-  private val pendingAnnouncements = mutable.HashMap.empty[Uid, Promise[Map[Uid, Set[ConnectionDescriptor]]]]
-  private val pendingOffers        = mutable.HashMap.empty[Uid, Promise[Session]]
+  private val pendingOffers                           = mutable.HashMap.empty[Uid, Promise[Session]]
 
   private def send(conn: Connection, message: Message): Async[Any, Unit] =
     conn.send(ArrayMessageBuffer(writeToArray(message)))
 
   private def failPending(err: Throwable): Unit = synchronized {
-    pendingAnnouncements.values.foreach(_.tryFailure(err))
     pendingOffers.values.foreach(_.tryFailure(err))
-    pendingAnnouncements.clear()
     pendingOffers.clear()
   }
 
   private def receive(conn: Connection): Callback[MessageBuffer] = {
     case Success(buffer) =>
       readFromArray[Message](buffer.asArray) match
-          case Message.TopicInfo(requestId, _, peers) =>
-            synchronized {
-              pendingAnnouncements.remove(requestId).foreach(_.trySuccess(peers))
-            }
           case Message.Offer(from, to, session) if to == localUid =>
             webrtcAnswerer.foreach { answerer =>
               answerer(from, session).run {
@@ -95,27 +88,13 @@ class SignalingClient(
     }
   }
 
-  def announce(
-      topic: String,
-      descriptors: Set[ConnectionDescriptor],
-      count: Int = Int.MaxValue,
-  ): Async[Any, Map[Uid, Set[ConnectionDescriptor]]] =
+  def start(): Async[Any, Unit] =
     Async.fromCallback {
       ensureConnected().run {
         case Success(conn) =>
-          val requestId = Uid.gen()
-          val promise   = Promise[Map[Uid, Set[ConnectionDescriptor]]]()
-          synchronized {
-            pendingAnnouncements.update(requestId, promise)
-          }
-          promise.future.onComplete(Async.handler.complete)
-          send(conn, Message.Announce(localUid, requestId, topic, descriptors, count)).run {
-            case Success(_)   => ()
-            case Failure(err) =>
-              synchronized {
-                pendingAnnouncements.remove(requestId)
-              }
-              promise.tryFailure(err): Unit
+          send(conn, Message.Register(localUid)).run {
+            case Success(_)   => Async.handler.succeed(())
+            case Failure(err) => Async.handler.fail(err)
           }
         case Failure(err) => Async.handler.fail(err)
       }

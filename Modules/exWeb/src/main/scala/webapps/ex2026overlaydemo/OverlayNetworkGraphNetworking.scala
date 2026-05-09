@@ -102,29 +102,9 @@ object OverlayNetworkGraphNetworking {
         fail: Throwable => Unit,
     )
 
-    private val wsResolver                            = new WebSocketConnectionDetailsResolver
-    private val outgoing                              = mutable.Map.empty[Uid, OutgoingAttempt]
-    private var rediscoveryHandle: js.UndefOr[js.Any] = js.undefined
-    private var lastLookupAtMillis                    = 0.0
-    private val answerTimeoutMillis                   = 15000
-
-    private def lookupNow(): Unit = {
-      lastLookupAtMillis = dom.window.performance.now()
-      client.announce(topic, selfDetails, 1).run {
-        case Success(peers) =>
-          peers.iterator.collectFirst {
-            case (uid, descriptors) if uid != node.localUid.uid && descriptors.nonEmpty =>
-              PeerConnectInfo(uid, descriptors)
-          }.foreach(node.bootstrapVia)
-        case Failure(err) => logFailure("announce failed", err)
-      }
-    }
-
-    private def maybeRediscover(): Unit = {
-      val now      = dom.window.performance.now()
-      val isolated = node.activeView.isEmpty && node.passiveView.isEmpty
-      if client.isConnected && isolated && now - lastLookupAtMillis >= 3000 then lookupNow()
-    }
+    private val wsResolver          = new WebSocketConnectionDetailsResolver
+    private val outgoing            = mutable.Map.empty[Uid, OutgoingAttempt]
+    private val answerTimeoutMillis = 15000
 
     private val clientAbort = Abort()
 
@@ -167,18 +147,15 @@ object OverlayNetworkGraphNetworking {
       }
 
     def start(): Unit = {
-      client.announce(topic, selfDetails).run {
+      client.start().run {
         case Success(_) =>
-          lookupNow()
+          initialSeed.foreach(uid => node.bootstrapVia(ConnectionDescriptor.WebRtc(Uid.unwrap(uid))))
           onRegistered()
-        case Failure(err) => logFailure("signaling announce failed", err)
+        case Failure(err) => logFailure("signaling connect failed", err)
       }
-      rediscoveryHandle = dom.window.setInterval(() => maybeRediscover(), 1000)
     }
 
     def stop(): Unit = {
-      rediscoveryHandle.foreach(handle => dom.window.clearInterval(handle.asInstanceOf[Int]))
-      rediscoveryHandle = js.undefined
       outgoing.values.foreach { attempt =>
         dom.window.clearTimeout(attempt.timeoutHandle)
         attempt.channel.close()

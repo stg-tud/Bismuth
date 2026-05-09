@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
 import rdts.datatypes.ReplicatedSet
 import replication.JsoniterCodecs.given
-import replication.overlay.DirectConnectionOverlay
+import replication.overlay.FullMeshOverlay
 
 class BroadcastIOTest extends munit.FunSuite {
   test("basics") {
@@ -145,7 +145,7 @@ class BroadcastIOTest extends munit.FunSuite {
       val io            = BroadcastIO[Set[String]](
         uid,
         _ => (),
-        overlay = Some(DirectConnectionOverlay(selfInfo)),
+        overlay = Some(FullMeshOverlay(selfInfo)),
         resolver = resolver,
       )
     }
@@ -201,7 +201,7 @@ class BroadcastIOTest extends munit.FunSuite {
       val io            = BroadcastIO[Set[String]](
         uid,
         _ => (),
-        overlay = Some(DirectConnectionOverlay(selfInfo)),
+        overlay = Some(FullMeshOverlay(selfInfo)),
         resolver = resolver,
       )
 
@@ -212,7 +212,7 @@ class BroadcastIOTest extends munit.FunSuite {
         io.discover(peers.iterator.map(_.selfInfo).toSet)
 
       def closeConnectionTo(other: Node): Unit =
-        io.overlayController.asInstanceOf[DirectConnectionOverlay].active.get(other.uid.uid).foreach(_.close())
+        io.overlayController.asInstanceOf[FullMeshOverlay].active.get(other.uid.uid).foreach(_.close())
     }
 
     def drain(maxRounds: Int = 200): Unit = {

@@ -25,10 +25,10 @@ class SyncedTodoListCrdt(
   private val connectionManager: ConnectionManager[StateType] =
     ConnectionManager[StateType](replicaId, handleStateReceived)
 
-  def address: String = "Connect via signaling server"
+  def address: String = connectionManager.connectionString
 
   def connect(connectionString: String): Unit =
-    connectionManager.connectToSignalingServer(connectionString)
+    connectionManager.connectTo(connectionString)
 
   protected def handleStateReceived(state: StateType): Unit = {
     runInCrdtExecContext { () =>

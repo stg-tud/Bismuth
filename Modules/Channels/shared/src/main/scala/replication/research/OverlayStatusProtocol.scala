@@ -8,7 +8,7 @@ import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import replication.BroadcastIO
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
-import replication.overlay.{DirectConnectionOverlay, HyParViewStateMachine}
+import replication.overlay.{FullMeshOverlay, HyParViewStateMachine}
 
 object OverlayStatusProtocol {
 
@@ -43,7 +43,7 @@ object OverlayStatusProtocol {
   def localViewOf[State](io: BroadcastIO[State], timestamp: Long)(using LocalUid): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
         case overlay: HyParViewStateMachine   => (overlay.activeView, overlay.passiveView)
-        case overlay: DirectConnectionOverlay => (overlay.active.keySet, Set.empty[Uid])
+        case overlay: FullMeshOverlay => (overlay.active.keySet, Set.empty[Uid])
         case _                                => (Set.empty[Uid], Set.empty[Uid])
 
     val peerStates =
