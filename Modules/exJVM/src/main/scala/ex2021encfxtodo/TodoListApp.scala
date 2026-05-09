@@ -5,6 +5,7 @@ import scalafx.application.{JFXApp3, Platform}
 import scalafx.scene.Scene
 import scalafx.scene.control.{Button, ListView, TextField}
 import scalafx.scene.layout.{HBox, Priority, VBox}
+import scalafx.stage.StageStyle
 
 import java.util.UUID
 
@@ -56,6 +57,7 @@ class TodoListApp extends JFXApp3 {
 
     stage = new JFXApp3.PrimaryStage {
       title.value = s"Encrdt Todolist (replica ${TodoListController.replicaId})"
+      initStyle(StageStyle.Utility)
       scene = new Scene {
         content = new VBox {
           children = Seq(
