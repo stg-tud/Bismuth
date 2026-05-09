@@ -5,7 +5,7 @@ import channels.WebsocketProtocol.WebsocketHeader
 import de.rmgk.delay.{Async, Callback, Sync}
 import replication.BroadcastIO
 
-import java.net.{SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
+import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import java.util.concurrent.{ExecutorService, Executors}
@@ -60,6 +60,14 @@ object NioTCP {
   )
 
   class EndOfChannelException(msg: String) extends Exception(msg)
+
+  extension [T](broadcast: BroadcastIO[T])
+      def serveNioLoop(): Unit = {
+        val niotcp = new NioTCP()
+        broadcast.addBinaryConnection(niotcp.listen(niotcp.defaultServerSocketChannel(new InetSocketAddress(0))))
+        niotcp.loopSelection(broadcast.globalAbort)
+      }
+
 }
 
 object ConcurrencyHelper {
@@ -88,7 +96,7 @@ object ConcurrencyHelper {
   * [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(accepCallbackExecutor: ExecutionContext) {
+class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmediately) {
   inline val compression: false = false
 
   val selector: Selector = Selector.open()

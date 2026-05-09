@@ -25,8 +25,6 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
   private val connectionManager: DataManagerConnectionManager[StateType] =
     DataManagerConnectionManager[StateType](replicaId, handleStateReceived)
 
-  def address: URI = connectionManager.uri
-
   def connect(connectionString: String): Unit = {
     val parts = connectionString.split("@")
     if parts.length == 2 then {
