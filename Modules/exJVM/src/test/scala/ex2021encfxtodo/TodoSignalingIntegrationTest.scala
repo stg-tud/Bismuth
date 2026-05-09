@@ -1,22 +1,11 @@
 package ex2021encfxtodo
 
-import javafx.application.Platform
 import munit.FunSuite
 import rdts.base.LocalUid
 
 import java.util.UUID
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 class TodoSignalingIntegrationTest extends FunSuite {
-
-  private lazy val fxStarted: Unit = {
-    val latch = CountDownLatch(1)
-    try
-        Platform.startup(() => latch.countDown())
-        assert(latch.await(5, TimeUnit.SECONDS), "JavaFX platform did not start")
-    catch
-        case _: IllegalStateException => ()
-  }
 
   private def eventually(timeoutMs: Long = 5000, sleepMs: Long = 20)(assertion: => Unit): Unit = {
     val deadline                = System.currentTimeMillis() + timeoutMs
@@ -33,8 +22,6 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   test("two todo states bootstrap directly and replicate") {
-    fxStarted
-
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
 
@@ -60,8 +47,6 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   test("synchronized updates to the same todo keep replicating") {
-    fxStarted
-
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
 
@@ -96,8 +81,6 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   test("late join after many edits still converges and keeps replicating") {
-    fxStarted
-
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
     val c = new SyncedTodoListCrdt(LocalUid.gen())
@@ -157,8 +140,6 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   test("adding a replica after prior edits backfills history and keeps future replication working") {
-    fxStarted
-
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
     val c = new SyncedTodoListCrdt(LocalUid.gen())
