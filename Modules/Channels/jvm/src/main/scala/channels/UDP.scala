@@ -92,13 +92,13 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
     (datagramSocket.getLocalSocketAddress, target) match
         case (local: InetSocketAddress, remote: InetSocketAddress) =>
           ConnectionInfo(
-            local = Some(ConnectionDescriptor.Tcp(local.getHostString, local.getPort)),
-            remote = Some(ConnectionDescriptor.Tcp(remote.getHostString, remote.getPort)),
+            local = Some(ConnectionDescriptor.Udp(local.getHostString, local.getPort)),
+            remote = Some(ConnectionDescriptor.Udp(remote.getHostString, remote.getPort)),
             details = Map("type" -> "udp")
           )
         case (local: InetSocketAddress, _) =>
           ConnectionInfo(
-            local = Some(ConnectionDescriptor.Tcp(local.getHostString, local.getPort)),
+            local = Some(ConnectionDescriptor.Udp(local.getHostString, local.getPort)),
             details = Map("type" -> "udp")
           )
         case _ => ConnectionInfo("type" -> "udp")
