@@ -25,32 +25,30 @@ class ConnectionManager[State: JsonValueCodec](
 ) {
   import ConnectionManager.*
 
-  private val aead        = loadOrCreateDemoAead()
-  private val globalAbort = Abort()
-
-  private val nio: NioTCP                              = new NioTCP()
-  private val nioThread: ExecutorService               = java.util.concurrent.Executors.newSingleThreadExecutor()
-  private val nioResolver                              = new NioTcpConnectionDetailsResolver(nio)
-  private val (listenDescriptor, listener)             = nioResolver.listen("127.0.0.1", 0)
+  private val aead                       = loadOrCreateDemoAead()
+  private val globalAbort                = Abort()
+  private val nio: NioTCP                = new NioTCP()
+  private val nioThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
+  private val nioResolver                = new NioTcpConnectionDetailsResolver(nio)
 
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = receiveCallback,
-      overlay = Some(FullMeshOverlay(PeerConnectInfo(replicaId.uid, Set(listenDescriptor)))),
+      overlay = Some(FullMeshOverlay(PeerConnectInfo(replicaId.uid))),
       resolver = nioResolver,
       globalAbort = globalAbort,
       aead = AeadTranslation(aead),
     )
 
-  dataManager.addServerConnection(listener)
+  dataManager.addServerConnection(nio.listen())
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
 
   def stateChanged(newState: State): Unit =
     dataManager.applyDelta(newState)
 
   def connectionString: String =
-    dataManager.selfConnectionDescriptors.headOption.getOrElse(listenDescriptor).toString
+    dataManager.selfConnectionDescriptors.head.toString
 
   def connectTo(connectionString: String): Unit =
     ConnectionDescriptor.parse(connectionString) match
@@ -69,7 +67,7 @@ class ConnectionManager[State: JsonValueCodec](
   def remoteAddresses: Set[String] =
     dataManager.overlayController match
         case overlay: FullMeshOverlay => overlay.active.keySet.map(_.delegate)
-        case _                                => Set.empty
+        case _                        => Set.empty
 }
 
 object ConnectionManager {
