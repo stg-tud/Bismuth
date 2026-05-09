@@ -52,8 +52,8 @@ object Dependencies {
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "26.0.0-R38"
 
   def scalajsReact = libraryDependencies ++= Seq(
-    "com.github.japgolly.scalajs-react" %%% "core"  % "2.1.3",
-    "com.github.japgolly.scalajs-react" %%% "extra" % "2.1.3",
+    "com.github.japgolly.scalajs-react" %%% "core"  % "3.0.0",
+    "com.github.japgolly.scalajs-react" %%% "extra" % "3.0.0",
   )
 
   def scalatags(conf: Configuration = Compile) = libraryDependencies += "com.lihaoyi" %%% "scalatags" % "0.13.1" % conf
