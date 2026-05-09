@@ -1,6 +1,8 @@
+.DS_Store
 .bloop/
 .bsp/
 .idea/
+.ipynb_checkpoints
 .metals/
 .scala-build/
 .vscode/
@@ -12,5 +14,4 @@ package-lock.json
 target/
 webview.h
 yarn.lock
-.ipynb_checkpoints
 ycsb-core.jar
