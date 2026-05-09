@@ -2,8 +2,7 @@ package ex2021encfxtodo
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import ex2021encfxtodo.SyncedTodoListCrdt.StateType
-import ex2021encfxtodo.sync.ConnectionManager
+import ex2021encfxtodo.SyncedTodoListCrdt.{StateType, stateCodec1}
 import rdts.base.LocalUid
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import scalafx.application.Platform
@@ -23,8 +22,8 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
   private val crdtExecutorService: ExecutorService = Executors.newSingleThreadExecutor()
   private val crdtExecContext: ExecutionContext    = ExecutionContext.fromExecutor(crdtExecutorService)
 
-  private val connectionManager: ConnectionManager[StateType] =
-    ConnectionManagerFactory.connectionManager(replicaId, queryCrdtState, handleStateReceived)
+  private val connectionManager: DataManagerConnectionManager[StateType] =
+    DataManagerConnectionManager[StateType](replicaId, handleStateReceived)
 
   def address: URI = connectionManager.uri
 

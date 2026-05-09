@@ -1,4 +1,4 @@
-package ex2021encfxtodo.sync
+package ex2021encfxtodo
 
 import channels.{ConcurrencyHelper, NioTCP}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -25,7 +25,7 @@ class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aea
 class DataManagerConnectionManager[State: {JsonValueCodec}](
     replicaId: LocalUid,
     receiveCallback: State => Unit
-) extends ConnectionManager[State] {
+) {
 
   AeadConfig.register()
   private val keysetFilePath: Path = Path.of("demokey.json")
@@ -59,25 +59,25 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
     niotcp.defaultServerSocketChannel(new InetSocketAddress("127.0.0.1", port))
   ))
 
-  override val localReplicaId: String = replicaId.toString
+  val localReplicaId: String = replicaId.toString
 
-  override def stateChanged(newState: State): Unit =
+  def stateChanged(newState: State): Unit =
     dataManager.applyDelta(newState)
 
-  override def connectToReplica(remoteReplicaId: String, uri: URI): Unit = {
+  def connectToReplica(remoteReplicaId: String, uri: URI): Unit = {
     dataManager.addBinaryConnection(niotcp.connect(niotcp.defaultSocketChannel(new InetSocketAddress(
       uri.getHost,
       uri.getPort
     ))))
   }
 
-  override def stop(): Unit = {
+  def stop(): Unit = {
     dataManager.globalAbort.closeRequest = true
     executor.shutdownNow()
     ()
   }
 
-  override def uri: URI = URI.create(s"tcp://127.0.0.1:$port")
+  def uri: URI = URI.create(s"tcp://127.0.0.1:$port")
 
-  override def remoteAddresses: Set[String] = Set.empty
+  def remoteAddresses: Set[String] = Set.empty
 }
