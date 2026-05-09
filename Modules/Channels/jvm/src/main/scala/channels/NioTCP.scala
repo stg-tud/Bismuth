@@ -183,7 +183,21 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     }
   }
 
-  def handleConnection(
+  def connect(
+      bindsocket: () => SocketChannel,
+  ): LatentConnection =
+    new LatentConnection {
+      override def prepare(incoming: Receive): Async[Any, Connection] =
+        Async.fromCallback {
+          try
+              Async.handler.succeed {
+                handleConnectTo(bindsocket(), incoming)
+              }
+          catch case NonFatal(exception) => Async.handler.fail(exception)
+        }
+    }
+
+  def handleConnectTo(
       clientChannel: SocketChannel,
       incoming: Receive,
   ): NioTCPConnection = {
@@ -201,20 +215,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
     conn
   }
-
-  def connect(
-      bindsocket: () => SocketChannel,
-  ): LatentConnection =
-    new LatentConnection {
-      override def prepare(incoming: Receive): Async[Any, Connection] =
-        Async.fromCallback {
-          try
-              Async.handler.succeed {
-                handleConnection(bindsocket(), incoming)
-              }
-          catch case NonFatal(exception) => Async.handler.fail(exception)
-        }
-    }
 
   def defaultSocketChannel(socketAddress: SocketAddress): () => SocketChannel = () => {
     val pf = socketAddress match
@@ -315,10 +315,13 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
               then attachment.copy(secondary = ByteBuffer.allocate(len - 1024), protocol = ProtocolState.Plain(len))
               else attachment.copy(protocol = ProtocolState.Plain(len))
 
-            val conn     = NioTCPConnection(clientChannel)
-            val callback = upat.incoming.messageHandler(conn)
-            if upat.connectCallback != null then upat.connectCallback.succeed(conn)
-            val withCallback = upat.copy(messageCallback = callback)
+            val withCallback =
+              if upat.messageCallback != null then upat
+              else
+                  val conn     = NioTCPConnection(clientChannel)
+                  val callback = upat.incoming.messageHandler(conn)
+                  if upat.connectCallback != null then upat.connectCallback.succeed(conn)
+                  upat.copy(messageCallback = callback)
             handlePlain(
               len,
               withCallback
@@ -381,10 +384,13 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
         attachment
       case Some(request) =>
         writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
-        val conn     = WebSocketConnection(clientChannel)
-        val callback = attachment.incoming.messageHandler(conn)
-        if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
-        val connected = attachment.copy(messageCallback = callback)
+        val connected =
+          if attachment.messageCallback != null then attachment
+          else
+              val conn     = WebSocketConnection(clientChannel)
+              val callback = attachment.incoming.messageHandler(conn)
+              if attachment.connectCallback != null then attachment.connectCallback.succeed(conn)
+              attachment.copy(messageCallback = callback)
 
         attachment.primary.compact()
 
