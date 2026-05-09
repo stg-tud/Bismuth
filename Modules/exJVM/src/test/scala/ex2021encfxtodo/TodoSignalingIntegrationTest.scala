@@ -27,7 +27,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
     val (listenDetails, serverConn) = nioResolver.listen("127.0.0.1", 0)
-    val signaling                   = SignalingServer(debug = true)
+    val signaling                   = SignalingServer(debug = false)
     signaling.addIncomingConnection(serverConn)
     nioThread.execute(() => nio.loopSelection(nioAbort))
 

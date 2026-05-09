@@ -34,10 +34,9 @@ class DataManagerConnectionManager[State: JsonValueCodec](
   private val nioResolver                              = new NioTcpConnectionDetailsResolver(nio)
   private val (listenDetails, listener)                = nioResolver.listen("127.0.0.1", 0)
   private val selfInfo                                 = PeerConnectInfo(replicaId.uid, Set(listenDetails))
-  private val signalingNio: NioTCP                     = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-  private val signalingThread: ExecutorService         = java.util.concurrent.Executors.newSingleThreadExecutor()
-  private val signalingResolver                        = new NioTcpConnectionDetailsResolver(signalingNio)
-  private var signalingClient: Option[SignalingClient] = None
+  private val signalingNio: NioTCP             = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
+  private val signalingThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
+  private val signalingResolver                = new NioTcpConnectionDetailsResolver(signalingNio)
 
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
@@ -59,41 +58,27 @@ class DataManagerConnectionManager[State: JsonValueCodec](
   def connectToSignalingServer(connectionString: String): Unit =
     parseSignalingServer(connectionString) match
         case Some(server) =>
-          println(s"[$replicaId] connecting to signaling server $server, announcing $listenDetails on topic '$Topic'")
-          signalingClient.foreach(_.stop())
-          var clientRef: Option[SignalingClient] = None
           val client = SignalingClient(
             server = server,
             resolver = signalingResolver,
             localUid = replicaId.uid,
-            initialAnnouncements = Map(Topic -> Set(listenDetails)),
-            debug = true,
-            onRegistered = () => {
-              println(s"[$replicaId] signaling registered, looking up topic '$Topic'")
-              clientRef.foreach(_.lookupTopic(Topic).run(res => println(s"[$replicaId] lookupTopic sent: $res")))
-            },
-            onPeerInfo = (uid, topics) =>
-              println(s"[$replicaId] signaling peer info for $uid: $topics"),
-            onTopicInfo = (topic, peers) => {
-              println(s"[$replicaId] signaling topic info for '$topic': $peers")
+            abort = dataManager.globalAbort,
+          )
+          client.announce(Topic, Set(listenDetails)).run {
+            case scala.util.Success(peers) =>
               dataManager.discover(
                 peers.iterator
                   .filterNot(_._1 == replicaId.uid)
                   .map((uid, infos) => PeerConnectInfo(uid, infos))
                   .toSet
               )
-            },
-            onDisconnected = () => println(s"[$replicaId] signaling disconnected")
-          )
-          clientRef = Some(client)
-          signalingClient = clientRef
-          client.start()
+            case scala.util.Failure(err) =>
+              Console.err.println(s"Failed to connect via signaling server: ${err.getMessage}")
+          }
         case None =>
           Console.err.println(s"Invalid signaling server connection string: $connectionString")
 
   def stop(): Unit = {
-    signalingClient.foreach(_.stop())
-    signalingClient = None
     dataManager.globalAbort.closeRequest = true
     signalingNio.selector.wakeup()
     nio.selector.wakeup()

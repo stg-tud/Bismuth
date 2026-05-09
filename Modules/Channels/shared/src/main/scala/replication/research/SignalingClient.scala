@@ -1,111 +1,147 @@
 package replication.research
 
-import channels.{Abort, ArrayMessageBuffer, ChannelConnectInfo, ChannelResolver, Connection}
+import channels.{Abort, ArrayMessageBuffer, ChannelConnectInfo, ChannelResolver, Connection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import de.rmgk.delay.{Async, Sync}
+import de.rmgk.delay.Async
 import rdts.base.Uid
 import replication.JsoniterCodecs.given
 import replication.research.SignalingServer.{Message, Session}
 
 import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Promise}
 import scala.util.{Failure, Success}
 
 class SignalingClient(
     server: ChannelConnectInfo,
     resolver: ChannelResolver,
     localUid: Uid,
-    initialAnnouncements: Map[String, Set[ChannelConnectInfo]],
+    abort: Abort,
+    webrtcAnswerer: Option[(Uid, Session) => Async[Any, Session]] = None,
     debug: Boolean = false,
-    onRegistered: () => Unit = () => (),
-    onPeerInfo: (Uid, Map[String, Set[ChannelConnectInfo]]) => Unit =
-      (_: Uid, _: Map[String, Set[ChannelConnectInfo]]) => (),
-    onTopicInfo: (String, Map[Uid, Set[ChannelConnectInfo]]) => Unit =
-      (_: String, _: Map[Uid, Set[ChannelConnectInfo]]) => (),
-    onOffer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
-    onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
-    onDisconnected: () => Unit = () => (),
-) {
-  private def log(msg: => String): Unit = if debug then println(s"[signaling-client ${Uid.unwrap(localUid)}] $msg")
+)(using ec: ExecutionContext = ExecutionContext.global) {
+  private var connection: Option[Connection]          = None
+  private var connecting: Option[Promise[Connection]] = None
+  private val pendingAnnouncements = mutable.HashMap.empty[Uid, Promise[Map[Uid, Set[ChannelConnectInfo]]]]
+  private val pendingOffers        = mutable.HashMap.empty[Uid, Promise[Session]]
 
-  private val abort                          = Abort()
-  private var connection: Option[Connection] = None
-  private val announcements                  = mutable.LinkedHashMap.from(initialAnnouncements)
+  private def send(conn: Connection, message: Message): Async[Any, Unit] =
+    conn.send(ArrayMessageBuffer(writeToArray(message)))
 
-  private def describe(conn: Connection): String =
-    s"${conn.getClass.getSimpleName}@${System.identityHashCode(conn)} ${conn.info}"
+  private def failPending(err: Throwable): Unit = synchronized {
+    pendingAnnouncements.values.foreach(_.tryFailure(err))
+    pendingOffers.values.foreach(_.tryFailure(err))
+    pendingAnnouncements.clear()
+    pendingOffers.clear()
+  }
 
-  private def send(message: Message): Async[Any, Unit] =
-    connection match
-        case Some(conn) =>
-          log(s"send $message via ${describe(conn)}")
-          conn.send(ArrayMessageBuffer(writeToArray(message)))
-        case None => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
-
-  def start(): Unit = {
-    log(s"connecting to $server")
-    resolver.connect(server).foreach {
-      _.prepare { _ =>
-        {
-          case Success(buffer) =>
-            val message = readFromArray[Message](buffer.asArray)
-            log(s"received $message")
-            message match
-                case Message.Register(_)                                 =>
-                  announcements.foreach { case (topic, descriptors) =>
-                    log(s"announce topic=$topic descriptors=$descriptors")
-                    send(Message.Announce(topic, descriptors)).run {
-                      case Success(_)  => log(s"announce sent for topic=$topic")
-                      case Failure(ex) => log(s"announce failed for topic=$topic: ${ex.getMessage}")
-                    }
+  private val receive: Receive = (_: Connection) => {
+    case Success(buffer) =>
+      readFromArray[Message](buffer.asArray) match
+          case Message.TopicInfo(requestId, _, peers) =>
+            synchronized {
+              pendingAnnouncements.remove(requestId).foreach(_.trySuccess(peers))
+            }
+          case Message.Offer(from, to, session) if to == localUid =>
+            webrtcAnswerer.foreach { answerer =>
+              answerer(from, session).run {
+                case Success(answer) =>
+                  ensureConnected().run {
+                    case Success(conn) => send(conn, Message.Answer(localUid, from, answer)).run(_ => ())
+                    case Failure(_)    => ()
                   }
-                  onRegistered()
-                case Message.PeerInfo(_, uid, topics)                    => onPeerInfo(uid, topics)
-                case Message.TopicInfo(_, topic, peers)                  => onTopicInfo(topic, peers)
-                case Message.Offer(from, to, session) if to == localUid  => onOffer(from, session)
-                case Message.Answer(from, to, session) if to == localUid => onAnswer(from, session)
-                case _                                                   => ()
-          case Failure(_) =>
-            connection = None
-            onDisconnected()
-        }
-      }.runIn(abort) {
-        case Success(conn) =>
-          connection = Some(conn)
-          log(s"connected to signaling server $server via ${describe(conn)}")
-          send(Message.Register(localUid)).run {
-            case Success(_) => log("register sent")
-            case Failure(err) =>
-              connection = None
-              conn.close()
-              err.printStackTrace()
-          }
-        case Failure(err) => err.printStackTrace()
+                case Failure(_) => ()
+              }
+            }
+          case Message.Answer(from, to, session) if to == localUid =>
+            synchronized {
+              pendingOffers.remove(from).foreach(_.trySuccess(session))
+            }
+          case _ => ()
+    case Failure(err) =>
+      synchronized {
+        connection = None
+        connecting = None
       }
+      failPending(err)
+  }
+
+  private def ensureConnected(): Async[Any, Connection] = Async.fromCallback {
+    synchronized {
+      connection match
+          case Some(conn) => Async.handler.succeed(conn)
+          case None       =>
+            connecting match
+                case Some(promise) => promise.future.onComplete(Async.handler.complete)
+                case None          =>
+                  val promise = Promise[Connection]()
+                  connecting = Some(promise)
+                  promise.future.onComplete(Async.handler.complete)
+                  resolver.connect(server) match
+                      case Some(latent) =>
+                        latent.prepare(receive).runIn(abort) {
+                          case Success(conn) =>
+                            synchronized {
+                              connection = Some(conn)
+                            }
+                            promise.trySuccess(conn): Unit
+                          case Failure(err) =>
+                            synchronized {
+                              connecting = None
+                            }
+                            promise.tryFailure(err): Unit
+                        }
+                      case None =>
+                        connecting = None
+                        promise.tryFailure(IllegalArgumentException(s"Could not resolve signaling server: $server")): Unit
     }
   }
 
-  def stop(): Unit = {
-    connection.foreach(_.close())
-    connection = None
-    abort.abort()
-  }
+  def announce(
+      topic: String,
+      descriptors: Set[ChannelConnectInfo],
+      count: Int = Int.MaxValue,
+  ): Async[Any, Map[Uid, Set[ChannelConnectInfo]]] =
+    Async.fromCallback {
+      ensureConnected().run {
+        case Success(conn) =>
+          val requestId = Uid.gen()
+          val promise   = Promise[Map[Uid, Set[ChannelConnectInfo]]]()
+          synchronized {
+            pendingAnnouncements.update(requestId, promise)
+          }
+          promise.future.onComplete(Async.handler.complete)
+          send(conn, Message.Announce(localUid, requestId, topic, descriptors, count)).run {
+            case Success(_) => ()
+            case Failure(err) =>
+              synchronized {
+                pendingAnnouncements.remove(requestId)
+              }
+              promise.tryFailure(err): Unit
+          }
+        case Failure(err) => Async.handler.fail(err)
+      }
+    }
 
-  def announce(topic: String, descriptors: Set[ChannelConnectInfo]): Async[Any, Unit] = {
-    announcements.update(topic, descriptors)
-    send(Message.Announce(topic, descriptors))
-  }
+  def requestSession(to: Uid, offer: Session): Async[Any, Session] =
+    Async.fromCallback {
+      ensureConnected().run {
+        case Success(conn) =>
+          val promise = Promise[Session]()
+          synchronized {
+            pendingOffers.update(to, promise)
+          }
+          promise.future.onComplete(Async.handler.complete)
+          send(conn, Message.Offer(localUid, to, offer)).run {
+            case Success(_) => ()
+            case Failure(err) =>
+              synchronized {
+                pendingOffers.remove(to)
+              }
+              promise.tryFailure(err): Unit
+          }
+        case Failure(err) => Async.handler.fail(err)
+      }
+    }
 
-  def lookupPeer(uid: Uid): Async[Any, Unit] =
-    send(Message.LookupPeer(Uid.gen(), uid))
-
-  def lookupTopic(topic: String, count: Int = Int.MaxValue): Async[Any, Unit] =
-    send(Message.LookupTopic(Uid.gen(), topic, count))
-
-  def offer(to: Uid, session: Session): Async[Any, Unit] =
-    send(Message.Offer(localUid, to, session))
-
-  def answer(to: Uid, session: Session): Async[Any, Unit] =
-    send(Message.Answer(localUid, to, session))
-
-  def isConnected: Boolean = connection.nonEmpty
+  def isConnected: Boolean = synchronized(connection.nonEmpty)
 }
