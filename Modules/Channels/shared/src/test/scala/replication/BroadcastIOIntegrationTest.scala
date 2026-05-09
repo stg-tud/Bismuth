@@ -32,18 +32,18 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
   ): Vector[Node] = {
     require(n >= 3, s"need at least 3 nodes, got $n")
 
-    val queue          = LocalMessageQueue()
-    val links          = (0 until n).map(i => s"n$i" -> QueuedLocalConnection(s"n$i", queue)).toMap
-    val resolver       = LocalConnectionRegistry(links)
-    val networkConfig  = config.getOrElse(HyParViewConfig.fromEstimatedNetworkSize(n))
+    val queue         = LocalMessageQueue()
+    val links         = (0 until n).map(i => s"n$i" -> QueuedLocalConnection(s"n$i", queue)).toMap
+    val resolver      = LocalConnectionRegistry(links)
+    val networkConfig = config.getOrElse(HyParViewConfig.fromEstimatedNetworkSize(n))
 
     val nodes = (0 until n).toVector.map { i =>
       val uid      = LocalUid.gen()
       val id       = s"n$i"
       val selfInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
-      val random   = Random(0xB15 + i)
+      val random   = Random(0xb15 + i)
       val overlay  = HyParViewStateMachine.empty(selfInfo, networkConfig, random.between, _ => true)
-      val io = BroadcastIO[Set[String]](
+      val io       = BroadcastIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(overlay),

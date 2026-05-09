@@ -85,12 +85,12 @@ object OverlayNetworkGraphNetworking {
   }
 
   final class WebRtcSignalingBridge(
-                                     url: String,
-                                     topic: String,
-                                     node: OverlayDemoNode,
-                                     selfDetails: Set[ConnectionDescriptor],
-                                     initialSeed: Option[Uid],
-                                     onRegistered: () => Unit,
+      url: String,
+      topic: String,
+      node: OverlayDemoNode,
+      selfDetails: Set[ConnectionDescriptor],
+      initialSeed: Option[Uid],
+      onRegistered: () => Unit,
   ) {
     private def logFailure(context: String, err: Throwable): Unit =
       println(s"[overlay-signaling] $context: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
@@ -168,7 +168,7 @@ object OverlayNetworkGraphNetworking {
 
     def start(): Unit = {
       client.announce(topic, selfDetails).run {
-        case Success(_)   =>
+        case Success(_) =>
           lookupNow()
           onRegistered()
         case Failure(err) => logFailure("signaling announce failed", err)
@@ -191,7 +191,7 @@ object OverlayNetworkGraphNetworking {
     def canConnect(details: ConnectionDescriptor): Boolean =
       details match
           case ConnectionDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
-          case _                                 => false
+          case _                                   => false
 
     def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = details match
         case ConnectionDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
@@ -235,7 +235,10 @@ object OverlayNetworkGraphNetworking {
                               client.requestSession(target, SignalingServer.Session(offer.descType, offer.sdp)).run {
                                 case Success(answer) =>
                                   outgoing.remove(target).foreach(a => dom.window.clearTimeout(a.timeoutHandle))
-                                  connector.updateRemoteDescription(SessionDescription(answer.descType, answer.sdp)).run {
+                                  connector.updateRemoteDescription(SessionDescription(
+                                    answer.descType,
+                                    answer.sdp
+                                  )).run {
                                     case Success(_)   => ()
                                     case Failure(err) => failAttempt(err)
                                   }

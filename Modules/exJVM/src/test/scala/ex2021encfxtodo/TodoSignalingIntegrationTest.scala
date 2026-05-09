@@ -20,7 +20,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
         case _: IllegalStateException => ()
   }
 
-  private final class SignalingFixture {
+  final private class SignalingFixture {
     val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
     val nioAbort    = Abort()
     val nioThread   = Executors.newSingleThreadExecutor()
@@ -43,7 +43,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   private def eventually(timeoutMs: Long = 5000, sleepMs: Long = 20)(assertion: => Unit): Unit = {
-    val deadline = System.currentTimeMillis() + timeoutMs
+    val deadline                = System.currentTimeMillis() + timeoutMs
     var last: Option[Throwable] = None
     while System.currentTimeMillis() < deadline do
         try
@@ -74,7 +74,10 @@ class TodoSignalingIntegrationTest extends FunSuite {
           assertEquals(signaling.signaling.topicPeers("encfx").size, 2)
         }
         eventually() {
-          assert(a.remoteAddresses.nonEmpty || b.remoteAddresses.nonEmpty, s"a peers=${a.remoteAddresses}, b peers=${b.remoteAddresses}")
+          assert(
+            a.remoteAddresses.nonEmpty || b.remoteAddresses.nonEmpty,
+            s"a peers=${a.remoteAddresses}, b peers=${b.remoteAddresses}"
+          )
         }
 
         val id    = UUID.randomUUID()

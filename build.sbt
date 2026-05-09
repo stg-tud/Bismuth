@@ -127,9 +127,8 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
         .withESFeatures(_.withESVersion(ESVersion.ES2015))
     },
-    Test / scalaJSLinkerConfig := {
-      scalaJSLinkerConfig.value
-    },
+    Test / scalaJSLinkerConfig :=
+      scalaJSLinkerConfig.value,
     // fix the output directory to make it “guessable” by JS import
     fastLinkJS / crossTarget := target.value / "generated_js",
     fullLinkJS / crossTarget := target.value / "generated_js",

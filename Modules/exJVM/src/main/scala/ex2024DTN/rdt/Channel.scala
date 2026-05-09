@@ -24,7 +24,7 @@ class ClientContext[T: JsonValueCodec](
 ) extends Connection {
   override def send(message: MessageBuffer): Async[Any, Unit] =
     BroadcastIO.decodeEnvelope[T](message, Aead.identity) match
-        case Failure(exception) => Async.fromCallback(Async.handler.fail(exception))
+        case Failure(exception)                          => Async.fromCallback(Async.handler.fail(exception))
         case Success(BroadcastIO.Envelope.Membership(_)) => Async {}
         case Success(BroadcastIO.Envelope.Broadcast(_, Graft(dots))) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
@@ -69,25 +69,34 @@ class Channel[T: JsonValueCodec](
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
             case RdtMessageType.Request =>
-              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(dtnid, PlumtreeMessage.Graft(dots)), Aead.identity))
+              cb.succeed(BroadcastIO.encodeEnvelope(
+                BroadcastIO.Envelope.Broadcast(dtnid, PlumtreeMessage.Graft(dots)),
+                Aead.identity
+              ))
             case RdtMessageType.Payload =>
-              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(
-                dtnid,
-                PlumtreeMessage.Payload(
-                  dots,
-                  readFromArray[T](payload)
-                )
-              ), Aead.identity))
+              cb.succeed(BroadcastIO.encodeEnvelope(
+                BroadcastIO.Envelope.Broadcast(
+                  dtnid,
+                  PlumtreeMessage.Payload(
+                    dots,
+                    readFromArray[T](payload)
+                  )
+                ),
+                Aead.identity
+              ))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
       // It makes any requests unnecessary.
       operationMode match
           case ClientOperationMode.PushAll =>
-            cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(
-              dtnid,
-              PlumtreeMessage.Graft(Dots.empty)
-            ), Aead.identity))
+            cb.succeed(BroadcastIO.encodeEnvelope(
+              BroadcastIO.Envelope.Broadcast(
+                dtnid,
+                PlumtreeMessage.Graft(Dots.empty)
+              ),
+              Aead.identity
+            ))
           case ClientOperationMode.RequestLater =>
 
       conn

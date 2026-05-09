@@ -23,7 +23,6 @@ object PlumtreeMessage {
 
   given [T: Lattice] => Lattice[Payload[T]] = Lattice.derived
 
-
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.
     */

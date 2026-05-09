@@ -13,22 +13,22 @@ import java.util.{Timer, TimerTask}
 import scala.util.Random
 
 class OverlayDemoNode(
-                       selfDetails: Set[ConnectionDescriptor],
-                       listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
-                       envelopeResolver: ChannelResolver,
-                       random: Random = Random(0),
-                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-                       onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
-                       printOverlayEventsToStdout: Boolean = false,
-                       runBackgroundTasks: Boolean = true,
-                       val localUid: LocalUid = LocalUid.gen(),
+    selfDetails: Set[ConnectionDescriptor],
+    listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
+    envelopeResolver: ChannelResolver,
+    random: Random = Random(0),
+    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+    onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
+    printOverlayEventsToStdout: Boolean = false,
+    runBackgroundTasks: Boolean = true,
+    val localUid: LocalUid = LocalUid.gen(),
 )(using Lattice[Payload[OverlayStatusProtocol.Status]]) {
 
   @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty
 
-  private val selfRef                                     = PeerConnectInfo(localUid.uid, selfDetails)
-  private val abort                                       = Abort()
-  private val timer                                       = Timer(true)
+  private val selfRef = PeerConnectInfo(localUid.uid, selfDetails)
+  private val abort   = Abort()
+  private val timer   = Timer(true)
   private var broadcastIO: Option[BroadcastIO[OverlayStatusProtocol.Status]] = None
 
   private def nowMillis(): Long = System.currentTimeMillis()
@@ -53,7 +53,10 @@ class OverlayDemoNode(
       resolver = envelopeResolver,
       globalAbort = abort,
       broadcast =
-        Some(PlumtreeBroadcast(localUid.uid, deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)))
+        Some(PlumtreeBroadcast(
+          localUid.uid,
+          deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)
+        ))
     )
 
   private def startBackgroundTasks(): Unit = {

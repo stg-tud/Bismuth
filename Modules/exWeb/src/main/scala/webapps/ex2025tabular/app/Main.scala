@@ -13,7 +13,7 @@ object Main {
   @JSExportTopLevel("Tabular")
   def run(): Unit = {
     val container = document.getElementById("app")
-    val root = ReactDOMClient.createRoot(container)
+    val root      = ReactDOMClient.createRoot(container)
     root.render(App())
     ()
   }

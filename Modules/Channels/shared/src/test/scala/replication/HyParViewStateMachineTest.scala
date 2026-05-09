@@ -41,7 +41,7 @@ class HyParViewStateMachineTest extends FunSuite {
       random: (Int, Int) => Int = (_, _) => 0,
       canConnect: PeerConnectInfo => Boolean = _.channelConnectors.exists {
         case ConnectionDescriptor.QueuedLocal(_) => true
-        case _                                 => false
+        case _                                   => false
       }
   ): HyParViewStateMachine =
     HyParViewStateMachine.empty(self, config, random, canConnect)
@@ -60,7 +60,9 @@ class HyParViewStateMachineTest extends FunSuite {
   private def sent(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Send(conn, msg) => (conn, msg) }
   private def sentJoin(actions: List[OverlayAction]) =
     actions.collect { case OverlayAction.SendJoin(details, expectedPeer, msg) => (details, expectedPeer, msg) }
-  private def disconnects(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Disconnect(conn) => conn }
+  private def disconnects(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Disconnect(conn) =>
+    conn
+  }
 
   private def receive(machine: HyParViewStateMachine, msg: OverlayController.OverlayMessage, from: Connection)
       : HyParViewStateMachine.Result = {
@@ -87,7 +89,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val aC        = TestConnection("a")
     val newcomerC = TestConnection("newcomer")
 
-    val machine = withActive(state(), a -> aC)
+    val machine                                     = withActive(state(), a -> aC)
     val HyParViewStateMachine.Result(next, actions) = receive(machine, Join(newcomer), newcomerC)
 
     assertEquals(next.activeView, Set(a.uid))
@@ -105,7 +107,8 @@ class HyParViewStateMachineTest extends FunSuite {
     val newNode = peer("new")
     val hopC    = TestConnection("hop")
 
-    val HyParViewStateMachine.Result(next, actions) = receive(state(), ForwardJoin(newNode, 0, peer("sender").uid), hopC)
+    val HyParViewStateMachine.Result(next, actions) =
+      receive(state(), ForwardJoin(newNode, 0, peer("sender").uid), hopC)
 
     assert(next.passiveView.contains(newNode.uid))
     assertEquals(
@@ -121,7 +124,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val aC      = TestConnection("a")
     val bC      = TestConnection("b")
 
-    val machine = withActive(state(), a -> aC, b -> bC)
+    val machine                                     = withActive(state(), a -> aC, b -> bC)
     val HyParViewStateMachine.Result(next, actions) =
       receive(machine, ForwardJoin(newNode, config.passiveRandomWalkLength, sender = a.uid), aC)
 
@@ -167,14 +170,12 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(sent(actions), List((cC, NeighborReply(defaultSelf.uid, accepted = true))))
   }
 
-
-
   test("removeConnection demotes an active peer to passive and triggers replacement promotion") {
     val activePeer = peer("active")
     val backup     = peer("backup")
     val activeC    = TestConnection("active")
 
-    val machine = withPassive(withActive(state(), activePeer -> activeC), backup)
+    val machine          = withPassive(withActive(state(), activePeer -> activeC), backup)
     val (next0, actions) = machine.removeConnection(activeC)
     val next             = next0.asInstanceOf[HyParViewStateMachine]
 
@@ -191,10 +192,10 @@ class HyParViewStateMachineTest extends FunSuite {
   }
 
   test("removeConnection for a failed pending promotion removes that peer from passive and clears pending state") {
-    val candidate  = peer("candidate")
-    val pendingC   = TestConnection("candidate")
+    val candidate   = peer("candidate")
+    val pendingC    = TestConnection("candidate")
     val connectInfo = candidate.channelConnectors.head
-    val machine    = withPassive(state(), candidate).copy(
+    val machine     = withPassive(state(), candidate).copy(
       pendingConnections = Vector(HyParViewStateMachine.PendingConnection(candidate))
     )
 

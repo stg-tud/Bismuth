@@ -154,18 +154,18 @@ class P2PTls(privateIdentity: PrivateIdentity) {
         remote = Try(socketAddrToConnectInfo(socket.getRemoteSocketAddress)).getOrElse(None),
         details = Map(
           "type" -> "p2ptls",
-        // Assumption: The listen port is fixed, the initiator port varies
-        "hackyIdentifier" -> {
-          val ports = List(
-            authenticatedPeerReplicaId.get.delegate -> socket.getPort,
-            localId.id                              -> socket.getLocalPort
-          )
-          // Sort tuple of ports based on replica id, should be unique for connection between two devices (though if
-          // there are two replicas with the same replica id, this won't work reliably)
-          val minPort = ports.minBy(_._1)._2
-          val maxPort = ports.maxBy(_._1)._2
-          s"$minPort|$maxPort"
-        }
+          // Assumption: The listen port is fixed, the initiator port varies
+          "hackyIdentifier" -> {
+            val ports = List(
+              authenticatedPeerReplicaId.get.delegate -> socket.getPort,
+              localId.id                              -> socket.getLocalPort
+            )
+            // Sort tuple of ports based on replica id, should be unique for connection between two devices (though if
+            // there are two replicas with the same replica id, this won't work reliably)
+            val minPort = ports.minBy(_._1)._2
+            val maxPort = ports.maxBy(_._1)._2
+            s"$minPort|$maxPort"
+          }
         )
       )
     }

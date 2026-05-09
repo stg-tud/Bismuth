@@ -15,9 +15,9 @@ import scala.util.Random
 class OverlayStatusProtocolTest extends FunSuite {
 
   final case class Node(id: String) {
-    val uid: LocalUid = LocalUid.gen()
-    val selfInfo      = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
-    var status: Status = OverlayStatusProtocol.empty
+    val uid: LocalUid           = LocalUid.gen()
+    val selfInfo                = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+    var status: Status          = OverlayStatusProtocol.empty
     val io: BroadcastIO[Status] = BroadcastIO[Status](
       uid,
       delta => status = status.merge(delta),
@@ -97,9 +97,9 @@ class OverlayStatusProtocolTest extends FunSuite {
     )
 
     final case class HyparNode(id: String, random: Random) {
-      val uid: LocalUid  = LocalUid.gen()
-      val selfInfo       = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
-      var status: Status = OverlayStatusProtocol.empty
+      val uid: LocalUid           = LocalUid.gen()
+      val selfInfo                = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      var status: Status          = OverlayStatusProtocol.empty
       val io: BroadcastIO[Status] = BroadcastIO[Status](
         uid,
         delta => status = status.merge(delta),
@@ -127,7 +127,7 @@ class OverlayStatusProtocolTest extends FunSuite {
         io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView
     }
 
-    val nodes = Vector.tabulate(nodeCount)(i => HyparNode(s"h$i", Random(0xB15 + i)))
+    val nodes = Vector.tabulate(nodeCount)(i => HyparNode(s"h$i", Random(0xb15 + i)))
     nodes.foreach(_.startListening())
 
     nodes.indices.foreach { i =>
@@ -165,6 +165,9 @@ class OverlayStatusProtocolTest extends FunSuite {
 
     val allPeerStates = snapshots.head.valuesIterator.flatMap(_.valuesIterator).toSet
     assert(allPeerStates.contains(PeerState.Passive), s"expected passive edges in snapshot, got $allPeerStates")
-    assert(nodes.forall(_.activeView.nonEmpty), s"expected all nodes to have active peers, got ${nodes.map(_.activeView.size)}")
+    assert(
+      nodes.forall(_.activeView.nonEmpty),
+      s"expected all nodes to have active peers, got ${nodes.map(_.activeView.size)}"
+    )
   }
 }

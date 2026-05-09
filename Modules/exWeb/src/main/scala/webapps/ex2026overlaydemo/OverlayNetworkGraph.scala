@@ -18,14 +18,14 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 /** vibecoded as part of the hyparview experiments */
 object OverlayNetworkGraph {
 
-  @volatile private var viewerUid: Option[Uid]                  = None
-  @volatile private var network: OverlayStatusProtocol.Status   = OverlayStatusProtocol.empty
-  @volatile private var connectionInfoText: String                    = "waiting for seed url parameter"
-  @volatile private var selfConnectionStringText: String              = ""
-  private var currentNode: Option[OverlayDemoNode]                    = None
-  private var currentSignalingBridge: Option[WebRtcSignalingBridge]   = None
-  private var infoNode: dom.html.TextArea | Null                      = null
-  private var selfConnectionNode: dom.html.TextArea | Null            = null
+  @volatile private var viewerUid: Option[Uid]                      = None
+  @volatile private var network: OverlayStatusProtocol.Status       = OverlayStatusProtocol.empty
+  @volatile private var connectionInfoText: String                  = "waiting for seed url parameter"
+  @volatile private var selfConnectionStringText: String            = ""
+  private var currentNode: Option[OverlayDemoNode]                  = None
+  private var currentSignalingBridge: Option[WebRtcSignalingBridge] = None
+  private var infoNode: dom.html.TextArea | Null                    = null
+  private var selfConnectionNode: dom.html.TextArea | Null          = null
   private val positions = mutable.Map.empty[Uid, (Double, Double, Double, Double)]
 
   private def refreshText(): Unit = {

@@ -39,7 +39,10 @@ class JettyWsListener(val server: Server) {
 
   val handlers = new ContextHandlerCollection()
 
-  def listen(pathSpec: PathSpec, context: ContextHandler = new ContextHandler()): LatentConnection[ConnectionDescriptor] =
+  def listen(
+      pathSpec: PathSpec,
+      context: ContextHandler = new ContextHandler()
+  ): LatentConnection[ConnectionDescriptor] =
     new LatentConnection[ConnectionDescriptor] {
       override def prepare(incomingHandler: ChannelHandler): Async[Abort, ConnectionDescriptor] =
         Async {

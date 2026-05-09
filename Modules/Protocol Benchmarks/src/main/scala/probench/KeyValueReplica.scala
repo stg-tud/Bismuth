@@ -46,8 +46,8 @@ class KeyValueReplica(
   given Participants(votingReplicas)
   given localUid: LocalUid = LocalUid(uid)
 
-  val currentStateLock: AnyRef     = new {}
-  val connInfStateLock: AnyRef     = new {}
+  val currentStateLock: AnyRef = new {}
+  val connInfStateLock: AnyRef = new {}
 
   private val kvCache = mutable.HashMap[String, String]()
 

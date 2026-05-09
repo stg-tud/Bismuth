@@ -87,4 +87,3 @@ case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
 
 object HeartbeatQuorum:
     given Lattice[HeartbeatQuorum] = Lattice.derived
-

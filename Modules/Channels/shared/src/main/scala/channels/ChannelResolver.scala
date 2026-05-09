@@ -16,10 +16,6 @@ object ChannelResolver {
 
 case class PeerConnectInfo(uid: Uid, channelConnectors: Set[ConnectionDescriptor])
 
-
-
-
-
 class LocalConnectionRegistry(
     queued: collection.Map[String, QueuedLocalConnection],
     synchronous: collection.Map[String, SynchronousLocalConnection] = Map.empty,

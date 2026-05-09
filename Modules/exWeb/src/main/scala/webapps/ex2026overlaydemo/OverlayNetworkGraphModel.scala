@@ -62,11 +62,17 @@ object OverlayNetworkGraphModel {
           "local overlay\n  active: -\n  passive: -\n  eager: -"
 
     val replicated = status.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, view) =>
-      val peers    = snapshot(status).getOrElse(uid, Map.empty)
-      val active   = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Eager | OverlayStatusProtocol.PeerState.Lazy) => peer }.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-      val passive  = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Passive) => peer }.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-      val eager    = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Eager) => peer }.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
-      val label    = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
+      val peers  = snapshot(status).getOrElse(uid, Map.empty)
+      val active = peers.collect {
+        case (peer, OverlayStatusProtocol.PeerState.Eager | OverlayStatusProtocol.PeerState.Lazy) => peer
+      }.toList.sortBy(Uid.unwrap).map(Uid.unwrap)
+      val passive = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Passive) => peer }.toList.sortBy(
+        Uid.unwrap
+      ).map(Uid.unwrap)
+      val eager = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Eager) => peer }.toList.sortBy(
+        Uid.unwrap
+      ).map(Uid.unwrap)
+      val label = if viewerUid.contains(uid) then s"${Uid.unwrap(uid)} (you)" else Uid.unwrap(uid)
       s"$label\n  active: ${if active.nonEmpty then active.mkString(", ") else "-"}\n  passive: ${
           if passive.nonEmpty then passive.mkString(", ") else "-"
         }\n  eager: ${if eager.nonEmpty then eager.mkString(", ") else "-"}\n  last seen: ${ageLabel(view.timestamp)}"
@@ -84,19 +90,24 @@ object OverlayNetworkGraphModel {
       width: Double,
       height: Double,
   ): (Vector[GraphNode], Vector[GraphEdge]) = {
-    val edges         = mutable.LinkedHashSet.empty[GraphEdge]
-    val detailsByNode = mutable.LinkedHashMap.empty[Uid, String]
-    val snapshots     = snapshot(status)
-    val timestamps    = status.entries.iterator.map((uid, view) => uid -> view.timestamp).toMap
-    val opacityByNode = mutable.LinkedHashMap.from(timestamps.iterator.map((uid, ts) => uid -> nodeOpacity(ts)))
+    val edges              = mutable.LinkedHashSet.empty[GraphEdge]
+    val detailsByNode      = mutable.LinkedHashMap.empty[Uid, String]
+    val snapshots          = snapshot(status)
+    val timestamps         = status.entries.iterator.map((uid, view) => uid -> view.timestamp).toMap
+    val opacityByNode      = mutable.LinkedHashMap.from(timestamps.iterator.map((uid, ts) => uid -> nodeOpacity(ts)))
     val unknownNodeOpacity = 0.1
 
     snapshots.foreach { (uid, peers) =>
-      val activePeers  = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Eager | OverlayStatusProtocol.PeerState.Lazy) => peer }.toSet
+      val activePeers = peers.collect {
+        case (peer, OverlayStatusProtocol.PeerState.Eager | OverlayStatusProtocol.PeerState.Lazy) => peer
+      }.toSet
       val passivePeers = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Passive) => peer }.toSet
       val eagerPeers   = peers.collect { case (peer, OverlayStatusProtocol.PeerState.Eager) => peer }.toSet
       val opacity      = opacityByNode(uid)
-      detailsByNode.update(uid, s"active=${activePeers.size} passive=${passivePeers.size} eager=${eagerPeers.size} lastSeen=${ageLabel(timestamps(uid))}")
+      detailsByNode.update(
+        uid,
+        s"active=${activePeers.size} passive=${passivePeers.size} eager=${eagerPeers.size} lastSeen=${ageLabel(timestamps(uid))}"
+      )
       activePeers.foreach { peerUid =>
         val kind = if eagerPeers.contains(peerUid) then EdgeKind.EagerOverlay else EdgeKind.ActiveOverlay
         edges += GraphEdge(uid, peerUid, kind, math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
@@ -105,7 +116,12 @@ object OverlayNetworkGraphModel {
             ()
       }
       passivePeers.foreach { peerUid =>
-        edges += GraphEdge(uid, peerUid, EdgeKind.PassiveOverlay, math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity)))
+        edges += GraphEdge(
+          uid,
+          peerUid,
+          EdgeKind.PassiveOverlay,
+          math.min(opacity, opacityByNode.getOrElse(peerUid, unknownNodeOpacity))
+        )
         if opacityByNode.contains(peerUid) then
             detailsByNode.getOrElseUpdate(peerUid, "passive peer")
             ()
@@ -120,7 +136,10 @@ object OverlayNetworkGraphModel {
           from,
           to,
           kind,
-          math.min(opacity, math.min(opacityByNode.getOrElse(from, unknownNodeOpacity), opacityByNode.getOrElse(to, unknownNodeOpacity)))
+          math.min(
+            opacity,
+            math.min(opacityByNode.getOrElse(from, unknownNodeOpacity), opacityByNode.getOrElse(to, unknownNodeOpacity))
+          )
         )
     }.toVector
 
@@ -195,9 +214,9 @@ object OverlayNetworkGraphModel {
             val dy                  = b.y - a.y
             val distance            = math.max(1.0, math.sqrt(dx * dx + dy * dy))
             val (desired, strength) = if kind == EdgeKind.EagerOverlay then (135.0, 0.0085) else (290.0, 0.0006)
-            val pull = (distance - desired) * strength
-            val fx   = dx * pull / distance
-            val fy   = dy * pull / distance
+            val pull                = (distance - desired) * strength
+            val fx                  = dx * pull / distance
+            val fy                  = dy * pull / distance
             a.vx += fx
             a.vy += fy
             b.vx -= fx
@@ -220,7 +239,7 @@ object OverlayNetworkGraphModel {
             val (current, currentAngle) = ordered(idx)
             val (next, nextAngleRaw)    = ordered((idx + 1) % ordered.size)
             val nextAngle               = if idx + 1 < ordered.size then nextAngleRaw else nextAngleRaw + math.Pi * 2
-            val gap = nextAngle - currentAngle
+            val gap                     = nextAngle - currentAngle
             if gap < desiredAngle then {
               val deficit        = desiredAngle - gap
               val spreadStrength = deficit * 0.032

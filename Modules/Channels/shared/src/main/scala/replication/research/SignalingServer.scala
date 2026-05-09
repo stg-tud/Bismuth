@@ -34,8 +34,8 @@ class SignalingServer(
 
   private def sendOrDisconnect(conn: Connection, msg: Message)(onFailure: => Unit = disconnect(conn)): Unit =
     conn.send(ArrayMessageBuffer(writeToArray(msg))).run {
-      case Success(_)  => ()
-      case Failure(_)  => onFailure
+      case Success(_) => ()
+      case Failure(_) => onFailure
     }
 
   def stop(): Unit = abort.abort()

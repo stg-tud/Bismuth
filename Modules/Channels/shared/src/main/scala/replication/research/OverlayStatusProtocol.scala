@@ -19,8 +19,8 @@ object OverlayStatusProtocol {
     case Passive, Lazy, Eager
   }
   object PeerState {
-    given Bottom[PeerState]  = Bottom.provide(PeerState.Passive)
-    given Lattice[PeerState] = Lattice.sumLattice
+    given Bottom[PeerState]         = Bottom.provide(PeerState.Passive)
+    given Lattice[PeerState]        = Lattice.sumLattice
     given JsonValueCodec[PeerState] = JsonCodecMaker.make
   }
 
@@ -29,8 +29,8 @@ object OverlayStatusProtocol {
       peers: ObserveRemoveMap[Uid, LastWriterWins[PeerState]],
   )
   object LocalView {
-    given Bottom[LocalView]  = Bottom.derived
-    given Lattice[LocalView] = Lattice.derived
+    given Bottom[LocalView]         = Bottom.derived
+    given Lattice[LocalView]        = Lattice.derived
     given JsonValueCodec[LocalView] = JsonCodecMaker.make
   }
 
@@ -42,7 +42,7 @@ object OverlayStatusProtocol {
 
   def localViewOf[State](io: BroadcastIO[State], timestamp: Long)(using LocalUid): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
-        case overlay: HyParViewStateMachine => (overlay.activeView, overlay.passiveView)
+        case overlay: HyParViewStateMachine   => (overlay.activeView, overlay.passiveView)
         case overlay: DirectConnectionOverlay => (overlay.active.keySet, Set.empty[Uid])
         case _                                => (Set.empty[Uid], Set.empty[Uid])
 
@@ -56,8 +56,9 @@ object OverlayStatusProtocol {
           uid -> state
         }).toList
 
-    val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) { case (acc, (uid, state)) =>
-      acc.merge(acc.update(uid, LastWriterWins.now(state)))
+    val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) {
+      case (acc, (uid, state)) =>
+        acc.merge(acc.update(uid, LastWriterWins.now(state)))
     }
 
     LocalView(timestamp, peers)

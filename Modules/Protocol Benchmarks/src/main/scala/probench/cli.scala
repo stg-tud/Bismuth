@@ -250,7 +250,6 @@ object cli {
           node.cluster.dataManager.addServerConnection(UDP.listen(() => new DatagramSocket(peerPort.value), ec))
           node.connInf.dataManager.addServerConnection(UDP.listen(() => new DatagramSocket(peerPort.value + 1), ec))
 
-
           cluster.value.foreach { (ip, port) =>
             node.cluster.dataManager.addClientConnection(UDP.connect(
               InetSocketAddress(ip, port),
