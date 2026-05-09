@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
 object BroadcastIO {
   enum Envelope[+State] {
     case Membership(message: OverlayMessage)
-    case Protocol(sender: Uid, message: PlumtreeMessage[State])
+    case Broadcast(sender: Uid, message: PlumtreeMessage[State])
   }
 
   def apply[State](
@@ -172,7 +172,7 @@ class BroadcastIO[State](
           peers.foreach(peer =>
             overlay.connectionFor(peer.uid).foreach(send(
               _,
-              Envelope.Protocol(replicaId.uid, message)
+              Envelope.Broadcast(replicaId.uid, message)
             ))
           )
 
@@ -228,7 +228,7 @@ class BroadcastIO[State](
     msg match
         case Envelope.Membership(message) =>
           applyOverlayResult(overlay.receiveActions(message, conn))
-        case Envelope.Protocol(sender, protocol) =>
+        case Envelope.Broadcast(sender, protocol) =>
           applyRoutingResult(plumtree.handleMessage(Peer(sender), protocol))
   }
 }
