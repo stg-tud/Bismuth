@@ -1,9 +1,8 @@
 {
 	"type": "module",
 	"devDependencies": {
-		"@scala-js/vite-plugin-scalajs": "1.0.0",
-		"vite": "6.3.5",
-		"vite-plugin-singlefile": "2.2.0",
+		"vite": "8.0.10",
+		"vite-plugin-singlefile": "2.3.3",
 		"react-dom": "18.2.0"
 	}
 }
