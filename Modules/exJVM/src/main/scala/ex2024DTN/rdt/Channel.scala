@@ -7,7 +7,7 @@ import ex2024DTN.MonitoringClientInterface
 import ex2024DTN.{NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.{BroadcastIO, PlumtreeMessage}
+import replication.{Aead, BroadcastIO, PlumtreeMessage}
 import replication.PlumtreeMessage.{Graft, IHave, Payload, Prune}
 
 import scala.concurrent.ExecutionContext
@@ -24,25 +24,23 @@ class ClientContext[T: JsonValueCodec](
     operationMode: ClientOperationMode
 ) extends Connection {
   override def send(message: MessageBuffer): Async[Any, Unit] =
-    BroadcastIO.decodeEnvelope[T](message) match
-        case BroadcastIO.Envelope.Membership(_)    => Async {}
-        case BroadcastIO.Envelope.Broadcast(_, Graft(dots)) =>
+    BroadcastIO.decodeEnvelope[T](message, Aead.identity) match
+        case Failure(exception) => Async.fromCallback(Async.handler.fail(exception))
+        case Success(BroadcastIO.Envelope.Membership(_)) => Async {}
+        case Success(BroadcastIO.Envelope.Broadcast(_, Graft(dots))) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
           // todo: actually there should be no requests being sent anymore then. is that the case?
           operationMode match
               case ClientOperationMode.PushAll      => Sync { () }
               case ClientOperationMode.RequestLater =>
-                connection.send(RdtMessageType.Request, Array(), dots).toAsync(using
-                  executionContext
-                )
-          Sync { () }
-        case BroadcastIO.Envelope.Broadcast(_, Payload(dots, data)) =>
+                connection.send(RdtMessageType.Request, Array(), dots).toAsync(using executionContext)
+        case Success(BroadcastIO.Envelope.Broadcast(_, Payload(dots, data))) =>
           connection.send(
             RdtMessageType.Payload,
             writeToArray[T](data),
             dots
           ).toAsync(using executionContext)
-        case BroadcastIO.Envelope.Broadcast(_, IHave(_) | Prune) => Async {}
+        case Success(BroadcastIO.Envelope.Broadcast(_, IHave(_) | Prune)) => Async {}
 
   override def close(): Unit = connection.close().onComplete {
     case Failure(f)     => f.printStackTrace()
@@ -72,7 +70,7 @@ class Channel[T: JsonValueCodec](
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
             case RdtMessageType.Request =>
-              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(dtnid, PlumtreeMessage.Graft(dots))))
+              cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(dtnid, PlumtreeMessage.Graft(dots)), Aead.identity))
             case RdtMessageType.Payload =>
               cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(
                 dtnid,
@@ -80,7 +78,7 @@ class Channel[T: JsonValueCodec](
                   dots,
                   readFromArray[T](payload)
                 )
-              )))
+              ), Aead.identity))
       }
 
       // This tells the rdt to send everything it has and new following stuff into the network.
@@ -90,7 +88,7 @@ class Channel[T: JsonValueCodec](
             cb.succeed(BroadcastIO.encodeEnvelope(BroadcastIO.Envelope.Broadcast(
               dtnid,
               PlumtreeMessage.Graft(Dots.empty)
-            )))
+            ), Aead.identity))
           case ClientOperationMode.RequestLater =>
 
       conn

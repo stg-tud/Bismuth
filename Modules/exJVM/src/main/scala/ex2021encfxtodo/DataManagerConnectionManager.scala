@@ -9,7 +9,6 @@ import replication.BroadcastIO
 
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
-import scala.annotation.unused
 import scala.util.{Random, Try}
 
 class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aead {
@@ -33,7 +32,7 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
 
   private val keyset =
     CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(Files.newInputStream(keysetFilePath)))
-  @unused private val aead: Aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[Aead])
+  private val aead: Aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[Aead])
 
   println(LegacyKeysetSerialization.getKeysetInfo(keyset))
 
@@ -41,6 +40,7 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
     BroadcastIO[State](
       replicaId: LocalUid,
       receiveCallback,
+      aead = AeadTranslation(aead),
     )
 
   val port: Int = Random.nextInt(10000) + 50000

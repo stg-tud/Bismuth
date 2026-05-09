@@ -32,6 +32,7 @@ object BroadcastIO {
       sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
       globalAbort: Abort = Abort(),
       broadcast: Option[PlumtreeBroadcast[State]] = None,
+      aead: Aead = Aead.identity,
   )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
     new BroadcastIO[State](
       replicaId = replicaId,
@@ -41,7 +42,8 @@ object BroadcastIO {
       sendingActor = sendingActor,
       globalAbort = globalAbort,
       plumtree =
-        broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 1000)))
+        broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 1000))),
+      aead = aead,
     )
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
@@ -51,11 +53,13 @@ object BroadcastIO {
 
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
-  def decodeEnvelope[State: JsonValueCodec](messageBuffer: MessageBuffer): Envelope[State] =
-    readFromArray[Envelope[State]](messageBuffer.asArray)(using BroadcastIO.messageCodec)
+  def decodeEnvelope[State: JsonValueCodec](messageBuffer: MessageBuffer, aead: Aead): Try[Envelope[State]] =
+    aead.decrypt(messageBuffer.asArray, Aead.emptyAssociatedData).flatMap(bytes =>
+      Try(readFromArray[Envelope[State]](bytes)(using BroadcastIO.messageCodec))
+    )
 
-  def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State]) =
-    ArrayMessageBuffer(writeToArray(envelope)(using BroadcastIO.messageCodec))
+  def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State], aead: Aead) =
+    ArrayMessageBuffer(aead.encrypt(writeToArray(envelope)(using BroadcastIO.messageCodec), Aead.emptyAssociatedData))
 }
 
 /** Combined Delta + Plumtree dissemination.
@@ -72,10 +76,11 @@ class BroadcastIO[State](
     resolver: ChannelResolver,
     sendingActor: ExecutionContext,
     val globalAbort: Abort,
-    @volatile private var plumtree: PlumtreeBroadcast[State]
+    @volatile private var plumtree: PlumtreeBroadcast[State],
+    val aead: Aead
 )(using val stateCodec: JsonValueCodec[State]) {
 
-  val lock: AnyRef = new {}
+  val lock: AnyRef                                                                     = new {}
   @volatile private var connectionDetails: Map[Connection, Option[ChannelConnectInfo]] = Map.empty
 
   def overlayController: OverlayController = overlay
@@ -98,7 +103,13 @@ class BroadcastIO[State](
   private val connectionReceiver: Receive = new Receive {
     override def messageHandler(conn: Connection): Callback[MessageBuffer] = new Callback {
       override def complete(tr: Try[MessageBuffer]): Unit = tr match {
-        case Success(msg)   => handleMessage(BroadcastIO.decodeEnvelope(msg), conn)
+        case Success(msg) =>
+          BroadcastIO.decodeEnvelope(msg, aead) match
+              case Success(decoded) => handleMessage(decoded, conn)
+              case Failure(error)   =>
+                println(s"$replicaId: error during message handling")
+                error.printStackTrace()
+                removePeer(conn)
         case Failure(error) =>
           error match {
             case se: SocketException if se.getMessage == "Connection reset" =>
@@ -217,7 +228,7 @@ class BroadcastIO[State](
     if globalAbort.closeRequest then ()
     else
         sendingActor.execute { () =>
-          conn.send(BroadcastIO.encodeEnvelope(payload)).run {
+          conn.send(BroadcastIO.encodeEnvelope(payload, aead)).run {
             case Success(_) => ()
             case Failure(_) => removePeer(conn)
           }
