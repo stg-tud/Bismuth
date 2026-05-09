@@ -88,7 +88,7 @@ object ConcurrencyHelper {
   * [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(pool: ExecutionContext) {
+class NioTCP(accepCallbackExecutor: ExecutionContext) {
   inline val compression: false = false
 
   val selector: Selector = Selector.open()
@@ -334,7 +334,7 @@ class NioTCP(pool: ExecutionContext) {
     grabPayload(len, attachment) match {
       case Some(buffer) =>
 
-        pool.execute { () =>
+        accepCallbackExecutor.execute { () =>
           callback.succeed(ArrayMessageBuffer(buffer))
         }
 
@@ -456,7 +456,7 @@ class NioTCP(pool: ExecutionContext) {
 
     websocketFrame match {
       case BinaryFrame(data) =>
-        if fin then pool.execute(() => callback.succeed(ArrayMessageBuffer(data)))
+        if fin then accepCallbackExecutor.execute(() => callback.succeed(ArrayMessageBuffer(data)))
         else {
           fragments = fragments :+ data
           fragmentOpcode = Some(0x2)
@@ -464,7 +464,7 @@ class NioTCP(pool: ExecutionContext) {
 
       case TextFrame(text) =>
         val data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8)
-        if fin then pool.execute(() => callback.succeed(ArrayMessageBuffer(data)))
+        if fin then accepCallbackExecutor.execute(() => callback.succeed(ArrayMessageBuffer(data)))
         else {
           fragments = fragments :+ data
           fragmentOpcode = Some(0x1)
@@ -476,7 +476,7 @@ class NioTCP(pool: ExecutionContext) {
           val complete = fragments.foldLeft(Array.emptyByteArray)(_ ++ _)
           fragments = Vector.empty
           fragmentOpcode = None
-          pool.execute(() => callback.succeed(ArrayMessageBuffer(complete)))
+          accepCallbackExecutor.execute(() => callback.succeed(ArrayMessageBuffer(complete)))
         }
 
       case PingFrame(data) =>
