@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.ExecutorService
 import scala.util.Try
 
-class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aead {
+class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends replication.Aead {
   override def encrypt(data: Array[Byte], associated: Array[Byte]): Array[Byte] = aead.encrypt(data, associated)
 
   override def decrypt(data: Array[Byte], associated: Array[Byte]): Try[Array[Byte]] =
@@ -38,7 +38,7 @@ class ConnectionManager[State: JsonValueCodec](
       overlay = Some(FullMeshOverlay(PeerConnectInfo(replicaId.uid))),
       resolver = nioResolver,
       globalAbort = globalAbort,
-      aead = AeadTranslation(aead),
+      aead = TinkBasedAead(aead),
     )
 
   dataManager.addServerConnection(nio.listen())
