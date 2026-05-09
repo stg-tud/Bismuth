@@ -27,9 +27,9 @@ class ConnectionManager[State: JsonValueCodec](
 
   private val aead                       = loadOrCreateDemoAead()
   private val globalAbort                = Abort()
-  private val nio: NioTCP                = new NioTCP()
+  private val nio: NioTCP                = NioTCP()
   private val nioThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
-  private val nioResolver                = new NioTcpConnectionDetailsResolver(nio)
+  private val nioResolver                = NioTcpConnectionDetailsResolver(nio)
 
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
