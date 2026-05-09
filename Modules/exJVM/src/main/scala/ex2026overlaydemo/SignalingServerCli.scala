@@ -1,7 +1,8 @@
 package ex2026overlaydemo
 
 import channels.*
-import replication.research.SignalingServer
+import replication.PlumtreeMessage.Payload
+import replication.research.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
 
 import java.net.BindException
 import java.util.concurrent.Executors
@@ -10,14 +11,7 @@ import java.util.concurrent.Executors
 object SignalingServerCli {
 
   def main(args: Array[String]): Unit = {
-    val (host, preferredPort) = args.toList match
-        case Nil                             => ("127.0.0.1", None)
-        case "--port" :: port :: Nil         => ("127.0.0.1", Some(port.toInt))
-        case host :: Nil                     => (host, None)
-        case host :: "--port" :: port :: Nil => (host, Some(port.toInt))
-        case _                               =>
-          println("usage: [host] [--port <port>]")
-          return
+    val host = args.headOption.getOrElse("localhost")
 
     val nio         = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
     val nioAbort    = Abort()
@@ -29,18 +23,23 @@ object SignalingServerCli {
       (details, latent)
     }
 
-    val (listenDetails, server) =
-      preferredPort match
-          case Some(port) =>
-            try listen(port)
-            catch
-                case _: BindException => listen(0)
-          case None => listen(0)
+    val (signalDetails, signalServer) =  listen(9001)
+
+    val (overlayDetails, overlayServer) = listen(9002)
 
     val signaling = SignalingServer(debug = true)
-    signaling.addIncomingConnection(server)
+    signaling.addIncomingConnection(signalServer)
+
+    given rdts.base.Lattice[Payload[OverlayStatusProtocol.Status]] = summon
+    val overlayNode = new OverlayDemoNode(
+      selfDetails = Set(overlayDetails),
+      listenEnvelope = Some(overlayServer),
+      envelopeResolver = nioResolver,
+      printOverlayEventsToStdout = true,
+    )
+    overlayNode.start(Nil)
 
     nioThread.execute(() => nio.loopSelection(nioAbort))
-    println(s"signal=${listenDetails.asUrl}")
+    println(s"&signal=${signalDetails.asUrl}&bootstrap=${overlayDetails.asUrl}")
   }
 }
