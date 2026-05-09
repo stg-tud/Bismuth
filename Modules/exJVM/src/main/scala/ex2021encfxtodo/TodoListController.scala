@@ -13,28 +13,45 @@ import scala.jdk.CollectionConverters.*
 object TodoListController {
   val replicaId: LocalUid = LocalUid.gen()
 
-  private val crdt: SyncedTodoListCrdt = new SyncedTodoListCrdt(replicaId)
+  private val crdt: SyncedTodoListCrdt = new SyncedTodoListCrdt(replicaId, handleUpdated)
 
   def handleUpdated(before: Map[UUID, TodoEntry], after: Map[UUID, TodoEntry]): Unit = {
     Platform.runLater {
       val added   = after.keySet.diff(before.keySet)
       val removed = before.keySet.diff(after.keySet)
-      val changed = (before.keySet -- removed)
-        .map { uuid => uuid -> (before(uuid), after(uuid)) }
-        .filter { case (uuid, (b, a)) => b != a }
-        .map { case (uuid, (b, a)) => uuid -> a }
+      val changed = (before.keySet intersect after.keySet)
+        .iterator
+        .flatMap { uuid =>
+          val next = after(uuid)
+          Option.when(before(uuid) != next)(uuid -> next)
+        }
+        .toMap
 
-      uuidToTodoEntryProperties.addAll(added.map(uuid => uuid -> ObjectProperty(after(uuid))))
-      observableUuidList.addAll(added.asJava)
-
-      changed.foreach { case (k, v) => uuidToTodoEntryProperties(k).set(v) }
-
-      observableUuidList.removeAll(removed.asJava)
-      removed.foreach { uuid =>
-        uuidToTodoEntryProperties.remove(uuid)
+      added.foreach { uuid =>
+        uuidToTodoEntryProperties.getOrElseUpdate(uuid, ObjectProperty(after(uuid)))
+        if !observableUuidList.contains(uuid) then observableUuidList.add(uuid): Unit
       }
 
+      changed.foreach { case (uuid, entry) =>
+        uuidToTodoEntryProperties.get(uuid) match
+            case Some(property) => property.set(entry)
+            case None =>
+              uuidToTodoEntryProperties.put(uuid, ObjectProperty(entry))
+              if !observableUuidList.contains(uuid) then observableUuidList.add(uuid): Unit
+      }
+
+      removed.foreach { uuid =>
+        observableUuidList.remove(uuid)
+        uuidToTodoEntryProperties.remove(uuid)
+      }
     }
+  }
+
+  private def applyLocalChange(update: => Unit): Unit = {
+    val before = crdt.values
+    update
+    val after = crdt.values
+    handleUpdated(before, after)
   }
 
   val observableUuidList: ObservableList[UUID] =
@@ -48,16 +65,16 @@ object TodoListController {
 
   def addTodo(todoEntry: TodoEntry): Unit = {
     val uuid = UUID.randomUUID()
-    crdt.put(uuid, todoEntry)
-    uuidToTodoEntryProperties.put(uuid, ObjectProperty[TodoEntry](todoEntry))
-    observableUuidList.add(uuid)
+    applyLocalChange {
+      crdt.put(uuid, todoEntry)
+    }
     ()
   }
 
   def removeTodo(uuid: UUID): Unit = {
-    crdt.remove(uuid)
-    observableUuidList.remove(uuid)
-    uuidToTodoEntryProperties.remove(uuid)
+    applyLocalChange {
+      crdt.remove(uuid)
+    }
     ()
   }
 
@@ -66,11 +83,11 @@ object TodoListController {
       println("uuid null for " + changedEntry)
     } else {
       val oldTodo = crdt.get(uuid)
-      if oldTodo.contains(changedEntry) then return
+      if oldTodo.isEmpty || oldTodo.contains(changedEntry) then return
 
-      println(s"$uuid -> $changedEntry changed from $oldTodo")
-      uuidToTodoEntryProperties(uuid).set(changedEntry)
-      crdt.put(uuid, changedEntry)
+      applyLocalChange {
+        crdt.put(uuid, changedEntry)
+      }
     }
   }
 

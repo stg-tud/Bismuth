@@ -10,6 +10,7 @@ import scalafx.geometry.Pos
 import scalafx.scene.control.{CheckBox, TextField}
 import scalafx.scene.layout.{HBox, Priority}
 
+
 import java.util.UUID
 
 class TodoItemListCell extends ListCell[UUID] {
@@ -23,17 +24,26 @@ class TodoItemListCell extends ListCell[UUID] {
       val todoProperty: Option[ObjectProperty[TodoEntry]] = TodoListController.getTodo(uuid)
 
       if todoProperty.isEmpty then {
-        Console.println("Empty")
+        setText(null)
+        setGraphic(null)
         return
       }
 
       val textField = new TextField {
         hgrow = Priority.Always
       }
-      textField.setText(todoProperty.get.value.description)
-
       val checkBox = new CheckBox()
-      checkBox.setSelected(todoProperty.get.value.completed)
+
+      var applyingRemoteUpdate = false
+      def syncFromProperty(entry: TodoEntry): Unit = {
+        applyingRemoteUpdate = true
+        try {
+          if textField.getText != entry.description then textField.setText(entry.description)
+          if checkBox.selected.get() != entry.completed then checkBox.setSelected(entry.completed)
+        } finally applyingRemoteUpdate = false
+      }
+
+      syncFromProperty(todoProperty.get.value)
 
       val rootContainer = new HBox {
         children = List(checkBox, textField)
@@ -42,33 +52,24 @@ class TodoItemListCell extends ListCell[UUID] {
       setGraphic(rootContainer)
 
       subscriptions = subscriptions :+ textField.text.onChange { (_: ObservableValue[String, String], _, newVal) =>
-        val uuid = getItem
-        if uuid != null then
-            todoProperty match {
-              case Some(property) => TodoListController.changeTodo(uuid, property.value.copy(description = newVal))
-              case None           => Console.err.println(s"TodoItemListCell: Entry $uuid not present in Controller")
-            }
+        if !applyingRemoteUpdate then
+            val uuid = getItem
+            if uuid != null then
+                TodoListController.changeTodo(uuid, TodoEntry(newVal, checkBox.selected.get()))
       }
 
       subscriptions = subscriptions :+ checkBox.selectedProperty.onChange {
         (_: ObservableValue[Boolean, java.lang.Boolean], _, newVal) =>
-          val uuid = getItem
-          if uuid != null then
-              todoProperty match {
-                case Some(property) => TodoListController.changeTodo(uuid, property.value.copy(completed = newVal))
-                case None           => Console.err.println(s"TodoItemListCell: Entry $uuid not present in Controller")
-              }
+          if !applyingRemoteUpdate then
+              val uuid = getItem
+              if uuid != null then
+                  TodoListController.changeTodo(uuid, TodoEntry(textField.getText, newVal))
       }
 
       subscriptions = subscriptions :+ todoProperty.get.onChange(
-        (_: ObservableValue[TodoEntry, TodoEntry], before: TodoEntry, after: TodoEntry) =>
+        (_: ObservableValue[TodoEntry, TodoEntry], _: TodoEntry, after: TodoEntry) =>
           Platform.runLater {
-            if textField.getText == before.description && before.description != after.description then {
-              textField.setText(after.description)
-            }
-            if checkBox.selected.get() == before.completed && before.completed != after.completed then {
-              checkBox.setSelected(after.completed)
-            }
+            if getItem == uuid then syncFromProperty(after)
           }
       )
       ()
@@ -78,7 +79,6 @@ class TodoItemListCell extends ListCell[UUID] {
   private var subscriptions = List.empty[Subscription]
 
   private def reset(): Unit = {
-    Console.println(s"Reset $subscriptions")
     subscriptions.foreach(sub => sub.cancel())
     subscriptions = List.empty
   }
