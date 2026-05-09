@@ -19,7 +19,7 @@ class BroadcastIOTest extends munit.FunSuite {
       BroadcastIO[Set[String]](uid, _ => ())
     }
 
-    val sync = SynchronousLocalConnection()
+    val sync = SynchronousLocalConnection("sync-basics")
 
     dd2.addClientConnection(sync.client("2"))
     dd1.addServerConnection(sync.server)
@@ -52,7 +52,7 @@ class BroadcastIOTest extends munit.FunSuite {
         i <- nodes.indices
         j <- (i + 1) until nodes.size
     do
-        val link = QueuedLocalConnection(queue)
+        val link = QueuedLocalConnection(s"queued-$i-$j", queue)
         nodes(i).addServerConnection(link.server)
         nodes(j).addClientConnection(link.client(s"$j->$i"))
 
@@ -85,7 +85,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
 
     val queue  = LocalMessageQueue()
-    val queued = QueuedLocalConnection(queue)
+    val queued = QueuedLocalConnection("queued-basics", queue)
 
     dd2.addClientConnection(queued.client("2"))
     dd1.addServerConnection(queued.server)
@@ -133,9 +133,9 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val queue = LocalMessageQueue()
     val links = Map(
-      "n0" -> QueuedLocalConnection(queue),
-      "n1" -> QueuedLocalConnection(queue),
-      "n2" -> QueuedLocalConnection(queue),
+      "n0" -> QueuedLocalConnection("n0", queue),
+      "n1" -> QueuedLocalConnection("n1", queue),
+      "n2" -> QueuedLocalConnection("n2", queue),
     )
     val resolver = LocalConnectionRegistry(links)
 
@@ -188,10 +188,10 @@ class BroadcastIOTest extends munit.FunSuite {
 
     val queue = LocalMessageQueue()
     val links = Map(
-      "n0" -> QueuedLocalConnection(queue),
-      "n1" -> QueuedLocalConnection(queue),
-      "n2" -> QueuedLocalConnection(queue),
-      "n3" -> QueuedLocalConnection(queue),
+      "n0" -> QueuedLocalConnection("n0", queue),
+      "n1" -> QueuedLocalConnection("n1", queue),
+      "n2" -> QueuedLocalConnection("n2", queue),
+      "n3" -> QueuedLocalConnection("n3", queue),
     )
     val resolver = LocalConnectionRegistry(links)
 
@@ -303,7 +303,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val nodes = Vector.fill(5)(mkNode())
 
     for i <- nodes.indices do
-        val link = QueuedLocalConnection(queue)
+        val link = QueuedLocalConnection(s"circle-$i", queue)
         nodes(i).dissemination.addServerConnection(link.server)
         nodes((i + 1) % nodes.size).dissemination.addClientConnection(link.client(s"${i}->${(i + 1) % nodes.size}"))
 

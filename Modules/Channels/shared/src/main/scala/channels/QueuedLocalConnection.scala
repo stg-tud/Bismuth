@@ -42,7 +42,7 @@ class LocalMessageQueue {
 }
 
 /** Like [[SynchronousLocalConnection]], but message delivery is queued and manually executed. */
-class QueuedLocalConnection(val messageQueue: LocalMessageQueue = LocalMessageQueue()) {
+class QueuedLocalConnection(val serverId: String, val messageQueue: LocalMessageQueue = LocalMessageQueue()) {
 
   object server extends LatentConnection[ConnectionDescriptor] {
 
@@ -53,8 +53,7 @@ class QueuedLocalConnection(val messageQueue: LocalMessageQueue = LocalMessageQu
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
-      // TODO: maybe we can put the actual client connection in here … ?
-      ConnectionDescriptor.QueuedLocal("server")
+      ConnectionDescriptor.QueuedLocal(serverId)
     }
   }
 

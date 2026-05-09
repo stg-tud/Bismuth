@@ -31,7 +31,7 @@ class BroadcastIOAeadTest extends FunSuite {
     val dd1 = BroadcastIO[Set[String]](LocalUid.gen(), received1 += _, aead = aead)
     val dd2 = BroadcastIO[Set[String]](LocalUid.gen(), received2 += _, aead = aead)
 
-    val sync = SynchronousLocalConnection()
+    val sync = SynchronousLocalConnection("sync-aead")
     dd1.addServerConnection(sync.server)
     dd2.addClientConnection(sync.client("2"))
 

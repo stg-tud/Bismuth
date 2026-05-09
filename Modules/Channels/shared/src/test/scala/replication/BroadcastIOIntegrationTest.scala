@@ -33,7 +33,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     require(n >= 3, s"need at least 3 nodes, got $n")
 
     val queue          = LocalMessageQueue()
-    val links          = (0 until n).map(i => s"n$i" -> QueuedLocalConnection(queue)).toMap
+    val links          = (0 until n).map(i => s"n$i" -> QueuedLocalConnection(s"n$i", queue)).toMap
     val resolver       = LocalConnectionRegistry(links)
     val networkConfig  = config.getOrElse(HyParViewConfig.fromEstimatedNetworkSize(n))
 

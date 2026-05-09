@@ -9,7 +9,7 @@ import de.rmgk.delay.{Async, Callback, Promise, Sync}
   * It does not matter if the server or client is started first, connection is established immediately when the second one joins the connection.
   */
 // You like callback hell? Definitely callback hell.
-class SynchronousLocalConnection {
+class SynchronousLocalConnection(serverId: String) {
 
   /** The server prepares by fullfillling the [[connectionEstablished]] promise, which contains a callback that allwows any number of clients to connect. The inner callback contains the [[Connection]] the server sends on, as well as a promise that the server completes immediately with it’s own receive handler. */
   object server extends LatentConnection[ConnectionDescriptor] {
@@ -21,8 +21,7 @@ class SynchronousLocalConnection {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
-      // TODO: return the client?
-      ConnectionDescriptor.SynchronousLocal("server")
+      ConnectionDescriptor.SynchronousLocal(serverId)
     }
   }
 

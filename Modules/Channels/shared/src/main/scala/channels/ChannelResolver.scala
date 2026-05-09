@@ -20,14 +20,23 @@ case class PeerConnectInfo(uid: Uid, channelConnectors: Set[ConnectionDescriptor
 
 
 
-class LocalConnectionRegistry(queued: collection.Map[String, QueuedLocalConnection]) extends ChannelResolver {
+class LocalConnectionRegistry(
+    queued: collection.Map[String, QueuedLocalConnection],
+    synchronous: collection.Map[String, SynchronousLocalConnection] = Map.empty,
+) extends ChannelResolver {
   def queuedServer(details: ConnectionDescriptor): Option[LatentConnection[ConnectionDescriptor]] =
     details match
         case ConnectionDescriptor.QueuedLocal(id) => queued.get(id).map(_.server)
-        case _                                  => None
+        case _                                    => None
+
+  def synchronousServer(details: ConnectionDescriptor): Option[LatentConnection[ConnectionDescriptor]] =
+    details match
+        case ConnectionDescriptor.SynchronousLocal(id) => synchronous.get(id).map(_.server)
+        case _                                         => None
 
   override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
     details match
-        case ConnectionDescriptor.QueuedLocal(id) => queued.get(id).map(_.client(id))
-        case _                                  => None
+        case ConnectionDescriptor.QueuedLocal(id)      => queued.get(id).map(_.client(id))
+        case ConnectionDescriptor.SynchronousLocal(id) => synchronous.get(id).map(_.client(id))
+        case _                                         => None
 }

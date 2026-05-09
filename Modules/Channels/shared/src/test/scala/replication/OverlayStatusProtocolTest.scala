@@ -33,7 +33,7 @@ class OverlayStatusProtocolTest extends FunSuite {
   }
 
   private def connect(queue: LocalMessageQueue, left: Node, right: Node, label: String): Unit = {
-    val link = QueuedLocalConnection(queue)
+    val link = QueuedLocalConnection(label, queue)
     left.io.addServerConnection(link.server)
     right.io.addClientConnection(link.client(label))
   }
@@ -84,7 +84,7 @@ class OverlayStatusProtocolTest extends FunSuite {
   test("status RDT converges across peers when using HyParView and includes passive knowledge") {
     val nodeCount = 6
     val queue     = LocalMessageQueue()
-    val links     = (0 until nodeCount).map(i => s"h$i" -> QueuedLocalConnection(queue)).toMap
+    val links     = (0 until nodeCount).map(i => s"h$i" -> QueuedLocalConnection(s"h$i", queue)).toMap
     val resolver  = LocalConnectionRegistry(links)
     val config    = HyParViewConfig(
       activeViewSize = 2,
