@@ -41,17 +41,17 @@ object OverlayNetworkGraph {
     }
   }
 
-  private def parseConnectionString(str: String): ChannelConnectInfo = {
+  private def parseConnectionString(str: String): ConnectionDescriptor = {
     val trimmed = str.trim
-    if trimmed.startsWith("{") then readFromString[ChannelConnectInfo](trimmed)
+    if trimmed.startsWith("{") then readFromString[ConnectionDescriptor](trimmed)
     else
-        readFromString[ChannelConnectInfo](String(
+        readFromString[ConnectionDescriptor](String(
           Base64.getUrlDecoder.decode(trimmed),
           java.nio.charset.StandardCharsets.UTF_8
         ))
   }
 
-  private def encodeConnectionString(details: ChannelConnectInfo): String =
+  private def encodeConnectionString(details: ConnectionDescriptor): String =
     Base64.getUrlEncoder.withoutPadding.encodeToString(
       writeToString(details).getBytes(java.nio.charset.StandardCharsets.UTF_8)
     )
@@ -65,7 +65,7 @@ object OverlayNetworkGraph {
   private def defaultSignalUrl: Option[String]  = urlParam("signal")
   private def defaultUidString: Option[String]  = urlParam("uid")
 
-  private def describeSeed(details: ChannelConnectInfo): String = details.toString
+  private def describeSeed(details: ConnectionDescriptor): String = details.toString
 
   private def localViews: Option[LocalViews] =
     currentNode.map(node =>
@@ -95,12 +95,12 @@ object OverlayNetworkGraph {
     val signalUrl      = defaultSignalUrl
     val signalingTopic = "overlay-demo"
     val selfDetails    =
-      signalUrl.map(_ => Set(ChannelConnectInfo.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
-    val requestedSeedId = seedDetails.collect { case ChannelConnectInfo.WebRtc(peerId) => Uid.predefined(peerId) }
+      signalUrl.map(_ => Set(ConnectionDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
+    val requestedSeedId = seedDetails.collect { case ConnectionDescriptor.WebRtc(peerId) => Uid.predefined(peerId) }
 
     var signalingRef: Option[WebRtcSignalingBridge] = None
     val resolver                                    = new ChannelResolver {
-      override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
+      override def connect(details: ConnectionDescriptor): Option[LatentConnection] =
         signalingRef.flatMap(_.connect(details))
     }
 
@@ -128,9 +128,9 @@ object OverlayNetworkGraph {
     selfConnectionStringText = selfDetails.headOption.map(encodeConnectionString).getOrElse("")
 
     connectionInfoText = (seedDetails, signalUrl) match
-        case (Some(seed: ChannelConnectInfo.WebRtc), Some(url)) =>
+        case (Some(seed: ConnectionDescriptor.WebRtc), Some(url)) =>
           s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before bootstrap lookup"
-        case (Some(seed: ChannelConnectInfo.WebRtc), None) =>
+        case (Some(seed: ConnectionDescriptor.WebRtc), None) =>
           s"starting peer\nseed: ${describeSeed(seed)}\nmissing signaling server url (?signal=ws://... required for WebRTC seed discovery)"
         case (Some(seed), _) =>
           s"starting peer\nseed: ${describeSeed(seed)}\nweb app only acquires peers via signaling + WebRTC; direct seed connection is ignored"

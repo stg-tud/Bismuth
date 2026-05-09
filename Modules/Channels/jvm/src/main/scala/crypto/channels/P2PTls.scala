@@ -143,8 +143,8 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     override def info: ConnectionInfo = {
-      def socketAddrToConnectInfo(socketAddr: SocketAddress): Option[ChannelConnectInfo.Tcp] = socketAddr match {
-        case address: InetSocketAddress => Some(ChannelConnectInfo.Tcp(address.getHostString, address.getPort))
+      def socketAddrToConnectInfo(socketAddr: SocketAddress): Option[ConnectionDescriptor.Tcp] = socketAddr match {
+        case address: InetSocketAddress => Some(ConnectionDescriptor.Tcp(address.getHostString, address.getPort))
         case _                          => None
       }
 

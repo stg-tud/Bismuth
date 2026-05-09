@@ -241,7 +241,7 @@ final case class HyParViewStateMachine(
 
   override def removeConnection(
       conn: Connection,
-      connectInfo: Option[channels.ChannelConnectInfo] = None
+      connectInfo: Option[channels.ConnectionDescriptor] = None
   ): (OverlayController, List[OverlayAction]) =
     active.find(_.connection == conn) match
         case Some(activePeer) =>

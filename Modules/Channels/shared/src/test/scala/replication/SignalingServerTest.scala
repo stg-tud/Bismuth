@@ -1,6 +1,6 @@
 package replication
 
-import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, SynchronousLocalConnection}
+import channels.{Abort, ConnectionDescriptor, ChannelResolver, LatentConnection, SynchronousLocalConnection}
 import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.Uid
@@ -19,11 +19,11 @@ class SignalingServerTest extends FunSuite {
 
   final private class Fixture {
     val abort         = Abort()
-    val serverDetails = ChannelConnectInfo.SynchronousLocal("signal")
+    val serverDetails = ConnectionDescriptor.SynchronousLocal("signal")
     val server        = SignalingServer(debug = false)
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
-      override def connect(details: ChannelConnectInfo): Option[LatentConnection] =
+      override def connect(details: ConnectionDescriptor): Option[LatentConnection] =
         if details == serverDetails then
             val link = SynchronousLocalConnection()
             server.addIncomingConnection(link.server)
@@ -37,8 +37,8 @@ class SignalingServerTest extends FunSuite {
     val fx       = Fixture()
     val a        = Uid.predefined("a")
     val b        = Uid.predefined("b")
-    val aDetails = Set(ChannelConnectInfo.QueuedLocal("a"), ChannelConnectInfo.WebRtc("a"))
-    val bDetails = Set(ChannelConnectInfo.QueuedLocal("b"))
+    val aDetails = Set(ConnectionDescriptor.QueuedLocal("a"), ConnectionDescriptor.WebRtc("a"))
+    val bDetails = Set(ConnectionDescriptor.QueuedLocal("b"))
 
     val clientA = SignalingClient(server = fx.serverDetails, resolver = fx.resolverFor("a"), localUid = a, abort = fx.abort)
     val clientB = SignalingClient(server = fx.serverDetails, resolver = fx.resolverFor("b"), localUid = b, abort = fx.abort)
@@ -56,7 +56,7 @@ class SignalingServerTest extends FunSuite {
   test("server replaces old announcement state when the same uid reconnects") {
     val fx      = Fixture()
     val a       = Uid.predefined("a")
-    val details = Set(ChannelConnectInfo.QueuedLocal("a"))
+    val details = Set(ConnectionDescriptor.QueuedLocal("a"))
 
     val first  = SignalingClient(server = fx.serverDetails, resolver = fx.resolverFor("a-1"), localUid = a, abort = fx.abort)
     val second = SignalingClient(server = fx.serverDetails, resolver = fx.resolverFor("a-2"), localUid = a, abort = fx.abort)
@@ -78,7 +78,7 @@ class SignalingServerTest extends FunSuite {
         resolver = fx.resolverFor(Uid.unwrap(uid)),
         localUid = uid,
         abort = fx.abort,
-      ).announce("topic-1", Set(ChannelConnectInfo.WebRtc(Uid.unwrap(uid)))))
+      ).announce("topic-1", Set(ConnectionDescriptor.WebRtc(Uid.unwrap(uid)))))
     })
 
     val observer = SignalingClient(

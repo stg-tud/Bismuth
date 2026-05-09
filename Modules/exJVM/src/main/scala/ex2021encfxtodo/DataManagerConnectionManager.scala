@@ -1,6 +1,6 @@
 package ex2021encfxtodo
 
-import channels.{Abort, ChannelConnectInfo, ConcurrencyHelper, NioTCP, NioTcpConnectionDetailsResolver, PeerConnectInfo}
+import channels.{Abort, ConnectionDescriptor, ConcurrencyHelper, NioTCP, NioTcpConnectionDetailsResolver, PeerConnectInfo}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, RegistryConfiguration}
@@ -56,8 +56,8 @@ class DataManagerConnectionManager[State: JsonValueCodec](
     dataManager.applyDelta(newState)
 
   def connectToSignalingServer(connectionString: String): Unit =
-    ChannelConnectInfo.parse(connectionString) match
-        case Some(server @ (_: ChannelConnectInfo.Tcp | _: ChannelConnectInfo.TcpWebSocket)) =>
+    ConnectionDescriptor.parse(connectionString) match
+        case Some(server @ (_: ConnectionDescriptor.Tcp | _: ConnectionDescriptor.TcpWebSocket)) =>
           SignalingClient(
             server = server,
             resolver = signalingResolver,

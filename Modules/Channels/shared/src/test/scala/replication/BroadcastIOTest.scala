@@ -1,6 +1,6 @@
 package replication
 
-import channels.{ChannelConnectInfo, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection, SynchronousLocalConnection}
+import channels.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection, SynchronousLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.LocalUid
@@ -141,7 +141,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     final case class Node(id: String) {
       val uid: LocalUid = LocalUid.gen()
-      val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
+      val selfInfo      = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val io            = BroadcastIO[Set[String]](
         uid,
         _ => (),
@@ -197,7 +197,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     final case class Node(id: String) {
       val uid: LocalUid = LocalUid.gen()
-      val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
+      val selfInfo      = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val io            = BroadcastIO[Set[String]](
         uid,
         _ => (),

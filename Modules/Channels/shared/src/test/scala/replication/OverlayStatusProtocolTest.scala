@@ -1,6 +1,6 @@
 package replication
 
-import channels.{ChannelConnectInfo, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
+import channels.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import munit.FunSuite
 import rdts.base.Lattice.syntax.merge
 import rdts.base.LocalUid
@@ -16,7 +16,7 @@ class OverlayStatusProtocolTest extends FunSuite {
 
   final case class Node(id: String) {
     val uid: LocalUid = LocalUid.gen()
-    val selfInfo      = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
+    val selfInfo      = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
     var status: Status = OverlayStatusProtocol.empty
     val io: BroadcastIO[Status] = BroadcastIO[Status](
       uid,
@@ -98,7 +98,7 @@ class OverlayStatusProtocolTest extends FunSuite {
 
     final case class HyparNode(id: String, random: Random) {
       val uid: LocalUid  = LocalUid.gen()
-      val selfInfo       = PeerConnectInfo(uid.uid, Set(ChannelConnectInfo.QueuedLocal(id)))
+      val selfInfo       = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       var status: Status = OverlayStatusProtocol.empty
       val io: BroadcastIO[Status] = BroadcastIO[Status](
         uid,

@@ -81,7 +81,7 @@ class BroadcastIO[State](
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef                                                                     = new {}
-  @volatile private var connectionDetails: Map[Connection, Option[ChannelConnectInfo]] = Map.empty
+  @volatile private var connectionDetails: Map[Connection, Option[ConnectionDescriptor]] = Map.empty
 
   def overlayController: OverlayController = overlay
 
@@ -165,7 +165,7 @@ class BroadcastIO[State](
   }
 
   /** Track a newly established connection and the optional connect info used to create it. */
-  private def registerConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): Unit = lock.synchronized {
+  private def registerConnection(conn: Connection, connectInfo: Option[ConnectionDescriptor]): Unit = lock.synchronized {
     connectionDetails = connectionDetails.updated(conn, connectInfo)
     applyOverlayResult(overlay.activateConnection(conn, connectInfo))
   }
@@ -195,9 +195,9 @@ class BroadcastIO[State](
 
   /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
   private def connectAndSend(
-      details: Iterable[ChannelConnectInfo],
-      expectedPeer: Uid,
-      payload: Envelope[State]
+                              details: Iterable[ConnectionDescriptor],
+                              expectedPeer: Uid,
+                              payload: Envelope[State]
   ): Unit =
     details.iterator.flatMap(detail => resolver.connect(detail).map(detail -> _)).nextOption() match
         case Some((detail, latentConnection)) =>

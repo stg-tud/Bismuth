@@ -1,6 +1,6 @@
 package replication.overlay
 
-import channels.{ChannelConnectInfo, Connection, PeerConnectInfo}
+import channels.{ConnectionDescriptor, Connection, PeerConnectInfo}
 import rdts.base.Uid
 import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
@@ -10,7 +10,7 @@ trait OverlayController {
     * HyParView does nothing here because it identifies peers from received protocol messages.
     * Simpler overlays may use this to emit an initial handshake.
     */
-  def activateConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo]): (OverlayController, List[OverlayAction]) =
+  def activateConnection(conn: Connection, connectInfo: Option[ConnectionDescriptor]): (OverlayController, List[OverlayAction]) =
     (this, Nil)
 
   /** Handle one overlay control-plane message and return the next controller state plus side-effect actions.
@@ -23,7 +23,7 @@ trait OverlayController {
   /** Remove a connection and optionally provide the connect info used to establish it, if known.
     * This lets overlays clean up pending outbound attempts without tracking raw connection objects internally.
     */
-  def removeConnection(conn: Connection, connectInfo: Option[ChannelConnectInfo] = None): (OverlayController, List[OverlayAction]) =
+  def removeConnection(conn: Connection, connectInfo: Option[ConnectionDescriptor] = None): (OverlayController, List[OverlayAction]) =
     (this, Nil)
 
   /** Lookup the currently known connection for a peer, if one is attached to an active-view entry. */
@@ -58,7 +58,7 @@ object OverlayController {
     case Send(connection: Connection, message: OverlayMessage)
 
     /** Bootstrap-only send where no peer identity is known yet, only raw connection details. */
-    case SendJoin(to: Set[ChannelConnectInfo], expectedPeer: Uid, message: OverlayMessage)
+    case SendJoin(to: Set[ConnectionDescriptor], expectedPeer: Uid, message: OverlayMessage)
 
     /** Close a live transport connection; the resulting closure must be fed back through `removeConnection`. */
     case Disconnect(connection: Connection)

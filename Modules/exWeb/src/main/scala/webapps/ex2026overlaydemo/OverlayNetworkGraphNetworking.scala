@@ -85,12 +85,12 @@ object OverlayNetworkGraphNetworking {
   }
 
   final class WebRtcSignalingBridge(
-      url: String,
-      topic: String,
-      node: OverlayDemoNode,
-      selfDetails: Set[ChannelConnectInfo],
-      initialSeed: Option[Uid],
-      onRegistered: () => Unit,
+                                     url: String,
+                                     topic: String,
+                                     node: OverlayDemoNode,
+                                     selfDetails: Set[ConnectionDescriptor],
+                                     initialSeed: Option[Uid],
+                                     onRegistered: () => Unit,
   ) {
     private def logFailure(context: String, err: Throwable): Unit =
       println(s"[overlay-signaling] $context: ${err.getClass.getSimpleName}: ${Option(err.getMessage).getOrElse("")}")
@@ -129,7 +129,7 @@ object OverlayNetworkGraphNetworking {
     private val clientAbort = Abort()
 
     private lazy val client: SignalingClient = new SignalingClient(
-      server = ChannelConnectInfo.WebSocket(url),
+      server = ConnectionDescriptor.WebSocket(url),
       resolver = wsResolver,
       localUid = node.localUid.uid,
       abort = clientAbort,
@@ -188,13 +188,13 @@ object OverlayNetworkGraphNetworking {
       clientAbort.closeRequest = true
     }
 
-    def canConnect(details: ChannelConnectInfo): Boolean =
+    def canConnect(details: ConnectionDescriptor): Boolean =
       details match
-          case ChannelConnectInfo.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
+          case ConnectionDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
           case _                                 => false
 
-    def connect(details: ChannelConnectInfo): Option[LatentConnection] = details match
-        case ChannelConnectInfo.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
+    def connect(details: ConnectionDescriptor): Option[LatentConnection] = details match
+        case ConnectionDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
           val target = Uid.predefined(peerId)
           Some(new LatentConnection {
             override def prepare(receiver: Receive): Async[Abort, Connection] = {

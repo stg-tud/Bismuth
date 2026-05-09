@@ -138,9 +138,9 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().clear()
   }
 
-  private def socketConnectInfo(address: SocketAddress): Option[ChannelConnectInfo.Tcp] =
+  private def socketConnectInfo(address: SocketAddress): Option[ConnectionDescriptor.Tcp] =
     address match
-        case isa: InetSocketAddress => Some(ChannelConnectInfo.Tcp(isa.getHostString, isa.getPort))
+        case isa: InetSocketAddress => Some(ConnectionDescriptor.Tcp(isa.getHostString, isa.getPort))
         case _                      => None
 
   class NioTCPConnection(clientChannel: SocketChannel) extends Connection {

@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ArrayMessageBuffer, ChannelConnectInfo, Connection, LatentConnection, Receive}
+import channels.{Abort, ArrayMessageBuffer, ConnectionDescriptor, Connection, LatentConnection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Uid
 import replication.JsoniterCodecs.given
@@ -13,8 +13,8 @@ object SignalingServer {
   case class Session(descType: String, sdp: String)
 
   enum Message {
-    case Announce(uid: Uid, requestId: Uid, topic: String, descriptors: Set[ChannelConnectInfo], count: Int)
-    case TopicInfo(requestId: Uid, topic: String, peers: Map[Uid, Set[ChannelConnectInfo]])
+    case Announce(uid: Uid, requestId: Uid, topic: String, descriptors: Set[ConnectionDescriptor], count: Int)
+    case TopicInfo(requestId: Uid, topic: String, peers: Map[Uid, Set[ConnectionDescriptor]])
     case Offer(from: Uid, to: Uid, session: Session)
     case Answer(from: Uid, to: Uid, session: Session)
   }
@@ -28,7 +28,7 @@ class SignalingServer(
 
   private val clientsByUid       = mutable.Map.empty[Uid, Connection]
   private val uidByConn          = mutable.Map.empty[Connection, Uid]
-  private val announcementsByUid = mutable.Map.empty[Uid, Map[String, Set[channels.ChannelConnectInfo]]]
+  private val announcementsByUid = mutable.Map.empty[Uid, Map[String, Set[channels.ConnectionDescriptor]]]
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
@@ -46,12 +46,12 @@ class SignalingServer(
       case Failure(ex) => ex.printStackTrace()
     }
 
-  def topicPeers(topic: String): Map[Uid, Set[channels.ChannelConnectInfo]] =
+  def topicPeers(topic: String): Map[Uid, Set[channels.ConnectionDescriptor]] =
     announcementsByUid.iterator.collect {
       case (uid, topics) if topics.contains(topic) => uid -> topics(topic)
     }.toMap
 
-  def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ChannelConnectInfo]] =
+  def randomTopicPeers(topic: String, count: Int): Map[Uid, Set[channels.ConnectionDescriptor]] =
     random.shuffle(topicPeers(topic).toVector).take(math.max(0, count)).toMap
 
   private def disconnect(conn: Connection): Unit = {

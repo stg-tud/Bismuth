@@ -1,6 +1,6 @@
 package replication
 
-import channels.{ChannelConnectInfo, Connection, ConnectionInfo, PeerConnectInfo}
+import channels.{ConnectionDescriptor, Connection, ConnectionInfo, PeerConnectInfo}
 import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.Uid
@@ -33,14 +33,14 @@ class HyParViewStateMachineTest extends FunSuite {
   private def peer(name: String, connectable: Boolean = true): PeerConnectInfo =
     PeerConnectInfo(
       Uid.predefined(name),
-      if connectable then Set(ChannelConnectInfo.QueuedLocal(name)) else Set(ChannelConnectInfo.Tcp(name, 42))
+      if connectable then Set(ConnectionDescriptor.QueuedLocal(name)) else Set(ConnectionDescriptor.Tcp(name, 42))
     )
 
   private def state(
       self: PeerConnectInfo = defaultSelf,
       random: (Int, Int) => Int = (_, _) => 0,
       canConnect: PeerConnectInfo => Boolean = _.channelConnectors.exists {
-        case ChannelConnectInfo.QueuedLocal(_) => true
+        case ConnectionDescriptor.QueuedLocal(_) => true
         case _                                 => false
       }
   ): HyParViewStateMachine =

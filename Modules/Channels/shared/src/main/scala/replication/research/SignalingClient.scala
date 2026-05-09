@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ArrayMessageBuffer, ChannelConnectInfo, ChannelResolver, Connection, Receive}
+import channels.{Abort, ArrayMessageBuffer, ConnectionDescriptor, ChannelResolver, Connection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import de.rmgk.delay.Async
 import rdts.base.Uid
@@ -12,16 +12,16 @@ import scala.concurrent.{ExecutionContext, Promise}
 import scala.util.{Failure, Success}
 
 class SignalingClient(
-    server: ChannelConnectInfo,
-    resolver: ChannelResolver,
-    localUid: Uid,
-    abort: Abort,
-    webrtcAnswerer: Option[(Uid, Session) => Async[Any, Session]] = None,
-    debug: Boolean = false,
+                       server: ConnectionDescriptor,
+                       resolver: ChannelResolver,
+                       localUid: Uid,
+                       abort: Abort,
+                       webrtcAnswerer: Option[(Uid, Session) => Async[Any, Session]] = None,
+                       debug: Boolean = false,
 )(using ec: ExecutionContext = ExecutionContext.global) {
   private var connection: Option[Connection]          = None
   private var connecting: Option[Promise[Connection]] = None
-  private val pendingAnnouncements = mutable.HashMap.empty[Uid, Promise[Map[Uid, Set[ChannelConnectInfo]]]]
+  private val pendingAnnouncements = mutable.HashMap.empty[Uid, Promise[Map[Uid, Set[ConnectionDescriptor]]]]
   private val pendingOffers        = mutable.HashMap.empty[Uid, Promise[Session]]
 
   private def send(conn: Connection, message: Message): Async[Any, Unit] =
@@ -97,15 +97,15 @@ class SignalingClient(
   }
 
   def announce(
-      topic: String,
-      descriptors: Set[ChannelConnectInfo],
-      count: Int = Int.MaxValue,
-  ): Async[Any, Map[Uid, Set[ChannelConnectInfo]]] =
+                topic: String,
+                descriptors: Set[ConnectionDescriptor],
+                count: Int = Int.MaxValue,
+  ): Async[Any, Map[Uid, Set[ConnectionDescriptor]]] =
     Async.fromCallback {
       ensureConnected().run {
         case Success(conn) =>
           val requestId = Uid.gen()
-          val promise   = Promise[Map[Uid, Set[ChannelConnectInfo]]]()
+          val promise   = Promise[Map[Uid, Set[ConnectionDescriptor]]]()
           synchronized {
             pendingAnnouncements.update(requestId, promise)
           }

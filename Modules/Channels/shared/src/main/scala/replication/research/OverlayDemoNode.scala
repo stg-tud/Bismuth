@@ -1,6 +1,6 @@
 package replication.research
 
-import channels.{Abort, ChannelConnectInfo, ChannelResolver, LatentConnection, PeerConnectInfo}
+import channels.{Abort, ConnectionDescriptor, ChannelResolver, LatentConnection, PeerConnectInfo}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import replication.JsoniterCodecs.given
@@ -13,15 +13,15 @@ import java.util.{Timer, TimerTask}
 import scala.util.Random
 
 class OverlayDemoNode(
-    selfDetails: Set[ChannelConnectInfo],
-    listenEnvelope: Option[LatentConnection],
-    envelopeResolver: ChannelResolver,
-    random: Random = Random(0),
-    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-    onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
-    printOverlayEventsToStdout: Boolean = false,
-    runBackgroundTasks: Boolean = true,
-    val localUid: LocalUid = LocalUid.gen(),
+                       selfDetails: Set[ConnectionDescriptor],
+                       listenEnvelope: Option[LatentConnection],
+                       envelopeResolver: ChannelResolver,
+                       random: Random = Random(0),
+                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+                       onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
+                       printOverlayEventsToStdout: Boolean = false,
+                       runBackgroundTasks: Boolean = true,
+                       val localUid: LocalUid = LocalUid.gen(),
 )(using Lattice[Payload[OverlayStatusProtocol.Status]]) {
 
   @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty
@@ -74,7 +74,7 @@ class OverlayDemoNode(
     )
   }
 
-  def start(seeds: List[ChannelConnectInfo] = Nil): Unit = {
+  def start(seeds: List[ConnectionDescriptor] = Nil): Unit = {
     val node = newOverlay()
     broadcastIO = Some(node)
     listenEnvelope.foreach(node.addBinaryConnection)
@@ -89,7 +89,7 @@ class OverlayDemoNode(
   def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit =
     broadcastIO.foreach(_.discover(peers.toSet))
 
-  def selfConnectionDetails: Set[ChannelConnectInfo] = selfDetails
+  def selfConnectionDetails: Set[ConnectionDescriptor] = selfDetails
 
   def repairTick(): Unit = broadcastIO.foreach(_.repairTick())
 

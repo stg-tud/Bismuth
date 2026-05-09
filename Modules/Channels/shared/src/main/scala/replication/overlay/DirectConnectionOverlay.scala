@@ -1,6 +1,6 @@
 package replication.overlay
 
-import channels.{ChannelConnectInfo, Connection, PeerConnectInfo}
+import channels.{ConnectionDescriptor, Connection, PeerConnectInfo}
 import rdts.base.Uid
 import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 
@@ -19,7 +19,7 @@ case class DirectConnectionOverlay(
 
   override def activateConnection(
       conn: Connection,
-      connectInfo: Option[ChannelConnectInfo]
+      connectInfo: Option[ConnectionDescriptor]
   ): (OverlayController, List[OverlayAction]) =
     if connectInfo.nonEmpty then (this, Nil)
     else (this, List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))))
@@ -39,7 +39,7 @@ case class DirectConnectionOverlay(
 
   override def removeConnection(
       conn: Connection,
-      connectInfo: Option[channels.ChannelConnectInfo] = None
+      connectInfo: Option[channels.ConnectionDescriptor] = None
   ): (OverlayController, List[OverlayAction]) =
     active.find(_._2 == conn) match
         case None            => (this, Nil)
