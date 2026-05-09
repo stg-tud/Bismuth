@@ -9,10 +9,7 @@ import replication.BroadcastIO
 
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
-import java.util.concurrent.{ExecutorService, Executors}
 import scala.annotation.unused
-import scala.concurrent.ExecutionContext
-import scala.util.chaining.scalaUtilChainingOps
 import scala.util.{Random, Try}
 
 class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aead {
@@ -48,10 +45,6 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
 
   val port: Int = Random.nextInt(10000) + 50000
 
-  val executor: ExecutorService = Executors.newCachedThreadPool((r: Runnable) =>
-    Executors.defaultThreadFactory().newThread(r).tap(_.setDaemon(true))
-  )
-  val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
   val niotcp: NioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
@@ -73,7 +66,6 @@ class DataManagerConnectionManager[State: {JsonValueCodec}](
 
   def stop(): Unit = {
     dataManager.globalAbort.closeRequest = true
-    executor.shutdownNow()
     ()
   }
 
