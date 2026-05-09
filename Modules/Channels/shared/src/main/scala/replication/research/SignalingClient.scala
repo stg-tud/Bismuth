@@ -15,6 +15,7 @@ class SignalingClient(
     resolver: ChannelResolver,
     localUid: Uid,
     initialAnnouncements: Map[String, Set[ChannelConnectInfo]],
+    debug: Boolean = false,
     onRegistered: () => Unit = () => (),
     onPeerInfo: (Uid, Map[String, Set[ChannelConnectInfo]]) => Unit =
       (_: Uid, _: Map[String, Set[ChannelConnectInfo]]) => (),
@@ -24,24 +25,38 @@ class SignalingClient(
     onAnswer: (Uid, Session) => Unit = (_: Uid, _: Session) => (),
     onDisconnected: () => Unit = () => (),
 ) {
+  private def log(msg: => String): Unit = if debug then println(s"[signaling-client ${Uid.unwrap(localUid)}] $msg")
+
   private val abort                          = Abort()
   private var connection: Option[Connection] = None
   private val announcements                  = mutable.LinkedHashMap.from(initialAnnouncements)
 
+  private def describe(conn: Connection): String =
+    s"${conn.getClass.getSimpleName}@${System.identityHashCode(conn)} ${conn.info}"
+
   private def send(message: Message): Async[Any, Unit] =
     connection match
-        case Some(conn) => conn.send(ArrayMessageBuffer(writeToArray(message)))
+        case Some(conn) =>
+          log(s"send $message via ${describe(conn)}")
+          conn.send(ArrayMessageBuffer(writeToArray(message)))
         case None => Sync(throw IllegalStateException(s"signaling client ${Uid.unwrap(localUid)} is not connected"))
 
-  def start(): Unit =
+  def start(): Unit = {
+    log(s"connecting to $server")
     resolver.connect(server).foreach {
       _.prepare { _ =>
         {
           case Success(buffer) =>
-            readFromArray[Message](buffer.asArray) match
+            val message = readFromArray[Message](buffer.asArray)
+            log(s"received $message")
+            message match
                 case Message.Register(_)                                 =>
                   announcements.foreach { case (topic, descriptors) =>
-                    send(Message.Announce(topic, descriptors)).run(_ => ())
+                    log(s"announce topic=$topic descriptors=$descriptors")
+                    send(Message.Announce(topic, descriptors)).run {
+                      case Success(_)  => log(s"announce sent for topic=$topic")
+                      case Failure(ex) => log(s"announce failed for topic=$topic: ${ex.getMessage}")
+                    }
                   }
                   onRegistered()
                 case Message.PeerInfo(_, uid, topics)                    => onPeerInfo(uid, topics)
@@ -56,8 +71,9 @@ class SignalingClient(
       }.runIn(abort) {
         case Success(conn) =>
           connection = Some(conn)
+          log(s"connected to signaling server $server via ${describe(conn)}")
           send(Message.Register(localUid)).run {
-            case Success(_) => ()
+            case Success(_) => log("register sent")
             case Failure(err) =>
               connection = None
               conn.close()
@@ -66,6 +82,7 @@ class SignalingClient(
         case Failure(err) => err.printStackTrace()
       }
     }
+  }
 
   def stop(): Unit = {
     connection.foreach(_.close())

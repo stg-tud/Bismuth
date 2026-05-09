@@ -36,6 +36,9 @@ class SignalingServer(
 
   private def log(msg: => String): Unit = if debug then println(s"[signaling] $msg")
 
+  private def describe(conn: Connection): String =
+    s"${conn.getClass.getSimpleName}@${System.identityHashCode(conn)} ${conn.info}"
+
   private def sendOrDisconnect(conn: Connection, msg: Message)(onFailure: => Unit = disconnect(conn)): Unit =
     conn.send(ArrayMessageBuffer(writeToArray(msg))).run {
       case Success(_)  => ()
@@ -80,22 +83,26 @@ class SignalingServer(
     clientsByUid.get(uid).filterNot(_ == conn).foreach(disconnect)
     uidByConn.update(conn, uid)
     clientsByUid.update(uid, conn)
-    log(s"register ${Uid.unwrap(uid)}")
+    log(s"register ${Uid.unwrap(uid)} via ${describe(conn)}")
   }
 
-  private def receive: Receive =
+  private val receive: Receive =
     (conn: Connection) => {
       case Success(buffer) =>
-        readFromArray[Message](buffer.asArray) match
+        val message = readFromArray[Message](buffer.asArray)
+        log(s"received $message via ${describe(conn)}")
+        message match
             case Message.Register(uid) =>
               register(uid, conn)
               sendOrDisconnect(conn, Message.Register(uid))()
 
             case Message.Announce(topic, descriptors) =>
-              uidByConn.get(conn).foreach { uid =>
-                announcementsByUid.update(uid, announcementsByUid.getOrElse(uid, Map.empty).updated(topic, descriptors))
-                log(s"announce uid=${Uid.unwrap(uid)} topic=$topic descriptors=${descriptors.size}")
-              }
+              uidByConn.get(conn) match
+                  case Some(uid) =>
+                    announcementsByUid.update(uid, announcementsByUid.getOrElse(uid, Map.empty).updated(topic, descriptors))
+                    log(s"announce uid=${Uid.unwrap(uid)} topic=$topic descriptors=${descriptors.size}")
+                  case None =>
+                    log(s"announce ignored for unknown connection topic=$topic descriptors=$descriptors via ${describe(conn)}")
 
             case Message.LookupPeer(requestId, uid) =>
               sendOrDisconnect(conn, Message.PeerInfo(requestId, uid, peerTopics(uid)))()

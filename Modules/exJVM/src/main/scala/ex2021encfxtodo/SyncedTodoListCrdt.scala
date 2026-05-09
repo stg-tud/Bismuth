@@ -7,12 +7,10 @@ import rdts.base.LocalUid
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import scalafx.application.Platform
 
-import java.net.URI
 import java.util.UUID
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.duration.{DurationInt, MILLISECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Try
 
 class SyncedTodoListCrdt(val replicaId: LocalUid) {
 
@@ -25,20 +23,10 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
   private val connectionManager: DataManagerConnectionManager[StateType] =
     DataManagerConnectionManager[StateType](replicaId, handleStateReceived)
 
-  def connect(connectionString: String): Unit = {
-    val parts = connectionString.split("@")
-    if parts.length == 2 then {
-      val uri = Try {
-        URI.create(parts(1))
-      }
-      if uri.isSuccess then {
-        connectionManager.connectToReplica(parts(0), uri.get)
-        return
-      }
-    }
+  def address: String = "Connect via signaling server"
 
-    Console.err.println(s"Invalid connection string: $connectionString")
-  }
+  def connect(connectionString: String): Unit =
+    connectionManager.connectToSignalingServer(connectionString)
 
   protected def handleStateReceived(state: StateType): Unit = {
     runInCrdtExecContext { () =>
