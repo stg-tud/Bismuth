@@ -1,6 +1,5 @@
 package probench.data
 
-import probench.data.RequestResponseQueue.Req
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
@@ -89,15 +88,3 @@ case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
 object HeartbeatQuorum:
     given Lattice[HeartbeatQuorum] = Lattice.derived
 
-case class KVState(
-    requests: RequestResponseQueue[KVOperation[String, String], String] = RequestResponseQueue.empty,
-    clusterState: MultiPaxos[Req[KVOperation[String, String]]] = MultiPaxos.empty
-):
-    def upkeep(using LocalUid, Participants): KVState =
-      KVState(clusterState = clusterState.upkeep)
-
-object KVState:
-    given Lattice[KVState] =
-      Lattice.derived
-
-    def empty: KVState = KVState()
