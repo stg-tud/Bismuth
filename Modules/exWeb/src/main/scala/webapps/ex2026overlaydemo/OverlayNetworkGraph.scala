@@ -43,12 +43,17 @@ object OverlayNetworkGraph {
 
   private def parseConnectionString(str: String): ConnectionDescriptor = {
     val trimmed = str.trim
-    if trimmed.startsWith("{") then readFromString[ConnectionDescriptor](trimmed)
-    else
-        readFromString[ConnectionDescriptor](String(
-          Base64.getUrlDecoder.decode(trimmed),
-          java.nio.charset.StandardCharsets.UTF_8
-        ))
+    ConnectionDescriptor.parse(trimmed)
+      .orElse(Option.when(trimmed.startsWith("{"))(readFromString[ConnectionDescriptor](trimmed)))
+      .orElse {
+        scala.util.Try(
+          readFromString[ConnectionDescriptor](String(
+            Base64.getUrlDecoder.decode(trimmed),
+            java.nio.charset.StandardCharsets.UTF_8
+          ))
+        ).toOption
+      }
+      .getOrElse(throw IllegalArgumentException(s"Invalid connection string: $trimmed"))
   }
 
   private def encodeConnectionString(details: ConnectionDescriptor): String =
@@ -61,7 +66,7 @@ object OverlayNetworkGraph {
     Option(url.searchParams.get(name))
   }
 
-  private def defaultSeedString: Option[String] = urlParam("seed")
+  private def defaultSeedString: Option[String] = urlParam("bootstrap").orElse(urlParam("seed"))
   private def defaultSignalUrl: Option[String]  = urlParam("signal")
   private def defaultUidString: Option[String]  = urlParam("uid")
 
@@ -92,16 +97,15 @@ object OverlayNetworkGraph {
     val seedDetails = seedConnectionString.filter(_.nonEmpty).map(parseConnectionString)
     val localUid    =
       defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
-    val signalUrl      = defaultSignalUrl
-    val signalingTopic = "overlay-demo"
-    val selfDetails    =
-      signalUrl.map(_ => Set(ConnectionDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
+    val signalDetails   = defaultSignalUrl.filter(_.nonEmpty).map(parseConnectionString)
+    val selfDetails     = signalDetails.map(_ => Set(ConnectionDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
     val requestedSeedId = seedDetails.collect { case ConnectionDescriptor.WebRtc(peerId) => Uid.predefined(peerId) }
 
     var signalingRef: Option[WebRtcSignalingBridge] = None
-    val resolver                                    = new ChannelResolver {
+    val wsResolver                                   = new channels.webnativewebsockets.WebSocketConnectionDetailsResolver
+    val resolver                                     = new ChannelResolver {
       override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
-        signalingRef.flatMap(_.connect(details))
+        wsResolver.connect(details).orElse(signalingRef.flatMap(_.connect(details)))
     }
 
     val node = new OverlayDemoNode(
@@ -113,35 +117,53 @@ object OverlayNetworkGraph {
       localUid = localUid,
     )
 
-    val joinAfterSignal = () =>
-      requestedSeedId.foreach { seedUid =>
-        connectionInfoText = s"${connectionInfoText}\nsignaling registered, discovering seed ${Uid.unwrap(seedUid)}"
-        refreshText()
+    var nodeStarted = false
+    def startNodeAndBootstrapDirectSeed(): Unit =
+      if !nodeStarted then {
+        node.start(Nil)
+        seedDetails match
+            case Some(seed) if !seed.isInstanceOf[ConnectionDescriptor.WebRtc] =>
+              node.bootstrapVia(seed)
+            case _ => ()
+        nodeStarted = true
       }
 
-    signalingRef = signalUrl.map(url =>
-      new WebRtcSignalingBridge(url, signalingTopic, node, selfDetails, requestedSeedId, joinAfterSignal)
+    val joinAfterSignal = () => {
+      startNodeAndBootstrapDirectSeed()
+      requestedSeedId.foreach { seedUid =>
+        connectionInfoText = s"${connectionInfoText}\nsignaling registered, bootstrapping via webrtc://${Uid.unwrap(seedUid)}"
+        refreshText()
+      }
+    }
+
+    signalingRef = signalDetails.map(details =>
+      new WebRtcSignalingBridge(details, "overlay-demo", node, selfDetails, requestedSeedId, joinAfterSignal)
     )
     currentSignalingBridge = signalingRef
     currentNode = Some(node)
     viewerUid = Some(node.localUid.uid)
     selfConnectionStringText = selfDetails.headOption.map(encodeConnectionString).getOrElse("")
 
-    connectionInfoText = (seedDetails, signalUrl) match
-        case (Some(seed: ConnectionDescriptor.WebRtc), Some(url)) =>
-          s"starting peer\nseed: ${describeSeed(seed)}\nsignaling: $url\nwaiting for signaling registration before bootstrap lookup"
+    connectionInfoText = (seedDetails, signalDetails) match
+        case (Some(seed: ConnectionDescriptor.WebRtc), Some(signal)) =>
+          s"starting peer\nbootstrap: ${describeSeed(seed)}\nsignaling: ${signal.asUrl}\nwaiting for signaling registration before WebRTC bootstrap"
         case (Some(seed: ConnectionDescriptor.WebRtc), None) =>
-          s"starting peer\nseed: ${describeSeed(seed)}\nmissing signaling server url (?signal=ws://... required for WebRTC seed discovery)"
-        case (Some(seed), _) =>
-          s"starting peer\nseed: ${describeSeed(seed)}\nweb app only acquires peers via signaling + WebRTC; direct seed connection is ignored"
-        case (None, Some(url)) =>
-          s"starting peer\nsignaling: $url"
+          s"starting peer\nbootstrap: ${describeSeed(seed)}\nmissing signaling server (?signal=ws://... or ?signal=tcp+ws://... required for webrtc:// bootstrap)"
+        case (Some(seed), Some(signal)) =>
+          s"starting peer\nbootstrap: ${describeSeed(seed)}\nsignaling: ${signal.asUrl}"
+        case (Some(seed), None) =>
+          s"starting peer\nbootstrap: ${describeSeed(seed)}"
+        case (None, Some(signal)) =>
+          s"starting peer\nsignaling: ${signal.asUrl}"
         case (None, None) =>
-          "starting peer\nmissing signaling server url (?signal=ws://...)"
+          "starting peer\nmissing bootstrap seed (?bootstrap=...) or signaling server (?signal=ws://... or tcp+ws://...)"
 
     refreshText()
-    signalingRef.foreach(_.start())
-    node.start(Nil)
+    signalingRef match
+        case Some(bridge) =>
+          bridge.start()
+        case None =>
+          startNodeAndBootstrapDirectSeed()
   }
 
   @JSExportTopLevel("OverlayNetworkGraph")
@@ -197,7 +219,7 @@ object OverlayNetworkGraph {
     catch
         case ex: Throwable =>
           connectionInfoText =
-            s"failed to parse/connect seed\nexpected ?seed=<base64-connection-string> or ?seed=<raw-json-ConnectionDetails>\nrequired: ?signal=<ws-url>\noptional: ?uid=<peer-uid>\n${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
+            s"failed to parse/connect seed\nexpected ?bootstrap=<tcp-ws://host:port|webrtc://peer|base64|raw-json>\noptional: ?signal=<ws://...|tcp-ws://host:port>\noptional: ?uid=<peer-uid>\n${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
           refreshText()
 
     val ctx           = graphCanvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]

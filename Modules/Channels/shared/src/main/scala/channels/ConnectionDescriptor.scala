@@ -19,7 +19,7 @@ enum ConnectionDescriptor {
       case ConnectionDescriptor.Tcp(host, port)          => s"tcp://$host:$port"
       case ConnectionDescriptor.Udp(host, port)          => s"udp://$host:$port"
       case ConnectionDescriptor.Unix(path)               => s"unix://$path"
-      case ConnectionDescriptor.TcpWebSocket(host, port) => s"tcp+ws://$host:$port"
+      case ConnectionDescriptor.TcpWebSocket(host, port) => s"tcp-ws://$host:$port"
       case ConnectionDescriptor.WebSocket(url)           => url
       case ConnectionDescriptor.WebRtc(peerId)           => s"webrtc://$peerId"
       case ConnectionDescriptor.QueuedLocal(id)          => s"queue://$id"
@@ -46,16 +46,28 @@ object ConnectionDescriptor {
             Option(uri.getHost)
               .orElse(Option(uri.getPath).filter(_.nonEmpty).map(_.stripPrefix("/")))
               .map(Unix.apply)
-          case "tcp+ws" =>
+          case "tcp+ws" | "tcp-ws" =>
             for
                 host <- Option(uri.getHost)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield TcpWebSocket(host, port)
           case "ws" | "wss" => Some(WebSocket(value))
-          case "webrtc"     => Option(uri.getHost).map(WebRtc.apply)
-          case "queue"      => Option(uri.getHost).map(QueuedLocal.apply)
-          case "sync"       => Option(uri.getHost).map(SynchronousLocal.apply)
-          case _            => None
+          case "webrtc" =>
+            Option(uri.getHost)
+              .orElse(Option(uri.getAuthority))
+              .orElse(Option(uri.getSchemeSpecificPart).map(_.stripPrefix("//")).filter(_.nonEmpty))
+              .map(WebRtc.apply)
+          case "queue" =>
+            Option(uri.getHost)
+              .orElse(Option(uri.getAuthority))
+              .orElse(Option(uri.getSchemeSpecificPart).map(_.stripPrefix("//")).filter(_.nonEmpty))
+              .map(QueuedLocal.apply)
+          case "sync" =>
+            Option(uri.getHost)
+              .orElse(Option(uri.getAuthority))
+              .orElse(Option(uri.getSchemeSpecificPart).map(_.stripPrefix("//")).filter(_.nonEmpty))
+              .map(SynchronousLocal.apply)
+          case _ => None
     }
 
   given codec: JsonValueCodec[ConnectionDescriptor] with {

@@ -65,15 +65,15 @@ class OverlayDemoNode(
         override def run(): Unit =
           repairTick()
       },
-      1000L,
-      1000L,
+      5000L,
+      5000L,
     )
     timer.schedule(
       new TimerTask {
         override def run(): Unit = overlayInfoTick()
       },
-      100L,
-      100L,
+      1000L,
+      1000L,
     )
   }
 

@@ -85,7 +85,7 @@ object OverlayNetworkGraphNetworking {
   }
 
   final class WebRtcSignalingBridge(
-      url: String,
+      server: ConnectionDescriptor,
       topic: String,
       node: OverlayDemoNode,
       selfDetails: Set[ConnectionDescriptor],
@@ -109,7 +109,7 @@ object OverlayNetworkGraphNetworking {
     private val clientAbort = Abort()
 
     private lazy val client: SignalingClient = new SignalingClient(
-      server = ConnectionDescriptor.WebSocket(url),
+      server = server,
       resolver = wsResolver,
       localUid = node.localUid.uid,
       abort = clientAbort,
