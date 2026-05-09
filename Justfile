@@ -6,23 +6,23 @@ readme:
 authors:
 	git shortlog --summary --numbered
 
-test sbtOpts="":
+test:
 	# npm install --no-package-lock
 	deno install --node-modules-dir=auto
-	sbt {{sbtOpts}} test
+	sbt --client testQuick
 
-publishLocal sbtOpts="":
-	sbt {{sbtOpts}} 'publishedProjects / publishLocal'
+publishLocal:
+	sbt --client 'publishedProjects / publishLocal'
 
-publishSigned sbtOpts="":
+publishSigned:
 	rm -rf "target/sona-staging"
-	sbt {{sbtOpts}} 'publishedProjects / publishSigned'
+	sbt --client 'publishedProjects / publishSigned'
 
-sonaRelease sbtOpts="":
-	sbt {{sbtOpts}} 'sonaRelease'
+sonaRelease:
+	sbt --client 'sonaRelease'
 
-runSimpleCaseStudy sbtOpts="":
-	sbt {{sbtOpts}} 'exJVM / run'
+runSimpleCaseStudy:
+	sbt --client 'exJVM / run'
 
 webappsPrepare:
 	# npm --prefix "Modules/exWeb/" install --no-package-lock
