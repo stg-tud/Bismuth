@@ -56,15 +56,14 @@ class DataManagerConnectionManager[State: JsonValueCodec](
     dataManager.applyDelta(newState)
 
   def connectToSignalingServer(connectionString: String): Unit =
-    parseSignalingServer(connectionString) match
-        case Some(server) =>
-          val client = SignalingClient(
+    ChannelConnectInfo.parse(connectionString) match
+        case Some(server @ (_: ChannelConnectInfo.Tcp | _: ChannelConnectInfo.TcpWebSocket)) =>
+          SignalingClient(
             server = server,
             resolver = signalingResolver,
             localUid = replicaId.uid,
             abort = dataManager.globalAbort,
-          )
-          client.announce(Topic, Set(listenDetails)).run {
+          ).announce(Topic, Set(listenDetails)).run {
             case scala.util.Success(peers) =>
               dataManager.discover(
                 peers.iterator
@@ -75,7 +74,7 @@ class DataManagerConnectionManager[State: JsonValueCodec](
             case scala.util.Failure(err) =>
               Console.err.println(s"Failed to connect via signaling server: ${err.getMessage}")
           }
-        case None =>
+        case _ =>
           Console.err.println(s"Invalid signaling server connection string: $connectionString")
 
   def stop(): Unit = {
@@ -109,9 +108,4 @@ object DataManagerConnectionManager {
     keyset.getPrimitive(RegistryConfiguration.get(), classOf[Aead])
   }
 
-  private def parseSignalingServer(connectionString: String): Option[ChannelConnectInfo.Tcp] =
-    Try(java.net.URI.create(connectionString)).toOption.collect {
-      case uri if Set("ws", "tcp").contains(uri.getScheme) && uri.getHost != null && uri.getPort >= 0 =>
-        ChannelConnectInfo.Tcp(uri.getHost, uri.getPort)
-    }
 }

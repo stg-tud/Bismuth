@@ -116,6 +116,6 @@ object JsoniterCodecs {
 
   /** case studies */
 
-  given codecConnectionDetails: JsonValueCodec[ChannelConnectInfo] = JsonCodecMaker.make
+  given codecConnectionDetails: JsonValueCodec[ChannelConnectInfo] = ChannelConnectInfo.codec
   given codecSignalMessage: JsonValueCodec[Message] = JsonCodecMaker.make
 }

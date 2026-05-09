@@ -89,14 +89,19 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket)
     extends Connection {
 
   override val info: ConnectionInfo =
-    datagramSocket.getLocalSocketAddress match
-        case isa: InetSocketAddress =>
+    (datagramSocket.getLocalSocketAddress, target) match
+        case (local: InetSocketAddress, remote: InetSocketAddress) =>
           ConnectionInfo(
-            "type" -> "udp",
-            "host" -> isa.getHostString,
-            "port" -> isa.getPort.toString
+            local = Some(ChannelConnectInfo.Tcp(local.getHostString, local.getPort)),
+            remote = Some(ChannelConnectInfo.Tcp(remote.getHostString, remote.getPort)),
+            details = Map("type" -> "udp")
           )
-        case other => ConnectionInfo("type" -> "udp")
+        case (local: InetSocketAddress, _) =>
+          ConnectionInfo(
+            local = Some(ChannelConnectInfo.Tcp(local.getHostString, local.getPort)),
+            details = Map("type" -> "udp")
+          )
+        case _ => ConnectionInfo("type" -> "udp")
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {
     // Create a packet with the message, server address, and port

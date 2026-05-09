@@ -1,10 +1,6 @@
 package ex2026overlaydemo
 
 import channels.*
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import replication.JsoniterCodecs.given
-import replication.research.SignalingServer.Message
 import replication.research.SignalingServer
 
 import java.net.BindException
@@ -12,10 +8,6 @@ import java.util.concurrent.Executors
 
 /** vibecoded as part of the hyparview experiments */
 object SignalingServerCli {
-
-  given JsonValueCodec[ChannelConnectInfo]      = JsonCodecMaker.make
-  given JsonValueCodec[SignalingServer.Session] = JsonCodecMaker.make
-  given JsonValueCodec[Message]                 = JsonCodecMaker.make
 
   def main(args: Array[String]): Unit = {
     val (host, preferredPort) = args.toList match
@@ -32,7 +24,7 @@ object SignalingServerCli {
     val nioThread   = Executors.newSingleThreadExecutor()
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-    def listen(port: Int): (ChannelConnectInfo.Tcp, LatentConnection) = {
+    def listen(port: Int): (ChannelConnectInfo.TcpWebSocket, LatentConnection) = {
       val (details, latent) = nioResolver.listen(host, port)
       (details, latent)
     }
@@ -49,6 +41,6 @@ object SignalingServerCli {
     signaling.addIncomingConnection(server)
 
     nioThread.execute(() => nio.loopSelection(nioAbort))
-    println(s"signal=ws://${listenDetails.host}:${listenDetails.port}")
+    println(s"signal=${listenDetails.asUrl}")
   }
 }

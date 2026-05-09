@@ -30,15 +30,26 @@ class Abort(@volatile var closeRequest: Boolean = false) {
 
 type Prod[A] = Async[Abort, A]
 
-case class ConnectionInfo(details: Map[String, String])
+case class ConnectionInfo(
+    local: Option[ChannelConnectInfo] = None,
+    remote: Option[ChannelConnectInfo] = None,
+    details: Map[String, String] = Map.empty,
+)
 object ConnectionInfo {
-  def apply(details: (String, String)*): ConnectionInfo = ConnectionInfo(details.toMap)
+  def apply(details: (String, String)*): ConnectionInfo = ConnectionInfo(details = details.toMap)
+
+  def structured(
+      local: Option[ChannelConnectInfo] = None,
+      remote: Option[ChannelConnectInfo] = None,
+      details: (String, String)*
+  ): ConnectionInfo =
+    ConnectionInfo(local = local, remote = remote, details = details.toMap)
 }
 
 /** Connections are bidirectional. Receiving is handled by the incoming handler of the latent connection. */
 trait Connection {
   // TODO: currently not consistently implemented
-  def info: ConnectionInfo                    = ConnectionInfo(Map.empty)
+  def info: ConnectionInfo                     = ConnectionInfo()
   def authenticatedPeerReplicaId: Option[Uid] = None
   def send(message: MessageBuffer): Async[Any, Unit]
   def close(): Unit

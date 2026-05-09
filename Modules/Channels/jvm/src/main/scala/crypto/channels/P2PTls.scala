@@ -143,15 +143,16 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     override def info: ConnectionInfo = {
-      def socketAddrToString(socketAddr: SocketAddress): String = socketAddr match {
-        case address: InetSocketAddress => address.getHostString + ":" + address.getPort
-        case _                          => ???
+      def socketAddrToConnectInfo(socketAddr: SocketAddress): Option[ChannelConnectInfo.Tcp] = socketAddr match {
+        case address: InetSocketAddress => Some(ChannelConnectInfo.Tcp(address.getHostString, address.getPort))
+        case _                          => None
       }
 
       ConnectionInfo(
-        "type"          -> "p2ptls",
-        "remoteAddress" -> Try { socketAddrToString(socket.getRemoteSocketAddress) }.recover(_.getMessage).get,
-        "localAddress"  -> Try { socketAddrToString(socket.getLocalSocketAddress) }.recover(_.getMessage).get,
+        local = Try(socketAddrToConnectInfo(socket.getLocalSocketAddress)).getOrElse(None),
+        remote = Try(socketAddrToConnectInfo(socket.getRemoteSocketAddress)).getOrElse(None),
+        details = Map(
+          "type" -> "p2ptls",
         // Assumption: The listen port is fixed, the initiator port varies
         "hackyIdentifier" -> {
           val ports = List(
@@ -164,6 +165,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
           val maxPort = ports.maxBy(_._1)._2
           s"$minPort|$maxPort"
         }
+        )
       )
     }
 

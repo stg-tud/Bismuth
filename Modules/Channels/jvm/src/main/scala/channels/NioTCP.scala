@@ -138,12 +138,17 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().clear()
   }
 
+  private def socketConnectInfo(address: SocketAddress): Option[ChannelConnectInfo.Tcp] =
+    address match
+        case isa: InetSocketAddress => Some(ChannelConnectInfo.Tcp(isa.getHostString, isa.getPort))
+        case _                      => None
+
   class NioTCPConnection(clientChannel: SocketChannel) extends Connection {
 
     override val info: ConnectionInfo = ConnectionInfo(
-      "type"          -> "niotcp",
-      "remoteAddress" -> Try { clientChannel.getRemoteAddress.toString }.recover(_.getMessage).get,
-      "localAddress"  -> Try { clientChannel.getLocalAddress.toString }.recover(_.getMessage).get
+      local = Try(socketConnectInfo(clientChannel.getLocalAddress)).getOrElse(None),
+      remote = Try(socketConnectInfo(clientChannel.getRemoteAddress)).getOrElse(None),
+      details = Map("type" -> "niotcp")
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
@@ -164,9 +169,9 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
   class WebSocketConnection(clientChannel: SocketChannel) extends Connection {
 
     override val info: ConnectionInfo = ConnectionInfo(
-      "type"          -> "websocket",
-      "remoteAddress" -> Try { clientChannel.getRemoteAddress.toString }.recover(_.getMessage).get,
-      "localAddress"  -> Try { clientChannel.getLocalAddress.toString }.recover(_.getMessage).get
+      local = Try(socketConnectInfo(clientChannel.getLocalAddress)).getOrElse(None),
+      remote = Try(socketConnectInfo(clientChannel.getRemoteAddress)).getOrElse(None),
+      details = Map("type" -> "websocket")
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
