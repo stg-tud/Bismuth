@@ -35,9 +35,13 @@ case class DirectConnectionOverlay(
   ): (OverlayController, List[OverlayAction]) = {
     message match
         case OverlayMessage.Neighbor(peer, _) =>
-          val wasKnown = active.contains(peer.uid)
+          val previous = active.get(peer.uid)
           val next     = copy(active = active.updated(peer.uid, conn))
-          (next, Option.when(!wasKnown)(OverlayAction.ActiveConnectionAdded(peer.uid)).toList)
+          val actions = previous match
+              case None => List(OverlayAction.ActiveConnectionAdded(peer.uid))
+              case Some(existing) if existing == conn => Nil
+              case Some(existing)                     => List(OverlayAction.Disconnect(existing))
+          (next, actions)
         case _ =>
           (this, Nil)
   }

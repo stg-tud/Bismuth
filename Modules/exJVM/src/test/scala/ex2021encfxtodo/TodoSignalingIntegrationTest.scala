@@ -92,4 +92,50 @@ class TodoSignalingIntegrationTest extends FunSuite {
         b.shutdown()
         signaling.stop()
   }
+
+  test("reconnecting to the signaling server does not break existing replication") {
+    fxStarted
+
+    val signaling = new SignalingFixture()
+    val a         = new SyncedTodoListCrdt(LocalUid.gen())
+    val b         = new SyncedTodoListCrdt(LocalUid.gen())
+
+    try
+        a.connect(signaling.connectionString)
+        b.connect(signaling.connectionString)
+
+        eventually() {
+          assert(
+            a.remoteAddresses.nonEmpty || b.remoteAddresses.nonEmpty,
+            s"a peers=${a.remoteAddresses}, b peers=${b.remoteAddresses}"
+          )
+        }
+
+        (1 to 8).foreach { _ =>
+          a.connect(signaling.connectionString)
+          b.connect(signaling.connectionString)
+        }
+
+        eventually() {
+          assertEquals(signaling.signaling.topicPeers("encfx").size, 2)
+        }
+
+        val idA    = UUID.randomUUID()
+        val entryA = TodoEntry("after reconnect a->b")
+        a.put(idA, entryA)
+        eventually() {
+          assertEquals(b.get(idA), Some(entryA))
+        }
+
+        val idB    = UUID.randomUUID()
+        val entryB = TodoEntry("after reconnect b->a")
+        b.put(idB, entryB)
+        eventually() {
+          assertEquals(a.get(idB), Some(entryB))
+        }
+    finally
+        a.shutdown()
+        b.shutdown()
+        signaling.stop()
+  }
 }
