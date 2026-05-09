@@ -24,19 +24,20 @@ jobs:
       JAVA_OPTS: -Xmx4g
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: coursier/cache-action@v6
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: coursier/cache-action@v7
+
+      - uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java-version}}
+          java-version: ${{ matrix.java-version }}
           distribution: "zulu"
 
       - uses: sbt/setup-sbt@v1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: install npm dependencies
         run: npm install
