@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 
 class NioTcpConnectionDetailsResolver(nio: NioTCP) extends ChannelResolver {
 
+  // TODO: probing seems unreliable, port might change in between
   def listen(
       host: String = "127.0.0.1",
       port: Int = 0

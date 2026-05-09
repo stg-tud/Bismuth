@@ -57,7 +57,7 @@ class DataManagerConnectionManager[State: JsonValueCodec](
 
   def connectToSignalingServer(connectionString: String): Unit =
     ConnectionDescriptor.parse(connectionString) match
-        case Some(server @ (_: ConnectionDescriptor.Tcp | _: ConnectionDescriptor.TcpWebSocket)) =>
+        case Some(server) =>
           SignalingClient(
             server = server,
             resolver = signalingResolver,

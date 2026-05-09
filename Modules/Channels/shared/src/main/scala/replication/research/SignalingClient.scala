@@ -12,12 +12,12 @@ import scala.concurrent.{ExecutionContext, Promise}
 import scala.util.{Failure, Success}
 
 class SignalingClient(
-                       server: ConnectionDescriptor,
-                       resolver: ChannelResolver,
-                       localUid: Uid,
-                       abort: Abort,
-                       webrtcAnswerer: Option[(Uid, Session) => Async[Any, Session]] = None,
-                       debug: Boolean = false,
+    server: ConnectionDescriptor,
+    resolver: ChannelResolver,
+    localUid: Uid,
+    abort: Abort,
+    webrtcAnswerer: Option[(Uid, Session) => Async[Any, Session]] = None,
+    debug: Boolean = false,
 )(using ec: ExecutionContext = ExecutionContext.global) {
   private var connection: Option[Connection]          = None
   private var connecting: Option[Promise[Connection]] = None
@@ -92,14 +92,16 @@ class SignalingClient(
                         }
                       case None =>
                         connecting = None
-                        promise.tryFailure(IllegalArgumentException(s"Could not resolve signaling server: $server")): Unit
+                        promise.tryFailure(
+                          IllegalArgumentException(s"Could not resolve signaling server: $server")
+                        ): Unit
     }
   }
 
   def announce(
-                topic: String,
-                descriptors: Set[ConnectionDescriptor],
-                count: Int = Int.MaxValue,
+      topic: String,
+      descriptors: Set[ConnectionDescriptor],
+      count: Int = Int.MaxValue,
   ): Async[Any, Map[Uid, Set[ConnectionDescriptor]]] =
     Async.fromCallback {
       ensureConnected().run {
@@ -111,7 +113,7 @@ class SignalingClient(
           }
           promise.future.onComplete(Async.handler.complete)
           send(conn, Message.Announce(localUid, requestId, topic, descriptors, count)).run {
-            case Success(_) => ()
+            case Success(_)   => ()
             case Failure(err) =>
               synchronized {
                 pendingAnnouncements.remove(requestId)
@@ -132,7 +134,7 @@ class SignalingClient(
           }
           promise.future.onComplete(Async.handler.complete)
           send(conn, Message.Offer(localUid, to, offer)).run {
-            case Success(_) => ()
+            case Success(_)   => ()
             case Failure(err) =>
               synchronized {
                 pendingOffers.remove(to)
