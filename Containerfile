@@ -1,24 +1,22 @@
-FROM docker.io/eclipse-temurin:25-jdk-resolute
+FROM docker.io/ubuntu:26.04
 
 RUN apt-get update && apt-get --yes upgrade
 
 # get core tooling useful for working within the container
-RUN apt-get install --yes --no-install-recommends fish just
+RUN apt-get install --yes --no-install-recommends fish just curl unzip git
+
+# install JDK
+RUN apt-get install --yes --no-install-recommends openjdk-25-source
 
 # get JS stuff
-RUN apt-get install --yes --no-install-recommends npm
+RUN apt-get install --yes --no-install-recommends nodejs
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 
 # get native stuff
 RUN apt-get install --yes --no-install-recommends clang
 
 # get webview dependencies
 RUN apt-get install --yes --no-install-recommends pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libwebkitgtk-6.0-dev libgtk-4-dev clang-format
-
-# install git for codespaces
-RUN apt-get install --yes --no-install-recommends git
-
-# install curl
-RUN apt-get install --yes --no-install-recommends curl
 
 RUN curl https://raw.githubusercontent.com/sbt/sbt/2293bddfefe382a48c1672df4e009bd7c5df32f4/sbt -o /usr/bin/sbt && \
 	chmod +x /usr/bin/sbt
