@@ -20,11 +20,11 @@ class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aea
     Try(aead.decrypt(data, associated))
 }
 
-class DataManagerConnectionManager[State: JsonValueCodec](
+class ConnectionManager[State: JsonValueCodec](
     replicaId: LocalUid,
     receiveCallback: State => Unit
 ) {
-  import DataManagerConnectionManager.*
+  import ConnectionManager.*
 
   private val aead        = loadOrCreateDemoAead()
   private val globalAbort = Abort()
@@ -84,7 +84,7 @@ class DataManagerConnectionManager[State: JsonValueCodec](
         case _                                => Set.empty
 }
 
-object DataManagerConnectionManager {
+object ConnectionManager {
   private val Topic = "encfx"
 
   private def loadOrCreateDemoAead(): Aead = {

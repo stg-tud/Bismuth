@@ -20,8 +20,8 @@ class SyncedTodoListCrdt(val replicaId: LocalUid) {
   private val crdtExecutorService: ExecutorService = Executors.newSingleThreadExecutor()
   private val crdtExecContext: ExecutionContext    = ExecutionContext.fromExecutor(crdtExecutorService)
 
-  private val connectionManager: DataManagerConnectionManager[StateType] =
-    DataManagerConnectionManager[StateType](replicaId, handleStateReceived)
+  private val connectionManager: ConnectionManager[StateType] =
+    ConnectionManager[StateType](replicaId, handleStateReceived)
 
   def address: String = "Connect via signaling server"
 
