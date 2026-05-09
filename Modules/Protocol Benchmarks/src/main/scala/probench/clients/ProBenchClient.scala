@@ -6,15 +6,12 @@ import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{LocalUid, Uid}
 import replication.{BroadcastIO, KeepAllHistory, PlumtreeBroadcast}
 
-import java.util.concurrent.Semaphore
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
 class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, logTimings) {
 
   given localUid: LocalUid = LocalUid(name)
-
-  val requestSemaphore = new Semaphore(0)
 
   val currentStateLock: AnyRef = new {}
 
