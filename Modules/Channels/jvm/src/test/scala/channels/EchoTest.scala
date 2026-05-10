@@ -22,6 +22,7 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
       _ => {
 
         val server = HttpServer.create()
+        EchoServerTestSunJavaHTTP.currentServer = server
 
         server.bind(InetSocketAddress("127.0.0.1", 0), 0)
         val port = server.getAddress.getPort
@@ -43,6 +44,12 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
   override def supportsMultipleConnections: Boolean    = false
   override def supportsDisconnectDetection: Boolean    = false
   override def supportsStableConnectionObject: Boolean = false
+  override def extraCleanup(cleanups: scala.collection.mutable.ListBuffer[() => Unit]): Unit =
+    cleanups += (() => Option(EchoServerTestSunJavaHTTP.currentServer).foreach(_.stop(0)))
+}
+
+object EchoServerTestSunJavaHTTP {
+  var currentServer: HttpServer | Null = null
 }
 
 def domainSocketHelperNonensese(name: String) = {
