@@ -101,7 +101,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   def loopSelection(abort: Abort): Unit = {
     while !abort.closeRequest do
-        selector.select()
+        selector.select(1000)
         runSelection()
   }
 

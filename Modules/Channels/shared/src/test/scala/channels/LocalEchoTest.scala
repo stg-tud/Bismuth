@@ -40,7 +40,7 @@ final class ImmediateServer[CD <: ConnectionDescriptor, Establish](
 }
 
 class EchoServerTestSynchronousLocal extends EchoCommunicationTest[ConnectionDescriptor.SynchronousLocal](
-      { _ =>
+      { (_, _) =>
         EchoServerTestSynchronousLocal.current = SynchronousLocalConnection("echo-sync")
         val current = EchoServerTestSynchronousLocal.current
         ImmediateServer[ConnectionDescriptor.SynchronousLocal, current.server.Establish](
@@ -50,7 +50,7 @@ class EchoServerTestSynchronousLocal extends EchoCommunicationTest[ConnectionDes
             establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
         )
       },
-      _ => _ => EchoServerTestSynchronousLocal.current.client("client")
+      (_, _) => _ => EchoServerTestSynchronousLocal.current.client("client")
     ) {
   override def supportsDisconnectDetection: Boolean = false
 }
@@ -60,7 +60,7 @@ object EchoServerTestSynchronousLocal {
 }
 
 class EchoServerTestQueuedLocal extends EchoCommunicationTest[ConnectionDescriptor.QueuedLocal](
-      { _ =>
+      { (_, _) =>
         val queue = LocalMessageQueue()
         EchoServerTestQueuedLocal.current = EchoServerTestQueuedLocal.QueuedState(queue, QueuedLocalConnection("echo-queued", queue))
         val current = EchoServerTestQueuedLocal.current
@@ -71,7 +71,7 @@ class EchoServerTestQueuedLocal extends EchoCommunicationTest[ConnectionDescript
             establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
         )
       },
-      _ => _ =>
+      (_, _) => _ =>
         new LatentConnection[Connection] {
           override def prepare(receiver: Receive): Async[Abort, Connection] = {
             var wrapped: QueueDrainingConnection | Null = null

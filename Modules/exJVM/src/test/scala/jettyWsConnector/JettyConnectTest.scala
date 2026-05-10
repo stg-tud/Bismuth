@@ -7,13 +7,13 @@ import org.eclipse.jetty.http.pathmap.PathSpec
 import java.net.URI
 
 class EchoServerTestJetty extends EchoCommunicationTest[channels.ConnectionDescriptor.WebSocket](
-      { _ =>
+      { (_, _) =>
         val listener   = JettyWsListener.prepareServer(0)
         val echoServer = listener.listen(PathSpec.from("/registry/*"))
         listener.server.start()
         echoServer
       },
-      _ => descriptor => JettyWsConnection.connect(URI.create(descriptor.url))
+      (_, _) => descriptor => JettyWsConnection.connect(URI.create(descriptor.url))
     ) {
   override def supportsDisconnectDetection: Boolean = false
 }

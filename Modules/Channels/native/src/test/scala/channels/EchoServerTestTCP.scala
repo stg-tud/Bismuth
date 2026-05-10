@@ -3,7 +3,7 @@ package channels
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, SocketException}
 
 class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
-      { ec =>
+      { (ec, _) =>
         val socket = new ServerSocket
 
         try socket.setReuseAddress(true)
@@ -16,5 +16,5 @@ class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
 
         TCP.listen(() => socket, ec)
       },
-      ec => descriptor => TCP.connect(TCP.defaultSocket(new InetSocketAddress(descriptor.host, descriptor.port)), ec)
+      (ec, _) => descriptor => TCP.connect(TCP.defaultSocket(new InetSocketAddress(descriptor.host, descriptor.port)), ec)
     )

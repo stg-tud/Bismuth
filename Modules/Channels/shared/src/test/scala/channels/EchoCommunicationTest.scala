@@ -9,8 +9,8 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 trait EchoCommunicationTest[CD <: ConnectionDescriptor](
-    serverConn: ExecutionContext => LatentConnection[CD],
-    clientConn: ExecutionContext => CD => LatentConnection[Connection]
+    serverConn: (ExecutionContext, Abort) => LatentConnection[CD],
+    clientConn: (ExecutionContext, Abort) => CD => LatentConnection[Connection]
 ) extends munit.FunSuite {
 
   def supportsMultipleConnections: Boolean    = true
@@ -18,13 +18,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
   def supportsStableConnectionObject: Boolean = true
   def extraCleanup(cleanups: mutable.ListBuffer[() => Unit]): Unit = ()
 
-  given ec: ExecutionContext = ExecutionContext.global
-
-  private def sameRef(a: AnyRef, b: AnyRef): Boolean = a eq b
-
-  private def asReceive(receiver: Connection => Callback[MessageBuffer]): Receive = new Receive {
-    override def connectionEstablished(answers: Connection): Callback[MessageBuffer] = receiver(answers)
-  }
+  def testExecutionContext: ExecutionContext = ExecutionContext.global
 
   private final class Counter(target: Int) {
     private var current = 0
@@ -41,11 +35,11 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
     def async: Async[Any, Unit] = promise.async
   }
 
-  private def startServer(receiver: Connection => Callback[MessageBuffer]): Async[Abort, CD] =
-    serverConn(ec).prepare(asReceive(receiver))
+  private def startServer(receiver: Connection => Callback[MessageBuffer])(using abort: Abort): Async[Abort, CD] =
+    serverConn(testExecutionContext, abort).prepare(receiver(_))
 
-  private def connectClient(descriptor: CD, receiver: Connection => Callback[MessageBuffer]): Async[Abort, Connection] =
-    clientConn(ec)(descriptor).prepare(asReceive(receiver))
+  private def connectClient(descriptor: CD, receiver: Connection => Callback[MessageBuffer])(using abort: Abort): Async[Abort, Connection] =
+    clientConn(testExecutionContext, abort)(descriptor).prepare(receiver(_))
 
   private def sendAll(connection: Connection, messages: List[String]): Async[Any, Unit] = messages match {
     case Nil          => Sync(())
@@ -53,6 +47,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
   }
 
   private def withCleanup[A](body: (Abort, mutable.ListBuffer[Connection]) => Future[A]): Future[A] = {
+    given ExecutionContext = testExecutionContext
     val abort    = Abort()
     val clients  = mutable.ListBuffer.empty[Connection]
     val cleanups = mutable.ListBuffer.empty[() => Unit]
@@ -257,8 +252,8 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
 
         assertEquals(serverEstablishedList.size, 1)
         assertEquals(clientEstablishedList.size, 1)
-        assert(serverSeenList.forall(conn => sameRef(conn.asInstanceOf[AnyRef], serverEstablishedList.head.asInstanceOf[AnyRef])))
-        assert(sameRef(preparedClientConn.asInstanceOf[AnyRef], clientEstablishedList.head.asInstanceOf[AnyRef]))
+        assert(serverSeenList.forall(conn => conn.asInstanceOf[AnyRef] eq serverEstablishedList.head.asInstanceOf[AnyRef]))
+        assert(preparedClientConn.asInstanceOf[AnyRef] eq clientEstablishedList.head.asInstanceOf[AnyRef])
       }.runToFuture(abort)
     }
   }
