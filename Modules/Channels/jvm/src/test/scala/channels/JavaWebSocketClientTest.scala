@@ -1,8 +1,7 @@
 package channels
 
-import java.net.http.HttpClient
 import java.net.URI
-import java.nio.channels.Selector
+import java.net.http.HttpClient
 
 class EchoServerTestJavaWebSocketClient extends EchoCommunicationTest[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix](
       { (ec, abort) =>

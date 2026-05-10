@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpServer
 
 import java.net.http.HttpClient
 import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI, UnixDomainSocketAddress}
-import java.nio.channels.{Selector, ServerSocketChannel, SocketChannel}
+import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.nio.file.Files
 
 class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](

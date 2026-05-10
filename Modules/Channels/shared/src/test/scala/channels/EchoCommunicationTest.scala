@@ -18,7 +18,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
   def supportsStableConnectionObject: Boolean = true
   def extraCleanup(cleanups: mutable.ListBuffer[() => Unit]): Unit = ()
 
-  def testExecutionContext: ExecutionContext = ExecutionContext.global
+  def testExecutionContext: ExecutionContext = TestExecutionContextProvider.create()
 
   private final class Counter(target: Int) {
     private var current = 0
