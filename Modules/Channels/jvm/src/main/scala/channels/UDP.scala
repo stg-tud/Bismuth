@@ -22,9 +22,35 @@ object UDP {
     new Client(target, socketFactory, executionContext)
 
   abstract private class Base(socketFactory: () => DatagramSocket, executionContext: ExecutionContext) {
-    protected def startReceiver(datagramSocket: DatagramSocket, receiver: Receive)(using Abort): Unit = {
+    private def loopReceive(
+        datagramSocket: DatagramSocket,
+        receiverFor: SocketAddress => (UDPDatagramWrapper, Callback[MessageBuffer]),
+        onFailure: Throwable => Unit,
+    )(using Abort): Unit = {
       val receiveBuffer = new Array[Byte](1 << 16)
-      val connections   = mutable.Map.empty[SocketAddress, (UDPDatagramWrapper, Callback[MessageBuffer])]
+
+      executionContext.execute { () =>
+        try {
+          try {
+            while !summon[Abort].closeRequest do
+                val packet = new DatagramPacket(receiveBuffer, receiveBuffer.length)
+                try {
+                  datagramSocket.receive(packet)
+                  val (_, callback) = receiverFor(packet.getSocketAddress)
+                  callback.succeed(ArrayMessageBuffer(packet.getData.slice(
+                    packet.getOffset,
+                    packet.getOffset + packet.getLength
+                  )))
+                } catch case _: SocketTimeoutException => ()
+          } finally datagramSocket.close()
+        } catch {
+          case NonFatal(e) => onFailure(e)
+        }
+      }
+    }
+
+    protected def startServerReceiver(datagramSocket: DatagramSocket, receiver: Receive)(using Abort): Unit = {
+      val connections = mutable.Map.empty[SocketAddress, (UDPDatagramWrapper, Callback[MessageBuffer])]
 
       def getOrCreateConnection(sa: SocketAddress): (UDPDatagramWrapper, Callback[MessageBuffer]) =
         connections.synchronized {
@@ -36,26 +62,23 @@ object UDP {
           )
         }
 
-      executionContext.execute { () =>
-        try {
-          try {
-            while !summon[Abort].closeRequest do
-                val packet = new DatagramPacket(receiveBuffer, receiveBuffer.length)
-                try {
-                  datagramSocket.receive(packet)
-                  val (_, callback) = getOrCreateConnection(packet.getSocketAddress)
-                  callback.succeed(ArrayMessageBuffer(packet.getData.slice(
-                    packet.getOffset,
-                    packet.getOffset + packet.getLength
-                  )))
-                } catch case _: SocketTimeoutException => ()
-          } finally datagramSocket.close()
-        } catch {
-          case NonFatal(e) =>
-            connections.values.foreach((_, callback) => callback.fail(e))
-        }
-      }
+      loopReceive(
+        datagramSocket,
+        receiverFor = getOrCreateConnection,
+        onFailure = e => connections.values.foreach((_, callback) => callback.fail(e))
+      )
     }
+
+    protected def startClientReceiver(
+        datagramSocket: DatagramSocket,
+        connection: UDPDatagramWrapper,
+        callback: Callback[MessageBuffer],
+    )(using Abort): Unit =
+      loopReceive(
+        datagramSocket,
+        receiverFor = _ => connection -> callback,
+        onFailure = callback.fail
+      )
 
   }
 
@@ -63,7 +86,7 @@ object UDP {
       extends Base(socketFactory, executionContext), LatentConnection[ConnectionDescriptor.Udp] {
     override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Udp] = Async {
       val datagramSocket = socketFactory()
-      startReceiver(datagramSocket, receiver)
+      startServerReceiver(datagramSocket, receiver)
       ConnectionDescriptor.Udp(datagramSocket.getLocalAddress.getHostAddress, datagramSocket.getLocalPort)
     }
   }
@@ -73,8 +96,8 @@ object UDP {
     override def prepare(receiver: Receive): Async[Abort, Connection] = Async {
       val datagramSocket = socketFactory()
       val conn           = UDPDatagramWrapper(target, datagramSocket)
-      receiver.connectionEstablished(conn)
-      startReceiver(datagramSocket, receiver)
+      val callback       = receiver.connectionEstablished(conn)
+      startClientReceiver(datagramSocket, conn, callback)
       conn
     }
   }

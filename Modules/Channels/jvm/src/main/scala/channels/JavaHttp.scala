@@ -18,7 +18,10 @@ object JavaHttp {
     override def close(): Unit                                  = out.outputStream.close()
   }
 
-  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection[ConnectionDescriptor.WebSocket] {
+  class SSEServer(
+      addHandler: HttpHandler => Unit,
+      descriptor: ConnectionDescriptor.WebSocket = ConnectionDescriptor.WebSocket("sse://server")
+  ) extends LatentConnection[ConnectionDescriptor.WebSocket] {
 
     def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.WebSocket] = Async {
       addHandler { (exchange: HttpExchange) =>
@@ -39,7 +42,7 @@ object JavaHttp {
         val amb = ArrayMessageBuffer(exchange.getRequestBody.readAllBytes())
         if amb.inner.nonEmpty then cb.succeed(amb)
       }
-      ConnectionDescriptor.WebSocket("sse://server")
+      descriptor
     }
   }
 
