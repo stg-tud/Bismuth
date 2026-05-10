@@ -119,6 +119,7 @@ class BroadcastIO[State](
     }
   }
 
+  /** receive message, decode, decrypt. remove peer on failure. */
   private def messageReceiver(conn: Connection): Callback[MessageBuffer] = {
     case Success(msg) =>
       BroadcastIO.decodeEnvelope(msg, aead) match
