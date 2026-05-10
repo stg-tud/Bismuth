@@ -2,7 +2,7 @@ package channels
 
 import channels.TestUtil.printErrors
 import de.rmgk.delay
-import de.rmgk.delay.{Async, Callback}
+import de.rmgk.delay.{Async, Callback, Sync}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -47,6 +47,11 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
   private def connectClient(descriptor: CD, receiver: Connection => Callback[MessageBuffer]): Async[Abort, Connection] =
     clientConn(ec)(descriptor).prepare(asReceive(receiver))
 
+  private def sendAll(connection: Connection, messages: List[String]): Async[Any, Unit] = messages match {
+    case Nil          => Sync(())
+    case head :: tail => connection.send(ArrayMessageBuffer(head.getBytes)).flatMap(_ => sendAll(connection, tail))
+  }
+
   private def withCleanup[A](body: (Abort, mutable.ListBuffer[Connection]) => Future[A]): Future[A] = {
     val abort    = Abort()
     val clients  = mutable.ListBuffer.empty[Connection]
@@ -77,7 +82,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
       Async[Abort] {
         val descriptor = startServer { conn =>
           printErrors { mb =>
-            conn.send(mb).runToFuture(())
+            conn.send(mb).run(printErrors(_ => ()))
           }
         }.bind
         val client = connectClient(descriptor, _ =>
@@ -87,7 +92,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
           }
         ).bind
         clients += client
-        toSend.foreach(msg => client.send(ArrayMessageBuffer(msg.getBytes())).run(printErrors(_ => ())))
+        sendAll(client, toSend).bind
         messageCounter.async.bind
         assertEquals(received.synchronized(received.toList).sorted, toSend.sorted)
       }.runToFuture(abort)
@@ -107,7 +112,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
         val descriptor = startServer { conn =>
           serverConnections.synchronized(serverConnections += conn)
           printErrors { mb =>
-            conn.send(mb).runToFuture(())
+            conn.send(mb).run(printErrors(_ => ()))
           }
         }.bind
         val clientA = connectClient(descriptor, _ =>
@@ -124,8 +129,8 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
         ).bind
         clients += clientA
         clients += clientB
-        clientA.send(ArrayMessageBuffer("client-a".getBytes)).run(_ => ())
-        clientB.send(ArrayMessageBuffer("client-b".getBytes)).run(_ => ())
+        clientA.send(ArrayMessageBuffer("client-a".getBytes)).bind
+        clientB.send(ArrayMessageBuffer("client-b".getBytes)).bind
         receivedCounter.async.bind
         assertEquals(clientReceived.toSet, Set("client-a", "client-b"))
         assertEquals(serverConnections.synchronized(serverConnections.size), 2)
@@ -159,7 +164,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
         }.bind
         val client = connectClient(descriptor, _ => printErrors(_ => ())).bind
         clients += client
-        client.send(ArrayMessageBuffer("hello".getBytes)).run(_ => ())
+        client.send(ArrayMessageBuffer("hello".getBytes)).bind
         serverMessages.async.bind
         client.close()
         serverFailures.async.bind
@@ -201,8 +206,8 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
         val clientB = connectClient(descriptor, _ => printErrors(_ => ())).bind
         clients += clientA
         clients += clientB
-        clientA.send(ArrayMessageBuffer("client-a".getBytes)).run(_ => ())
-        clientB.send(ArrayMessageBuffer("client-b".getBytes)).run(_ => ())
+        clientA.send(ArrayMessageBuffer("client-a".getBytes)).bind
+        clientB.send(ArrayMessageBuffer("client-b".getBytes)).bind
         serverMessages.async.bind
         clientA.close()
         serverFailures.async.bind
@@ -232,7 +237,7 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
           printErrors { mb =>
             serverSeenOnMsg.synchronized(serverSeenOnMsg += conn)
             serverMessages.hit()
-            conn.send(mb).runToFuture(())
+            conn.send(mb).run(printErrors(_ => ()))
           }
         }.bind
         val preparedClientConn = connectClient(descriptor, { conn =>
@@ -242,8 +247,8 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
           }
         }).bind
         clients += preparedClientConn
-        preparedClientConn.send(ArrayMessageBuffer("one".getBytes)).run(_ => ())
-        preparedClientConn.send(ArrayMessageBuffer("two".getBytes)).run(_ => ())
+        preparedClientConn.send(ArrayMessageBuffer("one".getBytes)).bind
+        preparedClientConn.send(ArrayMessageBuffer("two".getBytes)).bind
         serverMessages.async.bind
         clientMessages.async.bind
         val serverEstablishedList = serverEstablished.synchronized(serverEstablished.toList)

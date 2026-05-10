@@ -2,6 +2,8 @@ package channels
 
 import de.rmgk.delay.{Async, Callback, Sync}
 
+import scala.util.{Failure, Success}
+
 final class QueueDrainingConnection(inner: Connection, queue: LocalMessageQueue) extends Connection {
   override def info: ConnectionInfo = inner.info
 
@@ -21,24 +23,31 @@ final class QueueDrainingConnection(inner: Connection, queue: LocalMessageQueue)
   }
 }
 
-final class ImmediateServer[CD <: ConnectionDescriptor](
+final class ImmediateServer[CD <: ConnectionDescriptor, Establish](
     descriptor: CD,
-    start: Receive => Async[Abort, ?]
+    register: Callback[Establish] => Unit,
+    connect: (Receive, Establish) => Unit
 ) extends LatentConnection[CD] {
-  override def prepare(receiver: Receive): Async[Abort, CD] = Async.fromCallback { abort ?=>
-    start(receiver).runIn(abort) {
-      case _ => ()
-    }
-    Async.handler.succeed(descriptor)
+  override def prepare(receiver: Receive): Async[Abort, CD] = Sync {
+    register(new Callback[Establish] {
+      override def complete(result: scala.util.Try[Establish]): Unit = result match {
+        case Success(establish) => connect(receiver, establish)
+        case Failure(err)       => throw err
+      }
+    })
+    descriptor
   }
 }
 
 class EchoServerTestSynchronousLocal extends EchoCommunicationTest[ConnectionDescriptor.SynchronousLocal](
       { _ =>
         EchoServerTestSynchronousLocal.current = SynchronousLocalConnection("echo-sync")
-        ImmediateServer(
+        val current = EchoServerTestSynchronousLocal.current
+        ImmediateServer[ConnectionDescriptor.SynchronousLocal, current.server.Establish](
           ConnectionDescriptor.SynchronousLocal("echo-sync"),
-          EchoServerTestSynchronousLocal.current.server.prepare
+          cb => current.server.connectionEstablished.succeed(cb),
+          (receiver, establish) =>
+            establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
         )
       },
       _ => _ => EchoServerTestSynchronousLocal.current.client("client")
@@ -54,9 +63,12 @@ class EchoServerTestQueuedLocal extends EchoCommunicationTest[ConnectionDescript
       { _ =>
         val queue = LocalMessageQueue()
         EchoServerTestQueuedLocal.current = EchoServerTestQueuedLocal.QueuedState(queue, QueuedLocalConnection("echo-queued", queue))
-        ImmediateServer(
+        val current = EchoServerTestQueuedLocal.current
+        ImmediateServer[ConnectionDescriptor.QueuedLocal, current.link.server.Establish](
           ConnectionDescriptor.QueuedLocal("echo-queued"),
-          EchoServerTestQueuedLocal.current.link.server.prepare
+          cb => current.link.server.connectionEstablished.succeed(cb),
+          (receiver, establish) =>
+            establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
         )
       },
       _ => _ =>
