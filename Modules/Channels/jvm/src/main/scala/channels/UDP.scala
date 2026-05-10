@@ -2,7 +2,7 @@ package channels
 
 import de.rmgk.delay.{Async, Callback}
 
-import java.net.{DatagramPacket, DatagramSocket, InetSocketAddress, SocketAddress, SocketTimeoutException}
+import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, SocketAddress, SocketTimeoutException}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
@@ -88,7 +88,10 @@ object UDP {
     override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Udp] = Async {
       val datagramSocket = socketFactory()
       startServerReceiver(datagramSocket, receiver)
-      ConnectionDescriptor.Udp(datagramSocket.getLocalAddress.getHostAddress, datagramSocket.getLocalPort)
+      val host =
+        if datagramSocket.getLocalAddress.isAnyLocalAddress then InetAddress.getLoopbackAddress.getHostAddress
+        else datagramSocket.getLocalAddress.getHostAddress
+      ConnectionDescriptor.Udp(host, datagramSocket.getLocalPort)
     }
   }
 
