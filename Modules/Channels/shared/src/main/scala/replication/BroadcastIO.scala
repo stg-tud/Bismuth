@@ -131,9 +131,9 @@ class BroadcastIO[State](
     case Failure(error) =>
       error match {
         case se: SocketException if se.getMessage == "Connection reset" =>
-          println(s"$replicaId: disconnected ${conn.info} (${conn})")
+          // println(s"$replicaId: disconnected ${conn.info} (${conn})")
         case _: (NoMoreDataException | ConnectionClosedException) =>
-          println(s"$replicaId: disconnected ${conn.info} (${conn})")
+          // println(s"$replicaId: disconnected ${conn.info} (${conn})")
         case _ =>
           println(s"$replicaId: error during message handling")
           error.printStackTrace()
