@@ -24,12 +24,12 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
         val server = HttpServer.create()
         EchoServerTestSunJavaHTTP.currentServer = server
 
-        server.bind(InetSocketAddress("127.0.0.1", 0), 0)
+        server.bind(InetSocketAddress("0", 0), 0)
         val port = server.getAddress.getPort
 
         val handler = JavaHttpSSE.SSEServer(
           handler => server.createContext("/path", handler),
-          ConnectionDescriptor.WebSocket(s"http://127.0.0.1:$port/path")
+          ConnectionDescriptor.WebSocket(s"http://0:$port/path")
         )
 
         server.start()
