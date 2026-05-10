@@ -14,28 +14,36 @@ class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](
         UDP.listen(() => ds, ec)
       },
       ec => descriptor => UDP.connect(InetSocketAddress(descriptor.host, descriptor.port), () => new DatagramSocket(), ec)
-    )
+    ) {
+  override def supportsDisconnectDetection: Boolean = false
+}
 
 class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescriptor.WebSocket](
       _ => {
 
         val server = HttpServer.create()
 
-        server.bind(InetSocketAddress("0", 58004), 0)
+        server.bind(InetSocketAddress("127.0.0.1", 0), 0)
+        val port = server.getAddress.getPort
 
-        val handler = JavaHttp.SSEServer { handler =>
-          server.createContext("/path", handler)
-        }
+        val handler = JavaHttp.SSEServer(
+          handler => server.createContext("/path", handler),
+          ConnectionDescriptor.WebSocket(s"http://127.0.0.1:$port/path")
+        )
 
         server.start()
         handler
 
       },
-      ec => _ => {
+      ec => descriptor => {
         val client = HttpClient.newHttpClient()
-        JavaHttp.SSEClient(client, new URI(s"http://localhost:58004/path"), ec)
+        JavaHttp.SSEClient(client, URI.create(descriptor.url), ec)
       }
-    )
+    ) {
+  override def supportsMultipleConnections: Boolean    = false
+  override def supportsDisconnectDetection: Boolean    = false
+  override def supportsStableConnectionObject: Boolean = false
+}
 
 def domainSocketHelperNonensese(name: String) = {
   val tmpPath    = Files.createTempDirectory("channels-test")

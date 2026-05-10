@@ -44,12 +44,12 @@ class LocalMessageQueue {
 /** Like [[SynchronousLocalConnection]], but message delivery is queued and manually executed. */
 class QueuedLocalConnection(val serverId: String, val messageQueue: LocalMessageQueue = LocalMessageQueue()) {
 
-  object server extends LatentConnection[ConnectionDescriptor] {
+  object server extends LatentConnection[ConnectionDescriptor.QueuedLocal] {
 
     case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async.fromCallback[Establish] {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.QueuedLocal] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))

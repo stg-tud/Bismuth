@@ -14,7 +14,9 @@ class EchoServerTestJetty extends EchoCommunicationTest[channels.ConnectionDescr
         echoServer
       },
       _ => descriptor => JettyWsConnection.connect(URI.create(descriptor.url))
-    )
+    ) {
+  override def supportsDisconnectDetection: Boolean = false
+}
 
 object JettyConnectTest {
 

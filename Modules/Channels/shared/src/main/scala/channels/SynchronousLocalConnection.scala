@@ -12,12 +12,12 @@ import de.rmgk.delay.{Async, Callback, Promise, Sync}
 class SynchronousLocalConnection(serverId: String) {
 
   /** The server prepares by fullfillling the [[connectionEstablished]] promise, which contains a callback that allwows any number of clients to connect. The inner callback contains the [[Connection]] the server sends on, as well as a promise that the server completes immediately with it’s own receive handler. */
-  object server extends LatentConnection[ConnectionDescriptor] {
+  object server extends LatentConnection[ConnectionDescriptor.SynchronousLocal] {
 
     case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async.fromCallback[Establish] {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.SynchronousLocal] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
