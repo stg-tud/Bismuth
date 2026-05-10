@@ -3,12 +3,10 @@ package crypto.channels
 import channels.EchoCommunicationTest
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 
-class EchoServerTestP2PTls extends EchoCommunicationTest(
-      ec => {
-        val latentConnection = EchoServerTestP2PTls.p2pTls1.latentListener(ec)
-        (latentConnection.listenPort, latentConnection)
-      },
-      ec => port => EchoServerTestP2PTls.p2pTls2.latentConnect("localhost", port, ec)
+class EchoServerTestP2PTls extends EchoCommunicationTest[channels.ConnectionDescriptor.Tcp](
+      ec => EchoServerTestP2PTls.p2pTls1.latentListener(ec),
+      ec => descriptor =>
+        EchoServerTestP2PTls.p2pTls2.latentConnect(descriptor.host, descriptor.port, ec)
     )
 
 object EchoServerTestP2PTls {

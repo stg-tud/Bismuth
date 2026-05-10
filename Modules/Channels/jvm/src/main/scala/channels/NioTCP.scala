@@ -136,9 +136,9 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().clear()
   }
 
-  private def socketConnectInfo(address: SocketAddress): Option[ConnectionDescriptor] =
+  private def socketConnectInfo(address: SocketAddress): Option[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
     address match
-        case isa: InetSocketAddress       => Some(ConnectionDescriptor.Tcp(isa.getHostString, isa.getPort))
+        case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
         case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
         case _                            => None
 
@@ -247,13 +247,14 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     socket
   }
 
-  def listen(): LatentConnection[ConnectionDescriptor] = listen(defaultServerSocketChannel(new InetSocketAddress(0)))
+  def listen(): LatentConnection[ConnectionDescriptor.TcpWebSocket  | ConnectionDescriptor.Unix] =
+    listen(defaultServerSocketChannel(new InetSocketAddress(0))).asInstanceOf[LatentConnection[ConnectionDescriptor.TcpWebSocket]]
 
   def listen(
       bindsocket: () => ServerSocketChannel,
-  ): LatentConnection[ConnectionDescriptor] =
-    new LatentConnection[ConnectionDescriptor] {
-      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor] =
+  ): LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
+    new LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] {
+      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
         Async.fromCallback { abort ?=>
           try {
             val serverChannel: ServerSocketChannel = bindsocket()
@@ -261,9 +262,13 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
             serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(incoming))
             selector.wakeup()
 
-            socketConnectInfo(serverChannel.getLocalAddress) match {
-              case Some(value) => Async.handler.succeed(value)
-              case None        => Async.handler.fail(new IllegalStateException("unknown socket address type"))
+            serverChannel.getLocalAddress match {
+              case isa: InetSocketAddress =>
+                Async.handler.succeed(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
+              case uda: UnixDomainSocketAddress =>
+                Async.handler.succeed(ConnectionDescriptor.Unix(uda.getPath.toString))
+              case _ =>
+                Async.handler.fail(new IllegalStateException("unknown socket address type"))
             }
 
             ()

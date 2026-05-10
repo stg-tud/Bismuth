@@ -18,9 +18,9 @@ object JavaHttp {
     override def close(): Unit                                  = out.outputStream.close()
   }
 
-  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection[ConnectionDescriptor] {
+  class SSEServer(addHandler: HttpHandler => Unit) extends LatentConnection[ConnectionDescriptor.WebSocket] {
 
-    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.WebSocket] = Async {
       addHandler { (exchange: HttpExchange) =>
         val responseHeaders = exchange.getResponseHeaders
         responseHeaders.add("Content-Type", "text/event-stream")

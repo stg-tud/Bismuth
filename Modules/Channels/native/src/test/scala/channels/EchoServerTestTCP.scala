@@ -2,7 +2,7 @@ package channels
 
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, SocketException}
 
-class EchoServerTestTCP extends EchoCommunicationTest(
+class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
       { ec =>
         val socket = new ServerSocket
 
@@ -14,8 +14,7 @@ class EchoServerTestTCP extends EchoCommunicationTest(
 
         socket.bind(new InetSocketAddress(InetAddress.getByName("localhost"), 0))
 
-        val port = socket.getLocalPort
-        (port, TCP.listen(() => socket, ec))
+        TCP.listen(() => socket, ec)
       },
-      ec => port => TCP.connect(TCP.defaultSocket(new InetSocketAddress("localhost", port)), ec)
+      ec => descriptor => TCP.connect(TCP.defaultSocket(new InetSocketAddress(descriptor.host, descriptor.port)), ec)
     )

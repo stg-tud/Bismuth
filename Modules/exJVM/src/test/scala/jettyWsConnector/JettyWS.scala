@@ -42,9 +42,9 @@ class JettyWsListener(val server: Server) {
   def listen(
       pathSpec: PathSpec,
       context: ContextHandler = new ContextHandler()
-  ): LatentConnection[ConnectionDescriptor] =
-    new LatentConnection[ConnectionDescriptor] {
-      override def prepare(incomingHandler: ChannelHandler): Async[Abort, ConnectionDescriptor] =
+  ): LatentConnection[ConnectionDescriptor.WebSocket] =
+    new LatentConnection[ConnectionDescriptor.WebSocket] {
+      override def prepare(incomingHandler: ChannelHandler): Async[Abort, ConnectionDescriptor.WebSocket] =
         Async {
 
           val webSocketHandler = WebSocketUpgradeHandler.from(
@@ -60,7 +60,9 @@ class JettyWsListener(val server: Server) {
           context.setHandler(webSocketHandler)
           handlers.addHandler(context)
           context.start()
-          ConnectionDescriptor.WebSocket("jetty-ws://listener")
+          val port = server.getConnectors.head.asInstanceOf[ServerConnector].getLocalPort
+          val path = pathSpec.getDeclaration.stripSuffix("*")
+          ConnectionDescriptor.WebSocket(s"ws://localhost:$port$path")
         }
     }
 

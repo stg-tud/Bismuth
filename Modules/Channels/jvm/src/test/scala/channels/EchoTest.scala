@@ -7,17 +7,17 @@ import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI,
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.nio.file.Files
 
-class EchoServerTestUDP extends EchoCommunicationTest(
+class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](
       ec => {
         // don’t do this normally, but we need a free random socket
         val ds = new DatagramSocket()
-        (ds.getLocalPort, UDP.listen(() => ds, ec))
+        UDP.listen(() => ds, ec)
       },
-      ec => info => UDP.connect(InetSocketAddress("localhost", info), () => new DatagramSocket(), ec)
+      ec => descriptor => UDP.connect(InetSocketAddress(descriptor.host, descriptor.port), () => new DatagramSocket(), ec)
     )
 
-class EchoServerTestSunJavaHTTP extends EchoCommunicationTest(
-      ec => {
+class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescriptor.WebSocket](
+      _ => {
 
         val server = HttpServer.create()
 
@@ -28,16 +28,13 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest(
         }
 
         server.start()
-        val port = server.getAddress.getPort
-
-        (port, handler)
+        handler
 
       },
-      ec =>
-        port => {
-          val client = HttpClient.newHttpClient()
-          JavaHttp.SSEClient(client, new URI(s"http://localhost:$port/path"), ec)
-        }
+      ec => _ => {
+        val client = HttpClient.newHttpClient()
+        JavaHttp.SSEClient(client, new URI(s"http://localhost:58004/path"), ec)
+      }
     )
 
 def domainSocketHelperNonensese(name: String) = {
@@ -48,32 +45,27 @@ def domainSocketHelperNonensese(name: String) = {
   UnixDomainSocketAddress.of(socketPath)
 }
 
-class EchoServerTestNioTCP extends EchoCommunicationTest(
+class EchoServerTestNioTCP extends EchoCommunicationTest[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix](
       { ec =>
         val socket = ServerSocketChannel.open(StandardProtocolFamily.UNIX)
 
         socket.configureBlocking(false)
 
-        // socket.bind(new InetSocketAddress("localhost", 0))
-
         val socketPath = domainSocketHelperNonensese("some-name")
 
         socket.bind(socketPath)
-
-        // val port = socket.socket().getLocalPort
 
         val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
 
         ec.execute(() => nioTCP.loopSelection(Abort()))
 
-        (socketPath, nioTCP.listen(() => socket))
+        nioTCP.listen(bindsocket = () => socket)
       },
-      ec =>
-        sp => {
-
+      ec => {
+        case descriptor: ConnectionDescriptor.Unix =>
           def socketChannel: SocketChannel = {
             val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
-            channel.connect(sp)
+            channel.connect(UnixDomainSocketAddress.of(descriptor.path))
             channel.configureBlocking(false)
             channel
           }
@@ -83,5 +75,11 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           nioTCP.connect(() => socketChannel)
-        }
+        case descriptor: ConnectionDescriptor.TcpWebSocket =>
+          val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
+
+          ec.execute(() => nioTCP.loopSelection(Abort()))
+
+          nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(descriptor.host, descriptor.port)))
+      }
     )

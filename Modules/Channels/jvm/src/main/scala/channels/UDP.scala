@@ -11,7 +11,7 @@ object UDP {
   def listen(
       socketFactory: () => DatagramSocket,
       executionContext: ExecutionContext
-  ): LatentConnection[ConnectionDescriptor] =
+  ): LatentConnection[ConnectionDescriptor.Udp] =
     new Listener(socketFactory, executionContext)
 
   def connect(
@@ -60,8 +60,8 @@ object UDP {
   }
 
   private class Listener(socketFactory: () => DatagramSocket, executionContext: ExecutionContext)
-      extends Base(socketFactory, executionContext), LatentConnection[ConnectionDescriptor] {
-    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor] = Async {
+      extends Base(socketFactory, executionContext), LatentConnection[ConnectionDescriptor.Udp] {
+    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Udp] = Async {
       val datagramSocket = socketFactory()
       startReceiver(datagramSocket, receiver)
       ConnectionDescriptor.Udp(datagramSocket.getLocalAddress.getHostAddress, datagramSocket.getLocalPort)

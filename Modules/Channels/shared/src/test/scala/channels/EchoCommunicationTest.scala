@@ -7,9 +7,9 @@ import java.util.concurrent.{ExecutorService, Executors, Semaphore}
 import scala.concurrent.ExecutionContext
 import scala.util.Failure
 
-trait EchoCommunicationTest[Info](
-    serverConn: ExecutionContext => (Info, LatentConnection[ConnectionDescriptor]),
-    clientConn: ExecutionContext => Info => LatentConnection[Connection]
+trait EchoCommunicationTest[CD <: ConnectionDescriptor](
+    serverConn: ExecutionContext => LatentConnection[CD],
+    clientConn: ExecutionContext => CD => LatentConnection[Connection]
 ) extends munit.FunSuite {
 
   // need an execution context that generates new tasks as TCP does lots of blocking
@@ -35,26 +35,24 @@ trait EchoCommunicationTest[Info](
 
     trace("test starting")
 
-    val (info, serverLatent) = serverConn(ec)
-
-    val echoServer: Async[Abort, ConnectionDescriptor] =
-      serverLatent.prepare: conn =>
+    val echoServer: Async[Abort, CD] =
+      serverConn(ec).prepare: conn =>
           printErrors: mb =>
               trace("server received; echoing")
               conn.send(mb).runToFuture(())
 
-    val client: Async[Abort, Connection] =
-      clientConn.apply(ec).apply(info).prepare: conn =>
-          printErrors: mb =>
-              trace("client received")
-              synchronized {
-                received = String(mb.asArray) :: received
-              }
-              messageCounter.release()
-
-    echoServer.runIn(summon):
-        printErrors: conn =>
-            ()
+    val client: Async[Abort, Connection] = Async { (_: Abort) ?=>
+      val descriptor = echoServer.bind
+      clientConn.apply(ec).apply(descriptor).prepare({ conn =>
+        printErrors { mb =>
+          trace("client received")
+          synchronized {
+            received = String(mb.asArray) :: received
+          }
+          messageCounter.release()
+        }
+      }).bind
+    }
 
     val sending = Async: (_: Abort) ?=>
         trace("starting sending")

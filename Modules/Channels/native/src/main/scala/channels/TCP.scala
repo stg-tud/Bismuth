@@ -53,9 +53,9 @@ object TCP {
   def listen(
       bindsocket: () => ServerSocket,
       executionContext: ExecutionContext
-  ): LatentConnection[ConnectionDescriptor] =
-    new LatentConnection[ConnectionDescriptor] {
-      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor] =
+  ): LatentConnection[ConnectionDescriptor.Tcp] =
+    new LatentConnection[ConnectionDescriptor.Tcp] {
+      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
         Async.fromCallback { abort ?=>
           try
 
