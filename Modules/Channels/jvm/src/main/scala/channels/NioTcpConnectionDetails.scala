@@ -4,21 +4,6 @@ import java.net.InetSocketAddress
 
 class NioTcpConnectionDetailsResolver(nio: NioTCP) extends ChannelResolver {
 
-  // TODO: probing seems unreliable, port might change in between
-  def listen(
-      host: String = "127.0.0.1",
-      port: Int = 0
-  ): (ConnectionDescriptor.TcpWebSocket, LatentConnection[ConnectionDescriptor]) = {
-    val socketFactory = nio.defaultServerSocketChannel(InetSocketAddress(host, port))
-    val probe         = socketFactory()
-    val actualPort    = probe.getLocalAddress.asInstanceOf[InetSocketAddress].getPort
-    probe.close()
-    (
-      ConnectionDescriptor.TcpWebSocket(host, actualPort),
-      nio.listen(nio.defaultServerSocketChannel(InetSocketAddress(host, actualPort)))
-    )
-  }
-
   override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
     details match
         case ConnectionDescriptor.Tcp(host, port) =>

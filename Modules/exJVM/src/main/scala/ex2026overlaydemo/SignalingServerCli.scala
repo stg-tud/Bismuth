@@ -4,7 +4,7 @@ import channels.*
 import replication.PlumtreeMessage.Payload
 import replication.research.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
 
-import java.net.BindException
+import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
 /** vibecoded as part of the hyparview experiments */
@@ -18,14 +18,18 @@ object SignalingServerCli {
     val nioThread   = Executors.newSingleThreadExecutor()
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-    def listen(port: Int): (ConnectionDescriptor.TcpWebSocket, LatentConnection[ConnectionDescriptor]) = {
-      val (details, latent) = nioResolver.listen(host, port)
-      (details, latent)
+    def bindWebsocketServer(port: Int): (ConnectionDescriptor.TcpWebSocket, LatentConnection[ConnectionDescriptor]) = {
+      val socket  = nio.defaultServerSocketChannel(new InetSocketAddress(host, port))()
+      val address = socket.getLocalAddress.asInstanceOf[InetSocketAddress]
+      (
+        ConnectionDescriptor.TcpWebSocket(address.getHostString, address.getPort),
+        nio.listen(() => socket)
+      )
     }
 
-    val (signalDetails, signalServer) =  listen(9001)
+    val (signalDetails, signalServer) = bindWebsocketServer(9001)
 
-    val (overlayDetails, overlayServer) = listen(9002)
+    val (overlayDetails, overlayServer) = bindWebsocketServer(9002)
 
     val signaling = SignalingServer(debug = true)
     signaling.addIncomingConnection(signalServer)
@@ -40,6 +44,7 @@ object SignalingServerCli {
     overlayNode.start(Nil)
 
     nioThread.execute(() => nio.loopSelection(nioAbort))
-    println(s"&signal=${signalDetails.asUrl}&bootstrap=${overlayDetails.asUrl}")
+    val publishedOverlayDetails = overlayNode.selfConnectionDetails.headOption.getOrElse(overlayDetails)
+    println(s"&signal=${signalDetails.asUrl}&bootstrap=${publishedOverlayDetails.asUrl}")
   }
 }
