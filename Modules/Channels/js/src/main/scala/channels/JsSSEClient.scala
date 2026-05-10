@@ -10,7 +10,7 @@ import scala.scalajs.js.typedarray.{Int8Array, Uint8Array}
 import scala.util.Failure
 import scala.util.chaining.scalaUtilChainingOps
 
-object JSHttpPseudoChannel {
+object JsSSEClient {
 
   class SSEPseudoConnection(uri: String, receiver: Receive)
       extends Connection {

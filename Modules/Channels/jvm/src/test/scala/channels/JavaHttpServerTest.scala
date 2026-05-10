@@ -1,6 +1,6 @@
 package channels
 
-import channels.JavaHttp.SSEServer
+import channels.JavaHttpSSE.SSEServer
 import channels.MessageBuffer.given_Conversion_String_MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
@@ -67,7 +67,7 @@ object JavaHttpServerTest2 {
 
     val client = HttpClient.newHttpClient()
     val ec     = ExecutionContext.global
-    clientDiss.addClientConnection(JavaHttp.SSEClient(client, new URI(s"http://localhost:$port/channel"), ec))
+    clientDiss.addClientConnection(JavaHttpSSE.SSEClient(client, new URI(s"http://localhost:$port/channel"), ec))
 
     clientDiss.applyDelta(MultiVersionRegister.of("Hello!")(using clientId))
 

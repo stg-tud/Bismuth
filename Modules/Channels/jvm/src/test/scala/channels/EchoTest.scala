@@ -27,7 +27,7 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
         server.bind(InetSocketAddress("127.0.0.1", 0), 0)
         val port = server.getAddress.getPort
 
-        val handler = JavaHttp.SSEServer(
+        val handler = JavaHttpSSE.SSEServer(
           handler => server.createContext("/path", handler),
           ConnectionDescriptor.WebSocket(s"http://127.0.0.1:$port/path")
         )
@@ -38,7 +38,7 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
       },
       ec => descriptor => {
         val client = HttpClient.newHttpClient()
-        JavaHttp.SSEClient(client, URI.create(descriptor.url), ec)
+        JavaHttpSSE.SSEClient(client, URI.create(descriptor.url), ec)
       }
     ) {
   override def supportsMultipleConnections: Boolean    = false

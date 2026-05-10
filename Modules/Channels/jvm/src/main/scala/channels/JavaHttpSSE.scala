@@ -11,7 +11,7 @@ import java.net.http.{HttpClient, HttpRequest}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-object JavaHttp {
+object JavaHttpSSE {
 
   class SSEServerConnection(out: JioOutputStreamAdapter) extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Async { out.send(message) }
