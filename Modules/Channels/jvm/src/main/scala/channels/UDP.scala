@@ -32,6 +32,7 @@ object UDP {
       executionContext.execute { () =>
         try {
           try {
+            datagramSocket.setSoTimeout(1000)
             while !summon[Abort].closeRequest do
                 val packet = new DatagramPacket(receiveBuffer, receiveBuffer.length)
                 try {

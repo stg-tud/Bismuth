@@ -2,7 +2,7 @@ package channels
 
 import de.rmgk.delay.{Async, Callback}
 
-import java.net.{InetSocketAddress, ServerSocket, Socket, SocketException}
+import java.net.{InetSocketAddress, ServerSocket, Socket, SocketException, SocketTimeoutException}
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
@@ -64,12 +64,15 @@ object TCP {
 
               executionContext.execute { () =>
                 try
+                  socket.setSoTimeout(1000)
                   while !abort.closeRequest do {
-                    val connection = socket.accept()
-                    if connection != null
-                    then
-                        TCP.handleConnection(connection, incoming, executionContext)
-                        ()
+                    try
+                      val connection = socket.accept()
+                      if connection != null
+                      then
+                          TCP.handleConnection(connection, incoming, executionContext)
+                          ()
+                    catch case _: SocketTimeoutException => ()
                   }
                 catch {
                   case exception: SocketException =>
