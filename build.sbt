@@ -12,7 +12,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   lore.js,
   lore.jvm,
   loreCompilerPlugin,
-  microbenchmarks,
   proBench,
   rdts.js,
   rdts.jvm,
@@ -80,6 +79,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     scala3defaults,
     javaOutputVersion(21),
     fork := true,
+    Settings.jolSettings,
     Dependencies.akka,
     Dependencies.akkaTestKit,
     Dependencies.bloomFilter,
@@ -171,22 +171,6 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
         .map(at => at.data).mkString(java.io.File.pathSeparator)
       s"-Xplugin:$pluginClasspath"
     }
-  )
-
-lazy val microbenchmarks = project.in(file("Modules/Microbenchmarks"))
-  .enablePlugins(JmhPlugin)
-  .dependsOn(rdts.jvm, reactives.jvm, channels.jvm, exJVM)
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.jsoniterScala,
-    Settings.jolSettings,
-    Dependencies.tink,
-    Dependencies.conscrypt,
-    javaOptions ++= Seq(
-      "-XX:+IgnoreUnrecognizedVMOptions",
-      "--sun-misc-unsafe-memory-access=allow",
-      "--enable-native-access=ALL-UNNAMED"
-    ),
   )
 
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
