@@ -10,7 +10,6 @@ import scalafx.geometry.Pos
 import scalafx.scene.control.{CheckBox, TextField}
 import scalafx.scene.layout.{HBox, Priority}
 
-
 import java.util.UUID
 
 class TodoItemListCell extends ListCell[UUID] {
@@ -34,7 +33,7 @@ class TodoItemListCell extends ListCell[UUID] {
       }
       val checkBox = new CheckBox()
 
-      var applyingRemoteUpdate = false
+      var applyingRemoteUpdate                     = false
       def syncFromProperty(entry: TodoEntry): Unit = {
         applyingRemoteUpdate = true
         try {

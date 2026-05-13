@@ -16,7 +16,7 @@ import scalajs.js
 
 class UIFormat[EntityType](val condition: (id: String, entity: EntityType) => Signal[Boolean], val classes: String) {
   def apply(id: String, entity: EntityType): Signal[String] = Signal {
-    if (this.condition(id, entity).value) {
+    if this.condition(id, entity).value then {
       classes
     } else {
       ""
@@ -30,9 +30,8 @@ abstract class UIBasicAttribute[EntityType](
     val formats: Seq[UIFormat[EntityType]] = Seq.empty[UIFormat[EntityType]],
 ) {
 
-  def render(id: String, entity: EntityType): VMod = {
+  def render(id: String, entity: EntityType): VMod =
     div()
-  }
 
   def renderEdit(formId: String, editing: Var[Option[(EntityType, Var[EntityType])]], props: VMod*): VMod
 
@@ -73,13 +72,11 @@ class UIReadOnlyAttribute[EntityType, T](
     override val formats: Seq[UIFormat[EntityType]] = Seq.empty[UIFormat[EntityType]],
 )(using renderMagic: Render[T])
     extends UIBasicAttribute[EntityType](label, width, formats) {
-  override def render(id: String, entity: EntityType): VMod = {
+  override def render(id: String, entity: EntityType): VMod =
     div(cls := "px-4 min-h-9 flex items-center", div(getter(id, entity)), formats.map(f => cls <-- f.apply(id, entity)))
-  }
 
-  override def renderEdit(formId: String, editing: Var[Option[(EntityType, Var[EntityType])]], props: VMod*): VMod = {
+  override def renderEdit(formId: String, editing: Var[Option[(EntityType, Var[EntityType])]], props: VMod*): VMod =
     div()
-  }
 
   override def uiFilter: UIFilter[EntityType] = UIFilterNothing()
 }
@@ -108,10 +105,10 @@ class UITextAttribute[EntityType, AttributeType](
     ) {
 
   private def set(entityVar: Var[EntityType], x: AttributeType): Unit = {
-    entityVar.transform(e => {
+    entityVar.transform { e =>
       val attr = getter(e)
       setter(e, attr.set(x))
-    })
+    }
   }
 
   protected def renderEditInput(
@@ -124,11 +121,11 @@ class UITextAttribute[EntityType, AttributeType](
   ): VMod =
     TableInput(
       // cls := "input valid:input-success bg-gray-50 input-ghost dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white !outline-0 rounded-none w-full border border-gray-300 h-9",
-      `type` := fieldType,
-      formId := _formId,
-      required := isRequired,
-      stepAttr := stepSize,
-      pattern := regex,
+      `type`           := fieldType,
+      formId           := _formId,
+      required         := isRequired,
+      stepAttr         := stepSize,
+      pattern          := regex,
       VMod.attr("min") := min,
       value <-- attr.map(getEditString),
       onInput.value --> {
@@ -150,10 +147,10 @@ class UITextAttribute[EntityType, AttributeType](
       editing: Var[Option[(EntityType, Var[EntityType])]],
       props: VMod*,
   ): VMod = Signal.dynamic {
-    editing.value.map(editing => {
+    editing.value.map { editing =>
       val (editStart, entityVar) = editing
-      val editStartAttr = getter(editStart)
-      val id = s"${js.Math.round(js.Math.random() * 1000000)}"
+      val editStartAttr          = getter(editStart)
+      val id                     = s"${js.Math.round(js.Math.random() * 1000000)}"
       div(
         cls := "relative min-w-[1rem] edit-value",
         renderEditInput(
@@ -164,7 +161,7 @@ class UITextAttribute[EntityType, AttributeType](
           entityVar,
           props,
         ),
-        if (editStartAttr.getAll.size > 1) {
+        if editStartAttr.getAll.size > 1 then {
           Some(
             Seq(
               dataList(
@@ -177,7 +174,7 @@ class UITextAttribute[EntityType, AttributeType](
           None
         },
       )
-    })
+    }
   }
 
   protected def getEditString(attr: Attribute[AttributeType]): String =
@@ -252,12 +249,12 @@ class UIDateAttribute[EntityType](
       entity: Var[EntityType],
       props: VMod*,
   ): VMod = TableInput(
-    cls := "input",
+    cls         := "input",
     placeholder := "dd.mm.yyyy",
-    `type` := "date",
-    formId := _formId,
-    required := isRequired,
-    minAttr := min,
+    `type`      := "date",
+    formId      := _formId,
+    required    := isRequired,
+    minAttr     := min,
     value <-- attr.map(getEditString),
     onInput.value --> {
       val evt = Evt[String]()
@@ -295,7 +292,7 @@ class UICheckboxAttribute[EntityType](
     val attr = getter(entity)
     div(
       formats.map(f => cls <-- f.apply(id, entity)),
-      duplicateValuesHandler(attr.getAll.map(if (_) "Yes" else "No")),
+      duplicateValuesHandler(attr.getAll.map(if _ then "Yes" else "No")),
     )
   }
 
@@ -308,7 +305,7 @@ class UICheckboxAttribute[EntityType](
       props: VMod*,
   ): VMod = Checkbox(
     CheckboxStyle.Default,
-    cls := "absolute top-1/2 -translate-y-1/2",
+    cls    := "absolute top-1/2 -translate-y-1/2",
     formId := _formId,
     checked <-- attr.map(_.getOrElse(false)),
     onClick.foreach(_ => set(!attr.now.getOrElse(false))),
@@ -368,15 +365,14 @@ class UISelectAttribute[EntityType, AttributeType](
   ): VMod = {
     Select(
       Signal.dynamic { options(entity.value).value },
-      v => {
-        set(writeConverter(v))
-      },
+      v =>
+        set(writeConverter(v)),
       attr.map(getEditString),
       searchEnabled, {
         createPage match {
           case Some(createPage) =>
             a(
-              href := jsImplicits.routing.linkPath(createPage),
+              href   := jsImplicits.routing.linkPath(createPage),
               target := "_blank",
               "Nothing found. Click here to create.",
             )
@@ -456,16 +452,15 @@ class UIMultiSelectAttribute[EntityType](
     Seq(
       MultiSelect(
         Signal.dynamic { options(entity.value).value },
-        v => {
-          set(v)
-        },
+        v =>
+          set(v),
         attr.map(_.getOrElse(Seq())),
         showItems,
         searchEnabled, {
           createPage match {
             case Some(createPage) =>
               a(
-                href := jsImplicits.routing.linkPath(createPage),
+                href   := jsImplicits.routing.linkPath(createPage),
                 target := "_blank",
                 "Nothing found. Click here to create.",
               )
@@ -538,9 +533,8 @@ class UICheckboxListAttribute[EntityType](
     Seq(
       CheckboxList(
         Signal.dynamic { options(entity.value).value },
-        v => {
-          set(v)
-        },
+        v =>
+          set(v),
         attr.map(_.getOrElse(Seq())),
         div("Nothing found..."),
         isRequired,

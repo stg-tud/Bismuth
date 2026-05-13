@@ -100,13 +100,13 @@ class ProjectAttributes(using jsImplicits: JSImplicits) {
       jsImplicits.repositories.contracts.all.value
         .filter(contract => contract.signal.value.contractAssociatedProject.option.contains(id))
         .filter(contract => pred(contract.id, contract.signal.value))
-        .map(x => {
+        .map { x =>
           val contract = x.signal.value
           contract.contractHoursPerMonth.getOrElse(0) * dateDiffMonth(
             contract.contractStartDate.getOrElse(0L),
             contract.contractEndDate.getOrElse(0L),
           )
-        })
+        }
         .fold[Int](0)((acc: Int, x: Int) => acc + x)
     }
   }

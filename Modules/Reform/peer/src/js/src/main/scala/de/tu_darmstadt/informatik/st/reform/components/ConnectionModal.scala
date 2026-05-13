@@ -25,19 +25,19 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
       icons.Reload(
         cls := "h-8 w-8 animate-reload text-amber-600",
         onClick.foreach(e =>
-          Signal {
-            if (autoconnect.value) {
-              e.target.classList.add("animate-spin")
-              jsImplicits.discovery
-                .connect(true, true)
-                .transform(res => {
-                  window.setTimeout(() => e.target.classList.remove("animate-spin"), 1000)
-                  res
-                })
-                .toastOnError()
+            Signal {
+              if autoconnect.value then {
+                e.target.classList.add("animate-spin")
+                jsImplicits.discovery
+                  .connect(true, true)
+                  .transform { res =>
+                    window.setTimeout(() => e.target.classList.remove("animate-spin"), 1000)
+                    res
+                  }
+                  .toastOnError()
+              }
             }
-          }
-          (),
+            (),
         ),
       ),
       span(
@@ -58,7 +58,8 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
             span(
               cls := "inline-flex gap-1 flex-row items-center",
               i(jsImplicits.discovery.decodeToken(t).username),
-              if (jsImplicits.discovery.decodeToken(t).tpe == "SSO") Some(icons.CheckCircle(cls := "w-4 h-4")) else None,
+              if jsImplicits.discovery.decodeToken(t).tpe == "SSO" then Some(icons.CheckCircle(cls := "w-4 h-4"))
+              else None,
             ),
           )
         },
@@ -69,20 +70,20 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
   def render: VMod = {
     ul(
       tabIndex := 0,
-      cls := "p-2 shadow-xl menu menu-compact bg-base-100 w-52 dark:bg-gray-600 dark:text-gray-200",
+      cls      := "p-2 shadow-xl menu menu-compact bg-base-100 w-52 dark:bg-gray-600 dark:text-gray-200",
       h2(
         "Connections",
         cls := "font-bold text-lg p-2",
       ),
       Signal {
-        jsImplicits.webrtc.connections.value.map(ref => {
+        jsImplicits.webrtc.connections.value.map { ref =>
           val info = jsImplicits.webrtc.getInformation(ref)
           connectionRow(info.alias, info.source, info.uuid, info.displayId, info.tpe, ref)
-        })
+        }
       },
       Signal {
         var emptyState: VNode = div()
-        if (jsImplicits.webrtc.connections.value.isEmpty) {
+        if jsImplicits.webrtc.connections.value.isEmpty then {
           emptyState = div(
             cls := "flex flex-col items-center mt-4 mb-4",
             icons.Ghost(cls := "w-14 h-14 mb-2"),
@@ -96,7 +97,7 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
         "Auto",
       ), {
         Signal {
-          if (jsImplicits.discovery.online.value) {
+          if jsImplicits.discovery.online.value then {
             li(
               onlineBanner,
             )
@@ -109,7 +110,7 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
       },
       Login().render,
       Signal {
-        val connections = jsImplicits.webrtc.connections.value.map(jsImplicits.webrtc.getInformation(_).uuid)
+        val connections          = jsImplicits.webrtc.connections.value.map(jsImplicits.webrtc.getInformation(_).uuid)
         val availableConnections =
           jsImplicits.discovery.availableConnections.value.filter(p => !connections.contains(p.uuid))
         availableConnections.map(connection => availableConnectionRow(connection))
@@ -143,69 +144,69 @@ class Login(using jsImplicits: JSImplicits) {
   def render: VMod = {
     div(
       Signal {
-        if (jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.value))
-          Button(
-            ButtonStyle.Primary,
-            "Logout",
-            onClick.foreach(_ => {
-              jsImplicits.discovery.logout()
-            }),
-            cls := "w-full mt-2",
-          )
-        else
-          div(
-            cls := "form-control w-full text-sm",
-            label(cls := "label", span(cls := "label-text text-slate-500 dark:text-gray-300", "Username")),
-            input(
-              tpe := "text",
-              placeholder := "Username",
-              cls := "input input-bordered w-full text-sm p-2 h-fit dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white",
-              idAttr := "login-username",
-              onInput.value --> username,
-              value := "",
-            ),
-            label(cls := "label", span(cls := "label-text text-slate-500 dark:text-gray-300", "Password")),
-            input(
-              tpe := "password",
-              placeholder := "Password",
-              idAttr := "login-password",
-              cls := "input input-bordered w-full text-sm p-2 h-fit dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white",
-              onInput.value --> password,
-              value := "",
-            ),
+        if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.value) then
             Button(
               ButtonStyle.Primary,
-              "Login",
+              "Logout",
+              onClick.foreach { _ =>
+                jsImplicits.discovery.logout()
+              },
               cls := "w-full mt-2",
-              disabled <-- Signal { username.value.isBlank || password.value.isBlank },
-              onClick
-                .foreach(_ =>
-                  jsImplicits.discovery
-                    .login(new LoginInfo(username.now, password.now))
-                    .onComplete {
-                      case Failure(exception: LoginException) =>
-                        exception.fields.foreach(field => {
-                          val input = document.querySelector(s"#login-$field").asInstanceOf[HTMLInputElement]
-                          input.setCustomValidity(exception.message)
-                          input.reportValidity()
-                        })
-                      case Failure(_) => console.log("some login error has happened")
-                      case Success(value) =>
-                        jsImplicits.discovery.setAutoconnect(true)
-                    },
-                ),
-            ),
-            Button(
-              ButtonStyle.TU,
-              "Login with TU ID",
-              cls := "w-full mt-2",
-              onClick
-                .foreach(_ =>
-                  window.location.href =
-                    s"https://reform.st.informatik.tu-darmstadt.de/api/v1/authorize?goto=${window.location.href}&error=https://reform.st.informatik.tu-darmstadt.de/error",
-                ),
-            ),
-          )
+            )
+        else
+            div(
+              cls := "form-control w-full text-sm",
+              label(cls := "label", span(cls := "label-text text-slate-500 dark:text-gray-300", "Username")),
+              input(
+                tpe         := "text",
+                placeholder := "Username",
+                cls := "input input-bordered w-full text-sm p-2 h-fit dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white",
+                idAttr := "login-username",
+                onInput.value --> username,
+                value := "",
+              ),
+              label(cls := "label", span(cls := "label-text text-slate-500 dark:text-gray-300", "Password")),
+              input(
+                tpe         := "password",
+                placeholder := "Password",
+                idAttr      := "login-password",
+                cls := "input input-bordered w-full text-sm p-2 h-fit dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white",
+                onInput.value --> password,
+                value := "",
+              ),
+              Button(
+                ButtonStyle.Primary,
+                "Login",
+                cls := "w-full mt-2",
+                disabled <-- Signal { username.value.isBlank || password.value.isBlank },
+                onClick
+                  .foreach(_ =>
+                    jsImplicits.discovery
+                      .login(new LoginInfo(username.now, password.now))
+                      .onComplete {
+                        case Failure(exception: LoginException) =>
+                          exception.fields.foreach { field =>
+                            val input = document.querySelector(s"#login-$field").asInstanceOf[HTMLInputElement]
+                            input.setCustomValidity(exception.message)
+                            input.reportValidity()
+                          }
+                        case Failure(_)     => console.log("some login error has happened")
+                        case Success(value) =>
+                          jsImplicits.discovery.setAutoconnect(true)
+                      },
+                  ),
+              ),
+              Button(
+                ButtonStyle.TU,
+                "Login with TU ID",
+                cls := "w-full mt-2",
+                onClick
+                  .foreach(_ =>
+                    window.location.href =
+                      s"https://reform.st.informatik.tu-darmstadt.de/api/v1/authorize?goto=${window.location.href}&error=https://reform.st.informatik.tu-darmstadt.de/error",
+                  ),
+              ),
+            )
       },
     )
   }

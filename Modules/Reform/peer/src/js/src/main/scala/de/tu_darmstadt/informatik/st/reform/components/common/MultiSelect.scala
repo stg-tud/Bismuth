@@ -31,7 +31,7 @@ private class MultiSelect(
   private val visibleItems = Var(showItems)
   private val dropdownOpen = Var(false)
 
-  private val id = s"multi-select-${js.Math.round(js.Math.random() * 100000)}"
+  private val id     = s"multi-select-${js.Math.round(js.Math.random() * 100000)}"
   private val search = Var("")
 
   private def updateSelectAll(value: Seq[String]): Unit = {
@@ -42,94 +42,94 @@ private class MultiSelect(
     )
 
     Signal {
-      selectAll.map(selectAll => {
+      selectAll.map { selectAll =>
         val uncheckedOptions = options.value.size - value.size
 
-        if (uncheckedOptions == 0) {
+        if uncheckedOptions == 0 then {
           selectAll.checked = true
           selectAll.indeterminate = false
-        } else if (uncheckedOptions == options.value.size) {
+        } else if uncheckedOptions == options.value.size then {
           selectAll.checked = false
           selectAll.indeterminate = false
         } else {
           selectAll.indeterminate = true
         }
-      })
+      }
     }
     ()
   }
 
   private def handleResize: Signal[Unit] = Signal.dynamic {
     val element = Option(document.querySelector(s"#$id"))
-    if (element.nonEmpty) {
+    if element.nonEmpty then {
       val maxWidth = element.get.getBoundingClientRect().width - remToPx(4.5)
-      val items = options.value
+      val items    = options.value
         .filter(v => value.value.contains(v.id))
       val rect = element.get.querySelector(".multiselect-value-wrapper").getBoundingClientRect()
-      if (maxWidth > 0 && items.nonEmpty && rect.width > maxWidth) {
-        val widths = items.map(v => v.displayWidth("pl-2 pr-7").value)
-        var widthAcc = 0.0
+      if maxWidth > 0 && items.nonEmpty && rect.width > maxWidth then {
+        val widths            = items.map(v => v.displayWidth("pl-2 pr-7").value)
+        var widthAcc          = 0.0
         var visibleItemsCount = 0
 
-        widths.foreach(w => {
-          if (widthAcc + w <= maxWidth) {
+        widths.foreach { w =>
+          if widthAcc + w <= maxWidth then {
             console.log(w)
             widthAcc += w
             visibleItemsCount += 1
           } else {
             visibleItems.set(visibleItemsCount)
           }
-        })
+        }
       }
     }
   }
 
   def render: VMod = {
-    val resizeObserver = ResizeObserver((entries, _) => {
-      entries.foreach(entry => {
+    val resizeObserver = ResizeObserver { (entries, _) =>
+      entries.foreach { entry =>
         handleResize
-      })
-    })
+      }
+    }
 
     value.observe(updateSelectAll)
-    value.observe(_ => {
+    value.observe { _ =>
       handleResize
       ()
-    })
+    }
 
     div(
-      onDomMount.foreach(element => {
+      onDomMount.foreach { element =>
         resizeObserver.observe(element.querySelector(".multiselect-value-wrapper"))
-      }),
-      onDomUnmount.foreach(element => {
+      },
+      onDomUnmount.foreach { element =>
         resizeObserver.disconnect()
         cleanPopper(s"#$id .multiselect-select")
-      }),
+      },
       cls := "multiselect-dropdown dropdown bg-slate-50 relative w-full h-9 dark:bg-gray-700 border border-gray-300 dark:border-none overflow-hidden",
-      cls <-- Signal { if (dropdownOpen.value) Some("dropdown-open") else None },
+      cls <-- Signal { if dropdownOpen.value then Some("dropdown-open") else None },
       props,
       idAttr := id,
       div(
         cls := "multiselect-select flex flex-row w-full h-full items-center",
-        onClick.foreach(_ => {
-          dropdownOpen.transform(wasOpen => {
-            if (wasOpen) {
+        onClick.foreach { _ =>
+          dropdownOpen.transform { wasOpen =>
+            if wasOpen then {
               cleanPopper(s"#$id .multiselect-select")
             } else {
               cleanPopper(s"#$id .multiselect-select")
               createPopper(s"#$id .multiselect-select", s"#$id .multiselect-dropdown-list-wrapper")
             }
             !wasOpen
-          })
-        }),
+          }
+        },
         Signal {
           input(
-            outwatch.dsl.value := value.value.mkString(", "),
-            tpe := "text",
+            outwatch.dsl.value    := value.value.mkString(", "),
+            tpe                   := "text",
             outwatch.dsl.required := required,
             cls := "peer/multiselect w-[1px] focus:outline-none opacity-0 border-none max-w-[1px] pointer-events-none absolute",
             tabIndex := -1,
-            formId := props
+            formId   := props
               .collectFirst {
                 case AccumAttr("form", value, _) => value
                 case BasicAttr("form", value)    => value
@@ -141,8 +141,8 @@ private class MultiSelect(
         div(
           cls := "flex flex-row w-full h-full items-center pl-2 text-slate-600",
           cls <-- Signal {
-            if (styleValidity && dropdownOpen.value)
-              "peer-invalid/multiselect:bg-red-100 peer-invalid/multiselect:text-red-600 peer-invalid/multiselect:border-red-600"
+            if styleValidity && dropdownOpen.value then
+                "peer-invalid/multiselect:bg-red-100 peer-invalid/multiselect:text-red-600 peer-invalid/multiselect:border-red-600"
             else ""
           },
           div(
@@ -152,38 +152,38 @@ private class MultiSelect(
                 .filter(v => value.value.contains(v.id))
                 .sortBy(_.displayWidth().value)
                 .slice(0, visibleItems.value)
-                .map(option => {
+                .map { option =>
                   div(
                     cls := "bg-slate-300 text-slate-600 px-2 py-0.5 rounded-md flex flex-row gap-1 items-center whitespace-nowrap dark:bg-gray-500 dark:text-gray-200 multiselect-item",
                     option.name,
                     div(
                       icons.Close(cls := "w-4 h-4 text-slate-600 dark:text-slate-200"),
                       cls := "cursor-pointer",
-                      onClick.foreach(_ => {
+                      onClick.foreach { _ =>
                         onInput(
                           getIds(onlyChecked = true)
                             .filter(id => id != option.id)
                             .asInstanceOf[Seq[String]],
                         )
-                      }),
+                      },
                     ),
                   )
-                })
+                }
             },
             Signal {
-              if (value.value.size > visibleItems.value) {
+              if value.value.size > visibleItems.value then {
                 Some(
                   div(
                     cls := "flex items-center justify-center text-slate-400 dark:text-gray-200",
-                    if (visibleItems.value == 0) "Open to see more... " else "",
+                    if visibleItems.value == 0 then "Open to see more... " else "",
                     s"+${value.value.size - visibleItems.value}",
                   ),
                 )
-              } else if (value.value.isEmpty) {
+              } else if value.value.isEmpty then {
                 Some(
                   div(
-                    if (!styleValidity)
-                      cls := "text-slate-400 dark:text-gray-400"
+                    if !styleValidity then
+                        cls := "text-slate-400 dark:text-gray-400"
                     else None,
                     cls := "flex items-center justify-center",
                     "Select...",
@@ -194,14 +194,14 @@ private class MultiSelect(
           ),
           label(
             tabIndex := 0,
-            cls := "grow relative pr-7 h-full",
+            cls      := "grow relative pr-7 h-full",
             div(cls := "absolute right-2 top-1/2 -translate-y-1/2", icons.Notch(cls := "w-4 h-4")),
           ),
         ),
       ),
       div(
         cls := "!fixed multiselect-dropdown-list-wrapper dark:bg-gray-700 dark:border-gray-700 bg-white dropdown-content !transition-none shadow-lg w-full rounded top-0 left-0 border border-gray-300 !z-[100]",
-        if (searchEnabled) {
+        if searchEnabled then {
           Some(renderSearch)
         } else None,
         renderSelectAll,
@@ -212,7 +212,7 @@ private class MultiSelect(
 
   private def getIds(onlyChecked: Boolean): Seq[String] =
     document
-      .querySelectorAll(s"#$id input[type=checkbox]:not(#all-checkbox-$id)" + (if (onlyChecked) ":checked" else ""))
+      .querySelectorAll(s"#$id input[type=checkbox]:not(#all-checkbox-$id)" + (if onlyChecked then ":checked" else ""))
       .toSeq
       .map(element =>
         element
@@ -227,18 +227,18 @@ private class MultiSelect(
     label(
       Checkbox(
         CheckboxStyle.Default,
-        cls := "mr-2",
+        cls    := "mr-2",
         idAttr := s"all-checkbox-$id",
-        onClick.foreach(e => {
-          if (e.target.asInstanceOf[HTMLInputElement].checked) {
+        onClick.foreach { e =>
+          if e.target.asInstanceOf[HTMLInputElement].checked then {
             onInput(getIds(onlyChecked = false))
           } else {
             onInput(Seq.empty)
           }
-        }),
+        },
       ),
-      forId := s"all-checkbox-$id",
-      cls := "w-full block flex items-center",
+      forId    := s"all-checkbox-$id",
+      cls      := "w-full block flex items-center",
       tabIndex := 0,
       "Select All",
     ),
@@ -260,7 +260,7 @@ private class MultiSelect(
         )
         .map(renderOption)
 
-      if (options.isEmpty) {
+      if options.isEmpty then {
         Seq(renderNoOptions)
       } else {
         options
@@ -274,11 +274,11 @@ private class MultiSelect(
       CheckboxStyle.Default,
       cls := "mr-2",
       checked <-- Signal { value.value.contains(uiOption.id) },
-      idAttr := s"$id-${uiOption.id}",
+      idAttr               := s"$id-${uiOption.id}",
       VMod.attr("data-id") := uiOption.id,
-      onClick.foreach(_ => {
+      onClick.foreach { _ =>
         onInput(getIds(onlyChecked = true))
-      }),
+      },
     ),
     tabIndex := 0,
     uiOption.render,

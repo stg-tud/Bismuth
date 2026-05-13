@@ -6,13 +6,11 @@ import outwatch.dsl.*
 import scala.scalajs.js
 
 // TODO FIXME outwatch should at least give us a possibility so this value is stable.
-def getID(name: String): String = {
+def getID(name: String): String =
   s"$name-${js.Math.round(js.Math.random() * 1000000)}"
-}
 
-def Label(props: VMod*): VNode = {
+def Label(props: VMod*): VNode =
   label(cls := "label label-text text-slate-500 dark:text-slate-300", props)
-}
 
 def Input(props: VMod*): VNode = {
   input(

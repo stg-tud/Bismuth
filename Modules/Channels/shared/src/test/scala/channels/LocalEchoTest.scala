@@ -62,7 +62,8 @@ object EchoServerTestSynchronousLocal {
 class EchoServerTestQueuedLocal extends EchoCommunicationTest[ConnectionDescriptor.QueuedLocal](
       { (_, _) =>
         val queue = LocalMessageQueue()
-        EchoServerTestQueuedLocal.current = EchoServerTestQueuedLocal.QueuedState(queue, QueuedLocalConnection("echo-queued", queue))
+        EchoServerTestQueuedLocal.current =
+          EchoServerTestQueuedLocal.QueuedState(queue, QueuedLocalConnection("echo-queued", queue))
         val current = EchoServerTestQueuedLocal.current
         ImmediateServer[ConnectionDescriptor.QueuedLocal, current.link.server.Establish](
           ConnectionDescriptor.QueuedLocal("echo-queued"),
@@ -71,18 +72,19 @@ class EchoServerTestQueuedLocal extends EchoCommunicationTest[ConnectionDescript
             establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
         )
       },
-      (_, _) => _ =>
-        new LatentConnection[Connection] {
-          override def prepare(receiver: Receive): Async[Abort, Connection] = {
-            var wrapped: QueueDrainingConnection | Null = null
-            EchoServerTestQueuedLocal.current.link.client("client").prepare(new Receive {
-              override def connectionEstablished(answers: Connection): Callback[MessageBuffer] = {
-                wrapped = QueueDrainingConnection(answers, EchoServerTestQueuedLocal.current.queue)
-                receiver.connectionEstablished(wrapped.nn)
-              }
-            }).map(_ => wrapped.nn)
+      (_, _) =>
+        _ =>
+          new LatentConnection[Connection] {
+            override def prepare(receiver: Receive): Async[Abort, Connection] = {
+              var wrapped: QueueDrainingConnection | Null = null
+              EchoServerTestQueuedLocal.current.link.client("client").prepare(new Receive {
+                override def connectionEstablished(answers: Connection): Callback[MessageBuffer] = {
+                  wrapped = QueueDrainingConnection(answers, EchoServerTestQueuedLocal.current.queue)
+                  receiver.connectionEstablished(wrapped.nn)
+                }
+              }).map(_ => wrapped.nn)
+            }
           }
-        }
     )
 
 object EchoServerTestQueuedLocal {

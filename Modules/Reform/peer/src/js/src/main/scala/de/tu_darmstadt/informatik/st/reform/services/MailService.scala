@@ -36,7 +36,9 @@ class MailService {
 
   class MailAnswer(val accepted: Seq[String], val rejected: Seq[String]) {}
 
-  def sendMail(using jsImplicits: JSImplicits)(
+  def sendMail(using
+      jsImplicits: JSImplicits
+  )(
       to: String,
       from: String,
       fromName: String,
@@ -48,7 +50,7 @@ class MailService {
     Outwatch.renderInto[SyncIO](element, mail.body).unsafeRunSync()
     val htmlString = element.innerHTML
 
-    if (jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now)) {
+    if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now) then {
       val requestHeaders = new Headers()
       requestHeaders.set("content-type", "application/json")
       requestHeaders.set("authorization", s"Bearer ${jsImplicits.discovery.token.now.getOrElse("")}")
@@ -57,14 +59,16 @@ class MailService {
         new RequestInit {
           method = HttpMethod.POST
           body =
-            writeToString(MailBody(to, from, fromName, htmlString, mail.subject, mail.attachments, bcc))(using MailBody.codec)
+            writeToString(MailBody(to, from, fromName, htmlString, mail.subject, mail.attachments, bcc))(using
+              MailBody.codec
+            )
           headers = requestHeaders
         },
-      ).`then`(s => {
+      ).`then` { s =>
         s.json()
           .toFuture
-          .onComplete(json => {
-            if (s.status > 400 && s.status < 500) {
+          .onComplete { json =>
+            if s.status > 400 && s.status < 500 then {
               val error = json.get.asInstanceOf[js.Dynamic].error
               promise.failure(
                 new LoginException(
@@ -81,8 +85,8 @@ class MailService {
                 ),
               )
             }
-          })
-      }).toFuture
+          }
+      }.toFuture
         .toastOnError()
     }
 

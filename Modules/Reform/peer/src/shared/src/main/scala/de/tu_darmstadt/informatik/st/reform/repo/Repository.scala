@@ -73,18 +73,17 @@ case class Repository[A](name: String, defaultValue: A)(using
 
   val all: Signal[Seq[Synced[A]]] = {
     ids
-      .map(ids => {
+      .map { ids =>
         val futures = ids.toSeq.map(load)
-        val future = Future.sequence(futures)
+        val future  = Future.sequence(futures)
         nonIntegratedFuture(future)
-      })
+      }
       .flatten
   }
 
   /** does not capture outer transaction scope */
-  private def nonIntegratedFuture(future: Future[Seq[Synced[A]]]) = {
+  private def nonIntegratedFuture(future: Future[Seq[Synced[A]]]) =
     Signal.fromFuture(future)
-  }
 
   def find(id: String): Signal[Option[Synced[A]]] = Signal.dynamic {
     all.value.find(c => c.id == id)
@@ -97,18 +96,18 @@ case class Repository[A](name: String, defaultValue: A)(using
     val id = UUID.randomUUID().toString
     valueSyncer
       .createAndSync(id, initialValue)
-      .flatMap(value => {
+      .flatMap { value =>
         idSynced.flatMap(_.update(_.getOrElse(GrowOnlySet.empty).add(id)).map(_ => value))
-      })
+      }
   }
 
   def getOrCreate(id: String): Future[Synced[A]] = {
     indexedDb.requestPersistentStorage()
     valueSyncer
       .getOrCreateAndSync(id)
-      .flatMap(value => {
+      .flatMap { value =>
         idSynced.flatMap(_.update(_.getOrElse(GrowOnlySet.empty).add(id)).map(_ => value))
-      })
+      }
   }
 }
 

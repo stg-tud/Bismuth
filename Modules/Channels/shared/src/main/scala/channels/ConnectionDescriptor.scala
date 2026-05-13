@@ -52,7 +52,7 @@ object ConnectionDescriptor {
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield TcpWebSocket(host, port)
           case "ws" | "wss" => Some(WebSocket(value))
-          case "webrtc" =>
+          case "webrtc"     =>
             Option(uri.getHost)
               .orElse(Option(uri.getAuthority))
               .orElse(Option(uri.getSchemeSpecificPart).map(_.stripPrefix("//")).filter(_.nonEmpty))

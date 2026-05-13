@@ -30,11 +30,11 @@ case class DocumentsPage()(using
         "Each ",
         a(
           cls := "underline cursor-pointer",
-          onClick.foreach(e => {
+          onClick.foreach { e =>
             e.preventDefault()
             e.target.asInstanceOf[HTMLElement].blur()
             jsImplicits.routing.to(ContractSchemasPage(), true)
-          }),
+          },
           "contract schema",
         ),
         " has a number of documents that need to be checked before the contract can be finalized.",

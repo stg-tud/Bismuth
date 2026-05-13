@@ -15,16 +15,18 @@ case class ErrorPage(code: Int = 404, title: String = "", description: String = 
 ) extends Page {
 
   def render: VMod = Signal {
-    val querytitle = jsImplicits.routing.getQueryParameterAsString("title").value
-    val querycode = jsImplicits.routing.getQueryParameterAsString("code").value
+    val querytitle       = jsImplicits.routing.getQueryParameterAsString("title").value
+    val querycode        = jsImplicits.routing.getQueryParameterAsString("code").value
     val querydescription = jsImplicits.routing.getQueryParameterAsString("description").value
 
     println(querydescription)
 
     error(
-      s"${if (querycode.isBlank) this.code.toString else querycode} | ${if (querytitle.isBlank) this.title
-        else querytitle}",
-      if (querydescription.isBlank) this.description else querydescription,
+      s"${if querycode.isBlank then this.code.toString else querycode} | ${
+          if querytitle.isBlank then this.title
+          else querytitle
+        }",
+      if querydescription.isBlank then this.description else querydescription,
       "Take me Home",
       HomePage(),
     )
@@ -38,11 +40,11 @@ case class ErrorPage(code: Int = 404, title: String = "", description: String = 
       Button(
         ButtonStyle.Primary,
         label,
-        onClick.foreach(e => {
+        onClick.foreach { e =>
           e.preventDefault()
           e.target.asInstanceOf[HTMLElement].blur()
           jsImplicits.routing.to(page)
-        }),
+        },
         href := jsImplicits.routing.linkPath(page),
       ),
     )

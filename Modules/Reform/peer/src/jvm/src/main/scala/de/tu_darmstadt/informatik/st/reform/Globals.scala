@@ -28,7 +28,7 @@ object Env {
   }
 
   private def findEnvPath(currentPath: Path): Option[Path] = {
-    val envGuess = currentPath.resolve(".env")
+    val envGuess     = currentPath.resolve(".env")
     val exampleGuess = currentPath.resolve("env.example")
     if Files.isRegularFile(envGuess)
     then Some(envGuess)

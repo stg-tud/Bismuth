@@ -18,12 +18,12 @@ object Futures {
         jsImplicits: JSImplicits,
     )(mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Error): Unit = {
       self
-        .onComplete(value => {
-          if (value.isFailure) {
+        .onComplete { value =>
+          if value.isFailure then {
             value.failed.get.printStackTrace()
             jsImplicits.toaster.make(value.failed.get.getMessage.nn, mode, style)
           }
-        })
+        }
     }
   }
 
@@ -32,7 +32,7 @@ object Futures {
         jsImplicits: JSImplicits,
     ): Unit = {
       self match {
-        case Success(value) =>
+        case Success(value)     =>
         case Failure(exception) =>
           exception.printStackTrace()
           jsImplicits.toaster.make(exception.getMessage.nn, mode, style)

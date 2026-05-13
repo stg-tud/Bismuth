@@ -59,14 +59,14 @@ class UIIntervalFilter[EntityType, AttributeType](uiAttribute: UITextAttribute[E
         cls := "flex flex-row gap-2 items-center",
         Input(
           placeholder := "Minimum value",
-          `type` := uiAttribute.fieldType,
+          `type`      := uiAttribute.fieldType,
           value <-- jsImplicits.routing.getQueryParameterAsString(name + ":min"),
           onInput.value.foreach(v => jsImplicits.routing.updateQueryParameters(Map(name + ":min" -> v))),
         ),
         "-",
         Input(
           placeholder := "Maximum value",
-          `type` := uiAttribute.fieldType,
+          `type`      := uiAttribute.fieldType,
           value <-- jsImplicits.routing.getQueryParameterAsString(name + ":max"),
           onInput.value.foreach(v => jsImplicits.routing.updateQueryParameters(Map(name + ":max" -> v))),
         ),
@@ -88,16 +88,16 @@ class UIIntervalFilter[EntityType, AttributeType](uiAttribute: UITextAttribute[E
   }
 
   private def isBetween(min: String, value: AttributeType, max: String): Boolean = {
-    if (!min.isBlank) {
+    if !min.isBlank then {
       val minVal = uiAttribute.writeConverter(min)
-      if (ordering.gt(minVal, value)) {
+      if ordering.gt(minVal, value) then {
         return false
       }
     }
 
-    if (!max.isBlank) {
+    if !max.isBlank then {
       val maxVal = uiAttribute.writeConverter(max)
-      if (ordering.lt(maxVal, value)) {
+      if ordering.lt(maxVal, value) then {
         return false
       }
     }
@@ -183,24 +183,24 @@ class UIMultiSelectFilter[EntityType](
   }
 
   val predicate: Signal[EntityType => Boolean] = Signal {
-    val n = jsImplicits.routing.getQueryParameterAsSeq(name).value
+    val n    = jsImplicits.routing.getQueryParameterAsSeq(name).value
     val mode = jsImplicits.routing.getQueryParameterAsString(name + ":mode").value
 
     (e: EntityType) =>
       n.isEmpty || uiAttribute
         .getter(e)
         .option
-        .exists(a => {
+        .exists { a =>
           var res = false
-          if (mode == "or") {
+          if mode == "or" then {
             res = n.toSet.intersect(a.toSet).nonEmpty
-          } else if (mode == "and") {
+          } else if mode == "and" then {
             res = n.toSet.intersect(a.toSet).size >= n.toSet.size
-          } else if (mode == "exact") {
+          } else if mode == "exact" then {
             res = n.toSet.intersect(a.toSet).size == n.toSet.size && a.toSet.size == n.toSet.size
           }
           res
-        })
+        }
   }
 }
 

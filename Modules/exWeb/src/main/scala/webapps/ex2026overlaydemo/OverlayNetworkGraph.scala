@@ -97,13 +97,14 @@ object OverlayNetworkGraph {
     val seedDetails = seedConnectionString.filter(_.nonEmpty).map(parseConnectionString)
     val localUid    =
       defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
-    val signalDetails   = defaultSignalUrl.filter(_.nonEmpty).map(parseConnectionString)
-    val selfDetails     = signalDetails.map(_ => Set(ConnectionDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
+    val signalDetails = defaultSignalUrl.filter(_.nonEmpty).map(parseConnectionString)
+    val selfDetails   =
+      signalDetails.map(_ => Set(ConnectionDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)
     val requestedSeedId = seedDetails.collect { case ConnectionDescriptor.WebRtc(peerId) => Uid.predefined(peerId) }
 
     var signalingRef: Option[WebRtcSignalingBridge] = None
-    val wsResolver                                   = new channels.webnativewebsockets.WebSocketConnectionDetailsResolver
-    val resolver                                     = new ChannelResolver {
+    val wsResolver = new channels.webnativewebsockets.WebSocketConnectionDetailsResolver
+    val resolver   = new ChannelResolver {
       override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
         wsResolver.connect(details).orElse(signalingRef.flatMap(_.connect(details)))
     }
@@ -117,7 +118,7 @@ object OverlayNetworkGraph {
       localUid = localUid,
     )
 
-    var nodeStarted = false
+    var nodeStarted                             = false
     def startNodeAndBootstrapDirectSeed(): Unit =
       if !nodeStarted then {
         node.start(Nil)
@@ -131,7 +132,8 @@ object OverlayNetworkGraph {
     val joinAfterSignal = () => {
       startNodeAndBootstrapDirectSeed()
       requestedSeedId.foreach { seedUid =>
-        connectionInfoText = s"${connectionInfoText}\nsignaling registered, bootstrapping via webrtc://${Uid.unwrap(seedUid)}"
+        connectionInfoText =
+          s"${connectionInfoText}\nsignaling registered, bootstrapping via webrtc://${Uid.unwrap(seedUid)}"
         refreshText()
       }
     }

@@ -12,8 +12,8 @@ object Reload extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
-      fill := "currentColor",
+      xmlns   := "http://www.w3.org/2000/svg",
+      fill    := "currentColor",
       viewBox := "0 0 24 24",
       props,
       path(
@@ -30,7 +30,7 @@ object Circle extends Icon {
       xmlns := "http://www.w3.org/2000/svg",
       props,
       viewBox := "0 0 24 24",
-      fill := "none",
+      fill    := "none",
       rect(widthAttr := 24, heightAttr := 24, fill := ""),
       path(
         VMod.attr("fill-rule") := "evenodd",
@@ -65,7 +65,7 @@ object Connections extends Icon {
     svg(
       xmlns := "http://www.w3.org/2000/svg",
       props,
-      fill := "currentColor",
+      fill    := "currentColor",
       viewBox := "0 0 303.374 303.374",
       g(
         path(
@@ -82,14 +82,14 @@ object Hamburger extends Icon {
     svg(
       xmlns := "http://www.w3.org/2000/svg",
       props,
-      fill := "none",
+      fill    := "none",
       viewBox := "0 0 24 24",
-      stroke := "currentColor",
+      stroke  := "currentColor",
       path(
-        VMod.attr("stroke-linecap") := "round",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
-        VMod.attr("stroke-width") := "2",
-        d := "M4 6h16M4 12h8m-8 6h16",
+        VMod.attr("stroke-width")    := "2",
+        d                            := "M4 6h16M4 12h8m-8 6h16",
       ),
     )
   }
@@ -99,7 +99,7 @@ object Clipboard extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 1024 1024",
       props,
       path(
@@ -121,12 +121,12 @@ object Mail extends Icon {
       xmlns := "http://www.w3.org/2000/svg",
       props,
       viewBox := "0 0 24 24",
-      fill := "none",
+      fill    := "none",
       path(
         d := "M3 8L10.8906 13.2604C11.5624 13.7083 12.4376 13.7083 13.1094 13.2604L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "2",
-        VMod.attr("stroke-linecap") := "round",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "2",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
     )
@@ -137,8 +137,8 @@ object Whatsapp extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
-      fill := "currentColor",
+      xmlns   := "http://www.w3.org/2000/svg",
+      fill    := "currentColor",
       viewBox := "0 0 32 32",
       props,
       path(
@@ -152,9 +152,9 @@ object Close extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 1024 1024",
-      fill := "currentColor",
+      fill    := "currentColor",
       props,
       path(
         d := "M176.662 817.173c-8.19 8.471-7.96 21.977 0.51 30.165 8.472 8.19 21.978 7.96 30.166-0.51l618.667-640c8.189-8.472 7.96-21.978-0.511-30.166-8.471-8.19-21.977-7.96-30.166 0.51l-618.666 640z",
@@ -172,7 +172,7 @@ object Ghost extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 512.003 512.003",
       props,
       path(
@@ -198,7 +198,7 @@ object Ghost extends Icon {
         circle(styleAttr := "fill:#FFD92D;", cx := "324.922", cy := "216.017", r := "46.387"),
       ),
       g(
-        circle(styleAttr := "fill:#956EC4;", cx := "342.6", cy := "234.362", r := "21.644"),
+        circle(styleAttr := "fill:#956EC4;", cx := "342.6", cy   := "234.362", r := "21.644"),
         circle(styleAttr := "fill:#956EC4;", cx := "199.648", cy := "235.068", r := "21.644"),
       ),
     )
@@ -209,15 +209,15 @@ object Check extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24.00 24.00",
-      fill := "none",
+      fill    := "none",
       props,
       path(
-        d := "M20 7.00018L10 17.0002L5 12.0002",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "2.5",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M20 7.00018L10 17.0002L5 12.0002",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "2.5",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
     )
@@ -229,7 +229,7 @@ object Forbidden extends Icon {
     import svg.*
     svg(
       xmlns := "http://www.w3.org/2000/svg",
-      fill := "currentColor",
+      fill  := "currentColor",
       props,
       viewBox := "0 0 512 512",
       path(
@@ -243,8 +243,8 @@ object Expand extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      cls := "fill-current",
-      xmlns := "http://www.w3.org/2000/svg",
+      cls     := "fill-current",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       path(d := "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"),
@@ -256,16 +256,16 @@ object CheckCircle extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 48 48",
       props,
       g(
-        stroke := "none",
+        stroke                    := "none",
         VMod.attr("stroke-width") := "1",
-        fill := "none",
-        VMod.attr("fill-rule") := "evenodd",
+        fill                      := "none",
+        VMod.attr("fill-rule")    := "evenodd",
         g(
-          fill := "currentColor",
+          fill                   := "currentColor",
           VMod.attr("fill-rule") := "nonzero",
           path(
             d := "M24,4 C35.045695,4 44,12.954305 44,24 C44,35.045695 35.045695,44 24,44 C12.954305,44 4,35.045695 4,24 C4,12.954305 12.954305,4 24,4 Z M32.6338835,17.6161165 C32.1782718,17.1605048 31.4584514,17.1301307 30.9676119,17.5249942 L30.8661165,17.6161165 L20.75,27.732233 L17.1338835,24.1161165 C16.6457281,23.6279612 15.8542719,23.6279612 15.3661165,24.1161165 C14.9105048,24.5717282 14.8801307,25.2915486 15.2749942,25.7823881 L15.3661165,25.8838835 L19.8661165,30.3838835 C20.3217282,30.8394952 21.0415486,30.8698693 21.5323881,30.4750058 L21.6338835,30.3838835 L32.6338835,19.3838835 C33.1220388,18.8957281 33.1220388,18.1042719 32.6338835,17.6161165 Z",
@@ -280,16 +280,16 @@ object WarningTriangle extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       g(
-        stroke := "none",
+        stroke                    := "none",
         VMod.attr("stroke-width") := "1",
-        fill := "none",
-        VMod.attr("fill-rule") := "evenodd",
+        fill                      := "none",
+        VMod.attr("fill-rule")    := "evenodd",
         g(
-          fill := "currentColor",
+          fill                   := "currentColor",
           VMod.attr("fill-rule") := "nonzero",
           path(
             d := "M10.9084921,2.78216375 C11.9482635,2.20625071 13.2462954,2.54089334 13.8841246,3.52240345 L13.9669228,3.66023048 L21.725879,17.6684928 C21.9106772,18.0021332 22.0076302,18.3772743 22.0076302,18.7586748 C22.0076302,19.9495388 21.0824686,20.9243197 19.911679,21.003484 L19.7576302,21.0086748 L4.24187791,21.0086748 C3.86056733,21.0086748 3.48551176,20.9117674 3.15192815,20.7270522 C2.11208877,20.1512618 1.7070482,18.8734454 2.20060302,17.8120352 L2.27350053,17.668725 L10.0302967,3.66046274 C10.2348245,3.291099 10.5391525,2.98673515 10.9084921,2.78216375 Z M12.0004478,16.0017852 C11.4489016,16.0017852 11.0017852,16.4489016 11.0017852,17.0004478 C11.0017852,17.5519939 11.4489016,17.9991104 12.0004478,17.9991104 C12.5519939,17.9991104 12.9991104,17.5519939 12.9991104,17.0004478 C12.9991104,16.4489016 12.5519939,16.0017852 12.0004478,16.0017852 Z M11.9982876,7.99806092 C11.4854518,7.99824566 11.0629195,8.38443798 11.0053334,8.88179743 L10.9986476,8.99842097 L11.0004479,13.9993002 L11.0072176,14.1159189 C11.0651617,14.6132367 11.487972,14.9991248 12.0008078,14.9989403 C12.5136436,14.9987555 12.9361759,14.6125632 12.993762,14.1152038 L13.0004478,13.9985802 L12.9986476,8.99770102 L12.9918779,8.88108232 C12.9339337,8.38376446 12.5111234,7.99787644 11.9982876,7.99806092 Z",
@@ -307,7 +307,7 @@ object WarningPolygon extends Icon {
       xmlns := "http://www.w3.org/2000/svg",
       props,
       viewBox := "0 0 24 24",
-      fill := "currentColor",
+      fill    := "currentColor",
       path(
         d := "M19.5099 5.85L13.5699 2.42C12.5999 1.86 11.3999 1.86 10.4199 2.42L4.48992 5.85C3.51992 6.41 2.91992 7.45 2.91992 8.58V15.42C2.91992 16.54 3.51992 17.58 4.48992 18.15L10.4299 21.58C11.3999 22.14 12.5999 22.14 13.5799 21.58L19.5199 18.15C20.4899 17.59 21.0899 16.55 21.0899 15.42V8.58C21.0799 7.45 20.4799 6.42 19.5099 5.85ZM11.2499 7.75C11.2499 7.34 11.5899 7 11.9999 7C12.4099 7 12.7499 7.34 12.7499 7.75V13C12.7499 13.41 12.4099 13.75 11.9999 13.75C11.5899 13.75 11.2499 13.41 11.2499 13V7.75ZM12.9199 16.63C12.8699 16.75 12.7999 16.86 12.7099 16.96C12.5199 17.15 12.2699 17.25 11.9999 17.25C11.8699 17.25 11.7399 17.22 11.6199 17.17C11.4899 17.12 11.3899 17.05 11.2899 16.96C11.1999 16.86 11.1299 16.75 11.0699 16.63C11.0199 16.51 10.9999 16.38 10.9999 16.25C10.9999 15.99 11.0999 15.73 11.2899 15.54C11.3899 15.45 11.4899 15.38 11.6199 15.33C11.9899 15.17 12.4299 15.26 12.7099 15.54C12.7999 15.64 12.8699 15.74 12.9199 15.87C12.9699 15.99 12.9999 16.12 12.9999 16.25C12.9999 16.38 12.9699 16.51 12.9199 16.63Z",
       ),
@@ -322,7 +322,7 @@ object Info extends Icon {
       xmlns := "http://www.w3.org/2000/svg",
       props,
       viewBox := "0 0 24 24",
-      fill := "none",
+      fill    := "none",
       path(
         d := "M21.5609 10.7381L20.2109 9.15812C19.9609 8.85812 19.7509 8.29813 19.7509 7.89813V6.19812C19.7509 5.13812 18.8809 4.26812 17.8209 4.26812H16.1209C15.7209 4.26812 15.1509 4.05813 14.8509 3.80812L13.2709 2.45812C12.5809 1.86813 11.4509 1.86813 10.7609 2.45812L9.16086 3.80812C8.86086 4.05813 8.30086 4.26812 7.90086 4.26812H6.17086C5.11086 4.26812 4.24086 5.13812 4.24086 6.19812V7.89813C4.24086 8.28813 4.04086 8.84812 3.79086 9.14812L2.44086 10.7381C1.86086 11.4381 1.86086 12.5581 2.44086 13.2381L3.79086 14.8281C4.04086 15.1181 4.24086 15.6881 4.24086 16.0781V17.7881C4.24086 18.8481 5.11086 19.7181 6.17086 19.7181H7.91086C8.30086 19.7181 8.87086 19.9281 9.17086 20.1781L10.7509 21.5281C11.4409 22.1181 12.5709 22.1181 13.2609 21.5281L14.8409 20.1781C15.1409 19.9281 15.7009 19.7181 16.1009 19.7181H17.8009C18.8609 19.7181 19.7309 18.8481 19.7309 17.7881V16.0881C19.7309 15.6881 19.9409 15.1281 20.1909 14.8281L21.5409 13.2481C22.1509 12.5681 22.1509 11.4381 21.5609 10.7381ZM11.2509 8.12813C11.2509 7.71813 11.5909 7.37813 12.0009 7.37813C12.4109 7.37813 12.7509 7.71813 12.7509 8.12813V12.9581C12.7509 13.3681 12.4109 13.7081 12.0009 13.7081C11.5909 13.7081 11.2509 13.3681 11.2509 12.9581V8.12813ZM12.0009 16.8681C11.4509 16.8681 11.0009 16.4181 11.0009 15.8681C11.0009 15.3181 11.4409 14.8681 12.0009 14.8681C12.5509 14.8681 13.0009 15.3181 13.0009 15.8681C13.0009 16.4181 12.5609 16.8681 12.0009 16.8681Z",
         fill := "currentColor",
@@ -335,17 +335,17 @@ object Notch extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       fill := "none",
       path(
-        d := "M19.9201 8.94995L13.4001 15.47C12.6301 16.24 11.3701 16.24 10.6001 15.47L4.08008 8.94995",
+        d      := "M19.9201 8.94995L13.4001 15.47C12.6301 16.24 11.3701 16.24 10.6001 15.47L4.08008 8.94995",
         stroke := "currentColor",
-        VMod.attr("stroke-width") := "1.5",
+        VMod.attr("stroke-width")      := "1.5",
         VMod.attr("stroke-miterlimit") := "10",
-        VMod.attr("stroke-linecap") := "round",
-        VMod.attr("stroke-linejoin") := "round",
+        VMod.attr("stroke-linecap")    := "round",
+        VMod.attr("stroke-linejoin")   := "round",
       ),
     )
   }
@@ -355,15 +355,15 @@ object Edit extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       fill := "none",
       path(
-        d := "M18 10L21 7L17 3L14 6M18 10L8 20H4V16L14 6M18 10L14 6",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "1.5",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M18 10L21 7L17 3L14 6M18 10L8 20H4V16L14 6M18 10L14 6",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "1.5",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
     )
@@ -374,7 +374,7 @@ object Save extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       fill := "none",
@@ -398,13 +398,13 @@ object Delete extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 32 32",
       props,
-      fill := "none",
+      fill                   := "none",
       VMod.attr("xml:space") := "preserve",
       path(
-        cls := "linesandangles_een",
+        cls  := "linesandangles_een",
         fill := "currentColor",
         d := "M17,24h-2v-9h2V24z M21,15h-2v9h2V15z M13,15h-2v9h2V15z M27,13h-1.064l-1,15H7.064l-1-15H5V7h7  V4h8v3h7V13z M14,7h4V6h-4V7z M7,11h18V9H7V11z M23.931,13H8.069l0.866,13h14.129L23.931,13z",
       ),
@@ -416,29 +416,29 @@ object Add extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       fill := "none",
       path(
         d := "M3 10C3 8.34315 4.34315 7 6 7H14C15.6569 7 17 8.34315 17 10V18C17 19.6569 15.6569 21 14 21H6C4.34315 21 3 19.6569 3 18V10Z",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "1.5",
-        VMod.attr("stroke-linecap") := "round",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "1.5",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
       path(
-        d := "M10 14V11M10 14V17M10 14H13M10 14H7",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "1.5",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M10 14V11M10 14V17M10 14H13M10 14H7",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "1.5",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
       path(
-        d := "M7 3L18 3C19.6569 3 21 4.34315 21 6L21 17",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "1.5",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M7 3L18 3C19.6569 3 21 4.34315 21 6L21 17",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "1.5",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
     )
@@ -449,29 +449,29 @@ object Filter extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
       props,
       fill := "none",
       path(
-        d := "M4 7H20",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "2",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M4 7H20",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "2",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
       path(
-        d := "M7 12L17 12",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "2",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M7 12L17 12",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "2",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
       path(
-        d := "M11 17H13",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "2",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M11 17H13",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "2",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
     )
@@ -482,13 +482,13 @@ object Previous extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
-      fill := "none",
+      fill    := "none",
       props,
-      stroke := "currentColor",
-      VMod.attr("stroke-width") := "2",
-      VMod.attr("stroke-linecap") := "round",
+      stroke                       := "currentColor",
+      VMod.attr("stroke-width")    := "2",
+      VMod.attr("stroke-linecap")  := "round",
       VMod.attr("stroke-linejoin") := "arcs",
       path(d := "M15 18l-6-6 6-6"),
     )
@@ -499,13 +499,13 @@ object Next extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 24 24",
-      fill := "none",
+      fill    := "none",
       props,
-      stroke := "currentColor",
-      VMod.attr("stroke-width") := "2",
-      VMod.attr("stroke-linecap") := "round",
+      stroke                       := "currentColor",
+      VMod.attr("stroke-width")    := "2",
+      VMod.attr("stroke-linecap")  := "round",
       VMod.attr("stroke-linejoin") := "arcs",
       path(d := "M9 18l6-6-6-6"),
     )
@@ -516,13 +516,13 @@ object Settings extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 1920 1920",
       props,
-      fill := "none",
+      fill                   := "none",
       VMod.attr("xml:space") := "preserve",
       path(
-        cls := "linesandangles_een",
+        cls  := "linesandangles_een",
         fill := "currentColor",
         d := "m1739.34 1293.414-105.827 180.818-240.225-80.188-24.509 22.25c-69.91 63.586-150.211 109.666-238.644 136.771l-32.076 9.94-49.468 244.065H835.584l-49.468-244.179-32.076-9.939c-88.432-27.105-168.734-73.185-238.644-136.771l-24.508-22.25-240.226 80.189-105.826-180.82 189.74-164.442-7.453-32.978c-10.39-45.742-15.586-91.483-15.586-135.869 0-44.386 5.195-90.127 15.586-135.868l7.454-32.979-189.741-164.442 105.826-180.819 240.226 80.075 24.508-22.25c69.91-63.585 150.212-109.665 238.644-136.884l32.076-9.826 49.468-244.066h213.007l49.468 244.18 32.076 9.825c88.433 27.219 168.734 73.186 238.644 136.885l24.509 22.25 240.225-80.189 105.826 180.819-189.74 164.442 7.453 32.98c10.39 45.74 15.586 91.481 15.586 135.867 0 44.386-5.195 90.127-15.586 135.869l-7.454 32.978 189.741 164.556Zm-53.76-333.403c0-41.788-3.84-84.48-11.634-127.284l210.184-182.062-199.454-340.856-265.186 88.433c-66.974-55.567-143.322-99.388-223.85-128.414L1140.977.01H743.198l-54.663 269.704c-81.431 29.139-156.424 72.282-223.963 128.414L199.5 309.809.045 650.665l210.07 182.062c-7.68 42.804-11.52 85.496-11.52 127.284 0 41.789 3.84 84.48 11.52 127.172L.046 1269.357 199.5 1610.214l265.186-88.546c66.974 55.68 143.323 99.388 223.85 128.527l54.663 269.816h397.779l54.663-269.703c81.318-29.252 156.424-72.283 223.85-128.527l265.186 88.546 199.454-340.857-210.184-182.174c7.793-42.805 11.633-85.496 11.633-127.285ZM942.075 564.706C724.1 564.706 546.782 742.024 546.782 960c0 217.976 177.318 395.294 395.294 395.294 217.977 0 395.294-177.318 395.294-395.294 0-217.976-177.317-395.294-395.294-395.294m0 677.647c-155.633 0-282.353-126.72-282.353-282.353s126.72-282.353 282.353-282.353S1224.43 804.367 1224.43 960s-126.72 282.353-282.353 282.353",
       ),
@@ -534,22 +534,22 @@ object Return extends Icon {
   def apply(props: VMod*): VNode = {
     import svg.*
     svg(
-      xmlns := "http://www.w3.org/2000/svg",
+      xmlns   := "http://www.w3.org/2000/svg",
       viewBox := "0 0 48 48",
       props,
       fill := "none",
       path(
-        d := "M12.9998 8L6 14L12.9998 21",
-        stroke := "currentColor",
-        VMod.attr("stroke-width") := "4",
-        VMod.attr("stroke-linecap") := "round",
+        d                            := "M12.9998 8L6 14L12.9998 21",
+        stroke                       := "currentColor",
+        VMod.attr("stroke-width")    := "4",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
       path(
-        d := "M6 14H28.9938C35.8768 14 41.7221 19.6204 41.9904 26.5C42.2739 33.7696 36.2671 40 28.9938 40H11.9984",
+        d      := "M6 14H28.9938C35.8768 14 41.7221 19.6204 41.9904 26.5C42.2739 33.7696 36.2671 40 28.9938 40H11.9984",
         stroke := "currentColor",
-        VMod.attr("stroke-width") := "4",
-        VMod.attr("stroke-linecap") := "round",
+        VMod.attr("stroke-width")    := "4",
+        VMod.attr("stroke-linecap")  := "round",
         VMod.attr("stroke-linejoin") := "round",
       ),
     )

@@ -20,9 +20,8 @@ case class Document(
 
   def identifier: Attribute[String] = name
 
-  def withExists(exists: Boolean): Document = {
+  def withExists(exists: Boolean): Document =
     this.copy(_exists = _exists.set(exists))
-  }
 
   override def exists: Boolean = _exists.getOrElse(true)
 }

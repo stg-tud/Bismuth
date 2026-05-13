@@ -40,7 +40,7 @@ object LoginInfo {
 
 class DiscoveryService {
   private var pendingConnections: Map[String, PendingConnection] = Map()
-  private var ws: Option[WebSocket] = None
+  private var ws: Option[WebSocket]                              = None
 
   class LoginRepsonse(val token: String, val username: String)
   object LoginRepsonse {
@@ -55,12 +55,14 @@ class DiscoveryService {
 
   val online: Var[Boolean] = Var(false)
 
-  def setAutoconnect(using jsImplicits: JSImplicits)(
+  def setAutoconnect(using
+      jsImplicits: JSImplicits
+  )(
       value: Boolean,
   ): Unit = {
     window.localStorage.setItem("autoconnect", value.toString)
     autoconnect.set(value)
-    if (value) {
+    if value then {
       connect()
         .toastOnError()
     } else {
@@ -89,9 +91,8 @@ class DiscoveryService {
     token.set(value)
   }
 
-  def tokenIsValid(token: Option[String]): Boolean = {
+  def tokenIsValid(token: Option[String]): Boolean =
     token.nonEmpty && !token.get.isBlank && Date.now() > decodeToken(token.get).exp
-  }
 
   def logout(): Unit = {
     ws match {
@@ -101,12 +102,14 @@ class DiscoveryService {
     updateToken(None)
   }
 
-  def login(using jsImplicits: JSImplicits)(
+  def login(using
+      jsImplicits: JSImplicits
+  )(
       loginInfo: LoginInfo,
   ): Future[String] = {
     val promise = Promise[String]()
 
-    if (!tokenIsValid(token.now)) {
+    if !tokenIsValid(token.now) then {
       val requestHeaders = new Headers()
       requestHeaders.set("content-type", "application/json")
       fetch(
@@ -116,11 +119,11 @@ class DiscoveryService {
           body = writeToString(loginInfo)(using LoginInfo.codec)
           headers = requestHeaders
         },
-      ).`then`(s => {
+      ).`then` { s =>
         s.json()
           .toFuture
-          .onComplete(json => {
-            if (s.status > 400 && s.status < 500) {
+          .onComplete { json =>
+            if s.status > 400 && s.status < 500 then {
               val error = json.get.asInstanceOf[js.Dynamic].error
               promise.failure(
                 new LoginException(
@@ -135,8 +138,8 @@ class DiscoveryService {
                 .toastOnError()
               promise.success(newToken)
             }
-          })
-      }).toFuture
+          }
+      }.toFuture
         .toastOnError()
     }
 
@@ -148,25 +151,20 @@ class DiscoveryService {
     ref.disconnect()
   }
 
-  def addToWhitelist(uuid: String): Unit = {
+  def addToWhitelist(uuid: String): Unit =
     ws.foreach(emit(_, "whitelist_add", js.Dynamic.literal("uuid" -> uuid)))
-  }
 
-  def connectTo(uuid: String): Unit = {
+  def connectTo(uuid: String): Unit =
     ws.foreach(emit(_, "connect_to", js.Dynamic.literal("uuid" -> uuid)))
-  }
 
-  def reportClosedConnection(id: String): Unit = {
+  def reportClosedConnection(id: String): Unit =
     ws.foreach(emit(_, "connection_closed", js.Dynamic.literal("connection" -> id)))
-  }
 
-  def deleteFromWhitelist(uuid: String): Unit = {
+  def deleteFromWhitelist(uuid: String): Unit =
     ws.foreach(emit(_, "whitelist_del", js.Dynamic.literal("uuid" -> uuid)))
-  }
 
-  def refetchAvailableClients(): Unit = {
+  def refetchAvailableClients(): Unit =
     ws.foreach(emit(_, "request_available_clients", null))
-  }
 
   private def emit(ws: WebSocket, name: String, payload: js.Any | Null): Unit = {
     val event = js.Dynamic.literal("type" -> name, "payload" -> payload.asInstanceOf[js.Any])
@@ -190,7 +188,7 @@ class DiscoveryService {
   }
 
   private def handle(using jsImplicits: JSImplicits)(ws: WebSocket, name: String, payload: js.Dynamic) = {
-    if (name != "ping") console.log(name, payload)
+    if name != "ping" then console.log(name, payload)
 
     name match {
       case "request_host_token" =>
@@ -201,9 +199,9 @@ class DiscoveryService {
 
         pendingConnections(payload.id.asInstanceOf[String]).session
           .map(PendingConnection.sessionAsToken)
-          .foreach(token => {
+          .foreach { token =>
             emit(ws, "host_token", js.Dynamic.literal("token" -> token, "connection" -> payload.id))
-          })
+          }
 
         jsImplicits.webrtc.registerConnection(
           pendingConnections(payload.id.asInstanceOf[String]).connector,
@@ -226,9 +224,9 @@ class DiscoveryService {
 
         pendingConnections(payload.id.asInstanceOf[String]).session
           .map(PendingConnection.sessionAsToken)
-          .foreach(token => {
+          .foreach { token =>
             emit(ws, "client_token", js.Dynamic.literal("token" -> token, "connection" -> payload.id))
-          })
+          }
 
         jsImplicits.webrtc.registerConnection(
           pendingConnections(payload.id.asInstanceOf[String]).connector,
@@ -280,10 +278,10 @@ class DiscoveryService {
   )(resetWebsocket: Boolean = false, force: Boolean = false): Future[Boolean] = {
     val promise = Promise[Boolean]()
 
-    if (resetWebsocket) ws = None
+    if resetWebsocket then ws = None
 
-    if (Option(window.localStorage.getItem("autoconnect")).getOrElse("true").toBoolean || force) {
-      if (!tokenIsValid(token.now)) {
+    if Option(window.localStorage.getItem("autoconnect")).getOrElse("true").toBoolean || force then {
+      if !tokenIsValid(token.now) then {
         return promise.failure(new Exception("Your token is wrong")).future
       }
 
@@ -308,13 +306,11 @@ class DiscoveryService {
         handle(ws.get, json.`type`.asInstanceOf[String], json.payload)
       }
 
-      ws.get.onclose = _ => {
+      ws.get.onclose = _ =>
         online.set(false)
-      }
 
-      ws.get.onerror = _ => {
+      ws.get.onerror = _ =>
         promise.failure(new Exception("Connection failed"))
-      }
 
       val alwaysOnlineWS = WS(
         s"${Globals.VITE_ALWAYS_ONLINE_PEER_PROTOCOL}://${Globals.VITE_ALWAYS_ONLINE_PEER_HOST}:${Globals.VITE_ALWAYS_ONLINE_PEER_PUBLIC_PORT}${Globals.VITE_ALWAYS_ONLINE_PEER_PATH}?${token.now

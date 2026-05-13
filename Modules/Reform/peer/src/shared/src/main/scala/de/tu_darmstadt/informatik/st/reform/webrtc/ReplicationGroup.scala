@@ -59,41 +59,40 @@ class ReplicationGroup[A](name: String)(using
 
   def createAndSync(id: String, initialValue: A): Future[Synced[A]] = {
     synchronized {
-      if (cache.contains(id)) {
+      if cache.contains(id) then {
         throw new Exception("This is not a new entity!")
       } else {
         val synced = storage
           .getOrDefault(id, initialValue)
-          .map(value => {
+          .map { value =>
             var synced = Synced(storage, id, Var(value))
             distributeDeltaRDT(id, synced)
             synced
-          })
+          }
         cache += (id -> synced)
         synced
       }
     }
   }
 
-  def getOrCreateAndSync(id: String): Future[Synced[A]] = {
+  def getOrCreateAndSync(id: String): Future[Synced[A]] =
     cache.getOrElse(id, createAndSync(id, bottom.empty))
-  }
 
   given deltaCodec: JsonValueCodec[DeltaFor[A]] = JsonCodecMaker.make
 
   given IdenticallyTransmittable[DeltaFor[A]] = IdenticallyTransmittable()
-  given IdenticallyTransmittable[A] = IdenticallyTransmittable()
+  given IdenticallyTransmittable[A]           = IdenticallyTransmittable()
 
   given magicCodec: JsonValueCodec[Tuple2[Option[A], Option[String]]] = JsonCodecMaker.make
 
   private val binding = Binding[DeltaFor[A] => Future[A]](s"${Globals.VITE_PROTOCOL_VERSION}-${name}")
 
-  registry.bindSbj(binding)((remoteRef: RemoteRef, payload: DeltaFor[A]) => {
-    if (payload.name != "ids") {
+  registry.bindSbj(binding) { (remoteRef: RemoteRef, payload: DeltaFor[A]) =>
+    if payload.name != "ids" then {
       indexeddb.requestPersistentStorage()
     }
     getOrCreateAndSync(payload.name).flatMap(_.update(v => v.getOrElse(bottom.empty).merge(payload.delta)))
-  })
+  }
 
   def distributeDeltaRDT(
       name: String,
@@ -125,10 +124,10 @@ class ReplicationGroup[A](name: String)(using
           // which might be never ...
         }
 
-        if (remoteRef.connected) {
+        if remoteRef.connected then {
           // if the remote is connected try to send the data
           remoteUpdate(DeltaFor(name, allToSend)).onComplete {
-            case Success(_) => // success
+            case Success(_) =>                    // success
             case Failure(_) => scheduleForLater() // failure, add data to resend buffer
           }
         } else {
@@ -140,7 +139,7 @@ class ReplicationGroup[A](name: String)(using
       // Send full state to initialize remote
       val currentState = synced.signal.readValueOnce
       // only send full state if it's not empty for efficiency
-      if (currentState != bottom.empty) sendUpdate(currentState)
+      if currentState != bottom.empty then sendUpdate(currentState)
 
       // Whenever the crdt is changed propagate the delta
       val observer = synced.signal.observe { s =>

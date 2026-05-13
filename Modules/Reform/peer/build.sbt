@@ -1,8 +1,8 @@
 import org.scalajs.linker.interface.ModuleInitializer
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
-name := "Reform"
-ThisBuild / version := "0.1.0-SNAPSHOT"
+name                     := "Reform"
+ThisBuild / version      := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.6.4"
 // ThisBuild / wartremoverErrors ++= Warts.unsafe
 
@@ -12,9 +12,9 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform)
   .in(file("src"))
   // .jsConfigure(_.enablePlugins(ScalablyTypedConverterExternalNpmPlugin))
   .jsSettings(
-    Compile / scalaJSModuleInitializers := Seq({
+    Compile / scalaJSModuleInitializers := Seq {
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
-    }),
+    },
     Test / scalaJSUseTestModuleInitializer := true, // this disables the scalajsCom stuff (it injects some kind of communicator so the sbt test command works)
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
@@ -22,7 +22,7 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform)
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform",
     libraryDependencies ++= Seq(
-      "io.github.outwatch" %%% "outwatch" % "1.0.0-RC14",
+      "io.github.outwatch"   %%% "outwatch"       % "1.0.0-RC14",
       "com.github.cornerman" %%% "colibri-router" % "0.7.8",
       "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-webnative" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
       "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-webrtc" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
@@ -45,13 +45,13 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform)
      */
   )
   .jvmSettings(
-    fork := true,
-    run/baseDirectory := file("."),
+    fork                := true,
+    run / baseDirectory := file("."),
     libraryDependencies ++= Seq(
       "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-jetty11" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
       "org.eclipse.jetty" % "jetty-slf4j-impl" % "11.0.14",
-      "org.xerial" % "sqlite-jdbc" % "3.41.0.0",
-      "com.auth0" % "java-jwt" % "4.3.0",
+      "org.xerial"        % "sqlite-jdbc"      % "3.41.0.0",
+      "com.auth0"         % "java-jwt"         % "4.3.0",
     ),
     assembly / mainClass := Some("de.tu_darmstadt.informatik.st.reform.Main")
   )
@@ -60,10 +60,10 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform)
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "utest" % "0.8.1" % Test,
       "com.github.scala-loci.scala-loci" %%% "scala-loci-serializer-jsoniter-scala" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
-      "com.github.rescala-lang.REScala" %%% "rescala" % "7de346f7abbe81eb0cacd0ee7f49420a8ff527f7",
-      "com.github.rescala-lang.REScala" %%% "kofre" % "7de346f7abbe81eb0cacd0ee7f49420a8ff527f7",
-      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core" % "2.27.1",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.21.2",
+      "com.github.rescala-lang.REScala"       %%% "rescala"               % "7de346f7abbe81eb0cacd0ee7f49420a8ff527f7",
+      "com.github.rescala-lang.REScala"       %%% "kofre"                 % "7de346f7abbe81eb0cacd0ee7f49420a8ff527f7",
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-core"   % "2.27.1",
+      "com.github.plokhotnyuk.jsoniter-scala"  %% "jsoniter-scala-macros" % "2.21.2",
     ),
     testFrameworks += new TestFramework("utest.runner.Framework"),
     scalacOptions ++= Seq(
@@ -78,8 +78,7 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform)
     ),
   )
 
-
 ThisBuild / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-  case _ => MergeStrategy.first
+  case _                             => MergeStrategy.first
 }

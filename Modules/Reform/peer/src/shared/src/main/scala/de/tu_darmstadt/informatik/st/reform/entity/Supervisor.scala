@@ -18,9 +18,8 @@ case class Supervisor(
 
   def identifier: Attribute[String] = name
 
-  def withExists(exists: Boolean): Supervisor = {
+  def withExists(exists: Boolean): Supervisor =
     this.copy(_exists = _exists.set(exists))
-  }
 
   override def exists: Boolean = _exists.getOrElse(true)
 }

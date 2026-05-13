@@ -1,6 +1,6 @@
 package de.tu_darmstadt.informatik.st.reform.components.common
 
-import de.tu_darmstadt.informatik.st.reform.{given}
+import de.tu_darmstadt.informatik.st.reform.given
 import org.scalajs.dom.document
 import outwatch.*
 import outwatch.dsl.*
@@ -11,9 +11,8 @@ class SelectOption(
     val name: Signal[String],
     val props: VMod*,
 ) {
-  def render: VMod = {
+  def render: VMod =
     span(props, name, cls := "overflow-hidden max-w-full text-ellipsis inline-block")
-  }
 
   def displayWidth(classes: String = ""): Signal[Double] = Signal {
     val element = document.createElement("span")

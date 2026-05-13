@@ -11,27 +11,27 @@ object Seqnal {
   implicit class SignalOps[T](self: Signal[T]) {
 
     def toFuture: Future[T] = {
-      val promise = Promise[T]()
-      val disconnectable: Disconnectable = self.observe(v => {
+      val promise                        = Promise[T]()
+      val disconnectable: Disconnectable = self.observe { v =>
         promise.success(v)
-      })
-      promise.future.map(v => {
+      }
+      promise.future.map { v =>
         disconnectable.disconnect()
         v
-      })
+      }
     }
 
     def waitUntil(pred: T => Boolean): Future[T] = {
-      val promise = Promise[T]()
-      val disconnectable: Disconnectable = self.observe(v => {
-        if (pred(v)) {
+      val promise                        = Promise[T]()
+      val disconnectable: Disconnectable = self.observe { v =>
+        if pred(v) then {
           promise.success(v)
         }
-      })
-      promise.future.map(v => {
+      }
+      promise.future.map { v =>
         disconnectable.disconnect()
         v
-      })
+      }
     }
   }
 }

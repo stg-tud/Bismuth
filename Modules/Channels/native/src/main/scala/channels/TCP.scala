@@ -64,16 +64,16 @@ object TCP {
 
               executionContext.execute { () =>
                 try
-                  socket.setSoTimeout(1000)
-                  while !abort.closeRequest do {
-                    try
-                      val connection = socket.accept()
-                      if connection != null
-                      then
-                          TCP.handleConnection(connection, incoming, executionContext)
-                          ()
-                    catch case _: SocketTimeoutException => ()
-                  }
+                    socket.setSoTimeout(1000)
+                    while !abort.closeRequest do {
+                      try
+                          val connection = socket.accept()
+                          if connection != null
+                          then
+                              TCP.handleConnection(connection, incoming, executionContext)
+                              ()
+                      catch case _: SocketTimeoutException => ()
+                    }
                 catch {
                   case exception: SocketException =>
                     Async.handler.fail(exception)

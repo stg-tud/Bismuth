@@ -43,30 +43,38 @@ class FullMeshOverlayTest extends FunSuite {
     val other   = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
     val conn    = TestConnection("contact")
 
-    val seeded = FullMeshOverlay(self, known = Map(other.uid -> other))
+    val seeded                 = FullMeshOverlay(self, known = Map(other.uid -> other))
     val (joined0, joinActions) = seeded.receiveActions(OverlayMessage.Join(contact), conn)
     val joined                 = joined0.asInstanceOf[FullMeshOverlay]
 
     assertEquals(joined.active.get(contact.uid), Some(conn))
     assert(joinActions.contains(OverlayAction.ActiveConnectionAdded(contact.uid)))
-    assert(joinActions.contains(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, Set(self, other, contact)))))
+    assert(joinActions.contains(OverlayAction.Send(
+      conn,
+      OverlayMessage.ShuffleReply(self.uid, Set(self, other, contact))
+    )))
 
-    val fresh = FullMeshOverlay(self, active = Map(contact.uid -> conn))
-    val (afterInfo0, infoActions) = fresh.receiveActions(OverlayMessage.ShuffleReply(contact.uid, Set(contact, other)), conn)
-    val afterInfo                 = afterInfo0.asInstanceOf[FullMeshOverlay]
+    val fresh                     = FullMeshOverlay(self, active = Map(contact.uid -> conn))
+    val (afterInfo0, infoActions) =
+      fresh.receiveActions(OverlayMessage.ShuffleReply(contact.uid, Set(contact, other)), conn)
+    val afterInfo = afterInfo0.asInstanceOf[FullMeshOverlay]
 
     assertEquals(
       infoActions,
-      List(OverlayAction.SendJoin(other.channelConnectors, other.uid, OverlayMessage.Neighbor(self, highPriority = true)))
+      List(OverlayAction.SendJoin(
+        other.channelConnectors,
+        other.uid,
+        OverlayMessage.Neighbor(self, highPriority = true)
+      ))
     )
   }
 
   test("neighbor info is remembered and removed on disconnect") {
-    val conn                     = TestConnection("peer")
-    val (next0, _)               = FullMeshOverlay(self).receiveActions(OverlayMessage.Neighbor(peer, true), conn)
-    val next                     = next0.asInstanceOf[FullMeshOverlay]
+    val conn                      = TestConnection("peer")
+    val (next0, _)                = FullMeshOverlay(self).receiveActions(OverlayMessage.Neighbor(peer, true), conn)
+    val next                      = next0.asInstanceOf[FullMeshOverlay]
     val (removed0, removeActions) = next.removeConnection(conn)
-    val removed                  = removed0.asInstanceOf[FullMeshOverlay]
+    val removed                   = removed0.asInstanceOf[FullMeshOverlay]
 
     assertEquals(next.known.get(peer.uid), Some(peer))
     assertEquals(removed.known.get(peer.uid), None)
@@ -82,7 +90,11 @@ class FullMeshOverlayTest extends FunSuite {
 
     assertEquals(
       discoverActions,
-      List(OverlayAction.SendJoin(other.channelConnectors, other.uid, OverlayMessage.Neighbor(self, highPriority = true)))
+      List(OverlayAction.SendJoin(
+        other.channelConnectors,
+        other.uid,
+        OverlayMessage.Neighbor(self, highPriority = true)
+      ))
     )
     assertEquals(discovered.known.get(other.uid), None)
 

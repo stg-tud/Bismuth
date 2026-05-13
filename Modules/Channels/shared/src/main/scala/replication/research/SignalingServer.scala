@@ -20,7 +20,7 @@ object SignalingServer {
 }
 
 class SignalingServer(debug: Boolean) {
-  private val abort = Abort()
+  private val abort        = Abort()
   private val clientsByUid = mutable.Map.empty[Uid, Connection]
   private val uidByConn    = mutable.Map.empty[Connection, Uid]
 

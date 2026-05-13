@@ -34,13 +34,13 @@ object Main {
   def main(): Unit = {
     lazy val jsImplicits: JSImplicits =
       new JSImplicits() {
-        lazy val toaster: Toaster = Toaster()
-        lazy val mailing: MailService = MailService()
-        lazy val routing: RoutingService = RoutingService(using jsImplicits)
-        lazy val indexeddb: IIndexedDB = IndexedDB(using jsImplicits)
-        lazy val registry: Registry = Registry()
-        lazy val webrtc: WebRTCService = WebRTCService(using registry, toaster, discovery)
-        lazy val repositories: Repositories = Repositories()(using registry, indexeddb)
+        lazy val toaster: Toaster            = Toaster()
+        lazy val mailing: MailService        = MailService()
+        lazy val routing: RoutingService     = RoutingService(using jsImplicits)
+        lazy val indexeddb: IIndexedDB       = IndexedDB(using jsImplicits)
+        lazy val registry: Registry          = Registry()
+        lazy val webrtc: WebRTCService       = WebRTCService(using registry, toaster, discovery)
+        lazy val repositories: Repositories  = Repositories()(using registry, indexeddb)
         lazy val discovery: DiscoveryService = DiscoveryService()
       }
     // we could assign the members later if this doesn't work?
@@ -55,17 +55,17 @@ object Main {
 
     jsImplicits.indexeddb
       .update[String]("test", _ => "test")
-      .onComplete(value => {
-        if (value.isFailure) {
+      .onComplete { value =>
+        if value.isFailure then {
           jsImplicits.toaster.make(
             "Application unusable because storage is not available. Your Browser does not support IndexedDB! Private tabs in Firefox don't work.",
             ToastMode.Persistent,
             ToastType.Error,
           )
         }
-      })
+      }
 
-    if (jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now)) {
+    if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now) then {
       jsImplicits.discovery
         .connect(using jsImplicits)()
         .toastOnError(using jsImplicits)()

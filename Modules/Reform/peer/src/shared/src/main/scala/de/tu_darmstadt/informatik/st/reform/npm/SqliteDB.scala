@@ -59,7 +59,7 @@ class SqliteDB(dbPath: String) extends IIndexedDB {
   override def update[T](key: String, fun: Option[T] => T)(using codec: JsonValueCodec[T]): Future[T] = {
     synchronized {
       val dbValue = readValue(key)
-      val value = fun(dbValue.map(readFromString(_)))
+      val value   = fun(dbValue.map(readFromString(_)))
       writeStatement.setString(1, key)
       writeStatement.setString(2, writeToString(value))
       val _ = writeStatement.execute()
@@ -71,7 +71,7 @@ class SqliteDB(dbPath: String) extends IIndexedDB {
   private def readValue(key: String): Option[String] = {
     readStatement.setString(1, key)
     val resultSet = readStatement.executeQuery().nn
-    if (resultSet.next()) {
+    if resultSet.next() then {
       Some(resultSet.getString("value").nn)
     } else {
       None

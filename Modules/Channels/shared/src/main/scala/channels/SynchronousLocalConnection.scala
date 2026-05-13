@@ -17,12 +17,13 @@ class SynchronousLocalConnection(serverId: String) {
     case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.SynchronousLocal] = Async.fromCallback[Establish] {
-      connectionEstablished.succeed(Async.handler)
-    }.map { connChan =>
-      connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
-      ConnectionDescriptor.SynchronousLocal(serverId)
-    }
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.SynchronousLocal] =
+      Async.fromCallback[Establish] {
+        connectionEstablished.succeed(Async.handler)
+      }.map { connChan =>
+        connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
+        ConnectionDescriptor.SynchronousLocal(serverId)
+      }
   }
 
   /** Clients create both the client side and server side connection object. */

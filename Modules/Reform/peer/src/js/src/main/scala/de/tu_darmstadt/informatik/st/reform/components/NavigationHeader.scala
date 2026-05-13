@@ -32,7 +32,7 @@ def navigationMenu(using
 ) = {
   ul(
     tabIndex := 0,
-    cls := classes,
+    cls      := classes,
     li(
       navigationLink(ProjectsPage(), "Projects"),
     ),
@@ -93,15 +93,15 @@ def navigationHeader(
           cls := "flex-none",
           div(
             cls := "dropdown",
-            cls <-- Signal { if (dropdownOpen.value) Some("dropdown-open") else None },
+            cls <-- Signal { if dropdownOpen.value then Some("dropdown-open") else None },
             label(
               tabIndex := 0,
-              idAttr := "dropdown-button",
-              cls := "btn btn-ghost lg:hidden",
+              idAttr   := "dropdown-button",
+              cls      := "btn btn-ghost lg:hidden",
               icons.Hamburger(cls := "h-5 w-5"),
-              onClick.foreach(e => {
+              onClick.foreach { e =>
                 dropdownOpen.transform(!_)
-              }),
+              },
             ),
             navigationMenu(
               "menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52 dark:bg-gray-700",
@@ -112,13 +112,13 @@ def navigationHeader(
           cls := "flex-1",
           a(
             icons.Reform(),
-            cls := "btn btn-ghost normal-case text-xl hover:bg-slate-100 dark:hover:bg-gray-800/50",
+            cls  := "btn btn-ghost normal-case text-xl hover:bg-slate-100 dark:hover:bg-gray-800/50",
             href := "/",
-            onClick.foreach(e => {
+            onClick.foreach { e =>
               e.preventDefault()
               e.target.asInstanceOf[HTMLElement].blur()
               jsImplicits.routing.to(HomePage())
-            }),
+            },
           ),
         ),
         div(
@@ -129,7 +129,7 @@ def navigationHeader(
           cls := "flex-none",
           label(
             forId := "connection-drawer",
-            cls := "btn btn-ghost",
+            cls   := "btn btn-ghost",
             div(
               cls := "indicator",
               icons.Connections(cls := "h-6 w-6"),

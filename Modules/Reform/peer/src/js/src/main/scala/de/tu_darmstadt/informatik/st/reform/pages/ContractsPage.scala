@@ -38,7 +38,7 @@ class DetailPageEntityRow[T <: Entity[T]](
     jsImplicits: JSImplicits,
 ) extends EntityRow[T](title, repository, value, uiAttributes) {
 
-  override protected val editLabel: String = "Extend"
+  override protected val editLabel: String    = "Extend"
   override protected def startEditing(): Unit = {
     value match {
       case Existing(value, editingValue) => jsImplicits.routing.to(ExtendContractPage(value.id))
@@ -267,28 +267,28 @@ class ContractPageAttributes(using
                 jsImplicits.repositories.contractSchemas.all.value
                   .find(contractType => contractType.id == contractTypeId)
                   .flatMap(value =>
-                    value.signal.value.files.option.flatMap(requiredDocuments => {
-                      val documents = jsImplicits.repositories.requiredDocuments.all.value
+                    value.signal.value.files.option.flatMap { requiredDocuments =>
+                      val documents        = jsImplicits.repositories.requiredDocuments.all.value
                       val checkedDocuments =
-                        if (contract.requiredDocuments.hasValue) contract.requiredDocuments.option
+                        if contract.requiredDocuments.hasValue then contract.requiredDocuments.option
                         else Some(Seq.empty)
 
                       checkedDocuments
                         .map(_ ++ requiredDocuments)
                         .map(files =>
                           files.toSet
-                            .map(fileId => {
+                            .map { fileId =>
                               documents
                                 .find(doc => doc.id == fileId)
-                                .map(file => {
+                                .map { file =>
                                   SelectOption(
                                     fileId,
                                     Signal { file.signal.value.name.getOrElse("") },
-                                    if (!requiredDocuments.contains(fileId)) Seq(cls := "italic", checked := true)
+                                    if !requiredDocuments.contains(fileId) then Seq(cls := "italic", checked := true)
                                     else None,
                                   )
-                                })
-                            })
+                                }
+                            }
                             .toSeq
                             .sortWith(
                               _.getOrElse(SelectOption("", Signal(""))).id < _.getOrElse(
@@ -296,7 +296,7 @@ class ContractPageAttributes(using
                               ).id,
                             ),
                         )
-                    }),
+                    },
                   ),
               )
               .getOrElse(Seq.empty)
@@ -308,15 +308,15 @@ class ContractPageAttributes(using
   }
 
   def isInInterval(contract: Contract, month: Int, year: Int): Boolean = {
-    if (contract.contractStartDate.option.nonEmpty && contract.contractEndDate.option.nonEmpty) {
+    if contract.contractStartDate.option.nonEmpty && contract.contractEndDate.option.nonEmpty then {
       val start = contract.contractStartDate.option.get
-      val end = contract.contractEndDate.option.get
+      val end   = contract.contractEndDate.option.get
 
-      if (
-        (getYear(start) < year || getYear(start) == year && getMonth(start) <= month) && (getYear(
-          end,
-        ) > year || getYear(end) == year && getMonth(end) >= month)
-      ) return true
+      if
+          (getYear(start) < year || getYear(start) == year && getMonth(start) <= month) && (getYear(
+            end,
+          ) > year || getYear(end) == year && getMonth(end) >= month)
+      then return true
       else return false
     }
     false

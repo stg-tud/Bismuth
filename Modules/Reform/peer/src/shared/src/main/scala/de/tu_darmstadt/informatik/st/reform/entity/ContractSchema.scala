@@ -18,9 +18,8 @@ case class ContractSchema(
 
   def identifier: Attribute[String] = name
 
-  def withExists(exists: Boolean): ContractSchema = {
+  def withExists(exists: Boolean): ContractSchema =
     this.copy(_exists = _exists.set(exists))
-  }
 
   override def exists: Boolean = _exists.getOrElse(true)
 

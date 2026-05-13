@@ -20,20 +20,20 @@ import javax.security.auth.Subject
 
 // https://github.com/eclipse/jetty.project/blob/jetty-11.0.14/jetty-security/src/main/java/org/eclipse/jetty/security/authentication/BasicAuthenticator.java#L50
 def runServer(): Unit = {
-  val registry = Registry()
+  val registry  = Registry()
   val indexedDb = SqliteDB(Globals.ALWAYS_ONLINE_PEER_DATABASE_PATH)
-  val _ = Repositories()(using registry, indexedDb)
+  val _         = Repositories()(using registry, indexedDb)
 
-  val server = new Server()
+  val server    = new Server()
   val connector = new ServerConnector(server)
 
-  val port = Globals.VITE_ALWAYS_ONLINE_PEER_LISTEN_PORT
-  val path = Globals.VITE_ALWAYS_ONLINE_PEER_PATH
+  val port   = Globals.VITE_ALWAYS_ONLINE_PEER_LISTEN_PORT
+  val path   = Globals.VITE_ALWAYS_ONLINE_PEER_PATH
   val secret = Globals.JWT_KEY
 
   connector.setPort(port)
   val servletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY)
-  val securityHandler = servletContextHandler.getSecurityHandler.nn
+  val securityHandler       = servletContextHandler.getSecurityHandler.nn
 
   val authenticator: Authenticator = new Authenticator {
 
@@ -48,13 +48,13 @@ def runServer(): Unit = {
         res: ServletResponse | Null,
         mandatory: Boolean,
     ): Authentication | Null = {
-      val request: HttpServletRequest = req.asInstanceOf[HttpServletRequest]
+      val request: HttpServletRequest   = req.asInstanceOf[HttpServletRequest]
       val response: HttpServletResponse = res.asInstanceOf[HttpServletResponse]
-      val token = request.getQueryString
+      val token                         = request.getQueryString
 
-      if (token != null) {
+      if token != null then {
         try {
-          val algorithm: Algorithm = Algorithm.HMAC256(secret).nn
+          val algorithm: Algorithm  = Algorithm.HMAC256(secret).nn
           val verifier: JWTVerifier = JWT
             .require(algorithm)
             .nn
@@ -62,11 +62,11 @@ def runServer(): Unit = {
             .nn
 
           val decodedJWT: DecodedJWT = verifier.verify(token).nn
-          val issuedAt = decodedJWT.getIssuedAt
-          val expiresAt = decodedJWT.getExpiresAt
-          val uuid = decodedJWT.getClaim("uuid").nn.asString()
-          val device = decodedJWT.getClaim("device").nn.asString()
-          val username = decodedJWT.getClaim("username").nn.asString()
+          val issuedAt               = decodedJWT.getIssuedAt
+          val expiresAt              = decodedJWT.getExpiresAt
+          val uuid                   = decodedJWT.getClaim("uuid").nn.asString()
+          val device                 = decodedJWT.getClaim("device").nn.asString()
+          val username               = decodedJWT.getClaim("username").nn.asString()
           println(
             s"connection from $username ($uuid) from device $device issued $issuedAt expiring $expiresAt",
           )
@@ -124,7 +124,6 @@ def runServer(): Unit = {
 
 object Main {
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     runServer()
-  }
 }

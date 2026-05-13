@@ -77,8 +77,8 @@ case class UIAttributeBuilder[AttributeType](
       writeConverter = writeConverter,
       label = label,
       options =
-        if (filteredOptions.nonEmpty)
-          filteredOptions.get
+        if filteredOptions.nonEmpty then
+            filteredOptions.get
         else _ => options,
       optionsForFilter = options,
       isRequired = isRequired,
@@ -149,10 +149,11 @@ implicit class BindToSeqOfString(using jsImplicits: JSImplicits)(self: UIAttribu
       writeConverter = self.writeConverter,
       label = self.label,
       options =
-        if (filteredOptions.nonEmpty)
-          filteredOptions.get
+        if filteredOptions.nonEmpty then
+            filteredOptions.get
         else
-          _ => self.options,
+            _ => self.options
+      ,
       optionsForFilter = self.options,
       isRequired = self.isRequired,
       searchEnabled = self.searchEnabled,
@@ -171,10 +172,11 @@ implicit class BindToSeqOfString(using jsImplicits: JSImplicits)(self: UIAttribu
       writeConverter = self.writeConverter,
       label = self.label,
       options =
-        if (filteredOptions.nonEmpty)
-          filteredOptions.get
+        if filteredOptions.nonEmpty then
+            filteredOptions.get
         else
-          _ => self.options,
+            _ => self.options
+      ,
       optionsForFilter = self.options,
       isRequired = self.isRequired,
     )

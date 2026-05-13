@@ -32,11 +32,11 @@ case class ContractSchemasPage()(using
           "Each contract schema has a number of ",
           a(
             cls := "underline cursor-pointer",
-            onClick.foreach(e => {
+            onClick.foreach { e =>
               e.preventDefault()
               e.target.asInstanceOf[HTMLElement].blur()
               jsImplicits.routing.to(DocumentsPage(), true)
-            }),
+            },
             "documents",
           ),
           " that need to be checked before the contract can be finalized.",

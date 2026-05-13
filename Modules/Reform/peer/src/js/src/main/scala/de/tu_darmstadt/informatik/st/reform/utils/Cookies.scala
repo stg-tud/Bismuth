@@ -9,13 +9,13 @@ object Cookies {
     document.cookie
       .split(";")
       .nn
-      .find(cookie => {
+      .find { cookie =>
         cookie.nn.split("=").nn(0) == name
-      })
-      .map(cookie => {
+      }
+      .map { cookie =>
         val kv = cookie.nn.split("=").nn
         kv(1).nn
-      })
+      }
   }
 
   def clearCookie(name: String): Unit = {

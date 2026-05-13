@@ -27,12 +27,12 @@ class CheckboxList(
       idAttr := id,
       Signal {
         input(
-          outwatch.dsl.value := value.value.mkString(", "),
-          tpe := "text",
+          outwatch.dsl.value    := value.value.mkString(", "),
+          tpe                   := "text",
           outwatch.dsl.required := required,
-          cls := "w-[1px] focus:outline-none opacity-0 border-none max-w-[1px] pointer-events-none",
-          tabIndex := -1,
-          formId := props
+          cls                   := "w-[1px] focus:outline-none opacity-0 border-none max-w-[1px] pointer-events-none",
+          tabIndex              := -1,
+          formId                := props
             .collectFirst {
               case AccumAttr("form", value, _) => value
               case BasicAttr("form", value)    => value
@@ -49,7 +49,7 @@ class CheckboxList(
     Signal.dynamic {
       val options = this.options.value.map(renderOption)
 
-      if (options.isEmpty) {
+      if options.isEmpty then {
         Seq(renderNoOptions)
       } else {
         options
@@ -63,9 +63,9 @@ class CheckboxList(
       CheckboxStyle.Default,
       cls := "mr-2",
       checked <-- Signal { value.value.contains(uiOption.id) },
-      idAttr := s"$id-${uiOption.id}",
+      idAttr               := s"$id-${uiOption.id}",
       VMod.attr("data-id") := uiOption.id,
-      onClick.foreach(_ => {
+      onClick.foreach { _ =>
         onInput(
           document
             .querySelectorAll(s"#$id input[type=checkbox]:not(#all-checkbox-$id):checked")
@@ -78,7 +78,7 @@ class CheckboxList(
             )
             .asInstanceOf[Seq[String]],
         )
-      }),
+      },
     ),
     tabIndex := 0,
     uiOption.render,

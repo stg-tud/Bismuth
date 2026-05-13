@@ -16,9 +16,9 @@ import reactives.default.*
 import scala.scalajs.js
 
 enum ToastMode(val autodismiss: Boolean, val closeable: Boolean, val duration: Int = 0) {
-  case Short extends ToastMode(true, true, 10000)
-  case Long extends ToastMode(true, true, 20000)
-  case Infinit extends ToastMode(false, true)
+  case Short      extends ToastMode(true, true, 10000)
+  case Long       extends ToastMode(true, true, 20000)
+  case Infinit    extends ToastMode(false, true)
   case Persistent extends ToastMode(false, false)
 }
 
@@ -66,16 +66,16 @@ class Toast(using toaster: Toaster)(
     val toastType: ToastType,
     val onclose: Toast => Unit,
 ) {
-  val id: Double = js.Math.round(js.Math.random() * 100000)
-  var start: Option[Double] = None
+  val id: Double                        = js.Math.round(js.Math.random() * 100000)
+  var start: Option[Double]             = None
   private var previousTimeStamp: Double = 0
   private var pausedAtTimeStamp: Double = 0
-  private val animationDone = false
+  private val animationDone             = false
   private var animationRef: Option[Int] = None
 
   private def animate(timestamp: Double, resumeTo: Double = 0): Unit = {
     val element = Option(document.querySelector(s"#toast-$id").asInstanceOf[HTMLHtmlElement])
-    if (resumeTo > 0) {
+    if resumeTo > 0 then {
       start match {
         case None             =>
         case Some(startValue) => start = Some(startValue + timestamp - resumeTo)
@@ -92,20 +92,20 @@ class Toast(using toaster: Toaster)(
           case Some(startValue) =>
             val elapsed = timestamp - startValue
 
-            if (previousTimeStamp != timestamp) {
+            if previousTimeStamp != timestamp then {
               // animation magic
               val widthVal = js.Math.min((100 / toastMode.duration.toDouble) * elapsed, 100)
-              val width = s"$widthVal%"
+              val width    = s"$widthVal%"
               element.querySelector(".toast-progress").asInstanceOf[HTMLHtmlElement].style.width = width
 
-              if (widthVal >= 100) {
+              if widthVal >= 100 then {
                 this.onclose(this)
               }
             }
 
-            if (elapsed < toastMode.duration) {
+            if elapsed < toastMode.duration then {
               previousTimeStamp = timestamp
-              if (!animationDone) {
+              if !animationDone then {
                 animationRef = Some(window.requestAnimationFrame(t => animate(t)))
               }
             }
@@ -115,17 +115,17 @@ class Toast(using toaster: Toaster)(
     }
   }
 
-  if (toastMode.autodismiss) {
+  if toastMode.autodismiss then {
     animationRef = Some(window.requestAnimationFrame(t => animate(t)))
   }
 
   def render: VMod = {
     val killTimer =
-      if (toastMode.closeable) Some(window.setTimeout(() => { this.onclose(this) }, toastMode.duration)) else None
+      if toastMode.closeable then Some(window.setTimeout(() => this.onclose(this), toastMode.duration)) else None
 
     div(
       cls := s"${toastType.primaryBgClass} ${toastType.textClass} toast-elem shadow-md alert relative overflow-hidden w-fit",
-      onMouseEnter.foreach(_ => {
+      onMouseEnter.foreach { _ =>
         killTimer.foreach(window.clearTimeout)
         animationRef match {
           case Some(ref) =>
@@ -133,7 +133,7 @@ class Toast(using toaster: Toaster)(
             window.cancelAnimationFrame(ref)
           case None =>
         }
-      }),
+      },
       onMouseLeave.foreach(_ =>
         animationRef match {
           case Some(ref) =>
@@ -142,17 +142,17 @@ class Toast(using toaster: Toaster)(
         },
       ),
       idAttr := s"toast-$id", {
-        if (toastMode.autodismiss)
-          Some(
-            div(
-              cls := s"toast-progress absolute w-0 h-full left-0 top-0 ${toastType.secondaryBgClass}",
-            ),
-          )
+        if toastMode.autodismiss then
+            Some(
+              div(
+                cls := s"toast-progress absolute w-0 h-full left-0 top-0 ${toastType.secondaryBgClass}",
+              ),
+            )
         else
-          None
+            None
       },
       div(
-        cls := s"flex flex-row items-start !mt-0 !z-[50] ${if (!toastMode.autodismiss) "!w-full" else ""}",
+        cls := s"flex flex-row items-start !mt-0 !z-[50] ${if !toastMode.autodismiss then "!w-full" else ""}",
         div(
           cls := "shrink-0",
           toastType.icon match {
@@ -164,7 +164,7 @@ class Toast(using toaster: Toaster)(
           cls := "",
           text,
         ), {
-          if (toastType.copyable) {
+          if toastType.copyable then {
             Some(
               div(
                 icons.Clipboard(cls := "w-4 h-4 text-red-600"),
@@ -173,19 +173,19 @@ class Toast(using toaster: Toaster)(
                   window.navigator.clipboard
                     .writeText(document.querySelector(s"#toast-$id").innerText)
                     .toFuture
-                    .onComplete(value => {
-                      if (value.isFailure) {
+                    .onComplete { value =>
+                      if value.isFailure then {
                         println("could not copy to clipboard")
                       } else {
                         toaster.make("Copied to Clipboard!", ToastMode.Short, ToastType.Success)
                       }
-                    }),
+                    },
                 ),
               ),
             )
           } else None
         }, {
-          if (toastMode.closeable) {
+          if toastMode.closeable then {
             Some(
               div(
                 icons.Close(cls := "text-red-600 w-4 h-4"),
@@ -202,31 +202,30 @@ class Toast(using toaster: Toaster)(
 
 class Toaster {
 
-  private val removeToast = Evt[Toast]()
-  private val addToast = Evt[Toast]()
-  private val addToastB = addToast.branch(v => current[Seq[Toast]] :+ v)
+  private val removeToast  = Evt[Toast]()
+  private val addToast     = Evt[Toast]()
+  private val addToastB    = addToast.branch(v => current[Seq[Toast]] :+ v)
   private val removeToastB = removeToast.branch(r => current[Seq[Toast]].filter(b => !b.equals(r)))
 
   private val toasts: reactives.default.Signal[Seq[Toast]] = Fold(Seq.empty: Seq[Toast])(addToastB, removeToastB)
 
-  def make(text: String, mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Default): Unit = {
+  def make(text: String, mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Default): Unit =
     this.make(span(text), mode, style)
-  }
 
   def warn(text: String): Unit = make(text, Long, Warning)
 
   def error(text: String): Unit = make(text, Persistent, ToastType.Error)
 
   def make(text: VNode, mode: ToastMode, style: ToastType): Unit = {
-    if (Globals.VITE_SELENIUM && style != ToastType.Error) return
-    val toast = new Toast(using this)(text, mode, style, (t: Toast) => { this.removeToast.fire(t) })
+    if Globals.VITE_SELENIUM && style != ToastType.Error then return
+    val toast = new Toast(using this)(text, mode, style, (t: Toast) => this.removeToast.fire(t))
     this.addToast.fire(toast)
   }
 
   def render: VMod = {
     div(
       cls := "toast toast-end items-end !p-0 bottom-4 right-4",
-      Signal { toasts.value.map(toast => { toast.render }) },
+      Signal { toasts.value.map(toast => toast.render) },
     )
   }
 }

@@ -58,25 +58,25 @@ case class PendingConnection(
 )
 object PendingConnection {
   def webrtcIntermediate(cf: ConnectorFactory, alias: String): PendingConnection = {
-    val p = Promise[ConnectionInformation]()
+    val p      = Promise[ConnectionInformation]()
     val answer = cf.complete(s => p.success(new ConnectionInformation(s, alias)))
     PendingConnection(answer, p.future, answer.connection)
   }
   private val codec: JsonValueCodec[ConnectionInformation] = JsonCodecMaker.make
-  def sessionAsToken(s: ConnectionInformation): String = Base64.encode(writeToString(s)(using codec))
+  def sessionAsToken(s: ConnectionInformation): String     = Base64.encode(writeToString(s)(using codec))
 
   def tokenAsSession(s: String): ConnectionInformation = readFromString(Base64.decode(s))(using codec)
 }
 
 class WebRTCService(using registry: Registry, toaster: Toaster, discovery: DiscoveryService) {
 
-  private var connectionInfo = Map[RemoteRef, StoredConnectionInformation]()
+  private var connectionInfo    = Map[RemoteRef, StoredConnectionInformation]()
   private var webRTCConnections = Map[RemoteRef, RTCPeerConnection]() // could merge this map with the one above
-  private var connectionRefs = Map[String, RemoteRef]()
+  private var connectionRefs    = Map[String, RemoteRef]()
 
-  private val removeConnection = Evt[RemoteRef]()
-  private val addConnection = Evt[RemoteRef]()
-  private val addConnectionB = addConnection.branch(v => current[Seq[RemoteRef]] :+ v)
+  private val removeConnection  = Evt[RemoteRef]()
+  private val addConnection     = Evt[RemoteRef]()
+  private val addConnectionB    = addConnection.branch(v => current[Seq[RemoteRef]] :+ v)
   private val removeConnectionB = removeConnection.branch(r => current[Seq[RemoteRef]].filter(b => !b.equals(r)))
 
   val connections: Signal[Seq[RemoteRef]] = Fold(Seq.empty: Seq[RemoteRef])(addConnectionB, removeConnectionB)
@@ -94,54 +94,53 @@ class WebRTCService(using registry: Registry, toaster: Toaster, discovery: Disco
   ): Future[RemoteRef] = {
     registry
       .connect(connector)
-      .andThen(r => {
-        val storedConnection = StoredConnectionInformation(alias, source, uuid, displayId, connectionId, tpe)
-        connectionInfo += (r.get -> storedConnection)
+      .andThen { r =>
+        val storedConnection        = StoredConnectionInformation(alias, source, uuid, displayId, connectionId, tpe)
+        connectionInfo += (r.get        -> storedConnection)
         connectionRefs += (connectionId -> r.get)
-        webRTCConnections += (r.get -> connection)
+        webRTCConnections += (r.get     -> connection)
 
         onConnected(r.get)
 
         addConnection.fire(r.get)
 
         toaster.make(span(b(storedConnection.alias), " has just joined! 🚀"), ToastMode.Short, ToastType.Success)
-      })
+      }
   }
 
   def closeConnectionById(id: String): Unit = {
     connectionRefs.get(id) match {
-      case None =>
+      case None      =>
       case Some(ref) =>
         ref.disconnect()
         discovery.reportClosedConnection(id)
     }
   }
 
-  def getInformation(ref: RemoteRef): StoredConnectionInformation = {
+  def getInformation(ref: RemoteRef): StoredConnectionInformation =
     connectionInfo.getOrElse(ref, StoredConnectionInformation("Anonymous", "unknown"))
-  }
 
   def setAlias(ref: RemoteRef, alias: String): Unit = {
-    connectionInfo = connectionInfo.transform((r, storedConnection) => {
-      if (ref == r) {
+    connectionInfo = connectionInfo.transform { (r, storedConnection) =>
+      if ref == r then {
         storedConnection.alias = alias
       }
       storedConnection
-    })
+    }
   }
 
   def getConnectionMode(ref: RemoteRef): Future[String] = {
     val connection = webRTCConnections(ref)
 
-    JSUtils.usesTurn(connection).map(usesTurn => if (usesTurn) "relay" else "direct")
+    JSUtils.usesTurn(connection).map(usesTurn => if usesTurn then "relay" else "direct")
   }
 
-  registry.remoteLeft.monitor(remoteRef => {
+  registry.remoteLeft.monitor { remoteRef =>
     val connectionInfo = getInformation(remoteRef)
     toaster.make(span(b(connectionInfo.alias), " has left! 👋"), ToastMode.Short, ToastType.Default)
 
     removeConnection.fire(remoteRef)
-  })
+  }
 
   registry.connect(BroadcastChannel("default"))
 }

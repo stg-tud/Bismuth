@@ -45,7 +45,7 @@ case class SettingsPage()(using
 
   def render: VMod = {
     val deleteButtonActive = Var(false)
-    val deleteDBModal = new Modal(
+    val deleteDBModal      = new Modal(
       "Do you really want to drop the Database?",
       div(
         cls := "flex flex-col gap-4",
@@ -58,12 +58,12 @@ case class SettingsPage()(using
         div(
           LabeledCheckbox(
             forId := "export-success",
-            cls := "text-slate-600",
+            cls   := "text-slate-600",
             "I have verified that the export has downloaded correctly ",
           )(
             CheckboxStyle.Error,
             idAttr := "export-success",
-            cls := "mr-2",
+            cls    := "mr-2",
             onClick.foreach(_ => deleteButtonActive.transform(!_)),
           ),
         ),
@@ -92,7 +92,7 @@ case class SettingsPage()(using
     )
 
     val pdfFields: Var[Seq[String]] = Var(Seq.empty)
-    def resetFields: Unit = pdfFields.set(Seq.empty)
+    def resetFields: Unit           = pdfFields.set(Seq.empty)
 
     div(
       cls := "flex flex-col items-center",
@@ -102,7 +102,7 @@ case class SettingsPage()(using
         div(cls := "divider"),
         div(
           cls := "md:m-4 p-4",
-          h2(cls := "font-bold", "Color Scheme"),
+          h2(cls  := "font-bold", "Color Scheme"),
           div(cls := "divider"),
           Select(
             Signal(
@@ -127,7 +127,7 @@ case class SettingsPage()(using
         div(cls := "divider"),
         div(
           cls := "md:m-4 p-4",
-          h2(cls := "font-bold", "Manage Database"),
+          h2(cls  := "font-bold", "Manage Database"),
           div(cls := "divider"),
           div(
             cls := "flex flex-col gap-2",
@@ -136,11 +136,11 @@ case class SettingsPage()(using
               Button(
                 ButtonStyle.Primary,
                 "Export Database",
-                onClick.foreach(_ => {
+                onClick.foreach { _ =>
                   val json = exportIndexedDBJson
                   downloadFile(s"reform-export-${new js.Date().toISOString()}.json", json, "data:text/json")
                   jsImplicits.toaster.make("Database exported", ToastMode.Short, ToastType.Success)
-                }),
+                },
                 cls := "md:w-fit",
               ),
               div(
@@ -156,31 +156,31 @@ case class SettingsPage()(using
                 Button(
                   ButtonStyle.Primary,
                   "Import Database",
-                  onClick.foreach(_ => {
+                  onClick.foreach { _ =>
                     val fileList = document.querySelector("#import-file").asInstanceOf[HTMLInputElement].files
-                    if (fileList.nonEmpty)
-                      fileList(0)
-                        .text()
-                        .toFuture
-                        .onComplete(value => {
-                          if (value.isFailure) {
-                            value.failed.get.printStackTrace()
-                            jsImplicits.toaster.make(value.failed.get.getMessage.nn, ToastMode.Short, ToastType.Error)
+                    if fileList.nonEmpty then
+                        fileList(0)
+                          .text()
+                          .toFuture
+                          .onComplete { value =>
+                            if value.isFailure then {
+                              value.failed.get.printStackTrace()
+                              jsImplicits.toaster.make(value.failed.get.getMessage.nn, ToastMode.Short, ToastType.Error)
+                            }
+                            val json = value.getOrElse("")
+                            importIndexedDBJson(json).onComplete {
+                              case Success(value) =>
+                                jsImplicits.toaster.make("Database imported", ToastMode.Long, ToastType.Success)
+                              case Failure(exception) =>
+                                jsImplicits.toaster
+                                  .make(
+                                    "Failed to import database! " + exception.toString,
+                                    ToastMode.Long,
+                                    ToastType.Error,
+                                  )
+                            }
                           }
-                          val json = value.getOrElse("")
-                          importIndexedDBJson(json).onComplete {
-                            case Success(value) =>
-                              jsImplicits.toaster.make("Database imported", ToastMode.Long, ToastType.Success)
-                            case Failure(exception) =>
-                              jsImplicits.toaster
-                                .make(
-                                  "Failed to import database! " + exception.toString,
-                                  ToastMode.Long,
-                                  ToastType.Error,
-                                )
-                          }
-                        })
-                  }),
+                  },
                 ),
               ),
               div(
@@ -193,11 +193,11 @@ case class SettingsPage()(using
               Button(
                 ButtonStyle.Error,
                 "Delete Database",
-                onClick.foreach(_ => {
+                onClick.foreach { _ =>
                   val json = exportIndexedDBJson
                   downloadFile(s"reform-export-${new js.Date().toISOString()}.json", json, "data:text/json")
                   deleteDBModal.open()
-                }),
+                },
                 cls := "md:w-fit",
               ),
               div(
@@ -211,7 +211,7 @@ case class SettingsPage()(using
         div(cls := "divider"),
         div(
           cls := "md:m-4 p-4",
-          h2(cls := "font-bold", "Inspect PDF Fields"),
+          h2(cls  := "font-bold", "Inspect PDF Fields"),
           div(cls := "divider"),
           div(
             cls := "flex flex-col md:flex-row gap-2",
@@ -219,27 +219,27 @@ case class SettingsPage()(using
             Button(
               ButtonStyle.Primary,
               "Inspect PDF",
-              onClick.foreach(_ => {
+              onClick.foreach { _ =>
                 val fileList = document.querySelector("#inspect-pdf").asInstanceOf[HTMLInputElement].files
-                if (fileList.nonEmpty)
-                  fileList(0)
-                    .arrayBuffer()
-                    .toFuture
-                    .flatMap(buffer => PDF.getPDFFields(buffer))
-                    .onComplete(fields => {
-                      fields match {
-                        case Failure(exception) =>
-                          jsImplicits.toaster
-                            .make(s"Exception: ${exception.getMessage()}", ToastMode.Infinit, ToastType.Error)
-                        case Success(fields) => pdfFields.set(fields)
+                if fileList.nonEmpty then
+                    fileList(0)
+                      .arrayBuffer()
+                      .toFuture
+                      .flatMap(buffer => PDF.getPDFFields(buffer))
+                      .onComplete { fields =>
+                        fields match {
+                          case Failure(exception) =>
+                            jsImplicits.toaster
+                              .make(s"Exception: ${exception.getMessage()}", ToastMode.Infinit, ToastType.Error)
+                          case Success(fields) => pdfFields.set(fields)
+                        }
                       }
-                    })
-              }),
+              },
             ),
           ),
           Signal {
             val fields = pdfFields.value
-            if (fields.size > 0) {
+            if fields.size > 0 then {
               Some(
                 div(
                   cls := "my-2 flex flex-col text-sm rounded-lg bg-slate-100 dark:bg-gray-700/50 p-2 relative",
@@ -247,9 +247,9 @@ case class SettingsPage()(using
                     icons.Close(cls := "text-red-600 w-4 h-4"),
                     cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer absolute right-2 top-2",
                     data.tip := "Close",
-                    onClick.foreach(_ => {
+                    onClick.foreach { _ =>
                       resetFields
-                    }),
+                    },
                   ),
                   div(
                     cls := "text-slate-400 dark:text-gray-400 text-xs italic mb-2 mt-8 md:mt-2",

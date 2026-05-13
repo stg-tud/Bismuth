@@ -16,20 +16,20 @@ import scala.util.Success
 class PingService(using registry: Registry) {
 
   implicit val codec: JsonValueCodec[String] = JsonCodecMaker.make
-  val binding = Binding[String => Unit]("pings")
+  val binding                                = Binding[String => Unit]("pings")
 
   private def ping(timer: Timer, ref: RemoteRef) = {
-    if (!ref.connected) {
+    if !ref.connected then {
       timer.cancel()
     }
     val remoteUpdate = registry.lookup(binding, ref)
     remoteUpdate("pingdata").onComplete {
-      case Success(_) => {}
+      case Success(_) =>
       case Failure(_) => println("update ping failure")
     }
   }
 
-  registry.remoteJoined.foreach(remoteRef => {
+  registry.remoteJoined.foreach { remoteRef =>
     val timer = new Timer(true)
     timer.schedule(
       new TimerTask {
@@ -38,7 +38,7 @@ class PingService(using registry: Registry) {
       0,
       10000,
     )
-  })
+  }
 
-  registry.bindSbj(binding) { (_: RemoteRef, _: String) => {} }
+  registry.bindSbj(binding) { (_: RemoteRef, _: String) => }
 }

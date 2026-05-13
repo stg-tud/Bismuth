@@ -94,26 +94,29 @@ class P2PTls(privateIdentity: PrivateIdentity) {
         try
             serverSocket // binds port if required
 
-            executionContext.execute(() => {
+            executionContext.execute { () =>
               while !abort.closeRequest do {
-                  try {
-                    val socket = serverSocket.accept().asInstanceOf[SSLSocket]
-                    startHandshake(socket).map { (abort: Abort) ?=> peerIdentity =>
-                      val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
-                      executionContext.execute(() => conn.receiveLoopBlocking())
-                    }.runIn(summon) {
-                      case Success(value) => ()
-                      case Failure(ex)    => Async.handler.fail(ex)
-                    }
-                  } catch {
-                    case ex: SocketException if abort.closeRequest => ()
-                    case ex: Throwable                             => Async.handler.fail(ex)
+                try {
+                  val socket = serverSocket.accept().asInstanceOf[SSLSocket]
+                  startHandshake(socket).map { (abort: Abort) ?=> peerIdentity =>
+                    val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
+                    executionContext.execute(() => conn.receiveLoopBlocking())
+                  }.runIn(summon) {
+                    case Success(value) => ()
+                    case Failure(ex)    => Async.handler.fail(ex)
                   }
+                } catch {
+                  case ex: SocketException if abort.closeRequest => ()
+                  case ex: Throwable                             => Async.handler.fail(ex)
+                }
               }
               Try { serverSocket.close() }: Unit
-            })
+            }
 
-            Async.handler.succeed(ConnectionDescriptor.Tcp(serverSocket.getInetAddress.getHostAddress, serverSocket.getLocalPort))
+            Async.handler.succeed(ConnectionDescriptor.Tcp(
+              serverSocket.getInetAddress.getHostAddress,
+              serverSocket.getLocalPort
+            ))
         catch {
           case ioException: IOException =>
             Async.handler.fail(ioException)

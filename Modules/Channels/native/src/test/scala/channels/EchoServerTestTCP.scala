@@ -16,5 +16,6 @@ class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
 
         TCP.listen(() => socket, ec)
       },
-      (ec, _) => descriptor => TCP.connect(TCP.defaultSocket(new InetSocketAddress(descriptor.host, descriptor.port)), ec)
+      (ec, _) =>
+        descriptor => TCP.connect(TCP.defaultSocket(new InetSocketAddress(descriptor.host, descriptor.port)), ec)
     )

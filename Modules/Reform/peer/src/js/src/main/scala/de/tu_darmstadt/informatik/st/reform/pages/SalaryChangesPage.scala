@@ -34,11 +34,11 @@ case class SalaryChangesPage()(using
           ". Payment levels can be created ",
           a(
             cls := "underline cursor-pointer",
-            onClick.foreach(e => {
+            onClick.foreach { e =>
               e.preventDefault()
               e.target.asInstanceOf[HTMLElement].blur()
               jsImplicits.routing.to(PaymentLevelsPage(), true)
-            }),
+            },
             "here",
           ),
           ".",

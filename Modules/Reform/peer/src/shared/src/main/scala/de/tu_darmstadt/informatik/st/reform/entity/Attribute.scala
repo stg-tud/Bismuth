@@ -6,9 +6,8 @@ import rdts.datatypes.MultiVersionRegister
 
 case class Attribute[T](register: MultiVersionRegister[T]) {
 
-  def getAll: Seq[T] = {
+  def getAll: Seq[T] =
     register.repr.toSeq.sortBy(_._1.time)(using Ordering.Long).map(_._2)
-  }
 
   def option: Option[T] = getAll.headOption
 

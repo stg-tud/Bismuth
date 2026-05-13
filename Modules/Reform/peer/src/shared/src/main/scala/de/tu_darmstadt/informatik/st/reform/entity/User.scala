@@ -21,9 +21,8 @@ case class User(
 
   def identifier: Attribute[String] = username
 
-  def withExists(exists: Boolean): User = {
+  def withExists(exists: Boolean): User =
     this.copy(_exists = _exists.set(exists))
-  }
 
   override def exists: Boolean = _exists.getOrElse(true)
 }

@@ -35,7 +35,7 @@ object SignalingServerCli {
     signaling.addIncomingConnection(signalServer)
 
     given rdts.base.Lattice[Payload[OverlayStatusProtocol.Status]] = summon
-    val overlayNode = new OverlayDemoNode(
+    val overlayNode                                                = new OverlayDemoNode(
       selfDetails = Set(overlayDetails),
       listenEnvelope = Some(overlayServer),
       envelopeResolver = nioResolver,

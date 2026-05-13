@@ -29,9 +29,8 @@ case class Contract(
 
   def identifier: Attribute[String] = contractAssociatedHiwi
 
-  def withExists(exists: Boolean): Contract = {
+  def withExists(exists: Boolean): Contract =
     this.copy(_exists = _exists.set(exists))
-  }
 
   override def exists: Boolean = _exists.getOrElse(true)
 

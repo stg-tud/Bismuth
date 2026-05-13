@@ -32,7 +32,7 @@ class RoutingService(using
 ) {
   given RoutingService = this
 
-  private lazy val page = Var[Page](Routes.fromPath(Path(window.location.pathname)))
+  private lazy val page  = Var[Page](Routes.fromPath(Path(window.location.pathname)))
   private lazy val query =
     Var[Map[String, String | Seq[String]]](decodeQueryParameters(window.location.search))
 
@@ -47,7 +47,7 @@ class RoutingService(using
       queryParams: Map[String, String | Seq[String]] = Map(),
       keepFocus: Boolean = false,
   ): Unit = {
-    if (newTab) {
+    if newTab then {
       window.open(linkPath(newPage, queryParams), "_blank").focus()
     } else {
       window.history.pushState(null.asInstanceOf[js.Any], "", linkPath(newPage, queryParams))
@@ -55,28 +55,28 @@ class RoutingService(using
       query.set(queryParams)
     }
 
-    if (!keepFocus) {
+    if !keepFocus then {
       document.activeElement.asInstanceOf[HTMLElement].blur()
     }
   }
 
   private def decodeQueryParameters(query: String): Map[String, String | Seq[String]] = {
     var res: Map[String, String | Seq[String]] = Map()
-    val decodedQuery = js.URIUtils.decodeURI(query)
-    if (decodedQuery.isBlank || !decodedQuery.startsWith("?")) return res
+    val decodedQuery                           = js.URIUtils.decodeURI(query)
+    if decodedQuery.isBlank || !decodedQuery.startsWith("?") then return res
     decodedQuery
       .substring(1)
       .nn
       .split("&")
       .nn
       .map(_.nn)
-      .foreach(param => {
-        if (param.contains("=")) {
-          val kv = param.split("=").nn
-          val value = if (kv.length >= 2) kv(1).nn else "".nn
-          if (kv(0).nn.matches(".*\\[\\]$")) {
+      .foreach { param =>
+        if param.contains("=") then {
+          val kv    = param.split("=").nn
+          val value = if kv.length >= 2 then kv(1).nn else "".nn
+          if kv(0).nn.matches(".*\\[\\]$") then {
             val key = kv(0).nn.replace("[]", "").nn
-            if (!res.contains(key)) res += (key -> Seq(value))
+            if !res.contains(key) then res += (key -> Seq(value))
             else {
               val oldVal = res.getOrElse(key, Seq())
               oldVal match {
@@ -89,21 +89,21 @@ class RoutingService(using
             res += (kv(0).nn -> value)
           }
         }
-      })
+      }
 
     res
   }
 
   private def encodeQueryParameters(map: Map[String, String | Seq[String]]): String = {
     var res = ""
-    if (map.nonEmpty) {
+    if map.nonEmpty then {
       var entries: Seq[String] = Seq()
-      map.foreach((k, v) => {
+      map.foreach { (k, v) =>
         v match {
           case v: String      => entries = entries :+ s"$k=$v"
           case v: Seq[String] => entries = entries :+ v.map(s => s"$k[]=$s").mkString("&")
         }
-      })
+      }
 
       res = "?" + entries.mkString("&")
     }
@@ -140,20 +140,17 @@ class RoutingService(using
     )
   }
 
-  def setQueryParameters(newParams: Map[String, String | Seq[String]]): Unit = {
+  def setQueryParameters(newParams: Map[String, String | Seq[String]]): Unit =
     query.set(cleanQueryParameters(newParams))
-  }
 
-  def updateQueryParameters(newParams: Map[String, String | Seq[String]]): Unit = {
+  def updateQueryParameters(newParams: Map[String, String | Seq[String]]): Unit =
     query.transform(a => cleanQueryParameters(a ++ newParams))
-  }
 
   def link(newPage: Page): ByteString =
     URL(linkPath(newPage), window.location.href).toString
 
-  def linkPath(newPage: Page, newQuery: Map[String, String | Seq[String]] = Map()): ByteString = {
+  def linkPath(newPage: Page, newQuery: Map[String, String | Seq[String]] = Map()): ByteString =
     Routes.toPath(newPage).pathString + encodeQueryParameters(newQuery)
-  }
 
   def back(): Unit =
     window.history.back()
@@ -167,9 +164,9 @@ class RoutingService(using
     query.set(decodeQueryParameters(window.location.search))
   }
 
-  query.observe(t => {
+  query.observe { t =>
     page.map(page => linkPath(page, t))
     ()
-  })
+  }
 
 }

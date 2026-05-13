@@ -52,37 +52,36 @@ def importIndexedDBJson(
             in: JsonReader,
             default: mutable.Map[String, (Repository[?], mutable.Map[String, ?])],
         ): mutable.Map[String, (Repository[?], mutable.Map[String, ?])] = {
-          if (in.isNextToken('{')) {
-            if (in.isNextToken('}')) default
+          if in.isNextToken('{') then {
+            if in.isNextToken('}') then default
             else {
               in.rollbackToken()
               val mb = mutable.Map.newBuilder[String, (Repository[?], mutable.Map[String, ?])]
-              while ({
-                val key = in.readKeyAsString()
+              while {
+                val key        = in.readKeyAsString()
                 val repository = repositoryCodecs(key)
                 mb += (key -> repository.decodeRepository(in))
                 in.isNextToken(',')
-              }) ()
-              if (in.isCurrentToken('}')) mb.result()
+              } do ()
+              if in.isCurrentToken('}') then mb.result()
               else in.arrayEndOrCommaError()
             }
           } else in.readNullOrTokenError(default, '{')
         }
 
-        def nullValue: mutable.Map[String, (Repository[?], mutable.Map[String, ?])] = {
+        def nullValue: mutable.Map[String, (Repository[?], mutable.Map[String, ?])] =
           mutable.Map()
-        }
       }
 
     readFromString(json)(using repositoryMapCodec)
-  }.flatMap(result => {
+  }.flatMap { result =>
     val res = Future
       .sequence(
-        result.map((_, repoAndValues) => {
+        result.map { (_, repoAndValues) =>
           repoAndValues match {
             case repoAndValues: RepoAndValues[?] =>
               Future
-                .sequence(repoAndValues._2.map((k, v) => {
+                .sequence(repoAndValues._2.map { (k, v) =>
                   repoAndValues._1
                     .getOrCreate(k)
                     .flatMap(
@@ -91,11 +90,11 @@ def importIndexedDBJson(
                           .latticeMerge(old.getOrElse(repoAndValues._1.bottomEmpty), v),
                       ),
                     )
-                }))
+                })
                 .map(_ => repoAndValues._1)
           }
-        }),
+        },
       )
     res
-  })
+  }
 }

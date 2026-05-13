@@ -23,10 +23,10 @@ case class FullMeshOverlay(
     val remembered = rememberPeer(peer)
     val previous   = remembered.active.get(peer.uid)
     val next       = remembered.copy(active = remembered.active.updated(peer.uid, conn))
-    val actions = previous match
-        case None                           => List(OverlayAction.ActiveConnectionAdded(peer.uid))
+    val actions    = previous match
+        case None                               => List(OverlayAction.ActiveConnectionAdded(peer.uid))
         case Some(existing) if existing == conn => Nil
-        case Some(existing)                 => List(OverlayAction.Disconnect(existing))
+        case Some(existing)                     => List(OverlayAction.Disconnect(existing))
     (next, actions)
   }
 

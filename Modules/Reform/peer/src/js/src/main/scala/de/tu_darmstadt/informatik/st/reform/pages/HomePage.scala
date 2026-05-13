@@ -48,11 +48,11 @@ case class HomePage()(using
     val year =
       jsImplicits.routing
         .getQueryParameterAsString("year")
-        .map(p => if (p == "") new js.Date().getFullYear().toInt else p.toInt)
+        .map(p => if p == "" then new js.Date().getFullYear().toInt else p.toInt)
     val month =
       jsImplicits.routing
         .getQueryParameterAsString("month")
-        .map(p => if (p == "") new js.Date().getMonth().toInt + 1 else p.toInt)
+        .map(p => if p == "" then new js.Date().getMonth().toInt + 1 else p.toInt)
 
     div(
       cls := "flex flex-col gap-4 w-full",
@@ -61,31 +61,31 @@ case class HomePage()(using
         IconButton(
           ButtonStyle.LightDefault,
           icons.Previous(cls := "w-6 h-6"),
-          onClick.foreach(_ => {
+          onClick.foreach { _ =>
             val m = month.now
             val y = year.now
             jsImplicits.routing.updateQueryParameters(
               Map(
-                "month" -> (if (m == 1) "12" else (m - 1).toString),
-                "year" -> (if (m == 1) (y - 1).toString else y.toString),
+                "month" -> (if m == 1 then "12" else (m - 1).toString),
+                "year"  -> (if m == 1 then (y - 1).toString else y.toString),
               ),
             )
-          }),
+          },
         ),
         div(cls := "min-w-[120px] text-center", Signal { toHumanMonth(month.value) }, " ", year),
         IconButton(
           ButtonStyle.LightDefault,
           icons.Next(cls := "w-6 h-6"),
-          onClick.foreach(_ => {
+          onClick.foreach { _ =>
             val m = month.now
             val y = year.now
             jsImplicits.routing.updateQueryParameters(
               Map(
-                "month" -> (if (m == 12) "1" else (m + 1).toString),
-                "year" -> (if (m == 12) (y + 1).toString else y.toString),
+                "month" -> (if m == 12 then "1" else (m + 1).toString),
+                "year"  -> (if m == 12 then (y + 1).toString else y.toString),
               ),
             )
-          }),
+          },
         ),
       ),
       div(
@@ -123,13 +123,13 @@ case class HomePage()(using
               .filter((_, p) =>
                 !p.isDraft.getOrElse(true) && ContractPageAttributes().isInInterval(p, month.value, year.value),
               )
-              .map((id, contract) => {
+              .map { (id, contract) =>
                 val hourlyWage = ContractPageAttributes()
                   .getMoneyPerHour(id, contract, contract.contractStartDate.getOrElse(0L))
                   .value
                 val hoursPerMonth = contract.contractHoursPerMonth.getOrElse(0)
                 hoursPerMonth * hourlyWage
-              })
+              }
               .sum
 
             toMoneyString(sum).substring(0, toMoneyString(sum).length() - 2).nn
@@ -142,13 +142,13 @@ case class HomePage()(using
             val sum = jsImplicits.repositories.contracts.existing.value
               .map(p => p.id -> p.signal.value)
               .filter((_, p) => ContractPageAttributes().isInInterval(p, month.value, year.value))
-              .map((id, contract) => {
+              .map { (id, contract) =>
                 val hourlyWage = ContractPageAttributes()
                   .getMoneyPerHour(id, contract, contract.contractStartDate.getOrElse(0L))
                   .value
                 val hoursPerMonth = contract.contractHoursPerMonth.getOrElse(0)
                 hoursPerMonth * hourlyWage
-              })
+              }
               .sum
 
             toMoneyString(sum).substring(0, toMoneyString(sum).length() - 2).nn
@@ -157,8 +157,8 @@ case class HomePage()(using
         ),
       ),
       Signal.dynamic {
-        val projects = jsImplicits.repositories.projects.existing.value.map(p => p.id -> p.signal.value)
-        val hiwis = jsImplicits.repositories.hiwis.all.value.map(p => p.id -> p.signal.value)
+        val projects    = jsImplicits.repositories.projects.existing.value.map(p => p.id -> p.signal.value)
+        val hiwis       = jsImplicits.repositories.hiwis.all.value.map(p => p.id -> p.signal.value)
         val supervisors = jsImplicits.repositories.supervisors.all.value.map(p => p.id -> p.signal.value)
 
         var contractsPerProject: Map[String, Seq[(String, Contract)]] = Map.empty
@@ -167,32 +167,32 @@ case class HomePage()(using
           .map(p => p.id -> p.signal.value)
           .filter((_, p) => ContractPageAttributes().isInInterval(p, month.value, year.value))
 
-        projects.foreach((id, _) => {
+        projects.foreach { (id, _) =>
           contractsPerProject += (id -> contracts
             .filter((_, contract) => contract.contractAssociatedProject.getOrElse("") == id))
-        })
+        }
 
         val projectsThisMonth = projects
           .filter((id, _) => contractsPerProject.get(id).exists(c => c.nonEmpty))
 
         div(
           cls := "flex flex-col gap-4 md:items-center",
-          if (projectsThisMonth.nonEmpty) {
+          if projectsThisMonth.nonEmpty then {
             projectsThisMonth
-              .map((id, project) => {
+              .map { (id, project) =>
                 TableCard(
                   project.name.option,
                   project.accountName.option,
                   Seq("", "Hiwi", "Supervisor", "From", "To", "€/h", "h/mon", "€/mon"),
-                  contractsPerProject(id).map((contractId, contract) => {
+                  contractsPerProject(id).map { (contractId, contract) =>
                     val moneyPerHour =
                       ContractPageAttributes()
                         .getMoneyPerHour(contractId, contract, contract.contractStartDate.getOrElse(0L))
                         .value
                     val hoursPerMonth = contract.contractHoursPerMonth.getOrElse(0)
                     val moneyPerMonth = moneyPerHour * hoursPerMonth
-                    val hiwi = hiwis.find((id, _) => id == contract.contractAssociatedHiwi.getOrElse(""))
-                    val supervisor = supervisors
+                    val hiwi          = hiwis.find((id, _) => id == contract.contractAssociatedHiwi.getOrElse(""))
+                    val supervisor    = supervisors
                       .find((id, _) => id == contract.contractAssociatedSupervisor.getOrElse(""))
 
                     Seq(
@@ -205,7 +205,7 @@ case class HomePage()(using
                       span(hoursPerMonth, " h"),
                       toMoneyString(moneyPerMonth),
                     )
-                  }),
+                  },
                   Seq(
                     "Σ",
                     colSpan := 5,
@@ -217,19 +217,19 @@ case class HomePage()(using
                     ),
                     toMoneyString(
                       contractsPerProject(id)
-                        .map((id, contract) => {
+                        .map { (id, contract) =>
                           val moneyPerHour =
                             ContractPageAttributes()
                               .getMoneyPerHour(id, contract, contract.contractStartDate.getOrElse(0L))
                               .value
                           val hoursPerMonth = contract.contractHoursPerMonth.getOrElse(0)
                           moneyPerHour * hoursPerMonth
-                        })
+                        }
                         .sum,
                     ),
                   ),
                 )
-              })
+              }
           } else {
             div(cls := "text-slate-400 dark:text-gray-400", "No projects this month...")
           },

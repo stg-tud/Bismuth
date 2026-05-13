@@ -14,26 +14,23 @@ object JSUtils {
     promise.toFuture
   }
 
-  def downloadFile(name: String, content: String, tpe: String): Unit = {
+  def downloadFile(name: String, content: String, tpe: String): Unit =
     NativeImpl.downloadFile(name, content, tpe)
-  }
 
-  def createPopper(trigger: String, element: String, placement: String = "bottom", sameWidth: Boolean = true): Unit = {
+  def createPopper(trigger: String, element: String, placement: String = "bottom", sameWidth: Boolean = true): Unit =
     NativeImpl.createPopper(trigger, element, placement, sameWidth)
-  }
 
-  def cleanPopper(trigger: String): Unit = {
+  def cleanPopper(trigger: String): Unit =
     NativeImpl.cleanPopper(trigger)
-  }
 
   def stickyButton(trigger: String, element: String, toggleClass: String): Unit =
     NativeImpl.stickyButton(trigger, element, toggleClass)
 
   def cleanStickyButtons(): Unit = NativeImpl.cleanStickyButtons()
 
-  def toGermanDate(input: Long): String = NativeImpl.toGermanDate(input.toString)
-  def getMonth(input: Long): Int = NativeImpl.getMonth(input.toString)
-  def getYear(input: Long): Int = NativeImpl.getYear(input.toString)
+  def toGermanDate(input: Long): String           = NativeImpl.toGermanDate(input.toString)
+  def getMonth(input: Long): Int                  = NativeImpl.getMonth(input.toString)
+  def getYear(input: Long): Int                   = NativeImpl.getYear(input.toString)
   def toMilliseconds(month: Int, year: Int): Long = NativeImpl.toMilliseconds(month, year)
 
   def toHumanMonth(input: Int): String = NativeImpl.toHumanMonth(input)
@@ -76,10 +73,10 @@ object JSUtils {
 
     def toHumanMonth(input: Int): String = js.native
 
-    def getYear(input: String): Int = js.native
-    def getMonth(input: String): Int = js.native
+    def getYear(input: String): Int                 = js.native
+    def getMonth(input: String): Int                = js.native
     def toMilliseconds(month: Int, year: Int): Long = js.native
-    def toYYYYMMDD(input: String): String = js.native
+    def toYYYYMMDD(input: String): String           = js.native
 
     def DateTimeFromISO(input: String): String = js.native
 

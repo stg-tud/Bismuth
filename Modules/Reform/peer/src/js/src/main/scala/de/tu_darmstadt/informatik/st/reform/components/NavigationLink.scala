@@ -25,15 +25,15 @@ def navigationLink(using jsImplicits: JSImplicits)(page: Page, label: String): V
   a(
     cls := "btn btn-ghost normal-case	font-normal rounded-md	hover:bg-slate-100 dark:hover:bg-gray-800/50",
     label,
-    onClick.foreach(e => {
+    onClick.foreach { e =>
       e.preventDefault()
       e.target.asInstanceOf[HTMLElement].blur()
-      if (e.ctrlKey) {
+      if e.ctrlKey then {
         jsImplicits.routing.to(page, keepFocus = true)
       } else {
         jsImplicits.routing.to(page)
       }
-    }),
+    },
     href := jsImplicits.routing.linkPath(page),
   )
 }
@@ -42,15 +42,15 @@ def navigationIconLink(using jsImplicits: JSImplicits)(page: Page, icon: VNode):
   a(
     cls := "btn btn-ghost normal-case	font-normal rounded-md	hover:bg-slate-100 dark:hover:bg-gray-800/50",
     icon,
-    onClick.foreach(e => {
+    onClick.foreach { e =>
       e.preventDefault()
       e.target.asInstanceOf[HTMLElement].blur()
-      if (e.ctrlKey) {
+      if e.ctrlKey then {
         jsImplicits.routing.to(page, keepFocus = true)
       } else {
         jsImplicits.routing.to(page)
       }
-    }),
+    },
     href := jsImplicits.routing.linkPath(page),
   )
 }

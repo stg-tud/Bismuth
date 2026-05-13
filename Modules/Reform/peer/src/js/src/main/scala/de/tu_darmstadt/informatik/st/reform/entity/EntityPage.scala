@@ -39,7 +39,7 @@ case class Title(singular: String) {
   val plural: String = singular + "s"
 
   def ofCardinal(card: Int): String =
-    if (card == 1) singular
+    if card == 1 then singular
     else plural
 }
 
@@ -101,25 +101,25 @@ class EntityRow[T <: Entity[T]](
 
   private def renderEdit: VMod = {
     val deleteModal = Var[Option[Modal]](None)
-    val id = s"form-${existingValue.map(_.id).getOrElse("new")}"
+    val id          = s"form-${existingValue.map(_.id).getOrElse("new")}"
     tr(
-      cls := "odd:bg-slate-50 odd:dark:bg-gray-600",
+      cls     := "odd:bg-slate-50 odd:dark:bg-gray-600",
       data.id := existingValue.map(v => v.id),
-      key := existingValue.map(v => v.id).getOrElse("new"),
+      key     := existingValue.map(v => v.id).getOrElse("new"),
       Signal {
         val columns = jsImplicits.routing.getQueryParameterAsSeq("columns").value
         uiAttributes
           .filter(attr => columns.isEmpty || columns.contains(toQueryParameterName(attr.label)))
-          .map(ui => {
+          .map { ui =>
             td(
-              cls := "border-b border-l border-gray-300 dark:border-gray-700 p-0 [&>div.edit-value]:h-9",
+              cls       := "border-b border-l border-gray-300 dark:border-gray-700 p-0 [&>div.edit-value]:h-9",
               styleAttr := (ui.width match {
                 case None    => "min-width: 200px"
                 case Some(v) => s"max-width: $v; min-width: $v; width: $v"
               }),
               ui.renderEdit(id, editingValue, cls := "border-none"),
             )
-          })
+          }
       },
       td(
         cls := "py min-w-[130px] max-w-[130px] md:min-w-[195px] md:max-w-[195px] mx-auto sticky right-0 bg-white dark:bg-gray-600 border-l border-r border-b border-gray-300 dark:border-gray-700 odd:dark:bg-gray-600 !z-[1]",
@@ -127,10 +127,10 @@ class EntityRow[T <: Entity[T]](
           cls := "h-full w-full flex flex-row items-center justify-center md:px-4 gap-2 md:justify-end",
           form(
             idAttr := id,
-            onSubmit.foreach(e => {
+            onSubmit.foreach { e =>
               e.preventDefault()
               createOrUpdate()
-            }),
+            },
           ), {
             existingValue match {
               case Some(p) =>
@@ -141,16 +141,16 @@ class EntityRow[T <: Entity[T]](
                     `type` := "submit",
                     idAttr := "add-entity-button",
                     icons.Save(cls := "w-4 h-4 md:hidden"),
-                    span(cls := "hidden md:block", "Save"),
-                    cls := "h-7 tooltip tooltip-top entity-save px-2",
+                    span(cls       := "hidden md:block", "Save"),
+                    cls      := "h-7 tooltip tooltip-top entity-save px-2",
                     data.tip := "Save",
                   ),
                   TableButton(
                     ButtonStyle.LightDefault,
                     icons.Close(cls := "w-4 h-4 md:hidden"),
-                    span(cls := "hidden md:block", "Cancel"),
+                    span(cls        := "hidden md:block", "Cancel"),
                     onClick.foreach(_ => cancelEdit()),
-                    cls := "h-7 tooltip tooltip-top entity-cancel px-2",
+                    cls      := "h-7 tooltip tooltip-top entity-cancel px-2",
                     data.tip := "Cancel",
                   ),
                 )
@@ -161,13 +161,13 @@ class EntityRow[T <: Entity[T]](
                   `type` := "submit",
                   idAttr := "add-entity-button",
                   icons.Add(cls := "w-4 h-4 md:hidden"),
-                  span(cls := "hidden md:block whitespace-nowrap", "Add " + this.title.singular),
-                  cls := "h-7 tooltip tooltip-top entity-add",
+                  span(cls      := "hidden md:block whitespace-nowrap", "Add " + this.title.singular),
+                  cls      := "h-7 tooltip tooltip-top entity-add",
                   data.tip := "Add" + this.title.singular,
                 )
             }
           },
-          existingValue.map(p => {
+          existingValue.map { p =>
             val modal = new Modal(
               "Delete",
               s"Do you really want to delete the entity \"${p.signal.now.identifier.getOrElse("")}\"?",
@@ -188,13 +188,13 @@ class EntityRow[T <: Entity[T]](
               TableButton(
                 ButtonStyle.LightError,
                 icons.Delete(cls := "text-red-600 w-4 h-4"),
-                cls := "h-7 tooltip tooltip-top",
+                cls      := "h-7 tooltip tooltip-top",
                 data.tip := "Delete",
                 onClick.foreach(_ => modal.open()),
               )
             }
             res
-          }),
+          },
         ),
       ),
       Signal {
@@ -222,27 +222,27 @@ class EntityRow[T <: Entity[T]](
         new ModalButton("Cancel", ButtonStyle.LightDefault),
       ),
     )
-    synced.signal.map[VMod](p => {
-      if (p.exists) {
+    synced.signal.map[VMod] { p =>
+      if p.exists then {
         tr(
           onDblClick.foreach(e => startEditing()),
-          cls := "odd:bg-slate-50 odd:dark:bg-gray-600",
+          cls     := "odd:bg-slate-50 odd:dark:bg-gray-600",
           data.id := synced.id,
-          key := synced.id,
+          key     := synced.id,
           Signal {
             val columns = jsImplicits.routing.getQueryParameterAsSeq("columns").value
             uiAttributes
               .filter(attr => columns.isEmpty || columns.contains(toQueryParameterName(attr.label)))
-              .map(ui => {
+              .map { ui =>
                 td(
-                  cls := "border-b border-l border-gray-300 dark:border-gray-700 p-0",
+                  cls       := "border-b border-l border-gray-300 dark:border-gray-700 p-0",
                   styleAttr := (ui.width match {
                     case None    => "min-width: 200px"
                     case Some(v) => s"max-width: $v; min-width: $v; width: $v"
                   }),
                   ui.render(synced.id, p),
                 )
-              })
+              }
           },
           td(
             cls := "min-w-[130px] max-w-[130px] md:min-w-[195px] md:max-w-[195px] sticky right-0 bg-white dark:bg-gray-600 border-l border-r border-b border-gray-300 dark:border-gray-700 odd:dark:bg-gray-600 !z-[1]",
@@ -251,15 +251,15 @@ class EntityRow[T <: Entity[T]](
               TableButton(
                 ButtonStyle.LightPrimary,
                 icons.Edit(cls := "w-4 h-4 md:hidden"),
-                span(cls := "hidden md:block", editLabel),
-                cls := "h-7 tooltip tooltip-top entity-edit",
+                span(cls       := "hidden md:block", editLabel),
+                cls      := "h-7 tooltip tooltip-top entity-edit",
                 data.tip := editLabel,
                 onClick.foreach(_ => startEditing()),
               ),
               TableButton(
                 ButtonStyle.LightError,
                 icons.Delete(cls := "text-red-600 w-4 h-4"),
-                cls := "h-7 tooltip tooltip-top entity-delete",
+                cls      := "h-7 tooltip tooltip-top entity-delete",
                 data.tip := "Delete",
                 onClick.foreach(_ => modal.open()),
               ),
@@ -270,7 +270,7 @@ class EntityRow[T <: Entity[T]](
       } else {
         None
       }
-    })
+    }
   }
 
   private def removeEntity(s: Synced[T]): Unit = {
@@ -280,9 +280,8 @@ class EntityRow[T <: Entity[T]](
       .toastOnError(ToastMode.Infinit)
   }
 
-  private def cancelEdit(): Unit = {
+  private def cancelEdit(): Unit =
     editingValue.set(None)
-  }
 
   private def createOrUpdate(): Unit = {
     jsImplicits.indexeddb.requestPersistentStorage()
@@ -291,27 +290,26 @@ class EntityRow[T <: Entity[T]](
     existingValue match {
       case Some(existing) =>
         existing
-          .update(p => {
+          .update { p =>
             p.get.merge(editingNow)
-          })
-          .map(_ => {
+          }
+          .map { _ =>
             editingValue.set(None)
-          })
+          }
           .toastOnError(ToastMode.Infinit)
       case None =>
         repository
           .create(editingNow)
-          .map(entity => {
+          .map { entity =>
             editingValue.set(Some((bottom.empty.default, Var(bottom.empty.default))))
             entity
-          })
+          }
           .toastOnError(ToastMode.Infinit)
     }
   }
 
-  protected def startEditing(): Unit = {
+  protected def startEditing(): Unit =
     editingValue.set(Some((existingValue.get.signal.now, Var(existingValue.get.signal.now))))
-  }
 }
 
 private class Filter[EntityType](uiAttributes: Seq[UIBasicAttribute[EntityType]]) {
@@ -355,10 +353,10 @@ abstract class EntityPage[T <: Entity[T]](
   private val entityRows: Signal[Seq[EntityRow[T]]] = Signal.dynamic {
     all.value
       .sortBy(_.signal.value.identifier.option)
-      .map(syncedEntity => {
+      .map { syncedEntity =>
         val existing = cachedExisting.getOrElseUpdate(syncedEntity.id, Existing[T](syncedEntity))
         entityRowConstructor.construct(title, repository, existing, uiAttributes)
-      })
+      }
   }
 
   private val filter = Filter[T](uiAttributes)
@@ -391,9 +389,9 @@ abstract class EntityPage[T <: Entity[T]](
               ),
               icons.Filter(cls := "ml-1 w-6 h-6"),
               cls := "!mt-0",
-              onClick.foreach(e => {
+              onClick.foreach { e =>
                 filterDropdownClosed.transform(!_)
-              }),
+              },
             ),
           ),
           div(
@@ -407,14 +405,14 @@ abstract class EntityPage[T <: Entity[T]](
             cls := "md:ml-auto",
             onClick.foreach(_ => exportView()),
           ),
-          if (addInPlace) {
+          if addInPlace then {
             Some(addButton)
           } else None,
         ),
         div(
-          cls <-- Signal { if (filterDropdownClosed.value) Some("hidden") else None },
+          cls <-- Signal { if filterDropdownClosed.value then Some("hidden") else None },
           idAttr := "filter-dropdown",
-          cls := "menu p-2 mb-4 transition-none flex flex-row gap-2",
+          cls    := "menu p-2 mb-4 transition-none flex flex-row gap-2",
           filter.render,
           div(
             cls := "max-w-[300px] md:min-w-[300px] w-full",
@@ -462,37 +460,37 @@ abstract class EntityPage[T <: Entity[T]](
             tbody(
               cls := "dark:bg-gray-600",
               Signal {
-                if (countEntities.value == 0)
-                  List(
-                    tr(
-                      cls := "h-4",
-                    ),
-                    tr(
-                      td(
-                        colSpan := 100,
-                        cls := "text-slate-500",
-                        "No entries.",
+                if countEntities.value == 0 then
+                    List(
+                      tr(
+                        cls := "h-4",
                       ),
-                    ),
-                  )
-                else if (countFilteredEntities.value == 0 && countEntities.value > 0)
-                  List(
-                    tr(
-                      cls := "h-4",
-                    ),
-                    tr(
-                      td(
-                        colSpan := 100,
-                        cls := "text-slate-500",
-                        "No results for your filter.",
+                      tr(
+                        td(
+                          colSpan := 100,
+                          cls     := "text-slate-500",
+                          "No entries.",
+                        ),
                       ),
-                    ),
-                  )
+                    )
+                else if countFilteredEntities.value == 0 && countEntities.value > 0 then
+                    List(
+                      tr(
+                        cls := "h-4",
+                      ),
+                      tr(
+                        td(
+                          colSpan := 100,
+                          cls     := "text-slate-500",
+                          "No results for your filter.",
+                        ),
+                      ),
+                    )
                 else List()
               },
               renderEntities,
             ),
-            if (!addInPlace) {
+            if !addInPlace then {
               Some(
                 tfoot(
                   tr(
@@ -526,30 +524,30 @@ abstract class EntityPage[T <: Entity[T]](
 
   private def exportView(): Unit = {
     var csvHeader: Seq[String] = Seq()
-    var csvData: Seq[String] = Seq()
+    var csvData: Seq[String]   = Seq()
 
     val columns = jsImplicits.routing.getQueryParameterAsSeq("columns").now
-    val pred = filter.predicate.now
-    val rows = entityRows.now.filter(_.value match {
+    val pred    = filter.predicate.now
+    val rows    = entityRows.now.filter(_.value match {
       case New(_)             => false
       case Existing(value, _) => pred(value.signal.now)
     })
 
-    rows.foreach(row => {
+    rows.foreach { row =>
       row.value match {
-        case New(_) =>
+        case New(_)         =>
         case Existing(v, _) =>
-          val id = v.id
-          val value = v.signal.now
-          var csvRow: Seq[String] = Seq()
+          val id                           = v.id
+          val value                        = v.signal.now
+          var csvRow: Seq[String]          = Seq()
           var selectedHeaders: Seq[String] = Seq()
           row.uiAttributes
             .filter(attr => columns.isEmpty || columns.contains(toQueryParameterName(attr.label)))
-            .foreach(attr => {
+            .foreach { attr =>
               selectedHeaders = selectedHeaders :+ attr.label
               attr match {
                 case attr: UIReadOnlyAttribute[?, ?] =>
-                  if (value.exists) {
+                  if value.exists then {
                     val a = attr.getter(id, value).now
                     csvRow = csvRow :+ attr.readConverter(a)
                   }
@@ -559,19 +557,19 @@ abstract class EntityPage[T <: Entity[T]](
                     .map(x => attr.options(value).now.filter(p => p.id == x).map(v => v.name.now).mkString(", "))
                     .mkString(", ")
                 case attr: UIAttribute[?, ?] =>
-                  if (value.exists) {
+                  if value.exists then {
                     val a = attr.getter(value)
                     csvRow = csvRow :+ a.getAll.map(x => attr.readConverter(x)).mkString(", ")
                   }
                 case _ =>
               }
-            })
+            }
 
-          if (csvHeader.isEmpty) csvHeader = selectedHeaders
-          if (csvRow.nonEmpty)
-            csvData = csvData :+ csvRow.map(escapeCSVString).mkString(",")
+          if csvHeader.isEmpty then csvHeader = selectedHeaders
+          if csvRow.nonEmpty then
+              csvData = csvData :+ csvRow.map(escapeCSVString).mkString(",")
       }
-    })
+    }
 
     val csvString = csvHeader.map(escapeCSVString).mkString(",") + "\n" + csvData.mkString("\n")
     downloadFile(title.plural + ".csv", csvString, "data:text/csv")

@@ -42,9 +42,9 @@ object OverlayStatusProtocol {
 
   def localViewOf[State](io: BroadcastIO[State], timestamp: Long)(using LocalUid): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
-        case overlay: HyParViewStateMachine   => (overlay.activeView, overlay.passiveView)
-        case overlay: FullMeshOverlay => (overlay.active.keySet, Set.empty[Uid])
-        case _                                => (Set.empty[Uid], Set.empty[Uid])
+        case overlay: HyParViewStateMachine => (overlay.activeView, overlay.passiveView)
+        case overlay: FullMeshOverlay       => (overlay.active.keySet, Set.empty[Uid])
+        case _                              => (Set.empty[Uid], Set.empty[Uid])
 
     val peerStates =
       (passivePeers.iterator.map(_ -> PeerState.Passive) ++

@@ -235,13 +235,13 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
     ),
     Test / scalaJSUseTestModuleInitializer := true,
-    Test / jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    Test / jsEnv                           := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
     Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
     libraryDependencies ++= Seq(
-      "io.github.outwatch" %%% "outwatch" % "1.0.0-RC14",
+      "io.github.outwatch"   %%% "outwatch"       % "1.0.0-RC14",
       "com.github.cornerman" %%% "colibri-router" % "0.7.8",
       "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-webnative" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
       "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-webrtc" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
@@ -249,13 +249,13 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
     ),
   )
   .jvmSettings(
-    fork := true,
+    fork                := true,
     run / baseDirectory := file("Modules/Reform/peer"),
     libraryDependencies ++= Seq(
       "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-jetty11" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
       "org.eclipse.jetty" % "jetty-slf4j-impl" % "11.0.14",
-      "org.xerial" % "sqlite-jdbc" % "3.41.0.0",
-      "com.auth0" % "java-jwt" % "4.3.0",
+      "org.xerial"        % "sqlite-jdbc"      % "3.41.0.0",
+      "com.auth0"         % "java-jwt"         % "4.3.0",
     ),
     assembly / mainClass := Some("de.tu_darmstadt.informatik.st.reform.Main")
   )

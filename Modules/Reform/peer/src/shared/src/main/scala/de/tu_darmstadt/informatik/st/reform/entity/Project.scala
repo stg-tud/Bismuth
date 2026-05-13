@@ -22,14 +22,13 @@ case class Project(
     s"${name.getOrElse("")} - ${accountName.option.flatten.getOrElse("")}",
   )
 
-  def withExists(exists: Boolean): Project = {
+  def withExists(exists: Boolean): Project =
     this.copy(_exists = _exists.set(exists))
-  }
 
   override def exists: Boolean = _exists.getOrElse(true)
 }
 
 object Project {
-  val empty: Project = Project()
+  val empty: Project                          = Project()
   implicit val codec: JsonValueCodec[Project] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 }

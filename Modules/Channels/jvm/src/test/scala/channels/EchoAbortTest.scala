@@ -67,7 +67,7 @@ class NioTCPAbortRegressionTest extends munit.FunSuite {
     abort2.abort()
 
     given ExecutionContext = ec
-    val laterWork = Promise[Unit]()
+    val laterWork          = Promise[Unit]()
 
     done1
       .flatMap(_ => done2)

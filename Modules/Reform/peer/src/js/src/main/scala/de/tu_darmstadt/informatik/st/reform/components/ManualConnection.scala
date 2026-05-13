@@ -27,12 +27,12 @@ private val webrtcConfig = new RTCConfiguration {
   )
 }
 
-private sealed trait State {
+sealed private trait State {
   def render(using state: Var[State]): VNode
 }
 
 private def showConnectionToken(connection: PendingConnection)(using jsImplicits: JSImplicits) = {
-  connection.session.map(session => {
+  connection.session.map { session =>
     div(
       cls := "flex gap-1 mt-2",
       button(
@@ -60,7 +60,7 @@ private def showConnectionToken(connection: PendingConnection)(using jsImplicits
             .sessionAsToken(session)}%2F%0A%0ASee%20you%20there%2C%0AThe%20REForm%20Team",
       ),
     )
-  })
+  }
 }
 
 private case class Init()(using jsImplicits: JSImplicits) extends State {
@@ -70,12 +70,12 @@ private case class Init()(using jsImplicits: JSImplicits) extends State {
     state.set(HostPending(pendingConnection))
   }
 
-  private val alias = Var("")
+  private val alias                                   = Var("")
   override def render(using state: Var[State]): VNode = {
     div(
       cls := "form-control w-full text-sm",
       LabeledInput("What is your name?")(
-        tpe := "text",
+        tpe         := "text",
         placeholder := "Your name",
         onInput.value --> alias,
         value := "",
@@ -92,16 +92,16 @@ private case class Init()(using jsImplicits: JSImplicits) extends State {
 }
 
 private case class ClientAskingForHostSessionToken()(using jsImplicits: JSImplicits) extends State {
-  private val sessionToken = Var("")
-  private val alias = Var("")
+  private val sessionToken                            = Var("")
+  private val alias                                   = Var("")
   override def render(using state: Var[State]): VNode = div(
     cls := "p1",
     LabeledInput("What is your name?")(tpe := "text", placeholder := "Your name", onInput.value --> alias, value := ""),
     LabeledInput("Please enter the code your peer has provided:")(
-      tpe := "text",
+      tpe         := "text",
       placeholder := "Token",
-      cls := "input input-bordered w-full text-sm p-2 h-fit",
-      value := "",
+      cls         := "input input-bordered w-full text-sm p-2 h-fit",
+      value       := "",
       onInput.value --> sessionToken,
     ),
     Button(
@@ -137,9 +137,8 @@ private case class ClientWaitingForHostConfirmation(connection: PendingConnectio
     showConnectionToken(connection),
   )
 
-  private def onConnected()(using state: Var[State]): Unit = {
+  private def onConnected()(using state: Var[State]): Unit =
     state.set(ClientAskingForHostSessionToken())
-  }
 }
 
 private case class HostPending(connection: PendingConnection)(using
@@ -170,9 +169,9 @@ private case class HostPending(connection: PendingConnection)(using
     ),
     showConnectionToken(connection),
     LabeledInput("Please enter the code your peer has provided:")(
-      tpe := "text",
+      tpe         := "text",
       placeholder := "Token",
-      value := "",
+      value       := "",
       onInput.value --> sessionTokenFromClient,
     ),
     Button(
@@ -184,9 +183,8 @@ private case class HostPending(connection: PendingConnection)(using
     ),
   )
 
-  private def confirmConnectionToClient(): Unit = {
+  private def confirmConnectionToClient(): Unit =
     connection.connector.set(PendingConnection.tokenAsSession(sessionTokenFromClient.now).session)
-  }
 
   private def onConnected(ref: RemoteRef)(using state: Var[State]): Unit = {
     println(PendingConnection.tokenAsSession(sessionTokenFromClient.now).alias)
@@ -200,32 +198,32 @@ class ManualConnectionDialog(using
 )(private val state: Var[State] = Var(Init())) {
 
   private val mode = Var("host")
-  ignoreDisconnectable(mode.observe(v => {
-    if (v == "host") {
+  ignoreDisconnectable(mode.observe { v =>
+    if v == "host" then {
       state.set(Init())
     } else {
       state.set(ClientAskingForHostSessionToken())
     }
-  }))
+  })
 
   def render: VMod = {
     div(
       div(
         cls := "flex rounded-xl mt-2 gap-1 text-center",
         input(
-          tpe := "radio",
-          name := "mode",
-          idAttr := "hostMode",
-          cls := "hidden peer/host",
+          tpe     := "radio",
+          name    := "mode",
+          idAttr  := "hostMode",
+          cls     := "hidden peer/host",
           checked := true,
-          value := "host",
+          value   := "host",
           onInput.value --> mode,
         ),
         input(
-          tpe := "radio",
-          name := "mode",
-          cls := "hidden peer/client",
-          value := "client",
+          tpe    := "radio",
+          name   := "mode",
+          cls    := "hidden peer/client",
+          value  := "client",
           idAttr := "clientMode",
           onInput.value --> mode,
         ),

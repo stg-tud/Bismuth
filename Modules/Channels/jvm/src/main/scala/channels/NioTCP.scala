@@ -136,7 +136,8 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().clear()
   }
 
-  private def socketConnectInfo(address: SocketAddress): Option[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
+  private def socketConnectInfo(address: SocketAddress)
+      : Option[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
     address match
         case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
         case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
@@ -247,14 +248,17 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     socket
   }
 
-  def listen(): LatentConnection[ConnectionDescriptor.TcpWebSocket  | ConnectionDescriptor.Unix] =
-    listen(defaultServerSocketChannel(new InetSocketAddress(0))).asInstanceOf[LatentConnection[ConnectionDescriptor.TcpWebSocket]]
+  def listen(): LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
+    listen(
+      defaultServerSocketChannel(new InetSocketAddress(0))
+    ).asInstanceOf[LatentConnection[ConnectionDescriptor.TcpWebSocket]]
 
   def listen(
       bindsocket: () => ServerSocketChannel,
   ): LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
     new LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] {
-      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
+      override def prepare(incoming: Receive)
+          : Async[Abort, ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
         Async.fromCallback { abort ?=>
           try {
             val serverChannel: ServerSocketChannel = bindsocket()

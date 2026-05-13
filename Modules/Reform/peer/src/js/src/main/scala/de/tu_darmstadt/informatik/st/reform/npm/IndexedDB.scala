@@ -182,34 +182,34 @@ class IndexedDB(using jsImplicits: JSImplicits) extends IIndexedDB {
         "reform",
         4,
         OpenDBCallbacks()
-          .setUpgrade((db, _, _, _, _) => {
+          .setUpgrade { (db, _, _, _, _) =>
             val _ = db.createObjectStore(s"reform_${Globals.VITE_DATABASE_VERSION}")
-          }),
+          },
       )
       .toFuture
 
   private var requestedPersistentStorage: Boolean = Globals.VITE_SELENIUM
 
   def requestPersistentStorage(): Unit = {
-    if (!requestedPersistentStorage) {
+    if !requestedPersistentStorage then {
       println("request persistent storage")
       requestedPersistentStorage = true
-      if (
-        js.Dynamic.global.navigator.storage != js.undefined && js.Dynamic.global.navigator.storage.persist
-          .isInstanceOf[js.Function]
-      ) {
+      if
+          js.Dynamic.global.navigator.storage != js.undefined && js.Dynamic.global.navigator.storage.persist
+            .isInstanceOf[js.Function]
+      then {
         window.navigator.storage
           .persist()
           .toFuture
-          .map(result => {
-            if (result) {
+          .map { result =>
+            if result then {
               println("Your data will be safely stored in your browser. Please don't delete site data.")
             } else {
               println(
                 "No persistent storage! Your data may get lost. Please allow the permission if the browser asks you.",
               )
             }
-          })
+          }
           .toastOnError()
       } else {
         println(
@@ -220,29 +220,27 @@ class IndexedDB(using jsImplicits: JSImplicits) extends IIndexedDB {
   }
 
   override def get[T](key: String)(using codec: JsonValueCodec[T]): Future[Option[T]] = {
-    for db <- database
-    tx = db.transaction(js.Array(s"reform_${Globals.VITE_DATABASE_VERSION}"), IDBTransactionMode.readonly)
-    store = tx.objectStore(s"reform_${Globals.VITE_DATABASE_VERSION}")
-    v <- store.get(key).toFuture
-    _ <- tx.done.toFuture
-    value = Option(v.orNull).map(castFromJsDynamic(_).nn)
-    yield {
-      value
-    }
+    for
+        db <- database
+        tx    = db.transaction(js.Array(s"reform_${Globals.VITE_DATABASE_VERSION}"), IDBTransactionMode.readonly)
+        store = tx.objectStore(s"reform_${Globals.VITE_DATABASE_VERSION}")
+        v <- store.get(key).toFuture
+        _ <- tx.done.toFuture
+        value = Option(v.orNull).map(castFromJsDynamic(_).nn)
+    yield value
   }
 
   override def update[T](key: String, scalaFun: Option[T] => T)(using codec: JsonValueCodec[T]): Future[T] = {
-    for db <- database
-    tx = db.transaction(js.Array(s"reform_${Globals.VITE_DATABASE_VERSION}"), IDBTransactionMode.readwrite)
-    store = tx.objectStore(s"reform_${Globals.VITE_DATABASE_VERSION}")
-    v <- store.get(key).toFuture
-    value = Option(v.orNull).map(castFromJsDynamic)
-    newValue = scalaFun(value)
-    _ <- store.put(castToJsDynamic(newValue), key).toFuture
-    _ <- tx.done.toFuture
-    yield {
-      newValue
-    }
+    for
+        db <- database
+        tx    = db.transaction(js.Array(s"reform_${Globals.VITE_DATABASE_VERSION}"), IDBTransactionMode.readwrite)
+        store = tx.objectStore(s"reform_${Globals.VITE_DATABASE_VERSION}")
+        v <- store.get(key).toFuture
+        value    = Option(v.orNull).map(castFromJsDynamic)
+        newValue = scalaFun(value)
+        _ <- store.put(castToJsDynamic(newValue), key).toFuture
+        _ <- tx.done.toFuture
+    yield newValue
   }
 
   private def castToJsDynamic[T](value: T)(using codec: JsonValueCodec[T]): js.Any =

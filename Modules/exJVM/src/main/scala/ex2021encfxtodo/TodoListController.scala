@@ -35,7 +35,7 @@ object TodoListController {
       changed.foreach { case (uuid, entry) =>
         uuidToTodoEntryProperties.get(uuid) match
             case Some(property) => property.set(entry)
-            case None =>
+            case None           =>
               uuidToTodoEntryProperties.put(uuid, ObjectProperty(entry))
               if !observableUuidList.contains(uuid) then observableUuidList.add(uuid): Unit
       }
