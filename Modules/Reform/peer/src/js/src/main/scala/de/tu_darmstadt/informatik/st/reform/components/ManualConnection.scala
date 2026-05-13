@@ -17,7 +17,7 @@ import org.scalajs.dom.RTCIceServer
 import org.scalajs.dom.window
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.scalajs.js
 

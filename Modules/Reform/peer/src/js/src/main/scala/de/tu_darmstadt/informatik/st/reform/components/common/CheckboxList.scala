@@ -5,7 +5,7 @@ import org.scalajs.dom.HTMLElement
 import org.scalajs.dom.document
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.scalajs.js
 

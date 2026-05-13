@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
 import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
-import kofre.base.*
+import rdts.base.*
 
 case class SalaryChange(
     value: Attribute[BigDecimal] = Attribute.empty,

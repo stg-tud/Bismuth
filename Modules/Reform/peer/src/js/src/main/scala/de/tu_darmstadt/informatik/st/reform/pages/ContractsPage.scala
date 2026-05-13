@@ -24,11 +24,11 @@ import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.getYear
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toMoneyString
 import de.tu_darmstadt.informatik.st.reform.repo.Repository
 import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import kofre.base.Bottom
-import kofre.base.Lattice
+import rdts.base.Bottom
+import rdts.base.Lattice
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.annotation.nowarn
 import scala.scalajs.js

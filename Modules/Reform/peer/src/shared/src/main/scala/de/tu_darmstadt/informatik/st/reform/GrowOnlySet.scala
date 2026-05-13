@@ -2,7 +2,7 @@ package de.tu_darmstadt.informatik.st.reform
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import kofre.base.*
+import rdts.base.*
 
 case class GrowOnlySet[A](set: Set[A]) {
 
@@ -25,7 +25,7 @@ object GrowOnlySet {
 
   implicit def GrowOnlySetLattice[A]: Lattice[GrowOnlySet[A]] = new Lattice[GrowOnlySet[A]] {
     def merge(left: GrowOnlySet[A], right: GrowOnlySet[A]): GrowOnlySet[A] = left.union(right)
-
-    override def decompose(a: GrowOnlySet[A]): Iterable[GrowOnlySet[A]] = List(a)
   }
+
+  given [A]: Decompose[GrowOnlySet[A]] = a => List(a)
 }

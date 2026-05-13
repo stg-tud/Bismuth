@@ -20,10 +20,10 @@ import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.entity.*
 import de.tu_darmstadt.informatik.st.reform.repo.Repository
 import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import kofre.base.Bottom
-import kofre.base.Lattice
+import rdts.base.Bottom
+import rdts.base.Lattice
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 def onlyDrafts(using jsImplicits: JSImplicits): Signal[Seq[Synced[Contract]]] = Signal.dynamic {
   jsImplicits.repositories.contracts.all.value.filter(_.signal.value.isDraft.getOrElse(true))

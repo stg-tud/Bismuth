@@ -4,7 +4,7 @@ import de.tu_darmstadt.informatik.st.reform.{*, given}
 import org.scalajs.dom.document
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 class SelectOption(
     val id: String,

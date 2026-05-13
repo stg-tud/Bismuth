@@ -6,7 +6,7 @@ import org.scalajs.dom.document
 import org.scalajs.dom.window
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 def duplicateValuesHandler[T <: outwatch.VMod](values: Seq[T]) = {
   div(

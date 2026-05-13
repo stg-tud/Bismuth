@@ -5,6 +5,8 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 import {visualizer} from "rollup-plugin-visualizer";
 import * as path from "path";
 
+process.env.PATH = `/home/ragnar/Hub/Apps/Bin:${process.env.PATH ?? ''}`;
+
 /** @type {import('vitest/config').UserConfig} */
 
 
@@ -12,12 +14,10 @@ export default {
     plugins: [
         scalaJSPlugin({
             // path to the directory containing the sbt build
-            // default: '.'
-            cwd: '.',
+            cwd: path.join(process.cwd(), '..', '..', '..'),
 
             // sbt project ID from within the sbt build to get fast/fullLinkJS from
-            // default: the root project of the sbt build
-            // projectID: 'reform',
+            projectID: 'reformJS',
 
             // URI prefix of imports that this plugin catches (without the trailing ':')
             // default: 'scalajs' (so the plugin recognizes URIs starting with 'scalajs:')

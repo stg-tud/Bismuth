@@ -1,7 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.repo
 
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
-import rescala.default.*
+import reactives.default.*
 
 import scala.concurrent.Future
 

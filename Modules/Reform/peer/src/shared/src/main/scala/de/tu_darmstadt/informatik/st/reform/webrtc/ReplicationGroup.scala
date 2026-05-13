@@ -22,14 +22,14 @@ import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.repo.Storage
 import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import kofre.base.Lattice.*
-import kofre.base.*
+import rdts.base.Lattice.{syntax, *}
+import rdts.base.*
 import loci.registry.Binding
 import loci.registry.Registry
 import loci.serializer.jsoniterScala.given
 import loci.transmitter.*
-import rescala.core.Disconnectable
-import rescala.default.*
+import reactives.core.Disconnectable
+import reactives.default.*
 
 import scala.concurrent.Future
 import scala.util.*
@@ -152,7 +152,7 @@ class ReplicationGroup[A](name: String)(using
         val deltaStateList = List(s) ++ resendBuffer.get(remoteRef).toList
 
         // reduce the state change to a single state for efficiency
-        val combinedState = deltaStateList.reduceOption(Lattice[A].merge)
+        val combinedState = deltaStateList.reduceOption(Lattice.merge[A])
 
         combinedState.foreach(sendUpdate)
       }

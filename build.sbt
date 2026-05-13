@@ -1,5 +1,5 @@
 import Settings.{javaOutputVersion, scala3defaults, scala3defaultsExtra}
-import org.scalajs.linker.interface.{ESVersion, ModuleSplitStyle}
+import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitStyle}
 
 import scala.scalanative.build.{LTO, Mode}
 
@@ -15,6 +15,8 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   proBench,
   rdts.js,
   rdts.jvm,
+  reform.js,
+  reform.jvm,
   rdts.native,
   reactives.js,
   reactives.jvm,
@@ -215,6 +217,50 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Dependencies.scalajsDom,
     Dependencies.scalatags(Test),
     Settings.jsEnvDom,
+  )
+
+lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
+  .in(file("Modules/Reform/peer/src"))
+  .dependsOn(reactives, rdts)
+  .settings(
+    scala3defaults,
+    name := "Reform",
+    resolvers += "jitpack".at("https://jitpack.io"),
+    Dependencies.jsoniterScala,
+    testFrameworks += new TestFramework("utest.runner.Framework"),
+    libraryDependencies += "com.lihaoyi" %%% "utest" % "0.8.1" % Test,
+    libraryDependencies += "com.github.scala-loci.scala-loci" %%% "scala-loci-serializer-jsoniter-scala" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
+    Compile / scalacOptions := (Compile / scalacOptions).value.filterNot(_ == "-Werror"),
+    Test / scalacOptions := (Test / scalacOptions).value.filterNot(_ == "-Werror"),
+    Compile / compile / scalacOptions := (Compile / compile / scalacOptions).value.filterNot(_ == "-Werror"),
+    Test / compile / scalacOptions := (Test / compile / scalacOptions).value.filterNot(_ == "-Werror"),
+  )
+  .jsSettings(
+    Compile / scalaJSModuleInitializers := Seq(
+      ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
+    ),
+    Test / scalaJSUseTestModuleInitializer := true,
+    Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
+    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform",
+    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform",
+    libraryDependencies ++= Seq(
+      "io.github.outwatch" %%% "outwatch" % "1.0.0-RC14",
+      "com.github.cornerman" %%% "colibri-router" % "0.7.8",
+      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-webnative" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
+      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-webrtc" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
+      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-broadcastchannel" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
+    ),
+  )
+  .jvmSettings(
+    fork := true,
+    run / baseDirectory := file("Modules/Reform/peer"),
+    libraryDependencies ++= Seq(
+      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-jetty11" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
+      "org.eclipse.jetty" % "jetty-slf4j-impl" % "11.0.14",
+      "org.xerial" % "sqlite-jdbc" % "3.41.0.0",
+      "com.auth0" % "java-jwt" % "4.3.0",
+    ),
+    assembly / mainClass := Some("de.tu_darmstadt.informatik.st.reform.Main")
   )
 
 lazy val webview = project.in(file("Modules/Webview"))

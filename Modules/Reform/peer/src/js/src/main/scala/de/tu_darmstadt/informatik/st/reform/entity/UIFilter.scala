@@ -6,8 +6,8 @@ import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.toQueryParameterName
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default
-import rescala.default.*
+import reactives.default
+import reactives.default.*
 
 trait UIFilter[EntityType] {
   def render: VMod

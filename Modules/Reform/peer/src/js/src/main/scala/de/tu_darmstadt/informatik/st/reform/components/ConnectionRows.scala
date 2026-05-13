@@ -8,7 +8,7 @@ import de.tu_darmstadt.informatik.st.reform.services.AvailableConnection
 import loci.transmitter.RemoteRef
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 def connectionRow(name: String, source: String, uuid: String, displayId: String, tpe: String, ref: RemoteRef)(using
     jsImplicits: JSImplicits,

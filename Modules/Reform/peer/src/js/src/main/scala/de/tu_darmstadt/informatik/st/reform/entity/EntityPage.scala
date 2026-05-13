@@ -27,11 +27,11 @@ import de.tu_darmstadt.informatik.st.reform.services.Page
 import de.tu_darmstadt.informatik.st.reform.services.ToastMode
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import de.tu_darmstadt.informatik.st.reform.{*, given}
-import kofre.base.*
+import rdts.base.*
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default
-import rescala.default.*
+import reactives.default
+import reactives.default.*
 
 import scala.collection.mutable
 

@@ -23,7 +23,7 @@ import de.tu_darmstadt.informatik.st.reform.pages.*
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 def navigationMenu(using
     jsImplicits: JSImplicits,

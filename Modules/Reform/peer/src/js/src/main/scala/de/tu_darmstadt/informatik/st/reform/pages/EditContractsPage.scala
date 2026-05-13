@@ -30,8 +30,8 @@ import de.tu_darmstadt.informatik.st.reform.{*, given}
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default
-import rescala.default.*
+import reactives.default
+import reactives.default.*
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.*

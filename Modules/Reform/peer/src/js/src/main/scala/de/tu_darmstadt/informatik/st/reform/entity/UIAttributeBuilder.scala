@@ -4,7 +4,7 @@ import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils
 import de.tu_darmstadt.informatik.st.reform.services.Page
-import rescala.default.*
+import reactives.default.*
 
 case class UIAttributeBuilder[AttributeType](
     readConverter: AttributeType => String,

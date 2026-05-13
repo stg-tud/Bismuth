@@ -22,7 +22,7 @@ import org.scalajs.dom
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.scalajs.js
 

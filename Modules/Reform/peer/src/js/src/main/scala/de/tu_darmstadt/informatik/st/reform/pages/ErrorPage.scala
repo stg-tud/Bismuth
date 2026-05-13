@@ -8,7 +8,7 @@ import de.tu_darmstadt.informatik.st.reform.services.*
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 case class ErrorPage(code: Int = 404, title: String = "", description: String = "")(using
     jsImplicits: JSImplicits,

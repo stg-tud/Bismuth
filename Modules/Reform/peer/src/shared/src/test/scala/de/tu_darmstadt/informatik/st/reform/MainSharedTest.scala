@@ -23,7 +23,7 @@ import de.tu_darmstadt.informatik.st.reform.repo.Repository
 import de.tu_darmstadt.informatik.st.reform.repo.Synced
 import de.tu_darmstadt.informatik.st.reform.utils.Seqnal.*
 import loci.registry.Registry
-import rescala.default.*
+import reactives.default.*
 import utest.*
 
 import scala.concurrent.Future

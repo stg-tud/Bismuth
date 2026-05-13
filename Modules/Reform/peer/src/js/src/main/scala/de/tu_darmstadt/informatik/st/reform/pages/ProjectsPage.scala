@@ -22,7 +22,7 @@ import de.tu_darmstadt.informatik.st.reform.entity.*
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.dateDiffMonth
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 case class ProjectsPage()(using
     jsImplicits: JSImplicits,

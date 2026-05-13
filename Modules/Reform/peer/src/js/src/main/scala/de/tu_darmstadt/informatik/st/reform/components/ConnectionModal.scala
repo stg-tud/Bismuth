@@ -13,7 +13,7 @@ import org.scalajs.dom.document
 import org.scalajs.dom.window
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.util.Failure
 import scala.util.Success

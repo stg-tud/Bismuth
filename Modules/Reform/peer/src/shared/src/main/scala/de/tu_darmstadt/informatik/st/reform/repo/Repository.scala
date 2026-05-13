@@ -24,9 +24,9 @@ import de.tu_darmstadt.informatik.st.reform.entity.Entity
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.webrtc.ReplicationGroup
-import kofre.base.*
+import rdts.base.*
 import loci.registry.Registry
-import rescala.default.*
+import reactives.default.*
 
 import java.util.UUID
 import scala.collection.mutable

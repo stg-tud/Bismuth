@@ -1,8 +1,8 @@
 package de.tu_darmstadt.informatik.st.reform.utils
 
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
-import rescala.core.Disconnectable
-import rescala.default.*
+import reactives.core.Disconnectable
+import reactives.default.*
 
 import scala.concurrent.*
 

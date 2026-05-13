@@ -11,7 +11,7 @@ import org.scalajs.dom.window
 import outwatch.VNode
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.scalajs.js
 
@@ -203,10 +203,10 @@ class Toaster {
 
   private val removeToast = Evt[Toast]()
   private val addToast = Evt[Toast]()
-  private val addToastB = addToast.act(current[Seq[Toast]] :+ _)
-  private val removeToastB = removeToast.act(r => current[Seq[Toast]].filter(b => !b.equals(r)))
+  private val addToastB = addToast.branch(v => current[Seq[Toast]] :+ v)
+  private val removeToastB = removeToast.branch(r => current[Seq[Toast]].filter(b => !b.equals(r)))
 
-  private val toasts: rescala.default.Signal[Seq[Toast]] = Fold(Seq.empty: Seq[Toast])(addToastB, removeToastB)
+  private val toasts: reactives.default.Signal[Seq[Toast]] = Fold(Seq.empty: Seq[Toast])(addToastB, removeToastB)
 
   def make(text: String, mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Default): Unit = {
     this.make(span(text), mode, style)

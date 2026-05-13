@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
 import de.tu_darmstadt.informatik.st.reform.entity.Attribute.given
-import kofre.base.*
+import rdts.base.*
 
 case class Project(
     name: Attribute[String] = Attribute.empty,

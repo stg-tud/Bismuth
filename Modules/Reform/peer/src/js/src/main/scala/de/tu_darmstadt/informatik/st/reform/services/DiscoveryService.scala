@@ -13,7 +13,7 @@ import loci.communicator.ws.webnative.WS
 import loci.transmitter.RemoteRef
 import org.scalajs.dom
 import org.scalajs.dom.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.concurrent.Future
 import scala.concurrent.Promise

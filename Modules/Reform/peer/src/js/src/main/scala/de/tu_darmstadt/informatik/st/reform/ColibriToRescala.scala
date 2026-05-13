@@ -18,21 +18,22 @@ package de.tu_darmstadt.informatik.st.reform
 import colibri.Cancelable
 import colibri.Observer
 import colibri.Sink
-import rescala.core.Scheduler
-import rescala.default.*
-import rescala.structure.Pulse
+import reactives.SelectedScheduler.State as BundleState
+import reactives.core.Scheduler
+import reactives.default.*
+import reactives.structure.Pulse
 
 given (using scheduler: Scheduler[BundleState]): Sink[Evt] with {
   def unsafeOnNext[A](sink: Evt[A])(value: A): Unit = sink.fire(value)
   def unsafeOnError[A](sink: Evt[A])(error: Throwable): Unit = scheduler.forceNewTransaction(sink) { implicit turn =>
-    sink.admitPulse(Pulse.Exceptional(error))
+    sink.admitPulse(Pulse.Exceptional(Exception(error)))
   }
 }
 
 given (using scheduler: Scheduler[BundleState]): Sink[Var] with {
   def unsafeOnNext[A](sink: Var[A])(value: A): Unit = sink.set(value)
   def unsafeOnError[A](sink: Var[A])(error: Throwable): Unit = scheduler.forceNewTransaction(sink) { implicit turn =>
-    sink.admitPulse(Pulse.Exceptional(error))
+    sink.admitPulse(Pulse.Exceptional(Exception(error)))
   }
 }
 

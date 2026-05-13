@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
 import de.tu_darmstadt.informatik.st.reform.entity.Attribute.given
-import kofre.base.*
+import rdts.base.*
 
 case class User(
     username: Attribute[String] = Attribute.empty,

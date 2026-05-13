@@ -21,7 +21,7 @@ import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toMoneyString
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 case class PaymentLevelsPage()(using
     jsImplicits: JSImplicits,

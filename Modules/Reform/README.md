@@ -37,7 +37,7 @@ export $(cat .env)
 
 Cleaning the project:
 ```
-sbt clean
+sbt reformJS/clean reformJVM/clean
 ```
 
 Warning: Firefox is not able to load the Source maps, use Chromium.
@@ -49,7 +49,7 @@ npm install
 
 Compile to javascript:
 ```bash
-sbt ~fastLinkJS
+sbt ~reformJS/fastLinkJS
 ```
 
 In another terminal start the web dev server: 
@@ -89,7 +89,7 @@ npm run test
 Run jvm tests:
 
 ```bash
-sbt test
+sbt reformJVM/test reformJS/test
 ```
 
 If you want to run the selenium tests you need to run:
@@ -144,5 +144,5 @@ Always Online Peer
 
 ```bash
 sbt reformJVM/assembly
-java -jar src/jvm/target/scala-3.3.0/reform-assembly-0.1.0-SNAPSHOT.jar
+java -jar Modules/Reform/peer/src/jvm/target/scala-3.8.3/reformjvm-assembly-0.1.0-SNAPSHOT.jar
 ```

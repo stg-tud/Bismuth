@@ -1,14 +1,13 @@
 package de.tu_darmstadt.informatik.st.reform.entity
 
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.myReplicaID
-import kofre.base.*
-import kofre.datatypes.alternatives.MultiValueRegister
-import kofre.time.VectorClock
+import rdts.base.*
+import rdts.datatypes.MultiVersionRegister
 
-case class Attribute[T](register: MultiValueRegister[T]) {
+case class Attribute[T](register: MultiVersionRegister[T]) {
 
   def getAll: Seq[T] = {
-    register.versions.toSeq.sortBy(_._1)(using VectorClock.vectorClockTotalOrdering).map(_._2)
+    register.repr.toSeq.sortBy(_._1.time)(using Ordering.Long).map(_._2)
   }
 
   def option: Option[T] = getAll.headOption
@@ -18,10 +17,11 @@ case class Attribute[T](register: MultiValueRegister[T]) {
   def getOrElse[U >: T](default: => U): U =
     getAll.headOption.getOrElse(default)
 
-  def hasValue: Boolean = register.versions.nonEmpty
+  def hasValue: Boolean = register.repr.nonEmpty
 
   def set(newValue: T): Attribute[T] = {
-    this.copy(register = register.write(myReplicaID, newValue))
+    given rdts.base.LocalUid = myReplicaID
+    this.copy(register = register.write(newValue))
   }
 
   def update(f: T => T): Attribute[T] =
@@ -35,7 +35,7 @@ object Attribute {
 
   def apply[T](value: T): Attribute[T] = Attribute.empty.set(value)
 
-  def empty[T]: Attribute[T] = Attribute(MultiValueRegister(Map.empty))
+  def empty[T]: Attribute[T] = Attribute(MultiVersionRegister.empty)
 
   given bottom[T]: Bottom[Attribute[T]] = Bottom.derived
 

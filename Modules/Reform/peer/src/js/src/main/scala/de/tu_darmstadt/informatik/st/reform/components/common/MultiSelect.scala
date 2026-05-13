@@ -12,7 +12,7 @@ import org.scalajs.dom.console
 import org.scalajs.dom.document
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.scalajs.js
 

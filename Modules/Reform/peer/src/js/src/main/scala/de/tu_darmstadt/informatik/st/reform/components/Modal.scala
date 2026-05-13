@@ -7,7 +7,7 @@ import org.scalajs.dom.document
 import outwatch.VNode
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 class ModalButton(
     val text: String,

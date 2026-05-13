@@ -35,7 +35,7 @@ import loci.transmitter.RemoteRef
 import org.scalajs.dom.RTCPeerConnection
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default.*
+import reactives.default.*
 
 import scala.annotation.nowarn
 import scala.concurrent.Future
@@ -77,8 +77,8 @@ class WebRTCService(using registry: Registry, toaster: Toaster, discovery: Disco
 
   private val removeConnection = Evt[RemoteRef]()
   private val addConnection = Evt[RemoteRef]()
-  private val addConnectionB = addConnection.act(current[Seq[RemoteRef]] :+ _)
-  private val removeConnectionB = removeConnection.act(r => current[Seq[RemoteRef]].filter(b => !b.equals(r)))
+  private val addConnectionB = addConnection.branch(v => current[Seq[RemoteRef]] :+ v)
+  private val removeConnectionB = removeConnection.branch(r => current[Seq[RemoteRef]].filter(b => !b.equals(r)))
 
   val connections: Signal[Seq[RemoteRef]] = Fold(Seq.empty: Seq[RemoteRef])(addConnectionB, removeConnectionB)
 

@@ -8,8 +8,8 @@ import de.tu_darmstadt.informatik.st.reform.npm.JSUtils
 import de.tu_darmstadt.informatik.st.reform.services.Page
 import outwatch.*
 import outwatch.dsl.*
-import rescala.default
-import rescala.default.*
+import reactives.default
+import reactives.default.*
 
 import scalajs.js
 
