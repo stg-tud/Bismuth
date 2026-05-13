@@ -113,7 +113,7 @@ class DiscoveryService {
         Globals.DISCOVERY_SERVER_URL + "/login",
         new RequestInit {
           method = HttpMethod.POST
-          body = writeToString(loginInfo)(LoginInfo.codec)
+          body = writeToString(loginInfo)(using LoginInfo.codec)
           headers = requestHeaders
         },
       ).`then`(s => {

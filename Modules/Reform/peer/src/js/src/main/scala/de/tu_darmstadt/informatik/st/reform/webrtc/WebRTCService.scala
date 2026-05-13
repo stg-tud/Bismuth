@@ -63,10 +63,10 @@ object PendingConnection {
     val answer = cf.complete(s => p.success(new ConnectionInformation(s, alias)))
     PendingConnection(answer, p.future, answer.connection)
   }
-  private val codec: JsonValueCodec[ConnectionInformation] = JsonCodecMaker.make: @nowarn
-  def sessionAsToken(s: ConnectionInformation): String = Base64.encode(writeToString(s)(codec))
+  private val codec: JsonValueCodec[ConnectionInformation] = JsonCodecMaker.make
+  def sessionAsToken(s: ConnectionInformation): String = Base64.encode(writeToString(s)(using codec))
 
-  def tokenAsSession(s: String): ConnectionInformation = readFromString(Base64.decode(s))(codec)
+  def tokenAsSession(s: String): ConnectionInformation = readFromString(Base64.decode(s))(using codec)
 }
 
 class WebRTCService(using registry: Registry, toaster: Toaster, discovery: DiscoveryService) {

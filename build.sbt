@@ -229,10 +229,6 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
     Dependencies.jsoniterScala,
     Dependencies.munit,
     libraryDependencies += "com.github.scala-loci.scala-loci" %%% "scala-loci-serializer-jsoniter-scala" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
-    Compile / scalacOptions := (Compile / scalacOptions).value.filterNot(_ == "-Werror"),
-    Test / scalacOptions := (Test / scalacOptions).value.filterNot(_ == "-Werror"),
-    Compile / compile / scalacOptions := (Compile / compile / scalacOptions).value.filterNot(_ == "-Werror"),
-    Test / compile / scalacOptions := (Test / compile / scalacOptions).value.filterNot(_ == "-Werror"),
   )
   .jsSettings(
     Compile / scalaJSModuleInitializers := Seq(

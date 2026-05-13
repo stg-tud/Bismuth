@@ -331,7 +331,6 @@ class ContractPageAttributes(using
   // TODO: These parameters are an insane dependency magnet
   //       Also the ID is not even used
   //       We need to refactor this and similar methods
-  @nowarn("msg=unused explicit parameter")
   private def getSalaryChange(id: String, contract: Contract, date: Long): Signal[Option[SalaryChange]] =
     Signal.dynamic {
       val salaryChanges = jsImplicits.repositories.salaryChanges.all.value

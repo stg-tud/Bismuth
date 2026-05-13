@@ -170,6 +170,9 @@ class RoutingService(using
     query.set(decodeQueryParameters(window.location.search))
   }
 
-  query.observe(t => page.map(page => linkPath(page, t)))
+  query.observe(t => {
+    page.map(page => linkPath(page, t))
+    ()
+  })
 
 }

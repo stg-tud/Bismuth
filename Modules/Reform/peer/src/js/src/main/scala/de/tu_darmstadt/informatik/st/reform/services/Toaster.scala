@@ -88,6 +88,7 @@ class Toast(using toaster: Toaster)(
           case None =>
             start = Some(timestamp)
             window.requestAnimationFrame(t => animate(t))
+            ()
           case Some(startValue) =>
             val elapsed = timestamp - startValue
 

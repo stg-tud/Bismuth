@@ -56,6 +56,7 @@ private class MultiSelect(
         }
       })
     }
+    ()
   }
 
   private def handleResize: Signal[Unit] = Signal.dynamic {
@@ -91,7 +92,10 @@ private class MultiSelect(
     })
 
     value.observe(updateSelectAll)
-    value.observe(_ => handleResize)
+    value.observe(_ => {
+      handleResize
+      ()
+    })
 
     div(
       onDomMount.foreach(element => {

@@ -1,5 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.entity
 
+import scala.annotation.nowarn
+
 import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.duplicateValuesHandler
@@ -186,6 +188,7 @@ class UITextAttribute[EntityType, AttributeType](
     attr.getAll.map(x => option(value := readConverter(x)))
 }
 
+@nowarn("msg=shadows field")
 class UINumberAttribute[EntityType, AttributeType](
     getter: EntityType => Attribute[AttributeType],
     setter: (EntityType, Attribute[AttributeType]) => EntityType,
@@ -218,6 +221,7 @@ class UINumberAttribute[EntityType, AttributeType](
   override def uiFilter: UIFilter[EntityType] = UIIntervalFilter(this)
 }
 
+@nowarn("msg=shadows field")
 class UIDateAttribute[EntityType](
     getter: EntityType => Attribute[Long],
     setter: (EntityType, Attribute[Long]) => EntityType,
@@ -267,6 +271,7 @@ class UIDateAttribute[EntityType](
   override def uiFilter: UIFilter[EntityType] = UIIntervalFilter(this)
 }
 
+@nowarn("msg=shadows field")
 class UICheckboxAttribute[EntityType](
     getter: EntityType => Attribute[Boolean],
     setter: (EntityType, Attribute[Boolean]) => EntityType,
@@ -314,6 +319,7 @@ class UICheckboxAttribute[EntityType](
   override def uiFilter: UIFilter[EntityType] = UIBooleanFilter(this)
 }
 
+@nowarn("msg=shadows field")
 class UISelectAttribute[EntityType, AttributeType](
     getter: EntityType => Attribute[AttributeType],
     setter: (EntityType, Attribute[AttributeType]) => EntityType,
@@ -386,6 +392,7 @@ class UISelectAttribute[EntityType, AttributeType](
   }
 }
 
+@nowarn("msg=shadows field")
 class UIMultiSelectAttribute[EntityType](
     getter: EntityType => Attribute[Seq[String]],
     setter: (EntityType, Attribute[Seq[String]]) => EntityType,
@@ -474,6 +481,7 @@ class UIMultiSelectAttribute[EntityType](
   }
 }
 
+@nowarn("msg=shadows field")
 class UICheckboxListAttribute[EntityType](
     getter: EntityType => Attribute[Seq[String]],
     setter: (EntityType, Attribute[Seq[String]]) => EntityType,

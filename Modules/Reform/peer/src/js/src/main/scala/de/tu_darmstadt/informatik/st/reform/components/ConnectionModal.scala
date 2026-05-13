@@ -36,7 +36,8 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
                 })
                 .toastOnError()
             }
-          },
+          }
+          (),
         ),
       ),
       span(

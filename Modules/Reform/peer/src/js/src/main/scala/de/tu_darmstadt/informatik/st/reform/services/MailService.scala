@@ -57,7 +57,7 @@ class MailService {
         new RequestInit {
           method = HttpMethod.POST
           body =
-            writeToString(MailBody(to, from, fromName, htmlString, mail.subject, mail.attachments, bcc))(MailBody.codec)
+            writeToString(MailBody(to, from, fromName, htmlString, mail.subject, mail.attachments, bcc))(using MailBody.codec)
           headers = requestHeaders
         },
       ).`then`(s => {

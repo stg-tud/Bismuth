@@ -520,6 +520,7 @@ class BasicInformation(
                             cls := "underline py-1 px-2 bg-purple-200 text-purple-600 text-xs rounded-md ml-2 cursor-pointer",
                             onClick.foreach(_ => {
                               this.updateHoursPerMonth(maxHours.toInt)
+                              ()
                             }),
                           ),
                         ),
@@ -617,7 +618,7 @@ class BasicInformation(
                           cls := "underline cursor-pointer",
                           onClick.foreach(_ => {
                             this.updateHoursPerMonth(maxHoursForTax.toInt)
-
+                            ()
                           }),
                           s"reduce the hours to $maxHoursForTax hours.",
                         ),
@@ -639,6 +640,7 @@ class BasicInformation(
                               if (maxHoursForProject.get < 0) 0
                               else maxHoursForProject.get,
                             )
+                            ()
                           }),
                           s"You might want to reduce the monthly hours to ${if (maxHoursForProject.get < 0) 0
                             else maxHoursForProject.get}.",
@@ -843,7 +845,7 @@ class ContractRequirementsMail(
             e.preventDefault()
             document.querySelector("#sendReminder").classList.add("loading")
 
-            editingValue.now.map((contract, _) => {
+            editingValue.now.foreach((contract, _) => {
               val supervisorOption = jsImplicits.repositories.supervisors.all.now.find(p =>
                 p.id == contract.contractAssociatedSupervisor.getOrElse(""),
               )
@@ -876,7 +878,7 @@ class ContractRequirementsMail(
                     ReminderMail(
                       hiwi,
                       supervisor,
-                      (js.Date.now + 12096e5).toLong, // magic Number is 14 days in ms
+                      (js.Date.now() + 12096e5).toLong, // magic Number is 14 days in ms
                       neededDocuments,
                     ),
                     Seq(supervisor.eMail.getOrElse("")),
@@ -894,7 +896,7 @@ class ContractRequirementsMail(
                         editingValue.now
                           .foreach((_, contract) => {
                             contract
-                              .set(contract.now.copy(reminderSentDate = Attribute(js.Date.now.toLong)))
+                              .set(contract.now.copy(reminderSentDate = Attribute(js.Date.now().toLong)))
                             save()
                           })
 
@@ -969,7 +971,7 @@ class CreateContract(
                 e.preventDefault()
                 document.querySelector("#sendContract").classList.add("loading")
 
-                editingValue.now.map((contract, _) => {
+                editingValue.now.foreach((contract, _) => {
                   val supervisorOption = jsImplicits.repositories.supervisors.all.now.find(p =>
                     p.id == contract.contractAssociatedSupervisor.getOrElse(""),
                   )
@@ -992,7 +994,7 @@ class CreateContract(
                             ContractEmail(
                               hiwi,
                               supervisor,
-                              (js.Date.now + 12096e5).toLong, // magic Number is 14 days in ms
+                              (js.Date.now() + 12096e5).toLong, // magic Number is 14 days in ms
                               cotract.get.get,
                             ),
                             Seq(supervisor.eMail.getOrElse("")),
@@ -1007,7 +1009,7 @@ class CreateContract(
                               editingValue.now
                                 .foreach((_, contract) => {
                                   contract
-                                    .set(contract.now.copy(contractSentDate = Attribute(js.Date.now.toLong)))
+                                    .set(contract.now.copy(contractSentDate = Attribute(js.Date.now().toLong)))
                                 })
                               save()
                               jsImplicits.toaster.make(s"Sent mail to ${ans.get.accepted.mkString(" and ")}.")
@@ -1089,7 +1091,7 @@ class CreateLetter(
               onClick.foreach(e => {
                 e.preventDefault()
                 document.querySelector("#sendLetter").classList.add("loading")
-                editingValue.now.map((contract, _) => {
+                editingValue.now.foreach((contract, _) => {
                   val supervisorOption = jsImplicits.repositories.supervisors.all.now.find(p =>
                     p.id == contract.contractAssociatedSupervisor.getOrElse(""),
                   )
@@ -1126,7 +1128,7 @@ class CreateLetter(
                               editingValue.now
                                 .foreach((_, contract) => {
                                   contract
-                                    .set(contract.now.copy(letterSentDate = Attribute(js.Date.now.toLong)))
+                                    .set(contract.now.copy(letterSentDate = Attribute(js.Date.now().toLong)))
                                 })
                               save()
                               jsImplicits.toaster.make(s"Sent mail to ${ans.get.accepted.mkString(" and ")}.")
@@ -1217,6 +1219,7 @@ class InnerExtendContractsPage(override val existingValue: Synced[Contract], ove
               onClick.foreach(e => {
                 e.preventDefault()
                 createDraft()
+                ()
               }),
             ),
           ),
@@ -1296,15 +1299,17 @@ class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId
       })
   }
 
-  protected def cancelEdit(): Unit = Signal.dynamic {
-    editingValue.value.map((_, contract) => {
-      if (contract.value.isDraft.getOrElse(true)) {
-        jsImplicits.routing.to(ContractDraftsPage())
-      } else {
-        jsImplicits.routing.to(ContractsPage())
-      }
-    })
-
+  protected def cancelEdit(): Unit = {
+    Signal.dynamic {
+      editingValue.value.map((_, contract) => {
+        if (contract.value.isDraft.getOrElse(true)) {
+          jsImplicits.routing.to(ContractDraftsPage())
+        } else {
+          jsImplicits.routing.to(ContractsPage())
+        }
+      })
+    }
+    ()
   }
 
   var editingValue: Var[Option[(Contract, Var[Contract])]] = Var(
@@ -1446,7 +1451,10 @@ class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId
             ContractRequirementsMail(
               contractId,
               editingValue,
-              () => createOrUpdate(stayOnPage = true),
+              () => {
+                createOrUpdate(stayOnPage = true)
+                ()
+              },
               Signal.dynamic {
                 editingValue.value
                   .map((_, contractSignal) => {
@@ -1476,7 +1484,10 @@ class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId
             CreateContract(
               contractId,
               editingValue,
-              () => createOrUpdate(false, true, true),
+              () => {
+                createOrUpdate(false, true, true)
+                ()
+              },
               Signal.dynamic {
                 editingValue.value
                   .map((_, contractSignal) => {
@@ -1500,7 +1511,10 @@ class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId
             CreateLetter(
               contractId,
               editingValue,
-              () => createOrUpdate(false, true, true),
+              () => {
+                createOrUpdate(false, true, true)
+                ()
+              },
               Signal.dynamic {
                 editingValue.value
                   .map((_, contractSignal) => {
