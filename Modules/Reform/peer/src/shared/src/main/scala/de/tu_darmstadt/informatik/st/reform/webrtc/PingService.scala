@@ -30,7 +30,7 @@ class PingService(using registry: Registry) {
   }
 
   registry.remoteJoined.foreach(remoteRef => {
-    val timer = new Timer()
+    val timer = new Timer(true)
     timer.schedule(
       new TimerTask {
         def run() = ping(timer, remoteRef)

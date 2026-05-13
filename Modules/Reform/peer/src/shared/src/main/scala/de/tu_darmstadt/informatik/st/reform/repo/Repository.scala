@@ -76,9 +76,14 @@ case class Repository[A](name: String, defaultValue: A)(using
       .map(ids => {
         val futures = ids.toSeq.map(load)
         val future = Future.sequence(futures)
-        Signal.fromFuture(future)
+        nonIntegratedFuture(future)
       })
       .flatten
+  }
+
+  /** does not capture outer transaction scope */
+  private def nonIntegratedFuture(future: Future[Seq[Synced[A]]]) = {
+    Signal.fromFuture(future)
   }
 
   def find(id: String): Signal[Option[Synced[A]]] = Signal.dynamic {

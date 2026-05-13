@@ -240,6 +240,7 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
     ),
     Test / scalaJSUseTestModuleInitializer := true,
+    Test / jsEnv := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
     Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
