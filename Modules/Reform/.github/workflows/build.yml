@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  merge_group:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: peer
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "sbt"
+      - uses: sbt/setup-sbt@v1
+        with:
+          sbt-runner-version: 1.10.10
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+          cache-dependency-path: peer/package-lock.json
+      - run: npm ci
+      - name: Build JavaScript Sources from Scala
+        run: sbt fastLinkJS
+      - name: Build JavaScript
+        run: npm run build -- --mode lukasschreiber
