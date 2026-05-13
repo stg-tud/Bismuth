@@ -28,11 +28,13 @@ object Env {
   }
 
   private def findEnvPath(currentPath: Path): Option[Path] = {
-    val guess = currentPath.resolve(".env")
-    if Files.isRegularFile(guess)
-    then Some(guess)
-    else if Files.isReadable(currentPath.getParent) then findEnvPath(currentPath.getParent)
-    else None
+    val envGuess = currentPath.resolve(".env")
+    val exampleGuess = currentPath.resolve("env.example")
+    if Files.isRegularFile(envGuess)
+    then Some(envGuess)
+    else if Files.isRegularFile(exampleGuess)
+    then Some(exampleGuess)
+    else Option(currentPath.getParent).flatMap(findEnvPath)
   }
 
   lazy val env: Map[String, String] =
@@ -40,7 +42,7 @@ object Env {
       .map(loadEnv)
       .getOrElse(
         throw new IllegalStateException(
-          s".env file not found in directory tree starting at ${Path.of("").toAbsolutePath.nn}",
+          s".env or env.example file not found in directory tree starting at ${Path.of("").toAbsolutePath.nn}",
         ),
       )
 

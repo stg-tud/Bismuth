@@ -241,8 +241,8 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
     ),
     Test / scalaJSUseTestModuleInitializer := true,
     Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
-    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform",
-    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform",
+    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
+    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
     libraryDependencies ++= Seq(
       "io.github.outwatch" %%% "outwatch" % "1.0.0-RC14",
       "com.github.cornerman" %%% "colibri-router" % "0.7.8",
