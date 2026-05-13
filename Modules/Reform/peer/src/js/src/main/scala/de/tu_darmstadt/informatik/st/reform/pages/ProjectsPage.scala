@@ -21,7 +21,6 @@ import de.tu_darmstadt.informatik.st.reform.entity.UIBasicAttribute
 import de.tu_darmstadt.informatik.st.reform.entity.*
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.dateDiffMonth
 import outwatch.*
-import outwatch.dsl.*
 import reactives.default.*
 
 case class ProjectsPage()(using

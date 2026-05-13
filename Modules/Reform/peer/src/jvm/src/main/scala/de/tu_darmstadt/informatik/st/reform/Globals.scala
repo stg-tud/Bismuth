@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext
 given ExecutionContext =
   ExecutionContext.fromExecutor(Executors.newSingleThreadScheduledExecutor().nn)
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import scala.jdk.CollectionConverters.*
 
 object Env {

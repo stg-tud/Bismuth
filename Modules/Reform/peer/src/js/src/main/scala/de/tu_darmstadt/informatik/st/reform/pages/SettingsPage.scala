@@ -23,7 +23,6 @@ import de.tu_darmstadt.informatik.st.reform.components.icons
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.downloadFile
 import de.tu_darmstadt.informatik.st.reform.npm.PDF
-import de.tu_darmstadt.informatik.st.reform.npm.*
 import de.tu_darmstadt.informatik.st.reform.services.Page
 import de.tu_darmstadt.informatik.st.reform.services.ToastMode
 import de.tu_darmstadt.informatik.st.reform.services.ToastType

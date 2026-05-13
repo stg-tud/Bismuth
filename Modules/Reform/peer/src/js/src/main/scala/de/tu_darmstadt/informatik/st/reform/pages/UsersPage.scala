@@ -18,8 +18,6 @@ package de.tu_darmstadt.informatik.st.reform.pages
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.entity.*
 
-import UsersPage.*
-
 case class UsersPage()(using
     jsImplicits: JSImplicits,
 ) extends EntityPage[User](

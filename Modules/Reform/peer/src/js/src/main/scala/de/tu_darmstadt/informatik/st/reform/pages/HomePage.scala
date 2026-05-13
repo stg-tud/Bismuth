@@ -22,7 +22,6 @@ import de.tu_darmstadt.informatik.st.reform.entity.Contract
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toGermanDate
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toHumanMonth
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toMoneyString
-import de.tu_darmstadt.informatik.st.reform.npm.*
 import de.tu_darmstadt.informatik.st.reform.services.Page
 import de.tu_darmstadt.informatik.st.reform.{*, given}
 import outwatch.*

@@ -18,7 +18,6 @@ package de.tu_darmstadt.informatik.st.reform.pages
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.entity.*
 
-import HiwisPage.*
 
 case class HiwisPage()(using
     jsImplicits: JSImplicits,

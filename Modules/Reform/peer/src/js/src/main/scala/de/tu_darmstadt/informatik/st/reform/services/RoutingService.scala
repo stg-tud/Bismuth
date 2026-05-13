@@ -15,13 +15,10 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.services
 
-import colibri.*
 import colibri.router.*
 import de.tu_darmstadt.informatik.st.reform.{*, given}
-import org.scalajs.dom
 import org.scalajs.dom.*
 import outwatch.*
-import outwatch.dsl.*
 import reactives.default.*
 
 import scala.scalajs.js

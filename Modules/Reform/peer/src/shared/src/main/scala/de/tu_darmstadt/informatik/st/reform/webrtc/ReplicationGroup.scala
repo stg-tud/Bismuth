@@ -17,17 +17,14 @@ package de.tu_darmstadt.informatik.st.reform.webrtc
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.tu_darmstadt.informatik.st.reform.Globals
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
+import de.tu_darmstadt.informatik.st.reform.{Globals, given_ExecutionContext}
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
-import de.tu_darmstadt.informatik.st.reform.repo.Storage
-import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import rdts.base.Lattice.{syntax, *}
-import rdts.base.*
-import loci.registry.Binding
-import loci.registry.Registry
+import de.tu_darmstadt.informatik.st.reform.repo.{Storage, Synced}
+import loci.registry.{Binding, Registry}
 import loci.serializer.jsoniterScala.given
 import loci.transmitter.*
+import rdts.base.*
+import rdts.base.Lattice.syntax
 import reactives.core.Disconnectable
 import reactives.default.*
 

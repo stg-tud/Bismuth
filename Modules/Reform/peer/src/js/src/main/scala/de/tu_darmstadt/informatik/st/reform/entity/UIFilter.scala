@@ -1,12 +1,9 @@
 package de.tu_darmstadt.informatik.st.reform.entity
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.components.common.*
-import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.toQueryParameterName
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, toQueryParameterName, given}
 import outwatch.*
 import outwatch.dsl.*
-import reactives.default
 import reactives.default.*
 
 trait UIFilter[EntityType] {

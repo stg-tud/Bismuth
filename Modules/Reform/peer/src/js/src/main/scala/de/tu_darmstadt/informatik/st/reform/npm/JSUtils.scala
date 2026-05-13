@@ -7,8 +7,6 @@ import scala.scalajs.js
 import scala.scalajs.js.Promise
 import scala.scalajs.js.annotation.JSImport
 
-import js.JSConverters.*
-
 object JSUtils {
 
   def usesTurn(connection: RTCPeerConnection): Future[Boolean] = {

@@ -1,7 +1,7 @@
 package channels
 
 import java.util.concurrent.{Executors, ThreadFactory}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
+import scala.concurrent.ExecutionContext
 
 object TestExecutionContextProvider {
   def create(): ExecutionContext = {

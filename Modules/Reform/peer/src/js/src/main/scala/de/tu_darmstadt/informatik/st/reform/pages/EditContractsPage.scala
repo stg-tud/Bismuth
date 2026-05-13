@@ -30,17 +30,14 @@ import de.tu_darmstadt.informatik.st.reform.{*, given}
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*
-import reactives.default
 import reactives.default.*
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.*
 import scala.math.BigDecimal.RoundingMode
 import scala.scalajs.js
-import scala.scalajs.js.Date
 import scala.util.*
 
-import ContractsPage.*
 
 // TODO FIXME implement this using the proper existingValue=none, editingValue=Some logic
 case class NewContractPage()(using

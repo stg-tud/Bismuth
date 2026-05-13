@@ -1,6 +1,6 @@
 package de.tu_darmstadt.informatik.st.reform.components.common
 
-import de.tu_darmstadt.informatik.st.reform.{*, given}
+import de.tu_darmstadt.informatik.st.reform.{given}
 import org.scalajs.dom.document
 import outwatch.*
 import outwatch.dsl.*

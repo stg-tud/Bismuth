@@ -37,7 +37,6 @@ import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
 
-import scala.annotation.nowarn
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Try

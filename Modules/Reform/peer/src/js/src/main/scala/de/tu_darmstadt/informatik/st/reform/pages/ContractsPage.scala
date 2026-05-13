@@ -18,19 +18,13 @@ package de.tu_darmstadt.informatik.st.reform.pages
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.entity.*
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.dateDiffMonth
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.getMonth
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.getYear
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toMoneyString
-import de.tu_darmstadt.informatik.st.reform.repo.Repository
-import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import rdts.base.Bottom
-import rdts.base.Lattice
+import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.{dateDiffMonth, getMonth, getYear, toMoneyString}
+import de.tu_darmstadt.informatik.st.reform.repo.{Repository, Synced}
 import outwatch.*
 import outwatch.dsl.*
+import rdts.base.{Bottom, Lattice}
 import reactives.default.*
 
-import scala.annotation.nowarn
 import scala.scalajs.js
 
 class DetailPageEntityRow[T <: Entity[T]](

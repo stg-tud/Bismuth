@@ -8,10 +8,8 @@ import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.PendingConnection
-import loci.communicator.webrtc
 import loci.communicator.webrtc.WebRTC
 import loci.transmitter.RemoteRef
-import org.scalajs.dom
 import org.scalajs.dom.RTCConfiguration
 import org.scalajs.dom.RTCIceServer
 import org.scalajs.dom.window

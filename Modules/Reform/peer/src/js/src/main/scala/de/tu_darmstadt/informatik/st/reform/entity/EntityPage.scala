@@ -30,7 +30,6 @@ import de.tu_darmstadt.informatik.st.reform.{*, given}
 import rdts.base.*
 import outwatch.*
 import outwatch.dsl.*
-import reactives.default
 import reactives.default.*
 
 import scala.collection.mutable

@@ -15,9 +15,7 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform
 
-import colibri.*
 import colibri.router.*
-import de.tu_darmstadt.informatik.st.reform.pages.DocumentsPage
 import de.tu_darmstadt.informatik.st.reform.pages.*
 import de.tu_darmstadt.informatik.st.reform.services.Page
 import org.scalajs.dom.window
