@@ -6,7 +6,7 @@ object Dependencies {
 
   val akka        = libraryDependencies += "com.typesafe.akka"         %% "akka-actor-typed"         % "2.8.8"
   val akkaTestKit = libraryDependencies += "com.typesafe.akka"         %% "akka-actor-testkit-typed" % "2.8.8"  % Test
-  val ayza        = libraryDependencies += "io.github.hakky54"          % "ayza-for-pem"             % "10.0.4"
+  val ayza        = libraryDependencies += "io.github.hakky54"          % "ayza-for-pem"             % "10.0.5"
   val blake3      = libraryDependencies += "pt.kcry"                  %%% "blake3"                   % "3.1.2"
   val bloomFilter = libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13"        % "0.13.1"
   val catsParse   = libraryDependencies += "org.typelevel"            %%% "cats-parse"               % "1.1.0"
