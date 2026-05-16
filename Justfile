@@ -52,6 +52,9 @@ reformServe: reformPrepare
 reformBundle: reformPrepare
 	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js build
 
+compile-manual:
+	cd Documentation/web-manual && cs launch org.scalameta:mdoc_3:2.6.4 -- --classpath `cs fetch --classpath de.tu-darmstadt.stg:rescala_3:0.35.1` --in manual-src.md --out manual.md
+
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
 
