@@ -21,6 +21,7 @@ object PlumtreeMessage {
     */
   case class Payload[+T](dots: Dots, data: T) extends PlumtreeMessage[T]
 
+  // exists so we can merge history
   given [T: Lattice] => Lattice[Payload[T]] = Lattice.derived
 
   /** Lazy advertisement for Plumtree-style dissemination.
@@ -45,7 +46,7 @@ object PlumtreeBroadcast {
     */
   enum Event[+State] {
     case Deliver(payload: Payload[State])
-    case Send(peers: List[Peer], payload: PlumtreeMessage[State])
+    case Send(peers: List[Peer], message: PlumtreeMessage[State])
   }
 
   final case class Result[State](
