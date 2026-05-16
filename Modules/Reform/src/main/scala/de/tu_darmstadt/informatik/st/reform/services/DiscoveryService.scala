@@ -119,9 +119,7 @@ class DiscoveryService {
     updateToken(None)
   }
 
-  def login(using
-      jsImplicits: JSImplicits @scala.annotation.unused
-  )(
+  def login(
       loginInfo: LoginInfo,
   ): Future[String] = {
     val promise = Promise[String]()
@@ -241,9 +239,7 @@ class DiscoveryService {
     ws = None
   }
 
-  def connect(using
-      jsImplicits: JSImplicits @scala.annotation.unused,
-  )(resetWebsocket: Boolean = false, force: Boolean = false): Future[Boolean] = {
+  def connect(resetWebsocket: Boolean = false, force: Boolean = false): Future[Boolean] = {
     val promise = Promise[Boolean]()
 
     if resetWebsocket then ws = None
