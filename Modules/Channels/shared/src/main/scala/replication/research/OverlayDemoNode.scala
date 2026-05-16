@@ -40,7 +40,7 @@ class OverlayDemoNode(
     if !Bottom.isEmpty(delta) then
         state = state.merge(delta)
         emitStateChanged()
-        broadcastIO.foreach(_.applyDelta(delta))
+        broadcastIO.foreach(_.broadcast(delta))
 
   private def newOverlay() =
     BroadcastIO[OverlayStatusProtocol.Status](

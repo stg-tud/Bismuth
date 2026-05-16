@@ -57,11 +57,11 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
 
   def publishWrite(delta: ClientCommWrite.WriteReq): Unit = currentStateLock.synchronized {
     log("publishing write")
-    writeDataManager.applyDelta(delta)
+    writeDataManager.broadcast(delta)
   }
   def publishRead(delta: ClientCommRead.ReadReq): Unit = currentStateLock.synchronized {
     log("publishing read")
-    readDataManager.applyDelta(delta)
+    readDataManager.broadcast(delta)
   }
 
   def handleIncomingWrite(change: ClientCommWrite): Unit = currentStateLock.synchronized {

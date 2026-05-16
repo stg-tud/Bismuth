@@ -62,7 +62,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
     for i <- 0 to number_of_additions do {
       Thread.sleep(sleep_time_milliseconds)
-      dataManager.applyDelta(Set(s"hello world ${i} from ${dataManager.replicaId}"))
+      dataManager.broadcast(Set(s"hello world ${i} from ${dataManager.replicaId}"))
     }
 
     println("finshed adding changes")
@@ -144,7 +144,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
          */
       }
 
-      dataManager.applyDelta(delta)
+      dataManager.broadcast(delta)
     }
 
     println("finshed adding changes")
@@ -203,7 +203,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
       val state = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.replicaId}")
 
-      dataManager.applyDelta(state)
+      dataManager.broadcast(state)
     }
 
     while true do

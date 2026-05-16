@@ -51,7 +51,7 @@ object JavaHttpServerTest2 {
 
     serverDiss.addServerConnection(SSEServer(handler => server.createContext("/channel", handler)))
 
-    serverDiss.applyDelta(MultiVersionRegister.of("Hello! from the server")(using serverId))
+    serverDiss.broadcast(MultiVersionRegister.of("Hello! from the server")(using serverId))
 
     server.start()
 
@@ -69,7 +69,7 @@ object JavaHttpServerTest2 {
     val ec     = ExecutionContext.global
     clientDiss.addClientConnection(JavaHttpSSE.SSEClient(client, new URI(s"http://localhost:$port/channel"), ec))
 
-    clientDiss.applyDelta(MultiVersionRegister.of("Hello!")(using clientId))
+    clientDiss.broadcast(MultiVersionRegister.of("Hello!")(using clientId))
 
     println("waiting for shutdown")
     Thread.sleep(1000)

@@ -35,7 +35,7 @@ class BroadcastIOAeadTest extends FunSuite {
     dd1.addServerConnection(sync.server)
     dd2.addClientConnection(sync.client("2"))
 
-    dd1.applyDelta(Set("secret"))
+    dd1.broadcast(Set("secret"))
 
     assertEquals(dd1.allPayloads.map(_.data).toSet, Set(Set("secret")))
     assertEquals(dd2.allPayloads.map(_.data).toSet, Set(Set("secret")))

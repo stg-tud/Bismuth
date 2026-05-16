@@ -28,7 +28,7 @@ class OverlayStatusProtocolTest extends FunSuite {
       given LocalUid = uid
       val delta      = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
       status = status.merge(delta)
-      io.applyDelta(delta)
+      io.broadcast(delta)
     }
   }
 
@@ -117,7 +117,7 @@ class OverlayStatusProtocolTest extends FunSuite {
         given LocalUid = uid
         val delta      = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
         status = status.merge(delta)
-        io.applyDelta(delta)
+        io.broadcast(delta)
       }
 
       def activeView: Set[rdts.base.Uid] =

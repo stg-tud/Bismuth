@@ -29,7 +29,7 @@ object TodoDataManager {
       unwrap: TodoRepState => Option[A]
   )(create: (A, Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] = {
     dataManager.lock.synchronized {
-      dataManager.applyDelta(wrap(init))
+      dataManager.broadcast(wrap(init))
       val fullInit =
         dataManager.allPayloads.flatMap(v => unwrap(v.data)).foldLeft(init)(Lattice.merge)
 
@@ -43,7 +43,7 @@ object TodoDataManager {
 
       sig.observe { buffer =>
         buffer.deltaBuffer.foreach { delta =>
-          dataManager.applyDelta(wrap(delta))
+          dataManager.broadcast(wrap(delta))
         }
       }
 

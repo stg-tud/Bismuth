@@ -45,7 +45,7 @@ class ConnectionManager[State: JsonValueCodec](
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
 
   def stateChanged(newState: State): Unit =
-    dataManager.applyDelta(newState)
+    dataManager.broadcast(newState)
 
   def connectionString: String =
     dataManager.selfConnectionDescriptors.head.toString

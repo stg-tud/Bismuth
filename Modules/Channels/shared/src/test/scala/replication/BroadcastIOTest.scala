@@ -25,9 +25,9 @@ class BroadcastIOTest extends munit.FunSuite {
     dd1.addServerConnection(sync.server)
     dd3.addClientConnection(sync.client("3"))
 
-    dd1.applyDelta(Set("a"))
-    dd2.applyDelta(Set("b"))
-    dd3.applyDelta(Set("c"))
+    dd1.broadcast(Set("a"))
+    dd2.broadcast(Set("b"))
+    dd3.broadcast(Set("c"))
 
     assertEquals(
       dd1.allPayloads.map(_.data).toSet,
@@ -63,7 +63,7 @@ class BroadcastIOTest extends munit.FunSuite {
         setupSafety += 1
 
     nodes.zipWithIndex.foreach { case (n, idx) =>
-      n.applyDelta(Set(s"v$idx"))
+      n.broadcast(Set(s"v$idx"))
     }
 
     var disseminateSafety = 0
@@ -106,12 +106,12 @@ class BroadcastIOTest extends munit.FunSuite {
     deliverAndPrint()
     deliverAndPrint()
 
-    dd1.applyDelta(Set("a"))
+    dd1.broadcast(Set("a"))
     deliverAndPrint()
-    dd2.applyDelta(Set("b"))
+    dd2.broadcast(Set("b"))
     deliverAndPrint()
 
-    dd3.applyDelta(Set("c"))
+    dd3.broadcast(Set("c"))
     deliverAndPrint()
     deliverAndPrint()
     deliverAndPrint()
@@ -172,7 +172,7 @@ class BroadcastIOTest extends munit.FunSuite {
     drain()
 
     nodes.zipWithIndex.foreach { case (node, idx) =>
-      node.io.applyDelta(Set(s"v$idx"))
+      node.io.broadcast(Set(s"v$idx"))
       drain()
     }
 
@@ -234,9 +234,9 @@ class BroadcastIOTest extends munit.FunSuite {
     }
     drain()
 
-    n0.io.applyDelta(Set("before-0"))
+    n0.io.broadcast(Set("before-0"))
     drain()
-    n1.io.applyDelta(Set("before-1"))
+    n1.io.broadcast(Set("before-1"))
     drain()
 
     val initialExpected = Set(Set("before-0"), Set("before-1"))
@@ -257,9 +257,9 @@ class BroadcastIOTest extends munit.FunSuite {
     n1.closeConnectionTo(n3)
     drain()
 
-    n0.io.applyDelta(Set("after-0"))
+    n0.io.broadcast(Set("after-0"))
     drain()
-    n3.io.applyDelta(Set("after-3"))
+    n3.io.broadcast(Set("after-3"))
     drain()
 
     val survivingExpected = initialExpected ++ Set(Set("after-0"), Set("after-3"))
@@ -309,7 +309,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
       node.state = node.state.merge(delta)
-      node.dissemination.applyDelta(delta)
+      node.dissemination.broadcast(delta)
     }
 
     drainAll(nodes)

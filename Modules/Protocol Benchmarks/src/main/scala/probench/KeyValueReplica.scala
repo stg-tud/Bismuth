@@ -102,7 +102,7 @@ class KeyValueReplica(
         log(s"publishing cluster state $delta")
         val oldstate = state
         state = state.merge(delta)
-        dataManager.applyDelta(delta)
+        dataManager.broadcast(delta)
       } else {
         log("skip")
       }
@@ -263,10 +263,10 @@ class KeyValueReplica(
     }
 
     def publishWrite(delta: ClientCommWrite.WriteRes): Unit =
-      dataManagerWrite.applyDelta(delta)
+      dataManagerWrite.broadcast(delta)
 
     def publishRead(delta: ClientCommRead.ReadRes): Unit =
-      dataManagerRead.applyDelta(delta)
+      dataManagerRead.broadcast(delta)
   }
 
   // ============== CONN-INF ==============
@@ -311,7 +311,7 @@ class KeyValueReplica(
       if delta `inflates` state then {
         // log("publishing conn inf")
         state = state.merge(delta)
-        dataManager.applyDelta(delta)
+        dataManager.broadcast(delta)
       } else log("skip publishing conn inf")
 
       state

@@ -164,7 +164,7 @@ class BroadcastIO[State](
   def allPayloads: List[Payload[State]] =
     lock.synchronized(plumtree.deltaStorage.getHistory)
 
-  def applyDelta(delta: State): Unit = lock.synchronized {
+  def broadcast(delta: State): Unit = lock.synchronized {
     applyRoutingResult:
         plumtree.broadcast(delta)
   }
