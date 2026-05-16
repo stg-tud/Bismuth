@@ -1,9 +1,9 @@
-import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.BroadcastIO
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Sync}
 import rdts.base.LocalUid
-import replication.BroadcastIO
 import webview.WebView
 
 import java.nio.file.{Files, Path, StandardOpenOption}

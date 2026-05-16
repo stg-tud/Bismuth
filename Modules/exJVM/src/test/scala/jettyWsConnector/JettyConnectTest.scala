@@ -1,12 +1,13 @@
 package jettyWsConnector
 
-import channels.{Abort, ArrayMessageBuffer, EchoCommunicationTest}
+import channels.connection.{Abort, ArrayMessageBuffer, ConnectionDescriptor}
+import channels.EchoCommunicationTest
 import de.rmgk.delay.*
 import org.eclipse.jetty.http.pathmap.PathSpec
 
 import java.net.URI
 
-class EchoServerTestJetty extends EchoCommunicationTest[channels.ConnectionDescriptor.WebSocket](
+class EchoServerTestJetty extends EchoCommunicationTest[ConnectionDescriptor.WebSocket](
       { (_, _) =>
         val listener   = JettyWsListener.prepareServer(0)
         val echoServer = listener.listen(PathSpec.from("/registry/*"))

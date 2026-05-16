@@ -1,10 +1,10 @@
 package replication.acl.sync.anti_entropy
 
-import channels.ArrayMessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import AclEnforcingSync.SyncMsg
 import AclEnforcingSync.SyncMsg.*
+import channels.connection.ArrayMessageBuffer
 import rdts.time.Dots
 import replication.acl.bft.{Acl, BftDelta, Hash}
 import replication.acl.sync.ConnectionManager

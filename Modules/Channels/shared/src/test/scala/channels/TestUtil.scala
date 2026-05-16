@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.{ConnectionClosedException, NoMoreDataException}
 import de.rmgk.delay.Callback
 
 import java.io.IOException

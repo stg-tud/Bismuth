@@ -1,9 +1,9 @@
 package ex2026lofi_acl.sync
 
-import channels.{ArrayMessageBuffer, MessageBuffer}
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
 import ChannelConnectionManagerTest.*
+import channels.connection.{ArrayMessageBuffer, MessageBuffer}
 import munit.FunSuite
 import replication.acl.sync.ChannelConnectionManager
 

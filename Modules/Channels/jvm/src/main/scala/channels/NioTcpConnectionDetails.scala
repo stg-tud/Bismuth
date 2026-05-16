@@ -1,5 +1,7 @@
 package channels
 
+import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, LatentConnection}
+
 import java.net.InetSocketAddress
 
 class NioTcpConnectionDetailsResolver(nio: NioTCP) extends ChannelResolver {

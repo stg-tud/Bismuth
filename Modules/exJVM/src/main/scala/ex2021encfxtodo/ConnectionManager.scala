@@ -1,18 +1,18 @@
 package ex2021encfxtodo
 
-import channels.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver, PeerConnectInfo}
+import channels.connection.{Abort, ConnectionDescriptor, PeerConnectInfo}
+import channels.overlay.FullMeshOverlay
+import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, RegistryConfiguration}
 import rdts.base.LocalUid
-import replication.BroadcastIO
-import replication.overlay.FullMeshOverlay
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.ExecutorService
 import scala.util.Try
 
-class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends replication.Aead {
+class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends channels.Aead {
   override def encrypt(data: Array[Byte], associated: Array[Byte]): Array[Byte] = aead.encrypt(data, associated)
 
   override def decrypt(data: Array[Byte], associated: Array[Byte]): Try[Array[Byte]] =

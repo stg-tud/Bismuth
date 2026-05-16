@@ -1,6 +1,6 @@
 package ex2026lofi_acl.travelplanner
 
-import channels.MessageBuffer
+import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity

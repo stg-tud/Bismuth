@@ -1,8 +1,9 @@
 package ex2026overlaydemo
 
 import channels.*
-import replication.broadcast.PlumtreeMessage.Payload
-import replication.research.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
+import channels.connection.{Abort, ConnectionDescriptor, LatentConnection}
+import channels.research.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
+import channels.broadcast.PlumtreeMessage.Payload
 
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors

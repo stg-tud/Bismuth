@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap
-import replication.JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 
 class SizeTest extends munit.FunSuite {
 

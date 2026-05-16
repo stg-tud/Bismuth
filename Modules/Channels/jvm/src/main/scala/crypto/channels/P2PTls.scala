@@ -1,6 +1,6 @@
 package crypto.channels
 
-import channels.*
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
 import crypto.PublicIdentity
 import crypto.channels.{P2PX509TrustManager, X509Util}
 import de.rmgk.delay.{Async, Sync}

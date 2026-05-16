@@ -1,15 +1,15 @@
 package webapps
 
+import channels.BroadcastIO
 import channels.broadcastchannel.BroadcastChannelConnector
+import channels.connection.{Abort, ArrayMessageBuffer, MessageBuffer}
 import channels.webrtc.{ConnectorOverview, SessionDescription, WebRTCConnection, WebRTCConnector}
-import channels.{Abort, ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import org.scalajs.dom
 import org.scalajs.dom.*
 import org.scalajs.dom.html.Table
-import replication.BroadcastIO
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
 

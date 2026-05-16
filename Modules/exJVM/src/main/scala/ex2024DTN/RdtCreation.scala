@@ -1,13 +1,13 @@
 package ex2024DTN
 
-import _root_.replication.JsoniterCodecs.given
+import channels.BroadcastIO
+import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2024DTN.rdt.{Channel, ClientOperationMode}
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.time.Dot
-import replication.BroadcastIO
 
 import scala.annotation.unused
 import scala.util.Random

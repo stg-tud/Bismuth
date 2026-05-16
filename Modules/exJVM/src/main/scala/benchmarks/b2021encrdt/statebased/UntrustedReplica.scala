@@ -1,9 +1,9 @@
 package benchmarks.b2021encrdt.statebased
 
+import channels.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.Lattice
 import rdts.time.VectorClock
-import replication.Aead
 
 abstract class UntrustedReplica(initialStates: Set[EncryptedState]) extends Replica {
   protected var stateStore: Set[EncryptedState] = initialStates

@@ -1,5 +1,6 @@
 package webapps.ex2019todo
 
+import channels.BroadcastIO
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Lattice}
@@ -7,9 +8,7 @@ import rdts.datatypes.{LastWriterWins, ReplicatedList}
 import rdts.syntax.DeltaBuffer
 import rdts.time.Dots
 import reactives.default.*
-
-import replication.BroadcastIO
-import replication.JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 
 object TodoDataManager {
 

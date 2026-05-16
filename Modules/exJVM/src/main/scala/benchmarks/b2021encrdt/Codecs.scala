@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.base.Uid
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.{ArrayRanges, Dots}
-import replication.JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 
 import java.util.UUID
 

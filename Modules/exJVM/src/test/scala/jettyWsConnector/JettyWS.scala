@@ -1,6 +1,6 @@
 package jettyWsConnector
 
-import channels.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, Receive as ChannelHandler}
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, Receive as ChannelHandler}
 import de.rmgk.delay.{Async, toAsync, Callback as DelayCallback}
 import org.eclipse.jetty.http.pathmap.PathSpec
 import org.eclipse.jetty.server.handler.{ContextHandler, ContextHandlerCollection}

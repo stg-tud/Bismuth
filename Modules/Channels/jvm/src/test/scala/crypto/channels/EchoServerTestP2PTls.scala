@@ -1,9 +1,10 @@
 package crypto.channels
 
 import channels.EchoCommunicationTest
+import channels.connection.ConnectionDescriptor
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 
-class EchoServerTestP2PTls extends EchoCommunicationTest[channels.ConnectionDescriptor.Tcp](
+class EchoServerTestP2PTls extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
       (ec, _) => EchoServerTestP2PTls.p2pTls1.latentListener(ec),
       (ec, _) =>
         descriptor =>

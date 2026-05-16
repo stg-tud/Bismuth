@@ -48,7 +48,7 @@ case class WsSendData(src: String, dst: String, data: BinaryAsBase64, delivery_n
 given JsonValueCodec[WsRecvData] = JsonCodecMaker.make
 given JsonValueCodec[WsSendData] = JsonCodecMaker.make
 
-import replication.JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 given JsonValueCodec[PosNegCounter] = JsonCodecMaker.make
 
 class Replica[S: {Lattice, JsonValueCodec}](

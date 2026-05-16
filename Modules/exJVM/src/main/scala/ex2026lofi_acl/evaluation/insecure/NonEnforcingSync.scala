@@ -1,6 +1,6 @@
 package ex2026lofi_acl.evaluation.insecure
 
-import channels.MessageBuffer
+import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.channels.PrivateIdentity
 import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder

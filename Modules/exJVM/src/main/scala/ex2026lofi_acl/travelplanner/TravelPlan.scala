@@ -129,7 +129,7 @@ object TravelPlan {
       given Bottom[String]                 = Bottom.provide("")
       given JsonValueCodec[Option[String]] = JsonCodecMaker.make
       given Bottom[Option[String]]         = Bottom.provide(None)
-      import replication.JsoniterCodecs.given
+      import channels.JsoniterCodecs.given
       JsonCodecMaker.make[TravelPlan](CodecMakerConfig.withMapAsArray(true))
 }
 

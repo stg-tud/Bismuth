@@ -1,6 +1,7 @@
 package channels
 
-import channels.{Abort, JsSSEClient}
+import channels.JsSSEClient
+import channels.connection.{Abort, ArrayMessageBuffer}
 
 import scala.util.{Failure, Success}
 

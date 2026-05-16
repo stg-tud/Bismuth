@@ -1,6 +1,6 @@
 package ex2026lofi_acl.travelplanner
 
-import channels.MessageBuffer
+import channels.connection.MessageBuffer
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026lofi_acl.Debug
 import ex2026lofi_acl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}

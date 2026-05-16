@@ -4,6 +4,7 @@ import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.{DecryptedDeltaGroup, EncryptedDeltaGroup, TrustedReplica, UntrustedReplica}
 import benchmarks.b2021encrdt.mock.SecureToDoListClient.{ToDoMapLattice, mergeDecryptedDeltas}
 import benchmarks.b2021encrdt.todolist.ToDoEntry
+import channels.Aead
 import rdts.base.LocalUid
 import rdts.datatypes.ObserveRemoveMap
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
@@ -14,10 +15,10 @@ import java.util.UUID
 import scala.collection.mutable
 
 class SecureToDoListClient(
-    replicaId1: LocalUid,
-    crdt: DeltaAWLWWMContainer[UUID, ToDoEntry],
-    aead: replication.Aead | Null,
-    private val intermediary: UntrustedReplica
+                            replicaId1: LocalUid,
+                            crdt: DeltaAWLWWMContainer[UUID, ToDoEntry],
+                            aead: Aead | Null,
+                            private val intermediary: UntrustedReplica
 ) extends TrustedReplica[ToDoMapLattice](replicaId1, crdt.merge, aead) with ToDoListClient {
 
   private val uuidToDeltaGroupMap: mutable.Map[UUID, DecryptedDeltaGroup[ToDoMapLattice]] = mutable.Map.empty

@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, JioInputStreamAdapter, JioOutputStreamAdapter, LatentConnection, MessageBuffer, Receive}
 import com.sun.net.httpserver.{HttpExchange, HttpHandler}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 

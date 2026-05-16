@@ -1,6 +1,6 @@
 package ex2026lofi_acl.sync
 
-import channels.MessageBuffer
+import channels.connection.MessageBuffer
 import crypto.PublicIdentity
 import ex2026lofi_acl.Debug
 import replication.acl.sync.MessageReceiver

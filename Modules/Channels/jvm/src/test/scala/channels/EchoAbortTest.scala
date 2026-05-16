@@ -1,5 +1,7 @@
 package channels
 
+import channels.connection.Abort
+
 import java.util.concurrent.{Executors, ThreadFactory}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future, Promise}
 

@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.datatypes.{LastWriterWins, ReplicatedList}
 import rdts.syntax.DeltaBuffer
 import rdts.time.Dot
-import replication.JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 
 object Codecs {
 

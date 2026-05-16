@@ -1,6 +1,6 @@
 package replication.acl.sync
 
-import channels.{Abort, Connection, MessageBuffer, Receive}
+import channels.connection.{Abort, Connection, MessageBuffer, Receive}
 import crypto.PublicIdentity
 import crypto.channels.{P2PTls, PrivateIdentity}
 import de.rmgk.delay.Callback

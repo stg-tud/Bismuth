@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Callback}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, SocketAddress, SocketTimeoutException}

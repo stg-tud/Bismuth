@@ -1,6 +1,6 @@
 package webapps.ex2019todo
 
-import channels.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 
 import scala.scalajs.js

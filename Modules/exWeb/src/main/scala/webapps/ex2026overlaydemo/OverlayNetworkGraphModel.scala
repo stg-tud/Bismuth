@@ -1,7 +1,7 @@
 package webapps.ex2026overlaydemo
 
+import channels.research.OverlayStatusProtocol
 import rdts.base.Uid
-import replication.research.OverlayStatusProtocol
 
 import scala.collection.mutable
 

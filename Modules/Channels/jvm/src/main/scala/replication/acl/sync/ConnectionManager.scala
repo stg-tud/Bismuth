@@ -1,6 +1,6 @@
 package replication.acl.sync
 
-import channels.MessageBuffer
+import channels.connection.MessageBuffer
 import crypto.PublicIdentity
 
 trait ConnectionManager {

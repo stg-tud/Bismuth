@@ -1,14 +1,14 @@
 package webapps.ex2026overlaydemo
 
-import channels.*
+import channels.{BroadcastIO, *}
+import channels.connection.{Abort, Connection, ConnectionDescriptor, LatentConnection, Receive}
+import channels.research.{OverlayDemoNode, SignalingClient, SignalingServer}
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
 import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnectionFailed, WebRTCConnector}
 import de.rmgk.delay.Async
 import org.scalajs.dom
 import rdts.base.Uid
-import replication.BroadcastIO
-import replication.research.OverlayStatusProtocol.Status
-import replication.research.{OverlayDemoNode, SignalingClient, SignalingServer}
+import channels.research.OverlayStatusProtocol.Status
 
 import scala.collection.mutable
 import scala.scalajs.js

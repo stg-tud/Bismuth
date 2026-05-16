@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.{Abort, ArrayMessageBuffer}
 import channels.webnativewebsockets.WebsocketConnect
 import de.rmgk.delay.{Async, Callback}
 

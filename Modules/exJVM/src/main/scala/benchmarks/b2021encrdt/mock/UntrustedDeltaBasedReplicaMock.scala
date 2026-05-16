@@ -37,14 +37,14 @@ class UntrustedDeltaBasedReplicaMock extends UntrustedReplica {
     printWriter.close()
   }
 
-  def decryptAndWriteDeltasToFile(aead: replication.Aead, outFilePath: Path): Unit = {
+  def decryptAndWriteDeltasToFile(aead: channels.Aead, outFilePath: Path): Unit = {
     val os          = Files.newOutputStream(outFilePath)
     val printWriter = new PrintWriter(os)
     encryptedDeltaGroupStore.foreach(encDeltaGroup => printWriter.println(encDeltaGroup.decrypt[Dots](aead)))
     printWriter.close()
   }
 
-  def decryptAndWriteStateToFile(aead: replication.Aead, outFilePath: Path): Unit = {
+  def decryptAndWriteStateToFile(aead: channels.Aead, outFilePath: Path): Unit = {
     val os          = Files.newOutputStream(outFilePath)
     val printWriter = new PrintWriter(os)
     val crdt        = decrypt(aead)
@@ -52,7 +52,7 @@ class UntrustedDeltaBasedReplicaMock extends UntrustedReplica {
     printWriter.close()
   }
 
-  def decrypt(aead: replication.Aead): DeltaAWLWWMContainer[String, String] = {
+  def decrypt(aead: channels.Aead): DeltaAWLWWMContainer[String, String] = {
     val crdt = new DeltaAWLWWMContainer[String, String]("".convert)
     encryptedDeltaGroupStore.map { encDeltaGroup =>
       encDeltaGroup.decrypt(aead)(using Codecs.deltaAwlwwmapJsonCodec)

@@ -3,7 +3,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.base.{Bottom, Lattice}
 import rdts.datatypes.{LastWriterWins, ReplicatedList}
 import rdts.syntax.DeltaBuffer
-import replication.JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 
 case class TaskRef(id: String)
 case class TaskData(

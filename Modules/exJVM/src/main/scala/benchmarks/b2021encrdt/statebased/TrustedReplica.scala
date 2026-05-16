@@ -1,9 +1,9 @@
 package benchmarks.b2021encrdt.statebased
 
+import channels.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.LocalUid
 import rdts.time.VectorClock
-import replication.Aead
 
 abstract class TrustedReplica[T](val localReplicaId: LocalUid, private val aead: Aead)(using
     val stateJsonCodec: JsonValueCodec[T]

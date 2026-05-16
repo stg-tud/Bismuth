@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.{Abort, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, LocalMessageQueue, MessageBuffer, QueuedLocalConnection, Receive, SynchronousLocalConnection}
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import scala.util.{Failure, Success}

@@ -7,7 +7,7 @@ import rdts.filters.PermissionTree
 import replication.acl.bft.{Hash, Signature}
 import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
 import replication.acl.sync.anti_entropy.SignedDelta
-import JsoniterCodecs.given
+import channels.JsoniterCodecs.given
 
 object JsoniterCodecsJvm {
   given pubIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:

@@ -1,6 +1,7 @@
 package probench.ycsbadapters
 
-import channels.{Abort, ConcurrencyHelper, NioTCP}
+import channels.connection.Abort
+import channels.{ConcurrencyHelper, NioTCP}
 import probench.cli.addRetryingLatentConnection
 import probench.clients.ProBenchClient
 import probench.ycsbadapters.ProBenchAdapterConnectionPool.syncClient

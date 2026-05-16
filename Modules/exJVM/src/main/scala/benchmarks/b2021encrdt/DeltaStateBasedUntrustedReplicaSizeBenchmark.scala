@@ -135,11 +135,11 @@ trait DeltaStateUntrustedReplicaSizeBenchEnvironment {
   if !outDir.toFile.exists() then
       outDir.toFile.mkdirs()
       ()
-  val aead: replication.Aead                      = AeadTranslation(Helper.setupAead("AES128_GCM"))
+  val aead: channels.Aead                      = AeadTranslation(Helper.setupAead("AES128_GCM"))
   val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(10_000)
 }
 
-class AeadTranslation(aead: com.google.crypto.tink.Aead) extends replication.Aead {
+class AeadTranslation(aead: com.google.crypto.tink.Aead) extends channels.Aead {
   override def encrypt(data: Array[Byte], associated: Array[Byte]): Array[Byte] = aead.encrypt(data, associated)
 
   override def decrypt(data: Array[Byte], associated: Array[Byte]): Try[Array[Byte]] =

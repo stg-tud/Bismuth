@@ -2,8 +2,8 @@ package benchmarks.b2026merklesearchtree
 
 import org.openjdk.jmh.annotations.*
 import rdts.time.CausalTime
-import replication.JsoniterCodecs.given
-import replication.research.MerkleSearchTree
+import channels.JsoniterCodecs.given
+import channels.research.MerkleSearchTree
 
 import java.util.concurrent.TimeUnit
 

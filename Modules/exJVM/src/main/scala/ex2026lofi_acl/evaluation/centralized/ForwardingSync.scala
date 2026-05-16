@@ -1,6 +1,6 @@
 package ex2026lofi_acl.evaluation.centralized
 
-import channels.{ArrayMessageBuffer, MessageBuffer}
+import channels.connection.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity

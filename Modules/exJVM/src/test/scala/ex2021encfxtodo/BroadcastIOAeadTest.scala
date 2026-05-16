@@ -1,14 +1,14 @@
 package ex2021encfxtodo
 
-import channels.SynchronousLocalConnection
+import channels.broadcast.PlumtreeMessage
+import channels.{Aead, BroadcastIO}
+import channels.connection.SynchronousLocalConnection
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
-import com.google.crypto.tink.{Aead as TinkAead, KeyTemplates, KeysetHandle, RegistryConfiguration}
+import com.google.crypto.tink.{KeyTemplates, KeysetHandle, RegistryConfiguration, Aead as TinkAead}
 import munit.FunSuite
 import rdts.base.LocalUid
-import replication.BroadcastIO
-import replication.broadcast.PlumtreeMessage
 
 import scala.collection.mutable
 
@@ -16,7 +16,7 @@ class BroadcastIOAeadTest extends FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-  private def newAead(): replication.Aead = {
+  private def newAead(): Aead = {
     AeadConfig.register()
     val keyset = KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305"))
     val aead   = keyset.getPrimitive(RegistryConfiguration.get(), classOf[TinkAead])
@@ -50,7 +50,7 @@ class BroadcastIOAeadTest extends FunSuite {
       aead
     )
 
-    assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, replication.Aead.identity).isFailure)
+    assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, channels.Aead.identity).isFailure)
     assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
   }
 }

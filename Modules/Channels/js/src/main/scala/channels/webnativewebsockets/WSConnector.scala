@@ -2,6 +2,7 @@ package channels.webnativewebsockets
 
 import channels.*
 import channels.MesageBufferExtensions.asArrayBuffer
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
 

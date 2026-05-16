@@ -1,6 +1,7 @@
 package channels
 
 import channels.TestUtil.printErrors
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, NoMoreDataException}
 import de.rmgk.delay
 import de.rmgk.delay.{Async, Callback, Sync}
 

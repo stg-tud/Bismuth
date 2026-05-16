@@ -1,5 +1,7 @@
 package channels
 
+import channels.connection.{Abort, ArrayMessageBuffer, NoMoreDataException}
+
 import java.net.StandardProtocolFamily
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import scala.concurrent.ExecutionContext

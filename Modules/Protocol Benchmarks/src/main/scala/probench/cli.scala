@@ -1,11 +1,11 @@
 package probench
 
-import channels.*
+import channels.{BroadcastIO, DeltaStorage, *}
+import channels.connection.{Abort, Connection, LatentConnection}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
 import probench.clients.*
 import rdts.base.Uid
-import replication.{BroadcastIO, DeltaStorage}
 
 import java.net.{DatagramSocket, InetSocketAddress}
 import java.util.Timer

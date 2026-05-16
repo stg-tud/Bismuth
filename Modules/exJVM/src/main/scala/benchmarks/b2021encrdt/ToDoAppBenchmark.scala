@@ -4,6 +4,7 @@ import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.mock.insecure.{AlternativeInsecureToDoListClient, AlternativeInsecureToDoListIntermediary}
 import benchmarks.b2021encrdt.mock.{DisseminationStats, IntermediarySizeInfo, SecureToDoListClient, ToDoListClient, ToDoListIntermediary}
 import benchmarks.b2021encrdt.todolist.{AddToDoItem, CompleteToDoItem, RemoveToDoItems, ToDoEntry, ToDoListInteraction, ToDoListInteractionGenerator}
+import channels.Aead
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 
 import java.io.PrintWriter
@@ -24,7 +25,7 @@ object ToDoAppBenchmark {
   val clientCrdt = new DeltaAWLWWMContainer[UUID, ToDoEntry]("client".convert)
 
   var intermediarySizeInfo: IntermediarySizeInfo = scala.compiletime.uninitialized
-  var aead: replication.Aead                     = scala.compiletime.uninitialized
+  var aead: Aead                     = scala.compiletime.uninitialized
   var clientReplica: ToDoListClient              = scala.compiletime.uninitialized
 
   def main(args: Array[String]): Unit = {

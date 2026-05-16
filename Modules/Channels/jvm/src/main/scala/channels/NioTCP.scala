@@ -2,8 +2,8 @@ package channels
 
 import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
-import replication.BroadcastIO
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer

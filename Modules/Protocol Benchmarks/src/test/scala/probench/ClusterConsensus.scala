@@ -1,5 +1,6 @@
 package probench
 
+import channels.connection.SynchronousLocalConnection
 import probench.clients.ProBenchClient
 import probench.data.{ClusterState, KVOperation}
 import rdts.base.{LocalUid, Uid}
@@ -18,15 +19,15 @@ class ClusterConsensus extends munit.FunSuite {
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = channels.SynchronousLocalConnection("cluster-main")
+    val connection = SynchronousLocalConnection("cluster-main")
     primary.cluster.dataManager.addServerConnection(connection.server)
     secondaries.foreach { node => node.cluster.dataManager.addClientConnection(connection.client(node.uid.toString)) }
-    val connection2 = channels.SynchronousLocalConnection("cluster-secondary")
+    val connection2 = SynchronousLocalConnection("cluster-secondary")
     secondaries.head.cluster.dataManager.addServerConnection(connection2.server)
     secondaries(1).cluster.dataManager.addClientConnection(connection2.client(secondaries(1).uid.toString))
 
-    val clientConnectionWrite = channels.SynchronousLocalConnection("client-write")
-    val clientConnectionRead  = channels.SynchronousLocalConnection("client-read")
+    val clientConnectionWrite = SynchronousLocalConnection("client-write")
+    val clientConnectionRead  = SynchronousLocalConnection("client-read")
 
     primary.client.dataManagerWrite.addServerConnection(clientConnectionWrite.server)
     primary.client.dataManagerRead.addServerConnection(clientConnectionRead.server)
@@ -109,11 +110,11 @@ class ClusterConsensus extends munit.FunSuite {
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = channels.SynchronousLocalConnection("single-cluster")
+    val connection = SynchronousLocalConnection("single-cluster")
     primary.cluster.dataManager.addServerConnection(connection.server)
 
-    val clientConnectionWrites = channels.SynchronousLocalConnection("single-client-write")
-    val clientConnectionReads  = channels.SynchronousLocalConnection("single-client-read")
+    val clientConnectionWrites = SynchronousLocalConnection("single-client-write")
+    val clientConnectionReads  = SynchronousLocalConnection("single-client-read")
 
     primary.client.dataManagerWrite.addServerConnection(clientConnectionWrites.server)
     primary.client.dataManagerRead.addServerConnection(clientConnectionReads.server)

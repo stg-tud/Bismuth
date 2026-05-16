@@ -1,8 +1,8 @@
 package benchmarks.b2021encrdt.deltabased
 
+import channels.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
 import rdts.time.Dots
-import replication.Aead
 
 case class EncryptedDeltaGroup(stateCiphertext: Array[Byte], serialDottedVersionVector: Array[Byte])(
     implicit dotSetJsonCodec: JsonValueCodec[Dots]

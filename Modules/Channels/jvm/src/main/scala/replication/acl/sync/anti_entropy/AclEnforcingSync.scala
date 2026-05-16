@@ -1,12 +1,12 @@
 package replication.acl.sync.anti_entropy
 
-import channels.{ArrayMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import replication.acl.bft.HashDag.Encoder
 import AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import AclEnforcingSync.{SyncMsg, encoder}
+import channels.connection.{ArrayMessageBuffer, MessageBuffer}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots

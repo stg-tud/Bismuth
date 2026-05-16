@@ -221,7 +221,7 @@ object CreateAndSaveTrace {
     override def nullValue: KeyPair = null
   }
 
-  import replication.JsoniterCodecs.given
+  import channels.JsoniterCodecs.given
   import replication.JsoniterCodecsJvm.given
   given JsonValueCodec[SavedTrace] = JsonCodecMaker.make
 }

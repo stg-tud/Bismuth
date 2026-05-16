@@ -1,5 +1,7 @@
 package channels
 
+import channels.connection.ConnectionDescriptor
+
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, SocketException}
 
 class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](

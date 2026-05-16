@@ -1,6 +1,7 @@
 package channels
 
 import channels.MesageBufferExtensions.asArrayBuffer
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Callback, toAsync}
 import org.scalajs.dom.{AbortController, Headers, HttpMethod, ReadableStreamReader, RequestInit, Response, fetch}
 

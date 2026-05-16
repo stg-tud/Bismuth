@@ -1,5 +1,7 @@
 package channels
 
+import channels.connection.MessageBuffer
+
 import scala.scalajs.js.typedarray.{ArrayBuffer, Int8Array, given}
 
 class JsArrayBufferMessageBuffer(val inner: ArrayBuffer) extends MessageBuffer {
