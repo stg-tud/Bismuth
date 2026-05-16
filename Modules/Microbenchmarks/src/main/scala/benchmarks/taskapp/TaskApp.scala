@@ -1,13 +1,12 @@
 package benchmarks.taskapp
 
-import rdts.datatypes.RemoveWinsArray as ReplicatedList
 import rdts.datatypes.LastWriterWins as LWW
 import rdts.base.{Lattice, LocalUid, Bottom}
 import rdts.experiments.UndoRedoReplica
 import rdts.experiments.DeltaHistory
 import rdts.datatypes.ReplicatedTree
 import rdts.time.Dot
-import rdts.experiments.RemoveWinsArrayExperiment
+import rdts.experiments.RemoveWinsArrayExperiment as ReplicatedList
 
 object TaskApp {
   def taskList(tree: ReplicatedTree[Entry], dot: Dot): Option[TaskList] =
@@ -45,7 +44,7 @@ object TaskApp {
             Entry.TaskListEntry(
               TaskList(
                 name = LWW.now(name),
-                items = RemoveWinsArrayExperiment.empty
+                items = ReplicatedList.empty
               )
             )
         )
@@ -75,7 +74,7 @@ object TaskApp {
 
     def updateTaskListName(id: Dot, newName: String)(using LocalUid) =
       state.mod(tree =>
-        updateTaskList(tree, id, tl => tl.copy(name = LWW.now(newName), items = RemoveWinsArrayExperiment.empty))
+        updateTaskList(tree, id, tl => tl.copy(name = LWW.now(newName), items = ReplicatedList.empty))
       )
 
     def addTaskListItem(id: Dot, item: Task)(using LocalUid) =
@@ -131,7 +130,7 @@ object TaskApp {
   case class Folder(val name: LWW[String])
   case class TaskList(
       val name: LWW[String],
-      val items: RemoveWinsArrayExperiment[Task]
+      val items: ReplicatedList[Task]
   )
 
   case class Task(

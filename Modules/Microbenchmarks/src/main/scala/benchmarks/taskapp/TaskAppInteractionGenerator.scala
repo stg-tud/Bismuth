@@ -12,8 +12,6 @@ import scala.util.Random
   * This ensures the Dots used in interactions match the real app's Dots.
   */
 class TaskAppInteractionGenerator(
-    val textLengthMin: Int = 10,
-    val textLengthMax: Int = 100,
     seed: Long = 42
 ) {
   private val random = new Random(seed)
@@ -61,35 +59,35 @@ class TaskAppInteractionGenerator(
     } else if choice < 3.5 then {
       // 2.5% add task list
       addTaskList(folders)
-    } else if choice < 5.5 then {
+    } else if choice < 6 then {
       // 2.5% move entry
       moveEntry(folders, taskLists).getOrElse(addTaskList(folders))
     } else if choice < 7.5 then {
-      // 2.5% remove entry
+      // 1.5% remove entry
       removeEntry(folders, taskLists).getOrElse(addTaskList(folders))
-    } else if choice < 45 then {
-      // 37.5% add task to a list
+    } else if choice < 42.5 then {
+      // 35% add task to a list
       addTask(taskLists).getOrElse(addTaskList(folders))
-    } else if choice < 50 then {
+    } else if choice < 47.5 then {
       // 5% mark tasks as done that match a random character
       markItemsAsDoneThatMatch(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 65 then {
+    } else if choice < 62.5 then {
       // 15% remove task
       removeRandomTask(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 70 then {
-      // 5% mark items as done
+    } else if choice < 72.5 then {
+      // 10% mark items as done
       updateTaskDone(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 80 then {
+    } else if choice < 77.5 then {
       // 5% move task within list
       moveTaskWithinList(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 85 then {
+    } else if choice < 82.5 then {
       // 5% update task title
       updateTaskTitle(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
-    } else if choice < 90 then {
+    } else if choice < 87.5 then {
       // 5% update task description
       updateTaskDescription(taskLists).getOrElse(addTask(taskLists).getOrElse(addTaskList(folders)))
     } else if choice < 95 then {
-      // 5% undo
+      // 7.5% undo
       Undo
     } else {
       // 5% redo

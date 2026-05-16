@@ -211,6 +211,14 @@ object ReplicatedTree {
         if nodeOnLeft.isDefined && nodeOnLeft.get.largestEdge == right.nodes.head.largestEdge then {
           return ReplicatedTree(elements, deleted)
         }
+        // New node added
+        if nodeOnLeft.isEmpty then {
+          return ReplicatedTree(elements, deleted)
+        }
+      }
+      if right.size == 0 && right.removed.size == 1 then {
+        // Node removed
+        return ReplicatedTree(elements, deleted)
       }
 
       val result = resolveConflicts(ReplicatedTree(
@@ -243,10 +251,7 @@ object ReplicatedTree {
     t0 = System.nanoTime()
     val result = tree.copy(elements = tree.elements.map {
       case (dot, node) =>
-        parentUpdates.get(dot) match {
-          case Some(newParent) => (dot, node.copy(parent = newParent))
-          case None            => (dot, node)
-        }
+        (dot, parentUpdates.get(dot).map(p => node.copy(parent = p)).getOrElse(node))
     })
     MergeTimings.applyParentUpdatesNanos += System.nanoTime() - t0
 

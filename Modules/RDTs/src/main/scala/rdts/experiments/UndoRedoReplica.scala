@@ -88,7 +88,8 @@ case class UndoRedoReplica[A: Lattice](
     val undoLimit: Int = 50,
 ) {
   def state(using Lattice[A])(using Bottom[A]): A =
-    if cached.isDefined then this.cached.get
+    if cached.isDefined then
+        this.cached.get
     else {
       val state = history.state
       this.cached = Some(state)
@@ -100,8 +101,9 @@ case class UndoRedoReplica[A: Lattice](
         for delta <- delta.deltas.values do
             this.cached = Some(Lattice.merge(this.cached.get, delta))
       }
-      if !delta.removed.isEmpty then
-          this.cached = None
+      if !delta.removed.isEmpty && delta.base.isEmpty then {
+        this.cached = None
+      }
       this.history = Lattice.merge(this.history, delta)
 
   def mod(f: LocalUid ?=> A => A)(using LocalUid)(using Lattice[A])(using Bottom[A]): DeltaHistory[A] =

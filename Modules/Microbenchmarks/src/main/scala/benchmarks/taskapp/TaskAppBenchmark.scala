@@ -15,12 +15,12 @@ import rdts.datatypes.LastWriterWins
 object TaskAppBenchmark {
 
   val numInteractionsPerReplica = 1_000_000
-  val checkpointEvery           = 100
+  val checkpointEvery           = 1_000
   val progressLogEvery          = 1_000
 
   // Memory tracking (uses JOL GraphLayout; enable in Settings.jolSettings)
   val recordMemory      = true
-  val memorySampleEvery = 100 // 1 = every interaction; increase to reduce overhead
+  val memorySampleEvery = 1_000 // 1 = every interaction; increase to reduce overhead
 
   // Two replicas with separate LocalUids
   val localUid1: LocalUid = LocalUid.predefined("benchmark-client-1")
@@ -66,6 +66,26 @@ object TaskAppBenchmark {
     }
   }
 
+  // Operation categories for measurement
+  val undoOps = Set("Undo")
+  val treeOps = Set(
+    "AddTaskList",
+    "AddFolder",
+    "MoveEntry",
+    "RemoveEntry",
+    "UpdateFolderName",
+    "UpdateTaskListName"
+  )
+  val listOps = Set(
+    "AddTask",
+    "RemoveTaskListItem",
+    "MoveTaskListItem",
+    "UpdateTaskTitle",
+    "UpdateTaskDone",
+    "UpdateTaskDescription",
+    "MarkItemsAsDoneThatMatch"
+  )
+
   val opTimings: mutable.Map[String, OpStats] = mutable.Map(
     "AddFolder"                -> OpStats(),
     "AddTaskList"              -> OpStats(),
@@ -86,13 +106,17 @@ object TaskAppBenchmark {
     "Sync"                     -> OpStats(), // Track sync between replicas
   )
 
-  private val interactionSamplesNanos: mutable.ArrayBuffer[Long] = mutable.ArrayBuffer.empty
+  private val interactionSamplesNanos: mutable.ArrayBuffer[Long]    = mutable.ArrayBuffer.empty
+  private val opLatencySamples: mutable.ArrayBuffer[(String, Long)] = mutable.ArrayBuffer.empty
+  private val opPercentileHistory: mutable.ArrayBuffer[(Long, String, Double, String, Double)] =
+    mutable.ArrayBuffer.empty
 
-  inline def timed[T](opName: String)(op: => T): T = {
+  def timed[T](opName: String)(op: => T): T = {
     val start   = System.nanoTime()
     val result  = op
     val elapsed = System.nanoTime() - start
     opTimings(opName).record(elapsed)
+    opLatencySamples += ((opName, elapsed))
     result
   }
 
@@ -153,7 +177,7 @@ object TaskAppBenchmark {
     val csvFile = new PrintWriter(csvFilePath.toFile)
 
     csvFile.println(
-      "interactions,treeSize,folderCount,taskListCount,totalTaskCount,avgInteractionMs,p90InteractionMs,p99InteractionMs,concurrentMoveTreeConflicts,concurrentMoveListConflicts"
+      "interactions,treeSize,folderCount,taskListCount,totalTaskCount,avgInteractionMs,p90InteractionMs,p99InteractionMs,avgUndoMs,avgTreeMs,avgListMs,concurrentMoveTreeConflicts,concurrentMoveListConflicts"
     )
     csvFile.flush()
 
@@ -187,6 +211,10 @@ object TaskAppBenchmark {
     var lastAvgInteractionMs = 0.0
     var lastP90InteractionMs = 0.0
     var lastP99InteractionMs = 0.0
+    var lastP95Op: String    = ""
+    var lastP99Op: String    = ""
+    var lastP95OpMs          = 0.0
+    var lastP99OpMs          = 0.0
     var lastTreeSize         = 0
     var lastFolderCount      = 0
     var lastTaskListCount    = 0
@@ -228,8 +256,17 @@ object TaskAppBenchmark {
         lastAvgInteractionMs = avgTime / checkpointEvery / 2 / 1_000_000.0
         lastP90InteractionMs = percentileMs(interactionSamplesNanos, 0.90)
         lastP99InteractionMs = percentileMs(interactionSamplesNanos, 0.99)
+        val p95Op = percentileOp(opLatencySamples, 0.95)
+        val p99Op = percentileOp(opLatencySamples, 0.99)
+        lastP95Op = p95Op._1
+        lastP95OpMs = p95Op._2 / 1_000_000.0
+        lastP99Op = p99Op._1
+        lastP99OpMs = p99Op._2 / 1_000_000.0
+        if lastP95Op.nonEmpty && lastP99Op.nonEmpty then
+            opPercentileHistory += ((counter, lastP95Op, lastP95OpMs, lastP99Op, lastP99OpMs))
         avgTime = 0L
         interactionSamplesNanos.clear()
+        opLatencySamples.clear()
         val tree = app1.read
         lastTreeSize = tree.size
         val (folderCount, taskListCount, totalTaskCount) = countEntries(tree)
@@ -237,8 +274,19 @@ object TaskAppBenchmark {
         lastTaskListCount = taskListCount
         lastTotalTaskCount = totalTaskCount
 
+        // Compute Undo/Tree/List avg times for this checkpoint
+        def avgCat(cat: Set[String]): Double = {
+          val stats      = cat.flatMap(opTimings.get)
+          val totalNanos = stats.map(_.totalNanos).sum
+          val count      = stats.map(_.count).sum
+          if count == 0 then 0.0 else totalNanos / (count * 1_000_000.0)
+        }
+        val avgUndoMs = avgCat(undoOps)
+        val avgTreeMs = avgCat(treeOps)
+        val avgListMs = avgCat(listOps)
+
         csvFile.println(
-          s"$counter,$lastTreeSize,$lastFolderCount,$lastTaskListCount,$lastTotalTaskCount,$lastAvgInteractionMs,$lastP90InteractionMs,$lastP99InteractionMs,$concurrentMoveTreeConflicts,$concurrentMoveListConflicts"
+          s"$counter,$lastTreeSize,$lastFolderCount,$lastTaskListCount,$lastTotalTaskCount,$lastAvgInteractionMs,$lastP90InteractionMs,$lastP99InteractionMs,$avgUndoMs,$avgTreeMs,$avgListMs,$concurrentMoveTreeConflicts,$concurrentMoveListConflicts"
         )
         csvFile.flush()
 
@@ -251,6 +299,8 @@ object TaskAppBenchmark {
         println(
           s"$counter/$numInteractionsPerReplica completed / avg: $lastAvgInteractionMs ms / p90: $lastP90InteractionMs ms / p99: $lastP99InteractionMs ms / tree: $lastTreeSize / history deltas: $historySize1/$historySize2"
         )
+        if lastP95Op.nonEmpty && lastP99Op.nonEmpty then
+            println(s"  P95 op: $lastP95Op (${lastP95OpMs} ms), P99 op: $lastP99Op (${lastP99OpMs} ms)")
         println(
           s"  Move tree conflicts: $concurrentMoveTreeConflicts, Move list conflicts: $concurrentMoveListConflicts"
         )
@@ -268,6 +318,8 @@ object TaskAppBenchmark {
         // Print Replica internal timing breakdown
         println(rdts.experiments.ReplicaTimings.report())
         rdts.experiments.ReplicaTimings.reset()
+        // println(rdts.datatypes.ReplicatedTree.MergeTimings.report())
+        // rdts.datatypes.ReplicatedTree.MergeTimings.reset()
         // Reset timings for next batch
         opTimings.values.foreach(_.reset())
       }
@@ -275,6 +327,16 @@ object TaskAppBenchmark {
 
     csvFile.close()
     memoryCsvFile.foreach(_.close())
+
+    if opPercentileHistory.nonEmpty then
+        val opPercentileFilePath: Path = Paths.get("./benchmarks/results/taskapp_op_percentiles.csv")
+        Files.createDirectories(opPercentileFilePath.getParent)
+        val opPercentileFile = new PrintWriter(opPercentileFilePath.toFile)
+        opPercentileFile.println("interactions,p95Op,p95Ms,p99Op,p99Ms")
+        opPercentileHistory.foreach { case (interactions, p95Op, p95Ms, p99Op, p99Ms) =>
+          opPercentileFile.println(s"$interactions,$p95Op,$p95Ms,$p99Op,$p99Ms")
+        }
+        opPercentileFile.close()
 
     val totalTimeMs = (System.nanoTime() - startNanoTime) / 1_000_000.0
     println(s"Benchmark completed in ${totalTimeMs}ms")
@@ -293,6 +355,16 @@ object TaskAppBenchmark {
       val idx     = math.ceil(p * sorted.size).toInt - 1
       val clamped = math.max(0, math.min(idx, sorted.size - 1))
       sorted(clamped) / 1_000_000.0
+    }
+  }
+
+  private def percentileOp(samples: mutable.ArrayBuffer[(String, Long)], p: Double): (String, Long) = {
+    if samples.isEmpty then ("", 0L)
+    else {
+      val sorted  = samples.sortBy(_._2)
+      val idx     = math.ceil(p * sorted.size).toInt - 1
+      val clamped = math.max(0, math.min(idx, sorted.size - 1))
+      sorted(clamped)
     }
   }
 
@@ -320,60 +392,64 @@ object TaskAppBenchmark {
 
     val delta: DeltaHistory[ReplicatedTree[Entry]] = interaction match {
       case AddFolder(parentFolder, name) =>
-        timed("AddFolder") { app.addFolder(parentFolder, name) }
+        timed("AddFolder") { val l = app.addFolder(parentFolder, name); app.read; l }
 
       case AddTaskList(parentFolder, name) =>
-        timed("AddTaskList") { app.addTaskList(parentFolder, name) }
+        timed("AddTaskList") { val l = app.addTaskList(parentFolder, name); app.read; l }
 
       case MoveEntry(entryId, newParent) =>
-        timed("MoveEntry") { app.moveEntry(entryId, newParent) }
+        timed("MoveEntry") { val l = app.moveEntry(entryId, newParent); app.read; l }
 
       case RemoveEntry(entryId) =>
-        timed("RemoveEntry") { app.removeEntry(entryId) }
+        timed("RemoveEntry") { val l = app.removeEntry(entryId); app.read; l }
 
       case UpdateFolderName(folder, newName) =>
-        timed("UpdateFolderName") { app.updateFolderName(folder, newName) }
+        timed("UpdateFolderName") { val l = app.updateFolderName(folder, newName); app.read; l }
 
       case UpdateTaskListName(taskListId, newName) =>
-        timed("UpdateTaskListName") { app.updateTaskListName(taskListId, newName) }
+        timed("UpdateTaskListName") { val l = app.updateTaskListName(taskListId, newName); app.read; l }
 
       case AddTask(taskListId, task) =>
-        timed("AddTask") { app.addTaskListItem(taskListId, task) }
+        timed("AddTask") { val l = app.addTaskListItem(taskListId, task); app.read; l }
 
       case UpdateTaskDone(taskListId, itemIx) =>
         timed("UpdateTaskDone") {
-          app.updateTaskDone(
+          val l = app.updateTaskDone(
             taskListId,
             itemIx,
             done = true
-          )
+          );
+          app.read; l
         }
 
       case RemoveTaskListItem(taskListId, itemIx) =>
-        timed("RemoveTaskListItem") { app.removeTaskListItem(taskListId, itemIx) }
+        timed("RemoveTaskListItem") { val l = app.removeTaskListItem(taskListId, itemIx); app.read; l }
 
       case MoveTaskListItem(taskListId, from, to) =>
-        timed("MoveTaskListItem") { app.moveTaskListItem(taskListId, from, to) }
+        timed("MoveTaskListItem") { val l = app.moveTaskListItem(taskListId, from, to); app.read; l }
 
       case UpdateTaskTitle(taskListId, itemIx, newTitle) =>
-        timed("UpdateTaskTitle") { app.updateTaskTitle(taskListId, itemIx, newTitle) }
+        timed("UpdateTaskTitle") { val l = app.updateTaskTitle(taskListId, itemIx, newTitle); app.read; l }
 
       case UpdateTaskDescription(taskListId, itemIx, newDescription) =>
-        timed("UpdateTaskDescription") { app.updateTaskDescription(taskListId, itemIx, newDescription) }
+        timed("UpdateTaskDescription") {
+          val l = app.updateTaskDescription(taskListId, itemIx, newDescription); app.read; l
+        }
 
       case MarkItemsAsDoneThatMatch(taskListId, text) =>
         timed("MarkItemsAsDoneThatMatch") {
-          app.forEachTaskListItem(
+          val l = app.forEachTaskListItem(
             taskListId,
             task => if task.title.value.contains(text) then task.copy(done = LastWriterWins.now(true)) else task
-          )
+          );
+          app.read; l
         }
 
       case Undo =>
-        timed("Undo") { app.state.undo() }
+        timed("Undo") { val l = app.state.undo(); app.read; l }
 
       case Redo =>
-        timed("Redo") { app.state.redo() }
+        timed("Redo") { val l = app.state.redo(); app.read; l }
     }
     delta
   }
