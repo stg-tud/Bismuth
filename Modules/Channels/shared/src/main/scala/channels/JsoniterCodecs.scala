@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.*
 import rdts.time.*
-import channels.research.SignalingServer.Message
+import channels.experiments.SignalingServer.Message
 
 object JsoniterCodecs {
 

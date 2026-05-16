@@ -1,4 +1,4 @@
-package channels.research
+package channels.experiments
 
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast

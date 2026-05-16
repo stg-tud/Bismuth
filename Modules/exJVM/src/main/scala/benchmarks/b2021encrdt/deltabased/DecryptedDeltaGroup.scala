@@ -1,6 +1,6 @@
 package benchmarks.b2021encrdt.deltabased
 
-import channels.Aead
+import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.base.Lattice
 import rdts.time.Dots

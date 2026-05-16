@@ -1,4 +1,4 @@
-package channels.research
+package channels.experiments
 
 import channels.BroadcastIO
 import channels.JsoniterCodecs.given

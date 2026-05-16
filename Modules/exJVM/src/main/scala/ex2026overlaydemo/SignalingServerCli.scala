@@ -2,7 +2,7 @@ package ex2026overlaydemo
 
 import channels.*
 import channels.connection.{Abort, ConnectionDescriptor, LatentConnection}
-import channels.research.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
+import channels.experiments.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
 import channels.broadcast.PlumtreeMessage.Payload
 
 import java.net.InetSocketAddress

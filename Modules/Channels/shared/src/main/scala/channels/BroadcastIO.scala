@@ -8,6 +8,7 @@ import channels.broadcast.PlumtreeBroadcast.{Event, Peer}
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionClosedException, ConnectionDescriptor, LatentConnection, MessageBuffer, NoMoreDataException, PeerConnectInfo}
+import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayMessage}
 import channels.overlay.{FullMeshOverlay, OverlayController}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}

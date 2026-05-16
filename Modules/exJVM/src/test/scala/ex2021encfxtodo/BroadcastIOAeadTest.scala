@@ -1,8 +1,9 @@
 package ex2021encfxtodo
 
 import channels.broadcast.PlumtreeMessage
-import channels.{Aead, BroadcastIO}
+import channels.{BroadcastIO, experiments}
 import channels.connection.SynchronousLocalConnection
+import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
@@ -50,7 +51,7 @@ class BroadcastIOAeadTest extends FunSuite {
       aead
     )
 
-    assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, channels.Aead.identity).isFailure)
+    assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, experiments.Aead.identity).isFailure)
     assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
   }
 }

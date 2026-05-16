@@ -1,4 +1,4 @@
-package channels
+package channels.experiments
 
 import scala.util.Try
 

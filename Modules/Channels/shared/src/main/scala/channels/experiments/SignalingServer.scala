@@ -1,10 +1,10 @@
-package channels.research
+package channels.experiments
 
 import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Uid
 import channels.JsoniterCodecs.given
-import channels.research.SignalingServer.Message
+import channels.experiments.SignalingServer.Message
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}

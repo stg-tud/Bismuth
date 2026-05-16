@@ -3,6 +3,7 @@ package benchmarks.b2021encrdt
 import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.DecryptedDeltaGroup
 import benchmarks.b2021encrdt.mock.UntrustedDeltaBasedReplicaMock
+import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import com.google.crypto.tink.Aead
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
@@ -135,11 +136,11 @@ trait DeltaStateUntrustedReplicaSizeBenchEnvironment {
   if !outDir.toFile.exists() then
       outDir.toFile.mkdirs()
       ()
-  val aead: channels.Aead                      = AeadTranslation(Helper.setupAead("AES128_GCM"))
+  val aead: experiments.Aead                      = AeadTranslation(Helper.setupAead("AES128_GCM"))
   val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(10_000)
 }
 
-class AeadTranslation(aead: com.google.crypto.tink.Aead) extends channels.Aead {
+class AeadTranslation(aead: com.google.crypto.tink.Aead) extends experiments.Aead {
   override def encrypt(data: Array[Byte], associated: Array[Byte]): Array[Byte] = aead.encrypt(data, associated)
 
   override def decrypt(data: Array[Byte], associated: Array[Byte]): Try[Array[Byte]] =

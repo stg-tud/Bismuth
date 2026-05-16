@@ -3,7 +3,7 @@ package benchmarks.b2026merklesearchtree
 import org.openjdk.jmh.annotations.*
 import rdts.time.CausalTime
 import channels.JsoniterCodecs.given
-import channels.research.MerkleSearchTree
+import channels.experiments.MerkleSearchTree
 
 import java.util.concurrent.TimeUnit
 

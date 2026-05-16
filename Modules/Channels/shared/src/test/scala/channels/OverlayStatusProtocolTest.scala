@@ -4,8 +4,8 @@ import channels.BroadcastIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
-import channels.research.OverlayStatusProtocol
-import channels.research.OverlayStatusProtocol.{PeerState, Status}
+import channels.experiments.OverlayStatusProtocol
+import channels.experiments.OverlayStatusProtocol.{PeerState, Status}
 import munit.FunSuite
 import rdts.base.Lattice.syntax.merge
 import rdts.base.LocalUid

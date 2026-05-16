@@ -1,4 +1,4 @@
-package channels.research
+package channels.experiments
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import pt.kcry.blake3.Blake3

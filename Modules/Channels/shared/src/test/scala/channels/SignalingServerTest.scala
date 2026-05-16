@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.{Abort, ChannelResolver, Connection, ConnectionDescriptor, LatentConnection, SynchronousLocalConnection}
-import channels.research.{SignalingClient, SignalingServer}
+import channels.experiments.{SignalingClient, SignalingServer}
 import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.Uid

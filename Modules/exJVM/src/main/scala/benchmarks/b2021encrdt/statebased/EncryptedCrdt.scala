@@ -1,12 +1,12 @@
 package benchmarks.b2021encrdt.statebased
 
 import benchmarks.b2021encrdt.statebased.DecryptedState.vectorClockJsonCodec
-import channels.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Lattice
 import rdts.time.VectorClock
 import channels.JsoniterCodecs.given
+import channels.experiments.Aead
 
 case class EncryptedState(stateCiphertext: Array[Byte], serialVersionVector: Array[Byte]) {
   lazy val versionVector: VectorClock = readFromArray[VectorClock](serialVersionVector)

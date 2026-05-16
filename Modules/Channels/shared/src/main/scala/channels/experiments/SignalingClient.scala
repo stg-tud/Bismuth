@@ -1,11 +1,11 @@
-package channels.research
+package channels.experiments
 
 import channels.connection.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.Uid
 import channels.JsoniterCodecs.given
-import channels.research.SignalingServer.{Message, Session}
+import channels.experiments.SignalingServer.{Message, Session}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Promise}
