@@ -5,7 +5,7 @@
 
 The manual serves as an introduction of the concepts in reactive programming.
 The full API is covered in the scaladoc especially for :m{Signals} and :m{Events}.
-More details can be found in :cite{7, 3}.
+More details can be found in :cite{DBLP:conf/aosd/SalvaneschiHM14; query=REScala: Bridging between object-oriented and functional style in reactive applications} and :cite{DBLP:conf/aosd/GasiunasSMNN11; query=EScala: modular event-driven object interactions in Scala}
 The manual introduces the concepts related to functional reactive programming and event-based programming from a practical perspective.
 
 Also see the introductory video lecture at :link{https://www.youtube.com/watch?v=iRh7UiclElk} that gives a step by step introduction.
@@ -793,61 +793,27 @@ The following solution is syntactically correct and the signal
 = Essential Related Work
 :label = related-work
 
-A more academic presentation of these concepts is in :cite{7}.
+A more academic presentation of these concepts is in :cite{DBLP:conf/aosd/SalvaneschiHM14; query=REScala: Bridging between object-oriented and functional style in reactive applications}.
 A complete bibliography on reactive programming is beyond the scope of this work.
-The interested reader can refer to :cite{1} for an overview of reactive
-programming and to :cite{8} for the issues concerning the integration of RP
+The interested reader can refer to :cite{DBLP:journals/csur/BainomugishaCCMM13; query=A survey on reactive programming} for an overview of reactive
+programming and to :cite{DBLP:conf/aosd/SalvaneschiM13; query=Reactive behavior in object-oriented applications: an analysis and a research roadmap} for the issues concerning the integration of RP
 with object-oriented programming.
 
-This work builds on ideas originally developed in EScala :cite{3}
+This work builds on ideas originally developed in EScala :cite{query=EScala: modular event-driven object interactions in Scala}
 -- which supports event combination and implicit events.
 Other reactive languages directly represent time-changing values and remove
 inversion of control.
 Among the others, we mention
-FrTime :cite{2} (Scheme),
-FlapJax :cite{6} (Javascript),
-AmbientTalk/R :cite{4} and
-Scala.React :cite{5} (Scala).
+FrTime :cite{DBLP:conf/esop/CooperK06; query=Embedding dynamic dataflow in a call-by value language} (Scheme),
+FlapJax :cite{DBLP:conf/oopsla/MeyerovichGBCGBK09; query=Flapjax: a programming language for ajax applications} (Javascript),
+AmbientTalk/R :cite{DBLP:conf/tools/CarretonMCM10; query=Loosely-coupled distributed reactive programming in mobile ad hoc networks} and
+Scala.React :cite{query=Deprecating the Observer Pattern with Scala.react} (Scala).
 
 = Acknowledgments
 
 Several people contributed to this manual,
 among the others David Richter, Gerold Hintz and Pascal Weisenburger.
 
-= References
-:label = ref
-
-[1] :i{A survey on reactive programming.}
-E. Bainomugisha, A. Lombide Carreton, T. Van Cutsem, S. Mostinckx, and W. De Meuter.
-ACM Comput. Surv. 2013.
-
-[2] :i{Embedding dynamic dataflow in a call-by value language.}
-G. H. Cooper and S. Krishnamurthi.
-In ESOP, pages 294-308, 2006.
-
-[3] :i{EScala: modular event-driven object interactions in Scala.}
-V. Gasiunas, L. Satabin, M. Mezini, A. Nunez, and J. Noye.
-AOSD '11, pages 227-240. ACM, 2011.
-
-[4] :i{Loosely-coupled distributed reactive programming in mobile ad hoc networks.}
-A. Lombide Carreton, S. Mostinckx, T. Cutsem, and W. Meuter.
-In J. Vitek, editor, Objects, Models, Components, Patterns, volume 6141 of Lecture Notes in Computer Science, pages 41-60. Springer Berlin Heidelberg, 2010.
-
-[5] :i{Deprecating the Observer Pattern with Scala.react.}
-I. Maier and M. Odersky.
-Technical report, 2012.
-
-[6] :i{Flapjax: a programming language for ajax applications.}
-L. A. Meyerovich, A. Guha, J. Baskin, G. H. Cooper, M. Greenberg, A. Bromfield, and S. Krishnamurthi.
-OOPSLA '09, pages 1-20. ACM, 2009.
-
-[7] :i{REScala: Bridging between object-oriented and functional style in reactive applications.}
-G. Salvaneschi, G. Hintz, and M. Mezini.
-AOSD '14, New York, NY, USA, Accepted for publication, 2014. ACM.
-
-[8] :i{Reactive behavior in object-oriented applications: an analysis and a research roadmap.}
-G. Salvaneschi and M. Mezini.
-AOSD '13, pages 37-48, New York, NY, USA, 2013. ACM.
 */
 
   }
