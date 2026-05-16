@@ -12,11 +12,11 @@ test:
 	sbt --client testQuick
 
 publishLocal:
-	sbt --client 'publishedProjects / publishLocal'
+	sbt --client 'reload; publishedProjects / publishLocal'
 
 publishSigned:
 	rm -rf "target/sona-staging"
-	sbt --client 'publishedProjects / publishSigned'
+	sbt --client 'reload; publishedProjects / publishSigned'
 
 sonaRelease:
 	sbt --client 'sonaRelease'
