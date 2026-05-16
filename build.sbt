@@ -81,8 +81,6 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     javaOutputVersion(21),
     fork := true,
     Settings.jolSettings,
-    Dependencies.akka,
-    Dependencies.akkaTestKit,
     Dependencies.bloomFilter,
     Dependencies.borer,
     Dependencies.conscrypt,
