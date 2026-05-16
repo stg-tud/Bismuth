@@ -285,8 +285,9 @@ The initial value of the signal is set to :m{init}.
 The :m{changed} function applies to a signal and returns an event
 that is fired every time the signal changes its value.
 
-:code lang=scala
-changed[U >: T]: Event[U]
+```code lang=scala
+    changed[U >: T]: Event[U]
+```
 */
 
     // Example:
@@ -334,8 +335,9 @@ value. Every time a new event arrives, the function :m{f} is
 applied to the previous value of the signal and to the value
 associated to the event. The result is the new value of the signal.
 
-:code lang=scala
-fold[T,A](e: Event[T], init: A)(f: (A,T) => A): Signal[A]
+```code lang=scala
+    fold[T,A](e: Event[T], init: A)(f: (A,T) => A): Signal[A]
+```
 */
 
     // Example:
@@ -389,8 +391,9 @@ Returns a signal that counts the occurrences of the event.
 Initially, when the event has never been fired yet, the signal holds the value 0.
 The argument of the event is simply discarded.
 
-:code lang=scala
-count(e: Event[_]): Signal[Int]
+```code lang=scala
+    count(e: Event[_]): Signal[Int]
+```
 */
 
     val eCount              = Evt[Int]()
@@ -426,8 +429,9 @@ Collects the event values in a (growing) list. This function should be
 used carefully. Since the entire history of events is maintained, the
 function can potentially introduce a memory overflow.
 
-:code lang=scala
-list[T](e: Event[T]): Signal[List[T]]
+```code lang=scala
+    list[T](e: Event[T]): Signal[List[T]]
+```
 */
 
 /*:scim
@@ -488,8 +492,9 @@ occurrence of an event. Differently from :m{fold}, there is no
 carried value, i.e. the value of the signal does not depend on the
 current value but only on the accumulated value.
 
-:code lang=scala
-iterate[A](e: Event[_], init: A)(f: A => A): Signal[A]
+```code lang=scala
+    iterate[A](e: Event[_], init: A)(f: A => A): Signal[A]
+```
 */
 
     // Example:
@@ -516,8 +521,9 @@ iterate[A](e: Event[_], init: A)(f: A => A): Signal[A]
 The :m{change} function is similar to :m{changed}, but it
 provides both the old and the new value of the signal in a tuple.
 
-:code lang=scala
-change[U >: T]: Event[(U, U)]
+```code lang=scala
+    change[U >: T]: Event[(U, U)]
+```
 */
 
     // Example:
@@ -535,8 +541,9 @@ The :m{changedTo} function is similar to :m{changed}, but it
 fires an event only when the signal changes its value to a given
 value.
 
-:code lang=scala
-changedTo[V](value: V): Event[Unit]
+```code lang=scala
+    changedTo[V](value: V): Event[Unit]
+```
 */
 
     var testChangedTo           = 0
@@ -801,7 +808,7 @@ programming and to :cite{DBLP:conf/aosd/SalvaneschiM13; query=Reactive behavior 
 with object-oriented programming.
 
 This work builds on ideas originally developed in EScala :cite{query=EScala: modular event-driven object interactions in Scala}
--- which supports event combination and implicit events.
+– which supports event combination and implicit events.
 Other reactive languages directly represent time-changing values and remove
 inversion of control.
 Among the others, we mention
