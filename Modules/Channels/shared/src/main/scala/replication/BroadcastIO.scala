@@ -8,9 +8,10 @@ import rdts.base.{LocalUid, Uid}
 import rdts.time.Dots
 import replication.BroadcastIO.Envelope
 import replication.JsoniterCodecs.given
-import replication.PlumtreeBroadcast.Event.Send
-import replication.PlumtreeBroadcast.{Event, Peer}
-import replication.PlumtreeMessage.*
+import replication.broadcast.PlumtreeBroadcast.Event.Send
+import replication.broadcast.PlumtreeBroadcast.{Event, Peer}
+import replication.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
+import replication.broadcast.PlumtreeMessage.*
 import replication.overlay.{FullMeshOverlay, OverlayController}
 import replication.overlay.OverlayController.{OverlayAction, OverlayMessage}
 

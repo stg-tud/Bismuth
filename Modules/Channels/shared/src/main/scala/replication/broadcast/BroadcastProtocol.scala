@@ -1,8 +1,7 @@
-package replication
+package replication.broadcast
 
-import rdts.base.Uid
-import replication.PlumtreeBroadcast.{Peer, Result}
-import replication.PlumtreeMessage.*
+import replication.broadcast.PlumtreeBroadcast.{Peer, Result}
+import replication.broadcast.PlumtreeMessage.*
 
 /** Minimal interface for a broadcast protocol state machine.
   *

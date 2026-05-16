@@ -10,8 +10,9 @@ import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
 import replication.DeltaStorage.Type.*
-import replication.PlumtreeMessage.Payload
-import replication.{BroadcastIO, DeltaStorage, PlumtreeBroadcast}
+import replication.broadcast.PlumtreeBroadcast
+import replication.broadcast.PlumtreeMessage.Payload
+import replication.{BroadcastIO, DeltaStorage}
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable

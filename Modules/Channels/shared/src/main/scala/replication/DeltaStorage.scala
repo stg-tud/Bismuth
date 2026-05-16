@@ -2,7 +2,7 @@ package replication
 
 import rdts.base.Lattice
 import rdts.time.Dots
-import replication.PlumtreeMessage.Payload
+import replication.broadcast.PlumtreeMessage.Payload
 
 import scala.collection.immutable.Queue
 

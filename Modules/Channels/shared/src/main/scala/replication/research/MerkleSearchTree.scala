@@ -317,7 +317,7 @@ object MerkleSearchTree {
   def empty[K](branchingFactor: Int = 16)(using ordering: Ordering[K]): MerkleSearchTree[K] =
     MerkleSearchTree(None, Map.empty, math.max(2, branchingFactor), ordering)
 
-  def fromEntries[K: Ordering: JsonValueCodec, V: JsonValueCodec](
+  def fromEntries[K: {Ordering, JsonValueCodec}, V: JsonValueCodec](
       rawEntries: Iterable[(K, V)],
       branchingFactor: Int = 16,
   ): MerkleSearchTree[K] =

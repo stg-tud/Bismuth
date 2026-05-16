@@ -4,7 +4,8 @@ import probench.data
 import probench.data.Codecs.given
 import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{LocalUid, Uid}
-import replication.{BroadcastIO, KeepAllHistory, PlumtreeBroadcast}
+import replication.broadcast.PlumtreeBroadcast
+import replication.{BroadcastIO, KeepAllHistory}
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}

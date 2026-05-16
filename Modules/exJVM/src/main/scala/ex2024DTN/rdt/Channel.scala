@@ -6,8 +6,9 @@ import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 import ex2024DTN.{MonitoringClientInterface, NoMonitoringClient, RdtMessageType}
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.PlumtreeMessage.{Graft, IHave, Payload, Prune}
-import replication.{Aead, BroadcastIO, PlumtreeMessage}
+import replication.broadcast.PlumtreeMessage
+import replication.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune}
+import replication.{Aead, BroadcastIO}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}

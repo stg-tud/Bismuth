@@ -4,10 +4,11 @@ import channels.{Abort, Connection, ConnectionDescriptor, ChannelResolver, Laten
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import replication.JsoniterCodecs.given
-import replication.PlumtreeMessage.Payload
+import replication.broadcast.PlumtreeBroadcast
+import replication.broadcast.PlumtreeMessage.Payload
 import replication.overlay.HyParViewStateMachine
 import replication.overlay.HyParViewStateMachine.HyParViewConfig
-import replication.{BroadcastIO, MergingHistory, PlumtreeBroadcast}
+import replication.{BroadcastIO, MergingHistory}
 
 import java.util.{Timer, TimerTask}
 import scala.util.Random

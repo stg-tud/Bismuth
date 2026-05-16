@@ -7,7 +7,8 @@ import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead as TinkAead, KeyTemplates, KeysetHandle, RegistryConfiguration}
 import munit.FunSuite
 import rdts.base.LocalUid
-import replication.{BroadcastIO, PlumtreeMessage}
+import replication.BroadcastIO
+import replication.broadcast.PlumtreeMessage
 
 import scala.collection.mutable
 

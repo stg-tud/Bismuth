@@ -3,10 +3,11 @@ package replication
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dots
-import replication.PlumtreeBroadcast.Event
-import replication.PlumtreeBroadcast.Event.Send
-import replication.PlumtreeBroadcast.{Peer, PeerRole}
-import replication.PlumtreeMessage.*
+import replication.broadcast.PlumtreeBroadcast
+import replication.broadcast.PlumtreeBroadcast.Event
+import replication.broadcast.PlumtreeBroadcast.Event.Send
+import replication.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
+import replication.broadcast.PlumtreeMessage.*
 
 class PlumtreeBroadcastTest extends FunSuite {
 

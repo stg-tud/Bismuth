@@ -1,10 +1,11 @@
-package replication
+package replication.broadcast
 
 import rdts.base.{Lattice, Uid}
 import rdts.time.Dots
-import replication.PlumtreeBroadcast.Event.Send
-import replication.PlumtreeBroadcast.{Peer, PeerRole}
-import replication.PlumtreeMessage.*
+import PlumtreeBroadcast.Event.Send
+import PlumtreeBroadcast.{Peer, PeerRole}
+import PlumtreeMessage.*
+import replication.{DeltaStorage, NoHistory}
 
 import scala.util.Random
 

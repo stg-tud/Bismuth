@@ -5,8 +5,8 @@ import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
 import rdts.protocols.paper.{MultiPaxos, Vote, Voting}
-import replication.PlumtreeMessage
-import replication.PlumtreeMessage.Payload
+import replication.broadcast.PlumtreeMessage.Payload
+import replication.broadcast.PlumtreeMessage
 
 enum KVOperation[Key, Value] {
   def key: Key

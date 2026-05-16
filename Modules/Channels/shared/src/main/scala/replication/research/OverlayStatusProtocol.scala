@@ -5,9 +5,10 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.Lattice.syntax.merge
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import replication.{BroadcastIO, PlumtreeBroadcast}
+import replication.{BroadcastIO}
 import replication.JsoniterCodecs.given
-import replication.PlumtreeBroadcast.{Peer, PeerRole}
+import replication.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
+import replication.broadcast.PlumtreeBroadcast
 import replication.overlay.{FullMeshOverlay, HyParViewStateMachine}
 
 object OverlayStatusProtocol {
