@@ -37,7 +37,7 @@ import scala.concurrent.Promise
 import scala.scalajs.js
 import scala.scalajs.js.Date
 import scala.scalajs.js.JSON
-import scala.util.Failure
+
 
 class AvailableConnection(
     val name: String,
@@ -120,7 +120,7 @@ class DiscoveryService {
   }
 
   def login(using
-      jsImplicits: JSImplicits
+      jsImplicits: JSImplicits @scala.annotation.unused
   )(
       loginInfo: LoginInfo,
   ): Future[String] = {
@@ -174,7 +174,7 @@ class DiscoveryService {
     }
   }
 
-  private def handle(using jsImplicits: JSImplicits)(ws: WebSocket, name: String, payload: js.Dynamic) = {
+  @scala.annotation.unused private def handle(using jsImplicits: JSImplicits)(ws: WebSocket, name: String, payload: js.Dynamic) = {
     if name != "ping" then console.log(name, payload)
 
     name match {
@@ -242,7 +242,7 @@ class DiscoveryService {
   }
 
   def connect(using
-      jsImplicits: JSImplicits,
+      jsImplicits: JSImplicits @scala.annotation.unused,
   )(resetWebsocket: Boolean = false, force: Boolean = false): Future[Boolean] = {
     val promise = Promise[Boolean]()
 

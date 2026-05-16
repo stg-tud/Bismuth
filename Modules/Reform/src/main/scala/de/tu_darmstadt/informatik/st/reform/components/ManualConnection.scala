@@ -125,7 +125,6 @@ private case class ClientAskingForHostSessionToken()(using jsImplicits: JSImplic
 }
 
 private case class ClientWaitingForHostConfirmation(connection: PendingConnection, alias: String)(using
-    state: Var[State],
     jsImplicits: JSImplicits,
 ) extends State {
   println("[ManualConnection] scala-loci removed – client waiting for host is a stub")
@@ -141,7 +140,6 @@ private case class ClientWaitingForHostConfirmation(connection: PendingConnectio
 }
 
 private case class HostPending(connection: PendingConnection)(using
-    state: Var[State],
     jsImplicits: JSImplicits,
 ) extends State {
   private val sessionTokenFromClient = Var("")

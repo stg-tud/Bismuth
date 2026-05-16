@@ -1,16 +1,10 @@
 package de.tu_darmstadt.informatik.st.reform.services
 
 import cats.effect.SyncIO
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.tu_darmstadt.informatik.st.reform.Globals
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.entity.Hiwi
 import de.tu_darmstadt.informatik.st.reform.entity.Supervisor
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toGermanDate
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*
@@ -18,23 +12,11 @@ import outwatch.dsl.*
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.scalajs.js
+
 class MailService {
+  @scala.annotation.unused private object MailBody
 
-  class MailBody(
-      val to: String,
-      val from: String,
-      val fromName: String,
-      val html: String,
-      val subject: String,
-      val attachments: Seq[MailAttachment],
-      val bcc: Seq[String],
-  ) {}
-  private object MailBody {
-    val codec: JsonValueCodec[MailBody] = JsonCodecMaker.make
-  }
-
-  class MailAnswer(val accepted: Seq[String], val rejected: Seq[String]) {}
+  @scala.annotation.unused class MailAnswer(val accepted: Seq[String], val rejected: Seq[String]) {}
 
   def sendMail(using
       jsImplicits: JSImplicits
