@@ -42,7 +42,7 @@ but some require definitions from the prior blocks.
 To use all features of _REScala_ the only required import is:
 
 ```scala mdoc:silent
-import rescala.default._
+import reactives.default.*
 ```
 
 
@@ -492,7 +492,7 @@ reset.fire()
 word.fire("hello")
 count.fire(2)
 word.fire("world")
-rescala.default.transaction(count, count, reset) { implicit at =>
+reactives.default.transaction(count, count, reset) { implicit at =>
   count.fire(2)
   word.fire("do them all!")
   reset.fire()
@@ -595,7 +595,7 @@ v3.set(false)
 Conventional testing methods fail to thoroughly test reactive applications.
 Nodes may never be exposed to the full range of their possible inputs based on their current location in the spanned dependency graph.
 Furthermore, on receiving an invalid input, it is impossible to trace back the route of the problem.
-To tackle those shortcomings `rescala.extra.invarariant.SimpleScheduler` inside the `Tests-Sources` subproject adds the concept of _invariants_ and _generators_ to Rescala.
+To tackle those shortcomings `reactives.extra.invariant.SimpleScheduler` inside the `Tests-Sources` subproject adds the concept of _invariants_ and _generators_ to Rescala.
 
 ## Invariants
 
@@ -623,15 +623,15 @@ If an invariant fails an `InvariantViolationException` will be thrown.
 The exception message will contain further information about the exception:
 
 ```log
-rescala.extra.invariant.InvariantViolationException:
+reactives.extra.invariant.InvariantViolationException:
 
-Value(-1) violates invariant always_positive in reactive tests.rescala.property.InvariantsTest#sut:95
+Value(-1) violates invariant always_positive in reactive tests.reactives.property.InvariantsTest#sut:95
 
 The error was caused by these update chains:
 
-  tests.rescala.property.InvariantsTest#sut:95 with value: Value(-1)
+  tests.reactives.property.InvariantsTest#sut:95 with value: Value(-1)
   ↓
-  tests.rescala.property.InvariantsTest#v:94 with value: Value(-100)
+  tests.reactives.property.InvariantsTest#v:94 with value: Value(-100)
 ```
 
 ## Generators
@@ -659,19 +659,19 @@ c.test()
 ```
 
 The following is a complete example that demonstrates the example above in a working test environment.
-Note that you have to manually import the engine for `rescala.extra.invariant.SimpleScheduler` as testing using _invariants_ and _generators_ is currently only supported using this scheduler.
+Note that you have to manually import the engine for `reactives.extra.invariant.SimpleScheduler` as testing using _invariants_ and _generators_ is currently only supported using this scheduler.
 
 ```scala
-package tests.rescala.property
+package tests.reactives.property
 
 import org.scalacheck.Gen
 import org.scalatest.freespec.AnyFreeSpec
-import rescala.extra.invariant.SimpleScheduler.SignalWithInvariants
-import rescala.extra.invariant.{Invariant, SimpleStruct}
-import rescala.operator.RescalaInterface
+import reactives.extra.invariant.SimpleScheduler.SignalWithInvariants
+import reactives.extra.invariant.{Invariant, SimpleStruct}
+import reactives.operator.RescalaInterface
 
 class InvariantsTest extends AnyFreeSpec {
-  val engine: RescalaInterface[SimpleStruct] = RescalaInterface.interfaceFor(rescala.extra.invariant.SimpleScheduler)
+  val engine: RescalaInterface[SimpleStruct] = RescalaInterface.interfaceFor(reactives.extra.invariant.SimpleScheduler)
   import engine._
 
   "expect sum of two positives to always be positive" in {

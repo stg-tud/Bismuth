@@ -57,7 +57,7 @@ doc-serve port="8081" module="Reactives" platform="jvm":
 	jwebserver -b 0.0.0.0 -p {{port}} -d "Modules/{{module}}/{{platform}}/target/scala-3.8.3/api"
 
 compile-manual:
-	cd Documentation/web-manual && cs launch org.scalameta:mdoc_3:2.6.4 -- --classpath `cs fetch --classpath de.tu-darmstadt.stg:rescala_3:0.35.1` --in manual-src.md --out manual.md
+	cd Documentation/web-manual && cs launch org.scalameta:mdoc_3:2.9.0 -- --classpath `cs fetch --classpath de.tu-darmstadt.stg:reactives_3:0.37.0+2104-0fbc6ac1` --in manual-src.md --out manual.md
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
