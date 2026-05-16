@@ -12,6 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+--- NOTE: scala-loci peer-to-peer sync has been removed. All data is local
+--- IndexedDB storage only. Remote sync no longer happens.
  */
 package de.tu_darmstadt.informatik.st.reform.repo
 
@@ -25,7 +28,6 @@ import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.webrtc.ReplicationGroup
 import rdts.base.*
-import loci.registry.Registry
 import reactives.default.*
 
 import java.util.UUID
@@ -35,12 +37,13 @@ import scala.concurrent.Future
 type RepoAndValues[A] = (Repository[A], mutable.Map[String, A])
 
 case class Repository[A](name: String, defaultValue: A)(using
-    registry: Registry,
     indexedDb: IIndexedDB,
     dcl: Lattice[A],
     bottom: Bottom[A],
     codec: JsonValueCodec[A],
 ) {
+
+  println(s"[Repository] scala-loci sync removed – '$name' is local-only")
 
   def bottomEmpty: A = bottom.empty
 

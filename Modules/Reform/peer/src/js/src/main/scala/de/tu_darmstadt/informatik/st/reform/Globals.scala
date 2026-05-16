@@ -8,7 +8,6 @@ given ExecutionContext = scala.concurrent.ExecutionContext.global
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.services.{DiscoveryService, MailService, RoutingService, Toaster}
 import de.tu_darmstadt.informatik.st.reform.webrtc.WebRTCService
-import loci.registry.Registry
 
 import scala.scalajs.js
 
@@ -17,10 +16,9 @@ abstract case class JSImplicits() {
   lazy val mailing: MailService
   lazy val routing: RoutingService
   lazy val indexeddb: IIndexedDB
-  lazy val registry: Registry
-  lazy val webrtc: WebRTCService
   lazy val repositories: Repositories
   lazy val discovery: DiscoveryService
+  lazy val webrtc: WebRTCService
 }
 
 object Env {

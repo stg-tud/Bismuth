@@ -12,36 +12,23 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+--- NOTE: scala-loci peer-to-peer sync has been removed. WebRTC service,
+--- BroadcastChannel, and all remote peer connections have been removed.
  */
 package de.tu_darmstadt.informatik.st.reform.webrtc
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.tu_darmstadt.informatik.st.reform.*
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils
-import de.tu_darmstadt.informatik.st.reform.services.DiscoveryService
-import de.tu_darmstadt.informatik.st.reform.services.ToastMode
-import de.tu_darmstadt.informatik.st.reform.services.ToastType
-import de.tu_darmstadt.informatik.st.reform.services.Toaster
 import de.tu_darmstadt.informatik.st.reform.utils.Base64
-import loci.communicator.Connector
-import loci.communicator.broadcastchannel.BroadcastChannel
-import loci.communicator.webrtc.WebRTC
-import loci.communicator.webrtc.WebRTC.ConnectorFactory
-import loci.registry.*
-import loci.transmitter.RemoteRef
 import org.scalajs.dom.RTCPeerConnection
-import outwatch.*
-import outwatch.dsl.*
 import reactives.default.*
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
-import scala.util.Try
 
-class ConnectionInformation(val session: WebRTC.CompleteSession, val alias: String, val source: String = "manual") {}
+class ConnectionInformation(val session: WebRTCSession, val alias: String, val source: String = "manual") {}
 class StoredConnectionInformation(
     var alias: String,
     val source: String = "manual",
@@ -51,16 +38,20 @@ class StoredConnectionInformation(
     val tpe: String = "CLASSIC",
 ) {} // different object for discovery and manual
 
+// Minimal stand-in for scala-loci's WebRTC session types
+case class WebRTCSession(sdp: String, `type`: String)
 case class PendingConnection(
-    connector: WebRTC.Connector,
+    connector: ConnectorHandle,
     session: Future[ConnectionInformation],
     connection: RTCPeerConnection,
 )
 object PendingConnection {
-  def webrtcIntermediate(cf: ConnectorFactory, alias: String): PendingConnection = {
+  // Stub – scala-loci removed, WebRTC connections no longer work
+  def webrtcIntermediate(cf: ConnectorHandle, alias: String): PendingConnection = {
+    println(s"[PendingConnection] scala-loci removed – WebRTC connection to '$alias' will not proceed")
     val p      = Promise[ConnectionInformation]()
-    val answer = cf.complete(s => p.success(new ConnectionInformation(s, alias)))
-    PendingConnection(answer, p.future, answer.connection)
+    val handle = ConnectorHandle()
+    PendingConnection(handle, p.future, null)
   }
   private val codec: JsonValueCodec[ConnectionInformation] = JsonCodecMaker.make
   def sessionAsToken(s: ConnectionInformation): String     = Base64.encode(writeToString(s)(using codec))
@@ -68,59 +59,55 @@ object PendingConnection {
   def tokenAsSession(s: String): ConnectionInformation = readFromString(Base64.decode(s))(using codec)
 }
 
-class WebRTCService(using registry: Registry, toaster: Toaster, discovery: DiscoveryService) {
+// Stub for scala-loci's Connector/ConnectorFactory
+class ConnectorHandle() {
+  def set(session: WebRTCSession): Unit =
+    println("[ConnectorHandle] scala-loci removed – session set is a no-op")
+}
+object ConnectorHandle {
+  def offer(config: Any): ConnectorHandle = {
+    println("[ConnectorHandle] scala-loci removed – WebRTC offer not available")
+    new ConnectorHandle()
+  }
+  def answer(config: Any): ConnectorHandle = {
+    println("[ConnectorHandle] scala-loci removed – WebRTC answer not available")
+    new ConnectorHandle()
+  }
+}
 
-  private var connectionInfo    = Map[RemoteRef, StoredConnectionInformation]()
-  private var webRTCConnections = Map[RemoteRef, RTCPeerConnection]() // could merge this map with the one above
-  private var connectionRefs    = Map[String, RemoteRef]()
+// Stub for scala-loci's WebRTC
+object WebRTC {
+  def offer(config: Any): ConnectorHandle = ConnectorHandle.offer(config)
+  def answer(config: Any): ConnectorHandle = ConnectorHandle.answer(config)
+}
 
-  private val removeConnection  = Evt[RemoteRef]()
-  private val addConnection     = Evt[RemoteRef]()
-  private val addConnectionB    = addConnection.branch(v => current[Seq[RemoteRef]] :+ v)
-  private val removeConnectionB = removeConnection.branch(r => current[Seq[RemoteRef]].filter(b => !b.equals(r)))
+class WebRTCService() {
 
-  val connections: Signal[Seq[RemoteRef]] = Fold(Seq.empty: Seq[RemoteRef])(addConnectionB, removeConnectionB)
+  println("[WebRTCService] scala-loci sync removed – peer connections disabled")
 
-  def registerConnection(
-      connector: Connector[Connections.Protocol],
-      alias: String,
-      source: String,
-      connection: RTCPeerConnection,
-      uuid: String = "",
-      displayId: String = "",
-      tpe: String = "CLASSIC",
-      connectionId: String = "",
-      onConnected: (ref: RemoteRef) => Unit = _ => {},
-  ): Future[RemoteRef] = {
-    registry
-      .connect(connector)
-      .andThen { r =>
-        val storedConnection        = StoredConnectionInformation(alias, source, uuid, displayId, connectionId, tpe)
-        connectionInfo += (r.get        -> storedConnection)
-        connectionRefs += (connectionId -> r.get)
-        webRTCConnections += (r.get     -> connection)
+  private var connectionInfo    = Map[String, StoredConnectionInformation]()
 
-        onConnected(r.get)
+  private val removeConnection  = Evt[String]()
+  private val addConnection     = Evt[String]()
+  private val addConnectionB    = addConnection.branch(v => current[Seq[String]] :+ v)
+  private val removeConnectionB = removeConnection.branch(r => current[Seq[String]].filter(b => !b.equals(r)))
 
-        addConnection.fire(r.get)
+  // Changed from RemoteRef to String (connection id / alias) since loci is removed
+  val connections: Signal[Seq[String]] = Fold(Seq.empty: Seq[String])(addConnectionB, removeConnectionB)
 
-        toaster.make(span(b(storedConnection.alias), " has just joined! 🚀"), ToastMode.Short, ToastType.Success)
-      }
+  def registerConnection(alias: String): Future[Unit] = {
+    println(s"[WebRTCService] scala-loci removed – registration of '$alias' is a no-op")
+    Future.successful(())
   }
 
   def closeConnectionById(id: String): Unit = {
-    connectionRefs.get(id) match {
-      case None      =>
-      case Some(ref) =>
-        ref.disconnect()
-        discovery.reportClosedConnection(id)
-    }
+    println(s"[WebRTCService] closeConnectionById('$id') is a no-op (scala-loci removed)")
   }
 
-  def getInformation(ref: RemoteRef): StoredConnectionInformation =
+  def getInformation(ref: String): StoredConnectionInformation =
     connectionInfo.getOrElse(ref, StoredConnectionInformation("Anonymous", "unknown"))
 
-  def setAlias(ref: RemoteRef, alias: String): Unit = {
+  def setAlias(ref: String, alias: String): Unit = {
     connectionInfo = connectionInfo.transform { (r, storedConnection) =>
       if ref == r then {
         storedConnection.alias = alias
@@ -129,18 +116,6 @@ class WebRTCService(using registry: Registry, toaster: Toaster, discovery: Disco
     }
   }
 
-  def getConnectionMode(ref: RemoteRef): Future[String] = {
-    val connection = webRTCConnections(ref)
-
-    JSUtils.usesTurn(connection).map(usesTurn => if usesTurn then "relay" else "direct")
-  }
-
-  registry.remoteLeft.monitor { remoteRef =>
-    val connectionInfo = getInformation(remoteRef)
-    toaster.make(span(b(connectionInfo.alias), " has left! 👋"), ToastMode.Short, ToastType.Default)
-
-    removeConnection.fire(remoteRef)
-  }
-
-  registry.connect(BroadcastChannel("default"))
+  def getConnectionMode(ref: String): Future[String] =
+    Future.successful("none (scala-loci removed)")
 }

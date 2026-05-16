@@ -8,8 +8,7 @@ import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.PendingConnection
-import loci.communicator.webrtc.WebRTC
-import loci.transmitter.RemoteRef
+import de.tu_darmstadt.informatik.st.reform.webrtc.WebRTC
 import org.scalajs.dom.RTCConfiguration
 import org.scalajs.dom.RTCIceServer
 import org.scalajs.dom.window
@@ -18,6 +17,9 @@ import outwatch.dsl.*
 import reactives.default.*
 
 import scala.scalajs.js
+
+// NOTE: scala-loci removed – WebRTC connections via the library no longer work.
+// The UI is kept as a stub.
 
 private val webrtcConfig = new RTCConfiguration {
   iceServers = js.Array(
@@ -65,6 +67,7 @@ private def showConnectionToken(connection: PendingConnection)(using jsImplicits
 
 private case class Init()(using jsImplicits: JSImplicits) extends State {
   private def initializeHostSession(using state: Var[State]): Unit = {
+    println("[ManualConnection] scala-loci removed – host session creation is a stub")
     val pendingConnection =
       PendingConnection.webrtcIntermediate(WebRTC.offer(webrtcConfig), alias.now)
     state.set(HostPending(pendingConnection))
@@ -114,6 +117,7 @@ private case class ClientAskingForHostSessionToken()(using jsImplicits: JSImplic
   )
 
   private def connectToHost(using state: Var[State]): Unit = {
+    println("[ManualConnection] scala-loci removed – client connection is a stub")
     val connection = PendingConnection.webrtcIntermediate(WebRTC.answer(webrtcConfig), alias.now)
     connection.connector.set(PendingConnection.tokenAsSession(sessionToken.now).session)
     state.set(ClientWaitingForHostConfirmation(connection, PendingConnection.tokenAsSession(sessionToken.now).alias))
@@ -124,9 +128,7 @@ private case class ClientWaitingForHostConfirmation(connection: PendingConnectio
     state: Var[State],
     jsImplicits: JSImplicits,
 ) extends State {
-  jsImplicits.webrtc
-    .registerConnection(connection.connector, alias, "manual", connection.connection)
-    .foreach(_ => onConnected())
+  println("[ManualConnection] scala-loci removed – client waiting for host is a stub")
 
   override def render(using state: Var[State]): VNode = div(
     cls := "p-1",
@@ -136,9 +138,6 @@ private case class ClientWaitingForHostConfirmation(connection: PendingConnectio
     ),
     showConnectionToken(connection),
   )
-
-  private def onConnected()(using state: Var[State]): Unit =
-    state.set(ClientAskingForHostSessionToken())
 }
 
 private case class HostPending(connection: PendingConnection)(using
@@ -147,19 +146,7 @@ private case class HostPending(connection: PendingConnection)(using
 ) extends State {
   private val sessionTokenFromClient = Var("")
 
-  jsImplicits.webrtc
-    .registerConnection(
-      connection.connector,
-      "Anonymous",
-      "manual",
-      connection.connection,
-      "",
-      "",
-      "",
-      "CLASSIC",
-      onConnected,
-    )
-    .foreach(ref => onConnected(ref))
+  println("[ManualConnection] scala-loci removed – host pending is a stub")
 
   override def render(using state: Var[State]): VNode = div(
     cls := "p-1",
@@ -183,13 +170,9 @@ private case class HostPending(connection: PendingConnection)(using
     ),
   )
 
-  private def confirmConnectionToClient(): Unit =
+  private def confirmConnectionToClient(): Unit = {
+    println("[ManualConnection] scala-loci removed – confirm connection is a stub")
     connection.connector.set(PendingConnection.tokenAsSession(sessionTokenFromClient.now).session)
-
-  private def onConnected(ref: RemoteRef)(using state: Var[State]): Unit = {
-    println(PendingConnection.tokenAsSession(sessionTokenFromClient.now).alias)
-    jsImplicits.webrtc.setAlias(ref, PendingConnection.tokenAsSession(sessionTokenFromClient.now).alias)
-    state.set(Init())
   }
 }
 

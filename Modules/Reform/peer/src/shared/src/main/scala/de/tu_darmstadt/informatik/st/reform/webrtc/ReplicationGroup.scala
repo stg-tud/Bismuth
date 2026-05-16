@@ -12,47 +12,30 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+--- NOTE: scala-loci peer-to-peer sync has been removed. This class now works
+--- with local IndexedDB storage only. Remote sync no longer happens.
  */
 package de.tu_darmstadt.informatik.st.reform.webrtc
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.tu_darmstadt.informatik.st.reform.{Globals, given_ExecutionContext}
-import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
+import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.repo.{Storage, Synced}
-import loci.registry.{Binding, Registry}
-import loci.serializer.jsoniterScala.given
-import loci.transmitter.*
 import rdts.base.*
-import rdts.base.Lattice.syntax
-import reactives.core.Disconnectable
 import reactives.default.*
 
 import scala.concurrent.Future
-import scala.util.*
 
-/** @param name
-  *   The name/type of the thing to sync
-  * @param delta
-  *   The payload to sync
-  */
-case class DeltaFor[A](name: String, delta: A)
-
-/** @param name
-  *   The name/type of the thing to sync
-  * @param dcl
-  *   to split up the thing to sync into its containing lattices
-  * @param bottom
-  *   the neutral element of the thing to sync
+/** Local-only wrapper around a named value.
+  *
+  * Originally used scala-loci to replicate state between peers.
+  * scala-loci has been removed, so this only stores/loads from IndexedDB.
   */
 class ReplicationGroup[A](name: String)(using
-    registry: Registry,
-    dcl: Lattice[A],
     bottom: Bottom[A],
-    codec: JsonValueCodec[A],
     storage: Storage[A],
-    indexeddb: IIndexedDB,
 ) {
+
+  println(s"[ReplicationGroup] scala-loci sync removed – '$name' is local-only")
 
   @volatile
   private var cache: Map[String, Future[Synced[A]]] = Map.empty
@@ -65,9 +48,7 @@ class ReplicationGroup[A](name: String)(using
         val synced = storage
           .getOrDefault(id, initialValue)
           .map { value =>
-            var synced = Synced(storage, id, Var(value))
-            distributeDeltaRDT(id, synced)
-            synced
+            Synced(storage, id, Var(value))
           }
         cache += (id -> synced)
         synced
@@ -77,93 +58,4 @@ class ReplicationGroup[A](name: String)(using
 
   def getOrCreateAndSync(id: String): Future[Synced[A]] =
     cache.getOrElse(id, createAndSync(id, bottom.empty))
-
-  given deltaCodec: JsonValueCodec[DeltaFor[A]] = JsonCodecMaker.make
-
-  given IdenticallyTransmittable[DeltaFor[A]] = IdenticallyTransmittable()
-  given IdenticallyTransmittable[A]           = IdenticallyTransmittable()
-
-  given magicCodec: JsonValueCodec[Tuple2[Option[A], Option[String]]] = JsonCodecMaker.make
-
-  private val binding = Binding[DeltaFor[A] => Future[A]](s"${Globals.VITE_PROTOCOL_VERSION}-${name}")
-
-  registry.bindSbj(binding) { (remoteRef: RemoteRef, payload: DeltaFor[A]) =>
-    if payload.name != "ids" then {
-      indexeddb.requestPersistentStorage()
-    }
-    getOrCreateAndSync(payload.name).flatMap(_.update(v => v.getOrElse(bottom.empty).merge(payload.delta)))
-  }
-
-  def distributeDeltaRDT(
-      name: String,
-      synced: Synced[A],
-  ): Unit = {
-    // observe changes to send them to every remote
-    var observers = Map[RemoteRef, Disconnectable]()
-    // store data that needs to be resent to a remote
-    var resendBuffer = Map[RemoteRef, A]()
-
-    def registerRemote(remoteRef: RemoteRef): Unit = {
-      // Lookup method to send data to remote
-      val remoteUpdate = registry.lookup(binding, remoteRef)
-
-      def sendUpdate(delta: A): Unit = {
-        // the contents of the resend buffer and the delta need to be sent
-        val allToSend = resendBuffer.get(remoteRef).merge(Some(delta)).get
-        // remove from resend buffer for now
-        resendBuffer = resendBuffer.removed(remoteRef)
-
-        // functions that adds the data to the resend buffer
-        def scheduleForLater(): Unit = {
-          // add to resend buffer
-          resendBuffer = resendBuffer.updatedWith(remoteRef) { current =>
-            current.merge(Some(allToSend))
-          }
-          // note, it might be prudent to actually schedule some task that tries again,
-          // but for now we just remember the value and piggyback on sending whenever the next update happens,
-          // which might be never ...
-        }
-
-        if remoteRef.connected then {
-          // if the remote is connected try to send the data
-          remoteUpdate(DeltaFor(name, allToSend)).onComplete {
-            case Success(_) =>                    // success
-            case Failure(_) => scheduleForLater() // failure, add data to resend buffer
-          }
-        } else {
-          // if the remote is not connected add the data to the resend buffer
-          scheduleForLater()
-        }
-      }
-
-      // Send full state to initialize remote
-      val currentState = synced.signal.readValueOnce
-      // only send full state if it's not empty for efficiency
-      if currentState != bottom.empty then sendUpdate(currentState)
-
-      // Whenever the crdt is changed propagate the delta
-      val observer = synced.signal.observe { s =>
-        // note: isn't the resendbuffer also added in sendUpdate again?
-        // combine the resend buffer and the current delta
-        val deltaStateList = List(s) ++ resendBuffer.get(remoteRef).toList
-
-        // reduce the state change to a single state for efficiency
-        val combinedState = deltaStateList.reduceOption(Lattice.merge[A])
-
-        combinedState.foreach(sendUpdate)
-      }
-      // add the handler for this remote to the observers
-      observers += (remoteRef -> observer)
-    }
-
-    // if a remote joins register it to handle updates to it
-    registry.remoteJoined.foreach(registerRemote)
-    // also register all existing remotes
-    registry.remotes.foreach(registerRemote)
-    // remove remotes that disconnect
-    registry.remoteLeft.monitor { remoteRef =>
-      observers(remoteRef).disconnect()
-    }
-    ()
-  }
 }

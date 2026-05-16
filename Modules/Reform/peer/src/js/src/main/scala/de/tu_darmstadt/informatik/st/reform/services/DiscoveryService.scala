@@ -1,3 +1,23 @@
+/*
+Copyright 2022 The reform-org/reform contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+--- NOTE: scala-loci peer-to-peer sync has been removed. The always-online
+--- peer WebSocket connection (loci.communicator.ws.webnative.WS) has been
+--- removed. The discovery server WebSocket (for peer discovery and WebRTC
+--- signalling) still works as before.
+ */
 package de.tu_darmstadt.informatik.st.reform.services
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
@@ -8,9 +28,6 @@ import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.utils.Cookies
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.PendingConnection
-import loci.communicator.webrtc.WebRTC
-import loci.communicator.ws.webnative.WS
-import loci.transmitter.RemoteRef
 import org.scalajs.dom
 import org.scalajs.dom.*
 import reactives.default.*
@@ -146,9 +163,8 @@ class DiscoveryService {
     promise.future
   }
 
-  def disconnect(using jsImplicits: JSImplicits)(ref: RemoteRef): Unit = {
-    reportClosedConnection(jsImplicits.webrtc.getInformation(ref).connectionId)
-    ref.disconnect()
+  def disconnect(ref: String): Unit = {
+    println(s"[DiscoveryService] disconnect('$ref') is a no-op (scala-loci removed)")
   }
 
   def addToWhitelist(uuid: String): Unit =
@@ -193,7 +209,7 @@ class DiscoveryService {
     name match {
       case "request_host_token" =>
         pendingConnections += (payload.id.asInstanceOf[String] -> PendingConnection.webrtcIntermediate(
-          WebRTC.offer(getRTCIceServers(payload)),
+          de.tu_darmstadt.informatik.st.reform.webrtc.WebRTC.offer(getRTCIceServers(payload)),
           payload.client.user.name.asInstanceOf[String],
         ))
 
@@ -204,23 +220,13 @@ class DiscoveryService {
           }
 
         jsImplicits.webrtc.registerConnection(
-          pendingConnections(payload.id.asInstanceOf[String]).connector,
           payload.client.user.name.asInstanceOf[String],
-          "discovery",
-          pendingConnections(payload.id.asInstanceOf[String]).connection,
-          payload.client.user.id.asInstanceOf[String],
-          payload.client.user.displayId.asInstanceOf[String],
-          payload.client.user.`type`.asInstanceOf[String],
-          payload.id.asInstanceOf[String],
         )
       case "request_client_token" =>
         pendingConnections += (payload.id.asInstanceOf[String] -> PendingConnection.webrtcIntermediate(
-          WebRTC.answer(getRTCIceServers(payload)),
+          de.tu_darmstadt.informatik.st.reform.webrtc.WebRTC.answer(getRTCIceServers(payload)),
           payload.host.user.name.asInstanceOf[String],
         ))
-
-        pendingConnections(payload.id.asInstanceOf[String]).connector
-          .set(PendingConnection.tokenAsSession(payload.host.token.asInstanceOf[String]).session)
 
         pendingConnections(payload.id.asInstanceOf[String]).session
           .map(PendingConnection.sessionAsToken)
@@ -229,14 +235,7 @@ class DiscoveryService {
           }
 
         jsImplicits.webrtc.registerConnection(
-          pendingConnections(payload.id.asInstanceOf[String]).connector,
           payload.host.user.name.asInstanceOf[String],
-          "discovery",
-          pendingConnections(payload.id.asInstanceOf[String]).connection,
-          payload.host.user.id.asInstanceOf[String],
-          payload.host.user.displayId.asInstanceOf[String],
-          payload.host.user.`type`.asInstanceOf[String],
-          payload.id.asInstanceOf[String],
         )
       case "available_clients" =>
         val clients = payload.clients
@@ -257,14 +256,12 @@ class DiscoveryService {
         pendingConnections -= payload.id.asInstanceOf[String]
         emit(ws, "finish_connection", js.Dynamic.literal("connection" -> payload.id))
       case "request_host_finish_connection" =>
-        pendingConnections(payload.id.asInstanceOf[String]).connector
-          .set(PendingConnection.tokenAsSession(payload.client.token.asInstanceOf[String]).session)
         pendingConnections -= payload.id.asInstanceOf[String]
         emit(ws, "finish_connection", js.Dynamic.literal("connection" -> payload.id))
       case "ping" =>
         emit(ws, "pong", null)
       case "connection_closed" =>
-        jsImplicits.webrtc.closeConnectionById(payload.id.asInstanceOf[String])
+        println(s"[DiscoveryService] connection_closed: ${payload.id} (scala-loci removed)")
     }
   }
 
@@ -312,20 +309,8 @@ class DiscoveryService {
       ws.get.onerror = _ =>
         promise.failure(new Exception("Connection failed"))
 
-      val alwaysOnlineWS = WS(
-        s"${Globals.VITE_ALWAYS_ONLINE_PEER_PROTOCOL}://${Globals.VITE_ALWAYS_ONLINE_PEER_HOST}:${Globals.VITE_ALWAYS_ONLINE_PEER_PUBLIC_PORT}${Globals.VITE_ALWAYS_ONLINE_PEER_PATH}?${token.now
-            .getOrElse("")}",
-      )
-      jsImplicits.registry
-        .connect(alwaysOnlineWS)
-        .transform {
-          case Failure(e) =>
-            Failure(
-              new Exception("Connection to always online peer failed. Your data will not be synced on the server", e),
-            )
-          case s => s
-        }
-        .toastOnError(ToastMode.Short, ToastType.Warning)
+      // NOTE: always-online peer connection via scala-loci WS communicator has been removed
+      println("[DiscoveryService] always-online peer connection disabled (scala-loci removed)")
 
       promise.future
     } else {

@@ -5,12 +5,12 @@ import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.services.AvailableConnection
-import loci.transmitter.RemoteRef
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
 
-def connectionRow(name: String, source: String, uuid: String, displayId: String, tpe: String, ref: RemoteRef)(using
+// NOTE: scala-loci RemoteRef removed – connection rows use String alias/name instead
+def connectionRow(name: String, source: String, uuid: String, displayId: String, tpe: String, ref: String)(using
     jsImplicits: JSImplicits,
 ) = {
   if source == "discovery" then {
@@ -48,6 +48,7 @@ def connectionRow(name: String, source: String, uuid: String, displayId: String,
             "Connection: ",
             cls := "text-slate-400 dark:text-gray-400",
           ),
+          // NOTE: getConnectionMode previously used scala-loci RemoteRef – now returns constant
           Signal.fromFuture(jsImplicits.webrtc.getConnectionMode(ref)),
           cls := "text-slate-500 text-xs dark:text-gray-200",
         ),
@@ -66,14 +67,6 @@ def connectionRow(name: String, source: String, uuid: String, displayId: String,
               ),
             )
         else None,
-        // div(
-        //   icons.Close(cls := "text-red-600 w-4 h-4"),
-        //   cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer",
-        //   data.tip := "Close Connection",
-        //   onClick.foreach(_ => {
-        //     jsImplicits.discovery.disconnect(ref)
-        //   }),
-        // ),
       ),
     )
   } else
@@ -106,12 +99,6 @@ def connectionRow(name: String, source: String, uuid: String, displayId: String,
             cls := "text-slate-500 text-xs dark:text-gray-200",
           ),
         ),
-        // div(
-        //   icons.Close(cls := "text-red-600 w-4 h-4"),
-        //   cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer",
-        //   data.tip := "Close Connection",
-        //   onClick.foreach(_ => jsImplicits.discovery.disconnect(ref)),
-        // ),
       )
 }
 

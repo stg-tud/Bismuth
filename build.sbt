@@ -16,7 +16,6 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   rdts.js,
   rdts.jvm,
   reform.js,
-  reform.jvm,
   rdts.native,
   reactives.js,
   reactives.jvm,
@@ -219,7 +218,7 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Settings.jsEnvDom,
   )
 
-lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
+lazy val reform = crossProject(JSPlatform).crossType(CrossType.Full)
   .in(file("Modules/Reform/peer/src"))
   .dependsOn(reactives, rdts)
   .settings(
@@ -228,7 +227,6 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
     resolvers += "jitpack".at("https://jitpack.io"),
     Dependencies.jsoniterScala,
     Dependencies.munit,
-    libraryDependencies += "com.github.scala-loci.scala-loci" %%% "scala-loci-serializer-jsoniter-scala" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
   )
   .jsSettings(
     Compile / scalaJSModuleInitializers := Seq(
@@ -243,21 +241,8 @@ lazy val reform = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full
     libraryDependencies ++= Seq(
       "io.github.outwatch"   %%% "outwatch"       % "1.1.0",
       "com.github.cornerman" %%% "colibri-router" % "0.8.6",
-      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-webnative" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
-      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-webrtc" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
-      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-broadcastchannel" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
+      ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13),
     ),
-  )
-  .jvmSettings(
-    fork                := true,
-    run / baseDirectory := file("Modules/Reform/peer"),
-    libraryDependencies ++= Seq(
-      "com.github.scala-loci.scala-loci" %%% "scala-loci-communicator-ws-jetty11" % "3ea9afdeac1c46b5da65497b7d1fa54152128c2a",
-      "org.eclipse.jetty" % "jetty-slf4j-impl" % "11.0.14",
-      "org.xerial"        % "sqlite-jdbc"      % "3.53.1.0",
-      "com.auth0"         % "java-jwt"         % "4.5.2",
-    ),
-    assembly / mainClass := Some("de.tu_darmstadt.informatik.st.reform.Main")
   )
 
 lazy val webview = project.in(file("Modules/Webview"))

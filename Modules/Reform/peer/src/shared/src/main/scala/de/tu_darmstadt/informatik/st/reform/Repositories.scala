@@ -4,8 +4,6 @@ import de.tu_darmstadt.informatik.st.reform.entity.Document
 import de.tu_darmstadt.informatik.st.reform.entity.*
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.repo.Repository
-import de.tu_darmstadt.informatik.st.reform.webrtc.PingService
-import loci.registry.Registry
 
 case class Repositories(
     projects: Repository[Project],
@@ -17,12 +15,10 @@ case class Repositories(
     salaryChanges: Repository[SalaryChange],
     requiredDocuments: Repository[Document],
     contracts: Repository[Contract],
-)(using registry: Registry) {
-  val _ = PingService()
-}
+)
 
 object Repositories {
-  def apply()(using registry: Registry, indexedDb: IIndexedDB): Repositories = this(
+  def apply()(using indexedDb: IIndexedDB): Repositories = this(
     Repository("project", Project.empty),
     Repository("user", User.empty),
     Repository("hiwi", Hiwi.empty),

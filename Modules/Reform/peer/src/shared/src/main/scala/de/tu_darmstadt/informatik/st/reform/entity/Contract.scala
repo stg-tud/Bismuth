@@ -3,7 +3,6 @@ package de.tu_darmstadt.informatik.st.reform.entity
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
-import de.tu_darmstadt.informatik.st.reform.webrtc.DeltaFor
 import rdts.base.*
 
 case class Contract(
@@ -43,5 +42,4 @@ object Contract {
 
   implicit val codec: JsonValueCodec[Contract] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  implicit val deltaCodec: JsonValueCodec[DeltaFor[Contract]] = JsonCodecMaker.make
 }

@@ -12,6 +12,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+--- NOTE: scala-loci peer-to-peer sync has been removed. All data is local
+--- IndexedDB storage only. The registry, WebRTC, and discovery server
+--- connection have been removed.
  */
 package de.tu_darmstadt.informatik.st.reform
 
@@ -24,26 +28,24 @@ import de.tu_darmstadt.informatik.st.reform.npm.IndexedDB
 import de.tu_darmstadt.informatik.st.reform.services.DiscoveryService
 import de.tu_darmstadt.informatik.st.reform.services.RoutingService
 import de.tu_darmstadt.informatik.st.reform.services.*
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.WebRTCService
-import loci.registry.Registry
 import outwatch.*
 import outwatch.dsl.*
 
 object Main {
   def main(): Unit = {
+    println("[Main] scala-loci sync removed – running in local-only mode")
+
     lazy val jsImplicits: JSImplicits =
       new JSImplicits() {
-        lazy val toaster: Toaster            = Toaster()
-        lazy val mailing: MailService        = MailService()
-        lazy val routing: RoutingService     = RoutingService(using jsImplicits)
-        lazy val indexeddb: IIndexedDB       = IndexedDB(using jsImplicits)
-        lazy val registry: Registry          = Registry()
-        lazy val webrtc: WebRTCService       = WebRTCService(using registry, toaster, discovery)
-        lazy val repositories: Repositories  = Repositories()(using registry, indexeddb)
+        lazy val toaster: Toaster        = Toaster()
+        lazy val mailing: MailService    = MailService()
+        lazy val routing: RoutingService = RoutingService(using jsImplicits)
+        lazy val indexeddb: IIndexedDB   = IndexedDB(using jsImplicits)
+        lazy val repositories: Repositories = Repositories()(using indexeddb)
         lazy val discovery: DiscoveryService = DiscoveryService()
+        lazy val webrtc: WebRTCService       = WebRTCService()
       }
-    // we could assign the members later if this doesn't work?
 
     helpers.OutwatchTracing.error.unsafeForeach { throwable =>
       jsImplicits.toaster.make(
@@ -64,12 +66,6 @@ object Main {
           )
         }
       }
-
-    if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now) then {
-      jsImplicits.discovery
-        .connect(using jsImplicits)()
-        .toastOnError(using jsImplicits)()
-    }
 
     Outwatch
       .renderReplace[SyncIO](
