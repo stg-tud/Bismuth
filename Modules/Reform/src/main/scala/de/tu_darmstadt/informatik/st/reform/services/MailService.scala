@@ -51,43 +51,8 @@ class MailService {
     val htmlString = element.innerHTML
 
     if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now) then {
-      val requestHeaders = new Headers()
-      requestHeaders.set("content-type", "application/json")
-      requestHeaders.set("authorization", s"Bearer ${jsImplicits.discovery.token.now.getOrElse("")}")
-      fetch(
-        Globals.DISCOVERY_SERVER_URL + "/mail",
-        new RequestInit {
-          method = HttpMethod.POST
-          body =
-            writeToString(MailBody(to, from, fromName, htmlString, mail.subject, mail.attachments, bcc))(using
-              MailBody.codec
-            )
-          headers = requestHeaders
-        },
-      ).`then` { s =>
-        s.json()
-          .toFuture
-          .onComplete { json =>
-            if s.status > 400 && s.status < 500 then {
-              val error = json.get.asInstanceOf[js.Dynamic].error
-              promise.failure(
-                new LoginException(
-                  error.message.asInstanceOf[String],
-                  error.fields.asInstanceOf[js.Array[String]].toSeq,
-                ),
-              )
-            } else {
-              val response = json.get.asInstanceOf[js.Dynamic]
-              promise.success(
-                MailAnswer(
-                  response.selectDynamic("accepted").asInstanceOf[js.Array[String]].toSeq,
-                  response.selectDynamic("rejected").asInstanceOf[js.Array[String]].toSeq,
-                ),
-              )
-            }
-          }
-      }.toFuture
-        .toastOnError()
+      println("[MailService] sending mail disabled (scala-loci removed)")
+      promise.failure(new Exception("Mail service disabled"))
     }
 
     promise.future

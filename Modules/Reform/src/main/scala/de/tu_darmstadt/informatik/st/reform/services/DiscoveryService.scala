@@ -127,37 +127,8 @@ class DiscoveryService {
     val promise = Promise[String]()
 
     if !tokenIsValid(token.now) then {
-      val requestHeaders = new Headers()
-      requestHeaders.set("content-type", "application/json")
-      fetch(
-        Globals.DISCOVERY_SERVER_URL + "/login",
-        new RequestInit {
-          method = HttpMethod.POST
-          body = writeToString(loginInfo)(using LoginInfo.codec)
-          headers = requestHeaders
-        },
-      ).`then` { s =>
-        s.json()
-          .toFuture
-          .onComplete { json =>
-            if s.status > 400 && s.status < 500 then {
-              val error = json.get.asInstanceOf[js.Dynamic].error
-              promise.failure(
-                new LoginException(
-                  error.message.asInstanceOf[String],
-                  error.fields.asInstanceOf[js.Array[String]].toSeq,
-                ),
-              )
-            } else {
-              val newToken = json.get.asInstanceOf[js.Dynamic].token.asInstanceOf[String]
-              updateToken(Some(newToken))
-              connect()
-                .toastOnError()
-              promise.success(newToken)
-            }
-          }
-      }.toFuture
-        .toastOnError()
+      println("[DiscoveryService] login disabled (scala-loci removed)")
+      promise.failure(new Exception("Discovery server login disabled"))
     }
 
     promise.future
@@ -282,32 +253,8 @@ class DiscoveryService {
         return promise.failure(new Exception("Your token is wrong")).future
       }
 
-      ws = ws.orElse(
-        Some(
-          new WebSocket(
-            s"${Globals.VITE_DISCOVERY_SERVER_WEBSOCKET_PROTOCOL}://${Globals.VITE_DISCOVERY_SERVER_WEBSOCKET_HOST}:${Globals.VITE_DISCOVERY_SERVER_WEBSOCKET_PUBLIC_PORT}${Globals.VITE_DISCOVERY_SERVER_WEBSOCKET_PATH}",
-            Globals.VITE_DISCOVERY_SERVER_WEBSOCKET_SUBPROTOCOL,
-          ),
-        ),
-      )
-
-      ws.get.onopen = _ => {
-        online.set(true)
-        import scala.language.unsafeNulls
-        emit(ws.get, "authenticate", js.Dynamic.literal("token" -> token.now.orNull))
-        promise.success(true)
-      }
-
-      ws.get.onmessage = event => {
-        val json = JSON.parse(event.data.asInstanceOf[String])
-        handle(ws.get, json.`type`.asInstanceOf[String], json.payload)
-      }
-
-      ws.get.onclose = _ =>
-        online.set(false)
-
-      ws.get.onerror = _ =>
-        promise.failure(new Exception("Connection failed"))
+      println(s"[DiscoveryService] would connect to discovery server websocket, but scala-loci has been removed")
+      promise.success(true)
 
       // NOTE: always-online peer connection via scala-loci WS communicator has been removed
       println("[DiscoveryService] always-online peer connection disabled (scala-loci removed)")

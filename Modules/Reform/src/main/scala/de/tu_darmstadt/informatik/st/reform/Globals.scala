@@ -9,8 +9,6 @@ import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.services.{DiscoveryService, MailService, RoutingService, Toaster}
 import de.tu_darmstadt.informatik.st.reform.webrtc.WebRTCService
 
-import scala.scalajs.js
-
 abstract case class JSImplicits() {
   lazy val toaster: Toaster
   lazy val mailing: MailService
@@ -21,79 +19,18 @@ abstract case class JSImplicits() {
   lazy val webrtc: WebRTCService
 }
 
-object Env {
-  private val env = js.`import`.meta.env
-
-  def get(name: String): String = {
-    val opt: Option[String] = maybeGet(name)
-
-    if opt.isEmpty then {
-      throw new IllegalStateException(s"Environment variable ${name} must be set. (Did you source .env)?")
-    }
-
-    opt.get
-  }
-
-  def getOrElse(name: String, default: String): String =
-    maybeGet(name).getOrElse(default)
-
-  private def maybeGet(name: String): Option[String] = {
-    if env == js.undefined then {
-      return sys.env.get(name)
-    }
-
-    val x = env.selectDynamic(name)
-
-    if x == js.undefined then {
-      return None
-    }
-
-    Some(x.asInstanceOf[String])
-  }
-}
-
 object Globals {
-  lazy val VITE_SELENIUM: Boolean = Env.getOrElse("VITE_SELENIUM", "false") == "true"
+  lazy val VITE_SELENIUM: Boolean = false
 
-  lazy val VITE_DATABASE_VERSION: String = Env.get("VITE_DATABASE_VERSION")
+  lazy val VITE_DATABASE_VERSION: String = "2"
 
-  lazy val VITE_PROTOCOL_VERSION: String = Env.getOrElse("VITE_PROTOCOL_VERSION", "test")
+  lazy val APP_VERSION: String = "unknown"
 
-  lazy val VITE_SERVER_PROTOCOL: String = Env.get("VITE_SERVER_PROTOCOL")
-  lazy val VITE_SERVER_HOST: String     = Env.get("VITE_SERVER_HOST")
-  lazy val VITE_SERVER_PATH: String     = Env.get("VITE_SERVER_PATH")
-  lazy val VITE_SERVER_PORT: String     = Env.get("VITE_SERVER_PORT")
+  // Hardcoded defaults for stubbed WebRTC/peer services
+  lazy val VITE_TURN_SERVER_HOST: String = "localhost"
+  lazy val VITE_TURN_SERVER_PORT: String = "3478"
 
-  lazy val VITE_DISCOVERY_SERVER_PROTOCOL: String    = Env.get("VITE_DISCOVERY_SERVER_PROTOCOL")
-  lazy val VITE_DISCOVERY_SERVER_HOST: String        = Env.get("VITE_DISCOVERY_SERVER_HOST")
-  lazy val VITE_DISCOVERY_SERVER_PATH: String        = Env.get("VITE_DISCOVERY_SERVER_PATH")
-  lazy val VITE_DISCOVERY_SERVER_LISTEN_PORT: String = Env.get("VITE_DISCOVERY_SERVER_LISTEN_PORT")
-  lazy val VITE_DISCOVERY_SERVER_PUBLIC_PORT: String = Env.get("VITE_DISCOVERY_SERVER_PUBLIC_PORT")
-
-  lazy val VITE_DISCOVERY_SERVER_WEBSOCKET_PROTOCOL: String    = Env.get("VITE_DISCOVERY_SERVER_WEBSOCKET_PROTOCOL")
-  lazy val VITE_DISCOVERY_SERVER_WEBSOCKET_HOST: String        = Env.get("VITE_DISCOVERY_SERVER_WEBSOCKET_HOST")
-  lazy val VITE_DISCOVERY_SERVER_WEBSOCKET_PATH: String        = Env.get("VITE_DISCOVERY_SERVER_WEBSOCKET_PATH")
-  lazy val VITE_DISCOVERY_SERVER_WEBSOCKET_SUBPROTOCOL: String = Env.get("VITE_DISCOVERY_SERVER_WEBSOCKET_SUBPROTOCOL")
-  lazy val VITE_DISCOVERY_SERVER_WEBSOCKET_LISTEN_PORT: String = Env.get("VITE_DISCOVERY_SERVER_WEBSOCKET_LISTEN_PORT")
-  lazy val VITE_DISCOVERY_SERVER_WEBSOCKET_PUBLIC_PORT: String = Env.get("VITE_DISCOVERY_SERVER_WEBSOCKET_PUBLIC_PORT")
-
-  lazy val VITE_TURN_SERVER_HOST: String            = Env.get("VITE_TURN_SERVER_HOST")
-  lazy val VITE_TURN_SERVER_PORT: String            = Env.get("VITE_TURN_SERVER_PORT")
-  lazy val VITE_ALWAYS_ONLINE_PEER_PROTOCOL: String = Env.get("VITE_ALWAYS_ONLINE_PEER_PROTOCOL")
-  lazy val VITE_ALWAYS_ONLINE_PEER_HOST: String     = Env.get("VITE_ALWAYS_ONLINE_PEER_HOST")
-
-  lazy val VITE_ALWAYS_ONLINE_PEER_PATH: String        = Env.get("VITE_ALWAYS_ONLINE_PEER_PATH")
-  lazy val VITE_ALWAYS_ONLINE_PEER_SUBPROTOCOL: String = Env.get("VITE_ALWAYS_ONLINE_PEER_SUBPROTOCOL")
-  lazy val VITE_ALWAYS_ONLINE_PEER_PUBLIC_PORT: String = Env.get("VITE_ALWAYS_ONLINE_PEER_PUBLIC_PORT")
-
-  lazy val VITE_DEKANAT_MAIL: String = Env.get("VITE_DEKANAT_MAIL")
-
-  lazy val VITE_CONTRACT_PDF_PATH: String = Env.get("VITE_CONTRACT_PDF_PATH")
-
-  lazy val VITE_LETTER_PDF_PATH: String = Env.get("VITE_LETTER_PDF_PATH")
-
-  lazy val APP_VERSION: String = js.Dynamic.global.APP_VERSION.asInstanceOf[String]
-
-  lazy val DISCOVERY_SERVER_URL =
-    s"${VITE_DISCOVERY_SERVER_PROTOCOL}://${VITE_DISCOVERY_SERVER_HOST}:${VITE_DISCOVERY_SERVER_PUBLIC_PORT}${VITE_DISCOVERY_SERVER_PATH}"
+  lazy val VITE_DEKANAT_MAIL: String = ""
+  lazy val VITE_CONTRACT_PDF_PATH: String = "/contract_unlocked.pdf"
+  lazy val VITE_LETTER_PDF_PATH: String = "/letter_editable.pdf"
 }
