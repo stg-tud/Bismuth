@@ -94,7 +94,7 @@ class OverlayDemoNode(
 
   def selfConnectionDetails: Set[ConnectionDescriptor] = selfDetails
 
-  def repairTick(): Unit = broadcastIO.foreach(_.repairTick())
+  def repairTick(): Unit = broadcastIO.foreach(_.tick())
 
   def overlayInfoTick(): Unit = {
     broadcastIO.foreach { io =>
@@ -116,7 +116,11 @@ class OverlayDemoNode(
       io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView
   }.getOrElse(Set.empty)
 
-  def eagerView: Set[Uid] = broadcastIO.map(_.plumtreeState.eagerPeers).getOrElse(Set.empty)
+  def eagerView: Set[Uid] = broadcastIO.flatMap(io =>
+    io.plumtreeState match
+        case pt: PlumtreeBroadcast[?] => Some(pt.eagerPeers)
+        case _                        => None
+  ).getOrElse(Set.empty)
 
   def lastIncomingMessageTimes: Map[Uid, Long] = Map.empty
 

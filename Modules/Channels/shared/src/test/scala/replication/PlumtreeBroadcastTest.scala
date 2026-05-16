@@ -114,12 +114,12 @@ class PlumtreeBroadcastTest extends FunSuite {
     assertEquals(noEvents.toList, Nil)
     assertEquals(afterIHave.remoteContext(missing), remote, "")
 
-    val PlumtreeBroadcast.Result(afterFirstTick, firstTickEvents) = afterIHave.tickGrafts()
+    val PlumtreeBroadcast.Result(afterFirstTick, firstTickEvents) = afterIHave.tick()
     assertEquals(afterFirstTick.peerRoles(missing), PeerRole.Lazy, "")
     assertEquals(firstTickEvents.toList, Nil)
     assertEquals(afterFirstTick.remoteContextSnapshot, afterIHave.remoteContext)
 
-    val PlumtreeBroadcast.Result(afterSecondTick, secondTickEvents) = afterFirstTick.tickGrafts()
+    val PlumtreeBroadcast.Result(afterSecondTick, secondTickEvents) = afterFirstTick.tick()
     assertEquals(afterSecondTick.peerRoles(missing), PeerRole.Eager, "")
     assertEquals(secondTickEvents.toList, List(Send(List(missing), Graft(local))))
   }

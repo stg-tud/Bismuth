@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.Lattice.syntax.merge
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import replication.BroadcastIO
+import replication.{BroadcastIO, PlumtreeBroadcast}
 import replication.JsoniterCodecs.given
 import replication.PlumtreeBroadcast.{Peer, PeerRole}
 import replication.overlay.{FullMeshOverlay, HyParViewStateMachine}
@@ -47,14 +47,19 @@ object OverlayStatusProtocol {
         case _                              => (Set.empty[Uid], Set.empty[Uid])
 
     val peerStates =
+      val plumtreeRoles: Map[Uid, PeerState] = io.plumtreeState match
+          case pt: PlumtreeBroadcast[?] =>
+            activePeers.iterator.map { uid =>
+              val state = pt.peerRoles.get(Peer(uid)) match
+                  case Some(PeerRole.Lazy)  => PeerState.Lazy
+                  case Some(PeerRole.Eager) => PeerState.Eager
+                  case None                 => PeerState.Eager
+              uid -> state
+            }.toMap
+          case _ => Map.empty
+
       (passivePeers.iterator.map(_ -> PeerState.Passive) ++
-        activePeers.iterator.map { uid =>
-          val state = io.plumtreeState.peerRoles.get(Peer(uid)) match
-              case Some(PeerRole.Lazy)  => PeerState.Lazy
-              case Some(PeerRole.Eager) => PeerState.Eager
-              case None                 => PeerState.Eager
-          uid -> state
-        }).toList
+        plumtreeRoles.iterator).toList
 
     val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) {
       case (acc, (uid, state)) =>

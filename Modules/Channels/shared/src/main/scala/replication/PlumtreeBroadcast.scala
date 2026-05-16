@@ -72,7 +72,7 @@ final case class PlumtreeBroadcast[State](
     deltaStorage: DeltaStorage[State] = NoHistory(),
     peerRoles: Map[Peer, PeerRole] = Map.empty,
     remoteContextSnapshot: Map[Peer, Dots] = Map.empty,
-) {
+) extends BroadcastProtocol[State] {
   import PlumtreeBroadcast.*
 
   def eagerPeers: Set[Uid] = peerRoles.collect { case (Peer(uid), PeerRole.Eager) => uid }.toSet
@@ -83,10 +83,15 @@ final case class PlumtreeBroadcast[State](
     Result(next, List(Send(peer :: Nil, Graft(localContext))))
   }
 
+  def allPayloads: List[Payload[State]] = deltaStorage.getHistory
+
   /** Algorithm 3 `NeighborDown(node)`. */
-  def removePeer(peer: Peer): PlumtreeBroadcast[State] = copy(
-    peerRoles = peerRoles.removed(peer),
-    remoteContext = remoteContext.removed(peer)
+  def removePeer(peer: Peer): Result[State] = Result(
+    copy(
+      peerRoles = peerRoles.removed(peer),
+      remoteContext = remoteContext.removed(peer)
+    ),
+    Nil
   )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
@@ -102,7 +107,7 @@ final case class PlumtreeBroadcast[State](
   }
 
   /** The paper manages some timeouts after IHave messages, we instead check that the local context catches up between any two tick grafts calls. */
-  def tickGrafts(): Result[State] = {
+  def tick(): Result[State] = {
     // note, this may very well select already active peers, which is done to backfill in case of missing state
     val haveMissing = remoteContextSnapshot.collect:
         case (peer, context) if context.inflates(localContext) => peer

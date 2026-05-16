@@ -31,7 +31,7 @@ object BroadcastIO {
       resolver: ChannelResolver = ChannelResolver.disconnected,
       sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
       globalAbort: Abort = Abort(),
-      broadcast: Option[PlumtreeBroadcast[State]] = None,
+      broadcast: Option[BroadcastProtocol[State]] = None,
       aead: Aead = Aead.identity,
   )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
     new BroadcastIO[State](
@@ -41,7 +41,7 @@ object BroadcastIO {
       resolver = resolver,
       sendingActor = sendingActor,
       globalAbort = globalAbort,
-      plumtree =
+      broadcast =
         broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 1000))),
       aead = aead,
     )
@@ -65,7 +65,7 @@ object BroadcastIO {
 /** Combined Delta + Plumtree dissemination.
   *
   * Network/state-machine split:
-  * - [[PlumtreeBroadcast]] tracks immutable Plumtree eager/lazy roles and protocol transitions.
+  * - the [[BroadcastProtocol]] implementation tracks eager/lazy peer roles and protocol transitions.
   * - the overlay controller owns the mapping between abstract peers and concrete [[Connection]] objects.
   * - this class handles payload storage, message encoding/decoding, and callback side effects.
   */
@@ -76,7 +76,7 @@ class BroadcastIO[State](
     resolver: ChannelResolver,
     sendingActor: ExecutionContext,
     val globalAbort: Abort,
-    @volatile private var plumtree: PlumtreeBroadcast[State],
+    @volatile private var broadcast: BroadcastProtocol[State],
     val aead: Aead
 )(using val stateCodec: JsonValueCodec[State]) {
 
@@ -85,7 +85,7 @@ class BroadcastIO[State](
 
   def overlayController: OverlayController = overlay
 
-  def plumtreeState: PlumtreeBroadcast[State] = plumtree
+  def plumtreeState: BroadcastProtocol[State] = broadcast
 
   def selfConnectionDescriptors: Set[ConnectionDescriptor] = overlay.selfConnectionDescriptors
 
@@ -142,11 +142,11 @@ class BroadcastIO[State](
   }
 
   /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
-  def repairTick(): Unit = lock.synchronized {
+  def tick(): Unit = lock.synchronized {
     applyOverlayResult:
         overlay.tick()
     applyRoutingResult:
-        plumtree.tickGrafts()
+        broadcast.tick()
   }
 
   /** Register externally discovered peers with the overlay. */
@@ -159,14 +159,12 @@ class BroadcastIO[State](
     applyOverlayResult(overlay.bootstrapVia(contact))
   }
 
-  private def localKnownDeltaContext: Dots = plumtree.localContext
-
   def allPayloads: List[Payload[State]] =
-    lock.synchronized(plumtree.deltaStorage.getHistory)
+    lock.synchronized(broadcast.allPayloads)
 
   def broadcast(delta: State): Unit = lock.synchronized {
     applyRoutingResult:
-        plumtree.broadcast(delta)
+        broadcast.broadcast(delta)
   }
 
   /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */
@@ -186,7 +184,7 @@ class BroadcastIO[State](
     }
 
   private def applyRoutingResult(result: PlumtreeBroadcast.Result[State]): Unit = {
-    plumtree = result.state
+    broadcast = result.state
     result.events.foreach(handleRoutingEvent)
   }
 
@@ -245,9 +243,10 @@ class BroadcastIO[State](
           removePeer(connection)
         case OverlayAction.ActiveConnectionAdded(peer) =>
           applyRoutingResult:
-              plumtree.addPeer(Peer(peer))
+              broadcast.addPeer(Peer(peer))
         case OverlayAction.ActiveConnectionRemoved(peer) =>
-          plumtree = plumtree.removePeer(Peer(peer))
+          applyRoutingResult:
+              broadcast.removePeer(Peer(peer))
 
   private def send(conn: Connection, payload: Envelope[State]): Unit =
     if globalAbort.closeRequest then ()
@@ -264,7 +263,7 @@ class BroadcastIO[State](
     msg match
         case Envelope.Membership(message) =>
           applyOverlayResult(overlay.receiveActions(message, conn))
-        case Envelope.Broadcast(sender, protocol) =>
-          applyRoutingResult(plumtree.handleMessage(Peer(sender), protocol))
+        case Envelope.Broadcast(sender, msg) =>
+          applyRoutingResult(broadcast.handleMessage(Peer(sender), msg))
   }
 }
