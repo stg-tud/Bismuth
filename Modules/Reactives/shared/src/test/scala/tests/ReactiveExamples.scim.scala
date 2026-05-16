@@ -10,11 +10,11 @@ The manual introduces the concepts related to functional reactive programming an
 
 Also see the introductory video lecture at :link{https://www.youtube.com/watch?v=iRh7UiclElk} that gives a step by step introduction.
 
-- The chapter :ref{the-basics} covers how to get started and integrate reactives into a program, and
-- The chapter :ref{common-combinators} presents the most common features for composing signals and events.
-- The chapter :ref{combinators} describes other combinators.
-- If you encounter any problems, check out the chapter :ref{common-pitfalls}.
-- The readers interested in a more general presentation of these topics can find the essential references in the section :ref{related-work}.
+• The chapter :ref{the-basics} covers how to get started and integrate reactives into a program, and
+• The chapter :ref{common-combinators} presents the most common features for composing signals and events.
+• The chapter :ref{common-combinators} describes the most common combinators.
+• If you encounter any problems, check out the chapter :ref{common-pitfalls}.
+• The readers interested in a more general presentation of these topics can find the essential references in the section :ref{related-work}.
 */
 
 package tests.scim
@@ -249,7 +249,7 @@ Whenever any input changes, the value of the combinator is also updated.
 ## Latest, Changed
 
 Conversion between signals and events are fundamental to introduce
-time-changing values into OO applications -- which are usually event-based.
+time-changing values into OO applications – which are usually event-based.
 
 This section covers the basic conversions between signals and events.
 The :m{latest} conversion function creates a signal from an event.
@@ -262,8 +262,9 @@ The :m{latest} function applies to an event and returns a signal
 holding the latest value of the event :m{e}.
 The initial value of the signal is set to :m{init}.
 
-:code lang=scala
-latest[T](e: Event[T], init: T): Signal[T]
+```code lang=scala
+    latest[T](e: Event[T], init: T): Signal[T]
+```
 */
 
     // Example:
