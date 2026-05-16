@@ -165,10 +165,8 @@ class BroadcastIO[State](
     lock.synchronized(plumtree.deltaStorage.getHistory)
 
   def applyDelta(delta: State): Unit = lock.synchronized {
-    val nextDot = localKnownDeltaContext.nextDot(replicaId.uid)
-    val payload = Payload(Dots.single(nextDot), delta)
     applyRoutingResult:
-        plumtree.broadcast(payload)
+        plumtree.broadcast(delta)
   }
 
   /** Remove a failed connection from overlay bookkeeping and propagate resulting overlay actions. */

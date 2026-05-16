@@ -90,7 +90,10 @@ final case class PlumtreeBroadcast[State](
   )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
-  def broadcast(payload: Payload[State]): Result[State] = {
+  def broadcast(delta: State): Result[State] = {
+    val nextDot = localContext.nextDot(self)
+    val payload = Payload(Dots.single(nextDot), delta)
+
     val next: PlumtreeBroadcast[State] = copy(
       localContext = localContext.merge(payload.dots),
       deltaStorage = deltaStorage.remember(payload),

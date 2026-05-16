@@ -31,16 +31,16 @@ class PlumtreeBroadcastTest extends FunSuite {
       )
     )
 
-    val msg                                    = payload(self, 0, "v1")
-    val PlumtreeBroadcast.Result(next, events) = state.broadcast(msg)
+    val expectedPayload                        = Payload(Dots.single(self, 0), "v1")
+    val PlumtreeBroadcast.Result(next, events) = state.broadcast("v1")
 
-    assert(next.localContext.contains(msg.dots))
-    assertEquals(next.deltaStorage.getHistory, List(msg))
+    assert(next.localContext.contains(expectedPayload.dots))
+    assertEquals(next.deltaStorage.getHistory, List(expectedPayload))
     assertEquals(
       events.toList,
       List(
-        Send(List(eagerA, eagerB), msg),
-        Send(List(lazyA), IHave(msg.dots))
+        Send(List(eagerA, eagerB), expectedPayload),
+        Send(List(lazyA), IHave(expectedPayload.dots))
       )
     )
   }
