@@ -2,6 +2,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [],
+  legacy: {
+    inconsistentCjsInterop: true,
+  },
   root: "./src/main/js",
   envDir: process.cwd(),
   build: {
