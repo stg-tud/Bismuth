@@ -26,7 +26,7 @@ object NioTCP {
 
   /** Per-socket protocol mode.
     *
-    * New inbound sockets start in [[Init]] so we can sniff the first bytes.
+    * New inbound sockets start in `Init` so we can sniff the first bytes.
     * After that, each connection independently continues either as normal length-prefixed NioTCP traffic,
     * or as a websocket handshake followed by websocket frames.
     */

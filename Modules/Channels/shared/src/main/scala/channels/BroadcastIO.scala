@@ -68,8 +68,8 @@ object BroadcastIO {
 /** Combined Delta + Plumtree dissemination.
   *
   * Network/state-machine split:
-  * - the [[BroadcastProtocol]] implementation tracks eager/lazy peer roles and protocol transitions.
-  * - the overlay controller owns the mapping between abstract peers and concrete [[Connection]] objects.
+  * - the `BroadcastProtocol` implementation tracks eager/lazy peer roles and protocol transitions.
+  * - the overlay controller owns the mapping between abstract peers and concrete `Connection` objects.
   * - this class handles payload storage, message encoding/decoding, and callback side effects.
   */
 class BroadcastIO[State](
@@ -102,13 +102,13 @@ class BroadcastIO[State](
     overlay = overlay.addSelfConnectionDescriptor(descriptor)
   }
 
-  /** Register an outgoing/client transport that yields a usable [[Connection]]. */
+  /** Register an outgoing/client transport that yields a usable `Connection`. */
   def addClientConnection(latentConnection: LatentConnection[Connection]): Unit =
     Async.provided(globalAbort) {
       bindConnection(latentConnection).bind
     }.run(printExceptionHandler)
 
-  /** Register an incoming/server transport and learn its published local [[ConnectionDescriptor]]. */
+  /** Register an incoming/server transport and learn its published local `ConnectionDescriptor`. */
   def addServerConnection(latentConnection: LatentConnection[ConnectionDescriptor]): Unit =
     Async.provided(globalAbort) {
       val descriptor = bindConnection(latentConnection).bind
