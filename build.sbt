@@ -235,9 +235,9 @@ lazy val reform = project
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
     libraryDependencies ++= Seq(
-      "io.github.outwatch"   %%% "outwatch"       % "1.1.0",
-      "com.github.cornerman" %%% "colibri-router" % "0.8.6",
-      ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13),
+      "io.github.outwatch"   %%% "outwatch"                  % "1.1.0",
+      "com.github.cornerman" %%% "colibri-router"            % "0.8.6",
+      ("org.scala-js"        %%% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13),
     ),
   )
 

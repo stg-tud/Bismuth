@@ -77,7 +77,7 @@ object ConnectorHandle {
 
 // Stub for scala-loci's WebRTC
 object WebRTC {
-  def offer(config: Any): ConnectorHandle = ConnectorHandle.offer(config)
+  def offer(config: Any): ConnectorHandle  = ConnectorHandle.offer(config)
   def answer(config: Any): ConnectorHandle = ConnectorHandle.answer(config)
 }
 
@@ -85,7 +85,7 @@ class WebRTCService() {
 
   println("[WebRTCService] scala-loci sync removed – peer connections disabled")
 
-  private var connectionInfo    = Map[String, StoredConnectionInformation]()
+  private var connectionInfo = Map[String, StoredConnectionInformation]()
 
   private val removeConnection  = Evt[String]()
   private val addConnection     = Evt[String]()
@@ -100,9 +100,8 @@ class WebRTCService() {
     Future.successful(())
   }
 
-  def closeConnectionById(id: String): Unit = {
+  def closeConnectionById(id: String): Unit =
     println(s"[WebRTCService] closeConnectionById('$id') is a no-op (scala-loci removed)")
-  }
 
   def getInformation(ref: String): StoredConnectionInformation =
     connectionInfo.getOrElse(ref, StoredConnectionInformation("Anonymous", "unknown"))

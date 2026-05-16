@@ -48,18 +48,18 @@ object OverlayStatusProtocol {
         case _                              => (Set.empty[Uid], Set.empty[Uid])
 
     val peerStates =
-      val plumtreeRoles: Map[Uid, PeerState] = io.plumtreeState match
-          case pt: PlumtreeBroadcast[?] =>
-            activePeers.iterator.map { uid =>
-              val state = pt.peerRoles.get(Peer(uid)) match
-                  case Some(PeerRole.Lazy)  => PeerState.Lazy
-                  case Some(PeerRole.Eager) => PeerState.Eager
-                  case None                 => PeerState.Eager
-              uid -> state
-            }.toMap
-          case _ => Map.empty
+        val plumtreeRoles: Map[Uid, PeerState] = io.plumtreeState match
+            case pt: PlumtreeBroadcast[?] =>
+              activePeers.iterator.map { uid =>
+                val state = pt.peerRoles.get(Peer(uid)) match
+                    case Some(PeerRole.Lazy)  => PeerState.Lazy
+                    case Some(PeerRole.Eager) => PeerState.Eager
+                    case None                 => PeerState.Eager
+                uid -> state
+              }.toMap
+            case _ => Map.empty
 
-      (passivePeers.iterator.map(_ -> PeerState.Passive) ++
+        (passivePeers.iterator.map(_ -> PeerState.Passive) ++
         plumtreeRoles.iterator).toList
 
     val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) {

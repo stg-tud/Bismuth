@@ -10,10 +10,10 @@ import rdts.base.Uid
 class FullMeshOverlayTest extends FunSuite {
 
   final private case class TestConnection(name: String) extends Connection {
-    override def info: ConnectionInfo                                    = ConnectionInfo("name" -> name)
+    override def info: ConnectionInfo                           = ConnectionInfo("name" -> name)
     override def send(message: MessageBuffer): Async[Any, Unit] = Async(())
-    override def close(): Unit                                           = ()
-    override def toString: String                                        = s"TestConnection($name)"
+    override def close(): Unit                                  = ()
+    override def toString: String                               = s"TestConnection($name)"
   }
 
   private val self = PeerConnectInfo(Uid.predefined("self"), Set(ConnectionDescriptor.QueuedLocal("self")))

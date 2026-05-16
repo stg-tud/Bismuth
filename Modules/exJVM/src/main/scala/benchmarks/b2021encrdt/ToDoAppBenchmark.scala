@@ -25,7 +25,7 @@ object ToDoAppBenchmark {
   val clientCrdt = new DeltaAWLWWMContainer[UUID, ToDoEntry]("client".convert)
 
   var intermediarySizeInfo: IntermediarySizeInfo = scala.compiletime.uninitialized
-  var aead: Aead                     = scala.compiletime.uninitialized
+  var aead: Aead                                 = scala.compiletime.uninitialized
   var clientReplica: ToDoListClient              = scala.compiletime.uninitialized
 
   def main(args: Array[String]): Unit = {

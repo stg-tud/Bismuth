@@ -38,11 +38,11 @@ object Main {
 
     lazy val jsImplicits: JSImplicits =
       new JSImplicits() {
-        lazy val toaster: Toaster        = Toaster()
-        lazy val mailing: MailService    = MailService()
-        lazy val routing: RoutingService = RoutingService(using jsImplicits)
-        lazy val indexeddb: IIndexedDB   = IndexedDB(using jsImplicits)
-        lazy val repositories: Repositories = Repositories()(using indexeddb)
+        lazy val toaster: Toaster            = Toaster()
+        lazy val mailing: MailService        = MailService()
+        lazy val routing: RoutingService     = RoutingService(using jsImplicits)
+        lazy val indexeddb: IIndexedDB       = IndexedDB(using jsImplicits)
+        lazy val repositories: Repositories  = Repositories()(using indexeddb)
         lazy val discovery: DiscoveryService = DiscoveryService()
         lazy val webrtc: WebRTCService       = WebRTCService()
       }

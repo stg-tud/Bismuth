@@ -14,9 +14,11 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 
 class MailService {
-  @scala.annotation.unused private object MailBody
+  @scala.annotation.unused
+  private object MailBody
 
-  @scala.annotation.unused class MailAnswer(val accepted: Seq[String], val rejected: Seq[String]) {}
+  @scala.annotation.unused
+  class MailAnswer(val accepted: Seq[String], val rejected: Seq[String]) {}
 
   def sendMail(using
       jsImplicits: JSImplicits

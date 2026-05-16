@@ -30,7 +30,7 @@ object Globals {
   lazy val VITE_TURN_SERVER_HOST: String = "localhost"
   lazy val VITE_TURN_SERVER_PORT: String = "3478"
 
-  lazy val VITE_DEKANAT_MAIL: String = ""
+  lazy val VITE_DEKANAT_MAIL: String      = ""
   lazy val VITE_CONTRACT_PDF_PATH: String = "/contract_unlocked.pdf"
-  lazy val VITE_LETTER_PDF_PATH: String = "/letter_editable.pdf"
+  lazy val VITE_LETTER_PDF_PATH: String   = "/letter_editable.pdf"
 }

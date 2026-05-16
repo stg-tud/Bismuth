@@ -38,7 +38,6 @@ import scala.scalajs.js
 import scala.scalajs.js.Date
 import scala.scalajs.js.JSON
 
-
 class AvailableConnection(
     val name: String,
     val uuid: String,
@@ -132,9 +131,8 @@ class DiscoveryService {
     promise.future
   }
 
-  def disconnect(ref: String): Unit = {
+  def disconnect(ref: String): Unit =
     println(s"[DiscoveryService] disconnect('$ref') is a no-op (scala-loci removed)")
-  }
 
   def addToWhitelist(uuid: String): Unit =
     ws.foreach(emit(_, "whitelist_add", js.Dynamic.literal("uuid" -> uuid)))
@@ -172,7 +170,8 @@ class DiscoveryService {
     }
   }
 
-  @scala.annotation.unused private def handle(using jsImplicits: JSImplicits)(ws: WebSocket, name: String, payload: js.Dynamic) = {
+  @scala.annotation.unused
+  private def handle(using jsImplicits: JSImplicits)(ws: WebSocket, name: String, payload: js.Dynamic) = {
     if name != "ping" then console.log(name, payload)
 
     name match {
