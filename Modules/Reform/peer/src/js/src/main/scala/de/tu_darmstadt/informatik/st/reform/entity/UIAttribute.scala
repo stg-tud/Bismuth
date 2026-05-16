@@ -135,7 +135,7 @@ class UITextAttribute[EntityType, AttributeType](
       },
       placeholder := label, {
         datalist match {
-          case None        =>
+          case None        => VMod.empty
           case Some(value) => listId := value
         }
       },
