@@ -15,7 +15,7 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   proBench,
   rdts.js,
   rdts.jvm,
-  reform.js,
+  reform,
   rdts.native,
   reactives.js,
   reactives.jvm,
@@ -218,17 +218,15 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Settings.jsEnvDom,
   )
 
-lazy val reform = crossProject(JSPlatform).crossType(CrossType.Full)
-  .in(file("Modules/Reform/peer/src"))
-  .dependsOn(reactives, rdts)
+lazy val reform = project
+  .in(file("Modules/Reform"))
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(reactives.js, rdts.js)
   .settings(
     scala3defaults,
     name := "Reform",
-    resolvers += "jitpack".at("https://jitpack.io"),
     Dependencies.jsoniterScala,
     Dependencies.munit,
-  )
-  .jsSettings(
     Compile / scalaJSModuleInitializers := Seq(
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
     ),

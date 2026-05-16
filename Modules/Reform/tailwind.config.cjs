@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
 	darkMode: 'class',
-	content: ["./index.html", "./src/js/target/reform-opt/**/*.js", "./src/js/target/reform-fastopt/**/*.js"],
+	content: ["./index.html", "./target/reform-opt/**/*.js", "./target/reform-fastopt/**/*.js"],
 	theme: {
 		minHeight: {
 			36: "9rem",

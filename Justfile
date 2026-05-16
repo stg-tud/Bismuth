@@ -42,18 +42,15 @@ webappsWebview: webappsBundle
 
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
-	cd "Modules/Reform/peer/" && npm install
-	sbt --client reformJS/fastLinkJS
-	sbt --client reformJS/fullLinkJS
+	cd "Modules/Reform/" && npm install
+	sbt --client reform/fastLinkJS
+	sbt --client reform/fullLinkJS
 
 reformServe: reformPrepare
-	cd "Modules/Reform/peer/" && ./node_modules/vite/bin/vite.js
+	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js
 
 reformBundle: reformPrepare
-	cd "Modules/Reform/peer/" && ./node_modules/vite/bin/vite.js build
-
-reformServer: reformPrepare
-	sbt --client reformJVM/run
+	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js build
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}

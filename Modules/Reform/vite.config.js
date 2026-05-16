@@ -35,10 +35,10 @@ export default defineConfig({
     }),
     visualizer(),
   ],
-  root: './src/js/src/main/js',
-  envDir: path.join(process.cwd(), ".."),
+  root: './src/main/js',
+  envDir: process.cwd(),
   build: {
-    outDir: path.join(process.cwd(), "..", "dist"),
+    outDir: path.join(process.cwd(), "dist"),
     sourcemap: true,
   },
   define: {
