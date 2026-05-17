@@ -11,7 +11,6 @@ Also see the introductory video lecture at :link{https://www.youtube.com/watch?v
 
 • The chapter :ref{the-basics} covers how to get started and integrate reactives into a program, and
 • The chapter :ref{common-combinators} presents the most common features for composing signals and events.
-• The chapter :ref{common-combinators} describes the most common combinators.
 • If you encounter any problems, check out the chapter :ref{common-pitfalls}.
 • The readers interested in a more general presentation of these topics can find the essential references in the section :ref{related-work}.
 
