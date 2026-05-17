@@ -1,6 +1,6 @@
 /*:scim
 = Reactive Programming Concepts
-:flags = -hardwrap, +section numbers
+:flags = -hardwrap
 
 The manual serves as an introduction of the concepts in reactive programming.
 The full API is covered in the scaladoc especially for :m{Signals} and :m{Events}.
@@ -16,7 +16,7 @@ Also see the introductory video lecture at :link{https://www.youtube.com/watch?v
 • The readers interested in a more general presentation of these topics can find the essential references in the section :ref{related-work}.
 
 
-= Setup
+# Setup
 :label = setup
 
 Create a :m{build.sbt} file in an empty folder with the following contents:
@@ -43,7 +43,7 @@ object ReactiveExamples {
   def main(args: Array[String]): Unit = {
 
     /*:scim
-= The Basics
+# The Basics
 :label = the-basics
 
 Reactives provide a way to work with time-changing values.
@@ -221,7 +221,7 @@ Finally, the current value of the :m{space} signal is printed every time the val
 Note that using :m{println(space.now)} would also print the value of the signal, but only at the point in time in which the print statement is executed.
 Instead, the approach described so far prints :i{all} values of the signal.
 
-= Common Combinators
+# Common Combinators
 :label = common-combinators
 
 Combinators express functional dependencies among values.
@@ -560,31 +560,7 @@ fired a changed event:
     vFlatten3.set(false)
 
     /*:scim
-= Testing
-
-Conventional testing methods fail to thoroughly test reactive applications.
-Nodes may never be exposed to the full range of their possible inputs based on their current location in the spanned dependency graph.
-Furthermore, on receiving an invalid input, it is impossible to trace back the route of the problem.
-To tackle those shortcomings the :m{SimpleScheduler} adds the concept of :i{invariants} and :i{generators}.
-
-## Invariants
-
-Invariants can be directly attached to :m{Vars} and :m{Signals} to define functions that shall be true after every change.
-Each node can have multiple invariants and they can be attached using :m{specify}.
-     */
-
-    val vInv = Var { 42 }
-
-    /*:scim
-In the original REScala, invariants could be attached using :m{specify}.
-This API is not available in this reactive library.
-
-If an invariant fails an :m{InvariantViolationException} would be thrown.
-The exception message would contain further information about the exception.
-     */
-
-    /*:scim
-= Common Pitfalls
+# Common Pitfalls
 :label = common-pitfalls
 
 In this section we
@@ -780,7 +756,7 @@ The following solution is syntactically correct and the signal
     val sFunc2 = Signal { increment(aFunc2.value) + 1 }
 
     /*:scim
-= Essential Related Work
+# Essential Related Work
 :label = related-work
 
 A more academic presentation of these concepts is in :cite{DBLP:conf/aosd/SalvaneschiHM14; query=REScala: Bridging between object-oriented and functional style in reactive applications}.
@@ -799,7 +775,7 @@ FlapJax :cite{DBLP:conf/oopsla/MeyerovichGBCGBK09; query=Flapjax: a programming 
 AmbientTalk/R :cite{DBLP:conf/tools/CarretonMCM10; query=Loosely-coupled distributed reactive programming in mobile ad hoc networks} and
 Scala.React :cite{query=Deprecating the Observer Pattern with Scala.react} (Scala).
 
-= Acknowledgments
+# Acknowledgments
 
 Several people contributed to this manual,
 among the others David Richter, Gerold Hintz and Pascal Weisenburger.
