@@ -14,12 +14,8 @@ Also see the introductory video lecture at :link{https://www.youtube.com/watch?v
 • The chapter :ref{common-combinators} describes the most common combinators.
 • If you encounter any problems, check out the chapter :ref{common-pitfalls}.
 • The readers interested in a more general presentation of these topics can find the essential references in the section :ref{related-work}.
- */
 
-object ReactiveExamples {
-  def main(args: Array[String]): Unit = {
 
-    /*:scim
 = Setup
 :label = setup
 
@@ -39,9 +35,12 @@ The code examples in the manual serve as a self-contained Scala REPL session.
 Most code blocks can be executed on their own when adding this import,
 but some require definitions from the prior blocks.
 To get started, import:
-     */
+ */
 
-    import reactives.default.*
+import reactives.default.*
+
+object ReactiveExamples {
+  def main(args: Array[String]): Unit = {
 
     /*:scim
 = The Basics
