@@ -153,7 +153,10 @@ object Lattice {
   inline def derived[T <: Product: Mirror.ProductOf]: Lattice[T] = productLattice
 
   /** Sum Lattice merges considers later defined (those with larger ordinals) constructors as larger.
-    * Notably, this implies `None < Some` for Option and `Left < Right` for [[Either]].
+    * Notably, this implies `Left < Right` for [[Either]].
+    * Unfortunately the Scala standard library defines option in the wrong order,
+    * and in Scala 3.8.0 this causes sum lattice to not work for option automatically anymore.
+    * See https://github.com/scala/scala3/issues/25003
     * For an `enum E { case A, B, C }` it will be `A < B < C`
     */
   inline def sumLattice[T](using ordering: Ordering[Int])(using sm: Mirror.SumOf[T]): Lattice[T] =
