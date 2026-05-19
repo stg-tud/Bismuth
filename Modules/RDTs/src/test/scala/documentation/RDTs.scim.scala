@@ -308,6 +308,34 @@ component-wise merge automatically.
 
   /*:scim
 
+# Causal Time and Ordering-Based Data Types
+
+A common way to allow any data to be replicated is to order values by when
+they were created.  The last write (largest timestamp) wins.
+
+:m{CausalTime} is a causally consistent wall-time clock that provides a total
+order across replicas.  It has three components:
+
+  • :b{time}: wall-clock milliseconds
+  • :b{causal}: a monotonic counter for concurrent updates in the same ms
+  • :b{random}: a tie-breaker when all else is equal
+
+:m{LastWriterWins[A]} pairs a :m{CausalTime} with a payload :m{A}.  Its lattice
+picks the value with the later timestamp, and if two timestamps are equal the
+payload is merged via :code{assertEquals} (which assumes no conflict):
+
+   */
+
+  test("LastWriterWins"):
+      val lww1 = LastWriterWins.now("hello")
+      val lww2 = LastWriterWins.now("world")
+
+      // the later timestamp wins
+      val mergedLWW = lww1 `merge` lww2
+      assertEquals(mergedLWW.read, "world")
+
+  /*:scim
+
 # Common Replicated Data Types
 :label = common-replicated-data-types
 
@@ -438,22 +466,6 @@ The enable operation allocates a fresh dot.
       val dDisabled  = flag.enable(using localId)()
       val mergedFlag = dEnabled `merge` dDisabled
       assert(mergedFlag.read == true, "enable should win over disable")
-
-  /*:scim
-
-## LastWriterWins (LWW Register)
-
-A register that picks the write with the later causal timestamp.
-On tie the payload lattice merges both values.
-
-   */
-
-  test("LastWriterWins"):
-      val lww1 = LastWriterWins.now("hello")
-      val lww2 = LastWriterWins.now("world")
-
-      val mergedLWW = lww1 `merge` lww2
-      assertEquals(mergedLWW.read, "world")
 
   /*:scim
 
