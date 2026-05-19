@@ -14,12 +14,6 @@ The :m{merge} semantics of a compound data type are :b{automatically derived} fr
 
 This document contains compilable code, you can download the :link{full file; :path{RDTs.scim.scala}}.
 
-  • The chapter :ref{lattices} introduces :m{Lattice} and :m{Bottom} the algebraic foundation of all ARDTs.
-  • The chapter :ref{automatic-lattice-derivation} shows how merge semantics arise automatically from product and sum types.
-  • The chapter :ref{designing-replicated-data-types} explains identities and walks through implementing a GrowOnlyCounter from scratch.
-  • The chapter :ref{common-replicated-data-types} guides through the built-in data types that need no replica identity.
-  • The chapter :ref{data-types-with-identity} covers data types that use a replica id to track per-replica state.
-
 # Lattices
 :label = lattices
 
@@ -188,7 +182,7 @@ value may not be :b{semantically useful}.
 
 Consider counting votes in an election.  If we use a plain :m{Int},
 two replicas each counting one vote would produce values :m{1} and :m{1}.
-Merging with :code{max} gives :m{1}, losing a vote!  The replicas agree on
+Merging with :m{max} gives :m{1}, losing a vote!  The replicas agree on
 :m{1}, but the result is wrong.
 
 ARDTs shift the problem from ensuring convergence (which is hard) to
@@ -251,7 +245,7 @@ to be merged into the state to take effect.
   /*:scim
 
 Our :m{Counter} only grows.  If we try to add a negative value, the map merge with
-:code{max} would ignore it because the existing positive value is already larger:
+:{max} would ignore it because the existing positive value is already larger:
 
    */
 
@@ -321,8 +315,7 @@ order across replicas.  It has three components:
   • :b{random}: a tie-breaker when all else is equal
 
 :m{LastWriterWins[A]} pairs a :m{CausalTime} with a payload :m{A}.  Its lattice
-picks the value with the later timestamp, and if two timestamps are equal the
-payload is merged via :code{assertEquals} (which assumes no conflict):
+picks the value with the later timestamp:
 
    */
 
