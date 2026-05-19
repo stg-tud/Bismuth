@@ -12,21 +12,19 @@ types by composition of product, and sum types.
 
 The :m{merge} semantics of a compound data type are :b{automatically derived} from the merge semantics of its components.
 
-
-• The chapter :ref{lattices} introduces :m{Lattice} and :m{Bottom} the algebraic foundation of all ARDTs.
-• The chapter :ref{automatic-lattice-derivation} shows how merge semantics arise automatically from product and sum types.
-• The chapter :ref{common-replicated-data-types} walks through the built-in data types that need no replica identity.
-• The chapter :ref{data-types-with-identity} covers data types that use a replica id to track per-replica state.
-
-
-
 This document contains compilable code, you can download the :link{full file; :path{RDTs.scim.scala}}.
+
+  • The chapter :ref{lattices} introduces :m{Lattice} and :m{Bottom} the algebraic foundation of all ARDTs.
+  • The chapter :ref{automatic-lattice-derivation} shows how merge semantics arise automatically from product and sum types.
+  • The chapter :ref{designing-replicated-data-types} explains identities and walks through implementing a GrowOnlyCounter from scratch.
+  • The chapter :ref{common-replicated-data-types} guides through the built-in data types that need no replica identity.
+  • The chapter :ref{data-types-with-identity} covers data types that use a replica id to track per-replica state.
 
 # Lattices
 :label = lattices
 
 Every data type in this module is a :b{join-semilattice}.
-A lattice for a type :m{A} is a trait with single operation:
+A lattice for a type :m{A} is a trait with a single operation:
 
 ```code lang=scala
   trait Lattice[A]:
@@ -55,12 +53,13 @@ To use a type as a lattice, we need to provide a :link{given instance; https://s
 Merging based on an ordering will discard the smaller of the two values.
 
 :note label=safe
-  :i{Safe} in this case means that we must be sure that the lattce properties (associative, commutative, idempotent) are guaranteed.
+  :i{Safe} in this case means that we must be sure that the lattice properties (associative, commutative, idempotent) are guaranteed.
 
 The library comes with existing instances for built-in Scala types that you can just import.
 
    */
   import rdts.base.Lattice.given
+  import rdts.datatypes.*
   /*:scim
 
 Now you can merge any two values of a type that has a :b{given} :m{Lattice} instance:
@@ -118,12 +117,6 @@ The empty set, the empty map, and :m{None} are all examples of bottom values.
 The core idea of ARDTs is that lattices can be :b{automatically derived} from the structure of data types.
 No manual merge logic is needed.
 
-
-:todo{find better place to import}
-   */
-  import rdts.datatypes.*
-  /*:scim
-
 ## Product Lattices
 
 For a :b{product} type like a case class, merge is :b{component-wise}.
@@ -143,10 +136,10 @@ You get the derivation with a single line:
       val right = Data(2, Set(2, 3), Map("b" -> 2), None)
 
       val merged = left `merge` right
-      assertEquals(merged.counter, 2)            // max(1, 2)
-      assertEquals(merged.items, Set(1, 2, 3))   // union
+      assertEquals(merged.counter, 2)          // max(1, 2)
+      assertEquals(merged.items, Set(1, 2, 3)) // union
       assertEquals(merged.mapping, Map("a" -> 1, "b" -> 2)) // key-wise merge
-      assertEquals(merged.flag, Some(1))          // Some > None
+      assertEquals(merged.flag, Some(1)) // Some > None
 
   /*:scim
 
@@ -165,7 +158,9 @@ Sum lattices are not as common as product lattices, but do allow modeling state 
           case Complete()
 
       given Lattice[Workflow] = {
+        // each case of the sum is a Product type, so we need to derive lattices for each
         given Lattice[Boolean]            = Lattice.fromOrdering
+        given Lattice[Workflow.Init]      = Lattice.derived
         given Lattice[Workflow.Documents] = Lattice.derived
         given Lattice[Workflow.Contract]  = Lattice.derived
         given Lattice[Workflow.Complete]  = Lattice.derived
@@ -174,49 +169,104 @@ Sum lattices are not as common as product lattices, but do allow modeling state 
 
       val wf0: Workflow = Workflow.Init()
       val wf1           = wf0 `merge` Workflow.Documents()
-      assert(wf1.isInstanceOf[Workflow.Documents])
+      assertEquals(wf1, Workflow.Documents())
 
   /*:scim
 
 The ordering is :m{Init < Documents < Contract < Complete}.
 Once a workflow reaches :m{Complete}, merging any earlier state leaves it at :m{Complete}.
 
-## Why Product and Sum?
+# Designing Replicated Data Types
+:label = designing-replicated-data-types
 
-Every data type can be expressed as a product of sums (or sum of products).
-The derivation covers all data types, making the approach :b{algebraic}.
+Now that we can derive lattices from products and sums, we can design replicated data types.
 
-The underlying merge logic is straightforward:
+The key motivation for ARDTs is that they provide :b{automatic convergence}:
+no matter in which order replicas merge states, they always reach the same final
+result.  This solves the hard problem of distributed convergence, but the resulting
+value may not be :b{semantically useful}.
 
-```code
-  // merge for products: each field independently
-  def mergeProduct(left: S, right: S): S =
-    for each field i:
-      result_i = lattice_i.merge(left_i, right_i)
+Consider counting votes in an election.  If we use a plain :m{Int},
+two replicas each counting one vote would produce values :m{1} and :m{1}.
+Merging with :code{max} gives :m{1}, losing a vote!  The replicas agree on
+:m{1}, but the result is wrong.
 
-  // merge for sums: larger constructor wins
-  def mergeSum(left: T, right: T): T =
-    if ordinal(left) < ordinal(right) then right
-    else if ordinal(left) > ordinal(right) then left
-    else lattice_for_constructor.merge(left, right)
-```
+ARDTs shift the problem from ensuring convergence (which is hard) to
+designing good data types (which is much easier).
+We need to design data types where concurrent operations do not overwrite each other.
+
+A common trick is to use :b{replica identities}.  Each replica writes to
+its own part of the state, so concurrent writes never conflict. The library provides a built in class to track unique IDs and the specific Uid of the local replica (which is a different type, to prevent accidential misuse).
+
+   */
+  import rdts.base.Uid
+  import rdts.base.LocalUid
+  import rdts.base.LocalUid.replicaId
+  /*:scim
+
+## A replicated counter
+
+Let us design a counter that counts votes correctly.  Each replica tracks
+its own contribution in a map from replica id to count.  The total is the
+sum of all entries.  Since each replica only writes to its own key, no
+information is lost on merge.
+
+
+
+   */
+
+  test("GrowOnlyCounter from scratch") {
+    // A GCounter is just a map: each replica tracks its own count
+    case class Counter(counters: Map[Uid, Int] = Map.empty):
+        def value: Int = counters.values.sum
+
+        // increment uses the local replica id to create a delta
+        def inc()(using LocalUid): Counter =
+          Counter(Map(replicaId -> (counters.getOrElse(replicaId, 0) + 1)))
+
+    /*:scim
+
+Note how the methods only return :b{delta states}: small values that need
+to be merged into the state to take effect.
+
+     */
+
+    // We can derive the lattice automatically
+    given Lattice[Counter] = Lattice.derived
+
+    given LocalUid = LocalUid.predefined("replica-alice")
+
+    var counter = Counter()
+
+    // inc() returns a delta that we merge into the state
+    counter = counter `merge` counter.inc()
+    assertEquals(counter.value, 1)
+
+    // merging deltas from multiple replicas adds their contributions
+    val deltaAlice = counter.inc()
+    val deltaBob   =
+        given LocalUid = LocalUid.predefined("replica-bob")
+        counter.inc()
+
+    val total = counter `merge` deltaAlice `merge` deltaBob
+    assertEquals(total.value, 3)
+  }
+  /*:scim
+
+Each call to :m{inc()} produces a delta (a tiny :m{Counter} with just one entry).
+Merging that delta into the state accumulates the value.
+This is the essence of Delta RDTs: operations produce small lattice values that can be merged into any replica.
 
 # Common Replicated Data Types
 :label = common-replicated-data-types
 
-A Delta CRDT represents each mutation as a small :b{delta}, a lattice value that can be merged into a remote replica.
-
-You apply operations to a data type and get back a delta.
-Deltas are merged into a target state with :m{merge}.
-The :m{DeltaBuffer} wrapper accumulates un-sent deltas for the middleware to ship.
-
-This section covers the data types that need no replica identity: their operations carry enough information to be merged without knowing who created them.
+This section covers the data types that need no replica identity beyond what we already saw:
+their operations carry enough information to be merged without knowing who created them.
 
 ## GrowOnlyCounter (GCounter)
 
-An increment-only counter.
-Internally it is a :b{product} of :m{Map[Uid, Int]}: each replica tracks its own contribution.
-The counter value is the sum of all per-replica counts.
+The library's built-in GrowOnlyCounter mirrors our implementation above.
+It uses :m{Map[Uid, Int]} and provides :m{inc} and :m{add} operations.
 
    */
 
@@ -300,7 +350,7 @@ Elements are ordered by causal timestamps.
 
 Many data types need to know which replica is performing an operation.
 The identity is provided as a :m{LocalUid} parameter.
-This allows the data type to generate unique :m{Dot}s (globally unique points in time) for tracking causality.
+This allows the data type to generate unique :m{Dot}s for tracking causality.
 
 ## ReplicatedSet
 
@@ -338,12 +388,12 @@ The enable operation allocates a fresh dot.
       val flag = EnableWinsFlag.empty
 
       val enabled = flag.enable(using localId)()
-      assert(enabled.read == true)
+      assert(enabled.read == true, "enable should set flag")
 
       val dEnabled   = flag.disable()
       val dDisabled  = flag.enable(using localId)()
       val mergedFlag = dEnabled `merge` dDisabled
-      assert(mergedFlag.read == true)
+      assert(mergedFlag.read == true, "enable should win over disable")
 
   /*:scim
 
@@ -400,12 +450,12 @@ A map with key-value semantics.  Removals are tracked via dots and do not overri
       val orMap = ObserveRemoveMap.empty[String, String]
 
       val afterM1 = orMap `merge` orMap.update("key1", "value1")(using localId)
-      assertEquals(afterM1.get("key1"), Some("value1"))
+      assert(afterM1.get("key1") == Some("value1"), "should have key1")
 
       val mRemove          = afterM1.remove("key1")
       val mAdd             = afterM1.update("key1", "value2")(using localId)
       val afterConcurrent2 = mRemove `merge` mAdd
-      assertEquals(afterConcurrent2.get("key1"), Some("value2"))
+      assert(afterConcurrent2.get("key1") == Some("value2"), "add should win over remove")
 
   /*:scim
 
@@ -473,7 +523,7 @@ This minimizes network transfer.
       val decomposed: Iterable[GrowOnlyCounter] = dA.decomposed
 
       for part <- decomposed do
-          assert(part.value <= dA.value)
+          assert(part.value <= dA.value, "decomposed part should be <= original")
 
   /*:scim
 
@@ -492,7 +542,7 @@ This minimizes network transfer.
       val histD1    = gCounter3.inc()(using localId)
       val histD2    = gCounter3.inc()(using localId)
 
-      assert(histD2.isRedundant(histD1))
+      assert(histD2.isRedundant(histD1), "D2 should make D1 redundant")
 
   /*:scim
 
@@ -500,12 +550,6 @@ This minimizes network transfer.
 
 :m{DecoratedLattice} wraps an existing lattice to add filtering and compaction.
 Used internally by :m{ObserveRemoveMap}, :m{ReplicatedSet}, and :m{MultiVersionRegister} for observed-remove semantics.
-
-## Causal Time
-
-The module uses :m{Dot}s, globally unique pairs of :m{(Uid, Time)}, to track causality.
-:m{Dots} is an efficient set of dots backed by :m{ArrayRanges} per replica.
-:m{CausalTime} extends this with wall-clock milliseconds and a random tie-breaker for LWW registers.
 
 ## Protocols
 
