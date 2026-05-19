@@ -213,7 +213,7 @@ information is lost on merge.
 
    */
 
-  // A GCounter is just a map: each replica tracks its own count
+  // A Counter is just a map: each replica tracks its own count
   case class Counter(counters: Map[Uid, Int] = Map.empty):
       def value: Int = counters.values.sum
 
@@ -269,7 +269,7 @@ Our :m{Counter} only grows.  If we try to add a negative value, the map merge wi
   /*:scim
 
 We need a counter that can go both up and down.  The solution is a
-:b{product} of two GCounters: one for positive increments, one for negative
+:b{product} of two Counters: one for positive increments, one for negative
 increments.  The total is the difference.  The product lattice derives
 component-wise merge automatically.
 
@@ -277,10 +277,10 @@ component-wise merge automatically.
 
   // A PosNegCounter is a product of two Counters: one for positive, one for negative
   case class PosNeg(pos: Counter, neg: Counter):
-      def value: Int                      = pos.value - neg.value
+      def value: Int                               = pos.value - neg.value
       def add(amount: Int)(using LocalUid): PosNeg =
         if amount >= 0 then PosNeg(pos.add(amount), Counter())
-        else           PosNeg(Counter(), neg.add(-amount))
+        else PosNeg(Counter(), neg.add(-amount))
 
   given Lattice[PosNeg] = Lattice.derived
 
@@ -339,13 +339,11 @@ payload is merged via :code{assertEquals} (which assumes no conflict):
 # Common Replicated Data Types
 :label = common-replicated-data-types
 
-This section covers the data types that need no replica identity beyond what we already saw:
-their operations carry enough information to be merged without knowing who created them.
+## GrowOnlyCounter
 
-## GrowOnlyCounter (GCounter)
-
-The library's built-in GrowOnlyCounter mirrors our implementation above.
-It uses :m{Map[Uid, Int]} and provides :m{inc} and :m{add} operations.
+An increment-only counter.  Internally it is a :b{map from replica id to count}.
+Each :m{inc()} or :m{add(n)} produces a delta.  Needs an identity so each
+replica can write to its own map key.
 
    */
 
@@ -367,8 +365,8 @@ It uses :m{Map[Uid, Int]} and provides :m{inc} and :m{add} operations.
 
 ## PosNegCounter (PNCounter)
 
-A counter for both increment and decrement.
-It is a :b{product} of two :m{GrowOnlyCounter}s (positive and negative), merged component-wise.
+A counter for both increment and decrement.  It is a :b{product} of two
+Counters (positive and negative), merged component-wise.  Needs an identity.
 
    */
 
@@ -388,6 +386,7 @@ It is a :b{product} of two :m{GrowOnlyCounter}s (positive and negative), merged 
 ## GrowOnlySet (G-Set)
 
 A set that only supports adding elements.  Merge is set union.
+No identity needed: elements are self-contained.
 
    */
 
@@ -410,6 +409,7 @@ A set that only supports adding elements.  Merge is set union.
 
 An append-only list that also supports insertion at an index.
 Elements are ordered by causal timestamps.
+Identity is used to allocate fresh timestamps for inserted elements.
 
    */
 
@@ -428,7 +428,7 @@ Elements are ordered by causal timestamps.
 
 A set supporting add and remove (Observed-Remove Set).
 Removals do not override concurrent adds: the add wins.
-The add operation needs a replica id to create a fresh dot.
+Needs an identity to create fresh dots for added elements.
 
    */
 
@@ -450,7 +450,7 @@ The add operation needs a replica id to create a fresh dot.
 ## EnableWinsFlag (EWFlag)
 
 A boolean flag where enable always wins over concurrent disable.
-The enable operation allocates a fresh dot.
+Needs an identity to allocate fresh dots on enable.
 
    */
 
@@ -471,8 +471,9 @@ The enable operation allocates a fresh dot.
 
 ## MultiVersionRegister (MV-Register)
 
-A register that holds at most one value without concurrent writes, or all concurrently written values as a set.
-Writing needs an id to create a fresh dot for the new value.
+A register that holds at most one value without concurrent writes,
+or all concurrently written values as a set.
+Needs an identity to create fresh dots for written values.
 
    */
 
@@ -495,7 +496,8 @@ Writing needs an id to create a fresh dot for the new value.
 
 ## ObserveRemoveMap (OR-Map)
 
-A map with key-value semantics.  Removals are tracked via dots and do not override concurrent updates.
+A map with key-value semantics.  Removals are tracked via dots and do not
+override concurrent updates.  Needs an identity for update operations.
 
    */
 
@@ -519,7 +521,7 @@ A map with key-value semantics.  Removals are tracked via dots and do not overri
 
 A replicated list with insert, update, and delete.
 Uses a directed graph of dots for causal ordering.
-All modifying operations need a replica id.
+Needs an identity for all modifying operations.
 
    */
 
@@ -543,7 +545,8 @@ All modifying operations need a replica id.
 ## Epoch Wrapper
 
 :m{Epoch[E]} adds a monotonic counter to any datatype.
-A higher epoch wins over a lower epoch.  Useful for wrapping types with weak merge semantics.
+A higher epoch wins over a lower epoch.  Useful for wrapping types with weak
+merge semantics.
 
    */
 
@@ -558,71 +561,4 @@ A higher epoch wins over a lower epoch.  Useful for wrapping types with weak mer
       val mergedEpoch = epoch `merge` ep1 `merge` ep2
       assertEquals(mergedEpoch.read.value, 1)
 
-  /*:scim
-
-# Advanced Topics
-
-## Decompose
-
-:m{Decompose[A]} breaks a lattice value into smaller parts.
-Merging all decomposed parts of :m{a} into :m{b} is equivalent to merging :m{a} directly into :m{b}.
-This minimizes network transfer.
-
-   */
-
-  test("Decompose"):
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
-
-      val gCounter2                             = GrowOnlyCounter.zero
-      val dA                                    = gCounter2.inc()(using localId)
-      val dB                                    = gCounter2.inc()(using localId)
-      val decomposed: Iterable[GrowOnlyCounter] = dA.decomposed
-
-      for part <- decomposed do
-          assert(part.value <= dA.value, "decomposed part should be <= original")
-
-  /*:scim
-
-## Historized
-
-:m{Historized[T]} detects when a new delta makes a previously buffered delta redundant, allowing middleware to discard it.
-
-   */
-
-  test("Historized"):
-      import rdts.base.Historized.given
-
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
-
-      val gCounter3 = GrowOnlyCounter.zero
-      val histD1    = gCounter3.inc()(using localId)
-      val histD2    = gCounter3.inc()(using localId)
-
-      assert(histD2.isRedundant(histD1), "D2 should make D1 redundant")
-
-  /*:scim
-
-## Decorated Lattice
-
-:m{DecoratedLattice} wraps an existing lattice to add filtering and compaction.
-Used internally by :m{ObserveRemoveMap}, :m{ReplicatedSet}, and :m{MultiVersionRegister} for observed-remove semantics.
-
-## Protocols
-
-The :m{rdts.protocols} package includes consensus protocols built on top of the delta CRDT foundation:
-
-  • :m{Paxos}: multi-Paxos for state machine replication
-  • :m{Voting}: simple voting protocol
-  • :m{TwoPhaseCommit}: 2PC for atomic commitment
-  • :m{Tokens}: token-based coordination
-
-# Additional Resources
-
-  • The :m{rdts.time} package implements vector clocks (:m{VectorClock}), interval tree clocks (:m{IntervalTreeClock}), and efficient dot storage (:m{Dots}).
-  • The :m{rdts.filters} package provides permission-based filtering with :m{PermissionTree}.
-  • For testing, see the :m{simulatedNetworkTests} which exercise full replication workflows.
-
-The full API is documented in the scaladoc for each datatype.
-
-   */
 }
