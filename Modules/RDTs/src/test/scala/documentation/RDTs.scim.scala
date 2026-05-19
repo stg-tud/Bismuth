@@ -211,51 +211,102 @@ its own contribution in a map from replica id to count.  The total is the
 sum of all entries.  Since each replica only writes to its own key, no
 information is lost on merge.
 
-
-
    */
 
-  test("GrowOnlyCounter from scratch") {
-    // A GCounter is just a map: each replica tracks its own count
-    case class Counter(counters: Map[Uid, Int] = Map.empty):
-        def value: Int = counters.values.sum
+  // A GCounter is just a map: each replica tracks its own count
+  case class Counter(counters: Map[Uid, Int] = Map.empty):
+      def value: Int = counters.values.sum
 
-        // increment uses the local replica id to create a delta
-        def inc()(using LocalUid): Counter =
-          Counter(Map(replicaId -> (counters.getOrElse(replicaId, 0) + 1)))
+      def add(amount: Int)(using LocalUid): Counter =
+        Counter(Map(replicaId -> (counters.getOrElse(replicaId, 0) + amount)))
 
-    /*:scim
+  // We can derive the lattice automatically
+  given Lattice[Counter] = Lattice.derived
+
+  /*:scim
 
 Note how the methods only return :b{delta states}: small values that need
 to be merged into the state to take effect.
 
-     */
+   */
+  test("Using a counter"):
 
-    // We can derive the lattice automatically
-    given Lattice[Counter] = Lattice.derived
+      given LocalUid = LocalUid.predefined("replica-alice")
 
-    given LocalUid = LocalUid.predefined("replica-alice")
+      var counter = Counter()
 
-    var counter = Counter()
+      // inc() returns a delta that we merge into the state
+      counter = counter `merge` counter.add(1)
+      assertEquals(counter.value, 1)
 
-    // inc() returns a delta that we merge into the state
-    counter = counter `merge` counter.inc()
-    assertEquals(counter.value, 1)
+      // merging deltas from multiple replicas adds their contributions
+      val deltaAlice = counter.add(1)
+      val deltaBob   =
+          given LocalUid = LocalUid.predefined("replica-bob")
+          counter.add(1)
 
-    // merging deltas from multiple replicas adds their contributions
-    val deltaAlice = counter.inc()
-    val deltaBob   =
-        given LocalUid = LocalUid.predefined("replica-bob")
-        counter.inc()
+      val total = counter `merge` deltaAlice `merge` deltaBob
+      assertEquals(total.value, 3)
 
-    val total = counter `merge` deltaAlice `merge` deltaBob
-    assertEquals(total.value, 3)
-  }
   /*:scim
 
-Each call to :m{inc()} produces a delta (a tiny :m{Counter} with just one entry).
-Merging that delta into the state accumulates the value.
-This is the essence of Delta RDTs: operations produce small lattice values that can be merged into any replica.
+Our :m{Counter} only grows.  If we try to add a negative value, the map merge with
+:code{max} would ignore it because the existing positive value is already larger:
+
+   */
+
+  test("Counter cannot decrease"):
+      given LocalUid = LocalUid.predefined("replica-alice")
+
+      var counter = Counter()
+      counter = counter `merge` counter.add(1)
+      assertEquals(counter.value, 1)
+
+      // trying to "un-count" by adding -1 has no effect
+      counter = counter `merge` counter.add(-1)
+      assertEquals(counter.value, 1) // still 1, because max(1, -1) == 1
+
+  /*:scim
+
+We need a counter that can go both up and down.  The solution is a
+:b{product} of two GCounters: one for positive increments, one for negative
+increments.  The total is the difference.  The product lattice derives
+component-wise merge automatically.
+
+   */
+
+  // A PosNegCounter is a product of two Counters: one for positive, one for negative
+  case class PosNeg(pos: Counter, neg: Counter):
+      def value: Int                      = pos.value - neg.value
+      def add(amount: Int)(using LocalUid): PosNeg =
+        if amount >= 0 then PosNeg(pos.add(amount), Counter())
+        else           PosNeg(Counter(), neg.add(-amount))
+
+  given Lattice[PosNeg] = Lattice.derived
+
+  test("PosNegCounter from scratch"):
+      given LocalUid = LocalUid.predefined("replica-alice")
+
+      var pn = PosNeg(Counter(), Counter())
+      pn = pn `merge` pn.add(5)
+      pn = pn `merge` pn.add(3)
+      assertEquals(pn.value, 8)
+
+      pn = pn `merge` pn.add(-4)
+      assertEquals(pn.value, 4)
+
+  test("PosNegCounter concurrent from scratch"):
+      given LocalUid = LocalUid.predefined("replica-alice")
+
+      val deltaA = PosNeg(Counter(), Counter()).add(5)
+      val deltaB =
+          given LocalUid = LocalUid.predefined("replica-bob")
+          PosNeg(Counter(), Counter()).add(3)
+
+      val merged = PosNeg(Counter(), Counter()) `merge` deltaA `merge` deltaB
+      assertEquals(merged.value, 8)
+
+  /*:scim
 
 # Common Replicated Data Types
 :label = common-replicated-data-types
