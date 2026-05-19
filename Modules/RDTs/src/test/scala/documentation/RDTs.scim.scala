@@ -554,4 +554,12 @@ merge semantics.
       val mergedEpoch = epoch `merge` ep1 `merge` ep2
       assertEquals(mergedEpoch.read.value, 1)
 
+/*:scim
+
+# The End
+
+Don’t worry about the closing brace :-)
+
+*/
+
 }
