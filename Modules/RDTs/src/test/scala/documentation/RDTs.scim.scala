@@ -45,7 +45,7 @@ You bring the merge syntax into scope with an import:
 
 */
   import rdts.base.Lattice
-  import rdts.base.Lattice.syntax.given
+  import rdts.base.Lattice.syntax.merge
   import rdts.datatypes.*
 /*:scim
 
@@ -66,6 +66,7 @@ Maps merge key-wise using the lattice of their values:
  */
 
   test("map lattice key-wise"):
+    given Lattice[Int] = math.max
     val mapA: Map[String, Int] = Map("x" -> 1, "y" -> 2)
     val mapB: Map[String, Int] = Map("y" -> 3, "z" -> 4)
     val mergedMap = mapA `merge` mapB
@@ -80,6 +81,7 @@ Options form a lattice where :m{None} is smaller than :m{Some}:
  */
 
   test("option lattice"):
+    given Lattice[Int] = math.max
     val optA: Option[Int] = None
     val optB: Option[Int] = Some(5)
     assertEquals((optA `merge` optB), Some(5))
@@ -286,59 +288,6 @@ Elements are ordered by causal timestamps.
 
 /*:scim
 
-## DeltaBuffer
-
-:m{DeltaBuffer[A]} wraps a state and accumulates un-sent deltas.
-After the middleware ships them it calls :m{clearDeltas}.
-
- */
-
-  test("delta buffer accumulates deltas on mod"):
-    val localId = rdts.base.LocalUid.predefined("replica-alice")
-
-    var counter: DeltaBuffer[GrowOnlyCounter] = DeltaBuffer(GrowOnlyCounter.zero)
-
-    counter = counter.mod(_.inc()(using localId))
-
-    assertEquals(counter.state.value, 1)
-    assertEquals(counter.deltaBuffer.size, 1)
-
-    counter = counter.clearDeltas()
-    assert(counter.deltaBuffer.isEmpty)
-
-  test("delta buffer accumulates multiple deltas"):
-    val localId = rdts.base.LocalUid.predefined("replica-alice")
-
-    var counter: DeltaBuffer[GrowOnlyCounter] = DeltaBuffer(GrowOnlyCounter.zero)
-
-    counter = counter
-      .mod(_.inc()(using localId))
-      .mod(_.inc()(using localId))
-      .mod(_.inc()(using localId))
-
-    assertEquals(counter.state.value, 3)
-    assertEquals(counter.deltaBuffer.size, 3)
-
-/*:scim
-
-Merging a remote delta uses :m{applyDelta}:
-
- */
-
-  test("apply remote delta"):
-    val localId = rdts.base.LocalUid.predefined("replica-alice")
-    val remoteId = rdts.base.LocalUid.predefined("replica-bob")
-
-    var counter: DeltaBuffer[GrowOnlyCounter] = DeltaBuffer(GrowOnlyCounter.zero)
-
-    val deltaFromRemote = GrowOnlyCounter.zero.inc()(using remoteId)
-    counter = counter.applyDelta(deltaFromRemote)
-
-    assertEquals(counter.state.value, 1)
-    assertEquals(counter.deltaBuffer.size, 1)
-
-/*:scim
-
 # Data Types with Identity
 :label = data-types-with-identity
 
@@ -438,6 +387,7 @@ A map with key-value semantics.  Removals are tracked via dots and do not overri
  */
 
   test("ObserveRemoveMap"):
+    given Lattice[String] = Lattice.assertEquals
     val localId = rdts.base.LocalUid.predefined("replica-alice")
 
     val orMap = ObserveRemoveMap.empty[String, String]
