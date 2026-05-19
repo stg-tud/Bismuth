@@ -345,13 +345,6 @@ Elements are ordered by causal timestamps.
 
   /*:scim
 
-# Data Types with Identity
-:label = data-types-with-identity
-
-Many data types need to know which replica is performing an operation.
-The identity is provided as a :m{LocalUid} parameter.
-This allows the data type to generate unique :m{Dot}s for tracking causality.
-
 ## ReplicatedSet
 
 A set supporting add and remove (Observed-Remove Set).
