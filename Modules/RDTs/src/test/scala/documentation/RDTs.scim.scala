@@ -133,37 +133,27 @@ You get the derivation with a single line:
    */
 
   test("product lattice derives component-wise merge"):
-      val localId  = rdts.base.LocalUid.predefined("replica-alice")
-      val remoteId = rdts.base.LocalUid.predefined("replica-bob")
-      case class TwoCounters(a: GrowOnlyCounter, b: GrowOnlyCounter)
-      given Lattice[TwoCounters]          = Lattice.derived
-      given rdts.base.Bottom[TwoCounters] = rdts.base.Bottom.derived
+      given Lattice[Int] = math.max
+      case class Data(counter: Int, items: Set[Int], mapping: Map[String, Int], flag: Option[Int])
 
-      val tc1 = TwoCounters(GrowOnlyCounter.zero, GrowOnlyCounter.zero)
-        .copy(a = GrowOnlyCounter.zero.inc()(using localId))
+      // automatically derive the lattice instance
+      given Lattice[Data] = Lattice.derived
 
-      val tc2 = TwoCounters(GrowOnlyCounter.zero, GrowOnlyCounter.zero)
-        .copy(b = GrowOnlyCounter.zero.inc()(using remoteId))
+      val left  = Data(1, Set(1, 2), Map("a" -> 1), Some(1))
+      val right = Data(2, Set(2, 3), Map("b" -> 2), None)
 
-      val merged = tc1 `merge` tc2
-      assertEquals(merged.a.value, 1)
-      assertEquals(merged.b.value, 1)
+      val merged = left `merge` right
+      assertEquals(merged.counter, 2)            // max(1, 2)
+      assertEquals(merged.items, Set(1, 2, 3))   // union
+      assertEquals(merged.mapping, Map("a" -> 1, "b" -> 2)) // key-wise merge
+      assertEquals(merged.flag, Some(1))          // Some > None
 
   /*:scim
 
-The automatic derivation is why many data types only need :code{derives}:
-
-```code
-  case class PosNegCounter(pos: GrowOnlyCounter, neg: GrowOnlyCounter)
-    derives Lattice, Bottom, Decompose
-```
-
-The derivation works for any nesting depth: a product of products, a product of sums, etc.
-
 ## Sum Lattices
 
-For :b{sum types} (enums, sealed classes), later constructors are larger.
-This models :b{state machines} that only move forward.
+For :b{sum types} (enums, sealed classes), we rely on their inherent total ordering to derive the lattice instance. Constructors that are defined later are considered larger.
+Sum lattices are not as common as product lattices, but do allow modeling state machines.
 
    */
 
@@ -176,7 +166,6 @@ This models :b{state machines} that only move forward.
 
       given Lattice[Workflow] = {
         given Lattice[Boolean]            = Lattice.fromOrdering
-        given Lattice[Workflow.Init]      = Lattice.derived
         given Lattice[Workflow.Documents] = Lattice.derived
         given Lattice[Workflow.Contract]  = Lattice.derived
         given Lattice[Workflow.Complete]  = Lattice.derived
