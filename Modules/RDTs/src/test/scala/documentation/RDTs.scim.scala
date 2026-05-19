@@ -1,5 +1,7 @@
+package rdts.documentation
+
 /*:scim
-= Algebraic Replicated Data Types (ARDTs)
+= Algebraic Replicated Data Types
 :flags = -hardwrap
 
 This manual introduces Algebraic Replicated Data Types (ARDTs):
@@ -7,7 +9,6 @@ a systematic approach to building conflict-free replicated data
 types from :b{lattice foundations}, :b{product types}, and
 :b{sum types}.
 
-The code examples are self-contained and executable.
 
 • The chapter :ref{what-are-ardts} explains the core idea behind
   algebraic replicated data types.
@@ -21,6 +22,9 @@ The code examples are self-contained and executable.
   data types one by one.
 • The chapter :ref{advanced-topics} covers :b{Historized},
   :b{Decompose}, and consensus protocols.
+
+The code examples are self-contained and executable.
+
  */
 
 import rdts.base.Lattice
@@ -28,15 +32,16 @@ import rdts.base.Lattice.syntax.*
 import rdts.datatypes.*
 import rdts.syntax.DeltaBuffer
 
-val localId = rdts.base.LocalUid.predefined("replica-alice")
-val remoteId = rdts.base.LocalUid.predefined("replica-bob")
+class RDTs extends munit.FunSuite {
 
-given Lattice[Int] = math.max
-given Lattice[String] = Lattice.assertEquals
+  val localId = rdts.base.LocalUid.predefined("replica-alice")
+  val remoteId = rdts.base.LocalUid.predefined("replica-bob")
 
-class RDTs extends munit.FunSuite:
+  given Lattice[Int] = math.max
+  given Lattice[String] = Lattice.assertEquals
 
 /*:scim
+
 # What are ARDTs?
 :label = what-are-ardts
 
@@ -535,3 +540,4 @@ built on top of the delta CRDT foundation:
 
 The full API is documented in the Scaladoc for each datatype.
 */
+}
