@@ -99,7 +99,7 @@ Options form a lattice where :m{None} is smaller than :m{Some}:
 :m{Bottom[A]} provides the :b{empty} value of a lattice.
 It is the identity element of merge:
 
-```code
+```code lang=scala
   Lattice.merge(Bottom.empty, x) == x
 ```
 
