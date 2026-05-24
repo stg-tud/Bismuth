@@ -1,20 +1,22 @@
 package channels
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, JioInputStreamAdapter, JioOutputStreamAdapter, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionClosedException, ConnectionDescriptor, JioInputStreamAdapter, JioOutputStreamAdapter, LatentConnection, MessageBuffer, Receive}
 import com.sun.net.httpserver.{HttpExchange, HttpHandler}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 
-import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
 import java.net.http.{HttpClient, HttpRequest}
+import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 object JavaHttpSSE {
 
-  class SSEServerConnection(out: JioOutputStreamAdapter) extends Connection {
+  val connectionIdHeader: String = "X-SSE-Connection-Id"
+
+  class SSEServerConnection(val out: JioOutputStreamAdapter) extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Async { out.send(message) }
     override def close(): Unit                                  = out.outputStream.close()
   }
@@ -24,31 +26,61 @@ object JavaHttpSSE {
       descriptor: ConnectionDescriptor.WebSocket = ConnectionDescriptor.WebSocket("sse://server")
   ) extends LatentConnection[ConnectionDescriptor.WebSocket] {
 
+    private val connections = ConcurrentHashMap[String, (SSEServerConnection, Callback[MessageBuffer])]()
+
     def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.WebSocket] = Async {
       addHandler { (exchange: HttpExchange) =>
-        val responseHeaders = exchange.getResponseHeaders
-        responseHeaders.add("Content-Type", "text/event-stream")
-        responseHeaders.add("Connection", "keep-alive")
+        val method = exchange.getRequestMethod
 
-        exchange.sendResponseHeaders(200, 0)
-        val outstream = exchange.getResponseBody
+        if method.equalsIgnoreCase("GET") then
+            val connectionId = java.util.UUID.randomUUID().toString
 
-        // force sending of response headers
-        outstream.flush()
+            val responseHeaders = exchange.getResponseHeaders
+            responseHeaders.add("Content-Type", "text/event-stream")
+            responseHeaders.add("Connection", "keep-alive")
+            responseHeaders.add(connectionIdHeader, connectionId)
 
-        val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
+            exchange.sendResponseHeaders(200, 0)
+            val outstream = exchange.getResponseBody
+            outstream.flush()
 
-        val cb = receiver.connectionEstablished(conn)
+            val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
+            val cb   = receiver.connectionEstablished(conn)
 
-        val amb = ArrayMessageBuffer(exchange.getRequestBody.readAllBytes())
-        if amb.inner.nonEmpty then cb.succeed(amb)
+            connections.put(connectionId, (conn, cb))
+            ()
+        else if method.equalsIgnoreCase("POST") then
+            val connectionIdHeaderValue = exchange.getRequestHeaders.getFirst(connectionIdHeader)
+
+            val statusCode =
+              if connectionIdHeaderValue != null then
+                  connections.get(connectionIdHeaderValue) match
+                      case null    => 404
+                      case (_, cb) =>
+                        val data = ArrayMessageBuffer(exchange.getRequestBody.readAllBytes())
+                        if data.inner.nonEmpty then
+                            cb.succeed(data)
+                            200
+                        else 200
+              else 400
+
+            exchange.sendResponseHeaders(statusCode, -1)
+            exchange.close()
+        else
+            exchange.sendResponseHeaders(405, -1)
+            exchange.close()
       }
       descriptor
     }
   }
 
-  class SSEClientConnection(client: HttpClient, uri: URI, receiver: Receive, ec: ExecutionContext)
-      extends Connection {
+  class SSEClientConnection(
+      client: HttpClient,
+      uri: URI,
+      receiver: Receive,
+      ec: ExecutionContext,
+      connectionId: String
+  ) extends Connection {
 
     lazy val handler: Callback[MessageBuffer] = receiver.connectionEstablished(this)
 
@@ -56,42 +88,15 @@ object JavaHttpSSE {
       val sseRequest = HttpRequest.newBuilder()
         .POST(BodyPublishers.ofByteArray(message.asArray))
         .uri(uri)
+        .header(connectionIdHeader, connectionId)
         .build()
 
-      val res = client.sendAsync(sseRequest, BodyHandlers.ofInputStream()).toAsync.bind
-
-      handleReceive(res.body())
+      val res        = client.sendAsync(sseRequest, BodyHandlers.discarding()).toAsync.bind
+      val statusCode = res.statusCode()
+      if statusCode >= 400 then
+          throw ConnectionClosedException(s"SSE POST failed with status $statusCode")
     }
 
-    var currentReceive: JioInputStreamAdapter | Null = null
-
-    def handleReceive(rec: InputStream): Unit = synchronized {
-
-      val adapter = JioInputStreamAdapter(rec)
-
-//      if currentReceive != null then {
-//        println(s"closing old receiver")
-//        currentReceive.nn.close()
-//      }
-      currentReceive = adapter
-
-      ec.execute(() =>
-        adapter.loopReceive {
-          case Success(value) =>
-            handler.succeed(value)
-          case Failure(ex) =>
-            if SSEClientConnection.this.synchronized(currentReceive == adapter)
-            then
-                // if this fails again, then we give up
-                send(ArrayMessageBuffer(Array.emptyByteArray)).run(_ => ())
-                ()
-            else {
-              // accept close because another stream seems to be open
-              ()
-            }
-        }
-      )
-    }
     override def close(): Unit = ()
   }
 
@@ -99,8 +104,29 @@ object JavaHttpSSE {
       extends LatentConnection[Connection] {
 
     def prepare(receiver: Receive): Async[Abort, Connection] = Async {
-      val conn = SSEClientConnection(client, uri, receiver, ec)
-      conn.send(ArrayMessageBuffer(Array.emptyByteArray)).bind
+
+      val getRequest = HttpRequest.newBuilder()
+        .GET()
+        .uri(uri)
+        .header("Accept", "text/event-stream")
+        .build()
+
+      val getResponse = client.sendAsync(getRequest, BodyHandlers.ofInputStream()).toAsync.bind
+
+      val connectionId = getResponse.headers().firstValue(connectionIdHeader).orElseThrow()
+
+      val conn = SSEClientConnection(client, uri, receiver, ec, connectionId)
+
+      ec.execute(() =>
+          val adapter = JioInputStreamAdapter(getResponse.body())
+          adapter.loopReceive {
+            case Success(value) =>
+              conn.handler.succeed(value)
+            case Failure(ex) =>
+              conn.handler.fail(ex)
+          }
+      )
+
       conn
     }
   }

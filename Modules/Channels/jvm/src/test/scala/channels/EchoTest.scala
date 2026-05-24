@@ -44,9 +44,9 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
           JavaHttpSSE.SSEClient(client, URI.create(descriptor.url), ec)
         }
     ) {
-  override def supportsMultipleConnections: Boolean                                          = false
+  override def supportsMultipleConnections: Boolean                                          = true
   override def supportsDisconnectDetection: Boolean                                          = false
-  override def supportsStableConnectionObject: Boolean                                       = false
+  override def supportsStableConnectionObject: Boolean                                       = true
   override def extraCleanup(cleanups: scala.collection.mutable.ListBuffer[() => Unit]): Unit =
     cleanups += (() => Option(EchoServerTestSunJavaHTTP.currentServer).foreach(_.stop(0)))
 }
