@@ -20,9 +20,9 @@ object JavaHttpSSE {
     override def send(message: MessageBuffer): Async[Any, Unit] = Async {
       try out.send(message)
       catch
-        case ex: Exception =>
-          onSendFailure()
-          throw ex
+          case ex: Exception =>
+            onSendFailure()
+            throw ex
     }
     override def close(): Unit = out.outputStream.close()
   }
@@ -50,8 +50,9 @@ object JavaHttpSSE {
             val outstream = exchange.getResponseBody
             outstream.flush()
 
-            val conn = SSEServerConnection(JioOutputStreamAdapter(outstream), () => { connections.remove(connectionId); () })
-            val cb   = receiver.connectionEstablished(conn)
+            val conn =
+              SSEServerConnection(JioOutputStreamAdapter(outstream), () => { connections.remove(connectionId); () })
+            val cb = receiver.connectionEstablished(conn)
 
             connections.put(connectionId, (conn, cb))
             ()
@@ -85,7 +86,8 @@ object JavaHttpSSE {
       uri: URI,
       receiver: Receive,
       ec: ExecutionContext,
-      connectionId: String
+      connectionId: String,
+      jioInputStreamAdapter: JioInputStreamAdapter,
   ) extends Connection {
 
     lazy val handler: Callback[MessageBuffer] = receiver.connectionEstablished(this)
@@ -103,7 +105,8 @@ object JavaHttpSSE {
           throw ConnectionClosedException(s"SSE POST failed with status $statusCode")
     }
 
-    override def close(): Unit = ()
+    override def close(): Unit =
+      jioInputStreamAdapter.close()
   }
 
   class SSEClient(client: HttpClient, uri: URI, ec: ExecutionContext)
@@ -121,16 +124,16 @@ object JavaHttpSSE {
 
       val connectionId = getResponse.headers().firstValue(connectionIdHeader).orElseThrow()
 
-      val conn = SSEClientConnection(client, uri, receiver, ec, connectionId)
+      val adapter = JioInputStreamAdapter(getResponse.body())
+      val conn = SSEClientConnection(client, uri, receiver, ec, connectionId, adapter)
 
       ec.execute(() =>
-          val adapter = JioInputStreamAdapter(getResponse.body())
-          adapter.loopReceive {
-            case Success(value) =>
-              conn.handler.succeed(value)
-            case Failure(ex) =>
-              conn.handler.fail(ex)
-          }
+        adapter.loopReceive {
+          case Success(value) =>
+            conn.handler.succeed(value)
+          case Failure(ex) =>
+            conn.handler.fail(ex)
+        }
       )
 
       conn
