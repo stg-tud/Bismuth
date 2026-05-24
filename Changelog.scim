@@ -5,11 +5,6 @@
 • warning: classpath set repeatedly during doc:
 	:link{https://github.com/scala/scala3/issues/22875}
 
-== v.next
-
-•: Channels
-	• Improve/fix SSE connection. Dont ask why.
-
 == v0.38.0
 
 •: Reactives

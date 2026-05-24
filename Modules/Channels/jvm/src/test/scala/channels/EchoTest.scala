@@ -20,40 +20,6 @@ class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](
   override def supportsDisconnectDetection: Boolean = false
 }
 
-class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescriptor.Sse](
-      (_, _) => {
-
-        val server = HttpServer.create()
-        EchoServerTestSunJavaHTTP.currentServer = server
-
-        server.bind(InetSocketAddress("0", 0), 0)
-        val port = server.getAddress.getPort
-
-        val handler = JavaHttpSSE.SSEServer(
-          handler => server.createContext("/path", handler),
-          ConnectionDescriptor.Sse(s"http://0:$port/path")
-        )
-
-        server.start()
-        handler
-
-      },
-      (ec, _) =>
-        descriptor => {
-          val client = HttpClient.newHttpClient()
-          JavaHttpSSE.SSEClient(client, URI.create(descriptor.url), ec)
-        }
-    ) {
-  override def supportsMultipleConnections: Boolean                                          = true
-  override def supportsDisconnectDetection: Boolean                                          = false
-  override def supportsStableConnectionObject: Boolean                                       = true
-  override def extraCleanup(cleanups: scala.collection.mutable.ListBuffer[() => Unit]): Unit =
-    cleanups += (() => Option(EchoServerTestSunJavaHTTP.currentServer).foreach(_.stop(0)))
-}
-
-object EchoServerTestSunJavaHTTP {
-  var currentServer: HttpServer | Null = null
-}
 
 def domainSocketHelperNonensese(name: String) = {
   val tmpPath    = Files.createTempDirectory("channels-test")
