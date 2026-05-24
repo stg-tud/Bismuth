@@ -20,7 +20,7 @@ class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](
   override def supportsDisconnectDetection: Boolean = false
 }
 
-class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescriptor.WebSocket](
+class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescriptor.Sse](
       (_, _) => {
 
         val server = HttpServer.create()
@@ -31,7 +31,7 @@ class EchoServerTestSunJavaHTTP extends EchoCommunicationTest[ConnectionDescript
 
         val handler = JavaHttpSSE.SSEServer(
           handler => server.createContext("/path", handler),
-          ConnectionDescriptor.WebSocket(s"http://0:$port/path")
+          ConnectionDescriptor.Sse(s"http://0:$port/path")
         )
 
         server.start()

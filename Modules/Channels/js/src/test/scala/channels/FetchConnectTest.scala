@@ -16,11 +16,9 @@ object FetchConnectTest {
     }.runIn(Abort()) {
       case Success(conn) =>
         println("established")
-        conn.send(ArrayMessageBuffer("Test".getBytes()))
+        conn.send(ArrayMessageBuffer("Test".getBytes())); ()
       case Failure(ex) => ex.printStackTrace()
     }
-
-    Thread.sleep(1000)
   }
 
 }

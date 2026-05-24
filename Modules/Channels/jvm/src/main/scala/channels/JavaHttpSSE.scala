@@ -1,6 +1,7 @@
 package channels
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionClosedException, ConnectionDescriptor, JioInputStreamAdapter, JioOutputStreamAdapter, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionClosedException, JioInputStreamAdapter, JioOutputStreamAdapter, LatentConnection, MessageBuffer, Receive}
+import channels.connection.ConnectionDescriptor
 import com.sun.net.httpserver.{HttpExchange, HttpHandler}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 
@@ -29,12 +30,12 @@ object JavaHttpSSE {
 
   class SSEServer(
       addHandler: HttpHandler => Unit,
-      descriptor: ConnectionDescriptor.WebSocket = ConnectionDescriptor.WebSocket("sse://server")
-  ) extends LatentConnection[ConnectionDescriptor.WebSocket] {
+      descriptor: ConnectionDescriptor.Sse = ConnectionDescriptor.Sse("sse://server")
+  ) extends LatentConnection[ConnectionDescriptor.Sse] {
 
     private val connections = ConcurrentHashMap[String, (SSEServerConnection, Callback[MessageBuffer])]()
 
-    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.WebSocket] = Async {
+    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Sse] = Async {
       addHandler { (exchange: HttpExchange) =>
         val method = exchange.getRequestMethod
 

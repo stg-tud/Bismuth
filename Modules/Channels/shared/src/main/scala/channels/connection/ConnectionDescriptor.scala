@@ -14,6 +14,7 @@ enum ConnectionDescriptor {
   case WebRtc(peerId: String)
   case QueuedLocal(id: String)
   case SynchronousLocal(id: String)
+  case Sse(url: String)
 
   def asUrl: String = this match
       case ConnectionDescriptor.Tcp(host, port)          => s"tcp://$host:$port"
@@ -24,6 +25,7 @@ enum ConnectionDescriptor {
       case ConnectionDescriptor.WebRtc(peerId)           => s"webrtc://$peerId"
       case ConnectionDescriptor.QueuedLocal(id)          => s"queue://$id"
       case ConnectionDescriptor.SynchronousLocal(id)     => s"sync://$id"
+      case ConnectionDescriptor.Sse(url)                 => url
 
   override def toString: String = asUrl
 }
@@ -67,6 +69,7 @@ object ConnectionDescriptor {
               .orElse(Option(uri.getAuthority))
               .orElse(Option(uri.getSchemeSpecificPart).map(_.stripPrefix("//")).filter(_.nonEmpty))
               .map(SynchronousLocal.apply)
+          case "sse" => Some(Sse(value))
           case _ => None
     }
 
