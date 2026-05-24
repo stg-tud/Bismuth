@@ -22,6 +22,7 @@ class JioInputStreamAdapter(in: InputStream) {
     try
         while !closed do
             handler.succeed(readNext())
+        handler.fail(new ConnectionClosedException("requested close"))
     catch
         case ioe: IOException =>
           handler.fail(ioe)

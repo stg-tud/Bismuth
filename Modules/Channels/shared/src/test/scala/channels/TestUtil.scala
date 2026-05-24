@@ -17,6 +17,7 @@ object TestUtil {
             case ex: NoMoreDataException                                                 =>
             case ex: ConnectionClosedException                                           =>
             case ex: IOException if ex.getMessage == "Socket closed"                     =>
+            case ex: IOException if ex.getMessage == "closed"                        =>
             case ex: java.io.EOFException                                                =>
             case ex                                                                      => ex.printStackTrace()
 }

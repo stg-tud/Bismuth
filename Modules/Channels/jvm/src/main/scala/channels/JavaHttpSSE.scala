@@ -16,9 +16,15 @@ object JavaHttpSSE {
 
   val connectionIdHeader: String = "X-SSE-Connection-Id"
 
-  class SSEServerConnection(val out: JioOutputStreamAdapter) extends Connection {
-    override def send(message: MessageBuffer): Async[Any, Unit] = Async { out.send(message) }
-    override def close(): Unit                                  = out.outputStream.close()
+  class SSEServerConnection(val out: JioOutputStreamAdapter, onSendFailure: () => Unit) extends Connection {
+    override def send(message: MessageBuffer): Async[Any, Unit] = Async {
+      try out.send(message)
+      catch
+        case ex: Exception =>
+          onSendFailure()
+          throw ex
+    }
+    override def close(): Unit = out.outputStream.close()
   }
 
   class SSEServer(
@@ -44,7 +50,7 @@ object JavaHttpSSE {
             val outstream = exchange.getResponseBody
             outstream.flush()
 
-            val conn = SSEServerConnection(JioOutputStreamAdapter(outstream))
+            val conn = SSEServerConnection(JioOutputStreamAdapter(outstream), () => { connections.remove(connectionId); () })
             val cb   = receiver.connectionEstablished(conn)
 
             connections.put(connectionId, (conn, cb))
