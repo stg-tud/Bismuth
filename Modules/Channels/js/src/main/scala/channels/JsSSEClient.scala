@@ -1,56 +1,46 @@
 package channels
 
 import channels.MesageBufferExtensions.asArrayBuffer
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionClosedException, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Callback, toAsync}
-import org.scalajs.dom.{AbortController, Headers, HttpMethod, ReadableStreamReader, RequestInit, Response, fetch}
+import org.scalajs.dom.{AbortController, Headers, HttpMethod, ReadableStreamReader, RequestInit, fetch}
 
 import java.nio.ByteBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.typedarray.{Int8Array, Uint8Array}
-import scala.util.Failure
 import scala.util.chaining.scalaUtilChainingOps
+import scala.util.{Failure, Success}
 
 object JsSSEClient {
 
-  class SSEPseudoConnection(uri: String, receiver: Receive)
-      extends Connection {
+  val connectionIdHeader: String = "X-SSE-Connection-Id"
+
+  class SSEPseudoConnection(
+      uri: String,
+      receiver: Receive,
+      connectionId: String,
+      onClose: () => Unit,
+  ) extends Connection {
 
     lazy val resultCallback: Callback[MessageBuffer] = receiver.connectionEstablished(this)
 
-    var currentAbort: AbortController | Null = null
-
     override def send(message: MessageBuffer): Async[Any, Unit] = Async {
-
-      val abort = new AbortController()
 
       val requestInit = new RequestInit {}.tap: ri =>
           ri.method = HttpMethod.POST
           ri.body = message.asArrayBuffer
-          ri.signal = abort.signal
           ri.headers = Headers().tap: hi =>
               hi.set("Accept", "text/event-stream")
+              hi.set(connectionIdHeader, connectionId)
 
       val res = fetch(uri, requestInit).toFuture.toAsync.bind
 
-      handleResponses(res, abort).bind
-
+      val statusCode = res.status
+      if statusCode >= 400 then
+          throw ConnectionClosedException(s"SSE POST failed with status $statusCode")
     }
 
-    def handleResponses(res: Response, abort: AbortController): Async[Any, Unit] = Async {
-
-      val reader = res.body.getReader()
-
-      if currentAbort != null
-      then currentAbort.nn.abort()
-      currentAbort = abort
-
-      val streamCon = StreamConsumer(reader, resultCallback)
-
-      streamCon.loop().run { _ => () }
-    }
-
-    override def close(): Unit = ()
+    override def close(): Unit = onClose()
   }
 
   class StreamConsumer(reader: ReadableStreamReader[Uint8Array], cb: Callback[MessageBuffer]) {
@@ -81,14 +71,52 @@ object JsSSEClient {
         loop().bind
       }
     }
-
   }
 
   def connect(uri: String): LatentConnection[Connection] = new LatentConnection[Connection] {
     def prepare(receiver: Receive): Async[Abort, Connection] = Async {
-      new SSEPseudoConnection(uri, receiver)
-    }
 
+      val getAbort = new AbortController()
+
+      // Establish the SSE event stream via GET
+      val getInit = new RequestInit {}.tap: ri =>
+          ri.method = HttpMethod.GET
+          ri.signal = getAbort.signal
+          ri.headers = Headers().tap: hi =>
+              hi.set("Accept", "text/event-stream")
+
+      val getResponse = fetch(uri, getInit).toFuture.toAsync.bind
+
+      val connectionId = getResponse.headers.get(connectionIdHeader)
+
+      val reader = getResponse.body.getReader()
+
+      val doAbort = () => {
+        reader.cancel()
+        getAbort.abort()
+      }
+
+      val conn = SSEPseudoConnection(
+        uri,
+        receiver,
+        connectionId,
+        doAbort
+      )
+      val cb = receiver.connectionEstablished(conn)
+
+      val streamConsumer = StreamConsumer(reader, cb)
+
+      streamConsumer.loop().run {
+        case Success(value) =>
+          doAbort()
+          cb.fail(ConnectionClosedException("SSE connection closed"))
+        case Failure(ex) =>
+          doAbort()
+          cb.fail(ex)
+      }
+
+      conn
+    }
   }
 
 }

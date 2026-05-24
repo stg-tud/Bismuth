@@ -3,34 +3,39 @@
 == Known issues
 
 • warning: classpath set repeatedly during doc:
-  :link{https://github.com/scala/scala3/issues/22875}
+	:link{https://github.com/scala/scala3/issues/22875}
+
+== v.next
+
+•: Channels
+	• Improve/fix SSE connection. Dont ask why.
 
 == v0.38.0
 
 •: Reactives
-   • fix reactive tags integration
-   • removed FullMV
+	 • fix reactive tags integration
+	 • removed FullMV
 
 
 •: RDTs
-   • remove datatypes that are supposed to be wrapped into dotted/obrem
-   • renamed Lattice methods to :m{subsumes} :m{inflates}
-   • add a :m{DecoratedLattice} to systemize compaction/filtering merges
-   • more research lines included:
-	   • interval tree clocks
-	   • more consensus / paxos
-	   • RDT filtering
+	 • remove datatypes that are supposed to be wrapped into dotted/obrem
+	 • renamed Lattice methods to :m{subsumes} :m{inflates}
+	 • add a :m{DecoratedLattice} to systemize compaction/filtering merges
+	 • more research lines included:
+		 • interval tree clocks
+		 • more consensus / paxos
+		 • RDT filtering
 
 
 •: Channels
-   • A lot changed here 🙃
-   • client/server latent connections
-   • channels no longer parametric, only allow sending Bytes
-   • Connection descriptions and serializable connectors
-   • Websocket server implementation
-   • Broadcast implementation (for now based on HyParView and Plumtree)
-   • Include JVM key crypto
-   • Include JVM ACL
+	 • A lot changed here 🙃
+	 • client/server latent connections
+	 • channels no longer parametric, only allow sending Bytes
+	 • Connection descriptions and serializable connectors
+	 • Websocket server implementation
+	 • Broadcast implementation (for now based on HyParView and Plumtree)
+	 • Include JVM key crypto
+	 • Include JVM ACL
 
 
 
@@ -40,10 +45,10 @@
 Scala 3.5 based release
 
 • all modules now use at least Java version 17
-  • This is now actually the oldest supported Java version (except for commercial extended support we don't have). This feels strange.
+	• This is now actually the oldest supported Java version (except for commercial extended support we don't have). This feels strange.
 • publish channel and replication module
-  • module boundaries are likely to change, but for now these help a lot with replicating RDT deltas
-  • channels now has a NIO TCP module
+	• module boundaries are likely to change, but for now these help a lot with replicating RDT deltas
+	• channels now has a NIO TCP module
 • add experimental DTN replication work
 • add consensus protocol datatypes
 • enhanced UID generation and printing for better debuggability (and unlikely collisions)
@@ -59,12 +64,12 @@ Scala 3.5 based release
 # API changes
 
 • rename module imports to use generic names:
-  • rescala -> reactives
-  • kofre -> rdts
+	• rescala -> reactives
+	• kofre -> rdts
 
 • refactor API to no longer require bundle traits
-  • this removes the capability to select schedulers at runtime and instead moves the selection to compile time
-  • this release uses the leveled scheduler
+	• this removes the capability to select schedulers at runtime and instead moves the selection to compile time
+	• this release uses the leveled scheduler
 
 • rename event.act to event.branch for a more consistent API
 
@@ -73,16 +78,16 @@ Scala 3.5 based release
 • reactive tags integration no longer depends on scalatags, works on DOM elements directly
 
 • RDTs still have quickly changing API
-  • no more extensions based wrapped APIs
-  • more systematic IDs
+	• no more extensions based wrapped APIs
+	• more systematic IDs
 
 # Extra modules
 
 • reactive lenses experiments
 • lore is now part of the repo (not included in releases)
-  • there is also an experimental lore compiler plugin
+	• there is also an experimental lore compiler plugin
 • add channels module as an experiment to have RDT specific communication infrastructure
-  • with initial DTN support
+	• with initial DTN support
 • local first access control experiments
 • vendor in quicklens and adapt to allow to produce deltas
 • remove the graph compiler module (historical now)
@@ -106,10 +111,10 @@ Scala 3.5 based release
 This is a smaller release meant to mark a stable point before incompatible changes.
 
 • Reactives
-  • allow .value inside fold
+	• allow .value inside fold
 
 • RDTs
-  • remove dotset/map/fun, now generically generated from maps
+	• remove dotset/map/fun, now generically generated from maps
 
 == v0.34.0
 :date = 2023-11-10
@@ -117,9 +122,9 @@ This is a smaller release meant to mark a stable point before incompatible chang
 # Reactives
 
 • drop Scala 2 support
-  • We kept this around for compatibility with Scala Loci case studies, but those will keep working just fine with 0.33.
-  • Maintaining the Scala 2 macros became too much. Every refactor breaks them in very subtle ways, due to the interactions of the generic nature of the code, and the macros resolving types weirdly.
-  • We would like to update some APIs to make better use of Scala 3 features, in particular better handling of implicits, and more flexible macros will make certain parts of the code much more maintainable and enable better syntax for users.
+	• We kept this around for compatibility with Scala Loci case studies, but those will keep working just fine with 0.33.
+	• Maintaining the Scala 2 macros became too much. Every refactor breaks them in very subtle ways, due to the interactions of the generic nature of the code, and the macros resolving types weirdly.
+	• We would like to update some APIs to make better use of Scala 3 features, in particular better handling of implicits, and more flexible macros will make certain parts of the code much more maintainable and enable better syntax for users.
 • removed internal types from the public interface trait
 • remove old fold syntax
 • remove reduce (use new fold syntax instead)
@@ -162,7 +167,7 @@ This is a smaller release meant to mark a stable point before incompatible chang
 :date = 2022-12-31
 
 • automatic derivation of replicated data types
-  • cleaned up implementations of built-in replicated data types
+	• cleaned up implementations of built-in replicated data types
 • Scala 3 version now has signal macros
 • move incremental collections' thesis results into main repository
 
