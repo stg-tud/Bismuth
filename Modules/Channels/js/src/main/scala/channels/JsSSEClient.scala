@@ -67,20 +67,18 @@ object JsSSEClient {
     def loop(): Async[Any, Unit] = Async {
       val chunk = reader.read().toFuture.toAsync.bind
       val input = chunk.value
-      Async.bind {
-        if !scalajs.js.isUndefined(input) then {
-          buffer = buffer.appendedAll(new Int8Array(input.buffer, input.byteOffset, input.length).toArray)
+      if !scalajs.js.isUndefined(input) then {
+        buffer = buffer.appendedAll(new Int8Array(input.buffer, input.byteOffset, input.length).toArray)
 
-          if buffer.length >= 4 then
-              val len = ByteBuffer.wrap(buffer.slice(0, 4)).getInt()
-              require(len < MessageBuffer.maxPayloadSize, "Message too large")
-              if buffer.length >= len + 4 then
-                  val mb = ArrayMessageBuffer(buffer.slice(4, len + 4))
-                  buffer = buffer.slice(len + 4, buffer.length)
-                  cb.succeed(mb)
+        if buffer.length >= 4 then
+            val len = ByteBuffer.wrap(buffer.slice(0, 4)).getInt()
+            require(len < MessageBuffer.maxPayloadSize, "Message too large")
+            if buffer.length >= len + 4 then
+                val mb = ArrayMessageBuffer(buffer.slice(4, len + 4))
+                buffer = buffer.slice(len + 4, buffer.length)
+                cb.succeed(mb)
 
-          loop()
-        } else Async(())
+        loop().bind
       }
     }
 
