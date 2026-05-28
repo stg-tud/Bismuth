@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1">
+	<link href="scitzen.css" rel="stylesheet" type="text/css">
+	<title>Algebraic Replicated Data Types</title>
+</head>
+
+<body class="numbered-sections">
+
+<aside><input type="checkbox" id="sidebar-switch" hidden><label for="sidebar-switch" hidden><svg viewBox="0 0 24 24"
+			fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+			class="menu">
+			<path d="M3 12 H21 M3 6 H21 M3 18 H21" />
+		</svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+			stroke-linejoin="round" class="close">
+			<path d="M18 6 L6 18 M6 6 L18 18" />
+		</svg></label>
+	<nav><ul><li class="h1"><a href="#Algebraic Replicated Data Types">Algebraic Replicated Data Types</a></li><li class="h2"><a href="#lattices">Lattices</a></li><li class="h3"><a href="#Lattices for existing types">Lattices for existing types</a></li><li class="h3"><a href="#Bottom">Bottom</a></li><li class="h2"><a href="#automatic-lattice-derivation">Automatic Lattice Derivation</a></li><li class="h3"><a href="#Product Lattices">Product Lattices</a></li><li class="h3"><a href="#Sum Lattices">Sum Lattices</a></li><li class="h2"><a href="#designing-replicated-data-types">Designing Replicated Data Types</a></li><li class="h3"><a href="#A replicated counter">A replicated counter</a></li><li class="h2"><a href="#Causal Time and Ordering-Based Data Types">Causal Time and Ordering-Based Data Types</a></li><li class="h2"><a href="#common-replicated-data-types">Common Replicated Data Types</a></li><li class="h3"><a href="#GrowOnlyCounter">GrowOnlyCounter</a></li><li class="h3"><a href="#PosNegCounter (PNCounter)">PosNegCounter (PNCounter)</a></li><li class="h3"><a href="#GrowOnlySet (G-Set)">GrowOnlySet (G-Set)</a></li><li class="h3"><a href="#GrowOnlyList (G-List)">GrowOnlyList (G-List)</a></li><li class="h3"><a href="#ReplicatedSet">ReplicatedSet</a></li><li class="h3"><a href="#EnableWinsFlag (EWFlag)">EnableWinsFlag (EWFlag)</a></li><li class="h3"><a href="#MultiVersionRegister (MV-Register)">MultiVersionRegister (MV-Register)</a></li><li class="h3"><a href="#ObserveRemoveMap (OR-Map)">ObserveRemoveMap (OR-Map)</a></li><li class="h3"><a href="#ReplicatedList (RGA)">ReplicatedList (RGA)</a></li><li class="h3"><a href="#Epoch Wrapper">Epoch Wrapper</a></li><li class="h2"><a href="#The End">The End</a></li></ul></nav>
+</aside>
+	<main class=" justify">
+		<h1 id="Algebraic Replicated Data Types">Algebraic Replicated Data Types</h1>
+<p>This manual introduces Algebraic Replicated Data Types (ARDTs):
+a systematic approach to building conflict-free replicated data
+types by composition of product, and sum types.
+</p>
+<p>The <code>merge</code> semantics of a compound data type are <b>automatically derived</b> from the merge semantics of its components.
+</p>
+<p>This document contains compilable code, you can download the <a href="resources/Modules/RDTs/src/test/scala/documentation/RDTs.scim.scala">full file</a>.
+</p>
+<h2 id="lattices">Lattices</h2>
+<p>Every data type in this module is a <b>join-semilattice</b>.
+A lattice for a type <code>A</code> is a trait with a single operation:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">trait</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">A</span><span class="p">]:</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="n">left</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="p">):</span><span class="w"> </span><span class="nc">A</span>
+</code></pre>
+<p>We usually will just import it
+</p><pre class="highlight"><code class="language-scala"><span class="k">import</span><span class="w"> </span><span class="nn">rdts</span><span class="p">.</span><span class="nn">base</span><span class="p">.</span><span class="nc">Lattice</span>
+</code></pre>
+
+<p>The <code>merge</code> operation must be <b>associative</b>, <b>commutative</b>, and <b>idempotent</b>.
+Merging two states yields a consistent result containing all information from both sides.
+</p>
+<p>If <code>left `merge` right == right</code> then <code>left</code> is <code>subsumed</code> by <code>right</code>: merging <code>left</code> into <code>right</code> is a no-op.
+</p>
+<h3 id="Lattices for existing types">Lattices for existing types</h3>
+<p>To use a type as a lattice, we need to provide a <a href="https://scala-lang.org/api/3.x/docs/contextual/givens.html">given instance</a> for that type. A <a href="#safe">safe</a> way to do this is to use an existing ordering:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">fromOrdering</span>
+</code></pre>
+<p>Merging based on an ordering will discard the smaller of the two values.
+</p>
+<blockquote id="safe"><p><i>Safe</i> in this case means that we must be sure that the lattice properties (associative, commutative, idempotent) are guaranteed.
+</p></blockquote>
+<p>The library comes with existing instances for built-in Scala types that you can just import.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">import</span><span class="w"> </span><span class="nn">rdts</span><span class="p">.</span><span class="nn">base</span><span class="p">.</span><span class="nc">Lattice</span><span class="p">.</span><span class="k">given</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">rdts</span><span class="p">.</span><span class="nn">datatypes</span><span class="p">.</span><span class="n">*</span>
+</code></pre>
+<p>Now you can merge any two values of a type that has a <b>given</b> <code>Lattice</code> instance:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;set lattice via union&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">setA</span><span class="p">:</span><span class="w"> </span><span class="nc">Set</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">setB</span><span class="p">:</span><span class="w"> </span><span class="nc">Set</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedSet</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">setA</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">setB</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedSet</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">))</span>
+</code></pre>
+<p>Maps merge key-wise using the lattice of their values:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;map lattice key-wise&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mapA</span><span class="p">:</span><span class="w"> </span><span class="nc">Map</span><span class="p">[</span><span class="nc">String</span><span class="p">,</span><span class="w"> </span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Map</span><span class="p">(</span><span class="s">&quot;x&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;y&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mapB</span><span class="p">:</span><span class="w"> </span><span class="nc">Map</span><span class="p">[</span><span class="nc">String</span><span class="p">,</span><span class="w"> </span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Map</span><span class="p">(</span><span class="s">&quot;y&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;z&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedMap</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="n">mapA</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">mapB</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedMap</span><span class="p">(</span><span class="s">&quot;x&quot;</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedMap</span><span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedMap</span><span class="p">(</span><span class="s">&quot;z&quot;</span><span class="p">),</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+</code></pre>
+<p>Options form a lattice where <code>None</code> is smaller than <code>Some</code>:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;option lattice&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">optA</span><span class="p">:</span><span class="w"> </span><span class="nc">Option</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">None</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">optB</span><span class="p">:</span><span class="w"> </span><span class="nc">Option</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">optA</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">optB</span><span class="p">,</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">optB</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">optA</span><span class="p">,</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+</code></pre>
+<h3 id="Bottom">Bottom</h3>
+<p><code>Bottom[A]</code> provides the <b>empty</b> value of a lattice.
+It is the identity element of merge:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="nc">Lattice</span><span class="p">.</span><span class="n">merge</span><span class="p">(</span><span class="nc">Bottom</span><span class="p">.</span><span class="n">empty</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">x</span>
+</code></pre>
+<p>The empty set, the empty map, and <code>None</code> are all examples of bottom values.
+</p>
+<h2 id="automatic-lattice-derivation">Automatic Lattice Derivation</h2>
+<p>The core idea of ARDTs is that lattices can be <b>automatically derived</b> from the structure of data types.
+No manual merge logic is needed.
+</p>
+<h3 id="Product Lattices">Product Lattices</h3>
+<p>For a <b>product</b> type like a case class, merge is <b>component-wise</b>.
+Each field is merged independently using its own lattice.
+You get the derivation with a single line:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;product lattice derives component-wise merge&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">math</span><span class="p">.</span><span class="n">max</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Data</span><span class="p">(</span><span class="n">counter</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">,</span><span class="w"> </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="nc">Set</span><span class="p">[</span><span class="nc">Int</span><span class="p">],</span><span class="w"> </span><span class="n">mapping</span><span class="p">:</span><span class="w"> </span><span class="nc">Map</span><span class="p">[</span><span class="nc">String</span><span class="p">,</span><span class="w"> </span><span class="nc">Int</span><span class="p">],</span><span class="w"> </span><span class="n">flag</span><span class="p">:</span><span class="w"> </span><span class="nc">Option</span><span class="p">[</span><span class="nc">Int</span><span class="p">])</span>
+
+<span class="w">    </span><span class="c1">// automatically derive the lattice instance</span>
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Data</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">left</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nc">Data</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="nc">Map</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Data</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="nc">Map</span><span class="p">(</span><span class="s">&quot;b&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="nc">None</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">merged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">right</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">counter</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w">          </span><span class="c1">// max(1, 2)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span><span class="w"> </span><span class="c1">// union</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">mapping</span><span class="p">,</span><span class="w"> </span><span class="nc">Map</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;b&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="c1">// key-wise merge</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">flag</span><span class="p">,</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="c1">// Some &gt; None</span>
+</code></pre>
+<h3 id="Sum Lattices">Sum Lattices</h3>
+<p>For <b>sum types</b> (enums, sealed classes), we rely on their inherent total ordering to derive the lattice instance. Constructors that are defined later are considered larger.
+Sum lattices are not as common as product lattices, but do allow modeling state machines.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;sum lattice for state machine&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="k">enum</span><span class="w"> </span><span class="nc">Workflow</span><span class="p">:</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nc">Init</span><span class="p">()</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nc">Documents</span><span class="p">(</span><span class="n">hasStaffSheet</span><span class="p">:</span><span class="w"> </span><span class="nc">Boolean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">hasHourConfirmation</span><span class="p">:</span><span class="w"> </span><span class="nc">Boolean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nc">Contract</span><span class="p">(</span><span class="n">signed</span><span class="p">:</span><span class="w"> </span><span class="nc">Boolean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">)</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="nc">Complete</span><span class="p">()</span>
+
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Workflow</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="c1">// each case of the sum is a Product type, so we need to derive lattices for each</span>
+<span class="w">      </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Boolean</span><span class="p">]</span><span class="w">            </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">fromOrdering</span>
+<span class="w">      </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Init</span><span class="p">]</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+<span class="w">      </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Documents</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+<span class="w">      </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Contract</span><span class="p">]</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+<span class="w">      </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Complete</span><span class="p">]</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+<span class="w">      </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">sumLattice</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">wf0</span><span class="p">:</span><span class="w"> </span><span class="nc">Workflow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Init</span><span class="p">()</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">wf1</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">wf0</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Documents</span><span class="p">()</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">wf1</span><span class="p">,</span><span class="w"> </span><span class="nc">Workflow</span><span class="p">.</span><span class="nc">Documents</span><span class="p">())</span>
+</code></pre>
+<p>The ordering is <code>Init &lt; Documents &lt; Contract &lt; Complete</code>.
+Once a workflow reaches <code>Complete</code>, merging any earlier state leaves it at <code>Complete</code>.
+</p>
+<h2 id="designing-replicated-data-types">Designing Replicated Data Types</h2>
+<p>Now that we can derive lattices from products and sums, we can design replicated data types.
+</p>
+<p>The key motivation for ARDTs is that they provide <b>automatic convergence</b>:
+no matter in which order replicas merge states, they always reach the same final
+result.  This solves the hard problem of distributed convergence, but the resulting
+value may not be <b>semantically useful</b>.
+</p>
+<p>Consider counting votes in an election.  If we use a plain <code>Int</code>,
+two replicas each counting one vote would produce values <code>1</code> and <code>1</code>.
+Merging with <code>max</code> gives <code>1</code>, losing a vote!  The replicas agree on
+<code>1</code>, but the result is wrong.
+</p>
+<p>ARDTs shift the problem from ensuring convergence (which is hard) to
+designing good data types (which is much easier).
+We need to design data types where concurrent operations do not overwrite each other.
+</p>
+<p>A common trick is to use <b>replica identities</b>.  Each replica writes to
+its own part of the state, so concurrent writes never conflict. The library provides a built in class to track unique IDs and the specific Uid of the local replica (which is a different type, to prevent accidential misuse).
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">import</span><span class="w"> </span><span class="nn">rdts</span><span class="p">.</span><span class="nn">base</span><span class="p">.</span><span class="nc">Uid</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">rdts</span><span class="p">.</span><span class="nn">base</span><span class="p">.</span><span class="nc">LocalUid</span>
+<span class="k">import</span><span class="w"> </span><span class="nn">rdts</span><span class="p">.</span><span class="nn">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">replicaId</span>
+</code></pre>
+<h3 id="A replicated counter">A replicated counter</h3>
+<p>Let us design a counter that counts votes correctly.  Each replica tracks
+its own contribution in a map from replica id to count.  The total is the
+sum of all entries.  Since each replica only writes to its own key, no
+information is lost on merge.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="c1">// A Counter is just a map: each replica tracks its own count</span>
+<span class="k">case</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">(</span><span class="n">counters</span><span class="p">:</span><span class="w"> </span><span class="nc">Map</span><span class="p">[</span><span class="nc">Uid</span><span class="p">,</span><span class="w"> </span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Map</span><span class="p">.</span><span class="n">empty</span><span class="p">):</span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counters</span><span class="p">.</span><span class="n">values</span><span class="p">.</span><span class="n">sum</span>
+
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">):</span><span class="w"> </span><span class="nc">Counter</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="nc">Counter</span><span class="p">(</span><span class="nc">Map</span><span class="p">(</span><span class="n">replicaId</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">counters</span><span class="p">.</span><span class="n">getOrElse</span><span class="p">(</span><span class="n">replicaId</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">amount</span><span class="p">)))</span>
+
+<span class="c1">// We can derive the lattice automatically</span>
+<span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">Counter</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+</code></pre>
+<p>Note how the methods only return <b>delta states</b>: small values that need
+to be merged into the state to take effect.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;Using a counter&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">LocalUid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Counter</span><span class="p">()</span>
+
+<span class="w">    </span><span class="c1">// inc() returns a delta that we merge into the state</span>
+<span class="w">    </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">counter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">counter</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1">// merging deltas from multiple replicas adds their contributions</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">deltaAlice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">deltaBob</span><span class="w">   </span><span class="o">=</span>
+<span class="w">        </span><span class="k">given</span><span class="w"> </span><span class="nc">LocalUid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-bob&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="n">counter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">deltaAlice</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">deltaBob</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">total</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p>Our <code>Counter</code> only grows.  If we try to add a negative value, the map merge with
+:{max} would ignore it because the existing positive value is already larger:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;Counter cannot decrease&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">LocalUid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Counter</span><span class="p">()</span>
+<span class="w">    </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">counter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">counter</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1">// trying to &quot;un-count&quot; by adding -1 has no effect</span>
+<span class="w">    </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">counter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">counter</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="c1">// still 1, because max(1, -1) == 1</span>
+</code></pre>
+<p>We need a counter that can go both up and down.  The solution is a
+<b>product</b> of two Counters: one for positive increments, one for negative
+increments.  The total is the difference.  The product lattice derives
+component-wise merge automatically.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="c1">// A PosNegCounter is a product of two Counters: one for positive, one for negative</span>
+<span class="k">case</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PosNeg</span><span class="p">(</span><span class="n">pos</span><span class="p">:</span><span class="w"> </span><span class="nc">Counter</span><span class="p">,</span><span class="w"> </span><span class="n">neg</span><span class="p">:</span><span class="w"> </span><span class="nc">Counter</span><span class="p">):</span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w">                               </span><span class="o">=</span><span class="w"> </span><span class="n">pos</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">neg</span><span class="p">.</span><span class="n">value</span>
+<span class="w">    </span><span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">):</span><span class="w"> </span><span class="nc">PosNeg</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nc">PosNeg</span><span class="p">(</span><span class="n">pos</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">amount</span><span class="p">),</span><span class="w"> </span><span class="nc">Counter</span><span class="p">())</span>
+<span class="w">      </span><span class="k">else</span><span class="w"> </span><span class="nc">PosNeg</span><span class="p">(</span><span class="nc">Counter</span><span class="p">(),</span><span class="w"> </span><span class="n">neg</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="o">-</span><span class="n">amount</span><span class="p">))</span>
+
+<span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">PosNeg</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">derived</span>
+
+<span class="n">test</span><span class="p">(</span><span class="s">&quot;PosNegCounter from scratch&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">LocalUid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">pn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">PosNeg</span><span class="p">(</span><span class="nc">Counter</span><span class="p">(),</span><span class="w"> </span><span class="nc">Counter</span><span class="p">())</span>
+<span class="w">    </span><span class="n">pn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pn</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">pn</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="n">pn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pn</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">pn</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">pn</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">pn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pn</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">pn</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">pn</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">test</span><span class="p">(</span><span class="s">&quot;PosNegCounter concurrent from scratch&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">LocalUid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">deltaA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">PosNeg</span><span class="p">(</span><span class="nc">Counter</span><span class="p">(),</span><span class="w"> </span><span class="nc">Counter</span><span class="p">()).</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">deltaB</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="k">given</span><span class="w"> </span><span class="nc">LocalUid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-bob&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="nc">PosNeg</span><span class="p">(</span><span class="nc">Counter</span><span class="p">(),</span><span class="w"> </span><span class="nc">Counter</span><span class="p">()).</span><span class="n">add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">merged</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">PosNeg</span><span class="p">(</span><span class="nc">Counter</span><span class="p">(),</span><span class="w"> </span><span class="nc">Counter</span><span class="p">())</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">deltaA</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">deltaB</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">merged</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span>
+</code></pre>
+<h2 id="Causal Time and Ordering-Based Data Types">Causal Time and Ordering-Based Data Types</h2>
+<p>A common way to allow any data to be replicated is to order values by when
+they were created.  The last write (largest timestamp) wins.
+</p>
+<p><code>CausalTime</code> is a causally consistent wall-time clock that provides a total
+order across replicas.  It has three components:
+</p>
+<ul><li><p><b>time</b>: wall-clock milliseconds
+</p></li><li><p><b>causal</b>: a monotonic counter for concurrent updates in the same ms
+</p></li><li><p><b>random</b>: a tie-breaker when all else is equal
+</p></li></ul>
+<p><code>LastWriterWins[A]</code> pairs a <code>CausalTime</code> with a payload <code>A</code>.  Its lattice
+picks the value with the later timestamp:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;LastWriterWins&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">lww1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LastWriterWins</span><span class="p">.</span><span class="n">now</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">lww2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">LastWriterWins</span><span class="p">.</span><span class="n">now</span><span class="p">(</span><span class="s">&quot;world&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1">// the later timestamp wins</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedLWW</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lww1</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">lww2</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedLWW</span><span class="p">.</span><span class="n">read</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;world&quot;</span><span class="p">)</span>
+</code></pre>
+<h2 id="common-replicated-data-types">Common Replicated Data Types</h2>
+<h3 id="GrowOnlyCounter">GrowOnlyCounter</h3>
+<p>An increment-only counter.  Internally it is a <b>map from replica id to count</b>.
+Each <code>inc()</code> or <code>add(n)</code> produces a delta.  Needs an identity so each
+replica can write to its own map key.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;GrowOnlyCounter&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">remoteId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-bob&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">gCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">GrowOnlyCounter</span><span class="p">.</span><span class="n">zero</span>
+
+<span class="w">    </span><span class="n">gCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gCounter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gCounter</span><span class="p">.</span><span class="n">inc</span><span class="p">()(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">gCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gCounter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gCounter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">gCounter</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">gCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gCounter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="nc">GrowOnlyCounter</span><span class="p">.</span><span class="n">zero</span><span class="p">.</span><span class="n">inc</span><span class="p">()(</span><span class="k">using</span><span class="w"> </span><span class="n">remoteId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">gCounter</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">)</span>
+</code></pre>
+<h3 id="PosNegCounter (PNCounter)">PosNegCounter (PNCounter)</h3>
+<p>A counter for both increment and decrement.  It is a <b>product</b> of two
+Counters (positive and negative), merged component-wise.  Needs an identity.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;PosNegCounter&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">pnCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">PosNegCounter</span><span class="p">.</span><span class="n">zero</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">pn1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pnCounter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">pn2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pnCounter</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedPN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pnCounter</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">pn1</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">pn2</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedPN</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<h3 id="GrowOnlySet (G-Set)">GrowOnlySet (G-Set)</h3>
+<p>A set that only supports adding elements.  Merge is set union.
+No identity needed: elements are self-contained.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;GrowOnlySet&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">GrowOnlySet</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gs1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gSet</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;apple&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gs2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gSet</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;banana&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedGS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gSet</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gs1</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gs2</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedGS</span><span class="p">.</span><span class="n">set</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;apple&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;banana&quot;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gs3</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">gSet</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;apple&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedGS2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mergedGS</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gs3</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedGS2</span><span class="p">.</span><span class="n">set</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;apple&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;banana&quot;</span><span class="p">))</span>
+</code></pre>
+<h3 id="GrowOnlyList (G-List)">GrowOnlyList (G-List)</h3>
+<p>An append-only list that also supports insertion at an index.
+Elements are ordered by causal timestamps.
+Identity is used to allocate fresh timestamps for inserted elements.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;GrowOnlyList&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">GrowOnlyList</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gl1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gList</span><span class="p">.</span><span class="n">insertAfter</span><span class="p">(</span><span class="nc">GrowOnlyList</span><span class="p">.</span><span class="n">headDot</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;a&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">gl2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gl1</span><span class="p">.</span><span class="n">insertAfter</span><span class="p">(</span><span class="nc">GrowOnlyList</span><span class="p">.</span><span class="n">headDot</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;b&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedGL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gList</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gl1</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">gl2</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedGL</span><span class="p">.</span><span class="n">toList</span><span class="p">,</span><span class="w"> </span><span class="nc">List</span><span class="p">(</span><span class="s">&quot;b&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;a&quot;</span><span class="p">))</span>
+</code></pre>
+<h3 id="ReplicatedSet">ReplicatedSet</h3>
+<p>A set supporting add and remove (Observed-Remove Set).
+Removals do not override concurrent adds: the add wins.
+Needs an identity to create fresh dots for added elements.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;ReplicatedSet&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">rSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ReplicatedSet</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+
+<span class="w">    </span><span class="n">rSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rSet</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rSet</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)(</span><span class="s">&quot;x&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">rSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rSet</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rSet</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)(</span><span class="s">&quot;y&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">rSet</span><span class="p">.</span><span class="n">elements</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;x&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;y&quot;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="n">rSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rSet</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rSet</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&quot;x&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">rSet</span><span class="p">.</span><span class="n">elements</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">))</span>
+</code></pre>
+<h3 id="EnableWinsFlag (EWFlag)">EnableWinsFlag (EWFlag)</h3>
+<p>A boolean flag where enable always wins over concurrent disable.
+Needs an identity to allocate fresh dots on enable.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;EnableWinsFlag&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">flag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">EnableWinsFlag</span><span class="p">.</span><span class="n">empty</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">flag</span><span class="p">.</span><span class="n">enable</span><span class="p">(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)()</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">enabled</span><span class="p">.</span><span class="n">read</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;enable should set flag&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">dEnabled</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">flag</span><span class="p">.</span><span class="n">disable</span><span class="p">()</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">dDisabled</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">flag</span><span class="p">.</span><span class="n">enable</span><span class="p">(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)()</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedFlag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dEnabled</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">dDisabled</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">mergedFlag</span><span class="p">.</span><span class="n">read</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;enable should win over disable&quot;</span><span class="p">)</span>
+</code></pre>
+<h3 id="MultiVersionRegister (MV-Register)">MultiVersionRegister (MV-Register)</h3>
+<p>A register that holds at most one value without concurrent writes,
+or all concurrently written values as a set.
+Needs an identity to create fresh dots for written values.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;MultiVersionRegister&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">remoteId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-bob&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mvReg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">MultiVersionRegister</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">afterFirst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mvReg</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">mvReg</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;first&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">afterFirst</span><span class="p">.</span><span class="n">read</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;first&quot;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">afterConcurrent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">afterFirst</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">mvReg</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;second&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">remoteId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">afterConcurrent</span><span class="p">.</span><span class="n">read</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;first&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;second&quot;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">afterMerge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">afterConcurrent</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">afterConcurrent</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;third&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">afterMerge</span><span class="p">.</span><span class="n">read</span><span class="p">,</span><span class="w"> </span><span class="nc">Set</span><span class="p">(</span><span class="s">&quot;third&quot;</span><span class="p">))</span>
+</code></pre>
+<h3 id="ObserveRemoveMap (OR-Map)">ObserveRemoveMap (OR-Map)</h3>
+<p>A map with key-value semantics.  Removals are tracked via dots and do not
+override concurrent updates.  Needs an identity for update operations.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;ObserveRemoveMap&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="k">given</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Lattice</span><span class="p">.</span><span class="n">assertEquals</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">orMap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ObserveRemoveMap</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">String</span><span class="p">,</span><span class="w"> </span><span class="nc">String</span><span class="p">]</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">afterM1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orMap</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">orMap</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="s">&quot;key1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;value1&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">afterM1</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;key1&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="s">&quot;value1&quot;</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;should have key1&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mRemove</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="n">afterM1</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&quot;key1&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mAdd</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="n">afterM1</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="s">&quot;key1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;value2&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">afterConcurrent2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mRemove</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">mAdd</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">afterConcurrent2</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;key1&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">Some</span><span class="p">(</span><span class="s">&quot;value2&quot;</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;add should win over remove&quot;</span><span class="p">)</span>
+</code></pre>
+<h3 id="ReplicatedList (RGA)">ReplicatedList (RGA)</h3>
+<p>A replicated list with insert, update, and delete.
+Uses a directed graph of dots for causal ordering.
+Needs an identity for all modifying operations.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;ReplicatedList&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="n">rList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ReplicatedList</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span>
+
+<span class="w">    </span><span class="n">rList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rList</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rList</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">rList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rList</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rList</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;b&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">rList</span><span class="p">.</span><span class="n">toList</span><span class="p">,</span><span class="w"> </span><span class="nc">List</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;b&quot;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="n">rList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rList</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rList</span><span class="p">.</span><span class="n">insertAt</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;c&quot;</span><span class="p">)(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">rList</span><span class="p">.</span><span class="n">toList</span><span class="p">,</span><span class="w"> </span><span class="nc">List</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;c&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;b&quot;</span><span class="p">))</span>
+
+<span class="w">    </span><span class="n">rList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rList</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">rList</span><span class="p">.</span><span class="n">delete</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">rList</span><span class="p">.</span><span class="n">toList</span><span class="p">,</span><span class="w"> </span><span class="nc">List</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;b&quot;</span><span class="p">))</span>
+</code></pre>
+<h3 id="Epoch Wrapper">Epoch Wrapper</h3>
+<p><code>Epoch[E]</code> adds a monotonic counter to any datatype.
+A higher epoch wins over a lower epoch.  Useful for wrapping types with weak
+merge semantics.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">test</span><span class="p">(</span><span class="s">&quot;Epoch&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">localId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdts</span><span class="p">.</span><span class="n">base</span><span class="p">.</span><span class="nc">LocalUid</span><span class="p">.</span><span class="n">predefined</span><span class="p">(</span><span class="s">&quot;replica-alice&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">epoch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Epoch</span><span class="p">.</span><span class="n">empty</span><span class="p">[</span><span class="nc">GrowOnlyCounter</span><span class="p">]</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">ep1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">epoch</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">epoch</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">inc</span><span class="p">()(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">))</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">ep2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">epoch</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">epoch</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">inc</span><span class="p">()(</span><span class="k">using</span><span class="w"> </span><span class="n">localId</span><span class="p">))</span>
+
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="n">mergedEpoch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">epoch</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">ep1</span><span class="w"> </span><span class="n">`merge`</span><span class="w"> </span><span class="n">ep2</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">mergedEpoch</span><span class="p">.</span><span class="n">read</span><span class="p">.</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<h2 id="The End">The End</h2>
+<p>Don’t worry about the closing brace :-)
+</p>
+<pre class="highlight"><code class="language-scala"><span class="p">}</span>
+</code></pre>
+	</main><svg display="none">
+		<symbol id="external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+			stroke-linecap="round" stroke-linejoin="round">
+			<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+			<polyline points="15 3 21 3 21 9"></polyline>
+			<line x1="10" y1="14" x2="21" y2="3"></line>
+		</symbol>
+	</svg>
+</body>
+
+</html>

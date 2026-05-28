@@ -1,0 +1,1403 @@
+:root {
+	--color-subdued: oklch(60% 0.0000 0);
+
+	--theme-border-radius: 5px;
+	--theme-border: 1px solid var(--theme-color);
+
+	--theme-plate-color: oklch(50% 0 0 / 0.1);
+
+	/* a4 paper has 21cm, subtract 1.5 inch for print margins gives 171.9mm */
+	--main-content-width: 17cm;
+	--header-oversize: 5cm;
+	--sidebar-max-width: 20em;
+
+	--small-gap: 0.5em;
+	--normal-gap: 1em;
+
+	--color-marker-red: #E91E63;
+	--color-marker-green: #60C689;
+
+	/* allow browser to select a color scheme based on user preferences */
+	color-scheme: light dark;
+
+	--light-theme-color: oklch(66% 0.2 300 / 66%);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--theme-color: oklch(66% 0.2 300);
+	}
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		--theme-color: oklch(40% 0.2 300);
+	}
+}
+
+body {
+	/* margins are handled for main and sidebar individually */
+	margin: 0;
+	/* that should be 18px for the default of 16px font, but scale with user defined font size */
+	font-size: 1.125rem;
+
+	/* enable hyphenation everywhere */
+	/* this is required for the main text as that has justified content, */
+	/* but the navigation also profits from better use of space */
+	hyphens: auto;
+
+	/* Sometimes, content has way too long "words".
+	 * These would otherwise break layout and introduce scroll.
+	 * Breaking them is not great, but still better than the alternative. */
+	overflow-wrap: break-word;
+}
+
+
+
+/**************************************************************/
+/* main grid layout                                           */
+/**************************************************************/
+
+main {
+	/* this may be necessary for compatibility in some browsers */
+	display: block;
+}
+
+@media screen {
+	main {
+		/* allow overscrolling past the end of the content */
+		margin-bottom: calc(100vh - 4em);
+
+		/* use grid to have text centered, but allow oversized image content */
+		display: grid;
+		/* the minmax(0, 1fr) ensures that the margins are never larger than 1fr,
+		   but can shrink arbitrarily. Plain 1fr is equal to minmax(auto, 1fr)
+		   causing the thing to widen in case the content is large,
+		   as could happen with some images. */
+		grid-template-columns:
+			[image-start]   minmax(var(--normal-gap), 2fr)
+			[header-start]  minmax(0, 1fr)
+			[content-start] minmax(0, var(--main-content-width))
+			[content-end]   minmax(0, 1fr)
+			[header-end]    minmax(var(--normal-gap), 2fr)
+			[image-end];
+
+		grid-row-gap: var(--small-gap);
+	}
+
+	main>* {
+		grid-column: content-start / content-end;
+		/* usually margins should collapse, but because of grid they dont. */
+		/* thus we replace margins by grid gaps */
+		margin: 0;
+	}
+
+	/* oversized elements */
+	main> :is(img, figure, video, pre) {
+		/* oversized figures and images */
+		grid-column: image-start / image-end;
+
+		/* justify instead of margins to center elements in grid.
+		 * safe aligns left in case of overflow (moving overflow to the right).
+		 * unsafe would centered even if that causes overflow into the left,
+		 * which does not even produce a scrollbar */
+		justify-self: safe center;
+	}
+}
+
+
+/******************************************************************************/
+/* print specific stuff                                                       */
+/******************************************************************************/
+@media print {
+	main>* {
+		margin-left: auto;
+		margin-right: auto;
+		display: block;
+		max-width: var(--main-content-width) !important;
+	}
+
+	/* somewhat sane for 27cm A4 height */
+	img {
+		max-height: 24cm !important;
+	}
+}
+
+@page {
+	size: A4;
+
+	/* add page number */
+	@bottom-right {
+		content: counter(page);
+	}
+}
+
+/* this is for aggregate pages */
+h1 {
+	break-before: page;
+}
+h1, h2, h3, h4, h5, h6, .metadata {
+	break-after: avoid;
+}
+
+/******************************************************************************/
+/* general styling of elements follow, these should not affect overall layout */
+/******************************************************************************/
+
+main> :is(h1, h2, h3, h4, h5, h6, hr) {
+	/* we disabled all margins because they do not fold in grids */
+	/* for headers, we add padding instead, which works nicer with jumping to IDs */
+	padding-top: 1rem;
+	margin-bottom: 0.5rem;
+}
+
+h1,
+h2,
+hr {
+	/* hr is basically a header without text */
+	border: none;
+
+	/* Center and try to keep lines of even length */
+	text-align: center;
+	/* Might also try pretty, which tries to prevent single words on the last line, but seems unsupported in firefox */
+	text-wrap: balance;
+
+	/* safe aligns left in case of overflow */
+	justify-self: safe center;
+
+	border-bottom: var(--theme-border);
+	/* limit the width to either the grid element (scaling down for smaller screens) */
+	/* or to something a bit larger than the main content (limiting oversize for large screens) */
+	grid-column: header-start / header-end;
+	width: min(100%, calc(var(--main-content-width) + var(--header-oversize)));
+}
+
+h3,
+h4,
+h5,
+h6 {
+	/* underline in similar style to the border of larger headlines.
+	 * this helps a lot with distinguishing headers from just bold text. */
+	text-decoration: underline var(--theme-color);
+	text-underline-offset: 3px;
+}
+
+/* headers counting */
+.numbered-sections :is(main, aside) {
+	counter-reset: section subsection;
+}
+
+.numbered-sections :is(main h2, aside>nav>ul>li.h2) {
+	counter-increment: section;
+	counter-reset: subsection;
+}
+
+.numbered-sections :is(main h3, aside>nav>ul>li.h3) {
+	counter-increment: subsection;
+}
+
+.numbered-sections :is(main h2, aside>nav>ul>li.h2):before {
+	content: counter(section) ". ";
+}
+
+.numbered-sections :is(main h2~h3, aside>nav>ul>li.h2~li.h3):before {
+	content: counter(section) "." counter(subsection) ". ";
+}
+
+svg.icon {
+	vertical-align: bottom;
+	width: 0.85em;
+	height: 0.85em;
+	padding-bottom: 0.15em;
+}
+
+
+.metadata {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	overflow-wrap: anywhere;
+	color: var(--color-subdued);
+}
+
+time {
+	white-space: pre;
+	/* double monospace to override firefox default font size to use same as other fonts */
+	font-family: monospace, monospace;
+}
+
+/* basic text styling */
+
+main p {
+	/* set line-height to roughly 27px but relative to font size, works better with small print fonts */
+	line-height: 1.5;
+	/* flow text width is limited to content width, even when nested inside something else */
+	max-width: var(--main-content-width);
+}
+
+main.hardwrap p {
+	/* display linebreaks */
+	white-space: pre-line;
+}
+
+/* without the lang attribute set, hyphenation does not work, and then justify looks bad. */
+html[lang] main.justify p {
+	text-align: justify;
+}
+
+a {
+	text-decoration: none;
+	color: var(--theme-color);
+}
+
+a:hover {
+	filter: brightness(75%);
+}
+
+/* containers of other elements */
+
+figure,
+blockquote,
+pre {
+	background-color: var(--theme-plate-color);
+	border-radius: var(--theme-border-radius);
+	padding: var(--normal-gap);
+}
+
+figcaption>p {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+/* make content of list items hug each other, except for adjacent paragraphs */
+li>* {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+li>p+p {
+	margin-top: var(--small-gap);
+}
+
+/* remove top&bottom margins of nested elements */
+:is(figure, blockquote, pre, dd)> :first-child {
+	margin-top: 0;
+}
+
+:is(figure, blockquote, pre, dd)> :last-child {
+	margin-bottom: 0;
+}
+
+/* add margin to inner elements */
+:is(figure, blockquote, pre, dd)> :not(:first-child) {
+	margin-top: var(--small-gap);
+}
+
+/* code blocks */
+
+pre {
+	white-space: pre-wrap;
+	tab-size: 4;
+	/* we only want code in code font (default is monospace) */
+	font-family: inherit;
+	/* restrict pre-size to the outer container to make code blocks inside break aggressively */
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+main>pre {
+	/* min-width must not exceed container to prevent overflow on narrow screens */
+	min-width: min(100%, var(--main-content-width));
+}
+
+code {
+	hyphens: none;
+}
+
+/* Inline code */
+:not(pre)>code {
+	background-color: var(--theme-plate-color);
+	padding: calc(var(--normal-gap) / 10);
+	border-radius: var(--theme-border-radius);
+}
+
+/* individual element styles */
+
+img,
+video {
+	border-radius: var(--theme-border-radius);
+
+	/* display: block; */
+	height: auto;
+	max-width: 100%;
+}
+
+:is(img, video):not(.sizing-vertical) {
+	max-height: 90vh;
+}
+
+:is(img, video).sizing-text {
+	max-width: min(100%, var(--main-content-width));
+}
+
+:is(img, video).sizing-max {
+	max-width: initial;
+	width: 100%;
+}
+
+figure:has(.sizing-max) {
+	max-width: initial;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+img.lightbg {
+	background-color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+	:is(img, video).autoinvert {
+		filter: invert(100%) hue-rotate(180deg);
+	}
+}
+
+/* center contents of a figure, in particular the caption */
+figure {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.rule {
+	font-variant: small-caps;
+}
+
+dt {
+	font-weight: bold;
+}
+
+ins {
+	text-decoration: none;
+	color: var(--color-marker-green);
+}
+
+del {
+	color: var(--color-marker-red);
+}
+
+.bibliography li {
+	margin-top: var(--normal-gap);
+}
+
+.bibentry p {
+	/* reset line height to smaller default */
+	line-height: initial;
+}
+
+.bibentry .container {
+	font-style: italic;
+}
+
+input.footnote:not(:checked)+span.footnote {
+	display: none;
+}
+
+input.footnote:checked+span.footnote {
+	text-decoration: underline;
+}
+
+
+/**************************************************************/
+/* index page styling */
+/**************************************************************/
+
+article {
+	display: flex;
+}
+
+time,
+.tags {
+	color: var(--color-subdued);
+}
+
+
+@media screen {
+	article {
+		flex-direction: column;
+	}
+}
+
+@media screen and (min-width: 600px) {
+	article {
+		flex-direction: row;
+	}
+	article>.tags {
+		text-align: right;
+	}
+}
+
+/* space between the items of the article */
+/* while this is part of the html, its eaten by the flex */
+article>* {
+	margin-right: var(--small-gap);
+}
+
+/* make the title get most of the space, */
+/* to cause the tags to be right aligned */
+article>a {
+	flex: 1;
+}
+
+
+/**************************************************************/
+/* Sidebar design */
+/**************************************************************/
+@media screen {
+	body {
+		display: flex;
+	}
+}
+
+@media print {
+	body>aside {
+		display: none;
+	}
+}
+
+/* body has an optional aside and a main */
+/* if the aside exists, it is pinned on the full height, */
+/* unless a button is pressed to hide it */
+
+body>main {
+	flex: 1 1 var(--main-content-width);
+}
+
+body>aside {
+	/* no growth beyond content size, shrink aggressively, try to target content size if there is enough space */
+	flex: 0 10 fit-content;
+	/* max width, because sidebar with very long header names does not look great */
+	max-width: var(--sidebar-max-width);
+}
+
+body>aside>label {
+	position: fixed;
+	bottom: 0;
+	cursor: pointer;
+	/* fixed pixel size to correspond to designed image size of the svg icons */
+	width: 24px;
+	height: 24px;
+	padding: var(--small-gap);
+	z-index: 1;
+}
+
+/* the label is marked as hidden in the HTML, */
+/* because it makes no sense to show it if the stylesheet is not present */
+/* we use this high specificity selector to override the hidden attribute */
+body>aside>label[hidden] {
+	display: initial;
+}
+
+body>aside>label>svg {
+	width: 100%;
+	height: 100%;
+}
+
+body>aside>nav {
+	/* sticky at top 0 (original position of the element) essentially causes the */
+	/* element to be fixed in place BUT it keeps occupying space in the layout */
+	position: sticky;
+	top: 0;
+
+	/* box sizing together with height makes it occupy the full height pixel perfect */
+	/* except for some broken mobile environments like the android web view */
+	box-sizing: border-box;
+	height: 100vh;
+	height: 100dvh;
+
+	/* always show scrollbar to reserve space */
+	overflow-y: scroll;
+	scrollbar-width: thin;
+	scrollbar-color: var(--light-theme-color) hsla(0, 0%, 0%, 0);
+
+	/* make things also not hug the screen */
+	padding-left: var(--small-gap);
+	padding-top: var(--small-gap);
+	/* for the scroll bar; firefox desktop does assign space for the scrollbar by itself, but mobile browsers often do not */
+	padding-right: var(--small-gap);
+	/* space for the bottom label */
+	padding-bottom: calc(var(--normal-gap) + 24px);
+
+	border-right: var(--theme-border);
+}
+
+body>aside>nav>ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+body>aside>nav>ul>li { margin-top: var(--small-gap);}
+
+body>aside>nav>ul>li.h2 { margin-left: calc(1*var(--small-gap)); }
+body>aside>nav>ul>li.h3 { margin-left: calc(2*var(--small-gap)); }
+body>aside>nav>ul>li.h4 { margin-left: calc(3*var(--small-gap)); }
+
+
+
+
+/* remove sidebar nav content depending on screen size and clicked status … */
+#sidebar-switch:checked~nav {
+	display: none;
+}
+
+#sidebar-switch~label .close {
+	display: block;
+}
+
+#sidebar-switch~label .menu {
+	display: none;
+}
+
+#sidebar-switch:checked~label .close {
+	display: none;
+}
+
+#sidebar-switch:checked~label .menu {
+	display: block;
+}
+
+/* inverted logic for small screens */
+@media (max-width: 600px) {
+	#sidebar-switch~nav {
+		display: none;
+	}
+
+	#sidebar-switch:checked~nav {
+		display: block;
+	}
+
+	#sidebar-switch~label .close {
+		display: none;
+	}
+
+	#sidebar-switch~label .menu {
+		display: block;
+	}
+
+	#sidebar-switch:checked~label .close {
+		display: block;
+	}
+
+	#sidebar-switch:checked~label .menu {
+		display: none;
+	}
+}
+
+/**************************************************************/
+/* external and technical stuff */
+/**************************************************************/
+
+@keyframes fade-target {
+
+	0%,
+	30% {
+		background: var(--light-theme-color)
+	}
+}
+
+*:target {
+	animation: 1s ease 0s 1 fade-target;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*:target {
+		animation: none;
+	}
+}
+
+
+/** pygmentize color schemes, see https://pygments.org/docs/styles/ */
+@media (prefers-color-scheme: light) {
+	td.linenos .normal {
+		color: inherit;
+		background-color: transparent;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	span.linenos {
+		color: inherit;
+		background-color: transparent;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	td.linenos .special {
+		color: #000000;
+		background-color: #ffffc0;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	span.linenos.special {
+		color: #000000;
+		background-color: #ffffc0;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	.highlight .hll {
+		background-color: #e6e3c3
+	}
+
+	.highlight {
+		background: #fafafa;
+		color: #272822
+	}
+
+	.highlight .c {
+		color: #75715e
+	}
+
+	/* Comment */
+	.highlight .err {
+		color: #960050;
+		background-color: #1e0010
+	}
+
+	/* Error */
+	.highlight .k {
+		color: #00a8c8
+	}
+
+	/* Keyword */
+	.highlight .l {
+		color: #ae81ff
+	}
+
+	/* Literal */
+	.highlight .n {
+		color: #111111
+	}
+
+	/* Name */
+	.highlight .o {
+		color: #f92672
+	}
+
+	/* Operator */
+	.highlight .p {
+		color: #111111
+	}
+
+	/* Punctuation */
+	.highlight .ch {
+		color: #75715e
+	}
+
+	/* Comment.Hashbang */
+	.highlight .cm {
+		color: #75715e
+	}
+
+	/* Comment.Multiline */
+	.highlight .cp {
+		color: #75715e
+	}
+
+	/* Comment.Preproc */
+	.highlight .cpf {
+		color: #75715e
+	}
+
+	/* Comment.PreprocFile */
+	.highlight .c1 {
+		color: #75715e
+	}
+
+	/* Comment.Single */
+	.highlight .cs {
+		color: #75715e
+	}
+
+	/* Comment.Special */
+	.highlight .ge {
+		font-style: italic
+	}
+
+	/* Generic.Emph */
+	.highlight .gs {
+		font-weight: bold
+	}
+
+	/* Generic.Strong */
+	.highlight .kc {
+		color: #00a8c8
+	}
+
+	/* Keyword.Constant */
+	.highlight .kd {
+		color: #00a8c8
+	}
+
+	/* Keyword.Declaration */
+	.highlight .kn {
+		color: #f92672
+	}
+
+	/* Keyword.Namespace */
+	.highlight .kp {
+		color: #00a8c8
+	}
+
+	/* Keyword.Pseudo */
+	.highlight .kr {
+		color: #00a8c8
+	}
+
+	/* Keyword.Reserved */
+	.highlight .kt {
+		color: #00a8c8
+	}
+
+	/* Keyword.Type */
+	.highlight .ld {
+		color: #d88200
+	}
+
+	/* Literal.Date */
+	.highlight .m {
+		color: #ae81ff
+	}
+
+	/* Literal.Number */
+	.highlight .s {
+		color: #d88200
+	}
+
+	/* Literal.String */
+	.highlight .na {
+		color: #75af00
+	}
+
+	/* Name.Attribute */
+	.highlight .nb {
+		color: #111111
+	}
+
+	/* Name.Builtin */
+	.highlight .nc {
+		color: #75af00
+	}
+
+	/* Name.Class */
+	.highlight .no {
+		color: #00a8c8
+	}
+
+	/* Name.Constant */
+	.highlight .nd {
+		color: #75af00
+	}
+
+	/* Name.Decorator */
+	.highlight .ni {
+		color: #111111
+	}
+
+	/* Name.Entity */
+	.highlight .ne {
+		color: #75af00
+	}
+
+	/* Name.Exception */
+	.highlight .nf {
+		color: #75af00
+	}
+
+	/* Name.Function */
+	.highlight .nl {
+		color: #111111
+	}
+
+	/* Name.Label */
+	.highlight .nn {
+		color: #111111
+	}
+
+	/* Name.Namespace */
+	.highlight .nx {
+		color: #75af00
+	}
+
+	/* Name.Other */
+	.highlight .py {
+		color: #111111
+	}
+
+	/* Name.Property */
+	.highlight .nt {
+		color: #f92672
+	}
+
+	/* Name.Tag */
+	.highlight .nv {
+		color: #111111
+	}
+
+	/* Name.Variable */
+	.highlight .ow {
+		color: #f92672
+	}
+
+	/* Operator.Word */
+	.highlight .w {
+		color: #272822
+	}
+
+	/* Text.Whitespace */
+	.highlight .mb {
+		color: #ae81ff
+	}
+
+	/* Literal.Number.Bin */
+	.highlight .mf {
+		color: #ae81ff
+	}
+
+	/* Literal.Number.Float */
+	.highlight .mh {
+		color: #ae81ff
+	}
+
+	/* Literal.Number.Hex */
+	.highlight .mi {
+		color: #ae81ff
+	}
+
+	/* Literal.Number.Integer */
+	.highlight .mo {
+		color: #ae81ff
+	}
+
+	/* Literal.Number.Oct */
+	.highlight .sb {
+		color: #d88200
+	}
+
+	/* Literal.String.Backtick */
+	.highlight .sc {
+		color: #d88200
+	}
+
+	/* Literal.String.Char */
+	.highlight .sd {
+		color: #d88200
+	}
+
+	/* Literal.String.Doc */
+	.highlight .s2 {
+		color: #d88200
+	}
+
+	/* Literal.String.Double */
+	.highlight .se {
+		color: #8045FF
+	}
+
+	/* Literal.String.Escape */
+	.highlight .sh {
+		color: #d88200
+	}
+
+	/* Literal.String.Heredoc */
+	.highlight .si {
+		color: #d88200
+	}
+
+	/* Literal.String.Interpol */
+	.highlight .sx {
+		color: #d88200
+	}
+
+	/* Literal.String.Other */
+	.highlight .sr {
+		color: #d88200
+	}
+
+	/* Literal.String.Regex */
+	.highlight .s1 {
+		color: #d88200
+	}
+
+	/* Literal.String.Single */
+	.highlight .ss {
+		color: #d88200
+	}
+
+	/* Literal.String.Symbol */
+	.highlight .bp {
+		color: #111111
+	}
+
+	/* Name.Builtin.Pseudo */
+	.highlight .vc {
+		color: #111111
+	}
+
+	/* Name.Variable.Class */
+	.highlight .vg {
+		color: #111111
+	}
+
+	/* Name.Variable.Global */
+	.highlight .vi {
+		color: #111111
+	}
+
+	/* Name.Variable.Instance */
+	.highlight .il {
+		color: #ae81ff
+	}
+
+	/* Literal.Number.Integer.Long */
+
+}
+
+@media (prefers-color-scheme: dark) {
+
+	/* pygmentize scheme */
+	td.linenos .normal {
+		color: inherit;
+		background-color: transparent;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	span.linenos {
+		color: inherit;
+		background-color: transparent;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	td.linenos .special {
+		color: #000000;
+		background-color: #ffffc0;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	span.linenos.special {
+		color: #000000;
+		background-color: #ffffc0;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+
+	.highlight .hll {
+		background-color: #49483e
+	}
+
+	.highlight {
+		background: #272822;
+		color: #F8F8F2
+	}
+
+	.highlight .c {
+		color: #959077
+	}
+
+	/* Comment */
+	.highlight .err {
+		color: #ED007E;
+		background-color: #1E0010
+	}
+
+	/* Error */
+	.highlight .esc {
+		color: #F8F8F2
+	}
+
+	/* Escape */
+	.highlight .g {
+		color: #F8F8F2
+	}
+
+	/* Generic */
+	.highlight .k {
+		color: #66D9EF
+	}
+
+	/* Keyword */
+	.highlight .l {
+		color: #AE81FF
+	}
+
+	/* Literal */
+	.highlight .n {
+		color: #F8F8F2
+	}
+
+	/* Name */
+	.highlight .o {
+		color: #FF4689
+	}
+
+	/* Operator */
+	.highlight .x {
+		color: #F8F8F2
+	}
+
+	/* Other */
+	.highlight .p {
+		color: #F8F8F2
+	}
+
+	/* Punctuation */
+	.highlight .ch {
+		color: #959077
+	}
+
+	/* Comment.Hashbang */
+	.highlight .cm {
+		color: #959077
+	}
+
+	/* Comment.Multiline */
+	.highlight .cp {
+		color: #959077
+	}
+
+	/* Comment.Preproc */
+	.highlight .cpf {
+		color: #959077
+	}
+
+	/* Comment.PreprocFile */
+	.highlight .c1 {
+		color: #959077
+	}
+
+	/* Comment.Single */
+	.highlight .cs {
+		color: #959077
+	}
+
+	/* Comment.Special */
+	.highlight .gd {
+		color: #FF4689
+	}
+
+	/* Generic.Deleted */
+	.highlight .ge {
+		color: #F8F8F2;
+		font-style: italic
+	}
+
+	/* Generic.Emph */
+	.highlight .ges {
+		color: #F8F8F2;
+		font-weight: bold;
+		font-style: italic
+	}
+
+	/* Generic.EmphStrong */
+	.highlight .gr {
+		color: #F8F8F2
+	}
+
+	/* Generic.Error */
+	.highlight .gh {
+		color: #F8F8F2
+	}
+
+	/* Generic.Heading */
+	.highlight .gi {
+		color: #A6E22E
+	}
+
+	/* Generic.Inserted */
+	.highlight .go {
+		color: #66D9EF
+	}
+
+	/* Generic.Output */
+	.highlight .gp {
+		color: #FF4689;
+		font-weight: bold
+	}
+
+	/* Generic.Prompt */
+	.highlight .gs {
+		color: #F8F8F2;
+		font-weight: bold
+	}
+
+	/* Generic.Strong */
+	.highlight .gu {
+		color: #959077
+	}
+
+	/* Generic.Subheading */
+	.highlight .gt {
+		color: #F8F8F2
+	}
+
+	/* Generic.Traceback */
+	.highlight .kc {
+		color: #66D9EF
+	}
+
+	/* Keyword.Constant */
+	.highlight .kd {
+		color: #66D9EF
+	}
+
+	/* Keyword.Declaration */
+	.highlight .kn {
+		color: #FF4689
+	}
+
+	/* Keyword.Namespace */
+	.highlight .kp {
+		color: #66D9EF
+	}
+
+	/* Keyword.Pseudo */
+	.highlight .kr {
+		color: #66D9EF
+	}
+
+	/* Keyword.Reserved */
+	.highlight .kt {
+		color: #66D9EF
+	}
+
+	/* Keyword.Type */
+	.highlight .ld {
+		color: #E6DB74
+	}
+
+	/* Literal.Date */
+	.highlight .m {
+		color: #AE81FF
+	}
+
+	/* Literal.Number */
+	.highlight .s {
+		color: #E6DB74
+	}
+
+	/* Literal.String */
+	.highlight .na {
+		color: #A6E22E
+	}
+
+	/* Name.Attribute */
+	.highlight .nb {
+		color: #F8F8F2
+	}
+
+	/* Name.Builtin */
+	.highlight .nc {
+		color: #A6E22E
+	}
+
+	/* Name.Class */
+	.highlight .no {
+		color: #66D9EF
+	}
+
+	/* Name.Constant */
+	.highlight .nd {
+		color: #A6E22E
+	}
+
+	/* Name.Decorator */
+	.highlight .ni {
+		color: #F8F8F2
+	}
+
+	/* Name.Entity */
+	.highlight .ne {
+		color: #A6E22E
+	}
+
+	/* Name.Exception */
+	.highlight .nf {
+		color: #A6E22E
+	}
+
+	/* Name.Function */
+	.highlight .nl {
+		color: #F8F8F2
+	}
+
+	/* Name.Label */
+	.highlight .nn {
+		color: #F8F8F2
+	}
+
+	/* Name.Namespace */
+	.highlight .nx {
+		color: #A6E22E
+	}
+
+	/* Name.Other */
+	.highlight .py {
+		color: #F8F8F2
+	}
+
+	/* Name.Property */
+	.highlight .nt {
+		color: #FF4689
+	}
+
+	/* Name.Tag */
+	.highlight .nv {
+		color: #F8F8F2
+	}
+
+	/* Name.Variable */
+	.highlight .ow {
+		color: #FF4689
+	}
+
+	/* Operator.Word */
+	.highlight .pm {
+		color: #F8F8F2
+	}
+
+	/* Punctuation.Marker */
+	.highlight .w {
+		color: #F8F8F2
+	}
+
+	/* Text.Whitespace */
+	.highlight .mb {
+		color: #AE81FF
+	}
+
+	/* Literal.Number.Bin */
+	.highlight .mf {
+		color: #AE81FF
+	}
+
+	/* Literal.Number.Float */
+	.highlight .mh {
+		color: #AE81FF
+	}
+
+	/* Literal.Number.Hex */
+	.highlight .mi {
+		color: #AE81FF
+	}
+
+	/* Literal.Number.Integer */
+	.highlight .mo {
+		color: #AE81FF
+	}
+
+	/* Literal.Number.Oct */
+	.highlight .sa {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Affix */
+	.highlight .sb {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Backtick */
+	.highlight .sc {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Char */
+	.highlight .dl {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Delimiter */
+	.highlight .sd {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Doc */
+	.highlight .s2 {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Double */
+	.highlight .se {
+		color: #AE81FF
+	}
+
+	/* Literal.String.Escape */
+	.highlight .sh {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Heredoc */
+	.highlight .si {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Interpol */
+	.highlight .sx {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Other */
+	.highlight .sr {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Regex */
+	.highlight .s1 {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Single */
+	.highlight .ss {
+		color: #E6DB74
+	}
+
+	/* Literal.String.Symbol */
+	.highlight .bp {
+		color: #F8F8F2
+	}
+
+	/* Name.Builtin.Pseudo */
+	.highlight .fm {
+		color: #A6E22E
+	}
+
+	/* Name.Function.Magic */
+	.highlight .vc {
+		color: #F8F8F2
+	}
+
+	/* Name.Variable.Class */
+	.highlight .vg {
+		color: #F8F8F2
+	}
+
+	/* Name.Variable.Global */
+	.highlight .vi {
+		color: #F8F8F2
+	}
+
+	/* Name.Variable.Instance */
+	.highlight .vm {
+		color: #F8F8F2
+	}
+
+	/* Name.Variable.Magic */
+	.highlight .il {
+		color: #AE81FF
+	}
+
+	/* Literal.Number.Integer.Long */
+}

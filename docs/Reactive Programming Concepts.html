@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1">
+	<link href="scitzen.css" rel="stylesheet" type="text/css">
+	<title>Reactive Programming Concepts</title>
+</head>
+
+<body class="numbered-sections">
+
+<aside><input type="checkbox" id="sidebar-switch" hidden><label for="sidebar-switch" hidden><svg viewBox="0 0 24 24"
+			fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+			class="menu">
+			<path d="M3 12 H21 M3 6 H21 M3 18 H21" />
+		</svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+			stroke-linejoin="round" class="close">
+			<path d="M18 6 L6 18 M6 6 L18 18" />
+		</svg></label>
+	<nav><ul><li class="h1"><a href="#Reactive Programming Concepts">Reactive Programming Concepts</a></li><li class="h2"><a href="#setup">Setup</a></li><li class="h2"><a href="#the-basics">The Basics</a></li><li class="h3"><a href="#Signals">Signals</a></li><li class="h3"><a href="#Evt, fire">Evt, fire</a></li><li class="h3"><a href="#Now, observe, remove">Now, observe, remove</a></li><li class="h3"><a href="#Example">Example</a></li><li class="h2"><a href="#common-combinators">Common Combinators</a></li><li class="h3"><a href="#Latest, Changed">Latest, Changed</a></li><li class="h3"><a href="#Map">Map</a></li><li class="h3"><a href="#Fold">Fold</a></li><li class="h3"><a href="#Or, And">Or, And</a></li><li class="h3"><a href="#Count Signal">Count Signal</a></li><li class="h3"><a href="#Last(n) Signal">Last(n) Signal</a></li><li class="h3"><a href="#List Signal">List Signal</a></li><li class="h3"><a href="#LatestOption Signal">LatestOption Signal</a></li><li class="h3"><a href="#Fold matcher Signal">Fold matcher Signal</a></li><li class="h3"><a href="#Iterate Signal">Iterate Signal</a></li><li class="h3"><a href="#Change Event">Change Event</a></li><li class="h3"><a href="#ChangedTo Event">ChangedTo Event</a></li><li class="h3"><a href="#Flatten">Flatten</a></li><li class="h2"><a href="#common-pitfalls">Common Pitfalls</a></li><li class="h3"><a href="#Accessing values in signal expressions">Accessing values in signal expressions</a></li><li class="h3"><a href="#Attempting to assign a signal">Attempting to assign a signal</a></li><li class="h3"><a href="#Side effects in signal expressions">Side effects in signal expressions</a></li><li class="h3"><a href="#Cyclic dependencies">Cyclic dependencies</a></li><li class="h3"><a href="#Objects and mutability">Objects and mutability</a></li><li class="h3"><a href="#Functions of reactive values">Functions of reactive values</a></li><li class="h2"><a href="#related-work">Essential Related Work</a></li><li class="h2"><a href="#Acknowledgments">Acknowledgments</a></li><li class="h1"><a href="#bibliography (gen)">Bibliography</a></li></ul></nav>
+</aside>
+	<main class=" justify">
+		<h1 id="Reactive Programming Concepts">Reactive Programming Concepts</h1>
+<p>The manual serves as an introduction of the concepts in reactive programming.
+The full API is covered in the scaladoc especially for <code>Signals</code> and <code>Events</code>.
+More details can be found in <span class="citations">(<a href="#DBLP:conf/aosd/SalvaneschiHM14">Salvaneschi2014</a>)</span> and <span class="citations">(<a href="#DBLP:conf/aosd/GasiunasSMNN11">Gasiunas2011</a>)</span>
+The manual introduces the concepts related to functional reactive programming and event-based programming from a practical perspective.
+</p>
+<p>Also see the introductory video lecture at <a href="https://www.youtube.com/watch?v=iRh7UiclElk">https://www.youtube.com/watch?v=iRh7UiclElk</a> that gives a step by step introduction.
+</p>
+<ul><li><p>The chapter <a href="#the-basics">The Basics</a> covers how to get started and integrate reactives into a program, and
+</p></li><li><p>The chapter <a href="#common-combinators">Common Combinators</a> presents the most common features for composing signals and events.
+</p></li><li><p>If you encounter any problems, check out the chapter <a href="#common-pitfalls">Common Pitfalls</a>.
+</p></li><li><p>The readers interested in a more general presentation of these topics can find the essential references in the section <a href="#related-work">Essential Related Work</a>.
+</p></li></ul>
+
+<h2 id="setup">Setup</h2>
+<p>Create a <code>build.sbt</code> file in an empty folder with the following contents:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="c1">// should also work on any recent version of the Scala 3 branches</span>
+<span class="c1">// including ScalaJS 1.0 and ScalaNative 0.5</span>
+<span class="n">scalaVersion</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&quot;3.8.3&quot;</span>
+<span class="n">libraryDependencies</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">&quot;de.tu-darmstadt.stg&quot;</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="s">&quot;reactives&quot;</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="s">&quot;0.38.0&quot;</span>
+</code></pre>
+<p>Install <a href="http://www.scala-sbt.org/">http://www.scala-sbt.org/</a> sbt and run <code>sbt console</code> inside the folder,
+this should allow you to follow along the following examples.
+</p>
+<p>The code examples in the manual serve as a self-contained Scala REPL session.
+Most code blocks can be executed on their own when adding this import,
+but some require definitions from the prior blocks.
+To get started, import:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">import</span><span class="w"> </span><span class="nn">reactives</span><span class="p">.</span><span class="nn">default</span><span class="p">.</span><span class="n">*</span>
+
+<span class="k">object</span><span class="w"> </span><span class="nc">ReactiveExamples</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span><span class="w"> </span><span class="nc">Array</span><span class="p">[</span><span class="nc">String</span><span class="p">]):</span><span class="w"> </span><span class="nc">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</code></pre>
+<h2 id="the-basics">The Basics</h2>
+<p>Reactives provide a way to work with time-changing values.
+Such values normally originate from outside your program – examples are users that interact with a UI, network messages, or sensors of your device.
+</p>
+<h3 id="Signals">Signals</h3>
+<p>Reactives are represented in Scala as additional data types that wrap or contain time-changing values.
+We call reactives that always have a value <code>Signal[A]</code>.
+A typical example could be a temperature sensor: The temperature changes over time, but there always is a current temperature.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">temperature</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Double</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</code></pre>
+<p>The <code>???</code> operator is a Scala built-in that allows us to omit the definition for now, ideally we would use a library that provides signals, but we will see how to interact with typical imperative and callback based libraries shortly.
+</p>
+<p>We can check if the temperature exceeds some limit:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">exceedsLimit</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Boolean</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">temperature</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">limit</span>
+<span class="p">}</span>
+</code></pre>
+<p>Because the temperature changes over time, so does the result of an expression that uses the value of a signal.
+We use the syntax <code>Signal { ... </code>} to provide a scope to such a <i>signal expression</i>.
+</p>
+<p>A <code>Var[T]</code> holds a value of type <code>T</code>.
+<code>Var[T]</code> is a subtype of <code>Signal[T]</code>. See also the chapter about Signals.
+In contrast to declarative signals, <code>Var</code>s can be read and written to.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">va</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="s">&quot;Hello World&quot;</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="nc">List</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<p>Vars enable the framework to track changes of input values.
+Vars can be changed directly, via <code>set</code> and <code>transform</code>, which will trigger a propagation:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">va</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">va</span><span class="p">.</span><span class="n">transform</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="n">vc</span><span class="p">.</span><span class="n">transform</span><span class="p">(</span><span class="n">list</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">::</span><span class="w"> </span><span class="n">list</span><span class="p">)</span>
+</code></pre>
+<h3 id="Evt, fire">Evt, fire</h3>
+<p>Imperative events are defined by the <code>Evt[T]</code> type.
+<code>Evt[T]</code> are a subtype of <code>Event[T]</code>.
+The value of the parameter <code>T</code> defines the value that is attached to the event.
+If you do not care about the value, you can use an <code>Evt[Unit]</code>.
+If you need more than one value to the same event, you can use tuples.
+The following code snippet shows some valid event definitions:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">e2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">e3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[(</span><span class="nc">Boolean</span><span class="p">,</span><span class="w"> </span><span class="nc">String</span><span class="p">,</span><span class="w"> </span><span class="nc">Int</span><span class="p">)]()</span>
+</code></pre>
+<p>Events can be fired with the method <code>fire</code>, which will start a propagation.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">e1</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">e2</span><span class="p">.</span><span class="n">fire</span><span class="p">(())</span>
+<span class="n">e3</span><span class="p">.</span><span class="n">fire</span><span class="p">((</span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Hallo&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">))</span>
+</code></pre>
+<h3 id="Now, observe, remove">Now, observe, remove</h3>
+<p>The current value of a signal can be accessed using the <code>now</code> method.
+It is useful for debugging and testing, and sometimes inside onclick handlers.
+If possible, use observers or even better combinators instead.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">assert</span><span class="p">(</span><span class="n">va</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">11</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">vb</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Hello World&quot;</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">vc</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">List</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">))</span>
+</code></pre>
+<p>The <code>observe</code> attaches a handler function to the event.
+Every time the event is fired, the handler function is applied to the current value of the event.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eObs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">String</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">o1</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">eObs</span><span class="p">.</span><span class="n">observe</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;hello &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;!&quot;</span>
+<span class="w">  </span><span class="n">println</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">eObs</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="s">&quot;annette&quot;</span><span class="p">)</span>
+<span class="n">eObs</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="s">&quot;tom&quot;</span><span class="p">)</span>
+</code></pre>
+<p>If multiple handlers are registered, all of them are executed when the event is fired.
+Applications should not rely on the order of handler execution.
+</p>
+<p>Note that unit-type events still need an argument in the handler.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">locally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]()</span>
+<span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="s">&quot;ping&quot;</span><span class="p">))</span>
+<span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="s">&quot;pong&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre>
+<p>Note that events without arguments still need an argument in the handler.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="p">{</span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">eUnit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]()</span>
+<span class="w">  </span><span class="n">eUnit</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="s">&quot;ping&quot;</span><span class="p">))</span>
+<span class="w">  </span><span class="n">eUnit</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="s">&quot;pong&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre>
+<p>Scala allows one to refer to a method using the partially applied function syntax.
+This approach can be used to directly register a method as an event handler.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">def</span><span class="w"> </span><span class="nf">m1</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="n">println</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">e6</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">o4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e6</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">m1</span><span class="p">)</span>
+
+<span class="n">e6</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</code></pre>
+<p>Handlers can be unregistered from events with the <code>remove</code> operator.
+When a handler is unregistered, it is not executed when the event is fired.
+If you create handlers, you should also think about removing them, when they are no longer needed.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eRemove</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">handler1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eRemove</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">println</span><span class="p">)</span>
+
+<span class="n">eRemove</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">handler1</span><span class="p">.</span><span class="n">disconnect</span><span class="p">()</span>
+</code></pre>
+<h3 id="Example">Example</h3>
+<p>Now, we have introduced enough features to give a simple example.
+The following example computes the displacement <code>space</code> of a particle that is moving at constant speed <code>SPEED</code>.
+The application prints all the values associated to the displacement over time.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="nc">SPEED</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">time</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">space</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nc">SPEED</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oSpace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">space</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="k">while</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nc">Thread</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="w">  </span><span class="n">time</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">time</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="n">oSpace</span><span class="p">.</span><span class="n">disconnect</span><span class="p">()</span>
+</code></pre>
+<p>The application behaves as follows.
+Every 20 milliseconds, the value of the <code>time</code> var is increased by 1.
+When the value of the <code>time</code> var changes,
+the signal expression is reevaluated and the value of <code>space</code> is updated.
+Finally, the current value of the <code>space</code> signal is printed every time the value of the signal changes.
+</p>
+<p>Note that using <code>println(space.now)</code> would also print the value of the signal, but only at the point in time in which the print statement is executed.
+Instead, the approach described so far prints <i>all</i> values of the signal.
+</p>
+<h2 id="common-combinators">Common Combinators</h2>
+<p>Combinators express functional dependencies among values.
+Intuitively, the value of a combinator is computed from one or multiple input values.
+Whenever any input changes, the value of the combinator is also updated.
+</p>
+<h3 id="Latest, Changed">Latest, Changed</h3>
+<p>Conversion between signals and events are fundamental to introduce
+time-changing values into OO applications – which are usually event-based.
+</p>
+<p>This section covers the basic conversions between signals and events.
+The <code>latest</code> conversion function creates a signal from an event.
+The signal holds the value associated to an event.
+The value is held until the event is fired again and a new value is available.
+The <code>changed</code> conversion function creates an event from a signal.
+The function fires a new event every time a signal changes its value.
+</p>
+<p>The <code>latest</code> function applies to an event and returns a signal
+holding the latest value of the event <code>e</code>.
+The initial value of the signal is set to <code>init</code>.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">latest</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">T</span><span class="p">],</span><span class="w"> </span><span class="n">init</span><span class="p">:</span><span class="w"> </span><span class="nc">T</span><span class="p">):</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">T</span><span class="p">]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="c1">// Example:</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eLatest</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">s</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eLatest</span><span class="p">.</span><span class="n">hold</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">eLatest</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">eLatest</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">eLatest</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<p>The <code>changed</code> function applies to a signal and returns an event
+that is fired every time the signal changes its value.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">changed</span><span class="p">[</span><span class="nc">U</span><span class="w"> </span><span class="o">&gt;:</span><span class="w"> </span><span class="nc">T</span><span class="p">]:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">U</span><span class="p">]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="c1">// Example:</span>
+<span class="kd">var</span><span class="w"> </span><span class="n">testChanged</span><span class="w">          </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vChanged</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sChanged</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">vChanged</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eChanged</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sChanged</span><span class="p">.</span><span class="n">changed</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oChanged</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="n">eChanged</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">testChanged</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">vChanged</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">testChanged</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">vChanged</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">testChanged</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<h3 id="Map">Map</h3>
+<p>The reactive <code>r.map f</code> is obtained by applying <code>f</code> to the value carried by <code>r</code>.
+The map function must take the parameter as a formal parameter.
+The return type of the map function is the type parameter value of the resulting event.
+If <code>r</code> is a signal, then <code>r map f</code> is also a signal.
+If <code>r</code> is an event, then <code>r map f</code> is also an event.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">sMap</span><span class="w">                  </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">[</span><span class="nc">Int</span><span class="p">](</span><span class="mi">0</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">s_MAP</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sMap</span><span class="p">.</span><span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">toString</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oMap1</span><span class="w">                 </span><span class="o">=</span><span class="w"> </span><span class="n">s_MAP</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">String</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="s">s&quot;Here: </span><span class="si">$</span><span class="n">x</span><span class="s">&quot;</span><span class="p">))</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">eMap</span><span class="w">                 </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">e_MAP</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">String</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eMap</span><span class="p">.</span><span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">toString</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oMap2</span><span class="w">                </span><span class="o">=</span><span class="w"> </span><span class="n">e_MAP</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">String</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="s">s&quot;Here: </span><span class="si">$</span><span class="n">x</span><span class="s">&quot;</span><span class="p">))</span>
+
+<span class="n">sMap</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">sMap</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">eMap</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">eMap</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
+</code></pre>
+<h3 id="Fold">Fold</h3>
+<p>The <code>fold</code> function creates a signal by folding events with a
+given function. Initially the signal holds the <code>init</code>
+value. Every time a new event arrives, the function <code>f</code> is
+applied to the previous value of the signal and to the value
+associated to the event. The result is the new value of the signal.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">fold</span><span class="p">[</span><span class="nc">T</span><span class="p">,</span><span class="nc">A</span><span class="p">](</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">T</span><span class="p">],</span><span class="w"> </span><span class="n">init</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="p">)(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nc">A</span><span class="p">,</span><span class="nc">T</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">A</span><span class="p">):</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="c1">// Example:</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eFold</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">fFold</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sFold</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eFold</span><span class="p">.</span><span class="n">fold</span><span class="p">(</span><span class="mi">10</span><span class="p">)(</span><span class="n">fFold</span><span class="p">)</span>
+
+<span class="n">eFold</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">eFold</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sFold</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">13</span><span class="p">)</span>
+</code></pre>
+<h3 id="Or, And">Or, And</h3>
+<p>The event <code>e1 || e2</code> is fired upon the occurrence of one among <code>e1</code>
+or <code>e2</code>. Note that the events that appear in the event expression
+must have the same parameter type (<code>Int</code> in the next example).
+The <code>or</code> combinator is left-biased, so if both <code>e1</code> and <code>e2</code> fire in the same
+transaction, the left value is returned.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eOr1</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eOr2</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">e1_OR_e2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eOr1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">eOr2</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oOr</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">e1_OR_e2</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="n">eOr1</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">eOr2</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<p>The event <code>e &amp;&amp; p</code> (or the alternative syntax <code>e filter p</code>) is fired if <code>e</code> occurs and the predicate <code>p</code> is satisfied.
+The predicate is a function that accepts the event parameter as a formal parameter and returns <code>Boolean</code>.
+In other words the filter operator filters the events according to their parameter and a predicate.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eAnd</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">e_AND</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eAnd</span><span class="p">.</span><span class="n">filter</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oAnd</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="n">e_AND</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="n">eAnd</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">eAnd</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">eAnd</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">eAnd</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">eAnd</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">eAnd</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+</code></pre>
+<h3 id="Count Signal">Count Signal</h3>
+<p>Returns a signal that counts the occurrences of the event.
+Initially, when the event has never been fired yet, the signal holds the value 0.
+The argument of the event is simply discarded.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">count</span><span class="p">(</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="n">_</span><span class="p">]):</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eCount</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sCount</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eCount</span><span class="p">.</span><span class="n">count</span><span class="p">()</span>
+
+<span class="n">assert</span><span class="p">(</span><span class="n">sCount</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="n">eCount</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="n">assert</span><span class="p">(</span><span class="n">sCount</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="n">eCount</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span><span class="w"> </span><span class="n">assert</span><span class="p">(</span><span class="n">sCount</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<h3 id="Last(n) Signal">Last(n) Signal</h3>
+<p>The <code>list</code> function returns a signal which holds the last <code>n</code> events.
+</p>
+<p>Initially, an empty list is returned. Then the values are
+progressively filled up to the size specified by the
+programmer.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eList</span><span class="w">                                          </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sList</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="n">scala</span><span class="p">.</span><span class="n">collection</span><span class="p">.</span><span class="nc">LinearSeq</span><span class="p">[</span><span class="nc">Int</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eList</span><span class="p">.</span><span class="n">list</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oList</span><span class="w">                                          </span><span class="o">=</span><span class="w"> </span><span class="n">sList</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">println</span><span class="p">)</span>
+
+<span class="n">eList</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">eList</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">eList</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span><span class="w"> </span><span class="n">eList</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span><span class="w"> </span><span class="n">eList</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">eList</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+</code></pre>
+<h3 id="List Signal">List Signal</h3>
+<p>Collects the event values in a (growing) list. This function should be
+used carefully. Since the entire history of events is maintained, the
+function can potentially introduce a memory overflow.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">list</span><span class="p">[</span><span class="nc">T</span><span class="p">](</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">T</span><span class="p">]):</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">List</span><span class="p">[</span><span class="nc">T</span><span class="p">]]</span>
+</code></pre>
+
+<h3 id="LatestOption Signal">LatestOption Signal</h3>
+<p>The <code>latestOption</code> function is a variant of the <code>latest</code>
+function which uses the <code>Option</code> type to distinguish the case in
+which the event did not fire yet. Holds the latest value of an event
+as <code>Some(val)</code> or <code>None</code>.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">eOpt</span><span class="w">                      </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sOpt</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Option</span><span class="p">[</span><span class="nc">Int</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eOpt</span><span class="p">.</span><span class="n">holdOption</span><span class="p">()</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sOpt</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">None</span><span class="p">)</span>
+<span class="n">eOpt</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sOpt</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">Option</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">eOpt</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sOpt</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">Option</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">eOpt</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sOpt</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nc">Option</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</code></pre>
+<h3 id="Fold matcher Signal">Fold matcher Signal</h3>
+<p>The <code>fold</code> <code>Match</code> construct allows to match on one of multiple events.
+For every firing event, the corresponding handler function is executed,
+to compute the new state.
+If multiple events fire at the same time,
+the handlers are executed in order.
+The current parameter reflects the current state.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">word</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">String</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">countFld</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">reset</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">resetB</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">reset</span><span class="w"> </span><span class="n">`branch`</span><span class="w"> </span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">wordB</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">word</span><span class="w"> </span><span class="n">`branch`</span><span class="w"> </span><span class="n">identity</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">countB</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">countFld</span><span class="w"> </span><span class="n">`branch`</span><span class="w"> </span><span class="p">(</span><span class="nc">Fold</span><span class="p">.</span><span class="n">current</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">_</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">result</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nc">Fold</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)(</span><span class="n">resetB</span><span class="p">,</span><span class="w"> </span><span class="n">wordB</span><span class="p">,</span><span class="w"> </span><span class="n">countB</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oResult</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">println</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+
+<span class="n">countFld</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">reset</span><span class="p">.</span><span class="n">fire</span><span class="p">()</span>
+<span class="n">word</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">)</span>
+<span class="n">countFld</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">word</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="s">&quot;world&quot;</span><span class="p">)</span>
+<span class="n">transaction</span><span class="p">(</span><span class="n">countFld</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">reset</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">countFld</span><span class="p">.</span><span class="n">admit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">  </span><span class="n">word</span><span class="p">.</span><span class="n">admit</span><span class="p">(</span><span class="s">&quot;do them all!&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="n">reset</span><span class="p">.</span><span class="n">admit</span><span class="p">(())</span>
+<span class="p">}</span>
+</code></pre>
+<h3 id="Iterate Signal">Iterate Signal</h3>
+<p>Returns a signal holding the value computed by <code>f</code> on the
+occurrence of an event. Differently from <code>fold</code>, there is no
+carried value, i.e. the value of the signal does not depend on the
+current value but only on the accumulated value.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">iterate</span><span class="p">[</span><span class="nc">A</span><span class="p">](</span><span class="n">e</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="n">_</span><span class="p">],</span><span class="w"> </span><span class="n">init</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="p">)(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="nc">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nc">A</span><span class="p">):</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">A</span><span class="p">]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="c1">// Example:</span>
+<span class="kd">var</span><span class="w"> </span><span class="n">testIterValue</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eIter</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nc">Evt</span><span class="p">[</span><span class="nc">Int</span><span class="p">]()</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">fIter</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">testIterValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sIter</span><span class="p">:</span><span class="w"> </span><span class="nc">Signal</span><span class="p">[</span><span class="nc">Int</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eIter</span><span class="p">.</span><span class="n">iterate</span><span class="p">(</span><span class="mi">10</span><span class="p">)(</span><span class="n">fIter</span><span class="p">)</span>
+
+<span class="n">eIter</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">testIterValue</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sIter</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">11</span><span class="p">)</span>
+
+<span class="n">eIter</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">testIterValue</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">11</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sIter</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span>
+
+<span class="n">eIter</span><span class="p">.</span><span class="n">fire</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">testIterValue</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">sIter</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">13</span><span class="p">)</span>
+</code></pre>
+<h3 id="Change Event">Change Event</h3>
+<p>The <code>change</code> function is similar to <code>changed</code>, but it
+provides both the old and the new value of the signal in a tuple.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">change</span><span class="p">[</span><span class="nc">U</span><span class="w"> </span><span class="o">&gt;:</span><span class="w"> </span><span class="nc">T</span><span class="p">]:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[(</span><span class="nc">U</span><span class="p">,</span><span class="w"> </span><span class="nc">U</span><span class="p">)]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="c1">// Example:</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sChange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eChange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sChange</span><span class="p">.</span><span class="n">change</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oChange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eChange</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">println</span><span class="p">)</span>
+
+<span class="n">sChange</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">sChange</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+</code></pre>
+<h3 id="ChangedTo Event">ChangedTo Event</h3>
+<p>The <code>changedTo</code> function is similar to <code>changed</code>, but it
+fires an event only when the signal changes its value to a given
+value.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="n">changedTo</span><span class="p">[</span><span class="nc">V</span><span class="p">](</span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="nc">V</span><span class="p">):</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span>
+</code></pre>
+<pre class="highlight"><code class="language-scala"><span class="kd">var</span><span class="w"> </span><span class="n">testChangedTo</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vChangedTo</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sChangedTo</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">vChangedTo</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">eChangedTo</span><span class="p">:</span><span class="w"> </span><span class="nc">Event</span><span class="p">[</span><span class="nc">Unit</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sChangedTo</span><span class="p">.</span><span class="n">changed</span><span class="p">.</span><span class="n">filter</span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">3</span><span class="p">).</span><span class="n">map</span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">())</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oChangedTo</span><span class="w">              </span><span class="o">=</span><span class="w"> </span><span class="n">eChangedTo</span><span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Unit</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">testChangedTo</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">assert</span><span class="p">(</span><span class="n">testChangedTo</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="n">vChangedTo</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span><span class="w"> </span><span class="n">assert</span><span class="p">(</span><span class="n">testChangedTo</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="n">vChangedTo</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span><span class="w"> </span><span class="n">assert</span><span class="p">(</span><span class="n">testChangedTo</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<h3 id="Flatten">Flatten</h3>
+<p>The <code>flatten</code> function is used to &quot;flatten&quot; nested reactives.
+</p>
+<p>It can, for instance, be used to detect if any signal within a collection of signals
+fired a changed event:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">vFlatten1</span><span class="w">                   </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vFlatten2</span><span class="w">                   </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="s">&quot;Test&quot;</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">vFlatten3</span><span class="w">                   </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">collection</span><span class="p">:</span><span class="w"> </span><span class="nc">List</span><span class="p">[</span><span class="nc">Signal</span><span class="p">[</span><span class="o">?</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">List</span><span class="p">(</span><span class="n">vFlatten1</span><span class="p">,</span><span class="w"> </span><span class="n">vFlatten2</span><span class="p">,</span><span class="w"> </span><span class="n">vFlatten3</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">innerChanges</span><span class="w">                </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">collection</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="n">_</span><span class="p">.</span><span class="n">changed</span><span class="p">).</span><span class="n">reduce</span><span class="p">((</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">anyChanged</span><span class="w">                  </span><span class="o">=</span><span class="w"> </span><span class="n">innerChanges</span><span class="p">.</span><span class="n">flatten</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">oFlatten</span><span class="w">                    </span><span class="o">=</span><span class="w"> </span><span class="n">anyChanged</span><span class="p">.</span><span class="n">observe</span><span class="p">(</span><span class="n">println</span><span class="p">)</span>
+
+<span class="n">vFlatten1</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">vFlatten2</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;Changed&quot;</span><span class="p">)</span>
+<span class="n">vFlatten3</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+</code></pre>
+<h2 id="common-pitfalls">Common Pitfalls</h2>
+<p>In this section we
+collect the most common pitfalls for users that are new to reactive
+programming.
+</p>
+<h3 id="Accessing values in signal expressions">Accessing values in signal expressions</h3>
+<p>The <code>.value</code>
+operator used on a signal or a var, inside a signal expression,
+returns the signal/var value <i>and</i> creates a dependency. The
+<code>now</code> operator returns the current value but does <i>not</i>
+create a dependency. For example the following signal declaration
+creates a dependency between <code>a</code> and <code>s</code>, and a dependency
+between <code>b</code> and <code>s</code>.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">aPit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">bPit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">cPit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">aPit</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">bPit</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="p">}</span>
+</code></pre>
+<p>The following code instead establishes only a dependency between
+<code>b</code> and <code>s</code>.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">sPit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">aPit</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">bPit</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="p">}</span>
+</code></pre>
+<p>In other words, in the last example, if <code>a</code> is updated, <code>s</code>
+is not automatically updated. With the exception of the rare cases in
+which this behavior is desirable, using <code>now</code> inside a signal
+expression is almost certainly a mistake. As a rule of thumb, signals
+and vars appear in signal expressions with the <code>.value</code> operator.
+</p>
+<h3 id="Attempting to assign a signal">Attempting to assign a signal</h3>
+<p>Signals are not assignable.
+Signals depend on other signals and vars, the dependency is expressed by the signal expression.
+The value of the signal is automatically updated when one of the values it depends on changes.
+Any attempt to set the value of a signal manually is a mistake.
+</p>
+<h3 id="Side effects in signal expressions">Side effects in signal expressions</h3>
+<p>Signal expressions should be pure. i.e. they should not modify external variables.
+For example the following code is conceptually wrong because the variable
+<code>cSide</code> is imperatively assigned from inside the signal expression.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="cm">/*</span>
+<span class="cm">/* WRONG - DON&#39;T DO IT */</span>
+<span class="cm">val aSideWrong = Var(42)</span>
+<span class="cm">val bSideWrong = Var(42)</span>
+
+<span class="cm">var cSide = 0</span>
+<span class="cm">val sSideWrong = Signal{</span>
+<span class="cm">  val sum: Int = aSideWrong.value + bSideWrong.value</span>
+<span class="cm">  cSide = sum * 2           /* WRONG - DON&#39;T DO IT */</span>
+<span class="cm">}</span>
+<span class="cm">assert(cSide == 4)</span>
+
+<span class="cm"> */</span>
+</code></pre>
+<p>A possible solution is to refactor the code above to a more functional
+style. For example, by removing the variable <code>cSide</code> and replacing it
+directly with the signal.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">aSide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">bSide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="kd">val</span><span class="w"> </span><span class="n">cSide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">val</span><span class="w"> </span><span class="n">sum</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aSide</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">bSide</span><span class="p">.</span><span class="n">value</span>
+<span class="w">  </span><span class="n">sum</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="p">}</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">cSide</span><span class="p">.</span><span class="n">now</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">168</span><span class="p">)</span>
+</code></pre>
+<h3 id="Cyclic dependencies">Cyclic dependencies</h3>
+<p>When a signal <code>s</code> is defined, a dependency is established with each of the
+signals or vars that appear in the signal expression of <code>s</code>.
+Cyclic dependencies produce a runtime error and must be avoided.
+For example the following code:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="cm">/*</span>
+<span class="cm">/* WRONG - DON&#39;T DO IT */</span>
+<span class="cm">val aCyclic = Var(0)</span>
+<span class="cm">val sCyclic = Signal{ aCyclic.value + tCyclic.value }</span>
+<span class="cm">val tCyclic = Signal{ aCyclic.value + sCyclic.value + 1 }</span>
+
+<span class="cm"> */</span>
+</code></pre>
+<p>creates a mutual dependency between <code>s</code> and
+<code>t</code>. Similarly, indirect cyclic dependencies must be avoided.
+</p>
+<h3 id="Objects and mutability">Objects and mutability</h3>
+<p>Vars and signals may behave
+unexpectedly with mutable objects. Consider the following example.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="cm">/*</span>
+<span class="cm">/* WRONG - DON&#39;T DO THIS */</span>
+<span class="cm">class Foo(init: Int) { var x = init }</span>
+<span class="cm">val foo = new Foo(1)</span>
+<span class="cm">val varFoo = Var(foo)</span>
+<span class="cm">val s = Signal{ varFoo.value.x + 10 }</span>
+<span class="cm">println(s.now)</span>
+<span class="cm">foo.x = 2</span>
+<span class="cm">println(s.now)</span>
+
+<span class="cm"> */</span>
+</code></pre>
+<p>One may expect that after increasing the value of <code>foo.x</code>,
+the signal expression is evaluated again and updated
+to 12. The reason why the application behaves differently is that
+signals and vars hold <i>references</i> to objects, not the objects
+themselves. When the value of the <code>x</code> field changes, the reference held by the
+<code>varFoo</code> var is the same. For this reason, no change is detected
+by the var, the var does not propagate the change to the signal, and
+the signal is not reevaluated.
+</p>
+<p>A solution to this problem is to use immutable objects. Since the
+objects cannot be modified, the only way to change a field is to
+create an entirely new object and assign it to the var. As a result,
+the var is reevaluated.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="kd">val</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">fooImmut</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">varFooImmut</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="n">fooImmut</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sImmut</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">varFooImmut</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="p">}</span>
+<span class="n">println</span><span class="p">(</span><span class="n">sImmut</span><span class="p">.</span><span class="n">now</span><span class="p">)</span>
+<span class="n">varFooImmut</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="nc">Foo</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">println</span><span class="p">(</span><span class="n">sImmut</span><span class="p">.</span><span class="n">now</span><span class="p">)</span>
+</code></pre>
+<p>Alternatively, one can still use mutable objects but assign again the
+var to force the reevaluation. However this style of programming is
+confusing for the reader and should be avoided when possible.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="cm">/*</span>
+<span class="cm">/* WRONG - DON&#39;T DO THIS */</span>
+<span class="cm">class FooMut(init: Int) { var x = init }</span>
+<span class="cm">val fooMut = new FooMut(1)</span>
+<span class="cm">val varFooMut = Var(fooMut)</span>
+<span class="cm">val sMut = Signal{ varFooMut.value.x + 10 }</span>
+<span class="cm">println(sMut.now)</span>
+<span class="cm">fooMut.x = 2</span>
+<span class="cm">varFooMut set fooMut</span>
+<span class="cm">println(sMut.now)</span>
+
+<span class="cm"> */</span>
+</code></pre>
+<h3 id="Functions of reactive values">Functions of reactive values</h3>
+<p>Functions that operate on
+traditional values are not automatically transformed to operate on
+signals. For example consider the following function:
+</p>
+<pre class="highlight"><code class="language-scala"><span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">):</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+</code></pre>
+<p>The following code does not compile because the compiler expects an
+integer, not a var as a parameter of the <code>increment</code> function.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="cm">/*</span>
+<span class="cm">val aFunc = Var(1)</span>
+<span class="cm">val bFunc = increment(aFunc)     /* WRONG - DON&#39;T DO THIS */</span>
+<span class="cm">val sFunc = Signal{ bFunc.value + 1 }</span>
+
+<span class="cm"> */</span>
+</code></pre>
+<p>The following code snippet is syntactically correct, but the signal
+has a constant value 2 and is not updated when the var changes.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">aFunc</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">bFunc</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">increment</span><span class="p">(</span><span class="n">aFunc</span><span class="p">.</span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="c1">// b is not reactive!</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sFunc</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">bFunc</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// s is a constant signal with value 2</span>
+</code></pre>
+<p>The following solution is syntactically correct and the signal
+<code>sFunc</code> is updated every time the var <code>aFunc</code> is updated.
+</p>
+<pre class="highlight"><code class="language-scala"><span class="kd">val</span><span class="w"> </span><span class="n">aFunc2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Var</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kd">val</span><span class="w"> </span><span class="n">sFunc2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Signal</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">increment</span><span class="p">(</span><span class="n">aFunc2</span><span class="p">.</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+</code></pre>
+<h2 id="related-work">Essential Related Work</h2>
+<p>A more academic presentation of these concepts is in <span class="citations">(<a href="#DBLP:conf/aosd/SalvaneschiHM14">Salvaneschi2014</a>)</span>.
+A complete bibliography on reactive programming is beyond the scope of this work.
+The interested reader can refer to <span class="citations">(<a href="#DBLP:journals/csur/BainomugishaCCMM13">Bainomugisha2013</a>)</span> for an overview of reactive
+programming and to <span class="citations">(<a href="#DBLP:conf/aosd/SalvaneschiM13">Salvaneschi2013</a>)</span> for the issues concerning the integration of RP
+with object-oriented programming.
+</p>
+<p>This work builds on ideas originally developed in EScala <span class="citations">()</span>
+– which supports event combination and implicit events.
+Other reactive languages directly represent time-changing values and remove
+inversion of control.
+Among the others, we mention
+FrTime <span class="citations">(<a href="#DBLP:conf/esop/CooperK06">Cooper2006</a>)</span> (Scheme),
+FlapJax <span class="citations">(<a href="#DBLP:conf/oopsla/MeyerovichGBCGBK09">Meyerovich2009</a>)</span> (Javascript),
+AmbientTalk/R <span class="citations">(<a href="#DBLP:conf/tools/CarretonMCM10">Carreton2010</a>)</span> and
+Scala.React <span class="citations">()</span> (Scala).
+</p>
+<h2 id="Acknowledgments">Acknowledgments</h2>
+<p>Several people contributed to this manual,
+among the others David Richter, Gerold Hintz and Pascal Weisenburger.
+</p>
+
+<pre class="highlight"><code class="language-scala"><span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre><h1 id="bibliography (gen)">Bibliography</h1><ul class="bibliography"><li class="bibentry" id="DBLP:journals/csur/BainomugishaCCMM13"><p class="authors">Engineer Bainomugisha, Andoni Lombide Carreton, Tom Van Cutsem, Stijn Mostinckx, Wolfgang De Meuter. 2013. </p><p class="title"><a href="https://doi.org/10.1145/2501654.2501666">A survey on reactive programming</a>. </p><p class="container">ACM Comput. Surv. </p></li><li class="bibentry" id="DBLP:conf/tools/CarretonMCM10"><p class="authors">Andoni Lombide Carreton, Stijn Mostinckx, Tom Van Cutsem, Wolfgang De Meuter. 2010. </p><p class="title"><a href="https://doi.org/10.1007/978-3-642-13953-6_3">Loosely-Coupled Distributed Reactive Programming in Mobile Ad Hoc Networks</a>. </p><p class="container">Objects, Models, Components, Patterns, 48th International Conference, TOOLS 2010, Málaga, Spain, June 28 - July 2, 2010. Proceedings. </p></li><li class="bibentry" id="DBLP:conf/esop/CooperK06"><p class="authors">Gregory H. Cooper, Shriram Krishnamurthi. 2006. </p><p class="title"><a href="https://doi.org/10.1007/11693024_20">Embedding Dynamic Dataflow in a Call-by-Value Language</a>. </p><p class="container">Programming Languages and Systems, 15th European Symposium on Programming, ESOP 2006, Held as Part of the Joint European Conferences on Theory and Practice of Software, ETAPS 2006, Vienna, Austria, March 27-28, 2006, Proceedings. </p></li><li class="bibentry" id="DBLP:conf/aosd/GasiunasSMNN11"><p class="authors">Vaidas Gasiunas, Lucas Satabin, Mira Mezini, Angel Núñez, Jacques Noyé. 2011. </p><p class="title"><a href="https://doi.org/10.1145/1960275.1960303">EScala: modular event-driven object interactions in scala</a>. </p><p class="container">Proceedings of the 10th International Conference on Aspect-Oriented Software Development, AOSD 2011, Porto de Galinhas, Brazil, March 21-25, 2011. </p></li><li class="bibentry" id="DBLP:conf/oopsla/MeyerovichGBCGBK09"><p class="authors">Leo A. Meyerovich, Arjun Guha, Jacob P. Baskin, Gregory H. Cooper, Michael Greenberg, Aleks Bromfield, Shriram Krishnamurthi. 2009. </p><p class="title"><a href="https://doi.org/10.1145/1640089.1640091">Flapjax: a programming language for Ajax applications</a>. </p><p class="container">Proceedings of the 24th Annual ACM SIGPLAN Conference on Object-Oriented Programming, Systems, Languages, and Applications, OOPSLA 2009, October 25-29, 2009, Orlando, Florida, USA. </p></li><li class="bibentry" id="DBLP:conf/aosd/SalvaneschiHM14"><p class="authors">Guido Salvaneschi, Gerold Hintz, Mira Mezini. 2014. </p><p class="title"><a href="https://doi.org/10.1145/2577080.2577083">REScala: bridging between object-oriented and functional style in reactive applications</a>. </p><p class="container">13th International Conference on Modularity, MODULARITY ’14, Lugano, Switzerland, April 22-26, 2014. </p></li><li class="bibentry" id="DBLP:conf/aosd/SalvaneschiM13"><p class="authors">Guido Salvaneschi, Mira Mezini. 2013. </p><p class="title"><a href="https://doi.org/10.1145/2451436.2451442">Reactive behavior in object-oriented applications: an analysis and a research roadmap</a>. </p><p class="container">Aspect-Oriented Software Development, AOSD ’13, Fukuoka, Japan, March 24-29, 2013. </p></li></ul>
+	</main><svg display="none">
+		<symbol id="external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+			stroke-linecap="round" stroke-linejoin="round">
+			<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+			<polyline points="15 3 21 3 21 9"></polyline>
+			<line x1="10" y1="14" x2="21" y2="3"></line>
+		</symbol>
+	</svg>
+</body>
+
+</html>
