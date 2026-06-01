@@ -1,7 +1,6 @@
 package test.rdts.protocols
 
 import rdts.base.{Bottom, LocalUid}
-import rdts.protocols.paper.Paxos as PaperPaxos
 import rdts.protocols.{Participants, Paxos}
 import rdts.time.Dots
 
@@ -33,7 +32,7 @@ class PaperPaxosTest extends munit.FunSuite {
     a.upkeep()(using id1)
   }
   test("Paperpaxos") {
-    var a: PaperPaxos[Int] = PaperPaxos()
+    var a: Paxos[Int] = Paxos()
 
     a = a `merge` a.propose(1)(using id1)
     a = a `merge` a.upkeep()(using id1) `merge` a.upkeep()(using id2) `merge` a.upkeep()(using id3)

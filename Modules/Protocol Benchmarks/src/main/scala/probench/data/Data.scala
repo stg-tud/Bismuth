@@ -4,8 +4,7 @@ import probench.data.RequestResponseQueue.Req
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.Participants
-import rdts.protocols.paper.{MultiPaxos, Vote, Voting}
+import rdts.protocols.{MultiPaxos, Participants, Vote, Voting}
 import replication.ProtocolMessage
 import replication.ProtocolMessage.Payload
 

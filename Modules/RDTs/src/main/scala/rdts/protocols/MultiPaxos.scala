@@ -1,10 +1,10 @@
-package rdts.protocols.paper
+package rdts.protocols
 
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.Epoch
 import rdts.protocols.Participants
-import rdts.protocols.paper.Paxos.given
+import Paxos.given
 import rdts.time.Time
 
 import scala.collection.immutable.NumericRange
@@ -23,7 +23,7 @@ case class MultiPaxos[A](
     private def currentPaxos = rounds.value
 
     def closedRounds: Map[Long, A] = log
-    def nextDecisionRound = rounds.counter
+    def nextDecisionRound          = rounds.counter
 
     // public API
     def leader(using Participants): Option[Uid] = currentPaxos.currentRound match

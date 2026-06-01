@@ -7,8 +7,7 @@ import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.Participants
-import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
+import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage}
@@ -46,10 +45,8 @@ class KeyValueReplica(
   given Participants(votingReplicas)
   given localUid: LocalUid = LocalUid(uid)
 
-  val currentStateLock: AnyRef     = new {}
-  val connInfStateLock: AnyRef     = new {}
-  val clientReadStateLock: AnyRef  = new {}
-  val clientWriteStateLock: AnyRef = new {}
+  val currentStateLock: AnyRef = new {}
+  val connInfStateLock: AnyRef = new {}
 
   private val kvCache = mutable.HashMap[String, String]()
 
