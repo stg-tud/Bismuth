@@ -1,48 +1,57 @@
 package rdts.protocols
 
 import rdts.base.LocalUid.replicaId
-import rdts.base.{LocalUid, Uid}
-import rdts.protocols.Participants.participants
-import rdts.protocols.PrepareAbort.{Abort, Prepare}
-
-enum PrepareAbort:
-    case Prepare
-    case Abort
-
-case class Acknowledge()
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.protocols.Quorum.FullQuorum
+import rdts.protocols.Util.{Agreement, precondition}
 
 case class TwoPhaseCommit[A](
-    transaction: Option[A] = None,
-    voting: Voting[PrepareAbort] = Voting(),
-    acknowledgement: Set[Uid] = Set.empty
+    coordinator: Option[Uid] = None, // determined at construction
+    transaction: Option[A] = None,   // determined at construction
+    prepare: FlexibleVoting[Boolean] = FlexibleVoting(),
+    commit: FlexibleVoting[Boolean] = FlexibleVoting()
 ):
-
     // as the coordinator, propose a transaction
-    def commitRequest(tx: A)(using LocalUid, Participants): TwoPhaseCommit[A] =
-      // check if there is a transaction ongoing
-      transaction match
-          case None    => TwoPhaseCommit(Some(tx), voting = voting.voteFor(Prepare))
-          case Some(_) => TwoPhaseCommit()
+    def proposeTransaction(using LocalUid, Participants): TwoPhaseCommit[A] =
+      precondition(coordinator == Some(replicaId)) {
+        TwoPhaseCommit(prepare = prepare.voteFor(true))
+      }
 
     // as a participant, vote for commit in the request phase
     def prepare(using LocalUid, Participants): TwoPhaseCommit[A] =
-      transaction match
-          case Some(_) => TwoPhaseCommit(voting = voting.voteFor(Prepare))
-          case None    => TwoPhaseCommit()
+      precondition(transaction.isDefined && prepare.votes.nonEmpty) {
+        TwoPhaseCommit(prepare = prepare.voteFor(true))
+      }
 
     // as a participant, vote for abort in the request phase
     def abort(using LocalUid, Participants): TwoPhaseCommit[A] =
-      transaction match
-          case Some(_) => TwoPhaseCommit(voting = voting.voteFor(Abort))
-          case None    => TwoPhaseCommit()
+      precondition(transaction.isDefined) {
+        TwoPhaseCommit(prepare = prepare.voteFor(false))
+      }
 
-    // as a participant,
+    // everybody,
     // check if request phase was accepted by everyone
     // commit the transaction and send ack to the others
-    def acknowledge(using LocalUid, Participants): TwoPhaseCommit[A] =
+    def acknowledge(using LocalUid)(using p: Participants): TwoPhaseCommit[A] =
       // check if there is a transaction and everybody has voted
-      if transaction.isDefined && voting.votes.size == participants.size
-//      voting.votes.count(_.value == Prepare) == participants.size
-      then
-          TwoPhaseCommit(acknowledgement = Set(replicaId))
-      else TwoPhaseCommit()
+      precondition(transaction.isDefined && prepare.decision(using p, FullQuorum) != Agreement.Undecided) {
+        prepare.decision(using p, FullQuorum) match
+            case Agreement.Decided(true) => TwoPhaseCommit(commit = commit.voteFor(true))
+            case _                       => TwoPhaseCommit(commit = commit.voteFor(false))
+      }
+
+    // returns if the transaction was committed successfully or not
+    def decision(using p: Participants): Agreement[Boolean] =
+      // return false if there are any votes for false, otherwise return the commit decision
+      if commit.votes.filter(_.value == false).nonEmpty then
+          Agreement.Decided(false)
+      else
+          commit.decision(using p, FullQuorum)
+
+object TwoPhaseCommit:
+    given [A]: Lattice[TwoPhaseCommit[A]] =
+        given Lattice[Uid] = Lattice.assertEquals
+        given Lattice[A]   = Lattice.assertEquals
+        Lattice.derived
+
+    given [A]: Bottom[TwoPhaseCommit[A]] = Bottom.derived
