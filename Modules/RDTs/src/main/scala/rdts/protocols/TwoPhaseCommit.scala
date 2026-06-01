@@ -11,25 +11,19 @@ case class TwoPhaseCommit[A](
     prepare: FlexibleVoting[Boolean] = FlexibleVoting(),
     commit: FlexibleVoting[Boolean] = FlexibleVoting()
 ):
-    // as the coordinator, propose a transaction
+    // phase1: as the coordinator, propose a transaction
     def proposeTransaction(using LocalUid, Participants): TwoPhaseCommit[A] =
       precondition(coordinator == Some(replicaId)) {
         TwoPhaseCommit(prepare = prepare.voteFor(true))
       }
 
-    // as a participant, vote for commit in the request phase
-    def prepare(using LocalUid, Participants): TwoPhaseCommit[A] =
+    // phase1: as a participant, vote for commit or abort in the request phase
+    def prepare(commit: Boolean)(using LocalUid, Participants): TwoPhaseCommit[A] =
       precondition(transaction.isDefined && prepare.votes.nonEmpty) {
-        TwoPhaseCommit(prepare = prepare.voteFor(true))
+        TwoPhaseCommit(prepare = prepare.voteFor(commit))
       }
 
-    // as a participant, vote for abort in the request phase
-    def abort(using LocalUid, Participants): TwoPhaseCommit[A] =
-      precondition(transaction.isDefined) {
-        TwoPhaseCommit(prepare = prepare.voteFor(false))
-      }
-
-    // everybody,
+    // phase2: everybody,
     // check if request phase was accepted by everyone
     // commit the transaction and send ack to the others
     def acknowledge(using LocalUid)(using p: Participants): TwoPhaseCommit[A] =
