@@ -12,13 +12,13 @@ case class TwoPhaseCommit[A](
     commit: FlexibleVoting[Boolean] = FlexibleVoting()
 ):
     // phase1: as the coordinator, propose a transaction
-    def proposeTransaction(using LocalUid, Participants): TwoPhaseCommit[A] =
+    def proposeTransaction(using LocalUid): TwoPhaseCommit[A] =
       precondition(coordinator == Some(replicaId)) {
         TwoPhaseCommit(prepare = prepare.voteFor(true))
       }
 
     // phase1: as a participant, vote for commit or abort in the request phase
-    def prepare(commit: Boolean)(using LocalUid, Participants): TwoPhaseCommit[A] =
+    def prepare(commit: Boolean)(using LocalUid): TwoPhaseCommit[A] =
       precondition(transaction.isDefined && prepare.votes.nonEmpty) {
         TwoPhaseCommit(prepare = prepare.voteFor(commit))
       }
