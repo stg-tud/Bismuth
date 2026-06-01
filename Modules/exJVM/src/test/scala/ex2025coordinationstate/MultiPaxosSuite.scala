@@ -5,9 +5,8 @@ import org.scalacheck.Prop.propBoolean
 import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
-import rdts.protocols.paper.MultipaxosPhase.LeaderElection
-import rdts.protocols.Participants
-import rdts.protocols.paper.MultiPaxos
+import rdts.protocols.MultipaxosPhase.LeaderElection
+import rdts.protocols.{MultiPaxos, Participants}
 
 import scala.util.Try
 

@@ -1,8 +1,7 @@
 package rdts.protocols.smr
 
 import rdts.base.{LocalUid, Uid}
-import rdts.protocols.Participants
-import rdts.protocols.paper.MultiPaxos
+import rdts.protocols.{MultiPaxos, Participants}
 import rdts.time.Time
 
 import scala.collection.View

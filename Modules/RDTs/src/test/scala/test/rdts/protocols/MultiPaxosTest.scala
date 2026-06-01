@@ -1,8 +1,7 @@
 package test.rdts.protocols
 
 import rdts.base.LocalUid
-import rdts.protocols.Participants
-import rdts.protocols.paper.{MultiPaxos, MultipaxosPhase}
+import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 
 class MultiPaxosTest extends munit.FunSuite {
 

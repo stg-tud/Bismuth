@@ -1,11 +1,18 @@
 package ex2025coordinationstate
 
+import org.scalacheck.Test.Parameters
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
 import rdts.base.LocalUid
 
 import scala.collection.mutable
 import scala.util.Try
+
+object StateBasedTestParameters {
+  def update(param: Parameters): Parameters = param
+    .withMinSize(30)
+    .withMaxSize(200)
+}
 
 /** An API for stateful testing of ARDTs, removing a lot of the clutter of ScalaCheck's Commands API.
   * Users should use the trait `ACommand` for their commands which only needs an implementation of `nextLocalState` which is a function from a map of states to the next local state.

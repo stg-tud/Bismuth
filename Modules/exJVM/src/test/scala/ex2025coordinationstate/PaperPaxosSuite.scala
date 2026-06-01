@@ -2,7 +2,7 @@ package ex2025coordinationstate
 
 import org.scalacheck.Test.Parameters
 import rdts.protocols.Paxos
-import rdts.protocols.paper.Paxos as PaperPaxos
+import rdts.protocols.Paxos as PaperPaxos
 
 class PaperPaxosSuite extends munit.ScalaCheckSuite:
 

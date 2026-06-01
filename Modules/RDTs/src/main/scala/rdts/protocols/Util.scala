@@ -1,4 +1,4 @@
-package rdts.protocols.paper
+package rdts.protocols
 
 import rdts.base.Bottom
 
@@ -8,7 +8,7 @@ object Util:
         case Decided(value: A)
         case Undecided
 
-    def updateIf[P: Bottom](condition: Boolean)(update: => P): P =
+    def precondition[P: Bottom](condition: Boolean)(update: => P): P =
       if condition then
           update
       else

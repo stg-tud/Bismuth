@@ -5,7 +5,6 @@ import org.scalacheck.Prop.propBoolean
 import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
-import rdts.protocols.old.simplified.GeneralizedPaxos
 import rdts.protocols.{Consensus, Membership, Paxos}
 
 import scala.util.Try
@@ -13,40 +12,7 @@ class MembershipSuite extends munit.ScalaCheckSuite {
 
   override def scalaCheckTestParameters: Parameters = StateBasedTestParameters.update(super.scalaCheckTestParameters)
 
-  property("Membership with simplepaxos")(MembershipSpec[Int, Paxos, Paxos](
-    logging = false,
-    minDevices = 3,
-    maxDevices = 6,
-    mergeFreq = 80,
-    upkeepFreq = 70,
-    writeFreq = 20,
-    addMemberFreq = 1,
-    removeMemberFreq = 1
-  ).property())
-
-  property("Membership with generalized paxos")(MembershipSpec[Int, GeneralizedPaxos, GeneralizedPaxos](
-    logging = false,
-    minDevices = 3,
-    maxDevices = 6,
-    mergeFreq = 80,
-    upkeepFreq = 70,
-    writeFreq = 20,
-    addMemberFreq = 1,
-    removeMemberFreq = 1
-  ).property())
-
-  property("Membership with paper paxos")(MembershipSpec[Int, Paxos, Paxos](
-    logging = false,
-    minDevices = 3,
-    maxDevices = 6,
-    mergeFreq = 80,
-    upkeepFreq = 70,
-    writeFreq = 20,
-    addMemberFreq = 1,
-    removeMemberFreq = 1
-  ).property())
-
-  property("Membership with two different algos")(MembershipSpec[Int, Paxos, GeneralizedPaxos](
+  property("Membership with Paxos")(MembershipSpec[Int, Paxos, Paxos](
     logging = false,
     minDevices = 3,
     maxDevices = 6,
