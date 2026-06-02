@@ -1,12 +1,11 @@
-package rdts.protocols
+package rdts.protocols.spanner
 
 import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.protocols.Participants
-import rdts.protocols.Participants.participants
-import Util.*
-import Util.Agreement.*
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.protocols.Quorum.isQuorum
+import rdts.protocols.Util.*
+import rdts.protocols.Util.Agreement.*
+import rdts.protocols.{Participants, Quorum, Vote}
 
 case class FlexibleVoting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
   // boolean threshold queries

@@ -1,4 +1,4 @@
-package rdts.protocols
+package rdts.protocols.spanner
 
 import rdts.base.Uid
 import rdts.base.LocalUid
@@ -7,6 +7,9 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.Bottom
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.Agreement
+import rdts.protocols.MultiPaxos
+import rdts.protocols.TwoPhaseCommit
+import rdts.protocols.Participants
 
 enum twoPCMessages:
     case Prepare(transactionID: Uid, valid: Boolean)
