@@ -43,6 +43,9 @@ case class TwoPhaseCommit[A](
       else
           commit.decision(using p, FullQuorum)
 
+    def upkeep(using LocalUid, Participants): TwoPhaseCommit[A] =
+      acknowledge
+
 object TwoPhaseCommit:
     given [A]: Lattice[TwoPhaseCommit[A]] =
         given Lattice[Uid] = Lattice.assertEquals
