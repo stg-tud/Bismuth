@@ -4,6 +4,7 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.{Agreement, precondition}
+import rdts.protocols.spanner.FlexibleVoting
 
 case class TwoPhaseCommit[A](
     coordinator: Option[Uid] = None, // determined at construction
