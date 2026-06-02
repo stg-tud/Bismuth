@@ -74,7 +74,11 @@ case class MultiPaxos[A](
             )
           case _ =>
             // nothing to do, return upkeep result
-            MultiPaxos(rounds = rounds.write(deltaPaxos))
+            if deltaPaxos == Paxos() then
+                // filter empty deltas
+                MultiPaxos()
+            else
+                MultiPaxos(rounds = rounds.write(deltaPaxos))
     }
 
     override def toString: String =
