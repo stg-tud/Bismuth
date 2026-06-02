@@ -20,7 +20,7 @@ case class TwoPhaseCommit[A](
 
     // phase1: as a participant, vote for commit or abort in the request phase
     def prepare(commit: Boolean)(using LocalUid): TwoPhaseCommit[A] =
-      precondition(transaction.isDefined && prepare.votes.nonEmpty) {
+      precondition(transaction.isDefined) {
         TwoPhaseCommit(prepare = prepare.voteFor(commit))
       }
 
@@ -29,7 +29,10 @@ case class TwoPhaseCommit[A](
     // commit the transaction and send ack to the others
     def acknowledge(using l: LocalUid, p: Participants): TwoPhaseCommit[A] =
       // check if there is a transaction and everybody has voted
-      precondition(transaction.isDefined && prepare.decision(using p, FullQuorum) != Agreement.Undecided) {
+      precondition(transaction.isDefined &&
+        // we can start acknowledging if
+        ((prepare.decision(using p, FullQuorum) != Agreement.Undecided) || // everybody has agreed
+        (prepare.votes.map(_.value).contains(false)))) {                   // anybody has voted for abort
         prepare.decision(using p, FullQuorum) match
             case Agreement.Decided(true) => TwoPhaseCommit(commit = commit.voteFor(true))
             case _                       => TwoPhaseCommit(commit = commit.voteFor(false))
