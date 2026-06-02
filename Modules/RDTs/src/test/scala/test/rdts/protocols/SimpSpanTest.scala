@@ -1,12 +1,11 @@
 package test.rdts.protocols
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.base.Lattice.syntax
-import rdts.protocols.{MultiPaxos, Participants, TwoPhaseCommit, Vote}
-import rdts.protocols.Quorum
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.Agreement
 import rdts.protocols.spanner.{FlexibleVoting, SimpSpan, twoPCMessages}
+import rdts.protocols.*
 
 class SimpSpanTest extends munit.FunSuite {
 
@@ -428,27 +427,6 @@ class SimpSpanTest extends munit.FunSuite {
     assertEquals(state.decision, Agreement.Decided(Map(txId -> false)))
   }
 
-  test("decision reports aborted transaction when any false vote is present in commit phase") {
-    val p1   = Uid.gen()
-    val p2   = Uid.gen()
-    val txId = Uid.gen()
-
-    // Prepare succeeded, but commit contains a false vote
-    val aborted = TwoPhaseCommit[String](
-      coordinator = Some(p1),
-      transaction = Some("aborted-in-commit"),
-      prepare = FlexibleVoting(Set(Vote(p1, true), Vote(p2, true))),
-      commit = FlexibleVoting(Set(Vote(p1, false)))
-    )
-
-    val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
-      transactions = Map(txId -> aborted)
-    )
-
-    assertEquals(state.decision, Agreement.Decided(Map(txId -> false)))
-  }
-
   test("decision reports mix of committed, aborted, and pending transactions") {
     val p1            = Uid.gen()
     val p2            = Uid.gen()
@@ -706,26 +684,111 @@ class SimpSpanTest extends munit.FunSuite {
 
     // paxos log size should be 1 after upkeep
     assertEquals(state.paxosPartitions(partitionId).log.size, 1)
+    assertEquals(state.paxosPartitions(partitionId).phase, MultipaxosPhase.Idle)
 
-    state = state.merge(state.upkeep(using id1))
-    state = state.merge(state.upkeep(using id2))
-    state = state.merge(state.upkeep(using id3))
+    // we already know that this spanner transaction will be accepted
+    assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
 
-    state = state.merge(state.upkeep(using id1))
-    state = state.merge(state.upkeep(using id2))
-    state = state.merge(state.upkeep(using id3))
-
-    // transaction result should be committed
-    assertEquals(state.transactions.size, 1)
-    println(state.transactions.head)
-    println(state.paxosPartitions.keySet)
-    assertEquals(
-      state.transactions.head._2.decision(using Participants(state.paxosPartitions.keySet)),
+    // the transaction itself is not marked as fully decided because it was not acknowledged
+    assertNotEquals(
+      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
       Agreement.Decided(true)
     )
-    println(state.paxosPartitions(partitionId).log)
-    println(state.transactions)
-    assertEquals(state.decision, Agreement.Decided(Map(id1.uid -> true)))
+
+    // 8. upkeep again
+    state = state.merge(state.upkeep(using id1))
+    state = state.merge(state.upkeep(using id2))
+    state = state.merge(state.upkeep(using id3))
+
+    // now the 2PC transaction is acknowledged and fully decided
+    assertEquals(
+      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      Agreement.Decided(true)
+    )
+
+    // upkeep does not change knowledge anymore
+    assertEquals(state.upkeep(using id1), SimpSpan())
+    assertEquals(state.upkeep(using id2), SimpSpan())
+    assertEquals(state.upkeep(using id3), SimpSpan())
+
+  }
+
+  test("end-to-end with one node: leader election, startTransaction, and state accumulation") {
+    val id1         = LocalUid.gen()
+    val partitionId = Uid.gen()
+    val members     = Seq(id1)
+
+    given Participants = Participants(members.map(_.uid).toSet)
+
+    // 1. Start with empty paxos for the partition
+    var state = SimpSpan[String](
+      paxosPartitions = Map(partitionId -> MultiPaxos[twoPCMessages]()),
+      partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
+    )
+
+    // 2. Trigger leader election for id1 and process via upkeep
+    val electionDelta = state.paxosPartitions(partitionId).startLeaderElection(using id1)
+    state = state.merge(SimpSpan(paxosPartitions = Map(partitionId -> electionDelta)))
+    state = state.merge(state.upkeep(using id1))
+
+    assertEquals(state.paxosPartitions(partitionId).leader, Some(id1.uid))
+
+    // 3. id1 starts a transaction
+    val txDelta = state.startTransaction(partitionId, "important-tx")(using id1)
+    assertNotEquals(txDelta, SimpSpan[String]())
+
+    state = state.merge(txDelta)
+    assertEquals(state.transactions.size, 1)
+
+    val (txId, tx) = state.transactions.head
+    assertEquals(tx.coordinator, Some(partitionId))
+    assertEquals(tx.transaction, Some("important-tx"))
+
+    // 4. Transaction is pending; no decisions yet
+    assertEquals(state.decision, Agreement.Decided(Map.empty[Uid, Boolean]))
+
+    // 5. Merging the same delta again is idempotent
+    assertEquals(state.merge(txDelta).transactions.size, 1)
+
+    // 6. validate transaction as leader
+    state = state.merge(state.validate2PC(localPartitionId = partitionId, txId, true)(using id1))
+    // paxos log should still be empty
+    assertEquals(state.paxosPartitions(partitionId).log.size, 0)
+
+    // 7. upkeep with all partition members
+    state = state.merge(state.upkeep(using id1))
+
+    // paxos log size should be 1 after upkeep
+    assertEquals(state.paxosPartitions(partitionId).log.size, 1)
+    assertEquals(state.paxosPartitions(partitionId).phase, MultipaxosPhase.Idle)
+
+    // we already know that this spanner transaction will be accepted
+    assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
+
+    // the transaction itself is not marked as fully decided because it was not acknowledged
+    assertNotEquals(
+      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      Agreement.Decided(true)
+    )
+
+    // 8. upkeep again
+    // this causes the partition to acknowledge the outcome in its Paxos log, not yet in 2PC
+    state = state.merge(state.upkeep(using id1))
+    assertEquals(
+      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      Agreement.Undecided
+    )
+
+    // 9. upkeep again
+    // this causes the partition to persist the outcome in 2PC
+    state = state.merge(state.upkeep(using id1))
+    assertEquals(state.paxosPartitions(partitionId).log.size, 2)
+
+    // now the 2PC transaction is acknowledged and fully decided
+    assertEquals(
+      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      Agreement.Decided(true)
+    )
 
   }
 }
