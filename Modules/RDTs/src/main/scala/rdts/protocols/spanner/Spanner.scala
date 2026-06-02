@@ -148,7 +148,7 @@ case class Spanner[A](
     precondition(paxosPartitions.contains(partitionId) && transactions.contains(transactionID)) {
       val transaction     = transactions(transactionID)
       val acknowledgement =
-        transaction.acknowledge(using LocalUid(partitionId))(using Participants(paxosPartitions.keySet))
+        transaction.acknowledge(using LocalUid(partitionId), Participants(paxosPartitions.keySet))
 
       Spanner(transactions = Map(transactionID -> acknowledgement))
     }
