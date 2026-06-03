@@ -34,7 +34,7 @@ case class Spanner[A](
       // initiate new TwoPhaseCommit
       val init2PC            = TwoPhaseCommit(coordinator = Some(localPartitionId), transaction = Some(t))
       val proposeTransaction =
-        init2PC.proposeTransaction(using LocalUid(localPartitionId), Participants(paxosPartitions.keySet))
+        init2PC.proposeTransaction(using LocalUid(localPartitionId))
 
       Spanner(transactions = Map(Uid.gen() -> init2PC.merge(proposeTransaction)))
     }
@@ -74,10 +74,7 @@ case class Spanner[A](
                 replicaId
               ) =>
             val twoPC =
-              transactions(transactionID).prepare(valid)(using
-                LocalUid(partitionId),
-                Participants(paxosPartitions.keySet)
-              )
+              transactions(transactionID).prepare(valid)(using LocalUid(partitionId))
             Spanner(transactions = Map(transactionID -> twoPC))
           case _ => Spanner()
     }
