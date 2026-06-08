@@ -1,7 +1,7 @@
 package channels.webnativewebsockets
 
 import channels.*
-import channels.MesageBufferExtensions.asArrayBuffer
+import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
@@ -17,7 +17,7 @@ class WebsocketConnect(socket: dom.WebSocket) extends Connection {
   def open(): Boolean = socket.readyState == dom.WebSocket.OPEN
 
   def send(data: MessageBuffer): Async[Any, Unit] = Sync {
-    socket.send(data.asArrayBuffer)
+    socket.send(data.convertToArrayBuffer())
   }
 
   def close(): Unit = socket.close()

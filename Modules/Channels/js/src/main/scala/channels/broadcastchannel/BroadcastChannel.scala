@@ -1,7 +1,7 @@
 package channels.broadcastchannel
 
 import channels.*
-import channels.MesageBufferExtensions.asArrayBuffer
+import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
 import channels.connection.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay
 import de.rmgk.delay.{Async, Sync}
@@ -46,7 +46,7 @@ object BroadcastChannelConnector {
 class BroadcastChannelConnection(bc: BroadcastChannel) extends Connection {
 
   def send(message: MessageBuffer): delay.Async[Any, Unit] =
-    Sync(bc.postMessage(message.asArrayBuffer))
+    Sync(bc.postMessage(message.convertToArrayBuffer()))
 
   override def close(): Unit = ()
 

@@ -1,7 +1,7 @@
 package channels.webrtc
 
 import channels.*
-import channels.MesageBufferExtensions.asArrayBuffer
+import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
 import channels.connection.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
@@ -60,7 +60,7 @@ class WebRTCConnection(channel: dom.RTCDataChannel) extends Connection {
 
   }
   def send(message: MessageBuffer): Async[Any, Unit] =
-    Sync(channel.send(message.asArrayBuffer))
+    Sync(channel.send(message.convertToArrayBuffer()))
 
   override def close(): Unit = channel.close()
 }
