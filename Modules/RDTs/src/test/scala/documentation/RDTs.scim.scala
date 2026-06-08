@@ -5,6 +5,7 @@ class RDTs extends munit.FunSuite {
   /*:scim
 = Algebraic Replicated Data Types
 :flags = -hardwrap
+:htmlTemplate = template.rescala.html.scim
 
 This manual introduces Algebraic Replicated Data Types (ARDTs):
 a systematic approach to building conflict-free replicated data

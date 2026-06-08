@@ -1,10 +1,10 @@
 package channels.experiments
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, Receive}
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import rdts.base.Uid
 import channels.JsoniterCodecs.given
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, Receive}
 import channels.experiments.SignalingServer.Message
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromByteBuffer, writeToArray}
+import rdts.base.Uid
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}
@@ -35,7 +35,7 @@ class SignalingServer(debug: Boolean) {
   }
 
   private def sendOrDisconnect(conn: Connection, msg: Message): Unit =
-    conn.send(ArrayMessageBuffer(writeToArray(msg))).run {
+    conn.send(ByteBufferMessageBuffer(writeToArray(msg))).run {
       case Success(_) => ()
       case Failure(_) => disconnect(conn)
     }
@@ -64,7 +64,7 @@ class SignalingServer(debug: Boolean) {
   private val receive: Receive =
     (conn: Connection) => {
       case Success(buffer) =>
-        readFromArray[Message](buffer.asArray) match
+        readFromByteBuffer[Message](buffer.asByteBuffer) match
             case Message.Register(uid)             => register(uid, conn)
             case msg @ Message.Offer(from, to, _)  => relay(conn, from, to, msg)
             case msg @ Message.Answer(from, to, _) => relay(conn, from, to, msg)

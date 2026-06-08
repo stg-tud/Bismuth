@@ -3,7 +3,7 @@ package ex2026lofi_acl.sync
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
 import ChannelConnectionManagerTest.*
-import channels.connection.{ArrayMessageBuffer, MessageBuffer}
+import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import munit.FunSuite
 import replication.acl.sync.ChannelConnectionManager
 
@@ -13,9 +13,9 @@ object ChannelConnectionManagerTest {
   val DEBUG      = false
   val TIMEOUT_MS = 100
 
-  def buf(str: String): MessageBuffer = ArrayMessageBuffer(str.getBytes)
+  def buf(str: String): MessageBuffer = ByteBufferMessageBuffer(str.getBytes)
   extension (tpl: (MessageBuffer, PublicIdentity))
-      def unbuf: (String, PublicIdentity) = if tpl == null then null else tpl.copy(_1 = String(tpl._1.asArray))
+      def unbuf: (String, PublicIdentity) = if tpl == null then null else tpl.copy(_1 = String(tpl._1.convertToArray()))
 
   def waitForUnordered[T](queue: LinkedBlockingQueue[T], expected: Set[T]): Set[T] = {
     var accumulated = Set.empty[T]

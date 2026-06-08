@@ -15,7 +15,7 @@ class JioInputStreamAdapter(in: InputStream) {
     val bytes = new Array[Byte](size)
     inputStream.readFully(bytes, 0, size)
 
-    ArrayMessageBuffer(bytes)
+    ByteBufferMessageBuffer(bytes)
   }
 
   def loopReceive(handler: Callback[MessageBuffer]): Unit = {
@@ -39,7 +39,7 @@ class JioOutputStreamAdapter(out: OutputStream) {
   val outputStream = new DataOutputStream(new BufferedOutputStream(out))
 
   def send(data: MessageBuffer): Unit = synchronized {
-    val outArray = data.asArray
+    val outArray = data.convertToArray()
     outputStream.writeInt(outArray.length)
     outputStream.write(outArray)
     outputStream.flush()

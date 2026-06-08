@@ -48,7 +48,7 @@ class ChannelConnectionManager(
           messages.foreach { message =>
             connection.send(message).runIn(abort) {
               case Success(_) => if !disableLogging then
-                    println(s"Successfully sent msg: ${String(message.asArray)} to ${remotePeerId}")
+                    println(s"Successfully sent msg: ${String(message.convertToArray())} to ${remotePeerId}")
               case Failure(exception) =>
                 if !disableLogging then exception.printStackTrace()
                 onSocketFailure(remotePeerId, connection)

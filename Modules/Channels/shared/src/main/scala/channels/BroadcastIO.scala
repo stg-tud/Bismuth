@@ -1,23 +1,22 @@
 package channels
 
-import channels.*
 import channels.BroadcastIO.Envelope
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Event, Peer}
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
-import channels.connection.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionClosedException, ConnectionDescriptor, LatentConnection, MessageBuffer, NoMoreDataException, PeerConnectInfo}
+import channels.connection.{Abort, ByteBufferMessageBuffer, ChannelResolver, Connection, ConnectionClosedException, ConnectionDescriptor, LatentConnection, MessageBuffer, NoMoreDataException, PeerConnectInfo}
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayMessage}
 import channels.overlay.{FullMeshOverlay, OverlayController}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.{LocalUid, Uid}
-import rdts.time.Dots
 
 import java.net.SocketException
+import java.nio.ByteBuffer
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -57,12 +56,15 @@ object BroadcastIO {
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
 
   def decodeEnvelope[State: JsonValueCodec](messageBuffer: MessageBuffer, aead: Aead): Try[Envelope[State]] =
-    aead.decrypt(messageBuffer.asArray, Aead.emptyAssociatedData).flatMap(bytes =>
-      Try(readFromArray[Envelope[State]](bytes)(using BroadcastIO.messageCodec))
+    aead.decrypt(messageBuffer.asByteBuffer, Aead.emptyAssociatedData).flatMap(bytes =>
+      Try(readFromByteBuffer[Envelope[State]](bytes)(using BroadcastIO.messageCodec))
     )
 
   def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State], aead: Aead) =
-    ArrayMessageBuffer(aead.encrypt(writeToArray(envelope)(using BroadcastIO.messageCodec), Aead.emptyAssociatedData))
+    ByteBufferMessageBuffer(aead.encrypt(
+      ByteBuffer.wrap(writeToArray(envelope)(using BroadcastIO.messageCodec)),
+      Aead.emptyAssociatedData
+    ))
 }
 
 /** Combined Delta + Plumtree dissemination.

@@ -1,5 +1,5 @@
 import channels.BroadcastIO
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Sync}
@@ -80,7 +80,7 @@ object WebviewNativeChannel {
 
   class WebviewConnectionContext(w: WebView) extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
-      val b64 = new String(java.util.Base64.getEncoder.encode(message.asArray))
+      val b64 = new String(java.util.Base64.getEncoder.encode(message.convertToArray()))
       w.eval(s"""webview_channel_receive('$b64')""")
     }
     override def close(): Unit = ()
@@ -98,7 +98,7 @@ object WebviewNativeChannel {
           val bytes     = java.util.Base64.getDecoder.decode(arguments.head)
           println(s"successfully decoded base 64")
           println(new String(bytes))
-          cb.succeed(ArrayMessageBuffer(bytes))
+          cb.succeed(ByteBufferMessageBuffer(bytes))
           println(s"done")
           ""
         }

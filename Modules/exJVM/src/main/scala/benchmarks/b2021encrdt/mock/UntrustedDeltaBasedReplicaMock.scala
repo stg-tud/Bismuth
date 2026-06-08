@@ -3,6 +3,7 @@ package benchmarks.b2021encrdt.mock
 import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.{EncryptedDeltaGroup, UntrustedReplica}
 import benchmarks.b2021encrdt.{Codecs, localidFromString}
+import channels.connection.MessageBuffer
 import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
 import com.google.crypto.tink.Aead
@@ -20,7 +21,7 @@ class UntrustedDeltaBasedReplicaMock extends UntrustedReplica {
 
   def size(): Long = {
     encryptedDeltaGroupStore.toList.map { delta =>
-      delta.stateCiphertext.length.toLong + delta.serialDottedVersionVector.length.toLong
+      delta.stateCiphertext.remaining().toLong + delta.serialDottedVersionVector.remaining().toLong
     }.sum
   }
 
@@ -28,12 +29,17 @@ class UntrustedDeltaBasedReplicaMock extends UntrustedReplica {
     val os          = Files.newOutputStream(outFilepath)
     val printWriter = new PrintWriter(os)
     encryptedDeltaGroupStore.foreach { encDeltaGroup =>
+      val vectorbytes = MessageBuffer.convertByteBufferToArray(
+        encDeltaGroup.serialDottedVersionVector.duplicate()
+      )
       printWriter.print(new String(aead.decrypt(
-        encDeltaGroup.stateCiphertext,
-        encDeltaGroup.serialDottedVersionVector
+        MessageBuffer.convertByteBufferToArray(
+          encDeltaGroup.stateCiphertext.duplicate()
+        ),
+        vectorbytes
       )))
       printWriter.print('|')
-      printWriter.println(new String(encDeltaGroup.serialDottedVersionVector))
+      printWriter.println(new String(vectorbytes))
     }
     printWriter.close()
   }

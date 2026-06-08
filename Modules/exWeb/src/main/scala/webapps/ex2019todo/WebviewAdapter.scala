@@ -1,6 +1,6 @@
 package webapps.ex2019todo
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 
 import scala.scalajs.js
@@ -15,7 +15,7 @@ object WebviewAdapterChannel {
 
   object WebviewConnectionContext extends Connection {
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
-      val b64 = new String(java.util.Base64.getEncoder.encode(message.asArray))
+      val b64 = new String(java.util.Base64.getEncoder.encode(message.convertToArray()))
       if !js.isUndefined(scala.scalajs.js.Dynamic.global.webview_channel_send) then
           println("sending message to webview")
           scala.scalajs.js.Dynamic.global.webview_channel_send(b64)
@@ -33,7 +33,7 @@ object WebviewAdapterChannel {
       val cb   = incomingHandler.connectionEstablished(conn)
       receiveCallback = { (msg: String) =>
         val bytes = java.util.Base64.getDecoder.decode(msg)
-        cb.succeed(ArrayMessageBuffer(bytes))
+        cb.succeed(ByteBufferMessageBuffer(bytes))
         ""
       }
 

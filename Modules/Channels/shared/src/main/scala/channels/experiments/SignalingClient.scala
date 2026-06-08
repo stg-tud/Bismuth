@@ -1,11 +1,11 @@
 package channels.experiments
 
-import channels.connection.{Abort, ArrayMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer}
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+import channels.JsoniterCodecs.given
+import channels.connection.{Abort, ByteBufferMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer}
+import channels.experiments.SignalingServer.{Message, Session}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromByteBuffer, writeToArray}
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.Uid
-import channels.JsoniterCodecs.given
-import channels.experiments.SignalingServer.{Message, Session}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Promise}
@@ -24,7 +24,7 @@ class SignalingClient(
   private val pendingOffers                           = mutable.HashMap.empty[Uid, Promise[Session]]
 
   private def send(conn: Connection, message: Message): Async[Any, Unit] =
-    conn.send(ArrayMessageBuffer(writeToArray(message)))
+    conn.send(ByteBufferMessageBuffer(writeToArray(message)))
 
   private def failPending(err: Throwable): Unit = synchronized {
     pendingOffers.values.foreach(_.tryFailure(err))
@@ -33,7 +33,7 @@ class SignalingClient(
 
   private def receive(conn: Connection): Callback[MessageBuffer] = {
     case Success(buffer) =>
-      readFromArray[Message](buffer.asArray) match
+      readFromByteBuffer[Message](buffer.asByteBuffer) match
           case Message.Offer(from, to, session) if to == localUid =>
             webrtcAnswerer.foreach { answerer =>
               answerer(from, session).run {

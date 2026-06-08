@@ -2,7 +2,7 @@ package webapps
 
 import channels.BroadcastIO
 import channels.broadcastchannel.BroadcastChannelConnector
-import channels.connection.{Abort, ArrayMessageBuffer, MessageBuffer}
+import channels.connection.{Abort, ByteBufferMessageBuffer, MessageBuffer}
 import channels.webrtc.{ConnectorOverview, SessionDescription, WebRTCConnection, WebRTCConnector}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -25,9 +25,9 @@ object BroadcastCommunication {
   case class Response(from: Long, to: Long, sessionDescription: SessionDescription) extends BroadcastCommunication
 }
 
-given converterRead[T](using JsonValueCodec[T]): Conversion[MessageBuffer, T]  = mb => readFromArray[T](mb.asArray)
+given converterRead[T](using JsonValueCodec[T]): Conversion[MessageBuffer, T]  = mb => readFromByteBuffer[T](mb.asByteBuffer)
 given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
-  v => ArrayMessageBuffer(writeToArray[T](v))
+  v => ByteBufferMessageBuffer(writeToArray[T](v))
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 

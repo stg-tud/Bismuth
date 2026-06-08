@@ -3,6 +3,7 @@ package benchmarks.b2021encrdt
 import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.DecryptedDeltaGroup
 import benchmarks.b2021encrdt.mock.UntrustedDeltaBasedReplicaMock
+import channels.connection.MessageBuffer
 import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import com.google.crypto.tink.Aead
@@ -10,6 +11,7 @@ import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.{Dot, Dots}
 
 import java.io.PrintWriter
+import java.nio.ByteBuffer
 import java.nio.file.{Files, Path, Paths}
 import scala.language.implicitConversions
 import scala.util.Try
@@ -77,7 +79,7 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmark extends DeltaStateUntrustedR
           val mergedSize      = serializedDecryptedMergedState.length
           val mergedEncrypted = DecryptedDeltaGroup(mergedCrdt.state, untrustedReplica.getCausalContext).encrypt(aead)
           val mergedEncryptedSize =
-            mergedEncrypted.serialDottedVersionVector.length + mergedEncrypted.stateCiphertext.length
+            mergedEncrypted.serialDottedVersionVector.remaining() + mergedEncrypted.stateCiphertext.remaining()
           val csvLine =
             s"$parallelStates,${totalElements - parallelStates},$totalElements,${untrustedReplica.size()},$mergedSize,$mergedEncryptedSize"
           println(csvLine)
@@ -116,7 +118,7 @@ object DeltaStateBasedUntrustedReplicaSizeBenchmarkLinearScaling
         val serializedInternalCrdt = writeToArray(crdt.state)
         val encrdtFullyMerged      = DecryptedDeltaGroup(crdt.state, untrustedReplica.getCausalContext).encrypt(aead)
         val encrdtFullyMergedSize  =
-          encrdtFullyMerged.stateCiphertext.length + encrdtFullyMerged.serialDottedVersionVector.length
+          encrdtFullyMerged.stateCiphertext.remaining() + encrdtFullyMerged.serialDottedVersionVector.remaining()
 
         val csvLine =
           s"1,${i + 1},${i + 1},${untrustedReplica.size()},${serializedInternalCrdt.length},$encrdtFullyMergedSize"
@@ -141,8 +143,9 @@ trait DeltaStateUntrustedReplicaSizeBenchEnvironment {
 }
 
 class AeadTranslation(aead: com.google.crypto.tink.Aead) extends experiments.Aead {
-  override def encrypt(data: Array[Byte], associated: Array[Byte]): Array[Byte] = aead.encrypt(data, associated)
+  override def encrypt(data: ByteBuffer, associated: ByteBuffer): ByteBuffer =
+    ByteBuffer.wrap(aead.encrypt(MessageBuffer.convertByteBufferToArray(data), MessageBuffer.convertByteBufferToArray(associated)))
 
-  override def decrypt(data: Array[Byte], associated: Array[Byte]): Try[Array[Byte]] =
-    Try(aead.decrypt(data, associated))
+  override def decrypt(data: ByteBuffer, associated: ByteBuffer): Try[ByteBuffer] =
+    Try(ByteBuffer.wrap(aead.decrypt(MessageBuffer.convertByteBufferToArray(data), MessageBuffer.convertByteBufferToArray(associated))))
 }

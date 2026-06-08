@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{Abort, ArrayMessageBuffer, NoMoreDataException}
+import channels.connection.{Abort, ByteBufferMessageBuffer, NoMoreDataException}
 
 import java.net.StandardProtocolFamily
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
@@ -67,12 +67,12 @@ class DisconnectTest extends munit.FunSuite {
       }
     }.runIn(Abort()) {
       case Success(conn) =>
-        conn.send(ArrayMessageBuffer("Hi!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
+        conn.send(ByteBufferMessageBuffer("Hi!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
         Thread.sleep(10)
         serverNioTCP.selector.keys().forEach(_.channel().close())
         Thread.sleep(10)
 
-        conn.send(ArrayMessageBuffer("Hi 2!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
+        conn.send(ByteBufferMessageBuffer("Hi 2!".getBytes())).runIn(Abort()) { TestUtil.printErrors(mb => ()) }
       case Failure(_) =>
     }
 

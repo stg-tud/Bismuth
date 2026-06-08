@@ -6,7 +6,7 @@ import crypto.channels.PrivateIdentity
 import replication.acl.bft.HashDag.Encoder
 import AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import AclEnforcingSync.{SyncMsg, encoder}
-import channels.connection.{ArrayMessageBuffer, MessageBuffer}
+import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
@@ -31,7 +31,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     val msgReceiver = new MessageReceiver[MessageBuffer] {
       override def receivedMessage(msgBuf: MessageBuffer, fromUser: PublicIdentity): Unit =
         messageHandlerExecutor.execute(() =>
-            val msg: SyncMsg[State] = readFromArray(msgBuf.asArray)
+            val msg: SyncMsg[State] = readFromArray(msgBuf.convertToArray())
             // Debug.received(msg, fromUser, localIdentity.getPublic)
             handleMessage(msg, fromUser)
         )
@@ -59,11 +59,11 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
 
   protected def onConnectionEstablished(newRemote: PublicIdentity): Unit = {
     // Notify remote about local ACL state
-    val aclVersionMsg = ArrayMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
+    val aclVersionMsg = ByteBufferMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
     // Notify remote about local RDT state
-    val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
+    val rdtVersionMsg = ByteBufferMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
     // Only tell new peer about our peers (instead of everyone)
-    val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(
+    val peersMsg = ByteBufferMessageBuffer(writeToArray(MyPeersAre(
       // Tell remote my listen address (important, if we have established a connection)
       (localIdentity.getPublic -> connectionManager.listenAddress.get) +:
       // Tell remote about other replicas' addresses
@@ -88,7 +88,7 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
       newPeers.foreach { case (id, (host, port)) => connect(id, host, port) }
 
       if oldAddresses != remoteAddressCache.get() then
-          val peersMsg = ArrayMessageBuffer(writeToArray(MyPeersAre(
+          val peersMsg = ByteBufferMessageBuffer(writeToArray(MyPeersAre(
             // Tell remote my listen address (important, if we have established a connection)
             (localIdentity.getPublic -> connectionManager.listenAddress.get) +:
             // Tell remote about other replicas' addresses

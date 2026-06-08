@@ -1,6 +1,6 @@
 package jettyWsConnector
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, Receive as ChannelHandler}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, Receive as ChannelHandler}
 import de.rmgk.delay.{Async, toAsync, Callback as DelayCallback}
 import org.eclipse.jetty.http.pathmap.PathSpec
 import org.eclipse.jetty.server.handler.{ContextHandler, ContextHandlerCollection}
@@ -106,7 +106,7 @@ class JettySessionWrapper(session: Session) extends Connection {
 
   override def send(data: MessageBuffer): Async[Any, Unit] = Async.fromCallback {
     session.sendBinary(
-      ByteBuffer.wrap(data.asArray),
+      data.asByteBuffer,
       new JettyCallback {
         override def succeed(): Unit          = Async.handler.succeed(())
         override def fail(x: Throwable): Unit = Async.handler.fail(x)
@@ -135,7 +135,7 @@ class JettyWsHandler(
     val data = new Array[Byte](buffer.remaining())
     buffer.get(data)
 
-    internalCallback.succeed(ArrayMessageBuffer(data))
+    internalCallback.succeed(ByteBufferMessageBuffer(data))
 
     callback.succeed()
     getSession.demand()

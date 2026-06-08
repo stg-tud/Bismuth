@@ -1,6 +1,6 @@
 package ex2026lofi_acl.evaluation.centralized
 
-import channels.connection.{ArrayMessageBuffer, MessageBuffer}
+import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
@@ -41,9 +41,9 @@ class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}
 
   override protected def onConnectionEstablished(newRemote: PublicIdentity): Unit =
       // Notify remote about local ACL state
-      val aclVersionMsg = ArrayMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
+      val aclVersionMsg = ByteBufferMessageBuffer(writeToArray(MyAclVersionIs(aclAntiEntropy.currentAcl._1)))
       // Notify remote about local RDT state
-      val rdtVersionMsg = ArrayMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
+      val rdtVersionMsg = ByteBufferMessageBuffer(writeToArray(MyRdtVersionIs(rdtAntiEntropy.currentState._1)))
       // But don't tell remote about peers
 
       connectionManager.sendMultiple(newRemote, Array(aclVersionMsg, rdtVersionMsg))

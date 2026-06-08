@@ -1,8 +1,8 @@
 package channels
 
-import channels.connection.{Abort, ArrayMessageBuffer}
+import channels.connection.{Abort, ByteBufferMessageBuffer}
 import channels.webnativewebsockets.WebsocketConnect
-import de.rmgk.delay.{Async, Callback}
+import de.rmgk.delay.Async
 
 import scala.util.{Failure, Success}
 
@@ -19,7 +19,8 @@ class EchoWSTest extends munit.FunSuite {
 
     val fut = Async[Abort]:
         val wsc = outgoing.bind
-        wsc.send(ArrayMessageBuffer("hello world".getBytes())).bind
+        val bb  = ByteBufferMessageBuffer("hello world".getBytes())
+        wsc.send(bb).bind
     .runToFuture(Abort())
     fut
   }

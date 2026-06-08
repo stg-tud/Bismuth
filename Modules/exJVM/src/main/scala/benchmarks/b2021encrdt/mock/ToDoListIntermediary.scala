@@ -5,15 +5,15 @@ import benchmarks.b2021encrdt.deltabased.{DeltaPruning, EncryptedDeltaGroup, Unt
 class ToDoListIntermediary extends UntrustedReplica with DeltaPruning with IntermediarySizeInfo {
   def sizeInBytes: Long = {
     encryptedDeltaGroupStore.iterator.map { encDelta =>
-      encDelta.serialDottedVersionVector.length.toLong + encDelta.stateCiphertext.length.toLong
+      encDelta.serialDottedVersionVector.remaining().toLong + encDelta.stateCiphertext.remaining().toLong
     }.sum
   }
 
   def encDeltaCausalityInfoSizeInBytes: Long =
-    encryptedDeltaGroupStore.iterator.map(_.serialDottedVersionVector.length.toLong).sum
+    encryptedDeltaGroupStore.iterator.map(_.serialDottedVersionVector.remaining().toLong).sum
 
   def rawDeltasSizeInBytes: Long =
-    encryptedDeltaGroupStore.iterator.map(_.stateCiphertext.length.toLong).sum
+    encryptedDeltaGroupStore.iterator.map(_.stateCiphertext.remaining().toLong).sum
 
   def numberStoredDeltas: Int = encryptedDeltaGroupStore.size
 

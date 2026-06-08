@@ -1,6 +1,6 @@
 package jettyWsConnector
 
-import channels.connection.{Abort, ArrayMessageBuffer, ConnectionDescriptor}
+import channels.connection.{Abort, ByteBufferMessageBuffer, ConnectionDescriptor}
 import channels.EchoCommunicationTest
 import de.rmgk.delay.*
 import org.eclipse.jetty.http.pathmap.PathSpec
@@ -30,7 +30,7 @@ object JettyConnectTest {
 
     val connect = Async[Abort] {
       val outgoing = prepared.bind
-      outgoing.send(ArrayMessageBuffer("hello world".getBytes)).bind
+      outgoing.send(ByteBufferMessageBuffer("hello world".getBytes)).bind
       println("send successfull")
     }.runIn(Abort()) { res =>
       println("done!")

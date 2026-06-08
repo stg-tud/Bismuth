@@ -8,6 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import rdts.base.LocalUid
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 
+import java.nio.ByteBuffer
 import java.util.UUID
 
 class InsecureToDoListClient(
@@ -17,8 +18,8 @@ class InsecureToDoListClient(
 ) extends SecureToDoListClient(replicaId1, crdt, null, untrustedReplica) {
   override protected def encryptAndDisseminate(newDeltaGroup: DecryptedDeltaGroup[ToDoMapLattice]): Unit = {
     // Serialize but don't encrypt!
-    val serialPlaintextDeltaGroup = writeToArray(newDeltaGroup.deltaGroup)
-    val serialDottedVersionVector = writeToArray(newDeltaGroup.dottedVersionVector)
+    val serialPlaintextDeltaGroup = ByteBuffer.wrap(writeToArray(newDeltaGroup.deltaGroup))
+    val serialDottedVersionVector = ByteBuffer.wrap(writeToArray(newDeltaGroup.dottedVersionVector))
 
     disseminate(
       EncryptedDeltaGroup(serialPlaintextDeltaGroup, serialDottedVersionVector)

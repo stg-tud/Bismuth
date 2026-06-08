@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
+import channels.connection.{ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, toAsync}
 
 import java.net.URI
@@ -31,7 +31,7 @@ final case class JavaWebSocketConnection(uri: URI, socket: WebSocket) extends Co
   )
 
   override def send(message: MessageBuffer): Async[Any, Unit] =
-    socket.sendBinary(ByteBuffer.wrap(message.asArray), true).toAsync.map(_ => ())
+    socket.sendBinary(message.asByteBuffer, true).toAsync.map(_ => ())
 
   override def close(): Unit = {
     socket.sendClose(WebSocket.NORMAL_CLOSURE, "")
@@ -51,16 +51,16 @@ final class JavaWebSocketListener extends WebSocket.Listener {
   override def onBinary(webSocket: WebSocket, data: ByteBuffer, last: Boolean): CompletionStage[?] = {
     val bytes = new Array[Byte](data.remaining())
     data.get(bytes)
-    if last then callback.nn.succeed(ArrayMessageBuffer(bytes))
-    else callback.nn.succeed(ArrayMessageBuffer(bytes))
+    if last then callback.nn.succeed(ByteBufferMessageBuffer(bytes))
+    else callback.nn.succeed(ByteBufferMessageBuffer(bytes))
     webSocket.request(1)
     java.util.concurrent.CompletableFuture.completedFuture(null)
   }
 
   override def onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage[?] = {
     val bytes = data.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8)
-    if last then callback.nn.succeed(ArrayMessageBuffer(bytes))
-    else callback.nn.succeed(ArrayMessageBuffer(bytes))
+    if last then callback.nn.succeed(ByteBufferMessageBuffer(bytes))
+    else callback.nn.succeed(ByteBufferMessageBuffer(bytes))
     webSocket.request(1)
     java.util.concurrent.CompletableFuture.completedFuture(null)
   }

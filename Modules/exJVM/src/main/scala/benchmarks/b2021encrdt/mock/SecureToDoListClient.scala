@@ -40,7 +40,7 @@ class SecureToDoListClient(
   )
 
   override protected def disseminate(encryptedState: EncryptedDeltaGroup): Unit = {
-    _disseminatedDataInBytes += encryptedState.stateCiphertext.length + encryptedState.serialDottedVersionVector.length
+    _disseminatedDataInBytes += encryptedState.stateCiphertext.remaining() + encryptedState.serialDottedVersionVector.remaining()
     intermediary.receive(encryptedState)
   }
 

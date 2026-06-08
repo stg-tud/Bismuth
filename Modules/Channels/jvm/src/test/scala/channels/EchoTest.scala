@@ -1,10 +1,8 @@
 package channels
 
 import channels.connection.ConnectionDescriptor
-import com.sun.net.httpserver.HttpServer
 
-import java.net.http.HttpClient
-import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, URI, UnixDomainSocketAddress}
+import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, UnixDomainSocketAddress}
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.nio.file.Files
 

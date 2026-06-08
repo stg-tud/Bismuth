@@ -1,28 +1,49 @@
 package channels.connection
 
-import channels.connection.ConnectionInfo
+import channels.connection.MessageBuffer.convertByteBufferToArray
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.Uid
 
-import java.nio.charset.StandardCharsets
+import java.nio.ByteBuffer
 
 class NoMoreDataException(msg: String) extends Exception(msg)
 
 trait MessageBuffer {
-  def asArray: Array[Byte]
-  def show: String = asArray.mkString("[", ", ", "]")
+  def convertToArray(): Array[Byte] = convertByteBufferToArray(asByteBuffer)
+
+  def show: String = convertToArray().mkString("[", ", ", "]")
+
+  /** returns a new ByteBuffer that wraps the underlying memory */
+  def asByteBuffer: ByteBuffer
 }
 
 object MessageBuffer {
-  given Conversion[String, MessageBuffer] = str => ArrayMessageBuffer(str.getBytes(StandardCharsets.UTF_8))
-  given Conversion[MessageBuffer, String] = buf => new String(buf.asArray, StandardCharsets.UTF_8)
-
   val maxPayloadSize: Int = 1 << 24
+
+  def convertByteBufferToArray(buffer: ByteBuffer): Array[Byte] = {
+    if buffer.hasArray then {
+      val offset = buffer.arrayOffset() + buffer.position()
+      val length = buffer.remaining()
+      val arr    = buffer.array()
+      if offset == 0 && length == arr.length
+      then arr
+      else java.util.Arrays.copyOfRange(buffer.array(), offset, offset + length)
+    } else {
+      val length = buffer.remaining()
+      val array  = new Array[Byte](length)
+      buffer.get(array)
+      array
+    }
+  }
 }
 
-case class ArrayMessageBuffer(inner: Array[Byte]) extends MessageBuffer {
-  require(inner.length < MessageBuffer.maxPayloadSize, "message too large")
-  override def asArray: Array[Byte] = inner
+case class ByteBufferMessageBuffer(inner: ByteBuffer) extends MessageBuffer {
+  require(inner.remaining() < MessageBuffer.maxPayloadSize, "message too large")
+  override def asByteBuffer: ByteBuffer = inner.duplicate()
+}
+
+object ByteBufferMessageBuffer {
+  def apply(bytes: Array[Byte]): ByteBufferMessageBuffer = ByteBufferMessageBuffer(ByteBuffer.wrap(bytes))
 }
 
 class Abort(@volatile var closeRequest: Boolean = false) {

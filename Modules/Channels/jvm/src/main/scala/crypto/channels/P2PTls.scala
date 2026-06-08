@@ -1,6 +1,6 @@
 package crypto.channels
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
 import crypto.PublicIdentity
 import crypto.channels.{P2PX509TrustManager, X509Util}
 import de.rmgk.delay.{Async, Sync}
@@ -179,7 +179,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       outputStream.synchronized {
-        val bytes = message.asArray
+        val bytes = message.convertToArray()
         outputStream.writeInt(bytes.length)
         outputStream.write(bytes)
         outputStream.flush()
@@ -193,7 +193,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
               val len = inputStream.readInt()
               require(len < MessageBuffer.maxPayloadSize, "Message too large")
               val bytes = inputStream.readNBytes(len)
-              if bytes.length == len then receivedMessageCallback.succeed(ArrayMessageBuffer(bytes))
+              if bytes.length == len then receivedMessageCallback.succeed(ByteBufferMessageBuffer(bytes))
               else throw EOFException(s"Could not read $len bytes for message")
         } catch {
           case ex: Throwable =>

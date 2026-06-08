@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Callback}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, SocketAddress, SocketTimeoutException}
@@ -39,7 +39,7 @@ object UDP {
                 try {
                   datagramSocket.receive(packet)
                   val (_, callback) = receiverFor(packet.getSocketAddress)
-                  callback.succeed(ArrayMessageBuffer(packet.getData.slice(
+                  callback.succeed(ByteBufferMessageBuffer(packet.getData.slice(
                     packet.getOffset,
                     packet.getOffset + packet.getLength
                   )))
@@ -126,7 +126,7 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket) 
         case _ => ConnectionInfo("type" -> "udp")
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {
-    val outArray   = message.asArray
+    val outArray   = message.convertToArray()
     val sendPacket = new DatagramPacket(outArray, outArray.length, target)
     datagramSocket.send(sendPacket)
   }

@@ -2,7 +2,7 @@ package channels.webnativewebsockets
 
 import channels.*
 import channels.MesageBufferExtensions.asArrayBuffer
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
 
@@ -53,7 +53,7 @@ object WebsocketConnect {
                 reader.readAsArrayBuffer(data)
 
               case data: String =>
-                callback.succeed(ArrayMessageBuffer(data.getBytes))
+                callback.succeed(ByteBufferMessageBuffer(data.getBytes))
             }
           }
 

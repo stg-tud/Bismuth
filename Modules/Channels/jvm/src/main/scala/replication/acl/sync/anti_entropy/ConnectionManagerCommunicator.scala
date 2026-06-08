@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.PublicIdentity
 import AclEnforcingSync.SyncMsg
 import AclEnforcingSync.SyncMsg.*
-import channels.connection.ArrayMessageBuffer
+import channels.connection.ByteBufferMessageBuffer
 import rdts.time.Dots
 import replication.acl.bft.{Acl, BftDelta, Hash}
 import replication.acl.sync.ConnectionManager
@@ -13,7 +13,7 @@ class ConnectionManagerCommunicator[State](private val conn: ConnectionManager)(
     extends AntiEntropyCommunicator[State] {
 
   protected def send(remote: PublicIdentity, syncMsg: SyncMsg[State]): Unit = {
-    val buffer = ArrayMessageBuffer(writeToArray(syncMsg))
+    val buffer = ByteBufferMessageBuffer(writeToArray(syncMsg))
     conn.send(remote, buffer)
   }
 

@@ -2,7 +2,7 @@ package channels
 
 import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
-import channels.connection.{Abort, ArrayMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
@@ -152,14 +152,14 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
-      val bytes         = message.asArray
-      val messageLength = bytes.length
+      val bytes         = message.asByteBuffer
+      val messageLength = bytes.remaining()
 
       val sizeBuffer = ByteBuffer.allocate(4)
       sizeBuffer.putInt(messageLength)
       sizeBuffer.flip()
 
-      writeFully(clientChannel, Array(sizeBuffer, ByteBuffer.wrap(bytes)))
+      writeFully(clientChannel, Array(sizeBuffer, bytes))
       ()
     }
 
@@ -175,7 +175,12 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     )
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
-      val payload = message.asArray
+      val payload =
+        val bb = message.asByteBuffer
+        bb.array()
+        val arr = new Array[Byte](bb.remaining())
+        bb.get(arr)
+        arr
       val frame   = WebsocketProtocol.encodeBinaryFrame(payload)
       writeFully(clientChannel, Array(ByteBuffer.wrap(frame)))
       ()
@@ -364,7 +369,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
       case Some(buffer) =>
 
         accepCallbackExecutor.execute { () =>
-          callback.succeed(ArrayMessageBuffer(buffer))
+          callback.succeed(ByteBufferMessageBuffer(buffer))
         }
 
         attachment.primary.compact()
@@ -487,7 +492,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
     websocketFrame match {
       case BinaryFrame(data) =>
-        if fin then accepCallbackExecutor.execute(() => callback.succeed(ArrayMessageBuffer(data)))
+        if fin then accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(data)))
         else {
           fragments = fragments :+ data
           fragmentOpcode = Some(0x2)
@@ -495,7 +500,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
       case TextFrame(text) =>
         val data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8)
-        if fin then accepCallbackExecutor.execute(() => callback.succeed(ArrayMessageBuffer(data)))
+        if fin then accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(data)))
         else {
           fragments = fragments :+ data
           fragmentOpcode = Some(0x1)
@@ -507,7 +512,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
           val complete = fragments.foldLeft(Array.emptyByteArray)(_ ++ _)
           fragments = Vector.empty
           fragmentOpcode = None
-          accepCallbackExecutor.execute(() => callback.succeed(ArrayMessageBuffer(complete)))
+          accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(complete)))
         }
 
       case PingFrame(data) =>

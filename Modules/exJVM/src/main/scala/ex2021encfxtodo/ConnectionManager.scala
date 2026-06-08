@@ -1,6 +1,6 @@
 package ex2021encfxtodo
 
-import channels.connection.{Abort, ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
 import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -8,15 +8,23 @@ import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, RegistryConfiguration}
 import rdts.base.LocalUid
 
+import java.nio.ByteBuffer
 import java.nio.file.{Files, Path}
 import java.util.concurrent.ExecutorService
 import scala.util.Try
 
 class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends experiments.Aead {
-  override def encrypt(data: Array[Byte], associated: Array[Byte]): Array[Byte] = aead.encrypt(data, associated)
+  override def encrypt(data: ByteBuffer, associated: ByteBuffer): ByteBuffer =
+    ByteBuffer.wrap(aead.encrypt(
+      MessageBuffer.convertByteBufferToArray(data),
+      MessageBuffer.convertByteBufferToArray(associated)
+    ))
 
-  override def decrypt(data: Array[Byte], associated: Array[Byte]): Try[Array[Byte]] =
-    Try(aead.decrypt(data, associated))
+  override def decrypt(data: ByteBuffer, associated: ByteBuffer): Try[ByteBuffer] =
+    Try(ByteBuffer.wrap(aead.decrypt(
+      MessageBuffer.convertByteBufferToArray(data),
+      MessageBuffer.convertByteBufferToArray(associated)
+    )))
 }
 
 class ConnectionManager[State: JsonValueCodec](
