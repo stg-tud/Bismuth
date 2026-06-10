@@ -18,7 +18,7 @@ case class LastWriterWins[+A](timestamp: CausalTime, payload: A) {
   def write[B](v: B): LastWriterWins[B] =
     LastWriterWins(timestamp.advance, v)
 
-  def map[B](using ev: A <:< Option[B])(f: B => B): LastWriterWins[Option[B]] =
+  def map[B](f: B => B)(using ev: A <:< Option[B]): LastWriterWins[Option[B]] =
     read.map(f) match {
       case None => ev.substituteCo(this)
       case res  => write(res)

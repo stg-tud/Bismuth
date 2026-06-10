@@ -63,7 +63,7 @@ case class Paxos[A](
       case _ => false
 
   // protocol actions:
-  def phase1a(using LocalUid)(value: A): Paxos[A] =
+  def phase1a(value: A)(using LocalUid): Paxos[A] =
     // try to become leader and remember a value for later
     Paxos(Map(nextBallotNum -> voteLeader(replicaId), BallotNum(replicaId, -1) -> voteValue(value)))
   def phase1a(using LocalUid): Paxos[A] =

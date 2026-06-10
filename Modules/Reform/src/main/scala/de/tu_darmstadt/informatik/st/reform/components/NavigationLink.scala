@@ -21,7 +21,7 @@ import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
 
-def navigationLink(using jsImplicits: JSImplicits)(page: Page, label: String): VNode = {
+def navigationLink(page: Page, label: String)(using jsImplicits: JSImplicits): VNode = {
   a(
     cls := "btn btn-ghost normal-case	font-normal rounded-md	hover:bg-slate-100 dark:hover:bg-gray-800/50",
     label,
@@ -38,7 +38,7 @@ def navigationLink(using jsImplicits: JSImplicits)(page: Page, label: String): V
   )
 }
 
-def navigationIconLink(using jsImplicits: JSImplicits)(page: Page, icon: VNode): VNode = {
+def navigationIconLink(page: Page, icon: VNode)(using jsImplicits: JSImplicits): VNode = {
   a(
     cls := "btn btn-ghost normal-case	font-normal rounded-md	hover:bg-slate-100 dark:hover:bg-gray-800/50",
     icon,

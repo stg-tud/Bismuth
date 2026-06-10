@@ -88,8 +88,8 @@ class AWSetTest extends munit.ScalaCheckSuite {
       val seta0 = AntiEntropyContainer[ReplicatedSet[Int]](aea)
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb)
 
-      val seta1 = seta0.mod(_.add(using seta0.replicaID)(e))
-      val setb1 = setb0.mod(_.add(using setb0.replicaID)(e))
+      val seta1 = seta0.mod(_.add(e)(using seta0.replicaID))
+      val setb1 = setb0.mod(_.add(e)(using setb0.replicaID))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -105,8 +105,8 @@ class AWSetTest extends munit.ScalaCheckSuite {
         s"Concurrently adding the same element should have the same effect as adding it once, but ${setb2.data.elements} does not contain $e"
       )
 
-      val seta3 = seta2.mod(_.add(using seta2.replicaID)(e1))
-      val setb3 = setb2.mod(_.add(using setb2.replicaID)(e2))
+      val seta3 = seta2.mod(_.add(e1)(using seta2.replicaID))
+      val setb3 = setb2.mod(_.add(e2)(using setb2.replicaID))
 
       AntiEntropy.sync(aea, aeb)
 
@@ -186,7 +186,7 @@ class AWSetTest extends munit.ScalaCheckSuite {
       aeb.receiveFromNetwork()
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb).processReceivedDeltas()
 
-      val seta1 = seta0.mod(_.add(using seta0.replicaID)(e))
+      val seta1 = seta0.mod(_.add(e)(using seta0.replicaID))
       val setb1 = setb0.mod(_.remove(e))
 
       AntiEntropy.sync(aea, aeb)
@@ -203,7 +203,7 @@ class AWSetTest extends munit.ScalaCheckSuite {
         s"When concurrently adding and removing the same element the add operation should win, but ${setb2.data.elements} does not contain $e"
       )
 
-      val seta3 = seta2.mod(_.add(using seta2.replicaID)(e1))
+      val seta3 = seta2.mod(_.add(e1)(using seta2.replicaID))
       val setb3 = setb2.mod(_.remove(e2))
 
       AntiEntropy.sync(aea, aeb)
@@ -234,7 +234,7 @@ class AWSetTest extends munit.ScalaCheckSuite {
       AntiEntropy.sync(aea, aeb)
       val setb0 = AntiEntropyContainer[ReplicatedSet[Int]](aeb).processReceivedDeltas()
 
-      val seta1 = seta0.mod(_.add(using seta0.replicaID)(e))
+      val seta1 = seta0.mod(_.add(e)(using seta0.replicaID))
       val setb1 = setb0.mod(_.clear())
 
       AntiEntropy.sync(aea, aeb)
@@ -260,14 +260,14 @@ class AWSetTest extends munit.ScalaCheckSuite {
         val aeb     = new AntiEntropy[ReplicatedSet[Int]]("b", network, mutable.Buffer("a"))
 
         val setaAdded = addedA.foldLeft(AntiEntropyContainer[ReplicatedSet[Int]](aea)) {
-          case (set, e) => set.mod(_.add(using set.replicaID)(e))
+          case (set, e) => set.mod(_.add(e)(using set.replicaID))
         }
         val seta0 = removedA.foldLeft(setaAdded) {
           case (set, e) => set.mod(_.remove(e))
         }
 
         val setbAdded = addedB.foldLeft(AntiEntropyContainer[ReplicatedSet[Int]](aeb)) {
-          case (set, e) => set.mod(_.add(using set.replicaID)(e))
+          case (set, e) => set.mod(_.add(e)(using set.replicaID))
         }
         val setb0 = removedB.foldLeft(setbAdded) {
           case (set, e) => set.mod(_.remove(e))

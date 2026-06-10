@@ -57,7 +57,7 @@ case class Chimeric[A](
       case Some(PaxosRound(_, proposals)) if proposals.votes.nonEmpty => true
       case _ => false
 
-  def phase1a(using LocalUid)(value: A): Chimeric[A] =
+  def phase1a(value: A)(using LocalUid): Chimeric[A] =
     Chimeric(
       Map(
         nextBallotNum -> voteLeader(replicaId),

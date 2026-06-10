@@ -171,7 +171,7 @@ class DiscoveryService {
   }
 
   @scala.annotation.unused
-  private def handle(using jsImplicits: JSImplicits)(ws: WebSocket, name: String, payload: js.Dynamic) = {
+  private def handle(ws: WebSocket, name: String, payload: js.Dynamic)(using jsImplicits: JSImplicits) = {
     if name != "ping" then console.log(name, payload)
 
     name match {

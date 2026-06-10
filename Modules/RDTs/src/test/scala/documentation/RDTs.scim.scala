@@ -431,8 +431,8 @@ Needs an identity to create fresh dots for added elements.
 
       var rSet = ReplicatedSet.empty[String]
 
-      rSet = rSet `merge` rSet.add(using localId)("x")
-      rSet = rSet `merge` rSet.add(using localId)("y")
+      rSet = rSet `merge` rSet.add("x")(using localId)
+      rSet = rSet `merge` rSet.add("y")(using localId)
 
       assertEquals(rSet.elements, Set("x", "y"))
 

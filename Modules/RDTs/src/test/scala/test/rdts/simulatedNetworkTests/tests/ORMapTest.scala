@@ -33,7 +33,7 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val set = {
         val added: AntiEntropyContainer[ReplicatedSet[Int]] = add.foldLeft(AntiEntropyContainer(aeb)) {
-          case (s, e) => s.mod(_.add(using s.replicaID)(e))
+          case (s, e) => s.mod(_.add(e)(using s.replicaID))
         }
 
         remove.foldLeft(added) {
@@ -46,7 +46,7 @@ class ORMapTest extends munit.ScalaCheckSuite {
           case (m, e) =>
             m.mod(_.transform(k) { rs =>
               val before = rs.getOrElse(ReplicatedSet.empty[Int])
-              Some(before `merge` before.add(using m.replicaID)(e))
+              Some(before `merge` before.add(e)(using m.replicaID))
             }(using m.replicaID))
         }
         val res = remove.foldLeft(added) {
@@ -76,7 +76,7 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
       val map = {
         val added = add.foldLeft(AntiEntropyContainer[ObserveRemoveMap[Int, ReplicatedSet[Int]]](aea)) {
-          case (m, e) => m.mod(_.transform(k)(_.map(_.add(using m.replicaID)(e)))(using aea.localUid))
+          case (m, e) => m.mod(_.transform(k)(_.map(_.add(e)(using m.replicaID)))(using aea.localUid))
         }
 
         remove.foldLeft(added) {

@@ -22,7 +22,7 @@ class AWSetBench {
 
   def createBySize(size: Int): NamedDeltaBuffer[ReplicatedSet[Int]] =
     (0 until size).foldLeft(NamedDeltaBuffer("a".asId, ReplicatedSet.empty[Int])) {
-      case (s, e) => s.mod(_.add(using s.replicaID)(e))
+      case (s, e) => s.mod(_.add(e)(using s.replicaID))
     }
 
   @Setup
@@ -33,12 +33,12 @@ class AWSetBench {
   def elements(): Set[Int] = set.state.elements
 
   @Benchmark
-  def add(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.add(using set.replicaID)(-1))
+  def add(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.add(-1)(using set.replicaID))
 
   @Benchmark
   def addAll(): NamedDeltaBuffer[ReplicatedSet[Int]] =
       val ndb = NamedDeltaBuffer("a".asId, ReplicatedSet.empty[Int])
-      ndb.mod(_.addAll(using ndb.replicaID)(0 until size))
+      ndb.mod(_.addAll(0 until size)(using ndb.replicaID))
 
   @Benchmark
   def remove(): NamedDeltaBuffer[ReplicatedSet[Int]] = set.mod(_.remove(0))

@@ -17,14 +17,14 @@ case class ReplicatedSet[E](inner: Map[E, Dots], deleted: Dots) {
 
   lazy val observed: Dots = inner.values.foldLeft(deleted)(_ `union` _)
 
-  def add(using LocalUid)(e: E): Delta = {
+  def add(e: E)(using LocalUid): Delta = {
     val nextDot = observed.nextDot(LocalUid.replicaId)
     val v: Dots = inner.getOrElse(e, Dots.empty)
 
     ReplicatedSet(Map(e -> Dots.single(nextDot)), v)
   }
 
-  def addAll(using LocalUid)(elems: Iterable[E]): Delta = {
+  def addAll(elems: Iterable[E])(using LocalUid): Delta = {
     val nextCounter = observed.nextTime(LocalUid.replicaId)
     val nextDots    = Dots.from((nextCounter until nextCounter + elems.size).map(Dot(LocalUid.replicaId, _)))
 

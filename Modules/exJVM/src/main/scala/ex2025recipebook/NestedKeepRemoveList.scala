@@ -43,9 +43,9 @@ case class NestedKeepRemoveList[E] private (
           NestedKeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
-  def append(using LocalUid)(e: E): C = insertAt(sizeIncludingDead, e)
+  def append(e: E)(using LocalUid): C = insertAt(sizeIncludingDead, e)
 
-  def appendAll(using LocalUid)(es: Iterable[E]): C = es.foldLeft(this)((list, e) => list.append(e))
+  def appendAll(es: Iterable[E])(using LocalUid): C = es.foldLeft(this)((list, e) => list.append(e))
 
   def keep(idx: Int)(using LocalUid): C =
     updateFlag(idx) { case flag =>

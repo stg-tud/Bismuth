@@ -56,7 +56,7 @@ object RubisInterface {
       deltaState.make(auctions = newMap)
     }
 
-    def requestRegisterUser(using LocalUid)(userId: User): Delta = {
+    def requestRegisterUser(userId: User)(using LocalUid): Delta = {
       val (req, users, _) = current
       if users.contains(userId) then deltaState.make()
       else

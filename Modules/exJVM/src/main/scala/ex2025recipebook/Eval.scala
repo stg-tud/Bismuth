@@ -590,9 +590,9 @@ object Eval {
   }
 
   def performORSetOperation(orSet: ReplicatedSet[Int], localUid: LocalUid, random: Int): ReplicatedSet[Int] = {
-    if orSet.size == 0 then return orSet.add(using localUid)(random)
+    if orSet.size == 0 then return orSet.add(random)(using localUid)
     math.abs(random % 2) match {
-      case 0 => orSet.add(using localUid)(random)
+      case 0 => orSet.add(random)(using localUid)
       case 1 =>
         val index = math.abs(random % orSet.size)
         orSet.remove(index)
