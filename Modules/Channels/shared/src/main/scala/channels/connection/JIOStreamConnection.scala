@@ -29,8 +29,8 @@ class JioInputStreamAdapter(in: InputStream) {
   }
 
   def close(): Unit =
-    closed = true
-    in.close()
+      closed = true
+      in.close()
 
 }
 
@@ -61,8 +61,8 @@ class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Uni
   }
 
   def close(): Unit =
-    out.close()
-    doClose()
+      out.close()
+      doClose()
 
   // frame parsing
 

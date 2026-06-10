@@ -70,7 +70,7 @@ object ConnectionDescriptor {
               .orElse(Option(uri.getSchemeSpecificPart).map(_.stripPrefix("//")).filter(_.nonEmpty))
               .map(SynchronousLocal.apply)
           case "sse" => Some(Sse(value))
-          case _ => None
+          case _     => None
     }
 
   given codec: JsonValueCodec[ConnectionDescriptor] with {

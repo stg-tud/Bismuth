@@ -14,7 +14,8 @@ case class DecryptedDeltaGroup[T](deltaGroup: T, dottedVersionVector: Dots) {
   ): EncryptedDeltaGroup = {
     val serialDeltaGroup          = writeToArray(deltaGroup)
     val serialDottedVersionVector = writeToArray(dottedVersionVector)
-    val deltaGroupCipherText      = aead.encrypt(ByteBuffer.wrap(serialDeltaGroup), ByteBuffer.wrap(serialDottedVersionVector))
+    val deltaGroupCipherText      =
+      aead.encrypt(ByteBuffer.wrap(serialDeltaGroup), ByteBuffer.wrap(serialDottedVersionVector))
 
     EncryptedDeltaGroup(deltaGroupCipherText, ByteBuffer.wrap(serialDottedVersionVector))
   }

@@ -25,7 +25,8 @@ object BroadcastCommunication {
   case class Response(from: Long, to: Long, sessionDescription: SessionDescription) extends BroadcastCommunication
 }
 
-given converterRead[T](using JsonValueCodec[T]): Conversion[MessageBuffer, T]  = mb => readFromByteBuffer[T](mb.asByteBuffer)
+given converterRead[T](using JsonValueCodec[T]): Conversion[MessageBuffer, T] =
+  mb => readFromByteBuffer[T](mb.asByteBuffer)
 given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
   v => ByteBufferMessageBuffer(writeToArray[T](v))
 

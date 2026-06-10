@@ -18,24 +18,24 @@ class ChimericTest extends munit.FunSuite {
   given Participants = Participants(Set(u1, u2, u3))
 
   private def manualProposalState(
-    votes: List[(Uid, Int)]
+      votes: List[(Uid, Int)]
   ): Chimeric[Int] = {
-  val proposalVoting =
-    votes.foldLeft(rdts.protocols.Voting[Int]()) {
-      case (acc, (uid, value)) =>
-        given LocalUid = LocalUid(uid)
-        acc.voteFor(value)
-    }
+    val proposalVoting =
+      votes.foldLeft(rdts.protocols.Voting[Int]()) {
+        case (acc, (uid, value)) =>
+          given LocalUid = LocalUid(uid)
+          acc.voteFor(value)
+      }
 
-  Chimeric(
-    rounds = Map(
-      rdts.protocols.BallotNum(Uid("manual"), 0) ->
+    Chimeric(
+      rounds = Map(
+        rdts.protocols.BallotNum(Uid("manual"), 0) ->
         rdts.protocols.PaxosRound(
           proposals = proposalVoting
         )
+      )
     )
-  )
-}
+  }
 
   private def runSingleProposal(
       cfg: QuorumConfig,
@@ -49,9 +49,9 @@ class ChimericTest extends munit.FunSuite {
     c = c `merge` c.propose(value)(using proposer)
 
     for _ <- 1 to 5 do
-      c = c `merge` c.upkeep()(using id1)
-      c = c `merge` c.upkeep()(using id2)
-      c = c `merge` c.upkeep()(using id3)
+        c = c `merge` c.upkeep()(using id1)
+        c = c `merge` c.upkeep()(using id2)
+        c = c `merge` c.upkeep()(using id3)
 
     c
   }
@@ -69,9 +69,9 @@ class ChimericTest extends munit.FunSuite {
     c = c `merge` c.propose(v2)(using id2)
 
     for _ <- 1 to 5 do
-      c = c `merge` c.upkeep()(using id1)
-      c = c `merge` c.upkeep()(using id2)
-      c = c `merge` c.upkeep()(using id3)
+        c = c `merge` c.upkeep()(using id1)
+        c = c `merge` c.upkeep()(using id2)
+        c = c `merge` c.upkeep()(using id3)
 
     c
   }
@@ -91,9 +91,9 @@ class ChimericTest extends munit.FunSuite {
     c = c `merge` c.propose(v3)(using id3)
 
     for _ <- 1 to 5 do
-      c = c `merge` c.upkeep()(using id1)
-      c = c `merge` c.upkeep()(using id2)
-      c = c `merge` c.upkeep()(using id3)
+        c = c `merge` c.upkeep()(using id1)
+        c = c `merge` c.upkeep()(using id2)
+        c = c `merge` c.upkeep()(using id3)
 
     c
   }
@@ -144,13 +144,15 @@ class ChimericTest extends munit.FunSuite {
       u3 -> Set(Set(u3))
     )
 
-    val c = runThreeProposals(summon[QuorumConfig], 7,8,9)
+    val c = runThreeProposals(summon[QuorumConfig], 7, 8, 9)
 
     assertEquals(c.result, Some(9))
     assertEquals(c.decision, Decided(9))
   }
 
-  test("self-only trust cannot decide under when they only belive themselves and stick to their votes local quorum semantics") {
+  test(
+    "self-only trust cannot decide under when they only belive themselves and stick to their votes local quorum semantics"
+  ) {
     given QuorumConfig = Map(
       u1 -> Set(Set(u1)),
       u2 -> Set(Set(u2)),
@@ -163,7 +165,6 @@ class ChimericTest extends munit.FunSuite {
     assertEquals(c.decision, Undecided)
   }
 
-
   test("multiple proposers under full trust decides one value") {
     given QuorumConfig = Map(
       u1 -> Set(Set(u1, u2, u3)),
@@ -174,7 +175,7 @@ class ChimericTest extends munit.FunSuite {
     val c = runTwoProposals(summon[QuorumConfig], 42, 2)
 
     assertEquals(c.result, Some(2))
-    assertEquals(c.decision, Decided(2)) 
+    assertEquals(c.decision, Decided(2))
   }
 
   test("result and decision are consistent under reachable quorum") {

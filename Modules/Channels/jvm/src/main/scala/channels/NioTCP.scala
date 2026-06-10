@@ -176,12 +176,12 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val payload =
-        val bb = message.asByteBuffer
-        bb.array()
-        val arr = new Array[Byte](bb.remaining())
-        bb.get(arr)
-        arr
-      val frame   = WebsocketProtocol.encodeBinaryFrame(payload)
+          val bb = message.asByteBuffer
+          bb.array()
+          val arr = new Array[Byte](bb.remaining())
+          bb.get(arr)
+          arr
+      val frame = WebsocketProtocol.encodeBinaryFrame(payload)
       writeFully(clientChannel, Array(ByteBuffer.wrap(frame)))
       ()
     }

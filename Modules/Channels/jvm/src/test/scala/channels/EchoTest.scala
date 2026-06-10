@@ -18,7 +18,6 @@ class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](
   override def supportsDisconnectDetection: Boolean = false
 }
 
-
 def domainSocketHelperNonensese(name: String) = {
   val tmpPath    = Files.createTempDirectory("channels-test")
   val socketPath = tmpPath.resolve(name)
