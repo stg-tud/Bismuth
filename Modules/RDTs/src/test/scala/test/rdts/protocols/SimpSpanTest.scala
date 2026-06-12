@@ -103,13 +103,13 @@ class SimpSpanTest extends munit.FunSuite {
   // startTransaction – precondition failures
   // ============================================================
 
-  test("startTransaction returns empty delta when partition not in paxosPartitions") {
+  test("startTransaction returns empty delta when partition not in paxosPrepare") {
     val id          = LocalUid.gen()
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
       partitionMembers = Map(partitionId -> Set(id.uid))
-      // paxosPartitions is empty – no Paxos instance for partitionId
+      // paxosPrepare is empty – no Paxos instance for partitionId
     )
 
     assertEquals(state.startTransaction(partitionId, "tx")(using id), SimpSpan[String]())
@@ -120,7 +120,7 @@ class SimpSpanTest extends munit.FunSuite {
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> MultiPaxos[twoPCMessages]())
+      paxosPrepare = Map(partitionId -> MultiPaxos[twoPCMessages]())
       // partitionMembers is empty
     )
 
@@ -137,7 +137,7 @@ class SimpSpanTest extends munit.FunSuite {
     // fresh Paxos with no leader elected
     val paxos = MultiPaxos[twoPCMessages]()
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -154,7 +154,7 @@ class SimpSpanTest extends munit.FunSuite {
     val paxos = electLeader(members, id1) // id1 is the leader
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -175,7 +175,7 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos = electLeader(members, id1)
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -198,7 +198,7 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos     = electLeader(members, id1)
     val baseState = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -239,7 +239,7 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos = electLeader(members, id1)
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -255,7 +255,8 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos     = electLeader(members, id1)
     val baseState = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -298,7 +299,8 @@ class SimpSpanTest extends munit.FunSuite {
     val withElection = initialPaxos.merge(initialPaxos.startLeaderElection(using id1))
 
     var state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> withElection),
+      paxosPrepare = Map(partitionId -> withElection),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
@@ -308,7 +310,7 @@ class SimpSpanTest extends munit.FunSuite {
     // id1 concludes the election
     state = state.merge(state.upkeep(using id1))
 
-    assertEquals(state.paxosPartitions(partitionId).leader, Some(id1.uid))
+    assertEquals(state.paxosPrepare(partitionId).leader, Some(id1.uid))
   }
 
   test("upkeep transfers a committed Prepare log entry into the 2PC prepare phase") {
@@ -335,7 +337,8 @@ class SimpSpanTest extends munit.FunSuite {
 
     // id1 belongs to p1; no member of p2 is id1
     var state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> paxos, p2 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> paxos, p2 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
       partitionMembers = Map(
         p1 -> members.map(_.uid).toSet,
         p2 -> Set(Uid.gen()) // p2 members are different replicas
@@ -379,7 +382,8 @@ class SimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
       transactions = Map(txId -> twoPC)
     )
 
@@ -399,8 +403,10 @@ class SimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
-      transactions = Map(txId -> committed)
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      transactions = Map(txId -> committed),
+      partitionMembers = Map(p1 -> Set(), p2 -> Set()),
     )
 
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
@@ -420,7 +426,8 @@ class SimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
       transactions = Map(txId -> aborted)
     )
 
@@ -453,8 +460,10 @@ class SimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
-      transactions = Map(committedTxId -> committed, abortedTxId -> aborted, pendingTxId -> pending)
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos()),
+      transactions = Map(committedTxId -> committed, abortedTxId -> aborted, pendingTxId -> pending),
+      partitionMembers = Map(p1 -> Set(), p2 -> Set())
     )
 
     assertEquals(state.decision, Agreement.Decided(Map(committedTxId -> true, abortedTxId -> false)))
@@ -464,7 +473,7 @@ class SimpSpanTest extends munit.FunSuite {
   // validate2PC and acknowledge2PC
   // ============================================================
 
-  test("validate2PC returns empty SimpSpan when transaction is not present") {
+  test("validate2PC returns empty SimpSpan when transaction does not exist") {
     val id1         = LocalUid.gen()
     val id2         = LocalUid.gen()
     val id3         = LocalUid.gen()
@@ -473,7 +482,8 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos = electLeader(members, id1)
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
       // no transactions
     )
@@ -490,7 +500,8 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos = electLeader(Seq(id1), id1)
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> Set(id1.uid)), // outsider is not a member
       transactions = Map(txId -> TwoPhaseCommit[String](transaction = Some("tx")))
     )
@@ -499,7 +510,7 @@ class SimpSpanTest extends munit.FunSuite {
     assertEquals(delta, SimpSpan[String]())
   }
 
-  test("validate2PC proposes a Prepare message into the partition paxos when leader") {
+  test("validate2PC proposes a Prepare message into the partition paxosPrepare when leader") {
     val id1         = LocalUid.gen()
     val id2         = LocalUid.gen()
     val id3         = LocalUid.gen()
@@ -509,7 +520,8 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos = electLeader(members, id1)
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet),
       transactions = Map(txId -> TwoPhaseCommit[String](
         coordinator = Some(partitionId),
@@ -519,13 +531,13 @@ class SimpSpanTest extends munit.FunSuite {
 
     val delta = state.validate2PC(partitionId, txId, valid = true)(using id1)
 
-    // The delta carries an updated paxos entry for the partition
-    assert(delta.paxosPartitions.contains(partitionId))
-    assertNotEquals(delta.paxosPartitions(partitionId), paxos)
+    // The delta carries an updated paxosPrepare entry for the partition
+    assert(delta.paxosPrepare.contains(partitionId))
+    assertNotEquals(delta.paxosPrepare(partitionId), paxos)
 
     // Because validate2PC now returns SimpSpan, the delta can be merged back
     val updated = state.merge(delta)
-    assertNotEquals(updated.paxosPartitions(partitionId), paxos)
+    assertNotEquals(updated.paxosPrepare(partitionId), paxos)
   }
 
   test("acknowledge2PC returns empty SimpSpan when transaction has no prepare decision yet") {
@@ -538,7 +550,8 @@ class SimpSpanTest extends munit.FunSuite {
 
     val paxos = electLeader(members, id1)
     val state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> paxos),
+      paxosPrepare = Map(partitionId -> paxos),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet),
       transactions = Map(txId -> TwoPhaseCommit[String](
         coordinator = Some(partitionId),
@@ -570,20 +583,25 @@ class SimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> paxos, p2 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> paxos, p2 -> paxos),
+      paxosAcknowledge = Map(p1 -> paxos, p2 -> paxos),
       partitionMembers = Map(p1 -> members.map(_.uid).toSet, p2 -> Set(Uid.gen())),
       transactions = Map(txId -> twoPC)
     )
 
     val delta = state.acknowledge2PC(p1, txId)(using id1)
 
-    // The delta carries an updated paxos entry with the Commit message proposed
-    assert(delta.paxosPartitions.contains(p1))
-    assertNotEquals(delta.paxosPartitions(p1), paxos)
+    // The delta carries an updated paxosAcknowledge entry with the Commit message proposed
+    assert(delta.paxosAcknowledge.contains(p1), "paxosAcknowledge should contain p1")
+    assertNotEquals(delta.paxosAcknowledge(p1), MultiPaxos(), "paxosAcknowledge should be updated")
 
     // Delta is a SimpSpan and can be merged back
     val updated = state.merge(delta)
-    assertNotEquals(updated.paxosPartitions(p1), paxos)
+    assertNotEquals(
+      updated.paxosAcknowledge(p1),
+      MultiPaxos(),
+      "paxosAcknowledge should be updated after merge"
+    )
   }
 
   test("acknowledge2PC proposes Abort when any partition voted false in prepare") {
@@ -605,26 +623,34 @@ class SimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> paxos, p2 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> paxos, p2 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> paxos, p2 -> MultiPaxos()),
       partitionMembers = Map(p1 -> members.map(_.uid).toSet, p2 -> Set(Uid.gen())),
       transactions = Map(txId -> twoPC)
     )
 
     val delta = state.acknowledge2PC(p1, txId)(using id1)
 
-    // The delta carries an updated paxos entry (Abort proposed)
-    assert(delta.paxosPartitions.contains(p1))
-    assertNotEquals(delta.paxosPartitions(p1), paxos)
+    // The delta carries an updated paxosAcknowledge entry (Abort proposed)
+    assert(delta.paxosAcknowledge.contains(p1), "paxosAcknowledge should contain p1")
+    assertNotEquals(delta.paxosAcknowledge(p1), MultiPaxos(), "paxosAcknowledge should be updated")
 
     // the delta carries the abort proposal
-    assert(delta.paxosPartitions(p1).rounds.value.rounds.find(_._2.proposals.votes.contains(Vote(
-      id1.uid,
-      twoPCMessages.Abort(txId)
-    ))).isDefined)
+    assert(
+      delta.paxosAcknowledge(p1).rounds.value.rounds.find(_._2.proposals.votes.contains(Vote(
+        id1.uid,
+        twoPCMessages.Abort(txId)
+      ))).isDefined,
+      "abort proposal should be in paxos rounds"
+    )
 
     // Delta is a SimpSpan and can be merged back
     val updated = state.merge(delta)
-    assertNotEquals(updated.paxosPartitions(p1), paxos)
+    assertNotEquals(
+      updated.paxosAcknowledge(p1),
+      MultiPaxos(),
+      "paxosAcknowledge should be updated after merge"
+    )
   }
 
   // ============================================================
@@ -642,18 +668,21 @@ class SimpSpanTest extends munit.FunSuite {
 
     // 1. Start with empty paxos for the partition
     var state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> MultiPaxos[twoPCMessages]()),
+      paxosPrepare = Map(partitionId -> MultiPaxos[twoPCMessages]()),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
     // 2. Trigger leader election for id1 and process via upkeep
-    val electionDelta = state.paxosPartitions(partitionId).startLeaderElection(using id1)
-    state = state.merge(SimpSpan(paxosPartitions = Map(partitionId -> electionDelta)))
+    val electionDelta  = state.paxosPrepare(partitionId).startLeaderElection(using id1)
+    val electionDelta2 = state.paxosAcknowledge(partitionId).startLeaderElection(using id1)
+    state = state.merge(SimpSpan(paxosPrepare = Map(partitionId -> electionDelta)))
+    state = state.merge(SimpSpan(paxosAcknowledge = Map(partitionId -> electionDelta2)))
     state = state.merge(state.upkeep(using id2))
     state = state.merge(state.upkeep(using id3))
     state = state.merge(state.upkeep(using id1))
 
-    assertEquals(state.paxosPartitions(partitionId).leader, Some(id1.uid))
+    assertEquals(state.paxosPrepare(partitionId).leader, Some(id1.uid))
 
     // 3. id1 starts a transaction
     val txDelta = state.startTransaction(partitionId, "important-tx")(using id1)
@@ -674,24 +703,24 @@ class SimpSpanTest extends munit.FunSuite {
 
     // 6. validate transaction as leader
     state = state.merge(state.validate2PC(localPartitionId = partitionId, txId, true)(using id1))
-    // paxos log should still be empty
-    assertEquals(state.paxosPartitions(partitionId).log.size, 0)
+    // paxosPrepare log should still be empty
+    assertEquals(state.paxosPrepare(partitionId).log.size, 0)
 
     // 7. upkeep with all partition members
     state = state.merge(state.upkeep(using id1))
     state = state.merge(state.upkeep(using id2))
     state = state.merge(state.upkeep(using id3))
 
-    // paxos log size should be 1 after upkeep
-    assertEquals(state.paxosPartitions(partitionId).log.size, 1)
-    assertEquals(state.paxosPartitions(partitionId).phase, MultipaxosPhase.Idle)
+    // paxosPrepare log size should be 1 after upkeep
+    assertEquals(state.paxosPrepare(partitionId).log.size, 1)
+    assertEquals(state.paxosPrepare(partitionId).phase, MultipaxosPhase.Idle)
 
     // we already know that this spanner transaction will be accepted
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
 
     // the transaction itself is not marked as fully decided because it was not acknowledged
     assertNotEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.partitionIds)),
       Agreement.Decided(true)
     )
 
@@ -702,7 +731,7 @@ class SimpSpanTest extends munit.FunSuite {
 
     // now the 2PC transaction is acknowledged and fully decided
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.partitionIds)),
       Agreement.Decided(true)
     )
 
@@ -722,16 +751,19 @@ class SimpSpanTest extends munit.FunSuite {
 
     // 1. Start with empty paxos for the partition
     var state = SimpSpan[String](
-      paxosPartitions = Map(partitionId -> MultiPaxos[twoPCMessages]()),
+      paxosPrepare = Map(partitionId -> MultiPaxos[twoPCMessages]()),
+      paxosAcknowledge = Map(partitionId -> MultiPaxos[twoPCMessages]()),
       partitionMembers = Map(partitionId -> members.map(_.uid).toSet)
     )
 
     // 2. Trigger leader election for id1 and process via upkeep
-    val electionDelta = state.paxosPartitions(partitionId).startLeaderElection(using id1)
-    state = state.merge(SimpSpan(paxosPartitions = Map(partitionId -> electionDelta)))
+    val electionDelta  = state.paxosPrepare(partitionId).startLeaderElection(using id1)
+    val electionDelta2 = state.paxosAcknowledge(partitionId).startLeaderElection(using id1)
+    state = state.merge(SimpSpan(paxosPrepare = Map(partitionId -> electionDelta)))
+    state = state.merge(SimpSpan(paxosAcknowledge = Map(partitionId -> electionDelta2)))
     state = state.merge(state.upkeep(using id1))
 
-    assertEquals(state.paxosPartitions(partitionId).leader, Some(id1.uid))
+    assertEquals(state.paxosPrepare(partitionId).leader, Some(id1.uid))
 
     // 3. id1 starts a transaction
     val txDelta = state.startTransaction(partitionId, "important-tx")(using id1)
@@ -752,41 +784,42 @@ class SimpSpanTest extends munit.FunSuite {
 
     // 6. validate transaction as leader
     state = state.merge(state.validate2PC(localPartitionId = partitionId, txId, true)(using id1))
-    // paxos log should still be empty
-    assertEquals(state.paxosPartitions(partitionId).log.size, 0)
+    // paxosPrepare log should still be empty
+    assertEquals(state.paxosPrepare(partitionId).log.size, 0)
 
     // 7. upkeep with all partition members
     state = state.merge(state.upkeep(using id1))
 
-    // paxos log size should be 1 after upkeep
-    assertEquals(state.paxosPartitions(partitionId).log.size, 1)
-    assertEquals(state.paxosPartitions(partitionId).phase, MultipaxosPhase.Idle)
+    // paxosPrepare log size should be 1 after upkeep
+    assertEquals(state.paxosPrepare(partitionId).log.size, 1)
+    assertEquals(state.paxosPrepare(partitionId).phase, MultipaxosPhase.Idle)
 
     // we already know that this spanner transaction will be accepted
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
 
     // the transaction itself is not marked as fully decided because it was not acknowledged
     assertNotEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.partitionIds)),
       Agreement.Decided(true)
     )
 
     // 8. upkeep again
-    // this causes the partition to acknowledge the outcome in its Paxos log, not yet in 2PC
+    // this causes the partition to acknowledge the outcome in its paxosAcknowledge log, not yet in 2PC
     state = state.merge(state.upkeep(using id1))
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.partitionIds)),
       Agreement.Undecided
     )
 
     // 9. upkeep again
     // this causes the partition to persist the outcome in 2PC
     state = state.merge(state.upkeep(using id1))
-    assertEquals(state.paxosPartitions(partitionId).log.size, 2)
+    assertEquals(state.paxosPrepare(partitionId).log.size, 1)
+    assertEquals(state.paxosAcknowledge(partitionId).log.size, 1)
 
     // now the 2PC transaction is acknowledged and fully decided
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.partitionIds)),
       Agreement.Decided(true)
     )
 
