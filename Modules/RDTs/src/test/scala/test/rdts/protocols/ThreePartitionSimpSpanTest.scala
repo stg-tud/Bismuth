@@ -60,7 +60,8 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val paxos3 = electLeader(Seq(id3a, id3b, id3c), id3a)
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> paxos1, p2 -> paxos2, p3 -> paxos3),
+      paxosPrepare = Map(p1 -> paxos1, p2 -> paxos2, p3 -> paxos3),
+      paxosAcknowledge = Map(p1 -> paxos1, p2 -> paxos2, p3 -> paxos3),
       partitionMembers = Map(
         p1 -> Set(id1a.uid, id1b.uid, id1c.uid),
         p2 -> Set(id2a.uid, id2b.uid, id2c.uid),
@@ -143,7 +144,8 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
 
     // No cross-partition leader confusion: p1's paxos doesn't know about p2's members
     val _ = SimpSpan[String](
-      paxosPartitions = Map(p1 -> paxos1, p2 -> paxos2, p3 -> paxos3),
+      paxosPrepare = Map(p1 -> paxos1, p2 -> paxos2, p3 -> paxos3),
+      paxosAcknowledge = Map(p1 -> paxos1, p2 -> paxos2, p3 -> paxos3),
       partitionMembers = Map(
         p1 -> Set(id1a.uid, id1b.uid, id1c.uid),
         p2 -> Set(id2a.uid, id2b.uid, id2c.uid),
@@ -171,7 +173,12 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val electionDelta3 = rawPaxos3.startLeaderElection(using id3a)
 
     var state = SimpSpan[String](
-      paxosPartitions = Map(
+      paxosPrepare = Map(
+        p1 -> rawPaxos1.merge(electionDelta1),
+        p2 -> rawPaxos2.merge(electionDelta2),
+        p3 -> rawPaxos3.merge(electionDelta3)
+      ),
+      paxosAcknowledge = Map(
         p1 -> rawPaxos1.merge(electionDelta1),
         p2 -> rawPaxos2.merge(electionDelta2),
         p3 -> rawPaxos3.merge(electionDelta3)
@@ -188,13 +195,13 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     given Participants = Participants(Set(id1a.uid, id1b.uid, id1c.uid))
-    assertEquals(state.paxosPartitions(p1).leader, Some(id1a.uid))
+    assertEquals(state.paxosPrepare(p1).leader, Some(id1a.uid))
     assertEquals(
-      state.paxosPartitions(p2).leader(using Participants(Set(id2a.uid, id2b.uid, id2c.uid))),
+      state.paxosPrepare(p2).leader(using Participants(Set(id2a.uid, id2b.uid, id2c.uid))),
       Some(id2a.uid)
     )
     assertEquals(
-      state.paxosPartitions(p3).leader(using Participants(Set(id3a.uid, id3b.uid, id3c.uid))),
+      state.paxosPrepare(p3).leader(using Participants(Set(id3a.uid, id3b.uid, id3c.uid))),
       Some(id3a.uid)
     )
   }
@@ -206,8 +213,10 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   test("upkeep for p1 replicas does not mutate p2 or p3 paxos") {
     val (state, p1, p2, p3, id1a, id1b, id1c, _, _, _, _, _, _) = buildThreePartitionState()
 
-    val before2 = state.paxosPartitions(p2)
-    val before3 = state.paxosPartitions(p3)
+    val before2Prepare = state.paxosPrepare(p2)
+    val before3Prepare = state.paxosPrepare(p3)
+    val before2Ack     = state.paxosAcknowledge(p2)
+    val before3Ack     = state.paxosAcknowledge(p3)
 
     var s = state
     s = s.merge(s.upkeep(using id1a))
@@ -215,23 +224,29 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     s = s.merge(s.upkeep(using id1c))
 
     // p2 and p3 paxos must not have changed
-    assertEquals(s.paxosPartitions(p2), before2)
-    assertEquals(s.paxosPartitions(p3), before3)
+    assertEquals(s.paxosPrepare(p2), before2Prepare)
+    assertEquals(s.paxosPrepare(p3), before3Prepare)
+    assertEquals(s.paxosAcknowledge(p2), before2Ack)
+    assertEquals(s.paxosAcknowledge(p3), before3Ack)
   }
 
   test("upkeep for p2 replicas does not mutate p1 or p3 paxos") {
     val (state, p1, p2, p3, _, _, _, id2a, id2b, id2c, _, _, _) = buildThreePartitionState()
 
-    val before1 = state.paxosPartitions(p1)
-    val before3 = state.paxosPartitions(p3)
+    val before1Prepare = state.paxosPrepare(p1)
+    val before3Prepare = state.paxosPrepare(p3)
+    val before1Ack     = state.paxosAcknowledge(p1)
+    val before3Ack     = state.paxosAcknowledge(p3)
 
     var s = state
     s = s.merge(s.upkeep(using id2a))
     s = s.merge(s.upkeep(using id2b))
     s = s.merge(s.upkeep(using id2c))
 
-    assertEquals(s.paxosPartitions(p1), before1)
-    assertEquals(s.paxosPartitions(p3), before3)
+    assertEquals(s.paxosPrepare(p1), before1Prepare)
+    assertEquals(s.paxosPrepare(p3), before3Prepare)
+    assertEquals(s.paxosAcknowledge(p1), before1Ack)
+    assertEquals(s.paxosAcknowledge(p3), before3Ack)
   }
 
   // ============================================================
@@ -297,7 +312,8 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
       transactions = Map(txId -> twoPC)
     )
 
@@ -316,7 +332,8 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
       transactions = Map(txId -> twoPC)
     )
 
@@ -335,8 +352,10 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
-      transactions = Map(txId -> twoPC)
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      transactions = Map(txId -> twoPC),
+      partitionMembers = Map(p1 -> Set(), p2 -> Set(), p3 -> Set())
     )
 
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
@@ -354,7 +373,8 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
       transactions = Map(txId -> twoPC)
     )
 
@@ -373,7 +393,8 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
       transactions = Map(txId -> twoPC)
     )
 
@@ -406,8 +427,10 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     )
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
-      transactions = Map(committedId -> committed, abortedId -> aborted, pendingId -> pending)
+      paxosPrepare = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      paxosAcknowledge = Map(p1 -> MultiPaxos(), p2 -> MultiPaxos(), p3 -> MultiPaxos()),
+      transactions = Map(committedId -> committed, abortedId -> aborted, pendingId -> pending),
+      partitionMembers = Map(p1 -> Set(), p2 -> Set(), p3 -> Set())
     )
 
     assertEquals(
@@ -473,16 +496,16 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val delta2 = stateWithTx.validate2PC(p2, txId, valid = true)(using id2a)
     val delta3 = stateWithTx.validate2PC(p3, txId, valid = true)(using id3a)
 
-    // Each delta carries a non-empty paxos update for its own partition
-    assert(delta1.paxosPartitions.contains(p1) && delta1.paxosPartitions(p1) != MultiPaxos())
-    assert(delta2.paxosPartitions.contains(p2) && delta2.paxosPartitions(p2) != MultiPaxos())
-    assert(delta3.paxosPartitions.contains(p3) && delta3.paxosPartitions(p3) != MultiPaxos())
+    // Each delta carries a non-empty paxos update for its own partition (paxosPrepare for validate2PC)
+    assert(delta1.paxosPrepare.contains(p1) && delta1.paxosPrepare(p1) != MultiPaxos())
+    assert(delta2.paxosPrepare.contains(p2) && delta2.paxosPrepare(p2) != MultiPaxos())
+    assert(delta3.paxosPrepare.contains(p3) && delta3.paxosPrepare(p3) != MultiPaxos())
 
     // Merging all three deltas accumulates proposals in all three partition paxos instances
     val updated = stateWithTx.merge(delta1).merge(delta2).merge(delta3)
-    assert(updated.paxosPartitions(p1) != baseState.paxosPartitions(p1))
-    assert(updated.paxosPartitions(p2) != baseState.paxosPartitions(p2))
-    assert(updated.paxosPartitions(p3) != baseState.paxosPartitions(p3))
+    assert(updated.paxosPrepare(p1) != baseState.paxosPrepare(p1))
+    assert(updated.paxosPrepare(p2) != baseState.paxosPrepare(p2))
+    assert(updated.paxosPrepare(p3) != baseState.paxosPrepare(p3))
   }
 
   test("validate2PC returns empty delta when replica does not belong to the target partition") {
@@ -535,17 +558,17 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     //         and transfers prepare votes into the TwoPhaseCommit state
     state = runUpkeepRound(state, allReplicas)
 
-    // Each partition's paxos should have one committed log entry (Prepare)
-    assertEquals(state.paxosPartitions(p1).log.size, 1)
-    assertEquals(state.paxosPartitions(p2).log.size, 1)
-    assertEquals(state.paxosPartitions(p3).log.size, 1)
+    // Each partition's paxosPrepare should have one committed log entry (Prepare)
+    assertEquals(state.paxosPrepare(p1).log.size, 1)
+    assertEquals(state.paxosPrepare(p2).log.size, 1)
+    assertEquals(state.paxosPrepare(p3).log.size, 1)
 
     // All three partitions have voted true → SimpSpan.decision already knows
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
 
     // The 2PC transaction itself is not yet fully decided (Commit not yet acknowledged)
     assertNotEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(true)
     )
 
@@ -554,7 +577,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(true)
     )
 
@@ -592,7 +615,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
 
     // The 2PC transaction is not yet acknowledged (Abort not yet committed)
     assertNotEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(false)
     )
 
@@ -601,7 +624,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(false)
     )
 
@@ -635,7 +658,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     assertEquals(
-      state.transactions(txId1).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId1).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(true)
     )
 
@@ -651,7 +674,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     assertEquals(
-      state.transactions(txId2).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId2).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(true)
     )
 
@@ -688,7 +711,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(true)
     )
   }
@@ -718,7 +741,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     state = runUpkeepRound(state, allReplicas)
 
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(false)
     )
   }
@@ -746,7 +769,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
 
     // Fully decided
     assertEquals(
-      state.transactions(txId).decision(using Participants(state.paxosPartitions.keySet)),
+      state.transactions(txId).decision(using Participants(state.paxosPrepare.keySet)),
       Agreement.Decided(true)
     )
 
@@ -773,7 +796,12 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val paxos1 = electLeader(Seq(id1a, id1b, id1c), id1a)
 
     val state = SimpSpan[String](
-      paxosPartitions = Map(
+      paxosPrepare = Map(
+        p1 -> paxos1,
+        p2 -> MultiPaxos[twoPCMessages](),
+        p3 -> MultiPaxos[twoPCMessages]()
+      ),
+      paxosAcknowledge = Map(
         p1 -> paxos1,
         p2 -> MultiPaxos[twoPCMessages](),
         p3 -> MultiPaxos[twoPCMessages]()
@@ -790,18 +818,19 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     assertNotEquals(txDelta, SimpSpan[String]())
 
     // Meanwhile, p2 kicks off its election independently
-    val p2ElectionDelta = state.paxosPartitions(p2).startLeaderElection(using id2a)
-    val p2StateDelta    = SimpSpan[String](paxosPartitions = Map(p2 -> p2ElectionDelta))
+    val p2ElectionDelta = state.paxosPrepare(p2).startLeaderElection(using id2a)
+    val p2StateDelta    =
+      SimpSpan[String](paxosPrepare = Map(p2 -> p2ElectionDelta), paxosAcknowledge = Map(p2 -> p2ElectionDelta))
 
     // Both deltas can be merged into the state without conflict
     val merged = state.merge(txDelta).merge(p2StateDelta)
 
     assertEquals(merged.transactions.size, 1)
-    // p1's paxos is untouched by p2's election delta
-    assertEquals(merged.paxosPartitions(p1), state.paxosPartitions(p1))
-    // p3's paxos is untouched by both deltas
-    assertEquals(merged.paxosPartitions(p3), state.paxosPartitions(p3))
+    // p1's paxosPrepare is untouched by p2's election delta
+    assertEquals(merged.paxosPrepare(p1), state.paxosPrepare(p1))
+    // p3's paxosPrepare is untouched by both deltas
+    assertEquals(merged.paxosPrepare(p3), state.paxosPrepare(p3))
     // p2 has an election in progress
-    assertNotEquals(merged.paxosPartitions(p2), state.paxosPartitions(p2))
+    assertNotEquals(merged.paxosPrepare(p2), state.paxosPrepare(p2))
   }
 }
