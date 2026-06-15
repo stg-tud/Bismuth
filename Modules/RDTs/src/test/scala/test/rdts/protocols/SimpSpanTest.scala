@@ -713,7 +713,7 @@ class SimpSpanTest extends munit.FunSuite {
 
     // paxosPrepare log size should be 1 after upkeep
     assertEquals(state.paxosPrepare(partitionId).log.size, 1)
-    assertEquals(state.paxosPrepare(partitionId).phase, MultipaxosPhase.Idle)
+    assertEquals(state.paxosPrepare(partitionId).phase, MultipaxosPhase.WaitingForVote)
 
     // we already know that this spanner transaction will be accepted
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))
@@ -792,7 +792,7 @@ class SimpSpanTest extends munit.FunSuite {
 
     // paxosPrepare log size should be 1 after upkeep
     assertEquals(state.paxosPrepare(partitionId).log.size, 1)
-    assertEquals(state.paxosPrepare(partitionId).phase, MultipaxosPhase.Idle)
+    assertEquals(state.paxosPrepare(partitionId).phase, MultipaxosPhase.WaitingForVote)
 
     // we already know that this spanner transaction will be accepted
     assertEquals(state.decision, Agreement.Decided(Map(txId -> true)))

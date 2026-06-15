@@ -112,11 +112,12 @@ case class SimpSpan[A](
       val paxosCommitUpkept  = Lattice.merge(paxosAcknowledge, newPaxosAcknowledgeDelta)
 
       // acknowledge current transaction in the partition's paxos log
-      // only do this if the partition is idle (i.e., all transactions are decided)
+      // only do this if the partition is idle (i.e., not currently voting on something else)
+      // TODO: this could be done in parallel with the new Multipaxos
       val ackDelta: SimpSpan[A] = {
         if paxosPrepareUpkept(partitionId).phase(using
               Participants(partitionMembers(partitionId))
-            ) == MultipaxosPhase.Idle
+            ) == MultipaxosPhase.WaitingForVote
         then {
           // find first unacknowledged transaction
           val firstUnacknowledged =

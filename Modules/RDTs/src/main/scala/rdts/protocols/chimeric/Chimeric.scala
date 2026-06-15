@@ -23,7 +23,7 @@ case class Chimeric[A](
             MultipaxosPhase.Voting
           case Some(PaxosRound(leaderElection, proposals))
               if leaderDecision(leaderElection) != Undecided && proposals.votes.isEmpty =>
-            MultipaxosPhase.Idle
+            MultipaxosPhase.WaitingForVote
           case _ =>
             throw new Error("Inconsistent Chimeric State")
 
