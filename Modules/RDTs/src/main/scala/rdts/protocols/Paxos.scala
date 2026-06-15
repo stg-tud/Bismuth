@@ -27,7 +27,7 @@ case class Paxos[A](
       case Some(PaxosRound(leaderElection, proposals))
           if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
       case Some(PaxosRound(leaderElection, proposals))
-          if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
+          if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.WaitingForVote
       case _ => throw new Error("Inconsistent Paxos State")
 
   // voting

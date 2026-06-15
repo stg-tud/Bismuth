@@ -12,7 +12,7 @@ import scala.collection.immutable.NumericRange
 enum MultipaxosPhase:
     case LeaderElection
     case Voting
-    case Idle
+    case WaitingForVote
 
 case class MultiPaxos[A](
     rounds: Epoch[Paxos[A]] = Epoch.empty[Paxos[A]],
@@ -37,7 +37,7 @@ case class MultiPaxos[A](
           case Some(PaxosRound(leaderElection, proposals))
               if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
           case Some(PaxosRound(leaderElection, proposals))
-              if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
+              if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.WaitingForVote
           case _ => throw new Error("Inconsistent Paxos State")
 
     def read: List[A]                               = log.toList.sortBy(_._1).map(_._2)
