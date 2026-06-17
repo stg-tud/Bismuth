@@ -104,7 +104,6 @@ object ParallelMultiPaxos:
     def empty[A]: ParallelMultiPaxos[A] = ParallelMultiPaxos[A]()
 
     given [A]: Lattice[ParallelMultiPaxos[A]] =
-        // for the log
         given Lattice[Long] = Math.max
         Lattice.derived
 
