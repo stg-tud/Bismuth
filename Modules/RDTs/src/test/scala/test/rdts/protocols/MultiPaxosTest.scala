@@ -43,7 +43,7 @@ class MultiPaxosTest extends munit.FunSuite {
     assertEquals(testPaxosObject.phase, MultipaxosPhase.Voting)
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep(using id3))
     assertEquals(testPaxosObject.log.values.toList, List(1))
-    assertEquals(testPaxosObject.phase, MultipaxosPhase.WaitingForVote)
+    assertEquals(testPaxosObject.phase, MultipaxosPhase.Idle)
 
     testPaxosObject.merge(testPaxosObject.proposeIfLeader(2)(using id2))
 
@@ -63,7 +63,7 @@ class MultiPaxosTest extends munit.FunSuite {
     assertEquals(testPaxosObject.leader, None)
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep(using id2))
     testPaxosObject = testPaxosObject.merge(testPaxosObject.upkeep(using id3))
-    assertEquals(testPaxosObject.phase, MultipaxosPhase.WaitingForVote)
+    assertEquals(testPaxosObject.phase, MultipaxosPhase.Idle)
     assertEquals(testPaxosObject.leader, Some(id3.uid))
   }
 
