@@ -76,9 +76,13 @@ case class ParallelMultiPaxos[A](
         val paxos =
           log.getOrElse(index, openNextSlot)
 
-        ParallelMultiPaxos(
-          Map(index -> paxos.phase2a(value)) // phase 2a already checks if I am the leader
-        )
+        val paxosVote = paxos.phase2a(value)
+
+        if paxosVote != Paxos() then
+            ParallelMultiPaxos(
+              Map(index -> paxos.merge(paxosVote)) // phase 2a already checks if I am the leader
+            )
+        else ParallelMultiPaxos()
       }
 
     def proposeIfLeader(value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =

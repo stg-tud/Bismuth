@@ -357,4 +357,51 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     // Verify multiple slots are tracked
     assertEquals(state.log.size, 3)
   }
+
+  // ======= test re-use of leader election
+  test("proposing as non-leader does nothing") {
+    var state = ParallelMultiPaxos.empty[Int]
+
+    state = state.merge(state.startLeaderElection(0)(using id1))
+    state = runUpkeepRound(state)
+
+    assert(state.log(0).isCurrentLeader(using id1))
+    assert(!state.log(0).isCurrentLeader(using id2))
+
+    // proposeSlot 1 + 2
+    assertEquals(state.proposeIfLeader(10)(using id2), ParallelMultiPaxos())
+  }
+
+  test("leader election is re-used correctly") {
+    var state = ParallelMultiPaxos.empty[Int]
+
+    state = state.merge(state.startLeaderElection(0)(using id1))
+    state = runUpkeepRound(state)
+
+    assert(state.log(0).isCurrentLeader(using id1))
+    assert(!state.log(0).isCurrentLeader(using id2))
+    assertEquals(state.commitIndex, -1L)
+
+    // proposeSlot 1 + 2
+    state = state.merge(state.proposeIfLeader(10)(using id1))
+    state = runUpkeepRound(state)
+    assertEquals(state.decision, Agreement.Decided(List(10)))
+    assertEquals(state.commitIndex, 0L)
+
+    state = state.merge(state.proposeIfLeader(20)(using id1))
+    state = runUpkeepRound(state)
+    assert(state.log(0).isCurrentLeader(using id1))
+    assertEquals(state.decision, Agreement.Decided(List(10, 20)))
+    assertEquals(state.commitIndex, 1L)
+
+    // try to become leader as id2 but for old log index, doesn't do anything because we do not do upkeep in these rounds
+    state = state.merge(state.startLeaderElection(0)(using id2))
+    state = runUpkeepRound(state)
+
+    println(state)
+    assert(state.log(1).isCurrentLeader(using id1))
+    assert(!state.log(0).isCurrentLeader(using id2))
+
+    assertEquals(state.decision, Agreement.Decided(List(10, 20)))
+  }
 }
