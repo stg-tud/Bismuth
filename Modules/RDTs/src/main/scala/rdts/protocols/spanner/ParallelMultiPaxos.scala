@@ -7,6 +7,8 @@ import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
 import rdts.protocols.MultipaxosPhase
 
 import scala.collection.immutable.NumericRange
+import rdts.protocols.Util.Agreement
+import rdts.protocols.Util.precondition
 
 case class ParallelMultiPaxos[A](
     log: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],
@@ -46,15 +48,18 @@ case class ParallelMultiPaxos[A](
         .map(_.result.get)
 
     def startLeaderElection(index: Long)(using LocalUid): ParallelMultiPaxos[A] =
+      precondition(index == 0L || log.contains(index - 1)) {
         val currentPaxos = log.getOrElse(index, Paxos[A]())
         ParallelMultiPaxos(
           Map(index -> currentPaxos.phase1a)
         ) // start new Paxos round with self proposed as leader
+      }
 
     def startLeaderElection(using LocalUid): ParallelMultiPaxos[A] =
       startLeaderElection(commitIndex + 1)
 
     def proposeIfLeader(index: Long, value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
+      precondition(index == 0L || log.contains(index - 1)) {
         def openNextSlot = {
           // opens a new slot for the next log entry, either by reusing the old ballot or starting a new one
           log.get(index - 1).flatMap(_.newestBallotWithLeader) match
@@ -74,6 +79,7 @@ case class ParallelMultiPaxos[A](
         ParallelMultiPaxos(
           Map(index -> paxos.phase2a(value)) // phase 2a already checks if I am the leader
         )
+      }
 
     def proposeIfLeader(value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
       proposeIfLeader(commitIndex + 1, value)
@@ -95,6 +101,10 @@ case class ParallelMultiPaxos[A](
         commitIndex = commitIndex + committed.size.toLong
       )
     }
+
+    def decision(using Participants): Agreement[List[A]] = read.toList match
+        case Nil => Agreement.Undecided
+        case xs  => Agreement.Decided(xs)
 
     override def toString: String =
         lazy val s = s"MultiPaxos(commitIndex: $commitIndex, log: $log)"
