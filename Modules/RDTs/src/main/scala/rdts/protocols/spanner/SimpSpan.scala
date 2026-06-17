@@ -117,7 +117,7 @@ case class SimpSpan[A](
       val ackDelta: SimpSpan[A] = {
         if paxosPrepareUpkept(partitionId).phase(using
               Participants(partitionMembers(partitionId))
-            ) == MultipaxosPhase.WaitingForVote
+            ) == MultipaxosPhase.Idle
         then {
           // find first unacknowledged transaction
           val firstUnacknowledged =

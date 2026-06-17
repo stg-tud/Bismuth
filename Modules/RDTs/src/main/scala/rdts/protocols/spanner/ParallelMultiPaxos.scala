@@ -30,11 +30,11 @@ case class ParallelMultiPaxos[A](
                 case Some(PaxosRound(leaderElection, proposals))
                     if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
                 case Some(PaxosRound(leaderElection, proposals))
-                    if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.WaitingForVote
+                    if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
                 case _ => throw new Error("Inconsistent Paxos State")
           case None if commitIndex == -1 =>
             MultipaxosPhase.LeaderElection // first round, no previous decision, need to elect leader
-          case None => MultipaxosPhase.WaitingForVote // round not yet initialized but previous round was successful
+          case None => MultipaxosPhase.Idle // round not yet initialized but previous round was successful
 
     def read(using Participants): Iterable[A] =
       // return values in log order but only if all previous rounds are decided

@@ -133,7 +133,7 @@ class KeyValueReplica(
 
     def maybeProposeNewValue()(using LocalUid): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
-      if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.WaitingForVote then
+      if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
           Option(client.writeQueue.poll()) match {
             case Some((_, req)) =>
               log(s"Proposing new value $req.")
