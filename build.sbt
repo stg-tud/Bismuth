@@ -1,41 +1,21 @@
-import Settings.{javaOutputVersion, scala3defaults, scala3defaultsExtra}
+import Settings.{javaOutputVersion, scala3VersionString, scala3defaults, scala3defaultsExtra}
 import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitStyle}
 
 import scala.scalanative.build.{LTO, Mode}
 
-lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
-  channels.js,
-  channels.jvm,
-  deltalens,
-  exJVM,
-  exWeb,
-  lore.js,
-  lore.jvm,
-  loreCompilerPlugin,
-  proBench,
-  rdts.js,
-  rdts.jvm,
-  reform,
-  rdts.native,
-  reactives.js,
-  reactives.jvm,
-  reactives.native,
-)
+resolvers += "Sonatype Snapshots" at "https://central.sonatype.com/repository/maven-snapshots"
 
-// aggregate projects allow compiling all variants (js, jvm, native) at the same time
+evictionErrorLevel := Level.Info
 
 lazy val publishedProjects =
   project.in(file("target/PhonyBuilds/publishedProjects")).settings(scala3defaultsExtra, publish / skip := true)
     .aggregate(
-      rdts.js,
-      rdts.jvm,
-      rdts.native,
-      reactives.js,
-      reactives.jvm,
-      reactives.native,
-      channels.jvm,
-      channels.js,
-      channels.native,
+      rdts.jvm(scala3VersionString),
+      rdts.native(scala3VersionString),
+      reactives.jvm(scala3VersionString),
+      reactives.native(scala3VersionString),
+      channels.jvm(scala3VersionString),
+      channels.native(scala3VersionString),
     )
     // set publishing settings to have aggregate commands of bundle uploading work,
     // but do not publish this project itselfs
@@ -43,9 +23,8 @@ lazy val publishedProjects =
 
 // projects in alphabetical order
 
-lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
-  .in(file("Modules/Channels"))
-  .dependsOn(rdts % "compile->compile;test->test")
+lazy val channels = (projectMatrix in file("Modules/Channels"))
+  .dependsOn(rdts)
   .settings(
     Settings.scala3defaultsExtra,
     Dependencies.slips,
@@ -55,18 +34,24 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     Dependencies.jsoniterScala,
     SettingsLocal.publishSonatype,
   )
-  .jsSettings(
-    Settings.jsEnvDom,
-    Dependencies.scalajsDom,
-    Dependencies.scalatags(),
+  .jvmPlatform(
+    scalaVersions = Settings.scalaVersions,
+    settings = Seq(
+      Test / fork := true,
+      Dependencies.ayza,
+    )
   )
-  .jvmSettings(
-    Test / fork := true,
-    Dependencies.ayza,
+  .jsPlatform(
+    scalaVersions = Settings.scalaVersions,
+    settings = Seq(
+      Dependencies.scalajsDom,
+      Dependencies.scalatags(),
+    )
   )
+  .nativePlatform(scalaVersions = Settings.scalaVersions)
 
 lazy val deltalens = project.in(file("Modules/Deltalens"))
-  .dependsOn(rdts.jvm)
+  .dependsOn(rdts.jvm(scala3VersionString))
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
@@ -75,7 +60,7 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
 
 lazy val exJVM = project.in(file("Modules/exJVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, reactives.jvm, channels.jvm % "compile->compile;test->test")
+  .dependsOn(deltalens, reactives.jvm(scala3VersionString), channels.jvm(scala3VersionString) % "compile->compile;test->test")
   .settings(
     scala3defaults,
     javaOutputVersion(21),
@@ -107,7 +92,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
 
 lazy val exWeb = project.in(file("Modules/exWeb"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js, rdts.js, lore.js)
+  .dependsOn(channels.js(scala3VersionString), rdts.js(scala3VersionString), lore.js(scala3VersionString))
   .settings(
     Dependencies.jsoniterScala,
     Dependencies.munit,
@@ -147,9 +132,11 @@ lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).
     Dependencies.munit,
     Compile / mainClass := Some("lore.Compiler")
   )
+  .jvmPlatform(scalaVersions = Settings.scalaVersions)
+  .jsPlatform(scalaVersions = Settings.scalaVersions)
 
 lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
-  .dependsOn(lore.jvm)
+  .dependsOn(lore.jvm(scala3VersionString))
   .settings(
     scala3defaults,
     javaOutputVersion(17),
@@ -173,8 +160,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
   )
 
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
-  .dependsOn(reactives.jvm, rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
-  .enablePlugins(JavaAppPackaging)
+  .dependsOn(reactives.jvm(scala3VersionString), rdts.jvm(scala3VersionString), channels.jvm(scala3VersionString), rdts.jvm(scala3VersionString) % "compile->compile;test->test")
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,
@@ -184,20 +170,20 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     Dependencies.jetcd,
     Dependencies.pprint,
     Dependencies.ycsb,
-    Universal / packageName := "probench",
-    Universal / name        := "probench",
   )
 
-lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(CrossType.Pure)
-  .in(file("Modules/RDTs"))
+lazy val rdts = (projectMatrix in file("Modules/RDTs"))
   .settings(
     scala3defaultsExtra,
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
   )
+  .jvmPlatform(scalaVersions = Settings.scalaVersions)
+  .jsPlatform(scalaVersions = Settings.scalaVersions)
+  .nativePlatform(scalaVersions = Settings.scalaVersions)
 
-lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(file("Modules/Reactives"))
+lazy val reactives = (projectMatrix in file("Modules/Reactives"))
   .settings(
     scala3defaultsExtra,
     // scaladoc
@@ -207,19 +193,27 @@ lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(fi
     Dependencies.munitCheck,
     Dependencies.munit,
   )
-  .jvmSettings(
-    libraryDependencies += Dependencies.scalafx % Provided,
+  .jvmPlatform(
+    scalaVersions = Settings.scalaVersions,
+    settings = Seq(
+      libraryDependencies += Dependencies.scalafx % Provided,
+    )
   )
-  .jsSettings(
-    Dependencies.scalajsDom,
-    Dependencies.scalatags(Test),
-    Settings.jsEnvDom,
+  .jsPlatform(
+    scalaVersions = Settings.scalaVersions,
+    settings = Seq(
+      Dependencies.scalajsDom,
+      Dependencies.scalatags(Test),
+    )
+  )
+  .nativePlatform(
+    scalaVersions = Settings.scalaVersions,
   )
 
 lazy val reform = project
   .in(file("Modules/Reform"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(reactives.js, rdts.js)
+  .dependsOn(reactives.js(scala3VersionString), rdts.js(scala3VersionString))
   .settings(
     scala3defaults,
     name := "Reform",
@@ -229,21 +223,21 @@ lazy val reform = project
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
     ),
     Test / scalaJSUseTestModuleInitializer := true,
-    Test / jsEnv                           := new org.scalajs.jsenv.nodejs.NodeJSEnv(),
+    Test / jsEnv                           := Def.uncached { new org.scalajs.jsenv.nodejs.NodeJSEnv() },
     Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
     Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
     libraryDependencies ++= Seq(
-      "io.github.outwatch"   %%% "outwatch"                  % "1.1.0",
-      "com.github.cornerman" %%% "colibri-router"            % "0.8.6",
-      ("org.scala-js"        %%% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13),
+      "io.github.outwatch"   %% "outwatch"                  % "1.1.0",
+      "com.github.cornerman" %% "colibri-router"            % "0.8.6",
+      ("org.scala-js"        %% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13),
     ),
   )
 
 lazy val webview = project.in(file("Modules/Webview"))
   .enablePlugins(ScalaNativePlugin)
-  .dependsOn(channels.native)
+  .dependsOn(channels.native(scala3VersionString))
   .settings(
     Settings.scala3defaultsExtra,
     Dependencies.jsoniterScala,
