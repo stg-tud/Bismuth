@@ -118,12 +118,12 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     fullLinkJS / crossTarget := target.value / "generated_js",
   )
 
-lazy val lore = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full).in(file("Modules/Lore"))
+lazy val lore = (projectMatrix in file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
     scala3defaults,
     javaOutputVersion(17),
-    libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
+    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided").platform(Platform.jvm),
     Dependencies.jsoniterScala,
     Dependencies.decline,
     Dependencies.catsParse,
