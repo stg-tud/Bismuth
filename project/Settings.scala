@@ -1,7 +1,6 @@
 /* This file is shared between multiple projects
  * and may contain unused dependencies */
 
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.jsEnv
 import sbt.*
 import sbt.Keys.*
 
@@ -9,6 +8,8 @@ object Settings {
 
   // also consider updating the -source param below
   val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.8.4")
+
+  val scalaVersions = Seq(scala3VersionString)
 
   // see https://docs.scala-lang.org/overviews/compiler-options/
   // and https://docs.scala-lang.org/scala3/guides/migration/options-new.html
@@ -136,6 +137,6 @@ object Settings {
 
   // see https://www.scala-js.org/doc/project/js-environments.html
   // TLDR: enables the dom API when running on nodejs for the tests
-  val jsEnvDom = jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
+  // val jsEnvDom = jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
 
 }
