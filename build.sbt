@@ -3,6 +3,9 @@ import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitSt
 
 import scala.scalanative.build.{LTO, Mode}
 
+// 2026-06-22 scalacheck depends on scala native 0.5.8 while we use 0.5.12; this is likely fine as long as the tests dont fil
+evictionErrorLevel := Level.Info
+
 lazy val publishedProjects =
   project.in(file("target/PhonyBuilds/publishedProjects")).settings(scala3defaultsExtra, publish / skip := true)
     .aggregate(
@@ -23,7 +26,7 @@ lazy val publishedProjects =
 // projects in alphabetical order
 
 lazy val channels = (projectMatrix in file("Modules/Channels"))
-  .dependsOn(rdts)
+  .dependsOn(rdts % "compile->compile;test->test")
   .settings(
     Settings.scala3defaultsExtra,
     Dependencies.slips,
