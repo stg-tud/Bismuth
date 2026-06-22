@@ -3,19 +3,18 @@ import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitSt
 
 import scala.scalanative.build.{LTO, Mode}
 
-resolvers += "Sonatype Snapshots" at "https://central.sonatype.com/repository/maven-snapshots"
-
-evictionErrorLevel := Level.Info
-
 lazy val publishedProjects =
   project.in(file("target/PhonyBuilds/publishedProjects")).settings(scala3defaultsExtra, publish / skip := true)
     .aggregate(
       rdts.jvm(scala3VersionString),
       rdts.native(scala3VersionString),
+      rdts.js(scala3VersionString),
       reactives.jvm(scala3VersionString),
       reactives.native(scala3VersionString),
+      reactives.js(scala3VersionString),
       channels.jvm(scala3VersionString),
       channels.native(scala3VersionString),
+      channels.js(scala3VersionString),
     )
     // set publishing settings to have aggregate commands of bundle uploading work,
     // but do not publish this project itselfs
@@ -146,7 +145,7 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   )
 
 lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plugin/examples"))
-  .dependsOn(lore.jvm)
+  .dependsOn(lore.jvm(scala3VersionString))
   .dependsOn(loreCompilerPlugin)
   .settings(
     scala3defaults,
