@@ -121,7 +121,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
         // vite also seems to not really work with WASM – it kinda does in dev mode, but not when bundling
         // also disable module splitting when working with wasm
-        .withExperimentalUseWebAssembly(false)
+        .withESFeatures(_.withUseWebAssembly(false))
         .withModuleKind(ModuleKind.ESModule)
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
         .withESFeatures(_.withESVersion(ESVersion.ES2015))
