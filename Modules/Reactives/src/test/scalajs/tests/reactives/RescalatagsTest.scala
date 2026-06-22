@@ -14,9 +14,7 @@ import scala.util.chaining.scalaUtilChainingOps
 
 class RescalatagsTest extends FunSuite {
 
-  // Needs jsdom for nodejs test environment.
-  // Tracked by https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63
-  test("put var into dom".ignore) {
+  test("put var into dom".ignore.pending("needs jsdom; https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63")) {
 
     val v        = Var.empty[Element]
     val rendered = div().render.reattach(v)
@@ -47,9 +45,7 @@ class RescalatagsTest extends FunSuite {
             case elem: dom.Element => value.applyTo(elem)
   }
 
-  // Needs jsdom for nodejs test environment.
-  // Tracked by https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63
-  test("put style into dom".ignore) {
+  test("put style into dom".ignore.pending("needs jsdom; https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63")) {
     val v: Var[String] = Var.empty[String]
 
     val ourTag: Span = span.render.reattach(v.map(backgroundColor := _))
@@ -63,9 +59,7 @@ class RescalatagsTest extends FunSuite {
     assertEquals(ourTag.style.getPropertyValue(backgroundColor.cssName), "blue", "changing var changes color again")
   }
 
-  // Needs jsdom for nodejs test environment.
-  // Tracked by https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63
-  test("put attribute into dom".ignore) {
+  test("put attribute into dom".ignore.pending("needs jsdom; https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63")) {
     val v = Var.empty[String]
 
     val ourTag = a().render.reattach(v.map(href := _))
@@ -88,9 +82,7 @@ class RescalatagsTest extends FunSuite {
 
   }
 
-  // Needs jsdom for nodejs test environment.
-  // Tracked by https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63
-  test("work with multiple childern".ignore) {
+  test("work with multiple childern".ignore.pending("needs jsdom; https://github.com/scala-js/scala-js-env-jsdom-nodejs/pull/63")) {
 
     val v = Var(Seq(span("hey"), span("ho")))
 
