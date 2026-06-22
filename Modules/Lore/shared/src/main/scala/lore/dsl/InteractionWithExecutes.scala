@@ -8,34 +8,38 @@ import reactives.operator.{Event, Fold, FoldState}
 import scala.annotation.targetName
 import scala.quoted.{Expr, Quotes, Type}
 
-def constructIWEWithRequires[S <: Tuple, A](
-    interaction: Expr[InteractionWithExecutes[S, A]],
-    expr: Expr[(S, A) => Boolean]
-)(using Quotes, Type[S], Type[A]): Expr[InteractionWithExecutes[S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (S, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+object InteractionWithExecutes {
 
-  $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
-}
+  def constructIWEWithRequires[S <: Tuple, A](
+      interaction: Expr[InteractionWithExecutes[S, A]],
+      expr: Expr[(S, A) => Boolean]
+  )(using Quotes, Type[S], Type[A]): Expr[InteractionWithExecutes[S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (S, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
 
-def constructIWEWithEnsures[S <: Tuple, A](
-    interaction: Expr[InteractionWithExecutes[S, A]],
-    expr: Expr[(S, A) => Boolean]
-)(using Quotes, Type[S], Type[A]): Expr[InteractionWithExecutes[S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (S, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+    $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
+  }
 
-  $interaction.copy(ensures = $interaction.ensures :+ Ensures(inputs, fun, ${ showPredicateCode(expr) }))
+  def constructIWEWithEnsures[S <: Tuple, A](
+      interaction: Expr[InteractionWithExecutes[S, A]],
+      expr: Expr[(S, A) => Boolean]
+  )(using Quotes, Type[S], Type[A]): Expr[InteractionWithExecutes[S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (S, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
+
+    $interaction.copy(ensures = $interaction.ensures :+ Ensures(inputs, fun, ${ showPredicateCode(expr) }))
+  }
+
 }
 
 case class InteractionWithExecutes[S <: Tuple, A] private[dsl] (
@@ -47,10 +51,10 @@ case class InteractionWithExecutes[S <: Tuple, A] private[dsl] (
   type AO[_, _] = InteractionWithExecutesAndActs[S, A]
 
   override inline def requires(inline pred: (S, A) => Boolean): InteractionWithExecutes[S, A] =
-    ${ constructIWEWithRequires('{ this }, 'pred) }
+    ${ InteractionWithExecutes.constructIWEWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (S, A) => Boolean): InteractionWithExecutes[S, A] =
-    ${ constructIWEWithEnsures('{ this }, 'pred) }
+    ${ InteractionWithExecutes.constructIWEWithEnsures('{ this }, 'pred) }
 
   override def actsOn(event: Event[A]): InteractionWithExecutesAndActs[S, A] =
     InteractionWithExecutesAndActs(requires, ensures, executes, event)

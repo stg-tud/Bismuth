@@ -7,34 +7,38 @@ import reactives.default.*
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
 
-def constructBoundInteractionWithRequires[ST <: Tuple, S <: Tuple, A](
-    interaction: Expr[BoundInteraction[ST, S, A]],
-    expr: Expr[(ST, A) => Boolean]
-)(using Quotes, Type[ST], Type[S], Type[A]): Expr[BoundInteraction[ST, S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (ST, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+object BoundInteraction {
 
-  $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
-}
+  def constructBoundInteractionWithRequires[ST <: Tuple, S <: Tuple, A](
+      interaction: Expr[BoundInteraction[ST, S, A]],
+      expr: Expr[(ST, A) => Boolean]
+  )(using Quotes, Type[ST], Type[S], Type[A]): Expr[BoundInteraction[ST, S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (ST, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
 
-def constructBoundInteractionWithEnsures[ST <: Tuple, S <: Tuple, A](
-    interaction: Expr[BoundInteraction[ST, S, A]],
-    expr: Expr[(ST, A) => Boolean]
-)(using Quotes, Type[ST], Type[S], Type[A]): Expr[BoundInteraction[ST, S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (ST, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+    $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
+  }
 
-  $interaction.copy(ensures = $interaction.ensures :+ Ensures(inputs, fun, ${ showPredicateCode(expr) }))
+  def constructBoundInteractionWithEnsures[ST <: Tuple, S <: Tuple, A](
+      interaction: Expr[BoundInteraction[ST, S, A]],
+      expr: Expr[(ST, A) => Boolean]
+  )(using Quotes, Type[ST], Type[S], Type[A]): Expr[BoundInteraction[ST, S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (ST, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
+
+    $interaction.copy(ensures = $interaction.ensures :+ Ensures(inputs, fun, ${ showPredicateCode(expr) }))
+  }
+
 }
 
 case class BoundInteraction[ST <: Tuple, S <: Tuple, A] private[dsl] (
@@ -50,10 +54,10 @@ case class BoundInteraction[ST <: Tuple, S <: Tuple, A] private[dsl] (
   event.observe { it => apply(it) }
 
   override inline def requires(inline pred: (ST, A) => Boolean): BoundInteraction[ST, S, A] =
-    ${ constructBoundInteractionWithRequires('{ this }, 'pred) }
+    ${ BoundInteraction.constructBoundInteractionWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (ST, A) => Boolean): BoundInteraction[ST, S, A] =
-    ${ constructBoundInteractionWithEnsures('{ this }, 'pred) }
+    ${ BoundInteraction.constructBoundInteractionWithEnsures('{ this }, 'pred) }
 
   def apply(a: A): Unit = {
     val modList = modifies.toList.asInstanceOf[List[Var[?]]]

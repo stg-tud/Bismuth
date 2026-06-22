@@ -6,34 +6,38 @@ import reactives.operator.Event
 
 import scala.quoted.{Expr, Quotes, Type}
 
-def constructUnboundInteractionWithRequires[S <: Tuple, A](
-    interaction: Expr[UnboundInteraction[S, A]],
-    expr: Expr[(S, A) => Boolean]
-)(using Quotes, Type[S], Type[A]): Expr[UnboundInteraction[S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (S, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+object UnboundInteraction {
 
-  $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
-}
+  def constructUnboundInteractionWithRequires[S <: Tuple, A](
+      interaction: Expr[UnboundInteraction[S, A]],
+      expr: Expr[(S, A) => Boolean]
+  )(using Quotes, Type[S], Type[A]): Expr[UnboundInteraction[S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (S, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
 
-def constructUnboundInteractionWithEnsures[S <: Tuple, A](
-    interaction: Expr[UnboundInteraction[S, A]],
-    expr: Expr[(S, A) => Boolean]
-)(using Quotes, Type[S], Type[A]): Expr[UnboundInteraction[S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (S, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+    $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
+  }
 
-  $interaction.copy(ensures = $interaction.ensures :+ Ensures(inputs, fun, ${ showPredicateCode(expr) }))
+  def constructUnboundInteractionWithEnsures[S <: Tuple, A](
+      interaction: Expr[UnboundInteraction[S, A]],
+      expr: Expr[(S, A) => Boolean]
+  )(using Quotes, Type[S], Type[A]): Expr[UnboundInteraction[S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (S, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
+
+    $interaction.copy(ensures = $interaction.ensures :+ Ensures(inputs, fun, ${ showPredicateCode(expr) }))
+  }
+
 }
 
 case class UnboundInteraction[S <: Tuple, A] private[dsl] (
@@ -45,10 +49,10 @@ case class UnboundInteraction[S <: Tuple, A] private[dsl] (
   type AO[_, _] = InteractionWithActs[S, A]
 
   override inline def requires(inline pred: (S, A) => Boolean): UnboundInteraction[S, A] =
-    ${ constructUnboundInteractionWithRequires('{ this }, 'pred) }
+    ${ UnboundInteraction.constructUnboundInteractionWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (S, A) => Boolean): UnboundInteraction[S, A] =
-    ${ constructUnboundInteractionWithEnsures('{ this }, 'pred) }
+    ${ UnboundInteraction.constructUnboundInteractionWithEnsures('{ this }, 'pred) }
 
   override def executes(fun: (S, A) => S): InteractionWithExecutes[S, A] =
     InteractionWithExecutes(requires, ensures, fun)

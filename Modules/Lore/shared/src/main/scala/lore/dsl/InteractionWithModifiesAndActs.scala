@@ -6,36 +6,40 @@ import reactives.operator.Event
 
 import scala.quoted.{Expr, Quotes, Type}
 
-def constructIWMAAWithRequires[ST <: Tuple, S <: Tuple, A](
-    interaction: Expr[InteractionWithModifiesAndActs[ST, S, A]],
-    expr: Expr[(ST, A) => Boolean]
-)(using Quotes, Type[ST], Type[S], Type[A]): Expr[InteractionWithModifiesAndActs[ST, S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (ST, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+object InteractionWithModifiesAndActs {
 
-  $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
-}
+  def constructIWMAAWithRequires[ST <: Tuple, S <: Tuple, A](
+      interaction: Expr[InteractionWithModifiesAndActs[ST, S, A]],
+      expr: Expr[(ST, A) => Boolean]
+  )(using Quotes, Type[ST], Type[S], Type[A]): Expr[InteractionWithModifiesAndActs[ST, S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (ST, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
 
-def constructIWMAAWithEnsures[ST <: Tuple, S <: Tuple, A](
-    interaction: Expr[InteractionWithModifiesAndActs[ST, S, A]],
-    expr: Expr[(ST, A) => Boolean]
-)(using Quotes, Type[ST], Type[S], Type[A]): Expr[InteractionWithModifiesAndActs[ST, S, A]] = '{
-  val (inputs, fun, isStatic) =
-    reactives.macros.MacroLegos.getDependencies[
-      (ST, A) => Boolean,
-      ReSource.of[BundleState],
-      reactives.core.StaticTicket[BundleState],
-      true
-    ]($expr)
+    $interaction.copy(requires = $interaction.requires :+ Requires(inputs, fun, ${ showPredicateCode(expr) }))
+  }
 
-  val newEns = Ensures(inputs, fun, ${ showPredicateCode(expr) })
+  def constructIWMAAWithEnsures[ST <: Tuple, S <: Tuple, A](
+      interaction: Expr[InteractionWithModifiesAndActs[ST, S, A]],
+      expr: Expr[(ST, A) => Boolean]
+  )(using Quotes, Type[ST], Type[S], Type[A]): Expr[InteractionWithModifiesAndActs[ST, S, A]] = '{
+    val (inputs, fun, isStatic) =
+      reactives.macros.MacroLegos.getDependencies[
+        (ST, A) => Boolean,
+        ReSource.of[BundleState],
+        reactives.core.StaticTicket[BundleState],
+        true
+      ]($expr)
 
-  $interaction.copy(ensures = $interaction.ensures :+ newEns)
+    val newEns = Ensures(inputs, fun, ${ showPredicateCode(expr) })
+
+    $interaction.copy(ensures = $interaction.ensures :+ newEns)
+  }
+
 }
 
 case class InteractionWithModifiesAndActs[ST <: Tuple, S <: Tuple, A] private[dsl] (
@@ -48,10 +52,10 @@ case class InteractionWithModifiesAndActs[ST <: Tuple, S <: Tuple, A] private[ds
   type E[_, _] = BoundInteraction[ST, S, A]
 
   override inline def requires(inline pred: (ST, A) => Boolean): InteractionWithModifiesAndActs[ST, S, A] =
-    ${ constructIWMAAWithRequires('{ this }, 'pred) }
+    ${ InteractionWithModifiesAndActs.constructIWMAAWithRequires('{ this }, 'pred) }
 
   override inline def ensures(inline pred: (ST, A) => Boolean): InteractionWithModifiesAndActs[ST, S, A] =
-    ${ constructIWMAAWithEnsures('{ this }, 'pred) }
+    ${ InteractionWithModifiesAndActs.constructIWMAAWithEnsures('{ this }, 'pred) }
 
   override def executes(fun: (ST, A) => ST): BoundInteraction[ST, S, A] =
     BoundInteraction(requires, ensures, fun, modifies, event)
