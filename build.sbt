@@ -6,6 +6,25 @@ import scala.scalanative.build.{LTO, Mode}
 // 2026-06-22 scalacheck depends on scala native 0.5.8 while we use 0.5.12; this is likely fine as long as the tests dont fil
 evictionErrorLevel := Level.Info
 
+lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
+  channels.js(scala3VersionString),
+  channels.jvm(scala3VersionString),
+  deltalens,
+  exJVM,
+  exWeb,
+  lore.js(scala3VersionString),
+  lore.jvm(scala3VersionString),
+  loreCompilerPlugin,
+  proBench,
+  rdts.js(scala3VersionString),
+  rdts.jvm(scala3VersionString),
+  reform,
+  rdts.native(scala3VersionString),
+  reactives.js(scala3VersionString),
+  reactives.jvm(scala3VersionString),
+  reactives.native(scala3VersionString),
+)
+
 lazy val publishedProjects =
   project.in(file("target/PhonyBuilds/publishedProjects")).settings(scala3defaultsExtra, publish / skip := true)
     .aggregate(
