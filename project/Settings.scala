@@ -45,9 +45,8 @@ object Settings {
   def scalaSourceLevel(level: String) = scalacOptions ++= List("-source", level)
 
   // defines the output classfile version, and disables use of newer methods from the JDK classpath
-  def javaOutputVersion(n: Int, conf: TaskKey[?]*) = Def.settings(
+  def javaOutputVersion(n: Int, conf: TaskKey[?]*) =
     taskSpecificScalacOption(s"-java-output-version:$n", conf*)
-  )
 
   // treat warnings as errors
   // generally, adressing warnings as they come up is much less work than fixing problems later
@@ -122,7 +121,8 @@ object Settings {
     }
   }
 
-  def taskSpecificScalacOption(setting: String, conf: TaskKey[?]*) = {
+  // the inline is to workaround a sbt2 bug, where seemingly all settings created here are treated as if they were the same.
+  inline def taskSpecificScalacOption(setting: String, conf: TaskKey[?]*) = {
     val c2 = if (conf.isEmpty) List(Compile / compile, Test / compile) else conf
     c2.map { c => c / scalacOptions += setting }
   }
