@@ -46,8 +46,7 @@ object Settings {
 
   // defines the output classfile version, and disables use of newer methods from the JDK classpath
   def javaOutputVersion(n: Int, conf: TaskKey[?]*) = Def.settings(
-    taskSpecificScalacOption("-java-output-version", conf*),
-    taskSpecificScalacOption(n.toString, conf*)
+    taskSpecificScalacOption(s"-java-output-version:$n", conf*)
   )
 
   // treat warnings as errors
