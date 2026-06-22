@@ -68,7 +68,7 @@ class UndoRecordingSpreadsheet[S](
       pushUndo { s =>
         val removeNewValueDelta =
           if value == null then Spreadsheet.empty[S]
-          else s.internal.removeValueFromConflict(rowIdOpt.get, colIdOpt.get, value)
+          else s.internal.removeValueFromConflict(rowIdOpt.get, colIdOpt.get, value.nn)
 
         previousValues.foldLeft(removeNewValueDelta) { (accDelta, previousValue) =>
           accDelta.merge(s.editCellById(rowIdOpt.get, colIdOpt.get, previousValue, solveSeenConflict = false))
