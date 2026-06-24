@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
+import rdts.base.*
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
@@ -22,6 +22,16 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
     MultiVersionRegister(
       Map(nextDot -> v),
       containedDots
+    )
+  }
+
+  def writeConcurrent(v: A)(using LocalUid): MultiVersionRegister[A] = {
+
+    val nextDot = removed.union(Dots.from(repr.keys)).nextDot(LocalUid.replicaId)
+
+    MultiVersionRegister(
+      Map(nextDot -> v),
+      removed
     )
   }
 

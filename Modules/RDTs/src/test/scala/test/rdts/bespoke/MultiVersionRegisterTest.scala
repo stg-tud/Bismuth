@@ -1,9 +1,9 @@
 package test.rdts.bespoke
 
-import rdts.time.Dots
-import rdts.base.{Uid, LocalUid}
-import rdts.datatypes.MultiVersionRegister
 import rdts.base.Historized.MetaDelta
+import rdts.base.{LocalUid, Uid}
+import rdts.datatypes.MultiVersionRegister
+import rdts.time.Dots
 
 class MultiVersionRegisterTest extends munit.FunSuite {
 
@@ -31,7 +31,6 @@ class MultiVersionRegisterTest extends munit.FunSuite {
   }
 
   test("new write does not overrides all previous deltas") {
-    import MultiVersionRegister.given
 
     val localId: LocalUid = LocalUid.gen()
     var dots              = Dots.empty
@@ -72,4 +71,44 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     assertEquals(redundantDeltas, Dots.empty)
   }
 
+  test("concurrentWrite results in multiple versions") {
+    given localId: LocalUid = LocalUid(Uid.predefined("alice"))
+    val mvReg               = MultiVersionRegister.of("a")
+    val delta               = mvReg.writeConcurrent("b")
+    assertEquals(mvReg.merge(delta).read, Set("a", "b"))
+    assertEquals(delta.read, Set("b"))
+
+    val bEdited = delta.write("c")
+    assertEquals(bEdited.read, Set("c"))
+    assertEquals(delta.merge(bEdited).read, Set("c"))
+    assertEquals(mvReg.merge(bEdited).read, Set("a", "c"))
+
+    val mvReg2 = MultiVersionRegister.of("a")
+    val delta3 = mvReg2.write("b").writeConcurrent("c")
+    mvReg2.merge(delta3)
+
+  }
+
+  test("concurrentWrite results in multiple versions") {
+    given localId: LocalUid = LocalUid(Uid.predefined("alice"))
+    val mvReg               = MultiVersionRegister.of("a")
+    val delta               = mvReg.writeConcurrent("b")
+    assertEquals(mvReg.merge(delta).read, Set("a", "b"))
+    assertEquals(delta.read, Set("b"))
+
+    val bEdited = delta.write("c")
+    assertEquals(bEdited.read, Set("c"))
+    assertEquals(delta.merge(bEdited).read, Set("c"))
+    assertEquals(mvReg.merge(bEdited).read, Set("a", "c"))
+  }
+
+  test("concurrentWrite keeps prefix") {
+    given localId: LocalUid = LocalUid(Uid.predefined("alice"))
+    val mvReg               = MultiVersionRegister.of("a")
+    val delta               = mvReg.write("b")
+    val delta2              = mvReg.merge(delta).writeConcurrent("c")
+    assertEquals(mvReg.merge(delta).read, Set("b"))
+    assertEquals(mvReg.merge(delta2).read, Set("c"))
+    assertEquals(mvReg.merge(delta).merge(delta2).read, Set("b", "c"))
+  }
 }
