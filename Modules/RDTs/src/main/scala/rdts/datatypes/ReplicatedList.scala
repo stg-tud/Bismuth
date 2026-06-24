@@ -33,6 +33,7 @@ case class ReplicatedList[E](
   def findOptimizedInsertionPoint(predecessor: Dot): Dot = {
     def standardResult = predecessor
     return standardResult
+    // TODO: below optimization attempt is buggy, so we just return early and use the normal insertion point
     if !causalOrder.getOrElse(predecessor, Dots.empty).isEmpty then standardResult
     else {
       causalOrder.collectFirst { case (pred, succs) if succs.contains(predecessor) => (pred, succs) } match {
