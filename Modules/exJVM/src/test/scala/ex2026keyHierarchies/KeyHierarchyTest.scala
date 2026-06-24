@@ -1,4 +1,4 @@
-package ex2026accessControl.legacy.encryption
+package ex2026keyHierarchies
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

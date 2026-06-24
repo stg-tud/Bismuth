@@ -1,9 +1,9 @@
-package ex2026accessControl.legacy.encryption
+package ex2026keyHierarchies
 
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import crypto.{Ed25519Util, PublicIdentity}
-import KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
 import ex2026keyHierarchies.KeyDerivationKey
+import ex2026keyHierarchies.KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dot

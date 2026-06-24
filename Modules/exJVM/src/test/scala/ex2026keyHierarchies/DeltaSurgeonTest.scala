@@ -1,8 +1,8 @@
-package ex2026accessControl.legacy.encryption
+package ex2026keyHierarchies
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import DeltaSurgeonTest.{optionSurgeon, given}
+import ex2026keyHierarchies.DeltaSurgeonTest.{optionSurgeon, given}
 import ex2026keyHierarchies.{DeltaSurgeon, IsolatedDeltaParts}
 import munit.FunSuite
 import rdts.base.Bottom
