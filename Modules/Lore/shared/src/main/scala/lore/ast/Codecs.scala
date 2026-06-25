@@ -3,7 +3,7 @@ package lore.ast
 import cats.data.NonEmptyList
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import dotty.tools.dotc.util.SourceFile
+import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
@@ -40,6 +40,12 @@ object Codecs {
       override def decodeValue(in: JsonReader, default: SourceFile): SourceFile = default
       override def encodeValue(x: SourceFile, out: JsonWriter): Unit            = ()
       override def nullValue: SourceFile                                        = null
+
+  // dummy codec to prevent compilation error. We do not want to serialize source positions
+  given SourcePositionCodec: JsonValueCodec[SourcePosition] = new JsonValueCodec[SourcePosition]:
+      override def decodeValue(in: JsonReader, default: SourcePosition): SourcePosition = default
+      override def encodeValue(x: SourcePosition, out: JsonWriter): Unit                = ()
+      override def nullValue: SourcePosition                                            = null
 
   given targTListC: JsonValueCodec[List[TArgT]] = JsonCodecMaker.make(
     CodecMakerConfig

@@ -6,7 +6,7 @@ import lore.backends.traverseFromNode
 import lore.optics.*
 import munit.FunSuite
 
-class ParserSuite extends FunSuite {
+trait ParserSuite extends FunSuite {
   def assertParses[A](p: P[A], expr: String): Unit =
     p.parseAll(expr) match {
       case Right(_) => ()
