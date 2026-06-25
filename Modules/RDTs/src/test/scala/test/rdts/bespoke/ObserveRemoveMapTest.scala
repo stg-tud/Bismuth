@@ -1,10 +1,9 @@
 package test.rdts.bespoke
 
-import rdts.time.Dots
-import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.base.Historized.MetaDelta
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import rdts.time.Dot
+import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.datatypes.{LastWriterWins, MultiVersionRegister, ObserveRemoveMap}
+import rdts.time.{Dot, Dots}
 
 class ObserveRemoveMapTest extends munit.FunSuite {
 
@@ -136,6 +135,17 @@ class ObserveRemoveMapTest extends munit.FunSuite {
     redundantDeltas = buffer.getRedundantDeltas(delta)
 
     assertEquals(redundantDeltas, Dots.from(List(dot1, dot6)))
+  }
+
+  test("ORMap[MVReg[A]] outer delete implies inner clear") {
+    given replicaId: LocalUid = LocalUid.gen()
+
+    val empty  = ObserveRemoveMap.empty[String, MultiVersionRegister[String]]
+    val delta1 = empty.update("a", MultiVersionRegister.empty[String].write("a").write("b"))
+    val delta2 = delta1.clear()
+    val delta3 = delta1.update("a", MultiVersionRegister.empty[String].write("c"))
+
+    assertEquals((delta1 `merge` delta2 `merge` delta3).get("a").map(_.read), Some(Set("c")))
   }
 
 }
