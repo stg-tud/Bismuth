@@ -138,14 +138,16 @@ class ObserveRemoveMapTest extends munit.FunSuite {
   }
 
   test("ORMap[MVReg[A]] outer delete implies inner clear") {
-    given replicaId: LocalUid = LocalUid.gen()
+    val replicaId1: LocalUid = LocalUid.gen()
+    val replicaId2: LocalUid = LocalUid.gen()
 
-    val empty  = ObserveRemoveMap.empty[String, MultiVersionRegister[String]]
-    val delta1 = empty.update("a", MultiVersionRegister.empty[String].write("a").write("b"))
+    val empty  = ObserveRemoveMap.empty[String, MultiVersionRegister[Int]]
+    val delta1 = empty.update("a", MultiVersionRegister.empty[Int].write(1)(using replicaId1))(using replicaId1)
     val delta2 = delta1.clear()
-    val delta3 = delta1.update("a", MultiVersionRegister.empty[String].write("c"))
+    val delta3 = empty.update("a", MultiVersionRegister.empty[Int].write(2)(using replicaId2))(using replicaId2)
 
-    assertEquals((delta1 `merge` delta2 `merge` delta3).get("a").map(_.read), Some(Set("c")))
+    assertEquals(empty.merge(delta1).merge(delta2).merge(delta3).get("a").map(_.read), Some(Set(2)))
+    assertEquals(empty.merge(delta1).merge(delta3).get("a").map(_.read), Some(Set(1, 2))) // sanity check: without clear
   }
 
 }
