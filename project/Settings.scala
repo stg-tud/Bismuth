@@ -30,7 +30,7 @@ object Settings {
 
   val scala3defaultsExtra = Def.settings(
     scala3defaults,
-    javaOutputVersion(17),
+    javaOutputVersion(21), // should be 17
     explicitNulls(Compile / compile),
     safeInit(Compile / compile),
     unstableInlineAccessors(Compile / compile),
