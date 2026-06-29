@@ -143,7 +143,7 @@ lazy val lore = (projectMatrix in file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
     scala3defaults,
-    javaOutputVersion(17),
+    javaOutputVersion(21), // should be 17
     libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided").platform(Platform.jvm),
     Dependencies.jsoniterScala,
     Dependencies.decline,
@@ -160,7 +160,7 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .dependsOn(lore.jvm(scala3VersionString))
   .settings(
     scala3defaults,
-    javaOutputVersion(17),
+    javaOutputVersion(21), // should be 17
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     Dependencies.upickle,
     Dependencies.munit
@@ -171,7 +171,7 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
   .dependsOn(loreCompilerPlugin)
   .settings(
     scala3defaults,
-    javaOutputVersion(17),
+    javaOutputVersion(21), // should be 17
     Dependencies.munit,
     scalacOptions += {
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
