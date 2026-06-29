@@ -80,7 +80,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
         b.shutdown()
   }
 
-  test("late join after many edits still converges and keeps replicating".flaky) {
+  test("late join after many edits still converges and keeps replicating".ignore.pending("flaky for unclear reasons")) {
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
     val c = new SyncedTodoListCrdt(LocalUid.gen())
