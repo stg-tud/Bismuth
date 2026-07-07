@@ -1,6 +1,7 @@
 package replication.acl.bft
 
 import HashDag.Delta
+import crypto.Hash
 
 import scala.collection.mutable
 

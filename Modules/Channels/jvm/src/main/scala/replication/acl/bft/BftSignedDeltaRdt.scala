@@ -1,6 +1,6 @@
 package replication.acl.bft
 
-import crypto.Ed25519Util
+import crypto.{Ed25519Util, Hash, Signature}
 import crypto.channels.PrivateIdentity
 import HashDag.{Delta, Encoder, Hashable}
 

@@ -1,12 +1,12 @@
 package replication.acl.sync.anti_entropy
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
 import replication.acl.bft.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
-import replication.acl.bft.{Acl, Hash}
+import replication.acl.bft.Acl
 import replication.acl.sync.SynchronizedMutableArrayDeltaStore
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}

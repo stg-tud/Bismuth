@@ -1,6 +1,6 @@
 package replication.acl.bft
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity, Signature}
 import crypto.channels.PrivateIdentity
 import HashDag.{Delta, Encoder, Hashable}
 import rdts.base.Bottom

@@ -2,7 +2,7 @@ package replication.acl.bft
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity, Signature}
 import crypto.channels.PrivateIdentity
 import AclRdt.given
 import HashDag.Encoder

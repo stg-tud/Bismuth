@@ -1,9 +1,9 @@
 package ex2025ribltbft.riblt
 
+import ex2025ribltbft.datatypes.ORSet
 import ex2025ribltbft.network.Network
 import ex2025ribltbft.riblt.RIBLTSyncWithThreads
-import RIBLTSyncWithThreads.given_JsonValueCodec_ORSet
-import ex2025ribltbft.datatypes.{ORSet, Op}
+import ex2025ribltbft.riblt.RIBLTSyncWithThreads.given_JsonValueCodec_ORSet
 import ex2025ribltbft.riblt.SessionType.{receiver, sender}
 
 import scala.concurrent.duration.{Duration, DurationInt}

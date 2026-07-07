@@ -1,8 +1,8 @@
 package replication.acl.sync.anti_entropy
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity}
 import rdts.time.Dots
-import replication.acl.bft.{Acl, BftDelta, Hash}
+import replication.acl.bft.{Acl, BftDelta}
 
 trait AntiEntropyCommunicator[State] {
   def sendDeltas(

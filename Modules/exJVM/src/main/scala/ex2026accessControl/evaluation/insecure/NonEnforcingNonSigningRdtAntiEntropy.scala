@@ -1,12 +1,12 @@
 package ex2026accessControl.evaluation.insecure
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
 import replication.acl.bft.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.{Dot, Dots}
-import replication.acl.bft.{Acl, Hash}
+import replication.acl.bft.Acl
 import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 import scala.annotation.unused

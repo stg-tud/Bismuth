@@ -1,12 +1,12 @@
 package replication.acl.sync.anti_entropy
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity}
 import AclEnforcingSync.SyncMsg
 import AclEnforcingSync.SyncMsg.*
 import channels.connection.ByteBufferMessageBuffer
 import rdts.time.Dots
-import replication.acl.bft.{Acl, BftDelta, Hash}
+import replication.acl.bft.{Acl, BftDelta}
 import replication.acl.sync.ConnectionManager
 
 class ConnectionManagerCommunicator[State](private val conn: ConnectionManager)(using JsonValueCodec[SyncMsg[State]])

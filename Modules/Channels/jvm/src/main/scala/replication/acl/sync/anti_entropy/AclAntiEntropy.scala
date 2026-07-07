@@ -1,11 +1,11 @@
 package replication.acl.sync.anti_entropy
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
 import replication.acl.bft.AclRdt.given_Encoder_BftDelta
 import replication.acl.bft.HashDag.Hashable
 import rdts.base.Bottom
-import replication.acl.bft.{Acl, AclRdt, BftDelta, Hash, HashDag, HashDagSync}
+import replication.acl.bft.{Acl, AclRdt, BftDelta, HashDag, HashDagSync}
 
 import java.util.concurrent.atomic.AtomicReference
 

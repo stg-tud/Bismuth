@@ -1,6 +1,6 @@
 package replication.acl.bft
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity, Signature}
 import HashDag.{Delta, Encoder, Hashable}
 
 case class BftDelta[State](

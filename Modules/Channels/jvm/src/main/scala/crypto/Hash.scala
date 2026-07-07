@@ -1,4 +1,4 @@
-package replication.acl.bft
+package crypto
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 

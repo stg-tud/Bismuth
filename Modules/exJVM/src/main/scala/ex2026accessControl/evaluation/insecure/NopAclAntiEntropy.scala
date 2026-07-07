@@ -1,8 +1,8 @@
 package ex2026accessControl.evaluation.insecure
 
-import crypto.PublicIdentity
+import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import replication.acl.bft.{Acl, BftDelta, Hash}
+import replication.acl.bft.{Acl, BftDelta}
 import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator}
 
 class NopAclAntiEntropy(

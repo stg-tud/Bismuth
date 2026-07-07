@@ -1,7 +1,6 @@
 package replication.authz
 
-import replication.acl.bft.Hash
-
+import crypto.Hash
 import java.security.{MessageDigest, SecureRandom}
 
 object Commitment {
