@@ -4,7 +4,8 @@ import crypto.channels.PrivateIdentity
 import ex2026accessControl.evaluation.insecure.NonEnforcingSync
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.time.Dots
-import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.Acl
+import replication.acl.bft.BftDelta
 import replication.acl.sync.ChannelConnectionManager
 import replication.acl.sync.anti_entropy.AclEnforcingSync
 

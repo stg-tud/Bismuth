@@ -3,7 +3,7 @@ package ex2026accessControl.travelplanner
 import crypto.PublicIdentity
 import rdts.filters.PermissionTree
 import rdts.time.Dot
-import replication.acl.bft.Acl
+import replication.acl.Acl
 
 // TODO: Probably should be refactored away
 trait Replica[RDT] {

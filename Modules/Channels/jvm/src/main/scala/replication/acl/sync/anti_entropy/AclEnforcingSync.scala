@@ -11,9 +11,10 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
 import replication.JsoniterCodecsJvm
-import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.bft.BftDelta
 import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import replication.JsoniterCodecsJvm.given
+import replication.acl.Acl
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference

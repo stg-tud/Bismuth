@@ -5,7 +5,7 @@ import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.Debug
 import ex2026accessControl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import javafx.scene.input.KeyCode
-import replication.acl.bft.{Acl, AclRdt}
+import replication.acl.{Acl, AclRdt}
 import replication.acl.sync.{ChannelConnectionManager, MessageReceiver}
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.scene.control.{Menu, MenuBar, MenuItem}

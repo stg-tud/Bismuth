@@ -6,7 +6,8 @@ import AclEnforcingSync.SyncMsg
 import AclEnforcingSync.SyncMsg.*
 import channels.connection.ByteBufferMessageBuffer
 import rdts.time.Dots
-import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.Acl
+import replication.acl.bft.BftDelta
 import replication.acl.sync.ConnectionManager
 
 class ConnectionManagerCommunicator[State](private val conn: ConnectionManager)(using JsonValueCodec[SyncMsg[State]])

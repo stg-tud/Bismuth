@@ -3,9 +3,10 @@ package ex2026accessControl.travelplanner
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Ed25519Util, PublicIdentity}
-import replication.acl.bft.AclRdt.given_JsonValueCodec_BftDelta
+import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
 import SyncInvitation.base64Encoder
-import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.Acl
+import replication.acl.bft.BftDelta
 
 import java.security.KeyPair
 import java.util.Base64

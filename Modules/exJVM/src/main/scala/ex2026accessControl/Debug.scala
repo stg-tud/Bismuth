@@ -2,13 +2,14 @@ package ex2026accessControl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.{Hash, PublicIdentity, Signature}
-import replication.acl.bft.AclRdt.given_JsonValueCodec_BftDelta
+import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
 import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
 import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
-import replication.acl.bft.{Acl, BftDelta}
+import replication.acl.Acl
+import replication.acl.bft.BftDelta
 import replication.acl.sync.anti_entropy.SignedDelta
 
 object Debug {

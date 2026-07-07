@@ -1,4 +1,4 @@
-package replication.acl.bft
+package replication.acl
 
 import crypto.PublicIdentity
 import rdts.base.{Bottom, DecoratedLattice, Lattice}
