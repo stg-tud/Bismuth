@@ -44,14 +44,14 @@ case class Paxos[A](
       currentRound.getOrElse(PaxosRound()).proposals.voteFor(value)
     )
 
-  // boolean threshold queries
+  // preconditions
   def currentRoundHasCandidate: Boolean = currentRound match
       case Some(PaxosRound(leaderElection, _))
           if leaderElection.votes.nonEmpty => true
       case _ => false
   def isCurrentLeader(using
-      Participants,
-      LocalUid
+      LocalUid,
+      Participants
   ): Boolean = currentRound match
       case Some(PaxosRound(leaderElection, _))
           if leaderElection.decision == Decided(replicaId) =>
