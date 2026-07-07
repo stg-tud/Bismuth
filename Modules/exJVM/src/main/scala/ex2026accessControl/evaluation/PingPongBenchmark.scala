@@ -8,8 +8,7 @@ import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.filters.PermissionTree
 import rdts.time.{Dot, Dots}
-import replication.acl.Acl
-import replication.acl.bft.BftDelta
+import replication.acl.{Acl, BftDelta}
 
 import java.net.InetAddress
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}

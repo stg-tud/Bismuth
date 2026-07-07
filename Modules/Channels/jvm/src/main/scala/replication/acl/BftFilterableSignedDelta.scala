@@ -1,9 +1,9 @@
-package replication.acl.bft
+package replication.acl
 
-import crypto.{Hash, PublicIdentity, Signature}
 import crypto.channels.PrivateIdentity
-import HashDag.{Delta, Encoder, Hashable}
+import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.Bottom
+import replication.HashDag.{Delta, Encoder, Hashable}
 
 case class BftFilterableSignedDelta[RDT: Bottom](
     author: PublicIdentity,

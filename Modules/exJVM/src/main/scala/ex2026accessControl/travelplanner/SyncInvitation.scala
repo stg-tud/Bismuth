@@ -5,8 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Ed25519Util, PublicIdentity}
 import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
 import SyncInvitation.base64Encoder
-import replication.acl.Acl
-import replication.acl.bft.BftDelta
+import replication.acl.{Acl, BftDelta}
 
 import java.security.KeyPair
 import java.util.Base64

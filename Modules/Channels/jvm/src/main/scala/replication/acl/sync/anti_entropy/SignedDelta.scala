@@ -2,7 +2,7 @@ package replication.acl.sync.anti_entropy
 
 import crypto.{PublicIdentity, Signature}
 import crypto.channels.PrivateIdentity
-import replication.acl.bft.HashDag.Encoder
+import replication.HashDag.Encoder
 import rdts.time.Dot
 
 case class SignedDelta[State](

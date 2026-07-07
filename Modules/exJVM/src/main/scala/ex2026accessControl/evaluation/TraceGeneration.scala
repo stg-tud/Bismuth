@@ -8,8 +8,7 @@ import TravelPlanMutatorChoice.*
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
 import rdts.time.{ArrayRanges, Dots}
-import replication.acl.{Acl, AclRdt}
-import replication.acl.bft.BftDelta
+import replication.acl.{Acl, AclRdt, BftDelta}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

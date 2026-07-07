@@ -7,8 +7,7 @@ import crypto.channels.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
-import replication.acl.Acl
-import replication.acl.bft.{BftDelta}
+import replication.acl.{Acl, BftDelta}
 import replication.acl.sync.{ConnectionManager, MessageReceiver}
 import replication.acl.sync.anti_entropy.AclEnforcingSync
 

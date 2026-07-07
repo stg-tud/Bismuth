@@ -10,8 +10,8 @@ import rdts.base.Lattice.syntax.merge
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
-import replication.acl.{Acl, AclRdt}
-import replication.acl.bft.{BftDelta, HashDag}
+import replication.HashDag
+import replication.acl.{Acl, AclRdt, BftDelta}
 import replication.acl.sync.anti_entropy.{AclEnforcingSync, SignedDelta}
 
 import java.util.concurrent.TimeUnit

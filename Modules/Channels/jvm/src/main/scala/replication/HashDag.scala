@@ -1,9 +1,9 @@
-package replication.acl.bft
+package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import HashDag.{Delta, Encoder, Hashable}
 import crypto.Hash
 import rdts.base.{Bottom, Lattice}
+import replication.HashDag.{Delta, Encoder, Hashable}
 
 import scala.collection.mutable
 

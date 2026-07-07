@@ -5,9 +5,9 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.filters.PermissionTree
+import replication.HashDag
 import replication.acl.AclRdt.given
-import replication.acl.bft.HashDag.Encoder
-import replication.acl.bft.{BftDelta, BftSignedDeltaRdt, HashDag, StateReconstructor}
+import replication.HashDag.Encoder
 
 class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] = _ => None)
     extends BftSignedDeltaRdt[Acl](privateIdentity) {

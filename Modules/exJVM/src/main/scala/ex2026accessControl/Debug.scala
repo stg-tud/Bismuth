@@ -8,8 +8,7 @@ import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, Da
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
-import replication.acl.Acl
-import replication.acl.bft.BftDelta
+import replication.acl.{Acl, BftDelta}
 import replication.acl.sync.anti_entropy.SignedDelta
 
 object Debug {

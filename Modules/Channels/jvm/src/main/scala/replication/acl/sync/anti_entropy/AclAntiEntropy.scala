@@ -3,10 +3,10 @@ package replication.acl.sync.anti_entropy
 import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
 import replication.acl.AclRdt.given_Encoder_BftDelta
-import replication.acl.bft.HashDag.Hashable
+import replication.HashDag.Hashable
 import rdts.base.Bottom
-import replication.acl.{Acl, AclRdt}
-import replication.acl.bft.{BftDelta, HashDag, HashDagSync}
+import replication.{HashDag, HashDagSync}
+import replication.acl.{Acl, AclRdt, BftDelta}
 
 import java.util.concurrent.atomic.AtomicReference
 

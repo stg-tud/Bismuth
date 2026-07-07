@@ -2,7 +2,7 @@ package replication.acl.sync.anti_entropy
 
 import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import replication.acl.bft.HashDag.Encoder
+import replication.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}

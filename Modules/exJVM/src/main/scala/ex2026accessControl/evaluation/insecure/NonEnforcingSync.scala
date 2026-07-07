@@ -7,8 +7,7 @@ import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.acl.Acl
-import replication.acl.bft.BftDelta
+import replication.acl.{Acl, BftDelta}
 import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import replication.acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 

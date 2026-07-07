@@ -2,7 +2,7 @@ package ex2026accessControl.evaluation.insecure
 
 import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import replication.acl.bft.HashDag.Encoder
+import replication.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.{Dot, Dots}

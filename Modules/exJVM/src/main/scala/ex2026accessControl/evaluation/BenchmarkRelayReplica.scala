@@ -4,8 +4,7 @@ import crypto.channels.PrivateIdentity
 import ex2026accessControl.evaluation.centralized.ForwardingSync
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.time.Dots
-import replication.acl.Acl
-import replication.acl.bft.BftDelta
+import replication.acl.{Acl, BftDelta}
 import replication.acl.sync.ChannelConnectionManager
 
 import java.net.InetAddress

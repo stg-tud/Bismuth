@@ -1,8 +1,9 @@
-package replication.acl.bft
+package replication.acl
 
-import crypto.{Ed25519Util, Hash, Signature}
 import crypto.channels.PrivateIdentity
-import HashDag.{Delta, Encoder, Hashable}
+import crypto.{Ed25519Util, Hash, Signature}
+import replication.HashDag
+import replication.HashDag.{Delta, Encoder, Hashable}
 
 class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(using
     val encoder: Encoder[BftDelta[State]],

@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation.centralized
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import ex2026accessControl.Debug
-import replication.acl.bft.HashDag.Encoder
+import replication.HashDag.Encoder
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots

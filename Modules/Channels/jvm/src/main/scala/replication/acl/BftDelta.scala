@@ -1,7 +1,7 @@
-package replication.acl.bft
+package replication.acl
 
 import crypto.{Hash, PublicIdentity, Signature}
-import HashDag.{Delta, Encoder, Hashable}
+import replication.HashDag.{Delta, Encoder, Hashable}
 
 case class BftDelta[State](
     signature: Option[Signature],
