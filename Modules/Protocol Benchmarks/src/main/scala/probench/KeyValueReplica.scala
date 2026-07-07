@@ -165,11 +165,13 @@ class KeyValueReplica(
 
     def maybeAnswerClientFromCache(): Unit = {
       // check if we are the leader and have a heartbeat quorum
+      log("checking if we are the leader and have a heartbeat quorum")
       if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
             timeoutThreshold,
             System.currentTimeMillis()
           )
       then {
+        log("commencing to answer unanswered read requests from cache")
         var readOpt = Option(client.readQueue.poll())
 
         while readOpt.nonEmpty do
@@ -181,7 +183,15 @@ class KeyValueReplica(
                 readOpt = Option(client.readQueue.poll())
               case None => ()
             }
-      }
+      } else
+          if !state.leader.contains(replicaId) then
+              log("not leader, cancel answering unanswered read requests from cache")
+          else if !connInf.state.hasQuorum(
+                timeoutThreshold,
+                System.currentTimeMillis()
+              )
+          then
+              log("I assume that I am the leader but I don't have a hearbeat quorum")
     }
 
     private def maybeAnswerClientFromLog(previousRound: Time, state: ClusterState): Unit = {
@@ -288,7 +298,7 @@ class KeyValueReplica(
     )
 
     def handleIncoming(delta: ConnInformation): Unit = {
-      // log(s"handling incoming conn inf: $delta")
+      log(s"handling incoming conn inf: $delta")
       val (old, changed) = currentStateLock.synchronized {
         val receivedTime          = System.currentTimeMillis()
         val old                   = state

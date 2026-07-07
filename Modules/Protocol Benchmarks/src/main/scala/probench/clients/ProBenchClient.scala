@@ -46,6 +46,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       val p                               = Promise[String]()
       promises.synchronized {
         promises.put(id, p)
+        log("adding promise")
       }
       publishRead(request)
       p.future
