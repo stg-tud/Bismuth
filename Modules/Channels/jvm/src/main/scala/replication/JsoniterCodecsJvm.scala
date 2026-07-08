@@ -7,6 +7,7 @@ import rdts.filters.PermissionTree
 import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
 import replication.acl.sync.anti_entropy.SignedDelta
 import channels.JsoniterCodecs.given
+import replication.authz.ArdtEvent
 
 object JsoniterCodecsJvm {
   given pubIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:
@@ -32,4 +33,6 @@ object JsoniterCodecsJvm {
 
   given syncMsgCodec[State: JsonValueCodec]: JsonValueCodec[SyncMsg[State]] =
     JsonCodecMaker.make
+
+  given codec[T: JsonValueCodec]: JsonValueCodec[ArdtEvent[T]] = JsonCodecMaker.make
 }

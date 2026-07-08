@@ -1,6 +1,7 @@
-package replication.authz
+package crypto
 
 import crypto.Hash
+
 import java.security.{MessageDigest, SecureRandom}
 
 object Commitment {
