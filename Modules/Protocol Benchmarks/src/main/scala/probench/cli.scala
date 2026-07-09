@@ -157,7 +157,7 @@ object cli {
     val endpoints         = named[List[String]]("--endpoints", "")
     val deltaStorageType  = named[DeltaStorage.Type]("--delta-storage-type", "", DeltaStorage.Type.Merging(2000))
     val logTimings        = named[Boolean]("--log-timings", "true|false", true)
-    val commitReads        = named[Boolean]("--commit-reads", "true|false", true)
+    val commitReads       = named[Boolean]("--commit-reads", "true|false", false)
 
     /*
     fixed opType warmup measurement min max
@@ -223,16 +223,14 @@ object cli {
                 1000
               )
           Timer().schedule(
-            () => {
-              node.connInf.sendHeartbeat(): Unit
-            },
+            () =>
+              node.connInf.sendHeartbeat(): Unit,
             100,
             200
           )
           Timer().schedule(
-            () => {
-              node.connInf.checkLiveness()
-            },
+            () =>
+              node.connInf.checkLiveness(),
             1000,
             500
           )
