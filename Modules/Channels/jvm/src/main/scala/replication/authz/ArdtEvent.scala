@@ -1,23 +1,26 @@
 package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload
+import replication.authz.ArdtEvent.Payload.Capability
 
-case class ArdtEvent[T](
-    payload: Payload[T],
+case class ArdtEvent(
+    payload: Payload,
     author: PublicIdentity,
     parents: Set[Hash],
-    signature: Signature
+    signature: Signature,
+    authorization: Hash
 ):
-    def hash(using JsonValueCodec[T]): Hash = {
-      import replication.JsoniterCodecsJvm.given
-      Hash.compute(writeToArray(this))
-    }
+    def hash: Hash = Hash.compute(writeToArray(this))
 
 object ArdtEvent:
-    enum Payload[T]:
-        case DeltaCommitment(state: T)
+    enum Payload:
+        case DeltaCommitment(commitment: Hash)
         case Capability(holder: PublicIdentity, read: PermissionTree, write: PermissionTree)
         case Revocation(revoked: Set[Hash])
+
+    import replication.JsoniterCodecsJvm.given
+    given JsonValueCodec[ArdtEvent] = JsonCodecMaker.make

@@ -26,7 +26,7 @@ class ThreadsafeMapOverheadBenchmark {
 
   // Pre-filled maps used for the "get" benchmarks
   var filledTrieMap: TrieMap[String, Long]                     = TrieMap.empty[String, Long]
-  var filledAtomicRef: AtomicReference[Map[String, Long]]      = AtomicReference(Map.empty)
+  var filledMapInAtomicRef: AtomicReference[Map[String, Long]] = AtomicReference(Map.empty)
   var filledConcurrentHashMap: ConcurrentHashMap[String, Long] = new ConcurrentHashMap[String, Long](size)
 
   @Setup(Level.Trial)
@@ -45,7 +45,7 @@ class ThreadsafeMapOverheadBenchmark {
       i += 1
     }
 
-    filledAtomicRef = new AtomicReference[Map[String, Long]](immutableMap)
+    filledMapInAtomicRef = new AtomicReference[Map[String, Long]](immutableMap)
   }
 
   // ---------- PUT ----------
@@ -103,7 +103,7 @@ class ThreadsafeMapOverheadBenchmark {
 
   @Benchmark
   def getAtomicRefImmutableMap(bh: Blackhole): Unit = {
-    val snapshot = filledAtomicRef.get()
+    val snapshot = filledMapInAtomicRef.get()
     var i        = 0
     while i < size do {
       bh.consume(snapshot.get(keys(i)))
