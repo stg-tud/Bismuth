@@ -5,6 +5,8 @@ import crypto.Hash
 import rdts.base.Lattice
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
+import scala.collection.mutable
+
 case class EventGraph[T: Lattice](genesis: Hash, heads: Set[Hash], events: Map[Hash, ArdtEvent]) {
 
   /** Adds an event to the event graph unless the event is invalid or causally-before events are missing from the graph.
@@ -19,9 +21,11 @@ case class EventGraph[T: Lattice](genesis: Hash, heads: Set[Hash], events: Map[H
     // Signature verification
     require(event.signature.verify(event.author.publicKey, encodedEvent))
     val hash = event.hash
+    if events.contains(hash) then return Right(this)
 
     // All events need predecessors except the genesis event
-    require(event.parents.nonEmpty || hash == genesis)
+    if hash == genesis then require(event.parents.isEmpty)
+    else require(event.parents.nonEmpty)
 
     // Used capability is locally known (implies validity) and both holder and event author are the same
     val authorizingCapability = events.get(event.authorization) match {
@@ -55,9 +59,30 @@ case class EventGraph[T: Lattice](genesis: Hash, heads: Set[Hash], events: Map[H
     Right(copy(heads = (heads -- event.parents) + hash, events = events + (hash -> event)))
   }
 
-  def isBefore(event1: Hash, event2: Hash): Boolean     = ???
-  def isAfter(event1: Hash, event2: Hash): Boolean      = ???
-  def isConcurrent(event1: Hash, event2: Hash): Boolean = ???
+  // This is essentially BFS
+  def causallyBefore(event1: Hash, event2: Hash): Boolean = {
+    if event1 == event2 then return false
+    // if !events.contains(event1) || !events.contains(event2) then return false
+
+    val toSearch = {
+      val parents = events(event2).parents
+      if parents.contains(event1) then return true
+      mutable.Queue.from(parents)
+    }
+    val searched = mutable.Set(event2) // we don't have cycles, thus event2 is never found
+
+    while toSearch.nonEmpty do {
+      val next    = toSearch.dequeue()
+      val parents = events(event2).parents
+      if parents.contains(event1) then return true
+      toSearch.enqueueAll(events(next).parents.diff(searched))
+      searched += next
+    }
+
+    false
+  }
+  def causallyAfter(event1: Hash, event2: Hash): Boolean = causallyBefore(event2, event1)
+  def concurrent(event1: Hash, event2: Hash): Boolean    = ???
 
   def authorizationChain(capHash: Hash): Seq[Hash] = {
     if capHash == genesis then Seq(genesis)
