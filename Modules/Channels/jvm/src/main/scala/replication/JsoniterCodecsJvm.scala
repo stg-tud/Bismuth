@@ -34,5 +34,5 @@ object JsoniterCodecsJvm {
   given syncMsgCodec[State: JsonValueCodec]: JsonValueCodec[SyncMsg[State]] =
     JsonCodecMaker.make
 
-  given codec[T: JsonValueCodec]: JsonValueCodec[ArdtEvent[T]] = JsonCodecMaker.make
+  given ardtEventCodec: JsonValueCodec[ArdtEvent] = JsonCodecMaker.make
 }
