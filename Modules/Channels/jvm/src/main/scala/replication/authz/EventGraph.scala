@@ -12,6 +12,7 @@ case class EventGraph[T: Lattice](
     genesis: Hash,
     heads: Set[Hash],
     events: Map[Hash, (ArdtEvent, Int)],
+    revocations: Map[Hash, Set[Hash]],
     nextEventIndex: Int
 ) {
 
@@ -55,21 +56,28 @@ case class EventGraph[T: Lattice](
       case DeltaCommitment(_)         =>
       case Capability(_, read, write) =>
         // Delegation validity
-        read <= authorizingCapability.read && write <= authorizingCapability.write
-      case Revocation(revokedCapabilities) =>
+        require(read <= authorizingCapability.read && write <= authorizingCapability.write)
+      case Revocation(revokedCapability) =>
         // revocation is authorized if authorizing capability is also part of the authorization chain of the revoked capability
-        revokedCapabilities.forall(authorizationChain(_).contains(event.authorization))
+        require(authorizationChain(revokedCapability).contains(event.authorization))
     }
 
     // Event is valid
     Right(copy(
       heads = (heads -- event.parents) + hash,
       events = events + (hash -> (event, nextEventIndex)),
-      nextEventIndex = nextEventIndex + 1
+      nextEventIndex = nextEventIndex + 1,
+      revocations = event.payload match {
+        case Revocation(revokedCapability) => revocations.updatedWith(revokedCapability) {
+            case Some(existing) => Some(existing + hash)
+            case None           => Some(Set(hash))
+          }
+        case _ => revocations
+      }
     ))
   }
 
-  // This is essentially BFS
+  // This performs an optimized BFS for computing the reachability from event2 to event1 along the predecessors.
   def causallyBefore(event1: Hash, event2: Hash): Boolean = {
     if event1 == event2 then return false
 
@@ -131,9 +139,3 @@ enum CausalOrder:
     case CONCURRENT
     case EQUAL
     case UNKNOWN
-
-object Authorization {
-  def materialize[T](eventGraph: EventGraph[T], deltaValueStore: DeltaValueStore[T]): T = ???
-
-  def mayRead[T](events: EventGraph[T]): Boolean = ???
-}

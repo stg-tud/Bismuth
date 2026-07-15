@@ -20,7 +20,7 @@ object ArdtEvent:
     enum Payload:
         case DeltaCommitment(commitment: Hash)
         case Capability(holder: PublicIdentity, read: PermissionTree, write: PermissionTree)
-        case Revocation(revoked: Set[Hash])
+        case Revocation(revokedCapability: Hash)
 
     import replication.JsoniterCodecsJvm.given
     given JsonValueCodec[ArdtEvent] = JsonCodecMaker.make
