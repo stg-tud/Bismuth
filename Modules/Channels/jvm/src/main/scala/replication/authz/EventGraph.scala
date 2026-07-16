@@ -12,7 +12,7 @@ case class EventGraph[T: Lattice](
     genesis: Hash,
     heads: Set[Hash],
     events: Map[Hash, (ArdtEvent, Int)],
-    revocations: Map[Hash, Set[Hash]],
+    revocationCache: Map[Hash, Set[Hash]],
     nextEventIndex: Int
 ) {
 
@@ -67,12 +67,12 @@ case class EventGraph[T: Lattice](
       heads = (heads -- event.parents) + hash,
       events = events + (hash -> (event, nextEventIndex)),
       nextEventIndex = nextEventIndex + 1,
-      revocations = event.payload match {
-        case Revocation(revokedCapability) => revocations.updatedWith(revokedCapability) {
+      revocationCache = event.payload match {
+        case Revocation(revokedCapability) => revocationCache.updatedWith(revokedCapability) {
             case Some(existing) => Some(existing + hash)
             case None           => Some(Set(hash))
           }
-        case _ => revocations
+        case _ => revocationCache
       }
     ))
   }
@@ -129,6 +129,11 @@ case class EventGraph[T: Lattice](
   def authorizationChain(capHash: Hash): Seq[Hash] = {
     if capHash == genesis then Seq(genesis)
     else capHash +: authorizationChain(events(capHash)._1.authorization) // assumes that chain is in local event graph
+  }
+
+  def revocations(capHash: Hash): Set[Hash] = {
+    if capHash == genesis then revocationCache.getOrElse(capHash, Set.empty)
+    else revocationCache.getOrElse(capHash, Set.empty) ++ revocations(events(capHash)._1.authorization)
   }
 
 }
