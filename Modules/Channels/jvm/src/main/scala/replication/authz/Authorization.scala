@@ -23,8 +23,33 @@ object Authorization {
     }
   }
 
-  def mayRead[T](replica: PublicIdentity, delta: Hash, eventGraph: EventGraph[T]): Option[Boolean] =
-    ???
+  def mayRead[T: {JsonValueCodec, Filter}](
+      replicaId: PublicIdentity,
+      deltaEventHash: Hash,
+      eventGraph: EventGraph[T],
+      deltaValueStore: DeltaValueStore[T]
+  ): Boolean =
+    eventGraph.events.get(deltaEventHash) match {
+      case Some(ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _) =>
+        val delta = deltaValueStore.get(commitment).map(deltaBytes => readFromArray[T](deltaBytes.value)).get
+        mayRead(replicaId, deltaEventHash, delta, eventGraph)
+      case _ => ???
+    }
+
+  def mayRead[T: Filter](
+      replicaId: PublicIdentity,
+      deltaEventHash: Hash,
+      delta: T,
+      eventGraph: EventGraph[T]
+  ): Boolean = {
+    eventGraph.capabilityCache(replicaId)
+      .exists((capabilityEventHash, capability) =>
+        Filter[T].isAllowed(delta, capability.read) &&
+        eventGraph
+          .revocations(capabilityEventHash)
+          .forall(revocation => !eventGraph.causallyBefore(revocation, deltaEventHash))
+      )
+  }
 
   def mayWrite[T: {JsonValueCodec, Filter}](
       eventGraph: EventGraph[T],
@@ -59,11 +84,10 @@ object Authorization {
     // Delegation & revocation validity and validity of capability use are invariants of eventgraph, thus not checked here
     eventGraph.events(deltaEvent.authorization)._1.payload match {
       case Capability(_, _, write) =>
-        val revocations =
-          eventGraph
-            .revocations(deltaEvent.authorization)
-            .filter(revocation => !eventGraph.causallyBefore(deltaEventHash, revocation))
-        Filter[T].isAllowed(delta, write) && revocations.isEmpty
+        Filter[T].isAllowed(delta, write)
+        && eventGraph // All revocations for cap must be causally after deltaEvent
+          .revocations(deltaEvent.authorization)
+          .forall(revocation => eventGraph.causallyBefore(deltaEventHash, revocation))
       case _ => false
     }
   }

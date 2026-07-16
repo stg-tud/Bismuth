@@ -1,7 +1,7 @@
 package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
-import crypto.Hash
+import crypto.{Hash, PublicIdentity}
 import rdts.base.Lattice
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.CausalOrder.*
@@ -13,6 +13,7 @@ case class EventGraph[T: Lattice](
     heads: Set[Hash],
     events: Map[Hash, (ArdtEvent, Int)],
     revocationCache: Map[Hash, Set[Hash]],
+    capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
     nextEventIndex: Int
 ) {
 
@@ -73,6 +74,14 @@ case class EventGraph[T: Lattice](
             case None           => Some(Set(hash))
           }
         case _ => revocationCache
+      },
+      capabilityCache = event.payload match {
+        case capability @ Capability(holder, _, _) =>
+          capabilityCache.updatedWith(holder) {
+            case Some(oldCache) => Some(oldCache + (hash -> capability))
+            case None           => Some(Set(hash -> capability))
+          }
+        case _ => capabilityCache
       }
     ))
   }
