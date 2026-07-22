@@ -1,5 +1,0 @@
-# wait-for-res false
-multiput key%n valueZ%n 1000
-multiget key%n 1000
-# wait
-exit
