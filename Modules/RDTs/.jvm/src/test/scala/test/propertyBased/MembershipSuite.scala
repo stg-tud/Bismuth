@@ -1,4 +1,4 @@
-package ex2025coordinationstate
+package propertyBased
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean

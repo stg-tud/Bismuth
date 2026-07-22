@@ -1,4 +1,4 @@
-package ex2025coordinationstate
+package propertyBased
 
 import org.scalacheck.Test.Parameters
 import org.scalacheck.commands.Commands

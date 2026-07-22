@@ -36,19 +36,6 @@ lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossT
     Test / fork := true,
   )
 
-lazy val exJVM = project.in(file("Modules/exJVM"))
-  .dependsOn(rdts.jvm % "compile->compile;test->test")
-  .settings(
-    scala3defaults,
-    javaOutputVersion(21),
-    fork := true,
-    Dependencies.jsoniterScala,
-    Dependencies.munit,
-    Dependencies.munitCheck,
-    Dependencies.pprint,
-    Dependencies.slf4jnop, // for jetty
-  )
-
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .dependsOn(reactives.jvm, rdts.jvm, channels.jvm, rdts.jvm % "compile->compile;test->test")
   .enablePlugins(JavaAppPackaging)
