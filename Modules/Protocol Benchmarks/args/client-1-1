@@ -1,0 +1,5 @@
+# wait-for-res false
+multiput key%n valueX%n 1000
+multiget key%n 1000
+# wait
+exit
