@@ -6,7 +6,6 @@ import scala.scalanative.build.{LTO, Mode}
 lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
   channels.js,
   channels.jvm,
-  exJVM,
   proBench,
   rdts.js,
   rdts.jvm,
