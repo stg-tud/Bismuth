@@ -8,7 +8,7 @@ import rdts.protocols.Util.Agreement.*
 import rdts.protocols.{Participants, Quorum, Vote}
 
 case class FlexibleVoting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
-  // boolean threshold queries
+  // threshold queries
   def hasNotVoted(using LocalUid): Boolean =
     !votes.exists {
       case Vote(r, _) => r == replicaId
