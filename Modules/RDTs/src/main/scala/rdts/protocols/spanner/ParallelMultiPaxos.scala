@@ -38,14 +38,16 @@ case class ParallelMultiPaxos[A](
             MultipaxosPhase.LeaderElection // first round, no previous decision, need to elect leader
           case None => MultipaxosPhase.Idle // round not yet initialized but previous round was successful
 
-    def read(using Participants): Iterable[A] =
+    def read(using Participants): List[A] =
       // return values in log order but only if all previous rounds are decided
       readDecisionsSince(0)
 
-    def readDecisionsSince(time: Long)(using Participants): Iterable[A] =
-      NumericRange(time, commitIndex + 1, 1L).view.flatMap(log.get)
-        .takeWhile(_.result.isDefined) // return log until first undecided round
+    def readDecisionsSince(time: Long)(using Participants): List[A] =
+      NumericRange(time, log.size.toLong, 1L).view.flatMap(log.get)
+        .filter(_.result.isDefined)
+        // .takeWhile(_.result.isDefined) // return log until first undecided round
         .map(_.result.get)
+        .toList
 
     def startLeaderElection(index: Long)(using LocalUid): ParallelMultiPaxos[A] =
       precondition(index == 0L || log.contains(index - 1)) {
