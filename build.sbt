@@ -54,6 +54,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
 lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(CrossType.Pure)
   .in(file("Modules/RDTs"))
   .settings(
+    version := "oopsla26-artifact",
     scala3defaultsExtra,
     SettingsLocal.publishSonatype,
     Dependencies.munit,
