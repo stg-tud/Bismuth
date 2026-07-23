@@ -9,13 +9,11 @@ lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate
   proBench,
   rdts.js,
   rdts.jvm,
-  rdts.native,
   reactives.js,
   reactives.jvm,
-  reactives.native,
 )
 
-lazy val channels = crossProject(JSPlatform, JVMPlatform, NativePlatform).crossType(CrossType.Full)
+lazy val channels = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full)
   .in(file("Modules/Channels"))
   .dependsOn(rdts)
   .settings(
@@ -51,7 +49,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     Universal / name        := "probench",
   )
 
-lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(CrossType.Pure)
+lazy val rdts = crossProject(JVMPlatform, JSPlatform).crossType(CrossType.Pure)
   .in(file("Modules/RDTs"))
   .settings(
     version := "oopsla26-artifact",
@@ -61,7 +59,7 @@ lazy val rdts = crossProject(JVMPlatform, JSPlatform, NativePlatform).crossType(
     Dependencies.munitCheck,
   )
 
-lazy val reactives = crossProject(JVMPlatform, JSPlatform, NativePlatform).in(file("Modules/Reactives"))
+lazy val reactives = crossProject(JVMPlatform, JSPlatform).in(file("Modules/Reactives"))
   .settings(
     scala3defaultsExtra,
     // scaladoc

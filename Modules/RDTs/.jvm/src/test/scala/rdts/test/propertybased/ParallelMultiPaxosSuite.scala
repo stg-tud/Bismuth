@@ -1,4 +1,4 @@
-package propertyBased
+package rdts.test.propertybased
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
@@ -6,20 +6,20 @@ import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
 import rdts.protocols.MultipaxosPhase.LeaderElection
-import rdts.protocols.{MultiPaxos, Participants}
+import rdts.protocols.Participants
 
 import scala.util.Try
+import rdts.protocols.spanner.ParallelMultiPaxos
 
-extension [A](s1: Seq[A])
-    def isPrefix(s2: Seq[A]): Boolean = s1.indexOfSlice(s2) == 0
-
-class MultiPaxosSuite extends munit.ScalaCheckSuite {
-
+class ParallelMultiPaxosSuite extends munit.ScalaCheckSuite {
+  override def scalaCheckInitialSeed                = "T1dyTdzixur4RPmBXyJPMc4b097AtKu25e_AKKUKdQO="
   override def scalaCheckTestParameters: Parameters =
-    StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(100).withMaxSize(500)
+    StateBasedTestParameters.update(
+      super.scalaCheckTestParameters
+    ).withMinSize(100).withMaxSize(4000).withMinSuccessfulTests(200)
 
-  property("Multipaxos")(MultiPaxosSpec[Int](
-    logging = false,
+  property("ParallelMultiPaxos")(ParallelMultiPaxosSpec[Int](
+    logging = true,
     minDevices = 3,
     maxDevices = 5,
     proposeFreq = 5,
@@ -28,20 +28,20 @@ class MultiPaxosSuite extends munit.ScalaCheckSuite {
   ).property())
 }
 
-class MultiPaxosSpec[A: Arbitrary](
+class ParallelMultiPaxosSpec[A: Arbitrary](
     logging: Boolean = false,
     minDevices: Int,
     maxDevices: Int,
     proposeFreq: Int,
     startElectionFreq: Int,
     mergeFreq: Int
-) extends CommandsARDTs[MultiPaxos[A]] {
+) extends CommandsARDTs[ParallelMultiPaxos[A]] {
 
   override def genInitialState: Gen[State] =
     for
         numDevices <- Gen.choose(minDevices, maxDevices)
         ids = Range(0, numDevices).map(_ => LocalUid.gen()).toList
-    yield ids.map(id => (id, MultiPaxos())).toMap
+    yield ids.map(id => (id, ParallelMultiPaxos())).toMap
 
   override def genCommand(state: State): Gen[Command] =
     Gen.frequency(
@@ -54,9 +54,14 @@ class MultiPaxosSpec[A: Arbitrary](
     for
         id    <- genId(state)
         value <- arbitrary[A]
-    yield Propose(id, value)
+        slot  <- Gen.chooseNum(0, 5)
+    yield Propose(id, value, slot)
 
-  def genStartElection(state: State): Gen[StartElection] = genId(state).map(StartElection(_))
+  def genStartElection(state: State): Gen[StartElection] =
+    for
+        id   <- genId(state)
+        slot <- Gen.chooseNum(0, 5)
+    yield StartElection(id, slot)
 
   def genMerge(state: State): Gen[Merge] =
     for
@@ -65,19 +70,19 @@ class MultiPaxosSpec[A: Arbitrary](
 
   // commands: (merge), upkeep, write, addMember, removeMember
   case class Merge(left: LocalUid, right: LocalUid) extends ACommand(left):
-      override def nextLocalState(states: Map[LocalUid, MultiPaxos[A]]): MultiPaxos[A] =
+      override def nextLocalState(states: Map[LocalUid, ParallelMultiPaxos[A]]): ParallelMultiPaxos[A] =
           given Participants(states.keySet.map(_.uid))
           val merged = states(left).merge(states(right))
           val result = merged.merge(merged.upkeep(using left))
 
           if logging then
-              if result.read.length > 1 then
+              if result.read.length > 4 then
                   println(result)
           result
 
       override def postCondition(state: State, result: Try[Result]): Prop =
           given Participants(state.keySet.map(_.uid))
-          val res: Map[LocalUid, MultiPaxos[A]] = result.get
+          val res: Map[LocalUid, ParallelMultiPaxos[A]] = result.get
           Prop.forAll(genId2(res)) {
             (index1, index2) =>
               (state(index1), state(index2), res(index1), res(index2)) match
@@ -86,23 +91,22 @@ class MultiPaxosSpec[A: Arbitrary](
                     val (oldLog1, oldLog2) = (oldMultipaxos1.read, oldMultipaxos2.read)
                     (log1.isPrefix(log2) || log2.isPrefix(
                       log1
-                    )) :| s"every log is a prefix of another log or vice versa, but we had:\n${multipaxos1.rounds.counter}${multipaxos1.read}\n${multipaxos2.rounds.counter}${multipaxos2.read}" &&
+                    )) :| s"every log is a prefix of another log or vice versa, but we had:\nleft:${multipaxos1.read}\nright:${multipaxos2.read}" &&
                     // ((multipaxos1.rounds.counter != multipaxos2.rounds.counter) || multipaxos1.leader.isEmpty || multipaxos2.leader.isEmpty || (multipaxos1.leader == multipaxos2.leader)) :| s"There can only ever be one leader for a given epoch but we got:\n${multipaxos1.leader}\n${multipaxos2.leader}" &&
-                    (log1.isPrefix(oldLog1) && log2.isPrefix(oldLog2)) :| "logs never shrink" &&
-                    (multipaxos1.phase != LeaderElection || multipaxos1.leader.isEmpty) && (multipaxos1.phase == LeaderElection || multipaxos1.leader.nonEmpty) :| s"leader is only undefined during leader election, got ${multipaxos1.leader} in phase ${multipaxos1.phase}"
+                    (log1.isPrefix(oldLog1) && log2.isPrefix(oldLog2)) :| "logs never shrink"
           }
 
-  case class Propose(proposer: LocalUid, value: A) extends ACommand(proposer):
-      override def nextLocalState(states: Map[LocalUid, MultiPaxos[A]]): MultiPaxos[A] =
+  case class Propose(proposer: LocalUid, value: A, slot: Long) extends ACommand(proposer):
+      override def nextLocalState(states: Map[LocalUid, ParallelMultiPaxos[A]]): ParallelMultiPaxos[A] =
           given Participants(states.keySet.map(_.uid))
-          val delta    = states(proposer).proposeIfLeader(value)(using proposer)
+          val delta    = states(proposer).proposeIfLeader(slot, value)(using proposer)
           val proposed = Lattice.merge(states(proposer), delta)
           Lattice.merge(proposed, proposed.upkeep(using proposer))
 
-  case class StartElection(initiator: LocalUid) extends ACommand(initiator):
-      override def nextLocalState(states: Map[LocalUid, MultiPaxos[A]]): MultiPaxos[A] =
+  case class StartElection(initiator: LocalUid, slot: Long) extends ACommand(initiator):
+      override def nextLocalState(states: Map[LocalUid, ParallelMultiPaxos[A]]): ParallelMultiPaxos[A] =
           given Participants(states.keySet.map(_.uid))
-          val delta  = states(initiator).startLeaderElection(using initiator)
+          val delta  = states(initiator).startLeaderElection(slot)(using initiator)
           val merged = Lattice.merge(states(initiator), delta)
           Lattice.merge(merged, merged.upkeep(using initiator))
 }

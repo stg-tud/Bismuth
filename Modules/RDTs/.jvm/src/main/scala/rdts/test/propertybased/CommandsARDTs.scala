@@ -1,4 +1,4 @@
-package propertyBased
+package rdts.test.propertybased
 
 import org.scalacheck.Test.Parameters
 import org.scalacheck.commands.Commands

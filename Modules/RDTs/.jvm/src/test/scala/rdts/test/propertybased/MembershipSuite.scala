@@ -1,4 +1,4 @@
-package propertyBased
+package rdts.test.propertybased
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean

@@ -1,41 +1,7 @@
 import sbt.*
 import sbt.Keys.*
 
-import scala.scalanative.build.{LTO, NativeConfig}
-
 object SettingsLocal {
-
-  def osSpecificWebviewConfig(nativeConfig: NativeConfig): NativeConfig = {
-
-    def fromCommand(args: String*): List[String] = {
-      val process = new ProcessBuilder(args*).start()
-      process.waitFor()
-      val res = new String(process.getInputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
-      if (process.exitValue() != 0) throw new IllegalStateException(s"command failed: ${args.mkString(" ")}\n$res")
-      res.split(raw"\s+").toList
-    }
-
-    val osname = sys.props.get("os.name").map(_.toLowerCase)
-    osname match {
-      case Some(win) if win.contains("win")                           => nativeConfig
-      case Some(mac) if mac.contains("mac") || mac.contains("darwin") =>
-        nativeConfig.withLTO(LTO.none)
-          .withLinkingOptions(nativeConfig.linkingOptions ++ Seq("-framework", "WebKit"))
-          .withCompileOptions(co => co ++ Seq("-framework", "WebKit"))
-      case Some(linux) if linux.contains("linux") =>
-        nativeConfig
-          .withLinkingOptions(
-            // unfortunately gtk4 version does not work in podman :(
-            // nativeConfig.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk4", "webkitgtk-6.0")
-            nativeConfig.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk+-3.0", "webkit2gtk-4.1")
-          )
-          // .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk4", "webkitgtk-6.0"))
-          .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk+-3.0", "webkit2gtk-4.1"))
-      case other =>
-        println(s"unknown OS: $other")
-        nativeConfig
-    }
-  }
 
   // publishSigned: to generate bundle to be published into a local staging repo
   // sonaUpload: upload to sonatype and publish and verify manually

@@ -1,4 +1,4 @@
-package propertyBased
+package rdts.test.propertybased
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
@@ -7,6 +7,9 @@ import rdts.base.{Lattice, LocalUid}
 import rdts.protocols.{Consensus, Participants}
 
 import scala.util.Try
+
+extension [A](s1: Seq[A])
+    def isPrefix(s2: Seq[A]): Boolean = s1.indexOfSlice(s2) == 0
 
 class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
     logging: Boolean = false,

@@ -44,8 +44,8 @@ case class ParallelMultiPaxos[A](
 
     def readDecisionsSince(time: Long)(using Participants): List[A] =
       NumericRange(time, log.size.toLong, 1L).view.flatMap(log.get)
-        .filter(_.result.isDefined)
-        // .takeWhile(_.result.isDefined) // return log until first undecided round
+        // .filter(_.result.isDefined)
+        .takeWhile(_.result.isDefined) // return log until first undecided round
         .map(_.result.get)
         .toList
 
