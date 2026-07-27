@@ -100,7 +100,7 @@ object Settings {
   // this unused warnings definition is meant to be enabled only sometimes when looking for unused elements.
   // It does not play well with -Werror and makes developing quite annoying.
   def unusedWarnings(conf: TaskKey[?]*) = {
-    val c2 = if (conf.isEmpty) List(Compile / compile, Test / compile) else conf
+    val c2 = if conf.isEmpty then List(Compile / compile, Test / compile) else conf
     c2.map { c =>
       c / scalacOptions ++= List(
         // Warn for unused @nowarn annotations
@@ -124,7 +124,7 @@ object Settings {
   }
 
   inline def taskSpecificScalacOption(inline setting: String, conf: TaskKey[?]*) = {
-    val c2 = if (conf.isEmpty) List(Compile / compile, Test / compile) else conf
+    val c2 = if conf.isEmpty then List(Compile / compile, Test / compile) else conf
     c2.map { c => c / scalacOptions += setting }
   }
 

@@ -81,7 +81,11 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
 
 lazy val exJVM = project.in(file("Modules/exJVM"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(deltalens, reactives.jvm(scala3VersionString), channels.jvm(scala3VersionString) % "compile->compile;test->test")
+  .dependsOn(
+    deltalens,
+    reactives.jvm(scala3VersionString),
+    channels.jvm(scala3VersionString) % "compile->compile;test->test"
+  )
   .settings(
     scala3defaults,
     javaOutputVersion(21),
@@ -144,7 +148,9 @@ lazy val lore = (projectMatrix in file("Modules/Lore"))
   .settings(
     scala3defaults,
     javaOutputVersion(17),
-    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided").platform(Platform.jvm),
+    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided").platform(
+      Platform.jvm
+    ),
     Dependencies.jsoniterScala,
     Dependencies.decline,
     Dependencies.catsParse,
@@ -181,7 +187,11 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
   )
 
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
-  .dependsOn(reactives.jvm(scala3VersionString), rdts.jvm(scala3VersionString), channels.jvm(scala3VersionString), rdts.jvm(scala3VersionString) % "compile->compile;test->test")
+  .dependsOn(
+    reactives.jvm(scala3VersionString),
+    channels.jvm(scala3VersionString),
+    rdts.jvm(scala3VersionString) % "compile->compile;test->test"
+  )
   .settings(
     scala3defaultsExtra,
     Dependencies.jsoniterScala,

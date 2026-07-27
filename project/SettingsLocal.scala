@@ -11,7 +11,7 @@ object SettingsLocal {
       val process = new ProcessBuilder(args*).start()
       process.waitFor()
       val res = new String(process.getInputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
-      if (process.exitValue() != 0) throw new IllegalStateException(s"command failed: ${args.mkString(" ")}\n$res")
+      if process.exitValue() != 0 then throw new IllegalStateException(s"command failed: ${args.mkString(" ")}\n$res")
       res.split(raw"\s+").toList
     }
 
