@@ -45,7 +45,7 @@ object SettingsLocal {
     organizationName     := "Software Technology Group",
     organizationHomepage := Some(url("https://www.stg.tu-darmstadt.de/")),
     homepage             := Some(url("https://github.com/stg-tud/Bismuth")),
-    licenses             := List("Apache 2" -> new URI("http://www.apache.org/licenses/LICENSE-2.0.txt").toURL),
+    licenses             := List(sbt.librarymanagement.License("Apache 2", new URI("http://www.apache.org/licenses/LICENSE-2.0.txt"))),
     scmInfo              := Some(
       ScmInfo(
         url("https://github.com/stg-tud/Bismuth"),

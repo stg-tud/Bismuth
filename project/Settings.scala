@@ -1,7 +1,6 @@
 /* This file is shared between multiple projects
  * and may contain unused dependencies */
 
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.jsEnv
 import sbt.*
 import sbt.Keys.*
 
@@ -9,6 +8,8 @@ object Settings {
 
   // also consider updating the -source param below
   val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.8.4")
+
+  val scalaVersions = Seq(scala3VersionString)
 
   // see https://docs.scala-lang.org/overviews/compiler-options/
   // and https://docs.scala-lang.org/scala3/guides/migration/options-new.html
@@ -35,19 +36,19 @@ object Settings {
     unstableInlineAccessors(Compile / compile),
   )
 
+  // the inline defs are to workaround a sbt2 bug (behaviour??), where seemingly all settings created here are treated as if they were the same, so setting javaOutputVersion to 17 in one project and 21 in another, would cause both to be 21 or 17.
+
   // Spell out feature and deprecation warnings instead of summarizing them into a single warning
   // always turn this on to make the compiler less ominous
   def fullFeatureDeprecationWarnings = scalacOptions ++= List("-feature", "-deprecation")
 
   // set a specific source level for warnings/rewrites/features
   // generally recommended to get consistent behaviour
-  def scalaSourceLevel(level: String) = scalacOptions ++= List("-source", level)
+  inline def scalaSourceLevel(inline level: String) = scalacOptions ++= List("-source", level)
 
   // defines the output classfile version, and disables use of newer methods from the JDK classpath
-  def javaOutputVersion(n: Int, conf: TaskKey[?]*) = Def.settings(
-    taskSpecificScalacOption("-java-output-version", conf*),
-    taskSpecificScalacOption(n.toString, conf*)
-  )
+  inline def javaOutputVersion(inline n: Int, conf: TaskKey[?]*) =
+    taskSpecificScalacOption(s"-java-output-version:$n", conf*)
 
   // treat warnings as errors
   // generally, adressing warnings as they come up is much less work than fixing problems later
@@ -122,7 +123,7 @@ object Settings {
     }
   }
 
-  def taskSpecificScalacOption(setting: String, conf: TaskKey[?]*) = {
+  inline def taskSpecificScalacOption(inline setting: String, conf: TaskKey[?]*) = {
     val c2 = if (conf.isEmpty) List(Compile / compile, Test / compile) else conf
     c2.map { c => c / scalacOptions += setting }
   }
@@ -136,6 +137,6 @@ object Settings {
 
   // see https://www.scala-js.org/doc/project/js-environments.html
   // TLDR: enables the dom API when running on nodejs for the tests
-  val jsEnvDom = jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
+  // val jsEnvDom = jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
 
 }
