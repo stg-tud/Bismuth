@@ -75,7 +75,7 @@ object Authorization {
     }
   }
 
-  private def mayWrite[T: {JsonValueCodec, Filter}](
+  private def mayWrite[T: {Filter}](
       eventGraph: EventGraph[T],
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,

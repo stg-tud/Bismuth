@@ -118,7 +118,7 @@ case class ChimericOpen[A](
             )
           )
 
-  def phase2a(myProposal: A)(using LocalUid, Participants): ChimericOpen[A] =
+  def phase2a(myProposal: A)(using LocalUid): ChimericOpen[A] =
     if !isCurrentLeader then this
     else
       newestReceivedVal match
@@ -135,7 +135,7 @@ case class ChimericOpen[A](
             )
           )
 
-  def phase2a(using LocalUid, Participants): ChimericOpen[A] =
+  def phase2a(using LocalUid): ChimericOpen[A] =
     myValue match
       case Some(v) => phase2a(v)
       case None    => this
@@ -150,7 +150,7 @@ case class ChimericOpen[A](
         )
       )
 
-  def proposeReconfiguration(next: NetworkConfig)(using LocalUid): ChimericOpen[A] =
+  def proposeReconfiguration(next: NetworkConfig): ChimericOpen[A] =
     if !FBASOpen.isSafeTransition(network.currentConfig.slices, next.slices) then this
     else
       this
@@ -161,7 +161,7 @@ case class ChimericOpen[A](
   def enactReconfiguration: ChimericOpen[A] =
     this
 
-  def decision(using Participants): Agreement[A] =
+  def decision: Agreement[A] =
     rounds.toList
       .sortBy(_._1)(using summon[Ordering[(ConfigId, BallotNum)]])
       .reverse
