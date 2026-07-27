@@ -9,12 +9,12 @@ object Dependencies {
   val blake3      = libraryDependencies += "pt.kcry"                  %% "blake3"                   % "3.1.2"
   val bloomFilter = libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13"        % "0.13.1"
   val catsParse   = libraryDependencies += "org.typelevel"            %% "cats-parse"               % "1.1.0"
-  val conscrypt   = libraryDependencies += "org.conscrypt"              % "conscrypt-openjdk-uber"   % "2.5.2"
+  val conscrypt   = libraryDependencies += "org.conscrypt"              % "conscrypt-openjdk-uber"   % "2.6.1"
   val decline     = libraryDependencies += "com.monovore"             %% "decline"                  % "2.6.2"
   val fansi       = libraryDependencies += "com.lihaoyi"              %% "fansi"                    % "0.5.1"
   val jetcd       = libraryDependencies += "io.etcd"                    % "jetcd-core"               % "0.8.6"
   val monocleCore = libraryDependencies += "dev.optics"               %% "monocle-core"             % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"            %% "munit"                    % "1.3.3"  % Test
+  val munit       = libraryDependencies += "org.scalameta"            %% "munit"                    % "1.3.4"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"            %% "munit-scalacheck"         % "1.3.0"  % Test
   val pprint      = libraryDependencies += "com.lihaoyi"              %% "pprint"                   % "0.9.6"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules"    %% "scala-swing"              % "3.0.0"
@@ -23,8 +23,8 @@ object Dependencies {
   val slf4jSimple = libraryDependencies += "org.slf4j"                  % "slf4j-simple"             % "2.0.18" % Test
   val slf4jnop    = libraryDependencies += "org.slf4j"                  % "slf4j-nop"                % "2.0.18" % Test
   val slips       = libraryDependencies += "de.rmgk.slips"            %% "slips"                    % "0.19.0"
-  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %% "core"    % "4.0.25"
-  val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.22.0"
+  val sttpCore = libraryDependencies += "com.softwaremill.sttp.client4" %% "core"    % "4.0.26"
+  val tink     = libraryDependencies += "com.google.crypto.tink"          % "tink"    % "1.23.0"
   val upickle  = libraryDependencies += "com.lihaoyi"                   %% "upickle" % "4.4.3"
   val ycsb     = libraryDependencies += "site.ycsb"                       % "core"    % "0.17.0"
 
@@ -34,7 +34,7 @@ object Dependencies {
   )
 
   def jetty = {
-    val jettyVersion = "12.1.10"
+    val jettyVersion = "12.1.11"
     libraryDependencies ++= Seq(
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
@@ -44,8 +44,8 @@ object Dependencies {
 
   def jsoniterScala =
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.38.16",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.38.16" % Provided
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.39.1",
+      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.39.1" % Provided
     )
 
   def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "26.0.0-R38"
