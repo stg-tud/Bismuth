@@ -43,12 +43,15 @@ object SettingsLocal {
   val publishSonatype = Def.settings(
     organization         := "de.tu-darmstadt.stg",
     organizationName     := "Software Technology Group",
-    organizationHomepage := Some(url("https://www.stg.tu-darmstadt.de/")),
-    homepage             := Some(url("https://github.com/stg-tud/Bismuth")),
-    licenses             := List(sbt.librarymanagement.License("Apache 2", new URI("http://www.apache.org/licenses/LICENSE-2.0.txt"))),
-    scmInfo              := Some(
+    organizationHomepage := Some(uri("https://www.stg.tu-darmstadt.de/")),
+    homepage             := Some(uri("https://github.com/stg-tud/Bismuth")),
+    licenses             := List(sbt.librarymanagement.License(
+      "Apache 2",
+      new URI("http://www.apache.org/licenses/LICENSE-2.0.txt")
+    )),
+    scmInfo := Some(
       ScmInfo(
-        url("https://github.com/stg-tud/Bismuth"),
+        uri("https://github.com/stg-tud/Bismuth"),
         "scm:git@github.com:stg-tud/Bismuth.git"
       )
     ),
@@ -57,7 +60,7 @@ object SettingsLocal {
         id = "ragnar",
         name = "Ragnar Mogk",
         email = "mogk@cs.tu-darmstadt.de",
-        url = url("https://www.stg.tu-darmstadt.de/")
+        url = uri("https://www.stg.tu-darmstadt.de/")
       )
     ),
 
