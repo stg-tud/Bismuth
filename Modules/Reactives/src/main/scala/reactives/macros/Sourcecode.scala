@@ -83,9 +83,7 @@ object Sourcecode {
           s
 
     def fileImpl(using Quotes): Expr[File] = {
-      val file = quotes.reflect.Position.ofMacroExpansion.sourceFile.getJPath.map(_.toAbsolutePath.toString).getOrElse(
-        "unknown path"
-      )
+      val file = quotes.reflect.Position.ofMacroExpansion.sourceFile.path
       '{ File(${ Expr(file) }) }
     }
 

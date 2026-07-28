@@ -699,7 +699,7 @@ object DafnyGen {
           val invariants: List[String] = relevantInvariants.map { inv =>
             // No Invariant-specific position is available, since the Invariants aren't specifically
             // called for individual Interactions, but checked through other means in Scala execution.
-            val (embeddedErrorPre, embeddedErrorPost): (DafnyEmbeddedLoReError, DafnyEmbeddedLoReError) =
+            val (embeddedErrorPre: DafnyEmbeddedLoReError, embeddedErrorPost: DafnyEmbeddedLoReError) =
               n.scalaSourcePos match
                   case None =>
                     val preErr: DafnyEmbeddedLoReError = DafnyEmbeddedLoReError(

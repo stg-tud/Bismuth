@@ -20,7 +20,7 @@ class SQueue[T] {
   // methods mutating the state of the SQueue
   def enqueue(elem: T): Unit = _queue `set` _queue.now.enqueue(elem)
   def dequeue(): T           = {
-    val (first, tail): (T, Queue[T]) = _queue.now.dequeue
+    val (first: T, tail: Queue[T]) = _queue.now.dequeue
     _queue `set` tail
     first
   }

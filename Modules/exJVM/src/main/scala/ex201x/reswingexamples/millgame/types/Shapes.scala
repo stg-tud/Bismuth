@@ -10,9 +10,9 @@ case class Presentation[T, +S](
     shape: S,
     color: Color = Color.BLACK,
     width: T = 1
-)(implicit ev$1: S => Shape[T], ev$2: Numeric[T]) {
-  def toDouble: Presentation[Double, Shape[Double]] = Presentation(ev$1(shape).toDouble, color, width.toDouble)
-  def toInt: Presentation[Int, Shape[Int]]          = Presentation(ev$1(shape).toInt, color, width.toInt)
+)(implicit ev1: S => Shape[T], ev2: Numeric[T]) {
+  def toDouble: Presentation[Double, Shape[Double]] = Presentation(ev1(shape).toDouble, color, width.toDouble)
+  def toInt: Presentation[Int, Shape[Int]]          = Presentation(ev1(shape).toInt, color, width.toInt)
 }
 
 //
@@ -53,10 +53,10 @@ case class Point[@specialized(Int, Double) T: Numeric](x: T, y: T) extends Shape
 object Line {
   implicit def fromLine[T](l: Line[T]): (Point[T], Point[T]) = (l.from, l.to)
   implicit def toLine[T, A, B](l: (A, B))(implicit
-      ev$1: A => Point[T],
-      ev$2: B => Point[T],
+      ev1: A => Point[T],
+      ev2: B => Point[T],
   ): Line[T] =
-    Line(ev$1(l._1), ev$2(l._2))
+    Line(ev1(l._1), ev2(l._2))
 }
 
 case class Line[T](from: Point[T], to: Point[T]) extends Shape[T] {
