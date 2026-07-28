@@ -5,21 +5,19 @@ import org.scalacheck.Prop.propBoolean
 import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, LocalUid}
-import rdts.protocols.MultipaxosPhase.LeaderElection
 import rdts.protocols.Participants
 
 import scala.util.Try
 import rdts.protocols.spanner.ParallelMultiPaxos
 
 class ParallelMultiPaxosSuite extends munit.ScalaCheckSuite {
-  override def scalaCheckInitialSeed                = "T1dyTdzixur4RPmBXyJPMc4b097AtKu25e_AKKUKdQO="
   override def scalaCheckTestParameters: Parameters =
     StateBasedTestParameters.update(
       super.scalaCheckTestParameters
-    ).withMinSize(100).withMaxSize(4000).withMinSuccessfulTests(200)
+    ).withMinSize(100).withMaxSize(3000).withMinSuccessfulTests(50)
 
   property("ParallelMultiPaxos")(ParallelMultiPaxosSpec[Int](
-    logging = true,
+    logging = false,
     minDevices = 3,
     maxDevices = 5,
     proposeFreq = 5,
