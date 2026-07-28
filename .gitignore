@@ -15,3 +15,5 @@ yarn.lock
 .ipynb_checkpoints
 ycsb-core.jar
 REVIEW*
+
+Modules/Protocol Benchmarks/local-benchmarks/results**
