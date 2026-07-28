@@ -1,6 +1,7 @@
 package rdts.protocols.spanner
 
 import rdts.base.Lattice.syntax
+import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
@@ -18,10 +19,22 @@ case class ParallelMultiPaxos[A](
 
     // private helper functions
     private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1).orElse(rounds.get(commitIndex))
+    private def nextSlot(using LocalUid): Long = {
+      val numRounds = rounds.size
+      rounds.get(numRounds - 1) match {
+        case Some(paxos) => paxos.currentRound match {
+          // reuse slot if there are no votes yet or only votes by somebody else
+          case Some(PaxosRound(_, proposals))
+            if proposals.isEmpty || proposals.votes.forall(_.voter != replicaId) => numRounds - 1
+          case _ => numRounds
+        }
+        case None => numRounds
+      }
+    }
 
     // public API
-    def nextDecisionRound = commitIndex + 1
-    def closedRounds      = log
+    def nextDecisionRound        = commitIndex + 1
+    def closedRounds             = log
 
     def leader(using Participants): Option[Uid] = currentPaxos.flatMap(_.currentLeaderElection) match
         case Some(leaderElection) => leaderElection.result
@@ -34,7 +47,8 @@ case class ParallelMultiPaxos[A](
                 case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty =>
                   MultipaxosPhase.LeaderElection
                 case Some(PaxosRound(leaderElection, proposals))
-                    if leaderElection.result.nonEmpty && proposals.result.isEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
+                    if leaderElection.result.nonEmpty && proposals.result.isEmpty && proposals.votes.nonEmpty =>
+                  MultipaxosPhase.Voting
                 case Some(PaxosRound(leaderElection, _))
                     if leaderElection.result.nonEmpty => MultipaxosPhase.Idle
                 case _ => throw new Error("Inconsistent Paxos State")
@@ -98,7 +112,7 @@ case class ParallelMultiPaxos[A](
       }
 
     def proposeIfLeader(value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
-      proposeIfLeader(commitIndex + 1, value)
+      proposeIfLeader(nextSlot, value)
 
     def upkeep(using LocalUid, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds

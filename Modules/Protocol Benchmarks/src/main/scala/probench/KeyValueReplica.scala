@@ -7,7 +7,7 @@ import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.{MultipaxosPhase, Participants}
+import rdts.protocols.Participants
 import rdts.protocols.spanner.ParallelMultiPaxos
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
@@ -134,7 +134,7 @@ class KeyValueReplica(
 
     def maybeProposeNewValue()(using LocalUid): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
-      if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
+      if state.leader.contains(replicaId) then
           Option(client.writeQueue.poll()) match {
             case Some((_, req)) =>
               log(s"Proposing new value $req.")
