@@ -74,8 +74,8 @@ class ParallelMultiPaxosSpec[A: Arbitrary](
           val result = merged.merge(merged.upkeep(using left))
 
           if logging then
-              if result.read.length > 4 then
-                  println(result)
+              if result.readDecisions.length > 4 then
+                  println(s"decisions: ${result.readDecisions}, log: ${result.read}")
           result
 
       override def postCondition(state: State, result: Try[Result]): Prop =
@@ -85,13 +85,15 @@ class ParallelMultiPaxosSpec[A: Arbitrary](
             (index1, index2) =>
               (state(index1), state(index2), res(index1), res(index2)) match
                   case (oldMultipaxos1, oldMultipaxos2, multipaxos1, multipaxos2) =>
-                    val (log1, log2)       = (multipaxos1.read, multipaxos2.read)
-                    val (oldLog1, oldLog2) = (oldMultipaxos1.read, oldMultipaxos2.read)
-                    (log1.isPrefix(log2) || log2.isPrefix(
-                      log1
-                    )) :| s"every log is a prefix of another log or vice versa, but we had:\nleft:${multipaxos1.read}\nright:${multipaxos2.read}" &&
-                    // ((multipaxos1.rounds.counter != multipaxos2.rounds.counter) || multipaxos1.leader.isEmpty || multipaxos2.leader.isEmpty || (multipaxos1.leader == multipaxos2.leader)) :| s"There can only ever be one leader for a given epoch but we got:\n${multipaxos1.leader}\n${multipaxos2.leader}" &&
-                    (log1.isPrefix(oldLog1) && log2.isPrefix(oldLog2)) :| "logs never shrink"
+                    val (decisions1, decisions2)       = (multipaxos1.readDecisions, multipaxos2.readDecisions)
+                    val (oldDecisions1, oldDecisions2) = (oldMultipaxos1.readDecisions, oldMultipaxos2.readDecisions)
+                    val (log1, log2)                   = (multipaxos1.read, multipaxos2.read)
+                    (decisions1.isPrefix(decisions2) || decisions2.isPrefix(
+                      decisions1
+                    )) :| s"every log is a prefix of another log or vice versa, but we had:\nleft:${multipaxos1.readDecisions}\nright:${multipaxos2.readDecisions}" &&
+                    (decisions1.isPrefix(oldDecisions1) && decisions2.isPrefix(oldDecisions2)) :| "logs never shrink" &&
+                    ((log1 == decisions1) && (log2 == decisions2)) :| s"log is consisstent with decisions but we had:\nleftDecisions:${decisions1}\nleftLog:${log1}\nrightDecisions:${decisions2}\nrightLog:${log2}" &&
+                    (decisions1.isPrefix(oldDecisions1) && decisions2.isPrefix(oldDecisions2)) :| "logs never shrink"
           }
 
   case class Propose(proposer: LocalUid, value: A, slot: Long) extends ACommand(proposer):

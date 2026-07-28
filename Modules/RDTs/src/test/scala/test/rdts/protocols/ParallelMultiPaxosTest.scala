@@ -42,7 +42,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
 
   test("Empty State: read on empty state returns empty") {
     val empty  = ParallelMultiPaxos.empty[Int]
-    val result = empty.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid)))
+    val result = empty.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid)))
     assertEquals(result.toList, List())
   }
 
@@ -67,8 +67,8 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(1L)(using id2))
 
     // Check that slot 0 has leader
-    assertEquals(state.log.contains(0L), true)
-    assertEquals(state.log.contains(1L), true)
+    assertEquals(state.rounds.contains(0L), true)
+    assertEquals(state.rounds.contains(1L), true)
   }
 
   // ==================== 3. Parallelism Tests ====================
@@ -149,7 +149,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
       state = runUpkeepRound(state)
     }
 
-    val decisions = state.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
+    val decisions = state.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
     assertEquals(decisions.toList, List(10, 20, 30))
   }
 
@@ -166,7 +166,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(1L)(using id1))
     state = runUpkeepRound(state)
 
-    val decisions = state.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
+    val decisions = state.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
     // Should stop at undecided slot 1
     assertEquals(decisions.size, 1)
   }
@@ -274,9 +274,9 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = runUpkeepRound(state)
 
     // Gap should prevent full read
-    val decisions = state.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
+    val decisions = state.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
     assertEquals(decisions.size, 1)
-    assertEquals(state.log.size, 1)
+    assertEquals(state.rounds.size, 1)
   }
 
   test("Edge Cases: ballot reuse in parallel slots") {
@@ -294,7 +294,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.proposeIfLeader(1L, 200)(using id1))
     state = runUpkeepRound(state)
 
-    assertEquals(state.log.size, 2)
+    assertEquals(state.rounds.size, 2)
   }
 
   // ==================== 9. Decision Tests ====================
@@ -355,7 +355,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = runUpkeepRound(state)
 
     // Verify multiple slots are tracked
-    assertEquals(state.log.size, 3)
+    assertEquals(state.rounds.size, 3)
   }
 
   // ======= test re-use of leader election
@@ -365,8 +365,8 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(0)(using id1))
     state = runUpkeepRound(state)
 
-    assert(state.log(0).isCurrentLeader(using id1))
-    assert(!state.log(0).isCurrentLeader(using id2))
+    assert(state.rounds(0).isCurrentLeader(using id1))
+    assert(!state.rounds(0).isCurrentLeader(using id2))
 
     // proposeSlot 1 + 2
     assertEquals(state.proposeIfLeader(10)(using id2), ParallelMultiPaxos())
@@ -378,8 +378,8 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(0)(using id1))
     state = runUpkeepRound(state)
 
-    assert(state.log(0).isCurrentLeader(using id1))
-    assert(!state.log(0).isCurrentLeader(using id2))
+    assert(state.rounds(0).isCurrentLeader(using id1))
+    assert(!state.rounds(0).isCurrentLeader(using id2))
     assertEquals(state.commitIndex, -1L)
 
     // proposeSlot 1 + 2
@@ -390,7 +390,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
 
     state = state.merge(state.proposeIfLeader(20)(using id1))
     state = runUpkeepRound(state)
-    assert(state.log(0).isCurrentLeader(using id1))
+    assert(state.rounds(0).isCurrentLeader(using id1))
     assertEquals(state.decision, Agreement.Decided(List(10, 20)))
     assertEquals(state.commitIndex, 1L)
 
@@ -399,8 +399,8 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = runUpkeepRound(state)
 
     println(state)
-    assert(state.log(1).isCurrentLeader(using id1))
-    assert(!state.log(0).isCurrentLeader(using id2))
+    assert(state.rounds(1).isCurrentLeader(using id1))
+    assert(!state.rounds(0).isCurrentLeader(using id2))
 
     assertEquals(state.decision, Agreement.Decided(List(10, 20)))
   }

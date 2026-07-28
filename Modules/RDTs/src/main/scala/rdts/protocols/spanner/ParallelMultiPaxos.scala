@@ -11,12 +11,13 @@ import rdts.protocols.Util.Agreement
 import rdts.protocols.Util.precondition
 
 case class ParallelMultiPaxos[A](
-    log: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],
-    commitIndex: Long = -1
+    rounds: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],
+    commitIndex: Long = -1,
+    log: Map[Long, A] = Map.empty[Long, A]
 ):
 
     // private helper functions
-    private def currentPaxos: Option[Paxos[A]] = log.get(commitIndex + 1)
+    private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1)
 
     // public API
     def leader(using Participants): Option[Uid] = currentPaxos.flatMap(_.currentLeaderElection) match
@@ -38,20 +39,26 @@ case class ParallelMultiPaxos[A](
             MultipaxosPhase.LeaderElection // first round, no previous decision, need to elect leader
           case None => MultipaxosPhase.Idle // round not yet initialized but previous round was successful
 
-    def read(using Participants): List[A] =
+    def readSince(time: Long): List[A] =
+      NumericRange(time, log.size.toLong, 1L).view.flatMap(log.get).toList
+
+    def read: List[A] =
+      readSince(0)
+
+    def readDecisions(using Participants): List[A] =
       // return values in log order but only if all previous rounds are decided
       readDecisionsSince(0)
 
     def readDecisionsSince(time: Long)(using Participants): List[A] =
-      NumericRange(time, log.size.toLong, 1L).view.flatMap(log.get)
+      NumericRange(time, rounds.size.toLong, 1L).view.flatMap(rounds.get)
         // .filter(_.result.isDefined)
         .takeWhile(_.result.isDefined) // return log until first undecided round
         .map(_.result.get)
         .toList
 
     def startLeaderElection(index: Long)(using LocalUid): ParallelMultiPaxos[A] =
-      precondition(index == 0L || log.contains(index - 1)) {
-        val currentPaxos = log.getOrElse(index, Paxos[A]())
+      precondition(index == 0L || rounds.contains(index - 1)) {
+        val currentPaxos = rounds.getOrElse(index, Paxos[A]())
         ParallelMultiPaxos(
           Map(index -> currentPaxos.phase1a)
         ) // start new Paxos round with self proposed as leader
@@ -61,10 +68,10 @@ case class ParallelMultiPaxos[A](
       startLeaderElection(commitIndex + 1)
 
     def proposeIfLeader(index: Long, value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
-      precondition(index == 0L || log.contains(index - 1)) {
+      precondition(index == 0L || rounds.contains(index - 1)) {
         def openNextSlot = {
           // opens a new slot for the next log entry, either by reusing the old ballot or starting a new one
-          log.get(index - 1).flatMap(_.newestBallotWithLeader) match
+          rounds.get(index - 1).flatMap(_.newestBallotWithLeader) match
               case Some((ballotNum, PaxosRound(leaderElection, _))) =>
                 // reuse the old ballot, but empty proposals
                 Paxos(rounds =
@@ -76,7 +83,7 @@ case class ParallelMultiPaxos[A](
               case None => Paxos[A]()
         }
         val paxos =
-          log.getOrElse(index, openNextSlot)
+          rounds.getOrElse(index, openNextSlot)
 
         val paxosVote = paxos.phase2a(value)
 
@@ -92,34 +99,43 @@ case class ParallelMultiPaxos[A](
 
     def upkeep(using LocalUid, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds
-      val open        = NumericRange(commitIndex + 1, log.size.toLong, 1L).view.map(index => (index, log(index)))
+      val open        = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index => (index, rounds(index)))
       val paxosDeltas = open.map {
         case (index, paxos) => (index, paxos.upkeep())
       }.toMap
-      val newLog = log.merge(paxosDeltas)
+      val newPaxosMap = rounds.merge(paxosDeltas)
 
       // move commit index
-      val committed = NumericRange(commitIndex + 1, log.size.toLong, 1L).view.flatMap(newLog.get)
-        .takeWhile(_.result.isDefined) // return log until first undecided round
+      // val committed = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.flatMap(newPaxosMap.get)
+      // .takeWhile(_.result.isDefined) // return log until first undecided round
+
+      // move decisions to log
+      val newLogEntries = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.flatMap(i =>
+        newPaxosMap.get(i).map(p => (i, p))
+      ).takeWhile(_._2.result.isDefined).map((i, p) => (i, p.result.get)) // return log until first undecided round
 
       ParallelMultiPaxos(
-        log = paxosDeltas,
-        commitIndex = commitIndex + committed.size.toLong
+        rounds = paxosDeltas,
+        commitIndex = commitIndex + newLogEntries.size.toLong,
+        log = newLogEntries.toMap
       )
     }
 
-    def decision(using Participants): Agreement[List[A]] = read.toList match
+    def decision(using Participants): Agreement[List[A]] = readDecisions.toList match
         case Nil => Agreement.Undecided
         case xs  => Agreement.Decided(xs)
 
     override def toString: String =
-        lazy val s = s"MultiPaxos(commitIndex: $commitIndex, log: $log)"
+        lazy val s = s"MultiPaxos(commitIndex: $commitIndex, log: $rounds)"
         s
 
 object ParallelMultiPaxos:
     def empty[A]: ParallelMultiPaxos[A] = ParallelMultiPaxos[A]()
 
     given [A]: Lattice[ParallelMultiPaxos[A]] =
+        given Lattice[Map[Long, A]] =
+            given Lattice[A] = Lattice.assertEquals
+            Lattice.mapLattice
         given Lattice[Long] = Math.max
         Lattice.derived
 
