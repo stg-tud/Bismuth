@@ -17,26 +17,6 @@ class ChimericTest extends munit.FunSuite {
 
   given Participants = Participants(Set(u1, u2, u3))
 
-  private def manualProposalState(
-      votes: List[(Uid, Int)]
-  ): Chimeric[Int] = {
-    val proposalVoting =
-      votes.foldLeft(rdts.protocols.Voting[Int]()) {
-        case (acc, (uid, value)) =>
-          given LocalUid = LocalUid(uid)
-          acc.voteFor(value)
-      }
-
-    Chimeric(
-      rounds = Map(
-        rdts.protocols.BallotNum(Uid("manual"), 0) ->
-        rdts.protocols.PaxosRound(
-          proposals = proposalVoting
-        )
-      )
-    )
-  }
-
   private def runSingleProposal(
       cfg: QuorumConfig,
       value: Int,
@@ -159,10 +139,10 @@ class ChimericTest extends munit.FunSuite {
       u3 -> Set(Set(u3))
     )
 
-    val c = manualProposalState(List((u1, 7), (u2, 8), (u3, 9)))
+    val c = runThreeProposals(summon[QuorumConfig], 7, 8, 9)
 
-    assertEquals(c.result, None)
-    assertEquals(c.decision, Undecided)
+    assertEquals(c.result, Some(9))
+    assertEquals(c.decision, Decided(9))
   }
 
   test("multiple proposers under full trust decides one value") {
@@ -190,4 +170,5 @@ class ChimericTest extends munit.FunSuite {
     assertEquals(c.result, Some(100))
     assertEquals(c.decision, Decided(100))
   }
+
 }
