@@ -3,6 +3,7 @@ package probench
 import channels.ConcurrencyHelper
 import probench.data.*
 import probench.data.Codecs.given
+import probench.data.ClientComm.*
 import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
@@ -14,6 +15,7 @@ import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage}
 
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,6 +59,8 @@ class KeyValueReplica(
   val client: Client   = new Client()
   val connInf: ConnInf = new ConnInf()
 
+  val answeredUpTo: AtomicLong = new AtomicLong(-1)
+
   replicaActor.execute { () =>
     Thread.sleep(2000) // wait 2 seconds before first leader election
     cluster.maybeLeaderElection(votingReplicas)
@@ -91,7 +95,7 @@ class KeyValueReplica(
         else log("upkeep")
         // else log(s"upkept: ${pprint(upkept)}")
         val newState = publish(upkept)
-        maybeAnswerClientFromLog(old.nextDecisionRound, newState)
+        maybeAnswerClientFromLog(newState) // TODO: make this nicer and prevent double-answering
         // try to propose a new value in case voting is decided
         maybeProposeNewValue()
       }
@@ -113,7 +117,7 @@ class KeyValueReplica(
     def forceUpkeep(): ClusterState = currentStateLock.synchronized {
       log("forcing upkeep")
       val upkept = publish(state.upkeep)
-      maybeAnswerClientFromLog(state.nextDecisionRound, upkept)
+      maybeAnswerClientFromLog(upkept)
       upkept
     }
 
@@ -135,7 +139,7 @@ class KeyValueReplica(
     def maybeProposeNewValue()(using LocalUid): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
       if state.leader.contains(replicaId) then
-          Option(client.writeQueue.poll()) match {
+          Option(client.writeRequestQueue.poll()) match {
             case Some((_, req)) =>
               log(s"Proposing new value $req.")
               val proposal = state.proposeIfLeader(req)
@@ -143,7 +147,7 @@ class KeyValueReplica(
                 val oldstate = state
                 state = state `merge` proposal
                 state = state `merge` state.upkeep
-                maybeAnswerClientFromLog(oldstate.nextDecisionRound, state): Unit
+                maybeAnswerClientFromLog(state): Unit
               }
               val _ = publish(proposal)
             case None =>
@@ -195,21 +199,37 @@ class KeyValueReplica(
               log("I assume that I am the leader but I don't have a hearbeat quorum")
     }
 
-    private def maybeAnswerClientFromLog(previousRound: Time, state: ClusterState): Unit = {
-      log(s"log(${state.log.size}): ${state.log}")
-      log(s"decisions since previous round ($previousRound): ${state.readDecisionsSince(previousRound).toList}")
-      // println(s"${pprint.tokenize(newState).mkString("")}")
+    private def maybeAnswerClientFromLog(state: ClusterState): Unit = {
+      val answeredCounter = answeredUpTo.getAndSet(-2)
 
-      for req @ ClientCommWrite.WriteReq(id, op) <- state.readDecisionsSince(previousRound) do {
-        val result: String = performOp(op)
+      if  answeredUpTo.get != -2 then {
+        val start = answeredCounter + 1
+        val newEntries =  state.readSince(start)
+        if newEntries.size > 0 then {
+          log(s"log(${state.read.size} entries): answering since ($start), found ${newEntries.size} new entries")
+          // println(s"${pprint.tokenize(newState).mkString("")}")
+          for req @ ClientCommWrite.WriteReq(id, op) <- state.readSince(start) do {
+            val result: String = performOp(op)
 
-        // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
-        // only leader is allowed to actually respond to requests
-        if state.leader.contains(replicaId) then {
-          client.publishWrite(ClientCommWrite.WriteRes(id, result))
+            // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
+            // only leader is allowed to actually respond to requests
+            if state.leader.contains(replicaId) then {
+              log(s"answering request $id, log is (${state.read.size}):[${state.read.map(_.show).zip(Range(0,state.read.size)).mkString(",")}]")
+              client.publishWrite(ClientCommWrite.WriteRes(id, result))
+            }
+          }
+          if state.leader.contains(replicaId) then {
+            log(s"new answeredcounter is ${answeredCounter + newEntries.size}")
+            answeredUpTo.set(answeredCounter + newEntries.size)
+          }
+          else {
+            answeredUpTo.set(answeredCounter)
+          }
         }
-      }
-
+        else {
+          answeredUpTo.set(answeredCounter)
+        }
+      } else log("skipping answering from log")
     }
 
   }
@@ -220,8 +240,8 @@ class KeyValueReplica(
   class Client {
     import probench.data.ClientComm.given
 
-    val readQueue: ConcurrentLinkedQueue[(Time, ClientCommRead.ReadReq)]    = ConcurrentLinkedQueue()
-    val writeQueue: ConcurrentLinkedQueue[(Time, ClientCommWrite.WriteReq)] = ConcurrentLinkedQueue()
+    val readQueue: ConcurrentLinkedQueue[(Time, ClientCommRead.ReadReq)]           = ConcurrentLinkedQueue()
+    val writeRequestQueue: ConcurrentLinkedQueue[(Time, ClientCommWrite.WriteReq)] = ConcurrentLinkedQueue()
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
@@ -243,13 +263,14 @@ class KeyValueReplica(
     def handleIncomingWrite(delta: ClientCommWrite): Unit = {
       delta match {
         case req @ ClientCommWrite.WriteReq(id, kvOperation) =>
-          writeQueue.add((System.currentTimeMillis(), req))
+          writeRequestQueue.add((System.currentTimeMillis(), req))
           log("handling incoming write from client")
           cluster.maybeProposeNewValue()
+          cluster.forceUpkeep(): Unit
         case ClientCommWrite.WriteRes(id, _) =>
           // clean queue asynchronously
           replicaActor.execute(() =>
-            writeQueue.removeIf {
+            writeRequestQueue.removeIf {
               case (_, ClientCommWrite.WriteReq(i, _)) => i == id
             }: Unit
           )

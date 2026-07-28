@@ -15,7 +15,7 @@ if not set -q WORKLOAD
 end
 
 if not set -q WAITTIME
-    set -x WAITTIME 15
+    set -x WAITTIME 30
 end
 
 if not set -q YCSBJAR

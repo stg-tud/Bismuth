@@ -93,7 +93,7 @@ class ParallelMultiPaxosSpec[A: Arbitrary](
                     )) :| s"every log is a prefix of another log or vice versa, but we had:\nleft:${multipaxos1.readDecisions}\nright:${multipaxos2.readDecisions}" &&
                     (decisions1.isPrefix(oldDecisions1) && decisions2.isPrefix(oldDecisions2)) :| "logs never shrink" &&
                     ((log1 == decisions1) && (log2 == decisions2)) :| s"log is consisstent with decisions but we had:\nleftDecisions:${decisions1}\nleftLog:${log1}\nrightDecisions:${decisions2}\nrightLog:${log2}" &&
-                    (decisions1.isPrefix(oldDecisions1) && decisions2.isPrefix(oldDecisions2)) :| "logs never shrink"
+                    ((multipaxos1.commitIndex + 1 == log1.size) && (multipaxos2.commitIndex + 1 == log2.size)) :| "log size is consistent with commitIndex"
           }
 
   case class Propose(proposer: LocalUid, value: A, slot: Long) extends ACommand(proposer):

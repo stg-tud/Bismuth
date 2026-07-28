@@ -27,6 +27,14 @@ enum ClientCommWrite:
     case WriteRes(id: Uid, value: String)
 
 object ClientComm {
+
+  extension (c: ClientCommWrite) {
+    def show: String = {
+      c match
+          case ClientCommWrite.WriteReq(id, kvOperation) => id.show
+          case ClientCommWrite.WriteRes(id, value)       => id.show
+    }
+  }
   given l1: Lattice[Payload[ClientCommWrite]] =
       given Lattice[Int]             = Lattice.fromOrdering
       given Lattice[ClientCommWrite] = Lattice.assertEquals

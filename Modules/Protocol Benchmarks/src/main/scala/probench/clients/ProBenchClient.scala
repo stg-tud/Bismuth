@@ -50,17 +50,20 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
       }
       publishRead(request)
       p.future
+      
+  def writeWithResult(key: String, value: String): Future[String] =
+    writeWithResult(Uid.gen(), key, value)
 
-  def writeWithResult(key: String, value: String): Future[String] = currentStateLock.synchronized {
-    val id                                = Uid.gen()
+  def writeWithResult(id: Uid, key: String, value: String): Future[String] = currentStateLock.synchronized {
     val request: ClientCommWrite.WriteReq = ClientCommWrite.WriteReq(id, KVOperation.Write(key, value))
     val p                                 = Promise[String]()
     promises.synchronized {
       promises.put(id, p)
       log("adding promise")
+      publishWrite(request)
+      return p.future
     }
-    publishWrite(request)
-    p.future
+    // p.future
   }
 
   def publishWrite(delta: ClientCommWrite.WriteReq): Unit = currentStateLock.synchronized {
@@ -119,7 +122,7 @@ class ProBenchClient(val name: Uid, blocking: Boolean = true, logTimings: Boolea
 
     op match {
       case KVOperation.Read(key)         => readWithResult(key): Unit
-      case KVOperation.Write(key, value) => writeWithResult(key, value): Unit
+      case KVOperation.Write(key, value) => writeWithResult(Uid.gen(), key, value): Unit
     }
 
 }

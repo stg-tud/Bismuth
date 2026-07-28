@@ -23,18 +23,19 @@ case class ParallelMultiPaxos[A](
       val numRounds = rounds.size
       rounds.get(numRounds - 1) match {
         case Some(paxos) => paxos.currentRound match {
-          // reuse slot if there are no votes yet or only votes by somebody else
-          case Some(PaxosRound(_, proposals))
-            if proposals.isEmpty || proposals.votes.forall(_.voter != replicaId) => numRounds - 1
-          case _ => numRounds
-        }
+            // reuse slot if there are no votes yet or only votes by somebody else
+            case Some(PaxosRound(_, proposals))
+                if numRounds == 1 && proposals.isEmpty // || proposals.votes.forall(_.voter != replicaId)
+                => numRounds - 1
+            case _ => numRounds
+          }
         case None => numRounds
       }
     }
 
     // public API
-    def nextDecisionRound        = commitIndex + 1
-    def closedRounds             = log
+    def nextDecisionRound = commitIndex + 1
+    def closedRounds      = log
 
     def leader(using Participants): Option[Uid] = currentPaxos.flatMap(_.currentLeaderElection) match
         case Some(leaderElection) => leaderElection.result
@@ -112,11 +113,12 @@ case class ParallelMultiPaxos[A](
       }
 
     def proposeIfLeader(value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
-      proposeIfLeader(nextSlot, value)
+        //println(s"proposing for slot: ${nextSlot}, log length: ${read.size}")
+        proposeIfLeader(nextSlot, value)
 
     def upkeep(using LocalUid, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds
-      val open        = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index => (index, rounds(index)))
+      val open        = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index => (index, rounds.getOrElse(index, Paxos())))
       val paxosDeltas = open.map {
         case (index, paxos) => (index, paxos.upkeep())
       }.toMap
