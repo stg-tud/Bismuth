@@ -7,7 +7,8 @@ import rdts.base.Lattice.syntax
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
+import rdts.protocols.{MultipaxosPhase, Participants}
+import rdts.protocols.spanner.ParallelMultiPaxos
 import replication.DeltaStorage.Type.*
 import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage}
@@ -62,7 +63,7 @@ class KeyValueReplica(
   }
 
   class Cluster {
-    @volatile var state: ClusterState = MultiPaxos.empty
+    @volatile var state: ClusterState = ParallelMultiPaxos.empty
 
     given Lattice[Payload[ClusterState]] =
         given Lattice[Int] = Lattice.fromOrdering
@@ -250,7 +251,7 @@ class KeyValueReplica(
           replicaActor.execute(() =>
             writeQueue.removeIf {
               case (_, ClientCommWrite.WriteReq(i, _)) => i == id
-            } : Unit
+            }: Unit
           )
       }
     }

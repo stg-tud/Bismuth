@@ -20,6 +20,9 @@ case class ParallelMultiPaxos[A](
     private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1)
 
     // public API
+    def nextDecisionRound = commitIndex + 1
+    def closedRounds      = log
+
     def leader(using Participants): Option[Uid] = currentPaxos.flatMap(_.currentLeaderElection) match
         case Some(leaderElection) => leaderElection.result
         case None                 => None
