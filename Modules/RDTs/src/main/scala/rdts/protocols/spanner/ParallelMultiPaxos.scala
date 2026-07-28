@@ -17,7 +17,7 @@ case class ParallelMultiPaxos[A](
 ):
 
     // private helper functions
-    private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1)
+    private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1).orElse(rounds.get(commitIndex))
 
     // public API
     def nextDecisionRound = commitIndex + 1
@@ -34,9 +34,9 @@ case class ParallelMultiPaxos[A](
                 case Some(PaxosRound(leaderElection, _)) if leaderElection.result.isEmpty =>
                   MultipaxosPhase.LeaderElection
                 case Some(PaxosRound(leaderElection, proposals))
-                    if leaderElection.result.nonEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
-                case Some(PaxosRound(leaderElection, proposals))
-                    if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
+                    if leaderElection.result.nonEmpty && proposals.result.isEmpty && proposals.votes.nonEmpty => MultipaxosPhase.Voting
+                case Some(PaxosRound(leaderElection, _))
+                    if leaderElection.result.nonEmpty => MultipaxosPhase.Idle
                 case _ => throw new Error("Inconsistent Paxos State")
           case None if commitIndex == -1 =>
             MultipaxosPhase.LeaderElection // first round, no previous decision, need to elect leader
