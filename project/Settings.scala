@@ -7,7 +7,7 @@ import sbt.Keys.*
 object Settings {
 
   // also consider updating the -source param below
-  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.8.4")
+  val scala3VersionString = sys.env.get("SCALA_VERSION").filter(!_.isBlank).getOrElse("3.9.0-RC4")
 
   val scalaVersions = Seq(scala3VersionString)
 
