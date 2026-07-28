@@ -46,6 +46,11 @@ class TodoSignalingIntegrationTest extends FunSuite {
         b.shutdown()
   }
 
+  // Regression note: this used to be flaky when an update raced the connection handshake — the
+  // update was both eagerly pushed and replayed by the stale handshake graft, the duplicate
+  // pruned both plumtree edges to lazy, and since ConnectionManager never drives
+  // BroadcastIO.tick() nothing repaired the stall. Fixed by adding plumtree peers as lazy and
+  // letting the graft exchange promote them to eager (see channels.BroadcastIOHandshakeRaceTest).
   test("synchronized updates to the same todo keep replicating") {
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
@@ -80,7 +85,10 @@ class TodoSignalingIntegrationTest extends FunSuite {
         b.shutdown()
   }
 
-  test("late join after many edits still converges and keeps replicating".ignore.pending("flaky for unclear reasons")) {
+  // Was flaky for the same root cause as the test above (handshake graft race pruned the plumtree
+  // edges, see channels.BroadcastIOHandshakeRaceTest); fixed by lazy edge initialization, so this
+  // is enabled again.
+  test("late join after many edits still converges and keeps replicating") {
     val a = new SyncedTodoListCrdt(LocalUid.gen())
     val b = new SyncedTodoListCrdt(LocalUid.gen())
     val c = new SyncedTodoListCrdt(LocalUid.gen())

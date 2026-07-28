@@ -79,9 +79,22 @@ final case class PlumtreeBroadcast[State](
 
   def eagerPeers: Set[Uid] = peerRoles.collect { case (Peer(uid), PeerRole.Eager) => uid }.toSet
 
-  /** Algorithm 3 `NeighborUp(node)`. Adds the peer as eager and requests missing history. */
+  /** Algorithm 3 `NeighborUp(node)`. Requests missing history with an initial graft.
+    *
+    * The paper adds the peer as eager.
+    * We instead add the peer as lazy and let the graft exchange promote the edge: receiving the peer's
+    * graft promotes it to eager (see the `Graft` case in [[handleMessage]]). This guarantees that a
+    * payload is never both eagerly pushed and replayed by the graft handler to the same peer – such a
+    * duplicate would be misread as a redundant mesh edge and cause a spurious prune of the only edge.
+    *
+    * Note that the peer may already have a role when the overlay reports NeighborUp: the peer's graft
+    * can arrive before the overlay's connection notification (e.g. with reentrant transports), in which
+    * case the graft handler already promoted the edge to eager. Never downgrade such an edge.
+    */
   def addPeer(peer: Peer): Result[State] = {
-    val next: PlumtreeBroadcast[State] = copy(peerRoles = peerRoles.updated(peer, PeerRole.Eager))
+    val next: PlumtreeBroadcast[State] =
+      if peerRoles.contains(peer) then this
+      else copy(peerRoles = peerRoles.updated(peer, PeerRole.Lazy))
     Result(next, List(Send(peer :: Nil, Graft(localContext))))
   }
 

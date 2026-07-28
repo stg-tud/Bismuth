@@ -142,13 +142,25 @@ class PlumtreeBroadcastTest extends FunSuite {
     assertEquals(events.toList, List(Send(List(sender), p1)))
   }
 
-  test("addPeer models NeighborUp by making the peer eager and immediately requesting missing history") {
+  test("addPeer models NeighborUp by adding the peer as lazy and immediately requesting missing history") {
     val local = Dots.single(self, 2)
     val state = PlumtreeBroadcast[String](self, localContext = local, deltaStorage = NoHistory[String]())
 
     val PlumtreeBroadcast.Result(next, events) = state.addPeer(eagerA)
 
-    assertEquals(next.peerRoles(eagerA), PeerRole.Eager, "")
+    // lazy until the peer's graft arrives, so an eager push can never overlap with a graft replay
+    // (such an overlap would deliver the payload twice and cause a spurious prune)
+    assertEquals(next.peerRoles(eagerA), PeerRole.Lazy, "")
     assertEquals(events.toList, List(Send(List(eagerA), Graft(local))))
+
+    // the peer's graft reply promotes the edge to eager
+    val PlumtreeBroadcast.Result(afterGraft, _) = next.handleMessage(eagerA, Graft(Dots.empty))
+    assertEquals(afterGraft.peerRoles(eagerA), PeerRole.Eager, "")
+
+    // a repeated NeighborUp (e.g. overlay notification arriving after the peer's graft)
+    // must not downgrade the promoted edge back to lazy
+    val PlumtreeBroadcast.Result(afterReAdd, reAddEvents) = afterGraft.addPeer(eagerA)
+    assertEquals(afterReAdd.peerRoles(eagerA), PeerRole.Eager, "")
+    assertEquals(reAddEvents.toList, List(Send(List(eagerA), Graft(local))))
   }
 }
