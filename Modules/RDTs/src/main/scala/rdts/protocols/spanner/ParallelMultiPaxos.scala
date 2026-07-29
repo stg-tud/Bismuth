@@ -113,12 +113,14 @@ case class ParallelMultiPaxos[A](
       }
 
     def proposeIfLeader(value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
-        //println(s"proposing for slot: ${nextSlot}, log length: ${read.size}")
-        proposeIfLeader(nextSlot, value)
+      // println(s"proposing for slot: ${nextSlot}, log length: ${read.size}")
+      proposeIfLeader(nextSlot, value)
 
     def upkeep(using LocalUid, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds
-      val open        = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index => (index, rounds.getOrElse(index, Paxos())))
+      val open = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index =>
+        (index, rounds.getOrElse(index, Paxos()))
+      )
       val paxosDeltas = open.map {
         case (index, paxos) => (index, paxos.upkeep())
       }.toMap

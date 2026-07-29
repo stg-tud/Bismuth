@@ -39,7 +39,7 @@ class KeyValueReplica(
 ) {
 
   inline def log(inline msg: String): Unit =
-    if false then println(s"[$uid] $msg")
+    if true then println(s"[$uid] $msg")
 
   val sendingActor: ExecutionContext   = ConcurrencyHelper.makeExecutionContext(offloadSending)
   val replicaActor: ExecutionContext   = ConcurrencyHelper.makeExecutionContext(offloadReplica)
@@ -95,7 +95,9 @@ class KeyValueReplica(
         else log("upkeep")
         // else log(s"upkept: ${pprint(upkept)}")
         val newState = publish(upkept)
-        maybeAnswerClientFromLog(newState) // TODO: make this nicer and prevent double-answering
+        if old.commitIndex < newState.commitIndex then {
+          maybeAnswerClientFromLog(old.commitIndex + 1, newState) // TODO: make this nicer and prevent double-answering
+        }
         // try to propose a new value in case voting is decided
         maybeProposeNewValue()
       }
@@ -117,7 +119,6 @@ class KeyValueReplica(
     def forceUpkeep(): ClusterState = currentStateLock.synchronized {
       log("forcing upkeep")
       val upkept = publish(state.upkeep)
-      maybeAnswerClientFromLog(upkept)
       upkept
     }
 
@@ -147,7 +148,7 @@ class KeyValueReplica(
                 val oldstate = state
                 state = state `merge` proposal
                 state = state `merge` state.upkeep
-                maybeAnswerClientFromLog(state): Unit
+                maybeAnswerClientFromLog(oldstate.commitIndex + 1, state): Unit
               }
               val _ = publish(proposal)
             case None =>
@@ -199,16 +200,12 @@ class KeyValueReplica(
               log("I assume that I am the leader but I don't have a hearbeat quorum")
     }
 
-    private def maybeAnswerClientFromLog(state: ClusterState): Unit = {
-      val answeredCounter = answeredUpTo.getAndSet(-2)
-
-      if  answeredUpTo.get != -2 then {
-        val start = answeredCounter + 1
+    private def maybeAnswerClientFromLog(start: Long, state: ClusterState): Unit = {
         val newEntries =  state.readSince(start)
         if newEntries.size > 0 then {
           log(s"log(${state.read.size} entries): answering since ($start), found ${newEntries.size} new entries")
           // println(s"${pprint.tokenize(newState).mkString("")}")
-          for req @ ClientCommWrite.WriteReq(id, op) <- state.readSince(start) do {
+          for req @ ClientCommWrite.WriteReq(id, op) <- newEntries do {
             val result: String = performOp(op)
 
             // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
@@ -218,19 +215,9 @@ class KeyValueReplica(
               client.publishWrite(ClientCommWrite.WriteRes(id, result))
             }
           }
-          if state.leader.contains(replicaId) then {
-            log(s"new answeredcounter is ${answeredCounter + newEntries.size}")
-            answeredUpTo.set(answeredCounter + newEntries.size)
-          }
-          else {
-            answeredUpTo.set(answeredCounter)
-          }
         }
-        else {
-          answeredUpTo.set(answeredCounter)
-        }
-      } else log("skipping answering from log")
-    }
+      }
+
 
   }
 
