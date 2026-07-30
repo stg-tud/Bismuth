@@ -620,7 +620,7 @@ class ThesisTestSuite extends FunSuite {
         .nn
         .screenshot(
           ScreenshotOptions().setPath(
-            Paths.get(s"target/pdfs/simple-sequential-inserts-cpu.pdf")
+            Paths.get(s"target/pdfs/simple-sequential-inserts-cpu.png")
           )
         )
       driver.navigate(
@@ -637,7 +637,7 @@ class ThesisTestSuite extends FunSuite {
         .nn
         .screenshot(
           ScreenshotOptions().setPath(
-            Paths.get(s"target/pdfs/complex-sequential-inserts-cpu.pdf")
+            Paths.get(s"target/pdfs/complex-sequential-inserts-cpu.png")
           )
         )
       driver.navigate(
@@ -654,7 +654,7 @@ class ThesisTestSuite extends FunSuite {
         .nn
         .screenshot(
           ScreenshotOptions().setPath(
-            Paths.get(s"target/pdfs/complex-sequential-inserts-alloc.pdf")
+            Paths.get(s"target/pdfs/complex-sequential-inserts-alloc.png")
           )
         )
       driver.navigate(
@@ -671,7 +671,7 @@ class ThesisTestSuite extends FunSuite {
         .nn
         .screenshot(
           ScreenshotOptions().setPath(
-            Paths.get(s"target/pdfs/complex-real-world-cpu.pdf")
+            Paths.get(s"target/pdfs/complex-real-world-cpu.png")
           )
         )
       driver.navigate(
@@ -688,7 +688,7 @@ class ThesisTestSuite extends FunSuite {
         .nn
         .screenshot(
           ScreenshotOptions().setPath(
-            Paths.get(s"target/pdfs/simpleavl-real-world-cpu.pdf")
+            Paths.get(s"target/pdfs/simpleavl-real-world-cpu.png")
           )
         )
       driver.navigate(
@@ -705,7 +705,7 @@ class ThesisTestSuite extends FunSuite {
         .nn
         .screenshot(
           ScreenshotOptions().setPath(
-            Paths.get(s"target/pdfs/simpleavl-real-world-alloc.pdf")
+            Paths.get(s"target/pdfs/simpleavl-real-world-alloc.png")
           )
         )
     } finally {
