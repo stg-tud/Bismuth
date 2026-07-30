@@ -1,5 +1,6 @@
 package test.rdts.bespoke
 
+import rdts.base.Lattice
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.RemoveWinsArray
@@ -8,6 +9,8 @@ import scala.language.implicitConversions
 import rdts.experiments.RemoveWinsArrayExperiment
 
 class RemoveWinsArrayExperimentTest extends munit.FunSuite {
+  given Lattice[String] = Lattice.assertEquals
+
   test("test") {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")

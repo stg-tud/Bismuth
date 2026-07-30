@@ -96,10 +96,10 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     list = list `merge` list.append(LWW.now("a"))(using aid)
     assertEquals(list.toList.map(_.value), List("a"))
 
-    list = list `merge` list.update(0, LWW.now("b"))(using aid)
+    list = list `merge` list.update(0, LWW.now("b"))
     assertEquals(list.toList.map(_.value), List("b"))
 
-    list = list `merge` list.update(1, LWW.now("c"))(using aid)
+    list = list `merge` list.update(1, LWW.now("c"))
     assertEquals(list.toList.map(_.value), List("b"))
   }
 
@@ -259,8 +259,8 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     )
 
     // Update nested lists concurrently
-    val delta1a = list.updateWith(0, _.append("a")(using aid))(using aid)
-    val delta1b = list.updateWith(0, _.append("b")(using bid))(using bid)
+    val delta1a = list.updateWith(0, _.append("a")(using aid))
+    val delta1b = list.updateWith(0, _.append("b")(using bid))
 
     val v1a = list `merge` delta1a
     val v1b = list `merge` delta1b
@@ -271,7 +271,7 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     assertEquals(list.toList.map(_.toList), List(List("x", "a", "b"), List("y"), List("z")))
 
     // Update another position
-    list = list `merge` list.updateWith(1, _.append("modified")(using aid))(using aid)
+    list = list `merge` list.updateWith(1, _.append("modified")(using aid))
     assertEquals(list.toList.map(_.toList), List(List("x", "a", "b"), List("y", "modified"), List("z")))
   }
 }

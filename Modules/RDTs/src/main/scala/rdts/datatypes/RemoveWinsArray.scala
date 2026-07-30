@@ -62,10 +62,10 @@ case class RemoveWinsArray[E](
     RemoveWinsArray(elements = newElements.toMap, removed)
   }
 
-  def update(index: Int, elem: E)(using LocalUid): RemoveWinsArray[E] =
+  def update(index: Int, elem: E): RemoveWinsArray[E] =
     updateWith(index, _ => elem)
 
-  def updateWith(index: Int, f: E => E)(using LocalUid): RemoveWinsArray[E] = {
+  def updateWith(index: Int, f: E => E): RemoveWinsArray[E] = {
     entries.lift(index) match {
       case Some((dot, oldEntry)) =>
         val entry = RemoveWinsArray.Entry(LWW.now(oldEntry.index.value), f(oldEntry.value))

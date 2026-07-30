@@ -165,7 +165,7 @@ class TaskAppInteractionGenerator(
     Some(MoveEntry(entryToMove, newParent))
   }
 
-  private def updateFolderName(folders: Seq[Dot]): Option[UpdateFolderName] = {
+  @scala.annotation.unused private def updateFolderName(folders: Seq[Dot]): Option[UpdateFolderName] = {
     if folders.isEmpty then return None
 
     val folderDot = folders(random.nextInt(folders.size))
@@ -173,7 +173,7 @@ class TaskAppInteractionGenerator(
     Some(UpdateFolderName(folderDot, newName))
   }
 
-  private def updateTaskListName(taskLists: Map[Dot, Int]): Option[UpdateTaskListName] = {
+  @scala.annotation.unused private def updateTaskListName(taskLists: Map[Dot, Int]): Option[UpdateTaskListName] = {
     if taskLists.isEmpty then return None
 
     val taskListDots = taskLists.keys.toSeq
