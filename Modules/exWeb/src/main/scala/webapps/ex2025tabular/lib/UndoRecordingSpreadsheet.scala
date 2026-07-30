@@ -57,7 +57,7 @@ class UndoRecordingSpreadsheet[S](
     delegate.moveColumn(sourceIdx, targetIdx)
   }
 
-  override def editCell(coordinate: SpreadsheetCoordinate, value: S | Null, solveSeenConflict: Boolean = true)(using
+  override def editCell(coordinate: SpreadsheetCoordinate, value: Option[S], solveSeenConflict: Boolean = true)(using
       LocalUid
   ): Spreadsheet[S] = {
     val rowIdOpt = delegate.getRowId(coordinate.rowIdx)
@@ -66,12 +66,12 @@ class UndoRecordingSpreadsheet[S](
     if rowIdOpt.isDefined && colIdOpt.isDefined then {
       val previousValues = delegate.read(coordinate).toList
       pushUndo { s =>
-        val removeNewValueDelta =
-          if value == null then Spreadsheet.empty[S]
-          else s.internal.removeValueFromConflict(rowIdOpt.get, colIdOpt.get, value.nn)
+        val removeNewValueDelta = value match
+          case None    => Spreadsheet.empty[S]
+          case Some(v) => s.internal.removeValueFromConflict(rowIdOpt.get, colIdOpt.get, v)
 
         previousValues.foldLeft(removeNewValueDelta) { (accDelta, previousValue) =>
-          accDelta.merge(s.editCellById(rowIdOpt.get, colIdOpt.get, previousValue, solveSeenConflict = false))
+          accDelta.merge(s.editCellById(rowIdOpt.get, colIdOpt.get, Some(previousValue), solveSeenConflict = false))
         }
       }
     }

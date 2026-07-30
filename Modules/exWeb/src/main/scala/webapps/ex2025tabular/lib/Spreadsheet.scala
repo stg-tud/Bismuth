@@ -92,22 +92,23 @@ case class Spreadsheet[A](
         rangeIds = rangeIds
       )
 
-  def editCell(coordinate: SpreadsheetCoordinate, value: A | Null, solveSeenConflict: Boolean = true)(using
+  def editCell(coordinate: SpreadsheetCoordinate, value: Option[A], solveSeenConflict: Boolean = true)(using
       LocalUid
   ): Spreadsheet[A] = {
     val rowId      = rowIds.readAt(coordinate.rowIdx).get
     val colId      = colIds.readAt(coordinate.colIdx).get
     val newContent =
       rowAndColIdPairToContent.transform(rowId, colId) {
-        if value == null then
-            case None      => None
-            case Some(set) => Some(set.clear())
-        else
-            case None      => Some(ReplicatedSet.empty.add(value.asInstanceOf[A]))
-            case Some(set) =>
-              var delta = set.add(value.asInstanceOf[A])
-              if solveSeenConflict then delta = set.removeBy(_ != value) `merge` delta
-              Some(delta)
+        value match
+          case None =>
+              case None      => None
+              case Some(set) => Some(set.clear())
+          case Some(v) =>
+              case None      => Some(ReplicatedSet.empty.add(v))
+              case Some(set) =>
+                var delta = set.add(v)
+                if solveSeenConflict then delta = set.removeBy(_ != v) `merge` delta
+                Some(delta)
       }
     Spreadsheet[A](
       rowIds = rowIds.updateAt(coordinate.rowIdx, rowId),
@@ -166,7 +167,7 @@ case class Spreadsheet[A](
         case Some(idx) => removeColumn(idx)
         case None      => this
 
-  def editCellById(rowId: RowId, colId: ColumnId, value: A | Null, solveSeenConflict: Boolean = true)(using
+  def editCellById(rowId: RowId, colId: ColumnId, value: Option[A], solveSeenConflict: Boolean = true)(using
       LocalUid
   ): Spreadsheet[A] =
     (getRowIndex(rowId), getColIndex(colId)) match

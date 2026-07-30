@@ -114,7 +114,7 @@ object SpreadsheetComponent {
       $.modState(_.copy(conflictPopup = None))
 
     def keepValue(row: RowIndex, col: ColumnIndex, v: String): Callback =
-      modSpreadsheet(_.editCell(SpreadsheetCoordinate(row, col), v)) >> closeConflict()
+      modSpreadsheet(_.editCell(SpreadsheetCoordinate(row, col), Some(v))) >> closeConflict()
 
     def handleInputChange(e: ReactEventFromInput): Callback = {
       val value = e.target.value
@@ -132,9 +132,9 @@ object SpreadsheetComponent {
 
     private def commitEdit(): Callback = {
       withEditAndProps { (coordinate, content, _) =>
-        var value = content.trim
-        if value.isBlank then value = null
-        modSpreadsheet(_.editCell(coordinate, value))
+        val value = content.trim
+        val optValue = if value.isBlank then None else Some(value)
+        modSpreadsheet(_.editCell(coordinate, optValue))
       } >> concludeEdit(successful = true)
     }
 

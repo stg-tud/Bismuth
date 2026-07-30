@@ -23,13 +23,13 @@ class UndoSuite extends munit.FunSuite {
     val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
     val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
 
-    val initDelta = replicaA.editAndGetDelta()(_.editCell(cellCoord, "init"))
+    val initDelta = replicaA.editAndGetDelta()(_.editCell(cellCoord, Some("init")))
     replicaB.accumulate(initDelta)
     assertCellValues(replicaA, Set("init"))
     assertCellValues(replicaB, Set("init"))
 
-    val replicaAEdit = replicaA.editAndGetDelta()(_.editCell(cellCoord, "a"))
-    val replicaBEdit = replicaB.editAndGetDelta()(_.editCell(cellCoord, "b"))
+    val replicaAEdit = replicaA.editAndGetDelta()(_.editCell(cellCoord, Some("a")))
+    val replicaBEdit = replicaB.editAndGetDelta()(_.editCell(cellCoord, Some("b")))
 
     replicaA.accumulate(replicaBEdit)
     replicaB.accumulate(replicaAEdit)
@@ -58,15 +58,15 @@ class UndoSuite extends munit.FunSuite {
     val replica1 = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replica1"))
     val replica2 = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replica2"))
 
-    val replica1Edit = replica1.editAndGetDelta()(_.editCell(cellCoord, "a"))
-    val replica2Edit = replica2.editAndGetDelta()(_.editCell(cellCoord, "b"))
+    val replica1Edit = replica1.editAndGetDelta()(_.editCell(cellCoord, Some("a")))
+    val replica2Edit = replica2.editAndGetDelta()(_.editCell(cellCoord, Some("b")))
 
     replica1.accumulate(replica2Edit)
 
     assertCellValues(replica1, Set("a", "b"))
 
     val undoingReplica = SpreadsheetDeltaAggregator(replica1.current, LocalUid.predefined("undo"))
-    undoingReplica.edit(_.editCell(cellCoord, "c"))
+    undoingReplica.edit(_.editCell(cellCoord, Some("c")))
 
     assertCellValues(undoingReplica, Set("c"))
     assert(undoingReplica.undo())
@@ -141,7 +141,7 @@ class UndoSuite extends munit.FunSuite {
 
     val removeDelta    = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
     val keepAliveDelta =
-      replicaB.editAndGetDelta()(_.editCell(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), "kept"))
+      replicaB.editAndGetDelta()(_.editCell(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), Some("kept")))
 
     replicaA.accumulate(keepAliveDelta)
     replicaB.accumulate(removeDelta)
