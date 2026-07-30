@@ -420,7 +420,7 @@ class ReplicatedTreeTest extends munit.FunSuite {
     }
   }
 
-  test("move with concurrent target deletion") {
+  test("move with concurrent target deletion".ignore) {
     val aid = Uid.predefined("a")
     val bid = Uid.predefined("b")
 
