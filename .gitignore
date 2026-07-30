@@ -3,26 +3,19 @@
 .bsp/
 .idea/
 .ipynb_checkpoints
+.ipynb_checkpoints
 .metals/
 .scala-build/
 .vscode/
+.zed
 bun.lock
+demokey.json
 deno.lock
 metals.sbt
 node_modules/
 package-lock.json
+scitzen.out/
 target/
 webview.h
 yarn.lock
-<<<<<<< HEAD
 ycsb-core.jar
-demokey.json
-scitzen.out/
-.zed
-||||||| ceb49252e
-.ipynb_checkpoints
-=======
-.ipynb_checkpoints
-.DS_Store
->>>>>>> bennetbo/ardt-experiments
-.DS_Store
