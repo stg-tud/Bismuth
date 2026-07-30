@@ -69,12 +69,12 @@ trait ParRP extends Levelbased {
       val toVisit                 = new java.util.ArrayDeque[ReSource](10)
       val offer: ReSource => Unit = toVisit.addLast
       initialWrites.foreach(offer)
-      val priorKey = priorTurn.fold[Key[ParRPInterTurn] | Null](null)(_.key)
+      val priorKey = priorTurn.map(_.key)
 
       while !toVisit.isEmpty do {
         val reactive = toVisit.pop()
         val owner    = reactive.state.lock.getOwner
-        if (priorKey ne null) && (owner eq priorKey) then
+        if priorKey.exists(owner eq _) then
             throw new IllegalStateException(s"$this tried to lock reactive $reactive owned by its parent $priorKey")
         if owner ne key then {
           if reactive.state.lock.tryLock(key) eq key then
