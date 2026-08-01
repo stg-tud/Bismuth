@@ -2,19 +2,12 @@ package test.rdts.protocols.knowledgeGroups
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
-import rdts.protocols.Consensus.lattice
-import rdts.protocols.Paxos.given_Ordering_BallotNum_PaxosRound
-import rdts.protocols.Util.Agreement
-import rdts.protocols.Util.Agreement.Undecided
-import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
 import rdts.protocols.knowledgeGroups.MultiPaxos
+import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
 import replication.ProtocolMessage.Payload
-import replication.{DeltaDissemination, DeltaStorage, KnowledgeGroup, PrdtSystem, ProtocolMessage}
-
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
-import scala.math.Ordering.comparatorToOrdering
+import replication.*
 
 class PaperGroups extends munit.FunSuite {
   val client    = Uid.predefined("client")
