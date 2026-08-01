@@ -16,8 +16,8 @@ case class MultiPaxos[A](
     slots: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],
     log: Map[Long, A] = Map.empty[Long, A],
     requests: ReplicatedSet[A] = ReplicatedSet.empty[A]
-){
-    // private helper functions
+) {
+  // private helper functions
 //    private def currentPaxos: Option[Paxos[A]] = slots.get(commitIndex + 1).orElse(slots.get(commitIndex))
 //    private def nextSlot(using LocalUid): Long = {
 //      val numRounds = slots.size
@@ -56,6 +56,9 @@ case class MultiPaxos[A](
 //          case None if commitIndex == -1 =>
 //            MultipaxosPhase.LeaderElection // first round, no previous decision, need to elect leader
 //          case None => MultipaxosPhase.Idle // round not yet initialized but previous round was successful
+
+  def request(command: A)(using LocalUid): MultiPaxos[A] =
+    MultiPaxos(requests = requests.add(command))
 
   def readSince(time: Long): Seq[A] =
     NumericRange(time, log.size.toLong, 1L).view.flatMap(log.get).toSeq
@@ -112,14 +115,30 @@ case class MultiPaxos[A](
     val newLogEntries = NumericRange(log.size.toLong, slots.size.toLong, 1L).view.flatMap(i =>
       newPaxosMap.get(i).map(p => (i, p))
     ).takeWhile(_._2.result.isDefined).map((i, p) => (i, p.result.get)) // return log until first undecided round
-    
-    val requestsDelta = requests.removeAll(newLogEntries.map(_._2))
 
+    //val requestsDelta = requests.removeAll(newLogEntries.map(_._2))
+    val newState = this.merge(MultiPaxos(slots = newPaxosMap))
+    // propose requests for next slots
+    val requestElements     = newState.requests.elements
+    val requestsWithIndices =
+      requestElements.zip(NumericRange(slots.size.toLong, slots.size.toLong + requestElements.size, 1L))
+    val newProposals = requestsWithIndices.map((req, i) => newState.proposeIfLeader(i, req))
+    val hasRequestedDelta = newProposals.fold(MultiPaxos[A]())((it, delta) => it.merge(delta))
+
+    val requestsDelta =
+      if (hasRequestedDelta != MultiPaxos[A]()) then // check if we actually proposed something, which means that we are the leader
+        newState.requests.removeAll(requestElements)
+      else
+        ReplicatedSet.empty[A]
+
+    println(s"$replicaId: I produced the following requestsDelta: $requestsDelta")
+
+    // pack everything together
     MultiPaxos(
       slots = paxosDeltas,
       log = newLogEntries.toMap,
       requests = requestsDelta
-    )
+    ).merge(hasRequestedDelta)
   }
 
   def decision(using Participants): Agreement[Seq[A]] = Agreement.Decided(read)

@@ -39,7 +39,7 @@ class KeyValueReplica(
 ) {
 
   inline def log(inline msg: String): Unit =
-    if true then println(s"[$uid] $msg")
+    if false then println(s"[$uid] $msg")
 
   val sendingActor: ExecutionContext   = ConcurrencyHelper.makeExecutionContext(offloadSending)
   val replicaActor: ExecutionContext   = ConcurrencyHelper.makeExecutionContext(offloadReplica)
