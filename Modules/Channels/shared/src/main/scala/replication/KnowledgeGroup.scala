@@ -7,7 +7,7 @@ import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 case class KnowledgeGroup[A](ids: Set[Uid], path: A => A, enabled: A => Boolean) {
   def matches(delta: A)(using Bottom[A]): Boolean = {
     val pathDelta = path(delta)
-    enabled(pathDelta) && !Bottom[A].isEmpty(pathDelta)
+    enabled(delta) && !Bottom[A].isEmpty(pathDelta)
   }
 
 //  def setupConnections(handleDelta: A => Unit)(using JsonValueCodec[A], Lattice[ProtocolMessage.Payload[A]]) = {
@@ -33,8 +33,8 @@ case class PrdtSystem[A](knowledgeGroups: Set[KnowledgeGroup[A]]) {
 
   def matches(delta: A, receiver: Uid)(using Bottom[A], LocalUid) =
     knowledgeGroups.exists(g => g.ids.contains(replicaId) && g.ids.contains(receiver) && g.matches(delta))
-    
+
   def matches(delta: A, receivers: Set[Uid])(using Bottom[A], LocalUid) =
-    knowledgeGroups.exists(g => g.ids == receivers && g.matches(delta))
+    knowledgeGroups.exists(g =>  g.ids.contains(replicaId) && g.ids == receivers && g.matches(delta))
 
 }

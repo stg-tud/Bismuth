@@ -1,6 +1,7 @@
 package test.rdts.protocols.knowledgeGroups
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.Consensus.lattice
@@ -12,6 +13,7 @@ import rdts.protocols.knowledgeGroups.MultiPaxos
 import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage, KnowledgeGroup, PrdtSystem, ProtocolMessage}
 
+import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.math.Ordering.comparatorToOrdering
 
 class PaperGroups extends munit.FunSuite {
@@ -28,7 +30,6 @@ class PaperGroups extends munit.FunSuite {
       enabled = _ => true
     ),
     KnowledgeGroup( // client and leader share requests
-      // todo: only send back to client when request has been fulfilled
       ids = Set(client, leader),
       path = m => MultiPaxos[A](requests = m.requests),
       enabled = _ => true
@@ -44,19 +45,23 @@ class PaperGroups extends munit.FunSuite {
     KnowledgeGroup( // leader and followers share slots
       ids = Set(leader, follower1, follower2),
       path = m => MultiPaxos[A](slots = m.slots),
-      enabled = _ => true
+      enabled = m =>
+        m.slots.forall((id, paxos) =>
+          !paxos.currentRoundHasProposal // this is necessary such that this does not overlap with group 3
+        )
     ),
     KnowledgeGroup( // client and leader share requests
       ids = Set(client, leader),
       path = m => MultiPaxos[A](requests = m.requests),
-      enabled = _ => true
+      enabled = m =>
+        m.slots.isEmpty
     ),
-    KnowledgeGroup( // everybody shares decisions
+    KnowledgeGroup( // everybody shares round2 votes // TODO: fix endless loop here. Only send to client, not to the rest...
       ids = Set(client, leader, follower1, follower2),
-      path = m => MultiPaxos[A](log = m.log),
+      path = m => MultiPaxos[A](slots = m.slots),
       enabled = m =>
         m.slots.forall((id, paxos) =>
-          paxos.decision(using Participants(Set(leader, follower1, follower2))) != Agreement.Undecided
+          paxos.currentRoundHasProposal
         )
     )
   ))
@@ -99,7 +104,12 @@ class PaperGroups extends munit.FunSuite {
     ),
   ))
 
-  class Replica(id: LocalUid, participants: Set[Uid], var state: MultiPaxos[Int]) {
+  class Replica(
+      id: LocalUid,
+      participants: Set[Uid],
+      systemConfig: PrdtSystem[MultiPaxos[Int]],
+      var state: MultiPaxos[Int]
+  ) {
     given LocalUid     = id
     given Participants = Participants(participants)
 
@@ -110,6 +120,9 @@ class PaperGroups extends munit.FunSuite {
         given Lattice[Int] = Lattice.fromOrdering
         Lattice.derived
 
+    inline def log(inline msg: String): Unit =
+      if true then println(s"[$replicaId] $msg")
+
     def handleDelta(delta: MultiPaxos[Int])(using Participants) = {
       state = state.merge(delta)
       val upkept = state.upkeep
@@ -118,22 +131,23 @@ class PaperGroups extends munit.FunSuite {
           publish(upkept)
     }
 
-    val systemConfig = clientServerSystem[Int]
+    private def setupDataManagers: Map[Set[Uid], DeltaDissemination[MultiPaxos[Int]]] = {
+      val uniqueEndpointSets = systemConfig.knowledgeGroups.map(_.ids).filter(_.contains(replicaId))
 
-    // leader and followers share slots
-    val dataManager1: DeltaDissemination[MultiPaxos[Int]] = DeltaDissemination(
-      id,
-      delta => handleDelta(delta),
-      defaultTimetolive = 0,
-      deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)
-    )
-    // client and leader share requests + log
-    val dataManager2: DeltaDissemination[MultiPaxos[Int]] = DeltaDissemination(
-      id,
-      delta => handleDelta(delta),
-      defaultTimetolive = 0,
-      deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)
-    )
+      uniqueEndpointSets.map(endpoints =>
+        (
+          endpoints,
+          DeltaDissemination[MultiPaxos[Int]](
+            id,
+            delta => { publish(delta, Some(endpoints)); handleDelta(delta) },
+            defaultTimetolive = 0,
+            deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)
+          )
+        )
+      ).toMap
+    }
+
+    val dataManagers: Map[Set[Uid], DeltaDissemination[MultiPaxos[Int]]] = setupDataManagers
 
     def request(command: Int): Unit = {
       val delta = state.request(command)
@@ -145,13 +159,17 @@ class PaperGroups extends munit.FunSuite {
       publish(delta)
     }
 
-    def publish(delta: MultiPaxos[Int]) = {
+    def publish(delta: MultiPaxos[Int], source: Option[Set[Uid]] = None) = {
       state = state.merge(delta)
-      if systemConfig.matches(delta, Set(leader, follower1, follower2)) then
-          dataManager1.applyDelta(delta)
 
-      if systemConfig.matches(delta, Set(leader, client)) then
-          dataManager2.applyDelta(delta)
+      dataManagers.foreach {
+        case (uids, dataManager) =>
+          if !source.contains(uids) && // don't forward deltas to the knowledge groups they are coming from
+              systemConfig.matches(delta, uids)
+          then
+              log(s"sending delta $delta to $uids")
+              dataManager.applyDelta(delta)
+      }
     }
 
   }
@@ -330,7 +348,7 @@ class PaperGroups extends munit.FunSuite {
     }
   }
 
-  test("consensus with knowledge groups") {
+  test("test local connections with client-server knowledge groups") {
     given JsonValueCodec[MultiPaxos[Int]] =
       JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
@@ -344,24 +362,44 @@ class PaperGroups extends munit.FunSuite {
     val ids @ l :: c :: followers = List(leader, client, follower1, follower2): @unchecked
     given Participants(Set(leader, follower1, follower2))
 
+    val systemConfig = clientServerSystem[Int]
+
     val replicas: Map[Uid, Replica] = ids.map(f =
-      i => (i, Replica(id = LocalUid(i), participants = Set(leader, follower1, follower2), state = MultiPaxos()))
+      i =>
+        (
+          i,
+          Replica(
+            id = LocalUid(i),
+            participants = Set(leader, follower1, follower2),
+            systemConfig = systemConfig,
+            state = MultiPaxos()
+          )
+        )
     ).toMap
 
-    // setup connections // TODO: maybe do this automatically based on the knowledge groups?
+    // setup connections
     // we need one data manager per set of ids. They can theoretically be reused between knowledge groups if they have the same set of ids
     // leader and followers share slots
-    val connection1 = channels.SynchronousLocalConnection[ProtocolMessage[MultiPaxos[Int]]]()
-    replicas(leader).dataManager1.addObjectConnection(connection1.server)
-    followers.foreach(id => replicas(id).dataManager1.addObjectConnection(connection1.client(id.toString)))
-    val connection2 = channels.SynchronousLocalConnection[ProtocolMessage[MultiPaxos[Int]]]()
-    replicas(followers(0)).dataManager1.addObjectConnection(connection2.server)
-    replicas(followers(1)).dataManager1.addObjectConnection(connection2.client(followers(1).toString))
+    def setupConnections(allIds: Set[Uid]): Unit =
+      def _setupConnections(remaining: Set[Uid]): Unit =
+        val connection = channels.SynchronousLocalConnection[ProtocolMessage[MultiPaxos[Int]]]()
+        remaining.toList match {
+          case primary :: Nil => ()
+          case primary :: secondaries =>
+            println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
+            replicas(primary).dataManagers(allIds).addObjectConnection(connection.server)
+            secondaries.foreach(id =>
+              replicas(id).dataManagers(allIds).addObjectConnection(connection.client(id.toString))
+            )
+            _setupConnections(secondaries.toSet)
+          case Nil => ()
+        }
+      _setupConnections(allIds)
 
-    // client and leader share requests + log
-    val clientConnection = channels.SynchronousLocalConnection[ProtocolMessage[MultiPaxos[Int]]]()
-    replicas(leader).dataManager2.addObjectConnection(clientConnection.server)
-    replicas(client).dataManager2.addObjectConnection(clientConnection.client(client.toString))
+    systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
+
+    assertEquals(replicas(leader).dataManagers.size, 2)
+    assertEquals(replicas(follower1).dataManagers.size, 1)
 
     replicas(client).request(0)
     assert(!replicas(client).state.requests.elements.isEmpty)
@@ -373,65 +411,100 @@ class PaperGroups extends munit.FunSuite {
     assert(replicas(leader).state.requests.elements.isEmpty)
     assert(!replicas(leader).state.slots.isEmpty)
     assert(replicas(follower1).state.requests.elements.isEmpty)
-//    client.printResults = false
-//
-//    client.write("test", "Hi")
-//    client.read("test")
-//
-//    assertEquals(nodes(0).cluster.state, nodes(1).cluster.state)
-//    assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)
-//    assertEquals(nodes(2).cluster.state, nodes(0).cluster.state)
-//
-//    def investigateUpkeep(state: ClusterState)(using LocalUid) = {
-//      val delta  = state.upkeep
-//      val merged = state `merge` delta
-//      assert(state != merged)
-//      assert(delta `inflates` state, delta)
-//    }
-//
-//    def runUpkeep() = while {
-//      nodes.filter(_.cluster.needsUpkeep()).exists { n =>
-//        investigateUpkeep(n.cluster.state)(using n.localUid)
-//        n.cluster.forceUpkeep()
-//        true
-//      }
-//    } do ()
-//
-//    runUpkeep()
-//
-//    nodes.foreach(node => assert(!node.cluster.needsUpkeep(), node.uid))
-//
-//    def noUpkeep(keyValueReplica: KeyValueReplica): Unit = {
-//      val current = keyValueReplica.cluster.state
-//      assertEquals(
-//        current `merge` current.upkeep(using keyValueReplica.localUid),
-//        current,
-//        s"${keyValueReplica.uid} upkeep"
-//      )
-//    }
-//
-//    nodes.foreach(noUpkeep)
-//
-//    assertEquals(nodes(0).cluster.state, nodes(1).cluster.state)
-//    assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)
-//    assertEquals(nodes(2).cluster.state, nodes(0).cluster.state)
-//
-//    // simulate crash
-//
-//    secondaries.last.cluster.dataManager.globalAbort.closeRequest = true
-//
-//    client.printResults = false
-//
-//    client.write("test2", "Hi")
-//    client.read("test2")
-//
-//    runUpkeep()
-//
-//    nodes.foreach(noUpkeep)
-//
-//    assertEquals(nodes(0).cluster.state.closedRounds(1)._2, KVOperation.Write("test2", "Hi"))
-//    assertEquals(nodes(2).cluster.state.closedRounds.size, 1)
 
+    assertEquals(replicas(leader).state.read, Seq(0))
+    assertEquals(replicas(client).state.read, Seq(0))
+    assertEquals(replicas(follower1).state.read, Seq(0))
+    assertEquals(replicas(follower2).state.read, Seq(0))
+
+    replicas(client).request(1)
+    assertEquals(replicas(leader).state.read, Seq(0,1))
+    assertEquals(replicas(client).state.read, Seq(0,1))
+    assertEquals(replicas(follower1).state.read, Seq(0,1))
+    assertEquals(replicas(follower2).state.read, Seq(0,1))
+    assertEquals(replicas(leader).state, replicas(follower1).state)
+    assertEquals(replicas(follower2).state, replicas(follower1).state)
+    assertNotEquals(replicas(leader).state, replicas(client).state)
+  }
+
+  test("test local connections with occam's razor groups") {
+    given JsonValueCodec[MultiPaxos[Int]] =
+      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+
+    given Lattice[Payload[MultiPaxos[Int]]] =
+        given Lattice[Int] = Lattice.fromOrdering
+        Lattice.derived
+    // given clusterCodec: JsonValueCodec[ProtocolMessage[MultiPaxos[Int]]] = JsonCodecMaker.make
+
+    // val ids @ leader :: proxy :: client :: followers =
+    //  List("leader", "proxy", "client", "follower1", "follower2").map(Uid.predefined): @unchecked
+    val ids @ l :: c :: followers = List(leader, client, follower1, follower2): @unchecked
+    given Participants(Set(leader, follower1, follower2))
+
+    val systemConfig = occamsRazorSystem[Int]
+
+    val replicas: Map[Uid, Replica] = ids.map(f =
+      i =>
+        (
+          i,
+          Replica(
+            id = LocalUid(i),
+            participants = Set(leader, follower1, follower2),
+            systemConfig = systemConfig,
+            state = MultiPaxos()
+          )
+        )
+    ).toMap
+
+    // setup connections
+    // we need one data manager per set of ids. They can theoretically be reused between knowledge groups if they have the same set of ids
+    // leader and followers share slots
+    def setupConnections(allIds: Set[Uid]): Unit =
+      def _setupConnections(remaining: Set[Uid]): Unit =
+        val connection = channels.SynchronousLocalConnection[ProtocolMessage[MultiPaxos[Int]]]()
+        remaining.toList match {
+          case primary :: Nil => ()
+          case primary :: secondaries =>
+            println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
+            replicas(primary).dataManagers(allIds).addObjectConnection(connection.server)
+            secondaries.foreach(id =>
+              replicas(id).dataManagers(allIds).addObjectConnection(connection.client(id.toString))
+            )
+            _setupConnections(secondaries.toSet)
+          case Nil => ()
+        }
+      _setupConnections(allIds)
+
+    systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
+
+    assertEquals(replicas(leader).dataManagers.size, 3)
+    assertEquals(replicas(follower1).dataManagers.size, 2)
+
+    replicas(client).request(0)
+    assert(!replicas(client).state.requests.elements.isEmpty)
+    assert(!replicas(leader).state.requests.elements.isEmpty)
+    assert(replicas(follower1).state.requests.elements.isEmpty)
+
+    replicas(leader).startLeaderElection()
+    // assert(!replicas(client).state.requests.elements.isEmpty)
+    assert(replicas(leader).state.requests.elements.isEmpty)
+    assert(!replicas(leader).state.slots.isEmpty)
+    assert(replicas(follower1).state.requests.elements.isEmpty)
+
+    assertEquals(replicas(leader).state.read, Seq(0))
+    assertEquals(replicas(client).state.read, Seq(0))
+    assertEquals(replicas(follower1).state.read, Seq(0))
+    assertEquals(replicas(follower2).state.read, Seq(0))
+
+    replicas(client).request(1)
+    assertEquals(replicas(leader).state.read, Seq(0,1))
+    assertEquals(replicas(client).state.read, Seq(0,1))
+    assertEquals(replicas(follower1).state.read, Seq(0,1))
+    assertEquals(replicas(follower2).state.read, Seq(0,1))
+
+    assertEquals(replicas(leader).state, replicas(follower1).state)
+    assertEquals(replicas(follower2).state, replicas(follower1).state)
+    assertNotEquals(replicas(leader).state, replicas(client).state)
   }
 
 }
