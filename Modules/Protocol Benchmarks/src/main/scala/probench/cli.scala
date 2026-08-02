@@ -3,8 +3,10 @@ package probench
 import channels.*
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
+import probench.KnowledgeGroups.*
 import probench.clients.*
 import rdts.base.Uid
+import rdts.protocols.knowledgeGroups.MultiPaxos
 import replication.{DeltaDissemination, DeltaStorage}
 
 import java.net.{DatagramSocket, InetSocketAddress}
@@ -175,6 +177,56 @@ object cli {
     val argparse = composedParser {
 
       alternatives(
+        subcommand("multipaxos-node-clientServer", "starts multiPaxos node with clientServer knowledge group") {
+          val uid  = name.value
+          val node =
+            MultiPaxosReplica(
+              id = uid,
+              participants = initialClusterIds.value.toSet,
+              systemConfig = KnowledgeGroups.clientServer,
+              state = MultiPaxos()
+            )
+
+          // setup connections
+          val reporter = if reporting.value then ChannelTrafficReporter() else null
+          val nioTCP   = NioTCP(ConcurrencyHelper.makePooledExecutor(), reporter)
+          ec.execute(() => nioTCP.loopSelection(Abort()))
+
+          val peerPortVal = peerPort.value
+
+          if uid == Uid.predefined("leader") then {
+            println("setting up connections for leader")
+            // client leader
+            node.dataManagers(Set(
+              client,
+              leader
+            )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+              "0",
+              peerPortVal
+            ))))
+            // leader followers
+            node.dataManagers(Set(
+              leader,
+              follower1,
+              follower2,
+              follower3,
+              follower4
+            )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+              "0",
+              peerPortVal + 1
+            ))))
+          }
+
+          cluster.value.foreach { (host, port) =>
+            println(s"Connecting to $host:$port")
+            addRetryingLatentConnection(
+              node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
+              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+              1000,
+              10
+            )
+          }
+        },
         subcommand("node", "starts a cluster node") {
           val node =
             KeyValueReplica(
