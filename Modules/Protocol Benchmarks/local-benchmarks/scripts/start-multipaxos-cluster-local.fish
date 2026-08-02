@@ -95,6 +95,22 @@ if test $SYSTEM_CONFIG = "clientServer"
 	end
 end
 
+if test $SYSTEM_CONFIG = "occamsRazor"
+	# followers
+	for followerid in (seq 1 4)
+		java \
+			--class-path "$jarspath/*" probench.cli multipaxos-node \
+			--name follower$followerid \
+			--system-config $SYSTEM_CONFIG \
+			--listen-peer-port 8{$followerid}10 \
+			--cluster $cluster \
+			--initial-cluster-ids $clusterids &> /tmp/multipaxos/follower$followerid.log.txt &
+		echo "follower $followerid started with cluster $cluster (ids: $clusterids)"
+		set node_processes $node_processes (jobs -pl)
+		sleep 1
+	end
+end
+
 echo $node_processes
 
 echo "PRDT cluster started, press Ctrl+C to stop"

@@ -184,6 +184,7 @@ object cli {
           val configObject = config match {
             case "clientServer"         => KnowledgeGroups.clientServer
             case "compartmentalization" => KnowledgeGroups.compartmentalized
+            case "occamsRazor"          => KnowledgeGroups.occamsRazor
             case _                      => throw Exception(s"invalid system config $config")
           }
           val node =
@@ -234,6 +235,78 @@ object cli {
                   addRetryingLatentConnection(
                     node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                    1000,
+                    10
+                  )
+                }
+              case "occamsRazor" =>
+                if uid == Uid.predefined("leader") then {
+                  println("setting up connections for leader")
+                  // client leader
+                  node.dataManagers(Set(
+                    client,
+                    leader
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal
+                  ))))
+                  // leader followers
+                  node.dataManagers(Set(
+                    leader,
+                    follower1,
+                    follower2,
+                    follower3,
+                    follower4
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 1
+                  ))))
+                  // client leader followers
+                  node.dataManagers(Set(
+                    client,
+                    leader,
+                    follower1,
+                    follower2,
+                    follower3,
+                    follower4
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 2
+                  ))))
+                }
+                if uid == Uid.predefined("follower1") || uid == Uid.predefined("follower2") || uid == Uid.predefined(
+                      "follower3"
+                    ) || uid == Uid.predefined("follower4")
+                then {
+                  println(s"setting up connections for $uid")
+                  // followers client
+                  node.dataManagers(Set(
+                    client,
+                    leader,
+                    follower1,
+                    follower2,
+                    follower3,
+                    follower4
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal
+                  ))))
+                }
+
+                println(s"data managers: ${node.dataManagers}")
+
+                cluster.value.foreach { (host, port) =>
+                  println(s"Connecting to $host:$port")
+                  addRetryingLatentConnection(
+                    node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
+                    nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                    1000,
+                    10
+                  )
+                  println(s"Connecting to $host:${port + 1}")
+                  addRetryingLatentConnection(
+                    node.dataManagers(Set(client, leader, follower1, follower2, follower3, follower4)),
+                    nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
                     1000,
                     10
                   )

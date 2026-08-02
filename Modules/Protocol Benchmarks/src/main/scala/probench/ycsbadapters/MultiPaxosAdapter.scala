@@ -15,7 +15,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.language.unsafeNulls
-import MultiPaxosAdapterConnectionPool.syncClient
+import MultiPaxosAdapterConnectionPool.{multiPaxosReplica, syncClient}
 
 object MultiPaxosAdapterConnectionPool {
   private val receiveEC: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
@@ -64,20 +64,17 @@ class MultiPaxosAdapter extends DB {
 
   private var operationTimeout: FiniteDuration   = 1.seconds
   private var endpoints: Array[(String, String)] = Array.empty
-  private var currentEndpointIndex: Int          = -1
 
-  private def connectToNextEndpoint(): Boolean = {
-    if currentEndpointIndex == 0 && endpoints.length == 1 then {
-      println("no more endpoints to try. All known endpoints have failed")
-      return false
-    } else if currentEndpointIndex + 1 < endpoints.length then
-        currentEndpointIndex = currentEndpointIndex + 1
+  private def connectEndpoints(): Boolean = {
+    if multiPaxosReplica.systemConfig == KnowledgeGroups.occamsRazor then
+        endpoints.foreach((ip, port) =>
+            println(s"ensuring connection to $ip:$port")
+            MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
+        )
     else
-        currentEndpointIndex = 0 // start from beginning
-
-    val (ip, port) = endpoints(currentEndpointIndex)
-    println(s"ensuring connection to $ip:$port")
-    MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
+        val (ip, port) = endpoints.head
+        println(s"ensuring connection to $ip:$port")
+        MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
     true
   }
 
@@ -97,17 +94,23 @@ class MultiPaxosAdapter extends DB {
         val s = e.split(":")
         (s(0), s(1))
     )
+    val systemConfig = props.getProperty("multipaxos.systemconfig")
     if MultiPaxosAdapterConnectionPool.multiPaxosReplica == null then {
-      //val participants = props.getProperty("multipaxos.participants").split(" ").map(Uid.predefined).toSet
+      // val participants = props.getProperty("multipaxos.participants").split(" ").map(Uid.predefined).toSet
+      val configObject = systemConfig match {
+        case "clientServer"         => KnowledgeGroups.clientServer
+        case "occamsRazor"          => KnowledgeGroups.occamsRazor
+        case "compartmentalization" => KnowledgeGroups.compartmentalized
+        case _                      => throw Exception(s"invalid system config: $systemConfig")
+      }
       MultiPaxosAdapterConnectionPool.multiPaxosReplica = MultiPaxosReplica(
         id = Uid.predefined("client"),
         participants = Set(leader, follower1, follower2, follower3, follower4),
-        // TODO: allow other knowledge groups here
-        systemConfig = KnowledgeGroups.clientServer,
+        systemConfig = configObject,
         state = MultiPaxos()
       )
     }
-    connectToNextEndpoint()
+    connectEndpoints()
 
     println(s"Hello from MultiPaxos adapter! $this")
   }
@@ -123,7 +126,6 @@ class MultiPaxosAdapter extends DB {
         case exception: concurrent.TimeoutException =>
           println(s"failed to write id:$id\n$key\n${valsToString(values)}")
           exception.printStackTrace()
-          connectToNextEndpoint(): Unit // try with next endpoint
           Status.ERROR
   }
 

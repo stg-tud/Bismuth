@@ -1,16 +1,13 @@
 package rdts.protocols.knowledgeGroups
 
 import rdts.base.Lattice.syntax
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.Paxos.given
+import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
-import rdts.protocols.MultipaxosPhase
 
 import scala.collection.immutable.NumericRange
-import rdts.protocols.Util.Agreement
-import rdts.protocols.Util.precondition
 
 case class MultiPaxos[A](
     slots: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],
@@ -108,7 +105,7 @@ case class MultiPaxos[A](
     )
     val paxosDeltas = open.map {
       case (index, paxos) => (index, paxos.upkeep())
-    }.toMap
+    }.toMap.filter((s,p) => p.rounds.forall((b,r) => r != PaxosRound()))
     val newPaxosMap = slots.merge(paxosDeltas)
 
     // move decisions to log

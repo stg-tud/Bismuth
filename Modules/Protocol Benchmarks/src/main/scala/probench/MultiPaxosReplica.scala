@@ -103,12 +103,37 @@ object KnowledgeGroups {
       enabled = _ => true
     ),
   ))
+
+  val occamsRazor = PrdtSystem[MultiPaxos[Request]](Set(
+    KnowledgeGroup( // leader and followers share slots
+      ids = Set(leader, follower1, follower2, follower3, follower4),
+      path = m => MultiPaxos[Request](slots = m.slots),
+      enabled = m =>
+        m.slots.forall((id, paxos) =>
+          !paxos.currentRoundHasProposal // this is necessary such that this does not overlap with group 3
+        )
+    ),
+    KnowledgeGroup( // client and leader share requests
+      ids = Set(client, leader),
+      path = m => MultiPaxos[Request](requests = m.requests),
+      enabled = m =>
+        m.slots.isEmpty
+    ),
+    KnowledgeGroup( // everybody shares round2 votes // TODO: fix endless loop here. Only send to client, not to the rest...
+      ids = Set(client, leader, follower1, follower2, follower3, follower4),
+      path = m => MultiPaxos[Request](slots = m.slots),
+      enabled = m =>
+        m.slots.forall((id, paxos) =>
+          paxos.currentRoundHasProposal
+        )
+    )
+  ))
 }
 
 class MultiPaxosReplica(
     id: Uid,
     participants: Set[Uid],
-    systemConfig: PrdtSystem[MultiPaxos[Request]],
+    val systemConfig: PrdtSystem[MultiPaxos[Request]],
     var state: MultiPaxos[Request],
 
 ) {
@@ -124,23 +149,14 @@ class MultiPaxosReplica(
 
   def handleDelta(delta: MultiPaxos[Request])(using Participants) = {
     log(s"received delta: $delta")
+    maybeReturnResult(delta)
     currentStateLock.synchronized {
       state = state.merge(delta)
       val upkept = state.upkeep
+      maybeReturnResult(upkept)
 
       if !state.subsumes(upkept) then
           publish(upkept)
-    }
-
-    // return resolved requests
-    promises.synchronized {
-      val answers = delta.log.map(_._2)
-      answers.foreach {
-        case Request(id, payload) => promises.remove(id) match {
-            case Some(promise) => promise.success(payload): Unit
-            case None          => ()
-          }
-      }
     }
   }
 
@@ -177,6 +193,19 @@ class MultiPaxosReplica(
     p.future
   }
 
+  private def maybeReturnResult(delta: MultiPaxos[Request]): Unit = {
+    // return resolved requests
+    promises.synchronized {
+      val answers = delta.log.map(_._2)
+      answers.foreach {
+        case Request(id, payload) => promises.remove(id) match {
+          case Some(promise) => promise.success(payload): Unit
+          case None          => ()
+        }
+      }
+    }
+  }
+
   def startLeaderElection(): Unit = {
     val delta = state.startLeaderElection(state.log.size)
     publish(delta)
@@ -195,6 +224,8 @@ class MultiPaxosReplica(
         then
             log(s"sending delta $delta to $uids")
             dataManager.applyDelta(delta)
+//        else
+//          log(s"no match for $delta")
     }
   }
 
