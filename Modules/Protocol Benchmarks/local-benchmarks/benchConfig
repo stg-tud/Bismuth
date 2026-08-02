@@ -1,7 +1,8 @@
-pb.op-timeout = 10
+pb.op-timeout = 1
 pb.endpoints = localhost:8110
 etcd.endpoints = http://localhost:8010
 recordcount=1000
-operationcount=2000
+operationcount=5000
 measurementtype = raw
 multipaxos.endpoints = localhost:8010 localhost:8110 localhost:8210 localhost:8310 localhost:8410
+multipaxos.op-timeout = 3000

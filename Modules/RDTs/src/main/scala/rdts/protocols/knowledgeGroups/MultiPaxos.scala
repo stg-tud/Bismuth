@@ -1,6 +1,7 @@
 package rdts.protocols.knowledgeGroups
 
 import rdts.base.Lattice.syntax
+import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.Paxos.given
@@ -58,13 +59,13 @@ case class MultiPaxos[A](
     MultiPaxos(requests = requests.add(command))
 
   def readSince(time: Long): Seq[A] =
-    NumericRange(time, log.size.toLong, 1L).view.flatMap(log.get).toSeq
+    NumericRange(time, log.size.toLong, 1L).view.map(log.get).takeWhile(_.isDefined).map(_.get).toSeq
 
   def read: Seq[A] =
     readSince(0)
 
   def startLeaderElection(index: Long)(using LocalUid): MultiPaxos[A] =
-    precondition(index == 0L || slots.contains(index - 1)) {
+    precondition(index == 0 || slots.contains(index - 1)) {
       val currentPaxos = slots.getOrElse(index, Paxos[A]())
       MultiPaxos(
         Map(index -> currentPaxos.phase1a)
@@ -98,14 +99,19 @@ case class MultiPaxos[A](
       else MultiPaxos()
     }
 
+//  def proposeAll(indices: Seq[Long], values: Seq[A])(using LocalUid, Participants): MultiPaxos[A] =
+//    val both = indices.zip(values)
+//    val a = both.foldLeft(this){case (acc, (i, v)) => acc.merge(acc.proposeIfLeader(i,v))}
+
+
+
+
   def upkeep(using LocalUid, Participants): MultiPaxos[A] = {
     // perform upkeep in open rounds
-    val open = NumericRange(log.size.toLong, slots.size.toLong, 1L).view.map(index =>
-      (index, slots.getOrElse(index, Paxos()))
-    )
-    val paxosDeltas = open.map {
-      case (index, paxos) => (index, paxos.upkeep())
-    }.toMap.filter((s,p) => p.rounds.forall((b,r) => r != PaxosRound()))
+    val logSize = log.size.toLong
+    val paxosDeltas = slots.collect{
+      case (index, paxos) if index >= logSize && paxos.currentRound.forall(!_.proposals.votes.map(_.voter).contains(replicaId))=> (index, paxos.upkeep())
+    }.filter((i,p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
     val newPaxosMap = slots.merge(paxosDeltas)
 
     // move decisions to log
@@ -114,32 +120,42 @@ case class MultiPaxos[A](
     ).takeWhile(_._2.result.isDefined).map((i, p) => (i, p.result.get)) // return log until first undecided round
 
     // val requestsDelta = requests.removeAll(newLogEntries.map(_._2))
-    val newState = this.merge(MultiPaxos(slots = newPaxosMap))
+    //val newState = this.merge(MultiPaxos(slots = newPaxosMap))
 
     // propose requests for next slots (if we are the leader)
-    val afterRequests = newState.slots.get(newState.slots.size - 1) match {
-      case Some(p @ Paxos(_)) if p.isCurrentLeader =>
-        val requestElements     = newState.requests.elements
-        val requestsWithIndices =
-          requestElements.zip(NumericRange(log.size.toLong, log.size.toLong + requestElements.size, 1L))
-        val newProposals      = requestsWithIndices.map((req, i) => newState.proposeIfLeader(i, req))
-        val hasRequestedDelta = newProposals.fold(MultiPaxos[A]())((it, delta) => it.merge(delta))
-        val requestsDelta     =
-          if hasRequestedDelta != MultiPaxos[A]()
-          then // check if we actually proposed something, which means that we are the leader
-              newState.requests.removeAll(requestElements)
-          else
-              ReplicatedSet.empty[A]
-
-        MultiPaxos(requests = requestsDelta).merge(hasRequestedDelta)
-      case _ => MultiPaxos()
-    }
+//    val afterRequests = newState.slots.get(newState.slots.size - 1) match { // get newest slot
+//      case Some(p @ Paxos(_)) if p.isCurrentLeader =>
+//        val requestElements     = newState.requests.elements.toList
+//        //println(s"found ${requestElements.size} requests")
+//        if requestElements.nonEmpty then {
+//          val requestsWithIndices = {
+//            requestElements.zip(NumericRange(slots.size.toLong, slots.size.toLong + requestElements.size, 1L))
+//          }
+//          val firstRequest = newState.proposeIfLeader(requestsWithIndices.head._2, requestsWithIndices.head._1)
+//          val hasRequestedDelta = requestsWithIndices.tail.foldLeft(firstRequest) {
+//            case (s, (req, i)) => s.merge(s.proposeIfLeader(i, req))
+//          }
+//
+//          val requestsDelta =
+//            if hasRequestedDelta.slots.size == requestElements.size
+//            then { // check if we actually proposed something, which means that we are the leader
+//              newState.requests.removeAll(requestElements)
+//            } else
+//              ReplicatedSet.empty[A]
+//
+//          val d = MultiPaxos(requests = requestsDelta).merge(hasRequestedDelta)
+//          //println(s"requestsDelta is: $d")
+//          d
+//        }
+//        else MultiPaxos()
+//      case _ => MultiPaxos()
+//    }
 
     // pack everything together
     MultiPaxos(
       slots = paxosDeltas,
       log = newLogEntries.toMap,
-    ).merge(afterRequests)
+    )//.merge(afterRequests)
   }
 
   def decision(using Participants): Agreement[Seq[A]] = Agreement.Decided(read)

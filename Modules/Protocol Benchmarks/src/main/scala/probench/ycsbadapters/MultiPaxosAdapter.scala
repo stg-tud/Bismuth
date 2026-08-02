@@ -89,7 +89,7 @@ class MultiPaxosAdapter extends DB {
   override def init(): Unit = {
     val props: Properties = getProperties
     if props.stringPropertyNames.contains("multipaxos.op-timeout") then
-        operationTimeout = Integer.parseInt(props.getProperty("pb.op-timeout")).seconds
+        operationTimeout = Integer.parseInt(props.getProperty("multipaxos.op-timeout")).milliseconds
     endpoints = props.getProperty("multipaxos.endpoints").split(" ").map(e =>
         val s = e.split(":")
         (s(0), s(1))
@@ -119,13 +119,13 @@ class MultiPaxosAdapter extends DB {
     val v  = valsToString(values)
     val id = Uid.gen()
     try
-        val f = syncClient(_.requestWithResult(id, v))
+        val f = MultiPaxosAdapterConnectionPool.multiPaxosReplica.requestWithResult(id, v)
         Await.ready(f, operationTimeout)
         Status.OK
     catch
         case exception: concurrent.TimeoutException =>
-          println(s"failed to write id:$id\n$key\n${valsToString(values)}")
-          exception.printStackTrace()
+          println(s"failed to write id:$id\n$key\n${valsToString(values)}, log is: ${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.read.map(_.id).toSet.contains(id)}")
+          //exception.printStackTrace()
           Status.ERROR
   }
 

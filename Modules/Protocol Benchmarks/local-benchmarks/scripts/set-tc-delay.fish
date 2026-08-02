@@ -1,0 +1,28 @@
+#! /usr/bin/env fish
+sudo tc qdisc add dev lo root handle 1: prio
+sudo tc qdisc add dev lo parent 1:3 handle 30: netem delay 20ms
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8010 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8011 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8012 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8013 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8014 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8110 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8111 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8112 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8113 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8114 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8210 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8211 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8212 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8213 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8214 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8310 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8311 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8312 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8313 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8314 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8410 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8411 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8412 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8413 0xffff flowid 1:3
+sudo tc filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip dport 8414 0xffff flowid 1:3

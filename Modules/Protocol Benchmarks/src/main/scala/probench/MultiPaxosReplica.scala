@@ -2,14 +2,17 @@ package probench
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import probench.KnowledgeGroups.leader
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
+import rdts.protocols.Util.Agreement.Decided
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
 import replication.ProtocolMessage.Payload
 import replication.{DeltaDissemination, DeltaStorage, KnowledgeGroup, PrdtSystem, ProtocolMessage}
 
+import scala.collection.immutable.NumericRange
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
@@ -64,7 +67,6 @@ object KnowledgeGroups {
             paxos.currentRound.map(r => r.proposals.votes.map(_.voter) == Set(leader)).getOrElse(false)
           )
         )
-        || m.log.nonEmpty
     ),
     KnowledgeGroup( //  leader proxy2 for uneven rounds, and then only phase2a or leaderElection
       ids = Set(leader, proxy2),
@@ -76,7 +78,11 @@ object KnowledgeGroups {
             paxos.currentRound.map(r => r.proposals.votes.map(_.voter) == Set(leader)).getOrElse(false)
           )
         )
-        || m.log.nonEmpty
+    ),
+    KnowledgeGroup( // leader proxies log
+      ids = Set(leader, proxy1, proxy2),
+      path = m => MultiPaxos[Request](log = m.log),
+      enabled = _ => true
     ),
     KnowledgeGroup( // proxy to uneven followers
       ids = Set(proxy1, follower1, follower3),
@@ -134,7 +140,7 @@ class MultiPaxosReplica(
     id: Uid,
     participants: Set[Uid],
     val systemConfig: PrdtSystem[MultiPaxos[Request]],
-    var state: MultiPaxos[Request],
+    @volatile var state: MultiPaxos[Request],
 
 ) {
   given LocalUid     = LocalUid(id)
@@ -145,7 +151,7 @@ class MultiPaxosReplica(
   private val promises: mutable.HashMap[Uid, Promise[String]] = mutable.HashMap.empty[Uid, Promise[String]]
 
   inline def log(inline msg: String): Unit =
-    if true then println(s"[$replicaId] $msg")
+    if false then println(s"[$replicaId] $msg")
 
   def handleDelta(delta: MultiPaxos[Request])(using Participants) = {
     log(s"received delta: $delta")
@@ -157,6 +163,26 @@ class MultiPaxosReplica(
 
       if !state.subsumes(upkept) then
           publish(upkept)
+
+      if id == leader && delta.requests.elements.nonEmpty then {
+        // propose new stuff
+        if delta.requests.elements.size > 1 then log(s"got more than one request with delta. got ${delta.requests.elements.size}")
+        val newstate: MultiPaxos[Request] = state.merge(upkept)
+        val value = delta.requests.elements.head
+        val size = newstate.slots.size
+        val slot = {
+          if size == 1 && !newstate.slots(0).currentRoundHasProposal then
+            0
+          else
+            size
+        }
+        val proposal = newstate.proposeIfLeader(slot, value)
+        if !state.subsumes(proposal) then {
+          log(s"got new request, proposing for slot ${slot}")
+          val removed = MultiPaxos(requests = newstate.requests.remove(value))
+          publish(removed.merge(proposal))
+        }
+      }
     }
   }
 
@@ -182,21 +208,23 @@ class MultiPaxosReplica(
   }
 
   def requestWithResult(requestId: Uid, payload: String): Future[String] = {
-    val delta = state.request(Request(requestId, payload))
-    val p     = Promise[String]()
+    currentStateLock.synchronized {
+      val delta = state.request(Request(requestId, payload))
+      val p = Promise[String]()
 
-    promises.synchronized {
-      promises.put(requestId, p)
-      log("adding promise")
+      promises.synchronized {
+        promises.put(requestId, p)
+        log("adding promise")
+      }
+      publish(delta)
+      p.future
     }
-    publish(delta)
-    p.future
   }
 
   private def maybeReturnResult(delta: MultiPaxos[Request]): Unit = {
     // return resolved requests
     promises.synchronized {
-      val answers = delta.log.map(_._2)
+      val answers = delta.log.values
       answers.foreach {
         case Request(id, payload) => promises.remove(id) match {
           case Some(promise) => promise.success(payload): Unit
@@ -224,8 +252,8 @@ class MultiPaxosReplica(
         then
             log(s"sending delta $delta to $uids")
             dataManager.applyDelta(delta)
-//        else
-//          log(s"no match for $delta")
+        else
+          log(s"no match for $uids with: $delta")
     }
   }
 

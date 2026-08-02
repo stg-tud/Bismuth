@@ -113,9 +113,14 @@ case class Paxos[A](
   def phase2b(using LocalUid): Paxos[A] =
     // accept proposed value
     precondition(currentRoundHasProposal) {
-      val proposal =
+      val proposal = {
         currentRound.get.proposals.votes.head.value
-      Paxos(Map(currentBallotNum -> voteValue(proposal)))
+      }
+      val vote = voteValue(proposal)
+      if vote != Voting() then
+        Paxos(Map(currentBallotNum -> vote))
+      else
+        Paxos()
     }
 
   // decision function

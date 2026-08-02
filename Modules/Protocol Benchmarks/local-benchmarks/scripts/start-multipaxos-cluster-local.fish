@@ -25,6 +25,7 @@ set cluster localhost:8011
 set clusterids leader (string replace -r '(\d+)' 'follower$1' (seq 1 4))
 
 java \
+    -XX:StartFlightRecording=filename=/tmp/leaderrecording.jfr \
 	--class-path "$jarspath/*" probench.cli multipaxos-node \
 	--name leader \
 	--system-config $SYSTEM_CONFIG \
