@@ -1,9 +1,8 @@
 package probench.ycsbadapters
 
 import channels.{Abort, ConcurrencyHelper, NioTCP}
-import probench.KnowledgeGroups.{client, leader}
+import probench.KnowledgeGroups.*
 import probench.cli.addRetryingLatentConnection
-import probench.ycsbadapters.ProBenchAdapterConnectionPool.syncClient
 import probench.{KnowledgeGroups, MultiPaxosReplica}
 import rdts.base.Uid
 import rdts.protocols.knowledgeGroups.MultiPaxos
@@ -16,6 +15,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.language.unsafeNulls
+import MultiPaxosAdapterConnectionPool.syncClient
 
 object MultiPaxosAdapterConnectionPool {
   private val receiveEC: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
@@ -60,7 +60,7 @@ object MultiPaxosAdapterConnectionPool {
 
 }
 
-class MultiPaxosAdapterAdapter extends DB {
+class MultiPaxosAdapter extends DB {
 
   private var operationTimeout: FiniteDuration   = 1.seconds
   private var endpoints: Array[(String, String)] = Array.empty
@@ -98,10 +98,10 @@ class MultiPaxosAdapterAdapter extends DB {
         (s(0), s(1))
     )
     if MultiPaxosAdapterConnectionPool.multiPaxosReplica == null then {
-      val participants = props.getProperty("multipaxos.participants").split(" ").map(Uid.predefined).toSet
+      //val participants = props.getProperty("multipaxos.participants").split(" ").map(Uid.predefined).toSet
       MultiPaxosAdapterConnectionPool.multiPaxosReplica = MultiPaxosReplica(
         id = Uid.predefined("client"),
-        participants = participants,
+        participants = Set(leader, follower1, follower2, follower3, follower4),
         // TODO: allow other knowledge groups here
         systemConfig = KnowledgeGroups.clientServer,
         state = MultiPaxos()
@@ -116,7 +116,7 @@ class MultiPaxosAdapterAdapter extends DB {
     val v  = valsToString(values)
     val id = Uid.gen()
     try
-        val f = syncClient(_.writeWithResult(id, key, v))
+        val f = syncClient(_.requestWithResult(id, v))
         Await.ready(f, operationTimeout)
         Status.OK
     catch

@@ -69,9 +69,10 @@ class MultiPaxosReplica(
   private val promises: mutable.HashMap[Uid, Promise[String]] = mutable.HashMap.empty[Uid, Promise[String]]
 
   inline def log(inline msg: String): Unit =
-    if false then println(s"[$replicaId] $msg")
+    if true then println(s"[$replicaId] $msg")
 
   def handleDelta(delta: MultiPaxos[Request])(using Participants) = {
+    log(s"received delta: $delta")
     currentStateLock.synchronized {
       state = state.merge(delta)
       val upkept = state.upkeep
@@ -113,8 +114,7 @@ class MultiPaxosReplica(
     publish(delta)
   }
 
-  def requestWithResult(payload: String): Future[String] = {
-    val requestId = Uid.gen()
+  def requestWithResult(requestId: Uid, payload: String): Future[String] = {
     val delta     = state.request(Request(requestId, payload))
     val p         = Promise[String]()
 
@@ -135,6 +135,7 @@ class MultiPaxosReplica(
     currentStateLock.synchronized {
       state = state.merge(delta)
     }
+    // log(s"trying to publish $delta")
 
     dataManagers.foreach {
       case (uids, dataManager) =>

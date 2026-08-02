@@ -217,6 +217,8 @@ object cli {
             ))))
           }
 
+          println(s"data managers: ${node.dataManagers}")
+
           cluster.value.foreach { (host, port) =>
             println(s"Connecting to $host:$port")
             addRetryingLatentConnection(
@@ -224,6 +226,15 @@ object cli {
               nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
               1000,
               10
+            )
+          }
+
+          if uid == Uid.predefined("leader") then {
+            val timer = Timer()
+            timer.schedule(
+              () => { node.startLeaderElection(); timer.cancel() },
+              10000,
+              10000
             )
           }
         },
