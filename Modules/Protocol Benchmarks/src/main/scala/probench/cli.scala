@@ -166,25 +166,31 @@ object cli {
     timed opType warmup measurement min max blockSize
      */
 
-    val mode        = named[BenchmarkMode]("--mode", "mode for the benchmark")
-    val opType      = named[BenchmarkOpType]("--op-type", "opType for the benchmark")
-    val warmup      = named[Int]("--warmup", "warmup period/operations for the benchmark in seconds")
-    val measurement = named[Int]("--measurement", "measurement period/operations for the benchmark in seconds")
-    val kvRange     = named[(Int, Int)]("--kv-range", "min/max key/value index", (1000, 1999))
-    val blockSize   = named[Int]("--block-size", "block size for timed benchmarks")
-    val timeout     = named[Long]("--timeout", "timeout before new leader is elected in miliseconds", 1000)
-    val systemConfig     = named[String]("--system-config", "PRDT system config")
+    val mode         = named[BenchmarkMode]("--mode", "mode for the benchmark")
+    val opType       = named[BenchmarkOpType]("--op-type", "opType for the benchmark")
+    val warmup       = named[Int]("--warmup", "warmup period/operations for the benchmark in seconds")
+    val measurement  = named[Int]("--measurement", "measurement period/operations for the benchmark in seconds")
+    val kvRange      = named[(Int, Int)]("--kv-range", "min/max key/value index", (1000, 1999))
+    val blockSize    = named[Int]("--block-size", "block size for timed benchmarks")
+    val timeout      = named[Long]("--timeout", "timeout before new leader is elected in miliseconds", 1000)
+    val systemConfig = named[String]("--system-config", "PRDT system config")
 
     val argparse = composedParser {
 
       alternatives(
         subcommand("multipaxos-node", "starts multiPaxos node with configurable knowledge group") {
-          val uid  = name.value
+          val uid          = name.value
+          val config       = systemConfig.value
+          val configObject = config match {
+            case "clientServer"         => KnowledgeGroups.clientServer
+            case "compartmentalization" => KnowledgeGroups.compartmentalized
+            case _                      => throw Exception(s"invalid system config $config")
+          }
           val node =
             MultiPaxosReplica(
               id = uid,
               participants = initialClusterIds.value.toSet,
-              systemConfig = KnowledgeGroups.clientServer,
+              systemConfig = configObject,
               state = MultiPaxos()
             )
 
@@ -195,46 +201,145 @@ object cli {
 
           val peerPortVal = peerPort.value
 
-          val config = systemConfig.value
-
           // setup connections
-          println(s"systemconfig: $config")
-          if config == "clientServer" then {
-            if uid == Uid.predefined("leader") then {
-              println("setting up connections for leader")
-              // client leader
-              node.dataManagers(Set(
-                client,
-                leader
-              )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
-                "0",
-                peerPortVal
-              ))))
-              // leader followers
-              node.dataManagers(Set(
-                leader,
-                follower1,
-                follower2,
-                follower3,
-                follower4
-              )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
-                "0",
-                peerPortVal + 1
-              ))))
-            }
+          config match
+              case "clientServer" =>
+                if uid == Uid.predefined("leader") then {
+                  println("setting up connections for leader")
+                  // client leader
+                  node.dataManagers(Set(
+                    client,
+                    leader
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal
+                  ))))
+                  // leader followers
+                  node.dataManagers(Set(
+                    leader,
+                    follower1,
+                    follower2,
+                    follower3,
+                    follower4
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 1
+                  ))))
+                }
 
-            println(s"data managers: ${node.dataManagers}")
+                println(s"data managers: ${node.dataManagers}")
 
-            cluster.value.foreach { (host, port) =>
-              println(s"Connecting to $host:$port")
-              addRetryingLatentConnection(
-                node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
-                nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
-                1000,
-                10
-              )
-            }
-          }
+                cluster.value.foreach { (host, port) =>
+                  println(s"Connecting to $host:$port")
+                  addRetryingLatentConnection(
+                    node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
+                    nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                    1000,
+                    10
+                  )
+                }
+              case "compartmentalization" =>
+                // prepare server connections
+                if uid == Uid.predefined("leader") then {
+                  println("setting up connections for leader")
+                  // client leader
+                  node.dataManagers(Set(
+                    client,
+                    leader
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal
+                  ))))
+                  // leader proxy1
+                  node.dataManagers(Set(
+                    leader,
+                    proxy1
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 1
+                  ))))
+                  // leader proxy2
+                  node.dataManagers(Set(
+                    leader,
+                    proxy2
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 2
+                  ))))
+                }
+                if uid == Uid.predefined("proxy1") then {
+                  println("setting up connections for proxy1")
+                  // proxy1 follower1 follower3
+                  node.dataManagers(Set(
+                    proxy1,
+                    follower1,
+                    follower3
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 1
+                  ))))
+                }
+                if uid == Uid.predefined("proxy2") then {
+                  println("setting up connections for proxy2")
+                  // proxy2 follower2 follower4
+                  node.dataManagers(Set(
+                    proxy2,
+                    follower2,
+                    follower4
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal + 1
+                  ))))
+                }
+
+                println(s"data managers: ${node.dataManagers}")
+                // connect as client to existing server connections
+
+                if uid == Uid.predefined("proxy1") then {
+                  cluster.value.foreach { (host, port) =>
+                    println(s"Connecting to $host:$port")
+                    addRetryingLatentConnection(
+                      node.dataManagers(Set(leader, proxy1)),
+                      nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                      1000,
+                      10
+                    )
+                  }
+                }
+                if uid == Uid.predefined("proxy2") then {
+                  cluster.value.foreach { (host, port) =>
+                    println(s"Connecting to $host:$port")
+                    addRetryingLatentConnection(
+                      node.dataManagers(Set(leader, proxy2)),
+                      nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
+                      1000,
+                      10
+                    )
+                  }
+                }
+                if (uid == Uid.predefined("follower1")) || (uid == Uid.predefined("follower3")) then {
+                  cluster.value.foreach { (host, port) =>
+                    println(s"Connecting to $host:$port")
+                    addRetryingLatentConnection(
+                      node.dataManagers(Set(proxy1, follower1, follower3)),
+                      nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                      1000,
+                      10
+                    )
+                  }
+                }
+                if (uid == Uid.predefined("follower2")) || (uid == Uid.predefined("follower4")) then {
+                  cluster.value.foreach { (host, port) =>
+                    println(s"Connecting to $host:$port")
+                    addRetryingLatentConnection(
+                      node.dataManagers(Set(proxy2, follower2, follower4)),
+                      nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                      1000,
+                      10
+                    )
+                  }
+                }
+              case _ => throw Exception(s"need to provide a valid system config, got: $config")
 
           if uid == Uid.predefined("leader") then {
             val timer = Timer()

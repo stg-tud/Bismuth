@@ -52,6 +52,57 @@ object KnowledgeGroups {
       )
     ))
   }
+
+  val compartmentalized = PrdtSystem[MultiPaxos[Request]](Set(
+    KnowledgeGroup( // leader proxy1 for uneven rounds, and then only phase2a or leaderElection
+      ids = Set(leader, proxy1),
+      path = m => MultiPaxos[Request](slots = m.slots),
+      enabled = m =>
+        m.slots.forall((id, paxos) =>
+          m.slots.headOption.map(_._1 % 2 == 1).getOrElse(false) && (
+            paxos.currentRound.map(_.leaderElection.votes.nonEmpty).getOrElse(false) ||
+            paxos.currentRound.map(r => r.proposals.votes.map(_.voter) == Set(leader)).getOrElse(false)
+          )
+        )
+        || m.log.nonEmpty
+    ),
+    KnowledgeGroup( //  leader proxy2 for uneven rounds, and then only phase2a or leaderElection
+      ids = Set(leader, proxy2),
+      path = m => MultiPaxos[Request](slots = m.slots),
+      enabled = m =>
+        m.slots.forall((id, paxos) =>
+          m.slots.headOption.map(_._1 % 2 == 0).getOrElse(false) && (
+            paxos.currentRound.map(_.leaderElection.votes.nonEmpty).getOrElse(false) ||
+            paxos.currentRound.map(r => r.proposals.votes.map(_.voter) == Set(leader)).getOrElse(false)
+          )
+        )
+        || m.log.nonEmpty
+    ),
+    KnowledgeGroup( // proxy to uneven followers
+      ids = Set(proxy1, follower1, follower3),
+      path = m => MultiPaxos[Request](slots = m.slots),
+      enabled = m =>
+        m.slots.headOption.map(_._1 % 2 == 1).getOrElse(false) ||
+        m.log.nonEmpty
+    ),
+    KnowledgeGroup( // proxy followers as long as its undecided
+      ids = Set(proxy2, follower2, follower4),
+      path = m => MultiPaxos[Request](slots = m.slots),
+      enabled = m =>
+        m.slots.headOption.map(_._1 % 2 == 0).getOrElse(false) ||
+        m.log.nonEmpty
+    ),
+    KnowledgeGroup( // client leader requests
+      ids = Set(client, leader),
+      path = m => MultiPaxos[Request](requests = m.requests),
+      enabled = m => m.slots.isEmpty
+    ),
+    KnowledgeGroup( // client leader log
+      ids = Set(client, leader),
+      path = m => MultiPaxos[Request](log = m.log),
+      enabled = _ => true
+    ),
+  ))
 }
 
 class MultiPaxosReplica(
@@ -115,8 +166,8 @@ class MultiPaxosReplica(
   }
 
   def requestWithResult(requestId: Uid, payload: String): Future[String] = {
-    val delta     = state.request(Request(requestId, payload))
-    val p         = Promise[String]()
+    val delta = state.request(Request(requestId, payload))
+    val p     = Promise[String]()
 
     promises.synchronized {
       promises.put(requestId, p)
