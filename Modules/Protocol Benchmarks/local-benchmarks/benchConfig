@@ -1,0 +1,7 @@
+pb.op-timeout = 10
+pb.endpoints = localhost:8110
+etcd.endpoints = http://localhost:8010
+recordcount=1000
+operationcount=2000
+measurementtype = raw
+multipaxos.endpoints = localhost:8010

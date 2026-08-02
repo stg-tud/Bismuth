@@ -173,11 +173,12 @@ object cli {
     val kvRange     = named[(Int, Int)]("--kv-range", "min/max key/value index", (1000, 1999))
     val blockSize   = named[Int]("--block-size", "block size for timed benchmarks")
     val timeout     = named[Long]("--timeout", "timeout before new leader is elected in miliseconds", 1000)
+    val systemConfig     = named[String]("--system-config", "PRDT system config")
 
     val argparse = composedParser {
 
       alternatives(
-        subcommand("multipaxos-node-clientServer", "starts multiPaxos node with clientServer knowledge group") {
+        subcommand("multipaxos-node", "starts multiPaxos node with configurable knowledge group") {
           val uid  = name.value
           val node =
             MultiPaxosReplica(
@@ -194,39 +195,45 @@ object cli {
 
           val peerPortVal = peerPort.value
 
-          if uid == Uid.predefined("leader") then {
-            println("setting up connections for leader")
-            // client leader
-            node.dataManagers(Set(
-              client,
-              leader
-            )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
-              "0",
-              peerPortVal
-            ))))
-            // leader followers
-            node.dataManagers(Set(
-              leader,
-              follower1,
-              follower2,
-              follower3,
-              follower4
-            )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
-              "0",
-              peerPortVal + 1
-            ))))
-          }
+          val config = systemConfig.value
 
-          println(s"data managers: ${node.dataManagers}")
+          // setup connections
+          println(s"systemconfig: $config")
+          if config == "clientServer" then {
+            if uid == Uid.predefined("leader") then {
+              println("setting up connections for leader")
+              // client leader
+              node.dataManagers(Set(
+                client,
+                leader
+              )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                "0",
+                peerPortVal
+              ))))
+              // leader followers
+              node.dataManagers(Set(
+                leader,
+                follower1,
+                follower2,
+                follower3,
+                follower4
+              )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                "0",
+                peerPortVal + 1
+              ))))
+            }
 
-          cluster.value.foreach { (host, port) =>
-            println(s"Connecting to $host:$port")
-            addRetryingLatentConnection(
-              node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
-              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
-              1000,
-              10
-            )
+            println(s"data managers: ${node.dataManagers}")
+
+            cluster.value.foreach { (host, port) =>
+              println(s"Connecting to $host:$port")
+              addRetryingLatentConnection(
+                node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
+                nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
+                1000,
+                10
+              )
+            }
           }
 
           if uid == Uid.predefined("leader") then {
