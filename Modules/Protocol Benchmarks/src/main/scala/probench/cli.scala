@@ -345,6 +345,7 @@ object cli {
                   // proxy1 client
                   node.dataManagers(Set(
                     proxy1,
+                    proxy2,
                     client
                   )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
@@ -365,6 +366,7 @@ object cli {
                   // proxy2 client
                   node.dataManagers(Set(
                     proxy1,
+                    proxy2,
                     client
                   )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",

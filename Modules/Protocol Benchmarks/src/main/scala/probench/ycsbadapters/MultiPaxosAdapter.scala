@@ -42,14 +42,14 @@ object MultiPaxosAdapterConnectionPool {
     res
   }(using sendEC).flatten
 
-  def addConnection(ip: String, port: Int): Unit = synchronized {
+  def addConnection(ip: String, port: Int, members: Set[Uid]): Unit = synchronized {
 
     if connections.contains(ip, port) then ()
     else
         println(s"adding connection to $ip:$port")
         // todo add other collections for other knowledge groups
         addRetryingLatentConnection(
-          multiPaxosReplica.dataManagers(Set(client, leader)),
+          multiPaxosReplica.dataManagers(members),
           nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
           1000,
           10
@@ -62,24 +62,36 @@ object MultiPaxosAdapterConnectionPool {
 
 class MultiPaxosAdapter extends DB {
 
-  private var operationTimeout: FiniteDuration   = 1.seconds
-  private var endpoints: Array[(String, String)] = Array.empty
+  private var operationTimeout: FiniteDuration                       = 1.seconds
+  private var endpoints: Array[(String, String)]                     = Array.empty
+  private var razorEndpoints: Array[(String, String)]                = Array.empty
+  private var compartmentalizationEndpoints: Array[(String, String)] = Array.empty
 
   private def connectEndpoints(): Boolean = {
     if multiPaxosReplica.systemConfig == KnowledgeGroups.occamsRazor then
-        endpoints.foreach((ip, port) =>
+        razorEndpoints.foreach((ip, port) =>
             println(s"ensuring connection to $ip:$port")
-            MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
+            MultiPaxosAdapterConnectionPool.addConnection(
+              ip,
+              Integer.parseInt(port),
+              Set(
+                client,
+                leader,
+                follower1,
+                follower2,
+                follower3,
+                follower4
+              )
+            )
         )
     else if multiPaxosReplica.systemConfig == KnowledgeGroups.compartmentalized then
-        endpoints.take(3).foreach((ip, port) =>
+        compartmentalizationEndpoints.foreach((ip, port) =>
             println(s"ensuring connection to $ip:$port")
-            MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
+            MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port), Set(proxy1, proxy2, client))
         )
-    else
-        val (ip, port) = endpoints.head
-        println(s"ensuring connection to $ip:$port")
-        MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
+    val (ip, port) = endpoints.head
+    println(s"ensuring connection to $ip:$port")
+    MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port), Set(client, leader))
     true
   }
 
@@ -96,6 +108,14 @@ class MultiPaxosAdapter extends DB {
     if props.stringPropertyNames.contains("multipaxos.op-timeout") then
         operationTimeout = Integer.parseInt(props.getProperty("multipaxos.op-timeout")).milliseconds
     endpoints = props.getProperty("multipaxos.endpoints").split(" ").map(e =>
+        val s = e.split(":")
+        (s(0), s(1))
+    )
+    razorEndpoints = props.getProperty("multipaxos.endpoints.razor").split(" ").map(e =>
+        val s = e.split(":")
+        (s(0), s(1))
+    )
+    compartmentalizationEndpoints = props.getProperty("multipaxos.endpoints.compartmentalization").split(" ").map(e =>
         val s = e.split(":")
         (s(0), s(1))
     )

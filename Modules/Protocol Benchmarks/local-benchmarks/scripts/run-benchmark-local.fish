@@ -2,20 +2,24 @@
 trap 'kill -INT $(jobs -p)' SIGINT # for cleanup
 
 # variables
-
-if not set -q NUM_NODES
-    set -x NUM_NODES 3
-end
 if not set -q THREADS
     set -x THREADS 50
 end
 
+if not set -q OPERATIONS
+	set OPERATIONS 2000
+end
+
+if not set -q SYSTEM_CONFIG
+    set -x SYSTEM_CONFIG clientServer
+end
+
 if not set -q WORKLOAD
-    set -x WORKLOAD workloadb
+    set -x WORKLOAD writeonly
 end
 
 if not set -q WAITTIME
-    set -x WAITTIME 30
+    set -x WAITTIME 45
 end
 
 if not set -q YCSBJAR
@@ -34,36 +38,15 @@ if not set -q jarspath
 	cd $oldPath
 end
 
-if test "$SYSTEM" = "etcd"
-    echo "Starting etcd cluster..."
-    fish scripts/start-etcd-cluster-local.fish 2> /dev/null &
-else
-
-    echo "Starting PRDT cluster..."
-    fish scripts/start-prdt-cluster-local.fish &
-end
+echo "Starting Multipaxos cluster with $SYSTEM_CONFIG..."
+scripts/start-multipaxos-cluster-local.fish &
 
 echo "Waiting for cluster to initialize..."
 sleep $WAITTIME
 
-echo "Loading workload data..."
-
-if test "$SYSTEM" = "etcd"
-    java -cp "ycsb-core.jar:$jarspath/*" site.ycsb.Client -db probench.ycsbadapters.EtcdAdapter -P benchConfig -P workloads/$WORKLOAD -load
-else
-    java -cp "$YCSBJAR:$jarspath/*" site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P benchConfig -P workloads/$WORKLOAD -load
-end
-
-sleep 5
-
-mkdir -p results/raw/etcd
 mkdir -p results/raw/pb
 
 echo "Starting benchmark..."
-if test "$SYSTEM" = "etcd"
-    java -cp "$YCSBJAR:$jarspath/*" site.ycsb.Client -db probench.ycsbadapters.EtcdAdapter -P benchConfig -P workloads/$WORKLOAD -threads $THREADS | tee results/raw/etcd/(date +%Y-%m-%d-%T)_{$WORKLOAD}_{$NUM_NODES}nodes_{$THREADS}threads-defaulttarget-50000timeout-1batchsize-commitreadsfalse-historyKeepall-localmachine.txt
-else
-    java -cp "$YCSBJAR:$jarspath/*" site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P benchConfig -P workloads/$WORKLOAD -threads $THREADS | tee results/raw/pb/(date +%Y-%m-%d-%T)-{$WORKLOAD}-{$NUM_NODES}nodes-{$THREADS}threads-defaulttarget-50000timeout-1batchsize-commitreadsfalse-historyKeepall-localmachine.txt
-end
+java -cp "$YCSBJAR:$jarspath/*" site.ycsb.Client -db probench.ycsbadapters.MultiPaxosAdapter -P benchConfig -P workloads/$WORKLOAD -p multipaxos.systemconfig=$SYSTEM_CONFIG -p operationcount=$OPERATIONS -threads $THREADS -s | tee results/raw/pb/(date +%Y-%m-%d-%T)-{$WORKLOAD}-{$THREADS}threads-defaulttarget-40000timeout-1batchsize-commitreadsfalse-historyKeepall-knowledgeGroup{$SYSTEM_CONFIG}-localmachine.txt
 
 kill -INT (jobs -p) # cleanup jobs
