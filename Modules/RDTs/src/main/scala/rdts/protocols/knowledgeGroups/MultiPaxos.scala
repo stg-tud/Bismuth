@@ -105,20 +105,20 @@ case class MultiPaxos[A](
 //    val a = both.foldLeft(this){case (acc, (i, v)) => acc.merge(acc.proposeIfLeader(i,v))}
 
   def upkeep(using LocalUid, Participants): MultiPaxos[A] = {
+    val openSlots = slots.keySet -- log.keySet
     // perform upkeep in open rounds
-    val commitIndex = log.keys.maxOption.getOrElse(-1L)
     val paxosDeltas = slots.collect {
       case (index, paxos)
-          if index >= commitIndex + 1 && paxos.currentRound.forall(
+          if openSlots.contains(index) && paxos.currentRound.forall(
             !_.proposals.votes.map(_.voter).contains(replicaId)
           ) => (index, paxos.upkeep())
-    }.filter((i, p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
+    } // .filter((i, p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
     val newPaxosMap = slots.merge(paxosDeltas)
 
     // move decisions to log
-    val newLogEntries = slots.collect {
-      case (index, paxos) if index >= commitIndex + 1 && paxos.decision != Undecided => (index, paxos.result.get)
-    }.toMap
+    val newLogEntries = newPaxosMap.collect {
+      case (index, paxos) if openSlots.contains(index) && paxos.decision != Undecided => (index, paxos.result.get)
+    }
 
     // val requestsDelta = requests.removeAll(newLogEntries.map(_._2))
     // val newState = this.merge(MultiPaxos(slots = newPaxosMap))

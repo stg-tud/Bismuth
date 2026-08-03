@@ -170,12 +170,12 @@ class MultiPaxosReplica(
             log(s"got more than one request with delta. got ${delta.requests.elements.size}")
         val newstate: MultiPaxos[Request] = state.merge(upkept)
         val value                         = delta.requests.elements.head
-        val size                          = newstate.slots.size
+        val slotIndex                     = newstate.slots.keys.maxOption.getOrElse(-1L)
         val slot                          = {
-          if size == 1 && !newstate.slots(0).currentRoundHasProposal then
+          if slotIndex == 0 && !newstate.slots(0).currentRoundHasProposal then
               0
           else
-              size
+              slotIndex + 1
         }
         val proposal = newstate.proposeIfLeader(slot, value)
         if !state.subsumes(proposal) then {

@@ -121,11 +121,14 @@ class MultiPaxosAdapter extends DB {
     try
         val f = MultiPaxosAdapterConnectionPool.multiPaxosReplica.requestWithResult(id, v)
         Await.ready(f, operationTimeout)
+        // println(s"(read/log/slots) ${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.read.size}/${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.log.size}/${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.slots.size}")
         Status.OK
     catch
         case exception: concurrent.TimeoutException =>
-          println(s"failed to write id:$id\n$key\n${valsToString(values)}, log is: ${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.read.map(_.id).toSet.contains(id)}")
-          //exception.printStackTrace()
+          println(
+            s"failed to write id:$id\n$key\n${valsToString(values)}, (read/log/slots) ${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.read.size}/${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.log.size}/${MultiPaxosAdapterConnectionPool.multiPaxosReplica.state.slots.size}"
+          )
+          // exception.printStackTrace()
           Status.ERROR
   }
 
