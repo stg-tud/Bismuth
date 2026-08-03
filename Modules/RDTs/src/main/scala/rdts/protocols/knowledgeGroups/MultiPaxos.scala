@@ -5,6 +5,7 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.Paxos.given
+import rdts.protocols.Util.Agreement.Undecided
 import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
 
@@ -103,24 +104,24 @@ case class MultiPaxos[A](
 //    val both = indices.zip(values)
 //    val a = both.foldLeft(this){case (acc, (i, v)) => acc.merge(acc.proposeIfLeader(i,v))}
 
-
-
-
   def upkeep(using LocalUid, Participants): MultiPaxos[A] = {
     // perform upkeep in open rounds
-    val logSize = log.size.toLong
-    val paxosDeltas = slots.collect{
-      case (index, paxos) if index >= logSize && paxos.currentRound.forall(!_.proposals.votes.map(_.voter).contains(replicaId))=> (index, paxos.upkeep())
-    }.filter((i,p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
+    val commitIndex = log.keys.maxOption.getOrElse(-1L)
+    val paxosDeltas = slots.collect {
+      case (index, paxos)
+          if index >= commitIndex + 1 && paxos.currentRound.forall(
+            !_.proposals.votes.map(_.voter).contains(replicaId)
+          ) => (index, paxos.upkeep())
+    }.filter((i, p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
     val newPaxosMap = slots.merge(paxosDeltas)
 
     // move decisions to log
-    val newLogEntries = NumericRange(log.size.toLong, slots.size.toLong, 1L).view.flatMap(i =>
-      newPaxosMap.get(i).map(p => (i, p))
-    ).takeWhile(_._2.result.isDefined).map((i, p) => (i, p.result.get)) // return log until first undecided round
+    val newLogEntries = slots.collect {
+      case (index, paxos) if index >= commitIndex + 1 && paxos.decision != Undecided => (index, paxos.result.get)
+    }.toMap
 
     // val requestsDelta = requests.removeAll(newLogEntries.map(_._2))
-    //val newState = this.merge(MultiPaxos(slots = newPaxosMap))
+    // val newState = this.merge(MultiPaxos(slots = newPaxosMap))
 
     // propose requests for next slots (if we are the leader)
 //    val afterRequests = newState.slots.get(newState.slots.size - 1) match { // get newest slot
@@ -154,8 +155,8 @@ case class MultiPaxos[A](
     // pack everything together
     MultiPaxos(
       slots = paxosDeltas,
-      log = newLogEntries.toMap,
-    )//.merge(afterRequests)
+      log = newLogEntries,
+    ) // .merge(afterRequests)
   }
 
   def decision(using Participants): Agreement[Seq[A]] = Agreement.Decided(read)

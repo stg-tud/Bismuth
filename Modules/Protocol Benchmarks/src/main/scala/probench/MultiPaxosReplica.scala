@@ -166,15 +166,16 @@ class MultiPaxosReplica(
 
       if id == leader && delta.requests.elements.nonEmpty then {
         // propose new stuff
-        if delta.requests.elements.size > 1 then log(s"got more than one request with delta. got ${delta.requests.elements.size}")
+        if delta.requests.elements.size > 1 then
+            log(s"got more than one request with delta. got ${delta.requests.elements.size}")
         val newstate: MultiPaxos[Request] = state.merge(upkept)
-        val value = delta.requests.elements.head
-        val size = newstate.slots.size
-        val slot = {
+        val value                         = delta.requests.elements.head
+        val size                          = newstate.slots.size
+        val slot                          = {
           if size == 1 && !newstate.slots(0).currentRoundHasProposal then
-            0
+              0
           else
-            size
+              size
         }
         val proposal = newstate.proposeIfLeader(slot, value)
         if !state.subsumes(proposal) then {
@@ -210,7 +211,7 @@ class MultiPaxosReplica(
   def requestWithResult(requestId: Uid, payload: String): Future[String] = {
     currentStateLock.synchronized {
       val delta = state.request(Request(requestId, payload))
-      val p = Promise[String]()
+      val p     = Promise[String]()
 
       promises.synchronized {
         promises.put(requestId, p)
@@ -227,9 +228,9 @@ class MultiPaxosReplica(
       val answers = delta.log.values
       answers.foreach {
         case Request(id, payload) => promises.remove(id) match {
-          case Some(promise) => promise.success(payload): Unit
-          case None          => ()
-        }
+            case Some(promise) => promise.success(payload): Unit
+            case None          => ()
+          }
       }
     }
   }
@@ -252,8 +253,8 @@ class MultiPaxosReplica(
         then
             log(s"sending delta $delta to $uids")
             dataManager.applyDelta(delta)
-        else
-          log(s"no match for $uids with: $delta")
+//        else
+//          log(s"no match for $uids with: $delta")
     }
   }
 
