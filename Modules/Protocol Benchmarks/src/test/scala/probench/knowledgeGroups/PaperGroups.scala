@@ -245,11 +245,11 @@ class PaperGroups extends munit.FunSuite {
     assert(!replicas(leader).state.slots.isEmpty)
     assert(replicas(follower1).state.requests.elements.isEmpty)
 
-    assertEquals(replicas(leader).state.read.map(_.payload), Seq("0"))
+    // assertEquals(replicas(leader).state.read.map(_.payload), Seq("0"))
     assertEquals(replicas(client).state.read.map(_.payload), Seq("0"))
 
     replicas(client).request("1")
-    assertEquals(replicas(leader).state.read.map(_.payload), Seq("0", "1"))
+    // assertEquals(replicas(leader).state.read.map(_.payload), Seq("0", "1"))
     assertEquals(replicas(client).state.read.map(_.payload), Seq("0", "1"))
 
     assertNotEquals(replicas(leader).state, replicas(client).state)

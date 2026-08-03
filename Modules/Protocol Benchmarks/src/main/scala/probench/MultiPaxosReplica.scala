@@ -79,8 +79,8 @@ object KnowledgeGroups {
           )
         )
     ),
-    KnowledgeGroup( // leader proxies log
-      ids = Set(leader, proxy1, proxy2),
+    KnowledgeGroup( // client proxies log
+      ids = Set(client, proxy1, proxy2),
       path = m => MultiPaxos[Request](log = m.log),
       enabled = _ => true
     ),
@@ -102,12 +102,7 @@ object KnowledgeGroups {
       ids = Set(client, leader),
       path = m => MultiPaxos[Request](requests = m.requests),
       enabled = m => m.slots.isEmpty
-    ),
-    KnowledgeGroup( // client leader log
-      ids = Set(client, leader),
-      path = m => MultiPaxos[Request](log = m.log),
-      enabled = _ => true
-    ),
+    )
   ))
 
   val occamsRazor = PrdtSystem[MultiPaxos[Request]](Set(

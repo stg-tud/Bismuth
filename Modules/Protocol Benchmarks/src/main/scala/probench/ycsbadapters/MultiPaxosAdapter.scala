@@ -71,6 +71,11 @@ class MultiPaxosAdapter extends DB {
             println(s"ensuring connection to $ip:$port")
             MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
         )
+    else if multiPaxosReplica.systemConfig == KnowledgeGroups.compartmentalized then
+        endpoints.take(3).foreach((ip, port) =>
+            println(s"ensuring connection to $ip:$port")
+            MultiPaxosAdapterConnectionPool.addConnection(ip, Integer.parseInt(port))
+        )
     else
         val (ip, port) = endpoints.head
         println(s"ensuring connection to $ip:$port")

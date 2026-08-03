@@ -339,18 +339,17 @@ object cli {
                     "0",
                     peerPortVal + 2
                   ))))
-                  // leader proxy1 proxy2
-                  node.dataManagers(Set(
-                    leader,
-                    proxy1,
-                    proxy2
-                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
-                    "0",
-                    peerPortVal + 3
-                  ))))
                 }
                 if uid == Uid.predefined("proxy1") then {
                   println("setting up connections for proxy1")
+                  // proxy1 client
+                  node.dataManagers(Set(
+                    proxy1,
+                    client
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal
+                  ))))
                   // proxy1 follower1 follower3
                   node.dataManagers(Set(
                     proxy1,
@@ -363,6 +362,14 @@ object cli {
                 }
                 if uid == Uid.predefined("proxy2") then {
                   println("setting up connections for proxy2")
+                  // proxy2 client
+                  node.dataManagers(Set(
+                    proxy1,
+                    client
+                  )).addBinaryConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                    "0",
+                    peerPortVal
+                  ))))
                   // proxy2 follower2 follower4
                   node.dataManagers(Set(
                     proxy2,
@@ -376,19 +383,12 @@ object cli {
 
                 println(s"data managers: ${node.dataManagers}")
                 // connect as client to existing server connections
-
                 if uid == Uid.predefined("proxy1") then {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
                     addRetryingLatentConnection(
                       node.dataManagers(Set(leader, proxy1)),
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
-                      1000,
-                      10
-                    )
-                    addRetryingLatentConnection(
-                      node.dataManagers(Set(leader, proxy1, proxy2)),
-                      nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 2))),
                       1000,
                       10
                     )
@@ -400,12 +400,6 @@ object cli {
                     addRetryingLatentConnection(
                       node.dataManagers(Set(leader, proxy2)),
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
-                      1000,
-                      10
-                    )
-                    addRetryingLatentConnection(
-                      node.dataManagers(Set(leader, proxy1, proxy2)),
-                      nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 2))),
                       1000,
                       10
                     )
