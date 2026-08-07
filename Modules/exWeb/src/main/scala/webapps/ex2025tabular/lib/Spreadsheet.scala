@@ -100,10 +100,10 @@ case class Spreadsheet[A](
     val newContent =
       rowAndColIdPairToContent.transform(rowId, colId) {
         value match
-          case None =>
+            case None =>
               case None      => None
               case Some(set) => Some(set.clear())
-          case Some(v) =>
+            case Some(v) =>
               case None      => Some(ReplicatedSet.empty.add(v))
               case Some(set) =>
                 var delta = set.add(v)

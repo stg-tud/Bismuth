@@ -603,13 +603,11 @@ case class TreeViewNode[A](value: A, children: Set[TreeViewNode[A]]) {
     Assertions.assertEquals(childValues, expected)
   }
 
-  inline def assertValue(expected: A) = {
+  inline def assertValue(expected: A) =
     Assertions.assertEquals(value, expected)
-  }
 
-  inline def child(value: A): TreeViewNode[A] = {
+  inline def child(value: A): TreeViewNode[A] =
     children.find(_.value == value).getOrElse(throw new NoSuchElementException(s"Child with value $value not found"))
-  }
 }
 
 def treeView[A](tree: ReplicatedTree[LWW[A]]): TreeViewNode[A] = {

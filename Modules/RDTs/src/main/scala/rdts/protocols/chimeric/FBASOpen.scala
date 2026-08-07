@@ -22,12 +22,12 @@ object FBASOpen:
       powerSet(config.keySet).filter(voters => isQuorumReached(config, voters))
 
     def hasQuorumIntersection(config: QuorumConfig): Boolean =
-      val qs = quorums(config).toVector
-      qs.indices.forall { i =>
-        ((i + 1) until qs.length).forall { j =>
-          qs(i).intersect(qs(j)).nonEmpty
+        val qs = quorums(config).toVector
+        qs.indices.forall { i =>
+          ((i + 1) until qs.length).forall { j =>
+            qs(i).intersect(qs(j)).nonEmpty
+          }
         }
-      }
 
     def isSafeTransition(
         oldConfig: QuorumConfig,

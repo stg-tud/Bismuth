@@ -132,7 +132,7 @@ object SpreadsheetComponent {
 
     private def commitEdit(): Callback = {
       withEditAndProps { (coordinate, content, _) =>
-        val value = content.trim
+        val value    = content.trim
         val optValue = if value.isBlank then None else Some(value)
         modSpreadsheet(_.editCell(coordinate, optValue))
       } >> concludeEdit(successful = true)

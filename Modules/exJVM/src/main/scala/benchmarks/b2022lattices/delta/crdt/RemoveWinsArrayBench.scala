@@ -26,9 +26,8 @@ class RemoveWinsArrayBench {
   given intLattice: Lattice[Int] = math.max
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     sut = NamedDeltaBuffer("a".asId, RemoveWinsArray.empty[Int]).mod(_.appendAll(0 until listSize)(using "".asId))
-  }
 
   @Benchmark
   def readFirst(): Option[Int] = sut.state.read(0)

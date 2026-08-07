@@ -67,8 +67,8 @@ class UndoRecordingSpreadsheet[S](
       val previousValues = delegate.read(coordinate).toList
       pushUndo { s =>
         val removeNewValueDelta = value match
-          case None    => Spreadsheet.empty[S]
-          case Some(v) => s.internal.removeValueFromConflict(rowIdOpt.get, colIdOpt.get, v)
+            case None    => Spreadsheet.empty[S]
+            case Some(v) => s.internal.removeValueFromConflict(rowIdOpt.get, colIdOpt.get, v)
 
         previousValues.foldLeft(removeNewValueDelta) { (accDelta, previousValue) =>
           accDelta.merge(s.editCellById(rowIdOpt.get, colIdOpt.get, Some(previousValue), solveSeenConflict = false))
