@@ -23,14 +23,13 @@ class MVRegisterBench {
   var reg: NamedDeltaBuffer[MultiVersionRegister[Int]] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     reg = (0 until numWrites).foldLeft(NamedDeltaBuffer("-1".asId, MultiVersionRegister.empty[Int])) {
       case (r, i) =>
         given rid: LocalUid = i.toString.asId
         val delta           = MultiVersionRegister.empty[Int].write(i)
         r.applyDelta(rid.uid, delta)
     }
-  }
 
   @Benchmark
   def read(): Set[Int] = reg.state.read

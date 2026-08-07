@@ -50,13 +50,12 @@ class DeltaMergeBench {
     Lattice.diff(fullState, plusOneState)
 
   @Benchmark
-  def deltaMerge: ReplicatedList[Long] = {
+  def deltaMerge: ReplicatedList[Long] =
     Lattice.diff(fullState, plusOneDeltaState) match {
       case Some(stateDiff) =>
         Lattice.merge(fullState, stateDiff)
       case None => fullState
     }
-  }
 
   @Benchmark
   def deltaMergeNoDiff: ReplicatedList[Long] =

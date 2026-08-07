@@ -70,17 +70,16 @@ trait Event[+T] extends MacroAccess[Option[T]] with Disconnectable {
     * Only propagates the left event if both fire.
     * @group operator
     */
-  final def ||[U >: T](other: Event[U])(using ticket: CreationTicket[State]): Event[U] = {
+  final def ||[U >: T](other: Event[U])(using ticket: CreationTicket[State]): Event[U] =
     Event.Impl.staticNamed(s"(or $this $other)", this, other) { st =>
       val tp = st.collectStatic(this)
       if tp.access.isChange then tp.access else st.collectStatic(other).access
     }
-  }
 
   /** Propagates the event only when the other event `exception` does not fire.
     * @group operator
     */
-  final def except(exception: Event[Any])(using ticket: CreationTicket[State]): Event[T] = {
+  final def except(exception: Event[Any])(using ticket: CreationTicket[State]): Event[T] =
     Event.Impl.staticNamed(s"(except $this  $exception)", this, exception) { st =>
       st.collectStatic(exception) match {
         case NoChange            => st.collectStatic(this).access
@@ -88,7 +87,6 @@ trait Event[+T] extends MacroAccess[Option[T]] with Disconnectable {
         case ex @ Exceptional(_) => ex
       }
     }
-  }
 
   /** Flattens the inner value.
     * @group operator
@@ -133,14 +131,13 @@ trait Event[+T] extends MacroAccess[Option[T]] with Disconnectable {
     * list increases in size up to when n values are available
     * @group conversion
     */
-  final def list[A >: T](n: Int)(using ticket: CreationTicket[State]): Signal[LinearSeq[A]] = {
+  final def list[A >: T](n: Int)(using ticket: CreationTicket[State]): Signal[LinearSeq[A]] =
     if n < 0 then throw new IllegalArgumentException("length must be positive")
     else if n == 0 then Var(Nil)
     else
         fold(Queue[A]()) { (queue: Queue[A], v: T) =>
           if queue.lengthCompare(n) >= 0 then queue.tail.enqueue(v) else queue.enqueue(v)
         }
-  }
 
   /** collects events resulting in a variable holding a list of all values.
     * @group conversion
@@ -259,7 +256,7 @@ object Event {
         dependencies: ReSource.of[State]*
     )(expr: StaticTicket[State] => Pulse[T])(using
         ticket: CreationTicket[State]
-    ): Event[T] = {
+    ): Event[T] =
       ticket.scope.create[Pulse[T], EventImpl[T] & Event[T]](
         dependencies.toSet,
         Pulse.NoChange,
@@ -267,7 +264,6 @@ object Event {
       ) {
         state => new EventImpl(state, expr, ticket.info.derive(name), None) with Event[T]
       }
-    }
 
     /** Creates static events */
     def static[T](dependencies: ReSource.of[State]*)(expr: StaticTicket[State] => Option[T])(using

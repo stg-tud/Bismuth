@@ -289,14 +289,13 @@ class LikelihoodState {
   /*
     returns all known neighbours for a destination in a set, sorted by delivery-likelihood, with the best neighbour (highest score) first
    */
-  def get_sorted_neighbours(destination_node: Endpoint): Set[Endpoint] = {
+  def get_sorted_neighbours(destination_node: Endpoint): Set[Endpoint] =
     map
       .getOrDefault(destination_node, Map())
       .toList
       .sortBy(-_._2)
       .map(_._1)
       .toSet
-  }
 }
 
 class DotState {
@@ -315,7 +314,7 @@ class DotState {
   /*
     finds all nodes for which this nodes' dots are bigger than the other nodes' dots
    */
-  def getDestinationNodeEndpoints(node_endpoint: Endpoint, rdt_id: String, dots: Dots): Set[Endpoint] = {
+  def getDestinationNodeEndpoints(node_endpoint: Endpoint, rdt_id: String, dots: Dots): Set[Endpoint] =
     map.get(rdt_id) match
         case null                                       => Set()
         case rdt_map: ConcurrentHashMap[Endpoint, Dots] =>
@@ -323,12 +322,11 @@ class DotState {
             .filter((n: Endpoint, d: Dots) => !n.equals(node_endpoint) && !(dots <= d))
             .collect[Endpoint]((n: Endpoint, d: Dots) => n)
             .toSet
-  }
 
   /*
     return all neighbours for which the provided dots are not already known to them
    */
-  def filterNeighbourNodes(neighbour_node_endpoints: Set[Endpoint], rdt_id: String, dots: Dots): Set[Endpoint] = {
+  def filterNeighbourNodes(neighbour_node_endpoints: Set[Endpoint], rdt_id: String, dots: Dots): Set[Endpoint] =
     neighbour_node_endpoints.filter { endpoint =>
       val d = map.get(rdt_id) match
           case null                                        => Dots.empty
@@ -336,12 +334,11 @@ class DotState {
 
       !(dots <= d) || dots.isEmpty
     }
-  }
 
   /*
     return all peers for which the provided dots are not already known to them
    */
-  def filterPeers(peers: Iterable[DtnPeer], rdt_id: String, dots: Dots): Iterable[DtnPeer] = {
+  def filterPeers(peers: Iterable[DtnPeer], rdt_id: String, dots: Dots): Iterable[DtnPeer] =
     peers.filter { peer =>
       val d = map.get(rdt_id) match
           case null                                        => Dots.empty
@@ -349,5 +346,4 @@ class DotState {
 
       !(dots <= d) || dots.isEmpty
     }
-  }
 }

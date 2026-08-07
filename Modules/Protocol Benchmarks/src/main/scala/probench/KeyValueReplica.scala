@@ -123,13 +123,12 @@ class KeyValueReplica(
     }
 
     /** propose myself as leader if I have the lowest id */
-    def maybeLeaderElection(peers: Set[Uid]): Unit = {
+    def maybeLeaderElection(peers: Set[Uid]): Unit =
       peers.minOption match
           case Some(id) if id == uid =>
             log(s"Proposing election of $uid")
             publish(state.startLeaderElection): Unit
           case _ => ()
-    }
 
     def maybeProposeNewValue()(using LocalUid): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
@@ -163,7 +162,7 @@ class KeyValueReplica(
           s"$key=$value; OK"
       }
 
-    def maybeAnswerClientFromCache(): Unit = {
+    def maybeAnswerClientFromCache(): Unit =
       // check if we are the leader and have a heartbeat quorum
       if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
             timeoutThreshold,
@@ -182,7 +181,6 @@ class KeyValueReplica(
               case None => ()
             }
       }
-    }
 
     private def maybeAnswerClientFromLog(previousRound: Time, state: ClusterState): Unit = {
       log(s"log(${state.log.size}): ${state.log}")
@@ -229,7 +227,7 @@ class KeyValueReplica(
         Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
 
-    def handleIncomingWrite(delta: ClientCommWrite): Unit = {
+    def handleIncomingWrite(delta: ClientCommWrite): Unit =
       delta match {
         case req @ ClientCommWrite.WriteReq(id, kvOperation) =>
           writeQueue.add((System.currentTimeMillis(), req))
@@ -243,9 +241,8 @@ class KeyValueReplica(
             }: Unit
           )
       }
-    }
 
-    def handleIncomingRead(delta: ClientCommRead): Unit = {
+    def handleIncomingRead(delta: ClientCommRead): Unit =
       delta match {
         case req @ ClientCommRead.ReadReq(id, kvOperation) =>
           readQueue.add((System.currentTimeMillis(), req))
@@ -259,7 +256,6 @@ class KeyValueReplica(
             }: Unit
           )
       }
-    }
 
     def publishWrite(delta: ClientCommWrite.WriteRes): Unit =
       dataManagerWrite.broadcast(delta)

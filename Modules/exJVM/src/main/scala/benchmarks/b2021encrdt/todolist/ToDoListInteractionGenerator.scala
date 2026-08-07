@@ -9,7 +9,7 @@ class ToDoListInteractionGenerator(pruningCompletedToDoThreshold: Int = 50, numK
     val random = new Random(42)
     val state  = new GeneratorState(random, 70, 140)
 
-    0 until numberInteractions map (_ => {
+    0 until numberInteractions map (_ =>
       if state.numberOfCurrentlyCompletedEntries >= pruningCompletedToDoThreshold then { // Pruning
         RemoveToDoItems(state.pruneTodos(state.numberOfCurrentlyCompletedEntries - numKeptCompletedToDos))
       } else { // Normal Interactions
@@ -26,7 +26,7 @@ class ToDoListInteractionGenerator(pruningCompletedToDoThreshold: Int = 50, numK
         }
         chosenInteraction.get
       }
-    })
+    )
   }
 }
 
@@ -62,7 +62,7 @@ private class GeneratorState(random: Random, val textLengthMin: Int, val textLen
     AddToDoItem(entryUuid, entry)
   }
 
-  def pruneTodos(numberOfPrunedToDos: Int): Seq[UUID] = {
+  def pruneTodos(numberOfPrunedToDos: Int): Seq[UUID] =
     if numberOfPrunedToDos > completedEntries.size then {
       throw new IllegalArgumentException(
         s"Cannot prune $numberOfPrunedToDos todos, since only ${completedEntries.size} are completed"
@@ -70,5 +70,4 @@ private class GeneratorState(random: Random, val textLengthMin: Int, val textLen
     } else {
       (1 to numberOfPrunedToDos).map(_ => completedEntries.removeHead(false))
     }
-  }
 }

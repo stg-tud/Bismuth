@@ -15,12 +15,11 @@ trait DynamicScope[State[_]] {
 class DynamicScopeImpl[State[_], Tx <: Transaction[State]](val scheduler: SchedulerWithDynamicScope[State, Tx])
     extends DynamicScope[State] {
 
-  final private[reactives] def dynamicTransaction[T](f: Transaction[State] ?=> T): T = {
+  final private[reactives] def dynamicTransaction[T](f: Transaction[State] ?=> T): T =
     _currentTransaction.value match {
       case Some(transaction) => f(using transaction)
       case None              => scheduler.forceNewTransaction(Set.empty, ticket => f(using ticket.tx))
     }
-  }
 
   final protected val _currentTransaction: DynamicVariable[Option[Tx]] =
     new DynamicVariable[Option[Tx]](None)

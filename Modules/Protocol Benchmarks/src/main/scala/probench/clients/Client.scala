@@ -122,12 +122,11 @@ trait Client(name: Uid, logTimings: Boolean) {
 
     val warmupStart = System.currentTimeMillis()
 
-    while (System.currentTimeMillis() - warmupStart) < warmup * 1000 do {
-      mode match
-          case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
-          case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
-          case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
-    }
+    while (System.currentTimeMillis() - warmupStart) < warmup * 1000 do
+        mode match
+            case BenchmarkOpType.Read  => randomMultiGet("key%n", blockSize, min, max)
+            case BenchmarkOpType.Write => randomMultiPut("key%n", "value%n", blockSize, min, max)
+            case BenchmarkOpType.Mixed => mixed(blockSize, min, max)
 
     println("Measurement")
 

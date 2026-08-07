@@ -102,7 +102,7 @@ object Decompose {
           else btm.asInstanceOf[Bottom[Any]].isEmpty(a)
 
       extension (a: T)
-          override def decomposed: Iterable[T] = {
+          override def decomposed: Iterable[T] =
             // Singleton types (product arity == 0) would return an empty iterable if not handled explicitly.
             // That would be “fine” with regards to the guarantees of decompose, but is slightly less useful in cases where the singleton type does not have a bottom instance defined.
             if lattices.productArity == 0 then Iterable(a)
@@ -117,7 +117,6 @@ object Decompose {
                     })
                   }
                 }
-          }
 
     }
   }

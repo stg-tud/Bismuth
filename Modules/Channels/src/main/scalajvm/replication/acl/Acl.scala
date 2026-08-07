@@ -12,7 +12,7 @@ case class Acl(
 )
 
 object Acl {
-  given aclLattice: Lattice[Acl] = {
+  given aclLattice: Lattice[Acl] =
     DecoratedLattice.filter(Lattice.derived[Acl])((base, other) =>
       if other.removed.isEmpty then base
       else
@@ -22,7 +22,6 @@ object Acl {
             admins = base.admins.removedAll(other.removed)
           )
     )
-  }
 
   given aclBottom: Bottom[Acl] = Bottom.derived
 }

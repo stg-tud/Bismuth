@@ -39,12 +39,11 @@ class DetailPageEntityRow[T <: Entity[T]](
 ) extends EntityRow[T](title, repository, value, uiAttributes) {
 
   override protected val editLabel: String    = "Extend"
-  override protected def startEditing(): Unit = {
+  override protected def startEditing(): Unit =
     value match {
       case Existing(value, editingValue) => jsImplicits.routing.to(ExtendContractPage(value.id))
       case New(value)                    =>
     }
-  }
 }
 
 class DetailPageEntityRowBuilder[T <: Entity[T]] extends EntityRowBuilder[T] {
@@ -84,7 +83,7 @@ class ContractPageAttributes(using
     jsImplicits: JSImplicits,
 ) {
 
-  def contractAssociatedHiwi: UIAttribute[Contract, String] = {
+  def contractAssociatedHiwi: UIAttribute[Contract, String] =
     BuildUIAttribute()
       .select(
         Signal {
@@ -100,9 +99,8 @@ class ContractPageAttributes(using
         _.contractAssociatedHiwi,
         (p, a) => p.copy(contractAssociatedHiwi = a),
       )
-  }
 
-  def contractAssociatedProject: UIAttribute[Contract, String] = {
+  def contractAssociatedProject: UIAttribute[Contract, String] =
     BuildUIAttribute()
       .select(options = Signal {
         jsImplicits.repositories.projects.existing.value.map(value =>
@@ -116,9 +114,8 @@ class ContractPageAttributes(using
         _.contractAssociatedProject,
         (p, a) => p.copy(contractAssociatedProject = a),
       )
-  }
 
-  def contractAssociatedSupervisor: UIAttribute[Contract, String] = {
+  def contractAssociatedSupervisor: UIAttribute[Contract, String] =
     BuildUIAttribute()
       .select(
         Signal {
@@ -134,9 +131,8 @@ class ContractPageAttributes(using
         _.contractAssociatedSupervisor,
         (p, a) => p.copy(contractAssociatedSupervisor = a),
       )
-  }
 
-  def contractAssociatedType: UIAttribute[Contract, String] = {
+  def contractAssociatedType: UIAttribute[Contract, String] =
     BuildUIAttribute()
       .select(
         Signal {
@@ -152,7 +148,6 @@ class ContractPageAttributes(using
         _.contractType,
         (p, a) => p.copy(contractType = a),
       )
-  }
 
   def contractStartDate: UIAttribute[Contract, Long] = BuildUIAttribute().date
     .withLabel("Start")
@@ -228,7 +223,7 @@ class ContractPageAttributes(using
       (h, a) => h.copy(isSubmitted = a),
     )
 
-  def contractAssociatedPaymentLevel: UIAttribute[Contract, String] = {
+  def contractAssociatedPaymentLevel: UIAttribute[Contract, String] =
     BuildUIAttribute()
       .select(
         Signal {
@@ -244,7 +239,6 @@ class ContractPageAttributes(using
         _.contractAssociatedPaymentLevel,
         (p, a) => p.copy(contractAssociatedPaymentLevel = a),
       )
-  }
 
   def requiredDocuments: UIAttribute[Contract, Seq[String]] = {
     BuildUIAttribute()
@@ -336,12 +330,11 @@ class ContractPageAttributes(using
         .headOption
     }
 
-  def getTotalHours(id: String, contract: Contract): Int = {
+  def getTotalHours(id: String, contract: Contract): Int =
     contract.contractHoursPerMonth.getOrElse(0) * dateDiffMonth(
       contract.contractStartDate.getOrElse(0L),
       contract.contractEndDate.getOrElse(0L),
     )
-  }
 
   def getMoneyPerHour(id: String, contract: Contract, date: Long): Signal[BigDecimal] =
     Signal.dynamic {

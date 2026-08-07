@@ -33,7 +33,7 @@ class AclAntiEntropy(
     if latestHeads == heads then Some(acl) else None
   }
 
-  def receiveDeltas(deltas: Seq[BftDelta[Acl]], from: PublicIdentity): Unit = {
+  def receiveDeltas(deltas: Seq[BftDelta[Acl]], from: PublicIdentity): Unit =
     synchronized {
       var cumulativeDelta = Bottom[Acl].empty
       var changed         = true
@@ -44,7 +44,7 @@ class AclAntiEntropy(
       while changed do {
         changed = false
         toApply = toApply.filter { (hash, delta) =>
-          try {
+          try
             aclRdt.receiveWithComputedHash(hash, delta, hashDag) match {
               case Left(missingForDelta) =>
                 newMissing = newMissing union missingForDelta
@@ -56,7 +56,7 @@ class AclAntiEntropy(
                 currentAclRef.updateAndGet { case (_, acl) => (hashDag.heads, acl.merge(delta.state)) }
                 false // Remove applied delta from queue
             }
-          } catch {
+          catch {
             case e: IllegalArgumentException =>
               System.err.println(s"Illegal delta: $delta")
               false // Remove illegal delta
@@ -73,7 +73,6 @@ class AclAntiEntropy(
 
       if changed then onAclChanged(cumulativeDelta)
     }
-  }
 
   def updatePeerAclKnowledge(remoteHeads: Set[Hash], remote: PublicIdentity): Unit = {
     if remoteHeads == hashDag.heads then return

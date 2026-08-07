@@ -17,9 +17,8 @@ object JFXAdapter {
     def toProperty: StringProperty = {
       val p = StringProperty(s.now)
       s.observe(
-        { v =>
-          Platform.runLater(p.update(v))
-        },
+        v =>
+          Platform.runLater(p.update(v)),
         fireImmediately = false
       )
       p
@@ -30,9 +29,8 @@ object JFXAdapter {
     def toProperty: DoubleProperty = {
       val p = DoubleProperty(s.now)
       s.observe(
-        { v =>
-          Platform.runLater(p.update(v))
-        },
+        v =>
+          Platform.runLater(p.update(v)),
         fireImmediately = false
       )
       p
@@ -43,9 +41,8 @@ object JFXAdapter {
     def toProperty: BooleanProperty = {
       val p = BooleanProperty(s.now)
       s.observe(
-        { v =>
-          Platform.runLater(p.update(v))
-        },
+        v =>
+          Platform.runLater(p.update(v)),
         fireImmediately = false
       )
       p

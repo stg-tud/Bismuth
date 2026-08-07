@@ -52,12 +52,11 @@ class ReplicaOfSignedDeltaRdt[State](
       affectedUser: PublicIdentity,
       readPermission: PermissionTree,
       writePermission: PermissionTree
-  ): Unit = {
+  ): Unit =
     sync.delegatePermission(
       if readPermission.isEmpty then Map.empty else Map(affectedUser -> readPermission),
       if writePermission.isEmpty then Map.empty else Map(affectedUser -> writePermission),
     )
-  }
 
   override def start(): Unit = sync.start()
 

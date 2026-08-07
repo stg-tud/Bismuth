@@ -23,7 +23,7 @@ class ThreadedSyncBenchmark {
   Network.startChannel("replica2")
 
   @Setup(Level.Trial)
-  def setup(): Unit = {
+  def setup(): Unit =
 
     for i <- 0 to 10 do
         val r = Random().nextDouble()
@@ -36,7 +36,6 @@ class ThreadedSyncBenchmark {
                 replica1 = replica1.merge(replica1.add(i.toString))
             else
                 replica2 = replica2.merge(replica2.add(i.toString))
-  }
 
   @Benchmark
   def sync(): Unit = {

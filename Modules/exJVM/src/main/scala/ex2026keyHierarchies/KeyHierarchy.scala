@@ -33,7 +33,7 @@ class FullKeyHierarchy(private val kdk: KeyDerivationKey) extends KeyHierarchy {
       kdk: KeyDerivationKey,
       dot: Dot,
       isolatedDeltaParts: IsolatedDeltaParts
-  ): EncryptedDeltaParts = {
+  ): EncryptedDeltaParts =
     isolatedDeltaParts match
         case IsolatedDeltaParts(serializedValue: Array[Byte]) =>
           // We don't have any associated data that needs to be authenticated...
@@ -45,7 +45,6 @@ class FullKeyHierarchy(private val kdk: KeyDerivationKey) extends KeyHierarchy {
               pathElement -> encryptDeltaRec(kdk.childKeyDerivationKey(pathElement), dot, suffixParts)
             ).filterNot(_._2.isEmpty) // Just in case there are paths that lead to nowhere in Map
           )
-  }
 
   override def decryptDelta(dot: Dot, encryptedDeltaParts: EncryptedDeltaParts): IsolatedDeltaParts =
     decryptDeltaRec(kdk, dot, encryptedDeltaParts)
@@ -54,7 +53,7 @@ class FullKeyHierarchy(private val kdk: KeyDerivationKey) extends KeyHierarchy {
       kdk: KeyDerivationKey,
       dot: Dot,
       encryptedDeltaParts: EncryptedDeltaParts
-  ): IsolatedDeltaParts = {
+  ): IsolatedDeltaParts =
     encryptedDeltaParts match
         case EncryptedDeltaParts(ciphertext: Array[Byte]) =>
           IsolatedDeltaParts(ChaCha20Poly1305(kdk.encryptionKey(dot)).decrypt(ciphertext, Array.empty))
@@ -64,17 +63,15 @@ class FullKeyHierarchy(private val kdk: KeyDerivationKey) extends KeyHierarchy {
               pathElement -> decryptDeltaRec(kdk.childKeyDerivationKey(pathElement), dot, suffixParts)
             ).filterNot(_._2.isEmpty) // Just in case there are paths that lead to nowhere in Map
           )
-  }
 }
 
 class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
-  override def pathKey(path: Array[String]): Option[KeyDerivationKey] = {
+  override def pathKey(path: Array[String]): Option[KeyDerivationKey] =
     keys.lookup(path) match
         case Some(kdkPrefix -> kdk) =>
           val remainingPath = path.drop(kdkPrefix.length)
           Some(kdk.recursiveChildKeyDerivationKey(remainingPath))
         case None => None
-  }
 
   override def withKeys(other: KeyHierarchy): KeyHierarchy =
     other match
@@ -88,7 +85,7 @@ class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
       keyMap: KeyMap,
       dot: Dot,
       isolatedDeltaParts: IsolatedDeltaParts
-  ): EncryptedDeltaParts = {
+  ): EncryptedDeltaParts =
     isolatedDeltaParts match
         case IsolatedDeltaParts(serializedValue: Array[Byte]) =>
           EncryptedDeltaParts.empty // Can't derive key to encrypt
@@ -105,7 +102,6 @@ class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
                   case (None, _)                             => None // Can't derive key to encrypt
             }
           )
-  }
 
   override def decryptDelta(dot: Dot, encryptedDeltaParts: EncryptedDeltaParts): IsolatedDeltaParts =
     decryptDeltaRec(keys, dot, encryptedDeltaParts)
@@ -114,7 +110,7 @@ class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
       keyMap: KeyMap,
       dot: Dot,
       encryptedDeltaParts: EncryptedDeltaParts
-  ): IsolatedDeltaParts = {
+  ): IsolatedDeltaParts =
     encryptedDeltaParts match
         case EncryptedDeltaParts(ciphertext: Array[Byte]) => IsolatedDeltaParts.empty // Can't derive key to decrypt
         case EncryptedDeltaParts(children: Map[String, EncryptedDeltaParts]) => IsolatedDeltaParts(
@@ -130,7 +126,6 @@ class PartialKeyHierarchy(private val keys: KeyMap) extends KeyHierarchy {
                   case (None, _)                             => None // Can't derive key to decrypt
             }
           )
-  }
 }
 
 private case class KeyMap(inner: Map[String, KeyMap | KeyDerivationKey]) {
@@ -138,14 +133,13 @@ private case class KeyMap(inner: Map[String, KeyMap | KeyDerivationKey]) {
     lookupRec(path, 0)
 
   @tailrec
-  private def lookupRec(path: Array[String], index: Int): Option[(Array[String], KeyDerivationKey)] = {
+  private def lookupRec(path: Array[String], index: Int): Option[(Array[String], KeyDerivationKey)] =
     if index >= path.length then None
     else
         inner.get(path(index)) match
             case Some(keyMap: KeyMap)        => keyMap.lookupRec(path, index + 1)
             case Some(kdk: KeyDerivationKey) => Some(path.take(index + 1), kdk)
             case None                        => None
-  }
 
   def merge(other: KeyMap): KeyMap = KeyMap(
     other.inner.foldLeft(inner) {

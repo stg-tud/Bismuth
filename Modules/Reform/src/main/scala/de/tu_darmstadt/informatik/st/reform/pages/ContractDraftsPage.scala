@@ -39,12 +39,11 @@ class DraftDetailPageEntityRow[T <: Entity[T]](
     lattice: Lattice[T],
     jsImplicits: JSImplicits,
 ) extends EntityRow[T](title, repository, value, uiAttributes) {
-  override protected def startEditing(): Unit = {
+  override protected def startEditing(): Unit =
     value match {
       case Existing(value, editingValue) => jsImplicits.routing.to(EditContractsPage(value.id))
       case New(value)                    =>
     }
-  }
 }
 
 class DraftDetailPageEntityRowBuilder[T <: Entity[T]] extends EntityRowBuilder[T] {

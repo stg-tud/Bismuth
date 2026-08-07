@@ -102,12 +102,11 @@ case class Paxos[A](
 
   // This is a helper function that allows calling phase2a without a parameter.
   // In this case myValue has to be known from context, otherwise this does nothing.
-  def phase2a(using LocalUid, Participants): Paxos[A] = {
+  def phase2a(using LocalUid, Participants): Paxos[A] =
     // try to determine my process' value
     precondition(myValue.nonEmpty) {
       phase2a(myValue.get)
     }
-  }
 
   def phase2b(using LocalUid): Paxos[A] =
     // accept proposed value

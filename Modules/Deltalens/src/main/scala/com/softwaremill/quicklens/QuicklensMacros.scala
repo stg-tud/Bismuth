@@ -72,7 +72,7 @@ object QuicklensMacros {
       case Node(children: Seq[(PathSymbol, Seq[PathTree])])
 
       /** adds some path to the current tree */
-      def add(symbols: Seq[PathSymbol]): PathTree = {
+      def add(symbols: Seq[PathSymbol]): PathTree =
         this match
             case PathTree.Empty          => symbols.toPathTree
             case PathTree.Node(children) =>
@@ -104,7 +104,6 @@ object QuicklensMacros {
                             case c => c
                           }
                     }
-      }
     }
 
     object PathTree:
@@ -126,7 +125,7 @@ object QuicklensMacros {
           case _ => false
     }
 
-    def toPath(tree: Tree, focus: Expr[S => A]): Seq[PathSymbol] = {
+    def toPath(tree: Tree, focus: Expr[S => A]): Seq[PathSymbol] =
       tree match {
 
         /** Field access */
@@ -155,7 +154,6 @@ object QuicklensMacros {
         case _ =>
           report.errorAndAbort(unsupportedShapeInfo(focus.asTerm))
       }
-    }
 
     extension (tpe: TypeRepr) {
       def poorMansLUB: TypeRepr = tpe match {
@@ -176,12 +174,11 @@ object QuicklensMacros {
       }
     }
 
-    def symbolMethodByNameUnsafe(sym: Symbol, name: String): Symbol = {
+    def symbolMethodByNameUnsafe(sym: Symbol, name: String): Symbol =
       sym
         .methodMember(name)
         .headOption
         .getOrElse(report.errorAndAbort(noSuchMember(sym.name, name)))
-    }
 
     def termMethodByNameUnsafe(term: Term, name: String): Symbol =
       symbolMethodByNameUnsafe(term.tpe.widenAll.typeSymbol, name)
@@ -197,10 +194,9 @@ object QuicklensMacros {
     def isProduct(sym: Symbol): Boolean =
       sym.flags.is(Flags.Case)
 
-    def isSum(sym: Symbol): Boolean = {
+    def isSum(sym: Symbol): Boolean =
       sym.flags.is(Flags.Enum) ||
-      (sym.flags.is(Flags.Sealed) && (sym.flags.is(Flags.Trait) || sym.flags.is(Flags.Abstract)))
-    }
+        (sym.flags.is(Flags.Sealed) && (sym.flags.is(Flags.Trait) || sym.flags.is(Flags.Abstract)))
 
     def caseClassCopy(
         owner: Symbol,
@@ -212,7 +208,7 @@ object QuicklensMacros {
       if isProduct(objSymbol) then {
         val copy = symbolMethodByNameUnsafe(objSymbol, "copy")
 
-        val bottom = {
+        val bottom =
           if !produceDelta
           then obj
           else
@@ -224,7 +220,6 @@ object QuicklensMacros {
                         )
                       }.empty
                     }.asTerm
-        }
 
         val argsMap: Map[Int, Term] = fields.map { (field, trees) =>
           val (fieldMethod, idx) = termAccessorMethodByNameUnsafe(obj, field.name)

@@ -195,7 +195,7 @@ class DotState2 {
   /*
     return all peers for which the provided dots are not already known to them
    */
-  def filterPeers(peers: Iterable[DtnPeer], rdt_id: String, dots: Dots): Iterable[DtnPeer] = {
+  def filterPeers(peers: Iterable[DtnPeer], rdt_id: String, dots: Dots): Iterable[DtnPeer] =
     peers.filter { peer =>
       val d = map.get(rdt_id) match
           case null                                        => Dots.empty
@@ -203,5 +203,4 @@ class DotState2 {
 
       !(dots <= d) || dots.isEmpty
     }
-  }
 }

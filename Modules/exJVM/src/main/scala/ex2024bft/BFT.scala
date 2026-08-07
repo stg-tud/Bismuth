@@ -87,10 +87,9 @@ case class BFT[V](deltas: Set[BFTDelta[V]]) {
     def addToGraph(from: Option[Hash], to: BFTDelta[V]) =
       reverseGraph.updateWith(from)(_.fold(Some(Set(to)))(it => Some(it + to)))
 
-    for delta <- deltas do {
-      if delta.predecessors.isEmpty then addToGraph(None, delta)
-      else for hash <- delta.predecessors do addToGraph(Some(hash), delta)
-    }
+    for delta <- deltas do
+        if delta.predecessors.isEmpty then addToGraph(None, delta)
+        else for hash <- delta.predecessors do addToGraph(Some(hash), delta)
 
     reverseGraph.toMap
   }

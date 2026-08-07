@@ -208,13 +208,12 @@ class SignalMacro extends FunSuite {
       def wantsTicket(using
           ct: CreationTicket[State],
           ct2: CreationTicket[State]
-      ): (Boolean, Boolean, Boolean) = {
+      ): (Boolean, Boolean, Boolean) =
         (
           ct.scope == ct2.scope,
           ct.scope.isInstanceOf[CreationScope.StaticCreationScope[State]],
           ct2.scope.isInstanceOf[CreationScope.StaticCreationScope[State]]
         )
-      }
 
       val s = Signal { wantsTicket }
 

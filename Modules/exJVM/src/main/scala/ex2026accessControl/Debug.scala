@@ -22,10 +22,9 @@ object Debug {
 
   def shorten(uid: Uid): String = "🪪" + uid.delegate.substring(0, 2)
 
-  def shorten(acl: Acl): String = {
+  def shorten(acl: Acl): String =
     "r=" + acl.read.map((id, perm) => s"${shorten(id)}->$perm").mkString("{", ",", "}") +
-    "|w=" + acl.write.map((id, perm) => s"${shorten(id)}->$perm").mkString("{", ",", "}")
-  }
+      "|w=" + acl.write.map((id, perm) => s"${shorten(id)}->$perm").mkString("{", ",", "}")
 
   def shorten(aclDeltas: Seq[BftDelta[Acl]]): String =
     aclDeltas.map(shorten).mkString(" , ")
@@ -58,7 +57,7 @@ object Debug {
       .replaceAll("ObserveRemoveMap", "ORMap")
       .replaceAll("CausalTime", "")
 
-  def shorten(syncMsg: SyncMsg[?]): String = {
+  def shorten(syncMsg: SyncMsg[?]): String =
     syncMsg match {
       case AclDeltas(delta) =>
         s"AclDeltas(${shorten(delta)})".replaceAll("PermissionTree", "")
@@ -70,26 +69,22 @@ object Debug {
         s"DataDeltas([${deltas.map(shorten).mkString(",")}], ${shorten(filtered)}, ${acl.map(shorten)})"
       case _ => syncMsg.toString
     }
-  }
 
   inline def log(inline msg: => String): Unit =
     inline if enabled then println(msg)
 
-  inline def received(msg: SyncMsg[?], from: PublicIdentity): Unit = {
+  inline def received(msg: SyncMsg[?], from: PublicIdentity): Unit =
     inline if enabled
     then
         println(s"${shorten(from)} ? ${shorten(msg)}")
-  }
 
-  inline def received(msg: SyncMsg[?], from: PublicIdentity, receiver: PublicIdentity): Unit = {
+  inline def received(msg: SyncMsg[?], from: PublicIdentity, receiver: PublicIdentity): Unit =
     inline if enabled
     then
         println(s"${shorten(receiver)}: ${shorten(from)} ? ${shorten(msg)}")
-  }
 
-  inline def sent(msg: SyncMsg[?], to: PublicIdentity): Unit = {
+  inline def sent(msg: SyncMsg[?], to: PublicIdentity): Unit =
     inline if enabled
     then
         println(s"${shorten(to)} ! ${shorten(msg)}")
-  }
 }

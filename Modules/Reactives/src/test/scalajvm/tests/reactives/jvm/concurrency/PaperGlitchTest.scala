@@ -37,30 +37,28 @@ class PaperGlitchTest extends munit.FunSuite {
     val t1 = Spawn {
       latch.countDown()
       latch.await()
-      while !cancelled do {
-        try
-          price.set(3 * 2 << Random.nextInt(8))
-        catch {
-          // occurs because of invalid buffer
-          case e: AssertionError => glitches.add(-42)
-          // can occur because of missing sync barriers
-          case e: NoSuchElementException => glitches.add(-43)
-        }
-      }
+      while !cancelled do
+          try
+            price.set(3 * 2 << Random.nextInt(8))
+          catch {
+            // occurs because of invalid buffer
+            case e: AssertionError => glitches.add(-42)
+            // can occur because of missing sync barriers
+            case e: NoSuchElementException => glitches.add(-43)
+          }
     }
     val t2 = Spawn {
       latch.countDown()
       latch.await()
-      while !cancelled do {
-        try
-          quantity.set(2 << Random.nextInt(8))
-        catch {
-          // occurs because of invalid buffer
-          case e: AssertionError => glitches.add(-42)
-          // can occur because of missing sync barriers
-          case e: NoSuchElementException => glitches.add(-43)
-        }
-      }
+      while !cancelled do
+          try
+            quantity.set(2 << Random.nextInt(8))
+          catch {
+            // occurs because of invalid buffer
+            case e: AssertionError => glitches.add(-42)
+            // can occur because of missing sync barriers
+            case e: NoSuchElementException => glitches.add(-43)
+          }
     }
     latch.countDown()
     latch.await()

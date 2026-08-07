@@ -64,11 +64,10 @@ object Historized {
 
     private def hist(i: Int): Historized[Any] = historizables.productElement(i).asInstanceOf[Historized[Any]]
 
-    override def isRedundant(delta: T, bufferedDelta: T): Boolean = {
+    override def isRedundant(delta: T, bufferedDelta: T): Boolean =
       Range(0, historizables.productArity).forall { i =>
         hist(i).isRedundant(delta.productElement(i), bufferedDelta.productElement(i))
       }
-    }
   }
 
 }

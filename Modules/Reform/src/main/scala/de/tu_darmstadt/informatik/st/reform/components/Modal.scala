@@ -24,20 +24,18 @@ class Modal(val title: VMod, val body: VMod, val buttons: Seq[ModalButton]) {
 
   document.addEventListener(
     "click",
-    event => {
+    event =>
       if event.target.asInstanceOf[Element].matches(".modal.modal-open") then {
         this.openState.set(false)
-      }
-    },
+      },
   )
 
-  def button(): VNode = {
+  def button(): VNode =
     Button(
       ButtonStyle.Default,
       "Open Modal",
       onClick.foreach(_ => this.openState.set(true)),
     )
-  }
 
   def open(): Unit =
     this.openState.set(true)
@@ -45,7 +43,7 @@ class Modal(val title: VMod, val body: VMod, val buttons: Seq[ModalButton]) {
   def close(): Unit =
     this.openState.set(false)
 
-  def render: VMod = {
+  def render: VMod =
     div(
       div(
         cls <-- Signal { s"modal ${(if openState.value then Some("modal-open") else None).getOrElse("")}" },
@@ -76,5 +74,4 @@ class Modal(val title: VMod, val body: VMod, val buttons: Seq[ModalButton]) {
         ),
       ),
     )
-  }
 }

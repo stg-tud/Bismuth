@@ -13,7 +13,7 @@ class BusyThreads {
   @volatile var running: Boolean = false
   var threads: Array[Thread]     = scala.compiletime.uninitialized
   @Setup(Level.Iteration)
-  def bootBusyThreads(params: BenchmarkParams): Unit = {
+  def bootBusyThreads(params: BenchmarkParams): Unit =
     if runBusyThreads then {
       running = true
       val numProcs   = Runtime.getRuntime.availableProcessors()
@@ -34,9 +34,8 @@ class BusyThreads {
         println(startLatch.getCount.toString + " busy threads failed to start")
       }
     }
-  }
   @TearDown(Level.Iteration)
-  def stopBusyThreads(): Unit = {
+  def stopBusyThreads(): Unit =
     if runBusyThreads then {
       println("stopping busy threads...")
       val timeout = System.currentTimeMillis() + 1000
@@ -46,5 +45,4 @@ class BusyThreads {
         if t.isAlive then println(t.getName + " did not terminate!")
       }
     }
-  }
 }

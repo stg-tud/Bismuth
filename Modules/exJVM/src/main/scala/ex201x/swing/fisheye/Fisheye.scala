@@ -75,12 +75,11 @@ class Fisheye {
 
       preferredSize = new Dimension(Max_X, Max_Y)
       // val scoreFont = new Font("Tahoma", java.awt.Font.PLAIN, 32)
-      override def paintComponent(g: Graphics2D): Unit = {
+      override def paintComponent(g: Graphics2D): Unit =
         for box <- boxes do {
           g.setColor(box.effectiveColor.now)
           g.fill(box.area.now)
         }
-      }
     }
   }
 }

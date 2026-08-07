@@ -34,12 +34,11 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
     )
   }
 
-  def transform(k: K)(m: Option[V] => Option[V])(using LocalUid): Delta = {
+  def transform(k: K)(m: Option[V] => Option[V])(using LocalUid): Delta =
     m(inner.get(k).map(_.value)) match {
       case Some(value) => update(k, value)
       case None        => remove(k)
     }
-  }
 
   def remove(k: K): Delta =
     ObserveRemoveMap(Map.empty, inner.get(k).map(_.dots).getOrElse(Dots.empty))

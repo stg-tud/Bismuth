@@ -20,13 +20,12 @@ class LiteralTypeTest extends AnyFlatSpec with Matchers {
     Test1["foo"]("foo").modify["foo"](_.f).setTo("foo") should be(Test1("foo"))
   }
 
-  it should "not compile for a wrong literal type" in {
-    assertDoesNotCompile("""
+  it should "not compile for a wrong literal type" in
+  assertDoesNotCompile("""
       import com.softwaremill.quicklens.*
       
       case class Test1[A](f: A)
       
       Test1["foo"]("foo").modify["foo"](_.f).setTo("bar")
     """)
-  }
 }

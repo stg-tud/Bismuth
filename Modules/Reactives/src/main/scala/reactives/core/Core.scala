@@ -132,14 +132,13 @@ trait DisconnectableImpl extends Derived with Disconnectable {
   final def disconnect(): Unit       =
     disconnected = true
 
-  final override protected[reactives] def reevaluate(rein: ReIn): Rout = {
+  final override protected[reactives] def reevaluate(rein: ReIn): Rout =
     if disconnected then {
       rein.trackDependencies(Set.empty)
       rein
     } else {
       guardedReevaluate(rein)
     }
-  }
 
   protected[reactives] def guardedReevaluate(rein: ReIn): Rout
 

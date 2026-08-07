@@ -142,7 +142,7 @@ object Signal {
   /** creates a new static signal depending on the dependencies, reevaluating the function */
   def static[T](dependencies: ReSource.of[State]*)(expr: StaticTicket[State] => T)(using
       ct: CreationTicket[State]
-  ): Signal[T] = {
+  ): Signal[T] =
     ct.scope.create[Pulse[T], SignalImpl[T] & Signal[T]](
       dependencies.toSet,
       Pulse.empty(ct.info),
@@ -150,7 +150,6 @@ object Signal {
     ) {
       state => new SignalImpl(state, (t, _) => expr(t), ct.info, None) with Signal[T]
     }
-  }
 
   /** creates a signal that has dynamic dependencies (which are detected at runtime with Signal.apply(turn)) */
   def dynamic[T](dependencies: ReSource.of[State]*)(expr: DynamicTicket[State] => T)(using

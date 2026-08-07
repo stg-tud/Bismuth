@@ -36,7 +36,7 @@ class PingPongBenchmark(
         lastStartTime.set(System.nanoTime())
         replica.applyMutation(delta)
 
-    def onReceive(dots: Dots, delta: TravelPlan, replica: BenchmarkReplica): Unit = {
+    def onReceive(dots: Dots, delta: TravelPlan, replica: BenchmarkReplica): Unit =
       if remainingPongDots.updateAndGet(_.subtract(dots)).isEmpty then {
         val stopTime = System.nanoTime()
         runtimes.set(count.get(), stopTime - lastStartTime.get())
@@ -52,7 +52,6 @@ class PingPongBenchmark(
           replica.stop()
         }
       }
-    }
 
     val replica = BenchmarkReplica(
       InetAddress.getByName(bindHost),

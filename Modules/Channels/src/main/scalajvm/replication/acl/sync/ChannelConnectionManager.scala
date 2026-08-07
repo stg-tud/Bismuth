@@ -19,11 +19,10 @@ class ChannelConnectionManager(
     disableLogging: Boolean = true
 ) extends ConnectionManager {
   private val executor: ExecutorService = Executors.newSingleThreadExecutor()
-  private given ec: ExecutionContext    = {
+  private given ec: ExecutionContext    =
     if disableLogging
     then ExecutionContext.fromExecutor(executor, _ => ())
     else ExecutionContext.fromExecutor(executor)
-  }
   private val p2pTls                                            = P2PTls(privateIdentity)
   private val localPublicId                                     = privateIdentity.getPublic
   @volatile private var listener: Option[p2pTls.P2PTlsListener] = None
@@ -57,16 +56,14 @@ class ChannelConnectionManager(
         case _ =>
   }
 
-  override def broadcast(messages: Array[MessageBuffer]): Unit = {
+  override def broadcast(messages: Array[MessageBuffer]): Unit =
     connections.foreach { (user, connection) =>
       sendMultiple(user, messages)
     }
-  }
 
-  override def listenAddress: Option[(String, Int)] = {
+  override def listenAddress: Option[(String, Int)] =
     if abort.closeRequest then None
     else listener.map(listener => listener.ifAddress.getHostAddress -> listener.listenPort)
-  }
 
   override def shutdown(): Unit = synchronized {
     abort.closeRequest = true
@@ -118,7 +115,7 @@ class ChannelConnectionManager(
 
   override def connectedPeers: Set[PublicIdentity] = connections.keySet
 
-  private def trackConnection(connection: Connection): Unit = {
+  private def trackConnection(connection: Connection): Unit =
     connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
       case Some(`localPublicId`) =>
         if !disableLogging then println("Refusing attempt to track connection to myself")
@@ -152,7 +149,6 @@ class ChannelConnectionManager(
             messageReceiver.connectionEstablished(remotePeerId)
       case None => ??? // Should not happen
     }
-  }
 
   private def receiveMessageHandler(connection: Connection): Callback[MessageBuffer] = {
     trackConnection(connection)

@@ -57,13 +57,13 @@ class ClusterConsensus extends munit.FunSuite {
       assert(delta `inflates` state, delta)
     }
 
-    def runUpkeep() = while {
-      nodes.filter(_.cluster.needsUpkeep()).exists { n =>
-        investigateUpkeep(n.cluster.state)(using n.localUid)
-        n.cluster.forceUpkeep()
-        true
-      }
-    } do ()
+    def runUpkeep() = while
+        nodes.filter(_.cluster.needsUpkeep()).exists { n =>
+          investigateUpkeep(n.cluster.state)(using n.localUid)
+          n.cluster.forceUpkeep()
+          true
+        }
+    do ()
 
     runUpkeep()
 
@@ -153,13 +153,13 @@ class ClusterConsensus extends munit.FunSuite {
       assert(delta `inflates` state, delta)
     }
 
-    def runUpkeep() = while {
-      nodes.filter(_.cluster.needsUpkeep()).exists { n =>
-        investigateUpkeep(n.cluster.state)(using n.localUid)
-        n.cluster.forceUpkeep()
-        true
-      }
-    } do ()
+    def runUpkeep() = while
+        nodes.filter(_.cluster.needsUpkeep()).exists { n =>
+          investigateUpkeep(n.cluster.state)(using n.localUid)
+          n.cluster.forceUpkeep()
+          true
+        }
+    do ()
 
     runUpkeep()
 

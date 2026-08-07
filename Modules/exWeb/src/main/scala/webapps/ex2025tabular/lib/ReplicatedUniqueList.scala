@@ -194,13 +194,12 @@ case class ReplicatedUniqueList[E](
   def removeMarker(markerId: MarkerId): ReplicatedUniqueList[E] =
     ReplicatedUniqueList[E](markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.remove(markerId))
 
-  def getMarker(markerId: MarkerId): Option[Int] = {
+  def getMarker(markerId: MarkerId): Option[Int] =
     markerIdToElementIdAndBehavior.get(markerId).flatMap { marker =>
       val elementId    = marker.elementId
       val elementIndex = elementIdsAndOperations.toLazyList.indexWhere(_.elementId == elementId)
       if elementIndex == -1 then None else Some(elementIndex)
     }
-  }
 
   def filter(other: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] = {
     val combined = Array(elementIdsAndOperations, other.elementIdsAndOperations).view.sortBy(_.hashCode)

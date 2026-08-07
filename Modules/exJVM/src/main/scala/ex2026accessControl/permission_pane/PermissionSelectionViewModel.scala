@@ -18,7 +18,7 @@ class PermissionSelectionViewModel private (
     readDisabled: BooleanProperty,
     readIndeterminate: BooleanProperty
   ) = {
-    def updateParentsIndeterminateState(newVal: Boolean): Unit = {
+    def updateParentsIndeterminateState(newVal: Boolean): Unit =
       parent.foreach { p =>
         // switched to selected and parent is not selected and parent is not indeterminate
         if newVal && !p.readSelected.value && !p.readIndeterminate.value then
@@ -29,7 +29,6 @@ class PermissionSelectionViewModel private (
               p.readIndeterminate.value = false
         }
       }
-    }
     val cb = CheckBox()
     if hardcodedReadDisabled then cb.disable = true
     if hardcodedReadSelected then cb.selected = true
@@ -50,7 +49,7 @@ class PermissionSelectionViewModel private (
     writeDisabled: BooleanProperty,
     writeIndeterminate: BooleanProperty
   ) = {
-    def updateParentsIndeterminateState(newVal: Boolean): Unit = {
+    def updateParentsIndeterminateState(newVal: Boolean): Unit =
       parent.foreach { p =>
         // switched to selected and parent is not selected and parent is not indeterminate
         if newVal && !p.writeSelected.value && !p.writeIndeterminate.value then
@@ -61,7 +60,6 @@ class PermissionSelectionViewModel private (
               p.writeIndeterminate.value = false
         }
       }
-    }
     val cb = CheckBox()
     cb.disable = hardcodedWriteDisabled
     cb.selected = hardcodedWriteSelected

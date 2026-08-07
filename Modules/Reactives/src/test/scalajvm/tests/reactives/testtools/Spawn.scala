@@ -8,14 +8,13 @@ import scala.util.{Failure, Try}
 class Spawn[T] private (future: Future[T]) {
   def await(millis: Long): T =
     Await.result(future, millis.millisecond)
-  def awaitTry(millis: Long): Try[T] = {
+  def awaitTry(millis: Long): Try[T] =
     try {
       Await.ready(future, millis.milliseconds)
       future.value.get
     } catch {
       case te: TimeoutException => Failure(te)
     }
-  }
 }
 object Spawn {
   def apply[T](f: => T, desiredName: Option[String] = None): Spawn[T] = {

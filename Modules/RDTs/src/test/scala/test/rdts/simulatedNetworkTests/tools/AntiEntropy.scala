@@ -81,7 +81,7 @@ class AntiEntropy[A](
     gc()
   }
 
-  private def prepareDeltaMsg(to: String): Option[DeltaMsg[A]] = {
+  private def prepareDeltaMsg(to: String): Option[DeltaMsg[A]] =
     if deltaBufferOut.isEmpty || deltaBufferOut.keySet.min > ackMap(to) then
         Some(DeltaMsg(Named(replicaID.asId, fullState), nextSeqNum))
     else {
@@ -91,9 +91,8 @@ class AntiEntropy[A](
         Lattice.merge(left, right)
       } map { deltaState => DeltaMsg(Named(replicaID.asId, deltaState), nextSeqNum) }
     }
-  }
 
-  def sendChangesToAllNeighbors(): Unit = {
+  def sendChangesToAllNeighbors(): Unit =
     neighbors.foreach { id =>
       prepareDeltaMsg(id) match {
         case None      =>
@@ -102,15 +101,13 @@ class AntiEntropy[A](
           network.sendMessage(id, SimulatedMessage(eitherMsg))
       }
     }
-  }
 
-  private def gc(): Unit = {
+  private def gc(): Unit =
     if ackMap.values.nonEmpty then {
       deltaBufferOut.filterInPlace {
         case (n, _) => n >= ackMap.values.min
       }
     }
-  }
 }
 
 object AntiEntropy {

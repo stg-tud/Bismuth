@@ -19,18 +19,16 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
   def available(id: Uid): Int        = reserved(id) - allocated(id)
   def available(using LocalUid): Int = available(LocalUid.replicaId)
 
-  def allocate(value: Int)(using LocalUid): Delta = {
+  def allocate(value: Int)(using LocalUid): Delta =
     if value < 0 || available(LocalUid.replicaId) < value then neutral
     else neutral.copy(allocations = current.allocations.add(value))
-  }
 
-  def transfer(amount: Int, target: Uid)(using LocalUid): Delta = {
+  def transfer(amount: Int, target: Uid)(using LocalUid): Delta =
     if amount > available(LocalUid.replicaId) then neutral
     else
         neutral.copy(reservations =
           current.reservations.add(amount)(using target.convert) `merge` current.reservations.add(-amount)
         )
-  }
 
   def rebalance(using LocalUid): Delta = {
     val availableByReplica = current.participants.iterator.map(id => available(id) -> id).toList

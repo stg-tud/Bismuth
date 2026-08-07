@@ -55,7 +55,7 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
 
   def diff(other: Dots): Dots = subtract(other)
 
-  def subtract(other: Dots): Dots = {
+  def subtract(other: Dots): Dots =
     Dots(
       internal.map { case left @ (id, leftRanges) =>
         other.internal.get(id) match {
@@ -64,7 +64,6 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
         }
       }.filterNot(_._2.isEmpty)
     )
-  }
 
   def intersect(other: Dots): Dots =
     Dots {

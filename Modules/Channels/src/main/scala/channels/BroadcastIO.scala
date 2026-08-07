@@ -117,12 +117,11 @@ class BroadcastIO[State](
       updateOwnConnectionDescriptor(descriptor)
     }.run(printExceptionHandler)
 
-  private def bindConnection[T](latentConnection: LatentConnection[T]): Async[Abort, T] = {
+  private def bindConnection[T](latentConnection: LatentConnection[T]): Async[Abort, T] =
     latentConnection.prepare { (conn: Connection) =>
       registerConnection(conn, None)
       messageReceiver(conn)
     }
-  }
 
   /** receive message, decode, decrypt. remove peer on failure. */
   private def messageReceiver(conn: Connection): Callback[MessageBuffer] = {

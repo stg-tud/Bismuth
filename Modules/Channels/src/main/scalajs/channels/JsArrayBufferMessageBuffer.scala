@@ -15,7 +15,7 @@ object JsArrayBufferMessageBuffer {
 
   // TODO: likely unused, as all cases are handled by the case distinction in the extension methods
   //  particularly the else case is likely untested
-  def convertByteBufferToArrayBuffer(buffer: ByteBuffer): ArrayBuffer = {
+  def convertByteBufferToArrayBuffer(buffer: ByteBuffer): ArrayBuffer =
     if buffer.hasArrayBuffer() then {
       val offset = buffer.arrayBufferOffset() + buffer.position()
       val length = buffer.remaining()
@@ -30,7 +30,6 @@ object JsArrayBufferMessageBuffer {
       copy.flip()
       copy.arrayBuffer()
     }
-  }
 
   extension (mb: MessageBuffer)
       def convertToArrayBuffer(): ArrayBuffer =

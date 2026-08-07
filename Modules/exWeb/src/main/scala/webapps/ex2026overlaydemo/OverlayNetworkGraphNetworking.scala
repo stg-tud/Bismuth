@@ -146,14 +146,13 @@ object OverlayNetworkGraphNetworking {
         result.future.onComplete(Async.handler.complete)
       }
 
-    def start(): Unit = {
+    def start(): Unit =
       client.start().run {
         case Success(_) =>
           initialSeed.foreach(uid => node.bootstrapVia(ConnectionDescriptor.WebRtc(Uid.unwrap(uid))))
           onRegistered()
         case Failure(err) => logFailure("signaling connect failed", err)
       }
-    }
 
     def stop(): Unit = {
       outgoing.values.foreach { attempt =>

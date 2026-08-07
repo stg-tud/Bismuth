@@ -5,12 +5,11 @@ import rdts.time.IdTreeGenerators.genIdTree
 import org.scalacheck.Gen
 
 object EventTreeGenerators {
-  given genEventTree: Gen[EventTree] = {
+  given genEventTree: Gen[EventTree] =
     for {
       numModifications <- Gen.choose(0, 20)
       eventTree        <- modifyEventTree(seed, numModifications)
     } yield eventTree
-  }
 
   private def modifyEventTree(eventTree: Gen[EventTree], numModifications: Int): Gen[EventTree] = {
     if numModifications == 0 then return eventTree
@@ -22,12 +21,11 @@ object EventTreeGenerators {
     } yield modifiedEventTree
   }
 
-  given genRandomEventTree: Gen[EventTree] = {
+  given genRandomEventTree: Gen[EventTree] =
     for {
       maxDepth  <- Gen.choose(1, 10)
       eventTree <- genEventTreeBranch(maxDepth)
     } yield eventTree
-  }
 
   private def genEventTreeBranch(maxDepth: Int): Gen[Branch] = for {
     maxDepthL      <- Gen.choose(0, maxDepth - 1)
@@ -41,8 +39,7 @@ object EventTreeGenerators {
     value <- Gen.choose(0, 100)
   } yield Leaf(value)
 
-  private def genEventTreeBranchOrLeaf(maxDepth: Int): Gen[EventTree] = {
+  private def genEventTreeBranchOrLeaf(maxDepth: Int): Gen[EventTree] =
     if maxDepth == 0 then genEventTreeLeaf
     else Gen.oneOf(genEventTreeLeaf, genEventTreeBranch(maxDepth))
-  }
 }

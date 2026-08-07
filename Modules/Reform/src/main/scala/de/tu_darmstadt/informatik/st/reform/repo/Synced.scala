@@ -8,7 +8,7 @@ import scala.concurrent.Future
 case class Synced[A](private val storage: Storage[A], id: String, private val value: Var[A]) {
 
   // TODO FIXME remove Option here?
-  def update(f: Option[A] => A): Future[A] = {
+  def update(f: Option[A] => A): Future[A] =
     storage
       .update(id, f)
       .map { newValue =>
@@ -17,7 +17,6 @@ case class Synced[A](private val storage: Storage[A], id: String, private val va
         value.set(newValue)
         newValue
       }
-  }
 
   val signal: Signal[A] = value
 }

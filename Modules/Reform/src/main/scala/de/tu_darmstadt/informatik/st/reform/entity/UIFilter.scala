@@ -25,7 +25,7 @@ class UISubstringFilter[EntityType, AttributeType](uiAttribute: UIAttribute[Enti
 
   private val name = toQueryParameterName(uiAttribute.label)
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "max-w-[300px] md:min-w-[300px] w-full",
       uiAttribute.label,
@@ -35,7 +35,6 @@ class UISubstringFilter[EntityType, AttributeType](uiAttribute: UIAttribute[Enti
         onInput.value.foreach(v => jsImplicits.routing.updateQueryParameters(Map(name -> v))),
       ),
     )
-  }
 
   val predicate: Signal[EntityType => Boolean] = Signal {
     val n = jsImplicits.routing.getQueryParameterAsString(name).value
@@ -51,7 +50,7 @@ class UIIntervalFilter[EntityType, AttributeType](uiAttribute: UITextAttribute[E
 
   private val name = toQueryParameterName(uiAttribute.label)
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "max-w-[300px] md:min-w-[300px] w-full",
       uiAttribute.label,
@@ -72,7 +71,6 @@ class UIIntervalFilter[EntityType, AttributeType](uiAttribute: UITextAttribute[E
         ),
       ),
     )
-  }
 
   val predicate: Signal[EntityType => Boolean] = Signal {
     val min = jsImplicits.routing.getQueryParameterAsString(name + ":min").value
@@ -112,7 +110,7 @@ class UISelectFilter[EntityType, AttributeType](uiAttribute: UISelectAttribute[E
 
   private val name = toQueryParameterName(uiAttribute.label)
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "max-w-[300px] md:min-w-[300px] w-full",
       uiAttribute.label,
@@ -127,7 +125,6 @@ class UISelectFilter[EntityType, AttributeType](uiAttribute: UISelectAttribute[E
         cls := "rounded-md",
       ),
     )
-  }
 
   val predicate: Signal[EntityType => Boolean] = Signal {
     val n = jsImplicits.routing.getQueryParameterAsSeq(name).value
@@ -143,7 +140,7 @@ class UIMultiSelectFilter[EntityType](
 
   private val name = toQueryParameterName(uiAttribute.label)
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "max-w-[300px] md:min-w-[300px] w-full",
       uiAttribute.label,
@@ -180,7 +177,6 @@ class UIMultiSelectFilter[EntityType](
         ),
       ),
     )
-  }
 
   val predicate: Signal[EntityType => Boolean] = Signal {
     val n    = jsImplicits.routing.getQueryParameterAsSeq(name).value
@@ -210,7 +206,7 @@ class UIBooleanFilter[EntityType](uiAttribute: UITextAttribute[EntityType, Boole
 
   private val name = toQueryParameterName(uiAttribute.label)
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "max-w-[300px] md:min-w-[300px] w-full",
       uiAttribute.label,
@@ -225,7 +221,6 @@ class UIBooleanFilter[EntityType](uiAttribute: UITextAttribute[EntityType, Boole
         cls := "rounded-md min-w-full",
       ),
     )
-  }
 
   val predicate: Signal[EntityType => Boolean] = Signal {
     val n = jsImplicits.routing.getQueryParameterAsSeq(name).value

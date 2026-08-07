@@ -24,7 +24,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     * @param ticket a creation ticket as a new event will be created which has the ReactiveDeltaSeq as dependency
     * @return
     */
-  def asEvent(using ticket: CreationTicket[State]): Event[Delta[T]] = {
+  def asEvent(using ticket: CreationTicket[State]): Event[Delta[T]] =
     Event.Impl.static(this) { staticTicket =>
       // each time a change occurs it is represented by a Delta
       // the staticTicket gets this Delta and the Event representing the ReactiveDeltaSeq will fire the Delta
@@ -34,7 +34,6 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
       // That is why Some(delta) is used
       Some(delta)
     }
-  }
 
   /** Based on the concept of reversible Folds
     * Used to fold the deltas basing on fold for Addition-Delta and unfold for Removal-Delta
@@ -101,7 +100,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     * @param ticket          for creating the new source
     * @return the filtered ReactiveDeltaSeq
     */
-  def filter(filterOperation: T => Boolean)(using ticket: CreationTicket[State]): ReactiveDeltaSeq[T] = {
+  def filter(filterOperation: T => Boolean)(using ticket: CreationTicket[State]): ReactiveDeltaSeq[T] =
 
     // as a new reactive sequence will be returned after filtering we use the creation ticket to create the new source
     // The new created Source will be a FilterDeltaSeq which is basically a ReactiveDeltaSeq, which reevaluates differently when changes are propagated
@@ -110,7 +109,6 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     ticket.scope.create[Delta[T], FilterDeltaSeq[T]](Set(this), Delta.noChange, needsReevaluation = false) {
       state => new FilterDeltaSeq[T](this, filterOperation)(state, ticket.info) with DisconnectableImpl
     }
-  }
 
   /** Maps the elements of ReactiveDeltaSeq and returns a new ReactiveDeltaSeq with the mapped deltas with the old ReactiveDeltaSeq as dependency
     *
@@ -119,7 +117,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     * @tparam A new Value type for deltas in the mapped ReactiveDeltaSeq
     * @return the mapped ReactiveDeltaSeq
     */
-  def map[A](mapOperation: T => A)(using ticket: CreationTicket[State]): ReactiveDeltaSeq[A] = {
+  def map[A](mapOperation: T => A)(using ticket: CreationTicket[State]): ReactiveDeltaSeq[A] =
 
     // as a new reactive sequence will be returned after mapping we use the creation ticket to create the new source
     // The new created Source will be a MapDeltaSeq which is basically a ReactiveDeltaSeq, which reevaluates differently when changes are propagated
@@ -128,7 +126,6 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     ticket.scope.create[Delta[A], MapDeltaSeq[T, A]](Set(this), Delta.noChange, needsReevaluation = false) {
       state => new MapDeltaSeq[T, A](this, mapOperation)(state, ticket.info) with DisconnectableImpl
     }
-  }
 
   /** Concatenates the ReactiveDeltaSeq with another (that) ReactiveDeltaSeq by returning a new ReactiveDeltaSeq (ConcatenateDeltaSeq)
     *
@@ -136,7 +133,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     * @param ticket used for the creation of the concatenated ReactiveDeltaSeq
     * @return ConcatenateDeltaSeq
     */
-  def ++(that: ReactiveDeltaSeq[T])(using ticket: CreationTicket[State]): ReactiveDeltaSeq[T] = {
+  def ++(that: ReactiveDeltaSeq[T])(using ticket: CreationTicket[State]): ReactiveDeltaSeq[T] =
 
     // as a new reactive sequence will be returned after concatenating we use the creation ticket to create the new source
     // The new created Source will be a ConcatenateDeltaSeq which is basically a ReactiveDeltaSeq, which reevaluates differently when changes are propagated
@@ -149,7 +146,6 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
     ) {
       state => new ConcatenateDeltaSeq[T](this, that)(state, ticket.info)
     }
-  }
 
   /** Returns the sizeOfSeq of the ReactiveDeltaSeq
     *

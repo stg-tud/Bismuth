@@ -69,7 +69,7 @@ object GenericPermissionPane {
 
   class CustomCheckBoxTreeTableCell(checkBoxSource: PermissionSelectionViewModel => CheckBox)
       extends jfxsc.TreeTableCell[PermissionSelectionViewModel, PermissionSelectionViewModel] {
-    override def updateItem(viewModel: PermissionSelectionViewModel, empty: Boolean): Unit = {
+    override def updateItem(viewModel: PermissionSelectionViewModel, empty: Boolean): Unit =
       if empty || viewModel == null then {
         setGraphic(null)
       } else {
@@ -78,7 +78,6 @@ object GenericPermissionPane {
         box.alignment = Center
         setGraphic(box)
       }
-    }
   }
 }
 

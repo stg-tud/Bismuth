@@ -41,11 +41,10 @@ class FloodingRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
   override def onSendingFailed(packet: Packet.SendingFailed): Unit =
     println(s"sending failed for bundle ${packet.bid} on cla ${packet.cla_sender}")
 
-  override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit = {
+  override def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit =
     println(
       s"sending succeeded for bundle ${packet.bid} on cla ${packet.cla_sender}."
     )
-  }
 
   override def onIncomingBundle(packet: Packet.IncomingBundle): Unit =
     println("received incoming bundle. information not used for routing. ignoring.")

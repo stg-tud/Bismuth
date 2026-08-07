@@ -47,16 +47,15 @@ class SqliteDB(dbPath: String) extends IIndexedDB {
 
   def requestPersistentStorage(): Unit = {}
 
-  override def get[T](key: String)(using codec: JsonValueCodec[T]): Future[Option[T]] = {
+  override def get[T](key: String)(using codec: JsonValueCodec[T]): Future[Option[T]] =
     synchronized {
       val dbValue = readValue(key)
       connection.commit()
       val o = dbValue.map(readFromString(_))
       Future.successful(o)
     }
-  }
 
-  override def update[T](key: String, fun: Option[T] => T)(using codec: JsonValueCodec[T]): Future[T] = {
+  override def update[T](key: String, fun: Option[T] => T)(using codec: JsonValueCodec[T]): Future[T] =
     synchronized {
       val dbValue = readValue(key)
       val value   = fun(dbValue.map(readFromString(_)))
@@ -66,7 +65,6 @@ class SqliteDB(dbPath: String) extends IIndexedDB {
       connection.commit()
       Future.successful(value)
     }
-  }
 
   private def readValue(key: String): Option[String] = {
     readStatement.setString(1, key)

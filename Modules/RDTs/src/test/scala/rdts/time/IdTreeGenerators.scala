@@ -49,8 +49,7 @@ object IdTreeGenerators {
     rightId   <- genIdTreeBranchOrLeaf(maxDepthR)
   } yield Branch(leftId, rightId)
 
-  private def genIdTreeBranchOrLeaf(maxDepth: Int): Gen[IdTree] = {
+  private def genIdTreeBranchOrLeaf(maxDepth: Int): Gen[IdTree] =
     if maxDepth == 0 then genIdTreeLeaf
     else Gen.oneOf(genIdTreeLeaf, genIdTreeBranch(maxDepth))
-  }
 }

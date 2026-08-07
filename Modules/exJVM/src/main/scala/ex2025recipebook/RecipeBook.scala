@@ -19,72 +19,65 @@ case class RecipeBook(
   def deleteRecipe(key: String): Delta =
     this.deltaModify(_.recipes).using(_.remove(key))
 
-  def updateRecipeTitle(recipeKey: String, updatedRecipeTitle: String)(using localUid: LocalUid): Delta = {
+  def updateRecipeTitle(recipeKey: String, updatedRecipeTitle: String)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.title).using(_.write(updatedRecipeTitle)))
         case None        => ???
       }
     }
-  }
 
-  def addIngredient(recipeKey: String, ingredient: Ingredient)(using localUid: LocalUid): Delta = {
+  def addIngredient(recipeKey: String, ingredient: Ingredient)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.append(ingredient)))
         case None        => ???
       }
     }
-  }
 
   def updateIngredient(recipeKey: String, ingredientIndex: Int, mod: (Ingredient) => Ingredient)(using
       localUid: LocalUid
-  ): Delta = {
+  ): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.update(ingredientIndex, mod)))
         case None        => ???
       }
     }
-  }
 
-  def deleteIngredient(recipeKey: String, ingredientIndex: Int)(using localUid: LocalUid): Delta = {
+  def deleteIngredient(recipeKey: String, ingredientIndex: Int)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.remove(ingredientIndex)))
         case None        => ???
       }
     }
-  }
 
-  def updateServings(recipeKey: String, newServings: Int)(using localUid: LocalUid): Delta = {
+  def updateServings(recipeKey: String, newServings: Int)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateServings(newServings))
         case None        => ???
       }
     }
-  }
 
-  def updateCookingTime(recipeKey: String, newCookingTime: Int)(using localUid: LocalUid): Delta = {
+  def updateCookingTime(recipeKey: String, newCookingTime: Int)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateCookingTime(newCookingTime))
         case None        => ???
       }
     }
-  }
 
-  def updateDescription(recipeKey: String, newDescription: String)(using localUid: LocalUid): Delta = {
+  def updateDescription(recipeKey: String, newDescription: String)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateDescription(newDescription))
         case None        => ???
       }
     }
-  }
 
-  def updateFavorite(recipeKey: String, newValue: Boolean)(using localUid: LocalUid): Delta = {
+  def updateFavorite(recipeKey: String, newValue: Boolean)(using localUid: LocalUid): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.favorite).using(ew =>
@@ -93,7 +86,6 @@ case class RecipeBook(
         case None => ???
       }
     }
-  }
 
   def isEmpty: Boolean = recipes.inner.isEmpty
 

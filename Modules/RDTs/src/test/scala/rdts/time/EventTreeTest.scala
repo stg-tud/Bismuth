@@ -124,11 +124,10 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
         (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(0, IdTree.Branch(1, 0))),
         (Branch(0, Branch(0, 0, 2), Branch(0, 2, 0)), IdTree.Branch(IdTree.Branch(0, 1), IdTree.Branch(1, 0)))
       )
-  do {
-    test(s"ev.fill(id) returns same reference for ev=$ev, id=$id") {
-      assert(ev eq ev.fill(id))
-    }
-  }
+  do
+      test(s"ev.fill(id) returns same reference for ev=$ev, id=$id") {
+        assert(ev eq ev.fill(id))
+      }
 
   private val fillTestTable = List(
     // ("eventTree", "idTree", "expectedFilledEventTree"),
@@ -170,14 +169,13 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
     )
   )
 
-  for (ev, id, expectedEvFilled) <- fillTestTable do {
-    test(s"fill simplifies the EventTree for ev=$ev, id=$id") {
-      val evFilled = ev.fill(id)
-      assertEquals(evFilled, expectedEvFilled)
-      assertEquals(eventTreePord.tryCompare(evFilled, ev), Some(1))
-      assertEquals(eventTreePord.tryCompare(ev, evFilled), Some(-1))
-    }
-  }
+  for (ev, id, expectedEvFilled) <- fillTestTable do
+      test(s"fill simplifies the EventTree for ev=$ev, id=$id") {
+        val evFilled = ev.fill(id)
+        assertEquals(evFilled, expectedEvFilled)
+        assertEquals(eventTreePord.tryCompare(evFilled, ev), Some(1))
+        assertEquals(eventTreePord.tryCompare(ev, evFilled), Some(-1))
+      }
 
   test("fill returns same reference if equal to EventTree for generated EventTree and Id") {
     forAll(genEventTree.map(_.normalize), genIdTree.suchThat(!_.isAnonymous).map(_.normalize)) { (ev, id) =>
@@ -212,12 +210,11 @@ class EventTreeTest extends FunSuite with ScalaCheckSuite {
           Branch(0, Branch(0, 0, 2), Branch(0, 3, 0))
         )
       )
-  do {
-    test(s"grow works for non-fillable examples and IdTree with single 1-Leaf for $ev, $id") {
-      assertEquals(ev.grow(id)._1, expectedEv)
-      assertEquals(ev.increment(id), expectedEv)
-    }
-  }
+  do
+      test(s"grow works for non-fillable examples and IdTree with single 1-Leaf for $ev, $id") {
+        assertEquals(ev.grow(id)._1, expectedEv)
+        assertEquals(ev.increment(id), expectedEv)
+      }
 
   test("grow works when needing to split a Leaf") {
     val eventsAndIds = List(

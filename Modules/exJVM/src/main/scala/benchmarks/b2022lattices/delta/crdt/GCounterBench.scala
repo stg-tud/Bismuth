@@ -21,13 +21,12 @@ class GCounterBench {
   var counter: NamedDeltaBuffer[GrowOnlyCounter] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     counter = (1 until numReplicas).foldLeft(NamedDeltaBuffer("0".asId, GrowOnlyCounter.zero).map(_.inc())) {
       case (c, n) =>
         val delta = NamedDeltaBuffer(n.toString.asId, GrowOnlyCounter.zero).map(_.inc()).deltaBuffer.head
         c.applyDelta(delta.replicaId, delta.anon)
     }
-  }
 
   @Benchmark
   def value(): Int = counter.state.value

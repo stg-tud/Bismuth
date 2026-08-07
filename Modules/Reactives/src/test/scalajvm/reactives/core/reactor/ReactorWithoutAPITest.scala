@@ -38,7 +38,7 @@ class ReactorWithoutAPITest extends FunSuite {
       input.trackDependencies(Set())
 
       @tailrec
-      def processActions[A](stage: ReactorStage[T]): ReactorStage[T] = {
+      def processActions[A](stage: ReactorStage[T]): ReactorStage[T] =
         stage.stages.actions match {
           case Nil                  => stage
           case SetAction(v) :: tail => processActions(stage.copy(currentValue = v, stages = StageBuilder(tail)))
@@ -51,7 +51,6 @@ class ReactorWithoutAPITest extends FunSuite {
                 processActions(stage.copy(stages = stages))
             }
         }
-      }
 
       val resStage = processActions(input.before)
 
@@ -115,7 +114,7 @@ class ReactorWithoutAPITest extends FunSuite {
     def once[T](
         initialValue: T,
         dependencies: Set[ReSource.of[State]]
-    )(stageBuilder: StageBuilder[T])(using ct: CreationTicket[State]): Reactor[T] = {
+    )(stageBuilder: StageBuilder[T])(using ct: CreationTicket[State]): Reactor[T] =
       ct.scope.create(
         dependencies,
         new ReactorStage[T](initialValue, stageBuilder),
@@ -123,7 +122,6 @@ class ReactorWithoutAPITest extends FunSuite {
       ) { (createdState: State[ReactorStage[T]]) =>
         new Reactor[T](createdState)
       }
-    }
   }
 
   test("Reactor has initial value") {

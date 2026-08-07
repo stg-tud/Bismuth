@@ -33,7 +33,7 @@ sealed private trait State {
   def render(using state: Var[State]): VNode
 }
 
-private def showConnectionToken(connection: PendingConnection)(using jsImplicits: JSImplicits) = {
+private def showConnectionToken(connection: PendingConnection)(using jsImplicits: JSImplicits) =
   connection.session.map { session =>
     div(
       cls := "flex gap-1 mt-2",
@@ -63,7 +63,6 @@ private def showConnectionToken(connection: PendingConnection)(using jsImplicits
       ),
     )
   }
-}
 
 private case class Init()(using jsImplicits: JSImplicits) extends State {
   private def initializeHostSession(using state: Var[State]): Unit = {
@@ -74,7 +73,7 @@ private case class Init()(using jsImplicits: JSImplicits) extends State {
   }
 
   private val alias                                   = Var("")
-  override def render(using state: Var[State]): VNode = {
+  override def render(using state: Var[State]): VNode =
     div(
       cls := "form-control w-full text-sm",
       LabeledInput("What is your name?")(
@@ -91,7 +90,6 @@ private case class Init()(using jsImplicits: JSImplicits) extends State {
         onClick.foreach(_ => initializeHostSession),
       ),
     )
-  }
 }
 
 private case class ClientAskingForHostSessionToken()(using jsImplicits: JSImplicits) extends State {
@@ -187,7 +185,7 @@ class ManualConnectionDialog(using
     }
   })
 
-  def render: VMod = {
+  def render: VMod =
     div(
       div(
         cls := "flex rounded-xl mt-2 gap-1 text-center",
@@ -221,5 +219,4 @@ class ManualConnectionDialog(using
       ),
       Signal { state.value.render(using state) },
     )
-  }
 }

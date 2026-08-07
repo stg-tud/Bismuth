@@ -22,11 +22,10 @@ class KeyDerivationKey /* private constructor to make sure that ikm is not modif
   // It would probably be a good idea to separate encryptionKey and signingKey into two different classes, since the
   // type should indicate the use of the KeyDerivationKey (i.e., AeadKeyDerivationKey and SigningKeyDerivationKey).
   // TODO: Remove?
-  lazy val signingKey: Ed25519PrivateKey = {
+  lazy val signingKey: Ed25519PrivateKey =
     Ed25519Util.rawPrivateKeyBytesToKeyPair(
       derive256BitsOutputKeyMaterial(inputKeyMaterial, contextForSigningKeys)
     )
-  }
 
   def childKeyDerivationKey(realm: String): KeyDerivationKey =
     KeyDerivationKey(generateChildKeyDerivationKeyMaterial(inputKeyMaterial, realm))

@@ -11,7 +11,7 @@ class EtcdClient(val name: Uid, val endpoints: List[String], logTimings: Boolean
   private val etcdClient = jetcd.Client.builder().endpoints(endpoints*).build()
   private val kvClient   = etcdClient.getKVClient
 
-  override def handleOpImpl(op: KVOperation[String, String]): Unit = {
+  override def handleOpImpl(op: KVOperation[String, String]): Unit =
     op match
         case data.KVOperation.Read(opKey) =>
           val key = ByteSequence.from(opKey.getBytes)
@@ -22,6 +22,5 @@ class EtcdClient(val name: Uid, val endpoints: List[String], logTimings: Boolean
           val value = ByteSequence.from(opValue.getBytes)
           kvClient.put(key, value).get()
           onResultValue(s"$opKey=$opValue; OK")
-  }
 
 }

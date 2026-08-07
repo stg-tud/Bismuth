@@ -82,7 +82,7 @@ class EpidemicStrategy {
     Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = selected_clas, delete_afterwards = false))
   }
 
-  def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit = {
+  def onSendingSucceeded(packet: Packet.SendingSucceeded): Unit =
     delivered.get(packet.bid) match {
       case null =>
         delivered.put(packet.bid, Set(packet.cla_sender))
@@ -91,9 +91,8 @@ class EpidemicStrategy {
         delivered.put(packet.bid, x + packet.cla_sender)
         ()
     }
-  }
 
-  def onIncomingBundle(packet: Packet.IncomingBundle): Unit = {
+  def onIncomingBundle(packet: Packet.IncomingBundle): Unit =
     packet.bndl.other_blocks.collectFirst {
       case x: PreviousNodeBlock => x
     } match {
@@ -108,5 +107,4 @@ class EpidemicStrategy {
             ()
         }
     }
-  }
 }

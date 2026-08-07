@@ -32,7 +32,7 @@ class SingleVar {
   }
 
   @Benchmark
-  def write(): Unit = {
+  def write(): Unit =
     if lock eq null then {
       current = !current
       source.set(current)
@@ -43,10 +43,9 @@ class SingleVar {
         source.set(current)
       } finally lock.writeLock().unlock()
     }
-  }
 
   @Benchmark
-  def read(): Boolean = {
+  def read(): Boolean =
     if lock eq null then {
       source.readValueOnce
     } else {
@@ -55,6 +54,5 @@ class SingleVar {
         source.readValueOnce
       finally lock.readLock().unlock()
     }
-  }
 
 }

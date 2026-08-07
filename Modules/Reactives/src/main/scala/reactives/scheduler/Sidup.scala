@@ -113,7 +113,7 @@ trait Sidup extends Twoversion {
 
     /** Overrides the evaluator, this is essentially an inlined callback */
     def evaluate(r: Derived): Unit = evaluateIn(r)(reevaluationTicket.reset(r.state.base(token)))
-    def evaluateIn(reactive: Derived)(dt: ReevTicket[State, reactive.Value]): Unit = {
+    def evaluateIn(reactive: Derived)(dt: ReevTicket[State, reactive.Value]): Unit =
       if !reactive.state.done then {
         val rinc = relevantIncoming(reactive)
         if rinc.forall(_.state.done) then {
@@ -138,8 +138,6 @@ trait Sidup extends Twoversion {
         }
       }
 
-    }
-
     private def markDone(reactive: Derived, activate: Boolean): Unit = {
       reactive.state.done = true
       schedule(reactive)
@@ -156,7 +154,7 @@ trait Sidup extends Twoversion {
     override def beforeDynamicDependencyInteraction(dependency: ReSource): Unit = ()
     override def preparationPhase(initialWrites: Set[ReSource]): Unit           = ()
     @tailrec
-    final override def propagationPhase(): Unit = {
+    final override def propagationPhase(): Unit =
       if evaluating.nonEmpty then {
         val ev = evaluating
         evaluating = List.empty
@@ -167,7 +165,6 @@ trait Sidup extends Twoversion {
         evaluatingLater = List.empty
         propagationPhase()
       }
-    }
     override def releasePhase(): Unit            = ()
     override def initializer: Initializer[State] = new SidupInitializer(this)
   }

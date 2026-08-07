@@ -53,7 +53,7 @@ case class FullMeshOverlay(
   override def receiveActions(
       message: OverlayMessage,
       conn: Connection
-  ): (OverlayController, List[OverlayAction]) = {
+  ): (OverlayController, List[OverlayAction]) =
     message match
         case OverlayMessage.Join(peer) =>
           val (next, peerActions) = rememberActivePeer(peer, conn)
@@ -68,7 +68,6 @@ case class FullMeshOverlay(
 
         case _ =>
           (this, Nil)
-  }
 
   override def removeConnection(
       conn: Connection,

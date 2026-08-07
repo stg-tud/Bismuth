@@ -45,12 +45,11 @@ class ReComboBox[A](
   modelChanged()
 
   items.using(
-    { () =>
+    () =>
       javaPeer.getModel match {
         case model: ReComboBox.ReComboBoxModel[A] => model.getItems
         case model                                => for i <- 0 until model.getSize yield model.getElementAt(i)
-      }
-    },
+      },
     { items =>
       val model = javaPeer.getModel match {
         case model: ReComboBox.ReComboBoxModel[A] => model
@@ -115,7 +114,7 @@ object ReComboBox {
 
     private var selected: AnyRef            = scala.compiletime.uninitialized
     def getSelectedItem: AnyRef             = selected
-    def setSelectedItem(item: AnyRef): Unit = {
+    def setSelectedItem(item: AnyRef): Unit =
       if
           (item == null || (items contains item)) &&
           ((selected != null && selected != item) ||
@@ -124,6 +123,5 @@ object ReComboBox {
         selected = item
         fireContentsChanged(this, -1, -1)
       }
-    }
   }
 }

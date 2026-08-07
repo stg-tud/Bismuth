@@ -18,7 +18,7 @@ class BenchmarkReplica(
     onRdtChange: (Dots, TravelPlan, BenchmarkReplica) => Unit,
     listenPort: Int = 0,
 ) {
-  val sync: AclEnforcingSync[TravelPlan] = {
+  val sync: AclEnforcingSync[TravelPlan] =
     if enforcing then
         AclEnforcingSync[TravelPlan](
           identity,
@@ -33,7 +33,6 @@ class BenchmarkReplica(
           aclGenesis,
           (dots, delta) => onRdtChange(dots, delta, this)
         )
-  }
 
   def applyMutation(delta: TravelPlan): Unit = sync.mutate(_ => delta)
 

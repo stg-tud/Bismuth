@@ -20,13 +20,12 @@ case class IntervalTreeClock(idTree: IdTree, eventTree: EventTree):
       * An IntervalTreeClock (i,e') such that e' = e + f * i
       */
     @throws[IllegalArgumentException]("when the id is anonymous")
-    def event: IntervalTreeClock = {
+    def event: IntervalTreeClock =
       if idTree.isAnonymous then {
         throw IllegalArgumentException("Cannot perform events on an anonymous stamp")
       } else {
         copy(eventTree = eventTree.increment(idTree))
       }
-    }
 
     def peek: IntervalTreeClock = IntervalTreeClock(IdTree.anonymous, eventTree)
 

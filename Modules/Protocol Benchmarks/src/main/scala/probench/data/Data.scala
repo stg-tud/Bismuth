@@ -56,7 +56,7 @@ object Codecs {
 case class Heartbeat(supposedLeader: Option[Uid], senderTimestamp: Long, receiverTimestamp: Option[Long] = None)
 case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
   Map.empty[Uid, LastWriterWins[Heartbeat]]) {
-  private def currentVotes(timeoutThreshold: Long, currentTime: Long)(using LocalUid): Map[Uid, Option[Uid]] = {
+  private def currentVotes(timeoutThreshold: Long, currentTime: Long)(using LocalUid): Map[Uid, Option[Uid]] =
     // count votes that were received in the threshold window and current local votes
     heartbeats
       .collect {
@@ -67,21 +67,18 @@ case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
             if senderT >= (currentTime - timeoutThreshold) && uid == replicaId =>
           (uid, leader)
       }
-  }
 
-  def alivePeers(timeoutThreshold: Long, currentTime: Long)(using LocalUid): Set[Uid] = {
+  def alivePeers(timeoutThreshold: Long, currentTime: Long)(using LocalUid): Set[Uid] =
     currentVotes(timeoutThreshold, currentTime)
       .map((uid, _) => uid)
       .toSet
-  }
 
-  def hasQuorum(timeoutThreshold: Long, currentTime: Long)(using LocalUid, Participants): Boolean = {
+  def hasQuorum(timeoutThreshold: Long, currentTime: Long)(using LocalUid, Participants): Boolean =
     Voting(
       currentVotes(timeoutThreshold, currentTime).collect {
         case (id, Some(leader)) => Vote(value = leader, voter = id)
       }.toSet
     ).result.contains(replicaId)
-  }
 }
 
 object HeartbeatQuorum:

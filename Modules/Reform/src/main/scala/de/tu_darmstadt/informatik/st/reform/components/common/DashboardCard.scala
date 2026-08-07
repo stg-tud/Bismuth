@@ -4,7 +4,7 @@ import de.tu_darmstadt.informatik.st.reform.*
 import outwatch.*
 import outwatch.dsl.*
 
-def NumberCard(title: String, number: VMod, description: VMod, props: VMod*): VNode = {
+def NumberCard(title: String, number: VMod, description: VMod, props: VMod*): VNode =
   div(
     cls := "bg-white shadow-lg rounded-lg p-4 flex flex-col gap-4 w-fit min-h-36 min-w-36 justify-evenly dark:bg-gray-700",
     div(
@@ -20,9 +20,8 @@ def NumberCard(title: String, number: VMod, description: VMod, props: VMod*): VN
     ),
     props,
   )
-}
 
-def MoneyCard(title: String, number: VMod, description: VMod, props: VMod*): VNode = {
+def MoneyCard(title: String, number: VMod, description: VMod, props: VMod*): VNode =
   div(
     cls := "bg-white shadow-lg rounded-lg p-4 flex flex-col gap-4 w-fit min-h-36 min-w-36 justify-evenly dark:bg-gray-700",
     div(
@@ -39,7 +38,6 @@ def MoneyCard(title: String, number: VMod, description: VMod, props: VMod*): VNo
     ),
     props,
   )
-}
 
 def TableCard(
     title: VMod,
@@ -48,7 +46,7 @@ def TableCard(
     rows: Seq[Seq[VMod]],
     footer: Seq[VMod],
     props: VMod*,
-): VNode = {
+): VNode =
   div(
     cls := "bg-white shadow-lg rounded-lg p-4 flex flex-col gap-4 min-w-fit overflow-x-auto custom-scrollbar max-w-[900px] w-full dark:bg-gray-700",
     div(
@@ -71,4 +69,3 @@ def TableCard(
     ),
     props,
   )
-}

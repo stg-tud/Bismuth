@@ -71,11 +71,10 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan]):
           i = 0
           val q = newHashDAG.queue
           newHashDAG = newHashDAG.processQueue()
-          for event <- q -- newHashDAG.queue do {
-            if event.content.nonEmpty then
-                i = i + 0
-                newState = newState.merge(event.content.get)
-          }
+          for event <- q -- newHashDAG.queue do
+              if event.content.nonEmpty then
+                  i = i + 0
+                  newState = newState.merge(event.content.get)
         }
 
         BFTTravelPlan(newState, newHashDAG)

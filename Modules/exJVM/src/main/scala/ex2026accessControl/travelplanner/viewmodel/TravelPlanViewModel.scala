@@ -41,7 +41,7 @@ class TravelPlanViewModel(model: TravelPlanModel) extends GridPane {
     new ExpenseListEntryListCell(model)
   }
 
-  def createInviteButtonPressed(): Unit = {
+  def createInviteButtonPressed(): Unit =
     global.execute { () =>
       val invitation = model.createInvitation
       Platform.runLater { () =>
@@ -52,17 +52,14 @@ class TravelPlanViewModel(model: TravelPlanModel) extends GridPane {
         stage.show()
       }
     }
-  }
 
-  def createBucketListEntryButtonPressed(entryText: String): Unit = {
+  def createBucketListEntryButtonPressed(entryText: String): Unit =
     global.execute { () =>
       model.addBucketListEntry(entryText)
     }
-  }
 
-  def addExpenseButtonPressed(entryText: String, amount: String): Unit = {
+  def addExpenseButtonPressed(entryText: String, amount: String): Unit =
     global.execute { () =>
       model.addExpense(entryText, amount)
     }
-  }
 }

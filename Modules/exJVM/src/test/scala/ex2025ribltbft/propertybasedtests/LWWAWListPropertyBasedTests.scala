@@ -6,7 +6,7 @@ import org.scalacheck.Prop.forAll
 
 class LWWAWListPropertyBasedTests extends munit.ScalaCheckSuite {
 
-  val genOp: Gen[LWWAWList[String] => LWWAWList[String]] = {
+  val genOp: Gen[LWWAWList[String] => LWWAWList[String]] =
     Gen.oneOf(
       (c: LWWAWList[String]) =>
           val i = Gen.choose(0, c.list.size).sample.get
@@ -23,7 +23,6 @@ class LWWAWListPropertyBasedTests extends munit.ScalaCheckSuite {
           c.remove(i)
         }
     )
-  }
 
   val genOps: Gen[List[LWWAWList[String] => LWWAWList[String]]] = Gen.listOf(genOp)
 

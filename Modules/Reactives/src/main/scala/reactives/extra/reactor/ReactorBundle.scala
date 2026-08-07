@@ -134,7 +134,7 @@ object Reactor {
 
   private def createReactor[T](initialValue: T, initialStage: Stage[T])(using
       ct: CreationTicket[State]
-  ): Reactor[T] = {
+  ): Reactor[T] =
     ct.scope.create(
       Set(),
       new ReactorState[T](initialValue, initialStage),
@@ -142,7 +142,6 @@ object Reactor {
     ) { (createdState: State[ReactorState[T]]) =>
       new Reactor[T](createdState)
     }
-  }
 }
 
 sealed trait ReactorAction[T] {}

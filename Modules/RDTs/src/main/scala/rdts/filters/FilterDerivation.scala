@@ -18,7 +18,7 @@ object FilterDerivation {
       *
       * @param permissionTree The tree to check
       */
-    override def validatePermissionTree(permissionTree: PermissionTree): Unit = {
+    override def validatePermissionTree(permissionTree: PermissionTree): Unit =
       permissionTree.children.foreach { case (factorLabel, childPermissionTree) =>
         elementLabels.get(factorLabel) match
             case Some(factorIdx) =>
@@ -35,7 +35,6 @@ object FilterDerivation {
               }
             case None => throw InvalidPathException(List(factorLabel))
       }
-    }
 
     // Assumes a valid permission tree
     override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree = {
@@ -61,7 +60,7 @@ object FilterDerivation {
       factorBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each factor
       factorFilters: IArray[Filter[Any]]  // The Filter TypeClass instance for each factor
   ) extends AlgebraicFilter[T](factorLabels.zipWithIndex.toMap, factorFilters):
-      override def filter(delta: T, permissionTree: PermissionTree): T = {
+      override def filter(delta: T, permissionTree: PermissionTree): T =
         permissionTree match
             case PermissionTree(ALLOW, _)                              => delta
             case PermissionTree(PARTIAL, children) if children.isEmpty => productBottom.empty
@@ -70,9 +69,8 @@ object FilterDerivation {
               // Otherwise use bottom for factor
               val filteredProduct = filterProduct(delta.asInstanceOf[Product], permissionTree)
               pm.fromProduct(filteredProduct)
-      }
 
-      private def filterProduct(product: Product, permissionTree: PermissionTree): Product = {
+      private def filterProduct(product: Product, permissionTree: PermissionTree): Product =
         // We assume that permission is PARTIAL and children nonempty
         permissionTree.children.get("*") match
             case None => // No wildcard
@@ -95,7 +93,6 @@ object FilterDerivation {
                       val factor      = product.productElement(factorIndex)
                       val permissions = permissionTree.children.getOrElse(label, wildcard)
                       factorFilters(factorIndex).filter(factor, permissions)
-      }
 
       override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean = {
         if permissionTree.permission == ALLOW then return true

@@ -122,7 +122,7 @@ class ProBenchAdapter extends DB {
           Status.ERROR
   }
 
-  override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status = {
+  override def read(table: String, key: String, fields: Set[String], result: Map[String, ByteIterator]): Status =
     try
         val f = syncClient(_.readWithResult(key).map(res =>
           result.put("result", StringByteIterator(res))
@@ -138,7 +138,6 @@ class ProBenchAdapter extends DB {
           Thread.sleep(backoff)
           backoff = backoff + 500
           Status.ERROR
-  }
 
   override def scan(
       table: String,

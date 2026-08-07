@@ -15,7 +15,7 @@ import java.util.concurrent.locks.{Lock, ReentrantLock}
 class ChatBench {
 
   @Benchmark
-  def chat(benchState: BenchState, threadParams: ThreadParams): Unit = {
+  def chat(benchState: BenchState, threadParams: ThreadParams): Unit =
     if reactives.SelectedScheduler.candidate.scheduler != reactives.scheduler.LevelbasedVariants.unmanaged then {
       benchState.clients(threadParams.getThreadIndex).fire("hello")
     } else {
@@ -32,7 +32,6 @@ class ChatBench {
         locks(room1).unlock()
       }
     }
-  }
 
 }
 

@@ -68,12 +68,11 @@ class TextArea extends ReComponent {
     }
   }
 
-  def copy(): Unit = {
+  def copy(): Unit =
     if selected.readValueOnce.nonEmpty then {
       val s = new StringSelection(selected.readValueOnce.mkString)
       clipboard.setContents(s, s)
     }
-  }
 
   // A caret has a position in the document referred to as a dot.
   // The dot is where the caret is currently located in the model.

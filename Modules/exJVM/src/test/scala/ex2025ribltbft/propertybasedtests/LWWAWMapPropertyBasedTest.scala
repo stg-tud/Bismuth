@@ -12,7 +12,7 @@ class LWWAWMapPropertyBasedTest extends munit.ScalaCheckSuite {
 
   // override def scalaCheckInitialSeed = "KtTZ42SL7mcctkxBVRBmIfGbHFi39eQMCCGroGLjUfH="
 
-  val genOp: Gen[LWWAWMap[String, String] => LWWAWMap[String, String]] = {
+  val genOp: Gen[LWWAWMap[String, String] => LWWAWMap[String, String]] =
     Gen.oneOf(
       (map: LWWAWMap[String, String]) =>
           val key = Gen.alphaUpperStr.sample.get.take(3)
@@ -25,7 +25,6 @@ class LWWAWMapPropertyBasedTest extends munit.ScalaCheckSuite {
           // println(s"remove: $key")
           map.remove(key)
     )
-  }
 
   val genOps: Gen[List[LWWAWMap[String, String] => LWWAWMap[String, String]]] = Gen.listOf(genOp)
 

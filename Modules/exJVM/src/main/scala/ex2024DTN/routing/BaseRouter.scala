@@ -29,15 +29,14 @@ abstract class BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClie
   val peers: ConcurrentHashMap[String, DtnPeer] = ConcurrentHashMap()
   val services: ConcurrentHashMap[Int, String]  = ConcurrentHashMap()
 
-  def start_receiving(): Future[Unit] = {
+  def start_receiving(): Future[Unit] =
     ws.receivePacket().flatMap { packet =>
       on_packet_received(packet).flatMap { _ =>
         start_receiving()
       }
     }.recoverAndLog()
-  }
 
-  def on_packet_received(packet: Packet): Future[Unit] = {
+  def on_packet_received(packet: Packet): Future[Unit] =
     packet match
         case p: Packet.RequestSenderForBundle =>
           onRequestSenderForBundle(p) match {
@@ -59,7 +58,6 @@ abstract class BaseRouter(ws: WSEroutingClient, monitoringClient: MonitoringClie
         case p: Packet.PeerState                         => Future(onPeerState(p))
         case p: Packet.ServiceState                      => Future(onServiceState(p))
         case p: Packet => Future(println(s"warning: received unkown/unexpected packet $p for erouter. ignoring."))
-  }
 
   override def onRequestSenderForBundle(packet: Packet.RequestSenderForBundle): Option[Packet.ResponseSenderForBundle] =
     ???

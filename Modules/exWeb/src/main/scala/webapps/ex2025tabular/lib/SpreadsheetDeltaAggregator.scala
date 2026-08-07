@@ -46,7 +46,7 @@ class SpreadsheetDeltaAggregator[S](
     this
   }
 
-  def undoAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S]): Option[Spreadsheet[S]] = {
+  def undoAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S]): Option[Spreadsheet[S]] =
     undoStack match {
       case undoFn :: rest =>
         undoStack = rest
@@ -55,7 +55,6 @@ class SpreadsheetDeltaAggregator[S](
         Some(initialDelta.merge(delta))
       case Nil => None
     }
-  }
 
   def undo(): Boolean = undoAndGetDelta().isDefined
 

@@ -97,12 +97,11 @@ class OverlayDemoNode(
 
   def repairTick(): Unit = broadcastIO.foreach(_.tick())
 
-  def overlayInfoTick(): Unit = {
+  def overlayInfoTick(): Unit =
     broadcastIO.foreach { io =>
       given LocalUid = localUid
       publish(OverlayStatusProtocol.statusDelta(state, io, nowMillis()))
     }
-  }
 
   def addOverlayConnection(latent: LatentConnection[Connection]): Unit =
     broadcastIO.foreach(_.addClientConnection(latent))

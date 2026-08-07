@@ -125,7 +125,7 @@ object ReShapes extends SimpleSwingApplication {
           menu.update.fire()
   }
 
-  def addTab(networkSpaceState: DrawingSpaceState => NetworkSpaceState = { _ => null }): Unit = {
+  def addTab(networkSpaceState: DrawingSpaceState => NetworkSpaceState = { _ => null }): Unit =
     if newTabDialog.showDialog(ui.locationOnScreen) then {
       val (state, panel) = bilateralValues { value =>
         lazy val panel = generateDrawingPanel(
@@ -153,7 +153,6 @@ object ReShapes extends SimpleSwingApplication {
       }
       addDrawingPanel(panel, networkSpaceState(state))
     }
-  }
 
   def generateDrawingPanel(
       showIntersections: Boolean,
@@ -179,7 +178,7 @@ object ReShapes extends SimpleSwingApplication {
     menu.update.fire()
   }
 
-  def addNetworkTab(): Unit = {
+  def addNetworkTab(): Unit =
     if serverDialog.showDialog(ui.locationOnScreen) && serverDialog.inputIsValid() then
         try addTab { drawingSpaceState =>
             new NetworkSpaceState(
@@ -201,9 +200,8 @@ object ReShapes extends SimpleSwingApplication {
             JOptionPane.showMessageDialog(null, "Invalid input!")
             addNetworkTab()
         }
-  }
 
-  def removeCurrentTab(): Unit = {
+  def removeCurrentTab(): Unit =
     if ui.tabbedPane.pages.size > 0 then {
       val (_, networkSpaceState) = panelDrawingSpaceStates(ui.tabbedPane.selection.page)
       if networkSpaceState != null then
@@ -212,5 +210,4 @@ object ReShapes extends SimpleSwingApplication {
       ui.tabbedPane.pages remove ui.tabbedPane.selection.index
       menu.update.fire()
     }
-  }
 }

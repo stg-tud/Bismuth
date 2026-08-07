@@ -178,7 +178,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
 
     val iceTrickle = textarea(readonly := true).render
 
-    def sessionDisplay(sessionDescription: SessionDescription): dom.html.TextArea = {
+    def sessionDisplay(sessionDescription: SessionDescription): dom.html.TextArea =
       textarea(
         readonly := true,
         onfocus  := { (ev: UIEvent) =>
@@ -186,7 +186,6 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
         },
         writeToString(sessionDescription)(using codec)
       ).render
-    }
 
     Async[Any] {
       val lifecycle: ConnectorOverview = peer.lifecycle.bind

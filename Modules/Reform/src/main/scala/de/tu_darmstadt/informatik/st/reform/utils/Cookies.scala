@@ -5,7 +5,7 @@ import org.scalajs.dom.document
 import scala.scalajs.js
 
 object Cookies {
-  def getCookie(name: String): Option[String] = {
+  def getCookie(name: String): Option[String] =
     document.cookie
       .split(";")
       .nn
@@ -16,7 +16,6 @@ object Cookies {
         val kv = cookie.nn.split("=").nn
         kv(1).nn
       }
-  }
 
   def clearCookie(name: String): Unit = {
     document.cookie = s"$name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";

@@ -20,7 +20,7 @@ class CheckboxList(
 
   private val id = s"checkbox-list-${js.Math.round(js.Math.random() * 100000)}"
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "flex flex-row",
       props,
@@ -43,7 +43,6 @@ class CheckboxList(
       },
       renderOptions,
     )
-  }
 
   private def renderOptions: VMod = div(
     Signal.dynamic {

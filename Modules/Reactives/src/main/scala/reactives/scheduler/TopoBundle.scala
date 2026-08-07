@@ -170,7 +170,7 @@ trait TopoBundle {
     def toposort(rem: Seq[Derived]): Seq[Derived] = {
       val sorted = ArrayBuffer[Derived]()
 
-      def _toposort(rem: Derived): Unit = {
+      def _toposort(rem: Derived): Unit =
         if rem.state.discovered then ()
         else {
           rem.state.discovered = true
@@ -178,7 +178,6 @@ trait TopoBundle {
           sorted += rem
           ()
         }
-      }
 
       rem.foreach(_toposort)
       // need toSeq for 2.13, where Seq is immutable

@@ -85,9 +85,8 @@ object StateBasedUntrustedReplicaSizeBenchmark {
 class UntrustedStateBasedReplicaMock(encryptedStates: Set[EncryptedState]) extends UntrustedReplica(encryptedStates) {
   override protected def disseminate(encryptedState: EncryptedState): Unit = {}
 
-  def size: Int = {
+  def size: Int =
     stateStore.toList.map { encState =>
       encState.serialVersionVector.length + encState.stateCiphertext.length
     }.sum
-  }
 }

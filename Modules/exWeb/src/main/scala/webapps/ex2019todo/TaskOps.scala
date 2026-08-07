@@ -39,14 +39,13 @@ class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
           isDone
         })
 
-  def handleRemove(state: State)(id: String): State = {
+  def handleRemove(state: State)(id: String): State =
     state.mod(_.deleteBy { (taskref: TaskRef) =>
       val delete = taskref.id == id
       // todo, move to observer, disconnect during transaction does not respect rollbacks
       if delete then taskref.task.disconnect()
       delete
     })
-  }
 
   def handleDelta(deltaEvent: Event[TodoDataManager.TodoRepState]): Fold.Branch[State] =
     deltaEvent.branch { allDeltas =>

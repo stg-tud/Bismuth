@@ -19,11 +19,10 @@ class GSetBench {
   var set: NamedDeltaBuffer[Set[Int]] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     set = (0 until size).foldLeft(NamedDeltaBuffer("a".asId, Set.empty[Int])) {
       case (s, e) => s.mod(_ => Set(e))
     }
-  }
 
   @Benchmark
   def elements(): Set[Int] = set.state

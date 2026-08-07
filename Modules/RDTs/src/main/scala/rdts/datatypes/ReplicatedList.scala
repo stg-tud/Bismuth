@@ -53,7 +53,7 @@ case class ReplicatedList[E](
     val sorted               = ArrayBuffer[Dot]()
     var discovered: Set[Dot] = Set.empty
 
-    def _toposort(rem: Dot): Unit = {
+    def _toposort(rem: Dot): Unit =
       if discovered.contains(rem) then ()
       else {
         discovered = discovered + rem
@@ -65,7 +65,6 @@ case class ReplicatedList[E](
         sorted += rem
         ()
       }
-    }
 
     _toposort(headDot)
     sorted.toSeq.reverse
@@ -95,7 +94,7 @@ case class ReplicatedList[E](
   }
 
   def delete(index: Int): ReplicatedList[E]      = removeIndex(index)
-  def removeIndex(index: Int): ReplicatedList[E] = {
+  def removeIndex(index: Int): ReplicatedList[E] =
 
     if index < 0 || dotList.sizeIs <= index + 1 then ReplicatedList.empty
     else
@@ -105,24 +104,21 @@ case class ReplicatedList[E](
           removed = Dots.single(dotList(index + 1)),
           times = Map.empty
         )
-  }
 
-  def clear(): ReplicatedList[E] = {
+  def clear(): ReplicatedList[E] =
     ReplicatedList(
       causalOrder = Map.empty,
       elements = Map.empty,
       times = Map.empty,
       removed = observed
     )
-  }
 
   def size: Int = elements.size
 
-  def compact: ReplicatedList[E] = {
+  def compact: ReplicatedList[E] =
     copy(
       elements = elements.filterNot((d, _) => removed.contains(d)),
     )
-  }
 
   def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedList[E] = {
     val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(ReplicatedList.headDot))

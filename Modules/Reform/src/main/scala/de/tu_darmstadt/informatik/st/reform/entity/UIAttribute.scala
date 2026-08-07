@@ -104,12 +104,11 @@ class UITextAttribute[EntityType, AttributeType](
       formats = formats,
     ) {
 
-  private def set(entityVar: Var[EntityType], x: AttributeType): Unit = {
+  private def set(entityVar: Var[EntityType], x: AttributeType): Unit =
     entityVar.transform { e =>
       val attr = getter(e)
       setter(e, attr.set(x))
     }
-  }
 
   protected def renderEditInput(
       _formId: String,
@@ -133,11 +132,10 @@ class UITextAttribute[EntityType, AttributeType](
         ignoreDisconnectable(evt.observe(set.compose(writeConverter)))
         evt
       },
-      placeholder := label, {
-        datalist match {
-          case None        => VMod.empty
-          case Some(value) => listId := value
-        }
+      placeholder := label,
+      datalist match {
+        case None        => VMod.empty
+        case Some(value) => listId := value
       },
       props,
     )
@@ -362,29 +360,27 @@ class UISelectAttribute[EntityType, AttributeType](
       datalist: Option[String] = None,
       entity: Var[EntityType],
       props: VMod*,
-  ): VMod = {
+  ): VMod =
     Select(
       Signal.dynamic { options(entity.value).value },
       v =>
         set(writeConverter(v)),
       attr.map(getEditString),
-      searchEnabled, {
-        createPage match {
-          case Some(createPage) =>
-            a(
-              href   := jsImplicits.routing.linkPath(createPage),
-              target := "_blank",
-              "Nothing found. Click here to create.",
-            )
-          case None => span("Nothing found...")
-        }
+      searchEnabled,
+      createPage match {
+        case Some(createPage) =>
+          a(
+            href   := jsImplicits.routing.linkPath(createPage),
+            target := "_blank",
+            "Nothing found. Click here to create.",
+          )
+        case None => span("Nothing found...")
       },
       isRequired,
       isRequired,
       formId := _formId,
       props,
     )
-  }
 }
 
 @nowarn("msg=shadows field")
@@ -448,7 +444,7 @@ class UIMultiSelectAttribute[EntityType](
       datalist: Option[String] = None,
       entity: Var[EntityType],
       props: VMod*,
-  ): VMod = {
+  ): VMod =
     Seq(
       MultiSelect(
         Signal.dynamic { options(entity.value).value },
@@ -456,23 +452,21 @@ class UIMultiSelectAttribute[EntityType](
           set(v),
         attr.map(_.getOrElse(Seq())),
         showItems,
-        searchEnabled, {
-          createPage match {
-            case Some(createPage) =>
-              a(
-                href   := jsImplicits.routing.linkPath(createPage),
-                target := "_blank",
-                "Nothing found. Click here to create.",
-              )
-            case None => span("Nothing found...")
-          }
+        searchEnabled,
+        createPage match {
+          case Some(createPage) =>
+            a(
+              href   := jsImplicits.routing.linkPath(createPage),
+              target := "_blank",
+              "Nothing found. Click here to create.",
+            )
+          case None => span("Nothing found...")
         },
         isRequired,
         formId := _formId,
         props,
       ),
     )
-  }
 }
 
 @nowarn("msg=shadows field")
@@ -529,7 +523,7 @@ class UICheckboxListAttribute[EntityType](
       datalist: Option[String] = None,
       entity: Var[EntityType],
       props: VMod*,
-  ): VMod = {
+  ): VMod =
     Seq(
       CheckboxList(
         Signal.dynamic { options(entity.value).value },
@@ -543,5 +537,4 @@ class UICheckboxListAttribute[EntityType](
       ),
     )
 
-  }
 }

@@ -13,7 +13,7 @@ object RExceptions {
     }
   }
 
-  def toExternalReadException[R](r: ReSource, f: => R): R = {
+  def toExternalReadException[R](r: ReSource, f: => R): R =
     try f
     catch {
       case esct: EmptySignalControlThrowable =>
@@ -22,6 +22,5 @@ object RExceptions {
       // todo improve error message
       case other: Throwable => throw ObservedException(r.info, "was accessed but contained an exception", other)
     }
-  }
 
 }

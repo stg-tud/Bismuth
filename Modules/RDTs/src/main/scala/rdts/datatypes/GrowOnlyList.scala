@@ -18,7 +18,7 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
     val sorted                      = ArrayBuffer[CausalTime]()
     var discovered: Set[CausalTime] = Set.empty
 
-    def _toposort(rem: CausalTime): Unit = {
+    def _toposort(rem: CausalTime): Unit =
       if discovered.contains(rem) then ()
       else {
         discovered = discovered + rem
@@ -27,7 +27,6 @@ case class GrowOnlyList[E](order: Map[CausalTime, Set[CausalTime]], elements: Ma
         sorted += rem
         ()
       }
-    }
 
     (Iterable(GrowOnlyList.headDot) ++ order.keys.toSeq.sorted).foreach(_toposort)
     sorted.toSeq.reverse

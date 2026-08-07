@@ -9,7 +9,7 @@ object ReShapesServer {
   var clients: List[(InetAddress, Int)] = List.empty
   var currentShapes: Elem               = null
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     if args.size >= 2 then {
       val commandThreadPort = args(0).toInt
       val updateThreadPort  = args(1).toInt
@@ -18,7 +18,6 @@ object ReShapesServer {
       new Thread(new UpdateThread(updateThreadPort)).start()
     } else
         println("invalid number of arguments please enter two port numbers")
-  }
 
   /** Registers a client to the server if not already registered. */
   def registerClient(inetAddress: InetAddress, port: Int): Unit =
@@ -50,7 +49,7 @@ object ReShapesServer {
   /** Sends shapes to a client.
     * returns true if shapes where successfully send, false otherwise (connection refused to client)
     */
-  def sendToClient(client: (InetAddress, Int)): Boolean = {
+  def sendToClient(client: (InetAddress, Int)): Boolean =
     try {
       if currentShapes != null then {
         val socket = new Socket(client._1, client._2)
@@ -63,7 +62,6 @@ object ReShapesServer {
     } catch {
       case e: ConnectException => false
     }
-  }
 }
 
 /** Listens to string commands:

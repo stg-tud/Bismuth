@@ -31,7 +31,7 @@ object DafnyGen {
     * @param typeName The name of the Scala type.
     * @return The name of the corresponding Dafny type, or the original parameter if no such correspondence exists.
     */
-  private def getDafnyType(typeName: String): String = {
+  private def getDafnyType(typeName: String): String =
     typeName match
         case "Boolean"          => "bool"
         case "Char"             => "char"
@@ -41,7 +41,6 @@ object DafnyGen {
         case "Map"    => "map"
         case "List"   => "seq"    // This does confer some changes in semantics regarding mutability etc.
         case _        => typeName
-  }
 
   /** Recursively gathers the names of all references used in the given LoRe Term node.
     * This skips references to non-top-level definitions (e.g. references to parameters of arrow functions).
@@ -178,7 +177,7 @@ object DafnyGen {
   private def getInteractionAssignment(t: Term, reactiveNames: List[String], ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     t match
         case tup: TTuple =>
           // Multiple Sources are being modified, so generate multiple assignments.
@@ -206,7 +205,6 @@ object DafnyGen {
         case _ =>
           // Body is a single expression for a single Source (i.e. not a tuple), so that becomes the assignment.
           s"LoReFields.${reactiveNames.head} := ${generate(t, ctx)};"
-  }
 
   /** Compiles a list of LoRe terms into Dafny code.
     * @param ast The list of LoRe terms to compile to Dafny.
@@ -345,7 +343,7 @@ object DafnyGen {
     * @param node The LoRe Term node.
     * @return The generated Dafny code.
     */
-  private def generate(node: Term, ctx: Map[String, NodeInfo])(using logLevel: LogLevel, scalaCtx: Context): String = {
+  private def generate(node: Term, ctx: Map[String, NodeInfo])(using logLevel: LogLevel, scalaCtx: Context): String =
     node match
         // Cases ordered by order in LoRe AST definition.
         case n: TViperImport => generateFromTViperImport(n, ctx)
@@ -368,18 +366,16 @@ object DafnyGen {
         case n: TString      => generateFromTString(n, ctx)
         case n: TFAcc        => generateFromTFAcc(n, ctx)
         case n: TFunC        => generateFromTFunC(n, ctx)
-  }
 
   /** Generates a Dafny type annotation for the given LoRe Type node.
     *
     * @param node The LoRe Type node.
     * @return The generated Dafny type annotation.
     */
-  private def generate(node: Type, ctx: Map[String, NodeInfo])(using logLevel: LogLevel, scalaCtx: Context): String = {
+  private def generate(node: Type, ctx: Map[String, NodeInfo])(using logLevel: LogLevel, scalaCtx: Context): String =
     node match
         case n: SimpleType => generateFromSimpleType(n, ctx)
         case n: TupleType  => generateFromTupleType(n, ctx)
-  }
 
   /** Generates a Dafny Type annotation for the given LoRe SimpleType node.
     *
@@ -838,7 +834,7 @@ object DafnyGen {
   private def generateFromTSeq(node: TSeq, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // TSeq terms are not "sequences" as in collections of values, they're blocks of statements.
     // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-block-statement
     node.body.map { t =>
@@ -849,7 +845,6 @@ object DafnyGen {
       // The curly brace however would always already have been added as part of always-required syntax.
       if gen.endsWith("}") || gen.endsWith(";") then gen else s"$gen;"
     }.toList.mkString("\n")
-  }
 
   /** Generates Dafny code for the given LoRe TArrow.
     *
@@ -1318,7 +1313,7 @@ object DafnyGen {
   private def generateFromTFCall(node: TFCall, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     node.args match
         case None =>
           // Property (field) access
@@ -1349,7 +1344,6 @@ object DafnyGen {
           // Reference: https://dafny.org/dafny/DafnyRef/DafnyRef#sec-method-declaration
           val argsList: List[String] = args.map(arg => generate(arg, ctx))
           s"${generate(node.parent, ctx)}.${node.field}(${argsList.mkString(", ")})"
-  }
 
   /** Generates Dafny code for the given LoRe TFunC.
     *
@@ -1359,7 +1353,7 @@ object DafnyGen {
   private def generateFromTFunC(node: TFunC, ctx: Map[String, NodeInfo])(using
       logLevel: LogLevel,
       scalaCtx: Context
-  ): String = {
+  ): String =
     // References:
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-function-declaration
     // https://dafny.org/dafny/DafnyRef/DafnyRef#sec-maps
@@ -1400,7 +1394,6 @@ object DafnyGen {
         case _ =>
           val args: Seq[String] = node.args.map(arg => generate(arg, ctx))
           s"${node.name}(${args.mkString(", ")})"
-  }
 
   /* Term types that are not covered currently, and should error */
 

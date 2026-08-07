@@ -10,7 +10,7 @@ case class Storage[T](private val name: String)(using
     indexedDb: IIndexedDB,
 ) {
 
-  def getOrDefault(id: String, default: T): Future[T] = {
+  def getOrDefault(id: String, default: T): Future[T] =
     indexedDb.update[T](
       getKey(id),
       {
@@ -18,7 +18,6 @@ case class Storage[T](private val name: String)(using
         case None    => default
       },
     )
-  }
 
   private def getKey(id: String): String = s"$name-$id"
 

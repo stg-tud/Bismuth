@@ -40,7 +40,7 @@ class ReplicationGroup[A](name: String)(using
   @volatile
   private var cache: Map[String, Future[Synced[A]]] = Map.empty
 
-  def createAndSync(id: String, initialValue: A): Future[Synced[A]] = {
+  def createAndSync(id: String, initialValue: A): Future[Synced[A]] =
     synchronized {
       if cache.contains(id) then {
         throw new Exception("This is not a new entity!")
@@ -54,7 +54,6 @@ class ReplicationGroup[A](name: String)(using
         synced
       }
     }
-  }
 
   def getOrCreateAndSync(id: String): Future[Synced[A]] =
     cache.getOrElse(id, createAndSync(id, bottom.empty))

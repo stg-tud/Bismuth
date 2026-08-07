@@ -30,7 +30,7 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
 
   def registerOnReceive(callback: (RdtMessageType, Array[Byte], Dots) => Unit): Unit = {
     // flush receive forever and call callback
-    def flush_receive(): Future[Bundle] = {
+    def flush_receive(): Future[Bundle] =
       ws.receiveBundle().flatMap { bundle =>
         println(s"received bundle: ${bundle.id}")
 
@@ -50,7 +50,6 @@ class Client(ws: WSEndpointClient, appName: String, monitoringClient: Monitoring
 
         flush_receive()
       }
-    }
     flush_receive().recoverAndLog()
     ()
   }
@@ -63,10 +62,9 @@ object Client {
       port: Int,
       appName: String,
       monitoringClient: MonitoringClientInterface = NoMonitoringClient
-  ): Future[Client] = {
+  ): Future[Client] =
     WSEndpointClient(host, port)
       .flatMap(ws => ws.registerEndpointAndSubscribe(s"dtn://global/~rdt/$appName"))
       .flatMap(ws => ws.registerEndpointAndSubscribe(s"${ws.nodeId}rdt/$appName"))
       .map(ws => new Client(ws, appName, monitoringClient))
-  }
 }

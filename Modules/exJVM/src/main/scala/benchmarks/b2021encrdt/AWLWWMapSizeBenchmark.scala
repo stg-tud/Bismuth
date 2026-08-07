@@ -1,7 +1,7 @@
 package benchmarks.b2021encrdt
 
 object AWLWWMapSizeBenchmark {
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     for numberElements <- List(10, 100, 1000, 10_000, 100_000) do {
       val state = new SerializeOnlyBenchmarkState()
       state.crdtSizeInElements = numberElements
@@ -13,5 +13,4 @@ object AWLWWMapSizeBenchmark {
         println("size(" + numberElements + " elements)\t= " + sizeInKiB + " KiB")
       }
     }
-  }
 }

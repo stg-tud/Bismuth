@@ -22,7 +22,7 @@ enum RdtMessageType:
     case Request, Payload
 
 case class Endpoint(scheme: Int, specific_part: String | Int) {
-  def full_uri: String = {
+  def full_uri: String =
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED => specific_part match {
           case Endpoint.NONE_ENDPOINT_SPECIFIC_PART_ENCODED =>
@@ -33,9 +33,8 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
       case Endpoint.IPN_URI_SCHEME_ENCODED => s"${Endpoint.IPN_URI_SCHEME_NAME}:$specific_part"
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
-  }
 
-  def extract_node_endpoint(): Endpoint = {
+  def extract_node_endpoint(): Endpoint =
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
@@ -48,9 +47,8 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
       case Endpoint.IPN_URI_SCHEME_ENCODED => throw Exception(s"cannot extract node endpoint from ipn endpoint: $this")
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
-  }
 
-  def extract_node_name(): String = {
+  def extract_node_name(): String =
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
@@ -61,9 +59,8 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
       case Endpoint.IPN_URI_SCHEME_ENCODED => throw Exception(s"cannot extract node name from ipn endpoint: $this")
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
-  }
 
-  def extract_endpoint_id(): String = {
+  def extract_endpoint_id(): String =
     scheme match {
       case Endpoint.DTN_URI_SCHEME_ENCODED =>
         specific_part match
@@ -76,7 +73,6 @@ case class Endpoint(scheme: Int, specific_part: String | Int) {
       case Endpoint.IPN_URI_SCHEME_ENCODED => throw Exception(s"cannot extract node name from ipn endpoint: $this")
       case _                               => throw Exception(s"unkown encoded dtn uri scheme: $scheme")
     }
-  }
 }
 object Endpoint {
   val DTN_URI_SCHEME_NAME: String         = "dtn"
@@ -292,7 +288,7 @@ case class BlockProcessingControlFlags(
 )
 
 // utility method which either reads a byte-array (for CBOR) or an unbounded array of int (for JSON)
-private def readBytes(reader: Reader): Array[Byte] = {
+private def readBytes(reader: Reader): Array[Byte] =
   if reader.hasByteArray then {
     reader.readByteArray()
   } else {
@@ -303,7 +299,6 @@ private def readBytes(reader: Reader): Array[Byte] = {
         buffer += reader.readInt().toByte
     reader.readArrayClose(unbounded = true, buffer.toArray)
   }
-}
 
 given Codec[RdtMessageType] = deriveCodec[RdtMessageType]
 given Codec[RdtMetaInfo]    = deriveCodec[RdtMetaInfo]

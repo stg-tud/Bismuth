@@ -19,7 +19,7 @@ object Observe {
   def strong[T](
       dependency: ReSource.of[State],
       fireImmediately: Boolean
-  )(fun: dependency.Value => ObserveInteract)(using ct: CreationTicket[dependency.State]): Disconnectable = {
+  )(fun: dependency.Value => ObserveInteract)(using ct: CreationTicket[dependency.State]): Disconnectable =
     ct.scope.create[Pulse[Nothing], Disconnectable & Derived.of[State]](
       Set(dependency),
       Pulse.NoChange,
@@ -39,7 +39,6 @@ object Observe {
         }
         new Obs
     }
-  }
 
   class ObservePulsing[T](reevalVal: Pulse[T], location: Any, onValue: T => Unit, onError: (Exception => Unit) | Null)
       extends Observe.ObserveInteract {

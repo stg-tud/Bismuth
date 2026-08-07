@@ -89,27 +89,26 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       */
     def listenPort: Int = serverSocket.getLocalPort
 
-    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Tcp] = {
+    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
       Async.fromCallback { (abort: Abort) ?=>
         try
             serverSocket // binds port if required
 
             executionContext.execute { () =>
-              while !abort.closeRequest do {
-                try {
-                  val socket = serverSocket.accept().asInstanceOf[SSLSocket]
-                  startHandshake(socket).map { (abort: Abort) ?=> peerIdentity =>
-                    val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
-                    executionContext.execute(() => conn.receiveLoopBlocking())
-                  }.runIn(summon) {
-                    case Success(value) => ()
-                    case Failure(ex)    => Async.handler.fail(ex)
+              while !abort.closeRequest do
+                  try {
+                    val socket = serverSocket.accept().asInstanceOf[SSLSocket]
+                    startHandshake(socket).map { (abort: Abort) ?=> peerIdentity =>
+                      val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
+                      executionContext.execute(() => conn.receiveLoopBlocking())
+                    }.runIn(summon) {
+                      case Success(value) => ()
+                      case Failure(ex)    => Async.handler.fail(ex)
+                    }
+                  } catch {
+                    case ex: SocketException if abort.closeRequest => ()
+                    case ex: Throwable                             => Async.handler.fail(ex)
                   }
-                } catch {
-                  case ex: SocketException if abort.closeRequest => ()
-                  case ex: Throwable                             => Async.handler.fail(ex)
-                }
-              }
               Try { serverSocket.close() }: Unit
             }
 
@@ -122,15 +121,13 @@ class P2PTls(privateIdentity: PrivateIdentity) {
             Async.handler.fail(ioException)
         }
       }
-    }
 
-    def close(): Unit = {
+    def close(): Unit =
       try
         serverSocket.close()
       catch {
         case _: Throwable => ()
       }
-    }
   }
 
   private class P2PTlsConnection(
@@ -186,23 +183,22 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       }
     }
 
-    private[P2PTls] def receiveLoopBlocking()(using abort: Abort): Unit = {
+    private[P2PTls] def receiveLoopBlocking()(using abort: Abort): Unit =
       inputStream.synchronized {
-        try {
+        try
           while !abort.closeRequest do
               val len = inputStream.readInt()
               require(len < MessageBuffer.maxPayloadSize, "Message too large")
               val bytes = inputStream.readNBytes(len)
               if bytes.length == len then receivedMessageCallback.succeed(ByteBufferMessageBuffer(bytes))
               else throw EOFException(s"Could not read $len bytes for message")
-        } catch {
+        catch {
           case ex: Throwable =>
             try close()
             catch { case _: Throwable => () }
             receivedMessageCallback.fail(ex)
         }
       }
-    }
 
     override def close(): Unit =
       socket.close()

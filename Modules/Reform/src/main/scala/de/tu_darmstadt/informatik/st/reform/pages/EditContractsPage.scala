@@ -43,13 +43,12 @@ case class NewContractPage()(using
     jsImplicits: JSImplicits,
 ) extends Page {
 
-  def render: VMod = {
+  def render: VMod =
     jsImplicits.repositories.contracts
       .create(Contract.empty.default)
       .map { currentContract =>
         InnerEditContractsPage(currentContract, "").render
       }
-  }
 }
 
 case class ExtendContractPage(contractId: String)(using
@@ -86,7 +85,7 @@ case class EditContractsPage(contractId: String)(using
 
   private val existingValue = Signal { jsImplicits.repositories.contracts.all.value.find(c => c.id == contractId) }
 
-  def render: VMod = {
+  def render: VMod =
     existingValue
       .map { currentContract =>
         val result: VMod = currentContract match {
@@ -97,7 +96,6 @@ case class EditContractsPage(contractId: String)(using
         }
         result
       }
-  }
 }
 
 abstract class Step(
@@ -111,7 +109,7 @@ abstract class Step(
   protected def updateHoursPerMonth(hours: Int): Option[Unit] =
     editingValue.now.map((_, a) => a.transform(c => c.copy(contractHoursPerMonth = c.contractHoursPerMonth.set(hours))))
 
-  protected def editStep(children: VMod*): VNode = {
+  protected def editStep(children: VMod*): VNode =
     div(
       cls := "relative",
       Signal {
@@ -149,7 +147,6 @@ abstract class Step(
         children,
       ),
     )
-  }
 
   protected def letterPDF: Future[Try[ArrayBuffer[Short]]] = {
     val promise: Promise[Try[ArrayBuffer[Short]]] = Promise()
@@ -780,7 +777,7 @@ class ContractType(
 )(using
     jsImplicits: JSImplicits,
 ) extends Step("Contract Schema", existingId, editingValue, disabled, disabledDescription) {
-  def render: VMod = {
+  def render: VMod =
     this.editStep(
       div(
         cls := "p-4",
@@ -788,7 +785,6 @@ class ContractType(
         ContractPageAttributes().contractAssociatedType.renderEdit("", editingValue, cls := "rounded-md"),
       ),
     )
-  }
 }
 
 class ContractRequirements(
@@ -799,7 +795,7 @@ class ContractRequirements(
 )(using
     jsImplicits: JSImplicits,
 ) extends Step("Contract requirements", existingId, editingValue, disabled, disabledDescription) {
-  def render: VMod = {
+  def render: VMod =
     this.editStep(
       div(
         cls := "p-4",
@@ -811,7 +807,6 @@ class ContractRequirements(
         ),
       ),
     )
-  }
 }
 
 class ContractRequirementsMail(
@@ -1192,7 +1187,7 @@ class InnerExtendContractsPage(override val existingValue: Synced[Contract], ove
       }
   }
 
-  override def render: VMod = {
+  override def render: VMod =
     div(
       cls := "flex flex-col items-center",
       div(
@@ -1222,14 +1217,13 @@ class InnerExtendContractsPage(override val existingValue: Synced[Contract], ove
         ),
       ),
     )
-  }
 }
 
 class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId: String)(using
     jsImplicits: JSImplicits,
 ) {
 
-  private def isCompleted: Signal[Boolean] = {
+  private def isCompleted: Signal[Boolean] =
     Signal.dynamic {
       editingValue.value.exists { (_, contractSignal) =>
         val contract          = contractSignal.value
@@ -1254,7 +1248,6 @@ class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId
           .forall(id => contract.requiredDocuments.getOrElse(Seq.empty).contains(id))
       }
     }
-  }
 
   protected def createOrUpdate(
       finalize: Boolean = false,
@@ -1394,14 +1387,13 @@ class InnerEditContractsPage(val existingValue: Synced[Contract], val contractId
     ),
   )
 
-  private val ctrlSListener: js.Function1[KeyboardEvent, Unit] = (e: KeyboardEvent) => {
+  private val ctrlSListener: js.Function1[KeyboardEvent, Unit] = (e: KeyboardEvent) =>
     if e.keyCode == 83 && e.ctrlKey then {
       e.preventDefault()
       createOrUpdate(false, true)
         .map(id => jsImplicits.routing.to(EditContractsPage(id), false, Map.empty, true))
         .toastOnError(ToastMode.Infinit)
     }
-  }
 
   private val unloadListener: js.Function1[BeforeUnloadEvent, String] = (e: BeforeUnloadEvent) => {
     e.preventDefault()

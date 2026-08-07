@@ -22,13 +22,13 @@ object TraceGeneration {
       numDeltasPerReplica: Int,
       minMapEntriesPerReplica: Int,
       maxMapEntriesPerReplica: Int,
-  )(using random: Random): Array[Array[TravelPlan]] = {
+  )(using random: Random): Array[Array[TravelPlan]] =
     identities.map { id =>
       val permittedMutators = TraceGeneration.permittedMutators(acl.write(id))
       given LocalUid        = LocalUid(Uid(id.id))
 
       @tailrec
-      def genRec(deltas: List[TravelPlan], accState: TravelPlan, remaining: Int): Array[TravelPlan] = {
+      def genRec(deltas: List[TravelPlan], accState: TravelPlan, remaining: Int): Array[TravelPlan] =
         if remaining > 0 then
             val delta = TraceGeneration.performRandomRdtAction(
               permittedMutators,
@@ -38,11 +38,9 @@ object TraceGeneration {
             )
             genRec(delta :: deltas, accState.merge(delta), remaining - 1)
         else deltas.reverse.toArray
-      }
 
       genRec(Nil, TravelPlan.empty, numDeltasPerReplica)
     }
-  }
 
   def countDecomposed(trace: Array[TravelPlan]): Int = trace.map(delta => delta.decomposed.size).sum
 
@@ -145,7 +143,7 @@ case class Trace(
     additionalPermissions: Acl,
     deltas: Array[Array[TravelPlan]]
 ):
-    def computeEndStateVersion: Dots = {
+    def computeEndStateVersion: Dots =
       // Currently, we decompose deltas in both variants (enforcing and non-enforcing)
       Dots(
         ids.map(id => Uid(id.getPublic.id))
@@ -154,4 +152,3 @@ case class Trace(
             deltas.map(TraceGeneration.countDecomposed).map(end => ArrayRanges(Seq(0L -> end)))
           }.toMap
       )
-    }

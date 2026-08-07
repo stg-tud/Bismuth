@@ -51,7 +51,7 @@ def importIndexedDBJson(
         def decodeValue(
             in: JsonReader,
             default: mutable.Map[String, (Repository[?], mutable.Map[String, ?])],
-        ): mutable.Map[String, (Repository[?], mutable.Map[String, ?])] = {
+        ): mutable.Map[String, (Repository[?], mutable.Map[String, ?])] =
           if in.isNextToken('{') then {
             if in.isNextToken('}') then default
             else {
@@ -67,7 +67,6 @@ def importIndexedDBJson(
               else in.arrayEndOrCommaError()
             }
           } else in.readNullOrTokenError(default, '{')
-        }
 
         def nullValue: mutable.Map[String, (Repository[?], mutable.Map[String, ?])] =
           mutable.Map()

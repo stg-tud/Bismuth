@@ -131,14 +131,13 @@ class RoutingService(using
 
   private def cleanQueryParameters(
       newParams: Map[String, String | Seq[String]],
-  ): Map[ByteString, ByteString | Seq[ByteString]] = {
+  ): Map[ByteString, ByteString | Seq[ByteString]] =
     newParams.filter((_, value) =>
       value match {
         case x: String      => !x.isBlank
         case x: Seq[String] => x.exists(p => !p.isBlank)
       },
     )
-  }
 
   def setQueryParameters(newParams: Map[String, String | Seq[String]]): Unit =
     query.set(cleanQueryParameters(newParams))

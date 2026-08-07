@@ -175,7 +175,7 @@ given [A <: dom.Element]: RangeSplice[A, A => Unit] with {
 
 given optionAttrValue[T](using ev: AttrValue[T]): AttrValue[Option[T]] =
   new AttrValue[Option[T]] {
-    override def apply(t: Element, a: Attr, v: Option[T]): Unit = {
+    override def apply(t: Element, a: Attr, v: Option[T]): Unit =
       v match {
         case Some(value) => ev.apply(t, a, value)
         case None        =>
@@ -184,5 +184,4 @@ given optionAttrValue[T](using ev: AttrValue[T]): AttrValue[Option[T]] =
             case Some(ns) => t.removeAttributeNS(ns.uri, a.name)
           }
       }
-    }
   }

@@ -58,7 +58,7 @@ class SubscriptionReactive[T](
   var requested: Long = 0
   var cancelled       = false
 
-  override protected[reactives] def reevaluate(rein: ReIn): Rout = {
+  override protected[reactives] def reevaluate(rein: ReIn): Rout =
     rein.dependStatic(dependency).toOptionTry match {
       case None           => rein
       case Some(tryValue) =>
@@ -82,14 +82,12 @@ class SubscriptionReactive[T](
           }
         }
     }
-  }
 
-  override def cancel(): Unit = {
+  override def cancel(): Unit =
     synchronized {
       cancelled = true
       notifyAll()
     }
-  }
 
   override def request(n: Long): Unit =
     synchronized {
@@ -107,7 +105,7 @@ object REPublisher {
       dependency: ReadAs.of[State, Pulse[T]],
       subscriber: Subscriber[? >: T],
       fac: Scheduler[State]
-  ): SubscriptionReactive[T] = {
+  ): SubscriptionReactive[T] =
     fac.forceNewTransaction() { ticket =>
       val name: ReInfo = ReInfo.create.derive(s"forSubscriber($subscriber)")
       ticket.tx.initializer.create[Pulse[T], SubscriptionReactive[T]](
@@ -118,6 +116,5 @@ object REPublisher {
         state => new SubscriptionReactive[T](state, dependency, subscriber, name)
       }
     }
-  }
 
 }

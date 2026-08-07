@@ -19,7 +19,7 @@ abstract class Shape(
   def start: Point      = if path.isEmpty then null else path.head
   def end: Point        = if path.isEmpty then null else path.last
 
-  def draw(g: Graphics2D): Unit = {
+  def draw(g: Graphics2D): Unit =
     if start != null && end != null then {
       val stroke =
         if !selected then new BasicStroke(strokeWidth.toFloat)
@@ -37,7 +37,6 @@ abstract class Shape(
       g.setColor(color)
       doDraw(g)
     }
-  }
 
   def copy(
       drawingSpaceState: DrawingSpaceState = drawingSpaceState,
@@ -141,14 +140,13 @@ trait Movable extends Shape {
 }
 
 trait Resizable extends Shape {
-  def resizedShape(from: Point, to: Point): Shape = {
+  def resizedShape(from: Point, to: Point): Shape =
     if MathUtil.isInCircle(start, 6, from) then
         copy(path = to :: path)
     else if MathUtil.isInCircle(end, 6, from) then
         copy(path = path :+ to)
     else
         this: Shape
-  }
 
   override def draw(g: Graphics2D): Unit = {
     super.draw(g)

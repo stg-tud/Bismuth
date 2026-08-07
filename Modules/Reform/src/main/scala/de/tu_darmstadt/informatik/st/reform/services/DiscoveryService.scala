@@ -154,7 +154,7 @@ class DiscoveryService {
     ws.send(JSON.stringify(event))
   }
 
-  private def getRTCIceServers(payload: js.Dynamic): RTCConfiguration = {
+  private def getRTCIceServers(payload: js.Dynamic): RTCConfiguration =
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/urls
     new RTCConfiguration {
       iceServers = js.Array(
@@ -168,7 +168,6 @@ class DiscoveryService {
         },
       )
     }
-  }
 
   @scala.annotation.unused
   private def handle(ws: WebSocket, name: String, payload: js.Dynamic)(using jsImplicits: JSImplicits) = {

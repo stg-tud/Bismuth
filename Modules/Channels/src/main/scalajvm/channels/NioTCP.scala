@@ -69,7 +69,7 @@ object NioTCP {
 }
 
 object ConcurrencyHelper {
-  def makeExecutionContext(singleThreadExecutor: Boolean) = {
+  def makeExecutionContext(singleThreadExecutor: Boolean) =
     if singleThreadExecutor then
         val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
           val thread = new Thread(r)
@@ -80,7 +80,6 @@ object ConcurrencyHelper {
         ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
         BroadcastIO.executeImmediately
-  }
 
   def makePooledExecutor() = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 }
@@ -99,16 +98,15 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   val selector: Selector = Selector.open()
 
-  def loopSelection(abort: Abort): Unit = {
+  def loopSelection(abort: Abort): Unit =
     while !abort.closeRequest do
         selector.select(1000)
         runSelection()
-  }
 
   def runSelection(): Unit = {
 
     selector.selectedKeys().forEach { key =>
-      try {
+      try
         if key.isValid && key.isReadable then
             val clientChannel = key.channel().asInstanceOf[SocketChannel]
             val attachment    = key.attachment().asInstanceOf[ReceiveAttachment]
@@ -127,7 +125,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
               selector.wakeup()
               ()
             }
-      } catch {
+      catch {
         case ex: Exception =>
           failKey(key, ex)
       }
@@ -323,7 +321,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     ()
   }
 
-  private def handleInitial(clientChannel: SocketChannel, attachment: ReceiveAttachment) = {
+  private def handleInitial(clientChannel: SocketChannel, attachment: ReceiveAttachment) =
     if attachment.primary.remaining() < 4 then
         attachment.primary.compact()
         attachment
@@ -349,7 +347,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
               len,
               withCallback
             )
-  }
 
   def totalAvailable(attachment: ReceiveAttachment): Int =
     if attachment.secondary == null then attachment.primary.remaining()
@@ -539,12 +536,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     attachment.copy(protocol = ProtocolState.WebSocket(updatedWs))
   }
 
-  private def writeFully(clientChannel: SocketChannel, buffers: Array[ByteBuffer]): Unit = {
+  private def writeFully(clientChannel: SocketChannel, buffers: Array[ByteBuffer]): Unit =
     while buffers.exists(_.hasRemaining()) do {
       clientChannel.write(buffers)
       ()
     }
-  }
 
   private def failKey(key: SelectionKey, ex: Exception): Unit = {
     val channel = key.channel()

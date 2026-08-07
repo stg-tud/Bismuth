@@ -49,7 +49,7 @@ object TaskAppBenchmark {
       samples += nanos
     }
 
-    private def percentileMs(p: Double): Double = {
+    private def percentileMs(p: Double): Double =
       if samples.isEmpty then 0.0
       else {
         val sorted  = samples.sorted
@@ -57,7 +57,6 @@ object TaskAppBenchmark {
         val clamped = math.max(0, math.min(idx, sorted.size - 1))
         sorted(clamped) / 1_000_000.0
       }
-    }
 
     def reset(): Unit = {
       count = 0
@@ -348,7 +347,7 @@ object TaskAppBenchmark {
     // Estimate per-replica heap usage by traversing the replica state object graph.
     GraphLayout.parseInstance(app.state).totalSize()
 
-  private def percentileMs(samples: mutable.ArrayBuffer[Long], p: Double): Double = {
+  private def percentileMs(samples: mutable.ArrayBuffer[Long], p: Double): Double =
     if samples.isEmpty then 0.0
     else {
       val sorted  = samples.sorted
@@ -356,9 +355,8 @@ object TaskAppBenchmark {
       val clamped = math.max(0, math.min(idx, sorted.size - 1))
       sorted(clamped) / 1_000_000.0
     }
-  }
 
-  private def percentileOp(samples: mutable.ArrayBuffer[(String, Long)], p: Double): (String, Long) = {
+  private def percentileOp(samples: mutable.ArrayBuffer[(String, Long)], p: Double): (String, Long) =
     if samples.isEmpty then ("", 0L)
     else {
       val sorted  = samples.sortBy(_._2)
@@ -366,7 +364,6 @@ object TaskAppBenchmark {
       val clamped = math.max(0, math.min(idx, sorted.size - 1))
       sorted(clamped)
     }
-  }
 
   private def countEntries(tree: ReplicatedTree[Entry]): (Int, Int, Int) = {
     var folderCount    = 0

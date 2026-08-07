@@ -29,7 +29,7 @@ trait DeltaSurgeon[T] {
 
   def recombine(parts: IsolatedDeltaParts): T
 
-  def filter(isolatedDeltaParts: IsolatedDeltaParts, permissionTree: PermissionTree): IsolatedDeltaParts = {
+  def filter(isolatedDeltaParts: IsolatedDeltaParts, permissionTree: PermissionTree): IsolatedDeltaParts =
     (isolatedDeltaParts.inner, permissionTree) match
         case (atomicValue: Array[Byte], PermissionTree(Permission.ALLOW, _))                 => isolatedDeltaParts
         case (parts: Map[String, IsolatedDeltaParts], PermissionTree(Permission.ALLOW, _))   => isolatedDeltaParts
@@ -45,7 +45,6 @@ trait DeltaSurgeon[T] {
         case (atomicValue: Array[Byte], PermissionTree(Permission.PARTIAL, children)) if children.isEmpty =>
           IsolatedDeltaParts.empty
         case _ => ??? // Invalid PermissionTree or IsolatedDeltaParts
-  }
 }
 
 object DeltaSurgeon {
@@ -90,12 +89,11 @@ object DeltaSurgeon {
       require(factorLabels.toSet.size == factorLabels.length)
       private val factorLabelToIndexMap = factorLabels.zipWithIndex.toMap
 
-      override def isolate(delta: T): IsolatedDeltaParts = {
+      override def isolate(delta: T): IsolatedDeltaParts =
         if productBottom.isEmpty(delta) then IsolatedDeltaParts(Map.empty)
         else isolateProduct(delta.asInstanceOf[Product])
-      }
 
-      private def isolateProduct(product: Product): IsolatedDeltaParts = {
+      private def isolateProduct(product: Product): IsolatedDeltaParts =
         IsolatedDeltaParts(
           factorLabels.zipWithIndex.flatMap { (factorLabel, factorIdx) =>
             val factorSurgeon = factorSurgeons(factorIdx)
@@ -105,7 +103,6 @@ object DeltaSurgeon {
             else Some(factorLabel -> factorSurgeon.isolate(factor))
           }.toMap
         )
-      }
 
       override def recombine(delta: IsolatedDeltaParts): T = {
         // A Product is a compound type and therefore only as represented as a path, but never as a serialized value
@@ -138,7 +135,7 @@ object DeltaSurgeon {
         IsolatedDeltaParts(Map(label -> isolatedElement))
       }
 
-      override def recombine(parts: IsolatedDeltaParts): T = {
+      override def recombine(parts: IsolatedDeltaParts): T =
         parts.inner match
             case map: Map[String, IsolatedDeltaParts] =>
               require(map.size == 1)
@@ -147,7 +144,6 @@ object DeltaSurgeon {
                     val ordinal = ordinalLookup(elementType)
                     elementSurgeons(ordinal).recombine(element).asInstanceOf[T]
             case arr: Array[Byte] => ???
-      }
 
   // Used for values that should not be further isolated
   def ofTerminalValue[V: {Bottom, JsonValueCodec}]: DeltaSurgeon[V] = new TerminalValueDeltaSurgeon[V]

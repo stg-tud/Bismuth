@@ -122,12 +122,11 @@ object SyncStrategies {
 
       // Replica 1 receives
       receivedByR1 = receivedByR1 ++ toR1
-      for ev <- toR1 do {
-        if !replica1.hashDAG.contains(ev.id) then {
-          for p <- ev.dependencies if !replica1.hashDAG.contains(p) && !receivedByR1.map(_.id).contains(p) do
-              needFromR2 += p
-        }
-      }
+      for ev <- toR1 do
+          if !replica1.hashDAG.contains(ev.id) then {
+            for p <- ev.dependencies if !replica1.hashDAG.contains(p) && !receivedByR1.map(_.id).contains(p) do
+                needFromR2 += p
+          }
       bandwidth += toR1.toList.map(writeToArray(_).length).sum
       toR1 = Set.empty
 
@@ -140,12 +139,11 @@ object SyncStrategies {
 
       //   Replica 2 receives
       receivedByR2 = receivedByR2 ++ toR2
-      for ev <- toR2 do {
-        if !replica2.hashDAG.contains(ev.id) then {
-          for p <- ev.dependencies if !replica2.hashDAG.contains(p) && !receivedByR2.map(_.id).contains(p) do
-              needFromR1 += p
-        }
-      }
+      for ev <- toR2 do
+          if !replica2.hashDAG.contains(ev.id) then {
+            for p <- ev.dependencies if !replica2.hashDAG.contains(p) && !receivedByR2.map(_.id).contains(p) do
+                needFromR1 += p
+          }
       bandwidth += toR2.toList.map(writeToArray(_).length).sum
       toR2 = Set.empty
 
@@ -216,18 +214,16 @@ object SyncStrategies {
 
       // Replica 1 receives
       receivedByR1 = receivedByR1 ++ toR1
-      for response <- toR1 do {
-        if !replica1.hashDAG.contains(response.id) then {
-          neededAcc1 += response.id
-          neededAcc1 ++= response.dependencies.keySet
-          val req = response.dependencies.values.flatten.toSet.filter(id =>
-            !replica1.hashDAG.contains(id) && !neededAcc1.contains(id)
-          )
-          neededAcc1 ++= req
-          needFromR2 = needFromR2 ++ req.map(r => Request(r))
-        }
-
-      }
+      for response <- toR1 do
+          if !replica1.hashDAG.contains(response.id) then {
+            neededAcc1 += response.id
+            neededAcc1 ++= response.dependencies.keySet
+            val req = response.dependencies.values.flatten.toSet.filter(id =>
+              !replica1.hashDAG.contains(id) && !neededAcc1.contains(id)
+            )
+            neededAcc1 ++= req
+            needFromR2 = needFromR2 ++ req.map(r => Request(r))
+          }
 
       for r <- toR1 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
@@ -254,18 +250,16 @@ object SyncStrategies {
 
       //   Replica 2 receives
       receivedByR2 = receivedByR2 ++ toR2
-      for response <- toR2 do {
-        if !replica2.hashDAG.contains(response.id) then {
-          neededAcc2 += response.id
-          neededAcc2 ++= response.dependencies.keySet
-          val req = response.dependencies.values.flatten.toSet.filter(id =>
-            !replica2.hashDAG.contains(id) && !neededAcc2.contains(id)
-          )
-          neededAcc2 ++= req
-          needFromR1 = needFromR1 ++ req.map(r => Request(r))
-        }
-
-      }
+      for response <- toR2 do
+          if !replica2.hashDAG.contains(response.id) then {
+            neededAcc2 += response.id
+            neededAcc2 ++= response.dependencies.keySet
+            val req = response.dependencies.values.flatten.toSet.filter(id =>
+              !replica2.hashDAG.contains(id) && !neededAcc2.contains(id)
+            )
+            neededAcc2 ++= req
+            needFromR1 = needFromR1 ++ req.map(r => Request(r))
+          }
 
       for r <- toR2 do {
         bandwidth += Base64.getDecoder.decode(r.id).length
@@ -465,18 +459,16 @@ object SyncStrategies {
       bloomFilterFailed = 1
       // Missing dependencies that need to be requested
       var needFromR1: Set[String] = Set.empty
-      for e <- toR2 do {
-        for d <- e.dependencies do
-            if !replica2.hashDAG.contains(d) && !receivedByR2.map(ev => ev.id).contains(d) then
-                needFromR1 = needFromR1 + d
-      }
+      for e <- toR2 do
+          for d <- e.dependencies do
+              if !replica2.hashDAG.contains(d) && !receivedByR2.map(ev => ev.id).contains(d) then
+                  needFromR1 = needFromR1 + d
 
       var needFromR2: Set[String] = Set.empty
-      for e <- toR1 do {
-        for d <- e.dependencies do
-            if !replica1.hashDAG.contains(d) && !receivedByR1.map(ev => ev.id).contains(d) then
-                needFromR2 = needFromR2 + d
-      }
+      for e <- toR1 do
+          for d <- e.dependencies do
+              if !replica1.hashDAG.contains(d) && !receivedByR1.map(ev => ev.id).contains(d) then
+                  needFromR2 = needFromR2 + d
 
       toR1 = List.empty
       toR2 = List.empty
@@ -485,12 +477,11 @@ object SyncStrategies {
 
         // Replica 1 receives
         receivedByR1 = receivedByR1 ++ toR1
-        for ev <- toR1 do {
-          if !replica1.hashDAG.contains(ev.id) then {
-            for p <- ev.dependencies if !replica1.hashDAG.contains(p) && !receivedByR1.map(_.id).contains(p) do
-                needFromR2 += p
-          }
-        }
+        for ev <- toR1 do
+            if !replica1.hashDAG.contains(ev.id) then {
+              for p <- ev.dependencies if !replica1.hashDAG.contains(p) && !receivedByR1.map(_.id).contains(p) do
+                  needFromR2 += p
+            }
         bandwidth += toR1.map(writeToArray(_).length).sum
         toR1 = List.empty
 
@@ -500,12 +491,11 @@ object SyncStrategies {
 
         //   Replica 2 receives
         receivedByR2 = receivedByR2 ++ toR2
-        for ev <- toR2 do {
-          if !replica2.hashDAG.contains(ev.id) then {
-            for p <- ev.dependencies if !replica2.hashDAG.contains(p) && !receivedByR2.map(_.id).contains(p) do
-                needFromR1 += p
-          }
-        }
+        for ev <- toR2 do
+            if !replica2.hashDAG.contains(ev.id) then {
+              for p <- ev.dependencies if !replica2.hashDAG.contains(p) && !receivedByR2.map(_.id).contains(p) do
+                  needFromR1 += p
+            }
         bandwidth += toR2.map(writeToArray(_).length).sum
         toR2 = List.empty
 

@@ -22,7 +22,7 @@ case class PoWBlockchain[T](inner: Map[String, Block[T]], difficulty: Int)
   override def addBlock(newBlock: Block[T]): PoWBlockchain[T] =
     PoWBlockchain(Map(newBlock.hash -> newBlock), difficulty)
 
-  override def validate(): Boolean = {
+  override def validate(): Boolean =
     inner.values.forall { block =>
       block.previousHash match {
         case Some(prevHash) =>
@@ -36,7 +36,6 @@ case class PoWBlockchain[T](inner: Map[String, Block[T]], difficulty: Int)
         case None => true
       }
     }
-  }
 
 }
 

@@ -70,14 +70,13 @@ object Tags {
   /* This only returns true the second time it is called to prevent observers to directly trigger */
   def isInDocumentHack(elem: dom.Element): Any => Boolean = {
     var second = false
-    _ => {
+    _ =>
       if second then {
         !document.contains(elem)
       } else {
         second = true
         false
       }
-    }
   }
 
   /** Tag observer removes the observer if it fires while the element is NOT in the dom. */
@@ -86,7 +85,7 @@ object Tags {
       rendered: Signal[A]
   )(fun: A => Unit)(reevalVal: Pulse[A]): Observe.ObserveInteract =
     new Observe.ObserveInteract {
-      override def checkExceptionAndRemoval(): Boolean = {
+      override def checkExceptionAndRemoval(): Boolean =
         reevalVal match {
           case Pulse.empty(_) | Pulse.NoChange => false
           case Pulse.Exceptional(f)            =>
@@ -94,7 +93,6 @@ object Tags {
           case Pulse.Value(v) =>
             isInDocumentHack(parent)(v)
         }
-      }
 
       override def execute(): Unit =
         reevalVal match {

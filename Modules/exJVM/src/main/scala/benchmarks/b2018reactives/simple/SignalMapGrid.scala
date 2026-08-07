@@ -33,13 +33,11 @@ class SignalMapGrid extends BusyThreads {
     leafs =
       for w <- 1 to width yield {
         var result: Signal[Int] = source
-        for d <- 1 to depth do {
-          result = {
-            result.map { v =>
-              work.consume(); v + 1
-            }(using CreationTicket.fromName(s"map-$w-$d"))
-          }
-        }
+        for d <- 1 to depth do
+            result =
+              result.map { v =>
+                work.consume(); v + 1
+              }(using CreationTicket.fromName(s"map-$w-$d"))
         result
       }
   }

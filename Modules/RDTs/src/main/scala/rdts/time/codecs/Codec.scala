@@ -18,9 +18,8 @@ trait Codec[T] {
 
   def readArray(bytes: Array[Byte]): T
 
-  def readString(bytes: String): T = {
+  def readString(bytes: String): T =
     readArray(
       base64Decoder.decode(bytes)
     )
-  }
 }

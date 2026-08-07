@@ -44,13 +44,12 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     }
   }
 
-  def onAclChanged(delta: Acl): Unit = {
+  def onAclChanged(delta: Acl): Unit =
     // Invalidate filtered deltas, track them as missing
     if delta.read.contains(localIdentity.getPublic) then {
       val filtered = filteredDots.getAndUpdate(_ => Dots.empty)
       requestRoundRobin(missingDots.updateAndGet(missing => missing.union(filtered)))
     }
-  }
 
   private val lastRequestedPeer: AtomicInteger    = AtomicInteger(-1)
   private def requestRoundRobin(dots: Dots): Unit = {

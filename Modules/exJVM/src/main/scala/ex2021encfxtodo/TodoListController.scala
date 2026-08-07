@@ -15,7 +15,7 @@ object TodoListController {
 
   private val crdt: SyncedTodoListCrdt = new SyncedTodoListCrdt(replicaId, handleUpdated)
 
-  def handleUpdated(before: Map[UUID, TodoEntry], after: Map[UUID, TodoEntry]): Unit = {
+  def handleUpdated(before: Map[UUID, TodoEntry], after: Map[UUID, TodoEntry]): Unit =
     Platform.runLater {
       val added   = after.keySet.diff(before.keySet)
       val removed = before.keySet.diff(after.keySet)
@@ -45,7 +45,6 @@ object TodoListController {
         uuidToTodoEntryProperties.remove(uuid)
       }
     }
-  }
 
   private def applyLocalChange(update: => Unit): Unit = {
     val before = crdt.values
@@ -78,7 +77,7 @@ object TodoListController {
     ()
   }
 
-  def changeTodo(uuid: UUID, changedEntry: TodoEntry): Unit = {
+  def changeTodo(uuid: UUID, changedEntry: TodoEntry): Unit =
     if uuid == null || changedEntry == null then {
       println("uuid null for " + changedEntry)
     } else {
@@ -89,7 +88,6 @@ object TodoListController {
         crdt.put(uuid, changedEntry)
       }
     }
-  }
 
   def stop(): Unit =
     crdt.shutdown()

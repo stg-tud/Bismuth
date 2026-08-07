@@ -10,7 +10,7 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
     bit
   }
 
-  def readNextTwoBits(): Int = {
+  def readNextTwoBits(): Int =
     if pos % 8 != 7 then {
       // Both bits in same byte
       val byte: Int = byteArray(pos / 8) & 0xff
@@ -25,7 +25,6 @@ private[internal] class BitReader(private val byteArray: Array[Byte]) {
       pos += 2
       bits
     }
-  }
 
   def readNextIntOfLength(numBits: Int): Int = {
     if pos % 8 == 0 then return readNextBoundaryAlignedIntOfLength(numBits)

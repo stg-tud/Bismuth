@@ -78,7 +78,7 @@ class SalaryChangeAttributes(using
       (s, a) => s.copy(limit = a),
     )
 
-  def salaryChangePaymentLevel: UIAttribute[SalaryChange, String] = {
+  def salaryChangePaymentLevel: UIAttribute[SalaryChange, String] =
     BuildUIAttribute()
       .select(
         Signal {
@@ -94,7 +94,6 @@ class SalaryChangeAttributes(using
         _.paymentLevel,
         (p, a) => p.copy(paymentLevel = a),
       )
-  }
 
   def salaryChangeFromDate: UIAttribute[SalaryChange, Long] = BuildUIAttribute().date
     .withLabel("From")

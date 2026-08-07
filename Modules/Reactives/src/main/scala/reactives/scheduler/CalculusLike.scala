@@ -55,12 +55,11 @@ object CalculusLike {
       }
     }
 
-    def requiresReev(reSource: ReSource.of[State]): Boolean = {
+    def requiresReev(reSource: ReSource.of[State]): Boolean =
       if FScheduler.currentPropagation == null then false
       else
           FScheduler.currentPropagation.nn.isReady(reSource) &&
           FScheduler.currentPropagation.nn.isOutdated(reSource)
-    }
 
   }
 
@@ -214,14 +213,13 @@ object CalculusLike {
     lazy val unprocessed: Set[ReSource.of[State]] = knownReactives -- processed
 
     /** Compute the set of all ready reactives. Logic is identical to the paper. */
-    lazy val ready: Set[ReSource.of[State]] = {
+    lazy val ready: Set[ReSource.of[State]] =
       unprocessed.filter { r =>
         // intersect with all known reactives
         // as there may be new inputs that were created during this propagation
         // which we always consider as processed
         isReady(r)
       }
-    }
 
     def isReady(r: ReSource.of[State]): Boolean =
       r.state.inputs.intersect(knownReactives).subsetOf(processed + r)

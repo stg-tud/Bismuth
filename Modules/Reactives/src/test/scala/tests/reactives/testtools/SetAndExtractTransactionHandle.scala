@@ -10,10 +10,9 @@ class SetAndExtractTransactionHandle(val api: reactives.default.type) {
       value: A
   )(using
       engine: Scheduler[State]
-  ): Initializer[State] = {
+  ): Initializer[State] =
     engine.forceNewTransaction(source) { implicit t =>
       source.admit(value)
       t.tx.initializer
     }
-  }
 }

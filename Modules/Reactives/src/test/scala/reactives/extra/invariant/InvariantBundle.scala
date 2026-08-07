@@ -69,10 +69,9 @@ trait InvariantBundle extends TopoBundle {
       type State[V] = InvariantState[V]; type Value = Pulse[T]
     }) {
 
-      def specify(inv: Invariant[T]*): Unit = {
+      def specify(inv: Invariant[T]*): Unit =
         signal.state.invariants =
           inv.map(inv => new Invariant[signal.Value](inv.description, (invp: Pulse[T]) => inv.inv(invp.get: T)))
-      }
 
       def setValueGenerator(gen: Gen[T]): Unit =
         this.signal.state.gen = gen
@@ -108,7 +107,7 @@ trait InvariantBundle extends TopoBundle {
         }
 
       private def findGenerators(): List[(ReSource.of[State], Gen[?])] = {
-        def findGeneratorsRecursive(resource: ReSource): List[(ReSource.of[State], Gen[?])] = {
+        def findGeneratorsRecursive(resource: ReSource): List[(ReSource.of[State], Gen[?])] =
           if resource.state.gen != null then {
             List((resource, resource.state.gen))
           } else if resource.state.incoming == Set.empty then {
@@ -118,7 +117,6 @@ trait InvariantBundle extends TopoBundle {
               .flatMap { incoming => findGeneratorsRecursive(incoming) }
               .toList
           }
-        }
 
         val gens = findGeneratorsRecursive(this.signal)
         if gens.isEmpty then {
@@ -134,25 +132,23 @@ trait InvariantBundle extends TopoBundle {
 
         forceNewTransaction(
           asReSource,
-          {
-            admissionTicket =>
-              changes.foreach {
-                change =>
-                  val initialChange: InitialChange[State] = new InitialChange[State] {
-                    override val source: ReSource = change._1
+          admissionTicket =>
+            changes.foreach {
+              change =>
+                val initialChange: InitialChange[State] = new InitialChange[State] {
+                  override val source: ReSource = change._1
 
-                    override def writeValue(b: source.Value, v: source.Value => Unit): Boolean = {
-                      val casted = change._2.asInstanceOf[source.Value]
-                      if casted != b then {
-                        v(casted)
-                        return true
-                      }
-                      false
+                  override def writeValue(b: source.Value, v: source.Value => Unit): Boolean = {
+                    val casted = change._2.asInstanceOf[source.Value]
+                    if casted != b then {
+                      v(casted)
+                      return true
                     }
+                    false
                   }
-                  admissionTicket.recordChange(initialChange)
-              }
-          }
+                }
+                admissionTicket.recordChange(initialChange)
+            }
         )
 
         asReSource
@@ -163,19 +159,17 @@ trait InvariantBundle extends TopoBundle {
 
   object InvariantUtil {
 
-    def evaluateInvariants(reactives: Seq[ReSource], initialWrites: Set[ReSource]): Unit = {
+    def evaluateInvariants(reactives: Seq[ReSource], initialWrites: Set[ReSource]): Unit =
       for
           reactive <- reactives
           inv      <- reactive.state.invariants
           if !inv.validate(reactive.state.value)
-      do {
-        throw new InvariantViolationException(
-          new IllegalArgumentException(s"${reactive.state.value} violates invariant ${inv.description}"),
-          reactive,
-          InvariantUtil.getCausalErrorChains(reactive, initialWrites)
-        )
-      }
-    }
+      do
+          throw new InvariantViolationException(
+            new IllegalArgumentException(s"${reactive.state.value} violates invariant ${inv.description}"),
+            reactive,
+            InvariantUtil.getCausalErrorChains(reactive, initialWrites)
+          )
 
     def getCausalErrorChains(
         errorNode: ReSource,

@@ -115,7 +115,7 @@ case class Spanner[A](
 
   // step 8: every participant logs the 2PC decision in their paxos log
   // also seem unnecessary?
-  def log2PCDecisionParticipant(partitionId: Uid, transactionID: Uid)(using l: LocalUid): Spanner[A] = {
+  def log2PCDecisionParticipant(partitionId: Uid, transactionID: Uid)(using l: LocalUid): Spanner[A] =
     precondition(
       paxosPartitions.contains(partitionId) &&
       partitionMembers.contains(partitionId) &&
@@ -138,7 +138,6 @@ case class Spanner[A](
 
       Spanner(paxosPartitions = Map(partitionId -> newPaxos))
     }
-  }
 
   // step 9: release locks
 

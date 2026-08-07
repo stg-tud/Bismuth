@@ -32,7 +32,7 @@ class Board(val width: Int, val height: Int) {
   }
 
   /** removes the board element if present in the board */
-  def removeDead(): Unit = {
+  def removeDead(): Unit =
     elements = elements.filter {
       case (p, be) =>
         if be.isDead.readValueOnce then {
@@ -40,7 +40,6 @@ class Board(val width: Int, val height: Int) {
           false
         } else true
     }
-  }
 
   /** @return the immediate neighbors of the given position */
   def neighbors(pos: Pos): IndexedSeq[BoardElement] = nearby(pos, 1)
@@ -68,11 +67,10 @@ class Board(val width: Int, val height: Int) {
   private def clear(pos: Pos): Option[BoardElement] = elements.remove(pos)
 
   /** @return the position of the given BoardElement. slow. */
-  def getPosition(be: BoardElement): Option[Pos] = {
+  def getPosition(be: BoardElement): Option[Pos] =
     elements.collectFirst {
       case (pos, b) if b == be => pos
     }
-  }
 
   /** @return a random free position on this board */
   def randomFreePosition(random: Random): Pos = {

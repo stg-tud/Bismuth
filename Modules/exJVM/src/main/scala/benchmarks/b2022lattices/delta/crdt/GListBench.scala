@@ -21,12 +21,11 @@ class GListBench {
   var list: NamedDeltaBuffer[GrowOnlyList[Int]] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     list = (0 until listSize).foldLeft(NamedDeltaBuffer("a".asId, GrowOnlyList.empty[Int])) {
       case (c, i) =>
         c.mod(_.insertAt(0, i))
     }
-  }
 
   @Benchmark
   def toList: List[Int] = list.state.toList

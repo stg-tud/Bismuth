@@ -64,11 +64,10 @@ class TravelPlanModel(
   def setExpenseComment(expenseId: String, comment: String): Unit =
     mutateRdt(_.setExpenseComment(expenseId, comment))
 
-  private def mutateRdt(mutator: TravelPlan => TravelPlan): Unit = {
+  private def mutateRdt(mutator: TravelPlan => TravelPlan): Unit =
     global.execute { () =>
       replica.mutateState(mutator)
     }
-  }
 
   val title: StringProperty                      = StringProperty(state.title.read)
   val bucketListIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)

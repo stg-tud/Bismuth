@@ -15,13 +15,12 @@ import java.util.concurrent.TimeUnit
 @Threads(2)
 class PaperPhilosopherCompetition {
   @Benchmark
-  def eatOnce(comp: PaperCompetition, params: ThreadParams): Unit = {
+  def eatOnce(comp: PaperCompetition, params: ThreadParams): Unit =
     if comp.philosophers > 0 then {
       comp.table.eatRandomOnce(params.getThreadIndex, params.getThreadCount)
     } else {
       comp.table.eatOnce(params.getThreadIndex * -comp.philosophers)
     }
-  }
 }
 
 @State(Scope.Benchmark)

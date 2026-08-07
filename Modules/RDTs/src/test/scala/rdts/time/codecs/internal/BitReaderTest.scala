@@ -21,14 +21,16 @@ class BitReaderTest extends FunSuite {
     val reader  = new BitReader(Array(byte("10100001"), byte("10001111")))
     val allBits = "1010000110001111"
 
-    for startBit <- 0 until 8 do {
-      for lengthOfInt <- 1 until (16 - startBit) do {
-        for _ <- 0 until startBit do
-            reader.readNextBit()
-        assertEquals(reader.readNextIntOfLength(lengthOfInt), int(allBits.substring(startBit, startBit + lengthOfInt)))
-        reader.resetPos()
-      }
-    }
+    for startBit <- 0 until 8 do
+        for lengthOfInt <- 1 until (16 - startBit) do {
+          for _ <- 0 until startBit do
+              reader.readNextBit()
+          assertEquals(
+            reader.readNextIntOfLength(lengthOfInt),
+            int(allBits.substring(startBit, startBit + lengthOfInt))
+          )
+          reader.resetPos()
+        }
   }
 }
 

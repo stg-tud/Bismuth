@@ -51,7 +51,7 @@ class ServerDialog extends CustomDialog {
     }
   }
 
-  def applyPorts(): Unit = {
+  def applyPorts(): Unit =
     try {
       hostname = hostnameInput.text
       commandPort = commandPortInput.text.toInt
@@ -65,7 +65,6 @@ class ServerDialog extends CustomDialog {
         listenerPort = -1
         e.printStackTrace
     }
-  }
 
   def inputIsValid(): Boolean =
     hostname != null &&

@@ -29,26 +29,24 @@ case class RemoveWinsArrayExperiment[E](
   lazy val toList: List[E] = {
     val state                 = entries
     val output: ListBuffer[E] = state.map(_._2.value).to(ListBuffer)
-    for ((itemId, item), ix) <- state.zipWithIndex do {
-      for (opId, apply) <- ops do {
-        val ordering = Dots.partialOrder.tryCompare(history(itemId), history(opId))
-        ordering match {
-          // item inserted before or at same time as operation
-          case Some(i) if i <= 0 => output.update(ix, apply(output(ix)))
-          // item inserted concurrently with operation
-          case None => output.update(ix, apply(output(ix)))
-          case _    => () // item inserted after operation
+    for ((itemId, item), ix) <- state.zipWithIndex do
+        for (opId, apply) <- ops do {
+          val ordering = Dots.partialOrder.tryCompare(history(itemId), history(opId))
+          ordering match {
+            // item inserted before or at same time as operation
+            case Some(i) if i <= 0 => output.update(ix, apply(output(ix)))
+            // item inserted concurrently with operation
+            case None => output.update(ix, apply(output(ix)))
+            case _    => () // item inserted after operation
+          }
         }
-      }
-    }
     output.toList
   }
 
-  def compact: RemoveWinsArrayExperiment[E] = {
+  def compact: RemoveWinsArrayExperiment[E] =
     copy(
       elements = compactElements,
     )
-  }
 
   def read(i: Int): Option[E] = toList.lift(i)
 
@@ -89,7 +87,7 @@ case class RemoveWinsArrayExperiment[E](
   def update(index: Int, elem: E)(using LocalUid): RemoveWinsArrayExperiment[E] =
     updateWith(index, _ => elem)
 
-  def updateWith(index: Int, elem: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
+  def updateWith(index: Int, elem: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] =
     entries.lift(index) match {
       case Some((oldDot, e)) =>
         val predecessors = observed
@@ -102,16 +100,14 @@ case class RemoveWinsArrayExperiment[E](
         )
       case None => RemoveWinsArrayExperiment.empty
     }
-  }
 
-  def remove(index: Int): RemoveWinsArrayExperiment[E] = {
+  def remove(index: Int): RemoveWinsArrayExperiment[E] =
     entries.lift(index) match {
       case Some((dot, _)) => RemoveWinsArrayExperiment(elements = Map(), removed = removed.add(dot))
       case None           => RemoveWinsArrayExperiment.empty
     }
-  }
 
-  def move(from: Int, to: Int)(using LocalUid): RemoveWinsArrayExperiment[E] = {
+  def move(from: Int, to: Int)(using LocalUid): RemoveWinsArrayExperiment[E] =
     if from < 0 || to < 0 || from >= size || to >= size then RemoveWinsArrayExperiment.empty
     else if from == to then RemoveWinsArrayExperiment.empty
     else
@@ -133,7 +129,6 @@ case class RemoveWinsArrayExperiment[E](
             )
           case None => RemoveWinsArrayExperiment.empty
         }
-  }
 
   def apply(fn: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
     val predecessors = observed
@@ -146,12 +141,11 @@ case class RemoveWinsArrayExperiment[E](
     )
   }
 
-  def clear(): RemoveWinsArrayExperiment[E] = {
+  def clear(): RemoveWinsArrayExperiment[E] =
     RemoveWinsArrayExperiment(
       elements = Map.empty,
       removed = observed
     )
-  }
 }
 
 object RemoveWinsArrayExperiment {

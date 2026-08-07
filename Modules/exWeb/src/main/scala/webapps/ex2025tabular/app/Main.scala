@@ -27,7 +27,7 @@ object Main {
   case class State(spreadsheets: List[SpreadsheetData], nextId: Int)
 
   class Backend($ : BackendScope[Unit, State]) {
-    def addSpreadsheet(): Callback = {
+    def addSpreadsheet(): Callback =
       $.modState { state =>
         val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
         val replicaId          = LocalUid.gen()
@@ -49,12 +49,11 @@ object Main {
           nextId = state.nextId + 1
         )
       }
-    }
 
     def removeSpreadsheet(id: Int): Callback =
       $.modState(state => state.copy(spreadsheets = state.spreadsheets.filter(_.id != id)))
 
-    def toggleOnlineStatus(id: Int): Callback = {
+    def toggleOnlineStatus(id: Int): Callback =
       $.modState { state =>
         state.spreadsheets.find(_.id == id) match {
           case Some(sheet) if sheet.isOnline => // Is online -> turn offline
@@ -82,9 +81,8 @@ object Main {
           case None => state // sheet not found
         }
       }
-    }
 
-    def handleDelta(sourceSheetId: Int, delta: Spreadsheet[String]): Callback = {
+    def handleDelta(sourceSheetId: Int, delta: Spreadsheet[String]): Callback =
       $.modState { state =>
         val updatedSpreadsheets = state.spreadsheets.map { sheet =>
           if sheet.id != sourceSheetId && sheet.isOnline then {
@@ -95,7 +93,6 @@ object Main {
         }
         state.copy(spreadsheets = updatedSpreadsheets)
       }
-    }
   }
 
   private val App = ScalaComponent

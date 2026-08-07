@@ -71,19 +71,17 @@ class ReTable[A <: AnyRef](
   modelChanged()
 
   rowData.using(
-    { () =>
+    () =>
       peer.peer.getModel match {
         case model: ReTable.ReTableModel[A @unchecked] =>
           model.getRowData
         case model =>
           for r <- 0 to model.getRowCount()
-          yield {
+          yield
             for c <- 0 to model.getColumnCount()
             yield model.getValueAt(r, c).asInstanceOf[A]
-          }
-      }
-    },
-    { rowData =>
+      },
+    rowData =>
       (peer.peer.getModel match {
         case model: ReTable.ReTableModel[A @unchecked] => model
         case _                                         =>
@@ -91,8 +89,7 @@ class ReTable[A <: AnyRef](
           peer.peer `setModel` model
           modelChanged()
           model
-      })() = Left(rowData)
-    },
+      })() = Left(rowData),
     classOf[TableChanged],
     classOf[TableRowsRemoved],
     classOf[TableRowsAdded],
@@ -101,16 +98,15 @@ class ReTable[A <: AnyRef](
   )
 
   columnNames.using(
-    { () =>
+    () =>
       peer.peer.getModel match {
         case model: ReTable.ReTableModel[?] =>
           model.getColumnNames
         case model =>
           for c <- 0 to model.getColumnCount()
           yield model `getColumnName` c
-      }
-    },
-    { columnNames =>
+      },
+    columnNames =>
       (peer.peer.getModel match {
         case model: ReTable.ReTableModel[?] => model
         case _                              =>
@@ -118,21 +114,19 @@ class ReTable[A <: AnyRef](
           peer.peer `setModel` model
           modelChanged()
           model
-      })() = Right(columnNames)
-    },
+      })() = Right(columnNames),
     classOf[TableStructureChanged]
   )
 
   editable.using(
-    { () =>
+    () =>
       peer.peer.getModel match {
         case model: ReTable.ReTableModel[?] =>
           model.getCellEditable
         case model =>
           (row, column) => model.isCellEditable(row, column)
-      }
-    },
-    { editable =>
+      },
+    editable =>
       (peer.peer.getModel match {
         case model: ReTable.ReTableModel[?] => model
         case _                              =>
@@ -140,8 +134,7 @@ class ReTable[A <: AnyRef](
           peer.peer `setModel` model
           modelChanged()
           model
-      }) `setCellEditable` editable
-    },
+      }) `setCellEditable` editable,
     classOf[TableStructureChanged]
   )
 
@@ -259,7 +252,7 @@ object ReTable {
     private var columnNames        = Seq.empty[String]
     private var editable: Editable = scala.compiletime.uninitialized
 
-    def update(values: Either[Seq[Seq[A]], Seq[String]]): Unit = {
+    def update(values: Either[Seq[Seq[A]], Seq[String]]): Unit =
       values match {
         case Left(data) =>
           rowData = data
@@ -268,7 +261,6 @@ object ReTable {
           columnNames = names
           fireTableStructureChanged
       }
-    }
 
     def setCellEditable(cellEditable: Editable): Unit =
       editable = cellEditable
@@ -279,7 +271,7 @@ object ReTable {
 
     def getRowCount                            = rowData.length
     def getColumnCount                         = columnNames.length
-    def getValueAt(row: Int, col: Int): Object = {
+    def getValueAt(row: Int, col: Int): Object =
       if rowData.isDefinedAt(row) then {
         val data = rowData(row)
         if data.isDefinedAt(col) then
@@ -288,7 +280,6 @@ object ReTable {
             null
       } else
           null
-    }
 
     override def getColumnName(column: Int): String             = columnNames(column).toString
     override def isCellEditable(row: Int, column: Int): Boolean =

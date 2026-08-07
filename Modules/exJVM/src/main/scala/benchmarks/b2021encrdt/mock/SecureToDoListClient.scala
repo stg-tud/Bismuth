@@ -124,11 +124,10 @@ object SecureToDoListClient {
   private def mergeDecryptedDeltas(
       left: DecryptedDeltaGroup[ToDoMapLattice],
       right: DecryptedDeltaGroup[ToDoMapLattice]
-  ): DecryptedDeltaGroup[ToDoMapLattice] = {
+  ): DecryptedDeltaGroup[ToDoMapLattice] =
     DecryptedDeltaGroup.decryptedDeltaGroupSemiLattice[ToDoMapLattice](
       using DeltaAWLWWMContainer.lattice
     ).merge(left, right)
-  }
 }
 
 case class DisseminationStats(total: Long, addition: Long, completion: Long, removal: Long) {

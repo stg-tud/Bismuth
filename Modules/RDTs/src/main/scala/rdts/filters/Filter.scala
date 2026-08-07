@@ -100,7 +100,7 @@ object Filter {
                 case Some(PermissionTree(PARTIAL, dotPermissions)) => ranges <= permRangeToRange(dotPermissions)
           )
 
-    override def validatePermissionTree(permissionTree: PermissionTree): Unit = {
+    override def validatePermissionTree(permissionTree: PermissionTree): Unit =
       permissionTree.children.foreach { (_, childPerm) =>
         childPerm.children.foreach { (key, value) =>
           try {
@@ -110,7 +110,6 @@ object Filter {
           }
         }
       }
-    }
 
     override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree =
         if permissionTree.permission == ALLOW then return PermissionTree.allow

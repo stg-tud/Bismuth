@@ -37,7 +37,7 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
       }
 
       if this.syncThread.isEmpty then {
-        this.syncThread = Some(new Thread(() => {
+        this.syncThread = Some(new Thread(() =>
           while this.RIBLTSessions.values.exists(s => !s.isSynced) do
               // println(s"reading from ${this.replicaID.mkString("Array(", ", ", ")")}")
               val message = Network.get(this.replicaID)
@@ -47,7 +47,7 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
               handleMessage(message)
 
           // println(s"$replicaID:${Thread.currentThread().getName}:    sync done, good bye!")
-        }))
+        ))
         this.syncThread.get.start()
       }
 

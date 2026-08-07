@@ -84,13 +84,12 @@ object ConversionTest {
   }
 
   /** Returns the double represented by the string or 0 if no double is represented */
-  def toDoubleOr0(str: String): Double = {
+  def toDoubleOr0(str: String): Double =
     try
       str.toDouble
     catch {
       case _ => 0.0
     }
-  }
 
   /** A demonstration of the effect of declaration order on event execution if an event effects multiple LVars in the same
     * cluster. When inverting the definition of b and c, the output changes.

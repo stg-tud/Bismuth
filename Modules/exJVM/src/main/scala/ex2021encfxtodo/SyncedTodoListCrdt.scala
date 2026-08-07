@@ -30,14 +30,13 @@ class SyncedTodoListCrdt(
   def connect(connectionString: String): Unit =
     connectionManager.connectTo(connectionString)
 
-  protected def handleStateReceived(state: StateType): Unit = {
+  protected def handleStateReceived(state: StateType): Unit =
     runInCrdtExecContext { () =>
       val before = crdt.values
       crdt.merge(state)
       val after = crdt.values
       onUpdated(before, after)
     }
-  }
 
   protected def queryCrdtState(): StateType = runInCrdtExecContext(() => crdt.state)
 

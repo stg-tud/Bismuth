@@ -26,7 +26,7 @@ object TodoDataManager {
       init: A,
       wrap: A => TodoRepState,
       unwrap: TodoRepState => Option[A]
-  )(create: (A, Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] = {
+  )(create: (A, Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] =
     dataManager.lock.synchronized {
       dataManager.broadcast(wrap(init))
       val fullInit =
@@ -48,6 +48,5 @@ object TodoDataManager {
 
       sig
     }
-  }
 
 }

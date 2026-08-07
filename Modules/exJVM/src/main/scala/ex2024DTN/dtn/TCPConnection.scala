@@ -15,7 +15,7 @@ class TCPConnection(socket: Socket) {
   override def toString(): String =
     s"TCPConnection(local=${socket.getInetAddress()},remote=${socket.getRemoteSocketAddress()},remoteHost=${remoteHostName})"
 
-  def send(data: Array[Byte]): Unit = {
+  def send(data: Array[Byte]): Unit =
     lock.synchronized {
       try {
         outputStream.writeInt(data.length)
@@ -25,15 +25,13 @@ class TCPConnection(socket: Socket) {
         case e: IOException => println(s"could not send data (conn: ${this}): $e"); throw e
       }
     }
-  }
 
-  def close(): Unit = {
+  def close(): Unit =
     lock.synchronized {
       socket.close()
     }
-  }
 
-  def receive: Array[Byte] = {
+  def receive: Array[Byte] =
     lock.synchronized {
       val size = inputStream.readInt()
 
@@ -43,7 +41,6 @@ class TCPConnection(socket: Socket) {
 
       bytes
     }
-  }
 }
 object TCPConnection {
   def apply(host: String, port: Int): TCPConnection =
@@ -82,8 +79,8 @@ class TCPReadonlyServer(socket: ServerSocket) {
   class ListenerRunnable extends Runnable {
     var keepRunning: Boolean = true
 
-    override def run(): Unit = {
-      try {
+    override def run(): Unit =
+      try
         while keepRunning do {
           val connection = new TCPConnection(socket.accept())
 
@@ -95,22 +92,21 @@ class TCPReadonlyServer(socket: ServerSocket) {
 
           println(s"added new connection: ${connection.remoteHostName}")
         }
-      } catch {
+      catch {
         case e: SocketException =>
           println("server socket accept failed:")
           e.printStackTrace()
       }
-    }
   }
 
   class ReceiverRunnable(connection: TCPConnection) extends Runnable {
     var keepRunning: Boolean = true
 
     override def run(): Unit = {
-      try {
+      try
         while keepRunning do
             queue.put((connection, connection.receive))
-      } catch {
+      catch {
         case e: IOException =>
           println(s"read attempted on closed socket (conn: ${connection}):")
           e.printStackTrace()

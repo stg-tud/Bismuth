@@ -190,7 +190,7 @@ class IndexedDB(using jsImplicits: JSImplicits) extends IIndexedDB {
 
   private var requestedPersistentStorage: Boolean = Globals.VITE_SELENIUM
 
-  def requestPersistentStorage(): Unit = {
+  def requestPersistentStorage(): Unit =
     if !requestedPersistentStorage then {
       println("request persistent storage")
       requestedPersistentStorage = true
@@ -217,9 +217,8 @@ class IndexedDB(using jsImplicits: JSImplicits) extends IIndexedDB {
         )
       }
     }
-  }
 
-  override def get[T](key: String)(using codec: JsonValueCodec[T]): Future[Option[T]] = {
+  override def get[T](key: String)(using codec: JsonValueCodec[T]): Future[Option[T]] =
     for
         db <- database
         tx    = db.transaction(js.Array(s"reform_${Globals.VITE_DATABASE_VERSION}"), IDBTransactionMode.readonly)
@@ -228,9 +227,8 @@ class IndexedDB(using jsImplicits: JSImplicits) extends IIndexedDB {
         _ <- tx.done.toFuture
         value = Option(v.orNull).map(castFromJsDynamic(_).nn)
     yield value
-  }
 
-  override def update[T](key: String, scalaFun: Option[T] => T)(using codec: JsonValueCodec[T]): Future[T] = {
+  override def update[T](key: String, scalaFun: Option[T] => T)(using codec: JsonValueCodec[T]): Future[T] =
     for
         db <- database
         tx    = db.transaction(js.Array(s"reform_${Globals.VITE_DATABASE_VERSION}"), IDBTransactionMode.readwrite)
@@ -241,7 +239,6 @@ class IndexedDB(using jsImplicits: JSImplicits) extends IIndexedDB {
         _ <- store.put(castToJsDynamic(newValue), key).toFuture
         _ <- tx.done.toFuture
     yield newValue
-  }
 
   private def castToJsDynamic[T](value: T)(using codec: JsonValueCodec[T]): js.Any =
     JSON.parse(writeToString(value))

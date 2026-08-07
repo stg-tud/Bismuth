@@ -43,7 +43,7 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
       hash: Hash,
       signedDelta: BftDelta[State],
       hashDag: HashDag[BftDelta[State], State]
-  ): Either[Set[Hash], HashDag[BftDelta[State], State]] = {
+  ): Either[Set[Hash], HashDag[BftDelta[State], State]] =
     hashDag.add(hash, signedDelta) match {
       case missing @ Left(_) =>
         missing
@@ -52,7 +52,6 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
         require(invariants(hash, signedDelta, hashDag))
         updated
     }
-  }
 
   private inline def isSignatureValid(delta: BftDelta[State]): Boolean =
     delta.signature.get.verify(delta.author.publicKey, encoder(delta.copy(signature = None)))

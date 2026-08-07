@@ -32,7 +32,7 @@ case class ErrorPage(code: Int = 404, title: String = "", description: String = 
     )
   }
 
-  def error(text: String, description: String, label: String, page: Page): VNode = {
+  def error(text: String, description: String, label: String, page: Page): VNode =
     div(
       cls := "flex items-center justify-center h-[80vh] w-full flex-col gap-6",
       h1(text, cls := "text-6xl text-gray-200"),
@@ -48,5 +48,4 @@ case class ErrorPage(code: Int = 404, title: String = "", description: String = 
         href := jsImplicits.routing.linkPath(page),
       ),
     )
-  }
 }

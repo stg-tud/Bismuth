@@ -19,7 +19,7 @@ import scala.util.Failure
 import scala.util.Success
 
 class ConnectionModal(using jsImplicits: JSImplicits) {
-  private val offlineBanner: VNode = {
+  private val offlineBanner: VNode =
     div(
       cls := "bg-amber-100 flex flex-col items-center",
       icons.Reload(
@@ -45,9 +45,8 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
         "You are not connected to the discovery server!",
       ),
     )
-  }
 
-  private val onlineBanner: VNode = {
+  private val onlineBanner: VNode =
     div(
       cls := "bg-green-100 flex flex-col	items-center",
       span(
@@ -65,7 +64,6 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
         },
       ),
     )
-  }
 
   def render: VMod = {
     ul(
@@ -95,17 +93,16 @@ class ConnectionModal(using jsImplicits: JSImplicits) {
       div(
         cls := "divider uppercase text-slate-300 font-bold text-xs mb-2 after:dark:bg-gray-300 before:dark:bg-gray-300",
         "Auto",
-      ), {
-        Signal {
-          if jsImplicits.discovery.online.value then {
-            li(
-              onlineBanner,
-            )
-          } else {
-            li(
-              offlineBanner,
-            )
-          }
+      ),
+      Signal {
+        if jsImplicits.discovery.online.value then {
+          li(
+            onlineBanner,
+          )
+        } else {
+          li(
+            offlineBanner,
+          )
         }
       },
       Login().render,

@@ -34,13 +34,12 @@ class World(val width: Int = 100, val height: Int = 100) {
 
   /** returns an animal at random */
   def newAnimal: Animal = newAnimal(randomness.nextBoolean(), randomness.nextBoolean())
-  def newAnimal(isHerbivore: Boolean, isMale: Boolean): Animal = {
+  def newAnimal(isHerbivore: Boolean, isMale: Boolean): Animal =
     if isHerbivore then {
       if isMale then new MaleHerbivore else new FemaleHerbivore
     } else {
       if isMale then new MaleCarnivore else new FemaleCarnivore
     }
-  }
 
   /** spawns the given Board element at a free random position in the world */
   def spawn(element: BoardElement): Unit =

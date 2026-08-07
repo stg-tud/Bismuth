@@ -115,7 +115,7 @@ class ContractEmail(hiwi: Hiwi, supervisor: Supervisor, due: Long, contract: Arr
 }
 
 object Signature {
-  def apply(name: String): VNode = {
+  def apply(name: String): VNode =
     p(
       "Mit freundlichen Grüßen,",
       br,
@@ -131,5 +131,4 @@ object Signature {
       br,
       a(href := "https://www.stg.tu-darmstadt.de/", "https://www.stg.tu-darmstadt.de/"),
     )
-  }
 }

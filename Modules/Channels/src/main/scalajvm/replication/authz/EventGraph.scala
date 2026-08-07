@@ -122,28 +122,24 @@ case class EventGraph[T: Lattice](
 
   def causallyAfter(event1: Hash, event2: Hash): Boolean = causallyBefore(event2, event1)
 
-  def concurrent(event1: Hash, event2: Hash): Boolean = {
+  def concurrent(event1: Hash, event2: Hash): Boolean =
     events.contains(event1) && events.contains(event2) &&
-    !causallyAfter(event1, event2) && !causallyAfter(event2, event1)
-  }
+      !causallyAfter(event1, event2) && !causallyAfter(event2, event1)
 
-  def causalOrder(event1: Hash, event2: Hash): CausalOrder = {
+  def causalOrder(event1: Hash, event2: Hash): CausalOrder =
     if !events.contains(event1) || !events.contains(event2) then UNKNOWN
     else if event1 == event2 then EQUAL
     else if causallyBefore(event1, event2) then BEFORE
     else if causallyBefore(event2, event1) then AFTER
     else CONCURRENT
-  }
 
-  def authorizationChain(capHash: Hash): Seq[Hash] = {
+  def authorizationChain(capHash: Hash): Seq[Hash] =
     if capHash == genesis then Seq(genesis)
     else capHash +: authorizationChain(events(capHash)._1.authorization) // assumes that chain is in local event graph
-  }
 
-  def revocations(capHash: Hash): Set[Hash] = {
+  def revocations(capHash: Hash): Set[Hash] =
     if capHash == genesis then revocationCache.getOrElse(capHash, Set.empty)
     else revocationCache.getOrElse(capHash, Set.empty) ++ revocations(events(capHash)._1.authorization)
-  }
 
 }
 

@@ -27,14 +27,13 @@ class ORMapBench {
   given LocalUid = LocalUid.predefined("a")
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     map = (0 until numEntries).foldLeft(NamedDeltaBuffer[ObserveRemoveMap[Int, EnableWinsFlag]](
       summon,
       ObserveRemoveMap.empty
     )) {
       case (m, i) => m.mod(_.transform(i)(_.map(_.enable(using m.replicaID)())))
     }
-  }
 
   def queryExisting(): Boolean = map.state.get(0).exists(_.read)
 

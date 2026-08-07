@@ -57,7 +57,7 @@ case class ReplicatedTree[A](
     )
   }
 
-  def update(dot: Dot, newValue: A): Delta = {
+  def update(dot: Dot, newValue: A): Delta =
     node(dot) match {
       case Some(n) =>
         ReplicatedTree(
@@ -68,16 +68,14 @@ case class ReplicatedTree[A](
       case None =>
         ReplicatedTree.empty
     }
-  }
 
   def delete(dot: Dot): Delta = {
-    def collectChildrenDots(toDelete: Dot, acc: Dots): Dots = {
+    def collectChildrenDots(toDelete: Dot, acc: Dots): Dots =
       children(toDelete)
         .map(_.dot)
         .foldLeft(acc `union` Dots.single(toDelete)) { (currentAcc, childDot) =>
           collectChildrenDots(childDot, currentAcc)
         }
-    }
 
     // TODO: do we also need to cleanup the edges maps?
     ReplicatedTree(
@@ -86,14 +84,13 @@ case class ReplicatedTree[A](
     )
   }
 
-  def clear(): Delta = {
+  def clear(): Delta =
     ReplicatedTree(
       elements = Map.empty,
       removed = observed
     )
-  }
 
-  def move(dot: Dot, newParent: Dot): Delta = {
+  def move(dot: Dot, newParent: Dot): Delta =
     node(dot).fold(ReplicatedTree.empty) { n =>
       val edits       = ensureNodeIsRooted(n.parent) ::: ensureNodeIsRooted(newParent) ::: List((dot, newParent))
       val newElements = edits.map { case (dot, parent) =>
@@ -103,7 +100,6 @@ case class ReplicatedTree[A](
       }.toMap
       ReplicatedTree(elements = newElements)
     }
-  }
 
   private def isBelowNode(node: Dot, other: Dot): Boolean = {
     if node == other then return true
@@ -119,7 +115,7 @@ case class ReplicatedTree[A](
     hare.contains(other)
   }
 
-  private def ensureNodeIsRooted(dot: Dot): List[(Dot, Dot)] = {
+  private def ensureNodeIsRooted(dot: Dot): List[(Dot, Dot)] =
     node(dot).fold(List.empty[(Dot, Dot)]) { n =>
       if n.parent == ReplicatedTree.rootDot then List.empty
       else {
@@ -128,7 +124,6 @@ case class ReplicatedTree[A](
         current ::: ensureNodeIsRooted(n.parent)
       }
     }
-  }
 }
 
 object ReplicatedTree {

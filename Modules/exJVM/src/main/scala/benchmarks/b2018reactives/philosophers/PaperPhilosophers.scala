@@ -59,44 +59,41 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
   // Dynamic Sight
   val sights: IndexedSeq[Signal[Sight]] =
-    for avoidStaticOptimization <- 0 until size yield {
-      dynamicity match {
-        case Dynamicity.Dynamic => Signal.dynamic[Sight] {
-            val idx     = avoidStaticOptimization
-            val prevIdx = (idx - 1 + size) % size
-            forks(prevIdx).value match {
-              case Free =>
-                forks(idx).value match {
-                  case Taken(neighbor) => Blocked(neighbor)
-                  case Free            => Ready
-                }
-              case Taken(by) =>
-                if by == idx then {
-                  assert(forks(idx).value == Taken(idx), s"sight ${idx + 1} glitched")
-                  Done
-                } else {
-                  Blocked(by)
-                }
-            }
+    for avoidStaticOptimization <- 0 until size yield dynamicity match {
+      case Dynamicity.Dynamic => Signal.dynamic[Sight] {
+          val idx     = avoidStaticOptimization
+          val prevIdx = (idx - 1 + size) % size
+          forks(prevIdx).value match {
+            case Free =>
+              forks(idx).value match {
+                case Taken(neighbor) => Blocked(neighbor)
+                case Free            => Ready
+              }
+            case Taken(by) =>
+              if by == idx then {
+                assert(forks(idx).value == Taken(idx), s"sight ${idx + 1} glitched")
+                Done
+              } else {
+                Blocked(by)
+              }
           }
-        case Dynamicity.SemiStatic => Signal.dynamic[Sight] {
-            val idx     = avoidStaticOptimization
-            val prevIdx = (idx - 1 + size) % size
-            computeForkStatic(idx, (forks(prevIdx).value, forks(idx).value))
-          }
-        case Dynamicity.Static =>
-          val idx       = avoidStaticOptimization
-          val prevIdx   = (idx - 1 + size) % size
-          val leftFork  = forks(prevIdx)
-          val rightFork = forks(idx)
-          Signal[Sight] {
-            computeForkStatic(idx, (leftFork.value, rightFork.value))
-          }
-      }
-
+        }
+      case Dynamicity.SemiStatic => Signal.dynamic[Sight] {
+          val idx     = avoidStaticOptimization
+          val prevIdx = (idx - 1 + size) % size
+          computeForkStatic(idx, (forks(prevIdx).value, forks(idx).value))
+        }
+      case Dynamicity.Static =>
+        val idx       = avoidStaticOptimization
+        val prevIdx   = (idx - 1 + size) % size
+        val leftFork  = forks(prevIdx)
+        val rightFork = forks(idx)
+        Signal[Sight] {
+          computeForkStatic(idx, (leftFork.value, rightFork.value))
+        }
     }
 
-  private def computeForkStatic(idx: Int, forkStates: (Fork, Fork)) = {
+  private def computeForkStatic(idx: Int, forkStates: (Fork, Fork)) =
     forkStates match {
       case (Free, Free) =>
         Ready
@@ -109,7 +106,6 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
         assert(by != idx, s"sight ${idx + 1} glitched 2")
         Blocked(by)
     }
-  }
 
   val sightChngs: Seq[Event[Sight]] =
     for i <- 0 until size yield sights(i).changed
@@ -117,11 +113,10 @@ abstract class PaperPhilosophers(val size: Int, val engine: Any, dynamicity: Dyn
 
   def manuallyLocked[T](@unused idx: Int)(f: => T): T = synchronized { f }
 
-  def maybeEat(idx: Int): Unit = {
+  def maybeEat(idx: Int): Unit =
     transaction(phils(idx)) { t ?=>
       if t.now(sights(idx)) == Ready then phils(idx).admit(Eating)
     }
-  }
   def hasEaten(idx: Int): Boolean =
     sights(idx).readValueOnce == Done
   def rest(idx: Int): Unit =
@@ -210,17 +205,15 @@ trait SingleFoldTopper {
 }
 
 trait ManualLocking extends PaperPhilosophers {
-  override def maybeEat(idx: Int): Unit = {
+  override def maybeEat(idx: Int): Unit =
     manuallyLocked(idx) {
       super.maybeEat(idx)
     }
-  }
 
-  override def rest(idx: Int): Unit = {
+  override def rest(idx: Int): Unit =
     manuallyLocked(idx) {
       super.rest(idx)
     }
-  }
 }
 
 object PaperPhilosophers {
@@ -247,7 +240,7 @@ object PaperPhilosophers {
       }
 
     @volatile var abort: Boolean = false
-    def driver(idx: Int): Int    = {
+    def driver(idx: Int): Int    =
       try {
         var localCount = 0
         while !abort && continue() do {
@@ -261,7 +254,6 @@ object PaperPhilosophers {
           abort = true
           throw t
       }
-    }
 
     val executor    = Executors.newFixedThreadPool(threadCount)
     val execContext = scala.concurrent.ExecutionContext.fromExecutor(executor)

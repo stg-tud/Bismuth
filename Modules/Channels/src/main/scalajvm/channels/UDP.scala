@@ -31,7 +31,7 @@ object UDP {
       val receiveBuffer = new Array[Byte](1 << 16)
 
       executionContext.execute { () =>
-        try {
+        try
           try {
             datagramSocket.setSoTimeout(1000)
             while !summon[Abort].closeRequest do
@@ -45,7 +45,7 @@ object UDP {
                   )))
                 } catch case _: SocketTimeoutException => ()
           } finally datagramSocket.close()
-        } catch {
+        catch {
           case NonFatal(e) => onFailure(e)
         }
       }

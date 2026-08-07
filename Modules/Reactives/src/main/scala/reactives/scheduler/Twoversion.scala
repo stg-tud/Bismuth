@@ -83,7 +83,7 @@ trait Twoversion {
       def tracePhase(phase: String) = Tracing.observe(Tracing.Transaction(txhash, phase))
       tracePhase("started")
 
-      val result = {
+      val result =
         try
             tracePhase("preparation")
             tx.preparationPhase(initialWrites)
@@ -110,7 +110,6 @@ trait Twoversion {
         finally
             tracePhase("release")
             tx.releasePhase()
-      }
 
       tracePhase("observer")
       tx.observerPhase()

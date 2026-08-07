@@ -132,7 +132,7 @@ case class HashDAG[T](
         // apply the event
         effect(event)
 
-    def generateDelta(content: T): HashDAG[T] = {
+    def generateDelta(content: T): HashDAG[T] =
       // private key is empty => cannot sign any events => cannot generate any new events
       // usually the private key is empty in the case of a delta, because before sending a delta we empty the private
       // key to prevent leaking it out
@@ -145,7 +145,6 @@ case class HashDAG[T](
 
           // apply the event
           this.empty.effect(event)
-    }
 
     def processQueue(): HashDAG[T] =
         var hashDAG = this

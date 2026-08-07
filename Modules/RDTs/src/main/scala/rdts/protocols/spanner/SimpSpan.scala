@@ -99,14 +99,12 @@ case class SimpSpan[A](
       val paxosCommitDelta  = paxosAcknowledge(partitionId).upkeep(using l, Participants(partitionMembers(partitionId)))
 
       // filter empty paxos deltas
-      val newPaxosPrepareDelta = {
+      val newPaxosPrepareDelta =
         if paxosPrepareDelta == Bottom[MultiPaxos[twoPCMessages]].empty then Map()
         else Map(partitionId -> paxosPrepareDelta)
-      }
-      val newPaxosAcknowledgeDelta = {
+      val newPaxosAcknowledgeDelta =
         if paxosCommitDelta == Bottom[MultiPaxos[twoPCMessages]].empty then Map()
         else Map(partitionId -> paxosCommitDelta)
-      }
 
       val paxosPrepareUpkept = Lattice.merge(paxosPrepare, newPaxosPrepareDelta)
       val paxosCommitUpkept  = Lattice.merge(paxosAcknowledge, newPaxosAcknowledgeDelta)
@@ -197,7 +195,7 @@ case class SimpSpan[A](
   }
 
   // reports which transactions will/have been committed or aborted
-  def decision: Agreement[Map[Uid, Boolean]] = {
+  def decision: Agreement[Map[Uid, Boolean]] =
     // as an optimization, we can report transactions as decided once all partitions have agreed on them, even when that result was not yet acknowledged by all partitions
     Agreement.Decided(transactions.collect {
       case (transactionID, twoPC)
@@ -211,7 +209,6 @@ case class SimpSpan[A](
           twoPC.prepare.decision(using Participants(partitionIds), FullQuorum) == Agreement.Decided(true)
         )
     })
-  }
 }
 
 object SimpSpan:

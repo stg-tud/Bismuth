@@ -42,10 +42,9 @@ object SimulationBenchmark {
   private def bindAddress(bindPattern: String, i: Int): InetAddress =
     InetAddress.getByName(bindPattern.replaceAll("\\*", (i + 1).toString))
 
-  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace, bindPattern: String): Long = {
+  def benchmark(enforceAcl: Boolean, centralized: Boolean, trace: Trace, bindPattern: String): Long =
     if centralized then benchmarkCentralized(enforceAcl, trace, bindPattern)
     else benchmarkP2p(enforceAcl, trace, bindPattern)
-  }
 
   def benchmarkP2p(enforceAcl: Boolean, trace: Trace, bindPattern: String): Long = {
     val endStateReachedLatch = CountDownLatch(trace.ids.length)

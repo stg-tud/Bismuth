@@ -50,13 +50,12 @@ class AWSetDeltaMergeBench {
     Lattice.diff(fullState, plusOneState)
 
   @Benchmark
-  def deltaMerge: ReplicatedSet[Long] = {
+  def deltaMerge: ReplicatedSet[Long] =
     Lattice.diff(fullState, plusOneDeltaState) match {
       case Some(stateDiff) =>
         Lattice.merge(fullState, stateDiff)
       case None => fullState
     }
-  }
 
   @Benchmark
   def deltaMergeNoDiff: ReplicatedSet[Long] =

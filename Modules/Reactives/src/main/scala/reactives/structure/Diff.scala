@@ -6,7 +6,7 @@ final class Diff[+A](val from: Pulse[A], val to: Pulse[A]) {
 
   def _1: A        = from.get
   def _2: A        = to.get
-  def pair: (A, A) = {
+  def pair: (A, A) =
     try {
       val right = to.get
       val left  = from.get
@@ -15,7 +15,6 @@ final class Diff[+A](val from: Pulse[A], val to: Pulse[A]) {
       case EmptySignalControlThrowable(info) =>
         throw new NoSuchElementException(s"Can not convert $this to pair (empty propagated from $info)")
     }
-  }
 
   override def toString: String = s"Diff($from, $to)"
 }

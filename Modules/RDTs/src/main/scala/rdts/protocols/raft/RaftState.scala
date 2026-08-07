@@ -47,12 +47,11 @@ case class RaftState[T](
 
   def supportProposal(me: Uid): RaftState[T] = Lattice.merge(this, supportProposalDelta(me))
 
-  def proposeDelta(me: Uid, value: T): RaftState[T] = {
+  def proposeDelta(me: Uid, value: T): RaftState[T] =
     if me != leader then RaftState[T]()
     else {
       RaftState[T](valueProposals = Set(Propose(currentTerm, me, nextProposal, value)))
     }
-  }
 
   def propose(me: Uid, value: T): RaftState[T] =
     Lattice.merge(this, proposeDelta(me, value))

@@ -43,7 +43,7 @@ object Circle extends Icon {
 }
 
 object Reform extends Icon {
-  def apply(props: VMod*): VNode = {
+  def apply(props: VMod*): VNode =
     span(
       cls := "font-roboto-slab",
       props,
@@ -56,7 +56,6 @@ object Reform extends Icon {
         "Form",
       ),
     )
-  }
 }
 
 object Connections extends Icon {

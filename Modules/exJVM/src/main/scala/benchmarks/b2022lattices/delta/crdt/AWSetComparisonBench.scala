@@ -26,12 +26,11 @@ class AWSetComparisonBench {
   var plusOneDelta: State     = scala.compiletime.uninitialized
   var setAStatePlusOne: State = scala.compiletime.uninitialized
 
-  private def createSet(replicaID: String): State = {
+  private def createSet(replicaID: String): State =
     (0 until setSize).foldLeft(ReplicatedSet.empty[String]) { (s, i) =>
       val delta = s.add(s"${i.toString}$replicaID")(using replicaID.asId)
       Lattice.merge(s, delta)
     }
-  }
 
   @Setup
   def setup(): Unit = {

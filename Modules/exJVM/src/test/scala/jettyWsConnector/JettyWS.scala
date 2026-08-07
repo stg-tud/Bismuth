@@ -50,12 +50,11 @@ class JettyWsListener(val server: Server) {
           val webSocketHandler = WebSocketUpgradeHandler.from(
             server,
             context,
-            (wsContainer: ServerWebSocketContainer) => {
+            (wsContainer: ServerWebSocketContainer) =>
               wsContainer.addMapping(
                 pathSpec,
                 webSocketCreator(incomingHandler)
               )
-            }
           )
           context.setHandler(webSocketHandler)
           handlers.addHandler(context)

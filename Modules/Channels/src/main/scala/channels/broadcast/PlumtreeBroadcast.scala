@@ -178,12 +178,11 @@ final case class PlumtreeBroadcast[State](
             val forwarded = next.disseminate(payload, except = Set(from))
             forwarded.copy(events = Event.Deliver(payload) +: forwarded.events)
 
-  private def withRemoteKnowledge(from: Peer, knows: Dots) = {
+  private def withRemoteKnowledge(from: Peer, knows: Dots) =
     copy(remoteContext = remoteContext.updatedWith(from) {
       case None     => Some(knows)
       case Some(ex) => Some(ex `merge` knows)
     })
-  }
 
   /** roles are only added/removed by the add/remove peer methods, so here we only change it if a role exists */
   private def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =

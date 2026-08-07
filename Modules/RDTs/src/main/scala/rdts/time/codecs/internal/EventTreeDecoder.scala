@@ -9,7 +9,7 @@ private[codecs] object EventTreeDecoder {
     decode(BitReader(byteArray))
 
   @throws[DecoderException]
-  def decode(bitReader: BitReader): EventTree = {
+  def decode(bitReader: BitReader): EventTree =
     bitReader.readNextBit() match
         case 0 => // Everything starting with a 0 is a Branch
           bitReader.readNextTwoBits() match {
@@ -45,7 +45,6 @@ private[codecs] object EventTreeDecoder {
           }
         case 1 => // Everything starting with a 1 is a Leaf
           EventTree.Leaf(decodeNum(bitReader))
-  }
 
   private def decodeNum(reader: BitReader): Int = {
     // We assume that the leading 1 was already consumed, therefore add 1 to number of bits to next zero (inclusive)

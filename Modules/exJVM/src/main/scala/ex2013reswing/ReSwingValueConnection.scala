@@ -172,7 +172,7 @@ private[ex2013reswing] trait ReSwingValueConnection {
   }
 
   peer.peer.addPropertyChangeListener(new java.beans.PropertyChangeListener {
-    def propertyChange(e: java.beans.PropertyChangeEvent): Unit = {
+    def propertyChange(e: java.beans.PropertyChangeEvent): Unit =
       enforcedProperties get e.getPropertyName match {
         case Some(setter) => setter()
         case _            => changingProperties get e.getPropertyName match {
@@ -180,7 +180,6 @@ private[ex2013reswing] trait ReSwingValueConnection {
             case _             =>
           }
       }
-    }
   })
 
   peer.peer.addHierarchyListener(new HierarchyListener {

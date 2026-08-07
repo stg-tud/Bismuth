@@ -25,11 +25,10 @@ case class RemoveWinsArray[E](
 
   lazy val toList: List[E] = entries.map(e => e._2.value)
 
-  def compact: RemoveWinsArray[E] = {
+  def compact: RemoveWinsArray[E] =
     copy(
       elements = compactElements,
     )
-  }
 
   def read(i: Int): Option[E] = toList.lift(i)
 
@@ -65,23 +64,21 @@ case class RemoveWinsArray[E](
   def update(index: Int, elem: E): RemoveWinsArray[E] =
     updateWith(index, _ => elem)
 
-  def updateWith(index: Int, f: E => E): RemoveWinsArray[E] = {
+  def updateWith(index: Int, f: E => E): RemoveWinsArray[E] =
     entries.lift(index) match {
       case Some((dot, oldEntry)) =>
         val entry = RemoveWinsArray.Entry(LWW.now(oldEntry.index.value), f(oldEntry.value))
         RemoveWinsArray(elements = Map(dot -> entry), removed = Dots.empty)
       case None => RemoveWinsArray.empty
     }
-  }
 
-  def remove(index: Int): RemoveWinsArray[E] = {
+  def remove(index: Int): RemoveWinsArray[E] =
     entries.lift(index) match {
       case Some((dot, _)) => RemoveWinsArray(elements = Map(), removed = removed.add(dot))
       case None           => RemoveWinsArray.empty
     }
-  }
 
-  def move(from: Int, to: Int)(using LocalUid): RemoveWinsArray[E] = {
+  def move(from: Int, to: Int)(using LocalUid): RemoveWinsArray[E] =
     if from < 0 || to < 0 || from > size || to > size then RemoveWinsArray.empty
     else if from == to then RemoveWinsArray.empty
     else
@@ -101,9 +98,8 @@ case class RemoveWinsArray[E](
             )
           case None => RemoveWinsArray.empty
         }
-  }
 
-  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using LocalUid): RemoveWinsArray[E] = {
+  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using LocalUid): RemoveWinsArray[E] =
     if fromStart < 0 || fromEnd < 0 || toIndex < 0 then RemoveWinsArray.empty
     else if fromStart >= fromEnd then RemoveWinsArray.empty
     else if fromStart >= size || toIndex > size then RemoveWinsArray.empty
@@ -129,14 +125,12 @@ case class RemoveWinsArray[E](
               elements = newElements.toMap,
               removed = Dots.empty
             )
-  }
 
-  def clear(): RemoveWinsArray[E] = {
+  def clear(): RemoveWinsArray[E] =
     RemoveWinsArray(
       elements = Map.empty,
       removed = observed
     )
-  }
 }
 
 object RemoveWinsArray {
@@ -153,11 +147,10 @@ object RemoveWinsArray {
 
   def empty[A]: RemoveWinsArray[A] = RemoveWinsArray(Map.empty, Dots.empty)
 
-  def of[A](values: A*)(using LocalUid): RemoveWinsArray[A] = {
+  def of[A](values: A*)(using LocalUid): RemoveWinsArray[A] =
     values.foldLeft(RemoveWinsArray.empty[A]) { (arr, v) =>
       arr.append(v)
     }
-  }
 
   given decompose[E]: Decompose[RemoveWinsArray[E]] = Decompose.derived
 

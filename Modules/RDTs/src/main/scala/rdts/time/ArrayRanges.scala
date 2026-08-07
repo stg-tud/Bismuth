@@ -336,17 +336,16 @@ object ArrayRanges {
     var lastMin = sorted(0)
     var lastMax = sorted(0) - 1
 
-    for time <- sorted do {
-      if time <= lastMax + 1 then {
-        lastMax = time
-      } else {
-        newInternal(newInternalNextIndex) = lastMin         // from lastMin
-        newInternal(newInternalNextIndex + 1) = lastMax + 1 // until lastMax (exclusive)
-        newInternalNextIndex += 2
-        lastMin = time
-        lastMax = time
-      }
-    }
+    for time <- sorted do
+        if time <= lastMax + 1 then {
+          lastMax = time
+        } else {
+          newInternal(newInternalNextIndex) = lastMin         // from lastMin
+          newInternal(newInternalNextIndex + 1) = lastMax + 1 // until lastMax (exclusive)
+          newInternalNextIndex += 2
+          lastMin = time
+          lastMax = time
+        }
 
     newInternal(newInternalNextIndex) = lastMin         // from lastMin
     newInternal(newInternalNextIndex + 1) = lastMax + 1 // until lastMax (exclusive)

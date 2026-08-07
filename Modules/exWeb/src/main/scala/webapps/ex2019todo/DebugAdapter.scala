@@ -12,13 +12,12 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 object DebugAdapter {
 
   given infoCodec: JsonValueCodec[ReInfo]       = JsonCodecMaker.make
-  given resourceCodec: JsonValueCodec[ReSource] = {
+  given resourceCodec: JsonValueCodec[ReSource] =
     new JsonValueCodec[ReSource]:
         override def decodeValue(in: JsonReader, default: ReSource): ReSource =
           throw IllegalStateException("deserialization not supported")
         override def encodeValue(x: ReSource, out: JsonWriter): Unit = infoCodec.encodeValue(x.info, out)
         override def nullValue: ReSource                             = null.asInstanceOf[ReSource]
-  }
 
   def debugPrinter(x: Any): String = x match
       case v: String                                => s"\"$v\""

@@ -33,7 +33,7 @@ enum CheckboxStyle(val props: VMod*) {
       )
 }
 
-def Checkbox(style: CheckboxStyle, props: VMod*): VNode = {
+def Checkbox(style: CheckboxStyle, props: VMod*): VNode =
   input(
     props,
     style.props,
@@ -41,7 +41,6 @@ def Checkbox(style: CheckboxStyle, props: VMod*): VNode = {
     tpe       := "checkbox",
     cls       := "checkbox checkbox-xs rounded bg-white dark:bg-gray-700 !animate-none",
   )
-}
 
 def LabeledCheckbox(labelProps: VMod*)(style: CheckboxStyle, props: VMod*): VNode = {
   val id = s"${js.Math.round(js.Math.random() * 1000000)}"

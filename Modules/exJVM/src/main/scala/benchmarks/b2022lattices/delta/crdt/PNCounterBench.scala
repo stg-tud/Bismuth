@@ -22,14 +22,13 @@ class PNCounterBench {
   var counter: NamedDeltaBuffer[PosNegCounter] = scala.compiletime.uninitialized
 
   @Setup
-  def setup(): Unit = {
+  def setup(): Unit =
     counter = (1 until numReplicas).foldLeft(NamedDeltaBuffer("0".asId, PosNegCounter.zero).map(_.inc())) {
       case (c, n) =>
         given rid: LocalUid = LocalUid.predefined(n.toString)
         val delta           = PosNegCounter.zero.inc()
         c.applyDelta(rid.uid, delta)
     }
-  }
 
   @Benchmark
   def value(): Int = counter.state.value

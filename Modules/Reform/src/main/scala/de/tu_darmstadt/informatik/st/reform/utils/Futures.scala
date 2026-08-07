@@ -16,7 +16,7 @@ object Futures {
 
     def toastOnError(using
         jsImplicits: JSImplicits,
-    )(mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Error): Unit = {
+    )(mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Error): Unit =
       self
         .onComplete { value =>
           if value.isFailure then {
@@ -24,19 +24,17 @@ object Futures {
             jsImplicits.toaster.make(value.failed.get.getMessage.nn, mode, style)
           }
         }
-    }
   }
 
   implicit class TryOps[T](self: Try[T]) {
     def toastOnError(mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Error)(using
         jsImplicits: JSImplicits,
-    ): Unit = {
+    ): Unit =
       self match {
         case Success(value)     =>
         case Failure(exception) =>
           exception.printStackTrace()
           jsImplicits.toaster.make(exception.getMessage.nn, mode, style)
       }
-    }
   }
 }

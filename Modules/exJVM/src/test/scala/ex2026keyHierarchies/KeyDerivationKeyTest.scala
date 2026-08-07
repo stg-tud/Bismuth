@@ -53,11 +53,10 @@ class KeyDerivationKeyTest extends FunSuite {
 object KeyDerivationKeyTest {
   private val testData = "TEST_TEST_TEST_TEST_TEST".getBytes(StandardCharsets.UTF_8)
 
-  def keysAreEqualAccordingToSignatureSubkey(kdk1: KeyDerivationKey, kdk2: KeyDerivationKey): Boolean = {
+  def keysAreEqualAccordingToSignatureSubkey(kdk1: KeyDerivationKey, kdk2: KeyDerivationKey): Boolean =
     Ed25519Util.checkEd25519Signature(
       testData,
       Ed25519Util.sign(testData, kdk1.signingKey.getPrivate),
       kdk2.signingKey.getPublic
     )
-  }
 }

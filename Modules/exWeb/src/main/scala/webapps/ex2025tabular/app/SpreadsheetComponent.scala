@@ -15,11 +15,10 @@ import scala.scalajs.js.timers.SetTimeoutHandle
 
 object SpreadsheetComponent {
 
-  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] = {
+  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] =
     new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
       .repeatEdit(6, _.addRow().delta, allowUndo = false)
       .repeatEdit(6, _.addColumn().delta, allowUndo = false)
-  }
 
   case class Props(
       spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
@@ -49,14 +48,13 @@ object SpreadsheetComponent {
     private def modSpreadsheet(
         f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String],
         allowUndo: Boolean = true
-    ): Callback = {
+    ): Callback =
       $.props.flatMap { props =>
         given LocalUid = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta()(f, allowUndo)
         props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)
       }
-    }
 
     private def withSelectedRow(f: RowIndex => Callback): Callback =
       $.state.flatMap(_.selectedRow.map(f).getOrElse(Callback.empty))
@@ -122,21 +120,19 @@ object SpreadsheetComponent {
       $.modState(_.copy(editingValue = value))
     }
 
-    def handleKeyPress(e: ReactKeyboardEventFromInput): Callback = {
+    def handleKeyPress(e: ReactKeyboardEventFromInput): Callback =
       e.key match {
         case "Enter"  => commitEdit()
         case "Escape" => concludeEdit()
         case _        => Callback.empty
       }
-    }
 
-    private def commitEdit(): Callback = {
+    private def commitEdit(): Callback =
       withEditAndProps { (coordinate, content, _) =>
         val value    = content.trim
         val optValue = if value.isBlank then None else Some(value)
         modSpreadsheet(_.editCell(coordinate, optValue))
       } >> concludeEdit(successful = true)
-    }
 
     private def concludeEdit(successful: Boolean = false): Callback =
       withEditAndProps { (coordinate, content, props) =>
@@ -159,7 +155,7 @@ object SpreadsheetComponent {
           .getOrElse(Callback.empty)
       }
 
-    def handleRangeMouseUp(): Callback = {
+    def handleRangeMouseUp(): Callback =
       $.state.flatMap { state =>
         (for {
           start <- state.rangeDragStart
@@ -176,7 +172,6 @@ object SpreadsheetComponent {
           }
           .getOrElse(Callback.empty)
       } >> $.modState(_.copy(rangeDragStart = None, rangePreviewEnd = None))
-    }
 
     def selectRow(rowIdx: RowIndex): Callback =
       $.modState(_.copy(selectedRow = Some(rowIdx), selectedColumn = None))
@@ -261,7 +256,7 @@ object SpreadsheetComponent {
     def handleRowDragStart(rowIdx: RowIndex): Callback =
       $.modState(_.copy(draggingRow = Some(rowIdx), previewRow = None, previewColumn = None))
 
-    def handleRowDrop(targetIdx: RowIndex)(e: ReactDragEvent): Callback = {
+    def handleRowDrop(targetIdx: RowIndex)(e: ReactDragEvent): Callback =
       $.state.flatMap { st =>
         val insertionIdx = st.previewRow.get
         st.draggingRow
@@ -274,7 +269,6 @@ object SpreadsheetComponent {
           }
           .getOrElse(Callback.empty)
       } >> $.modState(_.copy(draggingRow = None, previewRow = None))
-    }
 
     def handleRowDragOver(targetIdx: RowIndex)(e: ReactDragEvent): Callback = {
       val elem                   = e.currentTarget.asInstanceOf[dom.html.Element]
@@ -287,7 +281,7 @@ object SpreadsheetComponent {
     def handleColumnDragStart(colIdx: ColumnIndex): Callback =
       $.modState(_.copy(draggingColumn = Some(colIdx), previewColumn = None, previewRow = None))
 
-    def handleColumnDrop(targetIdx: ColumnIndex)(e: ReactDragEvent): Callback = {
+    def handleColumnDrop(targetIdx: ColumnIndex)(e: ReactDragEvent): Callback =
       $.state.flatMap { st =>
         val insertionIdx = st.previewColumn.get
         st.draggingColumn
@@ -300,7 +294,6 @@ object SpreadsheetComponent {
           }
           .getOrElse(Callback.empty)
       } >> $.modState(_.copy(draggingColumn = None, previewColumn = None))
-    }
 
     def handleColumnDragOver(targetIdx: ColumnIndex)(e: ReactDragEvent): Callback = {
       val elem         = e.currentTarget.asInstanceOf[dom.html.Element]

@@ -126,7 +126,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     Dependencies.scalajsReact,
     Dependencies.scalatags(),
     scala3defaultsExtra,
-    Compile / scalaJSLinkerConfig := {
+    Compile / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
         // vite also seems to not really work with WASM – it kinda does in dev mode, but not when bundling
@@ -134,8 +134,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
         .withESFeatures(_.withUseWebAssembly(false))
         .withModuleKind(ModuleKind.ESModule)
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
-        .withESFeatures(_.withESVersion(ESVersion.ES2015))
-    },
+        .withESFeatures(_.withESVersion(ESVersion.ES2015)),
     Test / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value,
     // fix the output directory to make it “guessable” by JS import

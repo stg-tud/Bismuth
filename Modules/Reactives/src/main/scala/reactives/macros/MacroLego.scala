@@ -99,13 +99,12 @@ object MacroLegos {
 
     class ReplaceImplicitTickets(ticket: Term) extends TreeMap {
 
-      override def transformTerm(tree: quotes.reflect.Term)(owner: quotes.reflect.Symbol): quotes.reflect.Term = {
+      override def transformTerm(tree: quotes.reflect.Term)(owner: quotes.reflect.Symbol): quotes.reflect.Term =
         tree match
             case TypeApply(Ident("dynamicTransactionScope"), ta) =>
               Apply(TypeApply(Ident(TermRef(TypeRepr.of[TransactionSearch.type], "fromTicket")), ta), List(ticket))
             case other =>
               super.transformTerm(tree)(owner)
-      }
     }
 
     def makeReactive[Res: Type](expr: Expr[Res]): Expr[Any] = {

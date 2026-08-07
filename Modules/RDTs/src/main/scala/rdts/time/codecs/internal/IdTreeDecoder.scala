@@ -7,7 +7,7 @@ private[codecs] object IdTreeDecoder {
     decode(BitReader(byteArray))
 
   @throws[MatchError]
-  def decode(bitReader: BitReader): IdTree = {
+  def decode(bitReader: BitReader): IdTree =
     bitReader.readNextTwoBits() match {
       case 0 =>
         bitReader.readNextBit() match {
@@ -21,5 +21,4 @@ private[codecs] object IdTreeDecoder {
       case 3 => // enc((il, ir)) = <<3:2, enc(il), enc(ir)>>
         IdTree.Branch(decode(bitReader), decode(bitReader))
     }
-  }
 }

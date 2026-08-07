@@ -22,12 +22,11 @@ trait CreationScope[State[_]] {
       incoming: Set[ReSource.of[State]],
       initValue: V,
       needsReevaluation: Boolean
-  )(instantiateReactive: State[V] => T): T = {
+  )(instantiateReactive: State[V] => T): T =
     embedCreation { tx ?=>
       val init: Initializer[State] = tx.initializer
       init.create(incoming, initValue, needsReevaluation)(instantiateReactive)
     }
-  }
 
   private[reactives] def createSource[V, T <: ReSource.of[State]](intv: V)(instantiateReactive: State[V] => T): T =
     embedCreation(tx ?=> tx.initializer.createSource(intv)(instantiateReactive))

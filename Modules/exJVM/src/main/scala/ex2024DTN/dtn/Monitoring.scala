@@ -31,7 +31,7 @@ class MonitoringServer(server: TCPReadonlyServer, paths: MonitoringPaths = Monit
       val streamCreatedAndDelivered =
         use(BufferedOutputStream(Files.newOutputStream(paths.created_and_delivered_data_fp)))
 
-      try {
+      try
         while true do {
           val (connection, data) = server.queue.take()
 
@@ -57,7 +57,7 @@ class MonitoringServer(server: TCPReadonlyServer, paths: MonitoringPaths = Monit
                 streamCreatedAndDelivered.write("\n".getBytes())
                 streamCreatedAndDelivered.flush()
         }
-      } catch {
+      catch {
         case e: Exception =>
           println("monitoring server ran into exception:")
           e.printStackTrace()

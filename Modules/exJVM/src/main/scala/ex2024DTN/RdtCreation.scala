@@ -38,7 +38,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
       port: Int,
       monitoringClient: MonitoringClientInterface,
       operationMode: ClientOperationMode
-  ): Unit = {
+  ): Unit =
     dataManager.addClientConnection(Channel[RdtType](
       host,
       port,
@@ -47,12 +47,10 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
       monitoringClient,
       operationMode
     ))
-  }
 
-  def caseStudyListen(): Unit = {
+  def caseStudyListen(): Unit =
     while true do
         Thread.sleep(1000)
-  }
 
   def caseStudyActive(): Unit = {
     println("started active add-wins rdt.")
@@ -102,7 +100,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
       port: Int,
       monitoringClient: MonitoringClientInterface,
       operationMode: ClientOperationMode
-  ): Unit = {
+  ): Unit =
     dataManager.addClientConnection(Channel[RdtType](
       host,
       port,
@@ -111,12 +109,10 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
       monitoringClient,
       operationMode
     ))
-  }
 
-  def caseStudyListen(): Unit = {
+  def caseStudyListen(): Unit =
     while true do
         Thread.sleep(1000)
-  }
 
   def caseStudyActive(): Unit = {
     println("started active observe-remove-set rdt.")
@@ -176,7 +172,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
       port: Int,
       monitoringClient: MonitoringClientInterface,
       operationMode: ClientOperationMode
-  ): Unit = {
+  ): Unit =
     dataManager.addClientConnection(Channel[RdtType](
       host,
       port,
@@ -185,12 +181,10 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
       monitoringClient,
       operationMode
     ))
-  }
 
-  def caseStudyListen(): Unit = {
+  def caseStudyListen(): Unit =
     while true do
         Thread.sleep(1000)
-  }
 
   def caseStudyActive(): Unit = {
     println("started active last-writer-wins rdt.")

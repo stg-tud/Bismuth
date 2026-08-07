@@ -74,7 +74,7 @@ case class Repository[A](name: String, defaultValue: A)(using
 
   private val valueSyncer = ReplicationGroup[A](name)
 
-  val all: Signal[Seq[Synced[A]]] = {
+  val all: Signal[Seq[Synced[A]]] =
     ids
       .map { ids =>
         val futures = ids.toSeq.map(load)
@@ -82,7 +82,6 @@ case class Repository[A](name: String, defaultValue: A)(using
         nonIntegratedFuture(future)
       }
       .flatten
-  }
 
   /** does not capture outer transaction scope */
   private def nonIntegratedFuture(future: Future[Seq[Synced[A]]]) =

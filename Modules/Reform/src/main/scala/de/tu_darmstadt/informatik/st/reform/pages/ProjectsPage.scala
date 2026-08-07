@@ -80,12 +80,11 @@ class ProjectAttributes(using jsImplicits: JSImplicits) {
       readConverter = identity,
       formats = Seq(
         UIFormat(
-          (id, project) => {
+          (id, project) =>
             Signal.dynamic {
               val contracts = jsImplicits.repositories.contracts.all.value.map(_.signal.value)
               !contracts.exists(contract => contract.contractAssociatedProject.option.contains(id))
-            }
-          },
+            },
           "text-slate-400 dark:text-gray-400 italic",
         ),
       ),
@@ -95,7 +94,7 @@ class ProjectAttributes(using jsImplicits: JSImplicits) {
       id: String,
       project: Project,
       pred: (contractId: String, contract: Contract) => Boolean,
-  ): Signal[Int] = {
+  ): Signal[Int] =
     Signal.dynamic {
       jsImplicits.repositories.contracts.all.value
         .filter(contract => contract.signal.value.contractAssociatedProject.option.contains(id))
@@ -109,7 +108,6 @@ class ProjectAttributes(using jsImplicits: JSImplicits) {
         }
         .fold[Int](0)((acc: Int, x: Int) => acc + x)
     }
-  }
 
   def assignedHours =
     new UIReadOnlyAttribute[Project, String](

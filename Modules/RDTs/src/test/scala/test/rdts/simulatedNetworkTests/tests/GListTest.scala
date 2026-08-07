@@ -12,10 +12,8 @@ object GListGenerators {
   def genGList[E](using e: Arbitrary[E]): Gen[GrowOnlyList[E]] =
     for
         elems <- Gen.listOfN(20, e.arbitrary)
-    yield {
-      elems.foldLeft(GrowOnlyList.empty[E]) {
-        case (list, el) => list `merge` list.insertAt(0, el)
-      }
+    yield elems.foldLeft(GrowOnlyList.empty[E]) {
+      case (list, el) => list `merge` list.insertAt(0, el)
     }
 
   given arbGList[E](using

@@ -168,7 +168,7 @@ final case class HyParViewStateMachine(
           // Paper forwarded-join random walk: intermediate hops remember the newcomer, optionally add it
           // to the passive view at PRWL, and either forward to another active peer or terminate by
           // initiating a direct Neighbor handshake with the newcomer.
-          def sendJoin(nextState: HyParViewStateMachine) = {
+          def sendJoin(nextState: HyParViewStateMachine) =
             Result(
               nextState,
               List(
@@ -179,7 +179,6 @@ final case class HyParViewStateMachine(
                 )
               )
             )
-          }
 
           if newNode.uid == self.uid then Result(this, Nil)
           else if ttl == 0 || active.size <= 1 then

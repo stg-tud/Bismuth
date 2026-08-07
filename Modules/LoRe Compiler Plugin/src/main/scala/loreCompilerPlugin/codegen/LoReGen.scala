@@ -26,13 +26,12 @@ object LoReGen {
     */
   private def logRhsInfo(indentLevel: Integer, operandSide: String, rhsType: String, rhsValue: String)(using
       @unused logLevel: LogLevel
-  ): Unit = {
+  ): Unit =
     if operandSide.nonEmpty then {
       println(s"${"\t".repeat(indentLevel)}The $operandSide parameter is a $rhsType $rhsValue")
     } else {
       println(s"${"\t".repeat(indentLevel)}The parameter is a $rhsType $rhsValue")
     }
-  }
 
   /** Creates a LoRe Term from a Scala Tree.
     *
@@ -43,7 +42,7 @@ object LoReGen {
   def createLoReTermFromTree(tree: tpd.Tree, termList: List[Term])(using
       logLevel: LogLevel,
       ctx: Context
-  ): List[Term] = {
+  ): List[Term] =
     // Returns a List instead of a singular term because of blocks
     tree match
         case ap: Apply[?] => // Function or method calls, e.g. "println(...)" or "foo.bar()"
@@ -71,7 +70,6 @@ object LoReGen {
         case _ =>
           report.error("This syntax is not supported in LoRe.", tree.sourcePos)
           List(TVar("<error>")) // Make compiler happy
-  }
 
   /** Creates a LoRe Term from a Scala Apply Tree.
     *

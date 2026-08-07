@@ -43,26 +43,23 @@ enum ButtonStyle(val props: VMod) {
   case TU extends ButtonStyle(cls := "bg-[#E4001A] hover:bg-[#be0016] text-white")
 }
 
-def Button(style: ButtonStyle, props: VMod*): VNode = {
+def Button(style: ButtonStyle, props: VMod*): VNode =
   button(
     cls := "btn btn-active p-2 h-fit min-h-10 border-0 disabled:line-through disabled:opacity-[.5]",
     props,
     style.props,
   )
-}
 
-def TableButton(style: ButtonStyle, props: VMod*): VNode = {
+def TableButton(style: ButtonStyle, props: VMod*): VNode =
   button(
     cls := "rounded px-2 py-1 h-fit uppercase font-bold text-sm",
     props,
     style.props,
   )
-}
 
-def IconButton(style: ButtonStyle, props: VMod*): VNode = {
+def IconButton(style: ButtonStyle, props: VMod*): VNode =
   button(
     cls := "p-0.5 h-fit w-fit cursor-pointer rounded-md",
     props,
     style.props,
   )
-}

@@ -52,7 +52,7 @@ case class NestedKeepRemoveList[E] private (
       flag.enable()
     }
 
-  def update(idx: Int, mod: (E) => E)(using LocalUid): C = {
+  def update(idx: Int, mod: (E) => E)(using LocalUid): C =
     read(idx) match {
       case Some(value) =>
         findRealIndex(idx) match
@@ -67,7 +67,6 @@ case class NestedKeepRemoveList[E] private (
                     else NestedKeepRemoveList(flags = Map(d -> next), payloads = Map(d -> mod(value)))
       case None => NestedKeepRemoveList.empty
     }
-  }
 
   def remove(idx: Int): C =
     updateFlag(idx) { case flag =>

@@ -12,20 +12,18 @@ def getID(name: String): String =
 def Label(props: VMod*): VNode =
   label(cls := "label label-text text-slate-500 dark:text-slate-300", props)
 
-def Input(props: VMod*): VNode = {
+def Input(props: VMod*): VNode =
   input(
     cls := "input input-bordered w-full text-sm p-2 h-fit dark:bg-gray-700 dark:placeholder-gray-400 dark:text-slate-300",
     props,
   )
-}
 
-def TableInput(props: VMod*): VNode = {
+def TableInput(props: VMod*): VNode =
   input(
     cls := "dark:border-gray-500 input invalid:focus:bg-red-100 invalid:focus:placeholder-red-600 focus:invalid:text-red-600 dark:focus:invalid:bg-red-100 dark:focus:invalid:placeholder-red-600 dark:focus:invalid:text-red-600 bg-gray-50 input-ghost dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white !outline-0 rounded-none w-full border border-gray-300 h-9",
     props,
   )
-}
-def FileInput(props: VMod*): VNode = {
+def FileInput(props: VMod*): VNode =
   label(
     cls := "block h-[40px] cursor-pointer",
     span(cls := "sr-only", "Choose file"),
@@ -40,7 +38,6 @@ def FileInput(props: VMod*): VNode = {
               hover:file:bg-purple-400 h-full file:h-full dark:text-gray-400""",
     ),
   )
-}
 
 def LabeledInput(labelProps: VMod*)(props: VMod*): VMod = {
   val id = getID("input") // might not work if id attr is set

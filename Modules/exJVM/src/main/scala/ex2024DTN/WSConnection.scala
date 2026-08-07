@@ -26,7 +26,7 @@ class WSConnection(ws: WebSocket[Future]) {
     _receiveWholeMessage().recover { e => e.printStackTrace(); "" }
 
   private def _receiveWholeMessage(): Future[String | Array[Byte]] = {
-    def combineFragments(f1: String | Array[Byte], f2: String | Array[Byte]): String | Array[Byte] = {
+    def combineFragments(f1: String | Array[Byte], f2: String | Array[Byte]): String | Array[Byte] =
       f1 match {
         case s: String => f2 match {
             case s2: String      => s + s2
@@ -37,7 +37,6 @@ class WSConnection(ws: WebSocket[Future]) {
             case b2: Array[Byte] => b ++ b2
           }
       }
-    }
 
     ws.receive().flatMap {
       case Binary(payload: Array[Byte], finalFragment: Boolean, rsv: Option[Int]) =>
@@ -81,7 +80,7 @@ class WSEndpointClient(host: String, port: Int, connection: WSConnection, val no
 
   private val lock: AtomicBoolean = AtomicBoolean()
 
-  def receiveBundle(): Future[Bundle] = {
+  def receiveBundle(): Future[Bundle] =
     /*
     We have a problem:
     The "command() and sendBundle() functions" trigger a string response by the dtn7-rs indicating its success.
@@ -107,7 +106,6 @@ class WSEndpointClient(host: String, port: Int, connection: WSConnection, val no
       case b: Array[Byte] =>
         Future(Cbor.decode(b).to[Bundle].value)
     }
-  }
 
   def sendBundle(bundle: Bundle): Future[Unit] = {
     println(s"waiting to start sending bundle at time ${ZonedDateTime.now()}")
@@ -119,14 +117,13 @@ class WSEndpointClient(host: String, port: Int, connection: WSConnection, val no
     }
   }
 
-  def registerEndpointAndSubscribe(service: String): Future[WSEndpointClient] = {
+  def registerEndpointAndSubscribe(service: String): Future[WSEndpointClient] =
     // register the endpoint on the DTN daemon
     CompatCode.uget(uri"http://${host}:${port}/register?${service}").flatMap { _ =>
       registeredServices = service :: registeredServices
       // subscribe to the registered endpoint with our websocket
       connection.command(s"/subscribe $service").map(_ => this)
     }
-  }
 
   def disconnect(): Future[Unit] = {
     // currently unused method so we do not unregister atm todo: check when we actually want to unregister
@@ -164,7 +161,7 @@ class WSEroutingClient(
     connection: WSConnection,
     val nodeId: String
 ) {
-  def receivePacket(): Future[Packet] = {
+  def receivePacket(): Future[Packet] =
     connection.receiveWholeMessage().flatMap {
       case s: String =>
         Future(Json.decode(s.getBytes(StandardCharsets.UTF_8)).to[Packet].value)
@@ -172,7 +169,6 @@ class WSEroutingClient(
         println("received bytes on external routing ws, but shouldn't have. ignoring")
         receivePacket()
     }
-  }
 
   def sendPacket(packet: Packet): Future[Unit] =
     connection.sendText(Json.encode(packet).toUtf8String)

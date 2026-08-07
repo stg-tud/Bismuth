@@ -20,7 +20,7 @@ trait MessageBuffer {
 object MessageBuffer {
   val maxPayloadSize: Int = 1 << 24
 
-  def convertByteBufferToArray(buffer: ByteBuffer): Array[Byte] = {
+  def convertByteBufferToArray(buffer: ByteBuffer): Array[Byte] =
     if buffer.hasArray then {
       val offset = buffer.arrayOffset() + buffer.position()
       val length = buffer.remaining()
@@ -34,7 +34,6 @@ object MessageBuffer {
       buffer.get(array)
       array
     }
-  }
 }
 
 case class ByteBufferMessageBuffer(inner: ByteBuffer) extends MessageBuffer {

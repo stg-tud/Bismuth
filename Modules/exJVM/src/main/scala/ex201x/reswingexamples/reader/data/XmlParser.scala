@@ -130,12 +130,11 @@ class XmlParser {
     }
   }
 
-  private def tryToCreateURL(s: String): Option[URL] = {
+  private def tryToCreateURL(s: String): Option[URL] =
     try Some(new URI(s).toURL)
     catch {
       case _: MalformedURLException => None
     }
-  }
 
   private def extractDate(xml: NodeSeq): Option[Date] = {
     val res = xml \ "pubDate"

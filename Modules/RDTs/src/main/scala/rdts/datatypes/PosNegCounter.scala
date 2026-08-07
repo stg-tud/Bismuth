@@ -12,11 +12,10 @@ case class PosNegCounter(pos: GrowOnlyCounter, neg: GrowOnlyCounter) derives Lat
 
   def dec()(using LocalUid): PosNegCounter = add(-1)
 
-  def add(delta: Int)(using LocalUid): PosNegCounter = {
+  def add(delta: Int)(using LocalUid): PosNegCounter =
     if delta > 0 then PosNegCounter(pos.add(delta), GrowOnlyCounter.zero)
     else if delta < 0 then PosNegCounter(GrowOnlyCounter.zero, neg.add(-delta))
     else PosNegCounter.zero
-  }
 }
 
 /** A PNCounter (Positive-Negative Counter) is a Delta CRDT modeling a counter.

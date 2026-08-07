@@ -18,7 +18,7 @@ class JioInputStreamAdapter(in: InputStream) {
     ByteBufferMessageBuffer(bytes)
   }
 
-  def loopReceive(handler: Callback[MessageBuffer]): Unit = {
+  def loopReceive(handler: Callback[MessageBuffer]): Unit =
     try
         while !closed do
             handler.succeed(readNext())
@@ -26,7 +26,6 @@ class JioInputStreamAdapter(in: InputStream) {
     catch
         case ioe: IOException =>
           handler.fail(ioe)
-  }
 
   def close(): Unit =
       closed = true

@@ -31,20 +31,18 @@ case class TravelPlan(
     }
   }
 
-  def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta = {
+  def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta =
     this.deltaModify(_.bucketList).using { ormap =>
       ormap.transform(bucketListId) {
         case Some(prior) => Some(prior.write(text))
         case None        => Some(LastWriterWins.now(text))
       }
     }
-  }
 
-  def removeBucketListEntry(bucketListId: UniqueId): Delta = {
+  def removeBucketListEntry(bucketListId: UniqueId): Delta =
     this.deltaModify(_.bucketList).using { ormap =>
       ormap.remove(bucketListId)
     }
-  }
 
   def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta = {
     val key = randomIdentifier
@@ -58,13 +56,12 @@ case class TravelPlan(
     }
   }
 
-  def removeExpense(key: UniqueId): Delta = {
+  def removeExpense(key: UniqueId): Delta =
     this.deltaModify(_.expenses).using { ormap =>
       ormap.remove(key)
     }
-  }
 
-  def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta = {
+  def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta =
     this.deltaModify(_.expenses).using { ormap =>
       ormap.transform(expenseId) {
         case Some(prior: Expense) =>
@@ -72,9 +69,8 @@ case class TravelPlan(
         case None => ???
       }
     }
-  }
 
-  def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta = {
+  def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta =
     this.deltaModify(_.expenses).using { ormap =>
       ormap.transform(expenseId) {
         case Some(prior) =>
@@ -82,7 +78,6 @@ case class TravelPlan(
         case None => ???
       }
     }
-  }
 
   def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta = {
     val commentValue = if comment.isEmpty then None else Some(comment)

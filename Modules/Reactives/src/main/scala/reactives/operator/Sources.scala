@@ -32,14 +32,13 @@ class Evt[T] private[reactives] (initialState: State[Pulse[T]], name: ReInfo)
   def fire(value: T)(using planTransactionScope: PlanTransactionScope[State]): Unit =
     planTransactionScope.planTransaction(this)(admit(value)(using _))
   override def disconnect(): Unit                                             = ()
-  def admitPulse(pulse: Pulse[T])(using ticket: AdmissionTicket[State]): Unit = {
+  def admitPulse(pulse: Pulse[T])(using ticket: AdmissionTicket[State]): Unit =
     ticket.recordChange(new InitialChange[State] {
       override val source: Evt.this.type                                                = Evt.this
       override def writeValue(base: Pulse[T], writeCallback: Pulse[T] => Unit): Boolean = {
         writeCallback(pulse); true
       }
     })
-  }
 }
 
 /** @group create */
@@ -62,23 +61,21 @@ class Var[A] private[reactives] (initialState: State[Pulse[A]], name: ReInfo)
   def set(value: A)(using planTransactionScope: PlanTransactionScope[State]): Unit =
     planTransactionScope.planTransaction(this) { admit(value)(using _) }
 
-  def transform(f: A => A)(using planTransactionScope: PlanTransactionScope[State]): Unit = {
+  def transform(f: A => A)(using planTransactionScope: PlanTransactionScope[State]): Unit =
     planTransactionScope.planTransaction(this) { t =>
       admit(f(t.tx.now(this)))(using t)
     }
-  }
 
   def setEmpty()(using fac: Scheduler[State]): Unit =
     fac.forceNewTransaction(this)(t => admitPulse(Pulse.empty(info))(using t))
 
-  def admitPulse(pulse: Pulse[A])(using ticket: AdmissionTicket[State]): Unit = {
+  def admitPulse(pulse: Pulse[A])(using ticket: AdmissionTicket[State]): Unit =
     ticket.recordChange(new InitialChange[State] {
       override val source: Var.this.type                                                = Var.this
       override def writeValue(base: Pulse[A], writeCallback: Pulse[A] => Unit): Boolean =
         if base != pulse then { writeCallback(pulse); true }
         else false
     })
-  }
 }
 
 /** Creates new [[Var]]s

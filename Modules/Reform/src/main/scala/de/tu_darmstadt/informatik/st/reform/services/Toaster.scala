@@ -141,16 +141,16 @@ class Toast(using toaster: Toaster)(
           case None =>
         },
       ),
-      idAttr := s"toast-$id", {
-        if toastMode.autodismiss then
-            Some(
-              div(
-                cls := s"toast-progress absolute w-0 h-full left-0 top-0 ${toastType.secondaryBgClass}",
-              ),
-            )
-        else
-            None
-      },
+      idAttr := s"toast-$id",
+      if toastMode.autodismiss then
+          Some(
+            div(
+              cls := s"toast-progress absolute w-0 h-full left-0 top-0 ${toastType.secondaryBgClass}",
+            ),
+          )
+      else
+          None
+      ,
       div(
         cls := s"flex flex-row items-start !mt-0 !z-[50] ${if !toastMode.autodismiss then "!w-full" else ""}",
         div(
@@ -163,38 +163,36 @@ class Toast(using toaster: Toaster)(
         div(
           cls := "",
           text,
-        ), {
-          if toastType.copyable then {
-            Some(
-              div(
-                icons.Clipboard(cls := "w-4 h-4 text-red-600"),
-                cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer shrink-0 m-0.5",
-                onClick.foreach(_ =>
-                  window.navigator.clipboard
-                    .writeText(document.querySelector(s"#toast-$id").innerText)
-                    .toFuture
-                    .onComplete { value =>
-                      if value.isFailure then {
-                        println("could not copy to clipboard")
-                      } else {
-                        toaster.make("Copied to Clipboard!", ToastMode.Short, ToastType.Success)
-                      }
-                    },
-                ),
+        ),
+        if toastType.copyable then {
+          Some(
+            div(
+              icons.Clipboard(cls := "w-4 h-4 text-red-600"),
+              cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer shrink-0 m-0.5",
+              onClick.foreach(_ =>
+                window.navigator.clipboard
+                  .writeText(document.querySelector(s"#toast-$id").innerText)
+                  .toFuture
+                  .onComplete { value =>
+                    if value.isFailure then {
+                      println("could not copy to clipboard")
+                    } else {
+                      toaster.make("Copied to Clipboard!", ToastMode.Short, ToastType.Success)
+                    }
+                  },
               ),
-            )
-          } else None
-        }, {
-          if toastMode.closeable then {
-            Some(
-              div(
-                icons.Close(cls := "text-red-600 w-4 h-4"),
-                cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer shrink-0 m-0.5 reform-toast-close",
-                onClick.foreach(_ => onclose(this)),
-              ),
-            )
-          } else None
-        },
+            ),
+          )
+        } else None,
+        if toastMode.closeable then {
+          Some(
+            div(
+              icons.Close(cls := "text-red-600 w-4 h-4"),
+              cls := "tooltip tooltip-left hover:bg-red-200 rounded-md p-0.5 h-fit w-fit cursor-pointer shrink-0 m-0.5 reform-toast-close",
+              onClick.foreach(_ => onclose(this)),
+            ),
+          )
+        } else None,
       ),
     )
   }
@@ -222,10 +220,9 @@ class Toaster {
     this.addToast.fire(toast)
   }
 
-  def render: VMod = {
+  def render: VMod =
     div(
       cls := "toast toast-end items-end !p-0 bottom-4 right-4",
       Signal { toasts.value.map(toast => toast.render) },
     )
-  }
 }

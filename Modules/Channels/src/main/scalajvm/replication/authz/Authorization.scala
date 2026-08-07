@@ -11,7 +11,7 @@ object Authorization {
   def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter}](
       eventGraph: EventGraph[T],
       deltaValueStore: DeltaValueStore[T]
-  ): T = {
+  ): T =
     eventGraph.events.iterator.foldLeft(Bottom[T].empty) {
       case (left, (deltaEventHash, (deltaEvent @ ArdtEvent(deltaCommitment: DeltaCommitment, _, _, _, _), _))) =>
         deltaValueStore.get(deltaCommitment.commitment)
@@ -21,7 +21,6 @@ object Authorization {
           .getOrElse(left)
       case (left, _) => left
     }
-  }
 
   def mayRead[T: {JsonValueCodec, Filter}](
       replicaId: PublicIdentity,
@@ -41,7 +40,7 @@ object Authorization {
       deltaEventHash: Hash,
       delta: T,
       eventGraph: EventGraph[T]
-  ): Boolean = {
+  ): Boolean =
     eventGraph.capabilityCache(replicaId)
       .exists((capabilityEventHash, capability) =>
         Filter[T].isAllowed(delta, capability.read) &&
@@ -49,7 +48,6 @@ object Authorization {
           .revocations(capabilityEventHash)
           .forall(revocation => !eventGraph.causallyBefore(revocation, deltaEventHash))
       )
-  }
 
   def mayWrite[T: {JsonValueCodec, Filter}](
       eventGraph: EventGraph[T],
@@ -65,7 +63,7 @@ object Authorization {
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
       revealedValue: RevealedValue
-  ): Boolean = {
+  ): Boolean =
     deltaEvent.payload match {
       case DeltaCommitment(commitment) =>
         if revealedValue.commitment != commitment then return false
@@ -73,14 +71,13 @@ object Authorization {
         mayWrite(eventGraph, deltaEventHash, deltaEvent, delta)
       case _ => throw IllegalArgumentException(s"$deltaEvent is not a delta commitment")
     }
-  }
 
   private def mayWrite[T: {Filter}](
       eventGraph: EventGraph[T],
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
       delta: T
-  ): Boolean = {
+  ): Boolean =
     // Delegation & revocation validity and validity of capability use are invariants of eventgraph, thus not checked here
     eventGraph.events(deltaEvent.authorization)._1.payload match {
       case Capability(_, _, write) =>
@@ -90,5 +87,4 @@ object Authorization {
           .forall(revocation => eventGraph.causallyBefore(deltaEventHash, revocation))
       case _ => false
     }
-  }
 }

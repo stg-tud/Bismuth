@@ -15,22 +15,20 @@ class ShapesPanel(val shapes: Signal[Iterable[Shape]]) extends Panel {
 
   allChanges observe { _ => repaint() }
 
-  override def paintComponent(g: Graphics2D): Unit = {
+  override def paintComponent(g: Graphics2D): Unit =
     reactives.SelectedScheduler.candidate.scheduler.forceNewTransaction() { implicit turn =>
       g.setColor(Color.WHITE)
       g.fillRect(0, 0, size.width, size.height)
       g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
       g.translate(size.width / 2, size.height / 2)
-      for shape <- turn.now(shapes) do {
-        try
-          shape.drawSnapshot(g)
-        catch {
-          case _: NoSuchElementException => // ignore
-          case _: IllegalStateException  => // ignore
-        }
-      }
+      for shape <- turn.now(shapes) do
+          try
+            shape.drawSnapshot(g)
+          catch {
+            case _: NoSuchElementException => // ignore
+            case _: IllegalStateException  => // ignore
+          }
     }
-  }
 
   val _size: Var[Dimension]      = Var(size)
   val sigSize: Signal[Dimension] = _size

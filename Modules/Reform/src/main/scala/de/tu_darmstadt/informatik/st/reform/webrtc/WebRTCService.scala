@@ -106,14 +106,13 @@ class WebRTCService() {
   def getInformation(ref: String): StoredConnectionInformation =
     connectionInfo.getOrElse(ref, StoredConnectionInformation("Anonymous", "unknown"))
 
-  def setAlias(ref: String, alias: String): Unit = {
+  def setAlias(ref: String, alias: String): Unit =
     connectionInfo = connectionInfo.transform { (r, storedConnection) =>
       if ref == r then {
         storedConnection.alias = alias
       }
       storedConnection
     }
-  }
 
   def getConnectionMode(ref: String): Future[String] =
     Future.successful("none (scala-loci removed)")

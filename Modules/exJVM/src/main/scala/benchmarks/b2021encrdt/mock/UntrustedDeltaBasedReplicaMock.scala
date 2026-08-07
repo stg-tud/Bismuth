@@ -19,11 +19,10 @@ class UntrustedDeltaBasedReplicaMock extends UntrustedReplica {
 
   def getCausalContext: Dots = dottedVersionVector
 
-  def size(): Long = {
+  def size(): Long =
     encryptedDeltaGroupStore.toList.map { delta =>
       delta.stateCiphertext.remaining().toLong + delta.serialDottedVersionVector.remaining().toLong
     }.sum
-  }
 
   def decryptAndWriteRawDeltasToFile(aead: Aead, outFilepath: Path): Unit = {
     val os          = Files.newOutputStream(outFilepath)

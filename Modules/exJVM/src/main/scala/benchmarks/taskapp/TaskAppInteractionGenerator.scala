@@ -107,10 +107,9 @@ class TaskAppInteractionGenerator(
     sb.toString
   }
 
-  private def getRandomFolder(folders: Seq[Dot]): Dot = {
+  private def getRandomFolder(folders: Seq[Dot]): Dot =
     if folders.isEmpty || random.nextBoolean() then ReplicatedTree.rootDot
     else folders(random.nextInt(folders.size))
-  }
 
   private def addFolder(folders: Seq[Dot]): AddFolder = {
     val parentDot = getRandomFolder(folders)

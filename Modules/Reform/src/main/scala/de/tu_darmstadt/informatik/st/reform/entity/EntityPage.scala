@@ -131,41 +131,40 @@ class EntityRow[T <: Entity[T]](
               e.preventDefault()
               createOrUpdate()
             },
-          ), {
-            existingValue match {
-              case Some(p) =>
-                List(
-                  TableButton(
-                    ButtonStyle.LightPrimary,
-                    formId := id,
-                    `type` := "submit",
-                    idAttr := "add-entity-button",
-                    icons.Save(cls := "w-4 h-4 md:hidden"),
-                    span(cls       := "hidden md:block", "Save"),
-                    cls      := "h-7 tooltip tooltip-top entity-save px-2",
-                    data.tip := "Save",
-                  ),
-                  TableButton(
-                    ButtonStyle.LightDefault,
-                    icons.Close(cls := "w-4 h-4 md:hidden"),
-                    span(cls        := "hidden md:block", "Cancel"),
-                    onClick.foreach(_ => cancelEdit()),
-                    cls      := "h-7 tooltip tooltip-top entity-cancel px-2",
-                    data.tip := "Cancel",
-                  ),
-                )
-              case None =>
+          ),
+          existingValue match {
+            case Some(p) =>
+              List(
                 TableButton(
                   ButtonStyle.LightPrimary,
                   formId := id,
                   `type` := "submit",
                   idAttr := "add-entity-button",
-                  icons.Add(cls := "w-4 h-4 md:hidden"),
-                  span(cls      := "hidden md:block whitespace-nowrap", "Add " + this.title.singular),
-                  cls      := "h-7 tooltip tooltip-top entity-add",
-                  data.tip := "Add" + this.title.singular,
-                )
-            }
+                  icons.Save(cls := "w-4 h-4 md:hidden"),
+                  span(cls       := "hidden md:block", "Save"),
+                  cls      := "h-7 tooltip tooltip-top entity-save px-2",
+                  data.tip := "Save",
+                ),
+                TableButton(
+                  ButtonStyle.LightDefault,
+                  icons.Close(cls := "w-4 h-4 md:hidden"),
+                  span(cls        := "hidden md:block", "Cancel"),
+                  onClick.foreach(_ => cancelEdit()),
+                  cls      := "h-7 tooltip tooltip-top entity-cancel px-2",
+                  data.tip := "Cancel",
+                ),
+              )
+            case None =>
+              TableButton(
+                ButtonStyle.LightPrimary,
+                formId := id,
+                `type` := "submit",
+                idAttr := "add-entity-button",
+                icons.Add(cls := "w-4 h-4 md:hidden"),
+                span(cls      := "hidden md:block whitespace-nowrap", "Add " + this.title.singular),
+                cls      := "h-7 tooltip tooltip-top entity-add",
+                data.tip := "Add" + this.title.singular,
+              )
           },
           existingValue.map { p =>
             val modal = new Modal(
@@ -184,7 +183,7 @@ class EntityRow[T <: Entity[T]](
               ),
             )
             deleteModal.set(Some(modal))
-            val res = {
+            val res =
               TableButton(
                 ButtonStyle.LightError,
                 icons.Delete(cls := "text-red-600 w-4 h-4"),
@@ -192,7 +191,6 @@ class EntityRow[T <: Entity[T]](
                 data.tip := "Delete",
                 onClick.foreach(_ => modal.open()),
               )
-            }
             res
           },
         ),

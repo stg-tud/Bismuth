@@ -31,23 +31,21 @@ class MonadicErrors {
     if isMonadic then {
       val source                  = Evt[Try[Int]]()
       var result: Event[Try[Int]] = source
-      for _ <- Range(1, size.size) do {
-        result = result.map { (t: Try[Int]) =>
-          t.map { v =>
-            val r = v + 1; work.consume(); r
+      for _ <- Range(1, size.size) do
+          result = result.map { (t: Try[Int]) =>
+            t.map { v =>
+              val r = v + 1; work.consume(); r
+            }
           }
-        }
-      }
       finalresult = result
       fire = i => source.fire(Try { i })
     } else {
       val source             = Evt[Int]()
       var result: Event[Int] = source
-      for _ <- Range(1, size.size) do {
-        result = result.map { v =>
-          val r = v + 1; work.consume(); r
-        }
-      }
+      for _ <- Range(1, size.size) do
+          result = result.map { v =>
+            val r = v + 1; work.consume(); r
+          }
       finalresult = result
       fire = source.fire
     }

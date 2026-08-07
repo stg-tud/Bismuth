@@ -83,7 +83,7 @@ object SelectorFactory {
     BoxedValueSelectorFactory[Option[T], T](opt => opt.getOrElse(Bottom[T].empty))
 
   given ORMapSelectorFactory[K: KeyAsString, V: {SelectorFactory, Bottom}]: SelectorFactory[ObserveRemoveMap[K, V]] with
-      override def create(ardt: ObserveRemoveMap[K, V]): Selector[ObserveRemoveMap[K, V]] = {
+      override def create(ardt: ObserveRemoveMap[K, V]): Selector[ObserveRemoveMap[K, V]] =
         new Selector[ObserveRemoveMap[K, V]]() {
           override def children: Map[String, Selector[V]] = {
             val wildcard = SelectorFactory[V].create(Bottom[V].empty)
@@ -93,7 +93,6 @@ object SelectorFactory {
             )).toMap
           }
         }
-      }
 
   given LwwSelectorFactory[V: SelectorFactory]: SelectorFactory[LastWriterWins[V]] =
     BoxedValueSelectorFactory[LastWriterWins[V], V](lww => lww.read)

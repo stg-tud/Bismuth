@@ -8,14 +8,13 @@ import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
 
-def duplicateValuesHandler[T <: outwatch.VMod](values: Seq[T]) = {
+def duplicateValuesHandler[T <: outwatch.VMod](values: Seq[T]) =
   div(
     cls := s"flex w-full flex-row justify-between items-center min-h-9 px-4 ${
         if values.size > 1 then "bg-yellow-100 py-0 text-yellow-600"
         else "py-1"
-      }", {
-      Some(span(cls := "max-w-full overflow-hidden text-ellipsis", values.headOption.getOrElse("not set")))
-    }, {
+      }",
+    Some(span(cls := "max-w-full overflow-hidden text-ellipsis", values.headOption.getOrElse("not set"))), {
       val res = if values.size > 1 then {
         import outwatch.dsl.svg.*
         Some(
@@ -45,17 +44,15 @@ def duplicateValuesHandler[T <: outwatch.VMod](values: Seq[T]) = {
       res
     },
   )
-}
 
 val theme = {
   val theme = Var(Option(window.localStorage.getItem("theme")).getOrElse("default"))
   window.addEventListener(
     "storage",
-    (event: StorageEvent) => {
+    (event: StorageEvent) =>
       if event.key == "theme" then {
         theme.set(event.newValue)
-      }
-    },
+      },
   )
   theme
 }
@@ -64,11 +61,10 @@ val autoconnect = {
   val autoconnect = Var(Option(window.localStorage.getItem("autoconnect")).getOrElse("true").toBoolean)
   window.addEventListener(
     "storage",
-    (event: StorageEvent) => {
+    (event: StorageEvent) =>
       if event.key == "autoconnect" then {
         autoconnect.set(event.newValue.toBoolean)
-      }
-    },
+      },
   )
   autoconnect
 }
@@ -106,7 +102,6 @@ def toQueryParameterName(in: String) =
 def remToPx(rem: Float): Float =
   rem * "^\\d*".r.findFirstIn(window.getComputedStyle(document.documentElement).fontSize).getOrElse("16").toFloat
 
-def escapeCSVString(in: String): String = {
+def escapeCSVString(in: String): String =
   if """\s|,|\"|(\r\n|\r|\n)""".r.findFirstMatchIn(in).isDefined then s"\"${in.replaceAll("\"", "\"\"")}\""
   else in
-}

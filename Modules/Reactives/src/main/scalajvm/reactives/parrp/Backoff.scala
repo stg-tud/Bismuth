@@ -17,12 +17,11 @@ class Backoff(
 }
 
 object Backoff {
-  def milliSleepNanoSpin(backoff: Long): Unit = {
+  def milliSleepNanoSpin(backoff: Long): Unit =
     if backoff < 1000000L then {
       val start = System.nanoTime()
       while System.nanoTime() < backoff + start do Thread.`yield`()
     } else {
       Thread.sleep(backoff / 1000000L)
     }
-  }
 }

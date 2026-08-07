@@ -21,10 +21,9 @@ class Carnivore(using _world: World) extends Animal {
       case _            => Idling
     }
 
-  override protected def nextAction(pos: Pos): AnimalState = {
+  override protected def nextAction(pos: Pos): AnimalState =
     if sleepy.readValueOnce then Sleeping
     else super.nextAction(pos)
-  }
 }
 
 class Herbivore(using _world: World) extends Animal {
@@ -89,7 +88,7 @@ trait Female extends Animal {
 trait Male extends Animal {
   private val seeksMate = Signal.lift(isFertile, energy) { _ && _ > Animal.ProcreateThreshold }
 
-  final override def nextAction(pos: Pos): AnimalState = {
+  final override def nextAction(pos: Pos): AnimalState =
     if seeksMate.readValueOnce then {
       val findFemale: PartialFunction[BoardElement, Female] = {
         case f: Female if f.isFertile.readValueOnce => f
@@ -110,7 +109,6 @@ trait Male extends Animal {
       }
       nextAction
     } else super.nextAction(pos)
-  }
 }
 
 class FemaleHerbivore(using _world: World) extends Herbivore with Female
