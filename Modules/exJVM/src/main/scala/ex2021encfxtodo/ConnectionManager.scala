@@ -39,6 +39,18 @@ class ConnectionManager[State: JsonValueCodec](
   private val nioThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
   private val nioResolver                = NioTcpConnectionDetailsResolver(nio)
 
+  // Plumtree relies on periodic repair: a payload broadcast while the peer's overlay connection
+  // was still being established is dropped (the overlay lacks the peer, so the eager push has
+  // nowhere to go), and `tick()` is what turns the resulting `IHave`/context knowledge into a
+  // `Graft` request that backfills the missing history. Without this the first write of a freshly
+  // connected replica is silently lost forever (see channels.BroadcastIOOverlayDropTest).
+  private val tickExecutor: java.util.concurrent.ScheduledExecutorService =
+    java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r =>
+      val t = new Thread(r, s"plumtree-tick-${replicaId.uid}")
+      t.setDaemon(true)
+      t
+    }
+
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
       replicaId = replicaId,
@@ -51,6 +63,12 @@ class ConnectionManager[State: JsonValueCodec](
 
   dataManager.addServerConnection(nio.listen())
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
+  tickExecutor.scheduleWithFixedDelay(
+    () => dataManager.tick(),
+    100,
+    100,
+    java.util.concurrent.TimeUnit.MILLISECONDS
+  )
 
   def stateChanged(newState: State): Unit =
     dataManager.broadcast(newState)
@@ -69,6 +87,7 @@ class ConnectionManager[State: JsonValueCodec](
     dataManager.globalAbort.closeRequest = true
     nio.selector.wakeup()
     nioThread.shutdownNow()
+    tickExecutor.shutdownNow()
     ()
   }
 

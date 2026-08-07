@@ -39,6 +39,24 @@ class LocalMessageQueue {
     toDeliver.foreach { case (receiver, value) => receiver.complete(value) }
     toDeliver.size
   }
+
+  /** Delivers the most recently enqueued message (LIFO).
+    * Lets tests drive the exact interleaving of a message exchange.
+    *
+    * @return
+    *   `true` if a message was delivered, `false` if the queue was empty
+    */
+  def deliverOne(): Boolean = {
+    val toDeliver = synchronized {
+      queue match
+          case head :: tail =>
+            queue = tail
+            Some(head)
+          case Nil => None
+    }
+    toDeliver.foreach { case (receiver, value) => receiver.complete(value) }
+    toDeliver.nonEmpty
+  }
 }
 
 /** Like [[SynchronousLocalConnection]], but message delivery is queued and manually executed. */
