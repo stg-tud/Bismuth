@@ -9,27 +9,27 @@ authors:
 test:
 	# npm install --no-package-lock
 	deno install --node-modules-dir=auto
-	sbt --client testQuick
+	sbt test
 
 publishLocal:
-	sbt --client 'reload; publishedProjects / publishLocal'
+	sbt 'reload; publishedProjects / publishLocal'
 
 publishSigned:
 	rm -rf "target/sona-staging"
-	sbt --client 'reload; publishedProjects / publishSigned'
+	sbt 'reload; publishedProjects / publishSigned'
 
 sonaRelease:
-	sbt --client 'sonaRelease'
+	sbt 'sonaRelease'
 
 runSimpleCaseStudy:
-	sbt --client 'exJVM / run'
+	sbt 'exJVM / run'
 
 webappsPrepare:
 	# npm --prefix "Modules/exWeb/" install --no-package-lock
 	cd "Modules/exWeb/" && deno install --node-modules-dir=auto
 	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
-	sbt --client exWeb/fastLinkJS
-	sbt --client exWeb/fullLinkJS
+	sbt exWeb/fastLinkJS
+	sbt exWeb/fullLinkJS
 
 webappsServe: webappsPrepare
 	"Modules/exWeb/node_modules/vite/bin/vite.js" "Modules/exWeb/"
@@ -38,13 +38,13 @@ webappsBundle: webappsPrepare
 	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "target/dist"
 
 webappsWebview: webappsBundle
-	sbt --client 'webview / run "Modules/exWeb/target/dist/index.html"'
+	sbt 'webview / run "Modules/exWeb/target/dist/index.html"'
 
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
 	cd "Modules/Reform/" && npm install
-	sbt --client reform/fastLinkJS
-	sbt --client reform/fullLinkJS
+	sbt reform/fastLinkJS
+	sbt reform/fullLinkJS
 
 reformServe: reformPrepare
 	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js
