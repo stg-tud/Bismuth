@@ -90,9 +90,6 @@ class OverlayDemoNode(
   def bootstrapVia(peer: ConnectionDescriptor): Unit =
     broadcastIO.foreach(_.bootstrapVia(peer))
 
-  def discoverPeers(peers: Iterable[PeerConnectInfo]): Unit =
-    broadcastIO.foreach(_.discover(peers.toSet))
-
   def selfConnectionDetails: Set[ConnectionDescriptor] = selfDetails
 
   def repairTick(): Unit = broadcastIO.foreach(_.tick())
