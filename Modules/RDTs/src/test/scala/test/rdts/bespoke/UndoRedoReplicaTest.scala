@@ -39,7 +39,7 @@ class UndoRedoReplicaTest extends munit.FunSuite {
   }
 
   test("drawing example") {
-    import rdts.datatypes.{ReplicatedList, GrowOnlyCounter as Counter, LastWriterWins as LWW, ObserveRemoveMap}
+    import rdts.datatypes.{LastWriterWins as LWW, ObserveRemoveMap}
 
     type ID = String
 

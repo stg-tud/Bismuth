@@ -5,7 +5,6 @@ import rdts.datatypes.ReplicatedTree
 
 import scala.language.implicitConversions
 import rdts.time.Dot
-import rdts.base.Lattice.assertEquals
 import munit.Assertions
 import scala.util.Random
 import rdts.base.Lattice

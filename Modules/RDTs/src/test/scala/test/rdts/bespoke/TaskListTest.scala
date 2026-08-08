@@ -17,13 +17,13 @@ object TaskList {
       case _                         => None
     }
 
-  def updateTaskList(tree: ReplicatedTree[Entry], id: Dot, f: TaskList => TaskList)(using LocalUid) =
+  def updateTaskList(tree: ReplicatedTree[Entry], id: Dot, f: TaskList => TaskList) =
     tree.update(
       id,
       Entry.TaskListEntry(f(tree.node(id).get.value.asInstanceOf[Entry.TaskListEntry].list))
     )
 
-  def updateFolder(tree: ReplicatedTree[Entry], id: Dot, f: Folder => Folder)(using LocalUid) =
+  def updateFolder(tree: ReplicatedTree[Entry], id: Dot, f: Folder => Folder) =
     tree.update(
       id,
       Entry.FolderEntry(
