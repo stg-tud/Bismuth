@@ -38,7 +38,7 @@ class FullMeshOverlayTest extends FunSuite {
     assertEquals(secondActions, List(OverlayAction.Disconnect(oldConn)))
   }
 
-  test("bootstrap join is answered with known peers and shuffle reply triggers discoverPassive connects") {
+  test("bootstrap join is answered with known peers; activation happens via the separate Neighbor") {
     val contact = PeerConnectInfo(Uid.predefined("contact"), Set(ConnectionDescriptor.QueuedLocal("contact")))
     val other   = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
     val conn    = TestConnection("contact")
@@ -47,12 +47,14 @@ class FullMeshOverlayTest extends FunSuite {
     val (joined0, joinActions) = seeded.receiveActions(OverlayMessage.Join(contact), conn)
     val joined                 = joined0.asInstanceOf[FullMeshOverlay]
 
-    assertEquals(joined.active.get(contact.uid), Some(conn))
-    assert(joinActions.contains(OverlayAction.ActiveConnectionAdded(contact.uid)))
-    assert(joinActions.contains(OverlayAction.Send(
-      conn,
-      OverlayMessage.ShuffleReply(self.uid, Set(self, other, contact))
-    )))
+    // Join only answers with the known-peer list (self + already known peers).
+    // It does NOT remember/activate the joiner — that is done by the separate Neighbor handshake.
+    assertEquals(joined.active.get(contact.uid), None)
+    assertEquals(joined.known.get(contact.uid), None)
+    assertEquals(
+      joinActions,
+      List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, Set(self, other))))
+    )
 
     val fresh                     = FullMeshOverlay(self, active = Map(contact.uid -> conn))
     val (afterInfo0, infoActions) =
@@ -61,11 +63,7 @@ class FullMeshOverlayTest extends FunSuite {
 
     assertEquals(
       infoActions,
-      List(OverlayAction.SendJoin(
-        other.channelConnectors,
-        other.uid,
-        OverlayMessage.Neighbor(self, highPriority = true)
-      ))
+      List(OverlayAction.Connect(other.channelConnectors, other.uid, None))
     )
   }
 
@@ -81,7 +79,7 @@ class FullMeshOverlayTest extends FunSuite {
     assertEquals(removeActions, List(OverlayAction.ActiveConnectionRemoved(peer.uid)))
   }
 
-  test("discovering peers still uses direct neighbor connects and bootstrapping only contacts the bootstrap node") {
+  test("discovering peers only connects without sending, bootstrapping only contacts the bootstrap node") {
     val bootstrap = ConnectionDescriptor.QueuedLocal("bootstrap")
     val other     = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
 
@@ -90,18 +88,14 @@ class FullMeshOverlayTest extends FunSuite {
 
     assertEquals(
       discoverActions,
-      List(OverlayAction.SendJoin(
-        other.channelConnectors,
-        other.uid,
-        OverlayMessage.Neighbor(self, highPriority = true)
-      ))
+      List(OverlayAction.Connect(other.channelConnectors, other.uid, None))
     )
     assertEquals(discovered.known.get(other.uid), None)
 
     val (_, bootstrapActions) = discovered.bootstrapVia(bootstrap)
     assertEquals(
       bootstrapActions,
-      List(OverlayAction.SendJoin(Set(bootstrap), self.uid, OverlayMessage.Join(self)))
+      List(OverlayAction.Connect(Set(bootstrap), self.uid, Some(OverlayMessage.Join(self))))
     )
   }
 }

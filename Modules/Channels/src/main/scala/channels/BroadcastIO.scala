@@ -220,18 +220,18 @@ class BroadcastIO[State](
           }.run(printExceptionHandler)
         case None => ()
 
-  /** Resolve connection details, establish a connection, register it, and send the first payload atomically from the caller's perspective. */
+  /** Resolve connection details, establish a connection, register it, and optionally send the first payload. */
   private def connectAndSend(
       details: Iterable[ConnectionDescriptor],
       expectedPeer: Uid,
-      payload: Envelope[State]
+      payload: Option[Envelope[State]]
   ): Unit =
     details.iterator.flatMap(detail => resolver.connect(detail).map(detail -> _)).nextOption() match
         case Some((detail, latentConnection)) =>
           Async.provided(globalAbort) {
             val conn = latentConnection.prepare((conn: Connection) => messageReceiver(conn)).bind
             registerConnection(conn, Some(detail))
-            send(conn, payload)
+            payload.foreach(send(conn, _))
           }.run(printExceptionHandler)
         case None =>
           ()
@@ -240,8 +240,8 @@ class BroadcastIO[State](
     action match
         case OverlayAction.Send(connection, message) =>
           send(connection, Envelope.Membership(message))
-        case OverlayAction.SendJoin(details, expectedPeer, message) =>
-          connectAndSend(details, expectedPeer, Envelope.Membership(message))
+        case OverlayAction.Connect(details, expectedPeer, message) =>
+          connectAndSend(details, expectedPeer, message.map(Envelope.Membership(_)))
         case OverlayAction.Disconnect(connection) =>
           connection.close()
           removePeer(connection)

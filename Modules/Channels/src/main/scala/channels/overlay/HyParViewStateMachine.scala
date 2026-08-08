@@ -134,7 +134,7 @@ final case class HyParViewStateMachine(
   override def bootstrapVia(contact: ConnectionDescriptor): (OverlayController, List[OverlayAction]) =
     (
       this,
-      List(OverlayAction.SendJoin(Set(contact), self.uid, Join(self)))
+      List(OverlayAction.Connect(Set(contact), self.uid, Some(Join(self))))
     )
 
   /** Handle one HyParView protocol message according to the paper's join, neighbor, disconnect, and shuffle rules. */
@@ -172,10 +172,10 @@ final case class HyParViewStateMachine(
             Result(
               nextState,
               List(
-                OverlayAction.SendJoin(
+                OverlayAction.Connect(
                   newNode.channelConnectors,
                   newNode.uid,
-                  Neighbor(self, highPriority = nextState.active.isEmpty)
+                  Some(Neighbor(self, highPriority = nextState.active.isEmpty))
                 )
               )
             )
@@ -328,10 +328,10 @@ final case class HyParViewStateMachine(
             case Some(candidate) =>
               Result(
                 copy(pendingConnections = pendingConnections :+ PendingConnection(candidate)),
-                existingActions :+ OverlayAction.SendJoin(
+                existingActions :+ OverlayAction.Connect(
                   candidate.channelConnectors,
                   candidate.uid,
-                  Neighbor(self, highPriority = active.isEmpty)
+                  Some(Neighbor(self, highPriority = active.isEmpty))
                 )
               )
             case None => Result(this, existingActions)

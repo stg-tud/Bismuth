@@ -59,7 +59,7 @@ class HyParViewStateMachineTest extends FunSuite {
 
   private def sent(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Send(conn, msg) => (conn, msg) }
   private def sentBootstrapVia(actions: List[OverlayAction]) =
-    actions.collect { case OverlayAction.SendJoin(details, expectedPeer, msg) => (details, expectedPeer, msg) }
+    actions.collect { case OverlayAction.Connect(details, expectedPeer, msg) => (details, expectedPeer, msg) }
   private def disconnects(actions: List[OverlayAction]) = actions.collect { case OverlayAction.Disconnect(conn) =>
     conn
   }
@@ -79,7 +79,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(next.passiveView, Set.empty)
     assertEquals(
       sentBootstrapVia(actions),
-      List((Set(contact.channelConnectors.head), defaultSelf.uid, Join(defaultSelf)))
+      List((Set(contact.channelConnectors.head), defaultSelf.uid, Some(Join(defaultSelf))))
     )
   }
 
@@ -113,7 +113,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assert(next.passiveView.contains(newNode.uid))
     assertEquals(
       sentBootstrapVia(actions),
-      List((newNode.channelConnectors, newNode.uid, Neighbor(defaultSelf, highPriority = true)))
+      List((newNode.channelConnectors, newNode.uid, Some(Neighbor(defaultSelf, highPriority = true))))
     )
   }
 
@@ -186,7 +186,7 @@ class HyParViewStateMachineTest extends FunSuite {
       actions,
       List(
         OverlayAction.ActiveConnectionRemoved(activePeer.uid),
-        OverlayAction.SendJoin(activePeer.channelConnectors, activePeer.uid, Neighbor(defaultSelf, highPriority = true))
+        OverlayAction.Connect(activePeer.channelConnectors, activePeer.uid, Some(Neighbor(defaultSelf, highPriority = true)))
       )
     )
   }

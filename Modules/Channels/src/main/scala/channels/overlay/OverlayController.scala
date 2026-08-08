@@ -69,8 +69,11 @@ object OverlayController {
       */
     case Send(connection: Connection, message: OverlayMessage)
 
-    /** Bootstrap-only send where no peer identity is known yet, only raw connection details. */
-    case SendJoin(to: Set[ConnectionDescriptor], expectedPeer: Uid, message: OverlayMessage)
+    /** Dial the given connection details and optionally send a first control message.
+      * The message is optional: overlays that announce themselves on connection activation
+      * (e.g. full mesh) can connect without sending anything.
+      */
+    case Connect(to: Set[ConnectionDescriptor], expectedPeer: Uid, message: Option[OverlayMessage])
 
     /** Close a live transport connection; the resulting closure must be fed back through `removeConnection`. */
     case Disconnect(connection: Connection)

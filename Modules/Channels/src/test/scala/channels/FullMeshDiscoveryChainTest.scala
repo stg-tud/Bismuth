@@ -13,12 +13,12 @@ import rdts.base.{LocalUid, Uid}
 
 import scala.util.{Failure, Success, Try}
 
-/** Verifies the discovery chain the user hypothesised:
+/** Verifies the simplified full-mesh bootstrap chain:
   *
-  *   1. `discover` a peer → overlay emits a `SendJoin(Neighbor)` action
-  *   2. `SendJoin` triggers `connectAndSend`, which registers the connection
-  *   3. (On the other side the passive connection) activation triggers a Neighbor request
-  *   4. the Neighbor carried by the original `SendJoin` is then delivered
+  *   1. `discover` a peer → overlay emits a bare `Connect` action (no message)
+  *   2. `Connect` triggers `connectAndSend`, which establishes & registers the connection
+  *   3. both sides announce their own peer id via a `Neighbor` on connection activation
+  *   4. each side receives the other's `Neighbor` and reports `ActiveConnectionAdded`
   *
   * Each step is checked: the overlay action for step 1, and then through the BroadcastIO +
   * FullMeshOverlay wiring that steps 2-4 really establish a working active link in both directions.
@@ -37,15 +37,15 @@ class FullMeshDiscoveryChainTest extends FunSuite {
   private val self = PeerConnectInfo(Uid.predefined("self"), Set(ConnectionDescriptor.QueuedLocal("self")))
   private val peer = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
 
-  test("step 1: discoverPassive emits exactly one SendJoin carrying a Neighbor") {
+  test("step 1: discoverPassive emits exactly one bare Connect (no message)") {
     val (_, actions) = FullMeshOverlay(self).discoverPassive(Set(peer))
     assertEquals(
       actions,
       List(
-        OverlayAction.SendJoin(
+        OverlayAction.Connect(
           peer.channelConnectors,
           peer.uid,
-          OverlayMessage.Neighbor(self, highPriority = true),
+          None,
         )
       )
     )
@@ -84,7 +84,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // listener opens its server transport so it can accept the connection discoverer will dial.
     listener.io.addServerConnection(resolver.queuedServer(listener.selfInfo.channelConnectors.head).get)
 
-    // Step 1+2: discoverer discovers a single peer → SendJoin(Neighbor) → connectAndSend dials & registers.
+    // Step 1+2: discoverer discovers a single peer → bare Connect → connectAndSend dials & registers.
     discoverer.io.discover(Set(listener.selfInfo))
 
     def describe(mb: Try[MessageBuffer]): String = mb match
@@ -101,8 +101,9 @@ class FullMeshDiscoveryChainTest extends FunSuite {
 
     observe("after discover")
 
-    // The connection was established synchronously by connectAndSend (step 2), so before anything is
-    // delivered the queue must already carry the Neighbor handshakes from both sides (steps 3+4).
+    // Steps 3+4: the connection was established synchronously by connectAndSend (step 2) and both
+    // sides announced themselves on activation, so before anything is delivered the queue must
+    // already carry the Neighbor handshakes from both sides.
     val queuedNeighbors = queue.elements.flatMap(mb =>
       mb.toOption
         .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)

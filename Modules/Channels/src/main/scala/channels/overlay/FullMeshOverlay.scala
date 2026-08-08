@@ -41,17 +41,19 @@ case class FullMeshOverlay(
   override def discoverPassive(peers: Set[PeerConnectInfo]): (OverlayController, List[OverlayAction]) = {
     val actions = peers.iterator.collect {
       case peer if peer.uid != self.uid && !active.contains(peer.uid) =>
-        OverlayAction.SendJoin(peer.channelConnectors, peer.uid, OverlayMessage.Neighbor(self, highPriority = true))
+        OverlayAction.Connect(peer.channelConnectors, peer.uid, None)
     }.toList
     (this, actions)
   }
 
+  /** The full mesh announces its own peer id as soon as a connection is established.
+    * This is the only handshake mechanism: the remote side learns us from the received Neighbor.
+    */
   override def activateConnection(
       conn: Connection,
       connectInfo: Option[ConnectionDescriptor]
   ): (OverlayController, List[OverlayAction]) =
-    if connectInfo.nonEmpty then (this, Nil)
-    else (this, List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))))
+    (this, List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))))
 
   override def receiveActions(
       message: OverlayMessage,
@@ -59,9 +61,8 @@ case class FullMeshOverlay(
   ): (OverlayController, List[OverlayAction]) =
     message match
         case OverlayMessage.Join(peer) =>
-          val (next, peerActions) = rememberAndActivatePeer(peer, conn)
-          val bootstrapPeers      = next.known.valuesIterator.toSet + next.self
-          (next, peerActions :+ OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, bootstrapPeers)))
+          val bootstrapPeers      = known.valuesIterator.toSet + self
+          (this, List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, bootstrapPeers))))
 
         case OverlayMessage.Neighbor(peer, _) =>
           rememberAndActivatePeer(peer, conn)
@@ -87,8 +88,5 @@ case class FullMeshOverlay(
   override def connectionFor(peer: Uid): Option[Connection] = active.get(peer)
 
   override def bootstrapVia(contact: ConnectionDescriptor): (OverlayController, List[OverlayAction]) =
-    (
-      this,
-      List(OverlayAction.SendJoin(Set(contact), self.uid, OverlayMessage.Join(self)))
-    )
+    (this, List(OverlayAction.Connect(Set(contact), self.uid, Some(OverlayMessage.Join(self)))))
 }
