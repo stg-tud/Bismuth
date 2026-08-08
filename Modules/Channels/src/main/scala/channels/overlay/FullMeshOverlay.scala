@@ -19,7 +19,7 @@ case class FullMeshOverlay(
       copy(known = known.updated(peer.uid, merged))
     }
 
-  private def rememberActivePeer(peer: PeerConnectInfo, conn: Connection): (FullMeshOverlay, List[OverlayAction]) = {
+  private def rememberAndActivatePeer(peer: PeerConnectInfo, conn: Connection): (FullMeshOverlay, List[OverlayAction]) = {
     val remembered = rememberPeer(peer)
     val previous   = remembered.active.get(peer.uid)
     val next       = remembered.copy(active = remembered.active.updated(peer.uid, conn))
@@ -56,12 +56,12 @@ case class FullMeshOverlay(
   ): (OverlayController, List[OverlayAction]) =
     message match
         case OverlayMessage.Join(peer) =>
-          val (next, peerActions) = rememberActivePeer(peer, conn)
+          val (next, peerActions) = rememberAndActivatePeer(peer, conn)
           val bootstrapPeers      = next.known.valuesIterator.toSet + next.self
           (next, peerActions :+ OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, bootstrapPeers)))
 
         case OverlayMessage.Neighbor(peer, _) =>
-          rememberActivePeer(peer, conn)
+          rememberAndActivatePeer(peer, conn)
 
         case OverlayMessage.ShuffleReply(_, peers) =>
           discoverPassive(peers)
