@@ -3,12 +3,10 @@ package rdts.protocols.spanner
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Paxos.given
-import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
-import rdts.protocols.MultipaxosPhase
+import rdts.protocols.Util.{Agreement, precondition}
+import rdts.protocols.{MultipaxosPhase, Participants, Paxos, PaxosRound, Voting}
 
 import scala.collection.immutable.NumericRange
-import rdts.protocols.Util.Agreement
-import rdts.protocols.Util.precondition
 
 case class ParallelMultiPaxos[A](
     log: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],

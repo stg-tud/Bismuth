@@ -1,15 +1,13 @@
 package rdts.experiments
 
-import rdts.base.LocalUid
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.time.{Dot, Dots}
-import rdts.base.Lattice
-import rdts.base.Bottom
 
 case class DeltaHistory[A](val deltas: Map[Dot, A], val removed: Dots, val base: Option[A], val dots: Dots) {
   def add(dot: Dot, delta: A): DeltaHistory[A] =
     DeltaHistory(deltas = Map(dot -> delta), removed = Dots.empty, base = None, dots = Dots.single(dot))
 
-  def promoteToBase(dot: Dot) =
+  def promoteToBase(dot: Dot): DeltaHistory[A] =
     DeltaHistory(deltas = Map.empty, removed = Dots.single(dot), base = deltas.get(dot), dots = Dots.empty)
 
   def remove(dot: Dot): DeltaHistory[A] =
@@ -96,7 +94,7 @@ case class UndoRedoReplica[A: Lattice](
       state
     }
 
-  def receive(delta: DeltaHistory[A]) =
+  def receive(delta: DeltaHistory[A]): Unit =
       if delta.removed.isEmpty && this.cached.isDefined then {
         for delta <- delta.deltas.values do
             this.cached = Some(Lattice.merge(this.cached.get, delta))

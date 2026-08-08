@@ -3,10 +3,9 @@ package de.tu_darmstadt.informatik.st.reform.npm
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters.*
 import scala.scalajs.js.Promise
 import scala.scalajs.js.annotation.JSImport
-
-import js.JSConverters.*
 
 abstract class PDFField(
     val key: String,

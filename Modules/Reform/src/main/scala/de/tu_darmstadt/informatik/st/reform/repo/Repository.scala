@@ -18,15 +18,12 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.repo
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonReader
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonWriter
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.entity.Entity
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.webrtc.ReplicationGroup
+import de.tu_darmstadt.informatik.st.reform.{given_ExecutionContext, *}
 import rdts.base.*
 import reactives.default.*
 

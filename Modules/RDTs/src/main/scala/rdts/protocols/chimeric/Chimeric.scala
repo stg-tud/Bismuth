@@ -2,11 +2,10 @@ package rdts.protocols.chimeric
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.protocols.Paxos.given
 import rdts.protocols.Util.*
 import rdts.protocols.Util.Agreement.*
-import rdts.protocols.{Consensus, Participants}
-import rdts.protocols.{BallotNum, PaxosRound, Voting, MultipaxosPhase}
-import rdts.protocols.Paxos.given
+import rdts.protocols.{BallotNum, Consensus, MultipaxosPhase, Participants, PaxosRound, Voting}
 
 case class Chimeric[A](
     rounds: Map[BallotNum, PaxosRound[A]] =

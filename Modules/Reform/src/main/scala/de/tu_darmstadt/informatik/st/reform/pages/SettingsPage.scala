@@ -15,29 +15,21 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.pages
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.components.Modal
-import de.tu_darmstadt.informatik.st.reform.components.ModalButton
 import de.tu_darmstadt.informatik.st.reform.components.common.*
-import de.tu_darmstadt.informatik.st.reform.components.icons
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
+import de.tu_darmstadt.informatik.st.reform.components.{Modal, ModalButton, icons}
+import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.downloadFile
 import de.tu_darmstadt.informatik.st.reform.npm.PDF
-import de.tu_darmstadt.informatik.st.reform.services.Page
-import de.tu_darmstadt.informatik.st.reform.services.ToastMode
-import de.tu_darmstadt.informatik.st.reform.services.ToastType
-import de.tu_darmstadt.informatik.st.reform.utils.exportIndexedDBJson
-import de.tu_darmstadt.informatik.st.reform.utils.importIndexedDBJson
-import de.tu_darmstadt.informatik.st.reform.{*, given}
-import org.scalajs.dom.HTMLInputElement
-import org.scalajs.dom.*
+import de.tu_darmstadt.informatik.st.reform.services.{Page, ToastMode, ToastType}
+import de.tu_darmstadt.informatik.st.reform.utils.{exportIndexedDBJson, importIndexedDBJson}
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, given_ExecutionContext, *}
+import org.scalajs.dom.{HTMLInputElement, *}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
 
 import scala.scalajs.js
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 case class SettingsPage()(using
     jsImplicits: JSImplicits,

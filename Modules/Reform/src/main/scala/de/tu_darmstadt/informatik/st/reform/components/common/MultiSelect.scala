@@ -2,14 +2,9 @@ package de.tu_darmstadt.informatik.st.reform.components.common
 
 import de.tu_darmstadt.informatik.st.reform.components.icons
 import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.cleanPopper
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.createPopper
+import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.{cleanPopper, createPopper}
 import de.tu_darmstadt.informatik.st.reform.remToPx
-import org.scalajs.dom.HTMLElement
-import org.scalajs.dom.HTMLInputElement
-import org.scalajs.dom.ResizeObserver
-import org.scalajs.dom.console
-import org.scalajs.dom.document
+import org.scalajs.dom.{HTMLElement, HTMLInputElement, ResizeObserver, console, document}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

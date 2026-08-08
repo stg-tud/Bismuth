@@ -6,7 +6,7 @@ import loreCompilerPlugin.lsp.LSPDataTypes.CompilationStatus.{InternalException,
 import ujson.{Null, Obj, Str, Value, read as ujsonRead}
 import upickle.default.{read as upickleRead, write as upickleWrite}
 
-import java.io.{BufferedOutputStream, BufferedInputStream}
+import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable.ArrayBuffer
 

@@ -1,10 +1,10 @@
 package ex2025ribltbft.dag
 
-import scala.collection.immutable.{HashMap, List, Map, Set}
-import java.security.{PrivateKey, PublicKey}
 import crypto.Ed25519Util
 
+import java.security.{PrivateKey, PublicKey}
 import scala.annotation.tailrec
+import scala.collection.immutable.{HashMap, List, Map, Set}
 import scala.collection.mutable
 
 // a hash directed acyclic graph

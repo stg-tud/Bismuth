@@ -1,18 +1,18 @@
 package replication.acl.sync.anti_entropy
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import crypto.{Hash, PublicIdentity}
-import crypto.channels.PrivateIdentity
-import replication.HashDag.Encoder
-import AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
-import AclEnforcingSync.{SyncMsg, encoder}
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import crypto.channels.PrivateIdentity
+import crypto.{Hash, PublicIdentity}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
+import replication.HashDag.Encoder
 import replication.JsoniterCodecsJvm
-import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import replication.JsoniterCodecsJvm.given
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
+import replication.acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
+import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 import replication.acl.{Acl, BftDelta}
 
 import java.util.concurrent.Executors
@@ -42,8 +42,8 @@ class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filte
     connectionManagerProvider(localIdentity, msgReceiver)
   }
 
-  protected lazy val comm                             = ConnectionManagerCommunicator(connectionManager)
-  protected lazy val (aclAntiEntropy, rdtAntiEntropy) = instantiateAntiEntropy()
+  protected lazy val comm: ConnectionManagerCommunicator[State] = ConnectionManagerCommunicator(connectionManager)
+  protected lazy val (aclAntiEntropy, rdtAntiEntropy)           = instantiateAntiEntropy()
 
   protected def instantiateAntiEntropy(): (AclAntiEntropy, FilteredRdtAntiEntropy[State]) = {
     val aclAntiEntropy                                = AclAntiEntropy(localIdentity, aclGenesis, onAclChange, comm)

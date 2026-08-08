@@ -4,7 +4,6 @@ import org.scalajs.dom.html.{Button, Div, Input, LI}
 import reactives.default.*
 import reactives.extra.Tags.reattach
 import reactives.operator.Event
-
 import scalatags.JsDom.all.*
 
 case class Appointment(name: String, start: Int, end: Int) {

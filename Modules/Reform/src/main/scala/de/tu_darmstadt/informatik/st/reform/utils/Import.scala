@@ -1,12 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.utils
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.core.*
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.Repositories
-import de.tu_darmstadt.informatik.st.reform.*
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
-import de.tu_darmstadt.informatik.st.reform.repo.RepoAndValues
-import de.tu_darmstadt.informatik.st.reform.repo.Repository
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, *}
+import de.tu_darmstadt.informatik.st.reform.repo.{RepoAndValues, Repository}
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, Repositories, given_ExecutionContext, *}
 
 import scala.collection.mutable
 import scala.concurrent.Future

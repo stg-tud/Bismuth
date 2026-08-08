@@ -1,12 +1,9 @@
 package de.tu_darmstadt.informatik.st.reform.npm
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import de.tu_darmstadt.informatik.st.reform.Globals
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
-import org.scalajs.dom.IDBVersionChangeEvent
-import org.scalajs.dom.window
+import de.tu_darmstadt.informatik.st.reform.{Globals, JSImplicits, given_ExecutionContext}
+import org.scalajs.dom.{IDBVersionChangeEvent, window}
 
 import scala.concurrent.Future
 import scala.scalajs.js

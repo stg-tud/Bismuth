@@ -1,6 +1,6 @@
 package benchmarks.b2018reactives.philosophers
 
-import PhilosopherTable.{Philosopher, Thinking}
+import benchmarks.b2018reactives.philosophers.PhilosopherTable.{Philosopher, Thinking}
 import benchmarks.b2018reactives.{EngineParam, Workload}
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.{BenchmarkParams, ThreadParams}

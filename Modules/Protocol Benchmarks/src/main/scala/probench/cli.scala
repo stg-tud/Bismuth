@@ -1,7 +1,7 @@
 package probench
 
-import channels.{BroadcastIO, DeltaStorage, *}
 import channels.connection.{Abort, Connection, LatentConnection}
+import channels.{BroadcastIO, DeltaStorage, *}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
 import probench.clients.*

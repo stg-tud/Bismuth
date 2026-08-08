@@ -18,15 +18,13 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.webrtc
 
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.core.*
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, *}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.tu_darmstadt.informatik.st.reform.utils.Base64
 import org.scalajs.dom.RTCPeerConnection
 import reactives.default.*
 
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 
 class ConnectionInformation(val session: WebRTCSession, val alias: String, val source: String = "manual") {}
 class StoredConnectionInformation(

@@ -2,9 +2,9 @@ package rdts.protocols
 
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import Paxos.given
-import Util.*
-import Util.Agreement.*
+import rdts.protocols.Paxos.given
+import rdts.protocols.Util.*
+import rdts.protocols.Util.Agreement.*
 import rdts.protocols.{Consensus, Participants}
 
 // Paxos PRDT

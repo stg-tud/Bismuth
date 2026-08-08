@@ -12,6 +12,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContextExecutorService
 
 object NioTCP {
   case class AcceptAttachment(
@@ -69,7 +70,7 @@ object NioTCP {
 }
 
 object ConcurrencyHelper {
-  def makeExecutionContext(singleThreadExecutor: Boolean) =
+  def makeExecutionContext(singleThreadExecutor: Boolean): ExecutionContext =
     if singleThreadExecutor then
         val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
           val thread = new Thread(r)
@@ -81,7 +82,8 @@ object ConcurrencyHelper {
     else
         BroadcastIO.executeImmediately
 
-  def makePooledExecutor() = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+  def makePooledExecutor(): ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 }
 
 /** Selector-based TCP transport.

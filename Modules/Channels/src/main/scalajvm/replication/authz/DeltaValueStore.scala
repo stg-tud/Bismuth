@@ -1,7 +1,7 @@
 package replication.authz
 
-import crypto.Hash
 import crypto.Commitment.RevealedValue
+import crypto.Hash
 
 import java.util.concurrent.ConcurrentHashMap
 

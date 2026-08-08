@@ -18,11 +18,9 @@ package de.tu_darmstadt.informatik.st.reform.pages
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.entity.*
-import de.tu_darmstadt.informatik.st.reform.repo.Repository
-import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import rdts.base.Bottom
-import rdts.base.Lattice
+import de.tu_darmstadt.informatik.st.reform.repo.{Repository, Synced}
 import outwatch.dsl.*
+import rdts.base.{Bottom, Lattice}
 import reactives.default.*
 
 def onlyDrafts(using jsImplicits: JSImplicits): Signal[Seq[Synced[Contract]]] = Signal.dynamic {

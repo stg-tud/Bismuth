@@ -1,11 +1,11 @@
 package webapps.ex2019todo
 
+import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.datatypes.{LastWriterWins, ReplicatedList}
 import rdts.syntax.DeltaBuffer
 import rdts.time.Dot
-import channels.JsoniterCodecs.given
 
 object Codecs {
 

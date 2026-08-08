@@ -1,10 +1,10 @@
 package webapps.ex2025tabular.lib
 
-import ReplicatedUniqueList.MarkerRemovalBehavior
-import Spreadsheet.{Range, SpreadsheetCoordinate}
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
+import webapps.ex2025tabular.lib.ReplicatedUniqueList.MarkerRemovalBehavior
+import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 
 case class Spreadsheet[A](
     private val rowIds: ReplicatedUniqueList[RowId] = ReplicatedUniqueList.empty[RowId],
@@ -38,7 +38,7 @@ case class Spreadsheet[A](
         )
   }
 
-  lazy val internal = SpreadsheetInternal()
+  lazy val internal: SpreadsheetInternal = SpreadsheetInternal()
 
   def addRow()(using LocalUid): RowResult[A] =
       val id = newRowOrColId.toRowId

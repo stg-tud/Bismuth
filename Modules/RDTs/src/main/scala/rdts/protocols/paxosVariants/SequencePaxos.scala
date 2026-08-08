@@ -1,14 +1,11 @@
 package rdts.protocols.paxosVariants
 
-import rdts.protocols.Paxos
-import rdts.protocols.Util.precondition
-import rdts.protocols.Participants
-import rdts.protocols.Util.Agreement
-import rdts.base.Lattice
-import rdts.base.Bottom
+import rdts.base.{Bottom, Lattice}
+import rdts.protocols.Util.{Agreement, precondition}
+import rdts.protocols.{Participants, Paxos}
 
 case class SequencePaxos[A](log: List[Paxos[A]]):
-    def nextDecision(using Participants) =
+    def nextDecision(using Participants): SequencePaxos[A] =
       precondition(log.forall(_.decision != Agreement.Undecided)) {
         SequencePaxos(log :+ Paxos())
       }

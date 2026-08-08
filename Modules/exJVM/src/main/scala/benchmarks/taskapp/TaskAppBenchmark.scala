@@ -1,16 +1,14 @@
 package benchmarks.taskapp
 
 import benchmarks.taskapp.TaskApp.{App, Entry, given}
-import rdts.datatypes.ReplicatedTree
-import rdts.base.LocalUid
-import rdts.experiments.UndoRedoReplica
-import rdts.experiments.DeltaHistory
 import org.openjdk.jol.info.GraphLayout
+import rdts.base.LocalUid
+import rdts.datatypes.{LastWriterWins, ReplicatedTree}
+import rdts.experiments.{DeltaHistory, UndoRedoReplica}
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
-import rdts.datatypes.LastWriterWins
 
 object TaskAppBenchmark {
 
@@ -66,8 +64,8 @@ object TaskAppBenchmark {
   }
 
   // Operation categories for measurement
-  val undoOps = Set("Undo")
-  val treeOps = Set(
+  val undoOps: Set[String] = Set("Undo")
+  val treeOps: Set[String] = Set(
     "AddTaskList",
     "AddFolder",
     "MoveEntry",
@@ -75,7 +73,7 @@ object TaskAppBenchmark {
     "UpdateFolderName",
     "UpdateTaskListName"
   )
-  val listOps = Set(
+  val listOps: Set[String] = Set(
     "AddTask",
     "RemoveTaskListItem",
     "MoveTaskListItem",

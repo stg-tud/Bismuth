@@ -1,7 +1,7 @@
 package replication.acl.sync
 
-import SynchronizedMutableArrayDeltaStore.{calculateResize, resize}
 import rdts.time.{Dot, Dots}
+import replication.acl.sync.SynchronizedMutableArrayDeltaStore.{calculateResize, resize}
 
 import scala.reflect.ClassTag
 

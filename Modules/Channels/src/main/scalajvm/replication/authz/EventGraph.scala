@@ -124,7 +124,7 @@ case class EventGraph[T: Lattice](
 
   def concurrent(event1: Hash, event2: Hash): Boolean =
     events.contains(event1) && events.contains(event2) &&
-      !causallyAfter(event1, event2) && !causallyAfter(event2, event1)
+    !causallyAfter(event1, event2) && !causallyAfter(event2, event1)
 
   def causalOrder(event1: Hash, event2: Hash): CausalOrder =
     if !events.contains(event1) || !events.contains(event2) then UNKNOWN

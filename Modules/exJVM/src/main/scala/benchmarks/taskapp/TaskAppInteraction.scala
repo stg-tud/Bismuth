@@ -1,7 +1,7 @@
 package benchmarks.taskapp
 
-import rdts.time.Dot
 import benchmarks.taskapp.TaskApp.Task
+import rdts.time.Dot
 
 sealed trait TaskAppInteraction
 

@@ -1,6 +1,6 @@
 package benchmarks.b2018reactives.philosophers
 
-import PhilosopherTable.*
+import benchmarks.b2018reactives.philosophers.PhilosopherTable.*
 import org.openjdk.jmh.infra.Blackhole
 
 import java.util.concurrent.atomic.AtomicInteger

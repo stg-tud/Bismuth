@@ -1,15 +1,10 @@
 package rdts.protocols.spanner
 
-import rdts.base.Uid
-import rdts.base.LocalUid
-import rdts.protocols.Util.precondition
 import rdts.base.LocalUid.replicaId
-import rdts.base.Bottom
+import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.protocols.Quorum.FullQuorum
-import rdts.protocols.Util.Agreement
-import rdts.protocols.MultiPaxos
-import rdts.protocols.TwoPhaseCommit
-import rdts.protocols.Participants
+import rdts.protocols.Util.{Agreement, precondition}
+import rdts.protocols.{MultiPaxos, Participants, TwoPhaseCommit}
 
 enum twoPCMessages:
     case Prepare(transactionID: Uid, valid: Boolean)

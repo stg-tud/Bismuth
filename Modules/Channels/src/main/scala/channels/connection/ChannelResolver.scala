@@ -10,7 +10,7 @@ trait ChannelResolver {
 }
 
 object ChannelResolver {
-  def disconnected = new ChannelResolver {
+  def disconnected: ChannelResolver = new ChannelResolver {
     override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = None
   }
 }

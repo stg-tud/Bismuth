@@ -1,13 +1,13 @@
 package benchmarks.b2021encrdt.statebased
 
 import benchmarks.b2021encrdt.statebased.DecryptedState.vectorClockJsonCodec
+import channels.JsoniterCodecs.given
+import channels.connection.MessageBuffer
+import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Lattice
 import rdts.time.VectorClock
-import channels.JsoniterCodecs.given
-import channels.connection.MessageBuffer
-import channels.experiments.Aead
 
 import java.nio.ByteBuffer
 

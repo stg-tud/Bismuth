@@ -2,14 +2,14 @@ package ex2026accessControl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.{Hash, PublicIdentity, Signature}
-import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
-import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
-import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
-import replication.acl.{Acl, BftDelta}
+import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
+import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
 import replication.acl.sync.anti_entropy.SignedDelta
+import replication.acl.{Acl, BftDelta}
 
 object Debug {
   inline val enabled = false
@@ -24,7 +24,7 @@ object Debug {
 
   def shorten(acl: Acl): String =
     "r=" + acl.read.map((id, perm) => s"${shorten(id)}->$perm").mkString("{", ",", "}") +
-      "|w=" + acl.write.map((id, perm) => s"${shorten(id)}->$perm").mkString("{", ",", "}")
+    "|w=" + acl.write.map((id, perm) => s"${shorten(id)}->$perm").mkString("{", ",", "}")
 
   def shorten(aclDeltas: Seq[BftDelta[Acl]]): String =
     aclDeltas.map(shorten).mkString(" , ")

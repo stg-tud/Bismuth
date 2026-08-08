@@ -1,7 +1,6 @@
 package de.tu_darmstadt.informatik.st.reform
 
-import de.tu_darmstadt.informatik.st.reform.entity.Document
-import de.tu_darmstadt.informatik.st.reform.entity.*
+import de.tu_darmstadt.informatik.st.reform.entity.{Document, *}
 import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
 import de.tu_darmstadt.informatik.st.reform.repo.Repository
 

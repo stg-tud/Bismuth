@@ -7,9 +7,9 @@ import crypto.channels.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
-import replication.acl.{Acl, BftDelta}
-import replication.acl.sync.{ConnectionManager, MessageReceiver}
 import replication.acl.sync.anti_entropy.AclEnforcingSync
+import replication.acl.sync.{ConnectionManager, MessageReceiver}
+import replication.acl.{Acl, BftDelta}
 
 class ReplicaOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,
@@ -24,7 +24,8 @@ class ReplicaOfSignedDeltaRdt[State](
     Decompose[State]
 ) extends Replica[State] {
 
-  val sync = AclEnforcingSync(localIdentity, connectionManagerProvider, aclGenesis, onDeltaReceive)
+  val sync: AclEnforcingSync[State] =
+    AclEnforcingSync(localIdentity, connectionManagerProvider, aclGenesis, onDeltaReceive)
 
   // TODO: Not used in this instance, refactor
   override def receivedDelta(dot: Dot, rdt: State): Unit = ???

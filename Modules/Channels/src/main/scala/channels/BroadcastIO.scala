@@ -60,7 +60,7 @@ object BroadcastIO {
       Try(readFromByteBuffer[Envelope[State]](bytes)(using BroadcastIO.messageCodec))
     )
 
-  def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State], aead: Aead) =
+  def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State], aead: Aead): ByteBufferMessageBuffer =
     ByteBufferMessageBuffer(aead.encrypt(
       ByteBuffer.wrap(writeToArray(envelope)(using BroadcastIO.messageCodec)),
       Aead.emptyAssociatedData

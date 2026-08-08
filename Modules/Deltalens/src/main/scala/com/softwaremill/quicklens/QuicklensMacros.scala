@@ -196,7 +196,7 @@ object QuicklensMacros {
 
     def isSum(sym: Symbol): Boolean =
       sym.flags.is(Flags.Enum) ||
-        (sym.flags.is(Flags.Sealed) && (sym.flags.is(Flags.Trait) || sym.flags.is(Flags.Abstract)))
+      (sym.flags.is(Flags.Sealed) && (sym.flags.is(Flags.Trait) || sym.flags.is(Flags.Abstract)))
 
     def caseClassCopy(
         owner: Symbol,

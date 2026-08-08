@@ -1,5 +1,8 @@
 package probench
 
+import channels.DeltaStorage.Type.*
+import channels.broadcast.PlumtreeBroadcast
+import channels.broadcast.PlumtreeMessage.Payload
 import channels.{BroadcastIO, ConcurrencyHelper, DeltaStorage}
 import probench.data.*
 import probench.data.Codecs.given
@@ -8,9 +11,6 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
-import channels.DeltaStorage.Type.*
-import channels.broadcast.PlumtreeBroadcast
-import channels.broadcast.PlumtreeMessage.Payload
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable

@@ -155,7 +155,7 @@ class ChannelConnectionManager(
     val remotePeerId = PublicIdentity(connection.authenticatedPeerReplicaId.get.delegate)
 
     new Callback[MessageBuffer] {
-      def complete(result: Try[MessageBuffer]) = result match {
+      def complete(result: Try[MessageBuffer]): Unit = result match {
         case Success(msg)       => messageReceiver.receivedMessage(msg, remotePeerId)
         case Failure(exception) =>
           if !disableLogging

@@ -15,9 +15,7 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform
 
-import colibri.Cancelable
-import colibri.Observer
-import colibri.Sink
+import colibri.{Cancelable, Observer, Sink}
 import reactives.SelectedScheduler.State as BundleState
 import reactives.core.Scheduler
 import reactives.default.*

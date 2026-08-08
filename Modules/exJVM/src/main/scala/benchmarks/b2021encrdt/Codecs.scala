@@ -1,12 +1,12 @@
 package benchmarks.b2021encrdt
 
 import benchmarks.b2021encrdt.todolist.ToDoEntry
+import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.Uid
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.{ArrayRanges, Dots}
-import channels.JsoniterCodecs.given
 
 import java.util.UUID
 

@@ -2,16 +2,14 @@ package de.tu_darmstadt.informatik.st.reform.services
 
 import cats.effect.SyncIO
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.entity.Hiwi
-import de.tu_darmstadt.informatik.st.reform.entity.Supervisor
+import de.tu_darmstadt.informatik.st.reform.entity.{Hiwi, Supervisor}
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toGermanDate
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 
 class MailService {
   @scala.annotation.unused

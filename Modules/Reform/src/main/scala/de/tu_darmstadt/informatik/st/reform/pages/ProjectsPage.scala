@@ -15,11 +15,9 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.pages
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.*
-import de.tu_darmstadt.informatik.st.reform.entity.UIBasicAttribute
-import de.tu_darmstadt.informatik.st.reform.entity.*
+import de.tu_darmstadt.informatik.st.reform.entity.{UIBasicAttribute, *}
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.dateDiffMonth
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, *}
 import outwatch.*
 import reactives.default.*
 

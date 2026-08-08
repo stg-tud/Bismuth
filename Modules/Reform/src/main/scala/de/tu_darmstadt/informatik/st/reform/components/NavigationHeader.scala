@@ -15,11 +15,9 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.components
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.pages.DocumentsPage
-import de.tu_darmstadt.informatik.st.reform.pages.*
+import de.tu_darmstadt.informatik.st.reform.pages.{DocumentsPage, *}
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, *}
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*

@@ -1,6 +1,6 @@
 package benchmarks.b2018reactives.philosophers
 
-import PhilosopherTable.*
+import benchmarks.b2018reactives.philosophers.PhilosopherTable.*
 
 class DynamicPhilosopherTable(philosopherCount: Int, work: Long)(override val engine: reactives.default.type)
     extends PhilosopherTable(philosopherCount, work)(engine) {

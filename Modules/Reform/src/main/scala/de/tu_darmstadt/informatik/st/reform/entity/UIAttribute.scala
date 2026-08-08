@@ -1,18 +1,16 @@
 package de.tu_darmstadt.informatik.st.reform.entity
 
-import scala.annotation.nowarn
-
-import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.components.common.*
-import de.tu_darmstadt.informatik.st.reform.duplicateValuesHandler
 import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils
 import de.tu_darmstadt.informatik.st.reform.services.Page
+import de.tu_darmstadt.informatik.st.reform.{duplicateValuesHandler, *}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
 
-import scalajs.js
+import scala.annotation.nowarn
+import scala.scalajs.js
 
 class UIFormat[EntityType](val condition: (id: String, entity: EntityType) => Signal[Boolean], val classes: String) {
   def apply(id: String, entity: EntityType): Signal[String] = Signal {

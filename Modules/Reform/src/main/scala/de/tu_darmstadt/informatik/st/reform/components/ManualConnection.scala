@@ -1,17 +1,11 @@
 package de.tu_darmstadt.informatik.st.reform.components
 
-import de.tu_darmstadt.informatik.st.reform.*
-import de.tu_darmstadt.informatik.st.reform.components.common.Button
-import de.tu_darmstadt.informatik.st.reform.components.common.ButtonStyle
-import de.tu_darmstadt.informatik.st.reform.components.common.LabeledInput
+import de.tu_darmstadt.informatik.st.reform.components.common.{Button, ButtonStyle, LabeledInput}
 import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
-import de.tu_darmstadt.informatik.st.reform.webrtc.PendingConnection
-import de.tu_darmstadt.informatik.st.reform.webrtc.WebRTC
-import org.scalajs.dom.RTCConfiguration
-import org.scalajs.dom.RTCIceServer
-import org.scalajs.dom.window
+import de.tu_darmstadt.informatik.st.reform.webrtc.{PendingConnection, WebRTC}
+import de.tu_darmstadt.informatik.st.reform.{given_ExecutionContext, *}
+import org.scalajs.dom.{RTCConfiguration, RTCIceServer, window}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

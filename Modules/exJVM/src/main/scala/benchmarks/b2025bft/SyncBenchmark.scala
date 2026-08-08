@@ -32,8 +32,8 @@ class SyncBenchmark {
   // @Param(Array("1", "10", "100", "1000"))
   var deltaSizeInKiloBytes: Int = 10
 
-  var r1 = ORSet[String]()
-  var r2 = ORSet[String]()
+  var r1: ORSet[String] = ORSet[String]()
+  var r2: ORSet[String] = ORSet[String]()
 
   @Setup(Level.Trial)
   def setup(): Unit = {

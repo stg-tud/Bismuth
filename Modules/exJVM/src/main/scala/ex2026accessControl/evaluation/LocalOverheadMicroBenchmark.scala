@@ -1,9 +1,7 @@
 package ex2026accessControl.evaluation
 
-import crypto.{Hash, PublicIdentity}
 import crypto.channels.{IdentityFactory, PrivateIdentity}
-import replication.acl.AclRdt.given_Encoder_BftDelta
-import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
+import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice.syntax.merge
@@ -11,8 +9,10 @@ import rdts.base.{LocalUid, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
 import replication.HashDag
-import replication.acl.{Acl, AclRdt, BftDelta}
+import replication.acl.AclRdt.given_Encoder_BftDelta
+import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
 import replication.acl.sync.anti_entropy.{AclEnforcingSync, SignedDelta}
+import replication.acl.{Acl, AclRdt, BftDelta}
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
@@ -116,7 +116,7 @@ class BenchmarkInput {
 
   val authorIdentity: PrivateIdentity = IdentityFactory.createNewIdentity
   val author: PublicIdentity          = authorIdentity.getPublic
-  val authorUid                       = Uid(authorIdentity.getPublic.id)
+  val authorUid: Uid                  = Uid(authorIdentity.getPublic.id)
 
   val receiver: PublicIdentity = IdentityFactory.createNewIdentity.getPublic
 

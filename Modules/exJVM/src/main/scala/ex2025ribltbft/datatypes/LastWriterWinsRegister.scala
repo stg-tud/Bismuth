@@ -2,6 +2,7 @@ package ex2025ribltbft.datatypes
 
 import crypto.Ed25519Util
 import ex2025ribltbft.dag.HashDAG
+
 import scala.util.hashing.MurmurHash3
 
 case class LastWriterWinsRegister[T](

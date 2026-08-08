@@ -1,8 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.CodecMakerConfig
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
 import de.tu_darmstadt.informatik.st.reform.entity.Attribute.given
 import rdts.base.*

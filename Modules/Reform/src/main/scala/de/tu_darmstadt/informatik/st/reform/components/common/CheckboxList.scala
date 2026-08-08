@@ -1,8 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.components.common
 
 import de.tu_darmstadt.informatik.st.reform.given
-import org.scalajs.dom.HTMLElement
-import org.scalajs.dom.document
+import org.scalajs.dom.{HTMLElement, document}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

@@ -1,12 +1,12 @@
 package channels
 
 import channels.connection.ConnectionDescriptor
+import channels.experiments.SignalingServer.Message
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.*
 import rdts.time.*
-import channels.experiments.SignalingServer.Message
 
 object JsoniterCodecs {
 

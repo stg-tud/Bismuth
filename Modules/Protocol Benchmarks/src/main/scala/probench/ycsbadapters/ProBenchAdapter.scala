@@ -116,7 +116,7 @@ class ProBenchAdapter extends DB {
         Status.OK
     catch
         case exception: concurrent.TimeoutException =>
-          println(s"failed to write sth")
+          println("failed to write sth")
           exception.printStackTrace()
           connectToNextEndpoint(): Unit // try with next endpoint
           Status.ERROR
@@ -132,7 +132,7 @@ class ProBenchAdapter extends DB {
         Status.OK
     catch
         case exception: concurrent.TimeoutException =>
-          println(s"failed to read sth")
+          println("failed to read sth")
           exception.printStackTrace()
           connectToNextEndpoint(): Unit // try with next endpoint
           Thread.sleep(backoff)

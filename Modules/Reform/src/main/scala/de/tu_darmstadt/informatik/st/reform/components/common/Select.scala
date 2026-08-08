@@ -2,10 +2,8 @@ package de.tu_darmstadt.informatik.st.reform.components.common
 
 import de.tu_darmstadt.informatik.st.reform.components.icons
 import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.cleanPopper
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.createPopper
-import org.scalajs.dom.HTMLElement
-import org.scalajs.dom.document
+import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.{cleanPopper, createPopper}
+import org.scalajs.dom.{HTMLElement, document}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

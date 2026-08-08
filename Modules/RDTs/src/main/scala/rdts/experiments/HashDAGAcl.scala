@@ -57,7 +57,7 @@ case class HashDAGAcl(operations: Map[Hash, Operation]) {
 }
 
 object HashDAGAcl {
-  def empty                          = HashDAGAcl(Map.empty)
+  def empty: HashDAGAcl              = HashDAGAcl(Map.empty)
   given lattice: Lattice[HashDAGAcl] =
       given Lattice[Operation] = Lattice.assertEquals
       Lattice.derived

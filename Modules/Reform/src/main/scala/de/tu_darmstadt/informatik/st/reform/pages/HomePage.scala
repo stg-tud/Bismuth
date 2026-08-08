@@ -15,15 +15,13 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.pages
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.components.*
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.entity.Contract
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toGermanDate
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toHumanMonth
-import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.toMoneyString
+import de.tu_darmstadt.informatik.st.reform.given
+import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.{toGermanDate, toHumanMonth, toMoneyString}
 import de.tu_darmstadt.informatik.st.reform.services.Page
-import de.tu_darmstadt.informatik.st.reform.{*, given}
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, *}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

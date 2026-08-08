@@ -1,8 +1,9 @@
 package ex2025ribltbft.datatypes
 
-import OpType.{Add, Remove}
 import crypto.Ed25519Util
 import ex2025ribltbft.dag.HashDAG
+import ex2025ribltbft.datatypes.OpType.{Add, Remove}
+
 import scala.collection.immutable.HashMap
 
 case class ORSet[T](

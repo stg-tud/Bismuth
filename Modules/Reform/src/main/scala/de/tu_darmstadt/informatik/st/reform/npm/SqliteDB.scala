@@ -26,7 +26,7 @@ class SqliteDB(dbPath: String) extends IIndexedDB {
   // See: https://stackoverflow.com/a/16725406
   Class.forName("org.sqlite.JDBC")
 
-  val url = s"jdbc:sqlite:$dbPath"
+  val url: String = s"jdbc:sqlite:$dbPath"
 
   private val connection: Connection = DriverManager.getConnection(url).nn
   connection.setAutoCommit(false)

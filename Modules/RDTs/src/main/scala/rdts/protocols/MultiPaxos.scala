@@ -4,7 +4,7 @@ import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.datatypes.Epoch
 import rdts.protocols.Participants
-import Paxos.given
+import rdts.protocols.Paxos.given
 import rdts.time.Time
 
 import scala.collection.immutable.NumericRange

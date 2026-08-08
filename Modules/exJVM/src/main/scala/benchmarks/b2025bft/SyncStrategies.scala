@@ -4,12 +4,10 @@ import bloomfilter.mutable.BloomFilter
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.Ed25519Util
-import ex2025ribltbft.datatypes.Counter
 import ex2025ribltbft.dag.Event
-import ex2025ribltbft.datatypes.{ORSet, Op, Replica}
-import ex2025ribltbft.riblt.RIBLT.{given_Hashable_String, given_Xorable_String}
+import ex2025ribltbft.datatypes.{Counter, ORSet, Op, Replica}
 import ex2025ribltbft.riblt.RIBLT
-import ex2025ribltbft.riblt.RIBLT.given_JsonValueCodec_CodedSymbol
+import ex2025ribltbft.riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
 
 import java.io.ByteArrayOutputStream
 import java.security.{PrivateKey, PublicKey}

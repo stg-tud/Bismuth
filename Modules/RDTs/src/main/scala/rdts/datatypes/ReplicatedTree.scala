@@ -1,10 +1,10 @@
 package rdts.datatypes
 
-import rdts.time.Dot
-import rdts.base.LocalUid
-import rdts.time.Dots
-import rdts.base.Lattice
+import rdts.base.{Lattice, LocalUid}
+import rdts.time.{Dot, Dots}
+
 import scala.collection.mutable as mutable
+import rdts.datatypes.ReplicatedTree.Node
 
 case class ReplicatedTree[A](
     elements: Map[Dot, ReplicatedTree.Node[A]],
@@ -12,9 +12,9 @@ case class ReplicatedTree[A](
 ) {
   type Delta = ReplicatedTree[A]
 
-  lazy val observed = elements.keySet.foldLeft(removed)((acc, dot) => acc `union` Dots.single(dot))
+  lazy val observed: Dots = elements.keySet.foldLeft(removed)((acc, dot) => acc `union` Dots.single(dot))
 
-  lazy val compact = elements.filter((k, _) => !removed.contains(k))
+  lazy val compact: Map[Dot, Node[A]] = elements.filter((k, _) => !removed.contains(k))
 
   def isEmpty: Boolean = compact.isEmpty
 

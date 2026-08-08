@@ -1,11 +1,11 @@
 package probench.data
 
 import channels.broadcast.PlumtreeMessage
+import channels.broadcast.PlumtreeMessage.Payload
 import rdts.base.LocalUid.replicaId
 import rdts.base.{Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.{MultiPaxos, Participants, Vote, Voting}
-import channels.broadcast.PlumtreeMessage.Payload
 
 enum KVOperation[Key, Value] {
   def key: Key

@@ -1,6 +1,6 @@
 package ex2026accessControl.permission_pane
 
-import Selector.{FixedSelector, leafSelector}
+import ex2026accessControl.permission_pane.Selector.{FixedSelector, leafSelector}
 import rdts.base.Bottom
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.KeyAsString

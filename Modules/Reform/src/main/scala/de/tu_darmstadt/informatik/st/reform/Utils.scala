@@ -1,9 +1,6 @@
 package de.tu_darmstadt.informatik.st.reform
 
-import org.scalajs.dom.MediaQueryList
-import org.scalajs.dom.StorageEvent
-import org.scalajs.dom.document
-import org.scalajs.dom.window
+import org.scalajs.dom.{MediaQueryList, StorageEvent, document, window}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

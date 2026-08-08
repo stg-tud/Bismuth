@@ -22,21 +22,17 @@ package de.tu_darmstadt.informatik.st.reform.services
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.*
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.utils.Cookies
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.PendingConnection
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, given_ExecutionContext, *}
 import org.scalajs.dom
 import org.scalajs.dom.*
 import reactives.default.*
 
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
-import scala.scalajs.js.Date
-import scala.scalajs.js.JSON
+import scala.scalajs.js.{Date, JSON}
 
 class AvailableConnection(
     val name: String,
@@ -247,7 +243,7 @@ class DiscoveryService {
         return promise.failure(new Exception("Your token is wrong")).future
       }
 
-      println(s"[DiscoveryService] would connect to discovery server websocket, but scala-loci has been removed")
+      println("[DiscoveryService] would connect to discovery server websocket, but scala-loci has been removed")
       promise.success(true)
 
       // NOTE: always-online peer connection via scala-loci WS communicator has been removed

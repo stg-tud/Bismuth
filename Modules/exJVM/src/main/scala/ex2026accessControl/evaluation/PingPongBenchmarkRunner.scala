@@ -4,8 +4,8 @@ import cats.data.{Validated, ValidatedNel}
 import cats.implicits.*
 import com.monovore.decline.*
 import crypto.channels.IdentityFactory
-import PingPongBenchmarkRunnerArguments.Mode.*
-import PingPongBenchmarkRunnerArguments.{Config, Peer}
+import ex2026accessControl.evaluation.PingPongBenchmarkRunnerArguments.Mode.*
+import ex2026accessControl.evaluation.PingPongBenchmarkRunnerArguments.{Config, Peer}
 
 import java.nio.file.{Path, Paths}
 import scala.language.implicitConversions

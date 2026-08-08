@@ -6,8 +6,8 @@ import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.filters.PermissionTree
 import replication.HashDag
-import replication.acl.AclRdt.given
 import replication.HashDag.Encoder
+import replication.acl.AclRdt.given
 
 class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] = _ => None)
     extends BftSignedDeltaRdt[Acl](privateIdentity) {
@@ -20,13 +20,13 @@ class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] =
       prefixHashDag: HashDag[BftDelta[Acl], Acl]
   ): Boolean =
     super.invariants(hash, delta, prefixHashDag) // delta is either root, or transitive child of root
-      // either removal or delegation
-      && delta.state.removed.isEmpty || delta.state.read.isEmpty && delta.state.write.isEmpty && delta.state.admins.isEmpty
-      && delegationValid(
-        delta.author,
-        delta.state,
-        reconstruct(delta.parents, prefixHashDag)
-      )
+    // either removal or delegation
+    && delta.state.removed.isEmpty || delta.state.read.isEmpty && delta.state.write.isEmpty && delta.state.admins.isEmpty
+    && delegationValid(
+      delta.author,
+      delta.state,
+      reconstruct(delta.parents, prefixHashDag)
+    )
 
   private def delegationValid(author: PublicIdentity, delta: Acl, prefix: Acl): Boolean = {
     val prefixReadPermOfAuthor  = prefix.read.getOrElse(author, PermissionTree.empty)

@@ -1,8 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.components.icons
 
-import outwatch.VNode
-import outwatch.*
 import outwatch.dsl.*
+import outwatch.{VNode, *}
 
 trait Icon {
   def apply(props: VMod*): VNode

@@ -1,9 +1,9 @@
 package channels.broadcast
 
-import channels.{DeltaStorage, NoHistory}
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
+import channels.{DeltaStorage, NoHistory}
 import rdts.base.{Lattice, Uid}
 import rdts.time.Dots
 

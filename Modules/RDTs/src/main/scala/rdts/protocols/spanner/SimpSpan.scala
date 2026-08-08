@@ -1,18 +1,11 @@
 package rdts.protocols.spanner
 
-import rdts.base.Uid
-import rdts.protocols.MultiPaxos
-import rdts.base.LocalUid
-import rdts.protocols.Participants
-import rdts.protocols.Util.precondition
 import rdts.base.LocalUid.replicaId
-import rdts.base.Bottom
-import rdts.protocols.TwoPhaseCommit
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Quorum.FullQuorum
-import rdts.protocols.Util.Agreement
-import rdts.base.Lattice
 import rdts.protocols.Util.Agreement.Decided
-import rdts.protocols.MultipaxosPhase
+import rdts.protocols.Util.{Agreement, precondition}
+import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants, TwoPhaseCommit}
 
 case class SimpSpan[A](
     transactions: Map[Uid, TwoPhaseCommit[A]] = Map.empty[Uid, TwoPhaseCommit[A]],

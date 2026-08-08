@@ -2,23 +2,24 @@ package benchmarks.b2025bft
 
 import ex2025ribltbft.datatypes.ORSet
 import ex2025ribltbft.network.Network
-import org.openjdk.jmh.annotations.*
 import ex2025ribltbft.riblt.RIBLTSyncWithThreads
 import ex2025ribltbft.riblt.SessionType.{receiver, sender}
+import org.openjdk.jmh.annotations.*
 
-import scala.util.Random
 import java.util.concurrent.TimeUnit
+import scala.util.Random
+import ex2025ribltbft.datatypes.Op
 
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 class ThreadedSyncBenchmark {
 
-  var replica1 = ORSet[String]()
-  var replica2 = ORSet[String]()
-  var riblt1   = RIBLTSyncWithThreads(replica1, "replica1")
-  var riblt2   = RIBLTSyncWithThreads(replica2, "replica2")
-  val random   = new scala.util.Random(42)
+  var replica1: ORSet[String]                                 = ORSet[String]()
+  var replica2: ORSet[String]                                 = ORSet[String]()
+  var riblt1: RIBLTSyncWithThreads[Op[String], ORSet[String]] = RIBLTSyncWithThreads(replica1, "replica1")
+  var riblt2: RIBLTSyncWithThreads[Op[String], ORSet[String]] = RIBLTSyncWithThreads(replica2, "replica2")
+  val random                                                  = new scala.util.Random(42)
   Network.startChannel("replica1")
   Network.startChannel("replica2")
 

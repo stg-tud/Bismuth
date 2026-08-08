@@ -1,7 +1,7 @@
 package webapps.ex2025tabular.lib
 
-import Spreadsheet.SpreadsheetCoordinate
 import rdts.base.LocalUid
+import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
 
 class UndoRecordingSpreadsheet[S](
     val delegate: Spreadsheet[S],

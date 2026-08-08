@@ -1,13 +1,9 @@
 package rdts.protocols.paxosVariants
 
-import rdts.protocols.Paxos
+import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.Epoch
-import rdts.protocols.Util.precondition
-import rdts.protocols.Participants
-import rdts.protocols.Util.Agreement
-import rdts.base.Uid
-import rdts.base.Bottom
-import rdts.base.Lattice
+import rdts.protocols.Util.{Agreement, precondition}
+import rdts.protocols.{Participants, Paxos}
 
 case class ConfigurationRound[A](
     currentMembers: Set[Uid] = Set.empty[Uid],
@@ -18,7 +14,7 @@ case class ConfigurationRound[A](
 case class ReconfigurablePaxos[A](
     inner: Epoch[ConfigurationRound[A]] = Epoch(0, ConfigurationRound[A]())
 ):
-    def nextDecision(using Participants) =
+    def nextDecision(using Participants): ReconfigurablePaxos[Nothing] =
       precondition(
         inner.value.nextMembers.decision != Agreement.Undecided &&
         inner.value.innerConsensus.decision != Agreement.Undecided

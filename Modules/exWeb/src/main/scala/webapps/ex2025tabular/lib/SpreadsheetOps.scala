@@ -1,8 +1,8 @@
 package webapps.ex2025tabular.lib
 
-import Spreadsheet.SpreadsheetCoordinate
 import rdts.base.{LocalUid, Uid}
 import rdts.time.Dot
+import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
 
 import scala.annotation.targetName
 

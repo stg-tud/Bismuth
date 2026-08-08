@@ -1,8 +1,8 @@
 package channels.overlay
 
 import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
-import rdts.base.Uid
 import channels.overlay.OverlayController.{OverlayAction, OverlayMessage}
+import rdts.base.Uid
 
 case class FullMeshOverlay(
     self: PeerConnectInfo,
@@ -19,7 +19,10 @@ case class FullMeshOverlay(
       copy(known = known.updated(peer.uid, merged))
     }
 
-  private def rememberAndActivatePeer(peer: PeerConnectInfo, conn: Connection): (FullMeshOverlay, List[OverlayAction]) = {
+  private def rememberAndActivatePeer(
+      peer: PeerConnectInfo,
+      conn: Connection
+  ): (FullMeshOverlay, List[OverlayAction]) = {
     val remembered = rememberPeer(peer)
     val previous   = remembered.active.get(peer.uid)
     val next       = remembered.copy(active = remembered.active.updated(peer.uid, conn))

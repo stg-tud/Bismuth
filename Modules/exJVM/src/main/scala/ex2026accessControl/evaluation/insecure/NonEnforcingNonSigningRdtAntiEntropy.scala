@@ -1,11 +1,11 @@
 package ex2026accessControl.evaluation.insecure
 
-import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import replication.HashDag.Encoder
+import crypto.{Hash, PublicIdentity}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.{Dot, Dots}
+import replication.HashDag.Encoder
 import replication.acl.Acl
 import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 

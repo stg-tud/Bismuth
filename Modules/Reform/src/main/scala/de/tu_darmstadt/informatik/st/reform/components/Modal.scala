@@ -2,11 +2,9 @@ package de.tu_darmstadt.informatik.st.reform.components
 
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.given
-import org.scalajs.dom.Element
-import org.scalajs.dom.document
-import outwatch.VNode
-import outwatch.*
+import org.scalajs.dom.{Element, document}
 import outwatch.dsl.*
+import outwatch.{VNode, *}
 import reactives.default.*
 
 class ModalButton(

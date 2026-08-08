@@ -1,11 +1,11 @@
 package replication.acl.sync.anti_entropy
 
-import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import replication.HashDag.Encoder
+import crypto.{Hash, PublicIdentity}
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
+import replication.HashDag.Encoder
 import replication.acl.Acl
 import replication.acl.sync.SynchronizedMutableArrayDeltaStore
 
@@ -18,8 +18,8 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     aclAntiEntropy: AclAntiEntropy,
     initialDotValue: Long = 0
 )(using Encoder[SignedDelta[State]]) {
-  protected val dotCounter = AtomicLong(0)
-  protected val localUid   = Uid(localIdentity.getPublic.id)
+  protected val dotCounter: AtomicLong = AtomicLong(0)
+  protected val localUid: Uid          = Uid(localIdentity.getPublic.id)
 
   protected val currentStateRef: AtomicReference[(Dots, State)] = AtomicReference((Dots.empty, Bottom[State].empty))
   protected val deltaStore: SynchronizedMutableArrayDeltaStore[SignedDelta[State]] =

@@ -1,6 +1,7 @@
 package benchmarks.b2025bft
 
 import ex2025ribltbft.datatypes.{Counter, ORSet, Replica}
+
 import scala.util.Random
 
 object ReplicaGenerator:

@@ -1,6 +1,6 @@
 package ex2025ribltbft.riblt
 
-import Operation.{Add, Remove}
+import ex2025ribltbft.riblt.Operation.{Add, Remove}
 
 /** a CodingWindow is a collection of a source Symbols, that can produce the next coded Symbol based on the these
   * source symbols

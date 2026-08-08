@@ -1,10 +1,10 @@
 package webapps.ex2025tabular.lib
 
-import ReplicatedUniqueList.OpPrecedence.{Positional, Textual}
-import ReplicatedUniqueList.{ElementId, MarkerId, MarkerRemovalBehavior, MarkerValue, OpPrecedence}
 import rdts.base.*
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}
+import webapps.ex2025tabular.lib.ReplicatedUniqueList.OpPrecedence.{Positional, Textual}
+import webapps.ex2025tabular.lib.ReplicatedUniqueList.{ElementId, MarkerId, MarkerRemovalBehavior, MarkerValue, OpPrecedence}
 
 import scala.util.chaining.scalaUtilChainingOps
 

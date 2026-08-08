@@ -3,20 +3,15 @@ package de.tu_darmstadt.informatik.st.reform.components
 import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.services.LoginException
-import de.tu_darmstadt.informatik.st.reform.services.LoginInfo
+import de.tu_darmstadt.informatik.st.reform.services.{LoginException, LoginInfo}
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
 import org.scalajs.dom
-import org.scalajs.dom.HTMLInputElement
-import org.scalajs.dom.console
-import org.scalajs.dom.document
-import org.scalajs.dom.window
+import org.scalajs.dom.{HTMLInputElement, console, document, window}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
 
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class ConnectionModal(using jsImplicits: JSImplicits) {
   private val offlineBanner: VNode =

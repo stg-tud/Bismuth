@@ -25,8 +25,8 @@ class FullMeshActivationTest extends FunSuite {
   private val peer = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
 
   test("activating a raw local connection does not emit ActiveConnectionAdded") {
-    val conn                     = TestConnection("peer")
-    val (_, activationActions)   = FullMeshOverlay(self).activateConnection(conn, None)
+    val conn                   = TestConnection("peer")
+    val (_, activationActions) = FullMeshOverlay(self).activateConnection(conn, None)
     assert(!activationActions.contains(OverlayAction.ActiveConnectionAdded(peer.uid)))
   }
 
@@ -39,8 +39,8 @@ class FullMeshActivationTest extends FunSuite {
 
   test("receiveActions trusts the peer identity in the message, attaching whatever conn carried it") {
     // A connection that is NOT the one leading to `peer` (no transport back to the claimed peer).
-    val wrongConnection         = TestConnection("some-other-connection")
-    val stranger                = PeerConnectInfo(Uid.predefined("stranger"), Set.empty)
+    val wrongConnection = TestConnection("some-other-connection")
+    val stranger        = PeerConnectInfo(Uid.predefined("stranger"), Set.empty)
 
     // The message simply *claims* to be a Neighbor from `stranger`. The overlay adopts the peer
     // identity from the message and attaches the conn the message was carried on, without any

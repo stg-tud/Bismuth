@@ -1,7 +1,7 @@
 package ex2026accessControl.travelplanner.view
 
-import PermissionTreePane.{ExpensePermCheckBoxes, ExpensePermEntryCheckBoxes, wiredReadWriteCheckboxes}
 import ex2026accessControl.travelplanner.TravelPlan
+import ex2026accessControl.travelplanner.view.PermissionTreePane.{ExpensePermCheckBoxes, ExpensePermEntryCheckBoxes, wiredReadWriteCheckboxes}
 import rdts.filters.Permission.{ALLOW, PARTIAL}
 import rdts.filters.{Filter, PermissionTree}
 import scalafx.beans.property.BooleanProperty

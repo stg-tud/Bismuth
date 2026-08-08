@@ -1,9 +1,8 @@
 package benchmarks.taskapp
 
-import rdts.time.Dot
-import rdts.datatypes.ReplicatedTree
-import rdts.datatypes.LastWriterWins as LWW
 import benchmarks.taskapp.TaskApp.{Entry, Task}
+import rdts.datatypes.{LastWriterWins as LWW, ReplicatedTree}
+import rdts.time.Dot
 
 import scala.collection.mutable
 import scala.util.Random

@@ -1,15 +1,15 @@
 package ex2025ribltbft.riblt
-import RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
-import SessionType.{receiver, sender}
-import ex2025ribltbft.network.Message.given_JsonValueCodec_Message
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import crypto.Ed25519Util
-import ex2025ribltbft.network.Tag.{CODED_SYMBOLS, CODED_SYMBOLS_REQUEST, DELTA, REQUEST_DELTA}
-import RIBLTSyncWithThreads.{codec1, codec2}
 import ex2025ribltbft.dag.Event
 import ex2025ribltbft.datatypes.{ORSet, Op, Replica}
+import ex2025ribltbft.network.Message.given_JsonValueCodec_Message
+import ex2025ribltbft.network.Tag.{CODED_SYMBOLS, CODED_SYMBOLS_REQUEST, DELTA, REQUEST_DELTA}
 import ex2025ribltbft.network.{Message, Network}
+import ex2025ribltbft.riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_CodedSymbol, given_Xorable_String}
+import ex2025ribltbft.riblt.RIBLTSyncWithThreads.{codec1, codec2}
+import ex2025ribltbft.riblt.SessionType.{receiver, sender}
 
 import java.security.{PrivateKey, PublicKey}
 

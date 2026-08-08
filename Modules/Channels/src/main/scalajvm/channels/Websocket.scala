@@ -52,11 +52,11 @@ object WebsocketProtocol {
     )
 
     val response =
-      s"HTTP/1.1 101 Switching Protocols\r\n" +
-      s"Connection: Upgrade\r\n" +
-      s"Upgrade: websocket\r\n" +
+      "HTTP/1.1 101 Switching Protocols\r\n" +
+      "Connection: Upgrade\r\n" +
+      "Upgrade: websocket\r\n" +
       s"Sec-WebSocket-Accept: $accept\r\n" +
-      s"\r\n"
+      "\r\n"
 
     response.getBytes(StandardCharsets.US_ASCII)
   }

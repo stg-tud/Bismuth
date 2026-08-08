@@ -1,10 +1,10 @@
 package ex2025ribltbft.riblt
 
-import Operation.{Add, Remove}
-
-import scala.util.hashing.MurmurHash3
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
+import ex2025ribltbft.riblt.Operation.{Add, Remove}
+
+import scala.util.hashing.MurmurHash3
 
 class RIBLT[T](
     var receivedCodedSymbols: List[CodedSymbol[T]],

@@ -15,18 +15,16 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.pages
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.components.icons
 import de.tu_darmstadt.informatik.st.reform.entity.*
+import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.*
-import de.tu_darmstadt.informatik.st.reform.npm.PDF
-import de.tu_darmstadt.informatik.st.reform.npm.PDFCheckboxField
-import de.tu_darmstadt.informatik.st.reform.npm.PDFTextField
+import de.tu_darmstadt.informatik.st.reform.npm.{PDF, PDFCheckboxField, PDFTextField}
 import de.tu_darmstadt.informatik.st.reform.repo.Synced
 import de.tu_darmstadt.informatik.st.reform.services.*
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
-import de.tu_darmstadt.informatik.st.reform.{*, given}
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, *}
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*

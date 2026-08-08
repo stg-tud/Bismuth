@@ -2,8 +2,8 @@ package ex2026accessControl.travelplanner.model
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026accessControl.travelplanner.{Invitation, Replica, TravelPlan}
 import ex2026accessControl.travelplanner.TravelPlan.given
+import ex2026accessControl.travelplanner.{Invitation, Replica, TravelPlan}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree

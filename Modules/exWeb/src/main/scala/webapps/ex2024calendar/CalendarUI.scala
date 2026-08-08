@@ -8,10 +8,10 @@ import rdts.syntax.DeltaBuffer
 import reactives.core.CreationTicket
 import reactives.default.*
 import reactives.extra.Tags.*
-
 import scalatags.JsDom.all.*
 import webapps.Storing
 import webapps.ex2024calendar.Codecs.given
+import org.scalajs.dom.HTMLInputElement
 
 class NewAppointment(private val typeName: String) {
 
@@ -31,7 +31,7 @@ class NewAppointment(private val typeName: String) {
     `type`  := "number"
   ).render
 
-  val submitButton = Event.fromCallback(input(
+  val submitButton: (event: Event[Any], data: HTMLInputElement) = Event.fromCallback(input(
     `class` := "new-appointment-submit",
     `type`  := "button",
     onclick := Event.handle,

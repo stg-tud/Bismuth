@@ -15,21 +15,17 @@ limitations under the License.
  */
 package de.tu_darmstadt.informatik.st.reform.entity
 
-import de.tu_darmstadt.informatik.st.reform.components.Modal
-import de.tu_darmstadt.informatik.st.reform.components.ModalButton
 import de.tu_darmstadt.informatik.st.reform.components.common.*
-import de.tu_darmstadt.informatik.st.reform.components.icons
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
+import de.tu_darmstadt.informatik.st.reform.components.{Modal, ModalButton, icons}
+import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.downloadFile
-import de.tu_darmstadt.informatik.st.reform.repo.Repository
-import de.tu_darmstadt.informatik.st.reform.repo.Synced
-import de.tu_darmstadt.informatik.st.reform.services.Page
-import de.tu_darmstadt.informatik.st.reform.services.ToastMode
+import de.tu_darmstadt.informatik.st.reform.repo.{Repository, Synced}
+import de.tu_darmstadt.informatik.st.reform.services.{Page, ToastMode}
 import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
-import de.tu_darmstadt.informatik.st.reform.{*, given}
-import rdts.base.*
+import de.tu_darmstadt.informatik.st.reform.{given_ExecutionContext, *}
 import outwatch.*
 import outwatch.dsl.*
+import rdts.base.*
 import reactives.default.*
 
 import scala.collection.mutable

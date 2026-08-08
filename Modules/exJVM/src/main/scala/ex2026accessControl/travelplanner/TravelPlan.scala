@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import com.softwaremill.quicklens.*
 import ex2026accessControl.permission_pane.SelectorFactory
-import TravelPlan.{*, given}
+import ex2026accessControl.travelplanner.TravelPlan.{*, given}
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.Filter

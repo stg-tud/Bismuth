@@ -21,7 +21,7 @@ object Cookies {
     document.cookie = s"$name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   }
 
-  def setCookie(name: String, value: String, days: Long = 14) = {
+  def setCookie(name: String, value: String, days: Long = 14): Unit = {
     val date = new js.Date()
     date.setTime(date.getTime() + (days * 86400000))
     val expires = s"expires=${date.toUTCString()}"

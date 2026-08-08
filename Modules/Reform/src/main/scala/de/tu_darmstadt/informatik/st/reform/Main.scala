@@ -23,11 +23,8 @@ import cats.effect.SyncIO
 import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
 import de.tu_darmstadt.informatik.st.reform.components.navigationHeader
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
-import de.tu_darmstadt.informatik.st.reform.npm.IIndexedDB
-import de.tu_darmstadt.informatik.st.reform.npm.IndexedDB
-import de.tu_darmstadt.informatik.st.reform.services.DiscoveryService
-import de.tu_darmstadt.informatik.st.reform.services.RoutingService
-import de.tu_darmstadt.informatik.st.reform.services.*
+import de.tu_darmstadt.informatik.st.reform.npm.{IIndexedDB, IndexedDB}
+import de.tu_darmstadt.informatik.st.reform.services.{DiscoveryService, RoutingService, *}
 import de.tu_darmstadt.informatik.st.reform.webrtc.WebRTCService
 import outwatch.*
 import outwatch.dsl.*

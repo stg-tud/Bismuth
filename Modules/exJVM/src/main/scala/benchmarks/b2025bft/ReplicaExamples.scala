@@ -4,10 +4,10 @@ import ex2025ribltbft.datatypes.{Counter, ORSet}
 
 object ReplicaExamples:
     object Example1:
-        var replica1 = ORSet[String]()
-        var replica2 = ORSet[String]()
-        var replica3 = ORSet[String]()
-        var replica4 = ORSet[String]()
+        var replica1: ORSet[String] = ORSet[String]()
+        var replica2: ORSet[String] = ORSet[String]()
+        var replica3: ORSet[String] = ORSet[String]()
+        var replica4: ORSet[String] = ORSet[String]()
 
         // A
         replica1 = replica1.merge(replica1.add("A"))

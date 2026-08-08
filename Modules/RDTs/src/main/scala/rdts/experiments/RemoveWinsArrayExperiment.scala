@@ -1,15 +1,9 @@
 package rdts.experiments
 
-import rdts.time.Dot
-import rdts.time.Dots
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid, Uid}
 import rdts.datatypes.LastWriterWins as LWW
-import rdts.base.LocalUid
-import rdts.base.Lattice
-import rdts.base.DecoratedLattice
-import rdts.base.Uid
-import rdts.base.Bottom
-import rdts.time.CausalTime
-import rdts.base.Decompose
+import rdts.time.{CausalTime, Dot, Dots}
+
 import scala.collection.mutable.ListBuffer
 
 case class RemoveWinsArrayExperiment[E](
@@ -52,11 +46,11 @@ case class RemoveWinsArrayExperiment[E](
 
   def size: Int = compactElements.size
 
-  def prepend(value: E)(using LocalUid)               = insert(0, value)
-  def prependAll(values: Iterable[E])(using LocalUid) = insertAll(0, values)
+  def prepend(value: E)(using LocalUid): RemoveWinsArrayExperiment[E]               = insert(0, value)
+  def prependAll(values: Iterable[E])(using LocalUid): RemoveWinsArrayExperiment[E] = insertAll(0, values)
 
-  def append(value: E)(using LocalUid)               = insert(size, value)
-  def appendAll(values: Iterable[E])(using LocalUid) = insertAll(size, values)
+  def append(value: E)(using LocalUid): RemoveWinsArrayExperiment[E]               = insert(size, value)
+  def appendAll(values: Iterable[E])(using LocalUid): RemoveWinsArrayExperiment[E] = insertAll(size, values)
 
   def insert(index: Int, value: E)(using LocalUid): RemoveWinsArrayExperiment[E] =
     insertAll(index, Iterable(value))

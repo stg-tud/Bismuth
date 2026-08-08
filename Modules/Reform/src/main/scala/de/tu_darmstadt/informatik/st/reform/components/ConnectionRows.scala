@@ -1,10 +1,8 @@
 package de.tu_darmstadt.informatik.st.reform.components
 
-import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.given
-import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.services.AvailableConnection
+import de.tu_darmstadt.informatik.st.reform.{JSImplicits, given_ExecutionContext, *}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*

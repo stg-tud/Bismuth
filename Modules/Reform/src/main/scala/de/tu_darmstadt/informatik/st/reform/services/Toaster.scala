@@ -5,12 +5,9 @@ import de.tu_darmstadt.informatik.st.reform.components.icons
 import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.services.ToastMode.*
 import de.tu_darmstadt.informatik.st.reform.services.ToastType.*
-import org.scalajs.dom.HTMLHtmlElement
-import org.scalajs.dom.document
-import org.scalajs.dom.window
-import outwatch.VNode
-import outwatch.*
+import org.scalajs.dom.{HTMLHtmlElement, document, window}
 import outwatch.dsl.*
+import outwatch.{VNode, *}
 import reactives.default.*
 
 import scala.scalajs.js

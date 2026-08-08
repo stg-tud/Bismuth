@@ -1,9 +1,9 @@
 package ex2026accessControl.travelplanner.view
 
 import ex2026accessControl.travelplanner.model.TravelPlanModel
+import ex2026accessControl.travelplanner.view.ExpenseListEntryListCell.amountTextFilter
 import javafx.scene.control.ListCell
 import javafx.scene.layout.HBox
-import ExpenseListEntryListCell.amountTextFilter
 import scalafx.beans.property.StringProperty
 import scalafx.event.subscriptions.Subscription
 import scalafx.scene.control.{TextField, TextFormatter}

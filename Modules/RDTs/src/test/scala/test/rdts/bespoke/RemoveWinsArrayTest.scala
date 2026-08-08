@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{Uid}
+import rdts.base.Uid
 import rdts.datatypes.RemoveWinsArray
 
 import scala.language.implicitConversions

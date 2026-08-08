@@ -2,7 +2,7 @@ package test.rdts.bespoke
 
 import rdts.base.Lattice
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{Uid}
+import rdts.base.Uid
 
 import scala.language.implicitConversions
 import rdts.experiments.RemoveWinsArrayExperiment

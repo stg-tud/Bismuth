@@ -4,6 +4,7 @@ package ex2025ribltbft.dag
 //import com.github.plokhotnyuk.jsoniter_scala.macros.*
 
 import crypto.Ed25519Util
+
 import java.security.{MessageDigest, PublicKey}
 import java.util.Base64
 

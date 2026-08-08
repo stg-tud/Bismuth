@@ -4,8 +4,8 @@ import rdts.base.LocalUid.replicaId
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.Participants
 import rdts.protocols.Participants.participants
-import Util.*
-import Util.Agreement.*
+import rdts.protocols.Util.*
+import rdts.protocols.Util.Agreement.*
 
 case class Vote[A](voter: Uid, value: A)
 

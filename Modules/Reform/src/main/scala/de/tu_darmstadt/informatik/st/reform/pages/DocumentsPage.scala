@@ -16,8 +16,7 @@ limitations under the License.
 package de.tu_darmstadt.informatik.st.reform.pages
 
 import de.tu_darmstadt.informatik.st.reform.JSImplicits
-import de.tu_darmstadt.informatik.st.reform.entity.Document
-import de.tu_darmstadt.informatik.st.reform.entity.*
+import de.tu_darmstadt.informatik.st.reform.entity.{Document, *}
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
