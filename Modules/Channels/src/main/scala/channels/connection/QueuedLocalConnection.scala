@@ -13,11 +13,17 @@ case class ConnectionClosedException(msg: String) extends Exception(msg)
 class LocalMessageQueue {
   private var queue: List[(receiver: Callback[MessageBuffer], message: Try[MessageBuffer])] = Nil
 
+  // Delivered messages are logged (newest first) so tests can observe what was actually handed out.
+  private var deliveredLog: List[(receiver: Callback[MessageBuffer], message: Try[MessageBuffer])] = Nil
+
   def enqueue(receiver: Callback[MessageBuffer], value: Try[MessageBuffer]): Unit = synchronized {
     queue = (receiver, value) :: queue
   }
 
   def elements: List[Try[MessageBuffer]] = synchronized(queue).map(_.message)
+
+  /** All messages that have already been delivered, in delivery order. */
+  def delivered: List[Try[MessageBuffer]] = synchronized(deliveredLog).reverse.map(_.message)
 
   def size: Int = synchronized(queue.size)
 
@@ -36,7 +42,10 @@ class LocalMessageQueue {
       current
     }
 
-    toDeliver.foreach { case (receiver, value) => receiver.complete(value) }
+    toDeliver.foreach { case (receiver, value) =>
+      synchronized { deliveredLog = (receiver, value) :: deliveredLog }
+      receiver.complete(value)
+    }
     toDeliver.size
   }
 
@@ -54,7 +63,10 @@ class LocalMessageQueue {
             Some(head)
           case Nil => None
     }
-    toDeliver.foreach { case (receiver, value) => receiver.complete(value) }
+    toDeliver.foreach { case (receiver, value) =>
+      synchronized { deliveredLog = (receiver, value) :: deliveredLog }
+      receiver.complete(value)
+    }
     toDeliver.nonEmpty
   }
 }
