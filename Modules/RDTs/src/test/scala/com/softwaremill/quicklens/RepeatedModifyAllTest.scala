@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 class RepeatedModifyAllTest extends munit.FunSuite {
   import RepeatedModifyAllTest.*

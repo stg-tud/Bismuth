@@ -1,8 +1,7 @@
 package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.deltalens.*
 import com.softwaremill.deltalens.TestData.*
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 class ModifyArrayIndexTest extends munit.FunSuite {
 

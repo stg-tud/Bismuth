@@ -1,9 +1,8 @@
 package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.deltalens.*
 
 import com.softwaremill.deltalens.TestData.*
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 class ModifyEachTest extends munit.FunSuite {
   test("modify a single-nested optional case class field") {

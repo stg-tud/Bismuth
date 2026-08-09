@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 object ExtensionCopyTest {
   case class V(x: Double, y: Double, z: Double)

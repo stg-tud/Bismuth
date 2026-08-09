@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 import ModifyAndTypeTest.*
 
 object ModifyAndTypeTest {

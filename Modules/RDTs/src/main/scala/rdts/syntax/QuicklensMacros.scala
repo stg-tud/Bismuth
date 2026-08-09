@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package rdts.syntax
 
-import com.softwaremill.quicklens.deltalens.{PathLazyModify, PathModify}
+import deltalens.{PathLazyModify, PathModify}
 import rdts.base.Bottom
 
 import scala.quoted.*

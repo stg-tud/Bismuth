@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 class ExplicitCopyTest extends munit.FunSuite {
   test("modify a class with an explicit copy method") {

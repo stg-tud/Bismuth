@@ -1,7 +1,7 @@
 package com.softwaremill.deltalens
 
 import com.softwaremill.deltalens.ModifySelfThisTest.*
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 object ModifySelfThisTest {
 

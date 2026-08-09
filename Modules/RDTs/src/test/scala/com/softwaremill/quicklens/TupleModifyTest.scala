@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.deltalens.*
+import rdts.syntax.deltalens.*
 
 class TupleModifyTest extends munit.FunSuite {
   test("modify case classes using setTo") {

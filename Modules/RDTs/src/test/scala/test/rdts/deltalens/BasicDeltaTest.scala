@@ -1,6 +1,8 @@
-import com.softwaremill.quicklens.deltalens.*
+package test.rdts.deltalens
+
 import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
+import rdts.syntax.deltalens.*
 
 class BasicDeltaTest extends munit.FunSuite {
 

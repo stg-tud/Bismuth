@@ -1,8 +1,8 @@
-package com.softwaremill.deltalens
+package test.rdts.deltalens
 
-import com.softwaremill.quicklens.deltalens.*
 import rdts.base.{Bottom, LocalUid}
 import rdts.datatypes.*
+import rdts.syntax.deltalens.*
 import rdts.time.{CausalTime, Dots}
 
 /** Tests for [[com.softwaremill.deltalens.deltaModify]].

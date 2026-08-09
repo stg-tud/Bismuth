@@ -1,11 +1,10 @@
 package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.deltalens.*
 import scala.annotation.nowarn
+import rdts.syntax.deltalens.*
 
 class SecondParamListTest extends munit.FunSuite {
   test("modify an object with second implicit param list") {
-    import com.softwaremill.quicklens.deltalens.*
 
     @nowarn("id=E198")
     case class State(inside: Boolean)(implicit d: Double)
@@ -21,7 +20,6 @@ class SecondParamListTest extends munit.FunSuite {
   }
 
   test("should give a meaningful error for an object with more than one non-implicit param list") {
-    import com.softwaremill.quicklens.deltalens.*
 
     case class State(inside: Boolean)(d: Double)
 
@@ -32,5 +30,5 @@ class SecondParamListTest extends munit.FunSuite {
     given dd: Double = d
 
     assert(compileErrors("state1.modify(_.inside).setTo(true)").nonEmpty)
-  }: @nowarn("msg=unused")
+  }
 }
