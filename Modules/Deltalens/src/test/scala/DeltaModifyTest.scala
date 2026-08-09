@@ -272,4 +272,70 @@ class DeltaModifyTest extends munit.FunSuite {
       )
     )
   }
+
+  // ── deltaModifyAll ──────────────────────────────────────────────────────────────
+
+  test("deltaModifyAll blanks out fields not on any given path") {
+    val delta = alice.deltaModifyAll(_.name, _.address.street).using(_.toUpperCase)
+
+    // Both navigated fields get the modification; `age` and `address.zip` are bottom.
+    assertEquals(delta, Person("ALICE", 42, Address("MAIN ST", 42)))
+  }
+
+  test("deltaModifyAll on a single path behaves like deltaModify") {
+    val d1 = alice.deltaModify(_.name).using(_.toUpperCase)
+    val d2 = alice.deltaModifyAll(_.name).using(_.toUpperCase)
+
+    assertEquals(d1, d2)
+  }
+
+  test("deltaModifyAll on nested paths through a collection targets all elements") {
+    val delta = team.deltaModifyAll(
+      _.members.each.name,
+      _.members.each.address.street
+    ).using(_.toUpperCase)
+
+    assertEquals(
+      delta,
+      Team(
+        "BOTTOM",
+        List(
+          Person("ALICE", 42, Address("MAIN ST", 42)),
+          Person("BOB", 42, Address("2ND ST", 42))
+        )
+      )
+    )
+  }
+
+  // ── deltaModifyLens ─────────────────────────────────────────────────────────────
+
+  test("deltaModifyLens produces a PathLazyModify with delta semantics") {
+    val lens = modifyLens[Person].delta(_.address.street)
+    val res  = lens.using(_.toUpperCase)(alice)
+
+    assertEquals(res, Person("BOTTOM", 42, Address("MAIN ST", 42)))
+  }
+
+  test("deltaModifyLens can be composed with andThenModify") {
+    // Compose two delta lenses: first navigate into address, then into street of that address
+    val addressLens  = modifyLens[Person].delta(_.address)
+    val streetLens   = modifyLens[Address].apply(_.street)
+    val composed     = addressLens.andThenModify(streetLens)
+
+    val res = composed.using(_.toUpperCase)(alice)
+
+    // The outer delta blanks out Person fields not on the path, so `name`/`age` become bool.
+    // The inner (non-delta) modify targets `street` inside the already-navigated address;
+    // it preserves the other address fields (zip unchanged).
+    assertEquals(res, Person("BOTTOM", 42, Address("MAIN ST", 12345)))
+  }
+
+  // ── deltaModifyAllLens ──────────────────────────────────────────────────────────
+
+  test("deltaModifyAllLens produces a multi-path delta lens") {
+    val lens = modifyAllLens[Person].delta(_.name, _.address.street)
+    val res  = lens.using(_.toUpperCase)(alice)
+
+    assertEquals(res, Person("ALICE", 42, Address("MAIN ST", 42)))
+  }
 }

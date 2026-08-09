@@ -32,7 +32,11 @@ package object quicklens {
         * You can use `.each` to traverse options, lists, etc.
         */
       inline def modifyAll[A](inline path: S => A, inline paths: (S => A)*): PathModify[S, A] = ${
-        modifyAllImpl('obj, 'path, 'paths)
+        modifyAllImpl('obj, 'path, 'paths, produceDelta = false)
+      }
+
+      inline def deltaModifyAll[A](inline path: S => A, inline paths: (S => A)*): PathModify[S, A] = ${
+        modifyAllImpl('obj, 'path, 'paths, produceDelta = true)
       }
 
   case class PathModify[S, A](obj: S, f: (A => A) => S) {
@@ -99,12 +103,24 @@ package object quicklens {
   def modifyAllLens[T]: MultiLensHelper[T] = MultiLensHelper[T]()
 
   case class LensHelper[T] private[quicklens] () {
-    inline def apply[U](inline path: T => U): PathLazyModify[T, U] = ${ modifyLensApplyImpl('path) }
+    /** Create a (non-delta) lens, returning the full modified object (all fields preserved). */
+    inline def apply[U](inline path: T => U): PathLazyModify[T, U] =
+      ${ modifyLensApplyImpl('path, produceDelta = false) }
+
+    /** Create a delta lens, where fields not on the path are replaced by `Bottom.empty`. */
+    inline def delta[U](inline path: T => U): PathLazyModify[T, U] =
+      ${ modifyLensApplyImpl('path, produceDelta = true) }
   }
 
   case class MultiLensHelper[T] private[quicklens] () {
+    /** Create a (non-delta) multi lens, returning the full modified object. */
     inline def apply[U](inline path1: T => U, inline paths: (T => U)*): PathLazyModify[T, U] = ${
-      modifyAllLensApplyImpl('path1, 'paths)
+      modifyAllLensApplyImpl('path1, 'paths, produceDelta = false)
+    }
+
+    /** Create a delta multi lens, where fields not on any path are replaced by `Bottom.empty`. */
+    inline def delta[U](inline path1: T => U, inline paths: (T => U)*): PathLazyModify[T, U] = ${
+      modifyAllLensApplyImpl('path1, 'paths, produceDelta = true)
     }
   }
 

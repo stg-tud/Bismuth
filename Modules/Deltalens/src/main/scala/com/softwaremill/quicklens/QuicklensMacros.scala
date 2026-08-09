@@ -17,30 +17,36 @@ object QuicklensMacros {
 
   def from[T: Type, R: Type](f: Expr[T => R])(using Quotes): Expr[T] => Expr[R] = (x: Expr[T]) => '{ $f($x) }
 
-  def modifyLensApplyImpl[T, U](path: Expr[T => U])(using Quotes, Type[T], Type[U]): Expr[PathLazyModify[T, U]] = '{
+  def modifyLensApplyImpl[T, U](path: Expr[T => U], produceDelta: Boolean)(using
+      Quotes,
+      Type[T],
+      Type[U]
+  ): Expr[PathLazyModify[T, U]] = '{
     PathLazyModify { (t, mod) =>
       ${
-        toPathModify('t, modifyImpl('t, Seq(path), produceDelta = false))
+        toPathModify('t, modifyImpl('t, Seq(path), produceDelta))
       }.using(mod)
     }
   }
 
   def modifyAllLensApplyImpl[T: Type, U: Type](
       path1: Expr[T => U],
-      paths: Expr[Seq[T => U]]
+      paths: Expr[Seq[T => U]],
+      produceDelta: Boolean
   )(using Quotes): Expr[PathLazyModify[T, U]] =
-    '{ PathLazyModify((t, mod) => ${ modifyAllImpl('t, path1, paths) }.using(mod)) }
+    '{ PathLazyModify((t, mod) => ${ modifyAllImpl('t, path1, paths, produceDelta) }.using(mod)) }
 
   def modifyAllImpl[S: Type, A: Type](
       obj: Expr[S],
       focus: Expr[S => A],
-      focusesExpr: Expr[Seq[S => A]]
+      focusesExpr: Expr[Seq[S => A]],
+      produceDelta: Boolean
   )(using Quotes): Expr[PathModify[S, A]] = {
     val focuses = focusesExpr match {
       case Varargs(args) => focus +: args
     }
 
-    val modF = modifyImpl(obj, focuses, produceDelta = false)
+    val modF = modifyImpl(obj, focuses, produceDelta)
 
     toPathModify(obj, modF)
   }
