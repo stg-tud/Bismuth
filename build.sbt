@@ -76,7 +76,6 @@ lazy val deltalens = project.in(file("Modules/Deltalens"))
   .settings(
     scala3defaultsExtra,
     Dependencies.munit,
-    Dependencies.scalatest,
   )
 
 lazy val exJVM = project.in(file("Modules/exJVM"))

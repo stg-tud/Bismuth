@@ -1,11 +1,9 @@
 package com.softwaremill.quicklens
 package test
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class ExplicitCopyTest extends AnyFlatSpec with Matchers {
-  it should "modify a class with an explicit copy method" in {
+class ExplicitCopyTest extends munit.FunSuite {
+  test("modify a class with an explicit copy method") {
     case class V(x: Double, y: Double)
     class Vec(val v: V) {
       def x: Double                                   = v.x
@@ -20,10 +18,10 @@ class ExplicitCopyTest extends AnyFlatSpec with Matchers {
     val vec      = Vec(1, 2)
     val modified = vec.modify(_.x).using(_ + 1)
     val expected = Vec(2, 2)
-    modified.show shouldEqual expected.show
+    assertEquals(modified.show, expected.show)
   }
 
-  it should "modify a class that has a method with the same name as a field" in {
+  test("modify a class that has a method with the same name as a field") {
     final case class PathItem()
     final case class Paths(
         pathItems: Map[String, PathItem] = Map.empty
@@ -35,30 +33,30 @@ class ExplicitCopyTest extends AnyFlatSpec with Matchers {
     }
     val docs = Docs()
     val r    = docs.modify(_.paths.pathItems).using(m => m + ("a" -> PathItem()))
-    r.paths.pathItems should contain("a" -> PathItem())
+    assertEquals(r.paths.pathItems, Map("a" -> PathItem()))
   }
 
-  it should "modify a case class with an additional explicit copy" in {
+  test("modify a case class with an additional explicit copy") {
     case class Frozen(state: String, ext: Int) {
       def copy(stateC: Char): Frozen = Frozen(stateC.toString, ext)
     }
 
     val f = Frozen("A", 0)
     val r = f.modify(_.state).setTo("B")
-    r.state shouldEqual "B"
+    assertEquals(r.state, "B")
   }
 
-  it should "modify a case class with an ambiguous additional explicit copy" in {
+  test("modify a case class with an ambiguous additional explicit copy") {
     case class Frozen(state: String, ext: Int) {
       def copy(state: String): Frozen = Frozen(state, ext)
     }
 
     val f = Frozen("A", 0)
     val r = f.modify(_.state).setTo("B")
-    r.state shouldEqual "B"
+    assertEquals(r.state, "B")
   }
 
-  it should "modify a class with two explicit copy methods" in {
+  test("modify a class with two explicit copy methods") {
     class Frozen(val state: String, val ext: Int) {
       def copy(state: String = state, ext: Int = ext): Frozen = new Frozen(state, ext)
       def copy(state: String): Frozen                         = new Frozen(state, ext)
@@ -66,10 +64,10 @@ class ExplicitCopyTest extends AnyFlatSpec with Matchers {
 
     val f = new Frozen("A", 0)
     val r = f.modify(_.state).setTo("B")
-    r.state shouldEqual "B"
+    assertEquals(r.state, "B")
   }
 
-  it should "modify a case class with an ambiguous additional explicit copy and pick the synthetic one first" in {
+  test("modify a case class with an ambiguous additional explicit copy and pick the synthetic one first") {
     var accessed = 0
     case class Frozen(state: String, ext: Int) {
       def copy(state: String): Frozen =
@@ -79,11 +77,11 @@ class ExplicitCopyTest extends AnyFlatSpec with Matchers {
 
     val f = Frozen("A", 0)
     f.modify(_.state).setTo("B")
-    accessed shouldEqual 0
+    assertEquals(accessed, 0)
   }
 
-  it should "not compile when modifying a field which is not present as a copy parameter" in {
-    """
+  test("not compile when modifying a field which is not present as a copy parameter") {
+    assert(compileErrors("""
     case class Content(x: String)
 
     class A(val c: Content) {
@@ -92,7 +90,7 @@ class ExplicitCopyTest extends AnyFlatSpec with Matchers {
 
     val a = new A(Content("A"))
     val am = a.modify(_.c).setTo(Content("B"))
-    """ shouldNot compile
+    """).nonEmpty)
   }
 
   // TODO: Would be nice to be able to handle this case. Based on the types, it

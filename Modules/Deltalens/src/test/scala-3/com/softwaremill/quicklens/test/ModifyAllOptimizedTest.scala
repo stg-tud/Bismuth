@@ -1,19 +1,17 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import munit.BeforeEach
 
-class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
+class ModifyAllOptimizedTest extends munit.FunSuite {
   import ModifyAllOptimizedTest.*
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(context: BeforeEach): Unit = {
     Cons.copyCount = 0
     ConsOpt.copyCount = 0
     Opt.eachCount = 0
   }
 
-  it should "Have a correct number of copy calls with single focus" in {
+  test("Have a correct number of copy calls with single focus") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -22,10 +20,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Cons.copyCount should be(1)
+    assertEquals(Cons.copyCount, 1)
   }
 
-  it should "optimize number of copy calls 1" in {
+  test("optimize number of copy calls 1") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -35,10 +33,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Cons.copyCount should be(2)
+    assertEquals(Cons.copyCount, 2)
   }
 
-  it should "optimize number of copy calls 2" in {
+  test("optimize number of copy calls 2") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -49,10 +47,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Cons.copyCount should be(3)
+    assertEquals(Cons.copyCount, 3)
   }
 
-  it should "optimize number of copy calls 3" in {
+  test("optimize number of copy calls 3") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -62,10 +60,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Cons.copyCount should be(4)
+    assertEquals(Cons.copyCount, 4)
   }
 
-  it should "optimize number of copy calls 4" in {
+  test("optimize number of copy calls 4") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -80,10 +78,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
         case Some(Cons(head, tail)) => Some(Cons(head + 1, tail))
       }
 
-    Cons.copyCount should be(3)
+    assertEquals(Cons.copyCount, 3)
   }
 
-  it should "optimize number of copy calls 5" in {
+  test("optimize number of copy calls 5") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -98,10 +96,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
         case Some(Cons(head, tail)) => Some(Cons(head + 1, tail))
       }
 
-    Cons.copyCount should be(2)
+    assertEquals(Cons.copyCount, 2)
   }
 
-  it should "optimize number of copy calls 6" in {
+  test("optimize number of copy calls 6") {
     val lst: Cons = Cons.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -118,10 +116,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
         case Some(Cons(head, tail)) => Some(Cons(head + 1, tail))
       }
 
-    Cons.copyCount should be(5)
+    assertEquals(Cons.copyCount, 5)
   }
 
-  it should "optimize number of each function delegates 1" in {
+  test("optimize number of each function delegates 1") {
     val lst: ConsOpt = ConsOpt.fromList(List(1, 2, 3)).get
 
     lst
@@ -131,10 +129,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Opt.eachCount should be(2)
+    assertEquals(Opt.eachCount, 2)
   }
 
-  it should "optimize number of each function delegates 2" in {
+  test("optimize number of each function delegates 2") {
     val lst: ConsOpt = ConsOpt.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -144,10 +142,10 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Opt.eachCount should be(2)
+    assertEquals(Opt.eachCount, 2)
   }
 
-  it should "optimize number of each function delegates 3" in {
+  test("optimize number of each function delegates 3") {
     val lst: ConsOpt = ConsOpt.fromList(List(1, 2, 3, 4, 5, 6)).get
 
     lst
@@ -157,7 +155,7 @@ class ModifyAllOptimizedTest extends AnyFlatSpec with Matchers with BeforeAndAft
       )
       .using(_ + 1)
 
-    Opt.eachCount should be(3)
+    assertEquals(Opt.eachCount, 3)
   }
 }
 

@@ -1,12 +1,10 @@
 package com.softwaremill.quicklens.test
 
 import com.softwaremill.quicklens.*
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class CustomModifyProxyTest extends AnyFlatSpec with Matchers {
+class CustomModifyProxyTest extends munit.FunSuite {
 
-  it should "correctly modify a class using a custom modify proxy method" in {
+  test("correctly modify a class using a custom modify proxy method") {
     case class State(foo: Int)
 
     inline def set[A](state: State, inline path: State => A, value: A): State =
@@ -15,7 +13,7 @@ class CustomModifyProxyTest extends AnyFlatSpec with Matchers {
     val state    = State(100)
     val res      = set(state, _.foo, 200)
     val expected = State(200)
-    res.shouldBe(expected)
+    assertEquals(res, expected)
   }
 
 }

@@ -1,8 +1,6 @@
 package com.softwaremill.quicklens
 
 import com.softwaremill.quicklens.ModifyAliasTest.*
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 object ModifyAliasTest {
 
@@ -18,18 +16,18 @@ object ModifyAliasTest {
   type E = Expr
 }
 
-class ModifyAliasTest extends AnyFlatSpec with Matchers {
-  it should "modify an object declared using type alias" in {
+class ModifyAliasTest extends munit.FunSuite {
+  test("modify an object declared using type alias") {
     val s: S     = State(0)
     val modified = s.modify(_.x).setTo(1)
 
-    modified.x shouldBe 1
+    assertEquals(modified.x, 1)
   }
 
-  it should "modify a sealed hierarchy declared using type alias" in {
+  test("modify a sealed hierarchy declared using type alias") {
     val s: E     = ListInt(0)
     val modified = s.modify(_.i).setTo(1)
 
-    modified.i shouldBe 1
+    assertEquals(modified.i, 1)
   }
 }

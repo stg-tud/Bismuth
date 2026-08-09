@@ -3,6 +3,22 @@ package com.softwaremill.quicklens
 import scala.collection.immutable.{HashMap, ListMap, SortedMap}
 
 object TestData {
+  /** Deep structural equality that compares arrays element-wise (Scala's `==`
+    * uses reference equality for arrays). Unwraps arrays into sequences and
+    * recurses, so nested arrays are compared correctly against nested `Seq`s. */
+  def deepEquals(a: Any, b: Any): Boolean = (toSeqWrap(a), toSeqWrap(b)) match {
+    case (Left(av), Left(bv))   => av == bv
+    case (Right(as), Right(bs)) =>
+      as.length == bs.length && as.indices.forall(i => deepEquals(as(i), bs(i)))
+    case _ => false
+  }
+
+  private def toSeqWrap(x: Any): Either[Any, Seq[Any]] = x match {
+    case a: Array[?] => Right(a.asInstanceOf[Array[AnyRef]].toIndexedSeq)
+    case s: Seq[?]   => Right(s.toIndexedSeq)
+    case other       => Left(other)
+  }
+
   def duplicate(s: String): String = s + s
 
   case class A1(a2: A2)

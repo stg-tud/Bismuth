@@ -1,13 +1,11 @@
 package com.softwaremill.quicklens.test
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class CompileTimeTest extends AnyFlatSpec with Matchers {
+class CompileTimeTest extends munit.FunSuite {
   // #114
-  it should "not compile for too long in case of chained modify invocations" in {
+  test("not compile for too long in case of chained modify invocations") {
     val start = System.currentTimeMillis()
-    assertDoesNotCompile("""
+    assert(compileErrors("""
       case class B(a1: Double, a2: Double, a3: Double, a4: Double, a5: Double)
       case class C(b: B)
       
@@ -20,8 +18,8 @@ class CompileTimeTest extends AnyFlatSpec with Matchers {
         .modify(_.b.a3).setTo("")
         .modify(_.b.a4).setTo("")
         .modify(_.b.a5).setTo("")
-  """)
+  """).nonEmpty)
     val end = System.currentTimeMillis()
-    (end - start) shouldBe <=(5000L) // that's a lot anyway
+    assert((end - start) <= 5000L) // that's a lot anyway
   }
 }

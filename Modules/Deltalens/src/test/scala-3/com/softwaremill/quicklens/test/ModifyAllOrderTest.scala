@@ -1,12 +1,10 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
+class ModifyAllOrderTest extends munit.FunSuite {
   import ModifyAllOrderTest.*
 
-  it should "apply modifications in the correct order if child is first" in {
+  test("apply modifications in the correct order if child is first") {
     val lst: Cons = Cons.fromList(List(1, 2, 3)).get
 
     val expected: Cons = Cons.fromList(List(1, 2, 4)).get
@@ -24,10 +22,10 @@ class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
         case c => c
       }
 
-    res should be(expected)
+    assertEquals(res, expected)
   }
 
-  it should "apply modifications in the correct order if parent is first" in {
+  test("apply modifications in the correct order if parent is first") {
     val lst: Cons = Cons.fromList(List(1, 2, 3)).get
 
     val expected: Cons = Cons.fromList(List(1, 3, 4)).get
@@ -45,10 +43,10 @@ class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
         case c => c
       }
 
-    res should be(expected)
+    assertEquals(res, expected)
   }
 
-  it should "apply modifications in the correct order: child, parent, child" in {
+  test("apply modifications in the correct order: child, parent, child") {
     val lst: Cons = Cons.fromList(List(1, 2, 3)).get
 
     val expected: Cons = Cons.fromList(List(1, 3, 5)).get
@@ -67,10 +65,10 @@ class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
         case c => c
       }
 
-    res should be(expected)
+    assertEquals(res, expected)
   }
 
-  it should "apply modifications in the correct order: child, child, parent" in {
+  test("apply modifications in the correct order: child, child, parent") {
     val lst: Cons = Cons.fromList(List(1, 2, 3)).get
 
     val expected: Cons = Cons.fromList(List(1, 2, 5)).get
@@ -89,10 +87,10 @@ class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
         case c => c
       }
 
-    res should be(expected)
+    assertEquals(res, expected)
   }
 
-  it should "apply modifications in the correct order on option: child, child, parent" in {
+  test("apply modifications in the correct order on option: child, child, parent") {
     val lst: Option[Cons] = Cons.fromList(List(1, 2, 3))
 
     val expected: Option[Cons] = Cons.fromList(List(1, 2, 5))
@@ -111,10 +109,10 @@ class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
         case c => c
       }
 
-    res should be(expected)
+    assertEquals(res, expected)
   }
 
-  it should "apply modifications in the correct order on option: child, parent, child" in {
+  test("apply modifications in the correct order on option: child, parent, child") {
     val lst: Option[Cons] = Cons.fromList(List(1, 2, 3))
 
     val expected: Option[Cons] = Cons.fromList(List(1, 3, 5))
@@ -133,7 +131,7 @@ class ModifyAllOrderTest extends AnyFlatSpec with Matchers {
         case c => c
       }
 
-    res should be(expected)
+    assertEquals(res, expected)
   }
 }
 

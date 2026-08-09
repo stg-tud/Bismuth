@@ -1,8 +1,6 @@
 package com.softwaremill.quicklens
 package test
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 object ExtensionCopyTest {
   case class V(x: Double, y: Double, z: Double)
@@ -20,8 +18,8 @@ object ExtensionCopyTest {
   }
 }
 
-class ExtensionCopyTest extends AnyFlatSpec with Matchers {
-  it should "modify a simple class with an extension copy method" in {
+class ExtensionCopyTest extends munit.FunSuite {
+  test("modify a simple class with an extension copy method") {
     // this test does compile at the moment, because we search extensions in companions only
     /*
     class VecSimple(xp: Double, yp: Double) {
@@ -42,7 +40,7 @@ class ExtensionCopyTest extends AnyFlatSpec with Matchers {
      */
   }
 
-  it should "modify a simple class with an extension copy method in companion" in {
+  test("modify a simple class with an extension copy method in companion") {
     class VecCompanion(xp: Double, yp: Double) {
       val x = xp
       val y = yp
@@ -57,10 +55,10 @@ class ExtensionCopyTest extends AnyFlatSpec with Matchers {
 
     val a = VecCompanion(1, 2)
     val b = a.modify(_.x).using(_ + 10)
-    b.x shouldEqual 11
+    assert(b.x == 11.0)
   }
 
-  it should "modify a class with extension methods in companion" in {
+  test("modify a class with extension methods in companion") {
     case class V(xm: Double, ym: Double)
 
     class VecClass(val v: V)
@@ -77,14 +75,14 @@ class ExtensionCopyTest extends AnyFlatSpec with Matchers {
 
     val a = VecClass(1, 2)
     val b = a.modify(_.x).using(_ + 10)
-    b.x shouldEqual 11
+    assert(b.x == 11.0)
   }
 
-  it should "modify an opaque type with extension methods" in {
+  test("modify an opaque type with extension methods") {
     import ExtensionCopyTest.*
 
     val a = Vec(1, 2)
     val b = a.modify(_.x).using(_ + 10)
-    b.x shouldEqual 11
+    assert(b.x == 11.0)
   }
 }

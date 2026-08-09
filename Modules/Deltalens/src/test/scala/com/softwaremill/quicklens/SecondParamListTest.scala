@@ -1,12 +1,10 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 import scala.annotation.nowarn
 
-class SecondParamListTest extends AnyFlatSpec with Matchers {
-  it should "modify an object with second implicit param list" in {
+class SecondParamListTest extends munit.FunSuite {
+  test("modify an object with second implicit param list") {
     import com.softwaremill.quicklens.*
 
     @nowarn("id=E198")
@@ -19,10 +17,10 @@ class SecondParamListTest extends AnyFlatSpec with Matchers {
     given dd: Double = d
     val state2       = state1.modify(_.inside).setTo(true)
 
-    state1 should be(state2)
+    assertEquals(state1, state2)
   }
 
-  it should "should give a meaningful error for an object with more than one non-implicit param list" in {
+  test("should give a meaningful error for an object with more than one non-implicit param list") {
     import com.softwaremill.quicklens.*
 
     case class State(inside: Boolean)(d: Double)
@@ -33,6 +31,6 @@ class SecondParamListTest extends AnyFlatSpec with Matchers {
 
     given dd: Double = d
 
-    assertDoesNotCompile("state1.modify(_.inside).setTo(true)")
+    assert(compileErrors("state1.modify(_.inside).setTo(true)").nonEmpty)
   }: @nowarn("msg=unused")
 }

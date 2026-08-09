@@ -1,27 +1,27 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 import java.util.NoSuchElementException
 
-class ModifyOptionAtTest extends AnyFlatSpec with Matchers {
+class ModifyOptionAtTest extends munit.FunSuite {
 
-  it should "modify a Option with case class item" in {
-    modify(Option(1))(_.at).using(_ + 1) should be(Option(2))
+  test("modify a Option with case class item") {
+    assertEquals(modify(Option(1))(_.at).using(_ + 1), Option(2))
   }
 
-  it should "modify a Option in a case class hierarchy" in {
+  test("modify a Option in a case class hierarchy") {
     case class Foo(a: Int)
     case class Bar(foo: Foo)
     case class BarOpt(maybeBar: Option[Bar])
     case class BazOpt(barOpt: BarOpt)
-    modify(BazOpt(BarOpt(Some(Bar(Foo(4))))))(_.barOpt.maybeBar.at.foo.a).using(_ + 1) should be(
+    assertEquals(modify(BazOpt(BarOpt(Some(Bar(Foo(4))))))(_.barOpt.maybeBar.at.foo.a).using(_ + 1),
       BazOpt(BarOpt(Some(Bar(Foo(5)))))
     )
   }
 
-  it should "crashes on missing key" in {
-    an[NoSuchElementException] should be thrownBy modify(Option.empty[Int])(_.at).using(_ + 1)
+  test("crashes on missing key") {
+    intercept[NoSuchElementException] {
+      modify(Option.empty[Int])(_.at).using(_ + 1)
+    }
   }
 }

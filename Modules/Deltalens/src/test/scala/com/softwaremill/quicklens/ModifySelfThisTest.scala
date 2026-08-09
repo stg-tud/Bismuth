@@ -1,8 +1,6 @@
 package com.softwaremill.quicklens
 
 import com.softwaremill.quicklens.ModifySelfThisTest.*
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 object ModifySelfThisTest {
 
@@ -23,18 +21,18 @@ object ModifySelfThisTest {
   }
 }
 
-class ModifySelfThisTest extends AnyFlatSpec with Matchers {
-  it should "modify an object even in presence of self alias" in {
+class ModifySelfThisTest extends munit.FunSuite {
+  test("modify an object even in presence of self alias") {
     val s        = State(0)
     val modified = s.mod
 
-    modified.x shouldBe 1
+    assertEquals(modified.x, 1)
   }
 
-  it should "modify an object even in presence of self type" in {
+  test("modify an object even in presence of self type") {
     val s        = State(0)
     val modified = s.mod
 
-    modified.x shouldBe 1
+    assertEquals(modified.x, 1)
   }
 }

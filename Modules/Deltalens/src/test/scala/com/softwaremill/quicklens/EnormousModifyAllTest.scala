@@ -1,12 +1,10 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class EnormousModifyAllTest extends AnyFlatSpec with Matchers {
+class EnormousModifyAllTest extends munit.FunSuite {
   import EnormousModifyAllTest.*
 
-  it should "expand an enormous function" in {
+  test("expand an enormous function") {
     val c6 = C6(1)
     val c5 = C5(c6, c6, c6, c6)
     val c4 = C4(c5, c5, c5, c5)
@@ -29,7 +27,7 @@ class EnormousModifyAllTest extends AnyFlatSpec with Matchers {
         _.d.a.a.a.a.a
       )
       .using(_ + 1)
-    res should be(c1e)
+    assertEquals(res, c1e)
   }
 }
 

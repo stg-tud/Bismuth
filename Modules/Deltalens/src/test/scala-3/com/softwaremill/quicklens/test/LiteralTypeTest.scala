@@ -1,31 +1,30 @@
 package com.softwaremill.quicklens.test
 
 import com.softwaremill.quicklens.*
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 object LiteralTypeTestData {
   case class Test(f: "foo")
   case class Test1[A](f: A)
 }
 
-class LiteralTypeTest extends AnyFlatSpec with Matchers {
+class LiteralTypeTest extends munit.FunSuite {
   import LiteralTypeTestData.*
 
-  it should "modify a literal type field with an explicit parameter" in {
-    Test("foo").modify["foo"](_.f).setTo("foo") should be(Test("foo"))
+  test("modify a literal type field with an explicit parameter") {
+    assertEquals(Test("foo").modify["foo"](_.f).setTo("foo"), Test("foo"))
   }
 
-  it should "modify a literal type field as a type parameter with an explicit parameter" in {
-    Test1["foo"]("foo").modify["foo"](_.f).setTo("foo") should be(Test1("foo"))
+  test("modify a literal type field as a type parameter with an explicit parameter") {
+    assert(Test1["foo"]("foo").modify["foo"](_.f).setTo("foo") == Test1("foo"))
   }
 
-  it should "not compile for a wrong literal type" in
-  assertDoesNotCompile("""
+  test("not compile for a wrong literal type") {
+    assert(compileErrors("""
       import com.softwaremill.quicklens.*
       
       case class Test1[A](f: A)
       
       Test1["foo"]("foo").modify["foo"](_.f).setTo("bar")
-    """)
+    """).nonEmpty)
+  }
 }

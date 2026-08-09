@@ -1,14 +1,12 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class RepeatedModifyTest extends AnyFlatSpec with Matchers {
+class RepeatedModifyTest extends munit.FunSuite {
   import RepeatedModifyTest.*
 
-  it should "properly handle repeated modify invocations for different fields" in {
+  test("properly handle repeated modify invocations for different fields") {
     val c = C(B(1, 1, 1, 1, 1))
-    c
+    assertEquals(c
       .modify(_.b.a1)
       .setTo(0.0d)
       .modify(_.b.a2)
@@ -18,12 +16,12 @@ class RepeatedModifyTest extends AnyFlatSpec with Matchers {
       .modify(_.b.a4)
       .setTo(0.0d)
       .modify(_.b.a5)
-      .setTo(0.0d) shouldBe C(B(0, 0, 0, 0, 0))
+      .setTo(0.0d), C(B(0, 0, 0, 0, 0)))
   }
 
-  it should "properly handle repeated modify invocations for the same field" in {
+  test("properly handle repeated modify invocations for the same field") {
     val c = C(B(1, 1, 1, 1, 1))
-    c
+    assertEquals(c
       .modify(_.b.a1)
       .setTo(0.0d)
       .modify(_.b.a1)
@@ -33,7 +31,7 @@ class RepeatedModifyTest extends AnyFlatSpec with Matchers {
       .modify(_.b.a1)
       .setTo(3.0d)
       .modify(_.b.a1)
-      .setTo(4.0d) shouldBe C(B(4, 1, 1, 1, 1))
+      .setTo(4.0d), C(B(4, 1, 1, 1, 1)))
   }
 }
 

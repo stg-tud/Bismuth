@@ -1,8 +1,6 @@
 package com.softwaremill.quicklens
 
 import com.softwaremill.quicklens.TestData.duplicate
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 /** This test data is in the same file as the test to ensure correct compilation order. See
   * https://issues.scala-lang.org/browse/SI-7046.
@@ -46,26 +44,26 @@ object SealedTestData {
     List[Pet](Fish("Finn, Jr."), Cat("Catia, Jr."), Dog("Douglas, Jr."))
 }
 
-class SealedTest extends AnyFlatSpec with Matchers {
+class SealedTest extends munit.FunSuite {
   import SealedTestData.*
 
-  it should "modify a field in a sealed trait" in {
-    modify(p1)(_.x).using(duplicate) should be(p1dup)
+  test("modify a field in a sealed trait") {
+    assertEquals(modify(p1)(_.x).using(duplicate), p1dup)
   }
 
-  it should "modify a field in a sealed trait through a Functor" in {
-    modify(g1)(_.p1.each.x).using(duplicate) should be(g1dup)
+  test("modify a field in a sealed trait through a Functor") {
+    assertEquals(modify(g1)(_.p1.each.x).using(duplicate), g1dup)
   }
 
-  it should "modify a Functor field in a sealed trait" in {
-    modify(g1)(_.p1.each.f.each).using(duplicate) should be(g1eachdup)
+  test("modify a Functor field in a sealed trait") {
+    assertEquals(modify(g1)(_.p1.each.f.each).using(duplicate), g1eachdup)
   }
 
-  it should "modify a field in a hierarchy of sealed traits" in {
-    modify(p2)(_.x).using(duplicate) should be(p2dup)
+  test("modify a field in a hierarchy of sealed traits") {
+    assertEquals(modify(p2)(_.x).using(duplicate), p2dup)
   }
 
-  it should "modify a list of pets from the example" in {
-    modify(pets)(_.each.name).using(_ + ", Jr.") should be(juniorPets)
+  test("modify a list of pets from the example") {
+    assertEquals(modify(pets)(_.each.name).using(_ + ", Jr."), juniorPets)
   }
 }

@@ -57,8 +57,4 @@ object Dependencies {
 
   def scalatags(conf: Configuration = Compile) = libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % conf
 
-  val scalatest = libraryDependencies ++= Seq("flatspec", "shouldmatchers").map(m =>
-    "org.scalatest" %% s"scalatest-$m" % "3.2.20" % Test
-  )
-
 }

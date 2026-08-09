@@ -1,12 +1,10 @@
 package com.softwaremill.quicklens
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class RepeatedModifyAllTest extends AnyFlatSpec with Matchers {
+class RepeatedModifyAllTest extends munit.FunSuite {
   import RepeatedModifyAllTest.*
 
-  it should "expand a very long repeated function" in {
+  test("expand a very long repeated function") {
     val c6 = C6(1)
     val c5 = C5(c6)
     val c4 = C4(c5)
@@ -35,10 +33,10 @@ class RepeatedModifyAllTest extends AnyFlatSpec with Matchers {
         _.a.a.a.a.a.a
       )
       .setTo(2)
-    res should be(c1e)
+    assertEquals(res, c1e)
   }
 
-  it should "expand a very long repeated function correct number of times" in {
+  test("expand a very long repeated function correct number of times") {
     val c6 = C6(1)
     val c5 = C5(c6)
     val c4 = C4(c5)
@@ -67,7 +65,7 @@ class RepeatedModifyAllTest extends AnyFlatSpec with Matchers {
         _.a.a.a.a.a.a
       )
       .using(_ + 1)
-    res should be(c1e)
+    assertEquals(res, c1e)
   }
 }
 
