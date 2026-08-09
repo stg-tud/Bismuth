@@ -1,4 +1,4 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
 
 class EnormousModifyAllTest extends munit.FunSuite {

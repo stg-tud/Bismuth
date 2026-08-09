@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.ModifySelfThisTest.*
+import com.softwaremill.deltalens.ModifySelfThisTest.*
 
 object ModifySelfThisTest {
 

@@ -1,6 +1,6 @@
 package ex2025recipebook
 
-import com.softwaremill.quicklens.*
+import com.softwaremill.deltalens.*
 import ex2025recipebook.RecipeBook.Delta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap

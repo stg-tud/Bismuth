@@ -1,7 +1,7 @@
-package com.softwaremill.quicklens.scala3
+package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.quicklens.*
-import com.softwaremill.quicklens.TestData.*
+import com.softwaremill.deltalens.*
+import com.softwaremill.deltalens.TestData.*
 
 class ModitySealedAbstractClass extends munit.FunSuite {
   test("Modify abstract class hierarchy") {

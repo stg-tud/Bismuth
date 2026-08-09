@@ -1,7 +1,7 @@
-package com.softwaremill.quicklens.scala3
+package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.quicklens.*
-import com.softwaremill.quicklens.TestData.duplicate
+import com.softwaremill.deltalens.*
+import com.softwaremill.deltalens.TestData.duplicate
 
 object EnumTestData {
   enum P3(val a: String):

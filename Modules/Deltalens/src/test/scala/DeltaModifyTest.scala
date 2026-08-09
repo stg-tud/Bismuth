@@ -1,11 +1,11 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.*
+import com.softwaremill.deltalens.*
 import rdts.base.{Bottom, LocalUid}
 import rdts.datatypes.*
 import rdts.time.{CausalTime, Dots}
 
-/** Tests for [[com.softwaremill.quicklens.deltaModify]].
+/** Tests for [[com.softwaremill.deltalens.deltaModify]].
   *
   * Unlike plain `modify`, `deltaModify` does not rebuild the whole value: it produces a *delta*, i.e. only the
   * modification, with every field that is not on the modification path replaced by its `Bottom.empty` value (the

@@ -1,4 +1,4 @@
-package com.softwaremill.quicklens.scala3
+package com.softwaremill.deltalens.scala3
 
 class CompileTimeTest extends munit.FunSuite {
   // #114

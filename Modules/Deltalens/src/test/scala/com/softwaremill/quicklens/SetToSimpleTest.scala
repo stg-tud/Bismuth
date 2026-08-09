@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.TestData.*
+import com.softwaremill.deltalens.TestData.*
 
 class SetToSimpleTest extends munit.FunSuite {
   test("set a new value of a single-nested case class field") {

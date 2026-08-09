@@ -1,4 +1,4 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
 import scala.collection.immutable.{HashMap, ListMap, SortedMap}
 

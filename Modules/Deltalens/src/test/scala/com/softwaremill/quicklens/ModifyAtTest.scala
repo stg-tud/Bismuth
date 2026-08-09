@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.TestData.*
+import com.softwaremill.deltalens.TestData.*
 
 class ModifyAtTest extends munit.FunSuite {
 

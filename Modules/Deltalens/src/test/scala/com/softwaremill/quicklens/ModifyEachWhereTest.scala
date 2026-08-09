@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.TestData.*
+import com.softwaremill.deltalens.TestData.*
 
 class ModifyEachWhereTest extends munit.FunSuite {
   test("modify a single-nested optional case class field only if the condition returns true") {

@@ -1,12 +1,12 @@
 package com.softwaremill
 
-import com.softwaremill.quicklens.QuicklensMacros.*
+import com.softwaremill.deltalens.QuicklensMacros.*
 
 import scala.annotation.compileTimeOnly
 import scala.collection.SortedMap
 import scala.reflect.ClassTag
 
-package object quicklens {
+package object deltalens {
 
   // #114: obj shouldn't be inline since we want to reference the parameter by-name, rather then embedding the whole
   // expression whenever obj is used; this is especially important for chained .modify invocations
@@ -102,7 +102,7 @@ package object quicklens {
   def modifyLens[T]: LensHelper[T]         = LensHelper[T]()
   def modifyAllLens[T]: MultiLensHelper[T] = MultiLensHelper[T]()
 
-  case class LensHelper[T] private[quicklens] () {
+  case class LensHelper[T] private[deltalens]() {
     /** Create a (non-delta) lens, returning the full modified object (all fields preserved). */
     inline def apply[U](inline path: T => U): PathLazyModify[T, U] =
       ${ modifyLensApplyImpl('path, produceDelta = false) }
@@ -112,7 +112,7 @@ package object quicklens {
       ${ modifyLensApplyImpl('path, produceDelta = true) }
   }
 
-  case class MultiLensHelper[T] private[quicklens] () {
+  case class MultiLensHelper[T] private[deltalens]() {
     /** Create a (non-delta) multi lens, returning the full modified object. */
     inline def apply[U](inline path1: T => U, inline paths: (T => U)*): PathLazyModify[T, U] = ${
       modifyAllLensApplyImpl('path1, 'paths, produceDelta = false)

@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package com.softwaremill.deltalens
 
-import com.softwaremill.quicklens.ModifyAliasTest.*
+import com.softwaremill.deltalens.ModifyAliasTest.*
 
 object ModifyAliasTest {
 
