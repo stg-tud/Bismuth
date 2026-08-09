@@ -37,6 +37,15 @@ class ReactorWithoutAPITest extends FunSuite {
 
       input.trackDependencies(Set())
 
+      // Applies only leading SetActions, stopping before the first NextAction.
+      @tailrec
+      def applyLeadingSets[A](stage: ReactorStage[T]): ReactorStage[T] =
+        stage.stages.actions match {
+          case SetAction(v) :: tail =>
+            applyLeadingSets(stage.copy(currentValue = v, stages = StageBuilder(tail)))
+          case _ => stage
+        }
+
       @tailrec
       def processActions[A](stage: ReactorStage[T]): ReactorStage[T] =
         stage.stages.actions match {
@@ -47,8 +56,9 @@ class ReactorWithoutAPITest extends FunSuite {
             eventValue match {
               case None        => stage
               case Some(value) =>
-                val stages = handler(value)
-                processActions(stage.copy(stages = stages))
+                // Apply leading SetActions from handler result, but stop
+                // before the next NextAction to avoid double-consuming the event.
+                applyLeadingSets(stage.copy(stages = handler(value)))
             }
         }
 
@@ -165,7 +175,7 @@ class ReactorWithoutAPITest extends FunSuite {
     assertEquals(transaction(reactor) { at ?=> at.now(reactor) }, 1)
   }
 
-  test("ReactorStages can be nested".ignore) {
+  test("ReactorStages can be nested") {
     val e1 = Evt[Unit]()
 
     val reactor = Reactor.once(0, Set(e1)) {
