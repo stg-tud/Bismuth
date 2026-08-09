@@ -9,7 +9,6 @@ evictionErrorLevel := Level.Info
 lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
   channels.js(scala3VersionString),
   channels.jvm(scala3VersionString),
-  deltalens,
   exJVM,
   exWeb,
   lore.js(scala3VersionString),
@@ -71,17 +70,9 @@ lazy val channels = (projectMatrix in file("Modules/Channels"))
   )
   .nativePlatform(scalaVersions = Settings.scalaVersions)
 
-lazy val deltalens = project.in(file("Modules/Deltalens"))
-  .dependsOn(rdts.jvm(scala3VersionString))
-  .settings(
-    scala3defaultsExtra,
-    Dependencies.munit,
-  )
-
 lazy val exJVM = project.in(file("Modules/exJVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(
-    deltalens,
     reactives.jvm(scala3VersionString),
     channels.jvm(scala3VersionString) % "compile->compile;test->test"
   )
