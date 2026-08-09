@@ -18,7 +18,8 @@ class ChannelConnectionManager(
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
 ) extends ConnectionManager {
-  private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+  // accept loop and per-connection receive loops block indefinitely, so each needs its own thread
+  private val executor: ExecutorService = Executors.newCachedThreadPool()
   private given ec: ExecutionContext    =
     if disableLogging
     then ExecutionContext.fromExecutor(executor, _ => ())

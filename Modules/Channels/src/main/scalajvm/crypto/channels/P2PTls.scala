@@ -184,6 +184,9 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     }
 
     private[P2PTls] def receiveLoopBlocking()(using abort: Abort): Unit =
+      // force the lazy receive callback now, so the receiver is notified about the established
+      // connection before (and independent of) the first received message
+      val _ = receivedMessageCallback
       inputStream.synchronized {
         try
           while !abort.closeRequest do
