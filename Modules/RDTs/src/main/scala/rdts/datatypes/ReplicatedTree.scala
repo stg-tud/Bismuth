@@ -1,10 +1,10 @@
 package rdts.datatypes
 
 import rdts.base.{Lattice, LocalUid}
+import rdts.datatypes.ReplicatedTree.Node
 import rdts.time.{Dot, Dots}
 
 import scala.collection.mutable as mutable
-import rdts.datatypes.ReplicatedTree.Node
 
 case class ReplicatedTree[A](
     elements: Map[Dot, ReplicatedTree.Node[A]],

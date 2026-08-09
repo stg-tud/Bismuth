@@ -186,7 +186,11 @@ class HyParViewStateMachineTest extends FunSuite {
       actions,
       List(
         OverlayAction.ActiveConnectionRemoved(activePeer.uid),
-        OverlayAction.Connect(activePeer.channelConnectors, activePeer.uid, Some(Neighbor(defaultSelf, highPriority = true)))
+        OverlayAction.Connect(
+          activePeer.channelConnectors,
+          activePeer.uid,
+          Some(Neighbor(defaultSelf, highPriority = true))
+        )
       )
     )
   }

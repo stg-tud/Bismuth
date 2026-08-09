@@ -1,5 +1,6 @@
 package com.softwaremill.deltalens
 
+import com.softwaremill.quicklens.deltalens.*
 
 import java.util.NoSuchElementException
 
@@ -14,7 +15,8 @@ class ModifyOptionAtTest extends munit.FunSuite {
     case class Bar(foo: Foo)
     case class BarOpt(maybeBar: Option[Bar])
     case class BazOpt(barOpt: BarOpt)
-    assertEquals(modify(BazOpt(BarOpt(Some(Bar(Foo(4))))))(_.barOpt.maybeBar.at.foo.a).using(_ + 1),
+    assertEquals(
+      modify(BazOpt(BarOpt(Some(Bar(Foo(4))))))(_.barOpt.maybeBar.at.foo.a).using(_ + 1),
       BazOpt(BarOpt(Some(Bar(Foo(5)))))
     )
   }

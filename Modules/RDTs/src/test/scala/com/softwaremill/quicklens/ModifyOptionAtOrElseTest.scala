@@ -1,5 +1,5 @@
 package com.softwaremill.deltalens
-
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyOptionAtOrElseTest extends munit.FunSuite {
 
@@ -16,7 +16,8 @@ class ModifyOptionAtOrElseTest extends munit.FunSuite {
     case class Bar(foo: Foo)
     case class BarOpt(maybeBar: Option[Bar])
     case class BazOpt(barOpt: BarOpt)
-    assertEquals(modify(BazOpt(BarOpt(None)))(_.barOpt.maybeBar.atOrElse(Bar(Foo(5))).foo.a).using(_ + 1),
+    assertEquals(
+      modify(BazOpt(BarOpt(None)))(_.barOpt.maybeBar.atOrElse(Bar(Foo(5))).foo.a).using(_ + 1),
       BazOpt(BarOpt(Some(Bar(Foo(6)))))
     )
   }

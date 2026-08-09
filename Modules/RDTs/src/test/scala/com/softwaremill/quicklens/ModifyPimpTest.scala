@@ -1,6 +1,8 @@
 package com.softwaremill.deltalens
 
 import com.softwaremill.deltalens.TestData.*
+import com.softwaremill.quicklens.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyPimpTest extends munit.FunSuite {
   test("modify a field once") {
@@ -8,10 +10,13 @@ class ModifyPimpTest extends munit.FunSuite {
   }
 
   test("modify a deeply-nested case class field") {
-    assertEquals(a1.modify(_.a2.a3.a4.a5.name)
-      .using(duplicate)
-      .modify(_.a2.a3.a4.a5.name)
-      .using(duplicate), a1dupdup)
+    assertEquals(
+      a1.modify(_.a2.a3.a4.a5.name)
+        .using(duplicate)
+        .modify(_.a2.a3.a4.a5.name)
+        .using(duplicate),
+      a1dupdup
+    )
   }
 
   test("modify several fields") {

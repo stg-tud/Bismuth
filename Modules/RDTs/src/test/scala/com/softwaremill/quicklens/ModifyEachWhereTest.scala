@@ -1,6 +1,8 @@
 package com.softwaremill.deltalens
 
 import com.softwaremill.deltalens.TestData.*
+import com.softwaremill.quicklens.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyEachWhereTest extends munit.FunSuite {
   test("modify a single-nested optional case class field only if the condition returns true") {
@@ -35,9 +37,12 @@ class ModifyEachWhereTest extends munit.FunSuite {
   test("allow referencing local variable 1") {
     val lang2 = "hey"
 
-    assertEquals(Seq(Foo("asdf"))
-      .modify(_.eachWhere(_.field != lang2).field)
-      .setTo(lang2), Seq(Foo("hey")))
+    assertEquals(
+      Seq(Foo("asdf"))
+        .modify(_.eachWhere(_.field != lang2).field)
+        .setTo(lang2),
+      Seq(Foo("hey"))
+    )
   }
 
   test("not modify an optional case class field if it is none regardless of the condition") {
@@ -46,8 +51,11 @@ class ModifyEachWhereTest extends munit.FunSuite {
   }
 
   test("modify only those list elements where the condition returns true") {
-    assertEquals(modify(y1)(_.y2.y3.eachWhere(_.y4.map(_.name) == Some("d2")).y4.each.name)
-      .using(duplicate), y1at1dup)
+    assertEquals(
+      modify(y1)(_.y2.y3.eachWhere(_.y4.map(_.name) == Some("d2")).y4.each.name)
+        .using(duplicate),
+      y1at1dup
+    )
   }
 
   test("allow .each at then end only if the condition returns true") {

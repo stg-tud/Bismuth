@@ -1,4 +1,5 @@
 package com.softwaremill.deltalens
+import com.softwaremill.quicklens.deltalens.*
 
 import com.softwaremill.deltalens.ModifyAliasTest.*
 

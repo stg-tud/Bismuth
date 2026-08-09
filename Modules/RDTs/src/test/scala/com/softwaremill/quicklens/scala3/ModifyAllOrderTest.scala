@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyAllOrderTest extends munit.FunSuite {
   import ModifyAllOrderTest.*

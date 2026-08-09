@@ -1,5 +1,6 @@
-package com.softwaremill.deltalens
+package com.softwaremill.quicklens
 
+import com.softwaremill.quicklens.deltalens.{PathLazyModify, PathModify}
 import rdts.base.Bottom
 
 import scala.quoted.*
@@ -305,7 +306,7 @@ object QuicklensMacros {
 
     def isSum(sym: Symbol): Boolean =
       (sym.flags.is(Flags.Enum) && !sym.flags.is(Flags.Case)) ||
-        (sym.flags.is(Flags.Sealed) && (sym.flags.is(Flags.Trait) || sym.flags.is(Flags.Abstract)))
+      (sym.flags.is(Flags.Sealed) && (sym.flags.is(Flags.Trait) || sym.flags.is(Flags.Abstract)))
 
     def findCompanionLikeObject(objSymbol: Symbol): Symbol =
       if objSymbol.companionModule.exists then objSymbol.companionModule

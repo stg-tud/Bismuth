@@ -2,7 +2,7 @@ package ex2026accessControl.travelplanner
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import com.softwaremill.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 import ex2026accessControl.permission_pane.SelectorFactory
 import ex2026accessControl.travelplanner.TravelPlan.{*, given}
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}

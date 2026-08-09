@@ -1,13 +1,18 @@
 package com.softwaremill.deltalens
 
 import com.softwaremill.deltalens.TestData.*
+import com.softwaremill.quicklens.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyIndexTest extends munit.FunSuite {
 
   test("modify a non-nested list with case class item") {
     assertEquals(modify(l1)(_.index(2).a4.a5.name).using(duplicate), l1at2dup)
-    assertEquals(modify(l1)(_.index(2))
-      .using(a3 => modify(a3)(_.a4.a5.name).using(duplicate)), l1at2dup)
+    assertEquals(
+      modify(l1)(_.index(2))
+        .using(a3 => modify(a3)(_.a4.a5.name).using(duplicate)),
+      l1at2dup
+    )
   }
 
   test("modify a nested list using index") {

@@ -1,5 +1,6 @@
 package com.softwaremill.deltalens
 
+import com.softwaremill.quicklens.deltalens.*
 
 class EnormousModifyAllTest extends munit.FunSuite {
   import EnormousModifyAllTest.*

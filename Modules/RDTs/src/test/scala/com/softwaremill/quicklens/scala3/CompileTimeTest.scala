@@ -8,7 +8,7 @@ class CompileTimeTest extends munit.FunSuite {
       case class B(a1: Double, a2: Double, a3: Double, a4: Double, a5: Double)
       case class C(b: B)
       
-      import com.softwaremill.quicklens.*
+      import com.softwaremill.quicklens.deltalens.*
       
       val c = C(B(1, 1, 1, 1, 1))
       c

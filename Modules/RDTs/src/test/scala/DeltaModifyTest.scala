@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens
 
-import com.softwaremill.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 import rdts.base.{Bottom, LocalUid}
 import rdts.datatypes.*
 import rdts.time.{CausalTime, Dots}
@@ -39,7 +39,7 @@ class DeltaModifyTest extends munit.FunSuite {
   val missing: Person        = Person("Missing", 0, Address("Nowhere", 0))
   val withMiddle: WithMiddle = WithMiddle(Some("Marie"), 1)
 
-  val team: Team = Team("Team1", List(alice, bob))
+  val team: Team         = Team("Team1", List(alice, bob))
   val registry: Registry =
     Registry(Map("key1" -> alice, "key2" -> bob))
 
@@ -318,9 +318,9 @@ class DeltaModifyTest extends munit.FunSuite {
 
   test("deltaModifyLens can be composed with andThenModify") {
     // Compose two delta lenses: first navigate into address, then into street of that address
-    val addressLens  = modifyLens[Person].delta(_.address)
-    val streetLens   = modifyLens[Address].apply(_.street)
-    val composed     = addressLens.andThenModify(streetLens)
+    val addressLens = modifyLens[Person].delta(_.address)
+    val streetLens  = modifyLens[Address].apply(_.street)
+    val composed    = addressLens.andThenModify(streetLens)
 
     val res = composed.using(_.toUpperCase)(alice)
 

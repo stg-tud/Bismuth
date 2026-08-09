@@ -1,4 +1,4 @@
-import com.softwaremill.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 import rdts.base.Bottom
 import rdts.datatypes.LastWriterWins
 

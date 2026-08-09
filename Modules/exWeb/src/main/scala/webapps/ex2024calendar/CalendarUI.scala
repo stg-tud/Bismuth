@@ -1,6 +1,7 @@
 package webapps.ex2024calendar
 
 import lore.dsl.{Interaction, InteractionWithExecutes, Invariant}
+import org.scalajs.dom.HTMLInputElement
 import org.scalajs.dom.html.{Div, Input}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.ReplicatedSet
@@ -11,7 +12,6 @@ import reactives.extra.Tags.*
 import scalatags.JsDom.all.*
 import webapps.Storing
 import webapps.ex2024calendar.Codecs.given
-import org.scalajs.dom.HTMLInputElement
 
 class NewAppointment(private val typeName: String) {
 

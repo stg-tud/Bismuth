@@ -3,9 +3,11 @@ package com.softwaremill.deltalens
 import scala.collection.immutable.{HashMap, ListMap, SortedMap}
 
 object TestData {
+
   /** Deep structural equality that compares arrays element-wise (Scala's `==`
     * uses reference equality for arrays). Unwraps arrays into sequences and
-    * recurses, so nested arrays are compared correctly against nested `Seq`s. */
+    * recurses, so nested arrays are compared correctly against nested `Seq`s.
+    */
   def deepEquals(a: Any, b: Any): Boolean = (toSeqWrap(a), toSeqWrap(b)) match {
     case (Left(av), Left(bv))   => av == bv
     case (Right(as), Right(bs)) =>

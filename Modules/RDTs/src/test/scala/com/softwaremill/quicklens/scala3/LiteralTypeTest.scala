@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens.scala3
 
-import com.softwaremill.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 
 object LiteralTypeTestData {
   case class Test(f: "foo")
@@ -20,7 +20,7 @@ class LiteralTypeTest extends munit.FunSuite {
 
   test("not compile for a wrong literal type") {
     assert(compileErrors("""
-      import com.softwaremill.quicklens.*
+      import com.softwaremill.quicklens.deltalens.*
       
       case class Test1[A](f: A)
       

@@ -1,5 +1,6 @@
 package com.softwaremill.deltalens
 
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyOptionIndexTest extends munit.FunSuite {
 
@@ -12,7 +13,8 @@ class ModifyOptionIndexTest extends munit.FunSuite {
     case class Bar(foo: Foo)
     case class BarOpt(maybeBar: Option[Bar])
     case class BazOpt(barOpt: BarOpt)
-    assertEquals(modify(BazOpt(BarOpt(Some(Bar(Foo(4))))))(_.barOpt.maybeBar.index.foo.a).using(_ + 1),
+    assertEquals(
+      modify(BazOpt(BarOpt(Some(Bar(Foo(4))))))(_.barOpt.maybeBar.index.foo.a).using(_ + 1),
       BazOpt(BarOpt(Some(Bar(Foo(5)))))
     )
   }

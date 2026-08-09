@@ -1,5 +1,6 @@
 package com.softwaremill.deltalens
 
+import com.softwaremill.quicklens.deltalens.*
 import com.softwaremill.deltalens.TestData.duplicate
 
 /** This test data is in the same file as the test to ensure correct compilation order. See

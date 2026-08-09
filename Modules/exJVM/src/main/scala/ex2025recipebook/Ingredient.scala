@@ -1,6 +1,6 @@
 package ex2025recipebook
 
-import com.softwaremill.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 import ex2025recipebook.Ingredient.{Delta, stringBottom}
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.LastWriterWins

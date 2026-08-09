@@ -1,6 +1,8 @@
 package com.softwaremill.deltalens
 
 import com.softwaremill.deltalens.TestData.*
+import com.softwaremill.quicklens.deltalens.*
+import com.softwaremill.quicklens.deltalens.*
 
 class ModifyMapIndexTest extends munit.FunSuite {
 

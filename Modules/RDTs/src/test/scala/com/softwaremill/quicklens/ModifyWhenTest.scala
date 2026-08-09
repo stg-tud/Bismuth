@@ -1,5 +1,6 @@
 package com.softwaremill.deltalens
 
+import com.softwaremill.quicklens.deltalens.*
 
 object ModifyWhenTestData {
   trait Animal
@@ -41,12 +42,15 @@ class ModifyWhenTest extends munit.FunSuite {
   }
 
   test("modify a field in a subtype through a Functor") {
-    assertEquals(zoo
-      .modifyAll(
-        _.animals.each.when[Dog].age,
-        _.animals.each.when[Cat].ages.at(0)
-      )
-      .using(_ + 1), olderZoo)
+    assertEquals(
+      zoo
+        .modifyAll(
+          _.animals.each.when[Dog].age,
+          _.animals.each.when[Cat].ages.at(0)
+        )
+        .using(_ + 1),
+      olderZoo
+    )
   }
 
   test("modify a field in a subtypes (parameterized)") {
