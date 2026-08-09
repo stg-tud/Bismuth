@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
+package com.softwaremill.quicklens.scala3
 
-import munit.BeforeEach
+import com.softwaremill.quicklens.*
 
 class ModifyAllOptimizedTest extends munit.FunSuite {
   import ModifyAllOptimizedTest.*

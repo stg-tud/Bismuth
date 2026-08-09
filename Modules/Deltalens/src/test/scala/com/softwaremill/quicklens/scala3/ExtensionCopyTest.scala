@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
-package test
+package com.softwaremill.quicklens.scala3
 
+import com.softwaremill.quicklens.*
 
 object ExtensionCopyTest {
   case class V(x: Double, y: Double, z: Double)

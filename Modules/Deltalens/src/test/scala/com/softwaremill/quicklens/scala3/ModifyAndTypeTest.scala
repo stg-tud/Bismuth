@@ -1,6 +1,7 @@
-package com.softwaremill.quicklens
+package com.softwaremill.quicklens.scala3
 
-import com.softwaremill.quicklens.ModifyAndTypeTest.*
+import com.softwaremill.quicklens.*
+import ModifyAndTypeTest.*
 
 object ModifyAndTypeTest {
   case class A(a: Int) extends B

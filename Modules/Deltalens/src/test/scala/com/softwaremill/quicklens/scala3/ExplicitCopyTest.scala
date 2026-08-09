@@ -1,6 +1,6 @@
-package com.softwaremill.quicklens
-package test
+package com.softwaremill.quicklens.scala3
 
+import com.softwaremill.quicklens.*
 
 class ExplicitCopyTest extends munit.FunSuite {
   test("modify a class with an explicit copy method") {

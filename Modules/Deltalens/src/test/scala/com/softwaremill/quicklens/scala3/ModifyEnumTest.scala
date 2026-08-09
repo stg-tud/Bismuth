@@ -1,4 +1,4 @@
-package com.softwaremill.quicklens.test
+package com.softwaremill.quicklens.scala3
 
 import com.softwaremill.quicklens.*
 import com.softwaremill.quicklens.TestData.duplicate
