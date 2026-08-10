@@ -1,11 +1,20 @@
-= Changelog
+= Changelog and Repo Notes
 
 == Known issues
 
 • warning: classpath set repeatedly during doc:
 	:link{https://github.com/scala/scala3/issues/22875}
 
-== v0.38.0
+
+== Changelog
+
+
+# v.next
+
+• integrate deltalens into RDTs project
+
+
+# v0.38.0
 
 •: Reactives
 	 • fix reactive tags integration
@@ -34,7 +43,7 @@
 
 
 
-== v0.37.0
+# v0.37.0
 :date = 2024-12-12
 
 Scala 3.5 based release
@@ -53,10 +62,10 @@ Scala 3.5 based release
 • key-value store implementation case study
 
 
-== v0.36.0
+# v0.36.0
 :date = 2024-08-24
 
-# API changes
+## API changes
 
 • rename module imports to use generic names:
 	• rescala -> reactives
@@ -76,7 +85,7 @@ Scala 3.5 based release
 	• no more extensions based wrapped APIs
 	• more systematic IDs
 
-# Extra modules
+## Extra modules
 
 • reactive lenses experiments
 • lore is now part of the repo (not included in releases)
@@ -88,19 +97,19 @@ Scala 3.5 based release
 • remove the graph compiler module (historical now)
 • add webview experiments
 
-# Internal improvements
+## Internal improvements
 
 • migrate all tests to munit
 • compile with safe init and explicit nulls (most modules)
 • make a special propagation phase for follow-up transactions (this is still not a well-designed area …)
 
 
-== v0.35.1
+# v0.35.1
 :date = 2024-03-08
 
 • update Scala version to 3.3.3 due to incompatible release
 
-== v0.35.0
+# v0.35.0
 :date = 2024-02-24
 
 This is a smaller release meant to mark a stable point before incompatible changes.
@@ -111,10 +120,10 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • RDTs
 	• remove dotset/map/fun, now generically generated from maps
 
-== v0.34.0
+# v0.34.0
 :date = 2023-11-10
 
-# Reactives
+## Reactives
 
 • drop Scala 2 support
 	• We kept this around for compatibility with Scala Loci case studies, but those will keep working just fine with 0.33.
@@ -134,7 +143,7 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • add snap to snapshot some signals when an event triggers (like map, but ignoring the event parameter)
 • enable debugger hooks
 
-# RDTs
+## RDTs
 
 • generate lattices from orderings
 • more systematic causal time implementation and use
@@ -142,13 +151,13 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • drop decompose lattice and normal lattice distinction, decomposition is now simply a best effort feature
 
 
-== v0.33.1
+# v0.33.1
 :date = 2024-06-01
 
 • fix default signal and event expressions in JavaScript
 
 
-== v0.33.0
+# v0.33.0
 :date = 2023-02-22
 
 • move errant new transactions during propagation to observer phase
@@ -158,7 +167,7 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • simplify Lattices inheritance structure
 
 
-== v0.32.0
+# v0.32.0
 :date = 2022-12-31
 
 • automatic derivation of replicated data types
@@ -167,7 +176,7 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • move incremental collections' thesis results into main repository
 
 
-== v0.31.0
+# v0.31.0
 :date = 2021-12-07
 
 • drop checked macro support, use snapshot helpers instead
@@ -176,7 +185,7 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • internal refactoring for Scala 3 support (-macros)
 
 
-== v0.30.0
+# v0.30.0
 :date = 2020-04-10
 
 • update ScalaJS to 1.0
@@ -185,22 +194,22 @@ This is a smaller release meant to mark a stable point before incompatible chang
 • more CRDT experiments
 
 
-== v0.29.0
+# v0.29.0
 :date = 2019-09-15
 
 • update scala-loci version to 0.3.0
 
-== v0.28.0
+# v0.28.0
 :date = 2019-09-08
 
 • fix rescalatags observer behavior
 
-== v0.27.0
+# v0.27.0
 :date = 2019-09-07
 
 Include small external projects into the main project. This simplifies publishing and makes experimental features available in the published versions.
 
-== v0.26.0
+# v0.26.0
 :date = 2019-07-14
 
 • enable .value use in filter and collect macros
@@ -209,14 +218,14 @@ Include small external projects into the main project. This simplifies publishin
 • improve automatic name generation of reactives
 • update dependencies
 
-== v0.25.0
+# v0.25.0
 :date = 2019-03-31
 
 • many improvements to rescalatags
 • internal code cleanup and refactoring
 • CRDT library and distribution based on loci cleanups
 
-== v0.24.0
+# v0.24.0
 :date = 2018-07-14
 
 • move default import to rescala.default
@@ -224,12 +233,12 @@ Include small external projects into the main project. This simplifies publishin
 • improve reactive macro cut out
 • better support for restoration
 
-== v0.23.0
+# v0.23.0
 :date = 2018-05-07
 
 • no notes
 
-== v0.22.0
+# v0.22.0
 :date = 2018-02-25
 
 • add experimental multi fold events
@@ -237,31 +246,31 @@ Include small external projects into the main project. This simplifies publishin
 • rescalatags can now handle frags
 • internal refactorings
 
-== v0.21.1
+# v0.21.1
 :date = 2018-01-28
 
 • fix infinite loop when starting turns in observers
 
-== v0.21.0
+# v0.21.0
 :date = 2018-01-28
 
 • Reactive expressions are now static by default, and complain if any dynamic access happens.
 • Event.map is now also a macro and allows accessing reactives.
 • Internal interface cleanups and performance improvements.
 
-== v0.20.0
+# v0.20.0
 :date = 2017-11-14
 
 • no notes
 
-== v0.19.0
+# v0.19.0
 :date = 2016-12-21
 
 This is mostly a maintenance release to support Scala 2.12.
 
 • add Observable type alias to engine
 
-== v0.18.0
+# v0.18.0
 :date = 2016-09-19
 
 • many fixes and improvements for the Signal macro
@@ -274,7 +283,7 @@ This is mostly a maintenance release to support Scala 2.12.
 • add reactive streams compatibility layer
 • allow garbage collection of unused downstream reactives
 
-== v0.17.0
+# v0.17.0
 :date = 2016-07-04
 
 • embed RESwing
@@ -282,25 +291,25 @@ This is mostly a maintenance release to support Scala 2.12.
 • update locksweep semantics to match parrp (according to tests)
 • release locks before observer phase
 
-== v0.16.0
+# v0.16.0
 :date = 2016-04-04
 
 • locksweep is now counter based
 • refactor internal API
 • benchmark cleanups and additions
 
-== v0.15.0
+# v0.15.0
 :date = 2016-02-25
 
 • reactive state handled per engine
 • merge pipelining branch
 
-== v0.14.0
+# v0.14.0
 :date = 2016-02-09
 
 • no notes
 
-== v0.13.0
+# v0.13.0
 :date = 2015-06-20
 
 • add microbenchmarks
@@ -308,7 +317,7 @@ This is mostly a maintenance release to support Scala 2.12.
 • compile with ScalaJS
 • make composition of reactives type-safe with regard to internal state
 
-== v0.12.0
+# v0.12.0
 :date = 2015-06-15
 
 • AtomicReferences instead of synchronized for lock implementation
@@ -316,37 +325,37 @@ This is mostly a maintenance release to support Scala 2.12.
 • remove cyclic reference between turns and engines
 • experimental GC starting from unused sources
 
-== v0.11.0 aka the thesis version
+# v0.11.0 aka the thesis version
 :date = 2015-03-12
 
 • disabled assertions
 • added exponential back-off as a combined waiting strategy
 • bug fixes and code cleanups
 
-== v0.10.0
+# v0.10.0
 :date = 2015-02-11
 
 • simplify inter turn synchronization by introducing explicit keychains
 • miscellaneous fixes improvements and renamings
 
-== v0.9.0
+# v0.9.0
 :date = 2014-12-29
 
 • code cleanups and minor improvements
 
-== v0.8.0
+# v0.8.0
 :date = 2014-12-22
 
 • reactives with a single static dependency now reuse the lock of their predecessor
 
-== v0.7.0
+# v0.7.0
 :date = 2014-12-19
 
 • added STM turns
 • added yielding turns
 • philosophers are back! and eating!
 
-== v0.6.0
+# v0.6.0
 :date = 2014-12-17
 
 • fixed dynamic reads
@@ -354,22 +363,22 @@ This is mostly a maintenance release to support Scala 2.12.
 • added spin-locking for initial lock acquisition
 • removed philosophers
 
-== v0.5.0
+# v0.5.0
 :date = 2014-12-11
 
 • improved pessimistic locking
 
-== v0.4.0
+# v0.4.0
 :date = 2014-12-01
 
 • no notes
 
-== v0.3.0
+# v0.3.0
 :date = 2014-10-29
 
 • no notes
 
-== v0.2.0
+# v0.2.0
 :date = 2016-08-17
 
 • version used for public case and user studies
