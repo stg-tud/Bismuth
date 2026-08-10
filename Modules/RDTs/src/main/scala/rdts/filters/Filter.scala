@@ -251,6 +251,7 @@ object Filter {
         else minimized
   }
 
+  // TODO: this uses Bottom[LWW] which is not really well defined probably better to switch to a different datastructure
   given lwwFilter[V: {Filter, Bottom}]: Filter[LastWriterWins[V]] with {
     override def filter(delta: LastWriterWins[V], permission: PermissionTree): LastWriterWins[V] = permission match
         case PermissionTree(ALLOW, _)                                        => delta
