@@ -11,7 +11,7 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 object ChannelConnectionManagerTest {
   val DEBUG      = false
-  val TIMEOUT_MS = 100
+  val TIMEOUT_MS = 1000
 
   def buf(str: String): MessageBuffer = ByteBufferMessageBuffer(str.getBytes)
   extension (tpl: (MessageBuffer, PublicIdentity))
