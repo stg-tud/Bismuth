@@ -11,7 +11,7 @@ import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.{LocalUid, Uid}
 
-import scala.util.{Failure, Success, Try}
+
 
 /** Verifies the simplified full-mesh bootstrap chain:
   *
@@ -87,19 +87,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // Step 1+2: discoverer discovers a single peer → bare Connect → connectAndSend dials & registers.
     discoverer.io.discover(Set(listener.selfInfo))
 
-    def describe(mb: Try[MessageBuffer]): String = mb match
-        case Success(buf) =>
-          BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity) match
-              case Success(env) => env.toString
-              case Failure(err) => s"<undecodable: $err>"
-        case Failure(err) => s"<failure: $err>"
-
-    def observe(step: String): Unit =
-        println(s"--- $step ---")
-        println(s"  queued:    ${queue.elements.map(describe)}")
-        println(s"  delivered: ${queue.delivered.map(describe)}")
-
-    observe("after discover")
+    // debug prints removed
 
     // Steps 3+4: the connection was established synchronously by connectAndSend (step 2) and both
     // sides announced themselves on activation, so before anything is delivered the queue must
@@ -115,12 +103,11 @@ class FullMeshDiscoveryChainTest extends FunSuite {
       "multiple Neighbor requests must be sent (one from each side)",
     )
 
-    // Deliver step by step and observe the queue after every delivery.
+    // Deliver step by step until quiescent.
     var steps = 0
     while queue.nonEmpty && steps < 10 do
         queue.deliverOne()
         steps += 1
-        observe(s"after deliverOne #$steps")
     assert(steps < 10, s"queue did not quiesce, remaining=${queue.size}")
 
     // All the Neighbor requests eventually reach the other side.
