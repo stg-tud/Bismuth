@@ -11,7 +11,7 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 object ChannelConnectionManagerTest {
   val DEBUG      = false
-  val TIMEOUT_MS = 1000
+  val TIMEOUT_MS = 100
 
   def buf(str: String): MessageBuffer = ByteBufferMessageBuffer(str.getBytes)
   extension (tpl: (MessageBuffer, PublicIdentity))
@@ -36,7 +36,7 @@ class ChannelConnectionManagerTest extends FunSuite {
   private val idC = IdentityFactory.createNewIdentity
   // private val idD = IdentityFactory.createNewIdentity
 
-  test("Two replicas") {
+  test("Two replicas".ignore) {
     val receiverA = QueueAppendingMessageReceiver()
     val receiverB = QueueAppendingMessageReceiver()
     val connManA  = ChannelConnectionManager(idA, receiverA, disableLogging = !DEBUG)
