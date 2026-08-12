@@ -1,4 +1,4 @@
-package replication.acl.sync.anti_entropy
+package replication.acl.sync
 
 import crypto.{Hash, PublicIdentity}
 import rdts.time.Dots

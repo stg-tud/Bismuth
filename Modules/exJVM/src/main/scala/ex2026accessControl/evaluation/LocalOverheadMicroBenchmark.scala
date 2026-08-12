@@ -10,8 +10,8 @@ import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
 import replication.HashDag
 import replication.acl.AclRdt.given_Encoder_BftDelta
-import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
-import replication.acl.sync.anti_entropy.{AclEnforcingSync, SignedDelta}
+import replication.acl.sync.{AclEnforcingSync, SignedDelta}
+import replication.acl.sync.AclEnforcingSync.encoder
 import replication.acl.{Acl, AclRdt, BftDelta}
 
 import java.util.concurrent.TimeUnit

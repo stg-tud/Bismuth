@@ -7,7 +7,7 @@ import rdts.filters.Filter
 import rdts.time.{Dot, Dots}
 import replication.HashDag.Encoder
 import replication.acl.Acl
-import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
+import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 import scala.annotation.unused
 

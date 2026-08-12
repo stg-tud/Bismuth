@@ -7,9 +7,9 @@ import crypto.channels.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
-import replication.acl.sync.anti_entropy.AclEnforcingSync
-import replication.acl.sync.{ConnectionManager, MessageReceiver}
+import replication.acl.sync.AclEnforcingSync
 import replication.acl.{Acl, BftDelta}
+import replication.sync.{ConnectionManager, MessageReceiver}
 
 class ReplicaOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,

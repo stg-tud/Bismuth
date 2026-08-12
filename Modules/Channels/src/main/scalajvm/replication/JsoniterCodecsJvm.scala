@@ -5,8 +5,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.filters.PermissionTree
-import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
-import replication.acl.sync.anti_entropy.SignedDelta
+import replication.acl.sync.AclEnforcingSync.SyncMsg
+import replication.acl.sync.SignedDelta
 import replication.authz.ArdtEvent
 
 object JsoniterCodecsJvm {

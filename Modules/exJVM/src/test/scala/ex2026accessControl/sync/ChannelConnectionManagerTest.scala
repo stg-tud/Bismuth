@@ -5,7 +5,7 @@ import crypto.channels.IdentityFactory
 import ChannelConnectionManagerTest.*
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import munit.FunSuite
-import replication.acl.sync.ChannelConnectionManager
+import replication.sync.ChannelConnectionManager
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 

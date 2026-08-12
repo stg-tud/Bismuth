@@ -6,9 +6,9 @@ import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
 import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
-import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg
-import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
-import replication.acl.sync.anti_entropy.SignedDelta
+import replication.acl.sync.AclEnforcingSync.SyncMsg
+import replication.acl.sync.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
+import replication.acl.sync.SignedDelta
 import replication.acl.{Acl, BftDelta}
 
 object Debug {

@@ -6,7 +6,7 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
 import replication.HashDag.Encoder
-import replication.acl.sync.anti_entropy.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
+import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
 
 class NonFilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,

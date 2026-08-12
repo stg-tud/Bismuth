@@ -1,4 +1,4 @@
-package replication.acl.sync.anti_entropy
+package replication.acl.sync
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
@@ -10,10 +10,10 @@ import rdts.time.Dots
 import replication.HashDag.Encoder
 import replication.JsoniterCodecsJvm
 import replication.JsoniterCodecsJvm.given
-import replication.acl.sync.anti_entropy.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
-import replication.acl.sync.anti_entropy.AclEnforcingSync.{SyncMsg, encoder}
-import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
+import AclEnforcingSync.{SyncMsg, encoder}
 import replication.acl.{Acl, BftDelta}
+import replication.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference

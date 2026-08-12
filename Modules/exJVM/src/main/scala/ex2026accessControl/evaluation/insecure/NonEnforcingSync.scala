@@ -6,10 +6,10 @@ import crypto.channels.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.acl.sync.anti_entropy.AclEnforcingSync.encoder
-import replication.acl.sync.anti_entropy.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
-import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import replication.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
+import replication.acl.sync.AclEnforcingSync.encoder
 import replication.acl.{Acl, BftDelta}
+import replication.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 
 class NonEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

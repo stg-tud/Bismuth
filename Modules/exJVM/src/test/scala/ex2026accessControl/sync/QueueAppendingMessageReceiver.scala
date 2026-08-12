@@ -3,7 +3,7 @@ package ex2026accessControl.sync
 import channels.connection.MessageBuffer
 import crypto.PublicIdentity
 import ex2026accessControl.Debug
-import replication.acl.sync.MessageReceiver
+import replication.sync.MessageReceiver
 
 import java.util.concurrent.LinkedBlockingQueue
 
