@@ -8,7 +8,7 @@ import replication.authz.CausalOrder.*
 
 import scala.collection.mutable
 
-case class EventGraph[T: Lattice](
+case class ArdtEventGraph[T: Lattice](
     genesis: Hash,
     heads: Set[Hash],
     events: Map[Hash, (ArdtEvent, Int)],
@@ -23,13 +23,15 @@ case class EventGraph[T: Lattice](
     * @throws IllegalArgumentException If the event is invalid
     * @return If successful, this returns Right(updatedGraph). If parents are missing, then this returns
     */
-  def receive(encodedEvent: Array[Byte]): Either[Set[Hash], EventGraph[T]] = {
+  def receive(encodedEvent: Array[Byte]): Either[Set[Hash], ArdtEventGraph[T]] = {
+    // Check for duplicates before checking signature
+    val hash = Hash.compute(encodedEvent)
+    if events.contains(hash) then return Right(this)
+
     val event: ArdtEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
     // Signature verification
     require(event.signature.verify(event.author.publicKey, encodedEvent))
-    val hash = event.hash
-    if events.contains(hash) then return Right(this)
 
     // All events need predecessors except the genesis event
     if hash == genesis then require(event.parents.isEmpty)
@@ -141,6 +143,17 @@ case class EventGraph[T: Lattice](
     if capHash == genesis then revocationCache.getOrElse(capHash, Set.empty)
     else revocationCache.getOrElse(capHash, Set.empty) ++ revocations(events(capHash)._1.authorization)
 
+}
+
+object ArdtEventGraph {
+  def apply[T: Lattice](genesis: ArdtEvent): ArdtEventGraph[T] = {
+    val hash = genesis.hash
+    genesis.payload match {
+      case cap @ Capability(holder, _, _) =>
+        ArdtEventGraph(hash, Set(hash), Map(hash -> (genesis, 0)), Map.empty, Map(holder -> Set((hash, cap))), 1)
+      case _ => ???
+    }
+  }
 }
 
 enum CausalOrder:

@@ -9,7 +9,7 @@ import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
 object Authorization {
   def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter}](
-      eventGraph: EventGraph[T],
+      eventGraph: ArdtEventGraph[T],
       deltaValueStore: DeltaValueStore[T]
   ): T =
     eventGraph.events.iterator.foldLeft(Bottom[T].empty) {
@@ -25,21 +25,21 @@ object Authorization {
   def mayRead[T: {JsonValueCodec, Filter}](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
-      eventGraph: EventGraph[T],
+      eventGraph: ArdtEventGraph[T],
       deltaValueStore: DeltaValueStore[T]
   ): Boolean =
     eventGraph.events.get(deltaEventHash) match {
       case Some(ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _) =>
         val delta = deltaValueStore.get(commitment).map(deltaBytes => readFromArray[T](deltaBytes.value)).get
         mayRead(replicaId, deltaEventHash, delta, eventGraph)
-      case _ => ???
+      case _ => false
     }
 
   def mayRead[T: Filter](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       delta: T,
-      eventGraph: EventGraph[T]
+      eventGraph: ArdtEventGraph[T]
   ): Boolean =
     eventGraph.capabilityCache(replicaId)
       .exists((capabilityEventHash, capability) =>
@@ -50,7 +50,7 @@ object Authorization {
       )
 
   def mayWrite[T: {JsonValueCodec, Filter}](
-      eventGraph: EventGraph[T],
+      eventGraph: ArdtEventGraph[T],
       deltaEventHash: Hash,
       deltaValue: RevealedValue
   ): Boolean = {
@@ -59,7 +59,7 @@ object Authorization {
   }
 
   private def mayWrite[T: {JsonValueCodec, Filter}](
-      eventGraph: EventGraph[T],
+      eventGraph: ArdtEventGraph[T],
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
       revealedValue: RevealedValue
@@ -73,7 +73,7 @@ object Authorization {
     }
 
   private def mayWrite[T: {Filter}](
-      eventGraph: EventGraph[T],
+      eventGraph: ArdtEventGraph[T],
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
       delta: T
