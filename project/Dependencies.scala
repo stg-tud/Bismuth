@@ -9,12 +9,12 @@ object Dependencies {
   val blake3      = libraryDependencies += "pt.kcry"                   %% "blake3"                   % "3.1.2"
   val bloomFilter = libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13"        % "0.13.1"
   val catsParse   = libraryDependencies += "org.typelevel"             %% "cats-parse"               % "1.1.0"
-  val conscrypt   = libraryDependencies += "org.conscrypt"              % "conscrypt-openjdk-uber"   % "2.6.1"
+  val conscrypt   = libraryDependencies += "org.conscrypt"              % "conscrypt-openjdk-uber"   % "2.6.3"
   val decline     = libraryDependencies += "com.monovore"              %% "decline"                  % "2.6.2"
   val fansi       = libraryDependencies += "com.lihaoyi"               %% "fansi"                    % "0.5.1"
   val jetcd       = libraryDependencies += "io.etcd"                    % "jetcd-core"               % "0.8.6"
   val monocleCore = libraryDependencies += "dev.optics"                %% "monocle-core"             % "3.3.0"
-  val munit       = libraryDependencies += "org.scalameta"             %% "munit"                    % "1.3.4"  % Test
+  val munit       = libraryDependencies += "org.scalameta"             %% "munit"                    % "1.3.5"  % Test
   val munitCheck  = libraryDependencies += "org.scalameta"             %% "munit-scalacheck"         % "1.3.0"  % Test
   val pprint      = libraryDependencies += "com.lihaoyi"               %% "pprint"                   % "0.9.6"
   val scalaSwing  = libraryDependencies += "org.scala-lang.modules"    %% "scala-swing"              % "3.0.0"
