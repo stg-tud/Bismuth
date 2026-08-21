@@ -102,7 +102,7 @@ object deltalens {
   def modifyLens[T]: LensHelper[T]         = LensHelper[T]()
   def modifyAllLens[T]: MultiLensHelper[T] = MultiLensHelper[T]()
 
-  case class LensHelper[T] private[deltalens]() {
+  case class LensHelper[T] private[deltalens] () {
 
     /** Create a (non-delta) lens, returning the full modified object (all fields preserved). */
     inline def apply[U](inline path: T => U): PathLazyModify[T, U] =
@@ -113,7 +113,7 @@ object deltalens {
       ${ modifyLensApplyImpl('path, produceDelta = true) }
   }
 
-  case class MultiLensHelper[T] private[deltalens]() {
+  case class MultiLensHelper[T] private[deltalens] () {
 
     /** Create a (non-delta) multi lens, returning the full modified object. */
     inline def apply[U](inline path1: T => U, inline paths: (T => U)*): PathLazyModify[T, U] = ${

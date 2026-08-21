@@ -11,8 +11,6 @@ import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.{LocalUid, Uid}
 
-
-
 /** Verifies the simplified full-mesh bootstrap chain:
   *
   *   1. `discover` a peer → overlay emits a bare `Connect` action (no message)

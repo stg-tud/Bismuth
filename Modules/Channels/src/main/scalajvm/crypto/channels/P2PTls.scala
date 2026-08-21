@@ -184,24 +184,24 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     }
 
     private[P2PTls] def receiveLoopBlocking()(using abort: Abort): Unit =
-      // force the lazy receive callback now, so the receiver is notified about the established
-      // connection before (and independent of) the first received message
-      val _ = receivedMessageCallback
-      inputStream.synchronized {
-        try
-          while !abort.closeRequest do
-              val len = inputStream.readInt()
-              require(len < MessageBuffer.maxPayloadSize, "Message too large")
-              val bytes = inputStream.readNBytes(len)
-              if bytes.length == len then receivedMessageCallback.succeed(ByteBufferMessageBuffer(bytes))
-              else throw EOFException(s"Could not read $len bytes for message")
-        catch {
-          case ex: Throwable =>
-            try close()
-            catch { case _: Throwable => () }
-            receivedMessageCallback.fail(ex)
+        // force the lazy receive callback now, so the receiver is notified about the established
+        // connection before (and independent of) the first received message
+        val _ = receivedMessageCallback
+        inputStream.synchronized {
+          try
+            while !abort.closeRequest do
+                val len = inputStream.readInt()
+                require(len < MessageBuffer.maxPayloadSize, "Message too large")
+                val bytes = inputStream.readNBytes(len)
+                if bytes.length == len then receivedMessageCallback.succeed(ByteBufferMessageBuffer(bytes))
+                else throw EOFException(s"Could not read $len bytes for message")
+          catch {
+            case ex: Throwable =>
+              try close()
+              catch { case _: Throwable => () }
+              receivedMessageCallback.fail(ex)
+          }
         }
-      }
 
     override def close(): Unit =
       socket.close()

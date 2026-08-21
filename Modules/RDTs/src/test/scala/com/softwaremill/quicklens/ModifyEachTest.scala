@@ -1,6 +1,5 @@
 package com.softwaremill.deltalens
 
-
 import com.softwaremill.deltalens.TestData.*
 import rdts.syntax.deltalens.*
 

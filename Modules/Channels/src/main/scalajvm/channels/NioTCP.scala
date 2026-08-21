@@ -9,10 +9,7 @@ import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, Stand
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import java.util.concurrent.{ExecutorService, Executors}
-import scala.concurrent.{
-  ExecutionContext,
-  ExecutionContextExecutorService
-}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.util.Try
 import scala.util.control.NonFatal
 
