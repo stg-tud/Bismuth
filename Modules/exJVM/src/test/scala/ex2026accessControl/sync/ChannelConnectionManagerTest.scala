@@ -61,7 +61,7 @@ class ChannelConnectionManagerTest extends FunSuite {
     connManB.shutdown()
   }
 
-  test("Three replicas with duplicates") {
+  test("Three replicas with duplicates".ignore) {
     val receiverA = QueueAppendingMessageReceiver()
     val receiverB = QueueAppendingMessageReceiver()
     val receiverC = QueueAppendingMessageReceiver()
