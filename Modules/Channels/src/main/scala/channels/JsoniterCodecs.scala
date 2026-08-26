@@ -44,8 +44,8 @@ object JsoniterCodecs {
 
   given dotCodec: JsonValueCodec[Dot] = bimapCodec[(Uid, Time), Dot](
     JsonCodecMaker.make,
-    tuple => Dot(tuple._1, tuple._2),
-    dot => (dot.place, dot.time)
+    tuple => if tuple != null then Dot(tuple._1, tuple._2) else null,
+    dot => if dot != null then (dot.place, dot.time) else null
   )
 
   given dotKeyCodec: JsonKeyCodec[Dot] = new JsonKeyCodec[Dot]:
