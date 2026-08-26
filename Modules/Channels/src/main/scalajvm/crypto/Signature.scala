@@ -29,11 +29,16 @@ class Signature private (private val delegate: Array[Byte]) {
 object Signature {
   def apply(signatureBytes: Array[Byte]): Signature = new Signature(signatureBytes.clone())
 
+  val length: Int = 64
+
+  val empty: Signature = Signature.unsafeFromArray(Array.ofDim(length))
+
   def compute(content: Array[Byte], signingKey: PrivateKey): Signature = new Signature(
     Ed25519Util.sign(content, signingKey)
   )
 
   def unsafeFromArray(signatureBytes: Array[Byte]): Signature = new Signature(signatureBytes)
+
   given signatureValueCodec: JsonValueCodec[Signature]:
       override def decodeValue(in: JsonReader, default: Signature): Signature =
         new Signature(in.readBase64AsBytes(Array.empty))

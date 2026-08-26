@@ -14,11 +14,11 @@ class AntiEntropy(
     connectionManagerProvider: MessageReceiver[MessageBuffer] => ConnectionManager
 ) extends MessageReceiver[MessageBuffer] {
 
-  private val connectionManager                = connectionManagerProvider(this)
   private val missingEvents: mutable.Set[Hash] = mutable.Set.empty
   private val eventsWithMissingDependencies: mutable.Map[Hash, (Array[Byte], Set[Hash], PublicIdentity)] =
     mutable.Map.empty
   private val deltasWithMissingEvent: mutable.Map[Hash, RevealedValue] = mutable.Map.empty
+  private val connectionManager                = connectionManagerProvider(this)
 
   def broadcastEvents(events: Iterable[Array[Byte]]): Unit =
     connectionManager.broadcast(
@@ -54,7 +54,7 @@ class AntiEntropy(
         val encodedEvent = decodeEventMsg(msgBytes)
         replica.receiveEvent(encodedEvent) match {
           case Right(eventHash)    =>
-            missingEvents.remove(eventHash)
+            missingEvents.remove(eventHash): Unit
             // TODO: Remove from missing dependencies and receive events that are now receivable
           case Left(missingEvents) =>
             val eventHash = Hash.compute(encodedEvent)
@@ -63,7 +63,7 @@ class AntiEntropy(
       case DELTA_VALUE_MSG_TAG =>
         val (event, deltaValue) = decodeDeltaMsg(msgBytes)
         if replica.storesEvent(event) then replica.receiveDelta(event, deltaValue)
-        else deltasWithMissingEvent.put(event, deltaValue)
+        else deltasWithMissingEvent.put(event, deltaValue): Unit
       case _ => ???
     }
   }
@@ -77,7 +77,7 @@ class AntiEntropy(
     eventsWithMissingDependencies.updateWith(Hash.compute(encodedEvent)) {
       case old @ Some(_) => old
       case None          => Some((encodedEvent, missingEvents, learnedFrom))
-    }
+    }: Unit
 }
 
 object AntiEntropy {

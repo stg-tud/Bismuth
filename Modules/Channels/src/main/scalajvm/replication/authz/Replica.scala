@@ -13,12 +13,12 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     localIdentity: PrivateIdentity,
     antiEntropyProvider: Replica[?] => AntiEntropy
 ) {
-  val localReplicaId: PublicIdentity   = localIdentity.getPublic
-  private val antiEntropy: AntiEntropy = antiEntropyProvider(this)
+  val localReplicaId: PublicIdentity = localIdentity.getPublic
 
   def state: RDT                                    = Authorization.materialize(eventGraph, deltaValueStore)
   private var eventGraph: ArdtEventGraph[RDT]       = ArdtEventGraph(genesis)
   private val deltaValueStore: DeltaValueStore[RDT] = DeltaValueStore[RDT]()
+  private val antiEntropy: AntiEntropy              = antiEntropyProvider(this)
 
   def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Hash] = {
     val oldHeads = eventGraph.heads
@@ -33,8 +33,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   }
 
   def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit =
-    require(Authorization.mayRead(localReplicaId, eventHash, eventGraph, deltaValueStore))
-    deltaValueStore.put(delta)
+      require(Authorization.mayRead(localReplicaId, eventHash, eventGraph, deltaValueStore))
+      deltaValueStore.put(delta)
 
   def createUpdate(mutator: RDT => RDT, capabilityHash: Hash): Unit = {
     require(eventGraph.revocations(capabilityHash).isEmpty)
@@ -47,8 +47,13 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
     val eventsWithDeltas = Decompose.decompose(delta).map { decomposedDelta =>
       val commitedValue = Commitment.commit(writeToArray(decomposedDelta))
-      val unsignedEvent =
-        ArdtEvent(DeltaCommitment(commitedValue.commitment), localReplicaId, eventGraph.heads, null, capabilityHash)
+      val unsignedEvent = ArdtEvent(
+        DeltaCommitment(commitedValue.commitment),
+        localReplicaId,
+        eventGraph.heads,
+        null.asInstanceOf[Signature],
+        capabilityHash
+      )
       val signature = Signature.compute(writeToArray(unsignedEvent), localIdentity.identityKey.getPrivate)
 
       val signedEvent = writeToArray(unsignedEvent.copy(signature = signature))
