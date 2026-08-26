@@ -8,7 +8,7 @@ import java.util.Base64
 
 /** Container for SHA3-256 Hash. */
 class Hash private (private val delegate: Array[Byte]) {
-  require(delegate.length == 32)
+  require(delegate.length == Hash.length)
 
   def toBase64: String = Base64.getEncoder.encodeToString(delegate)
 
@@ -25,6 +25,8 @@ class Hash private (private val delegate: Array[Byte]) {
 }
 
 object Hash {
+  val length = 32
+
   def fromBase64(base64: String): Hash = Hash(Base64.getDecoder.decode(base64))
 
   def unsafeFromArray(hash: Array[Byte]): Hash = Hash(hash)

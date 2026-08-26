@@ -15,9 +15,9 @@ trait ConnectionManager {
     */
   def send(user: PublicIdentity, msg: MessageBuffer): Unit
 
-  def sendMultiple(user: PublicIdentity, messages: Array[MessageBuffer]): Unit
+  def sendMultiple(user: PublicIdentity, messages: Iterable[MessageBuffer]): Unit
 
-  def broadcast(messages: Array[MessageBuffer]): Unit
+  def broadcast(messages: Iterable[MessageBuffer]): Unit
 
   def listenAddress: Option[(String, Int)]
 

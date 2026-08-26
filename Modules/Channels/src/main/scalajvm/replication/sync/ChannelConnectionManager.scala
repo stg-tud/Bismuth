@@ -39,9 +39,9 @@ class ChannelConnectionManager(
     * @return true if a connections exists, otherwise false.
     */
   override inline def send(remotePeerId: PublicIdentity, msg: MessageBuffer): Unit =
-    sendMultiple(remotePeerId, Array(msg))
+    sendMultiple(remotePeerId, Iterable.single(msg))
 
-  override def sendMultiple(remotePeerId: PublicIdentity, messages: Array[MessageBuffer]): Unit = {
+  override def sendMultiple(remotePeerId: PublicIdentity, messages: Iterable[MessageBuffer]): Unit = {
     if abort.closeRequest then return
     connections.get(remotePeerId) match
         case Some(connection) =>
@@ -57,7 +57,7 @@ class ChannelConnectionManager(
         case _ =>
   }
 
-  override def broadcast(messages: Array[MessageBuffer]): Unit =
+  override def broadcast(messages: Iterable[MessageBuffer]): Unit =
     connections.foreach { (user, connection) =>
       sendMultiple(user, messages)
     }
