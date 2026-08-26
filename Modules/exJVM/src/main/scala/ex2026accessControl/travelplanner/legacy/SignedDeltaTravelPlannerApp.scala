@@ -1,9 +1,10 @@
-package ex2026accessControl.travelplanner
+package ex2026accessControl.travelplanner.legacy
 
 import channels.connection.MessageBuffer
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.Debug
 import ex2026accessControl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
+import ex2026accessControl.travelplanner.{MainScene, SyncInvitation, TravelPlan}
 import javafx.scene.input.KeyCode
 import replication.acl.{Acl, AclRdt}
 import replication.sync.{ChannelConnectionManager, MessageReceiver}

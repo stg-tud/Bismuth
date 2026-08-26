@@ -1,9 +1,10 @@
-package ex2026accessControl.travelplanner
+package ex2026accessControl.travelplanner.legacy
 
 import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
+import ex2026accessControl.travelplanner.{Invitation, Replica, SyncInvitation}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
@@ -26,9 +27,6 @@ class ReplicaOfSignedDeltaRdt[State](
 
   val sync: AclEnforcingSync[State] =
     AclEnforcingSync(localIdentity, connectionManagerProvider, aclGenesis, onDeltaReceive)
-
-  // TODO: Not used in this instance, refactor
-  override def receivedDelta(dot: Dot, rdt: State): Unit = ???
 
   override def connect(remoteUser: PublicIdentity, connectionString: String): Unit = {
     val remoteAddr = connectionString.split(':')

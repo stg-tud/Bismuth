@@ -2,12 +2,10 @@ package ex2026accessControl.travelplanner
 
 import crypto.PublicIdentity
 import rdts.filters.PermissionTree
-import rdts.time.Dot
 import replication.acl.Acl
 
 // TODO: Probably should be refactored away
 trait Replica[RDT] {
-  def receivedDelta(dot: Dot, rdt: RDT): Unit
   def connect(remoteUser: PublicIdentity, connectionString: String): Unit
   def createInvitation: Invitation
   def currentState: RDT
