@@ -19,13 +19,10 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
 
   private val state = travelPlanModel.state
 
-  private val acl: Acl = travelPlanModel.currentAcl
-
-  private val permissionTreePane = PermissionTreePane(
-    state,
-    acl.read.getOrElse(invitation.inviter, PermissionTree.empty),
-    acl.write.getOrElse(invitation.inviter, PermissionTree.empty),
-  )
+  private val permissionTreePane = {
+    val localPermissions = travelPlanModel.availablePermissions(travelPlanModel.publicId)
+    PermissionTreePane(state, localPermissions.read, localPermissions.write)
+  }
 
   private val inviteText = TextField()
   inviteText.setText(invitation.encode)
@@ -59,8 +56,9 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
   private val delegatePermissionsButton = Button("Delegate permissions")
   delegatePermissionsButton.onAction() = _ => {
     val permissionReceiverComboBox = {
-      val otherReplicas = travelPlanModel.currentAcl.read.keySet.filterNot(_ == travelPlanModel.publicId).toSeq
-      val comboBox      = ComboBox(otherReplicas)
+      val otherReplicas =
+        (travelPlanModel.availablePermissions.keySet - travelPlanModel.publicId).toSeq
+      val comboBox = ComboBox(otherReplicas)
       comboBox.converter = StringConverter[PublicIdentity](
         fromStringFunction = str => if str == null || str.isEmpty then null else PublicIdentity(str),
         toStringFunction = pubId => if pubId == null then "" else pubId.id

@@ -3,7 +3,7 @@ package ex2026accessControl.travelplanner.model
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import ex2026accessControl.travelplanner.TravelPlan.given
-import ex2026accessControl.travelplanner.{Invitation, Replica, TravelPlan}
+import ex2026accessControl.travelplanner.{Invitation, Sync, TravelPlan}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree
@@ -17,31 +17,32 @@ import scala.concurrent.ExecutionContext.global
 
 class TravelPlanModel(
     private val localIdentity: PrivateIdentity,
-    replicaProvider: (stateChanged: TravelPlan => Unit) => Replica[TravelPlan]
+    syncProvider: (stateChanged: TravelPlan => Unit) => Sync[TravelPlan]
 ) {
   val publicId: PublicIdentity = localIdentity.getPublic
 
   private given localUid: LocalUid = LocalUid(Uid(publicId.id))
 
-  def state: TravelPlan = replica.currentState
+  def state: TravelPlan = sync.currentState
 
-  def currentAcl: Acl = replica.currentAcl
+  def availablePermissions: Map[PublicIdentity, (read: PermissionTree, write: PermissionTree)] =
+    sync.availablePermissions
 
-  val replica: Replica[TravelPlan] = replicaProvider(stateChanged)
-  replica.start()
-  Runtime.getRuntime.addShutdownHook(new Thread(() => replica.stop()))
+  val sync: Sync[TravelPlan] = syncProvider(stateChanged)
+  sync.start()
+  Runtime.getRuntime.addShutdownHook(new Thread(() => sync.stop()))
 
   def grantPermission(
       affectedUser: PublicIdentity,
       readPermissions: PermissionTree,
       writePermissions: PermissionTree
-  ): Unit = replica.grantPermissions(affectedUser, readPermissions, writePermissions)
+  ): Unit = sync.grantPermissions(affectedUser, readPermissions, writePermissions)
 
   def createInvitation: Invitation =
-    replica.createInvitation
+    sync.createInvitation
 
   def addConnection(remoteUser: PublicIdentity, address: String): Unit =
-    replica.connect(remoteUser, address)
+    sync.connect(remoteUser, address)
 
   def changeTitle(newTitle: String): Unit =
     mutateRdt(_.setTitle(newTitle))
@@ -66,7 +67,7 @@ class TravelPlanModel(
 
   private def mutateRdt(mutator: TravelPlan => TravelPlan): Unit =
     global.execute { () =>
-      replica.mutateState(mutator)
+      sync.mutateState(mutator)
     }
 
   val title: StringProperty                      = StringProperty(state.title.read)

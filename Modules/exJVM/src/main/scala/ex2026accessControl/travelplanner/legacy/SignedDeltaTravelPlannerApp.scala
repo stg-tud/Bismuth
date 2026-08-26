@@ -4,7 +4,7 @@ import channels.connection.MessageBuffer
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.Debug
 import ex2026accessControl.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
-import ex2026accessControl.travelplanner.{MainScene, SyncInvitation, TravelPlan}
+import ex2026accessControl.travelplanner.{MainScene, TravelPlan}
 import javafx.scene.input.KeyCode
 import replication.acl.{Acl, AclRdt}
 import replication.sync.{ChannelConnectionManager, MessageReceiver}
@@ -26,20 +26,18 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
     accelerators.put(
       f1,
       () =>
-          println(Debug.shorten(mainScene.tpm.replica.currentAcl.asInstanceOf[Acl]))
-          println(Debug.shorten(mainScene.tpm.replica.currentState))
+          println(Debug.shorten(mainScene.tpm.sync.availablePermissions.asInstanceOf[Acl]))
+          println(Debug.shorten(mainScene.tpm.sync.currentState))
     ): Unit
 
     mainScene.group.children.append(
-      debugMenuBar(mainScene.tpm.replica.asInstanceOf[ReplicaOfSignedDeltaRdt[TravelPlan]])
+      debugMenuBar(mainScene.tpm.sync.asInstanceOf[SyncOfSignedDeltaRdt[TravelPlan]])
     ): Unit
   }
 
-  private def debugMenuBar(replica: => ReplicaOfSignedDeltaRdt[TravelPlan]): MenuBar = {
-    val menuBar     = MenuBar()
-    val debugMenu   = Menu("Debug")
-    val aclMenuItem = MenuItem("Print ACL")
-    aclMenuItem.onAction = _ => println(Debug.shorten(replica.currentAcl.asInstanceOf[Acl]))
+  private def debugMenuBar(replica: => SyncOfSignedDeltaRdt[TravelPlan]): MenuBar = {
+    val menuBar       = MenuBar()
+    val debugMenu     = Menu("Debug")
     val stateMenuItem = MenuItem("Print State")
     stateMenuItem.onAction = _ => println(Debug.shorten(replica.currentState))
     val metaDataMenuItem = MenuItem("Print Metadata")
@@ -49,7 +47,7 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
     val connectedPeersMenuItem = MenuItem("Print Connected Replicas")
     connectedPeersMenuItem.onAction = _ =>
       println(replica.sync.connectedPeers.map(Debug.shorten))
-    debugMenu.getItems.addAll(aclMenuItem, stateMenuItem, metaDataMenuItem, connectedPeersMenuItem)
+    debugMenu.getItems.addAll(stateMenuItem, metaDataMenuItem, connectedPeersMenuItem)
     menuBar.getMenus.add(debugMenu): Unit
     menuBar.useSystemMenuBar = true
     menuBar
@@ -66,7 +64,7 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
       val identity        = IdentityFactory.createNewIdentity
       val aclRoot         = AclRdt.createSelfSignedRoot(identity)
       val replicaProvider = (onDeltaReceive: TravelPlan => Unit) =>
-        new ReplicaOfSignedDeltaRdt[TravelPlan](
+        new SyncOfSignedDeltaRdt[TravelPlan](
           identity,
           connManProvider,
           aclRoot,
@@ -80,7 +78,7 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
       val aclRoot         = invitation.rootOp
       val identity        = IdentityFactory.fromIdentityKey(invitation.identityKey)
       val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
-        new ReplicaOfSignedDeltaRdt[TravelPlan](
+        new SyncOfSignedDeltaRdt[TravelPlan](
           identity,
           connManProvider,
           aclRoot,

@@ -4,15 +4,15 @@ import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
-import ex2026accessControl.travelplanner.{Invitation, Replica, SyncInvitation}
+import ex2026accessControl.travelplanner.{Invitation, Sync}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
-import rdts.time.{Dot, Dots}
+import rdts.time.Dots
 import replication.acl.sync.AclEnforcingSync
 import replication.acl.{Acl, BftDelta}
 import replication.sync.{ConnectionManager, MessageReceiver}
 
-class ReplicaOfSignedDeltaRdt[State](
+class SyncOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager,
     aclGenesis: BftDelta[Acl],
@@ -23,7 +23,7 @@ class ReplicaOfSignedDeltaRdt[State](
     JsonValueCodec[State],
     Filter[State],
     Decompose[State]
-) extends Replica[State] {
+) extends Sync[State] {
 
   val sync: AclEnforcingSync[State] =
     AclEnforcingSync(localIdentity, connectionManagerProvider, aclGenesis, onDeltaReceive)
@@ -43,7 +43,10 @@ class ReplicaOfSignedDeltaRdt[State](
 
   override def currentState: State = sync.currentState
 
-  override def currentAcl: Acl = sync.currentAcl
+  override def availablePermissions: Map[PublicIdentity, (read: PermissionTree, write: PermissionTree)] =
+    sync.currentAcl.read.keySet.map(replica =>
+      replica -> (sync.currentAcl.read(replica), sync.currentAcl.write(replica))
+    ).toMap
 
   override def mutateState(mutator: State => State): Unit = sync.mutate(mutator)
 
