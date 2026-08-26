@@ -1,6 +1,6 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Hash, PublicIdentity}
 import rdts.base.Lattice
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
@@ -30,8 +30,8 @@ case class ArdtEventGraph[T: Lattice](
 
     val event: ArdtEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
-    // Signature verification
-    require(event.signature.verify(event.author.publicKey, encodedEvent))
+    // Signature verification: (need to blank signature and re-encode for verification)
+    require(event.signature.verify(event.author.publicKey, writeToArray(event.copy(signature = null))))
 
     // All events need predecessors except the genesis event
     if hash == genesis then require(event.parents.isEmpty)
