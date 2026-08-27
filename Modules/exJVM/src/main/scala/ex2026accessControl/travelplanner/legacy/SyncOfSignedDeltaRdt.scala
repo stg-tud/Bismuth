@@ -35,7 +35,7 @@ class SyncOfSignedDeltaRdt[State](
   }
 
   override def createInvitation: Invitation =
-    SyncInvitation.createInvite(
+    AclSyncInvitation.createInvite(
       sync.aclRootOp,
       localIdentity.getPublic,
       s"${sync.listenAddress.get._1}:${sync.listenAddress.get._2}"

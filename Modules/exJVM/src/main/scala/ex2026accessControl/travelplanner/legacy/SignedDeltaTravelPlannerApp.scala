@@ -74,7 +74,7 @@ object SignedDeltaTravelPlannerApp extends JFXApp3 {
     }
 
     override def createByJoining(invitationString: String): TravelPlanModel = {
-      val invitation      = SyncInvitation.decode(invitationString)
+      val invitation      = AclSyncInvitation.decode(invitationString)
       val aclRoot         = invitation.rootOp
       val identity        = IdentityFactory.fromIdentityKey(invitation.identityKey)
       val replicaProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>

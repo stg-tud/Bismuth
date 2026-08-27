@@ -4,14 +4,14 @@ import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Ed25519Util, PublicIdentity}
 import ex2026accessControl.travelplanner.Invitation
-import ex2026accessControl.travelplanner.legacy.SyncInvitation.base64Encoder
+import ex2026accessControl.travelplanner.legacy.AclSyncInvitation.base64Encoder
 import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
 import replication.acl.{Acl, BftDelta}
 
 import java.security.KeyPair
 import java.util.Base64
 
-case class SyncInvitation(
+case class AclSyncInvitation(
     rootOp: BftDelta[Acl],
     identityKey: KeyPair,
     inviter: PublicIdentity,
@@ -24,7 +24,7 @@ case class SyncInvitation(
   }
 }
 
-object SyncInvitation {
+object AclSyncInvitation {
   private val base64Decoder = Base64.getDecoder
   private val base64Encoder = Base64.getEncoder
 
@@ -32,17 +32,17 @@ object SyncInvitation {
       aclRootOp: BftDelta[Acl],
       inviter: PublicIdentity,
       joinAddress: String
-  ): (PublicIdentity, SyncInvitation) = {
+  ): (PublicIdentity, AclSyncInvitation) = {
     val createdPrincipalId = Ed25519Util.generateNewKeyPair
     val publicIdentity     =
       PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(createdPrincipalId.getPublic))
-    (publicIdentity, SyncInvitation(aclRootOp, createdPrincipalId, inviter, joinAddress))
+    (publicIdentity, AclSyncInvitation(aclRootOp, createdPrincipalId, inviter, joinAddress))
   }
 
-  def decode(inviteString: String): SyncInvitation = {
+  def decode(inviteString: String): AclSyncInvitation = {
     val parts = inviteString.split('|')
     require(parts.length == 4)
-    SyncInvitation(
+    AclSyncInvitation(
       readFromArray(base64Decoder.decode(parts(0))),
       Ed25519Util.rawPrivateKeyBytesToKeyPair(base64Decoder.decode(parts(1))),
       PublicIdentity(parts(2)),
