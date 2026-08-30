@@ -4,7 +4,6 @@ import ex2014reswingexamples.reader.data.{FeedStore, RSSChannel, RSSItem}
 import reactives.default.*
 
 import java.awt.{Dimension, Point, Toolkit}
-import javax.swing.ImageIcon
 import scala.swing.*
 import scala.swing.event.*
 
@@ -154,7 +153,6 @@ class GUI(
 
       private def configure(): Unit = {
         title = "RSS Reader"
-        iconImage = new ImageIcon("res/icon.png").getImage
 
         minimumSize = new Dimension(framewidth, frameheight)
 
