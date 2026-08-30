@@ -239,7 +239,6 @@ class ReTable[A <: AnyRef](
 }
 
 object ReTable {
-  implicit def toTable[A <: AnyRef](component: ReTable[A]): Table = component.peer
 
   type Editable = (Int, Int) => Boolean
   object Editable {

@@ -57,6 +57,7 @@ case class Line[T](from: Point[T], to: Point[T]) extends Shape[T] {
 // rectangle
 //
 object Rect {
+  // dont delete
   implicit def apply[T: Numeric](x: T, y: T, width: T, height: T): Rect[T] =
     Rect(Point(x, y), width, height)
 }
