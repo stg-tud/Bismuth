@@ -1,4 +1,4 @@
-package ex201x
+package ex201x.swing
 
 import reactives.default.*
 import reactives.operator.Event

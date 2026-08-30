@@ -1,6 +1,6 @@
 package ex201x.swing.pong.ui
 
-import ex201x.Mouse
+import ex201x.swing.Mouse
 import ex201x.swing.pong.*
 import reactives.default.*
 

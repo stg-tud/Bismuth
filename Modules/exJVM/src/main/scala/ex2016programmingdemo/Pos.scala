@@ -1,4 +1,4 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
 case class Pos(x: Double, y: Double) {
   def *(v: Double): Pos = Pos(x * v, y * v)

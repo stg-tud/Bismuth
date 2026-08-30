@@ -1,7 +1,7 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
-import ex201x.programming2016demo.GModularClockCircle.Clock
-import ex201x.programming2016demo.ui.ShapesPanel
+import ex2016programmingdemo.ui.ShapesPanel
+import GModularClockCircle.Clock
 
 import java.awt.Dimension
 import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}

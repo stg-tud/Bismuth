@@ -1,6 +1,6 @@
 package ex201x.swing.fisheye
 
-import ex201x.Mouse
+import ex201x.swing.Mouse
 import reactives.default.*
 
 import java.awt.{Color, Dimension, Graphics2D, Point, Rectangle}

@@ -1,9 +1,9 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
-import ex201x.programming2016demo.LFullyModularBall.BouncingBall
-import ex201x.programming2016demo.MPlayingFieldBall.PlayingField
-import ex201x.programming2016demo.ORacketMultiBall.Racket
-import ex201x.programming2016demo.ui.{Shape, ShapesPanel}
+import LFullyModularBall.BouncingBall
+import MPlayingFieldBall.PlayingField
+import ORacketMultiBall.Racket
+import ex2016programmingdemo.ui.{Shape, ShapesPanel}
 import reactives.default.*
 
 import scala.swing.{Dimension, Frame, MainFrame, SimpleSwingApplication}

@@ -1,6 +1,6 @@
 package ex201x.swing.pong
 
-import ex201x.Mouse
+import ex201x.swing.Mouse
 import reactives.default.*
 
 import java.awt.{Point, Rectangle}

@@ -1,6 +1,6 @@
-package ex201x.programming2016demo.ui
+package ex2016programmingdemo.ui
 
-import ex201x.programming2016demo.Pos
+import ex2016programmingdemo.Pos
 import reactives.SelectedScheduler.State as BundleState
 import reactives.core.AdmissionTicket
 import reactives.default.*

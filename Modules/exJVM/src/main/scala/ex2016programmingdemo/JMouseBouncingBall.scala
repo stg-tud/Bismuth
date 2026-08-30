@@ -1,7 +1,7 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
-import ex201x.programming2016demo.GModularClockCircle.Clock
-import ex201x.programming2016demo.ui.{Circle, Point, Shape, ShapesPanel}
+import GModularClockCircle.Clock
+import ex2016programmingdemo.ui.{Circle, Point, Shape, ShapesPanel}
 import reactives.default.*
 
 /** Eventually, our Pong game will require a bouncing ball that moves

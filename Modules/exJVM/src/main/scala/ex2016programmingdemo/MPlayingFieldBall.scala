@@ -1,7 +1,7 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
-import ex201x.programming2016demo.LFullyModularBall.BouncingBall
-import ex201x.programming2016demo.ui.{Rectangle, Shape, ShapesPanel}
+import LFullyModularBall.BouncingBall
+import ex2016programmingdemo.ui.{Rectangle, Shape, ShapesPanel}
 import reactives.default.*
 
 /** We now add a playing field to our game. We begin implementing this

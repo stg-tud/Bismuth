@@ -1,8 +1,8 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
-import ex201x.programming2016demo.LFullyModularBall.BouncingBall
-import ex201x.programming2016demo.MPlayingFieldBall.PlayingField
-import ex201x.programming2016demo.ui.{Shape, ShapesPanel}
+import LFullyModularBall.BouncingBall
+import MPlayingFieldBall.PlayingField
+import ex2016programmingdemo.ui.{Shape, ShapesPanel}
 import reactives.default.*
 
 /** Because we implemented the collision events inside a method, with each

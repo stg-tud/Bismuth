@@ -1,6 +1,6 @@
 package ex201x.swing.followmouse
 
-import ex201x.Mouse
+import ex201x.swing.Mouse
 import reactives.default.*
 
 import java.awt.{Dimension, Graphics2D}

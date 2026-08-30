@@ -1,6 +1,6 @@
-package ex201x.programming2016demo
+package ex2016programmingdemo
 
-import ex201x.programming2016demo.ui.{Circle, ShapesPanel}
+import ex2016programmingdemo.ui.{Circle, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
