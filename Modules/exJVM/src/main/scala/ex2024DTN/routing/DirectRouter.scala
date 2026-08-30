@@ -33,7 +33,7 @@ class DirectRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInter
           Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = List(), delete_afterwards = false))
         case peer: DtnPeer =>
           val selected_clas = peer.cla_list
-            .filter((agent, port_option) => packet.clas.contains(agent))
+            .filter((agent, _) => packet.clas.contains(agent))
             .map((agent, port_option) =>
               Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
             )

@@ -8,6 +8,7 @@ import org.bouncycastle.crypto.params.HKDFParameters
 
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
+import scala.annotation.unused
 
 class HkdfTests extends FunSuite {
   test("BouncyCastle hkdf for AEAD with XChaCha20-Poly1305") {
@@ -75,7 +76,7 @@ class HkdfTests extends FunSuite {
       hkdf.generateBytes(outputKeyMaterial, 0, 32)
       outputKeyMaterial
     }
-    val okm = {
+    @unused val okm = {
       val combined       = kdkPart1.concat(kdkPart2)
       val hkdfParameters = HKDFParameters.skipExtractParameters(combined, "COMBINATION".getBytes())
       val hkdf           = HKDFBytesGenerator(SHA256Digest())

@@ -11,6 +11,7 @@ import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.time.{Duration, ZoneId, ZonedDateTime}
+import scala.annotation.unused
 import scala.util.Using
 
 class MonitoringPaths(base_dir: String = "/shared/monitoring") {
@@ -23,7 +24,6 @@ class MonitoringPaths(base_dir: String = "/shared/monitoring") {
 
 class MonitoringServer(server: TCPReadonlyServer, paths: MonitoringPaths = MonitoringPaths()) {
   def run(): Unit = {
-    val dir = Paths.get("/shared/monitoring")
 
     Using.Manager { use =>
       val streamReceived            = use(BufferedOutputStream(Files.newOutputStream(paths.received_data_fp)))
@@ -222,8 +222,8 @@ class MonitoringStateDevelopmentToRatioConverter(creationClientId: String, paths
       var deliveredStates: Map[String, Dots] = Map()
 
       // these count anomalies that should not happen!?
-      var bundlesCreatedAtOtherNodesCounter: Long = 0
-      var bundlesDeliveredAtCreationCounter: Long = 0
+      @unused var bundlesCreatedAtOtherNodesCounter: Long = 0
+      @unused var bundlesDeliveredAtCreationCounter: Long = 0
 
       var line = in.readLine()
       while line != null do {

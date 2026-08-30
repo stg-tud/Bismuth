@@ -13,6 +13,8 @@ import scalatags.JsDom.all.*
 import webapps.Storing
 import webapps.ex2024calendar.Codecs.given
 
+import scala.annotation.unused
+
 class NewAppointment(private val typeName: String) {
 
   val nameInput: Input = input(
@@ -81,7 +83,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
 
     // ====================== Invariants ====================== //
 
-    val noAppointmentsCrossing = (
+    @unused val _noAppointmentsCrossing = (
         c1: Var[Calendar],
         c2: Var[Calendar]
     ) =>
@@ -127,7 +129,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
       }
      */
 
-    val removeEvents = (cal: Signal[Calendar]) =>
+    @unused val _removeEvents = (cal: Signal[Calendar]) =>
       cal.map { buf => buf.state.elements.toList.map(_.removeEvent) }.flatten(using Flatten.firstFiringEvent)
 
     // ====================== edit ====================== //
@@ -143,7 +145,7 @@ class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
       .ensures { (cal: Calendar, aps) => cal.state.contains(aps._2) }
     // .ensures { (cal: Calendar, aps) => size(cal.toSet) == old(size(cal.toSet)) }
 
-    val editEvents = (cal: Signal[Calendar]) =>
+    @unused val _editEvents = (cal: Signal[Calendar]) =>
       cal.map { buf => buf.state.elements.toList.map(_.editEvent) }.flatten(using Flatten.firstFiringEvent)
 
     // ====================== RDTs ====================== //

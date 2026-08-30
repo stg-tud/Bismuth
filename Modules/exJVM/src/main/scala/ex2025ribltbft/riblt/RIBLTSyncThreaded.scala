@@ -12,6 +12,7 @@ import ex2025ribltbft.riblt.RIBLTSyncWithThreads.{codec1, codec2}
 import ex2025ribltbft.riblt.SessionType.{receiver, sender}
 
 import java.security.{PrivateKey, PublicKey}
+import scala.annotation.unused
 
 class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
     var replica: R,
@@ -55,11 +56,11 @@ class RIBLTSyncWithThreads[T, R <: Replica[T, R]](
     }
 
     private def handleMessage(bytes: Array[Byte])(using JsonValueCodec[R]): Unit = {
-      val name = Thread.currentThread().getName
+      @unused val name = Thread.currentThread().getName
 
       val message = readFromArray[Message](bytes)
 
-      val sender: String = message.sender
+      @unused val sender: String = message.sender
 
       message.tag match {
         case CODED_SYMBOLS_REQUEST =>

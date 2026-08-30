@@ -1,14 +1,11 @@
 package ex2025blockchain
 
 import munit.FunSuite
-import rdts.base.{Bottom, Lattice}
 import rdts.time.Dot
 
 class PoWBlockchainTest extends FunSuite {
 
   test("simple chain") {
-    given Lattice[String] = Lattice.fromOrdering
-    given Bottom[String]  = Bottom.provide("")
 
     val genesisBlock                 = PoWBlockchain(Block("", None, "", Dot.zero))
     val replicaA, replicaB, replicaC = Replica(genesisBlock)
@@ -37,8 +34,6 @@ class PoWBlockchainTest extends FunSuite {
   }
 
   test("with orphan branches") {
-    given Lattice[String] = Lattice.fromOrdering
-    given Bottom[String]  = Bottom.provide("")
 
     val replicaA, replicaB = Replica(PoWBlockchain(Block("", None, "", Dot.zero)))
     val difficulty         = 1
@@ -85,8 +80,6 @@ class PoWBlockchainTest extends FunSuite {
   }
 
   test("orphan outgrows valid branch") {
-    given Lattice[String] = Lattice.fromOrdering
-    given Bottom[String]  = Bottom.provide("")
 
     val replicaA, replicaB = Replica(PoWBlockchain(Block("", None, "", Dot.zero)))
     val difficulty         = 1

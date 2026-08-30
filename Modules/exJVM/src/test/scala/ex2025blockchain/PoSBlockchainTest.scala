@@ -1,15 +1,12 @@
 package ex2025blockchain
 
 import munit.FunSuite
-import rdts.base.{Bottom, Lattice}
 import rdts.time.Dot
 
 class PoSBlockchainTest extends FunSuite {
 
   test("single replica chain") {
-    given Lattice[String] = Lattice.fromOrdering
 
-    given Bottom[String] = Bottom.provide("")
 
     val difficulty   = 0
     val genesisBlock = PoSBlockchain(Block("", None, "", Dot.zero))
@@ -30,8 +27,6 @@ class PoSBlockchainTest extends FunSuite {
   }
 
   test("two replicas simple chain") {
-    given Lattice[String] = Lattice.fromOrdering
-    given Bottom[String]  = Bottom.provide("")
 
     val difficulty         = 0
     val genesisBlock       = PoSBlockchain(Block("", None, "", Dot.zero))
@@ -58,9 +53,7 @@ class PoSBlockchainTest extends FunSuite {
   }
 
   test("two replicas concurrent add to genesis chain") {
-    given Lattice[String] = Lattice.fromOrdering
 
-    given Bottom[String] = Bottom.provide("")
 
     val difficulty         = 0
     val genesisBlock       = PoSBlockchain(Block("", None, "", Dot.zero))
@@ -84,8 +77,6 @@ class PoSBlockchainTest extends FunSuite {
   }
 
   test("three replicas with orphan branch") {
-    given Lattice[String] = Lattice.fromOrdering
-    given Bottom[String]  = Bottom.provide("")
 
     val difficulty         = 0
     val replicaA, replicaB = Replica(PoSBlockchain(Block("", None, "", Dot.zero)))

@@ -8,7 +8,6 @@ object ReplicaGenerator:
     def generate[T, R <: Replica[T, R]](size: Int, diff: Float, replica1: R, replica2: R, n: Int = 1): (R, R) = {
       var r1  = replica1
       var r2  = replica2
-      val rnd = new Random()
       val s   = "A" * n * 1000
 
       val common = math.round(size * (1 - diff))

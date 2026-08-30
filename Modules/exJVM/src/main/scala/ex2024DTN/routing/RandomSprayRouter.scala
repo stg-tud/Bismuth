@@ -4,6 +4,7 @@ import ex2024DTN.{Endpoint, MonitoringClientInterface, NoMonitoringClient, Packe
 
 import java.time.ZonedDateTime
 import java.util.concurrent.ConcurrentHashMap
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters.*
@@ -32,19 +33,19 @@ class RandomSprayRouter(
       return Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = List(), delete_afterwards = false))
     }
 
-    val source_node: Endpoint = packet.bp.source.extract_node_endpoint()
+    @unused val source_node: Endpoint = packet.bp.source.extract_node_endpoint()
 
     // remove peers which we already delivered the bundle to
     val random_peers = peers.asScala
-      .filter((peer_name, peer) => !delivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
+      .filter((peer_name, _) => !delivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
 
-    println(s"filtered random peers available: ${List.from(random_peers).map((peer_name, peer) => peer.eid)}")
+    println(s"filtered random peers available: ${List.from(random_peers).map((_, peer) => peer.eid)}")
 
     // use peer-info and available clas' to build a list of cla-connections to forward the bundle over
     val selected_clas: List[Sender] =
-      Random.shuffle(random_peers).take(topNNeighbours).flatMap { (target_name, target) =>
+      Random.shuffle(random_peers).take(topNNeighbours).flatMap { (_, target) =>
         target.cla_list
-          .filter((agent, port_option) => packet.clas.contains(agent))
+          .filter((agent, _) => packet.clas.contains(agent))
           .map((agent, port_option) =>
             Sender(remote = target.addr, port = port_option, agent = agent, next_hop = target.eid)
           )

@@ -2,6 +2,8 @@ package webapps.ex2025tabular.lib
 
 import rdts.base.LocalUid
 
+import scala.annotation.unused
+
 class SpreadsheetDeltaAggregator[S](
     private var spreadsheet: Spreadsheet[S],
     replicaId: LocalUid
@@ -14,7 +16,7 @@ class SpreadsheetDeltaAggregator[S](
 
   def editAndGetDelta(initialDelta: Spreadsheet[S] = Spreadsheet.empty[S])(fn: EditFunction, allowUndo: Boolean = true)
       : Spreadsheet[S] = {
-    val delta            = fn(using replicaId)(spreadsheet)
+    @unused val delta    = fn(using replicaId)(spreadsheet)
     val recordingWrapper = if allowUndo then
         new UndoRecordingSpreadsheet[S](
           spreadsheet,

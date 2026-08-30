@@ -6,6 +6,7 @@ import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import RIBLT.{given_Hashable_Array, given_Xorable_Array}
 
+import scala.annotation.unused
 import scala.util.Random
 
 class TravelPlanTest extends munit.FunSuite:
@@ -57,7 +58,7 @@ class TravelPlanTest extends munit.FunSuite:
       // it. At the end of the process only the receiver knows the answer to the question: which symbols (deltas) are
       // exclusive to which replica? and we assume that this replica (the receiver) will share this answer with the other
       // replica (the sender) by sending the deltas that this replica is missing to her
-      var i = 0
+      @unused var i = 0
       while !ribltReplica2.isDecoded do
           // as long as the riblt instance of replica2 cannot decode all the codedSymbols, send a codedSymbol from replica1
           // to repplica2
@@ -90,7 +91,7 @@ class TravelPlanTest extends munit.FunSuite:
       var lstDelta1 = List[Delta]()
       var lstDelta2 = List[Delta]()
 
-      var j = 0
+      @unused var j = 0
       for i <- 0 to testSetSize do
           val r = Random().nextDouble()
           if r <= 0.8 then {
@@ -121,7 +122,7 @@ class TravelPlanTest extends munit.FunSuite:
       for item <- lstDelta2 do
           ribltReplica2.addSymbol(writeToArray(item))
 
-      var i = 0
+      @unused var i = 0
       while !ribltReplica2.isDecoded do
           ribltReplica2.addCodedSymbol(ribltReplica1.produceNextCodedSymbol)
           i += 1

@@ -121,8 +121,6 @@ object OverlayNetworkGraphRendering {
     val uy          = dy / distance
     val startOffset = 10.0
     val endDistance = math.max(startOffset + 8.0, distance * 0.5)
-    val startX      = fromX + ux * startOffset
-    val startY      = fromY + uy * startOffset
     val endX        = fromX + ux * endDistance
     val endY        = fromY + uy * endDistance
 

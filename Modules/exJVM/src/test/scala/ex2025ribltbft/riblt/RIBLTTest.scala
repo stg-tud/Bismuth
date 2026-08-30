@@ -5,6 +5,7 @@ import ex2025ribltbft.riblt.RIBLT
 import RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
 
 import java.security.MessageDigest
+import scala.annotation.unused
 import scala.concurrent.duration.*
 import scala.util.Random
 
@@ -26,7 +27,7 @@ class RIBLTTest extends munit.FunSuite:
       for s <- bob do
           dec.addSymbol(s)
 
-      var i = 0
+      @unused var i = 0
       var d = true
       while d do
           val s = enc.produceNextCodedSymbol
@@ -48,7 +49,7 @@ class RIBLTTest extends munit.FunSuite:
       var alice = List[String]()
       var bob   = List[String]()
 
-      var j = 0
+      @unused  var j = 0
       for i <- 0 to 10000 do
           val r = Random().nextDouble()
           if r <= 0.8 then {
@@ -70,7 +71,7 @@ class RIBLTTest extends munit.FunSuite:
       for s <- bob do
           dec.addSymbol(s)
 
-      var i = 0
+      @unused var i = 0
       var d = true
       while d do
           val s = enc.produceNextCodedSymbol
@@ -96,7 +97,7 @@ class RIBLTTest extends munit.FunSuite:
       var alice = List[String]()
       var bob   = List[String]()
 
-      var j = 0
+      @unused  var j = 0
       for i <- 0 to testSetSize do
           if i % 2 == 0 then {
             alice = alice :+ i.toString
@@ -116,7 +117,7 @@ class RIBLTTest extends munit.FunSuite:
       for s <- bob do
           dec.addSymbol(s)
 
-      var i = 0
+      @unused var i = 0
       var d = true
       while d do
           val s = enc.produceNextCodedSymbol
@@ -149,7 +150,7 @@ class RIBLTTest extends munit.FunSuite:
       for s <- bob do
           dec.addSymbol(s)
 
-      var i = 0
+      @unused var i = 0
       var d = true
       while d do
           val s = enc.produceNextCodedSymbol
@@ -175,11 +176,11 @@ class RIBLTTest extends munit.FunSuite:
       var replica2 = ORSet[String]()
       val riblt1   = RIBLT[String]()
       val riblt2   = RIBLT[String]()
-      var both     = 0
-      var a        = 0
-      var b        = 0
+      @unused var both     = 0
+      @unused var a        = 0
+      @unused var b        = 0
 
-      var j = 0
+      @unused var j = 0
       for i <- 0 to 100 do
           // println(i)
           val r = Random().nextDouble()
@@ -205,7 +206,7 @@ class RIBLTTest extends munit.FunSuite:
                 replica2 = replica2.merge(replica2.add(i.toString))
               }
 
-      var r = 0
+      @unused var r = 0
 
       // println(s"similarity $both")
       // println(s"diff $j")
@@ -220,7 +221,7 @@ class RIBLTTest extends munit.FunSuite:
       for id <- replica2.hashDAG.getIDs do
           riblt2.addSymbol(id)
 
-      var i = 0
+      @unused var i = 0
       var d = true
       while d do
           val s = riblt1.produceNextCodedSymbol
@@ -238,11 +239,11 @@ class RIBLTTest extends munit.FunSuite:
       var bob   = List[String]()
 
       val m    = MessageDigest.getInstance("SHA3-512")
-      var both = 0
-      var a    = 0
-      var b    = 0
+      @unused var both = 0
+      @unused var a    = 0
+      @unused var b    = 0
 
-      var j = 0
+      @unused var j = 0
       for i <- 0 to 1000 do
           val r = Random().nextDouble()
           if r <= 0.8 then {
@@ -278,7 +279,7 @@ class RIBLTTest extends munit.FunSuite:
       for s <- bob do
           dec.addSymbol(s)
 
-      var i = 0
+      @unused var i = 0
       var d = true
       while d do
           val s = enc.produceNextCodedSymbol

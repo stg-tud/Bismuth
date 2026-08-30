@@ -38,7 +38,7 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
             Option(Packet.ResponseSenderForBundle(bp = packet.bp, clas = List(), delete_afterwards = false))
           case peer: DtnPeer =>
             val selected_clas = peer.cla_list
-              .filter((agent, port_option) => packet.clas.contains(agent))
+              .filter((agent, _) => packet.clas.contains(agent))
               .map((agent, port_option) =>
                 Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
               )
@@ -50,11 +50,11 @@ class SprayAndWaitRouter(ws: WSEroutingClient, monitoringClient: MonitoringClien
       println("attempting spray routing")
 
       val selected_clas = peers.asScala
-        .filter((peer_name, peer) => !sprayDelivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
+        .filter((peer_name, _) => !sprayDelivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
         .take(num_copies_before - 1) // -1 to be left with at least one copy
-        .map { (peer_name, peer) =>
+        .map { (_, peer) =>
           peer.cla_list
-            .filter((agent, port_option) => packet.clas.contains(agent))
+            .filter((agent, _) => packet.clas.contains(agent))
             .map((agent, port_option) =>
               Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
             )

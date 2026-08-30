@@ -49,7 +49,7 @@ class SyncBenchmark {
 
     for i <- Range(1, 31) do
         println(s"RIBLT $i")
-        var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
+        val res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
         MyCollector.add(res)
 
     var l    = List.empty[Int]
@@ -60,12 +60,12 @@ class SyncBenchmark {
 
     for i <- l.sorted do
         println(s"RIBLT $i")
-        var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
+        val res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
         MyCollector.add(res)
 
     for i <- Range(1000, 4000, 500) do
         println(s"RIBLT $i")
-        var res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
+        val res = SyncStrategies.syncRIBLT(r1, r2, i, size, diff, deltaSizeInKiloBytes)
         MyCollector.add(res)
 
     for i <- Range(1, 300) do

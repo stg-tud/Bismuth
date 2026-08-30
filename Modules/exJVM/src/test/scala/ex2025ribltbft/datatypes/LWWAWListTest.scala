@@ -2,6 +2,8 @@ package ex2025ribltbft.datatypes
 
 import ex2025ribltbft.datatypes.LWWAWList
 
+import scala.annotation.unused
+
 class LWWAWListTest extends munit.FunSuite:
     test("basic") {
       var list = LWWAWList[String]()
@@ -87,7 +89,7 @@ class LWWAWListTest extends munit.FunSuite:
     }
 
     test("basic 4") {
-      var list1 = LWWAWList[String]()
+      val list1 = LWWAWList[String]()
       var list2 = LWWAWList[String]()
       var list3 = LWWAWList[String]()
 
@@ -112,9 +114,9 @@ class LWWAWListTest extends munit.FunSuite:
       // println(list1.merge(list2.merge(list3)).list)
 
       val t1 = list1.merge(list2)
-      val t2 = t1.merge(list3)
+      @unused val t2 = t1.merge(list3)
 
       val t3 = list2.merge(list3)
-      val t4 = list1.merge(t3)
+      @unused val t4 = list1.merge(t3)
 
     }

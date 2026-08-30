@@ -6,6 +6,7 @@ import ex2025ribltbft.riblt.RIBLTSyncWithThreads
 import ex2025ribltbft.riblt.RIBLTSyncWithThreads.given_JsonValueCodec_ORSet
 import ex2025ribltbft.riblt.SessionType.{receiver, sender}
 
+import scala.annotation.unused
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.util.Random
 
@@ -50,7 +51,7 @@ class RIBLTSyncThreadedTest extends munit.FunSuite:
       val t3 = sync1.startSession(sync2.replicaID, sessionType = sender)
 
       val t4 = sync3.startSession(sync2.replicaID, sessionType = receiver)
-      val t5 = sync2.startSession(sync3.replicaID, sessionType = sender)
+      @unused val t5 = sync2.startSession(sync3.replicaID, sessionType = sender)
 
       t0.join()
       t1.join()
@@ -58,10 +59,10 @@ class RIBLTSyncThreadedTest extends munit.FunSuite:
       t3.join()
       t4.join()
 
-      val crdt0afterSync = sync0.replica
-      val crdt1afterSync = sync1.replica
-      val crdt2afterSync = sync2.replica
-      val crdt3afterSync = sync3.replica
+      @unused val crdt0afterSync = sync0.replica
+      @unused val crdt1afterSync = sync1.replica
+      @unused val crdt2afterSync = sync2.replica
+      @unused val crdt3afterSync = sync3.replica
 
       // sync2.startSession(sync3.id, sessionType=sender)
       // sync3.startSession(sync2.id, sessionType=receiver)
@@ -102,8 +103,8 @@ class RIBLTSyncThreadedTest extends munit.FunSuite:
       t0.join()
       t1.join()
 
-      val crdt0afterSync = sync0.replica
-      val crdt1afterSync = sync1.replica
+      @unused val crdt0afterSync = sync0.replica
+      @unused val crdt1afterSync = sync1.replica
 
       // sync2.startSession(sync3.id, sessionType=sender)
       // sync3.startSession(sync2.id, sessionType=receiver)

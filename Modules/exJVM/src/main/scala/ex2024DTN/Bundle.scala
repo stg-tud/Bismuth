@@ -464,9 +464,8 @@ given Decoder[PrimaryBlock] = Decoder { reader =>
   // the CBOR should always be bounded, e.g. has a length, but we do not know it beforehand
   // we sliently accept unbounded arrays because either the CBOR is not to spec, or we got a JSON encoded bundle where arrays are always unbounded
   val unbounded: Boolean = reader.hasArrayStart
-  var length: Long       = -1
   if unbounded then { reader.readArrayStart() }
-  else { length = reader.readArrayHeader() }
+  else { reader.readArrayHeader() }
 
   val block = PrimaryBlock(
     version = reader.readInt(),
@@ -545,9 +544,8 @@ given Decoder[CanonicalBlock] = Decoder { reader =>
   // the CBOR should always be bounded, e.g. has a length, but we do not know it beforehand
   // we sliently accept unbounded arrays because either the CBOR is not to spec, or we got a JSON encoded bundle where arrays are always unbounded
   val unbounded: Boolean = reader.hasArrayStart
-  var length: Long       = -1
   if unbounded then { reader.readArrayStart() }
-  else { length = reader.readArrayHeader() }
+  else { reader.readArrayHeader() }
 
   val block_type_code = reader.readInt()
 
@@ -623,9 +621,8 @@ given Decoder[Bundle] = Decoder { reader =>
   // the CBOR should always be bounded, e.g. has a length, but we do not know it beforehand
   // we sliently accept unbounded arrays because either the CBOR is not to spec, or we got a JSON encoded bundle where arrays are always unbounded
   val unbounded: Boolean = reader.hasArrayStart
-  var length: Long       = -1
   if unbounded then { reader.readArrayStart() }
-  else { length = reader.readArrayHeader() }
+  else { reader.readArrayHeader() }
 
   val primaryBlock: PrimaryBlock = reader.read[PrimaryBlock]()
 

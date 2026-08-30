@@ -3,7 +3,7 @@ package ex2025ribltbft.dag
 import crypto.Ed25519Util
 
 import java.security.{PrivateKey, PublicKey}
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.collection.immutable.{HashMap, List, Map, Set}
 import scala.collection.mutable
 
@@ -100,7 +100,6 @@ case class HashDAG[T](
               if dependencies.forall(e => contains(e)) then
                   var g = this.graph
                   for d <- dependencies do
-                      val e = events(d)
                       g = g.updated(d, g(d) + event.id)
 
                   /*val tmp = this.queue.keySet.filter(e => e.dependencies.contains(event.id))
@@ -126,8 +125,8 @@ case class HashDAG[T](
 
     def addEvent(content: T): HashDAG[T] =
         // generate the event
-        val currentHeads = getCurrentHeads
-        val event        = generate(content)
+        @unused val currentHeads = getCurrentHeads
+        @unused val event        = generate(content)
 
         // apply the event
         effect(event)
@@ -140,15 +139,14 @@ case class HashDAG[T](
           this
       else
           // generate the event
-          val currentHeads = getCurrentHeads
-          val event        = generate(content)
+          @unused val currentHeads = getCurrentHeads
+          @unused val event        = generate(content)
 
           // apply the event
           this.empty.effect(event)
 
     def processQueue(): HashDAG[T] =
         var hashDAG = this
-        var events  = Set.empty[Event[T]]
 
         for event <- this.queue do {
           val tmp = hashDAG.effect(event)
@@ -256,7 +254,7 @@ case class HashDAG[T](
 
     def getAllSuccessors(id: String): Set[String] =
         var visited = Set.empty[String]
-        var stack   = mutable.Stack(id)
+        val stack   = mutable.Stack(id)
 
         while stack.nonEmpty do
             val v = stack.pop()

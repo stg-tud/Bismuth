@@ -8,6 +8,8 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
+import scala.annotation.unused
+
 class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: ArdtEvent,
     localIdentity: PrivateIdentity,
@@ -18,7 +20,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   def state: RDT                                    = Authorization.materialize(eventGraph, deltaValueStore)
   private var eventGraph: ArdtEventGraph[RDT]       = ArdtEventGraph(genesis)
   private val deltaValueStore: DeltaValueStore[RDT] = DeltaValueStore[RDT]()
-  private val antiEntropy: AntiEntropy              = antiEntropyProvider(this)
+  private lazy val antiEntropy: AntiEntropy         = antiEntropyProvider(this)
 
   def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Hash] = {
     val oldHeads = eventGraph.heads
@@ -80,7 +82,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       deltas: Iterable[(eventHash: Hash, delta: RevealedValue)]
   ): Iterable[(eventHash: Hash, delta: RevealedValue)] =
     deltas.filter { case (eventHash, RevealedValue(encodedDelta, _)) =>
-      val delta = readFromArray[RDT](encodedDelta)
+      @unused val delta = readFromArray[RDT](encodedDelta)
       Authorization.mayRead(readingReplica, eventHash, eventGraph, deltaValueStore)
     }
 

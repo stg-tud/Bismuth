@@ -159,7 +159,7 @@ class RdtRouter(
     // use peer-info and available clas' to build a list of cla-connections to forward the bundle over
     val selected_clas: List[Sender] = targets.flatMap { target =>
       target.cla_list
-        .filter((agent, port_option) => packet.clas.contains(agent))
+        .filter((agent, _) => packet.clas.contains(agent))
         .map((agent, port_option) =>
           Sender(remote = target.addr, port = port_option, agent = agent, next_hop = target.eid)
         )
@@ -320,7 +320,7 @@ class DotState {
         case rdt_map: ConcurrentHashMap[Endpoint, Dots] =>
           rdt_map.asScala
             .filter((n: Endpoint, d: Dots) => !n.equals(node_endpoint) && !(dots <= d))
-            .collect[Endpoint]((n: Endpoint, d: Dots) => n)
+            .collect[Endpoint]((n: Endpoint, _: Dots) => n)
             .toSet
 
   /*

@@ -2,7 +2,7 @@ package ex2025recipebook
 
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
+import rdts.base.{Historized, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlySet, LastWriterWins, ObserveRemoveMap, ReplicatedSet}
 import rdts.time.Dots
 
@@ -36,10 +36,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def baselineBufferGSet(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]               = Bottom.provide(0)
-    given Lattice[GrowOnlySet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer = DeltaBufferEverything[GrowOnlySet[Int]]()
 
     EvalORMap.modReplica(
@@ -54,10 +50,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def nonRedundantBufferGSet(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]               = Bottom.provide(0)
-    given Lattice[GrowOnlySet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer = DeltaBufferNonRedundant[GrowOnlySet[Int]]()
 
     EvalORMap.modReplica(
@@ -72,10 +64,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def subsumedBufferGSet(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]               = Bottom.provide(0)
-    given Lattice[GrowOnlySet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[GrowOnlySet[Int]]()
 
@@ -91,10 +79,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def baselineBufferORSet(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                 = Bottom.provide(0)
-    given Lattice[ReplicatedSet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer =
       DeltaBufferEverything[ReplicatedSet[Int]]()
 
@@ -110,10 +94,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def nonRedundantBufferORSet(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                 = Bottom.provide(0)
-    given Lattice[ReplicatedSet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer =
       DeltaBufferNonRedundant[ReplicatedSet[Int]]()
 
@@ -129,10 +109,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def subsumedBufferORSet(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                 = Bottom.provide(0)
-    given Lattice[ReplicatedSet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[ReplicatedSet[Int]]()
 
@@ -148,10 +124,6 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def baselineBufferORMapLWW(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                                         = Bottom.provide(0)
-    given Lattice[ObserveRemoveMap[Int, LastWriterWins[Int]]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer = DeltaBufferEverything[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
     EvalORMap.modReplica(
@@ -166,9 +138,7 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def nonRedundantBufferORMapLWW(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, LastWriterWins[Int]]] =
-        given Lattice[Int] = math.max
         Lattice.derived
     val deltaBuffer = DeltaBufferNonRedundant[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
@@ -184,9 +154,7 @@ class DeltaBufferORMapBenchmark {
 
   @Benchmark
   def subsumedBufferORMapLWW(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                                         = Bottom.provide(0)
     given Lattice[ObserveRemoveMap[Int, LastWriterWins[Int]]] =
-        given Lattice[Int] = math.max
         Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
@@ -351,7 +319,6 @@ object EvalORMap {
       random: Int,
       mapSize: Int
   ): ObserveRemoveMap[Int, EnableWinsFlag] = {
-    given Bottom[Int] = Bottom.provide(0)
     if orMap.entries.isEmpty then
         return orMap.update(
           random,

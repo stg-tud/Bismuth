@@ -8,6 +8,8 @@ import rdts.time.Dots
 import replication.HashDag.Encoder
 import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
 
+import scala.annotation.unused
+
 class NonFilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,
     network: AntiEntropyCommunicator[State],
@@ -40,7 +42,7 @@ class NonFilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Fi
       }
     } else {                                                      // Remote acl is the same as local acl
       missingDots.updateAndGet(missing => missing.diff(filtered)) // Remove filtered from missing
-      val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
+      @unused val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
     }
   }
 

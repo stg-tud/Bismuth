@@ -133,9 +133,7 @@ class SerializeOnlyBenchmarkState {
     val replicaId                  = "TestReplica"
     val crdt                       = new DeltaAWLWWMContainer[String, String](replicaId)
 
-    var count = 0
     for entry <- dummyKeyValuePairs do {
-      count = count + 1
       // Update crdt
       crdt.put(entry._1, entry._2)
       // Track time information used for encrypted crdt

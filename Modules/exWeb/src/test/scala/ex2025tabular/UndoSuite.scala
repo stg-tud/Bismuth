@@ -4,6 +4,8 @@ import rdts.base.{LocalUid, Uid}
 import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 import webapps.ex2025tabular.lib.*
 
+import scala.annotation.unused
+
 class UndoSuite extends munit.FunSuite {
 
   private val cellCoord = SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex)
@@ -58,8 +60,8 @@ class UndoSuite extends munit.FunSuite {
     val replica1 = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replica1"))
     val replica2 = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replica2"))
 
-    val replica1Edit = replica1.editAndGetDelta()(_.editCell(cellCoord, Some("a")))
-    val replica2Edit = replica2.editAndGetDelta()(_.editCell(cellCoord, Some("b")))
+    @unused val replica1Edit = replica1.editAndGetDelta()(_.editCell(cellCoord, Some("a")))
+    val replica2Edit         = replica2.editAndGetDelta()(_.editCell(cellCoord, Some("b")))
 
     replica1.accumulate(replica2Edit)
 

@@ -59,7 +59,7 @@ object Webview {
           setInterval("callback()",1000);
     """
     )
-    val res = w.bind(
+    @unused val res = w.bind(
       "webview_channel_send",
       b => {
         println("received:")

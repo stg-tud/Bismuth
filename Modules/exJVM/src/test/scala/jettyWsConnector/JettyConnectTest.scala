@@ -28,7 +28,7 @@ object JettyConnectTest {
         msg =>
           println(s"received ${msg.map(_.show)}")
 
-    val connect = Async[Abort] {
+    Async[Abort] {
       val outgoing = prepared.bind
       outgoing.send(ByteBufferMessageBuffer("hello world".getBytes)).bind
       println("send successfull")

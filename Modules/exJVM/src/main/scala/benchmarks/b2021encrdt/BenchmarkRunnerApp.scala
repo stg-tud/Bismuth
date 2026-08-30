@@ -8,6 +8,7 @@ import org.openjdk.jmh.runner.options.{Options, OptionsBuilder}
 import java.nio.file.Paths
 import java.util
 import java.util.concurrent.{Callable, Executors, TimeUnit}
+import scala.annotation.unused
 
 object BenchmarkRunnerApp {
   def main(args: Array[String]): Unit = {
@@ -23,7 +24,7 @@ object BenchmarkRunnerApp {
       .forks(3)
       .build()
 
-    val results: util.Collection[RunResult] = new Runner(jmhOptions).run()
+    @unused val results: util.Collection[RunResult] = new Runner(jmhOptions).run()
 
     println("Running ToDo App Benchmarks")
     ToDoAppBenchmark.main(Array.empty)

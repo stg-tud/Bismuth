@@ -18,7 +18,7 @@ class AntiEntropy(
   private val eventsWithMissingDependencies: mutable.Map[Hash, (Array[Byte], Set[Hash], PublicIdentity)] =
     mutable.Map.empty
   private val deltasWithMissingEvent: mutable.Map[Hash, RevealedValue] = mutable.Map.empty
-  private val connectionManager                = connectionManagerProvider(this)
+  private lazy val connectionManager                = connectionManagerProvider(this)
 
   def broadcastEvents(events: Iterable[Array[Byte]]): Unit =
     connectionManager.broadcast(

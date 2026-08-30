@@ -82,7 +82,7 @@ class RdtRouter2(ws: WSEroutingClient, monitoringClient: MonitoringClientInterfa
     // use peer-info and available clas' to build a list of cla-connections to forward the bundle over
     val selected_clas: Iterable[Sender] = filtered_peers.flatMap { target =>
       target.cla_list
-        .filter((agent, port_option) => packet.clas.contains(agent))
+        .filter((agent, _) => packet.clas.contains(agent))
         .map((agent, port_option) =>
           Sender(remote = target.addr, port = port_option, agent = agent, next_hop = target.eid)
         )

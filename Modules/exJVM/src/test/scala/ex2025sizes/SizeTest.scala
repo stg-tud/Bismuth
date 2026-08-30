@@ -7,6 +7,8 @@ import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap
 import channels.JsoniterCodecs.given
 
+import scala.annotation.unused
+
 class SizeTest extends munit.FunSuite {
 
   test("size does not grow indefinetely") {
@@ -28,7 +30,7 @@ class SizeTest extends munit.FunSuite {
 
     given JsonValueCodec[ObserveRemoveMap[String, Int]] = JsonCodecMaker.make
 
-    val emptyjson       = core.writeToArray(empty)
+    @unused val emptyjson       = core.writeToArray(empty)
     val oneThousandJson = core.writeToArray(oneThousand)
     val twoThousandJson = core.writeToArray(twoThousand)
 

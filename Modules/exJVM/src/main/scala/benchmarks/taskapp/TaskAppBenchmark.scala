@@ -8,6 +8,7 @@ import rdts.experiments.{DeltaHistory, UndoRedoReplica}
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
+import scala.annotation.unused
 import scala.collection.mutable
 
 object TaskAppBenchmark {
@@ -188,7 +189,7 @@ object TaskAppBenchmark {
     } else None
 
     val startNanoTime: Long             = System.nanoTime()
-    var lastCheckPointEndNanoTime: Long = startNanoTime
+    @unused var lastCheckPointEndNanoTime: Long = startNanoTime
 
     var counter                     = 0
     var concurrentMoveTreeConflicts = 0
@@ -228,7 +229,7 @@ object TaskAppBenchmark {
             concurrentMoveListConflicts += 1
           case _ => ()
 
-      var syncStartTime = System.nanoTime()
+      val syncStartTime = System.nanoTime()
       activeReplica = 1
       val delta1 = performInteraction(interaction1)
       activeReplica = 2

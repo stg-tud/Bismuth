@@ -5,7 +5,6 @@ import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, ObserveRemoveMap, PosNegCounter, ReplicatedSet}
-import rdts.time.Dots
 
 import java.util.concurrent.TimeUnit
 
@@ -69,7 +68,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferGCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int] = Bottom.provide(0)
     val deltaBuffer   = DeltaBufferEverything[GrowOnlyCounter]()
 
     Eval.modReplica(
@@ -84,7 +82,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferGCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int] = Bottom.provide(0)
     val deltaBuffer   = DeltaBufferNonRedundant[GrowOnlyCounter]()
 
     Eval.modReplica(
@@ -99,7 +96,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferGCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int] = Bottom.provide(0)
     val deltaBuffer   = DeltaBufferSubsumed[GrowOnlyCounter]()
 
     Eval.modReplica(
@@ -114,7 +110,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferPNCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int] = Bottom.provide(0)
     val deltaBuffer   = DeltaBufferEverything[PosNegCounter]()
 
     Eval.modReplica(
@@ -130,7 +125,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferPNCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int] = Bottom.provide(0)
     val deltaBuffer   = DeltaBufferNonRedundant[PosNegCounter]()
 
     Eval.modReplica(
@@ -146,7 +140,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferPNCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int] = Bottom.provide(0)
     val deltaBuffer   = DeltaBufferSubsumed[PosNegCounter]()
 
     Eval.modReplica(
@@ -204,10 +197,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferGSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]               = Bottom.provide(0)
-    given Lattice[GrowOnlySet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+
     val deltaBuffer = DeltaBufferEverything[GrowOnlySet[Int]]()
 
     Eval.modReplica(
@@ -222,10 +212,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferGSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]               = Bottom.provide(0)
-    given Lattice[GrowOnlySet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+
     val deltaBuffer = DeltaBufferNonRedundant[GrowOnlySet[Int]]()
 
     Eval.modReplica(
@@ -240,10 +227,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferGSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]               = Bottom.provide(0)
-    given Lattice[GrowOnlySet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[GrowOnlySet[Int]]()
 
@@ -259,10 +242,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferORSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                 = Bottom.provide(0)
-    given Lattice[ReplicatedSet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer =
       DeltaBufferEverything[ReplicatedSet[Int]]()
 
@@ -278,10 +257,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferORSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                 = Bottom.provide(0)
-    given Lattice[ReplicatedSet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+
     val deltaBuffer =
       DeltaBufferNonRedundant[ReplicatedSet[Int]]()
 
@@ -297,10 +273,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferORSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                 = Bottom.provide(0)
-    given Lattice[ReplicatedSet[Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
+
 
     val deltaBuffer = DeltaBufferSubsumed[ReplicatedSet[Int]]()
 
@@ -316,10 +289,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                         = Bottom.provide(0)
-    given Lattice[ObserveRemoveMap[Int, Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer = DeltaBufferEverything[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
     Eval.modReplica(
@@ -334,10 +303,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                         = Bottom.provide(0)
-    given Lattice[ObserveRemoveMap[Int, Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
     val deltaBuffer =
       DeltaBufferNonRedundant[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
@@ -353,10 +318,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferORMap(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    given Bottom[Int]                         = Bottom.provide(0)
-    given Lattice[ObserveRemoveMap[Int, Int]] =
-        given Lattice[Int] = math.max
-        Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 

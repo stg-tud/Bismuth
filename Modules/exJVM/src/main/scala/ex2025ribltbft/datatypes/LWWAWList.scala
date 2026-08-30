@@ -3,6 +3,7 @@ package ex2025ribltbft.datatypes
 import crypto.Ed25519Util
 import ex2025ribltbft.dag.{Event, HashDAG}
 
+import scala.annotation.unused
 import scala.util.hashing.MurmurHash3
 
 case class LWWAWList[T](
@@ -25,8 +26,8 @@ case class LWWAWList[T](
       if index > l.size || index < 0 then
           throw Exception("illegal index")
 
-      var hashDAGDelta = hashDAG.generateDelta(AddItem(ListItem(element, index)))
-      var newHashDAG   = hashDAG.merge(hashDAGDelta)
+      val hashDAGDelta = hashDAG.generateDelta(AddItem(ListItem(element, index)))
+      @unused var newHashDAG   = hashDAG.merge(hashDAGDelta)
       /*for i <- index until l.size do
           val delta = newHashDAG.generateDelta(AddItem(ListItem(l(i), i + 1)))
           newHashDAG = newHashDAG.merge(delta)
@@ -44,7 +45,7 @@ case class LWWAWList[T](
       if index >= l.size || index < 0 then
           throw Exception("illegal index")
 
-      var hashDAGDelta = hashDAG.generateDelta(RemoveItem(listWithIDs(index)._2))
+      val hashDAGDelta = hashDAG.generateDelta(RemoveItem(listWithIDs(index)._2))
       /*var newHashDAG   = hashDAG.merge(hashDAGDelta)
       for i <- index + 1 until l.size do
           val delta = newHashDAG.generateDelta(AddItem(ListItem(l(i), i - 1)))
@@ -79,7 +80,7 @@ case class LWWAWList[T](
                         newItemMaps = newItemMaps + (listItem.index -> Set((listItem.item, event.id)))
                     else {
                       var currentItems = newItemMaps(listItem.index)
-                      var ids          = currentItems.map((t, id) => id)
+                      var ids          = currentItems.map((_, id) => id)
                       for id <- ids do
                           if newHashDAG.pathExists(id, event.id) then {
                             ids = ids - id

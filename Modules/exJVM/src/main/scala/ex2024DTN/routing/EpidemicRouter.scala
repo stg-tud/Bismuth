@@ -67,10 +67,10 @@ class EpidemicStrategy {
       packet: Packet.RequestSenderForBundle
   ): Option[Packet.ResponseSenderForBundle] = {
     val selected_clas = peers.asScala
-      .filter((peer_name, peer) => !delivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
-      .map { (peer_name, peer) =>
+      .filter((peer_name, _) => !delivered.getOrDefault(packet.bp.id, Set()).contains(peer_name))
+      .map { (_, peer) =>
         peer.cla_list
-          .filter((agent, port_option) => packet.clas.contains(agent))
+          .filter((agent, _) => packet.clas.contains(agent))
           .map((agent, port_option) =>
             Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
           )

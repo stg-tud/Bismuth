@@ -16,7 +16,7 @@ object RecipeBookApp {
 
     printRecipes()
 
-    var pizzaRecipe = Recipe("Pizza")
+    val pizzaRecipe = Recipe("Pizza")
     val delta1      = recipeBook1.addRecipe("pizza", pizzaRecipe)(using localUid1)
     recipeBook1 = recipeBook1.merge(delta1)
 
@@ -26,7 +26,7 @@ object RecipeBookApp {
 
     printRecipes()
 
-    var pastaRecipe = Recipe("Pasta")
+    val pastaRecipe = Recipe("Pasta")
     val delta2      = recipeBook2.addRecipe("pasta", pastaRecipe)(using localUid2)
     recipeBook2 = recipeBook2.merge(delta2)
     // pizzaRecipe = pizzaRecipe.merge(pizzaRecipe.addIngredient(Ingredient("Teig", 1.0, "Stk."))(using localUid1))

@@ -12,6 +12,7 @@ import ex2025ribltbft.riblt.RIBLT.{given_Hashable_String, given_JsonValueCodec_C
 import java.io.ByteArrayOutputStream
 import java.security.{PrivateKey, PublicKey}
 import java.util.Base64
+import scala.annotation.unused
 
 given c1: JsonValueCodec[Event[Int]]         = JsonCodecMaker.make
 given c22: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
@@ -78,7 +79,6 @@ object SyncStrategies {
       if heads1 != heads2 then
           val exclusiveHeads1 = heads1 -- heads2
           val exclusiveHeads2 = heads2 -- heads1
-          val mutualHeads     = heads1.intersect(heads2)
           val IDs1            = replica1.hashDAG.getIDs
           val IDs2            = replica2.hashDAG.getIDs
           val exclusiveIDs1   =
@@ -367,9 +367,6 @@ object SyncStrategies {
     val tmp = (localEvents ++ remoteEvents).foldLeft(0)((b, e) => b + writeToArray(e).length)
     bandwidth += tmp
 
-    val replica1IDs = replica1.hashDAG.getIDs
-    val replica2IDs = replica2.hashDAG.getIDs
-
     // println(s"SyncRIBLT: diff = ${(replica1IDs -- replica2IDs).size}, total = ${replica1IDs.size}, ${replica2IDs.size}")
     // println(s"roundTrips = $roundTrips, bandwidth = $bandwidth")
     // println(s"coded symbols per roundtrip = $codedSymbolsPerRoundTrip")
@@ -530,15 +527,13 @@ object SyncStrategies {
   @main def main(): Unit = {
     given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
 
-    given c2: JsonValueCodec[Event[Int]] = JsonCodecMaker.make
-
     var r1                       = ORSet[String]()
     var r2                       = ORSet[String]()
     val size                     = 10000
     val diff                     = 1.0f
     val deltaSize                = 10
     val dependencyPerRoundTrip   = 1
-    val codedSymbolsPerRoundTrip = 1
+    @unused val codedSymbolsPerRoundTrip = 1
     val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
 
     // val t = r1.add("A")

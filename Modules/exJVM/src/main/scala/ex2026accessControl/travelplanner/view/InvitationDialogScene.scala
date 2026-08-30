@@ -4,7 +4,6 @@ import crypto.PublicIdentity
 import ex2026accessControl.travelplanner.model.TravelPlanModel
 import ex2026accessControl.travelplanner.{Invitation, TravelPlan}
 import rdts.filters.PermissionTree
-import replication.acl.Acl
 import scalafx.application.Platform
 import scalafx.scene.Scene
 import scalafx.scene.control.*

@@ -18,9 +18,9 @@ class FloodingRouter(ws: WSEroutingClient, monitoringClient: MonitoringClientInt
     println(s"received sender-request for bundle: ${packet.bp}")
 
     val selected_clas = peers.asScala
-      .map { (peer_name, peer) =>
+      .map { (_, peer) =>
         peer.cla_list
-          .filter((agent, port_option) => packet.clas.contains(agent))
+          .filter((agent, _) => packet.clas.contains(agent))
           .map((agent, port_option) =>
             Sender(remote = peer.addr, port = port_option, agent = agent, next_hop = peer.eid)
           )

@@ -41,7 +41,7 @@ case class ORSet[T](
         ORSet(newElements, newHashDAG)
 
     def getElements: Set[T] =
-      elements.filter((k, v) => v.nonEmpty).keySet
+      elements.filter((_, v) => v.nonEmpty).keySet
 
     def contains(elem: T): Boolean = elements.contains(elem) && elements(elem).nonEmpty
 

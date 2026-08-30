@@ -7,7 +7,6 @@ import ex2026accessControl.travelplanner.{Invitation, Sync, TravelPlan}
 import rdts.base.{LocalUid, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree
-import replication.acl.Acl
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
