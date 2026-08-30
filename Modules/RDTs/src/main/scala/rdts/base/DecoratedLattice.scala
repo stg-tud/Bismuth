@@ -18,14 +18,16 @@ class DecoratedLattice[A](decorated: Lattice[A]) extends Lattice[A] {
 }
 
 object DecoratedLattice {
+  // note, without semanticdb=true, this will warn about not suppressing anything (but it does)
+  @nowarn("id=197")
   inline def filter[A](decorated: Lattice[A])(inline filt: (A, A) => A): DecoratedLattice[A] =
     new DecoratedLattice[A](decorated) {
       override def filter(base: A, other: A): A = filt(base, other)
-    }: @nowarn("id=197")
+    }
 
-
+  @nowarn("id=197")
   inline def compact[A](decorated: Lattice[A])(inline comp: A => A): DecoratedLattice[A] =
     new DecoratedLattice[A](decorated) {
       override def compact(merged: A): A = comp(merged)
-    }: @nowarn("id=197")
+    }
 }
