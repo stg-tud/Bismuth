@@ -293,6 +293,3 @@ class TextArea extends ReComponent {
   }
 }
 
-object TextArea {
-  implicit def toComponent(input: TextArea): Component = input.peer
-}
