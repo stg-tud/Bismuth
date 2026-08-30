@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.dropdown
 
-import ex2013reswing.ReTextField
 import reactives.default.*
 
 import scala.swing.*
@@ -8,10 +7,10 @@ import scala.swing.*
 object DropdownSample3 extends SimpleSwingApplication {
 
   // initial values
-  val col1                 = new ReTextField(text = "Berlin", columns = 30)
-  val col2                 = new ReTextField(text = "Paris", columns = 30)
-  val val1: Signal[String] = Signal { col1.text.value }
-  val val2: Signal[String] = Signal { col2.text.value }
+  val col1                 = new ReactiveTextField("Berlin", 30)
+  val col2                 = new ReactiveTextField("Paris", 30)
+  val val1: Signal[String] = Signal { col1.text_out.value }
+  val val2: Signal[String] = Signal { col2.text_out.value }
 
   val fields: Var[List[Signal[String]]] = Var(List(val1, val2))
   val nFields: Signal[Int]              = Signal { fields.value.size }
@@ -25,7 +24,7 @@ object DropdownSample3 extends SimpleSwingApplication {
 
   anyChanged observe { x => println("some value has changed: " + x) }
 
-  val dropdown                            = new ReDynamicComboBox(options = options, selection = -1)
+  val dropdown                            = new ReDynamicComboBox(options = options, initialSelection = -1)
   val selectionIndex: Signal[Int]         = Signal { dropdown.selection.value }
   val validSelection: Signal[Option[Int]] =
     Signal { if options.value.indices.contains(selectionIndex.value) then Some(selectionIndex.value) else None }
@@ -34,7 +33,8 @@ object DropdownSample3 extends SimpleSwingApplication {
   val currentSelectedItem: Signal[Option[String]] =
     Signal.dynamic { validSelection.value.map { i => listOfSignals.value(i).value } }
   val outputString: Signal[String] = Signal { currentSelectedItem.value.getOrElse("Nothing") }
-  val outputField                  = new ReTextField(text = outputString)
+  val outputField                  = new ReactiveTextField("Nothing", 30)
+  outputField.text = outputString
 
   object frame extends MainFrame {
     title = "Dropdown example 3"
@@ -72,12 +72,12 @@ object DropdownSample3 extends SimpleSwingApplication {
 
   def addField(initText: String): Unit = {
     val n   = nFields.readValueOnce + 1
-    val col = new ReTextField(text = initText, columns = 30)
+    val col = new ReactiveTextField(initText, 30)
     frame.fields.contents += new FlowPanel {
       contents += new Label("Value " + n + ":")
       contents += col
     }
-    val content: Signal[String] = Signal { col.text.value }
+    val content: Signal[String] = Signal { col.text_out.value }
     fields `set` content :: fields.readValueOnce
     frame.pack()
   }

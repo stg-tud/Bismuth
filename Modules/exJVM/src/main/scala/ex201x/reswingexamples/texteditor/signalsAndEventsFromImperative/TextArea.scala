@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.texteditor.signalsAndEventsFromImperative
 
-import ex2013reswing.{ReComponent, ReSwingValue}
 import ex201x.reswingexamples.texteditor.{JScrollableComponent, LineIterator, LineOffset, Position}
 import reactives.default.*
 
@@ -8,17 +7,22 @@ import java.awt.datatransfer.{DataFlavor, StringSelection}
 import java.awt.{Dimension, Graphics2D, Point, Rectangle, SystemColor, Toolkit}
 import scala.language.postfixOps
 import scala.math.{max, min}
-import scala.swing.Component
-import scala.swing.event.Key
+import scala.swing.*
+import scala.swing.event.*
 
-class TextArea extends ReComponent {
-  object localPeer extends Component with ComponentMixin {
-    override lazy val peer: JScrollableComponent & SuperMixin = new JScrollableComponent with SuperMixin
-  }
-  override protected lazy val peer: localPeer.type = localPeer
+/** A custom text editor component, written directly against Swing and reactives.
+  *
+  * This replaces the old version that used to extend `ReComponent` from the
+  * `reswing` library. It is a plain `scala.swing.Component` that exposes the
+  * relevant document state (caret, selection, character/line/word counts) as
+  * reactive signals and listens to the raw `Swing` key / mouse events.
+  */
+class TextArea extends Component with Reactor {
+  override lazy val peer: JScrollableComponent & SuperMixin = new JScrollableComponent with SuperMixin
+  focusable = true
 
-  protected def stringWidth = peer.peer.metrics.stringWidth
-  protected def lineHeight  = peer.peer.unitHeight
+  protected def stringWidth = peer.metrics.stringWidth
+  protected def lineHeight  = peer.unitHeight
 
   protected val padding   = 5
   protected val clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
@@ -28,26 +32,30 @@ class TextArea extends ReComponent {
   def this(text: String) = {
     this()
     buffer.insert(text)
+    updatePreferredSize()
   }
 
-  override val preferredSize: ReSwingValue[Dimension] = Signal {
-    def it = LineIterator(buffer.iterable.value)
-    new Dimension(2 * padding + it.map(stringWidth(_)).max, (it.size + 1) * lineHeight)
+  private val focusVar: Var[Boolean] = Var(false)
+  val focusSignal: Signal[Boolean]   = Signal { focusVar.value }
+
+  private def updatePreferredSize(): Unit = {
+    def it = LineIterator(buffer.iterable.readValueOnce)
+    preferredSize = new Dimension(2 * padding + it.map(stringWidth(_)).max, (it.size + 1) * lineHeight)
+    peer.revalidate()
   }
-  preferredSize.using(() => peer.preferredSize, peer.preferredSize_=, "preferredSize")
 
-  val charCount: Signal[Int] = Signal { buffer.length.value }
+  val charCount: Signal[Int] = Signal { buffer.length.value } // #SIG
 
-  val lineCount: Signal[Int] = Signal { LineIterator(buffer.iterable.value).size }
+  val lineCount: Signal[Int] = Signal { LineIterator(buffer.iterable.value).size } // #SIG
 
-  val wordCount: Signal[Int] = Signal {
+  val wordCount: Signal[Int] = Signal { // #SIG
     buffer.iterable.value.iterator.foldLeft((0, false)) { (c, ch) =>
       val alphanum = Character.isLetterOrDigit(ch)
       (if alphanum && !c._2 then c._1 + 1 else c._1, alphanum)
     }._1
   }
 
-  val selected: Signal[Iterable[Char]] = Signal {
+  val selected: Signal[Iterable[Char]] = Signal { // #SIG
     val (it, dot, mark) = (buffer.iterable.value, caret.dot.value, caret.mark.value)
     val (start, end)    = (min(dot, mark), max(dot, mark))
     new Iterable[Char] { def iterator: Iterator[Char] = it.iterator.slice(start, end) }: Iterable[Char]
@@ -115,8 +123,8 @@ class TextArea extends ReComponent {
     protected[TextArea] val blink: Timer             = new Timer(500) start
     protected[TextArea] val steady                   = new Timer(500, false)
     protected[TextArea] val visible: Signal[Boolean] = blink.fired.toggle(
-      Signal { hasFocus.value },
-      Signal { hasFocus.value && steady.running.value }
+      Signal { focusSignal.value },
+      Signal { focusSignal.value && steady.running.value }
     )
   }
 
@@ -154,7 +162,22 @@ class TextArea extends ReComponent {
     Position(row, col)
   }
 
-  keys.pressed observe { e =>
+  listenTo(this)
+  reactions += {
+    case e: KeyPressed =>
+      handleKeyPressed(e)
+    case e: KeyTyped =>
+      handleKeyTyped(e)
+    case MousePressed(_, point, _, _, _) =>
+      this.requestFocusInWindow()
+      caret.position = positionFromPoint(point)
+    case MouseDragged(_, point, _) =>
+      caret.dotPos = positionFromPoint(point)
+    case _: FocusGained => focusVar.set(true)
+    case _: FocusLost   => focusVar.set(false)
+  }
+
+  private def handleKeyPressed(e: KeyPressed): Unit = {
     def shift = e.modifiers == Key.Modifier.Shift
     if e.modifiers == Key.Modifier.Control then
         e.key match {
@@ -197,7 +220,7 @@ class TextArea extends ReComponent {
         }
   }
 
-  keys.typed observe { e =>
+  private def handleKeyTyped(e: KeyTyped): Unit =
     if e.modifiers != Key.Modifier.Control then
         e.char match {
           case '\u007f' => // Del key
@@ -216,33 +239,26 @@ class TextArea extends ReComponent {
             buffer.insert(c.toString)
             caret.offset = caret.offset.readValueOnce + 1
         }
-  }
-
-  mouse.clicks.pressed observe { e =>
-    this.requestFocusInWindow()
-    caret.position = positionFromPoint(e.point)
-  }
-
-  mouse.moves.dragged observe { e =>
-    caret.dotPos = positionFromPoint(e.point)
-  }
 
   // handle scroll and paint updates
   caret.position.changed observe { _ =>
     val point = pointFromPosition(caret.position.readValueOnce)
-    peer.peer.scrollRectToVisible(new Rectangle(point.x - 8, point.y, 16, 2 * lineHeight))
+    peer.scrollRectToVisible(new Rectangle(point.x - 8, point.y, 16, 2 * lineHeight))
     caret.steady.restart
     ()
   }
 
   buffer.length.changed || caret.visible.changed ||
-  caret.dot.changed || caret.mark.changed observe { _ => this.repaint() }
+  caret.dot.changed || caret.mark.changed observe { _ =>
+    updatePreferredSize()
+    this.repaint()
+  }
 
   override def paintComponent(g: Graphics2D): Unit = {
     super.paintComponent(g)
     g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
     g.setColor(SystemColor.text)
-    g.fillRect(0, 0, size.readValueOnce.width, size.readValueOnce.height + lineHeight)
+    g.fillRect(0, 0, size.width, size.height + lineHeight)
 
     val selStart = min(caret.dot.readValueOnce, caret.mark.readValueOnce)
     val selEnd   = max(caret.dot.readValueOnce, caret.mark.readValueOnce)
@@ -267,7 +283,7 @@ class TextArea extends ReComponent {
         g.setColor(SystemColor.textHighlight)
         g.fillRect(
           middleX,
-          lineIndex * lineHeight + lineHeight - font.readValueOnce.getSize,
+          lineIndex * lineHeight + lineHeight - font.getSize,
           endX - middleX,
           lineHeight
         )
@@ -288,8 +304,7 @@ class TextArea extends ReComponent {
     if caret.visible.readValueOnce then {
       def point = pointFromPosition(caret.position.readValueOnce)
       g.setColor(SystemColor.textText)
-      g.drawLine(point.x, point.y + lineHeight - font.readValueOnce.getSize, point.x, point.y + lineHeight)
+      g.drawLine(point.x, point.y + lineHeight - font.getSize, point.x, point.y + lineHeight)
     }
   }
 }
-

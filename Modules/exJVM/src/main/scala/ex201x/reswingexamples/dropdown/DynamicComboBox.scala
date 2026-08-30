@@ -1,37 +1,54 @@
 package ex201x.reswingexamples.dropdown
 
-import ex2013reswing.{ReComponent, ReSwingEvent, ReSwingNoValue, ReSwingValue}
+import reactives.default.*
 
-import java.awt.Color
-import javax.swing.{ComboBoxModel, JComboBox}
-import scala.swing.ComboBox
+import javax.swing.{DefaultComboBoxModel, JComboBox}
+import scala.language.implicitConversions
+import scala.swing.{ComboBox, Component, Reactor}
 import scala.swing.event.SelectionChanged
 
-class DynamicComboBox[A] extends ComboBox[A](Nil: List[A]) {
-  val peerBox: JComboBox[?] = this.peer.asInstanceOf[JComboBox[?]]
+/** A combo box whose list of options is driven by a reactive signal and whose
+  * current selection is exposed as a reactive signal as well.
+  *
+  * This is the direct Swing + reactives replacement for the old
+  * `ReDynamicComboBox` that used to be built on the `reswing` library.
+  */
+class ReDynamicComboBox[A](
+    options: Signal[List[A]] = Signal { List.empty[A] },
+    initialSelection: Int = -1
+) {
+  val peer: ComboBox[A] = new ComboBox[A](Nil: List[A])
+  private val peerBox: JComboBox[A] = peer.peer.asInstanceOf[JComboBox[A]]
 
-  /** Set the choices */
-  def setChoices(options: List[A]): Unit = {
-    val currentIdx = selection.index
-    val model      = ComboBox.newConstantModel(options).asInstanceOf[ComboBoxModel[String]]
-    peerBox.asInstanceOf[JComboBox[String]].setModel(model)
-    if currentIdx < options.length then
-        selection.index = currentIdx
+  private val selectionVar: Var[Int] = Var(initialSelection)
+
+  /** The index of the currently selected element, as a reactive signal. */
+  val selection: Signal[Int] = Signal { selectionVar.value }
+
+  setChoices(options.now, initialSelection)
+
+  // Keep the model in sync with the options signal.
+  options.changed observe { opts =>
+    val current = peerBox.getSelectedIndex
+    setChoices(opts, if current >= 0 && current < opts.size then current else -1)
   }
 
-  def getChoices: List[A] = Nil
+  // Reflect user selections back into the reactive signal.
+  private val reactor = new Reactor {
+    reactions += { case SelectionChanged(_) => selectionVar.set(peerBox.getSelectedIndex) }
+  }
+  reactor.listenTo(peer.selection)
+
+  private def setChoices(opts: List[A], select: Int): Unit = {
+    val model = new DefaultComboBoxModel[A]()
+    opts.foreach(model.addElement)
+    peerBox.setModel(model)
+    peerBox.setSelectedIndex(select)
+    selectionVar.set(select)
+  }
 }
 
-class ReDynamicComboBox[A](
-    val options: ReSwingValue[List[A]] = ReSwingNoValue[List[A]](),
-    val selection: ReSwingValue[Int] = (),
-    val selectionForeground: ReSwingValue[Color] = (),
-    val selectionBackground: ReSwingValue[Color] = (),
-    val selectIndices: ReSwingEvent[Seq[Int]] = ()
-) extends ReComponent {
-
-  override protected lazy val peer: DynamicComboBox[A] & ComponentMixin = new DynamicComboBox[A] with ComponentMixin
-
-  options.using(() => peer.getChoices, peer.setChoices, classOf[Nothing])
-  selection.using(() => peer.selection.index, peer.selection.index_=, (peer.selection, classOf[SelectionChanged]))
+object ReDynamicComboBox {
+  /** Enables `contents += comboBox` to be used directly in layouts. */
+  implicit def toComponent[A](comboBox: ReDynamicComboBox[A]): Component = comboBox.peer
 }

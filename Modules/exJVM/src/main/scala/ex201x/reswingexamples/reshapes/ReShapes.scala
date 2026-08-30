@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.reshapes
 
-import ex2013reswing.{ReMenu, ReMenuItem, ReSwingValue}
 import ex201x.reswingexamples.reshapes.actions.{LoadAction, SaveAction}
 import ex201x.reswingexamples.reshapes.drawing.{Command, DrawingSpaceState, MergeDrawingSpaces, NetworkSpaceState}
 import ex201x.reswingexamples.reshapes.figures.Shape
@@ -49,16 +48,16 @@ object ReShapes extends SimpleSwingApplication {
   }
 
   object menu extends MenuBar {
-    val undo = new ReMenuItem(
+    val undo = new ReactiveMenuItem(
       "Undo",
       enabled = Signal.dynamic { // #SIG //#IS( // )
         drawingSpaceState.value != null && drawingSpaceState.value.commands.value.nonEmpty
       }
     )
 
-    val `merge` = new ReMenu(
+    val `merge` = new ReactiveMenu(
       text = "Merge with...", // #SIG //#IS( // )
-      contents = Signal {     // #SIG //#IS( // )
+      items = Signal {         // #SIG //#IS( // )
         itemsEvents.value map { case (btn, _) => btn }
       }
     )
@@ -72,7 +71,7 @@ object ReShapes extends SimpleSwingApplication {
     private lazy val itemsEvents: Signal[Seq[(Component, Event[Command])]] = // #SIG
       (update map { (_: Any) => // #EF
         (ui.tabbedPane.pages filter { tab => tab.index != ui.tabbedPane.selection.index } map { (tab: Page) =>
-          val item    = new ReMenuItem(tab.title)      // #IS( // )
+          val item    = new ReactiveMenuItem(tab.title) // #IS( // )
           val command = item.clicked map { (_: Any) => // #EF
             new MergeDrawingSpaces(panelDrawingSpaceStates(tab)._1)
           }
@@ -88,7 +87,7 @@ object ReShapes extends SimpleSwingApplication {
       contents += new MenuItem(new SaveAction)
       contents += new MenuItem(new LoadAction)
       contents += new Separator
-      contents += new ReMenuItem(text = ReSwingValue("Quit")) { // #IS( // )
+      contents += new ReactiveMenuItem("Quit") { // #IS( // )
         clicked observe { _ => quit() } // #HDL
       }
     }

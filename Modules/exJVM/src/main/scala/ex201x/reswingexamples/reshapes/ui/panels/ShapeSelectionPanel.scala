@@ -1,7 +1,6 @@
 package ex201x.reswingexamples.reshapes.ui.panels
 
-import ex2013reswing.ReButton
-import ex201x.reswingexamples.reshapes.ReShapes
+import ex201x.reswingexamples.reshapes.{ReactiveButton, ReShapes}
 import ex201x.reswingexamples.reshapes.figures.{Freedraw, Line, Oval, Rectangle, Shape, Triangle}
 import reactives.default.*
 
@@ -11,11 +10,11 @@ import scala.swing.{BoxPanel, Orientation}
 class ShapeSelectionPanel extends BoxPanel(Orientation.Vertical) {
   def state = ReShapes.drawingSpaceState.now
 
-  val lineBtn     = new ReButton("Line")      // #EVT
-  val rectBtn     = new ReButton("Rectangle") // #EVT
-  val ovalBtn     = new ReButton("Oval")      // #EVT
-  val triangleBtn = new ReButton("Triangle")  // #EVT
-  val freedrawBtn = new ReButton("Freedraw")  // #EVT
+  val lineBtn     = new ReactiveButton("Line")      // #EVT
+  val rectBtn     = new ReactiveButton("Rectangle") // #EVT
+  val ovalBtn     = new ReactiveButton("Oval")      // #EVT
+  val triangleBtn = new ReactiveButton("Triangle")  // #EVT
+  val freedrawBtn = new ReactiveButton("Freedraw")  // #EVT
 
   contents += lineBtn
   contents += rectBtn

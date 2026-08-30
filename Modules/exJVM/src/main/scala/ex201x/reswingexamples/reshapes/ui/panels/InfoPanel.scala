@@ -1,7 +1,6 @@
 package ex201x.reswingexamples.reshapes.ui.panels
 
-import ex2013reswing.ReLabel
-import ex201x.reswingexamples.reshapes.ReShapes
+import ex201x.reswingexamples.reshapes.{ReactiveLabel, ReShapes}
 import reactives.default.*
 
 import scala.swing.FlowPanel
@@ -40,7 +39,7 @@ class InfoPanel extends FlowPanel {
     else ""
   }
 
-  contents += new ReLabel(Signal.dynamic { // #SIG //#IS( //)
+  contents += new ReactiveLabel(Signal.dynamic { // #SIG //#IS( //)
     "%s | %s | %s | %s | %s".format(
       shapeCount.value,
       color.value,

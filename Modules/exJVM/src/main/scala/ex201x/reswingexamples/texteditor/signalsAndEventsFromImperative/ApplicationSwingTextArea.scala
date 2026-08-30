@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.texteditor.signalsAndEventsFromImperative
 
-import ex2013reswing.{ReButton, ReLabel, ReTextArea}
 import reactives.default.*
 
 import scala.math.min
@@ -9,34 +8,34 @@ import scala.swing.{BorderPanel, Dimension, Frame, GridPanel, MainFrame, ScrollP
 
 object ApplicationSwingTextArea extends SimpleSwingApplication {
   // reactive components
-  val textArea = new ReTextArea("Lorem ipsum dolor sit amet\nconsectetur adipisicing elit\nsed do eiusmod")
+  val textArea = new ReactiveTextArea("Lorem ipsum dolor sit amet\nconsectetur adipisicing elit\nsed do eiusmod")
 
-  val positionLabel = new ReLabel(Signal {
-    val pos  = min(textArea.caret.position.value, textArea.text.value.length())
+  val positionLabel = new ReactiveLabel(Signal {
+    val pos  = min(textArea.caretPosSignal.value, textArea.textSignal.value.length)
     val line = textArea.peer.getLineOfOffset(pos);
     val col  = pos - textArea.peer.getLineStartOffset(line);
-    "Ln " + (line + 1) + " : " + textArea.lineCount.value + "    Col " + (col + 1)
+    "Ln " + (line + 1) + " : " + textArea.lineCountSignal.value + "    Col " + (col + 1)
   })
 
-  val selectionLabel = new ReLabel(
-    Signal { "Sel " + (if textArea.selected.value != null then textArea.selected.value.length() else 0) }
+  val selectionLabel = new ReactiveLabel(
+    Signal { "Sel " + (if textArea.selected != null then textArea.selected.length else 0) }
   )
 
-  val charCountLabel = new ReLabel(Signal { "Ch " + textArea.text.value.length() })
+  val charCountLabel = new ReactiveLabel(Signal { "Ch " + textArea.textSignal.value.length })
 
-  val wordCountLabel = new ReLabel(Signal { "Words " + textArea.text.value.length() })
+  val wordCountLabel = new ReactiveLabel(Signal { "Words " + textArea.textSignal.value.length })
 
-  val selectAllButton = new ReButton("Select All")
+  val selectAllButton = new ReactiveButton("Select All")
   selectAllButton.clicked observe { _ =>
     textArea.selectAll(); textArea.requestFocus()
   }
 
-  val copyButton = new ReButton("Copy")
+  val copyButton = new ReactiveButton("Copy")
   copyButton.clicked observe { _ =>
     textArea.copy(); textArea.requestFocus()
   }
 
-  val pasteButton = new ReButton("Paste")
+  val pasteButton = new ReactiveButton("Paste")
   pasteButton.clicked observe { _ =>
     textArea.paste(); textArea.requestFocus()
   }

@@ -1,12 +1,11 @@
 package ex201x.reswingexamples.millgame.versions.signals
 
-import ex2013reswing.{ReComponent, ReLabel, ReSwingValue}
 import ex201x.reswingexamples.millgame.*
 import ex201x.reswingexamples.millgame.types.{Point, *}
 import reactives.default.*
 import reactives.operator.Event
 
-import java.awt.{BasicStroke, Color, Dimension, Font, RenderingHints}
+import java.awt.{BasicStroke, Color, Dimension, Font, Graphics2D, Rectangle, RenderingHints}
 import scala.swing.*
 import scala.swing.event.*
 
@@ -34,10 +33,10 @@ object MainWindow extends SimpleSwingApplication {
     }
 
   object ui extends BoxPanel(Orientation.Vertical) {
-    val statusBar = new ReLabel(
+    val statusBar = new ReactiveLabel(
       text = Signal { game.stateVar.value.text }, // #SIG
-      preferredSize = ReSwingValue(new Dimension(Integer.MAX_VALUE, 64)),
-      font = ReSwingValue(new Font("Tahoma", Font.PLAIN, 32))
+      preferredSize = new Dimension(Integer.MAX_VALUE, 64),
+      font = new Font("Tahoma", Font.PLAIN, 32)
     )
 
     val counterBar: Label = new Label("White: 9 / Black: 9") {
@@ -56,7 +55,9 @@ object MainWindow extends SimpleSwingApplication {
   }
 }
 
-class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dimension(500, 500)) {
+class MillDrawer(val game: MillGame) extends ReactiveComponent {
+  preferredSize = new Dimension(500, 500)
+
   val DotRadius            = 5
   val StoneRadius          = 15
   val ClickArea            = 50
@@ -65,12 +66,12 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
   val InnerPercent: Float  = 1f / 3
 
   val squareSize: Signal[Int] = Signal { // #SIG
-    (math.min(size.value.width, size.value.height) * SizePercent).toInt
+    (math.min(sizeS.value.width, sizeS.value.height) * SizePercent).toInt
   }
 
   val coordinates: Signal[List[Point[Int]]] = Signal { // #SIG
-    val midX     = size.value.width / 2
-    val midY     = size.value.height / 2
+    val midX     = sizeS.value.width / 2
+    val midY     = sizeS.value.height / 2
     val xFactors = List.fill(3)(List(-1, -1, -1, 0, 1, 1, 1, 0)).flatten
     val yFactors = List.fill(3)(List(-1, 0, 1, 1, 1, 0, -1, -1)).flatten
 
@@ -106,7 +107,7 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
   }
 
   val highlightedIndex: Signal[SlotIndex] = Signal { // #SIG
-    val index = mouse.moves.moved.holdOption().value match {
+    val index = mouseMoved.holdOption().value match {
       case Some(e) => coordinates.value indexWhere {
           p => (p.distance((e.point.x, e.point.y))) < ClickArea
         }
@@ -134,14 +135,14 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
   }
 
   val indexClicked: Event[SlotIndex] =
-    (mouse.clicks.released map { (e: MouseReleased) => // #EF
+    (mouseReleased map { (e: MouseReleased) => // #EF
       val index = coordinates.value.indexWhere {
         p => (p `distance` ((e.point.x, e.point.y))) < ClickArea
       }
       SlotIndex(index)
     }) && (_ != SlotIndex(-1)) // #EF
 
-  val backgroundRect: Signal[Rect[Int]] = Signal { Rect(0, 0, bounds.value.width, bounds.value.height) } // #SIG
+  val backgroundRect: Signal[Rect[Int]] = Signal { Rect(0, 0, boundsS.value.width, boundsS.value.height) } // #SIG
 
   val presentation: Signal[Seq[Presentation[Int, Rect[Int] | Line[Int] | Circle[Int]]]] = Signal { // #SIG
     // background and board

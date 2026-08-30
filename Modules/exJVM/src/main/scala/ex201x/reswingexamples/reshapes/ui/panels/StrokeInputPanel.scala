@@ -1,6 +1,6 @@
 package ex201x.reswingexamples.reshapes.ui.panels
 
-import ex2013reswing.{ReButton, ReSlider, ReSwingValue}
+import ex201x.reswingexamples.reshapes.{ReactiveButton, ReactiveSlider}
 import reactives.default.*
 
 import java.awt.Color
@@ -11,16 +11,9 @@ import scala.swing.{Action, BoxPanel, Button, Component, FlowPanel, Frame, Label
 class StrokeInputPanel extends FlowPanel {
   private val colorWindow = new ColorWindow
 
-  private val slider = new ReSlider(
-    min = 1,
-    max = 50,
-    value = 1,
-    minorTickSpacing = 1,
-    labels = ReSwingValue(scala.collection.immutable.Map.empty[Int, Label]),
-    paintTicks = true
-  )
+  private val slider = new ReactiveSlider(min = 1, max = 50, initValue = 1, minorTickSpacing = 1, paintTicks = true)
 
-  private val showColorWindow = new ReButton("Show Colorinput")
+  private val showColorWindow = new ReactiveButton("Show Colorinput")
   showColorWindow.clicked observe { _ => colorWindow.visible = !colorWindow.visible }
 
   contents += new Label { text = "stroke width: " }

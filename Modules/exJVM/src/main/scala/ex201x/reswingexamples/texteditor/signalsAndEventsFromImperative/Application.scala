@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.texteditor.signalsAndEventsFromImperative
 
-import ex2013reswing.{ReButton, ReLabel}
 import reactives.default.*
 
 import scala.swing.BorderPanel.Position
@@ -10,30 +9,30 @@ object Application extends SimpleSwingApplication {
   // reactive components
   val textArea = new TextArea("Lorem ipsum dolor sit amet\nconsectetur adipisicing elit\nsed do eiusmod")
 
-  val positionLabel = new ReLabel(Signal {
+  val positionLabel = new ReactiveLabel(Signal {
     val pos = textArea.caret.position.value
     "Ln " + (pos.row + 1) + " : " + textArea.lineCount.value + "    Col " + (pos.col + 1)
   })
 
-  val selectionLabel = new ReLabel(
+  val selectionLabel = new ReactiveLabel(
     Signal { "Sel " + textArea.selected.value.size }
   )
 
-  val charCountLabel = new ReLabel(Signal { "Ch " + textArea.charCount.value })
+  val charCountLabel = new ReactiveLabel(Signal { "Ch " + textArea.charCount.value })
 
-  val wordCountLabel = new ReLabel(Signal { "Words " + textArea.wordCount.value })
+  val wordCountLabel = new ReactiveLabel(Signal { "Words " + textArea.wordCount.value })
 
-  val selectAllButton = new ReButton("Select All")
+  val selectAllButton = new ReactiveButton("Select All")
   selectAllButton.clicked observe { _ =>
     textArea.selectAll(); textArea.requestFocus()
   }
 
-  val copyButton = new ReButton("Copy")
+  val copyButton = new ReactiveButton("Copy")
   copyButton.clicked observe { _ =>
     textArea.copy(); textArea.requestFocus()
   }
 
-  val pasteButton = new ReButton("Paste")
+  val pasteButton = new ReactiveButton("Paste")
   pasteButton.clicked observe { _ =>
     textArea.paste(); textArea.requestFocus()
   }
