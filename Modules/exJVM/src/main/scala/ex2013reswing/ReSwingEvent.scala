@@ -28,11 +28,10 @@ final class ReSwingEventNone[T] private[ex2013reswing] extends ReSwingEvent[T] {
 object ReSwingEvent {
 
   /** Creates an empty event (that is never fired) to be used with the library. */
+  // dont delete
   implicit def apply[T](@unused value: Unit): ReSwingEventNone[T] = new ReSwingEventNone[T]
 
-  /** Wraps a Event to be used with the library. */
-  implicit def apply[T](value: => Event[T]): ReSwingEventIn[T] = new ReSwingEventIn(Lazy { value })
-
   /** Returns the Event representing the event. */
+  // dont delete
   implicit def toEvent[T](value: ReSwingEvent[T]): Event[T] = value.toEvent
 }

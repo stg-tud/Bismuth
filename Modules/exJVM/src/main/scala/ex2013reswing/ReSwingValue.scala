@@ -66,10 +66,6 @@ object ReSwingValue {
 
   /** Does not cause the `Swing` library to use a specific value. */
   implicit def apply[T](@unused value: Unit): ReSwingNoValue[T] = ReSwingNoValue[T]()
-
-  /** Sets the given value once.
-    * After this, does not cause the `Swing` library to use a specific value.
-    */
   implicit def apply[T](value: T): ReSwingValueValue[T] = ReSwingValueValue(value)
 
   /** Sets the value whenever the given Event changes. */

@@ -123,9 +123,6 @@ class ReListView[A](
     val changed: ReSwingEvent[ListSelectionChanged[A]] = ReSwingEvent.using(peer, classOf[ListSelectionChanged[A]])
   }
 
-  object ReSelection {
-    implicit def toSelection(selection: ReSelection): selection.peer.type = selection.peer
-  }
 
   object selection
       extends ReSelection(

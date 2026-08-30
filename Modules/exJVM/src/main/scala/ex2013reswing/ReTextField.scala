@@ -55,6 +55,3 @@ class ReTextField(
   val editDone: ReSwingEvent[EditDone] = ReSwingEvent `using` classOf[EditDone]
 }
 
-object ReTextField {
-  implicit def toTextField(component: ReTextField): TextField = component.peer
-}

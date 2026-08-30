@@ -47,6 +47,3 @@ class ReSlider(
   )
 }
 
-object ReSlider {
-  implicit def toSlider(component: ReSlider): Slider = component.peer
-}

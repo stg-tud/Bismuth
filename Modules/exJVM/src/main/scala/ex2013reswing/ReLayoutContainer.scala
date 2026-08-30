@@ -29,7 +29,3 @@ trait ReLayoutContainer[Constraints] extends ReUIElement {
   }
 }
 
-object ReLayoutContainer {
-  implicit def toLayoutContainer(component: ReLayoutContainer[?]): LayoutContainer =
-    component.peer
-}

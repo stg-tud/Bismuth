@@ -67,10 +67,6 @@ class ReTextComponent(
     color.using(() => peer.color, peer.color_=)
   }
 
-  object ReCaret {
-    implicit def toCaret(caret: ReCaret): caret.peer.type = caret.peer
-  }
-
   object caret
       extends ReCaret(
         `caret.position`,
@@ -82,6 +78,3 @@ class ReTextComponent(
       )
 }
 
-object ReTextComponent {
-  implicit def toTextComponent(component: ReTextComponent): TextComponent = component.peer
-}

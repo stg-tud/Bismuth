@@ -16,6 +16,3 @@ trait ReRootPanel extends ReUIElement {
   )
 }
 
-object ReRootPanel {
-  implicit def toRootPanel(component: ReRootPanel): RootPanel = component.peer
-}

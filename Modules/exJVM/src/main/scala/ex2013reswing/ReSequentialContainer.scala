@@ -25,7 +25,3 @@ trait ReSequentialContainer extends ReUIElement {
   }
 }
 
-object ReSequentialContainer {
-  implicit def toSequentialContainer(component: ReSequentialContainer): SequentialContainer =
-    component.peer
-}

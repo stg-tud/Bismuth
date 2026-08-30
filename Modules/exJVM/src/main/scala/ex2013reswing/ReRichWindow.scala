@@ -13,6 +13,3 @@ trait ReRichWindow extends ReWindow {
   bounds.force("resizable", peer.resizable_=, false)
 }
 
-object ReRichWindow {
-  implicit def toRichWindow(component: ReRichWindow): RichWindow = component.peer
-}

@@ -38,6 +38,3 @@ class ReLabel(
   disabledIcon.using(() => peer.disabledIcon, peer.disabledIcon_=, "disabledIcon")
 }
 
-object ReLabel {
-  implicit def toLabel(component: ReLabel): Label = component.peer
-}

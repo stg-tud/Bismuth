@@ -46,18 +46,6 @@ case class Point[@specialized(Int, Double) T: Numeric](x: T, y: T) extends Shape
   def directionTo(p: Point[T]): Point[? >: T & Double <: T | Double] = (p - this).normalize
 }
 
-//
-// line
-//
-object Line {
-  implicit def fromLine[T](l: Line[T]): (Point[T], Point[T]) = (l.from, l.to)
-  implicit def toLine[T, A, B](l: (A, B))(implicit
-      ev1: A => Point[T],
-      ev2: B => Point[T],
-  ): Line[T] =
-    Line(ev1(l._1), ev2(l._2))
-}
-
 case class Line[T](from: Point[T], to: Point[T]) extends Shape[T] {
   def toDouble: Shape[Double] = Line(from.toDouble, to.toDouble)
   def toInt: Shape[Int]       = Line(from.toInt, to.toInt)

@@ -15,6 +15,3 @@ class RePanel(
   override protected lazy val peer: Panel & ComponentMixin = new Panel with ComponentMixin
 }
 
-object RePanel {
-  implicit def toPanel(component: RePanel): Panel = component.peer
-}

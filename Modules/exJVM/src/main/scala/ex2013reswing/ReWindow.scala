@@ -29,6 +29,3 @@ abstract class ReWindow(
   val windowOpened: ReSwingEvent[WindowOpened]           = ReSwingEvent.using(peer, classOf[WindowOpened])
 }
 
-object ReWindow {
-  implicit def toWindow(component: ReWindow): Window = component.peer
-}

@@ -17,6 +17,3 @@ class ReMenuBar(
   override protected lazy val peer: MenuBar & ComponentMixin = new MenuBar with ComponentMixin
 }
 
-object ReMenuBar {
-  implicit def toMenuBar(component: ReMenuBar): MenuBar = component.peer
-}
