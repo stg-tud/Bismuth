@@ -61,5 +61,6 @@ class ReTextArea(
 }
 
 object ReTextArea {
+  // dont delete
   implicit def toTextArea(component: ReTextArea): TextArea = component.peer
 }

@@ -27,6 +27,7 @@ sealed abstract class Shape[T] {
 // point
 //
 object Point {
+  // dont delete
   implicit def toPoint[T: Numeric](p: (T, T)): Point[T] = Point(p._1, p._2)
 }
 
@@ -65,14 +66,6 @@ object Rect {
 case class Rect[T: Numeric](anchor: Point[T], width: T, height: T) extends Shape[T] {
   def toDouble: Shape[Double] = Rect(anchor.toDouble, width.toDouble, height.toDouble)
   def toInt: Shape[Int]       = Rect(anchor.toInt, width.toInt, height.toInt)
-}
-
-//
-// circle
-//
-object Circle {
-  implicit def apply[T: Numeric](x: T, y: T, radius: T): Circle[T] =
-    Circle(Point(x, y), radius)
 }
 
 case class Circle[T: Numeric](center: Point[T], radius: T) extends Shape[T] {

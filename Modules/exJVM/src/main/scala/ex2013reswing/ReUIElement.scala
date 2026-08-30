@@ -29,6 +29,3 @@ abstract class ReUIElement(
   }
 }
 
-object ReUIElement {
-  implicit def toUIElement(component: ReUIElement): UIElement = component.peer
-}
