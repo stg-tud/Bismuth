@@ -42,7 +42,7 @@ object DropdownSample3 extends SimpleSwingApplication {
 
       contents += new FlowPanel {
         contents += new Label("Dropdown selection: ")
-        contents += dropdown
+        contents += dropdown.peer
       }
 
       contents += new FlowPanel {

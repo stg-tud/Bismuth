@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.reshapes
 
-import ex201x.reswingexamples.reshapes.util.ReactiveUtil
 import reactives.default.*
 
 import scala.language.implicitConversions
@@ -52,9 +51,6 @@ class ReactiveSlider(
   reactor.listenTo(peer)
 }
 
-object ReactiveSlider {
-  implicit def toComponent(slider: ReactiveSlider): Component = slider.peer
-}
 
 /** A `BoxPanel` whose children are bound to a reactive signal. */
 class ReactiveBoxPanel(

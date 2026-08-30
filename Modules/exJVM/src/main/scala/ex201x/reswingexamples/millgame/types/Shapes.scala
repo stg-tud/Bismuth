@@ -23,16 +23,7 @@ sealed abstract class Shape[T] {
   def toInt: Shape[Int]
 }
 
-//
-// point
-//
-object Point {
-  import scala.language.implicitConversions
-  // dont delete
-  implicit def toPoint[T: Numeric](p: (T, T)): Point[T] = Point(p._1, p._2)
-}
-
-case class Point[@specialized(Int, Double) T: Numeric](x: T, y: T) extends Shape[T] {
+case class Point[T: Numeric](x: T, y: T) extends Shape[T] {
   def toDouble: Point[Double] = Point(x.toDouble, y.toDouble)
   def toInt: Point[Int]       = Point(x.toInt, y.toInt)
 
@@ -53,15 +44,6 @@ case class Line[T](from: Point[T], to: Point[T]) extends Shape[T] {
   def toInt: Shape[Int]       = Line(from.toInt, to.toInt)
 
   def length: Double = from `distance` to
-}
-
-//
-// rectangle
-//
-object Rect {
-  // dont delete
-  implicit def apply[T: Numeric](x: T, y: T, width: T, height: T): Rect[T] =
-    Rect(Point(x, y), width, height)
 }
 
 case class Rect[T: Numeric](anchor: Point[T], width: T, height: T) extends Shape[T] {

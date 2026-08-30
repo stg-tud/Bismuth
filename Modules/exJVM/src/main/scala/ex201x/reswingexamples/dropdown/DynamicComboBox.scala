@@ -4,8 +4,8 @@ import reactives.default.*
 
 import javax.swing.{DefaultComboBoxModel, JComboBox}
 import scala.language.implicitConversions
-import scala.swing.{ComboBox, Component, Reactor}
 import scala.swing.event.SelectionChanged
+import scala.swing.{ComboBox, Reactor}
 
 /** A combo box whose list of options is driven by a reactive signal and whose
   * current selection is exposed as a reactive signal as well.
@@ -46,9 +46,4 @@ class ReDynamicComboBox[A](
     peerBox.setSelectedIndex(select)
     selectionVar.set(select)
   }
-}
-
-object ReDynamicComboBox {
-  /** Enables `contents += comboBox` to be used directly in layouts. */
-  implicit def toComponent[A](comboBox: ReDynamicComboBox[A]): Component = comboBox.peer
 }

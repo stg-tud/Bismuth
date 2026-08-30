@@ -17,7 +17,7 @@ class StrokeInputPanel extends FlowPanel {
   showColorWindow.clicked observe { _ => colorWindow.visible = !colorWindow.visible }
 
   contents += new Label { text = "stroke width: " }
-  contents += slider
+  contents += slider.peer
   contents += showColorWindow
 
   val strokeWidth = slider.value

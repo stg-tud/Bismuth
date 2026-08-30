@@ -89,7 +89,7 @@ class MillDrawer(val game: MillGame) extends ReactiveComponent {
   val board: Signal[Rect[Int]] = Signal { // #SIG
     val offset = (2 * StoneRadius, 2 * StoneRadius)
     val size   = squareSize.value + 4 * StoneRadius
-    Rect(coordinates.value(16) - Point.toPoint(offset), size, size)
+    Rect(coordinates.value(16) - Point(offset._1, offset._2), size, size)
   }
 
   val lines: Signal[IndexedSeq[Line[Int]]] = Signal { // #SIG
@@ -109,7 +109,7 @@ class MillDrawer(val game: MillGame) extends ReactiveComponent {
   val highlightedIndex: Signal[SlotIndex] = Signal { // #SIG
     val index = mouseMoved.holdOption().value match {
       case Some(e) => coordinates.value indexWhere {
-          p => (p.distance((e.point.x, e.point.y))) < ClickArea
+          p => (p.distance(Point(e.point.x, e.point.y))) < ClickArea
         }
       case _ => -1
     }
@@ -137,12 +137,12 @@ class MillDrawer(val game: MillGame) extends ReactiveComponent {
   val indexClicked: Event[SlotIndex] =
     (mouseReleased map { (e: MouseReleased) => // #EF
       val index = coordinates.value.indexWhere {
-        p => (p `distance` ((e.point.x, e.point.y))) < ClickArea
+        p => (p `distance` (Point(e.point.x, e.point.y))) < ClickArea
       }
       SlotIndex(index)
     }) && (_ != SlotIndex(-1)) // #EF
 
-  val backgroundRect: Signal[Rect[Int]] = Signal { Rect(0, 0, boundsS.value.width, boundsS.value.height) } // #SIG
+  val backgroundRect: Signal[Rect[Int]] = Signal { Rect(Point(0, 0), boundsS.value.width, boundsS.value.height) } // #SIG
 
   val presentation: Signal[Seq[Presentation[Int, Rect[Int] | Line[Int] | Circle[Int]]]] = Signal { // #SIG
     // background and board

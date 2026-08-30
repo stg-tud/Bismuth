@@ -38,12 +38,6 @@ object LineIterator {
 
 case class Position(row: Int, col: Int)
 
-object Position {
-  import scala.language.implicitConversions
-  // dont delete
-  implicit def fromTuple(tuple: (Int, Int)): Position = Position(tuple._1, tuple._2)
-}
-
 object LineOffset {
   def position(it: Iterator[Char], offset: Int): Position = {
     var (row, col, prev) = (0, 0, ' ')
