@@ -1,6 +1,6 @@
 import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitStyle}
 
-import scala.scalanative.build.{LTO, Mode}
+import scala.scalanative.build.{LTO, Mode, NativeConfig}
 
 // for some reason, project matrix REALLY likes to require this everywhere
 lazy val s3v = "3.9.0"
@@ -45,8 +45,8 @@ lazy val publishedProjects =
       channels.js(s3v),
     )
     // set publishing settings to have aggregate commands of bundle uploading work,
-    // but do not publish this project itselfs
-    .settings(SettingsLocal.publishSonatype, publish / skip := true)
+    // but do not publish this project itself
+    .settings(publishSonatype, publish / skip := true)
 
 // projects in alphabetical order
 
@@ -59,7 +59,7 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     munit,
     munitCheck,
     jsoniterScala,
-    SettingsLocal.publishSonatype,
+    publishSonatype,
   )
   .jvmPlatform(
     scalaVersions = Seq(s3v),
@@ -197,7 +197,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
   .settings(
     Settings.scala3defaultsExtra,
-    SettingsLocal.publishSonatype,
+    publishSonatype,
     munit,
     munitCheck,
   )
@@ -211,7 +211,7 @@ lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
     // scaladoc
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
-    SettingsLocal.publishSonatype,
+    publishSonatype,
     munitCheck,
     munit,
   )
@@ -266,11 +266,82 @@ lazy val webview = project.in(file("Modules/Webview"))
       val d = c.withLTO(LTO.thin)
         .withMode(Mode.releaseFast)
         .withIncrementalCompilation(true)
+
       // The below disables LTO for macos as that seems to cause problems.
       // Windows not implemented, macos has known issues.
-      SettingsLocal.osSpecificWebviewConfig(d)
+      def fromCommand(args: String*): List[String] = {
+        val process = new ProcessBuilder(args *).start()
+        process.waitFor()
+        val res = new String(process.getInputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+        if (process.exitValue() != 0)
+          throw new IllegalStateException(s"command failed: ${args.mkString(" ")}\n$res")
+        res.split(raw"\s+").toList
+      }
+
+      val osname = sys.props.get("os.name").map(_.toLowerCase)
+      osname match {
+        case Some(win) if win.contains("win")                           => d
+        case Some(mac) if mac.contains("mac") || mac.contains("darwin") =>
+          d.withLTO(LTO.none)
+            .withLinkingOptions(d.linkingOptions ++ Seq("-framework", "WebKit"))
+            .withCompileOptions(co => co ++ Seq("-framework", "WebKit"))
+        case Some(linux) if linux.contains("linux") =>
+          d
+            .withLinkingOptions(
+              // unfortunately gtk4 version does not work in podman :(
+              // nativeConfig.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk4", "webkitgtk-6.0")
+              d.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk+-3.0", "webkit2gtk-4.1")
+            )
+            // .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk4", "webkitgtk-6.0"))
+            .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk+-3.0", "webkit2gtk-4.1"))
+        case other =>
+          println(s"unknown OS: $other")
+          d
+      }
+
     }
   )
+
+////////////////// PUBLISHING SETTINGS
+
+// publishSigned: to generate bundle to be published into a local staging repo
+// sonaUpload: upload to sonatype and publish and verify manually
+// sonaRelease: to (upload?) and release the bundle automatically
+val publishSonatype = Def.settings(
+  organization         := "de.tu-darmstadt.stg",
+  organizationName     := "Software Technology Group",
+  organizationHomepage := Some(uri("https://www.stg.tu-darmstadt.de/")),
+  homepage             := Some(uri("https://github.com/stg-tud/Bismuth")),
+  licenses             := List(sbt.librarymanagement.License(
+    "Apache 2",
+    new URI("http://www.apache.org/licenses/LICENSE-2.0.txt")
+  )),
+  scmInfo := Some(
+    ScmInfo(
+      uri("https://github.com/stg-tud/Bismuth"),
+      "scm:git@github.com:stg-tud/Bismuth.git"
+    )
+  ),
+  developers := List(
+    Developer(
+      id = "ragnar",
+      name = "Ragnar Mogk",
+      email = "mogk@cs.tu-darmstadt.de",
+      url = uri("https://www.stg.tu-darmstadt.de/")
+    )
+  ),
+
+  // no binary compatibility for 0.Y.z releases
+  versionScheme := Some("semver-spec"),
+
+  // Remove all additional repository other than Maven Central from POM
+  pomIncludeRepository := { _ => false },
+  // change to sonatypePublishTo to not use the bundle feature
+  publishTo         := localStaging.value,
+  publishMavenStyle := true
+)
+
+//////////// DEPENDENCIES
 
 def akka        = libraryDependencies += "com.typesafe.akka"             %% "akka-actor-typed"         % "2.8.8"
 def akkaTestKit = libraryDependencies += "com.typesafe.akka"             %% "akka-actor-testkit-typed" % "2.8.8"  % Test
