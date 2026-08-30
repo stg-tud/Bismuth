@@ -18,15 +18,14 @@ class DecoratedLattice[A](decorated: Lattice[A]) extends Lattice[A] {
 }
 
 object DecoratedLattice {
-  @nowarn("msg=class definition will be duplicated")
-  inline def filter[A](inline decorated: Lattice[A])(inline filt: (A, A) => A): DecoratedLattice[A] =
+  inline def filter[A](decorated: Lattice[A])(inline filt: (A, A) => A): DecoratedLattice[A] =
     new DecoratedLattice[A](decorated) {
       override def filter(base: A, other: A): A = filt(base, other)
-    }
+    }: @nowarn("id=197")
 
-  @nowarn("msg=class definition will be duplicated")
-  inline def compact[A](inline decorated: Lattice[A])(inline comp: A => A): DecoratedLattice[A] =
+
+  inline def compact[A](decorated: Lattice[A])(inline comp: A => A): DecoratedLattice[A] =
     new DecoratedLattice[A](decorated) {
       override def compact(merged: A): A = comp(merged)
-    }
+    }: @nowarn("id=197")
 }
