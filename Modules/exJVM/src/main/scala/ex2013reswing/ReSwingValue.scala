@@ -63,6 +63,7 @@ final case class ReSwingSignalValue[T](private val value: Lazy[Signal[T]]) exten
 }
 
 object ReSwingValue {
+  import scala.language.implicitConversions
 
   /** Does not cause the `Swing` library to use a specific value. */
   implicit def apply[T](@unused value: Unit): ReSwingNoValue[T] = ReSwingNoValue[T]()

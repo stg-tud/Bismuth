@@ -10,7 +10,7 @@ case class Presentation[T, +S](
     shape: S,
     color: Color = Color.BLACK,
     width: T = 1
-)(implicit ev1: S => Shape[T], ev2: Numeric[T]) {
+)(using ev1: S => Shape[T], ev2: Numeric[T]) {
   def toDouble: Presentation[Double, Shape[Double]] = Presentation(ev1(shape).toDouble, color, width.toDouble)
   def toInt: Presentation[Int, Shape[Int]]          = Presentation(ev1(shape).toInt, color, width.toInt)
 }
@@ -27,6 +27,7 @@ sealed abstract class Shape[T] {
 // point
 //
 object Point {
+  import scala.language.implicitConversions
   // dont delete
   implicit def toPoint[T: Numeric](p: (T, T)): Point[T] = Point(p._1, p._2)
 }

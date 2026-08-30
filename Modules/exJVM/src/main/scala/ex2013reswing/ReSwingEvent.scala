@@ -26,6 +26,7 @@ final class ReSwingEventNone[T] private[ex2013reswing] extends ReSwingEvent[T] {
 }
 
 object ReSwingEvent {
+  import scala.language.implicitConversions
 
   /** Creates an empty event (that is never fired) to be used with the library. */
   // dont delete

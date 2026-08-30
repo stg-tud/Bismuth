@@ -39,6 +39,7 @@ object LineIterator {
 case class Position(row: Int, col: Int)
 
 object Position {
+  import scala.language.implicitConversions
   // dont delete
   implicit def fromTuple(tuple: (Int, Int)): Position = Position(tuple._1, tuple._2)
 }

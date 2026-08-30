@@ -1,8 +1,7 @@
 package ex2013reswing
 
-import scala.annotation.unused
+import scala.swing.SequentialContainer
 import scala.swing.event.{ComponentAdded, ComponentRemoved}
-import scala.swing.{Component, SequentialContainer}
 
 trait ReSequentialContainer extends ReUIElement {
   protected def peer: SequentialContainer
@@ -20,8 +19,5 @@ trait ReSequentialContainer extends ReUIElement {
 
   contents.using(() => peerContents, peerContents_=, classOf[ComponentAdded], classOf[ComponentRemoved])
 
-  implicit protected class AddContent(@unused contents: ReSwingValue[CompList]) {
-    def +=(component: Component): Unit = peerContents :+= component
-  }
 }
 

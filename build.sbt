@@ -100,7 +100,6 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Dependencies.sttpCore,
     Dependencies.tink,
     libraryDependencies += Dependencies.scalafx,
-    Settings.implicitConversions(), // reswing uses this in a million places for no reason
     javaOptions ++= Seq(
       "-XX:+IgnoreUnrecognizedVMOptions",
       "--sun-misc-unsafe-memory-access=allow",

@@ -57,9 +57,6 @@ object Settings {
   // combine with -new-syntax, -indent, or -source some-migration to rewrite changed behavior
   def rewrite(conf: TaskKey[?]*) = taskSpecificScalacOption("-rewrite", conf*)
 
-  // allow definition and application of implicit conversions
-  def implicitConversions(conf: TaskKey[?]*) = taskSpecificScalacOption("-language:implicitConversions", conf*)
-
   // require an instance of Eql[A, B] to allow == checks. This is rather invasive, but would be a great idea if more widely supported …
   def strictEquality(conf: TaskKey[?]*) = taskSpecificScalacOption("-language:strictEquality", conf*)
 

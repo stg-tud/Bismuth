@@ -42,6 +42,8 @@ import scala.swing.{Publisher, Reactor, Swing, UIElement}
 private[ex2013reswing] trait ReSwingValueConnection {
   protected def peer: UIElement
 
+  import scala.language.implicitConversions
+
   implicit protected def toReSwingValueConnector[T](signal: ReSwingValue[T]): ReSwingValueConnector[T] =
     new ReSwingValueConnector(signal)
 

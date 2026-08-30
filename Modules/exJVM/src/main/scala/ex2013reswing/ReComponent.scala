@@ -74,5 +74,6 @@ abstract class ReComponent(
 
 // dont delete
 object ReComponent {
+  import scala.language.implicitConversions
   implicit def toComponent(component: ReComponent): Component = component.peer
 }

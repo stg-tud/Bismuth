@@ -61,6 +61,7 @@ class ReTextArea(
 }
 
 object ReTextArea {
+  import scala.language.implicitConversions
   // dont delete
   implicit def toTextArea(component: ReTextArea): TextArea = component.peer
 }
