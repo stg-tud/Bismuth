@@ -33,7 +33,7 @@ object ProBenchAdapterConnectionPool {
 //  (new java.util.Timer()).scheduleAtFixedRate(() => pprint.pprintln(pbClient.currentState), 0, 1000)
 
   def syncClient[A](f: ProBenchClient => Future[A]): Future[A] = Future {
-    val count = counter.incrementAndGet()
+    counter.incrementAndGet()
     // println(s"syncClient: ${Thread.currentThread().getName} ${count} scheduling task")
     val res = f(pbClient)
     // res.onComplete(_ => println(s"syncClient: ${Thread.currentThread().getName} ${count} finished task "))

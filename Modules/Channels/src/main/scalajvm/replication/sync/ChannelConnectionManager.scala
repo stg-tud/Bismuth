@@ -58,7 +58,7 @@ class ChannelConnectionManager(
   }
 
   override def broadcast(messages: Iterable[MessageBuffer]): Unit =
-    connections.foreach { (user, connection) =>
+    connections.foreach { (user, _) =>
       sendMultiple(user, messages)
     }
 

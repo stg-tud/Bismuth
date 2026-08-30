@@ -30,7 +30,6 @@ class MailService {
     val promise = Promise[MailAnswer]()
     val element = document.createElement("div")
     Outwatch.renderInto[SyncIO](element, mail.body).unsafeRunSync()
-    val htmlString = element.innerHTML
 
     if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now) then {
       println("[MailService] sending mail disabled (scala-loci removed)")

@@ -48,7 +48,7 @@ trait InvariantBundle extends TopoBundle {
     override val getMessage: String = message
   }
 
-  class InvariantState[V](value: V) extends TopoState[V](value) {
+  class InvariantState[V](valueParam: V) extends TopoState[V](valueParam) {
     var invariants: Seq[Invariant[V]] = Seq.empty
     var gen: Gen[?]                   = scala.compiletime.uninitialized
   }

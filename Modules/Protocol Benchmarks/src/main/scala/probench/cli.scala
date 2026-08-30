@@ -34,8 +34,6 @@ object cli {
     val clientPort = named[Int]("--listen-client-port", "")
     val peerPort   = named[Int]("--listen-peer-port", "")
 
-    val reporting = flag("--reporting", "enable reporting")
-
     val ipAndPort = """(.+):(\d+)""".r
 
     given ipAndPortParser: ArgumentValueParser[(String, Int)] with

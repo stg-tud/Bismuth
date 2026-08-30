@@ -6,9 +6,11 @@ import rdts.datatypes.ReplicatedTree
 import scala.language.implicitConversions
 import rdts.time.Dot
 import munit.Assertions
+
 import scala.util.Random
 import rdts.base.Lattice
 import rdts.datatypes.LastWriterWins as LWW
+
 
 class ReplicatedTreeTest extends munit.FunSuite {
   test("insert") {
@@ -222,14 +224,13 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
   test("parent cycle") {
     val aid = Uid.predefined("a")
-    val bid = Uid.predefined("b")
 
     // Create initial tree: ROOT -> C -> A,B
     var tree = ReplicatedTree.empty[LWW[String]]
     tree = tree `merge` tree.insert(ReplicatedTree.rootDot, LWW.now("ROOT"))(using aid)
     val root = tree.root.get.dot
     tree = tree `merge` tree.insert(root, LWW.now("C"))(using aid)
-    var c = tree.children(root).find(_.value.value == "C").get.dot
+    val c = tree.children(root).find(_.value.value == "C").get.dot
     tree = tree `merge` tree.insert(c, LWW.now("A"))(using aid)
     tree = tree `merge` tree.insert(c, LWW.now("B"))(using aid)
     val a = tree.children(c).find(_.value.value == "A").get.dot
@@ -307,7 +308,7 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
   test("move after parent cycle") {
     val aid = Uid.predefined("a")
-    val bid = Uid.predefined("b")
+
 
     // Create initial tree: ROOT -> C, D ; C -> A,B
     var tree = ReplicatedTree.empty[LWW[String]]
@@ -315,8 +316,8 @@ class ReplicatedTreeTest extends munit.FunSuite {
     val root = tree.root.get.dot
     tree = tree `merge` tree.insert(root, LWW.now("C"))(using aid)
     tree = tree `merge` tree.insert(root, LWW.now("D"))(using aid)
-    var c = tree.children(root).find(_.value.value == "C").get.dot
-    var d = tree.children(root).find(_.value.value == "D").get.dot
+    val c = tree.children(root).find(_.value.value == "C").get.dot
+    val d = tree.children(root).find(_.value.value == "D").get.dot
     tree = tree `merge` tree.insert(c, LWW.now("A"))(using aid)
     tree = tree `merge` tree.insert(c, LWW.now("B"))(using aid)
     val a = tree.children(c).find(_.value.value == "A").get.dot
@@ -481,7 +482,6 @@ class ReplicatedTreeTest extends munit.FunSuite {
     tree = tree `merge` tree.insert(parent, LWW.now("A"))(using aid)
     tree = tree `merge` tree.insert(parent, LWW.now("B"))(using bid)
     val a = tree.children(parent).find(_.value.value == "A").get.dot
-    val b = tree.children(parent).find(_.value.value == "B").get.dot
     tree = tree `merge` tree.insert(a, LWW.now("A1"))(using aid)
     tree = tree `merge` tree.insert(a, LWW.now("A2"))(using aid)
     {

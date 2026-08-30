@@ -28,7 +28,7 @@ class PaperPaxosTest extends munit.FunSuite {
     assertEquals(a.result, Some(1))
   }
   test("Upkeep on empty") {
-    var a: Paxos[Int] = emptyPaxosObject
+    val a: Paxos[Int] = emptyPaxosObject
     a.upkeep()(using id1)
   }
   test("Paperpaxos") {

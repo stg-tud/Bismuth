@@ -4,6 +4,8 @@ import rdts.base.LocalUid.asId
 import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, MultiVersionRegister, PosNegCounter}
 
+import scala.annotation.unused
+
 class DiffManualTests extends munit.ScalaCheckSuite {
 
   val r1: LocalUid = "r1".asId
@@ -124,7 +126,7 @@ class DiffManualTests extends munit.ScalaCheckSuite {
 
   test("Set[Int] diff") {
 
-    val empty: Set[Int] = Bottom[Set[Int]].empty
+    @unused val empty: Set[Int] = Bottom[Set[Int]].empty
 
     val delta_1: Set[Int] = Set(1)
     assertEquals(delta_1, Set(1))

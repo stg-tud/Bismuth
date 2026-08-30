@@ -65,8 +65,7 @@ class KeyValueReplica(
     @volatile var state: ClusterState = MultiPaxos.empty
 
     given Lattice[Payload[ClusterState]] =
-        given Lattice[Int] = Lattice.fromOrdering
-        Lattice.derived
+      Lattice.derived
 
     lazy val dataManager: BroadcastIO[ClusterState] = BroadcastIO[ClusterState](
       localUid,
@@ -99,7 +98,6 @@ class KeyValueReplica(
     def publish(delta: ClusterState): ClusterState = currentStateLock.synchronized {
       if delta `inflates` state then {
         log(s"publishing cluster state $delta")
-        val oldstate = state
         state = state.merge(delta)
         dataManager.broadcast(delta)
       } else {
@@ -269,9 +267,7 @@ class KeyValueReplica(
   class ConnInf {
     @volatile var state: ConnInformation = HeartbeatQuorum()
 
-    given Lattice[Payload[ConnInformation]] =
-        given Lattice[Int] = Lattice.fromOrdering
-        Lattice.derived
+    given Lattice[Payload[ConnInformation]] = Lattice.derived
 
     var alivePeers: Set[Uid] = Set.empty
 

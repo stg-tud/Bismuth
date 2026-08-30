@@ -141,8 +141,8 @@ class TaskListTest extends munit.FunSuite {
     given bid: LocalUid = LocalUid.predefined("b")
 
     // Initialize two replicas
-    var replica1 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
-    var replica2 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
+    val replica1 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
+    val replica2 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])
 
     val root = ReplicatedTree.rootDot
 

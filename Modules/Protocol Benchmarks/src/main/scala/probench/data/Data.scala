@@ -26,13 +26,11 @@ enum ClientCommWrite:
 
 object ClientComm {
   given l1: Lattice[Payload[ClientCommWrite]] =
-      given Lattice[Int]             = Lattice.fromOrdering
       given Lattice[ClientCommWrite] = Lattice.assertEquals
 
       Lattice.derived
 
   given l2: Lattice[Payload[ClientCommRead]] =
-      given Lattice[Int]            = Lattice.fromOrdering
       given Lattice[ClientCommRead] = Lattice.assertEquals
 
       Lattice.derived

@@ -10,6 +10,7 @@ import replication.acl.Acl
 import replication.acl.sync.SynchronizedMutableArrayDeltaStore
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
+import scala.annotation.unused
 
 class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     private val localIdentity: PrivateIdentity,
@@ -124,7 +125,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       }
     } else {                                                      // Remote acl is the same as local acl
       missingDots.updateAndGet(missing => missing.diff(filtered)) // Remove filtered from missing
-      val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
+      @unused val newFiltered = filteredDots.updateAndGet(known => known.union(filtered))
     }
   }
 

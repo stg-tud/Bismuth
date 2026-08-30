@@ -9,11 +9,9 @@ class ReevaluationCount extends munit.FunSuite {
     val v1   = Var(true)
     val v2   = Var(0)
     val v3   = Var(10)
-    var i    = 0
     var test = 0
 
     val s = Signal {
-      i += 1
       if v1.value then v2.value
       else v3.value
     }

@@ -102,7 +102,7 @@ object Filter {
 
     override def validatePermissionTree(permissionTree: PermissionTree): Unit =
       permissionTree.children.foreach { (_, childPerm) =>
-        childPerm.children.foreach { (key, value) =>
+        childPerm.children.foreach { (key, _) =>
           try {
             val _ = java.lang.Long.parseUnsignedLong(key)
           } catch {

@@ -37,7 +37,6 @@ class ReplicatedListTest extends munit.FunSuite {
     val v1 = ReplicatedList.empty[String]
 
     val aid = Uid.predefined("a")
-    val bid = Uid.predefined("a")
 
     val v2 = v1.insertAt(0, "10")(using aid)
 
@@ -99,7 +98,6 @@ class ReplicatedListTest extends munit.FunSuite {
   }
 
   test("new grow list") {
-    given LocalUid = LocalUid.gen()
     val ten        = GrowOnlyList.empty.insertAfter(GrowOnlyList.headDot, "ten")
     val twenty     = ten `merge` ten.insertAfter(ten.dotList(1), "twenty")
     assertEquals(twenty.toList, List("ten", "twenty"), twenty)

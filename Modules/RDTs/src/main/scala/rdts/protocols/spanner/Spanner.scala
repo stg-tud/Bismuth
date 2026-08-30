@@ -6,6 +6,8 @@ import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.{MultiPaxos, Participants, TwoPhaseCommit}
 
+import scala.annotation.unused
+
 enum twoPCMessages:
     case Prepare(transactionID: Uid, valid: Boolean)
     case Commit(transactionID: Uid)
@@ -59,7 +61,7 @@ case class Spanner[A](
       partitionMembers.contains(partitionId) &&
       transactions.contains(transactionID)
     ) {
-      val transaction = transactions(transactionID)
+      @unused val transaction = transactions(transactionID)
       val vote        = paxosPartitions(partitionId).read.find {
         case twoPCMessages.Prepare(id, _) =>
           transactionID == id

@@ -48,7 +48,6 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     given Lattice[String] = Lattice.assertEquals
 
     val aid = Uid.predefined("a")
-    val bid = Uid.predefined("b")
 
     var list = RemoveWinsArray.empty[String]
 
@@ -160,7 +159,6 @@ class RemoveWinsArrayTest extends munit.FunSuite {
     given Lattice[String] = Lattice.assertEquals
 
     val aid = Uid.predefined("a")
-    val bid = Uid.predefined("b")
 
     var list = RemoveWinsArray.empty[String]
 

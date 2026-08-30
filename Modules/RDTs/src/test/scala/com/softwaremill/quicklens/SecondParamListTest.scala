@@ -1,6 +1,6 @@
 package com.softwaremill.deltalens
 
-import scala.annotation.nowarn
+import scala.annotation.{nowarn, unused}
 import rdts.syntax.deltalens.*
 
 class SecondParamListTest extends munit.FunSuite {
@@ -25,9 +25,9 @@ class SecondParamListTest extends munit.FunSuite {
 
     val d: Double = 1.0
 
-    val state1 = State(true)(d)
+    @unused val state1 = State(true)(d)
 
-    given dd: Double = d
+    @unused given dd: Double = d
 
     assert(compileErrors("state1.modify(_.inside).setTo(true)").nonEmpty)
   }

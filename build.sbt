@@ -1,41 +1,45 @@
-import Settings.{javaOutputVersion, scala3VersionString, scala3defaults, scala3defaultsExtra}
 import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitStyle}
 
 import scala.scalanative.build.{LTO, Mode}
 
-// 2026-06-22 scalacheck depends on scala native 0.5.8 while we use 0.5.12; this is likely fine as long as the tests dont fail
-evictionErrorLevel := Level.Info
+// for some reason, project matrix REALLY likes to require this everywhere
+lazy val s3v = "3.9.0"
+scalaVersion := s3v
+Settings.scala3defaults
 
-lazy val bismuth = project.in(file(".")).settings(scala3defaultsExtra).aggregate(
-  channels.js(scala3VersionString),
-  channels.jvm(scala3VersionString),
+// 2026-06-22 scalacheck depends on scala native 0.5.8 while we use 0.5.12; this is likely fine as long as the tests dont fail
+libraryDependencySchemes += "org.scala-native" % "test-interface_native0.5_3" % VersionScheme.EarlySemVer
+
+lazy val bismuth = project.in(file(".")).settings(Settings.scala3defaultsExtra).aggregate(
+  channels.js(s3v),
+  channels.jvm(s3v),
   exJVM,
   exWeb,
-  lore.js(scala3VersionString),
-  lore.jvm(scala3VersionString),
+  lore.js(s3v),
+  lore.jvm(s3v),
   loreCompilerPlugin,
   proBench,
-  rdts.js(scala3VersionString),
-  rdts.jvm(scala3VersionString),
+  rdts.js(s3v),
+  rdts.jvm(s3v),
   reform,
-  rdts.native(scala3VersionString),
-  reactives.js(scala3VersionString),
-  reactives.jvm(scala3VersionString),
-  reactives.native(scala3VersionString),
+  rdts.native(s3v),
+  reactives.js(s3v),
+  reactives.jvm(s3v),
+  reactives.native(s3v),
 )
 
 lazy val publishedProjects =
-  project.in(file("target/PhonyBuilds/publishedProjects")).settings(scala3defaultsExtra, publish / skip := true)
+  project.in(file("target/PhonyBuilds/publishedProjects")).settings(Settings.scala3defaultsExtra, publish / skip := true)
     .aggregate(
-      rdts.jvm(scala3VersionString),
-      rdts.native(scala3VersionString),
-      rdts.js(scala3VersionString),
-      reactives.jvm(scala3VersionString),
-      reactives.native(scala3VersionString),
-      reactives.js(scala3VersionString),
-      channels.jvm(scala3VersionString),
-      channels.native(scala3VersionString),
-      channels.js(scala3VersionString),
+      rdts.jvm(s3v),
+      rdts.native(s3v),
+      rdts.js(s3v),
+      reactives.jvm(s3v),
+      reactives.native(s3v),
+      reactives.js(s3v),
+      channels.jvm(s3v),
+      channels.native(s3v),
+      channels.js(s3v),
     )
     // set publishing settings to have aggregate commands of bundle uploading work,
     // but do not publish this project itselfs
@@ -55,30 +59,29 @@ lazy val channels = (projectMatrix in file("Modules/Channels"))
     SettingsLocal.publishSonatype,
   )
   .jvmPlatform(
-    scalaVersions = Settings.scalaVersions,
+    scalaVersions = Seq(s3v),
     settings = Seq(
       Test / fork := true,
       Dependencies.ayza,
     )
   )
   .jsPlatform(
-    scalaVersions = Settings.scalaVersions,
+    scalaVersions = Seq(s3v),
     settings = Seq(
       Dependencies.scalajsDom,
       Dependencies.scalatags(),
     )
   )
-  .nativePlatform(scalaVersions = Settings.scalaVersions)
+  .nativePlatform(scalaVersions = Seq(s3v))
 
 lazy val exJVM = project.in(file("Modules/exJVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(
-    reactives.jvm(scala3VersionString),
-    channels.jvm(scala3VersionString) % "compile->compile;test->test"
+    reactives.jvm(s3v),
+    channels.jvm(s3v) % "compile->compile;test->test"
   )
   .settings(
-    scala3defaults,
-    javaOutputVersion(21),
+    Settings.javaOutputVersion(21),
     fork := true,
     Settings.jolSettings,
     Dependencies.bloomFilter,
@@ -107,7 +110,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
 
 lazy val exWeb = project.in(file("Modules/exWeb"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js(scala3VersionString), rdts.js(scala3VersionString), lore.js(scala3VersionString))
+  .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v))
   .settings(
     Dependencies.jsoniterScala,
     Dependencies.munit,
@@ -115,7 +118,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     Dependencies.scalajsDom,
     Dependencies.scalajsReact,
     Dependencies.scalatags(),
-    scala3defaultsExtra,
+    Settings.scala3defaultsExtra,
     Compile / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
@@ -135,8 +138,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
 lazy val lore = (projectMatrix in file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
-    scala3defaults,
-    javaOutputVersion(17),
+    Settings.javaOutputVersion(17),
     libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided").platform(
       Platform.jvm
     ),
@@ -148,25 +150,23 @@ lazy val lore = (projectMatrix in file("Modules/Lore"))
     Dependencies.munit,
     Compile / mainClass := Some("lore.Compiler")
   )
-  .jvmPlatform(scalaVersions = Settings.scalaVersions)
-  .jsPlatform(scalaVersions = Settings.scalaVersions)
+  .jvmPlatform(scalaVersions = Seq(s3v))
+  .jsPlatform(scalaVersions = Seq(s3v))
 
 lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
-  .dependsOn(lore.jvm(scala3VersionString))
+  .dependsOn(lore.jvm(s3v))
   .settings(
-    scala3defaults,
-    javaOutputVersion(17),
+    Settings.javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     Dependencies.upickle,
     Dependencies.munit
   )
 
 lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plugin/examples"))
-  .dependsOn(lore.jvm(scala3VersionString))
+  .dependsOn(lore.jvm(s3v))
   .dependsOn(loreCompilerPlugin)
   .settings(
-    scala3defaults,
-    javaOutputVersion(17),
+    Settings.javaOutputVersion(17),
     Dependencies.munit,
     scalacOptions += {
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
@@ -177,12 +177,12 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
 
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .dependsOn(
-    reactives.jvm(scala3VersionString),
-    channels.jvm(scala3VersionString),
-    rdts.jvm(scala3VersionString) % "compile->compile;test->test"
+    reactives.jvm(s3v),
+    channels.jvm(s3v),
+    rdts.jvm(s3v) % "compile->compile;test->test"
   )
   .settings(
-    scala3defaultsExtra,
+    Settings.scala3defaultsExtra,
     Dependencies.jsoniterScala,
     Dependencies.munitCheck,
     Dependencies.munit,
@@ -194,18 +194,18 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
 
 lazy val rdts = (projectMatrix in file("Modules/RDTs"))
   .settings(
-    scala3defaultsExtra,
+    Settings.scala3defaultsExtra,
     SettingsLocal.publishSonatype,
     Dependencies.munit,
     Dependencies.munitCheck,
   )
-  .jvmPlatform(scalaVersions = Settings.scalaVersions)
-  .jsPlatform(scalaVersions = Settings.scalaVersions)
-  .nativePlatform(scalaVersions = Settings.scalaVersions)
+  .jvmPlatform(scalaVersions = Seq(s3v))
+  .jsPlatform(scalaVersions = Seq(s3v))
+  .nativePlatform(scalaVersions = Seq(s3v))
 
 lazy val reactives = (projectMatrix in file("Modules/Reactives"))
   .settings(
-    scala3defaultsExtra,
+    Settings.scala3defaultsExtra,
     // scaladoc
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
@@ -214,28 +214,27 @@ lazy val reactives = (projectMatrix in file("Modules/Reactives"))
     Dependencies.munit,
   )
   .jvmPlatform(
-    scalaVersions = Settings.scalaVersions,
+    scalaVersions = Seq(s3v),
     settings = Seq(
       libraryDependencies += Dependencies.scalafx % Provided,
     )
   )
   .jsPlatform(
-    scalaVersions = Settings.scalaVersions,
+    scalaVersions = Seq(s3v),
     settings = Seq(
       Dependencies.scalajsDom,
       Dependencies.scalatags(Test),
     )
   )
   .nativePlatform(
-    scalaVersions = Settings.scalaVersions,
+    scalaVersions = Seq(s3v),
   )
 
 lazy val reform = project
   .in(file("Modules/Reform"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(reactives.js(scala3VersionString), rdts.js(scala3VersionString))
+  .dependsOn(reactives.js(s3v), rdts.js(s3v))
   .settings(
-    scala3defaults,
     name := "Reform",
     Dependencies.jsoniterScala,
     Dependencies.munit,
@@ -257,7 +256,7 @@ lazy val reform = project
 
 lazy val webview = project.in(file("Modules/Webview"))
   .enablePlugins(ScalaNativePlugin)
-  .dependsOn(channels.native(scala3VersionString))
+  .dependsOn(channels.native(s3v))
   .settings(
     Settings.scala3defaultsExtra,
     Dependencies.jsoniterScala,

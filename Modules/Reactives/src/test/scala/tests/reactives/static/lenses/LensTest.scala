@@ -2,6 +2,8 @@ package tests.reactives.static.lenses
 
 import reactives.extra.lenses.{AddLens, LVar, Lens, MulLens, SignalLens}
 
+import scala.annotation.unused
+
 class LensTest extends munit.FunSuite {
 
   import reactives.default.*
@@ -73,7 +75,7 @@ class LensTest extends munit.FunSuite {
         )) // (Record("intValue" -> 5, "stringValue" -> "THISDOESNTCHANGE").asInstanceOf[testType])
       val b    = a.applyLens(testLens())
       val e1   = Evt[Int]()
-      val test = Var(0)
+      @unused val test = Var(0)
       b.fire(e1)
       e1.fire(5)
       assertEquals(a.now.intValue, 2)

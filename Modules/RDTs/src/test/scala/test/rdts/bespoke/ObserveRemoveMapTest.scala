@@ -117,7 +117,7 @@ class ObserveRemoveMapTest extends munit.FunSuite {
     val delta7 = produceDeltaRemove("a")
     orMap = orMap `merge` delta7
 
-    var buffer: List[MetaDelta[ObserveRemoveMap[String, LastWriterWins[String]]]] = List(
+    val buffer: List[MetaDelta[ObserveRemoveMap[String, LastWriterWins[String]]]] = List(
       MetaDelta(Dots.single(dot1), delta1),
       MetaDelta(Dots.single(dot2), delta2),
       MetaDelta(Dots.single(dot3), delta3),

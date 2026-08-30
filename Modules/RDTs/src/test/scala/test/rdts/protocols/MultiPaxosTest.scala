@@ -19,7 +19,6 @@ class MultiPaxosTest extends munit.FunSuite {
     assertEquals(testPaxosObject.leader, None)
     assertEquals(testPaxosObject.phase, MultipaxosPhase.LeaderElection, "multipaxos starts in leader election phase")
 
-    val proposeValue = 1
     // replica 1 tries to become leader
     testPaxosObject = testPaxosObject.merge(testPaxosObject.startLeaderElection(using id1))
 

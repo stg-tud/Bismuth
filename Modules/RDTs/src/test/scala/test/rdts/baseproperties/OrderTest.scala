@@ -23,10 +23,10 @@ abstract class OrderTests[A: {Arbitrary, Lattice}](using pa: PartialOrdering[A])
     agreesWithEquals: Boolean
 ) extends munit.ScalaCheckSuite {
 
-  extension [A](using pa: PartialOrdering[A])(a: A)
-      def <(b: A)     = pa.lt(a, b)
-      def <=(b: A)    = pa.lteq(a, b)
-      def equiv(b: A) = pa.equiv(a, b)
+  extension [B](using pa: PartialOrdering[B])(a: B)
+      def <(b: B)     = pa.lt(a, b)
+      def <=(b: B)    = pa.lteq(a, b)
+      def equiv(b: B) = pa.equiv(a, b)
 
   property("transitive") {
     forAll { (a: A, b: A, c: A) =>
@@ -49,6 +49,7 @@ abstract class OrderTests[A: {Arbitrary, Lattice}](using pa: PartialOrdering[A])
         forAll { (a: A, b: A) =>
           assert(a <= b || b <= a)
         }
+    else org.scalacheck.Prop.passed
   }
 
   property("reflexive") {

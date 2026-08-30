@@ -22,7 +22,7 @@ case class FlexibleVoting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
       // filter by quorum
       .filter((_, votes) => isQuorum(votes))
       // return maximum
-      .maxByOption((value, votes) => votes.size) match
+      .maxByOption((_, votes) => votes.size) match
         case Some((value, votes)) => Decided(value)
         case None                 => Undecided
 

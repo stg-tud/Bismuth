@@ -39,6 +39,9 @@ To get started, import:
 
 import reactives.default.*
 
+import scala.annotation.nowarn
+
+@nowarn("msg=unused local definition")
 object ReactiveExamples {
   def main(args: Array[String]): Unit = {
 

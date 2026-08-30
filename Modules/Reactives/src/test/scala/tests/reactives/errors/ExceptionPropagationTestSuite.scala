@@ -35,8 +35,8 @@ class ExceptionPropagationTestSuite extends FunSuite {
       val de = Event { e.value.map(div) }
       val se = e.map(div)
 
-      var dres: Try[Int] = null
-      var sres: Try[Int] = null
+      var dres: Try[Int] | Null = null
+      var sres: Try[Int] | Null = null
 
       de.map(Success(_)).recover { case t => Some(Failure(t)) }.observe(dres = _)
       se.map(Success(_)).recover { case t => Some(Failure(t)) }.observe(sres = _)
@@ -48,8 +48,8 @@ class ExceptionPropagationTestSuite extends FunSuite {
 
       e.fire(0)
 
-      intercept[ArithmeticException](dres.get)
-      intercept[ArithmeticException](sres.get)
+      intercept[ArithmeticException](dres.nn.get)
+      intercept[ArithmeticException](sres.nn.get)
 
     }
 
@@ -60,30 +60,30 @@ class ExceptionPropagationTestSuite extends FunSuite {
       val folded     = toInted.fold(100)((acc, v) => div2(v, acc))
       val `change'd` = folded.change
 
-      var res: Diff[Int] = null
+      var res: Diff[Int] | Null = null
       `change'd`.observe(res = _)
 
       assertEquals(folded.readValueOnce, 100)
 
       input.fire("10")
       assertEquals(folded.readValueOnce, 10, "successful fold")
-      assertEquals(res.pair, 100 -> 10, "successful changed")
+      assertEquals(res.nn.pair, 100 -> 10, "successful changed")
 
       input.fire(" 2  ")
       assertEquals(folded.readValueOnce, 5, "successful fold 2")
-      assertEquals(res.pair, 10 -> 5, "successful changed 2")
+      assertEquals(res.nn.pair, 10 -> 5, "successful changed 2")
 
       input.fire(" 0  ")
       intercept[ObservedException](folded.readValueOnce)
-      intercept[ArithmeticException](res.pair)
+      intercept[ArithmeticException](res.nn.pair)
 
       input.fire(" aet ")
       intercept[ObservedException](folded.readValueOnce)
-      intercept[NumberFormatException](res.pair)
+      intercept[NumberFormatException](res.nn.pair)
 
       input.fire(" 2 ")
       intercept[ObservedException](folded.readValueOnce)
-      intercept[NumberFormatException](res.pair)
+      intercept[NumberFormatException](res.nn.pair)
 
     }
 
@@ -93,7 +93,7 @@ class ExceptionPropagationTestSuite extends FunSuite {
       val folded     = trimmed.map(_.toInt)
       val `change'd` = folded.change
 
-      var res: Diff[Int] = null
+      var res: Diff[Int]| Null = null
 
       `change'd`.observe(res = _)
 
@@ -101,26 +101,26 @@ class ExceptionPropagationTestSuite extends FunSuite {
 
       input.set("10")
       assertEquals(folded.readValueOnce, 10, "successful fold")
-      assertEquals(res.pair, 100 -> 10, "successful changed")
+      assertEquals(res.nn.pair, 100 -> 10, "successful changed")
 
       input.set(" 2  ")
       assertEquals(folded.readValueOnce, 2, "successful fold 2")
-      assertEquals(res.pair, 10 -> 2, "successful changed2")
+      assertEquals(res.nn.pair, 10 -> 2, "successful changed2")
 
       input.set(" 0  ")
       assertEquals(folded.readValueOnce, 0, "successful fold 3")
-      assertEquals(res.pair, 2 -> 0, "successful changed3")
+      assertEquals(res.nn.pair, 2 -> 0, "successful changed3")
 
       input.set(" aet ")
       intercept[ObservedException](folded.readValueOnce)
-      intercept[NumberFormatException](res.pair)
+      intercept[NumberFormatException](res.nn.pair)
 
       input.set("100")
       assertEquals(folded.readValueOnce, 100, "successful fold 5")
-      intercept[NumberFormatException](res.pair) // TODO: should maybe change?
+      intercept[NumberFormatException](res.nn.pair) // TODO: should maybe change?
 
       input.set("200")
-      assertEquals(res.pair, 100 -> 200, "successful changed3")
+      assertEquals(res.nn.pair, 100 -> 200, "successful changed3")
 
     }
 

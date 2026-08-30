@@ -25,7 +25,7 @@ class PaperGlitchTest extends munit.FunSuite {
     val glitches = new ConcurrentLinkedQueue[Int]()
 
     total.changed observe { v =>
-      if !isPowerOf2(v) then glitches.add(v); ()
+      if !isPowerOf2(v) then { glitches.add(v); () }
     }
 
     // ============================================================================================================
@@ -42,9 +42,9 @@ class PaperGlitchTest extends munit.FunSuite {
             price.set(3 * 2 << Random.nextInt(8))
           catch {
             // occurs because of invalid buffer
-            case e: AssertionError => glitches.add(-42)
+            case e: AssertionError => glitches.add(-42); ()
             // can occur because of missing sync barriers
-            case e: NoSuchElementException => glitches.add(-43)
+            case e: NoSuchElementException => glitches.add(-43); ()
           }
     }
     val t2 = Spawn {
@@ -55,9 +55,9 @@ class PaperGlitchTest extends munit.FunSuite {
             quantity.set(2 << Random.nextInt(8))
           catch {
             // occurs because of invalid buffer
-            case e: AssertionError => glitches.add(-42)
+            case e: AssertionError => glitches.add(-42); ()
             // can occur because of missing sync barriers
-            case e: NoSuchElementException => glitches.add(-43)
+            case e: NoSuchElementException => glitches.add(-43); ()
           }
     }
     latch.countDown()

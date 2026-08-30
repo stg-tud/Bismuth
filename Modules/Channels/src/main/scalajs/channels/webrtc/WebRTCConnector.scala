@@ -4,6 +4,7 @@ import de.rmgk.delay.{Async, toAsync}
 import org.scalajs.dom
 import org.scalajs.dom.*
 
+import scala.annotation.unused
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
 import scala.util.control.NonFatal
@@ -65,7 +66,7 @@ class WebRTCConnector(configuration: dom.RTCConfiguration) {
   def smartUpdateLocalDescription: Async[Any, SessionDescription] = Async {
     // the `setLocalDescription()` seems to be a newer API that does not yet exists in the scala wrapper :(
     // it should automagically figure out the local description we should have in the current state
-    val res = peerConnection.asInstanceOf[js.Dynamic].setLocalDescription().asInstanceOf[
+    @unused val res = peerConnection.asInstanceOf[js.Dynamic].setLocalDescription().asInstanceOf[
       js.Promise[RTCSessionDescription]
     ].toFuture.toAsync.bind
     SessionDescription(peerConnection.localDescription).get

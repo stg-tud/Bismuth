@@ -54,9 +54,11 @@ abstract class DecomposePropertyChecks[A](
           s"decompose not smaller: »$d« <= »$theValue«\nmerge: ${d `merge` normalized}"
         )
         if decomposed.sizeIs > 1
-        then
-            BottomOpt.explicit: bo =>
-                assertNotEquals(bo.empty, d, s"decomposed result was empty\n  $decomposed")
+        then {
+          BottomOpt.explicit: bo =>
+              assertNotEquals(bo.empty, d, s"decomposed result was empty\n  $decomposed")
+          ()
+        }
       }
 
       BottomOpt.explicit: bo =>

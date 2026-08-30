@@ -303,7 +303,7 @@ class IdTreeTest extends ScalaCheckSuite {
 
     assertEquals(idPord.lteq(id, seed), true)
 
-    (normalizedId != anonymous) ==> {
+    if normalizedId != anonymous then {
       assertEquals(idPord.lteq(id.split._1, id.split._2), false)
       assertEquals(idPord.lteq(id.split._2, id.split._1), false)
 

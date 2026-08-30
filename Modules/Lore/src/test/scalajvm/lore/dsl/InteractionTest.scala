@@ -3,6 +3,8 @@ package lore.dsl
 import lore.dsl.*
 import reactives.default.*
 
+import scala.annotation.unused
+
 class InteractionTest extends munit.FunSuite {
 
   test("Test Interaction with single source") {
@@ -11,7 +13,7 @@ class InteractionTest extends munit.FunSuite {
 
     var t = 0
 
-    val add10 =
+    @unused val add10 =
       Interaction[Int, Int]
         .requires[Int]((t: Int, _) => t < 20)
         .modifies(v)

@@ -71,7 +71,6 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
 
   test("sample communication") {
     withCleanup { (abort, clients) =>
-      given Abort = abort
 
       val toSend         = List("Hi", "ho", "let’s", "go")
       val messageCounter = Counter(toSend.size)
@@ -103,7 +102,6 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
     if !supportsMultipleConnections then Future.successful(())
     else
         withCleanup { (abort, clients) =>
-          given Abort = abort
 
           val serverConnections = mutable.Set.empty[Connection]
           val clientReceived    = mutable.ListBuffer.empty[String]
@@ -147,7 +145,6 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
     if !supportsDisconnectDetection then Future.successful(())
     else
         withCleanup { (abort, clients) =>
-          given Abort = abort
 
           val serverMessages = Counter(1)
           val serverFailures = Counter(1)
@@ -183,7 +180,6 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
     if !supportsDisconnectDetection then Future.successful(())
     else
         withCleanup { (abort, clients) =>
-          given Abort = abort
 
           val firstMessageByConnection = mutable.Map.empty[Connection, String]
           val serverMessages           = Counter(2)
@@ -230,7 +226,6 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
     if !supportsStableConnectionObject then Future.successful(())
     else
         withCleanup { (abort, clients) =>
-          given Abort = abort
 
           val serverEstablished = mutable.ListBuffer.empty[Connection]
           val serverSeenOnMsg   = mutable.ListBuffer.empty[Connection]

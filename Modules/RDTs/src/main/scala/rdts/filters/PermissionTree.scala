@@ -38,7 +38,6 @@ case class PermissionTree(permission: Permission, children: Map[String, Permissi
 
   def toPathStringSet: Set[String] = {
     if permission == ALLOW then return Set("*")
-    val result = Set.empty[String]
     extension (p: PermissionTree)
         def pathStringsRec(pathElements: Queue[String]): Set[String] = p match
             case PermissionTree(ALLOW, _)                              => Set(pathElements.mkString("", ".", ".*"))

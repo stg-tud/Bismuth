@@ -4,6 +4,7 @@ import reactives.SelectedScheduler.State
 import reactives.core.*
 import reactives.operator.*
 
+import scala.annotation.unused
 import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 
@@ -49,7 +50,7 @@ trait ReactiveDeltaSeq[T] extends Derived with DisconnectableImpl {
       ticket: CreationTicket[State]
   ): Signal[A] = {
     // first we create an event that fires each time a Delta occurs
-    val event = asEvent
+    @unused val event = asEvent
 
     // Than we fold the event by applying the fold- or unfold-function respectively
     // In case Nothing Changed we return the old value of fold

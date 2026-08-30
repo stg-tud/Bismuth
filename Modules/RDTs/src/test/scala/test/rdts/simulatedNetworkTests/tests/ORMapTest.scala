@@ -2,7 +2,7 @@ package test.rdts.simulatedNetworkTests.tests
 
 import org.scalacheck.Prop.*
 import rdts.base
-import rdts.base.{Bottom, Decompose, LocalUid}
+import rdts.base.{Decompose, LocalUid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
@@ -13,13 +13,11 @@ class ORMapTest extends munit.ScalaCheckSuite {
 
   property("contains") {
     given LocalUid = base.LocalUid.predefined("test")
-    given Bottom[Int] with
-        def empty = Int.MinValue
     forAll { (entries: List[Int]) =>
       val orMap = entries.foldLeft(ObserveRemoveMap.empty[Int, Int]) { (curr, elem) =>
         curr.update(elem, elem)
       }
-      orMap.entries.foreach { (k, v) =>
+      orMap.entries.foreach { (k, _) =>
         assert(orMap.contains(k))
       }
     }

@@ -13,6 +13,7 @@ import java.util.Base64
 class Ed25519UtilTest extends FunSuite {
   if Security.getProvider("BC") == null then {
     Security.addProvider(new BouncyCastleProvider())
+    ()
   }
 
   private val cryptoProviders = List("BC", "SunEC")

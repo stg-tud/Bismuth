@@ -1,5 +1,7 @@
 package tests.reactives.misc
 
+import scala.annotation.unused
+
 class MacrosInteractingWithLanguageFeatures extends munit.FunSuite {
   import reactives.default.*
   {
@@ -17,8 +19,8 @@ class MacrosInteractingWithLanguageFeatures extends munit.FunSuite {
     }
 
     test("pattern Matching Anonymous Function") {
-      val s1 = Signal { List(Some(1), Some(2), None, Some(4), None) }
-      val s2 = Signal {
+      val s1         = Signal { List(Some(1), Some(2), None, Some(4), None) }
+      @unused val s2 = Signal {
         s1.value collect { case Some(n) => n }
       }
     }

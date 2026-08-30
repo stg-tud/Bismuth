@@ -227,7 +227,7 @@ object ReplicatedTree {
 
   private def resolveConflicts[A](mergedTree: ReplicatedTree[A]): ReplicatedTree[A] = {
     var t0   = System.nanoTime()
-    var tree = mergedTree.copy(elements = mergedTree.compact.map {
+    val tree = mergedTree.copy(elements = mergedTree.compact.map {
       case (dot, node) =>
         (dot, node.copy(parent = node.largestEdge))
     })

@@ -724,7 +724,7 @@ object DafnyGen {
             // Assemble list of parameters for Invariant call:
             // Any calls to definitions that exist are turned into field calls on the main object.
             val refs: Set[String] = usedReferences(inv.loreNode, ctx).map { ref =>
-              if ctx.exists((name, node) => name == ref) then s"LoReFields.$ref" else ref
+              if ctx.exists((name, _) => name == ref) then s"LoReFields.$ref" else ref
             }
 
             // Call the Invariant both before execution and after execution of the Interaction

@@ -40,7 +40,7 @@ class EmptySignalTestSuite extends FunSuite {
       val flat = v.flatten
       val e2   = e1 map { _ => flat.count() }
 
-      var s: Signal[Int] = null
+      var s: Signal[Int] | Null = null
 
       e2.observe(s = _)
 
@@ -48,16 +48,16 @@ class EmptySignalTestSuite extends FunSuite {
 
       assert(s != null, "sanity")
 
-      assertEquals(s.readValueOnce, 0, "mapped event")
+      assertEquals(s.nn.readValueOnce, 0, "mapped event")
 
       val e3 = Evt[Unit]()
       v.set(e3)
 
-      assertEquals(s.readValueOnce, 0, "mapped event after var set")
+      assertEquals(s.nn.readValueOnce, 0, "mapped event after var set")
 
       e3.fire()
 
-      assertEquals(s.readValueOnce, 1, "mapped event after event fire")
+      assertEquals(s.nn.readValueOnce, 1, "mapped event after event fire")
     }
 
     test("unwrap Empty Signal") {

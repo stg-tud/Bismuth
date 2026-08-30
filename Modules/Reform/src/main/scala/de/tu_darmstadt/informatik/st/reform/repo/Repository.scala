@@ -49,13 +49,13 @@ case class Repository[A](name: String, defaultValue: A)(using
   given mapCodec: JsonValueCodec[mutable.Map[String, A]] = JsonCodecMaker.make
 
   def encodeRepository(out: JsonWriter): Unit = {
-    var values: mutable.Map[String, A] = mutable.Map()
+    val values: mutable.Map[String, A] = mutable.Map()
     all.now.foreach(f => values += (f.id -> f.signal.now))
     mapCodec.encodeValue(values, out)
   }
 
   def decodeRepository(in: JsonReader): RepoAndValues[A] = {
-    var values = mapCodec.decodeValue(in, mutable.Map.empty)
+    val values = mapCodec.decodeValue(in, mutable.Map.empty)
     (this, values)
   }
 

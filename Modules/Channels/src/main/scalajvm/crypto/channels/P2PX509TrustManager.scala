@@ -2,6 +2,7 @@ package crypto.channels
 
 import java.security.cert.{CertificateException, X509Certificate}
 import javax.net.ssl.X509TrustManager
+import scala.annotation.unused
 
 class P2PX509TrustManager extends X509TrustManager {
 
@@ -12,7 +13,7 @@ class P2PX509TrustManager extends X509TrustManager {
     if certificate.getVersion != 3 then throw CertificateException("Only X509v3 Certificates are supported")
 
     // Validates and verifies the certificate
-    val id = X509Util.certificateToPublicIdentity(certificate)
+    @unused val id = X509Util.certificateToPublicIdentity(certificate)
   }
 
   override def checkClientTrusted(chain: Array[X509Certificate], authType: String): Unit = {

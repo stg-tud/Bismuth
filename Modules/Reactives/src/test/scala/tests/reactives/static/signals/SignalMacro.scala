@@ -83,9 +83,9 @@ class SignalMacro extends FunSuite {
       // a previous macro implementation yielded wrong results for code of the
       // following form, see:
       // https://github.com/guidosalva/examples/pull/4/files#r11724000
-      var test = 0
-      var e    = null: Evt[Int]
-      var s    = null: Signal[Int]
+      var test                  = 0
+      var e: Evt[Int] | Null    = null
+      var s: Signal[Int] | Null = null
 
       abstract class A { def obj(): Unit }
       val a = new A {
@@ -102,12 +102,12 @@ class SignalMacro extends FunSuite {
       }
 
       a.obj()
-      s.changed observe { _ => test += 1 }
-      assertEquals(s.readValueOnce, 0)
-      e.fire(2)
-      assertEquals(s.readValueOnce, 4)
-      e.fire(3)
-      assertEquals(s.readValueOnce, 6)
+      s.nn.changed observe { _ => test += 1 }
+      assertEquals(s.nn.readValueOnce, 0)
+      e.nn.fire(2)
+      assertEquals(s.nn.readValueOnce, 4)
+      e.nn.fire(3)
+      assertEquals(s.nn.readValueOnce, 6)
       assertEquals(test, 2)
     }
 

@@ -69,7 +69,7 @@ class PermissionTreePropertyChecks extends munit.ScalaCheckSuite {
             tree.children.filterNot(_._1 == "*").foreach((_, sibling) => require(contains(sibling, wChild.children)))
           case None =>
 
-      tree.children.foreach((label, subtree) => inNormalizedTreeAllSiblingsContainWildcardChildren(subtree))
+      tree.children.foreach((_, subtree) => inNormalizedTreeAllSiblingsContainWildcardChildren(subtree))
 
   property("Non-wildcard siblings of wildcards are at least as permissive as wildcard sibling") {
     forAll { (tree: PermissionTree) =>

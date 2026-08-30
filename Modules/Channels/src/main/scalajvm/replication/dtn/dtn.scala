@@ -14,6 +14,7 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.unused
 import scala.concurrent.{Await, Future}
 
 /** API base path used for http request */
@@ -148,7 +149,7 @@ def run(): Unit =
       given LocalUid = replica.id.convert
 
       val bundleString = sget(URI.create(s"$api/status/bundles")).bind
-      val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
+      @unused val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
         bget(URI.create(s"$api/download?$id"))
       }).bind
 
