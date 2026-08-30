@@ -47,7 +47,7 @@ lazy val publishedProjects =
 
 // projects in alphabetical order
 
-lazy val channels = (projectMatrix in file("Modules/Channels"))
+lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .dependsOn(rdts % "compile->compile;test->test")
   .settings(
     Settings.scala3defaultsExtra,
@@ -135,7 +135,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     fullLinkJS / crossTarget := target.value / "generated_js",
   )
 
-lazy val lore = (projectMatrix in file("Modules/Lore"))
+lazy val lore = projectMatrix.in(file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
     Settings.javaOutputVersion(17),
@@ -192,7 +192,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     Dependencies.ycsb,
   )
 
-lazy val rdts = (projectMatrix in file("Modules/RDTs"))
+lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
   .settings(
     Settings.scala3defaultsExtra,
     SettingsLocal.publishSonatype,
@@ -203,7 +203,7 @@ lazy val rdts = (projectMatrix in file("Modules/RDTs"))
   .jsPlatform(scalaVersions = Seq(s3v))
   .nativePlatform(scalaVersions = Seq(s3v))
 
-lazy val reactives = (projectMatrix in file("Modules/Reactives"))
+lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
   .settings(
     Settings.scala3defaultsExtra,
     // scaladoc
