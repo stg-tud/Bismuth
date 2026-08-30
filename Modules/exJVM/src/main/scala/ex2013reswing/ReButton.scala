@@ -55,6 +55,3 @@ class ReButton(
       peer.action = action
 }
 
-object ReButton {
-  implicit def toButton(component: ReButton): Button = component.peer
-}

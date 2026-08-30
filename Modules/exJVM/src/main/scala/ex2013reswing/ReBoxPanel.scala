@@ -17,6 +17,3 @@ class ReBoxPanel(
   override protected lazy val peer: BoxPanel & ComponentMixin = new BoxPanel(orientation) with ComponentMixin
 }
 
-object ReBoxPanel {
-  implicit def toBoxPanel(component: ReBoxPanel): BoxPanel = component.peer
-}

@@ -17,6 +17,3 @@ class ReBorderPanel(
   override protected lazy val peer: BorderPanel & ComponentMixin = new BorderPanel with ComponentMixin
 }
 
-object ReBorderPanel {
-  implicit def toBorderPanel(component: ReBorderPanel): BorderPanel = component.peer
-}

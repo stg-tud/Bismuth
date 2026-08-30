@@ -54,6 +54,3 @@ class ReMenuItem(
       peer.action = action
 }
 
-object ReMenuItem {
-  implicit def toMenuItem(component: ReMenuItem): MenuItem = component.peer
-}

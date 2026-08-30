@@ -50,6 +50,3 @@ class ReToggleButton(
   override protected lazy val peer: ToggleButton & ComponentMixin = new ToggleButton with ComponentMixin
 }
 
-object ReToggleButton {
-  implicit def toToggleButton(component: ReToggleButton): ToggleButton = component.peer
-}

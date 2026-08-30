@@ -88,7 +88,7 @@ class MillDrawer(val game: MillGame) extends ReComponent(preferredSize = new Dim
   val board: Signal[Rect[Int]] = Signal { // #SIG
     val offset = (2 * StoneRadius, 2 * StoneRadius)
     val size   = squareSize.value + 4 * StoneRadius
-    Rect(coordinates.value(16) - offset, size, size)
+    Rect(coordinates.value(16) - Point.toPoint(offset), size, size)
   }
 
   val lines: Signal[IndexedSeq[Line[Int]]] = Signal { // #SIG

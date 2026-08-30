@@ -27,7 +27,6 @@ sealed abstract class Shape[T] {
 // point
 //
 object Point {
-  implicit def fromPoint[T](p: Point[T]): (T, T)        = (p.x, p.y)
   implicit def toPoint[T: Numeric](p: (T, T)): Point[T] = Point(p._1, p._2)
 }
 

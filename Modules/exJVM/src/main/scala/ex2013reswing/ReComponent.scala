@@ -72,6 +72,7 @@ abstract class ReComponent(
   def paint(g: Graphics2D): Unit                    = peer.__super__paint(g)
 }
 
+// dont delete
 object ReComponent {
   implicit def toComponent(component: ReComponent): Component = component.peer
 }

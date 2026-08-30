@@ -51,6 +51,3 @@ class ReAbstractButton(
   val clicked: ReSwingEvent[ButtonClicked] = ReSwingEvent.using(classOf[ButtonClicked])
 }
 
-object ReAbstractButton {
-  implicit def toAbstractButton(component: ReAbstractButton): AbstractButton = component.peer
-}

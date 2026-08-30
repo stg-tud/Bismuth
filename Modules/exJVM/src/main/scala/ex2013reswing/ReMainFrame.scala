@@ -16,6 +16,3 @@ class ReMainFrame(
   override protected lazy val peer: MainFrame = new MainFrame
 }
 
-object ReMainFrame {
-  implicit def toMainFrame(component: ReMainFrame): MainFrame = component.peer
-}

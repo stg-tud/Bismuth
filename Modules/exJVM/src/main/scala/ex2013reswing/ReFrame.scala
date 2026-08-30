@@ -18,6 +18,3 @@ class ReFrame(
   override protected lazy val peer: Frame = new Frame
 }
 
-object ReFrame {
-  implicit def toFrame(component: ReFrame): Frame = component.peer
-}

@@ -51,6 +51,3 @@ class ReCheckBox(
   override protected lazy val peer: CheckBox & ComponentMixin = new CheckBox with ComponentMixin
 }
 
-object ReCheckBox {
-  implicit def toCheckBox(component: ReCheckBox): CheckBox = component.peer
-}

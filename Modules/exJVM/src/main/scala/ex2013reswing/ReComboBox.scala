@@ -80,15 +80,10 @@ class ReComboBox[A](
     val changed: ReSwingEvent[SelectionChanged] = ReSwingEvent.using(peer, classOf[SelectionChanged])
   }
 
-  object ReSelection {
-    implicit def toSelection(selection: ReSelection): selection.peer.type = selection.peer
-  }
-
   object selection extends ReSelection(`selection.index`, `selection.item`)
 }
 
 object ReComboBox {
-  implicit def toComboBox[A](component: ReComboBox[A]): ComboBox[A] = component.peer
 
   class ReComboBoxModel[A] extends javax.swing.AbstractListModel[A] with javax.swing.ComboBoxModel[A] {
     private var items: Seq[A] = Seq.empty[A]

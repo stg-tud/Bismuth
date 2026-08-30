@@ -135,7 +135,6 @@ class ReListView[A](
 }
 
 object ReListView {
-  implicit def toListView[A](component: ReListView[A]): ListView[A] = component.peer
 
   class ReListModel[A] extends javax.swing.AbstractListModel[A] {
     private var items: scala.collection.Seq[A] = Seq.empty[A]

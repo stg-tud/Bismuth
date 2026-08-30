@@ -1,6 +1,5 @@
 package ex201x.reswingexamples.reshapes
 
-import ex2013reswing.ReMenuItem.toMenuItem
 import ex2013reswing.{ReMenu, ReMenuItem, ReSwingValue}
 import ex201x.reswingexamples.reshapes.actions.{LoadAction, SaveAction}
 import ex201x.reswingexamples.reshapes.drawing.{Command, DrawingSpaceState, MergeDrawingSpaces, NetworkSpaceState}
