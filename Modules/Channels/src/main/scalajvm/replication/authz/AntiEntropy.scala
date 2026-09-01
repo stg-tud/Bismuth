@@ -11,14 +11,18 @@ import scala.collection.mutable
 
 class AntiEntropy(
     replica: Replica[?],
-    connectionManagerProvider: MessageReceiver[MessageBuffer] => ConnectionManager
+    connectionManagerProvider: MessageReceiver[MessageBuffer] => ConnectionManager,
+    controlPlaneProvider: ConnectionManager => MessageReceiver[ByteBuffer]
 ) extends MessageReceiver[MessageBuffer] {
 
   private val missingEvents: mutable.Set[Hash] = mutable.Set.empty
   private val eventsWithMissingDependencies: mutable.Map[Hash, (Array[Byte], Set[Hash], PublicIdentity)] =
     mutable.Map.empty
   private val deltasWithMissingEvent: mutable.Map[Hash, RevealedValue] = mutable.Map.empty
-  private lazy val connectionManager                = connectionManagerProvider(this)
+  private lazy val connectionManager                                   = connectionManagerProvider(this)
+  private lazy val controlPlane                                        = controlPlaneProvider(connectionManager)
+
+  def listenAddress: Option[(String, Int)] = connectionManager.listenAddress
 
   def broadcastEvents(events: Iterable[Array[Byte]]): Unit =
     connectionManager.broadcast(
@@ -53,20 +57,27 @@ class AntiEntropy(
       case EVENT_MSG_TAG =>
         val encodedEvent = decodeEventMsg(msgBytes)
         replica.receiveEvent(encodedEvent) match {
-          case Right(eventHash)    =>
+          case Right(eventHash) =>
             missingEvents.remove(eventHash): Unit
-            // TODO: Remove from missing dependencies and receive events that are now receivable
+          // TODO: Remove from missing dependencies and receive events that are now receivable
           case Left(missingEvents) =>
             val eventHash = Hash.compute(encodedEvent)
             enqueueEventWithMissingPredecessors(eventHash, encodedEvent, missingEvents, sender)
         }
       case DELTA_VALUE_MSG_TAG =>
         val (event, deltaValue) = decodeDeltaMsg(msgBytes)
-        if replica.storesEvent(event) then replica.receiveDelta(event, deltaValue)
+        if replica.containsEvent(event) then replica.receiveDelta(event, deltaValue)
         else deltasWithMissingEvent.put(event, deltaValue): Unit
-      case _ => ???
+      case CONTROL_PLANE_MSG_TAG => controlPlane.receivedMessage(msgBytes, sender)
+      case _                     => ???
     }
   }
+
+  override def connectionEstablished(publicIdentity: PublicIdentity): Unit =
+    controlPlane.connectionEstablished(publicIdentity)
+
+  override def connectionShutdown(publicIdentity: PublicIdentity): Unit =
+    controlPlane.connectionShutdown(publicIdentity)
 
   private def enqueueEventWithMissingPredecessors(
       eventHash: Hash,
@@ -87,6 +98,9 @@ object AntiEntropy {
 
   // delta value message format: tag(1 byte) | eventHash(32 bytes) | witness(32 bytes) | delta(variable length)
   val DELTA_VALUE_MSG_TAG: Byte = 1.toByte
+
+  // control messages that are forwarded to handler: tag(1 byte) | ???
+  val CONTROL_PLANE_MSG_TAG: Byte = Byte.MaxValue
 
   def encodeEventMsg(event: Array[Byte]): ByteBufferMessageBuffer = ByteBufferMessageBuffer(
     ByteBuffer.allocate(event.length + 1)

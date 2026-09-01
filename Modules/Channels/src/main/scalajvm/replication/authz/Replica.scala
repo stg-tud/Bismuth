@@ -1,14 +1,12 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.Commitment.RevealedValue
 import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
-
-import scala.annotation.unused
 
 class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
@@ -104,7 +102,6 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       deltas: Iterable[(eventHash: Hash, delta: RevealedValue)]
   ): Iterable[(eventHash: Hash, delta: RevealedValue)] =
     deltas.filter { case (eventHash, RevealedValue(encodedDelta, _)) =>
-      @unused val delta = readFromArray[RDT](encodedDelta)
       Authorization.mayRead(readingReplica, eventHash, eventGraph, deltaValueStore)
     }
 }
