@@ -31,7 +31,7 @@ object Signature {
 
   val length: Int = 64
 
-  val empty: Signature = Signature.unsafeFromArray(Array.ofDim(length))
+  val allZeroSignature: Signature = Signature.unsafeFromArray(Array.ofDim(length))
 
   def compute(content: Array[Byte], signingKey: PrivateKey): Signature = new Signature(
     Ed25519Util.sign(content, signingKey)

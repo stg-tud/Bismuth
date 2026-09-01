@@ -1,10 +1,11 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.Commitment.RevealedValue
-import crypto.{Hash, PublicIdentity}
+import crypto.channels.PrivateIdentity
+import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Lattice}
-import rdts.filters.Filter
+import rdts.filters.{Filter, PermissionTree}
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
 object Authorization {
@@ -87,4 +88,17 @@ object Authorization {
           .forall(revocation => eventGraph.causallyBefore(deltaEventHash, revocation))
       case _ => false
     }
+
+  def createGenesis(rootIdentity: PrivateIdentity): ArdtEvent = {
+    val genesisEvent = ArdtEvent(
+      Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow),
+      rootIdentity.getPublic,
+      Set.empty,
+      Signature.allZeroSignature,
+      Hash.allZeroHash
+    )
+    val encoded   = writeToArray(genesisEvent)
+    val signature = Signature.compute(encoded, rootIdentity.identityKey.getPrivate)
+    genesisEvent.copy(signature = signature)
+  }
 }

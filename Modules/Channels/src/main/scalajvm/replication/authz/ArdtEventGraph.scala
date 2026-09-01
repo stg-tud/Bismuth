@@ -31,7 +31,10 @@ case class ArdtEventGraph[T: Lattice](
     val event: ArdtEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
     // Signature verification: (need to blank signature and re-encode for verification)
-    require(event.signature.verify(event.author.publicKey, writeToArray(event.copy(signature = null.asInstanceOf[Signature]))))
+    require(event.signature.verify(
+      event.author.publicKey,
+      writeToArray(event.copy(signature = Signature.allZeroSignature))
+    ))
 
     // All events need predecessors except the genesis event
     if hash == genesis then require(event.parents.isEmpty)
@@ -154,6 +157,9 @@ object ArdtEventGraph {
       case _ => ???
     }
   }
+
+  def apply[T: Lattice](genesis: Hash): ArdtEventGraph[T] =
+    ArdtEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0)
 }
 
 enum CausalOrder:
