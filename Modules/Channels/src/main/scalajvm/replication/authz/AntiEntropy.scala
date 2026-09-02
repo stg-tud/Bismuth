@@ -19,8 +19,8 @@ class AntiEntropy(
   private val eventsWithMissingDependencies: mutable.Map[Hash, (Array[Byte], Set[Hash], PublicIdentity)] =
     mutable.Map.empty
   private val deltasWithMissingEvent: mutable.Map[Hash, RevealedValue] = mutable.Map.empty
-  private lazy val connectionManager                                   = connectionManagerProvider(this)
-  private lazy val controlPlane                                        = controlPlaneProvider(connectionManager)
+  private lazy val connectionManager: ConnectionManager                = connectionManagerProvider(this)
+  private lazy val controlPlane: MessageReceiver[ByteBuffer]           = controlPlaneProvider(connectionManager)
 
   def listenAddress: Option[(String, Int)] = connectionManager.listenAddress
 

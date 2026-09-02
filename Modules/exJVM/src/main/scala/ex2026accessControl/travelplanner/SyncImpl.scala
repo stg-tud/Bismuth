@@ -46,7 +46,8 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def mutateState(mutator: State => State): Unit = replica.mutateState(mutator)
 
-  def start(): Unit = ???
+  def start(): Unit =
+    replica.listenAddress: Unit // Forces connection manager
 
   def stop(): Unit = ???
 }

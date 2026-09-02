@@ -24,10 +24,6 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def containsEvent(eventHash: Hash): Boolean = eventGraph.events.contains(eventHash)
 
-  def revokedCapabilities: Set[Hash] = ???
-
-  def capabilities: Map[PublicIdentity, Set[(Hash, Capability)]] = ???
-
   def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Hash] = {
     val oldHeads = eventGraph.heads
     eventGraph.receive(encodedEvent) match {
@@ -45,10 +41,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       deltaValueStore.put(delta)
 
   def mutateState(mutator: RDT => RDT): Unit = {
-    val delta   = mutator(state)
-    val revoked = revokedCapabilities
-    capabilities(localReplicaId).find { case (hash, capability) =>
-      Filter[RDT].isAllowed(delta, capability.write) && revoked.contains(hash)
+    val delta = mutator(state)
+    eventGraph.capabilityCache.get(localReplicaId).flatMap { capabilities =>
+      capabilities.find { case (hash, capability) =>
+        Filter[RDT].isAllowed(delta, capability.write) && !eventGraph.revocationCache.contains(hash)
+      }
     } match {
       case Some(hash, capability) => createUpdate(delta, hash)
       case None                   => ???

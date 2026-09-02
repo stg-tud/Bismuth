@@ -3,6 +3,7 @@ package replication.authz
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.Lattice
+import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.CausalOrder.*
 
@@ -37,14 +38,20 @@ case class ArdtEventGraph[T: Lattice](
     ))
 
     // All events need predecessors except the genesis event
-    if hash == genesis then require(event.parents.isEmpty)
-    else require(event.parents.nonEmpty)
+    if hash != genesis then {
+      require(event.parents.nonEmpty)
+    } else {
+      require(event.parents.isEmpty)
+      require(event.authorization == Hash.allZeroHash)
+      require(event.payload.isInstanceOf[Capability])
+    }
 
     // Used capability is locally known (implies validity) and both holder and event author are the same
-    val authorizingCapability = events.get(event.authorization) match {
+    val authorizingCapability: Capability = events.get(event.authorization) match {
       case None => // Return missing capability and heads
         val missingParents = event.parents.filter(events.contains)
-        return Left(missingParents + event.authorization)
+        if hash != genesis then return Left(missingParents + event.authorization)
+        else Capability(event.author, PermissionTree.allow, PermissionTree.allow)
       case Some((ArdtEvent(cap @ Capability(capabilityHolder, _, _), eventAuthor, _, _, _), _)) =>
         // Used capability matches the event author
         require(capabilityHolder == eventAuthor)
