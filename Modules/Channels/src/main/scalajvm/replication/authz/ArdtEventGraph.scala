@@ -52,16 +52,16 @@ case class ArdtEventGraph[T: Lattice](
         val missingParents = event.parents.filter(events.contains)
         if hash != genesis then return Left(missingParents + event.authorization)
         else Capability(event.author, PermissionTree.allow, PermissionTree.allow)
-      case Some((ArdtEvent(cap @ Capability(capabilityHolder, _, _), eventAuthor, _, _, _), _)) =>
+      case Some((ArdtEvent(cap @ Capability(capabilityHolder, _, _), _, _, _, _), _)) =>
         // Used capability matches the event author
-        require(capabilityHolder == eventAuthor)
+        require(capabilityHolder == event.author)
         cap
       case _ => // Referenced capability is not a capability event
         throw java.lang.IllegalArgumentException(s"Event with invalid capability: $event")
     }
 
     // All parents are locally available
-    val missingParents = event.parents.filter(events.contains)
+    val missingParents = event.parents.filterNot(events.contains)
     if missingParents.nonEmpty then return Left(missingParents)
 
     // Payload dependent validity checks
@@ -102,24 +102,21 @@ case class ArdtEventGraph[T: Lattice](
   def causallyBefore(event1: Hash, event2: Hash): Boolean = {
     if event1 == event2 then return false
 
-    val (ev1, ev1Idx, ev2Idx) = (events.get(event2), events.get(event2)) match {
-      case (Some((ev1, ev1Idx)), Some((_, ev2Idx))) => (ev1, ev1Idx, ev2Idx)
-      case _                                        => return false
+    val (ev1, ev1Idx, ev2, ev2Idx) = (events.get(event1), events.get(event2)) match {
+      case (Some((ev1, ev1Idx)), Some((ev2, ev2Idx))) => (ev1, ev1Idx, ev2, ev2Idx)
+      case _                                          => return false
     }
 
     // If ev1Idx > ev2Idx, we applied ev1 after ev2, thus ev1 is not reachable by ev2
     if ev1Idx > ev2Idx then return false
+    if ev2.parents.contains(event1) then return true
 
-    val toSearch = {
-      val parents = ev1.parents
-      if parents.contains(event1) then return true
-      mutable.Queue.from(parents)
-    }
+    val toSearch = mutable.Queue.from(ev2.parents)
     val searched = mutable.Set(event2)
 
     while toSearch.nonEmpty do {
       val next                = toSearch.dequeue()
-      val (nextEv, nextEvIdx) = events(event2)
+      val (nextEv, nextEvIdx) = events(next)
 
       if nextEvIdx >= ev1Idx then // If nextEvIdx < ev1Idx, then ev1 is not reachable via nextEv
           val parents = nextEv.parents
