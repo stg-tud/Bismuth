@@ -1,5 +1,10 @@
 = Changelog and Repo Notes
 
+== Plans
+
+• merge the SocialMedia example into the Minisocial Web case study, so we can have that as an actual interactiev application
+	• there is also the minisocial example for just locl modifications, thats fine.
+
 == Known issues
 
 • warning: classpath set repeatedly during doc:
