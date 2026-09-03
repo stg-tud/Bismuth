@@ -98,13 +98,49 @@ Options form a lattice where :m{None} is smaller than :m{Some}:
 ## Bottom
 
 :m{Bottom[A]} provides the :b{empty} value of a lattice.
-It is the identity element of merge:
+It is the identity element of :m{merge}: merging an empty value into any other value leaves it unchanged.
 
-```code lang=scala
-  Lattice.merge(Bottom.empty, x) == x
-```
+   */
+
+  import rdts.base.Bottom
+  import rdts.base.Bottom.given
+
+  test("bottom is the identity of merge"):
+
+      val set: Set[Int] = Set(1, 2, 3)
+      val emptySet      = Bottom.empty[Set[Int]]
+      assert(emptySet.isEmpty, "the empty set is a bottom value")
+
+      // merging nothing into a state is a no-op
+      assertEquals(emptySet `merge` set, set)
+
+  /*:scim
 
 The empty set, the empty map, and :m{None} are all examples of bottom values.
+
+# Some Operations Have No Effect
+:label = some-operations-have-no-effect
+
+Because :m{merge} only ever :b{adds} information, removing information is impossible through merges alone: operations that try to forget previously merged state are :b{no-ops}.
+
+A plain grow-only set, for example, cannot forget an element. It can compute a smaller value, but merging that value back into the original set immediately re-adds what was removed:
+
+   */
+
+  test("removal has no effect in a set lattice"):
+      val original: Set[Int] = Set(1, 2)
+      // removing 1 gives a smaller set ...
+      val removed: Set[Int] = original.excl(1)
+      assertEquals(removed, Set(2))
+
+      // ... but merging it back into the original set re-adds 1
+      assertEquals(original `merge` removed, original)
+
+  /*:scim
+
+The :m{removed} value is :m{Set(2)}, yet merging it back yields :m{Set(1, 2) merge Set(2)}, which is :m{Set(1, 2)} again: the removal is lost because set union is monotone.
+
+To support removals replicated data types need more elaborated representations (such as tombstones).
 
 # Automatic Lattice Derivation
 :label = automatic-lattice-derivation
