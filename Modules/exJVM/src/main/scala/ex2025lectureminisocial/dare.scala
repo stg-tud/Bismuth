@@ -1,8 +1,4 @@
-//> using scala 3.8.3
-//> using dep "de.tu-darmstadt.stg::rdts:0.37.0+651-afc47005"
-//> using dep "com.lihaoyi::pprint:0.9.6"
-
-package ex2025protocols
+package ex2025lectureminisocial
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{GrowOnlyCounter, LastWriterWins}
