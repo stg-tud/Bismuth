@@ -71,6 +71,15 @@ class ArdtEventGraphTest extends FunSuite {
     assertEquals(empty.heads, Set.empty[Hash])
     assertEquals(empty.events, Map.empty[Hash, (ArdtEvent, Int)])
     assertEquals(empty.nextEventIndex, 0)
+
+    empty.receive(writeToArray(genesis)) match {
+      case Left(missing) => fail("empty graph should accept genesis")
+      case Right(graph)  =>
+        assertEquals(graph.genesis, genesis.hash)
+        assertEquals(graph.heads, Set(genesis.hash))
+        assertEquals(graph.events, Map(genesis.hash -> (genesis, 0)))
+        assertEquals(graph.nextEventIndex, 1)
+    }
   }
 
   // --- receive: duplicates & signatures ---
@@ -97,7 +106,7 @@ class ArdtEventGraphTest extends FunSuite {
       Capability(holder, PermissionTree.allow, PermissionTree.allow),
       holder,
       holderKey,
-      Set(Hash.allZeroHash),
+      parents = Set(Hash.allZeroHash),
       Hash.allZeroHash
     )
     val emptyGraph = ArdtEventGraph[Set[Int]](badGenesis.hash)
