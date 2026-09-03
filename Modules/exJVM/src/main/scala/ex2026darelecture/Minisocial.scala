@@ -26,8 +26,8 @@ object MiniSocial {
   given Lattice[MiniSocial] = Lattice.derived
 }
 
-/** The main objct, serving as kinda tests to play around with. */
-object DareMinisocial {
+/** The main object, serving as kinda tests to play around with. */
+object MinisocialMain {
 
   def main(args: Array[String]): Unit = {
     val a, b, c = Replica(MiniSocial())
