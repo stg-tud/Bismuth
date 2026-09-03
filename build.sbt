@@ -201,6 +201,7 @@ lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
     publishSonatype,
     munit,
     munitCheck,
+    pprintTest,
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))
@@ -357,7 +358,6 @@ def jetcd       = libraryDependencies += "io.etcd"                        % "jet
 def monocleCore = libraryDependencies += "dev.optics"                    %% "monocle-core"             % "3.3.0"
 def munit       = libraryDependencies += "org.scalameta"                 %% "munit"                    % "1.3.5"  % Test
 def munitCheck  = libraryDependencies += "org.scalameta"                 %% "munit-scalacheck"         % "1.3.0"  % Test
-def pprint      = libraryDependencies += "com.lihaoyi"                   %% "pprint"                   % "0.9.6"
 def scalaSwing  = libraryDependencies += "org.scala-lang.modules"        %% "scala-swing"              % "3.0.0"
 def scalaXml    = libraryDependencies += "org.scala-lang.modules"        %% "scala-xml"                % "2.4.0"
 def scalajsDom  = libraryDependencies += "org.scala-js"                  %% "scalajs-dom"              % "2.8.1"
@@ -368,6 +368,10 @@ def sttpCore    = libraryDependencies += "com.softwaremill.sttp.client4" %% "cor
 def tink        = libraryDependencies += "com.google.crypto.tink"         % "tink"                     % "1.23.0"
 def upickle     = libraryDependencies += "com.lihaoyi"                   %% "upickle"                  % "4.4.3"
 def ycsb        = libraryDependencies += "site.ycsb"                      % "core"                     % "0.17.0"
+
+def pprintModuleID = "com.lihaoyi"                        %% "pprint" % "0.9.6"
+def pprint         = libraryDependencies += pprintModuleID
+def pprintTest     = libraryDependencies += pprintModuleID % Test
 
 def borer = libraryDependencies ++= Seq(
   "io.bullet" %% "borer-core"       % "1.17.0",
