@@ -43,7 +43,7 @@ object Authorization {
       delta: T,
       eventGraph: ArdtEventGraph[T]
   ): Boolean =
-    eventGraph.capabilityCache.getOrElse(replicaId, Set.empty)
+    eventGraph.capabilities(replicaId)
       .exists((capabilityEventHash, capability) =>
         Filter[T].isAllowed(delta, capability.read) &&
         eventGraph

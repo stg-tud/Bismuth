@@ -42,10 +42,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def mutateState(mutator: RDT => RDT): Unit = {
     val delta = mutator(state)
-    eventGraph.capabilityCache.get(localReplicaId).flatMap { capabilities =>
-      capabilities.find { case (hash, capability) =>
-        Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
-      }
+    eventGraph.capabilities(localReplicaId).find {
+      case (hash, capability) => Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
     } match {
       case Some(hash, capability) => createUpdate(delta, hash)
       case None                   => ???

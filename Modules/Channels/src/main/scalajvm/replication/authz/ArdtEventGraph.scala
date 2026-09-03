@@ -13,9 +13,9 @@ case class ArdtEventGraph[T: Lattice](
     genesis: Hash,
     heads: Set[Hash],
     events: Map[Hash, (ArdtEvent, Int)],
-    revocationCache: Map[Hash, Set[Hash]],
-    capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
-    nextEventIndex: Int
+    private[authz] val revocationCache: Map[Hash, Set[Hash]],
+    private[authz] val capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
+    private[authz] val nextEventIndex: Int
 ) {
 
   /** Adds an event to the event graph unless the event is invalid or causally-before events are missing from the graph.
@@ -150,6 +150,8 @@ case class ArdtEventGraph[T: Lattice](
     if capHash == genesis then revocationCache.getOrElse(capHash, Set.empty)
     else revocationCache.getOrElse(capHash, Set.empty) ++ revocations(events(capHash)._1.authorization)
 
+  def capabilities(replicaId: PublicIdentity): Set[(Hash, Capability)] =
+    capabilityCache.getOrElse(replicaId, Set.empty)
 }
 
 object ArdtEventGraph {
