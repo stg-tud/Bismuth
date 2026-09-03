@@ -157,19 +157,18 @@ You get the derivation with a single line:
    */
 
   test("product lattice derives component-wise merge"):
-      given Lattice[Int] = math.max
       case class Data(counter: Int, items: Set[Int], mapping: Map[String, Int], flag: Option[Int])
 
       // automatically derive the lattice instance
       given Lattice[Data] = Lattice.derived
 
-      val left  = Data(1, Set(1, 2), Map("a" -> 1), Some(1))
-      val right = Data(2, Set(2, 3), Map("b" -> 2), None)
+      val left  = Data(1, Set(1, 2), Map("a" -> 4), Some(1))
+      val right = Data(2, Set(2, 3), Map("a" -> 1, "b" -> 2), None)
 
       val merged = left `merge` right
       assertEquals(merged.counter, 2)          // max(1, 2)
       assertEquals(merged.items, Set(1, 2, 3)) // union
-      assertEquals(merged.mapping, Map("a" -> 1, "b" -> 2)) // key-wise merge
+      assertEquals(merged.mapping, Map("a" -> 4, "b" -> 2)) // key-wise merge
       assertEquals(merged.flag, Some(1)) // Some > None
 
   /*:scim
@@ -178,26 +177,27 @@ You get the derivation with a single line:
 
 For :b{sum types} (enums, sealed classes), we rely on their inherent total ordering to derive the lattice instance. Constructors that are defined later are considered larger.
 Sum lattices are not as common as product lattices, but do allow modeling state machines.
+Consider the following example, where we have a Workflow that first prepares some documents, then drafts a contract, and then finalizes the process.
 
    */
 
+  enum Workflow:
+      case Init()
+      case Documents(hasStaffSheet: Boolean = false, hasHourConfirmation: Boolean = false)
+      case Contract(signed: Boolean = false)
+      case Complete()
+
+  given Lattice[Workflow] = {
+    // each case of the sum is a Product type, so we need to derive lattices for each
+    given Lattice[Boolean]            = Lattice.fromOrdering
+    given Lattice[Workflow.Init]      = Lattice.derived
+    given Lattice[Workflow.Documents] = Lattice.derived
+    given Lattice[Workflow.Contract]  = Lattice.derived
+    given Lattice[Workflow.Complete]  = Lattice.derived
+    Lattice.sumLattice
+  }
+
   test("sum lattice for state machine"):
-      enum Workflow:
-          case Init()
-          case Documents(hasStaffSheet: Boolean = false, hasHourConfirmation: Boolean = false)
-          case Contract(signed: Boolean = false)
-          case Complete()
-
-      given Lattice[Workflow] = {
-        // each case of the sum is a Product type, so we need to derive lattices for each
-        given Lattice[Boolean]            = Lattice.fromOrdering
-        given Lattice[Workflow.Init]      = Lattice.derived
-        given Lattice[Workflow.Documents] = Lattice.derived
-        given Lattice[Workflow.Contract]  = Lattice.derived
-        given Lattice[Workflow.Complete]  = Lattice.derived
-        Lattice.sumLattice
-      }
-
       val wf0: Workflow = Workflow.Init()
       val wf1           = wf0 `merge` Workflow.Documents()
       assertEquals(wf1, Workflow.Documents())
@@ -206,6 +206,47 @@ Sum lattices are not as common as product lattices, but do allow modeling state 
 
 The ordering is :m{Init < Documents < Contract < Complete}.
 Once a workflow reaches :m{Complete}, merging any earlier state leaves it at :m{Complete}.
+By itself, the Workflow state machine does not really guarantee that steps are taken in the correct order, we could just skip directly from Init to complete, without ever verifying the documents or the contract. We can fix this by using update methods that check preconditinos.
+
+   */
+
+  import Workflow.*
+  extension (wf: Workflow) {
+
+    def newContract: Workflow         = Documents()
+    def addStaffSheet: Workflow       = Documents(hasStaffSheet = true)
+    def addHourConfirmation: Workflow = Documents(hasHourConfirmation = true)
+
+    def createContract: Workflow = wf match
+        case Documents(hasStaffSheet = true, hasHourConfirmation = true) => Contract()
+        case other                                                       => Init()
+
+    def signContract: Workflow = wf match
+        case Contract(signed = false) => Contract(true)
+        case other                    => Init()
+
+    def complete: Workflow = wf match
+        case Contract(signed = true) => Complete()
+        case other                   => Init()
+  }
+
+  test("workflow"):
+      import rdts.syntax.DeltaBuffer
+
+      val db     = DeltaBuffer(Workflow.Init())
+      val result = db
+        .mod(_.newContract)
+        .mod(_.addStaffSheet)
+        .mod(_.addHourConfirmation)
+        .mod(_.createContract)
+        .mod(_.signContract)
+        .mod(_.complete)
+
+      assertEquals(result.state, Workflow.Complete())
+
+  /*:scim
+
+If we now leave out any of the steps above, then we will not complete the workflow. Note that its not important which replica calls any of the above methods, only that it is in a corresponding state. So anyone could progress the workflow. We could further restrict this to specific replicas/roles by adding those roles to the precondition. If we don’t trust all of the replicas, we need some form of access control, which is currently an open research topic.
 
 # Designing Replicated Data Types
 :label = designing-replicated-data-types
