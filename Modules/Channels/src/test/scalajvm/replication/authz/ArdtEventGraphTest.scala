@@ -1,53 +1,14 @@
 package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.{Ed25519Util, Hash, PublicIdentity, Signature}
+import crypto.Hash
 import munit.FunSuite
 import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import replication.authz.AuthzTestSupport.{buildEvent, buildGenesis, freshGraph, newIdentity, receiveOrFail}
 import replication.authz.CausalOrder.*
 
-import java.security.{KeyPair, PrivateKey}
-
 class ArdtEventGraphTest extends FunSuite {
-
-  private def newIdentity(): (PublicIdentity, PrivateKey) = {
-    val keyPair: KeyPair = Ed25519Util.generateNewKeyPair
-    (PublicIdentity.fromPublicKey(keyPair.getPublic), keyPair.getPrivate)
-  }
-
-  private def buildEvent(
-      payload: ArdtEvent.Payload,
-      author: PublicIdentity,
-      authorPrivateKey: PrivateKey,
-      parents: Set[Hash],
-      authorization: Hash
-  ): ArdtEvent = {
-    val unsigned  = ArdtEvent(payload, author, parents, Signature.allZeroSignature, authorization)
-    val signature = Signature.compute(writeToArray(unsigned), authorPrivateKey)
-    unsigned.copy(signature = signature)
-  }
-
-  private def buildGenesis(holder: PublicIdentity, holderKey: PrivateKey): ArdtEvent =
-    buildEvent(
-      Capability(holder, PermissionTree.allow, PermissionTree.allow),
-      holder,
-      holderKey,
-      Set.empty,
-      Hash.allZeroHash
-    )
-
-  private def receiveOrFail(graph: ArdtEventGraph[Set[Int]], event: ArdtEvent): ArdtEventGraph[Set[Int]] =
-    graph.receive(writeToArray(event)) match {
-      case Right(updated) => updated
-      case Left(missing)  => fail(s"expected ${event.hash} to be accepted, but graph reported missing: $missing")
-    }
-
-  private def freshGraph(): (ArdtEventGraph[Set[Int]], PublicIdentity, PrivateKey, ArdtEvent) = {
-    val (holder, holderKey) = newIdentity()
-    val genesis             = buildGenesis(holder, holderKey)
-    (ArdtEventGraph[Set[Int]](genesis), holder, holderKey, genesis)
-  }
 
   // --- construction ---
 
