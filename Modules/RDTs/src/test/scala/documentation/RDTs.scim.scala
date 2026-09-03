@@ -140,7 +140,7 @@ A plain grow-only set, for example, cannot forget an element. It can compute a s
 
 The :m{removed} value is :m{Set(2)}, yet merging it back yields :m{Set(1, 2) merge Set(2)}, which is :m{Set(1, 2)} again: the removal is lost because set union is monotone.
 
-To support removals replicated data types need more elaborated representations (such as tombstones).
+To support removals, replicated data types need more elaborate representations (such as tombstones).
 
 # Automatic Lattice Derivation
 :label = automatic-lattice-derivation
@@ -206,7 +206,7 @@ Consider the following example, where we have a Workflow that first prepares som
 
 The ordering is :m{Init < Documents < Contract < Complete}.
 Once a workflow reaches :m{Complete}, merging any earlier state leaves it at :m{Complete}.
-By itself, the Workflow state machine does not really guarantee that steps are taken in the correct order, we could just skip directly from Init to complete, without ever verifying the documents or the contract. We can fix this by using update methods that check preconditinos.
+By itself, the Workflow state machine does not really guarantee that steps are taken in the correct order; we could just skip directly from Init to Complete, without ever verifying the documents or the contract. We can fix this by using update methods that check preconditions.
 
    */
 
@@ -246,7 +246,7 @@ By itself, the Workflow state machine does not really guarantee that steps are t
 
   /*:scim
 
-If we now leave out any of the steps above, then we will not complete the workflow. Note that its not important which replica calls any of the above methods, only that it is in a corresponding state. So anyone could progress the workflow. We could further restrict this to specific replicas/roles by adding those roles to the precondition. If we don’t trust all of the replicas, we need some form of access control, which is currently an open research topic.
+If we now leave out any of the steps above, then we will not complete the workflow. Note that it’s not important which replica calls any of the above methods, only that it is in the corresponding state. So anyone could progress the workflow. We could further restrict this to specific replicas/roles by adding those roles to the precondition. If we don’t trust all of the replicas, we need some form of access control, which is currently an open research topic.
 
 # Designing Replicated Data Types
 :label = designing-replicated-data-types
