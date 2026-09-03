@@ -66,9 +66,11 @@ abstract class LatticePropertyChecks[A](
   property("associative") {
     forAll { (a: A, b: A, c: A) =>
       val ab   = Lattice.merge(a, b)
-      val bc   = Lattice.merge(b, c)
       val ab_c = Lattice.merge(ab, c)
+
+      val bc   = Lattice.merge(b, c)
       val a_bc = Lattice.merge(a, bc)
+
       assertEquals(ab_c, a_bc, s"merge not equal, steps:\n  $ab\n  $bc")
 
       val bc_ab = bc `merge` ab
