@@ -1,13 +1,18 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.{Ed25519Util, Hash, PublicIdentity, Signature}
-import rdts.filters.PermissionTree
-import replication.authz.ArdtEvent.Payload.Capability
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import crypto.*
+import crypto.Commitment.RevealedValue
+import crypto.channels.{IdentityFactory, PrivateIdentity}
+import rdts.filters.{Filter, PermissionTree}
+import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
 import java.security.{KeyPair, PrivateKey}
 
 object AuthzTestSupport extends munit.Assertions {
+  given JsonValueCodec[Set[Int]] = JsonCodecMaker.make
+  given Filter[Set[Int]]         = Filter.terminalSetFilter[Int]
 
   def newIdentity(): (PublicIdentity, PrivateKey) = {
     val keyPair: KeyPair = Ed25519Util.generateNewKeyPair
@@ -46,4 +51,19 @@ object AuthzTestSupport extends munit.Assertions {
     val genesis             = buildGenesis(holder, holderKey)
     (ArdtEventGraph[Set[Int]](genesis), holder, holderKey, genesis)
   }
+
+  def newPrivateIdentity(): PrivateIdentity = IdentityFactory.createNewIdentity
+
+  def buildDeltaEvent(
+      delta: Set[Int],
+      author: PublicIdentity,
+      authorPrivateKey: PrivateKey,
+      parents: Set[Hash],
+      authorization: Hash
+  ): (ArdtEvent, RevealedValue) = {
+    val revealed = Commitment.commit(writeToArray(delta))
+    val event    = buildEvent(DeltaCommitment(revealed.commitment), author, authorPrivateKey, parents, authorization)
+    (event, revealed)
+  }
+
 }

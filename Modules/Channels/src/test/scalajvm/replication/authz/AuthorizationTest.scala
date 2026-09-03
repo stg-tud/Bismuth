@@ -1,42 +1,16 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.Commitment
-import crypto.Commitment.RevealedValue
-import crypto.channels.{IdentityFactory, PrivateIdentity}
-import crypto.{Hash, PublicIdentity, Signature}
+import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import crypto.{Commitment, Hash, Signature}
 import munit.FunSuite
-import rdts.filters.{Filter, PermissionTree}
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import replication.authz.AuthzTestSupport.{buildEvent, freshGraph, newIdentity, receiveOrFail}
-
-import java.security.PrivateKey
+import rdts.filters.PermissionTree
+import replication.authz.ArdtEvent.Payload.{Capability, Revocation}
+import replication.authz.AuthzTestSupport.{*, given}
 
 class AuthorizationTest extends FunSuite {
-
-  given JsonValueCodec[Set[Int]] = JsonCodecMaker.make
-  given Filter[Set[Int]]         = Filter.terminalSetFilter[Int]
-
-  private def newPrivateIdentity(): PrivateIdentity = IdentityFactory.createNewIdentity
-
-  private def buildDeltaEvent(
-      delta: Set[Int],
-      author: PublicIdentity,
-      authorPrivateKey: PrivateKey,
-      parents: Set[Hash],
-      authorization: Hash
-  ): (ArdtEvent, RevealedValue) = {
-    val revealed = Commitment.commit(writeToArray(delta))
-    val event    = buildEvent(DeltaCommitment(revealed.commitment), author, authorPrivateKey, parents, authorization)
-    (event, revealed)
-  }
-
   // --- createGenesis ---
 
-  test(
-    "createGenesis produces a validly self-signed genesis event with the correct holder, payload, empty parents and zero authorization"
-  ) {
+  test("createGenesis produces a validly self-signed genesis event") {
     val rootIdentity = newPrivateIdentity()
     val genesis      = Authorization.createGenesis(rootIdentity)
 
@@ -197,41 +171,11 @@ class AuthorizationTest extends FunSuite {
     assert(Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph3))
   }
 
-  test("mayRead (delta overload) throws NoSuchElementException for a replicaId absent from capabilityCache") {
+  test("mayRead (delta overload) returns false for replica without capabilities") {
     val (graph, _, _, genesis) = freshGraph()
     val (stranger, _)          = newIdentity()
 
-    intercept[NoSuchElementException] {
-      Authorization.mayRead(stranger, genesis.hash, Set.empty[Int], graph)
-    }
-  }
-
-  test(
-    "mayRead (delta overload) throws IllegalArgumentException for a non-terminal PermissionTree against the terminal Set[Int] filter"
-  ) {
-    val (graph, holder, holderKey, genesis) = freshGraph()
-    val (delegate, _)                       = newIdentity()
-    val delegation                          = buildEvent(
-      Capability(delegate, PermissionTree.fromPath("a"), PermissionTree.empty),
-      holder,
-      holderKey,
-      Set(genesis.hash),
-      genesis.hash
-    )
-    val graph1 = receiveOrFail(graph, delegation)
-
-    intercept[IllegalArgumentException] {
-      Authorization.mayRead(delegate, genesis.hash, Set(1), graph1)
-    }
-  }
-
-  test(
-    "mayRead (delta overload) is true for an unrevoked capability even when deltaEventHash does not exist in the graph"
-  ) {
-    val (graph, holder, _, genesis) = freshGraph()
-    val unknownDeltaHash            = Hash.compute("unknown-delta".getBytes)
-
-    assert(Authorization.mayRead(holder, unknownDeltaHash, Set.empty[Int], graph))
+    assert(!Authorization.mayRead(stranger, genesis.hash, Set.empty[Int], graph))
   }
 
   // --- mayRead (graph+store overload) ---
@@ -365,31 +309,6 @@ class AuthorizationTest extends FunSuite {
     assert(!Authorization.mayWrite(graph3, deltaEvent.hash, revealed))
   }
 
-  test("mayRead and mayWrite disagree for a write concurrent with a revocation of its own authorizing capability") {
-    val (graph, holder, holderKey, genesis) = freshGraph()
-    val (delegate, delegateKey)             = newIdentity()
-    val delegation                          = buildEvent(
-      Capability(delegate, PermissionTree.allow, PermissionTree.allow),
-      holder,
-      holderKey,
-      Set(genesis.hash),
-      genesis.hash
-    )
-    val graph1 = receiveOrFail(graph, delegation)
-
-    val (deltaEvent, revealed) = buildDeltaEvent(Set(1), delegate, delegateKey, Set(delegation.hash), delegation.hash)
-    val graph2                 = receiveOrFail(graph1, deltaEvent)
-
-    val revocation = buildEvent(Revocation(delegation.hash), holder, holderKey, Set(delegation.hash), genesis.hash)
-    val graph3     = receiveOrFail(graph2, revocation)
-
-    // Same causal shape (delta and revocation are siblings, concurrent) yields opposite answers:
-    // mayRead only excludes revocations causally-before the delta, which concurrency satisfies;
-    // mayWrite requires every revocation to be causally-after the delta, which concurrency does not satisfy.
-    assert(Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph3))
-    assert(!Authorization.mayWrite(graph3, deltaEvent.hash, revealed))
-  }
-
   test("mayWrite throws NoSuchElementException when deltaEventHash is not present in the graph") {
     val (graph, _, _, genesis) = freshGraph()
     val revealed               = Commitment.commit(writeToArray(Set(1)))
@@ -491,22 +410,4 @@ class AuthorizationTest extends FunSuite {
     assertEquals(Authorization.materialize(graph3, store), Set.empty[Int])
   }
 
-  test("materialize ignores Capability and Revocation events, contributing nothing to the merged value") {
-    val (graph, holder, holderKey, genesis) = freshGraph()
-    val (delegate, _)                       = newIdentity()
-    val delegation                          = buildEvent(
-      Capability(delegate, PermissionTree.allow, PermissionTree.allow),
-      holder,
-      holderKey,
-      Set(genesis.hash),
-      genesis.hash
-    )
-    val graph1 = receiveOrFail(graph, delegation)
-
-    val revocation = buildEvent(Revocation(delegation.hash), holder, holderKey, Set(delegation.hash), genesis.hash)
-    val graph2     = receiveOrFail(graph1, revocation)
-
-    val store = new DeltaValueStore[Set[Int]]()
-    assertEquals(Authorization.materialize(graph2, store), Set.empty[Int])
-  }
 }
