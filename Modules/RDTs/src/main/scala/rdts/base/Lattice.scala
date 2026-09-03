@@ -90,6 +90,9 @@ object Lattice {
     override def subsumption(left: A, right: A): Boolean = Ordering[A].lteq(left, right)
   }
 
+  inline def lexicographic[A <: Product: Mirror.ProductOf]: Lattice[A] =
+    Lattice.fromOrdering(using Orderings.lexicographic)
+
   def assertEquals[A]: Lattice[A] = (left: A, right: A) =>
     if left == right then left
     else throw new IllegalStateException(s"assumed there would be no conflict, but have $left and $right")

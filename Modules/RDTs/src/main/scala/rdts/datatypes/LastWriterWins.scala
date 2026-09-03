@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, Orderings}
+import rdts.base.{Bottom, Decompose, Historized, Lattice}
 import rdts.time.CausalTime
 
 import scala.math.Ordering.Implicits.infixOrderingOps
@@ -38,7 +38,7 @@ object LastWriterWins {
 
   given lattice[A]: Lattice[LastWriterWins[A]] =
       given Ordering[A] = Lattice.assertEqualsOrdering
-      Lattice.fromOrdering(using Orderings.lexicographic)
+      Lattice.lexicographic
 
   given bottom[A: Bottom]: Bottom[LastWriterWins[A]] with
       override def empty: LastWriterWins[A] = LastWriterWins.this.empty
