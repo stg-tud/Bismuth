@@ -1,4 +1,4 @@
-package ex2025lectureminisocial
+package ex2026darelecture
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{GrowOnlyCounter, LastWriterWins}
@@ -27,7 +27,7 @@ object MiniSocial {
 }
 
 /** The main objct, serving as kinda tests to play around with. */
-object Dare {
+object DareMinisocial {
 
   def main(args: Array[String]): Unit = {
     val a, b, c = Replica(MiniSocial())

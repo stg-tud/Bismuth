@@ -1,4 +1,4 @@
-package ex2025lectureminisocial
+package ex2026darelecture
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
