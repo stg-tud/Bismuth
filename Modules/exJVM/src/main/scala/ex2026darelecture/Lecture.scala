@@ -1,9 +1,10 @@
 package ex2026darelecture
 
 import rdts.base.LocalUid.replicaId
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 import rdts.protocols.{BallotNum, Participants}
 import rdts.protocols.Participants.participants
+import rdts.protocols.Util.*
 
 object Lecture {
 
@@ -29,21 +30,21 @@ object Lecture {
   case class Voting[A](votes: Map[Uid, A] = Map.empty[Uid, A]) {
     def threshold(using Participants): Int = participants.size / 2 + 1
 
-    def decision(using Participants): Option[A] =
+    def decision(using Participants): Agreement[A] =
       leadingCount match
-          case Some((v, count)) if count >= threshold => Some(v)
-          case _                                      => None
+          case Some((v, count)) if count >= threshold => Agreement.Decided(v)
+          case _                                      => Agreement.Undecided
 
     def voteFor(v: A)(using LocalUid, Participants): Voting[A] =
-      if !participants.contains(replicaId) || votes.contains(replicaId)
-      then Voting() // already voted!
-      else
+      precondition(participants.contains(replicaId) && !votes.contains(replicaId)):
           Voting(Map(replicaId -> v))
 
     def leadingCount: Option[(A, Int)] =
         val grouped: Map[A, Int] = votes.values.groupBy(identity).map((value, vts) => (value, vts.size))
         grouped.maxByOption((_, size) => size)
   }
+
+  given [A]: Bottom[Voting[A]] = Bottom.provide(Voting())
 
   type LeaderElection = Voting[Uid]
 
