@@ -1,4 +1,4 @@
-package ex2025blockchain
+package ex2025lectureminisocial
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}

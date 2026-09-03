@@ -1,5 +1,6 @@
 package ex2025blockchain
 
+import ex2025lectureminisocial.Replica
 import rdts.base.{Bottom, Lattice}
 import rdts.time.Dot
 

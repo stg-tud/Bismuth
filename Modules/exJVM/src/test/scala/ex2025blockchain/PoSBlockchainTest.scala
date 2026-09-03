@@ -1,5 +1,6 @@
 package ex2025blockchain
 
+import ex2025lectureminisocial.Replica
 import munit.FunSuite
 import rdts.time.Dot
 

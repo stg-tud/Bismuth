@@ -2,44 +2,6 @@ package ex2025lectureminisocial
 
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.{GrowOnlyCounter, LastWriterWins}
-import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
-
-/** For this lecture/exercise, we are going to explore an executable model of a distributed system,
-  * consisting of many of these replicas. Each replica has its own current state, and a replica ID.
-  * There is no actual network involved, and it is just a helper
-  * to make exploring possible behaviour of a distributed system possible.
-  * It has no value in a real program.
-  */
-class Replica[A](init: A) {
-  val replicaId: LocalUid             = LocalUid.gen()
-  val buffer: DeltaBufferContainer[A] = DeltaBuffer(init).mutable
-
-  def mod(f: LocalUid ?=> A => A)(using Lattice[A]): this.type = {
-    buffer.mod(f(using replicaId))
-    this
-  }
-
-  def receive(other: Replica[A])(using Lattice[A]): this.type = {
-    buffer.applyDelta(other.buffer.result.state)
-    this
-  }
-
-  def show[B](select: A => B = identity): Unit = {
-    print(s"$replicaId: ")
-    pprint.pprintln(select(buffer.result.state))
-  }
-
-}
-
-object Replica {
-  def quiescence[A: Lattice](replicas: Replica[A]*): Unit =
-    replicas.toList match
-        case Seq() | Seq(_) => ()
-        case Seq(a, rem*)   =>
-          rem.foreach(a.receive)
-          rem.foreach(r => r.receive(a))
-
-}
 
 /** Mini Social models a social network … except that there is only a single global message which can be voted for.
   * Also when changing the message, the votes stay, so be careful.
