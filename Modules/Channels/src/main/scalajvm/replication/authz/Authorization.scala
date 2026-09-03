@@ -36,13 +36,14 @@ object Authorization {
       case _ => false
     }
 
-  def mayRead[T: Filter](
+  // assumes that delta matches hash and that the corresponding event is in the graph
+  private[authz] def mayRead[T: Filter](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       delta: T,
       eventGraph: ArdtEventGraph[T]
   ): Boolean =
-    eventGraph.capabilityCache(replicaId)
+    eventGraph.capabilityCache.getOrElse(replicaId, Set.empty)
       .exists((capabilityEventHash, capability) =>
         Filter[T].isAllowed(delta, capability.read) &&
         eventGraph
