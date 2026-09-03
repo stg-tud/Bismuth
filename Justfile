@@ -40,6 +40,13 @@ webappsBundle: webappsPrepare
 webappsWebview: webappsBundle
 	sbt 'webview / run "Modules/exWeb/target/dist/index.html"'
 
+# Build the exWeb examples and deploy them to the docs/examples folder for static hosting
+deploy-examples: webappsBundle
+	rm -rf docs/examples
+	mkdir -p docs/examples
+	cp -r Modules/exWeb/target/dist/. docs/examples/
+	echo "Examples deployed to docs/examples/"
+
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
 	cd "Modules/Reform/" && npm install

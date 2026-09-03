@@ -133,8 +133,9 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     Test / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value,
     // fix the output directory to make it “guessable” by JS import
-    fastLinkJS / crossTarget := target.value / "generated_js",
-    fullLinkJS / crossTarget := target.value / "generated_js",
+    // (in sbt 2.0 target.value is centralized under target/out, so anchor to the module dir instead)
+    fastLinkJS / crossTarget := baseDirectory.value / "target" / "generated_js",
+    fullLinkJS / crossTarget := baseDirectory.value / "target" / "generated_js",
   )
 
 lazy val lore = projectMatrix.in(file("Modules/Lore"))

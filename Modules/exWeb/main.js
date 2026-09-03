@@ -7,13 +7,14 @@ const modulePromise = useFullopt
 
 // the dynamic import above returns the module object, which is destructured into the components we care about below.
 modulePromise.then(
-	({ Todolist, Calendar, UnitConversion, Tabular, OverlayNetworkGraph, DebugAdapterSetListener }) => {
+	({ Todolist, Calendar, UnitConversion, Tabular, OverlayNetworkGraph, MiniSocial, DebugAdapterSetListener }) => {
 		const appHandlers = {
 			todolist: Todolist,
 			calendar: Calendar,
 			tabular: Tabular,
 			"unit-conversion": UnitConversion,
 			"overlay-graph": OverlayNetworkGraph,
+			"mini-social": MiniSocial,
 		};
 
 		const getRequestedApp = () => {
@@ -56,6 +57,11 @@ modulePromise.then(
 			.getElementById("overlay-graph-btn")
 			.addEventListener("click", () =>
 				openApp("overlay-graph", { syncUrl: true }),
+			);
+		document
+			.getElementById("mini-social-btn")
+			.addEventListener("click", () =>
+				openApp("mini-social", { syncUrl: true }),
 			);
 
 		window.reScalaEvents = [];
