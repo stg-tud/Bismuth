@@ -2,7 +2,7 @@ package ex2026darelecture
 
 import rdts.base.Lattice
 
-object Basics {
+object Lecture {
 
   case class Product[A, B, C](a: A, b: B, c: C)
 
