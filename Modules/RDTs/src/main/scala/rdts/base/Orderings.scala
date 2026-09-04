@@ -5,6 +5,10 @@ import scala.deriving.Mirror
 
 object Orderings {
 
+  def assertEqualsOrdering[A]: Ordering[A] = (l, r) =>
+    if l == r then 0
+    else throw IllegalStateException(s"assumed equality does not hold for »$l« and »$r« ")
+
   inline def lexicographic[T <: Product](using pm: Mirror.ProductOf[T]): Ordering[T] = {
     val orderings: Tuple = summonAll[Tuple.Map[pm.MirroredElemTypes, Ordering]]
     new LexicographicOrdering[T](orderings)

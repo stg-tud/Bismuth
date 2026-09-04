@@ -97,10 +97,6 @@ object Lattice {
     if left == right then left
     else throw new IllegalStateException(s"assumed there would be no conflict, but have $left and $right")
 
-  def assertEqualsOrdering[A]: Ordering[A] = (l, r) =>
-    if l == r then 0
-    else throw IllegalStateException(s"assumed equality does not hold for »$l« and »$r« ")
-
   // /////////////// common instances below ///////////////
 
   given setLattice[A]: Lattice[Set[A]] with
