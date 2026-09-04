@@ -5,6 +5,7 @@ class RDTs extends munit.FunSuite {
   /*:scim
 = Algebraic Replicated Data Types
 :flags = -hardwrap
+:htmlTemplate = template.rescala.html.scim
 
 This manual introduces Algebraic Replicated Data Types (ARDTs):
 a systematic approach to building conflict-free replicated data
@@ -97,13 +98,49 @@ Options form a lattice where :m{None} is smaller than :m{Some}:
 ## Bottom
 
 :m{Bottom[A]} provides the :b{empty} value of a lattice.
-It is the identity element of merge:
+It is the identity element of :m{merge}: merging an empty value into any other value leaves it unchanged.
 
-```code lang=scala
-  Lattice.merge(Bottom.empty, x) == x
-```
+   */
+
+  import rdts.base.Bottom
+  import rdts.base.Bottom.given
+
+  test("bottom is the identity of merge"):
+
+      val set: Set[Int] = Set(1, 2, 3)
+      val emptySet      = Bottom.empty[Set[Int]]
+      assert(emptySet.isEmpty, "the empty set is a bottom value")
+
+      // merging nothing into a state is a no-op
+      assertEquals(emptySet `merge` set, set)
+
+  /*:scim
 
 The empty set, the empty map, and :m{None} are all examples of bottom values.
+
+# Some Operations Have No Effect
+:label = some-operations-have-no-effect
+
+Because :m{merge} only ever :b{adds} information, removing information is impossible through merges alone: operations that try to forget previously merged state are :b{no-ops}.
+
+A plain grow-only set, for example, cannot forget an element. It can compute a smaller value, but merging that value back into the original set immediately re-adds what was removed:
+
+   */
+
+  test("removal has no effect in a set lattice"):
+      val original: Set[Int] = Set(1, 2)
+      // removing 1 gives a smaller set ...
+      val removed: Set[Int] = original.excl(1)
+      assertEquals(removed, Set(2))
+
+      // ... but merging it back into the original set re-adds 1
+      assertEquals(original `merge` removed, original)
+
+  /*:scim
+
+The :m{removed} value is :m{Set(2)}, yet merging it back yields :m{Set(1, 2) merge Set(2)}, which is :m{Set(1, 2)} again: the removal is lost because set union is monotone.
+
+To support removals, replicated data types need more elaborate representations (such as tombstones).
 
 # Automatic Lattice Derivation
 :label = automatic-lattice-derivation
@@ -120,19 +157,18 @@ You get the derivation with a single line:
    */
 
   test("product lattice derives component-wise merge"):
-      given Lattice[Int] = math.max
       case class Data(counter: Int, items: Set[Int], mapping: Map[String, Int], flag: Option[Int])
 
       // automatically derive the lattice instance
       given Lattice[Data] = Lattice.derived
 
-      val left  = Data(1, Set(1, 2), Map("a" -> 1), Some(1))
-      val right = Data(2, Set(2, 3), Map("b" -> 2), None)
+      val left  = Data(1, Set(1, 2), Map("a" -> 4), Some(1))
+      val right = Data(2, Set(2, 3), Map("a" -> 1, "b" -> 2), None)
 
       val merged = left `merge` right
       assertEquals(merged.counter, 2)          // max(1, 2)
       assertEquals(merged.items, Set(1, 2, 3)) // union
-      assertEquals(merged.mapping, Map("a" -> 1, "b" -> 2)) // key-wise merge
+      assertEquals(merged.mapping, Map("a" -> 4, "b" -> 2)) // key-wise merge
       assertEquals(merged.flag, Some(1)) // Some > None
 
   /*:scim
@@ -141,26 +177,27 @@ You get the derivation with a single line:
 
 For :b{sum types} (enums, sealed classes), we rely on their inherent total ordering to derive the lattice instance. Constructors that are defined later are considered larger.
 Sum lattices are not as common as product lattices, but do allow modeling state machines.
+Consider the following example, where we have a Workflow that first prepares some documents, then drafts a contract, and then finalizes the process.
 
    */
 
+  enum Workflow:
+      case Init()
+      case Documents(hasStaffSheet: Boolean = false, hasHourConfirmation: Boolean = false)
+      case Contract(signed: Boolean = false)
+      case Complete()
+
+  given Lattice[Workflow] = {
+    // each case of the sum is a Product type, so we need to derive lattices for each
+    given Lattice[Boolean]            = Lattice.fromOrdering
+    given Lattice[Workflow.Init]      = Lattice.derived
+    given Lattice[Workflow.Documents] = Lattice.derived
+    given Lattice[Workflow.Contract]  = Lattice.derived
+    given Lattice[Workflow.Complete]  = Lattice.derived
+    Lattice.sumLattice
+  }
+
   test("sum lattice for state machine"):
-      enum Workflow:
-          case Init()
-          case Documents(hasStaffSheet: Boolean = false, hasHourConfirmation: Boolean = false)
-          case Contract(signed: Boolean = false)
-          case Complete()
-
-      given Lattice[Workflow] = {
-        // each case of the sum is a Product type, so we need to derive lattices for each
-        given Lattice[Boolean]            = Lattice.fromOrdering
-        given Lattice[Workflow.Init]      = Lattice.derived
-        given Lattice[Workflow.Documents] = Lattice.derived
-        given Lattice[Workflow.Contract]  = Lattice.derived
-        given Lattice[Workflow.Complete]  = Lattice.derived
-        Lattice.sumLattice
-      }
-
       val wf0: Workflow = Workflow.Init()
       val wf1           = wf0 `merge` Workflow.Documents()
       assertEquals(wf1, Workflow.Documents())
@@ -169,6 +206,47 @@ Sum lattices are not as common as product lattices, but do allow modeling state 
 
 The ordering is :m{Init < Documents < Contract < Complete}.
 Once a workflow reaches :m{Complete}, merging any earlier state leaves it at :m{Complete}.
+By itself, the Workflow state machine does not really guarantee that steps are taken in the correct order; we could just skip directly from Init to Complete, without ever verifying the documents or the contract. We can fix this by using update methods that check preconditions.
+
+   */
+
+  import Workflow.*
+  extension (wf: Workflow) {
+
+    def newContract: Workflow         = Documents()
+    def addStaffSheet: Workflow       = Documents(hasStaffSheet = true)
+    def addHourConfirmation: Workflow = Documents(hasHourConfirmation = true)
+
+    def createContract: Workflow = wf match
+        case Documents(hasStaffSheet = true, hasHourConfirmation = true) => Contract()
+        case other                                                       => Init()
+
+    def signContract: Workflow = wf match
+        case Contract(signed = false) => Contract(true)
+        case other                    => Init()
+
+    def complete: Workflow = wf match
+        case Contract(signed = true) => Complete()
+        case other                   => Init()
+  }
+
+  test("workflow"):
+      import rdts.syntax.DeltaBuffer
+
+      val db     = DeltaBuffer(Workflow.Init())
+      val result = db
+        .mod(_.newContract)
+        .mod(_.addStaffSheet)
+        .mod(_.addHourConfirmation)
+        .mod(_.createContract)
+        .mod(_.signContract)
+        .mod(_.complete)
+
+      assertEquals(result.state, Workflow.Complete())
+
+  /*:scim
+
+If we now leave out any of the steps above, then we will not complete the workflow. Note that it’s not important which replica calls any of the above methods, only that it is in the corresponding state. So anyone could progress the workflow. We could further restrict this to specific replicas/roles by adding those roles to the precondition. If we don’t trust all of the replicas, we need some form of access control, which is currently an open research topic.
 
 # Designing Replicated Data Types
 :label = designing-replicated-data-types
@@ -245,7 +323,7 @@ to be merged into the state to take effect.
   /*:scim
 
 Our :m{Counter} only grows.  If we try to add a negative value, the map merge with
-:{max} would ignore it because the existing positive value is already larger:
+:m{max} would ignore it because the existing positive value is already larger:
 
    */
 

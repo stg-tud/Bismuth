@@ -6,8 +6,8 @@
 
 	--theme-plate-color: oklch(50% 0 0 / 0.1);
 
-	/* a4 paper has 21cm, subtract 1.5 inch for print margins gives 171.9mm */
-	--main-content-width: 17cm;
+	/* a4 paper has 21cm */
+	--main-content-width: 19cm;
 	--header-oversize: 5cm;
 	--sidebar-max-width: 20em;
 
@@ -25,7 +25,7 @@
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--theme-color: oklch(66% 0.2 300);
+		--theme-color: oklch(88% 0.2 300);
 	}
 }
 
