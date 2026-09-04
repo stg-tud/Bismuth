@@ -12,7 +12,8 @@ import replication.sync.{ChannelConnectionManager, ConnectionManager, FullMeshCo
 class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     private val localIdentity: PrivateIdentity,
     genesis: Hash,
-    genesisEvent: Option[ArdtEvent] = None
+    genesisEvent: Option[ArdtEvent] = None,
+    onStateChange: State => Unit
 ) extends Sync[State] {
   private val replica: Replica[State] = {
     def connectionManagerProvider(handler: MessageReceiver[MessageBuffer]): ConnectionManager =
@@ -22,7 +23,7 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     def antiEntropyProvider(replica: Replica[?]) =
       AntiEntropy(replica, connectionManagerProvider, controlPlaneProvider)
 
-    val replica = Replica[State](genesis, localIdentity, antiEntropyProvider)
+    val replica = Replica[State](genesis, localIdentity, antiEntropyProvider, onStateChange)
     genesisEvent.foreach { event => replica.receiveEvent(writeToArray(event)) }
     replica
   }

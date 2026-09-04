@@ -3,12 +3,12 @@ package replication.authz
 import crypto.Commitment.RevealedValue
 import crypto.Hash
 
-import java.util.concurrent.ConcurrentHashMap
+import scala.collection.mutable
 
-class DeltaValueStore[Ardt] {
-  private val backingStore: ConcurrentHashMap[Hash, RevealedValue] = new ConcurrentHashMap()
+class DeltaValueStore[Delta] {
+  private val backingStore: mutable.Map[Hash, RevealedValue] = mutable.Map.empty
 
   def put(value: RevealedValue): Unit = backingStore.put(value.commitment, value): Unit
 
-  def get(hash: Hash): Option[RevealedValue] = Option(backingStore.get(hash))
+  def get(hash: Hash): Option[RevealedValue] = backingStore.get(hash)
 }

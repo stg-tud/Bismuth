@@ -24,16 +24,16 @@ object TravelPlannerApp extends JFXApp3 {
     def createAsRootOfTrust: TravelPlanModel = {
       val identity     = IdentityFactory.createNewIdentity
       val genesisEvent = Authorization.createGenesis(identity)
-      val syncProvider = (onDeltaReceive: TravelPlan => Unit) =>
-        new SyncImpl[TravelPlan](identity, genesisEvent.hash, Some(genesisEvent))
+      val syncProvider = (onStateChange: TravelPlan => Unit) =>
+        new SyncImpl[TravelPlan](identity, genesisEvent.hash, Some(genesisEvent), onStateChange)
       TravelPlanModel(identity, syncProvider)
     }
 
     override def createByJoining(invitationString: String): TravelPlanModel = {
       val invitation   = SyncInvitation.decode(invitationString)
       val identity     = IdentityFactory.fromIdentityKey(invitation.identityKey)
-      val syncProvider = (onDeltaReceive: (tp: TravelPlan) => Unit) =>
-        new SyncImpl[TravelPlan](identity, invitation.genesis)
+      val syncProvider = (onStateChange: (tp: TravelPlan) => Unit) =>
+        new SyncImpl[TravelPlan](identity, invitation.genesis, onStateChange = onStateChange)
       val travelPlanModel = TravelPlanModel(identity, syncProvider)
       travelPlanModel.addConnection(invitation.inviter, invitation.joinAddress)
       travelPlanModel

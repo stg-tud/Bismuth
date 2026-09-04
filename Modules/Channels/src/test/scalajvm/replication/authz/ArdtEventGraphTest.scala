@@ -5,7 +5,7 @@ import crypto.Hash
 import munit.FunSuite
 import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import replication.authz.AuthzTestSupport.{buildEvent, buildGenesis, freshGraph, newIdentity, receiveOrFail}
+import replication.authz.AuthzTestSupport.*
 import replication.authz.CausalOrder.*
 
 class ArdtEventGraphTest extends FunSuite {

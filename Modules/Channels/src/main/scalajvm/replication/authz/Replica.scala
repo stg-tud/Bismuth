@@ -11,7 +11,8 @@ import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
     privateIdentity: PrivateIdentity,
-    antiEntropyProvider: Replica[?] => AntiEntropy
+    antiEntropyProvider: Replica[?] => AntiEntropy,
+    onStateChange: RDT => Unit
 ) {
   val localReplicaId: PublicIdentity = privateIdentity.getPublic
 
@@ -24,7 +25,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def containsEvent(eventHash: Hash): Boolean = eventGraph.events.contains(eventHash)
 
-  def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Hash] = {
+  def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Hash] = synchronized {
     val oldHeads = eventGraph.heads
     eventGraph.receive(encodedEvent) match {
       case Right(updatedEventGraph) =>
@@ -36,25 +37,29 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     }
   }
 
-  def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit =
-      require(Authorization.mayRead(localReplicaId, eventHash, delta, eventGraph))
-      deltaValueStore.put(delta)
+  def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit = synchronized {
+    require(Authorization.mayRead(localReplicaId, eventHash, delta, eventGraph))
+    deltaValueStore.put(delta)
+    onStateChange(state)
+  }
 
-  def mutateState(mutator: RDT => RDT): Unit = {
+  def mutateState(mutator: RDT => RDT): Unit = synchronized {
     val delta = mutator(state)
     eventGraph.capabilities(localReplicaId).find {
-      case (hash, capability) => Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
+      case (hash, capability) =>
+        Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
     } match {
       case Some(hash, capability) => createUpdate(delta, hash)
       case None                   => ???
     }
   }
 
-  def mutateState(mutator: RDT => RDT, capability: Hash): Unit =
-      val delta = mutator(state)
-      createUpdate(delta, capability)
+  def mutateState(mutator: RDT => RDT, capability: Hash): Unit = synchronized {
+    val delta = mutator(state)
+    createUpdate(delta, capability)
+  }
 
-  private def createUpdate(delta: RDT, capabilityHash: Hash): Unit = {
+  private def createUpdate(delta: RDT, capabilityHash: Hash): Unit = synchronized {
     require(eventGraph.revocations(capabilityHash).isEmpty)
     require(eventGraph.events(capabilityHash) match {
       case (ArdtEvent(Capability(`localReplicaId`, _, write), _, _, _, _), _) =>
@@ -95,8 +100,9 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   def filterDeltas(
       readingReplica: PublicIdentity,
       deltas: Iterable[(eventHash: Hash, delta: RevealedValue)]
-  ): Iterable[(eventHash: Hash, delta: RevealedValue)] =
+  ): Iterable[(eventHash: Hash, delta: RevealedValue)] = synchronized {
     deltas.filter { case (eventHash, RevealedValue(encodedDelta, _)) =>
       Authorization.mayRead(readingReplica, eventHash, eventGraph, deltaValueStore)
     }
+  }
 }
