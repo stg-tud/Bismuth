@@ -1,10 +1,6 @@
 package ex2026darelecture
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.protocols.{BallotNum, Participants}
-import rdts.protocols.Participants.participants
-import rdts.protocols.Util.*
+import rdts.base.Lattice
 
 object Lecture {
 

@@ -29,6 +29,9 @@ object Voting {
     given Lattice[A] = Lattice.assertEquals
     Lattice.derived
   }
+
+
+  
 }
 
 type LeaderElection = Voting[Uid]
