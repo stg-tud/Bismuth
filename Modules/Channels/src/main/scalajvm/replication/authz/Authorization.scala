@@ -51,6 +51,19 @@ object Authorization {
           .forall(revocation => !eventGraph.causallyBefore(revocation, deltaEventHash))
       )
 
+  private[authz] def mayRead[T: {JsonValueCodec, Filter}](
+      replicaId: PublicIdentity,
+      deltaEventHash: Hash,
+      deltaValue: RevealedValue,
+      eventGraph: ArdtEventGraph[T]
+  ): Boolean =
+    eventGraph.events.get(deltaEventHash) match {
+      case Some((ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _)) =>
+        if deltaValue.commitment != commitment then false
+        else mayRead(replicaId, deltaEventHash, readFromArray[T](deltaValue.value), eventGraph)
+      case _ => false
+    }
+
   def mayWrite[T: {JsonValueCodec, Filter}](
       eventGraph: ArdtEventGraph[T],
       deltaEventHash: Hash,

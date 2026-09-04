@@ -37,7 +37,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   }
 
   def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit =
-      require(Authorization.mayRead(localReplicaId, eventHash, eventGraph, deltaValueStore))
+      require(Authorization.mayRead(localReplicaId, eventHash, delta, eventGraph))
       deltaValueStore.put(delta)
 
   def mutateState(mutator: RDT => RDT): Unit = {
@@ -68,7 +68,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
         DeltaCommitment(commitedValue.commitment),
         localReplicaId,
         eventGraph.heads,
-        null.asInstanceOf[Signature],
+        Signature.allZeroSignature,
         capabilityHash
       )
       val signature = Signature.compute(writeToArray(unsignedEvent), privateIdentity.identityKey.getPrivate)
@@ -78,9 +78,9 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     }
 
     // Apply locally
-    eventsWithDeltas.foreach((hash, event, delta) =>
+    eventsWithDeltas.foreach((eventHash, event, delta) =>
         require(receiveEvent(event).isRight)
-        receiveDelta(hash, delta)
+        receiveDelta(eventHash, delta)
     )
 
     // Disseminate updates
