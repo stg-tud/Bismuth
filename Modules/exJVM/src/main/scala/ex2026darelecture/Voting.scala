@@ -24,14 +24,31 @@ case class Voting[A](votes: Map[Uid, A] = Map.empty[Uid, A]) {
 }
 
 object Voting {
-  given [A] => Bottom[Voting[A]] = Bottom.provide(Voting())
+  given [A] => Bottom[Voting[A]]  = Bottom.provide(Voting())
   given [A] => Lattice[Voting[A]] = {
     given Lattice[A] = Lattice.assertEquals
     Lattice.derived
   }
 
+  def main(args: Array[String]): Unit = {
+    val a, b, c = Replica(Voting[String]())
 
-  
+    // Every replica participating in this vote.
+    given Participants = Participants(Set(a.replicaId.uid, b.replicaId.uid, c.replicaId.uid))
+
+    a.mod(_.voteFor("cat"))
+    b.mod(_.voteFor("dog"))
+    c.mod(_.voteFor("cat"))
+    a.mod(_.voteFor("dog"))
+
+    Replica.quiescence(a, b, c)
+
+    a.show(_.votes) // Map(uida -> "cat", uidb -> "dog", uidc -> "cat")
+    a.show(_.decision)
+    b.show(_.decision)
+    c.show(_.decision)
+  }
+
 }
 
 type LeaderElection = Voting[Uid]
