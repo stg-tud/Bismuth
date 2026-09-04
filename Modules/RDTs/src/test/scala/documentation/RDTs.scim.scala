@@ -323,7 +323,7 @@ to be merged into the state to take effect.
   /*:scim
 
 Our :m{Counter} only grows.  If we try to add a negative value, the map merge with
-:{max} would ignore it because the existing positive value is already larger:
+:m{max} would ignore it because the existing positive value is already larger:
 
    */
 
