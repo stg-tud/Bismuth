@@ -14,8 +14,7 @@ This screenshot depicts a spreadsheet containing a range and a conflict (in cell
 Replicated data types (RDTs) such as CRDTs are becoming increasingly popular as a simplified way for programming distributed systems. RDTs are local data structures with a familiar interface (such as sets, lists, trees) that can automatically synchronize data between multiple devices in the background. For more background on CRDTs, see https://crdt.tech/.
 
 CRDTs for simple data types like sets or lists are well understood, however, modern collaborative applications such as Notion or Google Docs also include more complicated application specific data structures such as tables/spreadsheets. In a spreadsheet, we have certain dependencies between rows and columns and a spreadsheet CRDT algorithm has to decide what happens if multiple devices edit them concurrently and potentially produce conflicts.
-The state of the art of CRDT spreadsheets, which served as the starting point of our implementation, is described in the paper '[A Study of Semantics for CRDT-based Collaborative Spreadsheets
-](https://dlnext.acm.org/doi/10.1145/3578358.3591324)'.
+The state of the art of CRDT spreadsheets, which served as the starting point of our implementation, is described in the paper '[A Study of Semantics for CRDT-based Collaborative Spreadsheets](https://dlnext.acm.org/doi/10.1145/3578358.3591324)'.
 
 ## Project Structure
 * `lib`: Provides the CRDT and the underlying data structures, built on the [RDT module](../RDTs))
