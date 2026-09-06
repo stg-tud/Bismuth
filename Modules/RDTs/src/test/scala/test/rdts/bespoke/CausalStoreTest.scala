@@ -9,6 +9,7 @@ import test.rdts.given
 
 class CausalStoreTest extends munit.FunSuite {
 
+  import scala.language.implicitConversions
   given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
 
 
