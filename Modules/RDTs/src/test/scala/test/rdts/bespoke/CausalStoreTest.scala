@@ -5,12 +5,12 @@ import rdts.experiments.CausalStore
 import rdts.experiments.CausalStore.CausalDelta
 import rdts.time.{ArrayRanges, Dot, Dots}
 import test.rdts.DataGenerator.ExampleData
-import test.rdts.given
 
 class CausalStoreTest extends munit.FunSuite {
 
   import scala.language.implicitConversions
-  given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
+  given Conversion[String, ExampleData]   = ed => ExampleData(Set(ed))
+  given Conversion[String, rdts.base.Uid] = s => rdts.base.Uid.predefined(s)
 
   test("basic usage") {
 

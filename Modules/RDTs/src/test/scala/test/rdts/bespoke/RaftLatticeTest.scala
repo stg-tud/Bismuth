@@ -7,6 +7,9 @@ import test.rdts.given
 
 class RaftLatticeTest extends munit.FunSuite {
 
+  import scala.language.implicitConversions
+  given Conversion[String, rdts.base.Uid] = s => rdts.base.Uid.predefined(s)
+
   test("basic interaction") {
 
     val initial =

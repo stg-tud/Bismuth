@@ -5,6 +5,7 @@ import test.rdts.TestReplica
 
 class BoundedCounterTest extends munit.FunSuite {
 
+  import scala.language.implicitConversions
   given Conversion[String, rdts.base.Uid] = s => rdts.base.Uid.predefined(s)
 
   test("basic usage") {
