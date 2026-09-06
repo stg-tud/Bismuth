@@ -61,7 +61,7 @@ object LSPDataTypes {
 
   object ErrorCode {
     // Custom pickler for upickle so we can deserialize integers into error codes
-    implicit val rw: ReadWriter[ErrorCode] = upickle.default.readwriter[Int].bimap[ErrorCode](
+    given rw: ReadWriter[ErrorCode] = upickle.default.readwriter[Int].bimap[ErrorCode](
       // Serialization: From ErrorCode enum to integer
       error => error.code,
       // Deserialization: From integer to ErrorCode enum
@@ -127,7 +127,7 @@ object LSPDataTypes {
 
   object VerificationStatus {
     // Custom pickler for upickle so we can deserialize integers into verification statuses
-    implicit val rw: ReadWriter[VerificationStatus] = upickle.default.readwriter[Int].bimap[VerificationStatus](
+    given rw: ReadWriter[VerificationStatus] = upickle.default.readwriter[Int].bimap[VerificationStatus](
       // Serialization: From VerificationStatus enum to integer
       error => error.status,
       // Deserialization: From integer to VerificationStatus enum
@@ -167,7 +167,7 @@ object LSPDataTypes {
 
   object CompilationStatus {
     // Custom pickler for upickle so we can deserialize integers into compilation statuses
-    implicit val rw: ReadWriter[CompilationStatus] = upickle.default.readwriter[String].bimap[CompilationStatus](
+    given rw: ReadWriter[CompilationStatus] = upickle.default.readwriter[String].bimap[CompilationStatus](
       // Serialization: From CompilationStatus enum to string
       status => status.code,
       // Deserialization: From string to CompilationStatus enum
@@ -218,7 +218,7 @@ object LSPDataTypes {
 
   object DiagnosticSeverity {
     // Custom pickler for upickle so we can deserialize integers into diagnostic severities
-    implicit val rw: ReadWriter[DiagnosticSeverity] = upickle.default.readwriter[Int].bimap[DiagnosticSeverity](
+    given rw: ReadWriter[DiagnosticSeverity] = upickle.default.readwriter[Int].bimap[DiagnosticSeverity](
       // Serialization: From DiagnosticSeverity enum to string
       severity => severity.code,
       // Deserialization: From int to DiagnosticSeverity enum
@@ -245,7 +245,7 @@ object LSPDataTypes {
 
   object DiagnosticTag {
     // Custom pickler for upickle so we can deserialize integers into diagnostic tags
-    implicit val rw: ReadWriter[DiagnosticTag] = upickle.default.readwriter[Int].bimap[DiagnosticTag](
+    given rw: ReadWriter[DiagnosticTag] = upickle.default.readwriter[Int].bimap[DiagnosticTag](
       // Serialization: From DiagnosticTag enum to string
       severity => severity.code,
       // Deserialization: From int to DiagnosticTag enum

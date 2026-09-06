@@ -20,7 +20,7 @@ limitations under the License.
 package de.tu_darmstadt.informatik.st.reform
 
 import cats.effect.SyncIO
-import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
+import de.tu_darmstadt.informatik.st.reform.BasicCodecs.given
 import de.tu_darmstadt.informatik.st.reform.components.navigationHeader
 import de.tu_darmstadt.informatik.st.reform.given_ExecutionContext
 import de.tu_darmstadt.informatik.st.reform.npm.{IIndexedDB, IndexedDB}

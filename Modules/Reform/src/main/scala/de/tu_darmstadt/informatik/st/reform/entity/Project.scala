@@ -2,7 +2,7 @@ package de.tu_darmstadt.informatik.st.reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
+import de.tu_darmstadt.informatik.st.reform.BasicCodecs.given
 import de.tu_darmstadt.informatik.st.reform.entity.Attribute.given
 import rdts.base.*
 
@@ -30,5 +30,5 @@ case class Project(
 
 object Project {
   val empty: Project                          = Project()
-  implicit val codec: JsonValueCodec[Project] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+  given codec: JsonValueCodec[Project] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 }

@@ -2,7 +2,7 @@ package de.tu_darmstadt.informatik.st.reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
+import de.tu_darmstadt.informatik.st.reform.BasicCodecs.given
 import rdts.base.*
 
 case class PaymentLevel(
@@ -27,5 +27,5 @@ case class PaymentLevel(
 object PaymentLevel {
   val empty: PaymentLevel = PaymentLevel()
 
-  implicit val codec: JsonValueCodec[PaymentLevel] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+  given codec: JsonValueCodec[PaymentLevel] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 }

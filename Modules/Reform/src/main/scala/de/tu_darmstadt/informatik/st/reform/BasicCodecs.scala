@@ -8,9 +8,9 @@ object BasicCodecs {
   // every client has an id
   val myReplicaID: rdts.base.LocalUid = rdts.base.LocalUid.gen()
 
-  implicit val stringCodec: JsonValueCodec[String] = JsonCodecMaker.make
+  given stringCodec: JsonValueCodec[String] = JsonCodecMaker.make
 
-  implicit val idCodec: JsonValueCodec[rdts.base.Uid] = new JsonValueCodec[rdts.base.Uid] {
+  given idCodec: JsonValueCodec[rdts.base.Uid] = new JsonValueCodec[rdts.base.Uid] {
     private val codec = JsonCodecMaker.make[String]
 
     override def decodeValue(

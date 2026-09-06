@@ -2,7 +2,7 @@ package de.tu_darmstadt.informatik.st.reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
+import de.tu_darmstadt.informatik.st.reform.BasicCodecs.given
 import de.tu_darmstadt.informatik.st.reform.entity.Attribute.given
 import rdts.base.*
 
@@ -29,7 +29,7 @@ case class Document(
 object Document {
   val empty: Document = Document()
 
-  implicit val codec: JsonValueCodec[Document] = {
+  given codec: JsonValueCodec[Document] = {
     import scala.language.unsafeNulls
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   }

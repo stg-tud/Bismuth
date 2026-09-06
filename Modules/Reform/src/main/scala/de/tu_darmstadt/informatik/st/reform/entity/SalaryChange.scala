@@ -2,7 +2,7 @@ package de.tu_darmstadt.informatik.st.reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import de.tu_darmstadt.informatik.st.reform.BasicCodecs.*
+import de.tu_darmstadt.informatik.st.reform.BasicCodecs.given
 import rdts.base.*
 
 case class SalaryChange(
@@ -30,7 +30,7 @@ case class SalaryChange(
 object SalaryChange {
   val empty: SalaryChange = SalaryChange()
 
-  implicit val bigDecimalCodec: JsonValueCodec[BigDecimal] = new JsonValueCodec[BigDecimal] {
+  given bigDecimalCodec: JsonValueCodec[BigDecimal] = new JsonValueCodec[BigDecimal] {
     def decodeValue(in: JsonReader, default: BigDecimal): BigDecimal = in.readBigDecimal(0)
 
     def encodeValue(x: BigDecimal, out: JsonWriter): Unit = out.writeVal(x)
@@ -38,5 +38,5 @@ object SalaryChange {
     def nullValue: BigDecimal = null.asInstanceOf[BigDecimal]
   }
 
-  implicit val codec: JsonValueCodec[SalaryChange] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+  given codec: JsonValueCodec[SalaryChange] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 }

@@ -195,12 +195,12 @@ object LSeq {
     }
   }
 
-  implicit val componentOrdering: Ordering[LSeq.Component] = Ordering.fromLessThan { (a, b) =>
+  given componentOrdering: Ordering[LSeq.Component] = Ordering.fromLessThan { (a, b) =>
     if a.position != b.position then a.position < b.position
     else Uid.ordering.compare(a.place, b.place) < 0
   }
 
-  implicit val PositionOrdering: Ordering[LSeq] = new Ordering[LSeq] {
+  given PositionOrdering: Ordering[LSeq] = new Ordering[LSeq] {
     def compare(id1: LSeq, id2: LSeq): Int = {
       val zipped = id1.zip(id2)
 

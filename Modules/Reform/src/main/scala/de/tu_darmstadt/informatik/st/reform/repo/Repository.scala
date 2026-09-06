@@ -59,7 +59,7 @@ case class Repository[A](name: String, defaultValue: A)(using
     (this, values)
   }
 
-  implicit val idStorage: Storage[GrowOnlySet[String]] = Storage(name)
+  given idStorage: Storage[GrowOnlySet[String]] = Storage(name)
 
   private val idSyncer = ReplicationGroup[GrowOnlySet[String]](name + "-ids")
 
@@ -67,7 +67,7 @@ case class Repository[A](name: String, defaultValue: A)(using
 
   val ids: Signal[Set[String]] = Signal.fromFuture(idSynced).map(synced => synced.signal.map(_.set)).flatten
 
-  implicit val valuesStorage: Storage[A] = Storage(name)
+  given valuesStorage: Storage[A] = Storage(name)
 
   private val valueSyncer = ReplicationGroup[A](name)
 
