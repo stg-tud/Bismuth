@@ -5,7 +5,7 @@ import scala.annotation.implicitNotFound
 
 // opaque currently causes too many weird issues with library integrations, in particular the json libraries can no longer auto serialize
 /** Uid’s are serializable abstract unique Ids. Currently implemented as Strings, but subject to change. */
-case class Uid(delegate: String) derives CanEqual {
+into case class Uid(delegate: String) derives CanEqual {
   override def toString: String = show
   def show: String              =
       val offset    = delegate.indexOf('.')

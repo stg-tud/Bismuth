@@ -5,7 +5,7 @@ import rdts.base.Uid
 
 import scala.language.implicitConversions
 
-implicit def idFromString(s: String): rdts.base.Uid = rdts.base.Uid.predefined(s)
+given Conversion[String, rdts.base.Uid] = s => rdts.base.Uid.predefined(s)
 
 given munit.Compare[rdts.base.Uid, String] = new Compare[Uid, String]:
     override def isEqual(obtained: Uid, expected: String): Boolean = Uid.unwrap(obtained) == expected

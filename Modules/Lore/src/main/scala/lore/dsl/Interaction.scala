@@ -62,7 +62,7 @@ trait Executes[S <: Tuple, A] {
   val executes: (S, A) => S
 }
 
-given syntax: AnyRef with {
+implicit object Ex {
 
   extension [S, A](e: CanExecute[Tuple1[S], A]) {
     def executes(fun: (S, A) => S): e.E[Tuple1[S], A] =

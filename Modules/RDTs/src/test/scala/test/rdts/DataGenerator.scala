@@ -15,8 +15,7 @@ object DataGenerator {
   case class ExampleData(content: Set[String]) derives Lattice, Bottom {
     override def toString: _root_.java.lang.String = content.mkString("\"", "", "\"")
   }
-  object ExampleData:
-      given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
+
 
   given Arbitrary[ExampleData] = Arbitrary:
       Gen.oneOf(List("Anne", "Ben", "Chris", "Erin", "Julina", "Lynn", "Sara", "Taylor")).map(name =>
