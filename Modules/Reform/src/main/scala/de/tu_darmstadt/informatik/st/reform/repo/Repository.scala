@@ -112,8 +112,8 @@ case class Repository[A](name: String, defaultValue: A)(using
 
 object Repository {
 
-  implicit class EntityRepositoryOps[A <: Entity[A]](self: Repository[A]) {
+  extension [A <: Entity[A]](self: Repository[A]) {
 
-    val existing: Signal[Seq[Synced[A]]] = Signal.dynamic { self.all.value.filter(_.signal.map(_.exists).value) }
+    def existing: Signal[Seq[Synced[A]]] = Signal.dynamic { self.all.value.filter(_.signal.map(_.exists).value) }
   }
 }

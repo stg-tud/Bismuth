@@ -23,7 +23,7 @@ import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.*
 import de.tu_darmstadt.informatik.st.reform.npm.{PDF, PDFCheckboxField, PDFTextField}
 import de.tu_darmstadt.informatik.st.reform.repo.Synced
 import de.tu_darmstadt.informatik.st.reform.services.*
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
+import de.tu_darmstadt.informatik.st.reform.utils.FutureExtensions.*
 import de.tu_darmstadt.informatik.st.reform.{JSImplicits, *}
 import org.scalajs.dom.*
 import outwatch.*

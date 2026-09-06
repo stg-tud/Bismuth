@@ -23,7 +23,7 @@ package de.tu_darmstadt.informatik.st.reform.services
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.tu_darmstadt.informatik.st.reform.utils.Cookies
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
+import de.tu_darmstadt.informatik.st.reform.utils.FutureExtensions.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.PendingConnection
 import de.tu_darmstadt.informatik.st.reform.{JSImplicits, given_ExecutionContext, *}
 import org.scalajs.dom

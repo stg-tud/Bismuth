@@ -4,7 +4,8 @@ import de.tu_darmstadt.informatik.st.reform.*
 import de.tu_darmstadt.informatik.st.reform.components.common.*
 import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.services.{LoginException, LoginInfo}
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
+import de.tu_darmstadt.informatik.st.reform.utils.FutureExtensions.*
+import de.tu_darmstadt.informatik.st.reform.utils.TryExtensions.*
 import org.scalajs.dom
 import org.scalajs.dom.{HTMLInputElement, console, document, window}
 import outwatch.*

@@ -21,7 +21,7 @@ import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.npm.JSUtils.downloadFile
 import de.tu_darmstadt.informatik.st.reform.repo.{Repository, Synced}
 import de.tu_darmstadt.informatik.st.reform.services.{Page, ToastMode}
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
+import de.tu_darmstadt.informatik.st.reform.utils.FutureExtensions.*
 import de.tu_darmstadt.informatik.st.reform.{given_ExecutionContext, *}
 import outwatch.*
 import outwatch.dsl.*

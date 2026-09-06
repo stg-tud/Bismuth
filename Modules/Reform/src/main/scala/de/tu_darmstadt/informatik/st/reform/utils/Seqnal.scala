@@ -8,7 +8,7 @@ import scala.concurrent.*
 
 object Seqnal {
 
-  implicit class SignalOps[T](self: Signal[T]) {
+  extension [T](self: Signal[T]) {
 
     def toFuture: Future[T] = {
       val promise                        = Promise[T]()

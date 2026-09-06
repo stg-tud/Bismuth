@@ -6,9 +6,9 @@ import de.tu_darmstadt.informatik.st.reform.{JSImplicits, given_ExecutionContext
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-object Futures {
+object FutureExtensions {
 
-  implicit class FutureOps[T](self: Future[T]) {
+  extension [T](self: Future[T]) {
 
     def toastOnError(using
         jsImplicits: JSImplicits,
@@ -21,8 +21,10 @@ object Futures {
           }
         }
   }
+}
 
-  implicit class TryOps[T](self: Try[T]) {
+object TryExtensions {
+  extension [T](self: Try[T]) {
     def toastOnError(mode: ToastMode = ToastMode.Short, style: ToastType = ToastType.Error)(using
         jsImplicits: JSImplicits,
     ): Unit =

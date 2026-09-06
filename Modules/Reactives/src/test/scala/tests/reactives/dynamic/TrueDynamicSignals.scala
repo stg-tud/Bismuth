@@ -213,7 +213,7 @@ class TrueDynamicSignals extends FunSuite {
   test("creating Signals Inside Signals") {
     val outside = Var(1)
 
-    val testsig = Signal.dynamic() { implicit to =>
+    val testsig = Signal.dynamic() { to =>
       // remark 01.10.2014: without the bound the inner signal will be enqueued (it is level 0 same as its dependency)
       // this will cause testsig to reevaluate again, after the inner signal is fully updated.
       // leading to an infinite loop

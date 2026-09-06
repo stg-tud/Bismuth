@@ -88,8 +88,9 @@ case class UIAttributeBuilder[AttributeType](
 
 }
 
-implicit class BindToInt[AttributeType](using jsImplicits: JSImplicits)(self: UIAttributeBuilder[AttributeType])(
-    implicit ordering: Ordering[AttributeType],
+extension [AttributeType](self: UIAttributeBuilder[AttributeType])(
+    using jsImplicits: JSImplicits,
+    ordering: Ordering[AttributeType],
 ) {
   def bindAsNumber[EntityType](
       getter: EntityType => Attribute[AttributeType],
@@ -108,7 +109,7 @@ implicit class BindToInt[AttributeType](using jsImplicits: JSImplicits)(self: UI
   )
 }
 
-implicit class BindToLong(using jsImplicits: JSImplicits)(self: UIAttributeBuilder[Long]) {
+extension (self: UIAttributeBuilder[Long])(using jsImplicits: JSImplicits) {
   def bindAsDatePicker[EntityType](
       getter: EntityType => Attribute[Long],
       setter: (EntityType, Attribute[Long]) => EntityType,
@@ -123,7 +124,7 @@ implicit class BindToLong(using jsImplicits: JSImplicits)(self: UIAttributeBuild
   )
 }
 
-implicit class BindToBoolean(using jsImplicits: JSImplicits)(self: UIAttributeBuilder[Boolean]) {
+extension (self: UIAttributeBuilder[Boolean])(using jsImplicits: JSImplicits) {
   def bindAsCheckbox[EntityType](
       getter: EntityType => Attribute[Boolean],
       setter: (EntityType, Attribute[Boolean]) => EntityType,
@@ -135,7 +136,7 @@ implicit class BindToBoolean(using jsImplicits: JSImplicits)(self: UIAttributeBu
   )
 }
 
-implicit class BindToSeqOfString(using jsImplicits: JSImplicits)(self: UIAttributeBuilder[Seq[String]]) {
+extension (self: UIAttributeBuilder[Seq[String]])(using jsImplicits: JSImplicits) {
 
   def bindAsMultiSelect[EntityType](
       getter: EntityType => Attribute[Seq[String]],

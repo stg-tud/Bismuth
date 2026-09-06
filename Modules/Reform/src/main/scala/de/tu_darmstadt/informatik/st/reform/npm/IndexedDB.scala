@@ -1,7 +1,7 @@
 package de.tu_darmstadt.informatik.st.reform.npm
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import de.tu_darmstadt.informatik.st.reform.utils.Futures.*
+import de.tu_darmstadt.informatik.st.reform.utils.FutureExtensions.*
 import de.tu_darmstadt.informatik.st.reform.{Globals, JSImplicits, given_ExecutionContext}
 import org.scalajs.dom.{IDBVersionChangeEvent, window}
 
