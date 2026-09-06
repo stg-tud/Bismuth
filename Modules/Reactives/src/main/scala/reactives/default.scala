@@ -26,7 +26,7 @@ object default {
     * @tparam R Result type of the admission function
     * @return Result of the admission function
     * @group update
-    * @example transaction(a, b){ implicit at => a.set(5); b.set(1); at.now(a) }
+    * @example transaction(a, b){ a.set(5); b.set(1); at.now(a) }
     */
   def transaction[R](initialWrites: ReSource.of[State]*)(admissionPhase: AdmissionTicket[State] ?=> R): R =
     SelectedScheduler.candidate.scheduler.forceNewTransaction(initialWrites*)(admissionPhase(using _))

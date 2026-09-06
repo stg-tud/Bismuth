@@ -1,15 +1,11 @@
 package test.rdts.bespoke
 
 import rdts.experiments.BoundedCounter
-import test.rdts.{TestReplica}
+import test.rdts.TestReplica
 
 class BoundedCounterTest extends munit.FunSuite {
 
-  import scala.language.implicitConversions
-
-
-  implicit def idFromString(s: String): rdts.base.Uid = rdts.base.Uid.predefined(s)
-
+  given Conversion[String, rdts.base.Uid] = s => rdts.base.Uid.predefined(s)
 
   test("basic usage") {
     val r1 = TestReplica("r1", BoundedCounter.init(100, "r1")).mod(_.addParticipants(Set("r2", "r3")))

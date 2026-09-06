@@ -172,7 +172,7 @@ trait Transaction[State[_]] {
 }
 
 /** Scheduler that defines the basic data-types available to the user and creates turns for propagation handling. */
-@implicitNotFound(msg = "Could not find an implicit scheduler. Did you forget an import?")
+@implicitNotFound(msg = "Could not find a given scheduler. Did you forget an import?")
 trait Scheduler[S[_]] {
 
   final def forceNewTransaction[R](initialWrites: ReSource.of[S]*)(admissionPhase: AdmissionTicket[S] => R): R =
@@ -183,10 +183,4 @@ trait Scheduler[S[_]] {
   /** Name of the scheduler, used for helpful error messages. */
   def schedulerName: String
   override def toString: String = s"Scheduler($schedulerName)"
-}
-
-/** Some apis expect an implicit scheduler for historic reasons. This guarantees they work */
-object Scheduler {
-  given implicitScheduler: Scheduler[reactives.SelectedScheduler.State] =
-    reactives.SelectedScheduler.candidate.scheduler
 }
