@@ -54,7 +54,7 @@ reformServe: reformPrepare
 reformBundle: reformPrepare
 	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js build
 
-doc-serve project="reactives" port="8081":
+serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'
 	jwebserver -b 0.0.0.0 -p {{port}} -d "$(sbt --batch --error 'show {{project}}/Compile/doc/target' | sed -n 's#^\s*\[info\] ##p' | head -n 1)"
 
