@@ -1,6 +1,6 @@
 package lore.calendar
 
-import lore.dsl.*
+import lore.dsl.{syntax, *}
 import reactives.default.{Signal as Derived, Var as Source}
 
 import scala.collection.immutable.Set as AWSet
