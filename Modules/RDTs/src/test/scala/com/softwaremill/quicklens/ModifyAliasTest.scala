@@ -1,7 +1,6 @@
 package com.softwaremill.deltalens
-import rdts.syntax.deltalens.*
-
 import com.softwaremill.deltalens.ModifyAliasTest.*
+import rdts.syntax.deltalens.*
 
 object ModifyAliasTest {
 

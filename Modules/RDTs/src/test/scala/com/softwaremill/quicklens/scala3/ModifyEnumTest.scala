@@ -1,7 +1,7 @@
 package com.softwaremill.deltalens.scala3
 
-import rdts.syntax.deltalens.*
 import com.softwaremill.deltalens.TestData.duplicate
+import rdts.syntax.deltalens.*
 
 object EnumTestData {
   enum P3(val a: String):

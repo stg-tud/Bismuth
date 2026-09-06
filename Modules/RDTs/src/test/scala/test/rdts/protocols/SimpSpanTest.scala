@@ -2,10 +2,10 @@ package test.rdts.protocols
 
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.protocols.*
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.Agreement
 import rdts.protocols.spanner.{FlexibleVoting, SimpSpan, twoPCMessages}
-import rdts.protocols.*
 
 class SimpSpanTest extends munit.FunSuite {
 

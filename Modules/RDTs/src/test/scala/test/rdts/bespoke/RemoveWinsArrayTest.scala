@@ -1,11 +1,9 @@
 package test.rdts.bespoke
 import rdts.base.Lattice.syntax.merge
-import rdts.base.Uid
-import rdts.datatypes.RemoveWinsArray
+import rdts.base.{Lattice, Uid}
+import rdts.datatypes.{LastWriterWins as LWW, RemoveWinsArray}
 
 import scala.language.implicitConversions
-import rdts.base.Lattice
-import rdts.datatypes.LastWriterWins as LWW
 
 class RemoveWinsArrayTest extends munit.FunSuite {
   test("insert") {

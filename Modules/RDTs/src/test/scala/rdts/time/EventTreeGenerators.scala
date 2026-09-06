@@ -1,8 +1,8 @@
 package rdts.time
 
+import org.scalacheck.Gen
 import rdts.time.EventTree.{Branch, Leaf, seed}
 import rdts.time.IdTreeGenerators.genIdTree
-import org.scalacheck.Gen
 
 object EventTreeGenerators {
   given genEventTree: Gen[EventTree] =

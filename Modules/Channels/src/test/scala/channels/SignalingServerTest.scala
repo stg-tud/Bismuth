@@ -18,10 +18,10 @@ class SignalingServerTest extends FunSuite {
   }
 
   final private class Fixture {
-    val abort         = Abort()
-    val link          = SynchronousLocalConnection("signal")
-    val serverDetails = ConnectionDescriptor.SynchronousLocal("signal")
-    val server        = SignalingServer(debug = false)
+    val abort: Abort                        = Abort()
+    val link: SynchronousLocalConnection    = SynchronousLocalConnection("signal")
+    val serverDetails: ConnectionDescriptor = ConnectionDescriptor.SynchronousLocal("signal")
+    val server: SignalingServer             = SignalingServer(debug = false)
     server.addIncomingConnection(link.server)
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {

@@ -1,11 +1,10 @@
 package test.rdts.bespoke
 
-import rdts.base.Lattice
 import rdts.base.Lattice.syntax.merge
-import rdts.base.Uid
+import rdts.base.{Lattice, Uid}
+import rdts.experiments.RemoveWinsArrayExperiment
 
 import scala.language.implicitConversions
-import rdts.experiments.RemoveWinsArrayExperiment
 
 class RemoveWinsArrayExperimentTest extends munit.FunSuite {
   given Lattice[String] = Lattice.assertEquals

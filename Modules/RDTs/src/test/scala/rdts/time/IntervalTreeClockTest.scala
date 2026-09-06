@@ -1,12 +1,13 @@
 package rdts.time
 
-import rdts.time.IntervalTreeClockGenerators.genIntervalTreeClock
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*
+import rdts.time.IntervalTreeClockGenerators.genIntervalTreeClock
+import org.scalacheck.Test.Parameters
 
 class IntervalTreeClockTest extends ScalaCheckSuite {
 
-  override def scalaCheckTestParameters = super.scalaCheckTestParameters.withMaxDiscardRatio(20)
+  override def scalaCheckTestParameters: Parameters = super.scalaCheckTestParameters.withMaxDiscardRatio(20)
 
   property("NormalForm[IntervalTreeClock]") {
     forAll(genIntervalTreeClock) { itc =>

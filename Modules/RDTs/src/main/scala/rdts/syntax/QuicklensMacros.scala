@@ -1,7 +1,7 @@
 package rdts.syntax
 
-import deltalens.{PathLazyModify, PathModify}
 import rdts.base.Bottom
+import rdts.syntax.deltalens.{PathLazyModify, PathModify}
 
 import scala.quoted.*
 

@@ -1,9 +1,8 @@
 package rdts.time.codecs.internal
 
+import munit.FunSuite
 import rdts.time.IdTree
 import rdts.time.IdTree.{Branch, Leaf}
-
-import munit.FunSuite
 
 class IdTreeEncoderSpec extends FunSuite {
 

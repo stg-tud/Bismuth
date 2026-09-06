@@ -66,9 +66,9 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val resolver = LocalConnectionRegistry(Map("listener" -> link))
 
     final case class Node(id: String) {
-      val uid: LocalUid = LocalUid.gen()
-      val selfInfo      = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io            = BroadcastIO[Set[String]](
+      val uid: LocalUid                = LocalUid.gen()
+      val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),

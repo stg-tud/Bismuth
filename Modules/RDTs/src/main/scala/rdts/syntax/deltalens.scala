@@ -1,6 +1,6 @@
 package rdts.syntax
 
-import QuicklensMacros.*
+import rdts.syntax.QuicklensMacros.*
 
 import scala.annotation.compileTimeOnly
 import scala.collection.SortedMap

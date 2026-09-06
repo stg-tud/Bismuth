@@ -1,15 +1,15 @@
 package test.rdts.protocols
 
 import rdts.base.{LocalUid, Uid}
-import rdts.protocols.{Consensus, Participants}
-import rdts.protocols.chimeric.{Chimeric, QuorumConfig}
 import rdts.protocols.Util.Agreement.*
+import rdts.protocols.chimeric.{Chimeric, QuorumConfig}
+import rdts.protocols.{Consensus, Participants}
 
 class ChimericTest extends munit.FunSuite {
 
-  val u1 = Uid("node1")
-  val u2 = Uid("node2")
-  val u3 = Uid("node3")
+  val u1: Uid = Uid("node1")
+  val u2: Uid = Uid("node2")
+  val u3: Uid = Uid("node3")
 
   val id1: LocalUid = LocalUid(u1)
   val id2: LocalUid = LocalUid(u2)

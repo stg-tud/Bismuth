@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
+import rdts.base.{Bottom, Lattice, LocalUid}
 import rdts.experiments.UndoRedoReplica
-import rdts.base.{LocalUid, Lattice, Bottom}
 
 class UndoRedoReplicaTest extends munit.FunSuite {
   test("simple undo redo") {

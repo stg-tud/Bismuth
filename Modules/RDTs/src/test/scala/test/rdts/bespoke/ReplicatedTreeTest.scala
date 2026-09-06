@@ -1,15 +1,12 @@
 package test.rdts.bespoke
+import munit.Assertions
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{LocalUid, Uid}
-import rdts.datatypes.ReplicatedTree
+import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.datatypes.{LastWriterWins as LWW, ReplicatedTree}
+import rdts.time.Dot
 
 import scala.language.implicitConversions
-import rdts.time.Dot
-import munit.Assertions
-
 import scala.util.Random
-import rdts.base.Lattice
-import rdts.datatypes.LastWriterWins as LWW
 
 class ReplicatedTreeTest extends munit.FunSuite {
   test("insert") {

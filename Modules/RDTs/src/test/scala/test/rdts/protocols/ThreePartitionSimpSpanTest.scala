@@ -2,9 +2,9 @@ package test.rdts.protocols
 
 import rdts.base.Lattice.syntax
 import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.protocols.*
 import rdts.protocols.Util.Agreement
 import rdts.protocols.spanner.{FlexibleVoting, SimpSpan, twoPCMessages}
-import rdts.protocols.*
 
 /** Tests for SimpSpan with three partitions and three replicas per partition.
   *

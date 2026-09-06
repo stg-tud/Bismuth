@@ -1,9 +1,9 @@
 package test.rdts.bespoke
 
-import rdts.time.Dots
-import rdts.base.{Bottom, LocalUid}
 import rdts.base.Historized.MetaDelta
+import rdts.base.{Bottom, LocalUid}
 import rdts.datatypes.GrowOnlyCounter
+import rdts.time.Dots
 
 class GrowOnlyCounterTest extends munit.FunSuite {
 

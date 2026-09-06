@@ -1,16 +1,16 @@
 package rdts.time
 
+import munit.ScalaCheckSuite
+import org.scalacheck.Prop.*
 import rdts.time.IdTree.{Branch, Leaf, anonymous, seed, given}
 import rdts.time.IdTreeGenerators.{genIdTree, genIdTreeBySplitting, genIdTreeShallow, genTwoNonOverlappingIdTrees}
 
-import munit.ScalaCheckSuite
-import org.scalacheck.Prop.*
-
 import scala.language.implicitConversions
+import org.scalacheck.Test.Parameters
 
 class IdTreeTest extends ScalaCheckSuite {
 
-  override def scalaCheckTestParameters =
+  override def scalaCheckTestParameters: Parameters =
     super.scalaCheckTestParameters.withMaxDiscardRatio(20)
 
   private val idPord: PartialOrdering[IdTree] = summon[PartialOrdering[IdTree]]

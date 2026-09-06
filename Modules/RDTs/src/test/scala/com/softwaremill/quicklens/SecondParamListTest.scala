@@ -1,7 +1,8 @@
 package com.softwaremill.deltalens
 
-import scala.annotation.{nowarn, unused}
 import rdts.syntax.deltalens.*
+
+import scala.annotation.{nowarn, unused}
 
 class SecondParamListTest extends munit.FunSuite {
   test("modify an object with second implicit param list") {

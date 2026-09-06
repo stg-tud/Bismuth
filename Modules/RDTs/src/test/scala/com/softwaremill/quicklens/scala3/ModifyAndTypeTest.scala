@@ -1,7 +1,7 @@
 package com.softwaremill.deltalens.scala3
 
+import com.softwaremill.deltalens.scala3.ModifyAndTypeTest.*
 import rdts.syntax.deltalens.*
-import ModifyAndTypeTest.*
 
 object ModifyAndTypeTest {
   case class A(a: Int) extends B

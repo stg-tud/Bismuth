@@ -1,7 +1,7 @@
 package com.softwaremill.deltalens
 
-import rdts.syntax.deltalens.*
 import com.softwaremill.deltalens.TestData.duplicate
+import rdts.syntax.deltalens.*
 
 /** This test data is in the same file as the test to ensure correct compilation order. See
   * https://issues.scala-lang.org/browse/SI-7046.

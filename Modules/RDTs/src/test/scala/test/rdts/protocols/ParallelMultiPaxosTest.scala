@@ -1,9 +1,9 @@
 package test.rdts.protocols
 
 import rdts.base.LocalUid
-import rdts.protocols.{MultipaxosPhase, Participants}
 import rdts.protocols.Util.Agreement
 import rdts.protocols.spanner.ParallelMultiPaxos
+import rdts.protocols.{MultipaxosPhase, Participants}
 
 class ParallelMultiPaxosTest extends munit.FunSuite {
 
