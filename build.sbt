@@ -172,8 +172,10 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
     Settings.javaOutputVersion(17),
     munit,
     scalacOptions += {
+      val converter = fileConverter.value
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
-        .map(at => at.data).mkString(java.io.File.pathSeparator)
+        .map(at => converter.toPath(at.data).toAbsolutePath.toString)
+        .mkString(java.io.File.pathSeparator)
       s"-Xplugin:$pluginClasspath"
     }
   )
