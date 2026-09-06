@@ -1,4 +1,9 @@
-/*:scim
+package documentation
+
+object ReactiveExamples {
+  def main(args: Array[String]): Unit = {
+
+    /*:scim
 = Reactive Programming Concepts
 :flags = -hardwrap
 
@@ -35,15 +40,9 @@ Most code blocks can be executed on their own when adding this import,
 but some require definitions from the prior blocks.
 To get started, import:
 
- */
+     */
 
-import reactives.default.*
-
-import scala.annotation.nowarn
-
-@nowarn("msg=unused local definition")
-object ReactiveExamples {
-  def main(args: Array[String]): Unit = {
+    import reactives.default.*
 
     /*:scim
 
@@ -181,7 +180,6 @@ Note that unit-type events still need an argument in the handler.
 Note that events without arguments still need an argument in the handler.
 
      */
-
     {
       val eUnit = Evt[Unit]()
       eUnit.observe(x => println("ping"))
