@@ -1,8 +1,3 @@
-# https://github.com/casey/just
-
-readme:
-	pager README.md
-
 authors:
 	git shortlog --summary --numbered
 
@@ -59,12 +54,9 @@ reformServe: reformPrepare
 reformBundle: reformPrepare
 	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js build
 
-doc-serve port="8081" module="Reactives" platform="jvm":
-	echo "Serving {{module}}/{{platform}} docs at http://localhost:{{port}}"
-	jwebserver -b 0.0.0.0 -p {{port}} -d "Modules/{{module}}/{{platform}}/target/scala-3.8.3/api"
-
-compile-manual:
-	cd Documentation/web-manual && cs launch org.scalameta:mdoc_3:2.9.0 -- --classpath `cs fetch --classpath de.tu-darmstadt.stg:reactives_3:0.37.0+2104-0fbc6ac1` --in manual-src.md --out manual.md
+doc-serve project="reactives" port="8081":
+	sbt '{{project}}/doc'
+	jwebserver -b 0.0.0.0 -p {{port}} -d "$(sbt --batch --error 'show {{project}}/Compile/doc/target' | sed -n 's#^\s*\[info\] ##p' | head -n 1)"
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
