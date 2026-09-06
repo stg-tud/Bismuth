@@ -7,8 +7,25 @@ lazy val s3v = "3.9.0"
 scalaVersion := s3v
 Settings.defaultScalacFlags
 
-// 2026-06-22 scalacheck depends on scala native 0.5.8 while we use 0.5.12; this is likely fine as long as the tests dont fail
-libraryDependencySchemes += "org.scala-native" % "test-interface_native0.5_3" % VersionScheme.EarlySemVer
+//////////// DEPENDENCIES
+
+libraryDependencies ++= Seq(
+  "org.scalameta" %% "munit"            % "1.3.6" % Test,
+  "org.scalameta" %% "munit-scalacheck" % "1.3.1" % Test,
+)
+
+def decline    = libraryDependencies += "com.monovore"  %% "decline"     % "2.6.2"
+def pprint     = libraryDependencies += "com.lihaoyi"   %% "pprint"      % "0.9.6"
+def scalajsDom = libraryDependencies += "org.scala-js"  %% "scalajs-dom" % "2.8.1"
+def slips      = libraryDependencies += "de.rmgk.slips" %% "slips"       % "0.20.0"
+
+def jsoniterScala =
+  libraryDependencies ++= Seq(
+    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.40.1",
+    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.40.1" % Provided
+  )
+
+def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "26.0.0-R38"
 
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
   channels.js(s3v),
@@ -55,17 +72,15 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .settings(
     Settings.strictScalacFlags,
     slips,
-    libraryDependencies += "pt.kcry"                       %% "blake3"                   % "3.1.2",
-    munit,
-    munitCheck,
+    libraryDependencies += "pt.kcry" %% "blake3" % "3.1.2",
     jsoniterScala,
     publishSonatype,
   )
   .jvmPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
-      Test / fork := true,
-      libraryDependencies += "io.github.hakky54"              % "ayza-for-pem"             % "10.0.7",
+      Test / fork                               := true,
+      libraryDependencies += "io.github.hakky54" % "ayza-for-pem" % "10.0.7",
     )
   )
   .jsPlatform(
@@ -87,28 +102,28 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Settings.javaOutputVersion(21),
     fork := true,
     Settings.jolSettings,
-    libraryDependencies += "com.github.alexandrnikitin"     % "bloom-filter_2.13"        % "0.13.1",
-    borer,
-    libraryDependencies += "org.conscrypt"                  % "conscrypt-openjdk-uber"   % "2.7.0",
-    decline,
-    {
-  val jettyVersion = "12.1.12"
-  libraryDependencies ++= Seq(
-    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
-    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
-    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
-    "org.slf4j"                      % "slf4j-nop"                % "2.0.19" % Test
-  )
-},
+    libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13" % "0.13.1",
+    libraryDependencies ++= Seq(
+      "io.bullet" %% "borer-core"       % "1.18.0",
+      "io.bullet" %% "borer-derivation" % "1.18.0"
+    ),
+    libraryDependencies += "org.conscrypt" % "conscrypt-openjdk-uber" % "2.7.0",
+    decline, {
+      val jettyVersion = "12.1.12"
+      libraryDependencies ++= Seq(
+        "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
+        "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
+        "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
+        "org.slf4j"                   % "slf4j-nop"                    % "2.0.19" % Test
+      )
+    },
     jsoniterScala,
-    munit,
-    munitCheck,
     pprint,
-    libraryDependencies += "org.scala-lang.modules"        %% "scala-swing"              % "3.0.0",
-    libraryDependencies += "org.scala-lang.modules"        %% "scala-xml"                % "2.4.0",
+    libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
+    libraryDependencies += "org.scala-lang.modules" %% "scala-xml"   % "2.4.0",
     slips,
-    libraryDependencies += "com.softwaremill.sttp.client4" %% "core"                     % "4.0.26",
-    libraryDependencies += "com.google.crypto.tink"         % "tink"                     % "1.23.0",
+    libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.26",
+    libraryDependencies += "com.google.crypto.tink"         % "tink" % "1.23.0",
     libraryDependencies += scalafx,
     javaOptions ++= Seq(
       "-XX:+IgnoreUnrecognizedVMOptions",
@@ -122,13 +137,12 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
   .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v))
   .settings(
     jsoniterScala,
-    munit,
     pprint,
     scalajsDom,
     libraryDependencies ++= Seq(
-  "com.github.japgolly.scalajs-react" %% "core"  % "3.0.0",
-  "com.github.japgolly.scalajs-react" %% "extra" % "3.0.0",
-),
+      "com.github.japgolly.scalajs-react" %% "core"  % "3.0.0",
+      "com.github.japgolly.scalajs-react" %% "extra" % "3.0.0",
+    ),
     libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Compile,
     Settings.strictScalacFlags,
     Compile / scalaJSLinkerConfig :=
@@ -157,10 +171,9 @@ lazy val lore = projectMatrix.in(file("Modules/Lore"))
     ),
     jsoniterScala,
     decline,
-    libraryDependencies += "org.typelevel"                 %% "cats-parse"               % "1.1.0",
-    libraryDependencies += "com.lihaoyi"                   %% "fansi"                    % "0.5.1",
-    libraryDependencies += "dev.optics"                    %% "monocle-core"             % "3.3.0",
-    munit,
+    libraryDependencies += "org.typelevel" %% "cats-parse"   % "1.1.0",
+    libraryDependencies += "com.lihaoyi"   %% "fansi"        % "0.5.1",
+    libraryDependencies += "dev.optics"    %% "monocle-core" % "3.3.0",
     Compile / mainClass := Some("lore.Compiler")
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
@@ -171,8 +184,7 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .settings(
     Settings.javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
-    libraryDependencies += "com.lihaoyi"                   %% "upickle"                  % "4.4.3",
-    munit
+    libraryDependencies += "com.lihaoyi"    %% "upickle"         % "4.4.3",
   )
 
 lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plugin/examples"))
@@ -180,9 +192,8 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
   .dependsOn(loreCompilerPlugin)
   .settings(
     Settings.javaOutputVersion(17),
-    munit,
     scalacOptions += {
-      val converter = fileConverter.value
+      val converter       = fileConverter.value
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
         .map(at => converter.toPath(at.data).toAbsolutePath.toString)
         .mkString(java.io.File.pathSeparator)
@@ -199,20 +210,16 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .settings(
     Settings.strictScalacFlags,
     jsoniterScala,
-    munitCheck,
-    munit,
     slips,
-    libraryDependencies += "io.etcd"                        % "jetcd-core"               % "0.8.7",
+    libraryDependencies += "io.etcd" % "jetcd-core" % "0.8.7",
     pprint,
-    libraryDependencies += "site.ycsb"                      % "core"                     % "0.17.0",
+    libraryDependencies += "site.ycsb" % "core" % "0.17.0",
   )
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
   .settings(
     Settings.strictScalacFlags,
     publishSonatype,
-    munit,
-    munitCheck,
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))
@@ -225,8 +232,6 @@ lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
     publishSonatype,
-    munitCheck,
-    munit,
   )
   .jvmPlatform(
     scalaVersions = Seq(s3v),
@@ -252,7 +257,6 @@ lazy val reform = project
   .settings(
     name := "Reform",
     jsoniterScala,
-    munit,
     Compile / scalaJSModuleInitializers := Seq(
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
     ),
@@ -353,28 +357,3 @@ val publishSonatype = Def.settings(
   publishTo         := localStaging.value,
   publishMavenStyle := true
 )
-
-//////////// DEPENDENCIES
-
-def decline     = libraryDependencies += "com.monovore"                  %% "decline"                  % "2.6.2"
-def munit       = libraryDependencies += "org.scalameta"                 %% "munit"                    % "1.3.6"  % Test
-def munitCheck  = libraryDependencies += "org.scalameta"                 %% "munit-scalacheck"         % "1.3.1"  % Test
-def scalajsDom  = libraryDependencies += "org.scala-js"                  %% "scalajs-dom"              % "2.8.1"
-def slips       = libraryDependencies += "de.rmgk.slips"                 %% "slips"                    % "0.20.0"
-
-def pprintModuleID = "com.lihaoyi"                        %% "pprint" % "0.9.6"
-def pprint         = libraryDependencies += pprintModuleID
-
-def borer = libraryDependencies ++= Seq(
-  "io.bullet" %% "borer-core"       % "1.18.0",
-  "io.bullet" %% "borer-derivation" % "1.18.0"
-)
-
-def jsoniterScala =
-  libraryDependencies ++= Seq(
-    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.40.1",
-    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.40.1" % Provided
-  )
-
-def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "26.0.0-R38"
-
