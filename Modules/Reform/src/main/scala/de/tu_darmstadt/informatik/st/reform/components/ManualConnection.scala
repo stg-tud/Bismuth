@@ -3,7 +3,6 @@ package de.tu_darmstadt.informatik.st.reform.components
 import de.tu_darmstadt.informatik.st.reform.components.common.{Button, ButtonStyle, LabeledInput}
 import de.tu_darmstadt.informatik.st.reform.given
 import de.tu_darmstadt.informatik.st.reform.utils.FutureExtensions.*
-import de.tu_darmstadt.informatik.st.reform.utils.TryExtensions.*
 import de.tu_darmstadt.informatik.st.reform.webrtc.{PendingConnection, WebRTC}
 import de.tu_darmstadt.informatik.st.reform.{given_ExecutionContext, *}
 import org.scalajs.dom.{RTCConfiguration, RTCIceServer, window}

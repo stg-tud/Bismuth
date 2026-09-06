@@ -53,10 +53,9 @@ object OpenDBCallbacks {
     __obj.asInstanceOf[OpenDBCallbacks[DBTypes]]
   }
 
-  @scala.inline
-  implicit open class MutableBuilder[Self <: OpenDBCallbacks[?], DBTypes /* <: DBSchema */ ](
-      private val x: Self & OpenDBCallbacks[DBTypes],
-  ) extends AnyVal {
+  extension [Self <: OpenDBCallbacks[?], DBTypes /* <: DBSchema */ ](
+      x: Self & OpenDBCallbacks[DBTypes]
+  ) {
 
     inline def setUpgrade(
         value: (

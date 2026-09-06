@@ -193,7 +193,7 @@ class UINumberAttribute[EntityType, AttributeType](
     regex: String,
     stepSize: String,
     override val formats: Seq[UIFormat[EntityType]] = Seq.empty[UIFormat[EntityType]],
-)(using jsImplicits: JSImplicits)(implicit ordering: Ordering[AttributeType])
+)(using jsImplicits: JSImplicits, ordering: Ordering[AttributeType])
     extends UITextAttribute[EntityType, AttributeType](
       getter = getter,
       setter = setter,
