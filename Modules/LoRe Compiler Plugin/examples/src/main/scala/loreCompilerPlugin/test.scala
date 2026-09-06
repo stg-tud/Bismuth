@@ -1,6 +1,6 @@
 package loreCompilerPlugin
 
-import lore.dsl.{*}
+import lore.dsl.*
 import loreCompilerPlugin.annotation.LoReProgram
 import reactives.default.{Signal as Derived, Var as Source}
 
