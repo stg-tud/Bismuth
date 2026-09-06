@@ -55,7 +55,7 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .settings(
     Settings.strictScalacFlags,
     slips,
-    blake3,
+    libraryDependencies += "pt.kcry"                       %% "blake3"                   % "3.1.2",
     munit,
     munitCheck,
     jsoniterScala,
@@ -65,14 +65,14 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     scalaVersions = Seq(s3v),
     settings = Seq(
       Test / fork := true,
-      ayza,
+      libraryDependencies += "io.github.hakky54"              % "ayza-for-pem"             % "10.0.7",
     )
   )
   .jsPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
       scalajsDom,
-      scalatags(),
+      libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Compile,
     )
   )
   .nativePlatform(scalaVersions = Seq(s3v))
@@ -87,20 +87,28 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Settings.javaOutputVersion(21),
     fork := true,
     Settings.jolSettings,
-    bloomFilter,
+    libraryDependencies += "com.github.alexandrnikitin"     % "bloom-filter_2.13"        % "0.13.1",
     borer,
-    conscrypt,
+    libraryDependencies += "org.conscrypt"                  % "conscrypt-openjdk-uber"   % "2.7.0",
     decline,
-    jetty,
+    {
+  val jettyVersion = "12.1.12"
+  libraryDependencies ++= Seq(
+    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
+    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
+    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
+    "org.slf4j"                      % "slf4j-nop"                % "2.0.19" % Test
+  )
+},
     jsoniterScala,
     munit,
     munitCheck,
     pprint,
-    scalaSwing,
-    scalaXml,
+    libraryDependencies += "org.scala-lang.modules"        %% "scala-swing"              % "3.0.0",
+    libraryDependencies += "org.scala-lang.modules"        %% "scala-xml"                % "2.4.0",
     slips,
-    sttpCore,
-    tink,
+    libraryDependencies += "com.softwaremill.sttp.client4" %% "core"                     % "4.0.26",
+    libraryDependencies += "com.google.crypto.tink"         % "tink"                     % "1.23.0",
     libraryDependencies += scalafx,
     javaOptions ++= Seq(
       "-XX:+IgnoreUnrecognizedVMOptions",
@@ -117,8 +125,11 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     munit,
     pprint,
     scalajsDom,
-    scalajsReact,
-    scalatags(),
+    libraryDependencies ++= Seq(
+  "com.github.japgolly.scalajs-react" %% "core"  % "3.0.0",
+  "com.github.japgolly.scalajs-react" %% "extra" % "3.0.0",
+),
+    libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Compile,
     Settings.strictScalacFlags,
     Compile / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value
@@ -146,9 +157,9 @@ lazy val lore = projectMatrix.in(file("Modules/Lore"))
     ),
     jsoniterScala,
     decline,
-    catsParse,
-    fansi,
-    monocleCore,
+    libraryDependencies += "org.typelevel"                 %% "cats-parse"               % "1.1.0",
+    libraryDependencies += "com.lihaoyi"                   %% "fansi"                    % "0.5.1",
+    libraryDependencies += "dev.optics"                    %% "monocle-core"             % "3.3.0",
     munit,
     Compile / mainClass := Some("lore.Compiler")
   )
@@ -160,7 +171,7 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .settings(
     Settings.javaOutputVersion(17),
     libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
-    upickle,
+    libraryDependencies += "com.lihaoyi"                   %% "upickle"                  % "4.4.3",
     munit
   )
 
@@ -191,9 +202,9 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     munitCheck,
     munit,
     slips,
-    jetcd,
+    libraryDependencies += "io.etcd"                        % "jetcd-core"               % "0.8.7",
     pprint,
-    ycsb,
+    libraryDependencies += "site.ycsb"                      % "core"                     % "0.17.0",
   )
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
@@ -202,7 +213,6 @@ lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
     publishSonatype,
     munit,
     munitCheck,
-    pprintTest,
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))
@@ -228,7 +238,7 @@ lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
     scalaVersions = Seq(s3v),
     settings = Seq(
       scalajsDom,
-      scalatags(Test),
+      libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Test,
     )
   )
   .nativePlatform(
@@ -346,44 +356,19 @@ val publishSonatype = Def.settings(
 
 //////////// DEPENDENCIES
 
-def ayza        = libraryDependencies += "io.github.hakky54"              % "ayza-for-pem"             % "10.0.7"
-def blake3      = libraryDependencies += "pt.kcry"                       %% "blake3"                   % "3.1.2"
-def bloomFilter = libraryDependencies += "com.github.alexandrnikitin"     % "bloom-filter_2.13"        % "0.13.1"
-def catsParse   = libraryDependencies += "org.typelevel"                 %% "cats-parse"               % "1.1.0"
-def conscrypt   = libraryDependencies += "org.conscrypt"                  % "conscrypt-openjdk-uber"   % "2.7.0"
 def decline     = libraryDependencies += "com.monovore"                  %% "decline"                  % "2.6.2"
-def fansi       = libraryDependencies += "com.lihaoyi"                   %% "fansi"                    % "0.5.1"
-def jetcd       = libraryDependencies += "io.etcd"                        % "jetcd-core"               % "0.8.7"
-def monocleCore = libraryDependencies += "dev.optics"                    %% "monocle-core"             % "3.3.0"
 def munit       = libraryDependencies += "org.scalameta"                 %% "munit"                    % "1.3.6"  % Test
 def munitCheck  = libraryDependencies += "org.scalameta"                 %% "munit-scalacheck"         % "1.3.1"  % Test
-def scalaSwing  = libraryDependencies += "org.scala-lang.modules"        %% "scala-swing"              % "3.0.0"
-def scalaXml    = libraryDependencies += "org.scala-lang.modules"        %% "scala-xml"                % "2.4.0"
 def scalajsDom  = libraryDependencies += "org.scala-js"                  %% "scalajs-dom"              % "2.8.1"
 def slips       = libraryDependencies += "de.rmgk.slips"                 %% "slips"                    % "0.20.0"
-def sttpCore    = libraryDependencies += "com.softwaremill.sttp.client4" %% "core"                     % "4.0.26"
-def tink        = libraryDependencies += "com.google.crypto.tink"         % "tink"                     % "1.23.0"
-def upickle     = libraryDependencies += "com.lihaoyi"                   %% "upickle"                  % "4.4.3"
-def ycsb        = libraryDependencies += "site.ycsb"                      % "core"                     % "0.17.0"
 
 def pprintModuleID = "com.lihaoyi"                        %% "pprint" % "0.9.6"
 def pprint         = libraryDependencies += pprintModuleID
-def pprintTest     = libraryDependencies += pprintModuleID % Test
 
 def borer = libraryDependencies ++= Seq(
   "io.bullet" %% "borer-core"       % "1.18.0",
   "io.bullet" %% "borer-derivation" % "1.18.0"
 )
-
-def jetty = {
-  val jettyVersion = "12.1.12"
-  libraryDependencies ++= Seq(
-    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
-    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
-    "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
-    "org.slf4j"                      % "slf4j-nop"                % "2.0.19" % Test
-  )
-}
 
 def jsoniterScala =
   libraryDependencies ++= Seq(
@@ -393,9 +378,3 @@ def jsoniterScala =
 
 def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "26.0.0-R38"
 
-def scalajsReact = libraryDependencies ++= Seq(
-  "com.github.japgolly.scalajs-react" %% "core"  % "3.0.0",
-  "com.github.japgolly.scalajs-react" %% "extra" % "3.0.0",
-)
-
-def scalatags(conf: Configuration = Compile) = libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % conf
