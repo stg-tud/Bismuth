@@ -65,7 +65,7 @@ trait InvariantBundle extends TopoBundle {
     override def beforeCleanupHook(all: Seq[ReSource], initialWrites: Set[ReSource]): Unit =
       InvariantUtil.evaluateInvariants(all, initialWrites)
 
-    implicit class SignalWithInvariants[T](val signal: ReSource {
+    extension [T](signal: ReSource {
       type State[V] = InvariantState[V]; type Value = Pulse[T]
     }) {
 
@@ -74,7 +74,7 @@ trait InvariantBundle extends TopoBundle {
           inv.map(inv => new Invariant[signal.Value](inv.description, (invp: Pulse[T]) => inv.inv(invp.get: T)))
 
       def setValueGenerator(gen: Gen[T]): Unit =
-        this.signal.state.gen = gen
+        signal.state.gen = gen
 
       def test(): Unit = {
         val result = Test.check(
@@ -118,9 +118,9 @@ trait InvariantBundle extends TopoBundle {
               .toList
           }
 
-        val gens = findGeneratorsRecursive(this.signal)
+        val gens = findGeneratorsRecursive(signal)
         if gens.isEmpty then {
-          throw NoGeneratorException(s"No generators found in incoming nodes for signal ${this.signal.info}")
+          throw NoGeneratorException(s"No generators found in incoming nodes for signal ${signal.info}")
         }
         gens
       }
