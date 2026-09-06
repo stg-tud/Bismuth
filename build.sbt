@@ -7,25 +7,21 @@ lazy val s3v = "3.9.0"
 scalaVersion := s3v
 Settings.defaultScalacFlags
 
-//////////// DEPENDENCIES
-
 libraryDependencies ++= Seq(
   "org.scalameta" %% "munit"            % "1.3.6" % Test,
   "org.scalameta" %% "munit-scalacheck" % "1.3.1" % Test,
 )
 
-def decline    = libraryDependencies += "com.monovore"  %% "decline"     % "2.6.2"
-def pprint     = libraryDependencies += "com.lihaoyi"   %% "pprint"      % "0.9.6"
-def scalajsDom = libraryDependencies += "org.scala-js"  %% "scalajs-dom" % "2.8.1"
-def slips      = libraryDependencies += "de.rmgk.slips" %% "slips"       % "0.20.0"
+def decline    = "com.monovore"  %% "decline"     % "2.6.2"
+def pprint     = "com.lihaoyi"   %% "pprint"      % "0.9.6"
+def scalajsDom = "org.scala-js"  %% "scalajs-dom" % "2.8.1"
+def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
+def scalafx    = "org.scalafx"   %% "scalafx"     % "26.0.0-R38"
 
-def jsoniterScala =
-  libraryDependencies ++= Seq(
-    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.40.1",
-    "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.40.1" % Provided
-  )
-
-def scalafx: ModuleID = "org.scalafx" %% "scalafx" % "26.0.0-R38"
+def jsoniterScala = Seq(
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.40.1",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.40.1" % Provided
+)
 
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
   channels.js(s3v),
@@ -71,10 +67,12 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .dependsOn(rdts % "compile->compile;test->test")
   .settings(
     Settings.strictScalacFlags,
-    slips,
-    libraryDependencies += "pt.kcry" %% "blake3" % "3.1.2",
-    jsoniterScala,
     publishSonatype,
+    libraryDependencies ++= jsoniterScala,
+    libraryDependencies ++= Seq(
+      "pt.kcry" %% "blake3" % "3.1.2",
+      slips,
+    ),
   )
   .jvmPlatform(
     scalaVersions = Seq(s3v),
@@ -86,8 +84,10 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .jsPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
-      scalajsDom,
-      libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Compile,
+      libraryDependencies ++= Seq(
+        scalajsDom,
+        "com.lihaoyi" %% "scalatags" % "0.13.1",
+      ),
     )
   )
   .nativePlatform(scalaVersions = Seq(s3v))
@@ -102,29 +102,28 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Settings.javaOutputVersion(21),
     fork := true,
     Settings.jolSettings,
-    libraryDependencies += "com.github.alexandrnikitin" % "bloom-filter_2.13" % "0.13.1",
-    libraryDependencies ++= Seq(
-      "io.bullet" %% "borer-core"       % "1.18.0",
-      "io.bullet" %% "borer-derivation" % "1.18.0"
-    ),
-    libraryDependencies += "org.conscrypt" % "conscrypt-openjdk-uber" % "2.7.0",
-    decline, {
+    libraryDependencies ++= jsoniterScala,
+    libraryDependencies ++= {
       val jettyVersion = "12.1.12"
-      libraryDependencies ++= Seq(
-        "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
-        "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
-        "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
-        "org.slf4j"                   % "slf4j-nop"                    % "2.0.19" % Test
+      Seq(
+        "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
+        "com.google.crypto.tink"         % "tink"                         % "1.23.0",
+        "com.softwaremill.sttp.client4" %% "core"                         % "4.0.26",
+        "io.bullet"                     %% "borer-core"                   % "1.18.0",
+        "io.bullet"                     %% "borer-derivation"             % "1.18.0",
+        "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.7.0",
+        "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
+        "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
+        "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
+        "org.scala-lang.modules"        %% "scala-swing"                  % "3.0.0",
+        "org.scala-lang.modules"        %% "scala-xml"                    % "2.4.0",
+        "org.slf4j"                      % "slf4j-nop"                    % "2.0.19" % Test,
+        decline,
+        pprint,
+        scalafx,
+        slips,
       )
     },
-    jsoniterScala,
-    pprint,
-    libraryDependencies += "org.scala-lang.modules" %% "scala-swing" % "3.0.0",
-    libraryDependencies += "org.scala-lang.modules" %% "scala-xml"   % "2.4.0",
-    slips,
-    libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.26",
-    libraryDependencies += "com.google.crypto.tink"         % "tink" % "1.23.0",
-    libraryDependencies += scalafx,
     javaOptions ++= Seq(
       "-XX:+IgnoreUnrecognizedVMOptions",
       "--sun-misc-unsafe-memory-access=allow",
@@ -136,14 +135,13 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v))
   .settings(
-    jsoniterScala,
-    pprint,
-    scalajsDom,
     libraryDependencies ++= Seq(
-      "com.github.japgolly.scalajs-react" %% "core"  % "3.0.0",
-      "com.github.japgolly.scalajs-react" %% "extra" % "3.0.0",
-    ),
-    libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Compile,
+      "com.github.japgolly.scalajs-react" %% "core"      % "3.0.0",
+      "com.github.japgolly.scalajs-react" %% "extra"     % "3.0.0",
+      "com.lihaoyi"                       %% "scalatags" % "0.13.1" % Compile,
+      pprint,
+      scalajsDom,
+    ) ++ jsoniterScala,
     Settings.strictScalacFlags,
     Compile / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value
@@ -166,14 +164,14 @@ lazy val lore = projectMatrix.in(file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
     Settings.javaOutputVersion(17),
-    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided").platform(
-      Platform.jvm
+    libraryDependencies ++= jsoniterScala,
+    libraryDependencies ++= Seq(
+      "com.lihaoyi"    %% "fansi"           % "0.5.1",
+      "dev.optics"     %% "monocle-core"    % "3.3.0",
+      "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided" `platform` Platform.jvm,
+      "org.typelevel"  %% "cats-parse"      % "1.1.0",
+      decline,
     ),
-    jsoniterScala,
-    decline,
-    libraryDependencies += "org.typelevel" %% "cats-parse"   % "1.1.0",
-    libraryDependencies += "com.lihaoyi"   %% "fansi"        % "0.5.1",
-    libraryDependencies += "dev.optics"    %% "monocle-core" % "3.3.0",
     Compile / mainClass := Some("lore.Compiler")
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
@@ -183,8 +181,10 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .dependsOn(lore.jvm(s3v))
   .settings(
     Settings.javaOutputVersion(17),
-    libraryDependencies += "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
-    libraryDependencies += "com.lihaoyi"    %% "upickle"         % "4.4.3",
+    libraryDependencies ++= Seq(
+      "com.lihaoyi"    %% "upickle"         % "4.4.3",
+      "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
+    ),
   )
 
 lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plugin/examples"))
@@ -209,11 +209,13 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   )
   .settings(
     Settings.strictScalacFlags,
-    jsoniterScala,
-    slips,
-    libraryDependencies += "io.etcd" % "jetcd-core" % "0.8.7",
-    pprint,
-    libraryDependencies += "site.ycsb" % "core" % "0.17.0",
+    libraryDependencies ++= jsoniterScala,
+    libraryDependencies ++= Seq(
+      "io.etcd"   % "jetcd-core" % "0.8.7",
+      "site.ycsb" % "core"       % "0.17.0",
+      pprint,
+      slips,
+    ),
   )
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
@@ -242,8 +244,10 @@ lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
   .jsPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
-      scalajsDom,
-      libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1" % Test,
+      libraryDependencies ++= Seq(
+        "com.lihaoyi" %% "scalatags" % "0.13.1" % Test,
+        scalajsDom,
+      ),
     )
   )
   .nativePlatform(
@@ -255,8 +259,7 @@ lazy val reform = project
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(reactives.js(s3v), rdts.js(s3v))
   .settings(
-    name := "Reform",
-    jsoniterScala,
+    name                                := "Reform",
     Compile / scalaJSModuleInitializers := Seq(
       ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
     ),
@@ -266,10 +269,11 @@ lazy val reform = project
     Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
+    libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= Seq(
-      "io.github.outwatch"   %% "outwatch"                  % "1.1.0",
       "com.github.cornerman" %% "colibri-router"            % "0.8.6",
-      ("org.scala-js"        %% "scalajs-java-securerandom" % "1.0.0").cross(CrossVersion.for3Use2_13),
+      "io.github.outwatch"   %% "outwatch"                  % "1.1.0",
+      "org.scala-js"         %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
     ),
   )
 
@@ -278,7 +282,7 @@ lazy val webview = project.in(file("Modules/Webview"))
   .dependsOn(channels.native(s3v))
   .settings(
     Settings.strictScalacFlags,
-    jsoniterScala,
+    libraryDependencies ++= jsoniterScala,
     nativeConfig ~= { c =>
       val d = c.withLTO(LTO.thin)
         .withMode(Mode.releaseFast)
