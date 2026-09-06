@@ -1,9 +1,9 @@
 package ex2025recipebook
 
-import rdts.syntax.deltalens.*
 import ex2025recipebook.Recipe.Delta
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
+import rdts.syntax.deltalens.*
 
 case class Recipe(
     title: LastWriterWins[String],

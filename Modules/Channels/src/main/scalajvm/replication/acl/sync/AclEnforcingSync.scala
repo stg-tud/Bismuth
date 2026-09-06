@@ -10,8 +10,8 @@ import rdts.time.Dots
 import replication.HashDag.Encoder
 import replication.JsoniterCodecsJvm
 import replication.JsoniterCodecsJvm.given
-import AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
-import AclEnforcingSync.{SyncMsg, encoder}
+import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
+import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import replication.acl.{Acl, BftDelta}
 import replication.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 

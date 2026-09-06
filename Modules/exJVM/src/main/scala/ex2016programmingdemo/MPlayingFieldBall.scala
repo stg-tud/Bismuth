@@ -1,6 +1,6 @@
 package ex2016programmingdemo
 
-import LFullyModularBall.BouncingBall
+import ex2016programmingdemo.LFullyModularBall.BouncingBall
 import ex2016programmingdemo.ui.{Rectangle, Shape, ShapesPanel}
 import reactives.default.*
 

@@ -4,8 +4,8 @@ import channels.connection.ByteBufferMessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.{Hash, PublicIdentity}
 import rdts.time.Dots
-import AclEnforcingSync.SyncMsg
-import AclEnforcingSync.SyncMsg.*
+import replication.acl.sync.AclEnforcingSync.SyncMsg
+import replication.acl.sync.AclEnforcingSync.SyncMsg.*
 import replication.acl.{Acl, BftDelta}
 import replication.sync.ConnectionManager
 

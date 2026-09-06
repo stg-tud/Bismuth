@@ -1,6 +1,6 @@
 package benchmarks.b2025bft
 
-import ex2025ribltbft.datatypes.ORSet
+import ex2025ribltbft.datatypes.{ORSet, Op}
 import ex2025ribltbft.network.Network
 import ex2025ribltbft.riblt.RIBLTSyncWithThreads
 import ex2025ribltbft.riblt.SessionType.{receiver, sender}
@@ -8,7 +8,6 @@ import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
-import ex2025ribltbft.datatypes.Op
 
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)

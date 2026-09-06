@@ -1,8 +1,8 @@
 package ex2014reswingexamples.reshapes.ui.panels
 
-import ex2014reswingexamples.reshapes.{ReShapes, ReactiveBoxPanel, ReactiveButton}
 import ex2014reswingexamples.reshapes.drawing.Command
 import ex2014reswingexamples.reshapes.util.ReactiveUtil.UnionEvent
+import ex2014reswingexamples.reshapes.{ReShapes, ReactiveBoxPanel, ReactiveButton}
 import reactives.default.*
 
 import scala.swing.{BoxPanel, Component, Orientation, ScrollPane}

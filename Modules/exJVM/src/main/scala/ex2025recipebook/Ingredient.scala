@@ -1,9 +1,9 @@
 package ex2025recipebook
 
-import rdts.syntax.deltalens.*
 import ex2025recipebook.Ingredient.{Delta, stringBottom}
 import rdts.base.{Bottom, Historized, Lattice, LocalUid}
 import rdts.datatypes.LastWriterWins
+import rdts.syntax.deltalens.*
 
 /** complicated on purpose for more nested ardts
   *

@@ -1,11 +1,10 @@
 package benchmarks.b2026timing
 
 import org.openjdk.jmh.annotations.*
+import rdts.time.Time
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-
-import rdts.time.Time
 
 /** Compares the cost of the wall-clock helpers in `rdts.time.Time` against
   * `System.nanoTime` and the `java.time.Instant` based alternatives.

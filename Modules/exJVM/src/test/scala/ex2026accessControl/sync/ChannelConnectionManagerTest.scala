@@ -1,9 +1,9 @@
 package ex2026accessControl.sync
 
+import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import crypto.PublicIdentity
 import crypto.channels.IdentityFactory
-import ChannelConnectionManagerTest.*
-import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
+import ex2026accessControl.sync.ChannelConnectionManagerTest.*
 import munit.FunSuite
 import replication.sync.ChannelConnectionManager
 

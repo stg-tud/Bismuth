@@ -6,8 +6,8 @@ import crypto.channels.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 import replication.acl.sync.AclEnforcingSync.encoder
+import replication.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 import replication.acl.{Acl, BftDelta}
 import replication.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 

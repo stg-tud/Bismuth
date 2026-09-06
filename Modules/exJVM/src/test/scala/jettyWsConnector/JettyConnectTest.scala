@@ -1,7 +1,7 @@
 package jettyWsConnector
 
-import channels.connection.{Abort, ByteBufferMessageBuffer, ConnectionDescriptor}
 import channels.EchoCommunicationTest
+import channels.connection.{Abort, ByteBufferMessageBuffer, ConnectionDescriptor}
 import de.rmgk.delay.*
 import org.eclipse.jetty.http.pathmap.PathSpec
 

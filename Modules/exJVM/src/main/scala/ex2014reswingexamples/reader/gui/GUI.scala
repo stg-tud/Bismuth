@@ -103,19 +103,19 @@ class GUI(
 
       val renderArea = new RssItemRenderPane(itemList.selectedItem)
 
-      val statusBar = new ReactiveLabel("") {
+      val statusBar: ReactiveLabel = new ReactiveLabel("") {
         preferredSize = new Dimension(framewidth / 3, 15)
         horizontalAlignment = Alignment.Left
       }
       statusBar.text = notifications
 
-      val itemCountStatus = new ReactiveLabel("") {
+      val itemCountStatus: ReactiveLabel = new ReactiveLabel("") {
         preferredSize = new Dimension(framewidth / 3, 15)
         horizontalAlignment = Alignment.Left
       }
       itemCountStatus.text = itemStatus
 
-      val fetcherStatus = new ReactiveLabel("") {
+      val fetcherStatus: ReactiveLabel = new ReactiveLabel("") {
         preferredSize = new Dimension(framewidth / 3, 15)
         horizontalAlignment = Alignment.Left
       }

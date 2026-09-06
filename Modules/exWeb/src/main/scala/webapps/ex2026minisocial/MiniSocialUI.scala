@@ -5,8 +5,9 @@ import org.scalajs.dom.html.{Button, Div, Input}
 import rdts.base.{Lattice, LocalUid}
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
-import reactives.operator.FoldState
 import reactives.extra.Tags.reattach
+import reactives.operator.Fold.Branch
+import reactives.operator.FoldState
 import scalatags.JsDom.all.*
 
 object MiniSocialUI {
@@ -20,7 +21,8 @@ object MiniSocialUI {
         event.branch { v => Fold.current.mod(app => f(using FoldState(app))(v)) }
 
   /** This resets the Delta buffer in the fold below, to not contain any deltas */
-  def resetBuffer[T] = Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
+  def resetBuffer[T]: Branch[DeltaBuffer[T]] =
+    Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
 
   def makeInputEvent(placeholderText: String): (event: Event[String], data: Input) = {
     val handler = Event.fromCallback[Input, UIEvent](

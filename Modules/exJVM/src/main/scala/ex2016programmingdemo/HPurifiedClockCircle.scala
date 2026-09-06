@@ -1,6 +1,6 @@
 package ex2016programmingdemo
 
-import GModularClockCircle.Clock
+import ex2016programmingdemo.GModularClockCircle.Clock
 import ex2016programmingdemo.ui.{Circle, Shape, ShapesPanel}
 import reactives.default.*
 

@@ -1,13 +1,13 @@
 package jettyWsConnector
 
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, Receive as ChannelHandler}
-import de.rmgk.delay.{Async, toAsync, Callback as DelayCallback}
+import de.rmgk.delay.{Async, Callback as DelayCallback, toAsync}
 import org.eclipse.jetty.http.pathmap.PathSpec
 import org.eclipse.jetty.server.handler.{ContextHandler, ContextHandlerCollection}
 import org.eclipse.jetty.server.{Server, ServerConnector}
 import org.eclipse.jetty.util.Callback as JettyUtilCallback
 import org.eclipse.jetty.websocket.api.Session.Listener
-import org.eclipse.jetty.websocket.api.{Session, Callback as JettyCallback}
+import org.eclipse.jetty.websocket.api.{Callback as JettyCallback, Session}
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.eclipse.jetty.websocket.server.*
 

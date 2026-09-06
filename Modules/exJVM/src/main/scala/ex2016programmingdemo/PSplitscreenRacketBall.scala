@@ -1,8 +1,8 @@
 package ex2016programmingdemo
 
-import LFullyModularBall.BouncingBall
-import MPlayingFieldBall.PlayingField
-import ORacketMultiBall.Racket
+import ex2016programmingdemo.LFullyModularBall.BouncingBall
+import ex2016programmingdemo.MPlayingFieldBall.PlayingField
+import ex2016programmingdemo.ORacketMultiBall.Racket
 import ex2016programmingdemo.ui.{Shape, ShapesPanel}
 import reactives.default.*
 

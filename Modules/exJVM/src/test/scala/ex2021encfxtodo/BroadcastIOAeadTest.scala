@@ -1,13 +1,13 @@
 package ex2021encfxtodo
 
 import channels.broadcast.PlumtreeMessage
-import channels.{BroadcastIO, experiments}
 import channels.connection.SynchronousLocalConnection
 import channels.experiments.Aead
+import channels.{BroadcastIO, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
-import com.google.crypto.tink.{KeyTemplates, KeysetHandle, RegistryConfiguration, Aead as TinkAead}
+import com.google.crypto.tink.{Aead as TinkAead, KeyTemplates, KeysetHandle, RegistryConfiguration}
 import munit.FunSuite
 import rdts.base.LocalUid
 

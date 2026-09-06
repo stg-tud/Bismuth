@@ -1,6 +1,7 @@
 package ex2014reswingexamples.reshapes.figures
 
 import ex2014reswingexamples.reshapes.drawing.DrawingSpaceState
+
 import java.awt.{Color, Graphics2D, Point}
 
 @scala.annotation.nowarn("msg=shadows field")

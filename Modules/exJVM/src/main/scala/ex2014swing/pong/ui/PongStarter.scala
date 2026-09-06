@@ -1,8 +1,7 @@
 package ex2014swing.pong.ui
 
 import ex2014swing.Mouse
-import ex2014swing.pong.{Ball, Pong}
-import ex2014swing.pong.*
+import ex2014swing.pong.{Ball, Pong, *}
 import reactives.default.*
 
 import java.awt.{Color, Dimension, Font, Graphics2D}

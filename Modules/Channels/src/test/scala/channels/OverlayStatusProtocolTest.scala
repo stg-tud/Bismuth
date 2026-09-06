@@ -2,10 +2,10 @@ package channels
 
 import channels.BroadcastIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
-import channels.overlay.HyParViewStateMachine.HyParViewConfig
-import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import channels.experiments.OverlayStatusProtocol
 import channels.experiments.OverlayStatusProtocol.{PeerState, Status}
+import channels.overlay.HyParViewStateMachine.HyParViewConfig
+import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import munit.FunSuite
 import rdts.base.Lattice.syntax.merge
 import rdts.base.LocalUid
@@ -15,10 +15,10 @@ import scala.util.Random
 class OverlayStatusProtocolTest extends FunSuite {
 
   final case class Node(id: String) {
-    val uid: LocalUid           = LocalUid.gen()
-    val selfInfo                = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
-    var status: Status          = OverlayStatusProtocol.empty
-    val io: BroadcastIO[Status] = BroadcastIO[Status](
+    val uid: LocalUid             = LocalUid.gen()
+    val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+    var status: Status            = OverlayStatusProtocol.empty
+    val io: BroadcastIO[Status]   = BroadcastIO[Status](
       uid,
       delta => status = status.merge(delta),
       overlay = Some(FullMeshOverlay(selfInfo)),
@@ -97,10 +97,10 @@ class OverlayStatusProtocolTest extends FunSuite {
     )
 
     final case class HyparNode(id: String, random: Random) {
-      val uid: LocalUid           = LocalUid.gen()
-      val selfInfo                = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
-      var status: Status          = OverlayStatusProtocol.empty
-      val io: BroadcastIO[Status] = BroadcastIO[Status](
+      val uid: LocalUid             = LocalUid.gen()
+      val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      var status: Status            = OverlayStatusProtocol.empty
+      val io: BroadcastIO[Status]   = BroadcastIO[Status](
         uid,
         delta => status = status.merge(delta),
         overlay = Some(HyParViewStateMachine.empty(selfInfo, config, random.between, _ => true)),

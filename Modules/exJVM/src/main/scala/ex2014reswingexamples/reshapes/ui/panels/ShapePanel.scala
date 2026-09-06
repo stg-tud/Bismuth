@@ -1,9 +1,9 @@
 package ex2014reswingexamples.reshapes.ui.panels
 
 import ex2014reswingexamples.reshapes.drawing.{DeleteShape, DrawingSpaceState}
-import ex2014reswingexamples.reshapes.{ReShapes, ReactiveBoxPanel, ReactiveButton}
 import ex2014reswingexamples.reshapes.figures.Shape
 import ex2014reswingexamples.reshapes.util.ReactiveUtil.UnionEvent
+import ex2014reswingexamples.reshapes.{ReShapes, ReactiveBoxPanel, ReactiveButton}
 import reactives.default.*
 
 import java.awt.Color

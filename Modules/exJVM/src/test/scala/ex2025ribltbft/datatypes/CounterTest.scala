@@ -1,6 +1,7 @@
 package ex2025ribltbft.datatypes
 
 import ex2025ribltbft.datatypes.Counter
+
 import scala.concurrent.duration.*
 
 class CounterTest extends munit.FunSuite:

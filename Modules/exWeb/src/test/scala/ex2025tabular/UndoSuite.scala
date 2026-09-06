@@ -1,8 +1,8 @@
 package ex2025tabular
 
 import rdts.base.{LocalUid, Uid}
-import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 import webapps.ex2025tabular.lib.*
+import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 
 import scala.annotation.unused
 

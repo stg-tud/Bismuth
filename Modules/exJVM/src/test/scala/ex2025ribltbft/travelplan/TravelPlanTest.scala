@@ -2,9 +2,9 @@ package ex2025ribltbft.travelplan
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import ex2025ribltbft.riblt.RIBLT
+import ex2025ribltbft.riblt.RIBLT.{given_Hashable_Array, given_Xorable_Array}
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
-import RIBLT.{given_Hashable_Array, given_Xorable_Array}
 
 import scala.annotation.unused
 import scala.util.Random

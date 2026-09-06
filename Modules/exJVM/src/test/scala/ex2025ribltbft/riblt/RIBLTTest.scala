@@ -2,7 +2,7 @@ package ex2025ribltbft.riblt
 
 import ex2025ribltbft.datatypes.ORSet
 import ex2025ribltbft.riblt.RIBLT
-import RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
+import ex2025ribltbft.riblt.RIBLT.{given_Hashable_Int, given_Hashable_String, given_Xorable_Int, given_Xorable_String}
 
 import java.security.MessageDigest
 import scala.annotation.unused

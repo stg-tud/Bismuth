@@ -1,11 +1,11 @@
 package ex2025sizes
 
+import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Lattice, LocalUid}
 import rdts.datatypes.ObserveRemoveMap
-import channels.JsoniterCodecs.given
 
 import scala.annotation.unused
 
