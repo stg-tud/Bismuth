@@ -98,7 +98,6 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     pprint,
     scalaSwing,
     scalaXml,
-    slf4jnop, // for jetty
     slips,
     sttpCore,
     tink,
@@ -347,24 +346,20 @@ val publishSonatype = Def.settings(
 
 //////////// DEPENDENCIES
 
-def akka        = libraryDependencies += "com.typesafe.akka"             %% "akka-actor-typed"         % "2.8.8"
-def akkaTestKit = libraryDependencies += "com.typesafe.akka"             %% "akka-actor-testkit-typed" % "2.8.8"  % Test
-def ayza        = libraryDependencies += "io.github.hakky54"              % "ayza-for-pem"             % "10.0.6"
+def ayza        = libraryDependencies += "io.github.hakky54"              % "ayza-for-pem"             % "10.0.7"
 def blake3      = libraryDependencies += "pt.kcry"                       %% "blake3"                   % "3.1.2"
 def bloomFilter = libraryDependencies += "com.github.alexandrnikitin"     % "bloom-filter_2.13"        % "0.13.1"
 def catsParse   = libraryDependencies += "org.typelevel"                 %% "cats-parse"               % "1.1.0"
-def conscrypt   = libraryDependencies += "org.conscrypt"                  % "conscrypt-openjdk-uber"   % "2.6.3"
+def conscrypt   = libraryDependencies += "org.conscrypt"                  % "conscrypt-openjdk-uber"   % "2.7.0"
 def decline     = libraryDependencies += "com.monovore"                  %% "decline"                  % "2.6.2"
 def fansi       = libraryDependencies += "com.lihaoyi"                   %% "fansi"                    % "0.5.1"
-def jetcd       = libraryDependencies += "io.etcd"                        % "jetcd-core"               % "0.8.6"
+def jetcd       = libraryDependencies += "io.etcd"                        % "jetcd-core"               % "0.8.7"
 def monocleCore = libraryDependencies += "dev.optics"                    %% "monocle-core"             % "3.3.0"
-def munit       = libraryDependencies += "org.scalameta"                 %% "munit"                    % "1.3.5"  % Test
-def munitCheck  = libraryDependencies += "org.scalameta"                 %% "munit-scalacheck"         % "1.3.0"  % Test
+def munit       = libraryDependencies += "org.scalameta"                 %% "munit"                    % "1.3.6"  % Test
+def munitCheck  = libraryDependencies += "org.scalameta"                 %% "munit-scalacheck"         % "1.3.1"  % Test
 def scalaSwing  = libraryDependencies += "org.scala-lang.modules"        %% "scala-swing"              % "3.0.0"
 def scalaXml    = libraryDependencies += "org.scala-lang.modules"        %% "scala-xml"                % "2.4.0"
 def scalajsDom  = libraryDependencies += "org.scala-js"                  %% "scalajs-dom"              % "2.8.1"
-def slf4jSimple = libraryDependencies += "org.slf4j"                      % "slf4j-simple"             % "2.0.18" % Test
-def slf4jnop    = libraryDependencies += "org.slf4j"                      % "slf4j-nop"                % "2.0.18" % Test
 def slips       = libraryDependencies += "de.rmgk.slips"                 %% "slips"                    % "0.20.0"
 def sttpCore    = libraryDependencies += "com.softwaremill.sttp.client4" %% "core"                     % "4.0.26"
 def tink        = libraryDependencies += "com.google.crypto.tink"         % "tink"                     % "1.23.0"
@@ -376,8 +371,8 @@ def pprint         = libraryDependencies += pprintModuleID
 def pprintTest     = libraryDependencies += pprintModuleID % Test
 
 def borer = libraryDependencies ++= Seq(
-  "io.bullet" %% "borer-core"       % "1.17.0",
-  "io.bullet" %% "borer-derivation" % "1.17.0"
+  "io.bullet" %% "borer-core"       % "1.18.0",
+  "io.bullet" %% "borer-derivation" % "1.18.0"
 )
 
 def jetty = {
@@ -386,6 +381,7 @@ def jetty = {
     "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
     "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
     "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
+    "org.slf4j"                      % "slf4j-nop"                % "2.0.19" % Test
   )
 }
 
