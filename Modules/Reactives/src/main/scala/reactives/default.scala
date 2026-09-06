@@ -29,7 +29,7 @@ object default {
     * @example transaction(a, b){ a.set(5); b.set(1); at.now(a) }
     */
   def transaction[R](initialWrites: ReSource.of[State]*)(admissionPhase: AdmissionTicket[State] ?=> R): R =
-    SelectedScheduler.candidate.scheduler.forceNewTransaction(initialWrites*)(admissionPhase(using _))
+    SelectedScheduler.candidate.scheduler.forceNewTransaction(initialWrites*)(admissionPhase)
 
   /** Executes a transaction with WrapUpPhase.
     * @see transaction

@@ -18,7 +18,7 @@ class RESubscriber[T](evt: Evt[T]) extends Subscriber[T] {
       Objects.requireNonNull(thrw)
       thrw match
           case ex: Exception =>
-            PlanTransactionScope.search.planTransaction(evt) { implicit turn => evt.admitPulse(Pulse.Exceptional(ex)) }
+            PlanTransactionScope.search.planTransaction(evt) { evt.admitPulse(Pulse.Exceptional(ex)) }
           case other => throw other
     }
   override def onSubscribe(s: Subscription): Unit =
@@ -106,7 +106,7 @@ object REPublisher {
       subscriber: Subscriber[? >: T],
       fac: Scheduler[State]
   ): SubscriptionReactive[T] =
-    fac.forceNewTransaction() { ticket =>
+    fac.forceNewTransaction() { ticket ?=>
       val name: ReInfo = ReInfo.create.derive(s"forSubscriber($subscriber)")
       ticket.tx.initializer.create[Pulse[T], SubscriptionReactive[T]](
         Set(dependency),

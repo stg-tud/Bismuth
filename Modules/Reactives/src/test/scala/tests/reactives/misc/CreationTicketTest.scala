@@ -13,7 +13,7 @@ class CreationTicketTest extends FunSuite {
   /* this test uses some shady planned()(identity) to get the turn object out of the transaction
    * you should not do this. */
   def getTurn(using engine: Scheduler[State]): Transaction[State] =
-    engine.forceNewTransaction()(_.tx)
+    engine.forceNewTransaction()(t ?=> t.tx)
 
   test("none Dynamic No Implicit") {
     assert(summon[CreationTicket[State]].scope.isInstanceOf[DynamicCreationScope[State]])

@@ -415,12 +415,12 @@ class IncSeq[T] private[reactives] (initialState: IncSeq.SeqState[T], name: ReIn
 
   def add(value: T)(using fac: Scheduler[State]): Unit =
     fac.forceNewTransaction(this) {
-      addInTx(Addition(value))(using _)
+      addInTx(Addition(value))
     }
 
   def remove(value: T)(using fac: Scheduler[State]): Unit =
     fac.forceNewTransaction(this) {
-      addInTx(Removal(value))(using _)
+      addInTx(Removal(value))
     }
 
   def addInTx(delta: Delta[T])(using ticket: AdmissionTicket[State]): Unit = {

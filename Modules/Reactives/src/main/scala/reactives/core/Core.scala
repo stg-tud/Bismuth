@@ -175,12 +175,18 @@ trait Transaction[State[_]] {
 @implicitNotFound(msg = "Could not find a given scheduler. Did you forget an import?")
 trait Scheduler[S[_]] {
 
-  final def forceNewTransaction[R](initialWrites: ReSource.of[S]*)(admissionPhase: AdmissionTicket[S] => R): R =
-    forceNewTransaction(initialWrites.toSet, admissionPhase)
+  final def forceNewTransaction[R](initialWrites: ReSource.of[S]*)(admissionPhase: AdmissionTicket[S] ?=> R): R =
+    forceNewTransaction(initialWrites.toSet, admissionPhase(using _))
   def forceNewTransaction[R](initialWrites: Set[ReSource.of[S]], admissionPhase: AdmissionTicket[S] => R): R
   private[reactives] def singleReadValueOnce[A](reactive: ReadAs.of[S, A]): A
 
   /** Name of the scheduler, used for helpful error messages. */
   def schedulerName: String
   override def toString: String = s"Scheduler($schedulerName)"
+}
+
+/** Some apis expect an implicit scheduler for historic reasons. This guarantees they work */
+object Scheduler {
+  given implicitScheduler: Scheduler[reactives.SelectedScheduler.State] =
+    reactives.SelectedScheduler.candidate.scheduler
 }

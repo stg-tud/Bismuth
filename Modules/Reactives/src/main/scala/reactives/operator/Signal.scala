@@ -180,7 +180,7 @@ object Signal {
       case _ =>
         val v: Var[A] = Var.empty[A](using creationTicket)
         fut.onComplete { res =>
-          planScope.planTransaction(v)(t => v.admitPulse(Pulse.tryCatch(Pulse.Value(res.get)))(using t))
+          planScope.planTransaction(v)(v.admitPulse(Pulse.tryCatch(Pulse.Value(res.get))))
         }
         v
     }

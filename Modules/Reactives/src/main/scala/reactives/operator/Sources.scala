@@ -30,7 +30,7 @@ class Evt[T] private[reactives] (initialState: State[Pulse[T]], name: ReInfo)
   def apply(value: T)(using PlanTransactionScope[State]): Unit                      = fire(value)
   def fire()(using PlanTransactionScope[State])(using Unit =:= T): Unit             = fire(())
   def fire(value: T)(using planTransactionScope: PlanTransactionScope[State]): Unit =
-    planTransactionScope.planTransaction(this)(admit(value)(using _))
+    planTransactionScope.planTransaction(this)(admit(value))
   override def disconnect(): Unit                                             = ()
   def admitPulse(pulse: Pulse[T])(using ticket: AdmissionTicket[State]): Unit =
     ticket.recordChange(new InitialChange[State] {
@@ -59,15 +59,15 @@ class Var[A] private[reactives] (initialState: State[Pulse[A]], name: ReInfo)
   override def disconnect(): Unit = ()
 
   def set(value: A)(using planTransactionScope: PlanTransactionScope[State]): Unit =
-    planTransactionScope.planTransaction(this) { admit(value)(using _) }
+    planTransactionScope.planTransaction(this) { admit(value) }
 
   def transform(f: A => A)(using planTransactionScope: PlanTransactionScope[State]): Unit =
-    planTransactionScope.planTransaction(this) { t =>
-      admit(f(t.tx.now(this)))(using t)
+    planTransactionScope.planTransaction(this) { t ?=>
+      admit(f(t.tx.now(this)))
     }
 
   def setEmpty()(using fac: Scheduler[State]): Unit =
-    fac.forceNewTransaction(this)(t => admitPulse(Pulse.empty(info))(using t))
+    fac.forceNewTransaction(this)(admitPulse(Pulse.empty(info)))
 
   def admitPulse(pulse: Pulse[A])(using ticket: AdmissionTicket[State]): Unit =
     ticket.recordChange(new InitialChange[State] {

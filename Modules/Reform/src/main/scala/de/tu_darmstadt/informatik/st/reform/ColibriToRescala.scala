@@ -23,14 +23,14 @@ import reactives.structure.Pulse
 
 given (using scheduler: Scheduler[BundleState]): Sink[Evt] with {
   def unsafeOnNext[A](sink: Evt[A])(value: A): Unit          = sink.fire(value)
-  def unsafeOnError[A](sink: Evt[A])(error: Throwable): Unit = scheduler.forceNewTransaction(sink) { implicit turn =>
+  def unsafeOnError[A](sink: Evt[A])(error: Throwable): Unit = scheduler.forceNewTransaction(sink) {
     sink.admitPulse(Pulse.Exceptional(Exception(error)))
   }
 }
 
 given (using scheduler: Scheduler[BundleState]): Sink[Var] with {
   def unsafeOnNext[A](sink: Var[A])(value: A): Unit          = sink.set(value)
-  def unsafeOnError[A](sink: Var[A])(error: Throwable): Unit = scheduler.forceNewTransaction(sink) { implicit turn =>
+  def unsafeOnError[A](sink: Var[A])(error: Throwable): Unit = scheduler.forceNewTransaction(sink) {
     sink.admitPulse(Pulse.Exceptional(Exception(error)))
   }
 }

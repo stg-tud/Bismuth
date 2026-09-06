@@ -69,7 +69,7 @@ class ReactorWithoutAPITest extends FunSuite {
 
     def resource: ReadAs.of[State, T] = this
 
-    def now: T = reactives.SelectedScheduler.candidate.scheduler.forceNewTransaction(this)(at => at.now(this))
+    def now: T = reactives.SelectedScheduler.candidate.scheduler.forceNewTransaction(this)(at ?=> at.now(this))
   }
 
   /** A class that manages a single stage of the reactor body.
