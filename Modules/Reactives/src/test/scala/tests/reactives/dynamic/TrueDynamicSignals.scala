@@ -137,7 +137,7 @@ class TrueDynamicSignals extends FunSuite {
     val macroRes = Signal {
       newSignal().value
     }
-    val normalRes = Signal.dynamic() { implicit t: DynamicTicket[State] =>
+    val normalRes = Signal.dynamic() { (t: DynamicTicket[State]) =>
       t.depend(newSignal())
     }
     assertEquals(macroRes.readValueOnce, 0, "before, macro")
