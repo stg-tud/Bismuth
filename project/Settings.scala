@@ -10,7 +10,7 @@ object Settings {
   // and https://www.scala-lang.org/api/current/scala/language$.html
   // and run: cs launch scala3-compiler -- -help
 
-  val scala3defaults = Def.settings(
+  val defaultScalacFlags = Def.settings(
     fullFeatureDeprecationUncheckedWarnings,
     semanticdbEnabled := true,
     warningsAreErrors(),
@@ -24,8 +24,8 @@ object Settings {
     newSyntax(),
   )
 
-  val scala3defaultsExtra = Def.settings(
-    scala3defaults,
+  val strictScalacFlags = Def.settings(
+    defaultScalacFlags,
     explicitNulls(),
     safeInit(Compile / compile),
     unstableInlineAccessors(),

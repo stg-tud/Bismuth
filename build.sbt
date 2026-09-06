@@ -5,12 +5,12 @@ import scala.scalanative.build.{LTO, Mode, NativeConfig}
 // for some reason, project matrix REALLY likes to require this everywhere
 lazy val s3v = "3.9.0"
 scalaVersion := s3v
-Settings.scala3defaults
+Settings.defaultScalacFlags
 
 // 2026-06-22 scalacheck depends on scala native 0.5.8 while we use 0.5.12; this is likely fine as long as the tests dont fail
 libraryDependencySchemes += "org.scala-native" % "test-interface_native0.5_3" % VersionScheme.EarlySemVer
 
-lazy val bismuth = project.in(file(".")).settings(Settings.scala3defaultsExtra).aggregate(
+lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
   channels.js(s3v),
   channels.jvm(s3v),
   exJVM,
@@ -30,7 +30,7 @@ lazy val bismuth = project.in(file(".")).settings(Settings.scala3defaultsExtra).
 
 lazy val publishedProjects =
   project.in(file("target/PhonyBuilds/publishedProjects")).settings(
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     publish / skip := true
   )
     .aggregate(
@@ -53,7 +53,7 @@ lazy val publishedProjects =
 lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .dependsOn(rdts % "compile->compile;test->test")
   .settings(
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     slips,
     blake3,
     munit,
@@ -120,7 +120,7 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
     scalajsDom,
     scalajsReact,
     scalatags(),
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     Compile / scalaJSLinkerConfig :=
       scalaJSLinkerConfig.value
         // WASM does NOT work when running on webview (and is documented to not work on chrome)
@@ -187,7 +187,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
     rdts.jvm(s3v) % "compile->compile;test->test"
   )
   .settings(
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     jsoniterScala,
     munitCheck,
     munit,
@@ -199,7 +199,7 @@ lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
   .settings(
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     publishSonatype,
     munit,
     munitCheck,
@@ -211,7 +211,7 @@ lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
 
 lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
   .settings(
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     // scaladoc
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
@@ -264,7 +264,7 @@ lazy val webview = project.in(file("Modules/Webview"))
   .enablePlugins(ScalaNativePlugin)
   .dependsOn(channels.native(s3v))
   .settings(
-    Settings.scala3defaultsExtra,
+    Settings.strictScalacFlags,
     jsoniterScala,
     nativeConfig ~= { c =>
       val d = c.withLTO(LTO.thin)
