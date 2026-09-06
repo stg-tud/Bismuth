@@ -72,7 +72,7 @@ selectScheduler scheduler="levelled":
 update-webview-in-podman: (open-in-podman "fish ./scripts/update-webview.fish")
 
 open-in-podman command="fish":
-	podman build --file Containerfile --tag bismuth-dev-image .
+	podman build --file Scripts/Devcontainerfile --tag bismuth-dev-image .
 	mkdir -p target/bismut-dev-container-home
 	# largely stolen from distrobox
 	podman run --privileged --network host --ipc host --pid host --ulimit host \

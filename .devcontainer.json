@@ -1,7 +1,7 @@
 {
 	"name": "Bismuth Development Environment",
 	"build": {
-		"dockerfile": "./Containerfile"
+		"dockerfile": "./Scripts/Devcontainerfile"
 	},
 	"customizations": {
 		"jetbrains": {
