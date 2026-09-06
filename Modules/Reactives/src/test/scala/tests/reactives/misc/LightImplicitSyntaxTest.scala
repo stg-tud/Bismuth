@@ -10,8 +10,8 @@ class LightImplicitSyntaxTest extends munit.FunSuite {
 
   test("experiment With Implicit Syntax") {
 
-    implicit def getSignalValueDynamic[T](s: Signal[T])(using ticket: DynamicTicket[State]): T =
-      ticket.depend(s)
+    given [T] => (ticket: DynamicTicket[State]) => Conversion[Signal[T], T] =
+      s => ticket.depend(s)
 
     def Signal[T](f: DynamicTicket[State] ?=> T)(using maybe: CreationTicket[State]): Signal[T] =
       reactives.default.Signal.dynamic()(f(using _))
