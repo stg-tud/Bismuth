@@ -30,9 +30,9 @@ class SizeTest extends munit.FunSuite {
 
     given JsonValueCodec[ObserveRemoveMap[String, Int]] = JsonCodecMaker.make
 
-    @unused val emptyjson       = core.writeToArray(empty)
-    val oneThousandJson = core.writeToArray(oneThousand)
-    val twoThousandJson = core.writeToArray(twoThousand)
+    @unused val emptyjson = core.writeToArray(empty)
+    val oneThousandJson   = core.writeToArray(oneThousand)
+    val twoThousandJson   = core.writeToArray(twoThousand)
 
     assertEquals(oneThousand.removed.size, 1000L)
     assertEquals(twoThousand.removed.size, 2000L)

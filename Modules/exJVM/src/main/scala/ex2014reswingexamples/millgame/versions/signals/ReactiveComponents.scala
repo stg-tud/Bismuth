@@ -34,8 +34,8 @@ class ReactiveComponent extends Component with Reactor {
   private val mouseDraggedEvt  = Evt[MouseDragged]()
   private val mouseReleasedEvt = Evt[MouseReleased]()
 
-  val mouseMoved: Event[MouseMoved]    = mouseMovedEvt
-  val mouseDragged: Event[MouseDragged] = mouseDraggedEvt
+  val mouseMoved: Event[MouseMoved]       = mouseMovedEvt
+  val mouseDragged: Event[MouseDragged]   = mouseDraggedEvt
   val mouseReleased: Event[MouseReleased] = mouseReleasedEvt
 
   listenTo(this, mouse.moves, mouse.clicks)

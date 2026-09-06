@@ -188,7 +188,7 @@ object TaskAppBenchmark {
       Some(f)
     } else None
 
-    val startNanoTime: Long             = System.nanoTime()
+    val startNanoTime: Long                     = System.nanoTime()
     @unused var lastCheckPointEndNanoTime: Long = startNanoTime
 
     var counter                     = 0

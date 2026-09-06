@@ -56,7 +56,8 @@ object PlanTransactionScope {
 
   case class StaticInTransaction[State[_]](tx: Transaction[State], scheduler: Scheduler[State])
       extends PlanTransactionScope[State] {
-    override def planTransaction(inintialWrites: ReSource.of[State]*)(admission: AdmissionTicket[State] ?=> Unit): Unit =
+    override def planTransaction(inintialWrites: ReSource.of[State]*)(admission: AdmissionTicket[State] ?=> Unit)
+        : Unit =
       tx.followup { () =>
         scheduler.forceNewTransaction(inintialWrites*)(admission)
       }
@@ -64,7 +65,8 @@ object PlanTransactionScope {
 
   case class DynamicTransactionLookup[State[_]](scheduler: Scheduler[State], dynamicScope: DynamicScope[State])
       extends PlanTransactionScope[State] {
-    override def planTransaction(inintialWrites: ReSource.of[State]*)(admission: AdmissionTicket[State] ?=> Unit): Unit =
+    override def planTransaction(inintialWrites: ReSource.of[State]*)(admission: AdmissionTicket[State] ?=> Unit)
+        : Unit =
       dynamicScope.maybeTransaction match
           case Some(tx) => tx.followup { () =>
               scheduler.forceNewTransaction(inintialWrites*)(admission)

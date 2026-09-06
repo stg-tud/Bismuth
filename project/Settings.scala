@@ -31,7 +31,6 @@ object Settings {
     unstableInlineAccessors(),
   )
 
-
   // the inline defs are to workaround a sbt2 bug (“behaviour”), where seemingly all settings created here are treated as if they were the same, so setting javaOutputVersion to 17 in one project and 21 in another, would cause both to be 21 or 17.
 
   // set a specific source level for warnings/rewrites/features

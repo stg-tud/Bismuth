@@ -73,8 +73,8 @@ class LensTest extends munit.FunSuite {
           5,
           "THISDOESNOTCHANGE"
         )) // (Record("intValue" -> 5, "stringValue" -> "THISDOESNTCHANGE").asInstanceOf[testType])
-      val b    = a.applyLens(testLens())
-      val e1   = Evt[Int]()
+      val b            = a.applyLens(testLens())
+      val e1           = Evt[Int]()
       @unused val test = Var(0)
       b.fire(e1)
       e1.fire(5)

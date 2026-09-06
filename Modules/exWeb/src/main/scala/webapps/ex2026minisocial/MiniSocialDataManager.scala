@@ -24,15 +24,15 @@ object MiniSocialDataManager {
       init: A,
       wrap: A => MiniSocial,
       unwrap: MiniSocial => Option[A]
-  )(create: (DeltaBuffer[A], Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] = {
+  )(create: (DeltaBuffer[A], Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] =
     dataManager.lock.synchronized {
       dataManager.broadcast(wrap(init))
       val fullInit = dataManager.allPayloads.flatMap(v => unwrap(v.data)).foldLeft(init)(Lattice.merge)
 
       val branch = Fold.branch[DeltaBuffer[A]] {
         receivedCallback.value.flatMap(unwrap) match
-          case None    => Fold.current
-          case Some(v) => Fold.current.applyDeltaNonAppend(v)
+            case None    => Fold.current
+            case Some(v) => Fold.current.applyDeltaNonAppend(v)
       }
 
       val sig = create(DeltaBuffer(fullInit), branch)
@@ -45,6 +45,5 @@ object MiniSocialDataManager {
 
       sig
     }
-  }
 
 }

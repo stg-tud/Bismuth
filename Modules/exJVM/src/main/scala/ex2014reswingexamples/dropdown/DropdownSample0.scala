@@ -6,9 +6,9 @@ import scala.swing.{BoxPanel, FlowPanel, Frame, Label, MainFrame, Orientation, S
 
 object DropdownSample0 extends SimpleSwingApplication {
 
-  val inputField                            = new ReactiveTextField("Berlin, Paris, London, Rome", 50)
-  val inputText: Signal[String]             = Signal { inputField.text_out.value }
-  val commaSeparated: Signal[List[String]]  =
+  val inputField                           = new ReactiveTextField("Berlin, Paris, London, Rome", 50)
+  val inputText: Signal[String]            = Signal { inputField.text_out.value }
+  val commaSeparated: Signal[List[String]] =
     Signal { if inputText.value == null then Nil else inputText.value.split(",\\s*").toList }
 
   val dropdown                            = new ReDynamicComboBox(options = commaSeparated, initialSelection = -1)

@@ -68,7 +68,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferGCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer   = DeltaBufferEverything[GrowOnlyCounter]()
+    val deltaBuffer = DeltaBufferEverything[GrowOnlyCounter]()
 
     Eval.modReplica(
       deltaBuffer,
@@ -82,7 +82,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferGCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer   = DeltaBufferNonRedundant[GrowOnlyCounter]()
+    val deltaBuffer = DeltaBufferNonRedundant[GrowOnlyCounter]()
 
     Eval.modReplica(
       deltaBuffer,
@@ -96,7 +96,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferGCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer   = DeltaBufferSubsumed[GrowOnlyCounter]()
+    val deltaBuffer = DeltaBufferSubsumed[GrowOnlyCounter]()
 
     Eval.modReplica(
       deltaBuffer,
@@ -110,7 +110,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def baselineBufferPNCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer   = DeltaBufferEverything[PosNegCounter]()
+    val deltaBuffer = DeltaBufferEverything[PosNegCounter]()
 
     Eval.modReplica(
       deltaBuffer,
@@ -125,7 +125,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def nonRedundantBufferPNCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer   = DeltaBufferNonRedundant[PosNegCounter]()
+    val deltaBuffer = DeltaBufferNonRedundant[PosNegCounter]()
 
     Eval.modReplica(
       deltaBuffer,
@@ -140,7 +140,7 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferPNCounter(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-    val deltaBuffer   = DeltaBufferSubsumed[PosNegCounter]()
+    val deltaBuffer = DeltaBufferSubsumed[PosNegCounter]()
 
     Eval.modReplica(
       deltaBuffer,
@@ -273,7 +273,6 @@ class DeltaBufferBenchmark {
 
   @Benchmark
   def subsumedBufferORSet(blackhole: Blackhole, state: EvalState, resultCapture: ResultCapture): Unit = {
-
 
     val deltaBuffer = DeltaBufferSubsumed[ReplicatedSet[Int]]()
 

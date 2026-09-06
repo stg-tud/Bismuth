@@ -148,8 +148,8 @@ def run(): Unit =
       val replica    = Replica(Uid.gen(), nodeId, service, PosNegCounter.zero)
       given LocalUid = replica.id.convert
 
-      val bundleString = sget(URI.create(s"$api/status/bundles")).bind
-      @unused val bundles      = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
+      val bundleString    = sget(URI.create(s"$api/status/bundles")).bind
+      @unused val bundles = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>
         bget(URI.create(s"$api/download?$id"))
       }).bind
 

@@ -51,7 +51,6 @@ class ReactiveSlider(
   reactor.listenTo(peer)
 }
 
-
 /** A `BoxPanel` whose children are bound to a reactive signal. */
 class ReactiveBoxPanel(
     orientation: Orientation.Value,
@@ -66,7 +65,8 @@ class ReactiveBoxPanel(
 }
 
 /** A `MenuItem` that exposes its clicks as a reactive event and whose enabled
-  * state can be driven by a reactive signal. */
+  * state can be driven by a reactive signal.
+  */
 @scala.annotation.nowarn("msg=shadows field")
 class ReactiveMenuItem(
     text: String,

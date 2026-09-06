@@ -32,17 +32,17 @@ class ReactiveLabel(text: Signal[String]) extends Label(text.now) {
   * as reactive signals.
   */
 class ReactiveTextArea(text0: String) extends scala.swing.TextArea(text0) with Reactor {
-  private val textVar        = Var(text)
-  private val caretVar       = Var(caret.position)
-  private val lineCountVar   = Var(lineCount)
+  private val textVar      = Var(text)
+  private val caretVar     = Var(caret.position)
+  private val lineCountVar = Var(lineCount)
 
   listenTo(this, caret)
   reactions += {
-    case _: ValueChanged  => textVar.set(text); lineCountVar.set(lineCount)
-    case _: CaretUpdate   => caretVar.set(caret.position)
+    case _: ValueChanged => textVar.set(text); lineCountVar.set(lineCount)
+    case _: CaretUpdate  => caretVar.set(caret.position)
   }
 
-  val textSignal: Signal[String]     = textVar
-  val caretPosSignal: Signal[Int]    = caretVar
-  val lineCountSignal: Signal[Int]   = lineCountVar
+  val textSignal: Signal[String]   = textVar
+  val caretPosSignal: Signal[Int]  = caretVar
+  val lineCountSignal: Signal[Int] = lineCountVar
 }

@@ -62,7 +62,7 @@ case class Spanner[A](
       transactions.contains(transactionID)
     ) {
       @unused val transaction = transactions(transactionID)
-      val vote        = paxosPartitions(partitionId).read.find {
+      val vote                = paxosPartitions(partitionId).read.find {
         case twoPCMessages.Prepare(id, _) =>
           transactionID == id
         case _ => false

@@ -527,14 +527,14 @@ object SyncStrategies {
   @main def main(): Unit = {
     given c1: JsonValueCodec[Event[Op[String]]] = JsonCodecMaker.make
 
-    var r1                       = ORSet[String]()
-    var r2                       = ORSet[String]()
-    val size                     = 10000
-    val diff                     = 1.0f
-    val deltaSize                = 10
-    val dependencyPerRoundTrip   = 1
+    var r1                               = ORSet[String]()
+    var r2                               = ORSet[String]()
+    val size                             = 10000
+    val diff                             = 1.0f
+    val deltaSize                        = 10
+    val dependencyPerRoundTrip           = 1
     @unused val codedSymbolsPerRoundTrip = 1
-    val gen                      = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
+    val gen                              = ReplicaGenerator.generate(size, diff, r1, r2, deltaSize)
 
     // val t = r1.add("A")
     // r1.merge(t)

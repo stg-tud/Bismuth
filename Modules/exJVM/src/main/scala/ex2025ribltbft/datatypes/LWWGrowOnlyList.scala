@@ -26,8 +26,8 @@ case class LWWGrowOnlyList[T](
       if index > l.size || index < 0 then
           throw Exception("illegal index")
 
-      val hashDAGDelta = hashDAG.generateDelta(ListItem(element, index))
-      @unused var newHashDAG   = hashDAG.merge(hashDAGDelta)
+      val hashDAGDelta       = hashDAG.generateDelta(ListItem(element, index))
+      @unused var newHashDAG = hashDAG.merge(hashDAGDelta)
       /*for i <- index until l.size do
         val delta = newHashDAG.generateDelta(ListItem(l(i), i + 1))
         newHashDAG = newHashDAG.merge(delta)

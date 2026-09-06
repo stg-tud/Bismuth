@@ -17,7 +17,7 @@ class ReDynamicComboBox[A](
     options: Signal[List[A]] = Signal { List.empty[A] },
     initialSelection: Int = -1
 ) {
-  val peer: ComboBox[A] = new ComboBox[A](Nil: List[A])
+  val peer: ComboBox[A]             = new ComboBox[A](Nil: List[A])
   private val peerBox: JComboBox[A] = peer.peer.asInstanceOf[JComboBox[A]]
 
   private val selectionVar: Var[Int] = Var(initialSelection)

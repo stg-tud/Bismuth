@@ -142,7 +142,8 @@ class MillDrawer(val game: MillGame) extends ReactiveComponent {
       SlotIndex(index)
     }) && (_ != SlotIndex(-1)) // #EF
 
-  val backgroundRect: Signal[Rect[Int]] = Signal { Rect(Point(0, 0), boundsS.value.width, boundsS.value.height) } // #SIG
+  val backgroundRect: Signal[Rect[Int]] =
+    Signal { Rect(Point(0, 0), boundsS.value.width, boundsS.value.height) } // #SIG
 
   val presentation: Signal[Seq[Presentation[Int, Rect[Int] | Line[Int] | Circle[Int]]]] = Signal { // #SIG
     // background and board

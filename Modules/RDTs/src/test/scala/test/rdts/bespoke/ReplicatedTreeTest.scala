@@ -11,7 +11,6 @@ import scala.util.Random
 import rdts.base.Lattice
 import rdts.datatypes.LastWriterWins as LWW
 
-
 class ReplicatedTreeTest extends munit.FunSuite {
   test("insert") {
     val aid = Uid.predefined("a")
@@ -308,7 +307,6 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
   test("move after parent cycle") {
     val aid = Uid.predefined("a")
-
 
     // Create initial tree: ROOT -> C, D ; C -> A,B
     var tree = ReplicatedTree.empty[LWW[String]]

@@ -8,7 +8,6 @@ class PoSBlockchainTest extends FunSuite {
 
   test("single replica chain") {
 
-
     val difficulty   = 0
     val genesisBlock = PoSBlockchain(Block("", None, "", Dot.zero))
     val replicaA     = Replica(genesisBlock)
@@ -54,7 +53,6 @@ class PoSBlockchainTest extends FunSuite {
   }
 
   test("two replicas concurrent add to genesis chain") {
-
 
     val difficulty         = 0
     val genesisBlock       = PoSBlockchain(Block("", None, "", Dot.zero))

@@ -113,10 +113,10 @@ class LWWAWListTest extends munit.FunSuite:
       // println(list1.merge(list2).merge(list3).list)
       // println(list1.merge(list2.merge(list3)).list)
 
-      val t1 = list1.merge(list2)
+      val t1         = list1.merge(list2)
       @unused val t2 = t1.merge(list3)
 
-      val t3 = list2.merge(list3)
+      val t3         = list2.merge(list3)
       @unused val t4 = list1.merge(t3)
 
     }

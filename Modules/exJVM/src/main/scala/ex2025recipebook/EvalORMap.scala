@@ -139,7 +139,7 @@ class DeltaBufferORMapBenchmark {
   @Benchmark
   def nonRedundantBufferORMapLWW(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
     given Lattice[ObserveRemoveMap[Int, LastWriterWins[Int]]] =
-        Lattice.derived
+      Lattice.derived
     val deltaBuffer = DeltaBufferNonRedundant[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 
     EvalORMap.modReplica(
@@ -155,7 +155,7 @@ class DeltaBufferORMapBenchmark {
   @Benchmark
   def subsumedBufferORMapLWW(blackhole: Blackhole, state: EvalORMapState, resultCapture: ResultCapture): Unit = {
     given Lattice[ObserveRemoveMap[Int, LastWriterWins[Int]]] =
-        Lattice.derived
+      Lattice.derived
 
     val deltaBuffer = DeltaBufferSubsumed[ObserveRemoveMap[Int, LastWriterWins[Int]]]()
 

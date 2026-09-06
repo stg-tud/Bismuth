@@ -57,7 +57,7 @@ object ReShapes extends SimpleSwingApplication {
 
     val `merge` = new ReactiveMenu(
       text = "Merge with...", // #SIG //#IS( // )
-      items = Signal {         // #SIG //#IS( // )
+      items = Signal {        // #SIG //#IS( // )
         itemsEvents.value map { case (btn, _) => btn }
       }
     )
@@ -72,7 +72,7 @@ object ReShapes extends SimpleSwingApplication {
       (update map { (_: Any) => // #EF
         (ui.tabbedPane.pages filter { tab => tab.index != ui.tabbedPane.selection.index } map { (tab: Page) =>
           val item    = new ReactiveMenuItem(tab.title) // #IS( // )
-          val command = item.clicked map { (_: Any) => // #EF
+          val command = item.clicked map { (_: Any) =>  // #EF
             new MergeDrawingSpaces(panelDrawingSpaceStates(tab)._1)
           }
           (item: Component, command)

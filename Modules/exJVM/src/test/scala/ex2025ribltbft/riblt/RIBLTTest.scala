@@ -28,7 +28,7 @@ class RIBLTTest extends munit.FunSuite:
           dec.addSymbol(s)
 
       @unused var i = 0
-      var d = true
+      var d         = true
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
@@ -49,7 +49,7 @@ class RIBLTTest extends munit.FunSuite:
       var alice = List[String]()
       var bob   = List[String]()
 
-      @unused  var j = 0
+      @unused var j = 0
       for i <- 0 to 10000 do
           val r = Random().nextDouble()
           if r <= 0.8 then {
@@ -72,7 +72,7 @@ class RIBLTTest extends munit.FunSuite:
           dec.addSymbol(s)
 
       @unused var i = 0
-      var d = true
+      var d         = true
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
@@ -97,7 +97,7 @@ class RIBLTTest extends munit.FunSuite:
       var alice = List[String]()
       var bob   = List[String]()
 
-      @unused  var j = 0
+      @unused var j = 0
       for i <- 0 to testSetSize do
           if i % 2 == 0 then {
             alice = alice :+ i.toString
@@ -118,7 +118,7 @@ class RIBLTTest extends munit.FunSuite:
           dec.addSymbol(s)
 
       @unused var i = 0
-      var d = true
+      var d         = true
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
@@ -151,7 +151,7 @@ class RIBLTTest extends munit.FunSuite:
           dec.addSymbol(s)
 
       @unused var i = 0
-      var d = true
+      var d         = true
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1
@@ -172,13 +172,13 @@ class RIBLTTest extends munit.FunSuite:
     }
 
     test("test") {
-      var replica1 = ORSet[String]()
-      var replica2 = ORSet[String]()
-      val riblt1   = RIBLT[String]()
-      val riblt2   = RIBLT[String]()
-      @unused var both     = 0
-      @unused var a        = 0
-      @unused var b        = 0
+      var replica1     = ORSet[String]()
+      var replica2     = ORSet[String]()
+      val riblt1       = RIBLT[String]()
+      val riblt2       = RIBLT[String]()
+      @unused var both = 0
+      @unused var a    = 0
+      @unused var b    = 0
 
       @unused var j = 0
       for i <- 0 to 100 do
@@ -222,7 +222,7 @@ class RIBLTTest extends munit.FunSuite:
           riblt2.addSymbol(id)
 
       @unused var i = 0
-      var d = true
+      var d         = true
       while d do
           val s = riblt1.produceNextCodedSymbol
           i += 1
@@ -238,7 +238,7 @@ class RIBLTTest extends munit.FunSuite:
       var alice = List[String]()
       var bob   = List[String]()
 
-      val m    = MessageDigest.getInstance("SHA3-512")
+      val m            = MessageDigest.getInstance("SHA3-512")
       @unused var both = 0
       @unused var a    = 0
       @unused var b    = 0
@@ -280,7 +280,7 @@ class RIBLTTest extends munit.FunSuite:
           dec.addSymbol(s)
 
       @unused var i = 0
-      var d = true
+      var d         = true
       while d do
           val s = enc.produceNextCodedSymbol
           i += 1

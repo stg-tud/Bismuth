@@ -16,9 +16,8 @@ object MiniSocialUI {
 
   /** helper function to remove some boilerplate in the Fold below */
   extension [T](event: Event[T])
-    def deltaBranch[S: Lattice](f: FoldState[S] ?=> T => S): Fold.Branch[DeltaBuffer[S]] = {
-      event.branch { v => Fold.current.mod(app => f(using FoldState(app))(v)) }
-    }
+      def deltaBranch[S: Lattice](f: FoldState[S] ?=> T => S): Fold.Branch[DeltaBuffer[S]] =
+        event.branch { v => Fold.current.mod(app => f(using FoldState(app))(v)) }
 
   /** This resets the Delta buffer in the fold below, to not contain any deltas */
   def resetBuffer[T] = Fold.Branch[DeltaBuffer[T]](Nil, isStatic = false, _ => Fold.current.clearDeltas())
@@ -38,7 +37,7 @@ object MiniSocialUI {
 
   def getContents(): Div = {
 
-    val (upvoteButtonEvent, upvoteButtonData)   = makeButtonEvent(Character.toString(0x1f44d))
+    val (upvoteButtonEvent, upvoteButtonData)     = makeButtonEvent(Character.toString(0x1f44d))
     val (downvoteButtonEvent, downvoteButtonData) = makeButtonEvent(Character.toString(0x1f44e))
     val (messageEvent, messageField)              = makeInputEvent("<your message to the world>")
 
@@ -61,7 +60,7 @@ object MiniSocialUI {
       }
 
     val appStateSignal = Signal { stateSignal.value.state }
-    val messageSignal = Signal {
+    val messageSignal  = Signal {
       span(appStateSignal.value.message.value).render
     }
     val upvotesSignal = Signal {

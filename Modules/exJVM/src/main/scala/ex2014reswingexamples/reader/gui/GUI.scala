@@ -53,7 +53,7 @@ class GUI(
   val refreshCheckbox = new ReactiveCheckBox("auto refresh", selectedInit = true)
   def refreshAllowed  = refreshCheckbox.selectedSignal
 
-  def top: Frame =
+  def top: Frame = {
     new MainFrame {
       val quitAction: Action      = swing.Action("Quit") { quit() }
       val urlDialogAction: Action = swing.Action("Add url") {
@@ -160,4 +160,5 @@ class GUI(
         location = new Point((screenSize.width - framewidth) / 2, (screenSize.height - frameheight) / 2)
       }
     }
+  }
 }

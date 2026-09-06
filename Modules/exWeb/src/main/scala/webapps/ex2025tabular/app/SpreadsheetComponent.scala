@@ -163,9 +163,9 @@ object SpreadsheetComponent {
         } yield (start, end))
           .map { case ((r1, c1), (r2, c2)) =>
             $.props.flatMap { props =>
-              val from       = SpreadsheetCoordinate(math.min(r1, r2).toRowIndex, math.min(c1, c2).toColumnIndex)
-              val to         = SpreadsheetCoordinate(math.max(r1, r2).toRowIndex, math.max(c1, c2).toColumnIndex)
-              val rangeId    = RangeId.gen
+              val from    = SpreadsheetCoordinate(math.min(r1, r2).toRowIndex, math.min(c1, c2).toColumnIndex)
+              val to      = SpreadsheetCoordinate(math.max(r1, r2).toRowIndex, math.max(c1, c2).toColumnIndex)
+              val rangeId = RangeId.gen
               modSpreadsheet(_.addRange(rangeId, from, to))
             }
           }

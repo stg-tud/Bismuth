@@ -89,7 +89,8 @@ case class UIAttributeBuilder[AttributeType](
 }
 
 extension [AttributeType](self: UIAttributeBuilder[AttributeType])(
-    using jsImplicits: JSImplicits,
+    using
+    jsImplicits: JSImplicits,
     ordering: Ordering[AttributeType],
 ) {
   def bindAsNumber[EntityType](

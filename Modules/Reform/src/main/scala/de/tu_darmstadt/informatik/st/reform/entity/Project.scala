@@ -29,6 +29,6 @@ case class Project(
 }
 
 object Project {
-  val empty: Project                          = Project()
+  val empty: Project                   = Project()
   given codec: JsonValueCodec[Project] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 }

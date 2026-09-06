@@ -93,7 +93,7 @@ class ExceptionPropagationTestSuite extends FunSuite {
       val folded     = trimmed.map(_.toInt)
       val `change'd` = folded.change
 
-      var res: Diff[Int]| Null = null
+      var res: Diff[Int] | Null = null
 
       `change'd`.observe(res = _)
 

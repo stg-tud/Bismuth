@@ -6,7 +6,7 @@ import scala.swing.{BoxPanel, FlowPanel, Frame, Label, MainFrame, Orientation, S
 
 object DropdownSample1 extends SimpleSwingApplication {
 
-  def top: Frame =
+  def top: Frame = {
     new MainFrame {
 
       val col1 = new ReactiveTextField("Berlin", 30)
@@ -76,4 +76,5 @@ object DropdownSample1 extends SimpleSwingApplication {
         }
       }
     }
+  }
 }

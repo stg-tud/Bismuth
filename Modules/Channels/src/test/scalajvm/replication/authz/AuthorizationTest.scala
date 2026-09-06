@@ -182,15 +182,15 @@ class AuthorizationTest extends FunSuite {
   test("mayRead (RevealedValue overload) is false when the event doesn't match the commitment hash") {
     val (graph, holder, holderKey, genesis) = freshGraph()
     val (deltaEvent, revealedValue) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
-    val (altDeltaEvent, altRevealedValue) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
-    val updated         = receiveOrFail(receiveOrFail(graph, deltaEvent), altDeltaEvent)
+    val (altDeltaEvent, altRevealedValue) =
+      buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
+    val updated = receiveOrFail(receiveOrFail(graph, deltaEvent), altDeltaEvent)
 
     assert(Authorization.mayRead(holder, deltaEvent.hash, revealedValue, updated))
     assert(Authorization.mayRead(holder, altDeltaEvent.hash, altRevealedValue, updated))
     assert(!Authorization.mayRead(holder, deltaEvent.hash, altRevealedValue, updated))
     assert(!Authorization.mayRead(holder, altDeltaEvent.hash, revealedValue, updated))
   }
-
 
   // --- mayRead (graph+store overload) ---
 

@@ -12,7 +12,6 @@ class CausalStoreTest extends munit.FunSuite {
   import scala.language.implicitConversions
   given Conversion[String, ExampleData] = ed => ExampleData(Set(ed))
 
-
   test("basic usage") {
 
     val a: CausalStore[Map[Dot, ExampleData]] =

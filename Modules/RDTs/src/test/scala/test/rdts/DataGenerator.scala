@@ -16,7 +16,6 @@ object DataGenerator {
     override def toString: _root_.java.lang.String = content.mkString("\"", "", "\"")
   }
 
-
   given Arbitrary[ExampleData] = Arbitrary:
       Gen.oneOf(List("Anne", "Ben", "Chris", "Erin", "Julina", "Lynn", "Sara", "Taylor")).map(name =>
         ExampleData(Set(name))

@@ -98,8 +98,8 @@ class ReplicatedListTest extends munit.FunSuite {
   }
 
   test("new grow list") {
-    val ten        = GrowOnlyList.empty.insertAfter(GrowOnlyList.headDot, "ten")
-    val twenty     = ten `merge` ten.insertAfter(ten.dotList(1), "twenty")
+    val ten    = GrowOnlyList.empty.insertAfter(GrowOnlyList.headDot, "ten")
+    val twenty = ten `merge` ten.insertAfter(ten.dotList(1), "twenty")
     assertEquals(twenty.toList, List("ten", "twenty"), twenty)
     val fifteen = twenty `merge` twenty.insertAfter(ten.dotList(1), "fifteen")
     assertEquals(fifteen.toList, List("ten", "fifteen", "twenty"), fifteen)

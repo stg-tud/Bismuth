@@ -50,7 +50,7 @@ class RIBLTSyncThreadedTest extends munit.FunSuite:
       val t2 = sync2.startSession(sync1.replicaID, sessionType = receiver)
       val t3 = sync1.startSession(sync2.replicaID, sessionType = sender)
 
-      val t4 = sync3.startSession(sync2.replicaID, sessionType = receiver)
+      val t4         = sync3.startSession(sync2.replicaID, sessionType = receiver)
       @unused val t5 = sync2.startSession(sync3.replicaID, sessionType = sender)
 
       t0.join()

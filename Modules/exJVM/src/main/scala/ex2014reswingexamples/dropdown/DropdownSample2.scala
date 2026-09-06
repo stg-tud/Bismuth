@@ -6,7 +6,7 @@ import scala.swing.{BoxPanel, FlowPanel, Frame, Label, MainFrame, Orientation, S
 
 object DropdownSample2 extends SimpleSwingApplication {
 
-  def top: Frame =
+  def top: Frame = {
     new MainFrame {
 
       /* This version "artificially" introduces a Signal[List[Signal[String]] to illustrate higher
@@ -72,4 +72,5 @@ object DropdownSample2 extends SimpleSwingApplication {
         }
       }
     }
+  }
 }
