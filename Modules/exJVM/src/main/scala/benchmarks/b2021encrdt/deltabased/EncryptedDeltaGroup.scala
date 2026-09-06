@@ -7,7 +7,7 @@ import rdts.time.Dots
 import java.nio.ByteBuffer
 
 case class EncryptedDeltaGroup(stateCiphertext: ByteBuffer, serialDottedVersionVector: ByteBuffer)(
-    implicit dotSetJsonCodec: JsonValueCodec[Dots]
+    using dotSetJsonCodec: JsonValueCodec[Dots]
 ) {
   lazy val dottedVersionVector: Dots = readFromByteBuffer(serialDottedVersionVector.duplicate())
 

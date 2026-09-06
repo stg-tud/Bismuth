@@ -13,7 +13,7 @@ trait Shape extends Serializable {
   val centerY: Signal[Int]
   val hitboxWidth: Signal[Int]
   val hitboxHeight: Signal[Int]
-  def drawSnapshot(g: Graphics2D)(using turn: AdmissionTicket[BundleState]): Unit
+  def drawSnapshot(g: Graphics2D, turn: AdmissionTicket[BundleState]): Unit
 }
 
 class Circle(
@@ -30,7 +30,7 @@ class Circle(
     centerX.changed || centerY.changed || diameter.changed || border.changed || fill.changed
   override val hitboxWidth                                                                 = diameter
   override val hitboxHeight                                                                = diameter
-  override def drawSnapshot(g: Graphics2D)(using turn: AdmissionTicket[BundleState]): Unit = {
+  override def drawSnapshot(g: Graphics2D, turn: AdmissionTicket[BundleState]): Unit = {
     val d = turn.now(diameter)
     val x = turn.now(centerX) - d / 2
     val y = turn.now(centerY) - d / 2
@@ -57,7 +57,7 @@ class Rectangle(
 ) extends Shape {
   override val changed: Event[Any] =
     centerX.changed || centerY.changed || hitboxWidth.changed || hitboxHeight.changed || border.changed || fill.changed
-  override def drawSnapshot(g: Graphics2D)(using turn: AdmissionTicket[BundleState]): Unit = {
+  override def drawSnapshot(g: Graphics2D, turn: AdmissionTicket[BundleState]): Unit = {
     val w = turn.now(hitboxWidth)
     val h = turn.now(hitboxHeight)
     val x = turn.now(centerX) - w / 2
