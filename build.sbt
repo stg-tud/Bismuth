@@ -109,6 +109,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
         "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
         "com.google.crypto.tink"         % "tink"                         % "1.23.0",
         "com.softwaremill.sttp.client4" %% "core"                         % "4.0.26",
+        "io.avaje.webview"               % "avaje-webview"                % "0.29",
         "io.bullet"                     %% "borer-core"                   % "1.18.0",
         "io.bullet"                     %% "borer-derivation"             % "1.18.0",
         "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.7.0",

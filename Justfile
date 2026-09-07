@@ -35,6 +35,9 @@ webappsBundle: webappsPrepare
 webappsWebview: webappsBundle
 	sbt 'webview / run "Modules/exWeb/target/dist/index.html"'
 
+webappsWebviewJVM: webappsBundle
+	sbt 'exJVM / runMain ex2026webview.Webview "Modules/exWeb/target/dist/index.html"'
+
 # Build the exWeb examples and deploy them to the docs/examples folder for static hosting
 deploy-examples: webappsBundle
 	rm -rf docs/examples
