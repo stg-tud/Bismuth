@@ -36,11 +36,11 @@ webappsBundle: webappsPrepare
 
 webappsWebview:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'webview / run "http://localhost:5173/todolist.html"'
+	sbt 'webview / run "http://localhost:5173/"'
 
 webappsWebviewJVM:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'exJVM / runMain ex2026webview.Webview "http://localhost:5173/todolist.html"'
+	sbt 'exJVM / runMain ex2026webview.Webview "http://localhost:5173/"'
 
 # Build the exWeb examples and deploy them to the docs/examples folder for static hosting
 deploy-examples: webappsBundle
