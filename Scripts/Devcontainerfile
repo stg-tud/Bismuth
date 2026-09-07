@@ -16,7 +16,7 @@ RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 RUN apt-get install --yes --no-install-recommends clang
 
 # get webview dependencies
-RUN apt-get install --yes --no-install-recommends pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libwebkitgtk-6.0-dev libgtk-4-dev clang-format
+RUN apt-get install --yes --no-install-recommends --update pkg-config libwebkitgtk-6.0-dev libgtk-4-dev clang-format
 
 RUN curl https://raw.githubusercontent.com/sbt/sbt/2293bddfefe382a48c1672df4e009bd7c5df32f4/sbt -o /usr/bin/sbt && \
 	chmod +x /usr/bin/sbt
