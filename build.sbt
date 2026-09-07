@@ -309,13 +309,8 @@ lazy val webview = project.in(file("Modules/Webview"))
             .withCompileOptions(co => co ++ Seq("-framework", "WebKit"))
         case Some(linux) if linux.contains("linux") =>
           d
-            .withLinkingOptions(
-              // unfortunately gtk4 version does not work in podman :(
-              // nativeConfig.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk4", "webkitgtk-6.0")
-              d.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk+-3.0", "webkit2gtk-4.1")
-            )
-            // .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk4", "webkitgtk-6.0"))
-            .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk+-3.0", "webkit2gtk-4.1"))
+            .withLinkingOptions(d.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk4", "webkitgtk-6.0"))
+            .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk4", "webkitgtk-6.0"))
         case other =>
           println(s"unknown OS: $other")
           d
