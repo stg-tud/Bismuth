@@ -6,6 +6,7 @@ import de.rmgk.delay.{Async, Sync}
 import rdts.base.LocalUid
 import webview.WebView
 
+import java.net.URI
 import java.nio.file.{Files, Path, StandardOpenOption}
 import scala.annotation.unused
 import scala.concurrent.Future
@@ -14,7 +15,7 @@ object Webview {
   def main(args: Array[String]): Unit = {
 
     if args.isEmpty then
-        println(s"requires a path to the html as a first argument")
+        println(s"requires a url or a path to an html file as a first argument")
         return
 
     def receiveCallback(state: TodoRepState): Unit = {
@@ -38,11 +39,16 @@ object Webview {
       ()
     }
 
+    val target = args.head
+    val uri =
+      if target.startsWith("http://") || target.startsWith("https://") then URI(target)
+      else Path.of(target).toUri
+
     val dataManager = BroadcastIO[TodoRepState](LocalUid.gen(), receiveCallback)
 
     val w = WebView()
     dataManager.addClientConnection(WebviewNativeChannel.listen(w))
-    w.navigate(Path.of(args.head).toUri)
+    w.navigate(uri)
 
     w.run()
   }

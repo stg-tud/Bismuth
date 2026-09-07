@@ -1,8 +1,8 @@
 // Single shared "main" bundle for all exWeb case studies.
 //
-// Instead of one HTML page that switches apps via ?app= buttons, each case
-// study now has its own HTML file. Every app page imports this module and
-// calls initApp("<name>") inline to launch exactly the app it is dedicated to.
+// Each case study lives in its own HTML file (so the apps never collide over
+// shared stylesheets). Every app page imports this module and calls
+// initApp("<name>") inline to launch exactly the app that page is dedicated to.
 // The heavy Scala.js bundle is loaded lazily below and shared across all pages,
 // so there is still only a single compiled application bundle.
 //

@@ -4,9 +4,6 @@ import { defineConfig } from "vite";
 
 const root = dirname(fileURLToPath(import.meta.url));
 
-// Multi-page build: the landing page (index.html) plus one page per case study.
-// Every case-study page imports the same ./main.js entry, so vite hoists it into
-// a single shared JS bundle that all pages reference (rather than duplicating it).
 export default defineConfig({
 	// relative asset paths so the build works when deployed under any subpath
 	base: "./",

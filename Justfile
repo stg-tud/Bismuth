@@ -30,13 +30,17 @@ webappsServe: webappsPrepare
 	"Modules/exWeb/node_modules/vite/bin/vite.js" "Modules/exWeb/"
 
 webappsBundle: webappsPrepare
+	# plain multi-page `vite build`: dist/ contains the landing page, one html per
+	# case study, and shared chunks, i.e. a directly deployable folder
 	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "target/dist"
 
-webappsWebview: webappsBundle
-	sbt 'webview / run "Modules/exWeb/target/dist/index.html"'
+webappsWebview:
+	# connect to a running vite dev server (start it with `just webappsServe`)
+	sbt 'webview / run "http://localhost:5173/todolist.html"'
 
-webappsWebviewJVM: webappsBundle
-	sbt 'exJVM / runMain ex2026webview.Webview "Modules/exWeb/target/dist/index.html"'
+webappsWebviewJVM:
+	# connect to a running vite dev server (start it with `just webappsServe`)
+	sbt 'exJVM / runMain ex2026webview.Webview "http://localhost:5173/todolist.html"'
 
 # Build the exWeb examples and deploy them to the docs/examples folder for static hosting
 deploy-examples: webappsBundle
