@@ -73,7 +73,7 @@ update-webview-in-podman: (open-in-podman "fish ./scripts/update-webview.fish")
 open-in-podman command="fish":
 	podman build --file Scripts/Devcontainerfile --tag bismuth-dev-image .
 	mkdir -p target/bismut-dev-container-home
-	rm -r target/out # need to delete out otherwise will conflict with host sbt
+	rm -rf target/out # need to delete out otherwise will conflict with host sbt
 	# largely stolen from distrobox
 	podman run --privileged --network host --ipc host --pid host --ulimit host \
 		--volume "$(pwd)":"$(pwd)":rslave \
@@ -85,5 +85,5 @@ open-in-podman command="fish":
 		--rm --tty --interactive \
 		bismuth-dev-image \
 		{{command}}
-	rm -r target/out # need to delete out otherwise host sbt will not work
+	rm -rf target/out # need to delete out otherwise host sbt will not work
 
