@@ -1,88 +1,49 @@
-// the meta env will be set by a bundler (vite) when building a distributable file, thus using the fullopt.js
-// when running this file directly in the browser without bundling, we fall back to using the fastopt variant
+// Single shared "main" bundle for all exWeb case studies.
+//
+// Instead of one HTML page that switches apps via ?app= buttons, each case
+// study now has its own HTML file. Every app page imports this module and
+// calls initApp("<name>") inline to launch exactly the app it is dedicated to.
+// The heavy Scala.js bundle is loaded lazily below and shared across all pages,
+// so there is still only a single compiled application bundle.
+//
+// The chosen variant (fastopt vs fullopt) is decided by the bundler (vite):
+// when building a distributable file we use the optimized fullopt.js; when
+// serving in development we fall back to the fastopt variant.
 const useFullopt = import.meta.env?.PROD;
 const modulePromise = useFullopt
 	? import("./target/generated_js/exweb-opt/main.js")
 	: import("./target/generated_js/exweb-fastopt/main.js");
 
-// the dynamic import above returns the module object, which is destructured into the components we care about below.
-modulePromise.then(
-	({ Todolist, Calendar, UnitConversion, Tabular, OverlayNetworkGraph, MiniSocial, DebugAdapterSetListener }) => {
-		const appHandlers = {
-			todolist: Todolist,
-			calendar: Calendar,
-			tabular: Tabular,
-			"unit-conversion": UnitConversion,
-			"overlay-graph": OverlayNetworkGraph,
-			"mini-social": MiniSocial,
-		};
+const appHandlers = {
+	todolist: "Todolist",
+	calendar: "Calendar",
+	tabular: "Tabular",
+	"unit-conversion": "UnitConversion",
+	"overlay-graph": "OverlayNetworkGraph",
+	"mini-social": "MiniSocial",
+};
 
-		const getRequestedApp = () => {
-			const url = new URL(window.location.href);
-			const appName = url.searchParams.get("app");
-			return appHandlers[appName] ? appName : "todolist";
-		};
+/** Launch the case study whose page we are on. */
+export async function initApp(appName) {
+	const exportName = appHandlers[appName] ?? "Todolist";
+	const module = await modulePromise;
+	module[exportName]();
+}
 
-		const syncUrlForApp = (appName) => {
-			const url = new URL(window.location.href);
-			url.searchParams.set("app", appName);
-			window.history.replaceState({}, "", url);
-		};
+// --- Debug adapter plumbing, set up once per page load ---------------------
+window.reScalaEvents = [];
+window.reScalaId = Math.random();
+window.domAssocations = new Map();
 
-		const openApp = (appName, { syncUrl = false } = {}) => {
-			const requestedApp = appHandlers[appName] ? appName : "todolist";
-			appHandlers[requestedApp]();
-
-			if (syncUrl) {
-				syncUrlForApp(requestedApp);
-			}
-		};
-
-		// Add event listeners
-		document
-			.getElementById("todolist-btn")
-			.addEventListener("click", () => openApp("todolist", { syncUrl: true }));
-		document
-			.getElementById("calendar-btn")
-			.addEventListener("click", () => openApp("calendar", { syncUrl: true }));
-		document
-			.getElementById("tabular-btn")
-			.addEventListener("click", () => openApp("tabular", { syncUrl: true }));
-		document
-			.getElementById("unit-conversion-btn")
-			.addEventListener("click", () =>
-				openApp("unit-conversion", { syncUrl: true }),
+modulePromise.then(({ DebugAdapterSetListener }) => {
+	DebugAdapterSetListener((data) => {
+		if (data.type === "DomAssociation") {
+			window.domAssocations.set(
+				JSON.parse(data.reSource).idCounter,
+				data.node,
 			);
-		document
-			.getElementById("overlay-graph-btn")
-			.addEventListener("click", () =>
-				openApp("overlay-graph", { syncUrl: true }),
-			);
-		document
-			.getElementById("mini-social-btn")
-			.addEventListener("click", () =>
-				openApp("mini-social", { syncUrl: true }),
-			);
-
-		window.reScalaEvents = [];
-		window.reScalaId = Math.random();
-		window.domAssocations = new Map();
-
-		DebugAdapterSetListener((data) => {
-			if (data.type === "DomAssociation") {
-				window.domAssocations.set(
-					JSON.parse(data.reSource).idCounter,
-					data.node,
-				);
-			} else if (typeof data === "string") {
-				window.reScalaEvents.push(JSON.parse(data));
-			}
-		});
-
-		window.addEventListener("popstate", () => {
-			openApp(getRequestedApp());
-		});
-
-		openApp(getRequestedApp());
-	},
-);
+		} else if (typeof data === "string") {
+			window.reScalaEvents.push(JSON.parse(data));
+		}
+	});
+});

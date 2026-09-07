@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Tabular · WebApp Case Studies</title>
+	<link rel="stylesheet" href="style.css">
+
+	<!-- Tabular app is styled with Tailwind utility classes at runtime -->
+	<script src="https://cdn.tailwindcss.com"></script>
+	<style>
+		@keyframes tabular-scale-in {
+			from {
+				transform: scale(.95);
+				opacity: 0;
+			}
+			to {
+				transform: scale(1);
+				opacity: 1;
+			}
+		}
+		.tabular-animate-scale-in {
+			animation: tabular-scale-in .15s ease-out;
+		}
+	</style>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					fontFamily: {
+						'sans': ['Inter', 'system-ui', 'sans-serif'],
+					}
+				}
+			}
+		}
+	</script>
+</head>
+
+<body>
+	<section id="app">
+		<noscript>
+			<div style="padding:2em;text-align:center;font-size:2em">
+				Please enable JavaScript!
+			</div>
+		</noscript>
+	</section>
+
+	<footer class="info">
+		<p><a href="index.html">← All Case Studies</a></p>
+		<p>Created by the <a href="https://www.st.informatik.tu-darmstadt.de/">Software Technology Group</a></p>
+	</footer>
+
+	<script type="module">
+		import { initApp } from "./main.js";
+		initApp("tabular");
+	</script>
+</body>
+
+</html>

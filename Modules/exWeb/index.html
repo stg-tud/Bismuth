@@ -4,26 +4,10 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>WebApp Examples</title>
+	<title>WebApp Case Studies</title>
 	<link rel="stylesheet" href="style.css">
 
-	<!-- Tabular stuff -->
 	<script src="https://cdn.tailwindcss.com"></script>
-	<style>
-		@keyframes tabular-scale-in {
-			from {
-				transform: scale(.95);
-				opacity: 0;
-			}
-			to {
-				transform: scale(1);
-				opacity: 1;
-			}
-		}
-		.tabular-animate-scale-in {
-			animation: tabular-scale-in .15s ease-out;
-		}
-	</style>
 	<script>
 		tailwind.config = {
 			theme: {
@@ -37,29 +21,70 @@
 	</script>
 </head>
 
-<body>
-	<section id="app">
-		<noscript>
-			<div style="padding:2em;text-align:center;font-size:2em">
-				Please enable JavaScript!
-			</div>
-		</noscript>
-	</section>
+<body class="bg-slate-100 text-slate-800 antialiased">
+	<main class="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+		<header class="text-center mb-12">
+			<p class="text-sm uppercase tracking-widest text-slate-400 mb-3">
+				Software Technology Group
+			</p>
+			<h1 class="text-4xl sm:text-5xl font-bold mb-4">
+				WebApp Case Studies
+			</h1>
+			<p class="max-w-xl text-slate-500">
+				A collection of distributed / collaborative web applications, built to explore
+				reactive data structures. Pick one below to open it.
+			</p>
+		</header>
 
+		<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl w-full">
+			<a href="todolist.html"
+				class="rounded-2xl bg-white p-6 shadow-lg hover:bg-slate-50">
+				<div class="text-3xl mb-3">✅</div>
+				<h2 class="text-xl font-semibold">Todo List</h2>
+				<p class="text-sm text-slate-500 mt-1">A classic collaborative todo list based on TodoMVC.</p>
+			</a>
 
-	<footer class="info">
-		<button id="todolist-btn">Show Todo List</button>
-		<button id="calendar-btn">Show Calendar</button>
-		<button id="unit-conversion-btn">Show Unit Conversion</button>
-		<button id="tabular-btn">Show Tabular</button>
-		<button id="overlay-graph-btn">Show Overlay Graph</button>
-		<button id="mini-social-btn">Show Mini Social</button>
-		<p>Created by the <a href="https://www.st.informatik.tu-darmstadt.de/">Software Technology Group</a></p>
-		<p>Todolist based on <a href="https://todomvc.com">TodoMVC</a></p>
-	</footer>
+			<a href="calendar.html"
+				class="rounded-2xl bg-white p-6 shadow-lg hover:bg-slate-50">
+				<div class="text-3xl mb-3">📅</div>
+				<h2 class="text-xl font-semibold">Calendar</h2>
+				<p class="text-sm text-slate-500 mt-1">A shared appointment calendar across replicas.</p>
+			</a>
 
-	<script type="module" src="main.js"></script>
+			<a href="tabular.html"
+				class="rounded-2xl bg-white p-6 shadow-lg hover:bg-slate-50">
+				<div class="text-3xl mb-3">📊</div>
+				<h2 class="text-xl font-semibold">Tabular</h2>
+				<p class="text-sm text-slate-500 mt-1">A collaborative spreadsheet with offline sync.</p>
+			</a>
 
+			<a href="unit-conversion.html"
+				class="rounded-2xl bg-white p-6 shadow-lg hover:bg-slate-50">
+				<div class="text-3xl mb-3">⚖️</div>
+				<h2 class="text-xl font-semibold">Unit Conversion</h2>
+				<p class="text-sm text-slate-500 mt-1">A quick unit converter built with pure scalatags.</p>
+			</a>
+
+			<a href="overlay-graph.html"
+				class="rounded-2xl bg-white p-6 shadow-lg hover:bg-slate-50">
+				<div class="text-3xl mb-3">🕸️</div>
+				<h2 class="text-xl font-semibold">Overlay Graph</h2>
+				<p class="text-sm text-slate-500 mt-1">A live overlay network graph visualisation.</p>
+			</a>
+
+			<a href="mini-social.html"
+				class="rounded-2xl bg-white p-6 shadow-lg hover:bg-slate-50">
+				<div class="text-3xl mb-3">💬</div>
+				<h2 class="text-xl font-semibold">Mini Social</h2>
+				<p class="text-sm text-slate-500 mt-1">A tiny replicated social feed demo.</p>
+			</a>
+		</section>
+
+		<footer class="info mt-14">
+			<p>Created by the <a href="https://www.st.informatik.tu-darmstadt.de/">Software Technology Group</a></p>
+			<p>Todo List based on <a href="https://todomvc.com">TodoMVC</a></p>
+		</footer>
+	</main>
 </body>
 
 </html>
