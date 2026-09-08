@@ -105,11 +105,16 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= {
       val jettyVersion = "12.1.12"
+      val javaGiVerison = "1.0.0-RC3"
       Seq(
         "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
         "com.google.crypto.tink"         % "tink"                         % "1.23.0",
         "com.softwaremill.sttp.client4" %% "core"                         % "4.0.26",
         "io.avaje.webview"               % "avaje-webview"                % "0.29",
+        "org.java-gi"                     % "gtk"                          % javaGiVerison,
+        "org.java-gi"                     % "adw"                          % javaGiVerison,
+        "org.java-gi"                     % "glib"                         % javaGiVerison,
+        "org.java-gi"                     % "webkit"                       % javaGiVerison,
         "io.bullet"                     %% "borer-core"                   % "1.18.0",
         "io.bullet"                     %% "borer-derivation"             % "1.18.0",
         "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.7.0",

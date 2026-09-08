@@ -34,13 +34,17 @@ webappsBundle: webappsPrepare
 	# case study, and shared chunks, i.e. a directly deployable folder
 	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "target/dist"
 
-webappsWebview:
+webappsWebviewNative:
 	# connect to a running vite dev server (start it with `just webappsServe`)
 	sbt 'webview / run "http://localhost:5173/"'
 
 webappsWebviewJVM:
 	# connect to a running vite dev server (start it with `just webappsServe`)
 	sbt 'exJVM / runMain ex2026webview.Webview "http://localhost:5173/"'
+
+webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKitGTK) browser window
+	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
+	sbt 'exJVM / runMain ex2026webview.JavaGiWebview "http://localhost:5173/"'
 
 # Build the exWeb examples and deploy them to the docs/examples folder for static hosting
 deploy-examples: webappsBundle
