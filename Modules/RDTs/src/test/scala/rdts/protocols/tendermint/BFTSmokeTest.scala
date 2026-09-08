@@ -16,15 +16,15 @@ class BFTSmokeTest extends munit.FunSuite:
         given ValidatorSet = vs
         val mA = BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed("v0")))
         val mB = BFTState.prevote(0, 0, Vote(Some(BlockId(2)), signed("v1")))
-        val x  = BlockchainState[Signed]().merge(mA).merge(mB)
-        val y  = BlockchainState[Signed]().merge(mB).merge(mA)
+        val x  = TendermintState[Signed]().merge(mA).merge(mB)
+        val y  = TendermintState[Signed]().merge(mB).merge(mA)
         // reordering and duplication must not matter
         assertEquals(x, y)
         assertEquals(x.merge(mA), x)
 
     test("prevote quorum forms at 2f+1; equivocation nullifies the equivocator (Thm. 3, Def. 5)"):
         given ValidatorSet = vs
-        var b = BlockchainState[Signed]()
+        var b = TendermintState[Signed]()
         for i <- 0 until 3 do
             b = b.merge(BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         assertEquals(b.getPrevoteQuorum(0, 0), Some(BlockId(1)))
@@ -34,7 +34,7 @@ class BFTSmokeTest extends munit.FunSuite:
         assertEquals(b4.getPrevoteQuorum(0, 0), None)
 
         // only 2 votes: no quorum
-        var b5 = BlockchainState[Signed]()
+        var b5 = TendermintState[Signed]()
         for i <- 0 until 2 do
             b5 = b5.merge(BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         assertEquals(b5.getPrevoteQuorum(0, 0), None)
@@ -43,21 +43,21 @@ class BFTSmokeTest extends munit.FunSuite:
         val teeMembers     = (0 until 3).map(i => Uid(s"v$i")).toSet
         given ValidatorSet = ValidatorSet(teeMembers, TrustModel.Tee)
 
-        def add(b: BlockchainState[TeeSigned], uid: String, counter: Long, block: Option[BlockId]): BlockchainState[TeeSigned] =
+        def add(b: TendermintState[TeeSigned], uid: String, counter: Long, block: Option[BlockId]): TendermintState[TeeSigned] =
             b.merge(BFTState.precommit(0, 0, Vote(block, tee(uid, counter))))
 
         // two validators vote, with out-of-order delivery of their counters
-        val bt = add(add(add(BlockchainState(), "v0", 2, Some(BlockId(5))), "v0", 0, Some(BlockId(5))), "v1", 1, Some(BlockId(5)))
+        val bt = add(add(add(TendermintState(), "v0", 2, Some(BlockId(5))), "v0", 0, Some(BlockId(5))), "v1", 1, Some(BlockId(5)))
         // f+1 = 2 canonical votes suffice; entries carry duplicates
         assertEquals(bt.getPrecommitQuorum(0, 0), Some(BlockId(5)))
 
         // nil quorum
-        val bn = add(add(BlockchainState(), "v0", 0, None), "v1", 1, None)
+        val bn = add(add(TendermintState(), "v0", 0, None), "v1", 1, None)
         assert(bn.hasNilQuorum(0, 0, Step.Precommit))
 
     test("compute drives a replica from Proposal to Precommit on quorum"):
         val vs4 = ValidatorSet((0 until 4).map(i => Uid(s"v$i")).toSet, TrustModel.Classical)
-        var b   = BlockchainState[Signed]()
+        var b   = TendermintState[Signed]()
         // leader for (0,0) proposes block 1
         locally {
             given ValidatorSet = vs4
@@ -68,7 +68,7 @@ class BFTSmokeTest extends munit.FunSuite:
         }
         locally {
             given ValidatorSet = vs4
-            val t = Tendermint(state = b).stabilize
+            val t = TendermintReplica(state = b).stabilize
             assertEquals(t.local.currentStep, Step.Precommit)
             assertEquals(t.local.lockedValue, Some(BlockId(1)))
             assertEquals(t.local.lockedRound, 0L)

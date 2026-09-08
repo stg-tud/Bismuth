@@ -90,7 +90,7 @@ case class HeightState[E <: Evidence](rounds: Map[Long, RoundState[E]] = Map.emp
   * associative, commutative and idempotent: replicas that incorporate the same
   * set of deltas converge (Lemma 2), independent of delivery order and duplication.
   */
-case class BlockchainState[E <: Evidence](heights: Map[Long, HeightState[E]] = Map.empty[Long, HeightState[E]]) {
+case class TendermintState[E <: Evidence](heights: Map[Long, HeightState[E]] = Map.empty[Long, HeightState[E]]) {
 
     // -- Deterministic state projections (Sec. 5) ----------------------------
 
@@ -180,10 +180,10 @@ case class BlockchainState[E <: Evidence](heights: Map[Long, HeightState[E]] = M
 object BFTState:
     given [E <: Evidence]: Lattice[RoundState[E]]      = Lattice.derived
     given [E <: Evidence]: Lattice[HeightState[E]]     = Lattice.derived
-    given [E <: Evidence]: Lattice[BlockchainState[E]] = Lattice.derived
+    given [E <: Evidence]: Lattice[TendermintState[E]] = Lattice.derived
 
-    given [E <: Evidence]: Bottom[BlockchainState[E]] =
-        Bottom.provide(BlockchainState[E]())
+    given [E <: Evidence]: Bottom[TendermintState[E]] =
+        Bottom.provide(TendermintState[E]())
 
     /** Minimal delta containing exactly one protocol message at its coordinates
       * (Def. 1: B(t+1) = B(t) ⊔ δ(m)). The message is attributed to the sender
@@ -191,11 +191,11 @@ object BFTState:
       * BlockchainState itself is the message type: sending a message means
       * producing such a delta, receiving means merging it into the lattice.
       */
-    def proposal[E <: Evidence](h: Long, r: Long, p: ProposalMsg[E]): BlockchainState[E] =
-        BlockchainState(Map(h -> HeightState(Map(r -> RoundState(proposals = Set(p))))))
+    def proposal[E <: Evidence](h: Long, r: Long, p: ProposalMsg[E]): TendermintState[E] =
+        TendermintState(Map(h -> HeightState(Map(r -> RoundState(proposals = Set(p))))))
 
-    def prevote[E <: Evidence](h: Long, r: Long, v: Vote[E]): BlockchainState[E] =
-        BlockchainState(Map(h -> HeightState(Map(r -> RoundState(preVotes = Map(v.evidence.sender -> Set(v)))))))
+    def prevote[E <: Evidence](h: Long, r: Long, v: Vote[E]): TendermintState[E] =
+        TendermintState(Map(h -> HeightState(Map(r -> RoundState(preVotes = Map(v.evidence.sender -> Set(v)))))))
 
-    def precommit[E <: Evidence](h: Long, r: Long, v: Vote[E]): BlockchainState[E] =
-        BlockchainState(Map(h -> HeightState(Map(r -> RoundState(preCommits = Map(v.evidence.sender -> Set(v)))))))
+    def precommit[E <: Evidence](h: Long, r: Long, v: Vote[E]): TendermintState[E] =
+        TendermintState(Map(h -> HeightState(Map(r -> RoundState(preCommits = Map(v.evidence.sender -> Set(v)))))))

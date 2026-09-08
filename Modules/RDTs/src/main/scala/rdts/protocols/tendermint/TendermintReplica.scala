@@ -78,16 +78,16 @@ case class LocalState(
   * queries on the projection π; replicated state is only ever extended by
   * CRDT delta merges of outbound messages (Sec. 8).
   */
-case class Tendermint(
-    state: BlockchainState[?] = BlockchainState[Nothing](),
-    local: LocalState = LocalState(),
+case class TendermintReplica(
+                       state: TendermintState[?] = TendermintState[Nothing](),
+                       local: LocalState = LocalState(),
 ):
 
     /** Outbound delta for the active step — the message *is* a BlockchainState
       * delta. Evidence is attached here, consuming one monotonic counter for
       * TenderTee deployments. The empty state (bottom) encodes "no message".
       */
-    def send[E <: Evidence](using LocalUid, ValidatorSet, EvidenceMaker[E]): BlockchainState[E] =
+    def send[E <: Evidence](using LocalUid, ValidatorSet, EvidenceMaker[E]): TendermintState[E] =
         val ev = summon[EvidenceMaker[E]].make(replicaId, local.nextCounter)
         val h  = local.currentHeight
         val r  = local.currentRound
@@ -95,14 +95,14 @@ case class Tendermint(
             case Proposal =>
                 if replicaId == leader(h, r) && local.proposal.isDefined then
                     BFTState.proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev))
-                else Bottom[BlockchainState[E]].empty
+                else Bottom[TendermintState[E]].empty
             case Prevote   => BFTState.prevote(h, r, Vote(local.proposal, ev))
             case Precommit => BFTState.precommit(h, r, Vote(local.vote, ev))
 
     /** Timeout handler: guarantees progress and breaks liveness deadlocks.
       * Timers increment monotonically and shift steps/rounds deterministically.
       */
-    def onTimeout: Tendermint =
+    def onTimeout: TendermintReplica =
         val l = local.currentStep match
             case Step.Proposal =>
                 local.copy(timeoutProposal = local.timeoutProposal + 1, currentStep = Prevote)
@@ -115,12 +115,12 @@ case class Tendermint(
                     currentStep = Proposal,
                     proposal = local.validValue.orElse(local.proposal),
                 )
-        Tendermint(state, l)
+        TendermintReplica(state, l)
 
     /** Deterministic guard evaluation over the projected state (Sec. 7).
       * Returns a new local state; the replicated state is never modified here.
       */
-    def compute(using ValidatorSet): Tendermint =
+    def compute(using ValidatorSet): TendermintReplica =
         val h = local.currentHeight
         val r = local.currentRound
 
@@ -135,18 +135,18 @@ case class Tendermint(
                         val unlocked =
                             local.lockedRound == -1 || local.lockedValue.contains(p.block)
                         if justified || unlocked then
-                            Tendermint(state, local.copy(proposal = Some(p.block), currentStep = Prevote))
-                        else Tendermint(state, local.copy(currentStep = Prevote))
+                            TendermintReplica(state, local.copy(proposal = Some(p.block), currentStep = Prevote))
+                        else TendermintReplica(state, local.copy(currentStep = Prevote))
                     case Some(_) =>
                         // invalid proposal: prevote nil
-                        Tendermint(state, local.copy(proposal = None, currentStep = Prevote))
+                        TendermintReplica(state, local.copy(proposal = None, currentStep = Prevote))
                     case None => this // fixed point
 
             case Prevote =>
                 state.getPrevoteQuorum(h, r) match
                     case Some(b) if isValid(b) && state.getProposal(h, r).exists(_.block == b) =>
                         // lock b and precommit it (Lemma 6 anchor, Line 39)
-                        Tendermint(state, local.copy(
+                        TendermintReplica(state, local.copy(
                             lockedValue = Some(b),
                             lockedRound = r,
                             validValue = Some(b),
@@ -156,7 +156,7 @@ case class Tendermint(
                         ))
                     case _ =>
                         val nil = if state.hasNilQuorum(h, r, Prevote) then None else local.proposal
-                        Tendermint(state, local.copy(vote = nil, currentStep = Precommit))
+                        TendermintReplica(state, local.copy(vote = nil, currentStep = Precommit))
 
             case Precommit =>
                 val bv = state.getPrevoteQuorum(h, r)
@@ -168,11 +168,11 @@ case class Tendermint(
                     case Some(b) if isValid(b) && !lv.decisions.contains(lv.currentHeight) =>
                         // decision register is write-once per height (Theorem 6)
                         val next = nextProposalValue(lv)
-                        Tendermint(state, lv.copy(decisions = lv.decisions + (lv.currentHeight -> b))
+                        TendermintReplica(state, lv.copy(decisions = lv.decisions + (lv.currentHeight -> b))
                             .advanceHeight(next))
                     case _ =>
                         if state.hasNilQuorum(lv.currentHeight, lv.currentRound, Precommit) then
-                            Tendermint(state, lv.copy(
+                            TendermintReplica(state, lv.copy(
                                 currentRound = lv.currentRound + 1,
                                 currentStep = Proposal,
                                 proposal = lv.validValue.orElse(local.proposal),
@@ -182,7 +182,7 @@ case class Tendermint(
     /** Fixed-point stabilization (Sec. 8): repeatedly applies Compute until
       * key(S) = key(S1). Terminates over a finite lattice snapshot (Theorem 7).
       */
-    def stabilize(using ValidatorSet): Tendermint =
+    def stabilize(using ValidatorSet): TendermintReplica =
         val s1 = compute
         if s1.local.key == local.key then s1
         else s1.stabilize
