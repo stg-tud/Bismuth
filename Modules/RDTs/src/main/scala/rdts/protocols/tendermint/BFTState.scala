@@ -17,8 +17,7 @@
 // pure functional transition system.
 package rdts.protocols.tendermint
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
-import rdts.base.LocalUid.replicaId
+import rdts.base.{Bottom, Lattice, Uid}
 import rdts.protocols.tendermint.BFTState.given
 import rdts.protocols.tendermint.Step.*
 
@@ -47,15 +46,16 @@ case class MockSignature()
 
 /** Cryptographic binding attached to every protocol message.
   *
-  * In the Tendermint setting this is a plain (mock) signature; in the TenderTee
-  * variant it structurally incorporates a hardware-enforced monotonic counter
-  * (Def. 3). No real cryptographic verification is performed — see
-  * [[MockSignature]].
+  * Carries the authenticated sender identity of the message (in a real
+  * deployment recovered by verifying the signature) and, in the TenderTee
+  * variant, a hardware-enforced monotonic counter (Def. 3). No real
+  * cryptographic verification is performed — see [[MockSignature]].
   */
 sealed trait Evidence:
+    def sender: Uid
     def counter: Option[Long] = None
-case class Signed(signature: MockSignature) extends Evidence
-case class TeeSigned(ctr: Long, signature: MockSignature) extends Evidence:
+case class Signed(sender: Uid, signature: MockSignature) extends Evidence
+case class TeeSigned(sender: Uid, ctr: Long, signature: MockSignature) extends Evidence:
     override def counter: Option[Long] = Some(ctr)
 
 /** Validator set together with the trust model determining quorum thresholds. */
@@ -107,15 +107,18 @@ case class HeightState[E <: Evidence](rounds: Map[Long, RoundState[E]] = Map.emp
   */
 case class BlockchainState[E <: Evidence](heights: Map[Long, HeightState[E]] = Map.empty[Long, HeightState[E]]) {
 
-    /** Minimal delta containing exactly m at its coordinates (Def. 1: B(t+1) = B(t) ⊔ δ(m)). */
-    def delta(m: InMsg[E])(using LocalUid): BlockchainState[E] =
-        val round = m match
+    /** Minimal delta containing exactly m at its coordinates (Def. 1: B(t+1) = B(t) ⊔ δ(m)).
+      * The message is attributed to the sender encoded in its evidence, not to
+      * the replica performing the merge.
+      */
+    def delta(m: InMsg[E]): BlockchainState[E] =
+        val round  = m match
             case InMsg.Proposal(_, _, p)  => RoundState(proposals = Set(p))
-            case InMsg.Prevote(_, _, v)   => RoundState(preVotes = Map(replicaId -> Set(v)))
-            case InMsg.Precommit(_, _, v) => RoundState(preCommits = Map(replicaId -> Set(v)))
+            case InMsg.Prevote(_, _, v)   => RoundState(preVotes = Map(v.evidence.sender -> Set(v)))
+            case InMsg.Precommit(_, _, v) => RoundState(preCommits = Map(v.evidence.sender -> Set(v)))
         BlockchainState(Map(m.height -> HeightState(Map(m.round -> round))))
 
-    def merge(m: InMsg[E])(using LocalUid): BlockchainState[E] =
+    def merge(m: InMsg[E]): BlockchainState[E] =
         Lattice.merge(this, delta(m))
 
     // -- Deterministic state projections (Sec. 5) ----------------------------
@@ -146,10 +149,10 @@ case class BlockchainState[E <: Evidence](heights: Map[Long, HeightState[E]] = M
       */
     def canAdmit(existing: Set[Vote[E]], vote: Vote[E])(using vs: ValidatorSet): Boolean =
         (vote.evidence, vs.model) match
-            case (TeeSigned(counter, _), TrustModel.Tee) =>
-                val counters = existing.collect { case Vote(_, TeeSigned(c, _)) => c }
+            case (TeeSigned(_, counter, _), TrustModel.Tee) =>
+                val counters = existing.collect { case Vote(_, TeeSigned(_, c, _)) => c }
                 counters.forall(_ < counter) && counter == counters.maxOption.getOrElse(-1L) + 1
-            case (Signed(_), TrustModel.Classical) => true
+            case (_: Signed, TrustModel.Classical) => true
             case _                                 => false
 
     // -- Deterministic protocol queries (Sec. 6) ------------------------------

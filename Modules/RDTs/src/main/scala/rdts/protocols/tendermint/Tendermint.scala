@@ -15,19 +15,20 @@ import rdts.base.{LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
 import rdts.protocols.tendermint.Step.*
 
-/** Produces the cryptographic evidence appropriate to the deployment:
-  * plain (mock) signatures for Tendermint, counter-carrying evidence for
-  * TenderTee. No real signing happens; see [[MockSignature]].
+/** Produces the cryptographic evidence appropriate to the deployment,
+  * binding the signing replica's identity (and, for TenderTee, a
+  * hardware-enforced monotonic counter) into the evidence. No real signing
+  * happens; see [[MockSignature]].
   */
 trait EvidenceMaker[E <: Evidence]:
-    def make(counter: Long): E
+    def make(sender: Uid, counter: Long): E
 
 object EvidenceMaker:
     given EvidenceMaker[Signed] with
-        def make(counter: Long): Signed = Signed(MockSignature())
+        def make(sender: Uid, counter: Long): Signed = Signed(sender, MockSignature())
 
     given EvidenceMaker[TeeSigned] with
-        def make(counter: Long): TeeSigned = TeeSigned(counter, MockSignature())
+        def make(sender: Uid, counter: Long): TeeSigned = TeeSigned(sender, counter, MockSignature())
 
 /** Local, non-replicated registers L and timeout counters C of a replica
   * (Sec. 7: S = ⟨B, C, L⟩). Replicated state lives exclusively in the lattice.
@@ -85,7 +86,7 @@ case class Tendermint(
       * consuming one monotonic counter for TenderTee deployments.
       */
     def send[E <: Evidence](using LocalUid, ValidatorSet, EvidenceMaker[E]): Set[InMsg[E]] =
-        val ev   = summon[EvidenceMaker[E]].make(local.nextCounter)
+        val ev   = summon[EvidenceMaker[E]].make(replicaId, local.nextCounter)
         val h    = local.currentHeight
         val r    = local.currentRound
         local.currentStep match
@@ -179,7 +180,7 @@ case class Tendermint(
     /** Fixed-point stabilization (Sec. 8): repeatedly applies Compute until
       * key(S) = key(S1). Terminates over a finite lattice snapshot (Theorem 7).
       */
-    def stabilize(using LocalUid, ValidatorSet): Tendermint =
+    def stabilize(using ValidatorSet): Tendermint =
         val s1 = compute
         if s1.local.key == local.key then s1
         else s1.stabilize
