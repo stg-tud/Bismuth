@@ -5,8 +5,10 @@ import crypto.Commitment.RevealedValue
 import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import rdts.filters.{Filter, PermissionTree}
+import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+
+import scala.annotation.tailrec
 
 class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
@@ -69,16 +71,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
     val eventsWithDeltas = Decompose.decompose(delta).map { decomposedDelta =>
       val commitedValue = Commitment.commit(writeToArray(decomposedDelta))
-      val unsignedEvent = ArdtEvent(
-        DeltaCommitment(commitedValue.commitment),
-        localReplicaId,
-        eventGraph.heads,
-        Signature.allZeroSignature,
-        capabilityHash
-      )
-      val signature = Signature.compute(writeToArray(unsignedEvent), privateIdentity.identityKey.getPrivate)
-
-      val signedEvent = writeToArray(unsignedEvent.copy(signature = signature))
+      val payload       = DeltaCommitment(commitedValue.commitment)
+      val signedEvent   = createSignedEvent(payload, capabilityHash)
       (Hash.compute(signedEvent), signedEvent, commitedValue)
     }
 
@@ -93,9 +87,66 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     antiEntropy.broadcastDeltasFiltered(eventsWithDeltas.map(d => d._1 -> d._3))
   }
 
-  def createRevocation: Unit = ???
+  def createRevocation(revokedCapability: Hash): Unit = {
+    @tailrec
+    def findAuthorizationForRevocation(event: Hash): Option[Hash] =
+      if event == Hash.allZeroHash then None
+      else
+          eventGraph.events(event) match {
+            case (ArdtEvent(_, _, author, _, authorization), _) =>
+              if author == localReplicaId then Some(revokedCapability)
+              else findAuthorizationForRevocation(authorization)
+          }
 
-  def createDelegation: Unit = ???
+    findAuthorizationForRevocation(revokedCapability) match {
+      case Some(authorization) =>
+        val revocationEvent = createSignedEvent(Revocation(revokedCapability), authorization)
+        // Apply event locally
+        require(receiveEvent(revocationEvent).isRight)
+        // Disseminate event
+        antiEntropy.broadcastEvents(Iterable.single(revocationEvent))
+      case None => throw new IllegalStateException("No capability in authorization chain found to perform revocation")
+    }
+  }
+
+  def createDelegation(
+      usedCapability: Hash,
+      delegatee: PublicIdentity,
+      readPermissions: PermissionTree,
+      writePermissions: PermissionTree
+  ): Unit = {
+    require(writePermissions <= readPermissions)
+
+    eventGraph.events(usedCapability) match {
+      case (ArdtEvent(Capability(capabilityHolder, readUpperLimit, writeUpperLimit), _, _, _, _), _) =>
+        require(capabilityHolder == localReplicaId)
+        require(readPermissions <= readUpperLimit)
+        require(writePermissions <= writeUpperLimit)
+        val delegationEvent = createSignedEvent(
+          Capability(delegatee, readPermissions, writePermissions),
+          usedCapability
+        )
+
+        // Apply event locally
+        require(receiveEvent(delegationEvent).isRight)
+
+        // Disseminate event
+        antiEntropy.broadcastEvents(Iterable.single(delegationEvent))
+      case _ => throw new IllegalArgumentException("Referenced capability event is not a capability")
+    }
+  }
+
+  private def createSignedEvent(payload: ArdtEvent.Payload, capability: Hash): Array[Byte] = {
+    val unsignedEvent = ArdtEvent(
+      payload,
+      localReplicaId,
+      eventGraph.heads,
+      Signature.allZeroSignature,
+      capability
+    )
+    val signature = Signature.compute(writeToArray(unsignedEvent), privateIdentity.identityKey.getPrivate)
+    writeToArray(unsignedEvent.copy(signature = signature))
+  }
 
   def filterDeltas(
       readingReplica: PublicIdentity,
