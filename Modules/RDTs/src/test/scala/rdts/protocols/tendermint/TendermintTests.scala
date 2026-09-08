@@ -4,7 +4,7 @@ import rdts.base.Uid
 import rdts.base.Lattice.syntax
 import rdts.protocols.tendermint.TendermintState.given
 
-class BFTSmokeTest extends munit.FunSuite:
+class TendermintTests extends munit.FunSuite:
 
     val members = (0 until 4).map(i => Uid(s"v$i")).toSet
     val vs      = ValidatorSet(members, TrustModel.Classical)
