@@ -11,8 +11,9 @@
 // performed.
 package rdts.protocols.tendermint
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
+import rdts.protocols.tendermint.BFTState.given
 import rdts.protocols.tendermint.Step.*
 
 /** Produces the cryptographic evidence appropriate to the deployment,
@@ -82,20 +83,21 @@ case class Tendermint(
     local: LocalState = LocalState(),
 ):
 
-    /** Outbound message set for the active step. Evidence is attached here,
-      * consuming one monotonic counter for TenderTee deployments.
+    /** Outbound delta for the active step — the message *is* a BlockchainState
+      * delta. Evidence is attached here, consuming one monotonic counter for
+      * TenderTee deployments. The empty state (bottom) encodes "no message".
       */
-    def send[E <: Evidence](using LocalUid, ValidatorSet, EvidenceMaker[E]): Set[InMsg[E]] =
-        val ev   = summon[EvidenceMaker[E]].make(replicaId, local.nextCounter)
-        val h    = local.currentHeight
-        val r    = local.currentRound
+    def send[E <: Evidence](using LocalUid, ValidatorSet, EvidenceMaker[E]): BlockchainState[E] =
+        val ev = summon[EvidenceMaker[E]].make(replicaId, local.nextCounter)
+        val h  = local.currentHeight
+        val r  = local.currentRound
         local.currentStep match
             case Proposal =>
                 if replicaId == leader(h, r) && local.proposal.isDefined then
-                    Set(InMsg.Proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev)))
-                else Set.empty
-            case Prevote   => Set(InMsg.Prevote(h, r, Vote(local.proposal, ev)))
-            case Precommit => Set(InMsg.Precommit(h, r, Vote(local.vote, ev)))
+                    BFTState.proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev))
+                else Bottom[BlockchainState[E]].empty
+            case Prevote   => BFTState.prevote(h, r, Vote(local.proposal, ev))
+            case Precommit => BFTState.precommit(h, r, Vote(local.vote, ev))
 
     /** Timeout handler: guarantees progress and breaks liveness deadlocks.
       * Timers increment monotonically and shift steps/rounds deterministically.

@@ -76,21 +76,6 @@ case class ProposalMsg[E <: Evidence](block: BlockId, validRound: Long, evidence
 /** Messages accepted by the CRDT layer. Invalid messages (e.g. proposals from
   * non-designated leaders) are filtered prior to insertion (Sec. 4).
   */
-enum InMsg[E <: Evidence]:
-    case Proposal(h: Long, r: Long, proposal: ProposalMsg[E])
-    case Prevote(h: Long, r: Long, vote: Vote[E])
-    case Precommit(h: Long, r: Long, vote: Vote[E])
-
-    def height: Long = this match
-        case InMsg.Proposal(h, _, _)  => h
-        case InMsg.Prevote(h, _, _)   => h
-        case InMsg.Precommit(h, _, _) => h
-
-    def round: Long = this match
-        case InMsg.Proposal(_, r, _)  => r
-        case InMsg.Prevote(_, r, _)   => r
-        case InMsg.Precommit(_, r, _) => r
-
 /** CRDT replicated state for a single round (Sec. 4). */
 case class RoundState[E <: Evidence](
     proposals: Set[ProposalMsg[E]] = Set.empty[ProposalMsg[E]],
@@ -106,20 +91,6 @@ case class HeightState[E <: Evidence](rounds: Map[Long, RoundState[E]] = Map.emp
   * set of deltas converge (Lemma 2), independent of delivery order and duplication.
   */
 case class BlockchainState[E <: Evidence](heights: Map[Long, HeightState[E]] = Map.empty[Long, HeightState[E]]) {
-
-    /** Minimal delta containing exactly m at its coordinates (Def. 1: B(t+1) = B(t) ⊔ δ(m)).
-      * The message is attributed to the sender encoded in its evidence, not to
-      * the replica performing the merge.
-      */
-    def delta(m: InMsg[E]): BlockchainState[E] =
-        val round  = m match
-            case InMsg.Proposal(_, _, p)  => RoundState(proposals = Set(p))
-            case InMsg.Prevote(_, _, v)   => RoundState(preVotes = Map(v.evidence.sender -> Set(v)))
-            case InMsg.Precommit(_, _, v) => RoundState(preCommits = Map(v.evidence.sender -> Set(v)))
-        BlockchainState(Map(m.height -> HeightState(Map(m.round -> round))))
-
-    def merge(m: InMsg[E]): BlockchainState[E] =
-        Lattice.merge(this, delta(m))
 
     // -- Deterministic state projections (Sec. 5) ----------------------------
 
@@ -214,8 +185,17 @@ object BFTState:
     given [E <: Evidence]: Bottom[BlockchainState[E]] =
         Bottom.provide(BlockchainState[E]())
 
-    given [E <: Evidence]: Ordering[InMsg[E]] with
-        override def compare(x: InMsg[E], y: InMsg[E]): Int =
-            x.height compare y.height match
-                case 0 => x.round compare y.round
-                case c => c
+    /** Minimal delta containing exactly one protocol message at its coordinates
+      * (Def. 1: B(t+1) = B(t) ⊔ δ(m)). The message is attributed to the sender
+      * encoded in its evidence, not to the replica performing the merge.
+      * BlockchainState itself is the message type: sending a message means
+      * producing such a delta, receiving means merging it into the lattice.
+      */
+    def proposal[E <: Evidence](h: Long, r: Long, p: ProposalMsg[E]): BlockchainState[E] =
+        BlockchainState(Map(h -> HeightState(Map(r -> RoundState(proposals = Set(p))))))
+
+    def prevote[E <: Evidence](h: Long, r: Long, v: Vote[E]): BlockchainState[E] =
+        BlockchainState(Map(h -> HeightState(Map(r -> RoundState(preVotes = Map(v.evidence.sender -> Set(v)))))))
+
+    def precommit[E <: Evidence](h: Long, r: Long, v: Vote[E]): BlockchainState[E] =
+        BlockchainState(Map(h -> HeightState(Map(r -> RoundState(preCommits = Map(v.evidence.sender -> Set(v)))))))

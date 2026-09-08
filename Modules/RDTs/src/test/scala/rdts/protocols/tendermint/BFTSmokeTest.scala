@@ -1,6 +1,7 @@
 package rdts.protocols.tendermint
 
 import rdts.base.Uid
+import rdts.base.Lattice.syntax
 import rdts.protocols.tendermint.BFTState.given
 
 class BFTSmokeTest extends munit.FunSuite:
@@ -13,8 +14,8 @@ class BFTSmokeTest extends munit.FunSuite:
 
     test("CRDT convergence is independent of delivery order (Lemma 2)"):
         given ValidatorSet = vs
-        val mA = InMsg.Prevote(0, 0, Vote(Some(BlockId(1)), signed("v0")))
-        val mB = InMsg.Prevote(0, 0, Vote(Some(BlockId(2)), signed("v1")))
+        val mA = BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed("v0")))
+        val mB = BFTState.prevote(0, 0, Vote(Some(BlockId(2)), signed("v1")))
         val x  = BlockchainState[Signed]().merge(mA).merge(mB)
         val y  = BlockchainState[Signed]().merge(mB).merge(mA)
         // reordering and duplication must not matter
@@ -25,17 +26,17 @@ class BFTSmokeTest extends munit.FunSuite:
         given ValidatorSet = vs
         var b = BlockchainState[Signed]()
         for i <- 0 until 3 do
-            b = b.merge(InMsg.Prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
+            b = b.merge(BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         assertEquals(b.getPrevoteQuorum(0, 0), Some(BlockId(1)))
 
         // v0 equivocates: its projection becomes bottom, only 2 canonical votes remain
-        val b4 = b.merge(InMsg.Prevote(0, 0, Vote(Some(BlockId(2)), signed("v0"))))
+        val b4 = b.merge(BFTState.prevote(0, 0, Vote(Some(BlockId(2)), signed("v0"))))
         assertEquals(b4.getPrevoteQuorum(0, 0), None)
 
         // only 2 votes: no quorum
         var b5 = BlockchainState[Signed]()
         for i <- 0 until 2 do
-            b5 = b5.merge(InMsg.Prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
+            b5 = b5.merge(BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         assertEquals(b5.getPrevoteQuorum(0, 0), None)
 
     test("TenderTEE projection selects minimal counter and quorum is f+1 (Lemma 4, 5)"):
@@ -43,7 +44,7 @@ class BFTSmokeTest extends munit.FunSuite:
         given ValidatorSet = ValidatorSet(teeMembers, TrustModel.Tee)
 
         def add(b: BlockchainState[TeeSigned], uid: String, counter: Long, block: Option[BlockId]): BlockchainState[TeeSigned] =
-            b.merge(InMsg.Precommit(0, 0, Vote(block, tee(uid, counter))))
+            b.merge(BFTState.precommit(0, 0, Vote(block, tee(uid, counter))))
 
         // two validators vote, with out-of-order delivery of their counters
         val bt = add(add(add(BlockchainState(), "v0", 2, Some(BlockId(5))), "v0", 0, Some(BlockId(5))), "v1", 1, Some(BlockId(5)))
@@ -60,10 +61,10 @@ class BFTSmokeTest extends munit.FunSuite:
         // leader for (0,0) proposes block 1
         locally {
             given ValidatorSet = vs4
-            b = b.merge(InMsg.Proposal(0, 0, ProposalMsg(BlockId(1), -1, signed("v0"))))
+            b = b.merge(BFTState.proposal(0, 0, ProposalMsg(BlockId(1), -1, signed("v0"))))
             // 3 prevotes for block 1
             for i <- 0 until 3 do
-                b = b.merge(InMsg.Prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
+                b = b.merge(BFTState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         }
         locally {
             given ValidatorSet = vs4
