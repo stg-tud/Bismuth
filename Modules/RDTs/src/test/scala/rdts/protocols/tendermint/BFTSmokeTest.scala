@@ -14,17 +14,17 @@ class BFTSmokeTest extends munit.FunSuite:
 
     test("CRDT convergence is independent of delivery order (Lemma 2)"):
         given ValidatorSet = vs
-        val mA = TendermintState.prevote(0, 0, Vote(Some(BlockId(1)), signed("v0")))
-        val mB = TendermintState.prevote(0, 0, Vote(Some(BlockId(2)), signed("v1")))
-        val x  = TendermintState().merge(mA).merge(mB)
-        val y  = TendermintState().merge(mB).merge(mA)
+        val mA             = TendermintState.prevote(0, 0, Vote(Some(BlockId(1)), signed("v0")))
+        val mB             = TendermintState.prevote(0, 0, Vote(Some(BlockId(2)), signed("v1")))
+        val x              = TendermintState().merge(mA).merge(mB)
+        val y              = TendermintState().merge(mB).merge(mA)
         // reordering and duplication must not matter
         assertEquals(x, y)
         assertEquals(x.merge(mA), x)
 
     test("prevote quorum forms at 2f+1; equivocation nullifies the equivocator (Thm. 3, Def. 5)"):
         given ValidatorSet = vs
-        var b = TendermintState()
+        var b              = TendermintState()
         for i <- 0 until 3 do
             b = b.merge(TendermintState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         assertEquals(b.getPrevoteQuorum(0, 0), Some(BlockId(1)))
@@ -44,10 +44,15 @@ class BFTSmokeTest extends munit.FunSuite:
         given ValidatorSet = ValidatorSet(teeMembers, TrustModel.Tee)
 
         def add(b: TendermintState, uid: String, counter: Long, block: Option[BlockId]): TendermintState =
-            b.merge(TendermintState.precommit(0, 0, Vote(block, tee(uid, counter))))
+          b.merge(TendermintState.precommit(0, 0, Vote(block, tee(uid, counter))))
 
         // two validators vote, with out-of-order delivery of their counters
-        val bt = add(add(add(TendermintState(), "v0", 2, Some(BlockId(5))), "v0", 0, Some(BlockId(5))), "v1", 1, Some(BlockId(5)))
+        val bt = add(
+          add(add(TendermintState(), "v0", 2, Some(BlockId(5))), "v0", 0, Some(BlockId(5))),
+          "v1",
+          1,
+          Some(BlockId(5))
+        )
         // f+1 = 2 canonical votes suffice; entries carry duplicates
         assertEquals(bt.getPrecommitQuorum(0, 0), Some(BlockId(5)))
 
@@ -60,16 +65,16 @@ class BFTSmokeTest extends munit.FunSuite:
         var b   = TendermintState()
         // leader for (0,0) proposes block 1
         locally {
-            given ValidatorSet = vs4
-            b = b.merge(TendermintState.proposal(0, 0, ProposalMsg(BlockId(1), -1, signed("v0"))))
-            // 3 prevotes for block 1
-            for i <- 0 until 3 do
-                b = b.merge(TendermintState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
+          given ValidatorSet = vs4
+          b = b.merge(TendermintState.proposal(0, 0, ProposalMsg(BlockId(1), -1, signed("v0"))))
+          // 3 prevotes for block 1
+          for i <- 0 until 3 do
+              b = b.merge(TendermintState.prevote(0, 0, Vote(Some(BlockId(1)), signed(s"v$i"))))
         }
         locally {
-            given ValidatorSet = vs4
-            val t = TendermintReplica(state = b).stabilize
-            assertEquals(t.local.currentStep, Step.Precommit)
-            assertEquals(t.local.lockedValue, Some(BlockId(1)))
-            assertEquals(t.local.lockedRound, 0L)
+          given ValidatorSet = vs4
+          val t              = TendermintReplica(state = b).stabilize
+          assertEquals(t.local.currentStep, Step.Precommit)
+          assertEquals(t.local.lockedValue, Some(BlockId(1)))
+          assertEquals(t.local.lockedRound, 0L)
         }

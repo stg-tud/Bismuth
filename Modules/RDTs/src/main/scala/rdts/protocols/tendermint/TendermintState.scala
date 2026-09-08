@@ -88,89 +88,89 @@ case class HeightState(rounds: Map[Long, RoundState] = Map.empty[Long, RoundStat
   */
 case class TendermintState(heights: Map[Long, HeightState] = Map.empty[Long, HeightState]) {
 
-    // -- Deterministic state projections (Sec. 5) ----------------------------
+  // -- Deterministic state projections (Sec. 5) ----------------------------
 
-    def roundState(h: Long, r: Long): RoundState =
-        heights.get(h).flatMap(_.rounds.get(r)).getOrElse(RoundState())
+  def roundState(h: Long, r: Long): RoundState =
+    heights.get(h).flatMap(_.rounds.get(r)).getOrElse(RoundState())
 
-    /** Deterministic projection π over a set of observed entries (Lemma 3):
-      *
-      *   - Classical: canonical entry iff the set is a singleton, ⊥ on any conflict
-      *   - Tee:       unique minimal-counter entry (Lemma 4), ⊥ if empty
-      *
-      * `ev` extracts the evidence carried by an entry.
-      */
-    def project[V](entries: Set[V])(ev: V => Evidence)(using vs: ValidatorSet): Option[V] =
-        vs.model match
-            case TrustModel.Classical =>
-                if entries.size == 1 then entries.headOption else None
-            case TrustModel.Tee =>
-                entries
-                    .map(e => (e, ev(e).ctr))
-                    .collect { case (e, Some(ctr)) => (e, ctr) }
-                    .minByOption(_._2)
-                    .map(_._1)
+  /** Deterministic projection π over a set of observed entries (Lemma 3):
+    *
+    *   - Classical: canonical entry iff the set is a singleton, ⊥ on any conflict
+    *   - Tee:       unique minimal-counter entry (Lemma 4), ⊥ if empty
+    *
+    * `ev` extracts the evidence carried by an entry.
+    */
+  def project[V](entries: Set[V])(ev: V => Evidence)(using vs: ValidatorSet): Option[V] =
+    vs.model match
+        case TrustModel.Classical =>
+          if entries.size == 1 then entries.headOption else None
+        case TrustModel.Tee =>
+          entries
+            .map(e => (e, ev(e).ctr))
+            .collect { case (e, Some(ctr)) => (e, ctr) }
+            .minByOption(_._2)
+            .map(_._1)
 
-    /** TenderTee per-(validator, step) contiguous-prefix admission rule (Def. 3):
-      * a message is admitted only if it extends the next expected counter.
-      */
-    def canAdmit(existing: Set[Vote], vote: Vote)(using vs: ValidatorSet): Boolean =
-        (vote.evidence.ctr, vs.model) match
-            case (Some(counter), TrustModel.Tee) =>
-                val counters = existing.collect { case Vote(_, Evidence(Some(c), _, _)) => c }
-                counters.forall(_ < counter) && counter == counters.maxOption.getOrElse(-1L) + 1
-            case (None, TrustModel.Classical) => true
-            case _                            => false
+  /** TenderTee per-(validator, step) contiguous-prefix admission rule (Def. 3):
+    * a message is admitted only if it extends the next expected counter.
+    */
+  def canAdmit(existing: Set[Vote], vote: Vote)(using vs: ValidatorSet): Boolean =
+    (vote.evidence.ctr, vs.model) match
+        case (Some(counter), TrustModel.Tee) =>
+          val counters = existing.collect { case Vote(_, Evidence(Some(c), _, _)) => c }
+          counters.forall(_ < counter) && counter == counters.maxOption.getOrElse(-1L) + 1
+        case (None, TrustModel.Classical) => true
+        case _                            => false
 
-    // -- Deterministic protocol queries (Sec. 6) ------------------------------
+  // -- Deterministic protocol queries (Sec. 6) ------------------------------
 
-    /** Def. 4: block proposed by the designated leader for (h, r).
-      * Proposals are not keyed by validator, so π is applied over the whole
-      * proposal slot: a singleton yields the proposal, any conflict yields ⊥
-      * (Classical) or the minimal-counter entry (Tee).
-      */
-    def getProposal(h: Long, r: Long)(using vs: ValidatorSet): Option[ProposalMsg] =
-        project(roundState(h, r).proposals)(_.evidence)
+  /** Def. 4: block proposed by the designated leader for (h, r).
+    * Proposals are not keyed by validator, so π is applied over the whole
+    * proposal slot: a singleton yields the proposal, any conflict yields ⊥
+    * (Classical) or the minimal-counter entry (Tee).
+    */
+  def getProposal(h: Long, r: Long)(using vs: ValidatorSet): Option[ProposalMsg] =
+    project(roundState(h, r).proposals)(_.evidence)
 
-    private def votesIn(
-        h: Long,
-        r: Long,
-        select: RoundState => Map[Uid, Set[Vote]],
-    )(using vs: ValidatorSet): Map[Uid, Option[Vote]] =
-        select(roundState(h, r)).view.mapValues(entries => project(entries)(_.evidence)).toMap
+  private def votesIn(
+      h: Long,
+      r: Long,
+      select: RoundState => Map[Uid, Set[Vote]],
+  )(using vs: ValidatorSet): Map[Uid, Option[Vote]] =
+    select(roundState(h, r)).view.mapValues(entries => project(entries)(_.evidence)).toMap
 
-    private def quorumBlock(
-        h: Long,
-        r: Long,
-        select: RoundState => Map[Uid, Set[Vote]],
-    )(using vs: ValidatorSet): Option[BlockId] =
-        val counts = votesIn(h, r, select).values.flatten
-            .filter(_.block.isDefined)
-            .groupBy(_.block)
-            .map((b, vts) => (b, vts.size))
-        val winners = counts.filter((_, c) => c >= vs.quorum).keys
-        // quorum validity (Thm. 3) implies at most one such block
-        if winners.size == 1 then winners.head else None
+  private def quorumBlock(
+      h: Long,
+      r: Long,
+      select: RoundState => Map[Uid, Set[Vote]],
+  )(using vs: ValidatorSet): Option[BlockId] =
+      val counts = votesIn(h, r, select).values.flatten
+        .filter(_.block.isDefined)
+        .groupBy(_.block)
+        .map((b, vts) => (b, vts.size))
+      val winners = counts.filter((_, c) => c >= vs.quorum).keys
+      // quorum validity (Thm. 3) implies at most one such block
+      if winners.size == 1 then winners.head else None
 
-    /** Def. 5: unique block with a prevote-threshold certificate at (h, r). */
-    def getPrevoteQuorum(h: Long, r: Long)(using vs: ValidatorSet): Option[BlockId] =
-        quorumBlock(h, r, _.preVotes)
+  /** Def. 5: unique block with a prevote-threshold certificate at (h, r). */
+  def getPrevoteQuorum(h: Long, r: Long)(using vs: ValidatorSet): Option[BlockId] =
+    quorumBlock(h, r, _.preVotes)
 
-    /** Def. 6: unique block with a commit certificate in any round r' <= r at height h. */
-    def getPrecommitQuorum(h: Long, r: Long)(using vs: ValidatorSet): Option[BlockId] =
-        (0L to r).view.flatMap(rr => quorumBlock(h, rr, _.preCommits)).headOption
+  /** Def. 6: unique block with a commit certificate in any round r' <= r at height h. */
+  def getPrecommitQuorum(h: Long, r: Long)(using vs: ValidatorSet): Option[BlockId] =
+    (0L to r).view.flatMap(rr => quorumBlock(h, rr, _.preCommits)).headOption
 
-    /** Def. 7: threshold of validators issued nil in step s at (h, r). */
-    def hasNilQuorum(h: Long, r: Long, s: Step)(using vs: ValidatorSet): Boolean =
-        val select = s match
-            case Prevote   => (_: RoundState).preVotes
-            case Precommit => (_: RoundState).preCommits
-            case Proposal  => (_: RoundState).preVotes
-        votesIn(h, r, select).values.count {
-            case Some(Vote(Some(_), _)) => false
-            case Some(Vote(None, _))    => true
-            case None                   => false
-        } >= vs.quorum
+  /** Def. 7: threshold of validators issued nil in step s at (h, r). */
+  def hasNilQuorum(h: Long, r: Long, s: Step)(using vs: ValidatorSet): Boolean =
+      val select = s match
+          case Prevote   => (_: RoundState).preVotes
+          case Precommit => (_: RoundState).preCommits
+          case Proposal  => (_: RoundState).preVotes
+      votesIn(h, r, select).values.count {
+        case Some(Vote(Some(_), _)) => false
+        case Some(Vote(None, _))    => true
+        case None                   => false
+      } >= vs.quorum
 }
 
 object TendermintState:
@@ -179,7 +179,7 @@ object TendermintState:
     given Lattice[TendermintState] = Lattice.derived
 
     given Bottom[TendermintState] =
-        Bottom.provide(TendermintState())
+      Bottom.provide(TendermintState())
 
     /** Minimal delta containing exactly one protocol message at its coordinates
       * (Def. 1: B(t+1) = B(t) ⊔ δ(m)). The message is attributed to the sender
@@ -188,10 +188,10 @@ object TendermintState:
       * producing such a delta, receiving means merging it into the lattice.
       */
     def proposal(h: Long, r: Long, p: ProposalMsg): TendermintState =
-        TendermintState(Map(h -> HeightState(Map(r -> RoundState(proposals = Set(p))))))
+      TendermintState(Map(h -> HeightState(Map(r -> RoundState(proposals = Set(p))))))
 
     def prevote(h: Long, r: Long, v: Vote): TendermintState =
-        TendermintState(Map(h -> HeightState(Map(r -> RoundState(preVotes = Map(v.evidence.sender -> Set(v)))))))
+      TendermintState(Map(h -> HeightState(Map(r -> RoundState(preVotes = Map(v.evidence.sender -> Set(v)))))))
 
     def precommit(h: Long, r: Long, v: Vote): TendermintState =
-        TendermintState(Map(h -> HeightState(Map(r -> RoundState(preCommits = Map(v.evidence.sender -> Set(v)))))))
+      TendermintState(Map(h -> HeightState(Map(r -> RoundState(preCommits = Map(v.evidence.sender -> Set(v)))))))

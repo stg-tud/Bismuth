@@ -17,7 +17,7 @@ object Webview {
         return
 
     val target = args.head
-    val uri =
+    val uri    =
       if target.startsWith("http://") || target.startsWith("https://") then target
       else Path.of(target).toUri.toString
 
