@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation
+package ex2026accessControl.evaluation.acl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

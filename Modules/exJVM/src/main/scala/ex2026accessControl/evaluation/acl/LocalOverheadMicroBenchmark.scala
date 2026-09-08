@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation
+package ex2026accessControl.evaluation.acl
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Hash, PublicIdentity}

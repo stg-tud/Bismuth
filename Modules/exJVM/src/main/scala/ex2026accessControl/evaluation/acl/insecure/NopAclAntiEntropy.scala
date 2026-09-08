@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation.insecure
+package ex2026accessControl.evaluation.acl.insecure
 
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}

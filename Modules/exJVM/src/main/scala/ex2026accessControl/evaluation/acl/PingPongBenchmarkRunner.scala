@@ -1,11 +1,11 @@
-package ex2026accessControl.evaluation
+package ex2026accessControl.evaluation.acl
 
 import cats.data.{Validated, ValidatedNel}
 import cats.implicits.*
 import com.monovore.decline.*
 import crypto.channels.IdentityFactory
-import ex2026accessControl.evaluation.PingPongBenchmarkRunnerArguments.Mode.*
-import ex2026accessControl.evaluation.PingPongBenchmarkRunnerArguments.{Config, Peer}
+import ex2026accessControl.evaluation.acl.PingPongBenchmarkRunnerArguments.Mode.*
+import ex2026accessControl.evaluation.acl.PingPongBenchmarkRunnerArguments.{Config, Peer}
 
 import java.nio.file.{Path, Paths}
 import scala.language.implicitConversions

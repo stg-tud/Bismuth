@@ -1,8 +1,8 @@
-package ex2026accessControl.evaluation
+package ex2026accessControl.evaluation.acl
 
 import cats.implicits.*
 import com.monovore.decline.*
-import ex2026accessControl.evaluation.SimulationBenchmark.start
+import ex2026accessControl.evaluation.acl.SimulationBenchmark.start
 
 object SimulationRunnerArguments {
   case class Config(

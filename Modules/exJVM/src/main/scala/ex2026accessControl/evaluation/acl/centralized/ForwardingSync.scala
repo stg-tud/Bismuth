@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation.centralized
+package ex2026accessControl.evaluation.acl.centralized
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}

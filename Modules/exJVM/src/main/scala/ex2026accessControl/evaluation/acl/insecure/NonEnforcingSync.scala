@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation.insecure
+package ex2026accessControl.evaluation.acl.insecure
 
 import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

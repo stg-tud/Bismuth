@@ -1,7 +1,7 @@
-package ex2026accessControl.evaluation
+package ex2026accessControl.evaluation.acl
 
 import crypto.channels.PrivateIdentity
-import ex2026accessControl.evaluation.insecure.NonEnforcingSync
+import ex2026accessControl.evaluation.acl.insecure.NonEnforcingSync
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.time.Dots
 import replication.acl.sync.AclEnforcingSync

@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation.centralized
+package ex2026accessControl.evaluation.acl.centralized
 
 import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
