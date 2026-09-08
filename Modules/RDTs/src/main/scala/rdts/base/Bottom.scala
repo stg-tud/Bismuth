@@ -26,8 +26,7 @@ trait Bottom[A] {
 }
 
 object Bottom {
-  def provide[A](v: A): Bottom[A] = new Bottom[A]:
-      override val empty: A = v
+  case class provide[A](override val empty: A) extends Bottom[A]
 
   def empty[A](using bottom: Bottom[A]): A               = bottom.empty
   def isEmpty[A](v: A)(using bottom: Bottom[A]): Boolean = bottom.isEmpty(v)
