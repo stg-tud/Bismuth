@@ -16,21 +16,6 @@ import rdts.base.LocalUid.replicaId
 import rdts.protocols.tendermint.BFTState.given
 import rdts.protocols.tendermint.Step.*
 
-/** Produces the cryptographic evidence appropriate to the deployment,
-  * binding the signing replica's identity (and, for TenderTee, a
-  * hardware-enforced monotonic counter) into the evidence. No real signing
-  * happens; see [[MockSignature]].
-  */
-trait EvidenceMaker[E <: Evidence]:
-    def make(sender: Uid, counter: Long): E
-
-object EvidenceMaker:
-    given EvidenceMaker[Signed] with
-        def make(sender: Uid, counter: Long): Signed = Signed(sender, MockSignature())
-
-    given EvidenceMaker[TeeSigned] with
-        def make(sender: Uid, counter: Long): TeeSigned = TeeSigned(sender, counter, MockSignature())
-
 /** Local, non-replicated registers L and timeout counters C of a replica
   * (Sec. 7: S = ⟨B, C, L⟩). Replicated state lives exclusively in the lattice.
   */
@@ -71,7 +56,7 @@ case class LocalState(
             timeoutPrecommit = 1,
         )
 
-/** Tendermint / TenderTEE consensus over the BlockchainState semilattice,
+/** Tendermint / TenderTEE consensus over the TendermintState semilattice,
   * expressed as a pure functional transition system (Sec. 7).
   *
   * Protocol safety is enforced solely through guards operating over read-only
@@ -79,23 +64,32 @@ case class LocalState(
   * CRDT delta merges of outbound messages (Sec. 8).
   */
 case class TendermintReplica(
-                       state: TendermintState[?] = TendermintState[Nothing](),
-                       local: LocalState = LocalState(),
+    state: TendermintState = TendermintState(),
+    local: LocalState = LocalState(),
 ):
 
-    /** Outbound delta for the active step — the message *is* a BlockchainState
+    /** Outbound delta for the active step — the message *is* a TendermintState
       * delta. Evidence is attached here, consuming one monotonic counter for
-      * TenderTee deployments. The empty state (bottom) encodes "no message".
+      * TenderTee deployments (the ValidatorSet's trust model decides whether
+      * a counter is embedded). The empty state (bottom) encodes "no message".
       */
-    def send[E <: Evidence](using LocalUid, ValidatorSet, EvidenceMaker[E]): TendermintState[E] =
-        val ev = summon[EvidenceMaker[E]].make(replicaId, local.nextCounter)
-        val h  = local.currentHeight
-        val r  = local.currentRound
+    def send(using LocalUid, ValidatorSet): TendermintState =
+        val vs = summon[ValidatorSet]
+        val ev = Evidence(
+            ctr = vs.model match
+                case TrustModel.Tee       => Some(local.nextCounter)
+                case TrustModel.Classical => None
+            ,
+            sender = replicaId,
+            signature = MockSignature(),
+        )
+        val h = local.currentHeight
+        val r = local.currentRound
         local.currentStep match
             case Proposal =>
-                if replicaId == leader(h, r) && local.proposal.isDefined then
+                if replicaId == leader(h, r)(using vs) && local.proposal.isDefined then
                     BFTState.proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev))
-                else Bottom[TendermintState[E]].empty
+                else Bottom[TendermintState].empty
             case Prevote   => BFTState.prevote(h, r, Vote(local.proposal, ev))
             case Precommit => BFTState.precommit(h, r, Vote(local.vote, ev))
 
@@ -120,7 +114,7 @@ case class TendermintReplica(
     /** Deterministic guard evaluation over the projected state (Sec. 7).
       * Returns a new local state; the replicated state is never modified here.
       */
-    def compute(using ValidatorSet): TendermintReplica =
+    def compute()(using ValidatorSet): TendermintReplica =
         val h = local.currentHeight
         val r = local.currentRound
 
@@ -183,7 +177,7 @@ case class TendermintReplica(
       * key(S) = key(S1). Terminates over a finite lattice snapshot (Theorem 7).
       */
     def stabilize(using ValidatorSet): TendermintReplica =
-        val s1 = compute
+        val s1 = compute()
         if s1.local.key == local.key then s1
         else s1.stabilize
 

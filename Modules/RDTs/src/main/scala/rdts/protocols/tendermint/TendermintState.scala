@@ -18,7 +18,6 @@
 package rdts.protocols.tendermint
 
 import rdts.base.{Bottom, Lattice, Uid}
-import rdts.protocols.tendermint.BFTState.given
 import rdts.protocols.tendermint.Step.*
 
 /** Execution phase within a round. */
@@ -29,6 +28,9 @@ enum Step:
   *
   *   - Classical: digital signatures, equivocation possible, quorum 2f + 1 (n >= 3f + 1)
   *   - Tee:       hardware-enforced monotonic counters, no equivocation, quorum f + 1
+  *
+  * The trust model is a property of the validator set, not of the evidence
+  * type: the same Evidence shape is used in both deployments.
   */
 enum TrustModel:
     case Classical, Tee
@@ -48,15 +50,12 @@ case class MockSignature()
   *
   * Carries the authenticated sender identity of the message (in a real
   * deployment recovered by verifying the signature) and, in the TenderTee
-  * variant, a hardware-enforced monotonic counter (Def. 3). No real
+  * deployment, a hardware-enforced monotonic counter (Def. 3) — `ctr` is
+  * `None` in the classical Tendermint deployment. Whether a counter is
+  * present/checked is decided by the ValidatorSet's TrustModel. No real
   * cryptographic verification is performed — see [[MockSignature]].
   */
-sealed trait Evidence:
-    def sender: Uid
-    def counter: Option[Long] = None
-case class Signed(sender: Uid, signature: MockSignature) extends Evidence
-case class TeeSigned(sender: Uid, ctr: Long, signature: MockSignature) extends Evidence:
-    override def counter: Option[Long] = Some(ctr)
+case class Evidence(ctr: Option[Long], sender: Uid, signature: MockSignature)
 
 /** Validator set together with the trust model determining quorum thresholds. */
 case class ValidatorSet(members: Set[Uid], model: TrustModel):
@@ -68,34 +67,31 @@ case class ValidatorSet(members: Set[Uid], model: TrustModel):
         case TrustModel.Tee       => f + 1
 
 /** A vote (pre-vote or pre-commit) for a block or nil, bound to evidence. */
-case class Vote[E <: Evidence](block: Option[BlockId], evidence: E)
+case class Vote(block: Option[BlockId], evidence: Evidence)
 
 /** A proposal carrying the validRound of the proposer's lock. */
-case class ProposalMsg[E <: Evidence](block: BlockId, validRound: Long, evidence: E)
+case class ProposalMsg(block: BlockId, validRound: Long, evidence: Evidence)
 
-/** Messages accepted by the CRDT layer. Invalid messages (e.g. proposals from
-  * non-designated leaders) are filtered prior to insertion (Sec. 4).
-  */
 /** CRDT replicated state for a single round (Sec. 4). */
-case class RoundState[E <: Evidence](
-    proposals: Set[ProposalMsg[E]] = Set.empty[ProposalMsg[E]],
-    preVotes: Map[Uid, Set[Vote[E]]] = Map.empty[Uid, Set[Vote[E]]],
-    preCommits: Map[Uid, Set[Vote[E]]] = Map.empty[Uid, Set[Vote[E]]]
+case class RoundState(
+    proposals: Set[ProposalMsg] = Set.empty[ProposalMsg],
+    preVotes: Map[Uid, Set[Vote]] = Map.empty[Uid, Set[Vote]],
+    preCommits: Map[Uid, Set[Vote]] = Map.empty[Uid, Set[Vote]],
 )
 
-case class HeightState[E <: Evidence](rounds: Map[Long, RoundState[E]] = Map.empty[Long, RoundState[E]])
+case class HeightState(rounds: Map[Long, RoundState] = Map.empty[Long, RoundState])
 
 /** Hierarchical join-semilattice over (height, round, step, validator) coordinates
   * (Lemma 1). Merge is key-wise map merge with set union on overlap, hence
   * associative, commutative and idempotent: replicas that incorporate the same
   * set of deltas converge (Lemma 2), independent of delivery order and duplication.
   */
-case class TendermintState[E <: Evidence](heights: Map[Long, HeightState[E]] = Map.empty[Long, HeightState[E]]) {
+case class TendermintState(heights: Map[Long, HeightState] = Map.empty[Long, HeightState]) {
 
     // -- Deterministic state projections (Sec. 5) ----------------------------
 
-    def roundState(h: Long, r: Long): RoundState[E] =
-        heights.get(h).flatMap(_.rounds.get(r)).getOrElse(RoundState[E]())
+    def roundState(h: Long, r: Long): RoundState =
+        heights.get(h).flatMap(_.rounds.get(r)).getOrElse(RoundState())
 
     /** Deterministic projection π over a set of observed entries (Lemma 3):
       *
@@ -110,21 +106,21 @@ case class TendermintState[E <: Evidence](heights: Map[Long, HeightState[E]] = M
                 if entries.size == 1 then entries.headOption else None
             case TrustModel.Tee =>
                 entries
-                    .map(e => (e, ev(e)))
-                    .collect { case (e, t: TeeSigned) => (e, t.counter) }
+                    .map(e => (e, ev(e).ctr))
+                    .collect { case (e, Some(ctr)) => (e, ctr) }
                     .minByOption(_._2)
                     .map(_._1)
 
     /** TenderTee per-(validator, step) contiguous-prefix admission rule (Def. 3):
       * a message is admitted only if it extends the next expected counter.
       */
-    def canAdmit(existing: Set[Vote[E]], vote: Vote[E])(using vs: ValidatorSet): Boolean =
-        (vote.evidence, vs.model) match
-            case (TeeSigned(_, counter, _), TrustModel.Tee) =>
-                val counters = existing.collect { case Vote(_, TeeSigned(_, c, _)) => c }
+    def canAdmit(existing: Set[Vote], vote: Vote)(using vs: ValidatorSet): Boolean =
+        (vote.evidence.ctr, vs.model) match
+            case (Some(counter), TrustModel.Tee) =>
+                val counters = existing.collect { case Vote(_, Evidence(Some(c), _, _)) => c }
                 counters.forall(_ < counter) && counter == counters.maxOption.getOrElse(-1L) + 1
-            case (_: Signed, TrustModel.Classical) => true
-            case _                                 => false
+            case (None, TrustModel.Classical) => true
+            case _                            => false
 
     // -- Deterministic protocol queries (Sec. 6) ------------------------------
 
@@ -133,20 +129,20 @@ case class TendermintState[E <: Evidence](heights: Map[Long, HeightState[E]] = M
       * proposal slot: a singleton yields the proposal, any conflict yields ⊥
       * (Classical) or the minimal-counter entry (Tee).
       */
-    def getProposal(h: Long, r: Long)(using vs: ValidatorSet): Option[ProposalMsg[E]] =
+    def getProposal(h: Long, r: Long)(using vs: ValidatorSet): Option[ProposalMsg] =
         project(roundState(h, r).proposals)(_.evidence)
 
     private def votesIn(
         h: Long,
         r: Long,
-        select: RoundState[E] => Map[Uid, Set[Vote[E]]],
-    )(using vs: ValidatorSet): Map[Uid, Option[Vote[E]]] =
+        select: RoundState => Map[Uid, Set[Vote]],
+    )(using vs: ValidatorSet): Map[Uid, Option[Vote]] =
         select(roundState(h, r)).view.mapValues(entries => project(entries)(_.evidence)).toMap
 
     private def quorumBlock(
         h: Long,
         r: Long,
-        select: RoundState[E] => Map[Uid, Set[Vote[E]]],
+        select: RoundState => Map[Uid, Set[Vote]],
     )(using vs: ValidatorSet): Option[BlockId] =
         val counts = votesIn(h, r, select).values.flatten
             .filter(_.block.isDefined)
@@ -167,9 +163,9 @@ case class TendermintState[E <: Evidence](heights: Map[Long, HeightState[E]] = M
     /** Def. 7: threshold of validators issued nil in step s at (h, r). */
     def hasNilQuorum(h: Long, r: Long, s: Step)(using vs: ValidatorSet): Boolean =
         val select = s match
-            case Prevote   => (_: RoundState[E]).preVotes
-            case Precommit => (_: RoundState[E]).preCommits
-            case Proposal  => (_: RoundState[E]).preVotes
+            case Prevote   => (_: RoundState).preVotes
+            case Precommit => (_: RoundState).preCommits
+            case Proposal  => (_: RoundState).preVotes
         votesIn(h, r, select).values.count {
             case Some(Vote(Some(_), _)) => false
             case Some(Vote(None, _))    => true
@@ -178,24 +174,24 @@ case class TendermintState[E <: Evidence](heights: Map[Long, HeightState[E]] = M
 }
 
 object BFTState:
-    given [E <: Evidence]: Lattice[RoundState[E]]      = Lattice.derived
-    given [E <: Evidence]: Lattice[HeightState[E]]     = Lattice.derived
-    given [E <: Evidence]: Lattice[TendermintState[E]] = Lattice.derived
+    given Lattice[RoundState]      = Lattice.derived
+    given Lattice[HeightState]     = Lattice.derived
+    given Lattice[TendermintState] = Lattice.derived
 
-    given [E <: Evidence]: Bottom[TendermintState[E]] =
-        Bottom.provide(TendermintState[E]())
+    given Bottom[TendermintState] =
+        Bottom.provide(TendermintState())
 
     /** Minimal delta containing exactly one protocol message at its coordinates
       * (Def. 1: B(t+1) = B(t) ⊔ δ(m)). The message is attributed to the sender
       * encoded in its evidence, not to the replica performing the merge.
-      * BlockchainState itself is the message type: sending a message means
+      * TendermintState itself is the message type: sending a message means
       * producing such a delta, receiving means merging it into the lattice.
       */
-    def proposal[E <: Evidence](h: Long, r: Long, p: ProposalMsg[E]): TendermintState[E] =
+    def proposal(h: Long, r: Long, p: ProposalMsg): TendermintState =
         TendermintState(Map(h -> HeightState(Map(r -> RoundState(proposals = Set(p))))))
 
-    def prevote[E <: Evidence](h: Long, r: Long, v: Vote[E]): TendermintState[E] =
+    def prevote(h: Long, r: Long, v: Vote): TendermintState =
         TendermintState(Map(h -> HeightState(Map(r -> RoundState(preVotes = Map(v.evidence.sender -> Set(v)))))))
 
-    def precommit[E <: Evidence](h: Long, r: Long, v: Vote[E]): TendermintState[E] =
+    def precommit(h: Long, r: Long, v: Vote): TendermintState =
         TendermintState(Map(h -> HeightState(Map(r -> RoundState(preCommits = Map(v.evidence.sender -> Set(v)))))))
