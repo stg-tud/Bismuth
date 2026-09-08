@@ -132,7 +132,7 @@ case class TendermintReplica(
                         TendermintReplica(state, local.copy(proposal = Some(p.block), currentStep = Prevote))
                     else TendermintReplica(state, local.copy(currentStep = Prevote))
                   case Some(_) =>
-                    // invalid proposal: prevote nil
+                    // invalid proposal: prevote nil (paper Line 30: proposal <- ∅)
                     TendermintReplica(state, local.copy(proposal = None, currentStep = Prevote))
                   case None => this // fixed point
 
