@@ -44,7 +44,7 @@ class SyncedTodoListCrdt(
     Future {
       op()
     }(using crdtExecContext),
-    100.milliseconds
+    2.seconds
   )
 
   def shutdown(): Unit = {
