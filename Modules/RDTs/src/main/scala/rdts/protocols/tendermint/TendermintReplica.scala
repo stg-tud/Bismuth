@@ -13,7 +13,7 @@ package rdts.protocols.tendermint
 
 import rdts.base.{Bottom, LocalUid, Uid}
 import rdts.base.LocalUid.replicaId
-import rdts.protocols.tendermint.BFTState.given
+import rdts.protocols.tendermint.TendermintState.given
 import rdts.protocols.tendermint.Step.*
 
 /** Local, non-replicated registers L and timeout counters C of a replica
@@ -88,10 +88,10 @@ case class TendermintReplica(
         local.currentStep match
             case Proposal =>
                 if replicaId == leader(h, r)(using vs) && local.proposal.isDefined then
-                    BFTState.proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev))
+                    TendermintState.proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev))
                 else Bottom[TendermintState].empty
-            case Prevote   => BFTState.prevote(h, r, Vote(local.proposal, ev))
-            case Precommit => BFTState.precommit(h, r, Vote(local.vote, ev))
+            case Prevote   => TendermintState.prevote(h, r, Vote(local.proposal, ev))
+            case Precommit => TendermintState.precommit(h, r, Vote(local.vote, ev))
 
     /** Timeout handler: guarantees progress and breaks liveness deadlocks.
       * Timers increment monotonically and shift steps/rounds deterministically.

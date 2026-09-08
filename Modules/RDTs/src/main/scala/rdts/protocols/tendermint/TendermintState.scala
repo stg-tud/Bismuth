@@ -173,7 +173,7 @@ case class TendermintState(heights: Map[Long, HeightState] = Map.empty[Long, Hei
         } >= vs.quorum
 }
 
-object BFTState:
+object TendermintState:
     given Lattice[RoundState]      = Lattice.derived
     given Lattice[HeightState]     = Lattice.derived
     given Lattice[TendermintState] = Lattice.derived
