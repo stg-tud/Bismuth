@@ -57,9 +57,10 @@ class AntiEntropy(
       case EVENT_MSG_TAG =>
         val encodedEvent = decodeEventMsg(msgBytes)
         replica.receiveEvent(encodedEvent) match {
-          case Right(eventHash) =>
+          case Right(Some(eventHash)) =>
             missingEvents.remove(eventHash): Unit
           // TODO: Remove from missing dependencies and receive events that are now receivable
+          case Right(None)         => // Duplicate event
           case Left(missingEvents) =>
             val eventHash = Hash.compute(encodedEvent)
             enqueueEventWithMissingPredecessors(eventHash, encodedEvent, missingEvents, sender)

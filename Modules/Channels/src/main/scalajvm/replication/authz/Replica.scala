@@ -27,12 +27,12 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def containsEvent(eventHash: Hash): Boolean = eventGraph.events.contains(eventHash)
 
-  def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Hash] = synchronized {
+  def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Option[Hash]] = synchronized {
     val oldHeads = eventGraph.heads
     eventGraph.receive(encodedEvent) match {
       case Right(updatedEventGraph) =>
         eventGraph = updatedEventGraph
-        val addedEventHash = eventGraph.heads.diff(oldHeads).head
+        val addedEventHash = eventGraph.heads.diff(oldHeads).headOption
         Right(addedEventHash)
       case Left(missing) =>
         Left(missing)
@@ -93,7 +93,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       if event == Hash.allZeroHash then None
       else
           eventGraph.events(event) match {
-            case (ArdtEvent(_, _, author, _, authorization), _) =>
+            case (ArdtEvent(_, author, _, _, authorization), _) =>
               if author == localReplicaId then Some(revokedCapability)
               else findAuthorizationForRevocation(authorization)
           }
