@@ -22,7 +22,11 @@ class AntiEntropy(
   private lazy val connectionManager: ConnectionManager                = connectionManagerProvider(this)
   private lazy val controlPlane: MessageReceiver[ByteBuffer]           = controlPlaneProvider(connectionManager)
 
-  def listenAddress: Option[(String, Int)] = connectionManager.listenAddress
+  def listenAddress: Option[(String, Int)]  = connectionManager.listenAddress
+  def connect(address: (String, Int)): Unit = connectionManager.connectTo(address)
+
+  def start(): Unit = connectionManager.acceptIncomingConnections()
+  def stop(): Unit  = connectionManager.shutdown()
 
   def broadcastEvents(events: Iterable[Array[Byte]]): Unit =
     connectionManager.broadcast(

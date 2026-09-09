@@ -152,6 +152,12 @@ case class ArdtEventGraph[T: Lattice](
 
   def capabilities(replicaId: PublicIdentity): Set[(Hash, Capability)] =
     capabilityCache.getOrElse(replicaId, Set.empty)
+
+  def activeCapabilities: Map[PublicIdentity, Set[(Hash, Capability)]] =
+    capabilityCache.map((k, v) => k -> v.filter((hash, cap) => revocations(hash).isEmpty))
+
+  def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
+    capabilityCache.getOrElse(publicIdentity, Set.empty).filter((hash, cap) => revocations(hash).isEmpty)
 }
 
 object ArdtEventGraph {

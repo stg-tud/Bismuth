@@ -24,6 +24,10 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   private lazy val antiEntropy: AntiEntropy         = antiEntropyProvider(this)
 
   def listenAddress: Option[(String, Int)] = antiEntropy.listenAddress
+  def connect(address: (String, Int)): Unit = antiEntropy.connect(address)
+
+  def start(): Unit = antiEntropy.start()
+  def stop(): Unit  = antiEntropy.stop()
 
   def containsEvent(eventHash: Hash): Boolean = eventGraph.events.contains(eventHash)
 
@@ -135,6 +139,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       case _ => throw new IllegalArgumentException("Referenced capability event is not a capability")
     }
   }
+
+  def activeCapabilities: Map[PublicIdentity, Set[(Hash, Capability)]] = eventGraph.activeCapabilities
+
+  def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
+    eventGraph.activeCapabilitiesOf(publicIdentity)
 
   private def createSignedEvent(payload: ArdtEvent.Payload, capability: Hash): Array[Byte] = {
     val unsignedEvent = ArdtEvent(

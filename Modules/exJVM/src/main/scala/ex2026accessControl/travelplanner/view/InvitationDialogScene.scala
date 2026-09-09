@@ -19,7 +19,10 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
   private val state = travelPlanModel.state
 
   private val permissionTreePane = {
-    val localPermissions = travelPlanModel.availablePermissions(travelPlanModel.publicId)
+    val localPermissions = travelPlanModel.availablePermissions.getOrElse(
+      travelPlanModel.publicId,
+      (PermissionTree.empty, PermissionTree.empty)
+    )
     PermissionTreePane(state, localPermissions.read, localPermissions.write)
   }
 
