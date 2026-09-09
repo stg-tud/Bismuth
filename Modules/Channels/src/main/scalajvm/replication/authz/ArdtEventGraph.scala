@@ -7,6 +7,7 @@ import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.CausalOrder.*
 
+import scala.collection.immutable.Iterable
 import scala.collection.mutable
 
 case class ArdtEventGraph[T: Lattice](
@@ -158,6 +159,12 @@ case class ArdtEventGraph[T: Lattice](
 
   def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
     capabilityCache.getOrElse(publicIdentity, Set.empty).filter((hash, cap) => revocations(hash).isEmpty)
+
+  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)] = {
+    val sortedEvents = Array.ofDim[(Hash, ArdtEvent)](events.size)
+    events.foreach { case (hash, (event, i)) => sortedEvents(i) = hash -> event }
+    sortedEvents
+  }
 }
 
 object ArdtEventGraph {

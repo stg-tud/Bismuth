@@ -21,16 +21,21 @@ class FullMeshControlPlane(
   override def receivedMessage(msg: ByteBuffer, fromUser: PublicIdentity): Unit = {
     require(msg.get() == AntiEntropy.CONTROL_PLANE_MSG_TAG, "Not a control plane message")
     val peers = readFromByteBuffer[Peers](msg)
-    learnedAddresses = mapOfPeerAddressesLattice.merge(learnedAddresses, peers.peers)
+    synchronized {
+      learnedAddresses = mapOfPeerAddressesLattice.merge(learnedAddresses, peers.peers)
+    }
   }
 
-  override def connectionEstablished(publicIdentity: PublicIdentity): Unit = {
-    val peers         = Peers(learnedAddresses)
+  override def connectionEstablished(publicIdentity: PublicIdentity): Unit =
+    sendPeerList(publicIdentity)
+
+  private def sendPeerList(to: PublicIdentity): Unit = {
+    val peers         = synchronized { Peers(learnedAddresses) }
     val encodedPeers  = writeToArray(peers)
     val msgByteBuffer = ByteBuffer.allocate(encodedPeers.length + 1)
     msgByteBuffer.put(AntiEntropy.CONTROL_PLANE_MSG_TAG)
     msgByteBuffer.put(encodedPeers)
-    msgByteBuffer.reset()
+    msgByteBuffer.rewind()
     connectionManager.send(publicIdentity, ByteBufferMessageBuffer(msgByteBuffer))
   }
 }

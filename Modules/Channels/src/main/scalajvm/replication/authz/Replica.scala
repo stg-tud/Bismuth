@@ -18,12 +18,17 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 ) {
   val localReplicaId: PublicIdentity = privateIdentity.getPublic
 
-  def state: RDT                                    = Authorization.materialize(eventGraph, deltaValueStore)
   private var eventGraph: ArdtEventGraph[RDT]       = ArdtEventGraph(genesis)
   private val deltaValueStore: DeltaValueStore[RDT] = DeltaValueStore[RDT]()
   private lazy val antiEntropy: AntiEntropy         = antiEntropyProvider(this)
 
-  def listenAddress: Option[(String, Int)] = antiEntropy.listenAddress
+  def state: RDT                                       = Authorization.materialize(eventGraph, deltaValueStore)
+  def heads: Set[Hash]                                 = eventGraph.heads
+  def event(hash: Hash): Option[ArdtEvent]             = eventGraph.events.get(hash).map(_._1)
+  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)] = eventGraph.allEventsInCausalOrder
+  def delta(commitment: Hash): Option[RevealedValue]   = deltaValueStore.get(commitment)
+
+  def listenAddress: Option[(String, Int)]  = antiEntropy.listenAddress
   def connect(address: (String, Int)): Unit = antiEntropy.connect(address)
 
   def start(): Unit = antiEntropy.start()
@@ -56,7 +61,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
         Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
     } match {
       case Some(hash, capability) => createUpdate(delta, hash)
-      case None                   => ???
+      case None                   => println(s"Insufficient permissions for mutation: $delta")
     }
   }
 
