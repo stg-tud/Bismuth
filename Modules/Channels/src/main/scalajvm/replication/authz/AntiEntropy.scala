@@ -39,7 +39,7 @@ class AntiEntropy(
         catch { case e: InterruptedException => }
         requestMissing()
       }
-    )
+    ): Unit
   }
 
   def stop(): Unit = {

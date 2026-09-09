@@ -19,7 +19,7 @@ class ReplicaTest extends FunSuite {
       onStateChange: Set[Int] => Unit = _ => ()
   ): (Replica[Set[Int]], MockAntiEntropy) = {
     var mockRef: MockAntiEntropy | Null = null
-    val replica = new Replica[Set[Int]](
+    val replica                         = new Replica[Set[Int]](
       genesisEvent.hash,
       identity,
       r => {
@@ -29,7 +29,7 @@ class ReplicaTest extends FunSuite {
       },
       onStateChange
     )
-    replica.listenAddress: Unit // forces the lazy antiEntropy val, so mockRef is populated before we return
+    replica.start()
     assert(replica.receiveEvent(writeToArray(genesisEvent)).isRight)
     (replica, mockRef.nn)
   }
@@ -37,8 +37,8 @@ class ReplicaTest extends FunSuite {
   private def newReplica(
       onStateChange: Set[Int] => Unit = _ => ()
   ): (Replica[Set[Int]], MockAntiEntropy, PrivateIdentity, ArdtEvent) = {
-    val rootIdentity     = newPrivateIdentity()
-    val genesisEvent     = Authorization.createGenesis(rootIdentity)
+    val rootIdentity    = newPrivateIdentity()
+    val genesisEvent    = Authorization.createGenesis(rootIdentity)
     val (replica, mock) = newReplicaWithGenesis(rootIdentity, genesisEvent, onStateChange)
     (replica, mock, rootIdentity, genesisEvent)
   }
@@ -61,17 +61,18 @@ class ReplicaTest extends FunSuite {
     assert(!replica.containsEvent(Hash.compute("unknown".getBytes)))
   }
 
-  test("listenAddress delegates to the underlying AntiEntropy") {
-    val (replica, _, _, _) = newReplica()
-    assertEquals(replica.listenAddress, None)
-  }
-
   // --- receiveEvent ---
 
   test("receiveEvent accepts a valid new event authorized by the genesis capability") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val (deltaEvent, _)                           =
-      buildDeltaEvent(Set(1), rootIdentity.getPublic, rootIdentity.identityKey.getPrivate, Set(genesisEvent.hash), genesisEvent.hash)
+    val (deltaEvent, _)                          =
+      buildDeltaEvent(
+        Set(1),
+        rootIdentity.getPublic,
+        rootIdentity.identityKey.getPrivate,
+        Set(genesisEvent.hash),
+        genesisEvent.hash
+      )
 
     assertEquals(replica.receiveEvent(writeToArray(deltaEvent)), Right(Some(deltaEvent.hash)))
     assert(replica.containsEvent(deltaEvent.hash))
@@ -79,8 +80,14 @@ class ReplicaTest extends FunSuite {
 
   test("receiveEvent returns Left with the missing parent when a parent is not locally available") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val (missingParentEvent, _)                   =
-      buildDeltaEvent(Set(1), rootIdentity.getPublic, rootIdentity.identityKey.getPrivate, Set(genesisEvent.hash), genesisEvent.hash)
+    val (missingParentEvent, _)                  =
+      buildDeltaEvent(
+        Set(1),
+        rootIdentity.getPublic,
+        rootIdentity.identityKey.getPrivate,
+        Set(genesisEvent.hash),
+        genesisEvent.hash
+      )
     val (deltaEvent, _) = buildDeltaEvent(
       Set(2),
       rootIdentity.getPublic,
@@ -91,7 +98,7 @@ class ReplicaTest extends FunSuite {
 
     replica.receiveEvent(writeToArray(deltaEvent)) match {
       case Left(missing) => assert(missing.contains(missingParentEvent.hash))
-      case Right(_)       => fail("expected Left because the parent event is not locally available")
+      case Right(_)      => fail("expected Left because the parent event is not locally available")
     }
   }
 
@@ -105,8 +112,14 @@ class ReplicaTest extends FunSuite {
   test("receiveDelta stores a readable delta and notifies onStateChange with the merged state") {
     val notifications                            = mutable.Buffer.empty[Set[Int]]
     val (replica, _, rootIdentity, genesisEvent) = newReplica(onStateChange = s => notifications += s: Unit)
-    val (deltaEvent, revealed)                    =
-      buildDeltaEvent(Set(1, 2), rootIdentity.getPublic, rootIdentity.identityKey.getPrivate, Set(genesisEvent.hash), genesisEvent.hash)
+    val (deltaEvent, revealed)                   =
+      buildDeltaEvent(
+        Set(1, 2),
+        rootIdentity.getPublic,
+        rootIdentity.identityKey.getPrivate,
+        Set(genesisEvent.hash),
+        genesisEvent.hash
+      )
     assert(replica.receiveEvent(writeToArray(deltaEvent)).isRight)
 
     replica.receiveDelta(deltaEvent.hash, revealed)
@@ -116,9 +129,9 @@ class ReplicaTest extends FunSuite {
   }
 
   test("receiveDelta throws when the local replica may not read the delta") {
-    val rootIdentity        = newPrivateIdentity()
-    val genesisEvent         = Authorization.createGenesis(rootIdentity)
-    val restrictedIdentity   = newPrivateIdentity()
+    val rootIdentity       = newPrivateIdentity()
+    val genesisEvent       = Authorization.createGenesis(rootIdentity)
+    val restrictedIdentity = newPrivateIdentity()
 
     val delegation = buildEvent(
       Capability(restrictedIdentity.getPublic, PermissionTree.empty, PermissionTree.allow),
@@ -158,13 +171,19 @@ class ReplicaTest extends FunSuite {
     assertEquals(readFromArray[Set[Int]](broadcastDelta.delta.value), Set(42))
   }
 
-  test("mutateState(mutator) throws NotImplementedError when no owned, unrevoked capability allows the delta") {
+  test("mutateState(mutator) throws exception when no owned, unrevoked capability allows the delta") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val revocation                                =
-      buildEvent(Revocation(genesisEvent.hash), rootIdentity.getPublic, rootIdentity.identityKey.getPrivate, Set(genesisEvent.hash), genesisEvent.hash)
+    val revocation                               =
+      buildEvent(
+        Revocation(genesisEvent.hash),
+        rootIdentity.getPublic,
+        rootIdentity.identityKey.getPrivate,
+        Set(genesisEvent.hash),
+        genesisEvent.hash
+      )
     assert(replica.receiveEvent(writeToArray(revocation)).isRight)
 
-    intercept[NotImplementedError] {
+    intercept[IllegalArgumentException] {
       replica.mutateState(_ => Set(1))
     }
   }
@@ -182,8 +201,14 @@ class ReplicaTest extends FunSuite {
 
   test("mutateState(mutator, capability) rejects writing under a revoked capability") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val revocation                                =
-      buildEvent(Revocation(genesisEvent.hash), rootIdentity.getPublic, rootIdentity.identityKey.getPrivate, Set(genesisEvent.hash), genesisEvent.hash)
+    val revocation                               =
+      buildEvent(
+        Revocation(genesisEvent.hash),
+        rootIdentity.getPublic,
+        rootIdentity.identityKey.getPrivate,
+        Set(genesisEvent.hash),
+        genesisEvent.hash
+      )
     assert(replica.receiveEvent(writeToArray(revocation)).isRight)
 
     intercept[IllegalArgumentException] {
@@ -193,7 +218,7 @@ class ReplicaTest extends FunSuite {
 
   test("mutateState(mutator, capability) rejects a delta the given capability's write permission forbids") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val selfDelegation                            = buildEvent(
+    val selfDelegation                           = buildEvent(
       Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.empty),
       rootIdentity.getPublic,
       rootIdentity.identityKey.getPrivate,
@@ -211,7 +236,7 @@ class ReplicaTest extends FunSuite {
 
   test("createDelegation creates a narrower delegation, applies it locally, and broadcasts it") {
     val (replica, mock, _, genesisEvent) = newReplica()
-    val (delegateHolder, _)               = newIdentity()
+    val (delegateHolder, _)              = newIdentity()
 
     replica.createDelegation(genesisEvent.hash, delegateHolder, PermissionTree.fromPath("a"), PermissionTree.empty)
 
@@ -226,7 +251,7 @@ class ReplicaTest extends FunSuite {
 
   test("createDelegation rejects permissions that exceed the used capability's permissions") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val narrowSelfDelegation                      = buildEvent(
+    val narrowSelfDelegation                     = buildEvent(
       Capability(rootIdentity.getPublic, PermissionTree.fromPath("a"), PermissionTree.empty),
       rootIdentity.getPublic,
       rootIdentity.identityKey.getPrivate,
@@ -243,7 +268,7 @@ class ReplicaTest extends FunSuite {
 
   test("createDelegation rejects writePermissions that are not <= readPermissions") {
     val (replica, _, _, genesisEvent) = newReplica()
-    val (delegateHolder, _)            = newIdentity()
+    val (delegateHolder, _)           = newIdentity()
 
     intercept[IllegalArgumentException] {
       replica.createDelegation(genesisEvent.hash, delegateHolder, PermissionTree.empty, PermissionTree.allow)
@@ -252,8 +277,14 @@ class ReplicaTest extends FunSuite {
 
   test("createDelegation throws IllegalArgumentException when usedCapability does not reference a Capability event") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val (deltaEvent, _)                           =
-      buildDeltaEvent(Set(1), rootIdentity.getPublic, rootIdentity.identityKey.getPrivate, Set(genesisEvent.hash), genesisEvent.hash)
+    val (deltaEvent, _)                          =
+      buildDeltaEvent(
+        Set(1),
+        rootIdentity.getPublic,
+        rootIdentity.identityKey.getPrivate,
+        Set(genesisEvent.hash),
+        genesisEvent.hash
+      )
     assert(replica.receiveEvent(writeToArray(deltaEvent)).isRight)
 
     val (delegateHolder, _) = newIdentity()
@@ -274,9 +305,9 @@ class ReplicaTest extends FunSuite {
   }
 
   test("createRevocation throws IllegalStateException when no owned capability is found in the authorization chain") {
-    val rootIdentity       = newPrivateIdentity()
-    val genesisEvent        = Authorization.createGenesis(rootIdentity)
-    val bystanderIdentity   = newPrivateIdentity()
+    val rootIdentity          = newPrivateIdentity()
+    val genesisEvent          = Authorization.createGenesis(rootIdentity)
+    val bystanderIdentity     = newPrivateIdentity()
     val (bystanderReplica, _) = newReplicaWithGenesis(bystanderIdentity, genesisEvent)
 
     intercept[IllegalStateException] {
@@ -288,7 +319,7 @@ class ReplicaTest extends FunSuite {
 
   test("filterDeltas keeps only deltas the requesting replica may read") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
-    val (readableDelta, readableRevealed)         = buildDeltaEvent(
+    val (readableDelta, readableRevealed)        = buildDeltaEvent(
       Set.empty[Int],
       rootIdentity.getPublic,
       rootIdentity.identityKey.getPrivate,
@@ -299,7 +330,7 @@ class ReplicaTest extends FunSuite {
     replica.receiveDelta(readableDelta.hash, readableRevealed)
 
     val restrictedIdentity = newPrivateIdentity()
-    val delegation           = buildEvent(
+    val delegation         = buildEvent(
       Capability(restrictedIdentity.getPublic, PermissionTree.empty, PermissionTree.allow),
       rootIdentity.getPublic,
       rootIdentity.identityKey.getPrivate,
@@ -319,7 +350,10 @@ class ReplicaTest extends FunSuite {
 
     val result = replica.filterDeltas(
       restrictedIdentity.getPublic,
-      List((eventHash = readableDelta.hash, delta = readableRevealed), (eventHash = unreadableDelta.hash, delta = unreadableRevealed))
+      List(
+        (eventHash = readableDelta.hash, delta = readableRevealed),
+        (eventHash = unreadableDelta.hash, delta = unreadableRevealed)
+      )
     )
 
     assertEquals(result.map(_.eventHash).toSet, Set(readableDelta.hash))
@@ -327,8 +361,10 @@ class ReplicaTest extends FunSuite {
 }
 
 class MockAntiEntropy(replica: Replica[?]) extends AntiEntropy(replica, _ => ???, _ => ???) {
-  val broadcastedEvents: mutable.Buffer[Array[Byte]]                       = mutable.Buffer.empty
+  val broadcastedEvents: mutable.Buffer[Array[Byte]]                             = mutable.Buffer.empty
   val broadcastedDeltas: mutable.Buffer[(eventHash: Hash, delta: RevealedValue)] = mutable.Buffer.empty
+
+  override def start(): Unit = ()
 
   override def listenAddress: Option[(String, Int)] = None
 

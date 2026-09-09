@@ -61,7 +61,12 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       case None             => throw new IllegalArgumentException("No capability with sufficient permissions found")
     }
 
-  def mutateState(mutator: State => State): Unit = replica.mutateState(mutator)
+  def mutateState(mutator: State => State): Unit =
+    try
+      replica.mutateState(mutator)
+    catch {
+      case rex: RuntimeException => println(rex.getMessage)
+    }
 
   def start(): Unit = replica.start()
 

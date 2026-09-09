@@ -61,7 +61,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
         Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
     } match {
       case Some(hash, capability) => createUpdate(delta, hash)
-      case None                   => println(s"Insufficient permissions for mutation: $delta")
+      case None => throw new IllegalArgumentException(s"Insufficient permissions for mutation: $delta")
     }
   }
 
