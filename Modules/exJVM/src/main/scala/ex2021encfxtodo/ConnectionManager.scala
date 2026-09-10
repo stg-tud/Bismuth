@@ -5,11 +5,10 @@ import channels.overlay.FullMeshOverlay
 import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
-import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, JsonKeysetWriter, KeyTemplates, KeysetHandle, RegistryConfiguration}
+import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
 import rdts.base.LocalUid
 
 import java.nio.ByteBuffer
-import java.nio.file.{Files, Path}
 import java.util.concurrent.ExecutorService
 import scala.util.Try
 
@@ -98,16 +97,20 @@ class ConnectionManager[State: JsonValueCodec](
 }
 
 object ConnectionManager {
+
+  val demokey =
+    """{"primaryKeyId":2175398082,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.XChaCha20Poly1305Key","value":"GiC9IjJ4Kab5ReDkVMle76U4ryd+BxylGYtDbuQvc8GnSg==","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":2175398082,"outputPrefixType":"TINK"}]}""".stripMargin
+
   private def loadOrCreateDemoAead(): Aead = {
     AeadConfig.register()
-    val keysetFilePath: Path = Path.of("demokey.json")
-    if !Files.exists(keysetFilePath) then {
-      val keyset: KeysetHandle = KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305"))
-      CleartextKeysetHandle.write(keyset, JsonKeysetWriter.withOutputStream(Files.newOutputStream(keysetFilePath)))
-    }
+    //    val keysetFilePath: Path = Path.of("demokey.json")
+    //    if !Files.exists(keysetFilePath) then {
+    //      val keyset: KeysetHandle = KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305"))
+    //      CleartextKeysetHandle.write(keyset, JsonKeysetWriter.withOutputStream(Files.newOutputStream(keysetFilePath)))
+    //    }
 
     val keyset =
-      CleartextKeysetHandle.read(JsonKeysetReader.withInputStream(Files.newInputStream(keysetFilePath)))
+      CleartextKeysetHandle.read(JsonKeysetReader.withString(demokey))
     keyset.getPrimitive(RegistryConfiguration.get(), classOf[Aead])
   }
 
