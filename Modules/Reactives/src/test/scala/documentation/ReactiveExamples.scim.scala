@@ -1,5 +1,8 @@
 package documentation
 
+import scala.annotation.nowarn
+
+@nowarn("id=E198") // disable unused warnings
 object ReactiveExamples {
   def main(args: Array[String]): Unit = {
 

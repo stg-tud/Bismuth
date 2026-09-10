@@ -24,7 +24,6 @@ class TendermintTests extends munit.FunSuite:
         (0 until 3).map(i => TendermintState.precommit(h, r, Vote(Some(b), signed(s"v$i")))).reduce((a, b) => a.merge(b))
 
     test("CRDT convergence is independent of delivery order (Lemma 2)"):
-        given ValidatorSet = vs
         val mA             = TendermintState.prevote(0, 0, Vote(Some(BlockId(1)), signed("v0")))
         val mB             = TendermintState.prevote(0, 0, Vote(Some(BlockId(2)), signed("v1")))
         val x              = TendermintState().merge(mA).merge(mB)
@@ -76,7 +75,6 @@ class TendermintTests extends munit.FunSuite:
         var b   = TendermintState()
         // leader for (0,0) proposes block 1
         locally {
-          given ValidatorSet = vs4
           b = b.merge(TendermintState.proposal(0, 0, ProposalMsg(BlockId(1), -1, signed("v0"))))
           // 3 prevotes for block 1
           for i <- 0 until 3 do
