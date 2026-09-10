@@ -9,8 +9,9 @@ import rdts.filters.{Filter, PermissionTree}
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
-class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
+class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose, ClassTag}](
     genesis: Hash,
     privateIdentity: PrivateIdentity,
     antiEntropyProvider: Replica[?] => AntiEntropy,

@@ -8,20 +8,43 @@ import rdts.base.{Bottom, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
+import scala.reflect.ClassTag
+
 object Authorization {
-  def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter}](
+  def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter, ClassTag}](
       eventGraph: ArdtEventGraph[T],
       deltaValueStore: DeltaValueStore[T]
-  ): T =
-    eventGraph.events.iterator.foldLeft(Bottom[T].empty) {
-      case (left, (deltaEventHash, (deltaEvent @ ArdtEvent(deltaCommitment: DeltaCommitment, _, _, _, _), _))) =>
-        deltaValueStore.get(deltaCommitment.commitment)
-          .map(commited => readFromArray[T](commited.value))
-          .filter(rdt => mayWrite(eventGraph, deltaEventHash, deltaEvent, rdt))
-          .map(left.merge)
-          .getOrElse(left)
-      case (left, _) => left
+  ): T = {
+    // Applying the updates in causal order is usually faster, reordering them is very fast in comparison to merging
+    val deltas = Array.ofDim[T](eventGraph.nextEventIndex)
+    eventGraph.events.foreach {
+      case (deltaEventHash, (deltaEvent @ ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _), causalOrderIndex)) =>
+        deltaValueStore.get(commitmentHash) match {
+          case Some(RevealedValue(encodedDelta, _)) =>
+            val delta = readFromArray[T](encodedDelta)
+            if mayWrite(eventGraph, deltaEventHash, deltaEvent, delta)
+            then deltas(causalOrderIndex) = delta
+          case _ =>
+        }
+
+        deltas
+      case _ =>
     }
+    deltas.foldLeft(Bottom.empty)((acc, value) =>
+      if value == null then acc
+      else acc.merge(value)
+    )
+
+    // eventGraph.events.iterator.foldLeft(Bottom[T].empty) {
+    // case (left, (deltaEventHash, (deltaEvent @ ArdtEvent(deltaCommitment: DeltaCommitment, _, _, _, _), _))) =>
+    //   deltaValueStore.get(deltaCommitment.commitment)
+    //     .map(commited => readFromArray[T](commited.value))
+    //     .filter(rdt => mayWrite(eventGraph, deltaEventHash, deltaEvent, rdt))
+    //     .map(left.merge)
+    //     .getOrElse(left)
+    // case (left, _) => left
+    // }
+  }
 
   def mayRead[T: {JsonValueCodec, Filter}](
       replicaId: PublicIdentity,
