@@ -20,17 +20,12 @@ object UnauthorizedMaterialize {
   ): T =
       val deltas = Array.ofDim[T](eventGraph.nextEventIndex)
       eventGraph.events.foreach {
-        case (
-              deltaEventHash,
-              (deltaEvent @ ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _), causalOrderIndex)
-            ) =>
+        case (_, (deltaEvent @ ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _), causalOrderIndex)) =>
           deltaValueStore.get(commitmentHash) match {
             case Some(RevealedValue(encodedDelta, _)) =>
               deltas(causalOrderIndex) = readFromArray[T](encodedDelta)
             case _ =>
           }
-
-          deltas
         case _ =>
       }
       deltas.foldLeft(Bottom.empty)((acc, value) =>

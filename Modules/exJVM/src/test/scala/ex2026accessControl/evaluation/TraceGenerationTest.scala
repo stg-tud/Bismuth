@@ -9,7 +9,7 @@ class TraceGenerationTest extends FunSuite {
 
   test("generateEventGraph produces a graph that materializes without throwing, for varying concurrency") {
     for concurrencyProbability <- Seq(0.0, 0.3, 1.0) do
-        given Random = Random(42)
+        given Random  = Random(42)
         val generated = TraceGeneration.generateEventGraph(
           numReplicas = 5,
           numEvents = 100,
@@ -21,9 +21,8 @@ class TraceGenerationTest extends FunSuite {
         // genesis + one delegation per non-root replica + all decomposed delta events
         assert(generated.eventGraph.events.size > 100)
 
-        // Should not throw and should be deterministic given the same graph/store.
         val state = Authorization.materialize(generated.eventGraph, generated.deltaValueStore)
-        assertEquals(Authorization.materialize(generated.eventGraph, generated.deltaValueStore), state)
+        assertEquals(state, UnauthorizedMaterialize.materialize(generated.eventGraph, generated.deltaValueStore))
   }
 
   test("concurrencyProbability = 0 yields a graph with a single head; = 1 yields multiple heads") {

@@ -75,17 +75,19 @@ object Runner {
     state.setup()
     val bench = new MaterializationBenchmark()
     println("Done with setup")
-    val res1 = {
-      val timeStart = System.nanoTime()
-      val result    = bench.materializeWithAuthorization(state)
-      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
-      result
-    }
     val res2 = {
       val timeStart = System.nanoTime()
       val result    = bench.materializeWithoutAuthorization(state)
       println((System.nanoTime() - timeStart) / 1_000_000_000.0)
       result
     }
+    val res1 = {
+      val timeStart = System.nanoTime()
+      val result    = bench.materializeWithAuthorization(state)
+      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
+      result
+    }
+
+    require(res1 == res2)
   }
 }

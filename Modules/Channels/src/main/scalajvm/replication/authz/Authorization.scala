@@ -26,8 +26,6 @@ object Authorization {
             then deltas(causalOrderIndex) = delta
           case _ =>
         }
-
-        deltas
       case _ =>
     }
     deltas.foldLeft(Bottom.empty)((acc, value) =>
