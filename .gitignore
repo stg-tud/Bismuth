@@ -9,7 +9,6 @@
 .vscode/
 .zed
 bun.lock
-demokey.json
 deno.lock
 metals.sbt
 node_modules/
