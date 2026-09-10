@@ -54,7 +54,7 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       readPermission: PermissionTree,
       writePermission: PermissionTree
   ): Unit =
-    replica.activeCapabilities(localIdentity.getPublic).find((hash, cap) =>
+    replica.activeCapabilities(localIdentity.getPublic).find((_, cap) =>
       readPermission <= cap.read && writePermission <= cap.write
     ) match {
       case Some(capHash, _) => replica.createDelegation(capHash, affectedUser, readPermission, writePermission)

@@ -1,10 +1,9 @@
 package ex2026accessControl.evaluation
 
-import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.evaluation.TravelPlanMutatorChoice.*
 import ex2026accessControl.travelplanner.TravelPlan
-import rdts.base.{LocalUid, Uid}
+import rdts.base.LocalUid
 import rdts.filters.PermissionTree
 
 import scala.annotation.tailrec
@@ -68,30 +67,4 @@ object BenchmarkHelper {
     require(numReplicas >= 1)
     (0 until numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
   }
-
-  def generateDeltas(
-      writePermissions: Map[PublicIdentity, PermissionTree],
-      identities: Array[PublicIdentity],
-      numDeltasPerReplica: Int,
-      minMapEntriesPerReplica: Int,
-      maxMapEntriesPerReplica: Int,
-  )(using random: Random): Array[Array[TravelPlan]] =
-    identities.map { id =>
-      val permittedMutators = BenchmarkHelper.permittedMutators(writePermissions(id))
-      given LocalUid        = LocalUid(Uid(id.id))
-
-      @tailrec
-      def genRec(deltas: List[TravelPlan], accState: TravelPlan, remaining: Int): Array[TravelPlan] =
-        if remaining > 0 then
-            val delta = BenchmarkHelper.randomTravelPlanDelta(
-              permittedMutators,
-              minMapEntriesPerReplica,
-              maxMapEntriesPerReplica,
-              accState
-            )
-            genRec(delta :: deltas, accState.merge(delta), remaining - 1)
-        else deltas.reverse.toArray
-
-      genRec(Nil, TravelPlan.empty, numDeltasPerReplica)
-    }
 }
