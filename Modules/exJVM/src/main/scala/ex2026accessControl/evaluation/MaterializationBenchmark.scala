@@ -32,7 +32,7 @@ class MaterializationBenchmarkState {
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    val generated = TraceGeneration.generateEventGraph(
+    val generated        = TraceGeneration.generateEventGraph(
       numReplicas,
       numEvents,
       minEntriesPerMapPerReplica,
@@ -66,4 +66,26 @@ class MaterializationBenchmark {
   @Benchmark
   def materializeWithoutAuthorization(state: MaterializationBenchmarkState): TravelPlan =
     UnauthorizedMaterialize.materialize(state.eventGraph, state.deltaValueStore)
+}
+
+object Runner {
+  def main(args: Array[String]): Unit = {
+    val state = new MaterializationBenchmarkState()
+    state.numEvents = 100_000
+    state.setup()
+    val bench = new MaterializationBenchmark()
+    println("Done with setup")
+    val res1 = {
+      val timeStart = System.nanoTime()
+      val result    = bench.materializeWithAuthorization(state)
+      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
+      result
+    }
+    val res2 = {
+      val timeStart = System.nanoTime()
+      val result    = bench.materializeWithoutAuthorization(state)
+      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
+      result
+    }
+  }
 }
