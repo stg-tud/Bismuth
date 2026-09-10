@@ -89,7 +89,8 @@ object ObserveRemoveMap {
 
   given lattice[K, V: {Lattice}]: Lattice[ObserveRemoveMap[K, V]] =
     DecoratedLattice.filter[ObserveRemoveMap[K, V]](Lattice.derived) { (base, other) =>
-      base.copy(inner = base.inner.filter((_, e) => !other.removed.subsumes(e.dots)))
+      if other.removed.isEmpty then base
+      else base.copy(inner = base.inner.filter((_, e) => !other.removed.subsumes(e.dots)))
     }
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
