@@ -15,7 +15,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose, ClassTag
     genesis: Hash,
     privateIdentity: PrivateIdentity,
     antiEntropyProvider: Replica[?] => AntiEntropy,
-    onStateChange: RDT => Unit
+    onStateChange: (=> RDT) => Unit
 ) {
   val localReplicaId: PublicIdentity = privateIdentity.getPublic
 
@@ -52,7 +52,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose, ClassTag
   def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit = synchronized {
     require(Authorization.mayRead(localReplicaId, eventHash, delta, eventGraph))
     deltaValueStore.put(delta)
-    onStateChange(state)
+    onStateChange { state }
   }
 
   def mutateState(mutator: RDT => RDT): Unit = synchronized {

@@ -3,6 +3,7 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.Hash
 import crypto.channels.PrivateIdentity
+import ex2026accessControl.evaluation.ReceiveBenchmark.noopOnStateChange
 import ex2026accessControl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
@@ -78,7 +79,7 @@ class ReceiveBenchmark {
       state.genesisHash,
       state.rootIdentity,
       r => new NoOpAntiEntropy(r),
-      _ => ()
+      noopOnStateChange
     )
 
     state.trace.foreach { (hash, encodedEvent, deltaCommitment) =>
@@ -90,4 +91,8 @@ class ReceiveBenchmark {
 
     replica.heads
   }
+}
+
+object ReceiveBenchmark {
+  def noopOnStateChange[T](x: => T): Unit = ()
 }
