@@ -30,16 +30,16 @@ class ReceiveBenchmarkState {
   val concurrencyProbability: Double  = 0.2
   val seed: Long                      = 42L
 
-  var genesisHash: Hash                             = scala.compiletime.uninitialized
-  var rootIdentity: PrivateIdentity                 = scala.compiletime.uninitialized
-  var deltaValueStore: DeltaValueStore[TravelPlan]  = scala.compiletime.uninitialized
+  var genesisHash: Hash                            = scala.compiletime.uninitialized
+  var rootIdentity: PrivateIdentity                = scala.compiletime.uninitialized
+  var deltaValueStore: DeltaValueStore[TravelPlan] = scala.compiletime.uninitialized
   var trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])] =
     scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    val generated = TraceGeneration.generateEventGraph(
+    val generated        = TraceGeneration.generateEventGraph(
       numReplicas,
       numEvents,
       minEntriesPerMapPerReplica,
@@ -95,4 +95,18 @@ class ReceiveBenchmark {
 
 object ReceiveBenchmark {
   def noopOnStateChange[T](x: => T): Unit = ()
+}
+
+object AltRunner {
+  def main(args: Array[String]): Unit = {
+    val state = new ReceiveBenchmarkState()
+    state.numEvents = 10_000
+    state.setup()
+    val bench = new ReceiveBenchmark()
+    println("Done with setup")
+
+    val timeStart = System.nanoTime()
+    bench.receiveEventsAndDeltas(state)
+    println((System.nanoTime() - timeStart) / 1_000_000_000.0)
+  }
 }
