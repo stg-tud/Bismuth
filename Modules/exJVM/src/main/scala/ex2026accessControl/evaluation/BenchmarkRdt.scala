@@ -1,6 +1,8 @@
 package ex2026accessControl.evaluation
 
-import rdts.base.{Bottom, Lattice}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.datatypes.{LastWriterWins, PosNegCounter}
 import rdts.filters.Filter
 
@@ -36,14 +38,26 @@ object BenchmarkRdt {
   given Filter[MoreNesting]         = Filter.derived
   given Filter[EvenMoreNesting]     = Filter.derived
 
-  private val multiFieldsPerms       = List("x", "y", "z")
-  private val moreNestingPerms       = List("alpha", for { f <- multiFieldsPerms } yield s"alpha.$f", "beta")
-  private val evenMoreNestingPerms   = List("one", for { f <- moreNestingPerms } yield s"one.$f", "two")
+  given Decompose[BenchmarkRdt]    = Decompose.derived
+  given Decompose[MultipleFields]  = Decompose.derived
+  given Decompose[MoreNesting]     = Decompose.derived
+  given Decompose[EvenMoreNesting] = Decompose.derived
+
+  given jsonCodec: JsonValueCodec[BenchmarkRdt] =
+      given JsonValueCodec[Int] = JsonCodecMaker.make
+      import channels.JsoniterCodecs.given
+      JsonCodecMaker.make[BenchmarkRdt]
+
+  val empty: BenchmarkRdt = Bottom[BenchmarkRdt].empty
+
+  private val multiFieldsPerms     = List("x", "y", "z")
+  private val moreNestingPerms     = List("alpha") ++ multiFieldsPerms.map(f => s"alpha.$f") ++ List("beta")
+  private val evenMoreNestingPerms = List("one") ++ moreNestingPerms.map(f => s"one.$f") ++ List("two")
   val benchmarkRdtPerms: Seq[String] =
     Seq("a", "b")
-    ++ (for { f <- multiFieldsPerms } yield s"b.$f")
+    ++ multiFieldsPerms.map(f => s"b.$f")
     ++ Seq("c")
-    ++ (for { f <- moreNestingPerms } yield s"c.$f")
+    ++ moreNestingPerms.map(f => s"c.$f")
     ++ Seq("d")
-    ++ (for { f <- evenMoreNestingPerms } yield s"d.$f")
+    ++ evenMoreNestingPerms.map(f => s"d.$f")
 }

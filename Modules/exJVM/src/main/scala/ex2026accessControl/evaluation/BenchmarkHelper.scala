@@ -1,10 +1,13 @@
 package ex2026accessControl.evaluation
 
 import crypto.channels.{IdentityFactory, PrivateIdentity}
+import ex2026accessControl.evaluation.BenchmarkRdt.given
 import ex2026accessControl.evaluation.TravelPlanMutatorChoice.*
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.LocalUid
+import rdts.datatypes.PosNegCounter
 import rdts.filters.PermissionTree
+import rdts.syntax.deltalens.*
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -67,4 +70,43 @@ object BenchmarkHelper {
     require(numReplicas >= 1)
     (0 until numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
   }
+
+  /** Applies a random mutation to the leaf field of [[BenchmarkRdt]] identified by one of the paths in
+    * `permittedMutators` (a subset of [[BenchmarkRdt.benchmarkRdtPerms]], see [[permittedBenchmarkRdtMutators]]).
+    */
+  def randomBenchmarkRdtDelta(
+      permittedMutators: Array[String],
+      state: BenchmarkRdt,
+  )(using random: Random, author: LocalUid): BenchmarkRdt = {
+    def randomIntValue: Int = random.nextInt(1000)
+    def randomCounterUpdate(counter: PosNegCounter): PosNegCounter =
+      if random.nextBoolean() then counter.inc() else counter.dec()
+
+    permittedMutators(random.nextInt(permittedMutators.length)) match {
+      case "a"             => state.deltaModify(_.a).using(_.write(randomIntValue))
+      case "b.x"           => state.deltaModify(_.b.x).using(randomCounterUpdate)
+      case "b.y"           => state.deltaModify(_.b.y).using(randomCounterUpdate)
+      case "b.z"           => state.deltaModify(_.b.z).using(_.write(randomIntValue))
+      case "c.alpha.x"     => state.deltaModify(_.c.alpha.x).using(randomCounterUpdate)
+      case "c.alpha.y"     => state.deltaModify(_.c.alpha.y).using(randomCounterUpdate)
+      case "c.alpha.z"     => state.deltaModify(_.c.alpha.z).using(_.write(randomIntValue))
+      case "c.beta"        => state.deltaModify(_.c.beta).using(randomCounterUpdate)
+      case "d.one.alpha.x" => state.deltaModify(_.d.one.alpha.x).using(randomCounterUpdate)
+      case "d.one.alpha.y" => state.deltaModify(_.d.one.alpha.y).using(randomCounterUpdate)
+      case "d.one.alpha.z" => state.deltaModify(_.d.one.alpha.z).using(_.write(randomIntValue))
+      case "d.one.beta"    => state.deltaModify(_.d.one.beta).using(randomCounterUpdate)
+      case "d.two"         => state.deltaModify(_.d.two).using(_.write(randomIntValue))
+    }
+  }
+
+  /** The paths from [[BenchmarkRdt.benchmarkRdtPerms]] that are permitted by `writePerm` and name a leaf field
+    * (i.e. have no other permission path nested underneath them), since only those can be mutated directly.
+    */
+  def permittedBenchmarkRdtMutators(writePerm: PermissionTree): Array[String] =
+      def isLeafPermission(path: String): Boolean =
+        !BenchmarkRdt.benchmarkRdtPerms.exists(other => other != path && other.startsWith(s"$path."))
+
+      BenchmarkRdt.benchmarkRdtPerms.iterator
+        .filter(path => isLeafPermission(path) && PermissionTree.fromPath(path) <= writePerm)
+        .toArray
 }

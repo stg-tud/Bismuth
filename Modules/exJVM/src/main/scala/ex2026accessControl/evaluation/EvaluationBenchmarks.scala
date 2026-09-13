@@ -4,7 +4,6 @@ import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.Hash
 import crypto.channels.PrivateIdentity
 import ex2026accessControl.evaluation.EvaluationBenchmark.noopOnStateChange
-import ex2026accessControl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
 import replication.authz.{ArdtEventGraph, Authorization, DeltaValueStore, Replica}
@@ -12,41 +11,37 @@ import replication.authz.{ArdtEventGraph, Authorization, DeltaValueStore, Replic
 import java.util.concurrent.TimeUnit
 import scala.util.Random
 
-/** Holds a randomly generated [[ArdtEventGraph]] of TravelPlan edits, built once per JMH trial (i.e. before
+/** Holds a randomly generated [[ArdtEventGraph]] of BenchmarkRdt edits, built once per JMH trial (i.e. before
   * warmup/measurement iterations start, so its construction is never included in the measured time), together
   * with the pre-encoded events and delta-commitment classification needed to feed them into a [[Replica]] via
   * `receiveEvent`/`receiveDelta`. The graph is generated deterministically from [[seed]], so every fork/trial
   * with the same `@Param` values operates on the exact same trace.
   */
 @State(Scope.Benchmark)
-class TravelPlanTraceBenchmarkState {
+class BenchmarkRdtTraceBenchmarkState {
 
-  // The total number of TravelPlan edits performed, distributed among replicas at random. This controls the
+  // The total number of BenchmarkRdt edits performed, distributed among replicas at random. This controls the
   // size of the generated event graph.
   @Param(Array("20000", "40000", "60000", "80000", "100000"))
   var numEvents: Int = scala.compiletime.uninitialized
 
-  val numReplicas: Int                = 10
-  val minEntriesPerMapPerReplica: Int = 5
-  val maxEntriesPerMapPerReplica: Int = 50
-  val concurrencyProbability: Double  = 0.2
-  val seed: Long                      = 42L
+  val numReplicas: Int               = 10
+  val concurrencyProbability: Double = 0.2
+  val seed: Long                     = 42L
 
-  var eventGraph: ArdtEventGraph[TravelPlan]       = scala.compiletime.uninitialized
-  var deltaValueStore: DeltaValueStore[TravelPlan] = scala.compiletime.uninitialized
-  var genesisHash: Hash                            = scala.compiletime.uninitialized
-  var rootIdentity: PrivateIdentity                = scala.compiletime.uninitialized
+  var eventGraph: ArdtEventGraph[BenchmarkRdt]       = scala.compiletime.uninitialized
+  var deltaValueStore: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
+  var genesisHash: Hash                              = scala.compiletime.uninitialized
+  var rootIdentity: PrivateIdentity                  = scala.compiletime.uninitialized
   var trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])] =
     scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    val generated        = TraceGeneration.generateEventGraph(
+    val generated        = TraceGeneration.generateBenchmarkRdtEventGraph(
       numReplicas,
       numEvents,
-      minEntriesPerMapPerReplica,
-      maxEntriesPerMapPerReplica,
       concurrencyProbability
     )
 
@@ -76,7 +71,7 @@ class EvaluationBenchmark {
     * revocation/causality checks), as used in production.
     */
   @Benchmark
-  def materializeWithAuthorization(state: TravelPlanTraceBenchmarkState): TravelPlan =
+  def materializeWithAuthorization(state: BenchmarkRdtTraceBenchmarkState): BenchmarkRdt =
     Authorization.materialize(state.eventGraph, state.deltaValueStore)
 
   /** Materializes the very same trace by merging every delta value in causal-order-independent fashion, without
@@ -84,7 +79,7 @@ class EvaluationBenchmark {
     * access control enforcement.
     */
   @Benchmark
-  def materializeWithoutAuthorization(state: TravelPlanTraceBenchmarkState): TravelPlan =
+  def materializeWithoutAuthorization(state: BenchmarkRdtTraceBenchmarkState): BenchmarkRdt =
     UnauthorizedMaterialize.materialize(state.eventGraph, state.deltaValueStore)
 
   /** Ingests the entire trace into a freshly constructed [[Replica]] via `receiveEvent`/`receiveDelta`, mirroring
@@ -94,8 +89,8 @@ class EvaluationBenchmark {
     * since a single invocation is far cheaper than one round of materialization.
     */
   @Benchmark
-  def receiveEventsAndDeltas(state: TravelPlanTraceBenchmarkState): Set[Hash] = {
-    val replica = new Replica[TravelPlan](
+  def receiveEventsAndDeltas(state: BenchmarkRdtTraceBenchmarkState): Set[Hash] = {
+    val replica = new Replica[BenchmarkRdt](
       state.genesisHash,
       state.rootIdentity,
       r => NoOpAntiEntropy(r),
@@ -119,7 +114,7 @@ object EvaluationBenchmark {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new TravelPlanTraceBenchmarkState()
+    val state = new BenchmarkRdtTraceBenchmarkState()
     state.numEvents = 100_000
     state.setup()
     val bench = new EvaluationBenchmark()

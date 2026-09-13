@@ -18,14 +18,15 @@ object TraceGeneration {
   def countDecomposed(trace: Array[Array[TravelPlan]]): Int = trace.map(countDecomposed).sum
 
   def pickRandomPermissions(
+      possiblePermissions: Seq[String],
       replicaIds: Array[PublicIdentity]
   )(using random: Random): Map[PublicIdentity, PermissionTree] = {
     // Pick one to three random permissions
     def pickRandomPermissions: PermissionTree = {
       var resultingPerm = PermissionTree.empty
       // Pick one to three distinct permissions
-      var numPerms         = random.between(1, 4)
-      var remainingChoices = Seq("title", "bucketList", "expenses")
+      var numPerms         = math.min(random.between(1, 4), possiblePermissions.size)
+      var remainingChoices = possiblePermissions
       while numPerms > 0 do
           numPerms = numPerms - 1
           val choice = random.between(0, remainingChoices.size)
@@ -75,7 +76,7 @@ object TraceGeneration {
       minEntriesPerMapPerReplica: Int,
       maxEntriesPerMapPerReplica: Int,
       concurrencyProbability: Double,
-  )(using random: Random): GeneratedEventGraph = {
+  )(using random: Random): GeneratedEventGraph[TravelPlan] = {
     require(numReplicas >= 1)
     require(numEvents >= 0)
     require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
@@ -88,7 +89,8 @@ object TraceGeneration {
     val deltaValueStore = DeltaValueStore[TravelPlan]()
 
     val writePermissions =
-      pickRandomPermissions(replicaIds.drop(1).map(_.getPublic)) + (rootIdentity.getPublic -> PermissionTree.allow)
+      pickRandomPermissions(Seq("title", "bucketList", "expenses"), replicaIds.drop(1).map(_.getPublic))
+        + (rootIdentity.getPublic -> PermissionTree.allow)
 
     // The capability event that authorizes each replica's writes. The root replica writes under the
     // genesis capability directly; every other replica is delegated a capability restricted to its
@@ -154,10 +156,89 @@ object TraceGeneration {
 
     GeneratedEventGraph(eventGraph, deltaValueStore, replicaIds)
   }
+
+  /** Alternative to [[generateEventGraph]] that builds a random [[ArdtEventGraph]] of edits to [[BenchmarkRdt]], an
+    * example RDT combining [[rdts.datatypes.LastWriterWins]] and [[rdts.datatypes.PosNegCounter]] fields nested a
+    * few levels deep, instead of the application-shaped [[TravelPlan]]. Write permissions for non-root replicas are
+    * assembled from one to three randomly chosen paths out of [[BenchmarkRdt.benchmarkRdtPerms]].
+    *
+    * @param numReplicas number of participating replicas
+    * @param numEvents total number of BenchmarkRdt mutations performed across all replicas; for each one, a
+    *   replica is chosen uniformly at random to author it.
+    * @param concurrencyProbability see [[generateEventGraph]]
+    */
+  def generateBenchmarkRdtEventGraph(
+      numReplicas: Int,
+      numEvents: Int,
+      concurrencyProbability: Double,
+  )(using random: Random): GeneratedEventGraph[BenchmarkRdt] = {
+    require(numReplicas >= 1)
+    require(numEvents >= 0)
+    require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
+
+    val replicaIds   = BenchmarkHelper.generateReplicaIds(numReplicas)
+    val rootIdentity = replicaIds(0)
+
+    val genesisEvent    = Authorization.createGenesis(rootIdentity)
+    var eventGraph      = ArdtEventGraph[BenchmarkRdt](genesisEvent)
+    val deltaValueStore = DeltaValueStore[BenchmarkRdt]()
+
+    val writePermissions =
+      pickRandomPermissions(BenchmarkRdt.benchmarkRdtPerms, replicaIds.drop(1).map(_.getPublic))
+        + (rootIdentity.getPublic -> PermissionTree.allow)
+
+    val capabilityEvent = mutable.Map(rootIdentity.getPublic -> genesisEvent.hash)
+    replicaIds.drop(1).foreach { identity =>
+      val delegation = EventGraphBuilder.buildCapabilityEvent(
+        holder = identity.getPublic,
+        read = PermissionTree.allow,
+        write = writePermissions(identity.getPublic),
+        author = rootIdentity,
+        parents = eventGraph.heads,
+        authorization = genesisEvent.hash
+      )
+      eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, delegation)
+      capabilityEvent(identity.getPublic) = delegation.hash
+    }
+
+    val permittedMutators =
+      replicaIds.map(identity => BenchmarkHelper.permittedBenchmarkRdtMutators(writePermissions(identity.getPublic)))
+
+    var sharedState = BenchmarkRdt.empty
+
+    for _ <- 0 until numEvents do
+        val replicaIndex = random.nextInt(numReplicas)
+        val identity     = replicaIds(replicaIndex)
+        val author       = identity.getPublic
+
+        given LocalUid = LocalUid(Uid(author.id))
+        val delta = BenchmarkHelper.randomBenchmarkRdtDelta(permittedMutators(replicaIndex), sharedState)
+        sharedState = sharedState.merge(delta)
+
+        val isConcurrentWrite = random.nextDouble() < concurrencyProbability
+        val parents           =
+          if isConcurrentWrite then
+              val heads      = eventGraph.heads
+              val chosenHead = heads.iterator.drop(random.nextInt(heads.size)).next()
+              val backSteps  = 1 + random.nextInt(3)
+              Set(walkBackAFewSteps(eventGraph, chosenHead, backSteps))
+          else eventGraph.heads
+
+        val decomposedEvents = delta.decomposed.map { decomposedDelta =>
+          EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, parents, capabilityEvent(author))
+        }.toArray
+
+        decomposedEvents.foreach { case (event, revealed) =>
+          eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
+          deltaValueStore.put(revealed)
+        }
+
+    GeneratedEventGraph(eventGraph, deltaValueStore, replicaIds)
+  }
 }
 
-case class GeneratedEventGraph(
-    eventGraph: ArdtEventGraph[TravelPlan],
-    deltaValueStore: DeltaValueStore[TravelPlan],
+case class GeneratedEventGraph[T](
+    eventGraph: ArdtEventGraph[T],
+    deltaValueStore: DeltaValueStore[T],
     replicaIds: Array[PrivateIdentity]
 )
