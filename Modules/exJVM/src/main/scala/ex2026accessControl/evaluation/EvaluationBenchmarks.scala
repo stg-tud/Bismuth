@@ -1,8 +1,8 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.channels.PrivateIdentity
 import crypto.Hash
+import crypto.channels.PrivateIdentity
 import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
 import org.openjdk.jmh.annotations.*
@@ -90,17 +90,6 @@ class BenchmarkRdtBenchmarkState {
 @State(Scope.Thread)
 class EvaluationBenchmarks {
 
-  /** Authors a single new [[BenchmarkRdt]] event on top of the pre-built graph held by
-    * [[BenchmarkRdtBenchmarkState]], instead of replaying a whole trace of events: merging the preselected
-    * [[BenchmarkRdtBenchmarkState.selectedMutatorChoice]]'s delta into the graph's fully merged state, and
-    * decomposing/signing/committing it into an event inserted into the graph and a delta store. What this
-    * measures is purely the mechanical cost of authoring a single event on top of a graph of a given size
-    * ([[BenchmarkRdtBenchmarkState.numEvents]]). `state` is only ever read, never mutated; the resulting graph
-    * and delta store are discarded rather than written back, so every invocation authors the exact same event
-    * on top of the exact same base graph rather than accumulating new events across invocations. The
-    * counterpart to [[materializeWithAuthorization]]/[[materializeWithoutAuthorization]], which instead measure
-    * reading an already-built trace of the same size.
-    */
   @Benchmark
   def createEvents(state: BenchmarkRdtBenchmarkState): ArdtEventGraph[BenchmarkRdt] = {
     given random: Random = Random(state.seed)
@@ -108,15 +97,13 @@ class EvaluationBenchmarks {
 
     val delta = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
 
-    val parents       = state.eventGraph.heads
-    var graph         = state.eventGraph
-    val newEventStore = DeltaValueStore[BenchmarkRdt]()
+    val parents = state.eventGraph.heads
+    var graph   = state.eventGraph
 
     delta.decomposed.foreach { decomposedDelta =>
       val (event, revealed) =
         EventGraphBuilder.buildDeltaEvent(decomposedDelta, state.selectedIdentity, parents, state.authorizationHash)
       graph = EventGraphBuilder.receiveOrThrow(graph, event)
-      newEventStore.put(revealed)
     }
 
     graph
@@ -129,20 +116,6 @@ class EvaluationBenchmarks {
   def materializeWithAuthorization(state: BenchmarkRdtBenchmarkState): BenchmarkRdt =
     Authorization.materialize(state.eventGraph, state.deltaValueStore)
 
-  /** Materializes the very same trace by merging every delta value in causal-order-independent fashion, without
-    * any access control checks. The difference to [[materializeWithAuthorization]] is the overhead added by
-    * access control enforcement.
-    */
-  @Benchmark
-  def materializeWithoutAuthorization(state: BenchmarkRdtBenchmarkState): BenchmarkRdt =
-    UnauthorizedMaterialize.materialize(state.eventGraph, state.deltaValueStore)
-
-  /** Ingests the entire trace into a freshly constructed [[Replica]] via `receiveEvent`/`receiveDelta`, mirroring
-    * how a replica processes events and delta payloads received from its peers. A fresh replica is required per
-    * invocation since `Replica` is stateful: replaying the same trace into an already-populated replica would
-    * make every subsequent invocation a cheap no-op. Overrides the class-level warmup/measurement durations
-    * since a single invocation is far cheaper than one round of materialization.
-    */
   @Benchmark
   def receiveEventsAndDeltas(state: BenchmarkRdtBenchmarkState): Set[Hash] = {
     val replica = new Replica[BenchmarkRdt](
@@ -181,20 +154,11 @@ object EvaluationRunner {
       println((System.nanoTime() - timeStart) / 1_000_000_000.0)
     }
 
-    val res1 = {
+    {
       val timeStart = System.nanoTime()
       val result    = bench.materializeWithAuthorization(state)
       println((System.nanoTime() - timeStart) / 1_000_000_000.0)
-      result
     }
-
-    val res2 = {
-      val timeStart = System.nanoTime()
-      val result    = bench.materializeWithoutAuthorization(state)
-      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
-      result
-    }
-    require(res1 == res2)
 
     val timeStart = System.nanoTime()
     bench.receiveEventsAndDeltas(state)
