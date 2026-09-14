@@ -10,9 +10,7 @@ import replication.authz.ArdtEvent.Payload.Capability
 import replication.authz.{AntiEntropy, ArdtEvent, Replica}
 import replication.sync.{ChannelConnectionManager, ConnectionManager, FullMeshControlPlane, MessageReceiver}
 
-import scala.reflect.ClassTag
-
-class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose, ClassTag}](
+class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     private val localIdentity: PrivateIdentity,
     genesis: Hash,
     genesisEvent: Option[ArdtEvent] = None,
