@@ -69,6 +69,9 @@ serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'
 	jwebserver -b 0.0.0.0 -p {{port}} -d "$(sbt --batch --error 'show {{project}}/Compile/doc/target' | sed -n 's#^\s*\[info\] ##p' | head -n 1)"
 
+intellij-bsp-import-fix:
+	fish Scripts/patch-bsp-shared-test-modules.fish
+
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
 
