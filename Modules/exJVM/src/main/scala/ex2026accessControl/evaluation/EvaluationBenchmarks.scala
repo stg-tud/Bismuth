@@ -82,11 +82,13 @@ class BenchmarkRdtBenchmarkState {
   }
 }
 
-/** Holds a randomly generated [[HashDag]] of [[SignedHashDagEntry]] BenchmarkRdt edits, the counterpart of
+/** Holds a [[HashDag]] of [[SignedHashDagEntry]]s translated (via [[TraceGeneration.translateToSignedHashDag]])
+  * from the exact same [[ArdtEventGraph]] trace that [[BenchmarkRdtBenchmarkState]] builds (built with the same
+  * `numReplicas`/`concurrencyProbability`/`seed`, which deterministically reproduces the same graph rather than
+  * sharing state across the two), instead of generating an independent random graph — the counterpart of
   * [[BenchmarkRdtBenchmarkState]] for the ACL-free [[HashDag]] representation (no capabilities, no access
-  * control enforcement) used as a baseline to compare against it. See
-  * [[TraceGeneration.generateSignedHashDagEventGraph]] for how the dag is built, and [[BenchmarkRdtBenchmarkState]]
-  * for what `trace`/`rdtState`/`selectedIdentity`/`selectedMutatorChoice` are for.
+  * control enforcement) used as a baseline to compare against it. See [[BenchmarkRdtBenchmarkState]] for what
+  * `trace`/`rdtState`/`selectedIdentity`/`selectedMutatorChoice` are for.
   */
 @State(Scope.Benchmark)
 class SignedHashDagBenchmarkRdtBenchmarkState {
@@ -108,16 +110,16 @@ class SignedHashDagBenchmarkRdtBenchmarkState {
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    val generated        =
-      TraceGeneration.generateSignedHashDagEventGraph(numReplicas, numEvents, concurrencyProbability)
+    val generated         = TraceGeneration.generateBenchmarkRdtEventGraph(numReplicas, numEvents, concurrencyProbability)
+    val translated         = TraceGeneration.translateToSignedHashDag(generated)
 
-    hashDag = generated.hashDag
-    trace = generated.trace
-    rdtState = generated.state
+    hashDag = translated.hashDag
+    trace = translated.trace
+    rdtState = translated.state
 
     val replicaIndex = random.nextInt(numReplicas)
     selectedIdentity = generated.replicaIds(replicaIndex)
-    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)
+    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))
   }
 }
 
@@ -144,16 +146,16 @@ class UnsignedHashDagBenchmarkRdtBenchmarkState {
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    val generated        =
-      TraceGeneration.generateUnsignedHashDagEventGraph(numReplicas, numEvents, concurrencyProbability)
+    val generated         = TraceGeneration.generateBenchmarkRdtEventGraph(numReplicas, numEvents, concurrencyProbability)
+    val translated         = TraceGeneration.translateToUnsignedHashDag(generated)
 
-    hashDag = generated.hashDag
-    trace = generated.trace
-    rdtState = generated.state
+    hashDag = translated.hashDag
+    trace = translated.trace
+    rdtState = translated.state
 
     val replicaIndex = random.nextInt(numReplicas)
     selectedIdentity = generated.replicaIds(replicaIndex)
-    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)
+    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))
   }
 }
 

@@ -1,12 +1,13 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
+import replication.authz.ArdtEvent.Payload.DeltaCommitment
 import replication.authz.{ArdtEventGraph, Authorization, DeltaValueStore}
 
 import scala.annotation.tailrec
@@ -251,41 +252,22 @@ object TraceGeneration {
     )
   }
 
-  /** Walks backwards from `start` along a [[HashDag]]'s ancestry; see [[walkBackAFewSteps]] above, which this
-    * mirrors for [[HashDag]] instead of [[ArdtEventGraph]].
-    */
-  @tailrec
-  private def walkBackAFewStepsInHashDag[T <: HashDagEntry](
-      hashDag: HashDag[T],
-      start: Hash,
-      steps: Int
-  )(using random: Random): Hash =
-    if steps <= 0 then start
-    else
-        val parents = hashDag.events(start).parents
-        if parents.isEmpty then start
-        else walkBackAFewStepsInHashDag(hashDag, parents.iterator.drop(random.nextInt(parents.size)).next(), steps - 1)
-
-  /** Builds a random [[HashDag]] of [[BenchmarkRdt]] edits, the counterpart of [[generateBenchmarkRdtEventGraph]]
-    * for the ACL-free [[HashDag]] representation (no capabilities, no access control enforcement) used as a
-    * baseline to compare against [[ArdtEventGraph]]/[[Authorization]] in the evaluation benchmarks. Since there
-    * is no access control, every replica may author every mutation (unlike [[generateBenchmarkRdtEventGraph]],
-    * where write permissions restrict the mutators available to non-root replicas).
+  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[ArdtEventGraph]] of [[BenchmarkRdt]]
+    * edits, together with its delta value store) into a [[HashDag]] of the very same edits, in the same causal
+    * order and authored by the same replicas, instead of generating an independent random graph — so that the
+    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[ArdtEventGraph]]-based ones.
+    * Since [[HashDag]] has no notion of access control, every capability/delegation event of the source graph is
+    * dropped, and each delta event's parents are reconnected to its nearest ancestor delta event (or the dag's
+    * genesis) instead.
     *
     * @param buildEntry builds one dag entry (signed or unsigned) authored by `identity`, on top of `parents`
     */
-  private def generateHashDagEventGraph[T <: HashDagEntry: JsonValueCodec](
-      numReplicas: Int,
-      numEvents: Int,
-      concurrencyProbability: Double,
+  def translateToHashDag[T <: HashDagEntry: JsonValueCodec](
+      generated: GeneratedBenchmarkRdtEventGraph,
       buildEntry: (payload: BenchmarkRdt, identity: PrivateIdentity, parents: Set[Hash]) => T
-  )(using random: Random): GeneratedHashDagEventGraph[T] = {
-    require(numReplicas >= 1)
-    require(numEvents >= 0)
-    require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
-
-    val replicaIds   = BenchmarkHelper.generateReplicaIds(numReplicas)
-    val rootIdentity = replicaIds(0)
+  ): GeneratedHashDagEventGraph[T] = {
+    val identityByPublic = generated.replicaIds.map(identity => identity.getPublic -> identity).toMap
+    val rootIdentity      = generated.replicaIds(0)
 
     val trace = mutable.ArrayBuffer.empty[Array[Byte]]
 
@@ -297,59 +279,44 @@ object TraceGeneration {
     )
     trace += genesisEncoded
 
-    var sharedState = BenchmarkRdt.empty
+    // Maps every ArdtEvent hash of the source graph to the set of HashDag entry hashes that should stand in
+    // for it as a parent: a singleton of the translated entry, for delta events; for every other event
+    // (dropped, since it carries no RDT payload), the resolved parents of that event instead, so that a delta
+    // event originally parented on a capability/delegation event ends up parented on that event's nearest
+    // ancestor delta event(s)/the genesis once translated.
+    val resolved = mutable.Map(generated.eventGraph.genesis -> Set(genesisEntry.hash))
 
-    for _ <- 0 until numEvents do
-        val replicaIndex = random.nextInt(numReplicas)
-        val identity      = replicaIds(replicaIndex)
+    generated.eventGraph.allEventsInCausalOrder.foreach { (oldHash, event) =>
+      if oldHash != generated.eventGraph.genesis then
+          event.payload match {
+            case DeltaCommitment(commitment) =>
+              val delta      = readFromArray[BenchmarkRdt](generated.deltaValueStore.get(commitment).get.value)
+              val newParents = event.parents.flatMap(resolved)
+              val entry      = buildEntry(delta, identityByPublic(event.author), newParents)
+              val encoded    = writeToArray(entry)
+              hashDag = HashDag.receiveOrThrow(hashDag, encoded)
+              trace += encoded
+              resolved(oldHash) = Set(entry.hash)
+            case _ =>
+              resolved(oldHash) = event.parents.flatMap(resolved)
+          }
+    }
 
-        given LocalUid    = LocalUid(Uid(identity.getPublic.id))
-        val mutatorChoice = BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)
-        val delta         = BenchmarkHelper.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
-        sharedState = sharedState.merge(delta)
-
-        val isConcurrentWrite = random.nextDouble() < concurrencyProbability
-        val parents            =
-          if isConcurrentWrite then
-              val heads      = hashDag.heads
-              val chosenHead = heads.iterator.drop(random.nextInt(heads.size)).next()
-              val backSteps  = 1 + random.nextInt(3)
-              Set(walkBackAFewStepsInHashDag(hashDag, chosenHead, backSteps))
-          else hashDag.heads
-
-        delta.decomposed.foreach { decomposedDelta =>
-          val entry   = buildEntry(decomposedDelta, identity, parents)
-          val encoded = writeToArray(entry)
-          hashDag = HashDag.receiveOrThrow(hashDag, encoded)
-          trace += encoded
-        }
-
-    GeneratedHashDagEventGraph(hashDag, trace.toArray, replicaIds, sharedState)
+    GeneratedHashDagEventGraph(hashDag, trace.toArray, generated.replicaIds, generated.state)
   }
 
-  /** [[generateHashDagEventGraph]], authoring [[SignedHashDagEntry]] entries. */
-  def generateSignedHashDagEventGraph(
-      numReplicas: Int,
-      numEvents: Int,
-      concurrencyProbability: Double,
-  )(using random: Random): GeneratedHashDagEventGraph[SignedHashDagEntry] =
-    generateHashDagEventGraph(
-      numReplicas,
-      numEvents,
-      concurrencyProbability,
+  /** [[translateToHashDag]], authoring [[SignedHashDagEntry]] entries. */
+  def translateToSignedHashDag(generated: GeneratedBenchmarkRdtEventGraph): GeneratedHashDagEventGraph[SignedHashDagEntry] =
+    translateToHashDag(
+      generated,
       (payload, identity, parents) => HashDagEntry.createSignedEntry(payload, identity, parents)
     )
 
-  /** [[generateHashDagEventGraph]], authoring [[UnsignedHashDagEntry]] entries. */
-  def generateUnsignedHashDagEventGraph(
-      numReplicas: Int,
-      numEvents: Int,
-      concurrencyProbability: Double,
-  )(using random: Random): GeneratedHashDagEventGraph[UnsignedHashDagEntry] =
-    generateHashDagEventGraph(
-      numReplicas,
-      numEvents,
-      concurrencyProbability,
+  /** [[translateToHashDag]], authoring [[UnsignedHashDagEntry]] entries. */
+  def translateToUnsignedHashDag(generated: GeneratedBenchmarkRdtEventGraph)
+      : GeneratedHashDagEventGraph[UnsignedHashDagEntry] =
+    translateToHashDag(
+      generated,
       (payload, identity, parents) => HashDagEntry.createUnsignedEntry(payload, identity, parents)
     )
 }
@@ -375,11 +342,12 @@ case class GeneratedBenchmarkRdtEventGraph(
     state: BenchmarkRdt
 )
 
-/** Result of [[TraceGeneration.generateSignedHashDagEventGraph]]/[[TraceGeneration.generateUnsignedHashDagEventGraph]]:
-  * the generated dag, together with `trace`, every entry's encoded bytes in causal (insertion) order (needed to
+/** Result of [[TraceGeneration.translateToSignedHashDag]]/[[TraceGeneration.translateToUnsignedHashDag]]: the
+  * translated dag, together with `trace`, every entry's encoded bytes in causal (insertion) order (needed to
   * replay the dag into a fresh [[HashDag]] via repeated [[HashDag.receiveOrThrow]] calls, as [[HashDag]] itself,
   * unlike [[ArdtEventGraph]], does not track insertion order), and `state`, the fully merged [[BenchmarkRdt]]
-  * value resulting from every generated entry.
+  * value resulting from every translated entry (the same value as the source [[GeneratedBenchmarkRdtEventGraph]]'s
+  * `state`, since translation preserves every edit).
   */
 case class GeneratedHashDagEventGraph[T <: HashDagEntry](
     hashDag: HashDag[T],
