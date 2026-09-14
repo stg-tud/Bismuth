@@ -109,14 +109,14 @@ class EvaluationBenchmarks {
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkRdtBenchmarkState): Set[Hash] = {
     var dag = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
-    state.trace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
     dag.heads
   }
 
   @Benchmark
   def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkRdtBenchmarkState): Set[Hash] = {
     var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
-    state.trace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
     dag.heads
   }
 }
@@ -150,10 +150,14 @@ class BenchmarkRdtBenchmarkState {
   var selectedLocalUid: LocalUid                       = scala.compiletime.uninitialized
   var authorizationHash: Hash                          = scala.compiletime.uninitialized
 
+  // Exposed so that state classes extending this one (e.g. those translating the generated graph into a
+  // HashDag) can reuse it in their own @Setup, instead of generating an independent random graph.
+  protected var generated: GeneratedBenchmarkRdtEventGraph = scala.compiletime.uninitialized
+
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    val generated        = TraceGeneration.generateBenchmarkRdtEventGraph(
+    generated = TraceGeneration.generateBenchmarkRdtEventGraph(
       numReplicas,
       numEvents,
       concurrencyProbability
@@ -183,37 +187,18 @@ class BenchmarkRdtBenchmarkState {
 }
 
 @State(Scope.Benchmark)
-class SignedHashDagBenchmarkRdtBenchmarkState {
-
-  @Param(Array("20000", "40000", "60000", "80000", "100000"))
-  var numEvents: Int = scala.compiletime.uninitialized
-
-  val numReplicas: Int               = 10
-  val concurrencyProbability: Double = 0.2
-  val seed: Long                     = 42L
+class SignedHashDagBenchmarkRdtBenchmarkState extends BenchmarkRdtBenchmarkState {
 
   var hashDag: HashDag[SignedHashDagEntry] = scala.compiletime.uninitialized
-  var trace: Array[Array[Byte]]            = scala.compiletime.uninitialized
-  var rdtState: BenchmarkRdt               = scala.compiletime.uninitialized
-
-  var selectedIdentity: PrivateIdentity                = scala.compiletime.uninitialized
-  var selectedLocalUid: LocalUid                       = scala.compiletime.uninitialized
-  var selectedMutatorChoice: BenchmarkRdtMutatorChoice = scala.compiletime.uninitialized
+  var hashDagTrace: Array[Array[Byte]]     = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
-  def setup(): Unit = {
-    given random: Random = Random(seed)
-    val generated  = TraceGeneration.generateBenchmarkRdtEventGraph(numReplicas, numEvents, concurrencyProbability)
+  override def setup(): Unit = {
+    super.setup()
     val translated = TraceGeneration.translateToSignedHashDag(generated)
 
     hashDag = translated.hashDag
-    trace = translated.trace
-    rdtState = translated.state
-
-    val replicaIndex = random.nextInt(numReplicas)
-    selectedIdentity = generated.replicaIds(replicaIndex)
-    selectedLocalUid = LocalUid(Uid(selectedIdentity.getPublic.id))
-    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))
+    hashDagTrace = translated.trace
   }
 }
 
@@ -221,37 +206,18 @@ class SignedHashDagBenchmarkRdtBenchmarkState {
   * signing/verification overhead paid by every [[SignedHashDagEntry]].
   */
 @State(Scope.Benchmark)
-class UnsignedHashDagBenchmarkRdtBenchmarkState {
-
-  @Param(Array("20000", "40000", "60000", "80000", "100000"))
-  var numEvents: Int = scala.compiletime.uninitialized
-
-  val numReplicas: Int               = 10
-  val concurrencyProbability: Double = 0.2
-  val seed: Long                     = 42L
+class UnsignedHashDagBenchmarkRdtBenchmarkState extends BenchmarkRdtBenchmarkState {
 
   var hashDag: HashDag[UnsignedHashDagEntry] = scala.compiletime.uninitialized
-  var trace: Array[Array[Byte]]              = scala.compiletime.uninitialized
-  var rdtState: BenchmarkRdt                 = scala.compiletime.uninitialized
-
-  var selectedIdentity: PrivateIdentity                = scala.compiletime.uninitialized
-  var selectedLocalUid: LocalUid                       = scala.compiletime.uninitialized
-  var selectedMutatorChoice: BenchmarkRdtMutatorChoice = scala.compiletime.uninitialized
+  var hashDagTrace: Array[Array[Byte]]       = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
-  def setup(): Unit = {
-    given random: Random = Random(seed)
-    val generated  = TraceGeneration.generateBenchmarkRdtEventGraph(numReplicas, numEvents, concurrencyProbability)
+  override def setup(): Unit = {
+    super.setup()
     val translated = TraceGeneration.translateToUnsignedHashDag(generated)
 
     hashDag = translated.hashDag
-    trace = translated.trace
-    rdtState = translated.state
-
-    val replicaIndex = random.nextInt(numReplicas)
-    selectedIdentity = generated.replicaIds(replicaIndex)
-    selectedLocalUid = LocalUid(Uid(selectedIdentity.getPublic.id))
-    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))
+    hashDagTrace = translated.trace
   }
 }
 
