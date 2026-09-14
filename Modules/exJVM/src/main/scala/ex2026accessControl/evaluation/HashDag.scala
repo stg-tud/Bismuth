@@ -2,6 +2,7 @@ package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
 
 case class HashDag[T <: HashDagEntry: JsonValueCodec](
@@ -61,3 +62,29 @@ object HashDagEntry:
     import replication.JsoniterCodecsJvm.given
     given JsonValueCodec[SignedHashDagEntry]   = JsonCodecMaker.make
     given JsonValueCodec[UnsignedHashDagEntry] = JsonCodecMaker.make
+
+    def createSignedEntry[P: JsonValueCodec](
+        hashDag: HashDag[SignedHashDagEntry],
+        payload: P,
+        privateIdentity: PrivateIdentity
+    ): SignedHashDagEntry = {
+      val unsignedEntry = SignedHashDagEntry(
+        writeToArray(payload),
+        privateIdentity.getPublic,
+        hashDag.heads,
+        Signature.allZeroSignature,
+      )
+      val sk        = privateIdentity.identityKey.getPrivate
+      val signature = Signature.compute(writeToArray(unsignedEntry), sk)
+      unsignedEntry.copy(signature = signature)
+    }
+
+    def createUnsignedEntry[P: JsonValueCodec](
+        hashDag: HashDag[UnsignedHashDagEntry],
+        payload: P,
+        privateIdentity: PrivateIdentity
+    ): UnsignedHashDagEntry = UnsignedHashDagEntry(
+      writeToArray(payload),
+      privateIdentity.getPublic,
+      hashDag.heads,
+    )
