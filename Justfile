@@ -73,9 +73,9 @@ intellij-bsp-import-fix:
 	fish Scripts/patch-bsp-shared-test-modules.fish
 
 selectScheduler scheduler="levelled":
-	scala-cli --jvm=system --server=false scripts/select-scheduler.scala -- {{scheduler}}
+	scala-cli --jvm=system --server=false Scripts/select-scheduler.scala -- {{scheduler}}
 
-update-webview-in-podman: (open-in-podman "fish ./scripts/update-webview.fish")
+update-webview-in-podman: (open-in-podman "fish ./Scripts/update-webview.fish")
 
 open-in-podman command="fish":
 	podman build --file Scripts/Devcontainerfile --tag bismuth-dev-image .
