@@ -2,6 +2,7 @@ package ex2026accessControl.evaluation
 
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
+import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
@@ -90,7 +91,7 @@ object TraceGeneration {
 
     val writePermissions =
       pickRandomPermissions(Seq("title", "bucketList", "expenses"), replicaIds.drop(1).map(_.getPublic))
-        + (rootIdentity.getPublic -> PermissionTree.allow)
+      + (rootIdentity.getPublic -> PermissionTree.allow)
 
     // The capability event that authorizes each replica's writes. The root replica writes under the
     // genesis capability directly; every other replica is delegated a capability restricted to its
@@ -124,7 +125,7 @@ object TraceGeneration {
         val author       = identity.getPublic
 
         given LocalUid = LocalUid(Uid(author.id))
-        val delta = BenchmarkHelper.randomTravelPlanDelta(
+        val delta      = BenchmarkHelper.randomTravelPlanDelta(
           permittedMutators(replicaIndex),
           minEntriesPerMapPerReplica,
           maxEntriesPerMapPerReplica,
@@ -185,7 +186,7 @@ object TraceGeneration {
 
     val writePermissions =
       pickRandomPermissions(BenchmarkRdt.benchmarkRdtPerms, replicaIds.drop(1).map(_.getPublic))
-        + (rootIdentity.getPublic -> PermissionTree.allow)
+      + (rootIdentity.getPublic -> PermissionTree.allow)
 
     val capabilityEvent = mutable.Map(rootIdentity.getPublic -> genesisEvent.hash)
     replicaIds.drop(1).foreach { identity =>
@@ -211,7 +212,7 @@ object TraceGeneration {
         val identity     = replicaIds(replicaIndex)
         val author       = identity.getPublic
 
-        given LocalUid = LocalUid(Uid(author.id))
+        given LocalUid    = LocalUid(Uid(author.id))
         val mutatorChoice = BenchmarkHelper.randomMutatorChoice(permittedMutators(replicaIndex))
         val delta         = BenchmarkHelper.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
         sharedState = sharedState.merge(delta)
@@ -272,13 +273,13 @@ object TraceGeneration {
 
     val writePermissions =
       pickRandomPermissions(BenchmarkRdt.benchmarkRdtPerms, replicaIds.drop(1).map(_.getPublic))
-        + (rootIdentity.getPublic -> PermissionTree.allow)
+      + (rootIdentity.getPublic -> PermissionTree.allow)
 
     val genesisEvent = Authorization.createGenesis(rootIdentity)
     var eventGraph   = ArdtEventGraph[BenchmarkRdt](genesisEvent)
 
     val capabilityEvent = mutable.Map(rootIdentity.getPublic -> genesisEvent.hash)
-    val eventIndex       = mutable.Map(genesisEvent.hash -> 0)
+    val eventIndex      = mutable.Map(genesisEvent.hash -> 0)
     replicaIds.drop(1).zipWithIndex.foreach { case (identity, i) =>
       val delegation = EventGraphBuilder.buildCapabilityEvent(
         holder = identity.getPublic,
@@ -305,7 +306,7 @@ object TraceGeneration {
         val identity     = replicaIds(replicaIndex)
         val author       = identity.getPublic
 
-        given LocalUid = LocalUid(Uid(author.id))
+        given LocalUid    = LocalUid(Uid(author.id))
         val mutatorChoice = BenchmarkHelper.randomMutatorChoice(permittedMutators(replicaIndex))
         val delta         = BenchmarkHelper.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
         sharedState = sharedState.merge(delta)

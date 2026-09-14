@@ -15,7 +15,7 @@ case class ArdtEventGraph[T: Lattice](
     events: Map[Hash, (ArdtEvent, Int)],
     private[authz] val revocationCache: Map[Hash, Set[Hash]],
     private[authz] val capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
-    val nextEventIndex: Int
+    nextEventIndex: Int
 ) {
 
   /** Adds an event to the event graph unless the event is invalid or causally-before events are missing from the graph.

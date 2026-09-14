@@ -1,9 +1,9 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.{Hash, PublicIdentity}
 import crypto.channels.PrivateIdentity
-import ex2026accessControl.evaluation.EvaluationBenchmark.noopOnStateChange
+import crypto.{Hash, PublicIdentity}
+import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
 import org.openjdk.jmh.annotations.*
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
@@ -93,9 +93,9 @@ class BenchmarkRdtCreationState {
 
   // Replay state, updated in place by createEvents and reset before every invocation.
   var rdtState: BenchmarkRdt                         = scala.compiletime.uninitialized
-  var eventGraph: ArdtEventGraph[BenchmarkRdt]        = scala.compiletime.uninitialized
-  var deltaValueStore: DeltaValueStore[BenchmarkRdt]  = scala.compiletime.uninitialized
-  var eventIndex: mutable.Map[Int, Hash]              = scala.compiletime.uninitialized
+  var eventGraph: ArdtEventGraph[BenchmarkRdt]       = scala.compiletime.uninitialized
+  var deltaValueStore: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
+  var eventIndex: mutable.Map[Int, Hash]             = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   def setup(): Unit = {
@@ -141,7 +141,7 @@ class BenchmarkRdtCreationState {
 @Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
 @State(Scope.Thread)
-class EvaluationBenchmark {
+class EvaluationBenchmarks {
 
   /** Replays a pre-planned [[BenchmarkRdtTracePlan]] (see [[BenchmarkRdtCreationState]]): none of its random
     * decisions (which replica authors a mutation, which field it touches, which earlier events it is
@@ -155,13 +155,14 @@ class EvaluationBenchmark {
   @Benchmark
   def createEvents(state: BenchmarkRdtCreationState): ArdtEventGraph[BenchmarkRdt] = {
     given random: Random = Random(state.seed)
+    // TODO: extract initialization of author specific information. Only use root identity?
 
     state.plan.mutationSteps.foreach { step =>
       val identity = state.plan.replicaIds(step.authorIndex)
       val author   = identity.getPublic
 
       given LocalUid = LocalUid(Uid(author.id))
-      val delta = BenchmarkHelper.applyBenchmarkRdtMutator(step.mutatorChoice, state.rdtState)
+      val delta      = BenchmarkHelper.applyBenchmarkRdtMutator(step.mutatorChoice, state.rdtState)
       state.rdtState = state.rdtState.merge(delta)
 
       val parents = step.parentIndices.map(state.eventIndex)
@@ -219,7 +220,7 @@ class EvaluationBenchmark {
   }
 }
 
-object EvaluationBenchmark {
+object EvaluationBenchmarks {
   def noopOnStateChange[T](x: => T): Unit = ()
 }
 
@@ -228,7 +229,7 @@ object EvaluationRunner {
     val state = new BenchmarkRdtTraceBenchmarkState()
     state.numEvents = 100_000
     state.setup()
-    val bench = new EvaluationBenchmark()
+    val bench = new EvaluationBenchmarks()
     println("Done with setup")
 
     val creationState = new BenchmarkRdtCreationState()
