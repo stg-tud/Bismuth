@@ -75,9 +75,10 @@ class BenchmarkRdtBenchmarkState {
 
     rdtState = generated.state
 
-    val replicaIndex = random.nextInt(numReplicas)
+    val replicaIndex = Random(42).nextInt(numReplicas)
     selectedIdentity = generated.replicaIds(replicaIndex)
-    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))
+    selectedMutatorChoice =
+      BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))(using Random(42))
     authorizationHash = generated.capabilityEvent(selectedIdentity.getPublic)
   }
 }

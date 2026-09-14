@@ -8,10 +8,8 @@ import rdts.base.{Bottom, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
-import scala.reflect.ClassTag
-
 object Authorization {
-  def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter, ClassTag}](
+  def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter}](
       eventGraph: ArdtEventGraph[T],
       deltaValueStore: DeltaValueStore[T]
   ): T =
