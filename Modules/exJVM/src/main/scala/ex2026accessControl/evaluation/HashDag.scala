@@ -4,6 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
+import rdts.base.{Bottom, Lattice}
 
 case class HashDag[T <: HashDagEntry: JsonValueCodec](
     genesis: Hash,
@@ -31,6 +32,24 @@ case class HashDag[T <: HashDagEntry: JsonValueCodec](
       events = events + (hash -> event),
     ))
   }
+}
+
+object HashDag {
+  /** Inserts an entry into the dag, throwing if it is invalid or references unknown dependencies. */
+  def receiveOrThrow[T <: HashDagEntry](hashDag: HashDag[T], encodedEntry: Array[Byte]): HashDag[T] =
+    hashDag.receive(encodedEntry) match {
+      case Right(updated) => updated
+      case Left(missing)  =>
+        throw new IllegalStateException(s"Entry is missing dependencies: $missing")
+    }
+
+  /** Full state materialization from every entry's payload, without any access control enforcement (unlike
+    * [[replication.authz.Authorization.materialize]]).
+    */
+  def materialize[R: {Lattice, Bottom, JsonValueCodec}](hashDag: HashDag[?]): R =
+    hashDag.events.values.iterator.foldLeft(Bottom[R].empty) { (acc, entry) =>
+      acc.merge(readFromArray[R](entry.payload))
+    }
 }
 
 trait HashDagEntry:
@@ -64,14 +83,14 @@ object HashDagEntry:
     given JsonValueCodec[UnsignedHashDagEntry] = JsonCodecMaker.make
 
     def createSignedEntry[P: JsonValueCodec](
-        hashDag: HashDag[SignedHashDagEntry],
         payload: P,
-        privateIdentity: PrivateIdentity
+        privateIdentity: PrivateIdentity,
+        parents: Set[Hash]
     ): SignedHashDagEntry = {
       val unsignedEntry = SignedHashDagEntry(
         writeToArray(payload),
         privateIdentity.getPublic,
-        hashDag.heads,
+        parents,
         Signature.allZeroSignature,
       )
       val sk        = privateIdentity.identityKey.getPrivate
@@ -80,11 +99,11 @@ object HashDagEntry:
     }
 
     def createUnsignedEntry[P: JsonValueCodec](
-        hashDag: HashDag[UnsignedHashDagEntry],
         payload: P,
-        privateIdentity: PrivateIdentity
+        privateIdentity: PrivateIdentity,
+        parents: Set[Hash]
     ): UnsignedHashDagEntry = UnsignedHashDagEntry(
       writeToArray(payload),
       privateIdentity.getPublic,
-      hashDag.heads,
+      parents,
     )

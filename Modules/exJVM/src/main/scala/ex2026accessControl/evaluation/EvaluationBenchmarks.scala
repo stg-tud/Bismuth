@@ -82,6 +82,81 @@ class BenchmarkRdtBenchmarkState {
   }
 }
 
+/** Holds a randomly generated [[HashDag]] of [[SignedHashDagEntry]] BenchmarkRdt edits, the counterpart of
+  * [[BenchmarkRdtBenchmarkState]] for the ACL-free [[HashDag]] representation (no capabilities, no access
+  * control enforcement) used as a baseline to compare against it. See
+  * [[TraceGeneration.generateSignedHashDagEventGraph]] for how the dag is built, and [[BenchmarkRdtBenchmarkState]]
+  * for what `trace`/`rdtState`/`selectedIdentity`/`selectedMutatorChoice` are for.
+  */
+@State(Scope.Benchmark)
+class SignedHashDagBenchmarkRdtBenchmarkState {
+
+  @Param(Array("20000", "40000", "60000", "80000", "100000"))
+  var numEvents: Int = scala.compiletime.uninitialized
+
+  val numReplicas: Int               = 10
+  val concurrencyProbability: Double = 0.2
+  val seed: Long                     = 42L
+
+  var hashDag: HashDag[SignedHashDagEntry] = scala.compiletime.uninitialized
+  var trace: Array[Array[Byte]]            = scala.compiletime.uninitialized
+  var rdtState: BenchmarkRdt               = scala.compiletime.uninitialized
+
+  var selectedIdentity: PrivateIdentity                = scala.compiletime.uninitialized
+  var selectedMutatorChoice: BenchmarkRdtMutatorChoice = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  def setup(): Unit = {
+    given random: Random = Random(seed)
+    val generated        =
+      TraceGeneration.generateSignedHashDagEventGraph(numReplicas, numEvents, concurrencyProbability)
+
+    hashDag = generated.hashDag
+    trace = generated.trace
+    rdtState = generated.state
+
+    val replicaIndex = random.nextInt(numReplicas)
+    selectedIdentity = generated.replicaIds(replicaIndex)
+    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)
+  }
+}
+
+/** [[SignedHashDagBenchmarkRdtBenchmarkState]], using [[UnsignedHashDagEntry]] instead, i.e. without the
+  * signing/verification overhead paid by every [[SignedHashDagEntry]].
+  */
+@State(Scope.Benchmark)
+class UnsignedHashDagBenchmarkRdtBenchmarkState {
+
+  @Param(Array("20000", "40000", "60000", "80000", "100000"))
+  var numEvents: Int = scala.compiletime.uninitialized
+
+  val numReplicas: Int               = 10
+  val concurrencyProbability: Double = 0.2
+  val seed: Long                     = 42L
+
+  var hashDag: HashDag[UnsignedHashDagEntry] = scala.compiletime.uninitialized
+  var trace: Array[Array[Byte]]              = scala.compiletime.uninitialized
+  var rdtState: BenchmarkRdt                 = scala.compiletime.uninitialized
+
+  var selectedIdentity: PrivateIdentity                = scala.compiletime.uninitialized
+  var selectedMutatorChoice: BenchmarkRdtMutatorChoice = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  def setup(): Unit = {
+    given random: Random = Random(seed)
+    val generated        =
+      TraceGeneration.generateUnsignedHashDagEventGraph(numReplicas, numEvents, concurrencyProbability)
+
+    hashDag = generated.hashDag
+    trace = generated.trace
+    rdtState = generated.state
+
+    val replicaIndex = random.nextInt(numReplicas)
+    selectedIdentity = generated.replicaIds(replicaIndex)
+    selectedMutatorChoice = BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)
+  }
+}
+
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
@@ -133,6 +208,76 @@ class EvaluationBenchmarks {
     }
 
     replica.heads
+  }
+
+  /** [[createEvents]], authoring the new event as a [[SignedHashDagEntry]] on top of a [[HashDag]] instead. */
+  @Benchmark
+  def createEventsSignedHashDag(state: SignedHashDagBenchmarkRdtBenchmarkState): HashDag[SignedHashDagEntry] = {
+    given random: Random = Random(state.seed)
+    given LocalUid       = LocalUid(Uid(state.selectedIdentity.getPublic.id))
+
+    val delta = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
+
+    val parents = state.hashDag.heads
+    var dag     = state.hashDag
+
+    delta.decomposed.foreach { decomposedDelta =>
+      val entry = HashDagEntry.createSignedEntry(decomposedDelta, state.selectedIdentity, parents)
+      dag = HashDag.receiveOrThrow(dag, writeToArray(entry))
+    }
+
+    dag
+  }
+
+  /** [[createEventsSignedHashDag]], authoring an [[UnsignedHashDagEntry]] instead. */
+  @Benchmark
+  def createEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkRdtBenchmarkState): HashDag[UnsignedHashDagEntry] = {
+    given random: Random = Random(state.seed)
+    given LocalUid       = LocalUid(Uid(state.selectedIdentity.getPublic.id))
+
+    val delta = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
+
+    val parents = state.hashDag.heads
+    var dag     = state.hashDag
+
+    delta.decomposed.foreach { decomposedDelta =>
+      val entry = HashDagEntry.createUnsignedEntry(decomposedDelta, state.selectedIdentity, parents)
+      dag = HashDag.receiveOrThrow(dag, writeToArray(entry))
+    }
+
+    dag
+  }
+
+  /** Full state materialization from a pre-built [[HashDag]] of [[SignedHashDagEntry]]s, without any access
+    * control enforcement (unlike [[materializeWithAuthorization]]) — only decoding and merging every entry's
+    * payload.
+    */
+  @Benchmark
+  def materializeSignedHashDag(state: SignedHashDagBenchmarkRdtBenchmarkState): BenchmarkRdt =
+    HashDag.materialize[BenchmarkRdt](state.hashDag)
+
+  /** [[materializeSignedHashDag]], for a [[HashDag]] of [[UnsignedHashDagEntry]]s instead. */
+  @Benchmark
+  def materializeUnsignedHashDag(state: UnsignedHashDagBenchmarkRdtBenchmarkState): BenchmarkRdt =
+    HashDag.materialize[BenchmarkRdt](state.hashDag)
+
+  /** [[receiveEventsAndDeltas]], replaying the pre-encoded trace of [[SignedHashDagEntry]]s into a fresh
+    * [[HashDag]] instead of into a [[Replica]]; since a [[HashDag]] entry carries its payload directly, there is
+    * no separate delta to receive.
+    */
+  @Benchmark
+  def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkRdtBenchmarkState): Set[Hash] = {
+    var dag = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    state.trace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    dag.heads
+  }
+
+  /** [[receiveEventsSignedHashDag]], for a trace of [[UnsignedHashDagEntry]]s instead. */
+  @Benchmark
+  def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkRdtBenchmarkState): Set[Hash] = {
+    var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    state.trace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    dag.heads
   }
 }
 
