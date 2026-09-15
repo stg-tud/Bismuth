@@ -95,6 +95,20 @@ class EvaluationBenchmarks {
     replica.heads
   }
 
+  @Benchmark
+  def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
+    var dag = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    dag.heads
+  }
+
+  @Benchmark
+  def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkState): Set[Hash] = {
+    var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    dag.heads
+  }
+
   /** Full state materialization, including access control enforcement */
   @Benchmark
   def materializeWithAuthorization(state: ArdtEventGraphBenchmarkState): BenchmarkRdt =
@@ -110,20 +124,6 @@ class EvaluationBenchmarks {
   @Benchmark
   def materializeUnsignedHashDag(state: UnsignedHashDagBenchmarkState): BenchmarkRdt =
     HashDag.materialize[BenchmarkRdt](state.hashDag)
-
-  @Benchmark
-  def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
-    var dag = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
-    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
-    dag.heads
-  }
-
-  @Benchmark
-  def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkState): Set[Hash] = {
-    var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
-    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
-    dag.heads
-  }
 }
 
 @State(Scope.Benchmark)
@@ -232,26 +232,26 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new ArdtEventGraphBenchmarkState()
-    state.numEvents = 100_000
-    state.setup()
-    val bench = new EvaluationBenchmarks()
-    println("Done with setup")
-
     {
+      val state = new ArdtEventGraphBenchmarkState()
+      state.numEvents = 100_000
+      state.setup()
+      val bench = new EvaluationBenchmarks()
+      println("Done with setup")
       val timeStart = System.nanoTime()
-      bench.createSingleEvent(state)
+      bench.receiveEventsAndDeltas(state)
       println((System.nanoTime() - timeStart) / 1_000_000_000.0)
     }
 
     {
+      val state = new SignedHashDagBenchmarkState()
+      state.numEvents = 100_000
+      state.setup()
+      val bench = new EvaluationBenchmarks()
+      println("Done with setup")
       val timeStart = System.nanoTime()
-      bench.materializeWithAuthorization(state)
+      bench.receiveEventsSignedHashDag(state)
       println((System.nanoTime() - timeStart) / 1_000_000_000.0)
     }
-
-    val timeStart = System.nanoTime()
-    bench.receiveEventsAndDeltas(state)
-    println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }
