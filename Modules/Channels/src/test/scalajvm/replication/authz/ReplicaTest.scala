@@ -27,7 +27,7 @@ class ReplicaTest extends FunSuite {
         mockRef = m
         m
       },
-      onStateChange
+      s => onStateChange(s)
     )
     replica.start()
     assert(replica.receiveEvent(writeToArray(genesisEvent)).isRight)
