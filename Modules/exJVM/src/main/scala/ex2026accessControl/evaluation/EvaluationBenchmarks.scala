@@ -1,14 +1,14 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.Hash
 import crypto.channels.PrivateIdentity
+import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
 import org.openjdk.jmh.annotations.*
 import rdts.base.{LocalUid, Uid}
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
-import replication.authz.{ArdtEventGraph, Authorization, DeltaValueStore, Replica}
+import replication.authz.{AntiEntropy, ArdtEventGraph, Authorization, DeltaValueStore, Replica}
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
@@ -107,6 +107,34 @@ class EvaluationBenchmarks {
     var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
     state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
     dag.heads
+  }
+
+  /** Sending side of anti-entropy, including access control enforcement: every requested event is looked up
+    * and encoded, and every delta value belonging to one of them is filtered against the destination's read
+    * permissions before being encoded and handed to the [[SummingConnectionManager]].
+    */
+  @Benchmark
+  def sendEventsWithDelta(state: SendEventsWithDeltaBenchmarkState): Long = {
+    state.connectionManager.reset()
+    state.antiEntropy.sendEventsWithDelta(state.destination, state.eventHashes)
+    state.connectionManager.sentBytes
+  }
+
+  /** [[sendEventsWithDelta]] without any access control: every requested entry, payload included, is looked up,
+    * encoded and handed to the [[SummingConnectionManager]] unfiltered.
+    */
+  @Benchmark
+  def sendEntriesSignedHashDag(state: SendEntriesSignedHashDagBenchmarkState): Long = {
+    state.connectionManager.reset()
+    HashDag.sendEntries(state.hashDag, state.connectionManager, state.destination, state.entryHashes)
+    state.connectionManager.sentBytes
+  }
+
+  @Benchmark
+  def sendEntriesUnsignedHashDag(state: SendEntriesUnsignedHashDagBenchmarkState): Long = {
+    state.connectionManager.reset()
+    HashDag.sendEntries(state.hashDag, state.connectionManager, state.destination, state.entryHashes)
+    state.connectionManager.sentBytes
   }
 
   /** Full state materialization, including access control enforcement */
@@ -223,6 +251,82 @@ class UnsignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
 
     hashDag = translated.hashDag
     hashDagTrace = translated.trace
+  }
+}
+
+/** [[ArdtEventGraphBenchmarkState]] holding, in addition, a [[Replica]] that has received the whole generated
+  * trace (events and delta values alike), together with an [[AntiEntropy]] on top of it whose
+  * [[SummingConnectionManager]] merely sums up whatever is sent. Everything is sent to the root replica, which
+  * holds the initial (unrestricted) permissions granted by the genesis event, so that no delta value is filtered
+  * out and the full trace is shipped.
+  */
+@State(Scope.Benchmark)
+class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
+
+  var connectionManager: SummingConnectionManager = scala.compiletime.uninitialized
+  var antiEntropy: AntiEntropy                    = scala.compiletime.uninitialized
+  var destination: PublicIdentity                 = scala.compiletime.uninitialized
+  var eventHashes: Array[Hash]                    = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+
+    val replica = new Replica[BenchmarkRdt](
+      genesisHash,
+      rootIdentity,
+      r => NoOpAntiEntropy(r),
+      noopOnStateChange
+    )
+    trace.foreach { (hash, encodedEvent, deltaCommitment) =>
+      replica.receiveEvent(encodedEvent)
+      deltaCommitment.foreach { commitment =>
+        deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
+      }
+    }
+
+    destination = rootIdentity.getPublic
+    connectionManager = SummingConnectionManager(Set(destination))
+    // The control plane is never consulted by sendEventsWithDelta, and is thus left unimplemented.
+    antiEntropy = AntiEntropy(replica, _ => connectionManager, _ => ???)
+    eventHashes = trace.map(_.hash)
+  }
+}
+
+/** [[SignedHashDagBenchmarkState]] holding, in addition, what the access control free counterpart of
+  * [[AntiEntropy.sendEventsWithDelta]] needs: the hashes of every translated entry, in the same (causal) order
+  * as the trace the [[ArdtEventGraph]] based benchmark sends, and a [[SummingConnectionManager]] to send them to.
+  */
+@State(Scope.Benchmark)
+class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState {
+
+  var connectionManager: SummingConnectionManager = scala.compiletime.uninitialized
+  var destination: PublicIdentity                 = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                    = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+    destination = rootIdentity.getPublic
+    connectionManager = SummingConnectionManager(Set(destination))
+    entryHashes = hashDagTrace.map(Hash.compute)
+  }
+}
+
+/** [[SendEntriesSignedHashDagBenchmarkState]], using [[UnsignedHashDagEntry]] instead. */
+@State(Scope.Benchmark)
+class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkState {
+
+  var connectionManager: SummingConnectionManager = scala.compiletime.uninitialized
+  var destination: PublicIdentity                 = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                    = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+    destination = rootIdentity.getPublic
+    connectionManager = SummingConnectionManager(Set(destination))
+    entryHashes = hashDagTrace.map(Hash.compute)
   }
 }
 
