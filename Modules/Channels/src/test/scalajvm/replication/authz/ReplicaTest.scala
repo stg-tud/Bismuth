@@ -16,7 +16,7 @@ class ReplicaTest extends FunSuite {
   private def newReplicaWithGenesis(
       identity: PrivateIdentity,
       genesisEvent: ArdtEvent,
-      onStateChange: Set[Int] => Unit = _ => ()
+      onStateChange: (Unit => Set[Int]) => Unit = _ => ()
   ): (Replica[Set[Int]], MockAntiEntropy) = {
     var mockRef: MockAntiEntropy | Null = null
     val replica                         = new Replica[Set[Int]](
@@ -27,7 +27,7 @@ class ReplicaTest extends FunSuite {
         mockRef = m
         m
       },
-      s => onStateChange(s)
+      onStateChange
     )
     replica.start()
     assert(replica.receiveEvent(writeToArray(genesisEvent)).isRight)
@@ -35,7 +35,7 @@ class ReplicaTest extends FunSuite {
   }
 
   private def newReplica(
-      onStateChange: Set[Int] => Unit = _ => ()
+      onStateChange: (Unit => Set[Int]) => Unit = _ => ()
   ): (Replica[Set[Int]], MockAntiEntropy, PrivateIdentity, ArdtEvent) = {
     val rootIdentity    = newPrivateIdentity()
     val genesisEvent    = Authorization.createGenesis(rootIdentity)
@@ -111,7 +111,7 @@ class ReplicaTest extends FunSuite {
 
   test("receiveDelta stores a readable delta and notifies onStateChange with the merged state") {
     val notifications                            = mutable.Buffer.empty[Set[Int]]
-    val (replica, _, rootIdentity, genesisEvent) = newReplica(onStateChange = s => notifications += s: Unit)
+    val (replica, _, rootIdentity, genesisEvent) = newReplica(onStateChange = s => notifications += s(()))
     val (deltaEvent, revealed)                   =
       buildDeltaEvent(
         Set(1, 2),
