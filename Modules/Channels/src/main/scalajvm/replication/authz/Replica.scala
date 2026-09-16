@@ -1,6 +1,6 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.Commitment.RevealedValue
 import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, PublicIdentity, Signature}
@@ -22,7 +22,9 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   private val deltaValueStore: DeltaValueStore[RDT] = DeltaValueStore[RDT]()
   private lazy val antiEntropy: AntiEntropy         = antiEntropyProvider(this)
 
-  def state: RDT                                       = Authorization.materialize(eventGraph, deltaValueStore)
+  private var materializedState: RDT = Bottom[RDT].empty
+
+  def state: RDT                                       = synchronized { materializedState }
   def heads: Set[Hash]                                 = eventGraph.heads
   def event(hash: Hash): Option[ArdtEvent]             = eventGraph.events.get(hash).map(_._1)
   def allEventsInCausalOrder: Array[(Hash, ArdtEvent)] = eventGraph.allEventsInCausalOrder
@@ -36,22 +38,49 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def containsEvent(eventHash: Hash): Boolean = eventGraph.events.contains(eventHash)
 
+  /** Adds an event to the event graph and updates the materialized state accordingly.
+    *
+    * @return Right(Some(hash)) if the event was added, Right(None) if the event was already known, and
+    *         Left(missing) if the event depends on events that are missing locally.
+    */
   def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Option[Hash]] = synchronized {
     val oldHeads = eventGraph.heads
     eventGraph.receive(encodedEvent) match {
       case Right(updatedEventGraph) =>
         eventGraph = updatedEventGraph
         val addedEventHash = eventGraph.heads.diff(oldHeads).headOption
+        addedEventHash.foreach { eventHash =>
+          val (event, _) = eventGraph.events(eventHash)
+          event.payload match {
+            case DeltaCommitment(commitment) =>
+              //deltaValueStore.get(commitment).foreach(delta => mergeIfAuthorized(eventHash, event, delta))
+            case Capability(_, _, _) => // Capabilities can only authorize updates that are causally after
+            case Revocation(_) =>
+              // TODO: this case could be optimized. We perform recomputeState in casese where it is not necessary.
+              if eventGraph.heads.size > 1 // Check if we have events that are concurrent to revocation.
+              then
+                materializedState = Authorization.materialize(eventGraph, deltaValueStore)
+                onStateChange(_ => materializedState)
+          }
+        }
         Right(addedEventHash)
-      case Left(missing) =>
-        Left(missing)
+      case Left(missing) => Left(missing)
     }
   }
 
+  /** Stores a received delta value and merges it into the materialized state if it is authorized.
+    *
+    * @throws IllegalArgumentException if the local replica may not read the delta.
+    */
   def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit = synchronized {
     require(Authorization.mayRead(localReplicaId, eventHash, delta, eventGraph))
     deltaValueStore.put(delta)
-    onStateChange(_ => state)
+    // mayRead implies that the delta event is part of the event graph
+    val deltaValue = readFromArray[RDT](delta.value)
+    if Authorization.mayWrite(eventGraph, eventHash, eventGraph.events(eventHash)._1, deltaValue) then {
+      materializedState = materializedState.merge(deltaValue)
+      onStateChange(_ => state)
+    }
   }
 
   def mutateState(mutator: RDT => RDT): Unit = synchronized {

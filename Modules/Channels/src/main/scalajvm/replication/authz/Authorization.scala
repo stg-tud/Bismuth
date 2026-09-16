@@ -105,7 +105,7 @@ object Authorization {
       case _ => throw IllegalArgumentException(s"$deltaEvent is not a delta commitment")
     }
 
-  private def mayWrite[T: {Filter}](
+  private[authz] def mayWrite[T: {Filter}](
       eventGraph: ArdtEventGraph[T],
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
