@@ -34,6 +34,7 @@ class EvaluationBenchmarks {
     delta.decomposed.foreach { decomposedDelta =>
       val (event, revealed) =
         EventGraphBuilder.buildDeltaEvent(decomposedDelta, state.selectedIdentity, parents, state.authorizationHash)
+      // TODO: test without integrating this into the event graph
       graph = EventGraphBuilder.receiveOrThrow(graph, event)
     }
 
@@ -98,7 +99,7 @@ class EvaluationBenchmarks {
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
     var rdtState = BenchmarkRdt.empty
-    var dag      = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    var dag      = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set.empty, Map.empty)
     state.hashDagTrace.foreach { encodedEntry =>
       val oldHashDag = dag
       dag = HashDag.receiveOrThrow(dag, encodedEntry)
@@ -112,7 +113,7 @@ class EvaluationBenchmarks {
   @Benchmark
   def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkState): Set[Hash] = {
     var rdtState = BenchmarkRdt.empty
-    var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    var dag      = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set.empty, Map.empty)
     state.hashDagTrace.foreach { encodedEntry =>
       val oldHashDag = dag
       dag = HashDag.receiveOrThrow(dag, encodedEntry)
@@ -350,13 +351,13 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new SendEventsWithDeltaBenchmarkState()
+    val state = new SignedHashDagBenchmarkState()
     state.numEvents = 100_000
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
     val timeStart = System.nanoTime()
-    bench.sendEventsWithDelta(state)
+    bench.receiveEventsSignedHashDag(state)
     println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }
