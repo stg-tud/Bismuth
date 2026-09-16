@@ -1,14 +1,14 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
 import org.openjdk.jmh.annotations.*
 import rdts.base.{LocalUid, Uid}
+import replication.authz.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
-import replication.authz.{AntiEntropy, ArdtEventGraph, Authorization, DeltaValueStore, Replica}
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
@@ -97,15 +97,29 @@ class EvaluationBenchmarks {
 
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
-    var dag = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
-    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    var rdtState = BenchmarkRdt.empty
+    var dag      = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
+    state.hashDagTrace.foreach { encodedEntry =>
+      val oldHashDag = dag
+      dag = HashDag.receiveOrThrow(dag, encodedEntry)
+      val newEntry = dag.heads.diff(oldHashDag.heads).head
+      val delta    = readFromArray[BenchmarkRdt](dag.events(newEntry).payload)
+      rdtState = rdtState.merge(delta)
+    }
     dag.heads
   }
 
   @Benchmark
   def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkState): Set[Hash] = {
+    var rdtState = BenchmarkRdt.empty
     var dag = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set(state.hashDag.genesis), Map.empty)
-    state.hashDagTrace.foreach { encodedEntry => dag = HashDag.receiveOrThrow(dag, encodedEntry) }
+    state.hashDagTrace.foreach { encodedEntry =>
+      val oldHashDag = dag
+      dag = HashDag.receiveOrThrow(dag, encodedEntry)
+      val newEntry = dag.heads.diff(oldHashDag.heads).head
+      val delta    = readFromArray[BenchmarkRdt](dag.events(newEntry).payload)
+      rdtState = rdtState.merge(delta)
+    }
     dag.heads
   }
 
@@ -336,26 +350,13 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    {
-      val state = new ArdtEventGraphBenchmarkState()
-      state.numEvents = 100_000
-      state.setup()
-      val bench = new EvaluationBenchmarks()
-      println("Done with setup")
-      val timeStart = System.nanoTime()
-      bench.receiveEventsAndDeltas(state)
-      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
-    }
-
-    {
-      val state = new SignedHashDagBenchmarkState()
-      state.numEvents = 100_000
-      state.setup()
-      val bench = new EvaluationBenchmarks()
-      println("Done with setup")
-      val timeStart = System.nanoTime()
-      bench.receiveEventsSignedHashDag(state)
-      println((System.nanoTime() - timeStart) / 1_000_000_000.0)
-    }
+    val state = new SendEventsWithDeltaBenchmarkState()
+    state.numEvents = 100_000
+    state.setup()
+    val bench = new EvaluationBenchmarks()
+    println("Done with setup")
+    val timeStart = System.nanoTime()
+    bench.sendEventsWithDelta(state)
+    println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }
