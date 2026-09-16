@@ -14,7 +14,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
     privateIdentity: PrivateIdentity,
     antiEntropyProvider: Replica[?] => AntiEntropy,
-    onStateChange: (Unit => RDT) => Unit
+    onStateChange: RDT => Unit
 ) {
   val localReplicaId: PublicIdentity = privateIdentity.getPublic
 
@@ -53,14 +53,14 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
           val (event, _) = eventGraph.events(eventHash)
           event.payload match {
             case DeltaCommitment(commitment) =>
-              //deltaValueStore.get(commitment).foreach(delta => mergeIfAuthorized(eventHash, event, delta))
+            // deltaValueStore.get(commitment).foreach(delta => mergeIfAuthorized(eventHash, event, delta))
             case Capability(_, _, _) => // Capabilities can only authorize updates that are causally after
-            case Revocation(_) =>
-              // TODO: this case could be optimized. We perform recomputeState in casese where it is not necessary.
+            case Revocation(_)       =>
+              // TODO: this case could be optimized. We perform recomputeState in cases where it is not necessary.
               if eventGraph.heads.size > 1 // Check if we have events that are concurrent to revocation.
               then
-                materializedState = Authorization.materialize(eventGraph, deltaValueStore)
-                onStateChange(_ => materializedState)
+                  materializedState = Authorization.materialize(eventGraph, deltaValueStore)
+                  onStateChange(materializedState)
           }
         }
         Right(addedEventHash)
@@ -79,7 +79,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     val deltaValue = readFromArray[RDT](delta.value)
     if Authorization.mayWrite(eventGraph, eventHash, eventGraph.events(eventHash)._1, deltaValue) then {
       materializedState = materializedState.merge(deltaValue)
-      onStateChange(_ => state)
+      onStateChange(state)
     }
   }
 

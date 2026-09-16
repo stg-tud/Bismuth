@@ -24,7 +24,7 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     def antiEntropyProvider(replica: Replica[?]) =
       AntiEntropy(replica, connectionManagerProvider, controlPlaneProvider)
 
-    val replica = Replica[State](genesis, localIdentity, antiEntropyProvider, state => onStateChange(state(())))
+    val replica = Replica[State](genesis, localIdentity, antiEntropyProvider, state => onStateChange(state))
     genesisEvent.foreach { event => replica.receiveEvent(writeToArray(event)) }
     replica
   }
