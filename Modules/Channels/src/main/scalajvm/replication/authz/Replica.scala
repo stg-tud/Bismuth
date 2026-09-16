@@ -127,13 +127,13 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   def createRevocation(revokedCapability: Hash): Unit = {
     @tailrec
-    def findAuthorizationForRevocation(event: Hash): Option[Hash] =
-      if event == Hash.allZeroHash then None
+    def findAuthorizationForRevocation(authEvent: Hash): Option[Hash] =
+      if authEvent == Hash.allZeroHash then None
       else
-          eventGraph.events(event) match {
-            case (ArdtEvent(_, author, _, _, authorization), _) =>
-              if author == localReplicaId then Some(revokedCapability)
-              else findAuthorizationForRevocation(authorization)
+          eventGraph.events(authEvent) match {
+            case (ArdtEvent(_, author, _, _, parentAuthorization), _) =>
+              if author == localReplicaId then Some(authEvent)
+              else findAuthorizationForRevocation(parentAuthorization)
           }
 
     findAuthorizationForRevocation(revokedCapability) match {
