@@ -6,6 +6,7 @@ import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
 import org.openjdk.jmh.annotations.*
+import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{LocalUid, Uid}
 import replication.authz.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
@@ -23,58 +24,46 @@ class EvaluationBenchmarks {
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def createSingleEvent(state: ArdtEventGraphBenchmarkState): ArdtEventGraph[BenchmarkRdt] = {
+  def createSingleEvent(state: ArdtEventGraphBenchmarkState, blackhole: Blackhole): Unit = {
     given random: Random = Random(state.seed)
     given LocalUid       = state.selectedLocalUid
-    val delta            = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
 
-    val parents = state.eventGraph.heads
-    var graph   = state.eventGraph
+    val delta            = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
+    val parents          = state.eventGraph.heads
 
     delta.decomposed.foreach { decomposedDelta =>
-      val (event, revealed) =
+      blackhole.consume(
         EventGraphBuilder.buildDeltaEvent(decomposedDelta, state.selectedIdentity, parents, state.authorizationHash)
-      // TODO: test without integrating this into the event graph
-      graph = EventGraphBuilder.receiveOrThrow(graph, event)
+      )
     }
-
-    graph
   }
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def createSingleEventSignedHashDag(state: SignedHashDagBenchmarkState): HashDag[SignedHashDagEntry] = {
+  def createSingleEventSignedHashDag(state: SignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
     given random: Random = Random(state.seed)
     given LocalUid       = state.selectedLocalUid
 
-    val delta = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
-
+    val delta   = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.hashDag.heads
-    var dag     = state.hashDag
 
-    val entry = HashDagEntry.createSignedEntry(delta, state.selectedIdentity, parents)
-    dag = HashDag.receiveOrThrow(dag, writeToArray(entry))
-
-    dag
+    blackhole.consume(
+      HashDagEntry.createSignedEntry(delta, state.selectedIdentity, parents)
+    )
   }
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def createSingleEventUnsignedHashDag(
-      state: UnsignedHashDagBenchmarkState
-  ): HashDag[UnsignedHashDagEntry] = {
+  def createSingleEventUnsignedHashDag(state: UnsignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
     given random: Random = Random(state.seed)
     given LocalUid       = state.selectedLocalUid
 
-    val delta = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
-
+    val delta   = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.hashDag.heads
-    var dag     = state.hashDag
 
-    val entry = HashDagEntry.createUnsignedEntry(delta, state.selectedIdentity, parents)
-    dag = HashDag.receiveOrThrow(dag, writeToArray(entry))
-
-    dag
+    blackhole.consume(
+      HashDagEntry.createUnsignedEntry(delta, state.selectedIdentity, parents)
+    )
   }
 
   @Benchmark
