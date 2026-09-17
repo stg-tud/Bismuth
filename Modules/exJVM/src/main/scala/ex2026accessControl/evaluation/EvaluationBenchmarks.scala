@@ -181,6 +181,7 @@ class ArdtEventGraphBenchmarkState {
   val numReplicas: Int               = 10
   val concurrencyProbability: Double = 0.2
   val seed: Long                     = 42L
+  val numCapabilitiesPerReplica: Int = 4
 
   var eventGraph: ArdtEventGraph[BenchmarkRdt]       = scala.compiletime.uninitialized
   var deltaValueStore: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
@@ -191,8 +192,7 @@ class ArdtEventGraphBenchmarkState {
 
   var rdtState: BenchmarkRdt = scala.compiletime.uninitialized
 
-  // The single replica and mutation createEvents authors its one new event as, preselected once per trial
-  // rather than picked at random on every invocation.
+  // The single (non-root) replica and mutation used by createEvents
   var selectedIdentity: PrivateIdentity                = scala.compiletime.uninitialized
   var selectedMutatorChoice: BenchmarkRdtMutatorChoice = scala.compiletime.uninitialized
   var selectedLocalUid: LocalUid                       = scala.compiletime.uninitialized
@@ -208,7 +208,8 @@ class ArdtEventGraphBenchmarkState {
     generated = TraceGeneration.generateBenchmarkRdtEventGraph(
       numReplicas,
       numEvents,
-      concurrencyProbability
+      concurrencyProbability,
+      numCapabilitiesPerReplica
     )
 
     eventGraph = generated.eventGraph
@@ -225,12 +226,11 @@ class ArdtEventGraphBenchmarkState {
 
     rdtState = generated.state
 
-    val replicaIndex = Random(42).nextInt(numReplicas)
-    selectedIdentity = generated.replicaIds(replicaIndex)
+    selectedIdentity = generated.replicaIds(1 + Random(42).nextInt(numReplicas - 1))
     selectedLocalUid = LocalUid(Uid(selectedIdentity.getPublic.id))
     selectedMutatorChoice =
-      BenchmarkHelper.randomMutatorChoice(generated.permittedMutators(replicaIndex))(using Random(42))
-    authorizationHash = generated.capabilityEvent(selectedIdentity.getPublic)
+      BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)(using Random(42))
+    authorizationHash = generated.capabilityEvent(selectedIdentity.getPublic)(selectedMutatorChoice)
   }
 }
 
@@ -269,12 +269,6 @@ class UnsignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
   }
 }
 
-/** [[ArdtEventGraphBenchmarkState]] holding, in addition, a [[Replica]] that has received the whole generated
-  * trace (events and delta values alike), together with an [[AntiEntropy]] on top of it whose
-  * [[SummingConnectionManager]] merely sums up whatever is sent. Everything is sent to the root replica, which
-  * holds the initial (unrestricted) permissions granted by the genesis event, so that no delta value is filtered
-  * out and the full trace is shipped.
-  */
 @State(Scope.Benchmark)
 class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
 
@@ -300,7 +294,7 @@ class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
       }
     }
 
-    destination = rootIdentity.getPublic
+    destination = generated.replicaIds(1).getPublic
     connectionManager = SummingConnectionManager(Set(destination))
     // The control plane is never consulted by sendEventsWithDelta, and is thus left unimplemented.
     antiEntropy = AntiEntropy(replica, _ => connectionManager, _ => ???)

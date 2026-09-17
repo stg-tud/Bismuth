@@ -50,14 +50,13 @@ object BenchmarkRdt {
 
   val empty: BenchmarkRdt = Bottom[BenchmarkRdt].empty
 
-  private val multiFieldsPerms     = List("x", "y", "z")
-  private val moreNestingPerms     = List("alpha") ++ multiFieldsPerms.map(f => s"alpha.$f") ++ List("beta")
-  private val evenMoreNestingPerms = List("one") ++ moreNestingPerms.map(f => s"one.$f") ++ List("two")
-  val benchmarkRdtPerms: Seq[String] =
-    Seq("a", "b")
-    ++ multiFieldsPerms.map(f => s"b.$f")
-    ++ Seq("c")
-    ++ moreNestingPerms.map(f => s"c.$f")
-    ++ Seq("d")
-    ++ evenMoreNestingPerms.map(f => s"d.$f")
+  private val multiFieldsLeaves     = List("x", "y", "z")
+  private val moreNestingLeaves     = multiFieldsLeaves.map(f => s"alpha.$f") ++ List("beta")
+  private val evenMoreNestingLeaves = moreNestingLeaves.map(f => s"one.$f") ++ List("two")
+
+  val benchmarkRdtLeafPerms: Seq[String] =
+    Seq("a")
+    ++ multiFieldsLeaves.map(f => s"b.$f")
+    ++ moreNestingLeaves.map(f => s"c.$f")
+    ++ evenMoreNestingLeaves.map(f => s"d.$f")
 }
