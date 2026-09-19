@@ -104,7 +104,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Settings.jolSettings,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= {
-      val jettyVersion = "12.1.12"
+      val jettyVersion = "12.1.13"
       val javaGiVerison = "1.0.0-RC3"
       Seq(
         "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
@@ -122,7 +122,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
         "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
         "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
         "org.scala-lang.modules"        %% "scala-swing"                  % "3.0.0",
-        "org.scala-lang.modules"        %% "scala-xml"                    % "2.4.0",
+        "org.scala-lang.modules"        %% "scala-xml"                    % "2.5.0",
         "org.slf4j"                      % "slf4j-nop"                    % "2.0.19" % Test,
         decline,
         pprint,
