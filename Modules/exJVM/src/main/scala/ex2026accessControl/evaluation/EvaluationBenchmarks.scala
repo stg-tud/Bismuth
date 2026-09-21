@@ -337,6 +337,7 @@ object EvaluationRunner {
   def main(args: Array[String]): Unit = {
     val state = new SendEventsWithDeltaBenchmarkState()
     state.numEvents = 100_000
+    state.numReplicas = 10
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
