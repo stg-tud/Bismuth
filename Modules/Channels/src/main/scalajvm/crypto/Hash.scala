@@ -36,6 +36,7 @@ object Hash {
   def fromArray(hash: Array[Byte]): Hash = new Hash(hash.clone())
 
   def compute(data: Array[Byte]): Hash =
+    // SHA256 via SUN provider is faster on M4 Pro and AMD Ryzen 9 5950X
     new Hash(MessageDigest.getInstance("SHA3-256", "SUN").digest(data))
 
   given hashValueCodec: JsonValueCodec[Hash]:
