@@ -1,7 +1,7 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import crypto.channels.PrivateIdentity
+import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Hash, PublicIdentity}
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
@@ -54,10 +54,7 @@ object TraceGeneration {
     *
     * @param numReplicas number of participating replicas, the root replica included
     * @param numEvents total number of BenchmarkRdt mutations performed across all non-root replicas
-    * @param concurrencyProbability probability, per mutation, that its event is made concurrent to a randomly
-    *   chosen current head of the graph, by walking back a few steps along that head's ancestry and using the
-    *   resulting, slightly older event as its sole parent. A value of 0 produces a graph where every event is
-    *   causally ordered after all previously created events.
+    * @param concurrencyProbability probability, per mutation, that an event is concurrent
     * @param numCapabilitiesPerReplica number of capabilities each non-root replica's permissions are split into
     */
   def generateBenchmarkRdtEventGraph(
@@ -70,7 +67,7 @@ object TraceGeneration {
     require(numEvents >= 0)
     require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
 
-    val replicaIds   = BenchmarkHelper.generateReplicaIds(numReplicas)
+    val replicaIds   = 0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
     val rootIdentity = replicaIds(0)
 
     val genesisEvent    = Authorization.createGenesis(rootIdentity)

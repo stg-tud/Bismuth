@@ -1,6 +1,6 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
@@ -37,6 +37,7 @@ case class HashDag[T <: HashDagEntry: JsonValueCodec](
 }
 
 object HashDag {
+
   /** Inserts an entry into the dag, throwing if it is invalid or references unknown dependencies. */
   def receiveOrThrow[T <: HashDagEntry](hashDag: HashDag[T], encodedEntry: Array[Byte]): HashDag[T] =
     hashDag.receive(encodedEntry) match {

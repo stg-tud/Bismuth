@@ -14,9 +14,9 @@ class NoOpAntiEntropy(replica: Replica[?]) extends AntiEntropy(replica, _ => ???
   override def start(): Unit                         = ()
   override def stop(): Unit                          = ()
 
-  override def broadcastEvents(events: Iterable[Array[Byte]]): Unit                         = ()
-  override def sendEvents(destination: PublicIdentity, events: Iterable[Array[Byte]]): Unit = ()
-  override def sendEventsWithDelta(destination: PublicIdentity, eventHashes: Iterable[Hash]): Unit = ()
+  override def broadcastEvents(events: Iterable[Array[Byte]]): Unit                                     = ()
+  override def sendEvents(destination: PublicIdentity, events: Iterable[Array[Byte]]): Unit             = ()
+  override def sendEventsWithDelta(destination: PublicIdentity, eventHashes: Iterable[Hash]): Unit      = ()
   override def broadcastDeltasFiltered(deltas: Iterable[(eventHash: Hash, delta: RevealedValue)]): Unit = ()
   override def sendDeltasFiltered(
       destination: PublicIdentity,
@@ -24,7 +24,7 @@ class NoOpAntiEntropy(replica: Replica[?]) extends AntiEntropy(replica, _ => ???
   ): Unit = ()
 
   override def receivedMessage(msg: MessageBuffer, sender: PublicIdentity): Unit = ()
-  override def requestMissing(): Unit                                           = ()
-  override def connectionEstablished(publicIdentity: PublicIdentity): Unit      = ()
-  override def connectionShutdown(publicIdentity: PublicIdentity): Unit        = ()
+  override def requestMissing(): Unit                                            = ()
+  override def connectionEstablished(publicIdentity: PublicIdentity): Unit       = ()
+  override def connectionShutdown(publicIdentity: PublicIdentity): Unit          = ()
 }

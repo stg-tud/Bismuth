@@ -1,9 +1,7 @@
 package ex2026accessControl.evaluation.acl
 
 import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
-import ex2026accessControl.evaluation.BenchmarkHelper
-import ex2026accessControl.evaluation.BenchmarkHelper.{dummy, pickOne, retryUntilSuccess}
+import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.evaluation.acl.TravelPlanMutatorChoice.*
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{LocalUid, Uid}
@@ -16,6 +14,22 @@ import scala.collection.mutable
 import scala.util.Random
 
 object TraceGeneration {
+  def dummy(using random: Random): String = random.alphanumeric.take(20).mkString("")
+
+  def pickOne[V](set: Set[V])(using random: Random): V = set.drop(random.nextInt(set.size)).head
+
+  @tailrec
+  def retryUntilSuccess[T](action: => T): T =
+    try
+      action
+    catch {
+      case _: Throwable => retryUntilSuccess(action)
+    }
+
+  def generateReplicaIds(numReplicas: Int): Array[PrivateIdentity] = {
+    require(numReplicas >= 1)
+    0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
+  }
 
   def randomTravelPlanDelta(
       permittedMutators: Array[TravelPlanMutatorChoice],
@@ -116,7 +130,7 @@ object TraceGeneration {
       minEntriesPerMapPerReplica: Int,
       maxEntriesPerMapPerReplica: Int,
   )(using random: Random): Trace = {
-    val replicaIds = BenchmarkHelper.generateReplicaIds(numReplicas)
+    val replicaIds = generateReplicaIds(numReplicas)
     val genesis    = AclRdt.createSelfSignedRoot(replicaIds(0))
 
     // Generate permissions for non-root replicas:

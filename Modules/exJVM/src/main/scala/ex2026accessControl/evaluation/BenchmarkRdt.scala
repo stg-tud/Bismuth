@@ -67,25 +67,25 @@ object BenchmarkRdt {
   )(using random: Random, author: LocalUid): BenchmarkRdt = {
     val choiceSplit = choice.split('.')
 
-    def one(in: BenchmarkRdt): BenchmarkRdt = choiceSplit(0) match {
+    inline def one(in: BenchmarkRdt): BenchmarkRdt = choiceSplit(0) match {
       case "a" => BenchmarkRdt(a = two(in.a))
       case "b" => BenchmarkRdt(b = two(in.b))
       case "c" => BenchmarkRdt(c = two(in.c))
     }
 
-    def two(in: NestedCounters): NestedCounters = choiceSplit(1) match {
+    inline def two(in: NestedCounters): NestedCounters = choiceSplit(1) match {
       case "a" => NestedCounters(a = three(in.a))
       case "b" => NestedCounters(b = three(in.b))
       case "c" => NestedCounters(c = three(in.c))
     }
 
-    def three(in: CounterTripel): CounterTripel = choiceSplit(2) match {
+    inline def three(in: CounterTripel): CounterTripel = choiceSplit(2) match {
       case "a" => CounterTripel(a = four(in.a))
       case "b" => CounterTripel(b = four(in.b))
       case "c" => CounterTripel(c = four(in.c))
     }
 
-    def four(in: PosNegCounter): PosNegCounter = choiceSplit(3) match {
+    inline def four(in: PosNegCounter): PosNegCounter = choiceSplit(3) match {
       case "pos" => PosNegCounter(in.pos.inc(), GrowOnlyCounter.bottom.empty)
       case "neg" => PosNegCounter(GrowOnlyCounter.bottom.empty, in.pos.inc())
     }
