@@ -56,9 +56,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
             // deltaValueStore.get(commitment).foreach(delta => mergeIfAuthorized(eventHash, event, delta))
             case Capability(_, _, _) => // Capabilities can only authorize updates that are causally after
             case Revocation(_)       =>
-              // TODO: this case could be optimized. We perform recomputeState in cases where it is not necessary.
               if eventGraph.heads.size > 1 // Check if we have events that are concurrent to revocation.
               then
+                  // TODO: this case could be optimized. We perform recomputeState in cases where it is not necessary.
+                  // Concretely, we might want to search for those events that use the revoked capability and are concurrent.
+                  // If we find any, remove them from the store and then perform rematerialization (otherwise we're done).
                   materializedState = Authorization.materialize(eventGraph, deltaValueStore)
                   onStateChange(materializedState)
           }
@@ -73,11 +75,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     * @throws IllegalArgumentException if the local replica may not read the delta.
     */
   def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit = synchronized {
-    require(Authorization.mayRead(localReplicaId, eventHash, delta, eventGraph))
-    deltaValueStore.put(delta)
-    // mayRead implies that the delta event is part of the event graph
     val deltaValue = readFromArray[RDT](delta.value)
+    require(Authorization.mayRead(localReplicaId, eventHash, deltaValue, eventGraph))
+    // mayRead implies that the delta event is part of the event graph
     if Authorization.mayWrite(eventGraph, eventHash, eventGraph.events(eventHash)._1, deltaValue) then {
+      deltaValueStore.put(delta)
       materializedState = materializedState.merge(deltaValue)
       onStateChange(state)
     }
