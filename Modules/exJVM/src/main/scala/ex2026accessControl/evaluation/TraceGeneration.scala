@@ -3,7 +3,6 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
-import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
@@ -14,6 +13,7 @@ import scala.collection.mutable
 import scala.util.Random
 
 object TraceGeneration {
+  type BenchmarkRdtMutatorChoice = String
 
   /** Randomly partitions `paths` into `numParts` non-empty groups and turns each group into the
     * [[PermissionTree]] allowing exactly its paths. Since every path ends up in exactly one group, merging the
@@ -78,7 +78,7 @@ object TraceGeneration {
     val deltaValueStore = DeltaValueStore[BenchmarkRdt]()
 
     // The permissions of one capability each, shared by all replicas alike
-    val permissionSplit = splitPermissions(BenchmarkRdt.benchmarkRdtLeafPerms, numCapabilitiesPerReplica)
+    val permissionSplit = splitPermissions(BenchmarkRdt.leafPaths, numCapabilitiesPerReplica)
 
     // The capability event authorizing each mutation of each non-root replica: whichever of its capabilities
     // holds the leaf that mutation writes. Since the leaves are split among those capabilities, exactly one of
@@ -96,7 +96,7 @@ object TraceGeneration {
           authorization = genesisEvent.hash
         )
         eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, delegation)
-        BenchmarkHelper.permittedBenchmarkRdtMutators(permissions).foreach { mutatorChoice =>
+        BenchmarkRdt.leafPaths.filter(path => PermissionTree.fromPath(path) <= permissions).foreach { mutatorChoice =>
           authorizingCapability(mutatorChoice) = delegation.hash
         }
       }
@@ -111,9 +111,9 @@ object TraceGeneration {
         val identity = replicaIds(1 + random.nextInt(numReplicas - 1))
         val author   = identity.getPublic
 
-        given LocalUid = LocalUid(Uid(author.id))
-        val mutatorChoice = BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)
-        val delta         = BenchmarkHelper.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
+        given LocalUid    = LocalUid(Uid(author.id))
+        val mutatorChoice = BenchmarkRdt.leafPaths.drop(random.nextInt(BenchmarkRdt.leafPaths.size)).head
+        val delta         = BenchmarkRdt.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
         sharedState = sharedState.merge(delta)
 
         val isConcurrentWrite = random.nextDouble() < concurrencyProbability
@@ -220,7 +220,7 @@ case class GeneratedBenchmarkRdtEventGraph(
     eventGraph: ArdtEventGraph[BenchmarkRdt],
     deltaValueStore: DeltaValueStore[BenchmarkRdt],
     replicaIds: Array[PrivateIdentity],
-    capabilityEvent: Map[PublicIdentity, Map[BenchmarkRdtMutatorChoice, Hash]],
+    capabilityEvent: Map[PublicIdentity, Map[String, Hash]],
     state: BenchmarkRdt
 )
 

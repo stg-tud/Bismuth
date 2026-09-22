@@ -3,7 +3,6 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
-import ex2026accessControl.evaluation.BenchmarkHelper.BenchmarkRdtMutatorChoice
 import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
@@ -28,8 +27,8 @@ class EvaluationBenchmarks {
     given random: Random = Random(state.seed)
     given LocalUid       = state.selectedLocalUid
 
-    val delta            = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
-    val parents          = state.eventGraph.heads
+    val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
+    val parents = state.eventGraph.heads
 
     delta.decomposed.foreach { decomposedDelta =>
       blackhole.consume(
@@ -44,7 +43,7 @@ class EvaluationBenchmarks {
     given random: Random = Random(state.seed)
     given LocalUid       = state.selectedLocalUid
 
-    val delta   = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
+    val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.hashDag.heads
 
     blackhole.consume(
@@ -58,7 +57,7 @@ class EvaluationBenchmarks {
     given random: Random = Random(state.seed)
     given LocalUid       = state.selectedLocalUid
 
-    val delta   = BenchmarkHelper.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
+    val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.hashDag.heads
 
     blackhole.consume(
@@ -183,10 +182,10 @@ class ArdtEventGraphBenchmarkState {
   var rdtState: BenchmarkRdt = scala.compiletime.uninitialized
 
   // The single (non-root) replica and mutation used by createEvents
-  var selectedIdentity: PrivateIdentity                = scala.compiletime.uninitialized
-  var selectedMutatorChoice: BenchmarkRdtMutatorChoice = scala.compiletime.uninitialized
-  var selectedLocalUid: LocalUid                       = scala.compiletime.uninitialized
-  var authorizationHash: Hash                          = scala.compiletime.uninitialized
+  var selectedIdentity: PrivateIdentity = scala.compiletime.uninitialized
+  var selectedMutatorChoice: String     = scala.compiletime.uninitialized
+  var selectedLocalUid: LocalUid        = scala.compiletime.uninitialized
+  var authorizationHash: Hash           = scala.compiletime.uninitialized
 
   // Exposed so that state classes extending this one (e.g. those translating the generated graph into a
   // HashDag) can reuse it in their own @Setup, instead of generating an independent random graph.
@@ -216,10 +215,9 @@ class ArdtEventGraphBenchmarkState {
 
     rdtState = generated.state
 
-    selectedIdentity = generated.replicaIds(1 + Random(42).nextInt(numReplicas - 1))
+    selectedIdentity = generated.replicaIds(1 + Random(seed).nextInt(numReplicas - 1))
     selectedLocalUid = LocalUid(Uid(selectedIdentity.getPublic.id))
-    selectedMutatorChoice =
-      BenchmarkHelper.randomMutatorChoice(BenchmarkRdtMutatorChoice.values)(using Random(42))
+    selectedMutatorChoice = BenchmarkRdt.leafPaths.drop(Random(seed).nextInt(BenchmarkRdt.leafPaths.size)).head
     authorizationHash = generated.capabilityEvent(selectedIdentity.getPublic)(selectedMutatorChoice)
   }
 }

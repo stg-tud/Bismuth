@@ -1,4 +1,4 @@
-package ex2026accessControl.evaluation
+package ex2026accessControl.evaluation.acl
 
 enum TravelPlanMutatorChoice:
     case SET_TITLE

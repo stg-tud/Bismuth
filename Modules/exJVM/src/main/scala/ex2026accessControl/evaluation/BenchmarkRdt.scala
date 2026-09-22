@@ -2,61 +2,94 @@ package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.datatypes.{LastWriterWins, PosNegCounter}
+import ex2026accessControl.evaluation.BenchmarkRdt.given
+import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
 import rdts.filters.Filter
 
+import scala.util.Random
+
 case class BenchmarkRdt(
-    a: LastWriterWins[Int],
-    b: MultipleFields,
-    c: MoreNesting,
-    d: EvenMoreNesting
+    a: NestedCounters = Bottom.empty,
+    b: NestedCounters = Bottom.empty,
+    c: NestedCounters = Bottom.empty
 )
 
-case class MultipleFields(x: PosNegCounter, y: PosNegCounter, z: LastWriterWins[Int])
+case class NestedCounters(
+    a: CounterTripel = Bottom.empty,
+    b: CounterTripel = Bottom.empty,
+    c: CounterTripel = Bottom.empty
+)
 
-case class MoreNesting(alpha: MultipleFields, beta: PosNegCounter)
-
-case class EvenMoreNesting(one: MoreNesting, two: LastWriterWins[Int])
+case class CounterTripel(
+    a: PosNegCounter = Bottom.empty,
+    b: PosNegCounter = Bottom.empty,
+    c: PosNegCounter = Bottom.empty
+)
 
 object BenchmarkRdt {
-  given Lattice[BenchmarkRdt]    = Lattice.derived
-  given Lattice[MultipleFields]  = Lattice.derived
-  given Lattice[MoreNesting]     = Lattice.derived
-  given Lattice[EvenMoreNesting] = Lattice.derived
+  given Lattice[BenchmarkRdt]   = Lattice.derived
+  given Lattice[NestedCounters] = Lattice.derived
+  given Lattice[CounterTripel]  = Lattice.derived
 
-  given Bottom[Int]             = Bottom.provide(0)
-  given Bottom[BenchmarkRdt]    = Bottom.derived
-  given Bottom[MultipleFields]  = Bottom.derived
-  given Bottom[MoreNesting]     = Bottom.derived
-  given Bottom[EvenMoreNesting] = Bottom.derived
+  given Bottom[BenchmarkRdt]    = Bottom.deriveStructural
+  given Bottom[NestedCounters]  = Bottom.deriveStructural
+  given Bottom[CounterTripel]   = Bottom.deriveStructural
+  given Bottom[PosNegCounter]   = Bottom.deriveStructural
+  given Bottom[GrowOnlyCounter] = Bottom.provide(GrowOnlyCounter(Map.empty))
 
-  given Filter[BenchmarkRdt]        = Filter.derived
-  given Filter[LastWriterWins[Int]] = Filter.terminalLwwFilter
-  given Filter[PosNegCounter]       = Filter.ofTerminalValue
-  given Filter[MultipleFields]      = Filter.derived
-  given Filter[MoreNesting]         = Filter.derived
-  given Filter[EvenMoreNesting]     = Filter.derived
+  given Decompose[BenchmarkRdt]   = Decompose.derived
+  given Decompose[NestedCounters] = Decompose.derived
+  given Decompose[CounterTripel]  = Decompose.derived
 
-  given Decompose[BenchmarkRdt]    = Decompose.derived
-  given Decompose[MultipleFields]  = Decompose.derived
-  given Decompose[MoreNesting]     = Decompose.derived
-  given Decompose[EvenMoreNesting] = Decompose.derived
+  given Filter[BenchmarkRdt]    = Filter.derived
+  given Filter[NestedCounters]  = Filter.derived
+  given Filter[CounterTripel]   = Filter.derived
+  given Filter[PosNegCounter]   = Filter.derived
+  given Filter[GrowOnlyCounter] = Filter.ofTerminalValue
 
   given jsonCodec: JsonValueCodec[BenchmarkRdt] =
-      given JsonValueCodec[Int] = JsonCodecMaker.make
       import channels.JsoniterCodecs.given
       JsonCodecMaker.make[BenchmarkRdt]
 
   val empty: BenchmarkRdt = Bottom[BenchmarkRdt].empty
 
-  private val multiFieldsLeaves     = List("x", "y", "z")
-  private val moreNestingLeaves     = multiFieldsLeaves.map(f => s"alpha.$f") ++ List("beta")
-  private val evenMoreNestingLeaves = moreNestingLeaves.map(f => s"one.$f") ++ List("two")
+  val leafPaths: Seq[String] = for {
+    a <- Seq("a", "b", "c")
+    b <- Seq("a", "b", "c")
+    c <- Seq("a", "b", "c")
+    d <- Seq("pos", "neg")
+  } yield s"$a.$b.$c.$d"
 
-  val benchmarkRdtLeafPerms: Seq[String] =
-    Seq("a")
-    ++ multiFieldsLeaves.map(f => s"b.$f")
-    ++ moreNestingLeaves.map(f => s"c.$f")
-    ++ evenMoreNestingLeaves.map(f => s"d.$f")
+  def applyBenchmarkRdtMutator(
+      choice: String,
+      state: BenchmarkRdt,
+  )(using random: Random, author: LocalUid): BenchmarkRdt = {
+    val choiceSplit = choice.split('.')
+
+    def one(in: BenchmarkRdt): BenchmarkRdt = choiceSplit(0) match {
+      case "a" => BenchmarkRdt(a = two(in.a))
+      case "b" => BenchmarkRdt(b = two(in.b))
+      case "c" => BenchmarkRdt(c = two(in.c))
+    }
+
+    def two(in: NestedCounters): NestedCounters = choiceSplit(1) match {
+      case "a" => NestedCounters(a = three(in.a))
+      case "b" => NestedCounters(b = three(in.b))
+      case "c" => NestedCounters(c = three(in.c))
+    }
+
+    def three(in: CounterTripel): CounterTripel = choiceSplit(2) match {
+      case "a" => CounterTripel(a = four(in.a))
+      case "b" => CounterTripel(b = four(in.b))
+      case "c" => CounterTripel(c = four(in.c))
+    }
+
+    def four(in: PosNegCounter): PosNegCounter = choiceSplit(3) match {
+      case "pos" => PosNegCounter(in.pos.inc(), GrowOnlyCounter.bottom.empty)
+      case "neg" => PosNegCounter(GrowOnlyCounter.bottom.empty, in.pos.inc())
+    }
+
+    one(state)
+  }
 }
