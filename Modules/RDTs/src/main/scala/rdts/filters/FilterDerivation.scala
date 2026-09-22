@@ -99,19 +99,20 @@ object FilterDerivation {
         if permissionTree.children.isEmpty then return productBottom.isEmpty(delta)
         val product = delta.asInstanceOf[Product]
         permissionTree.children.get("*") match {
-          case Some(wildcard) => factorLabels.indices.forall(idx =>
-              permissionTree.children.get(factorLabels(idx)) match {
-                // Merge wildcard permission into specific permission
-                case Some(child) => factorFilters(idx).isAllowed(product.productElement(idx), child.merge(wildcard))
-                case None        => factorFilters(idx).isAllowed(product.productElement(idx), wildcard)
-              }
+          case None => factorFilters.indices.forall(idx =>
+                val element = product.productElement(idx)
+                factorBottoms(idx).isEmpty(element) || (permissionTree.children.get(factorLabels(idx)) match {
+                  case Some(childPermission) => factorFilters(idx).isAllowed(element, childPermission)
+                  case None                  => false
+                })
             )
-          case None =>
-            factorFilters.indices.forall(idx =>
-              permissionTree.children.get(factorLabels(idx)) match {
-                case Some(child) => factorFilters(idx).isAllowed(product.productElement(idx), child)
-                case None        => factorBottoms(idx).isEmpty(product.productElement(idx))
-              }
+          // Need to merge wildcard permission into specific permission
+          case Some(wildcard) => factorLabels.indices.forall(idx =>
+                val element = product.productElement(idx)
+                factorBottoms(idx).isEmpty(element) || (permissionTree.children.get(factorLabels(idx)) match {
+                  case Some(child) => factorFilters(idx).isAllowed(element, child.merge(wildcard))
+                  case None        => factorFilters(idx).isAllowed(element, wildcard)
+                })
             )
 
         }
