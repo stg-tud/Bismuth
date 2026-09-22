@@ -143,6 +143,115 @@ object TraceGeneration {
     )
   }
 
+  /** Builds an [[ArdtEventGraph]] with a two-level delegation hierarchy, in four phases:
+    *
+    *   1. The root replica delegates write access to one top-level subtree (`a.*`, `b.*`, `c.*`) each to three
+    *      new replicas.
+    *   1. `numEventsPhase1` mutations, authored by the root replica and those three replicas.
+    *   1. Each of the three replicas delegates one second-level subtree of its own (e.g. `a.a.*`, `a.b.*`,
+    *      `a.c.*`) each to three new replicas.
+    *   1. `numEventsPhase2` mutations, authored by all 13 replicas.
+    *
+    * Every capability allows reading everything. A mutation is concurrent with probability
+    * `concurrencyProbability`, in which case its author builds it on top of its own previous event instead of the
+    * current heads of the graph. A replica that has not authored anything yet treats the delegation event granting
+    * its capability as its previous event.
+    *
+    * @param numEventsPhase1 number of mutations performed by the root and the top-level subtree replicas
+    * @param numEventsPhase2 number of mutations performed by all replicas, after the second-level delegations
+    * @param concurrencyProbability probability, per mutation, that an event is concurrent
+    */
+  def generateDelegationHierarchyEventGraph(
+      numEventsPhase1: Int,
+      numEventsPhase2: Int,
+      concurrencyProbability: Double,
+  )(using random: Random): GeneratedBenchmarkRdtEventGraph = {
+    require(numEventsPhase1 >= 0 && numEventsPhase2 >= 0)
+    require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
+
+    val subtreeLabels = Seq("a", "b", "c")
+
+    val rootIdentity = IdentityFactory.createNewIdentity
+    val replicaIds   = mutable.ArrayBuffer(rootIdentity)
+
+    val genesisEvent    = Authorization.createGenesis(rootIdentity)
+    var eventGraph      = ArdtEventGraph[BenchmarkRdt](genesisEvent)
+    val deltaValueStore = DeltaValueStore[BenchmarkRdt]()
+    var sharedState     = BenchmarkRdt.empty
+
+    // The capability event authorizing each mutation a replica may perform, i.e. each leaf it may write
+    val capabilityEvent = mutable.Map(rootIdentity.getPublic -> BenchmarkRdt.leafPaths.map(_ -> genesisEvent.hash).toMap)
+    // The event each replica would build a concurrent event on top of
+    val previousEvent = mutable.Map(rootIdentity.getPublic -> genesisEvent.hash)
+
+    // Delegates write access to `subtree` (and read access to everything) to a new replica
+    def delegate(delegator: PrivateIdentity, subtree: String): PrivateIdentity = {
+      val holder         = IdentityFactory.createNewIdentity
+      val subtreeLeaves  = BenchmarkRdt.leafPaths.filter(_.startsWith(s"$subtree."))
+      val delegatorCaps   = capabilityEvent(delegator.getPublic)
+      val delegation     = EventGraphBuilder.buildCapabilityEvent(
+        holder = holder.getPublic,
+        read = PermissionTree.allow,
+        write = PermissionTree.fromPath(s"$subtree.*"),
+        author = delegator,
+        parents = eventGraph.heads,
+        authorization = delegatorCaps(subtreeLeaves.head)
+      )
+      eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, delegation)
+
+      replicaIds += holder
+      capabilityEvent(holder.getPublic) = subtreeLeaves.map(_ -> delegation.hash).toMap
+      previousEvent(delegator.getPublic) = delegation.hash
+      previousEvent(holder.getPublic) = delegation.hash
+      holder
+    }
+
+    def performUpdates(numEvents: Int, authors: IndexedSeq[PrivateIdentity]): Unit = {
+      // Sorted, so that the choice of mutation only depends on the seed
+      val permittedMutations = authors.map(identity => capabilityEvent(identity.getPublic).keys.toIndexedSeq.sorted)
+
+      for _ <- 0 until numEvents do
+          val authorIndex = random.nextInt(authors.size)
+          val identity    = authors(authorIndex)
+          val author      = identity.getPublic
+
+          given LocalUid    = LocalUid(Uid(author.id))
+          val mutations     = permittedMutations(authorIndex)
+          val mutatorChoice = mutations(random.nextInt(mutations.size))
+          val delta         = BenchmarkRdt.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
+          sharedState = sharedState.merge(delta)
+
+          val isConcurrentWrite = random.nextDouble() < concurrencyProbability
+          val parents           = if isConcurrentWrite then Set(previousEvent(author)) else eventGraph.heads
+
+          // Mirrors Replica.createUpdate: every decomposed part of the delta is authorized by the same
+          // capability and built on top of the same parents, making them concurrent siblings of each other.
+          val authorization = capabilityEvent(author)(mutatorChoice)
+          delta.decomposed.foreach { decomposedDelta =>
+            val (event, revealed) = EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, parents, authorization)
+            eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
+            deltaValueStore.put(revealed)
+            previousEvent(author) = event.hash
+          }
+    }
+
+    val subtreeHolders = subtreeLabels.map(label => delegate(rootIdentity, label))
+    performUpdates(numEventsPhase1, (rootIdentity +: subtreeHolders).toIndexedSeq)
+
+    subtreeHolders.lazyZip(subtreeLabels).foreach { (holder, label) =>
+      subtreeLabels.foreach(subLabel => delegate(holder, s"$label.$subLabel"))
+    }
+    performUpdates(numEventsPhase2, replicaIds.toIndexedSeq)
+
+    GeneratedBenchmarkRdtEventGraph(
+      eventGraph,
+      deltaValueStore,
+      replicaIds.toArray,
+      capabilityEvent.toMap,
+      sharedState
+    )
+  }
+
   /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[ArdtEventGraph]] of [[BenchmarkRdt]]
     * edits, together with its delta value store) into a [[HashDag]] of the very same edits, in the same causal
     * order and authored by the same replicas, instead of generating an independent random graph — so that the

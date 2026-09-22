@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
-import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
+import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange}
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{LocalUid, Uid}
@@ -147,20 +147,20 @@ class EvaluationBenchmarks {
     HashDag.materialize[BenchmarkRdt](state.hashDag)
 }
 
+/** Holds an [[ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
+  * 13 replicas in a two-level delegation hierarchy, writing in two phases.
+  */
 @State(Scope.Benchmark)
 class ArdtEventGraphBenchmarkState {
 
-  // The total number of BenchmarkRdt edits making up the pre-built event graph, distributed among replicas at
-  // random. This controls the size of the graph that createEvents authors one further event on top of, as
-  // well as the size read by the other benchmarks below.
+  // The total number of BenchmarkRdt edits making up the pre-built event graph, half of them before and half of
+  // them after the second-level delegations. This controls the size of the graph that createSingleEvent authors
+  // one further event on top of, as well as the size read by the other benchmarks.
   @Param(Array("10000", "100000"))
   var numEvents: Int = scala.compiletime.uninitialized
 
-  @Param(Array("10"))
-  var numReplicas: Int               = scala.compiletime.uninitialized
   val concurrencyProbability: Double = 0.2
   val seed: Long                     = 42L
-  val numCapabilitiesPerReplica: Int = 4
 
   var eventGraph: ArdtEventGraph[BenchmarkRdt]       = scala.compiletime.uninitialized
   var deltaValueStore: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
@@ -171,7 +171,7 @@ class ArdtEventGraphBenchmarkState {
 
   var rdtState: BenchmarkRdt = scala.compiletime.uninitialized
 
-  // The single (non-root) replica and mutation used by createEvents
+  // The single (non-root) replica and mutation used by createSingleEvent
   var selectedIdentity: PrivateIdentity = scala.compiletime.uninitialized
   var selectedMutatorChoice: String     = scala.compiletime.uninitialized
   var selectedLocalUid: LocalUid        = scala.compiletime.uninitialized
@@ -184,30 +184,26 @@ class ArdtEventGraphBenchmarkState {
   @Setup(Level.Trial)
   def setup(): Unit = {
     given random: Random = Random(seed)
-    generated = TraceGeneration.generateBenchmarkRdtEventGraph(
-      numReplicas,
-      numEvents,
-      concurrencyProbability,
-      numCapabilitiesPerReplica
+    generated = TraceGeneration.generateDelegationHierarchyEventGraph(
+      numEventsPhase1 = numEvents / 2,
+      numEventsPhase2 = numEvents - numEvents / 2,
+      concurrencyProbability
     )
 
     eventGraph = generated.eventGraph
     deltaValueStore = generated.deltaValueStore
     genesisHash = generated.eventGraph.genesis
     rootIdentity = generated.replicaIds(0)
-    trace = generated.eventGraph.allEventsInCausalOrder.map { (hash, event) =>
-      val deltaCommitment = event.payload match {
-        case DeltaCommitment(commitment) => Some(commitment)
-        case _                           => None
-      }
-      (hash = hash, encodedEvent = writeToArray(event), deltaCommitment = deltaCommitment)
-    }
+    trace = encodeTrace(generated.eventGraph)
 
     rdtState = generated.state
 
-    selectedIdentity = generated.replicaIds(1 + Random(seed).nextInt(numReplicas - 1))
+    val selectionRandom = Random(seed)
+    selectedIdentity = generated.replicaIds(1 + selectionRandom.nextInt(generated.replicaIds.length - 1))
     selectedLocalUid = LocalUid(Uid(selectedIdentity.getPublic.id))
-    selectedMutatorChoice = BenchmarkRdt.leafPaths.drop(Random(seed).nextInt(BenchmarkRdt.leafPaths.size)).head
+    // A non-root replica may only write to its own subtree
+    val permittedMutations = generated.capabilityEvent(selectedIdentity.getPublic).keys.toIndexedSeq.sorted
+    selectedMutatorChoice = permittedMutations(selectionRandom.nextInt(permittedMutations.size))
     authorizationHash = generated.capabilityEvent(selectedIdentity.getPublic)(selectedMutatorChoice)
   }
 }
@@ -331,13 +327,23 @@ class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkS
 
 object EvaluationBenchmarks {
   def noopOnStateChange[T](x: => T): Unit = ()
+
+  /** Encodes every event of `eventGraph` in causal order, along with its delta commitment (if any) */
+  def encodeTrace(eventGraph: ArdtEventGraph[BenchmarkRdt])
+      : Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])] =
+    eventGraph.allEventsInCausalOrder.map { (hash, event) =>
+      val deltaCommitment = event.payload match {
+        case DeltaCommitment(commitment) => Some(commitment)
+        case _                           => None
+      }
+      (hash = hash, encodedEvent = writeToArray(event), deltaCommitment = deltaCommitment)
+    }
 }
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
     val state = new UnsignedHashDagBenchmarkState()
     state.numEvents = 100_000
-    state.numReplicas = 10
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
