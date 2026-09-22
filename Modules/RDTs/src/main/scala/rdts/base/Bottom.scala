@@ -76,7 +76,10 @@ object Bottom {
   // Assumes that structural equality of Bottom.empty is valid for all factors of product
   inline def deriveStructural[T](using pm: Mirror.ProductOf[T]): Bottom[T] =
       val bottoms = summonAll[Tuple.Map[pm.MirroredElemTypes, Bottom]]
-      Bottom.provide(pm.fromProduct(bottoms))
+      Bottom.provide(pm.fromProduct(
+        Tuple.fromArray:
+            bottoms.toArray.mapInPlace(_.asInstanceOf[Bottom[AnyRef]].empty)
+      ))
 
   object Derived {
 
