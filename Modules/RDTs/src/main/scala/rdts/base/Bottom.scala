@@ -70,8 +70,13 @@ object Bottom {
       Derived.SumBottom[T](sm, bottoms)
 
   inline def productBottom[T](using pm: Mirror.ProductOf[T]): Bottom[T] =
-      val lattices = summonAll[Tuple.Map[pm.MirroredElemTypes, Bottom]]
-      Derived.ProductBottom(pm, lattices)
+      val bottoms = summonAll[Tuple.Map[pm.MirroredElemTypes, Bottom]]
+      Derived.ProductBottom(pm, bottoms)
+
+  // Assumes that structural equality of Bottom.empty is valid for all factors of product
+  inline def deriveStructural[T](using pm: Mirror.ProductOf[T]): Bottom[T] =
+      val bottoms = summonAll[Tuple.Map[pm.MirroredElemTypes, Bottom]]
+      Bottom.provide(pm.fromProduct(bottoms))
 
   object Derived {
 
