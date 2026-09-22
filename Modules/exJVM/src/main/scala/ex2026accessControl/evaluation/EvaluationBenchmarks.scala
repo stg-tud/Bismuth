@@ -156,7 +156,7 @@ class ArdtEventGraphBenchmarkState {
   @Param(Array("10000", "100000"))
   var numEvents: Int = scala.compiletime.uninitialized
 
-  @Param(Array("10", "100"))
+  @Param(Array("10"))
   var numReplicas: Int               = scala.compiletime.uninitialized
   val concurrencyProbability: Double = 0.2
   val seed: Long                     = 42L
@@ -335,14 +335,14 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new SendEventsWithDeltaBenchmarkState()
+    val state = new UnsignedHashDagBenchmarkState()
     state.numEvents = 100_000
     state.numReplicas = 10
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
     val timeStart = System.nanoTime()
-    bench.sendEventsWithDelta(state)
+    bench.receiveEventsUnsignedHashDag(state)
     println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }

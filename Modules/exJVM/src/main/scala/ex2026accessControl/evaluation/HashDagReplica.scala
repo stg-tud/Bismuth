@@ -19,8 +19,11 @@ class HashDagReplica[Entry <: HashDagEntry: JsonValueCodec, RDT: {Lattice, Botto
   def receiveEntry(encodedEntry: Array[Byte]): Unit = synchronized {
     val oldHeads = hashDag.heads
     hashDag = HashDag.receiveOrThrow(hashDag, encodedEntry)
-    val addedEntry = hashDag.heads.diff(oldHeads).head
-    materializedState = materializedState.merge(readFromArray[RDT](hashDag.events(addedEntry).payload))
+    hashDag.heads.diff(oldHeads).headOption match {
+      case Some(addedEntry) =>
+        materializedState = materializedState.merge(readFromArray[RDT](hashDag.events(addedEntry).payload))
+      case None => ??? // There shouldn't be any duplicates in the benchmark
+    }
   }
 
   def sendEntries(destination: PublicIdentity, entryHashes: Iterable[Hash]): Unit =
