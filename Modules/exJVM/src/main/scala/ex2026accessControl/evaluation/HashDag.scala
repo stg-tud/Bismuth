@@ -5,8 +5,6 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Lattice}
-import replication.authz.AntiEntropy
-import replication.sync.ConnectionManager
 
 case class HashDag[T <: HashDagEntry: JsonValueCodec](
     genesis: Hash,
@@ -45,27 +43,6 @@ object HashDag {
       case Left(missing)  =>
         throw new IllegalStateException(s"Entry is missing dependencies: $missing")
     }
-
-  /** Sends the requested entries to `destination`, the counterpart to
-    * [[replication.authz.AntiEntropy.sendEventsWithDelta]] without any access control. Since a [[HashDagEntry]]
-    * carries its payload inline, shipping the requested entries also ships their payloads, so there is neither a
-    * second round of delta value messages, nor any per-payload read permission check (as performed by
-    * [[replication.authz.Replica.filterDeltas]] before a delta value may be sent). Entries are sent using the
-    * same message encoding as [[replication.authz.AntiEntropy]]'s event messages, so that the resulting message
-    * sizes are directly comparable.
-    *
-    * Unknown hashes are skipped, mirroring [[replication.authz.AntiEntropy.sendEventsWithDelta]].
-    */
-  def sendEntries[T <: HashDagEntry: JsonValueCodec](
-      hashDag: HashDag[T],
-      connectionManager: ConnectionManager,
-      destination: PublicIdentity,
-      entryHashes: Iterable[Hash]
-  ): Unit =
-    connectionManager.sendMultiple(
-      destination,
-      entryHashes.flatMap(hashDag.events.get).map(entry => AntiEntropy.encodeEventMsg(writeToArray(entry)))
-    )
 
   /** Full state materialization from every entry's payload, without any access control enforcement (unlike
     * [[replication.authz.Authorization.materialize]]).

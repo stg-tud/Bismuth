@@ -1,6 +1,6 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.evaluation.EvaluationBenchmarks.noopOnStateChange
@@ -86,30 +86,20 @@ class EvaluationBenchmarks {
 
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
-    var rdtState = BenchmarkRdt.empty
-    var dag      = HashDag[SignedHashDagEntry](state.hashDag.genesis, Set.empty, Map.empty)
-    state.hashDagTrace.foreach { encodedEntry =>
-      val oldHashDag = dag
-      dag = HashDag.receiveOrThrow(dag, encodedEntry)
-      val newEntry = dag.heads.diff(oldHashDag.heads).head
-      val delta    = readFromArray[BenchmarkRdt](dag.events(newEntry).payload)
-      rdtState = rdtState.merge(delta)
-    }
-    dag.heads
+    val replica = new HashDagReplica[SignedHashDagEntry, BenchmarkRdt](state.hashDag.genesis, ???)
+
+    state.hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
+
+    replica.heads
   }
 
   @Benchmark
   def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkState): Set[Hash] = {
-    var rdtState = BenchmarkRdt.empty
-    var dag      = HashDag[UnsignedHashDagEntry](state.hashDag.genesis, Set.empty, Map.empty)
-    state.hashDagTrace.foreach { encodedEntry =>
-      val oldHashDag = dag
-      dag = HashDag.receiveOrThrow(dag, encodedEntry)
-      val newEntry = dag.heads.diff(oldHashDag.heads).head
-      val delta    = readFromArray[BenchmarkRdt](dag.events(newEntry).payload)
-      rdtState = rdtState.merge(delta)
-    }
-    dag.heads
+    val replica = new HashDagReplica[UnsignedHashDagEntry, BenchmarkRdt](state.hashDag.genesis, ???)
+
+    state.hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
+
+    replica.heads
   }
 
   /** Sending side of anti-entropy, including access control enforcement: every requested event is looked up
@@ -129,14 +119,14 @@ class EvaluationBenchmarks {
   @Benchmark
   def sendEntriesSignedHashDag(state: SendEntriesSignedHashDagBenchmarkState): Long = {
     state.connectionManager.reset()
-    HashDag.sendEntries(state.hashDag, state.connectionManager, state.destination, state.entryHashes)
+    state.replica.sendEntries(state.destination, state.entryHashes)
     state.connectionManager.sentBytes
   }
 
   @Benchmark
   def sendEntriesUnsignedHashDag(state: SendEntriesUnsignedHashDagBenchmarkState): Long = {
     state.connectionManager.reset()
-    HashDag.sendEntries(state.hashDag, state.connectionManager, state.destination, state.entryHashes)
+    state.replica.sendEntries(state.destination, state.entryHashes)
     state.connectionManager.sentBytes
   }
 
@@ -297,15 +287,21 @@ class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
 @State(Scope.Benchmark)
 class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager = scala.compiletime.uninitialized
-  var destination: PublicIdentity                 = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                    = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager               = scala.compiletime.uninitialized
+  var replica: HashDagReplica[SignedHashDagEntry, BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: PublicIdentity                               = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                  = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
     super.setup()
+
     destination = rootIdentity.getPublic
     connectionManager = SummingConnectionManager(Set(destination))
+
+    replica = new HashDagReplica[SignedHashDagEntry, BenchmarkRdt](hashDag.genesis, connectionManager)
+    hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
+
     entryHashes = hashDagTrace.map(Hash.compute)
   }
 }
@@ -314,15 +310,21 @@ class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState
 @State(Scope.Benchmark)
 class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager = scala.compiletime.uninitialized
-  var destination: PublicIdentity                 = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                    = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager                 = scala.compiletime.uninitialized
+  var replica: HashDagReplica[UnsignedHashDagEntry, BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: PublicIdentity                                 = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                    = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
     super.setup()
+
     destination = rootIdentity.getPublic
     connectionManager = SummingConnectionManager(Set(destination))
+
+    replica = new HashDagReplica[UnsignedHashDagEntry, BenchmarkRdt](hashDag.genesis, connectionManager)
+    hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
+
     entryHashes = hashDagTrace.map(Hash.compute)
   }
 }
