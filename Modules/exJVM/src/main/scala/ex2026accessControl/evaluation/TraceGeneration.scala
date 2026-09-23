@@ -165,6 +165,7 @@ object TraceGeneration {
       numEventsPhase1: Int,
       numEventsPhase2: Int,
       concurrencyProbability: Double,
+      rootPerformsUpdates: Boolean = false
   )(using random: Random): GeneratedBenchmarkRdtEventGraph = {
     require(numEventsPhase1 >= 0 && numEventsPhase2 >= 0)
     require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
@@ -180,16 +181,17 @@ object TraceGeneration {
     var sharedState     = BenchmarkRdt.empty
 
     // The capability event authorizing each mutation a replica may perform, i.e. each leaf it may write
-    val capabilityEvent = mutable.Map(rootIdentity.getPublic -> BenchmarkRdt.leafPaths.map(_ -> genesisEvent.hash).toMap)
+    val capabilityEvent =
+      mutable.Map(rootIdentity.getPublic -> BenchmarkRdt.leafPaths.map(_ -> genesisEvent.hash).toMap)
     // The event each replica would build a concurrent event on top of
     val previousEvent = mutable.Map(rootIdentity.getPublic -> genesisEvent.hash)
 
     // Delegates write access to `subtree` (and read access to everything) to a new replica
     def delegate(delegator: PrivateIdentity, subtree: String): PrivateIdentity = {
-      val holder         = IdentityFactory.createNewIdentity
-      val subtreeLeaves  = BenchmarkRdt.leafPaths.filter(_.startsWith(s"$subtree."))
-      val delegatorCaps   = capabilityEvent(delegator.getPublic)
-      val delegation     = EventGraphBuilder.buildCapabilityEvent(
+      val holder        = IdentityFactory.createNewIdentity
+      val subtreeLeaves = BenchmarkRdt.leafPaths.filter(_.startsWith(s"$subtree."))
+      val delegatorCaps = capabilityEvent(delegator.getPublic)
+      val delegation    = EventGraphBuilder.buildCapabilityEvent(
         holder = holder.getPublic,
         read = PermissionTree.allow,
         write = PermissionTree.fromPath(s"$subtree.*"),
@@ -236,12 +238,20 @@ object TraceGeneration {
     }
 
     val subtreeHolders = subtreeLabels.map(label => delegate(rootIdentity, label))
-    performUpdates(numEventsPhase1, (rootIdentity +: subtreeHolders).toIndexedSeq)
+    performUpdates(
+      numEventsPhase1,
+      if rootPerformsUpdates
+      then (rootIdentity +: subtreeHolders).toIndexedSeq
+      else subtreeHolders.toIndexedSeq
+    )
 
     subtreeHolders.lazyZip(subtreeLabels).foreach { (holder, label) =>
       subtreeLabels.foreach(subLabel => delegate(holder, s"$label.$subLabel"))
     }
-    performUpdates(numEventsPhase2, replicaIds.toIndexedSeq)
+    performUpdates(
+      numEventsPhase2,
+      if rootPerformsUpdates then replicaIds.toIndexedSeq else replicaIds.toIndexedSeq.drop(1)
+    )
 
     GeneratedBenchmarkRdtEventGraph(
       eventGraph,
@@ -258,20 +268,20 @@ object TraceGeneration {
     * already-received delta authorized by the revoked capability or any capability delegated from it.
     */
   def revokeConcurrently(generated: GeneratedBenchmarkRdtEventGraph, subtree: String): GeneratedBenchmarkRdtEventGraph =
-    val capability = capabilityGrantingWrite(generated.eventGraph, subtree)
-    val eventGraph = appendRevocation(generated, capability, Set(capability))
-    // The revocation invalidates deltas, so the resulting state has to be recomputed
-    generated.copy(eventGraph = eventGraph, state = Authorization.materialize(eventGraph, generated.deltaValueStore))
+      val capability = capabilityGrantingWrite(generated.eventGraph, subtree)
+      val eventGraph = appendRevocation(generated, capability, Set(capability))
+      // The revocation invalidates deltas, so the resulting state has to be recomputed
+      generated.copy(eventGraph = eventGraph, state = Authorization.materialize(eventGraph, generated.deltaValueStore))
 
   /** Appends to `generated` the root replica's revocation of the capability granting write access to `subtree`
     * (e.g. `"a"` or `"a.a"`), built on top of the current heads. Since every other event is causally before the
     * revocation, it invalidates none of them.
     */
   def revokeAtHeads(generated: GeneratedBenchmarkRdtEventGraph, subtree: String): GeneratedBenchmarkRdtEventGraph =
-    val capability = capabilityGrantingWrite(generated.eventGraph, subtree)
-    // Nothing is invalidated, so the state stays the same. Recomputing it would also be slow: Authorization checks
-    // every affected delta for being causally before the revocation, searching almost the entire graph each time.
-    generated.copy(eventGraph = appendRevocation(generated, capability, generated.eventGraph.heads))
+      val capability = capabilityGrantingWrite(generated.eventGraph, subtree)
+      // Nothing is invalidated, so the state stays the same. Recomputing it would also be slow: Authorization checks
+      // every affected delta for being causally before the revocation, searching almost the entire graph each time.
+      generated.copy(eventGraph = appendRevocation(generated, capability, generated.eventGraph.heads))
 
   /** The capability event granting write access to exactly `subtree` */
   private def capabilityGrantingWrite(eventGraph: ArdtEventGraph[BenchmarkRdt], subtree: String): Hash = {

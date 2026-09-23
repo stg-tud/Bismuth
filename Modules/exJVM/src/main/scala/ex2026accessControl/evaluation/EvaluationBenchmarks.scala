@@ -231,8 +231,10 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
     val (subtree, parents) = revocation.splitAt(revocation.lastIndexOf('-'))
     invalidatesDeltas = parents == "-concurrent"
     useGenerated(
-      if invalidatesDeltas then TraceGeneration.revokeConcurrently(generated, subtree)
-      else TraceGeneration.revokeAtHeads(generated, subtree)
+      parents match {
+        case "-concurrent" => TraceGeneration.revokeConcurrently(generated, subtree)
+        case "-heads"      => TraceGeneration.revokeAtHeads(generated, subtree)
+      }
     )
 
     // The revocation is the last event of the trace
@@ -409,13 +411,14 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new UnsignedHashDagBenchmarkState()
+    val state = new RevocationBenchmarkState()
     state.numEvents = 100_000
+    state.revocation = "a-concurrent"
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
     val timeStart = System.nanoTime()
-    bench.receiveEventsUnsignedHashDag(state)
+    bench.receiveRevocation(state)
     println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }
