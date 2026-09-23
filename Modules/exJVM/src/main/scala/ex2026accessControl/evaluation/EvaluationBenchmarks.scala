@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
-import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace}
+import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{LocalUid, Uid}
@@ -68,9 +68,11 @@ class EvaluationBenchmarks {
   @Benchmark
   def receiveEventsAndDeltas(state: ArdtEventGraphBenchmarkState): Set[Hash] = receiveTrace(state)
 
-  /** [[receiveEventsAndDeltas]], on a trace ending in a revocation */
+  /** Receiving only a revocation, into a replica that has already received every other event of the trace */
   @Benchmark
-  def receiveEventsAndDeltasWithRevocation(state: RevocationBenchmarkState): Set[Hash] = receiveTrace(state)
+  @OutputTimeUnit(TimeUnit.MICROSECONDS)
+  def receiveRevocation(state: RevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
+    state.replica.receiveEvent(state.encodedRevocation)
 
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
@@ -204,6 +206,9 @@ class ArdtEventGraphBenchmarkState {
   * capability granting write access to either `a.*` or `a.a.*`. The revocation's parents are either only the
   * revoked capability's delegation event (making it concurrent to every other event, which forces receiving
   * replicas to re-materialize their state) or the heads of the graph (making every other event causally before).
+  *
+  * Holds a replica that has received every event of the trace but the revocation, reset to that point before
+  * every invocation, so that receiving the revocation can be measured on its own.
   */
 @State(Scope.Benchmark)
 class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
@@ -212,14 +217,41 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
   @Param(Array("a-concurrent", "a-heads", "a.a-concurrent", "a.a-heads"))
   var revocation: String = scala.compiletime.uninitialized
 
+  var replica: BenchmarkReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
+
+  // The parts of the replica's state that receiving the revocation changes, as they were before
+  private var invalidatesDeltas: Boolean                               = scala.compiletime.uninitialized
+  private var eventGraphBeforeRevocation: ArdtEventGraph[BenchmarkRdt] = scala.compiletime.uninitialized
+  private var stateBeforeRevocation: BenchmarkRdt                      = scala.compiletime.uninitialized
+
   @Setup(Level.Trial)
   override def setup(): Unit = {
     super.setup()
     val (subtree, parents) = revocation.splitAt(revocation.lastIndexOf('-'))
-    useGenerated(parents match {
-      case "-concurrent" => TraceGeneration.revokeConcurrently(generated, subtree)
-      case "-heads"      => TraceGeneration.revokeAtHeads(generated, subtree)
-    })
+    invalidatesDeltas = parents == "-concurrent"
+    useGenerated(
+      if invalidatesDeltas then TraceGeneration.revokeConcurrently(generated, subtree)
+      else TraceGeneration.revokeAtHeads(generated, subtree)
+    )
+
+    // The revocation is the last event of the trace
+    encodedRevocation = trace.last.encodedEvent
+    replica =
+      new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
+    replayTrace(replica, trace.init, deltaValueStore)
+    eventGraphBeforeRevocation = replica.currentEventGraph
+    stateBeforeRevocation = replica.currentMaterializedState
+  }
+
+  /** Removes the revocation from the replica again. The event graph is immutable, so putting back the one from
+    * before the revocation also restores its heads. Only a concurrent revocation invalidates deltas, making the
+    * replica re-materialize its state. Receiving a revocation never touches the delta value store.
+    */
+  @Setup(Level.Invocation)
+  def resetReplica(): Unit = {
+    replica.currentEventGraph = eventGraphBeforeRevocation
+    if invalidatesDeltas then replica.currentMaterializedState = stateBeforeRevocation
   }
 }
 
@@ -276,12 +308,7 @@ class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
       r => NoOpAntiEntropy(r),
       noopOnStateChange
     )
-    trace.foreach { (hash, encodedEvent, deltaCommitment) =>
-      replica.receiveEvent(encodedEvent)
-      deltaCommitment.foreach { commitment =>
-        deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
-      }
-    }
+    replayTrace(replica, trace, deltaValueStore)
 
     destination = generated.replicaIds(1).getPublic
     connectionManager = SummingConnectionManager(Set(destination))
@@ -351,16 +378,22 @@ object EvaluationBenchmarks {
       r => NoOpAntiEntropy(r),
       noopOnStateChange
     )
-
-    state.trace.foreach { (hash, encodedEvent, deltaCommitment) =>
-      replica.receiveEvent(encodedEvent)
-      deltaCommitment.foreach { commitment =>
-        state.deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
-      }
-    }
-
+    replayTrace(replica, state.trace, state.deltaValueStore)
     replica.heads
   }
+
+  /** Has `replica` receive every event of `trace` in order, each directly followed by its delta (if any) */
+  def replayTrace(
+      replica: Replica[BenchmarkRdt],
+      trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])],
+      deltaValueStore: DeltaValueStore[BenchmarkRdt]
+  ): Unit =
+    trace.foreach { (hash, encodedEvent, deltaCommitment) =>
+      replica.receiveEvent(encodedEvent)
+      deltaCommitment.foreach { commitment =>
+        deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
+      }
+    }
 
   /** Encodes every event of `eventGraph` in causal order, along with its delta commitment (if any) */
   def encodeTrace(eventGraph: ArdtEventGraph[BenchmarkRdt])

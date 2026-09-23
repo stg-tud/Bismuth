@@ -18,11 +18,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 ) {
   val localReplicaId: PublicIdentity = privateIdentity.getPublic
 
-  @volatile private var eventGraph: ArdtEventGraph[RDT] = ArdtEventGraph(genesis)
-  private val deltaValueStore: DeltaValueStore[RDT]     = DeltaValueStore[RDT]()
-  private lazy val antiEntropy: AntiEntropy             = antiEntropyProvider(this)
+  @volatile protected var eventGraph: ArdtEventGraph[RDT]      = ArdtEventGraph(genesis)
+  @volatile protected var deltaValueStore: DeltaValueStore[RDT] = DeltaValueStore[RDT]()
+  private lazy val antiEntropy: AntiEntropy                     = antiEntropyProvider(this)
 
-  @volatile private var materializedState: RDT = Bottom[RDT].empty
+  @volatile protected var materializedState: RDT = Bottom[RDT].empty
 
   def state: RDT                                       = synchronized { materializedState }
   def heads: Set[Hash]                                 = eventGraph.heads
