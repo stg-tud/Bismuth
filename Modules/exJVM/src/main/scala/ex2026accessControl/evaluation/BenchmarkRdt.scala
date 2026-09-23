@@ -64,7 +64,7 @@ object BenchmarkRdt {
   def applyBenchmarkRdtMutator(
       choice: String,
       state: BenchmarkRdt,
-  )(using random: Random, author: LocalUid): BenchmarkRdt = {
+  )(using author: LocalUid): BenchmarkRdt = {
     val choiceSplit = choice.split('.')
 
     inline def one(in: BenchmarkRdt): BenchmarkRdt = choiceSplit(0) match {
