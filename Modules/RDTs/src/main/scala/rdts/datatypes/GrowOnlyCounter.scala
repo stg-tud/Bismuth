@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid, Uid}
+import rdts.base.*
 
 case class GrowOnlyCounter(inner: Map[Uid, Int]) {
   lazy val value: Int = inner.valuesIterator.sum
@@ -17,9 +17,15 @@ object GrowOnlyCounter {
 
   given bottom: Bottom[GrowOnlyCounter] = Bottom.derived
 
-  given lattice: Lattice[GrowOnlyCounter] =
-      given Lattice[Int] = math.max
-      Lattice.derived
+  given lattice: Lattice[GrowOnlyCounter] = new Lattice[GrowOnlyCounter]:
+      override def merge(left: GrowOnlyCounter, right: GrowOnlyCounter): GrowOnlyCounter =
+        GrowOnlyCounter(right.inner.foldLeft(left.inner) {
+          case (current, (key, l)) =>
+            current.updatedWith(key) {
+              case Some(r) => Some(r + l)
+              case None    => Some(l)
+            }
+        })
 
   given decompose: Decompose[GrowOnlyCounter] =
       given Decompose[Int] = Decompose.atomic
