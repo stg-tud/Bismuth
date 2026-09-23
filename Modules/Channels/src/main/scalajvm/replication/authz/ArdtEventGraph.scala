@@ -146,6 +146,7 @@ case class ArdtEventGraph[T: Lattice](
     if capHash == genesis then Seq(genesis)
     else capHash +: authorizationChain(events(capHash)._1.authorization) // assumes that chain is in local event graph
 
+  // TODO: could also cache whole chain
   def revocations(capHash: Hash): Set[Hash] =
     if capHash == genesis then revocationCache.getOrElse(capHash, Set.empty)
     else revocationCache.getOrElse(capHash, Set.empty) ++ revocations(events(capHash)._1.authorization)

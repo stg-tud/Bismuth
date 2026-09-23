@@ -58,7 +58,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, _) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
     val updated         = receiveOrFail(graph, deltaEvent)
 
-    assert(Authorization.mayRead(holder, deltaEvent.hash, Set(1, 2, 3), updated))
+    assert(Authorization.mayReadAssumingCommitmentHolds(holder, deltaEvent.hash, Set(1, 2, 3), updated))
   }
 
   test("mayRead (delta overload) is false when the capability's read permission disallows the delta") {
@@ -76,8 +76,8 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, _) = buildDeltaEvent(Set(1), delegate, delegateKey, Set(delegation.hash), delegation.hash)
     val graph2          = receiveOrFail(graph1, deltaEvent)
 
-    assert(!Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph2))
-    assert(Authorization.mayRead(delegate, deltaEvent.hash, Set.empty[Int], graph2))
+    assert(!Authorization.mayReadAssumingCommitmentHolds(delegate, deltaEvent.hash, Set(1), graph2))
+    assert(Authorization.mayReadAssumingCommitmentHolds(delegate, deltaEvent.hash, Set.empty[Int], graph2))
   }
 
   test("mayRead (delta overload) is false when the capability was revoked causally-before the delta event") {
@@ -98,7 +98,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, _) = buildDeltaEvent(Set(1), delegate, delegateKey, Set(revocation.hash), delegation.hash)
     val graph3          = receiveOrFail(graph2, deltaEvent)
 
-    assert(!Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph3))
+    assert(!Authorization.mayReadAssumingCommitmentHolds(delegate, deltaEvent.hash, Set(1), graph3))
   }
 
   test("mayRead (delta overload) is true when the capability's revocation is only concurrent with the delta event") {
@@ -119,7 +119,7 @@ class AuthorizationTest extends FunSuite {
     val revocation = buildEvent(Revocation(delegation.hash), holder, holderKey, Set(delegation.hash), genesis.hash)
     val graph3     = receiveOrFail(graph2, revocation)
 
-    assert(Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph3))
+    assert(Authorization.mayReadAssumingCommitmentHolds(delegate, deltaEvent.hash, Set(1), graph3))
   }
 
   test("mayRead (delta overload) is true when the capability's revocation is causally-after the delta event") {
@@ -140,7 +140,7 @@ class AuthorizationTest extends FunSuite {
     val revocation = buildEvent(Revocation(delegation.hash), holder, holderKey, Set(deltaEvent.hash), genesis.hash)
     val graph3     = receiveOrFail(graph2, revocation)
 
-    assert(Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph3))
+    assert(Authorization.mayReadAssumingCommitmentHolds(delegate, deltaEvent.hash, Set(1), graph3))
   }
 
   test("mayRead (delta overload) is true when the replica holds multiple capabilities and at least one satisfies") {
@@ -168,14 +168,14 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, _) = buildDeltaEvent(Set(1), delegate, delegateKey, Set(permissive.hash), permissive.hash)
     val graph3          = receiveOrFail(graph2, deltaEvent)
 
-    assert(Authorization.mayRead(delegate, deltaEvent.hash, Set(1), graph3))
+    assert(Authorization.mayReadAssumingCommitmentHolds(delegate, deltaEvent.hash, Set(1), graph3))
   }
 
   test("mayRead (delta overload) returns false for replica without capabilities") {
     val (graph, _, _, genesis) = freshGraph()
     val (stranger, _)          = newIdentity()
 
-    assert(!Authorization.mayRead(stranger, genesis.hash, Set.empty[Int], graph))
+    assert(!Authorization.mayReadAssumingCommitmentHolds(stranger, genesis.hash, Set.empty[Int], graph))
   }
 
   // --- mayRead (RevealedValue overload) ---

@@ -18,7 +18,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 ) {
   val localReplicaId: PublicIdentity = privateIdentity.getPublic
 
-  @volatile protected var eventGraph: ArdtEventGraph[RDT]      = ArdtEventGraph(genesis)
+  @volatile protected var eventGraph: ArdtEventGraph[RDT]       = ArdtEventGraph(genesis)
   @volatile protected var deltaValueStore: DeltaValueStore[RDT] = DeltaValueStore[RDT]()
   private lazy val antiEntropy: AntiEntropy                     = antiEntropyProvider(this)
 
@@ -52,21 +52,37 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
         addedEventHash.foreach { eventHash =>
           val (event, _) = eventGraph.events(eventHash)
           event.payload match {
-            case DeltaCommitment(commitment) =>
-            // deltaValueStore.get(commitment).foreach(delta => mergeIfAuthorized(eventHash, event, delta))
-            case Capability(_, _, _) => // Capabilities can only authorize updates that are causally after
-            case Revocation(_)       =>
+            case Revocation(_) =>
               if eventGraph.heads.size > 1 // Check if we have events that are concurrent to revocation.
               then
-                  // TODO: this case could be optimized. We perform recomputeState in cases where it is not necessary.
-                  // Concretely, we might want to search for those events that use the revoked capability and are concurrent.
-                  // If we find any, remove them from the store and then perform rematerialization (otherwise we're done).
-                  materializedState = Authorization.materialize(eventGraph, deltaValueStore)
-                  onStateChange(materializedState)
+                  if invalidateDeltasAfterRevocation(eventHash) > 0 then
+                      materializedState = deltaValueStore.merged
+                      onStateChange(materializedState)
+            case _ => // delta values are not accepted before their commitment, new delegations don't update the state
           }
         }
         Right(addedEventHash)
       case Left(missing) => Left(missing)
+    }
+  }
+
+  // Deletes all deltas that depend on revoked capability that are not causallyBefore revocationEvent
+  private def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Int = synchronized {
+    val transitivelyRevokedCapabilities = eventGraph.events(revocationEventHash) match {
+      case (ArdtEvent(Revocation(revokedCapability), _, _, _, _), _) =>
+        eventGraph.capabilityCache.values.flatMap(caps =>
+          caps.filter((capEvHash, _) => eventGraph.authorizationChain(capEvHash).contains(revokedCapability)).map(_._1)
+        ).toSet
+      case _ => ???
+    }
+
+    require(eventGraph.heads.contains(revocationEventHash))
+    eventGraph.events.count {
+      case evHash -> (ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, auth), idx) =>
+        if transitivelyRevokedCapabilities.contains(auth) && !eventGraph.causallyBefore(evHash, revocationEventHash)
+        then deltaValueStore.remove(commitmentHash).nonEmpty
+        else false
+      case _ => false
     }
   }
 
@@ -75,14 +91,17 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     * @throws IllegalArgumentException if the local replica may not read the delta.
     */
   def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit = synchronized {
+    val event      = eventGraph.events(eventHash)._1
+    val commitment = delta.commitment
+    require(commitment == event.payload.asInstanceOf[DeltaCommitment].commitment)
+
     val deltaValue = readFromArray[RDT](delta.value)
-    require(Authorization.mayRead(localReplicaId, eventHash, deltaValue, eventGraph))
-    // mayRead implies that the delta event is part of the event graph
-    if Authorization.mayWrite(eventGraph, eventHash, eventGraph.events(eventHash)._1, deltaValue) then {
-      deltaValueStore.put(delta)
-      materializedState = materializedState.merge(deltaValue)
-      onStateChange(state)
-    }
+    require(Authorization.mayReadAssumingCommitmentHolds(localReplicaId, eventHash, deltaValue, eventGraph))
+    require(Authorization.mayWriteAssumingCommitmentHolds(eventGraph, eventHash, event, deltaValue))
+
+    deltaValueStore.put(commitment, delta)
+    materializedState = materializedState.merge(deltaValue)
+    onStateChange(state)
   }
 
   def mutateState(mutator: RDT => RDT): Unit = synchronized {

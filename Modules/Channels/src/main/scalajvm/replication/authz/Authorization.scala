@@ -35,7 +35,7 @@ object Authorization {
       case (left, (deltaEventHash, (deltaEvent @ ArdtEvent(deltaCommitment: DeltaCommitment, _, _, _, _), _))) =>
         deltaValueStore.get(deltaCommitment.commitment)
           .map(commited => readFromArray[T](commited.value))
-          .filter(rdt => mayWrite(eventGraph, deltaEventHash, deltaEvent, rdt))
+          .filter(rdt => mayWriteAssumingCommitmentHolds(eventGraph, deltaEventHash, deltaEvent, rdt))
           .map(left.merge)
           .getOrElse(left)
       case (left, _) => left
@@ -50,12 +50,25 @@ object Authorization {
     eventGraph.events.get(deltaEventHash) match {
       case Some(ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _) =>
         val delta = deltaValueStore.get(commitment).map(deltaBytes => readFromArray[T](deltaBytes.value)).get
-        mayRead(replicaId, deltaEventHash, delta, eventGraph)
+        mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, delta, eventGraph)
       case _ => false
     }
 
+  private[authz] def mayRead[T: {JsonValueCodec, Filter}](
+      replicaId: PublicIdentity,
+      deltaEventHash: Hash,
+      deltaValue: RevealedValue,
+      eventGraph: ArdtEventGraph[T]
+  ): Boolean =
+    eventGraph.events.get(deltaEventHash) match {
+      case Some((ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _)) =>
+        if deltaValue.commitment != commitment then false
+        else mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, readFromArray[T](deltaValue.value), eventGraph)
+      case _ => false
+    }
+   
   // assumes that delta matches hash and that the corresponding event is in the graph
-  private[authz] def mayRead[T: Filter](
+  private[authz] def mayReadAssumingCommitmentHolds[T: Filter](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       delta: T,
@@ -68,19 +81,6 @@ object Authorization {
           .revocations(capabilityEventHash)
           .forall(revocation => !eventGraph.causallyBefore(revocation, deltaEventHash))
       )
-
-  private[authz] def mayRead[T: {JsonValueCodec, Filter}](
-      replicaId: PublicIdentity,
-      deltaEventHash: Hash,
-      deltaValue: RevealedValue,
-      eventGraph: ArdtEventGraph[T]
-  ): Boolean =
-    eventGraph.events.get(deltaEventHash) match {
-      case Some((ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _)) =>
-        if deltaValue.commitment != commitment then false
-        else mayRead(replicaId, deltaEventHash, readFromArray[T](deltaValue.value), eventGraph)
-      case _ => false
-    }
 
   def mayWrite[T: {JsonValueCodec, Filter}](
       eventGraph: ArdtEventGraph[T],
@@ -101,11 +101,11 @@ object Authorization {
       case DeltaCommitment(commitment) =>
         if revealedValue.commitment != commitment then return false
         val delta = readFromArray[T](revealedValue.value)
-        mayWrite(eventGraph, deltaEventHash, deltaEvent, delta)
+        mayWriteAssumingCommitmentHolds(eventGraph, deltaEventHash, deltaEvent, delta)
       case _ => throw IllegalArgumentException(s"$deltaEvent is not a delta commitment")
     }
 
-  private[authz] def mayWrite[T: {Filter}](
+  private[authz] def mayWriteAssumingCommitmentHolds[T: {Filter}](
       eventGraph: ArdtEventGraph[T],
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
