@@ -5,8 +5,8 @@ import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Hash, PublicIdentity}
 import rdts.base.{LocalUid, Uid}
 import rdts.filters.PermissionTree
-import replication.authz.ArdtEvent.Payload.DeltaCommitment
-import replication.authz.{ArdtEventGraph, Authorization, DeltaValueStore}
+import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import replication.authz.{ArdtEvent, ArdtEventGraph, Authorization, DeltaValueStore}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -250,6 +250,52 @@ object TraceGeneration {
       capabilityEvent.toMap,
       sharedState
     )
+  }
+
+  /** Appends to `generated` the root replica's revocation of the capability granting write access to `subtree`
+    * (e.g. `"a"` or `"a.a"`), built on top of that capability's delegation event only. The revocation is thus
+    * concurrent to every other event, and since it is the last event of the trace, receiving it invalidates every
+    * already-received delta authorized by the revoked capability or any capability delegated from it.
+    */
+  def revokeConcurrently(generated: GeneratedBenchmarkRdtEventGraph, subtree: String): GeneratedBenchmarkRdtEventGraph =
+    val capability = capabilityGrantingWrite(generated.eventGraph, subtree)
+    val eventGraph = appendRevocation(generated, capability, Set(capability))
+    // The revocation invalidates deltas, so the resulting state has to be recomputed
+    generated.copy(eventGraph = eventGraph, state = Authorization.materialize(eventGraph, generated.deltaValueStore))
+
+  /** Appends to `generated` the root replica's revocation of the capability granting write access to `subtree`
+    * (e.g. `"a"` or `"a.a"`), built on top of the current heads. Since every other event is causally before the
+    * revocation, it invalidates none of them.
+    */
+  def revokeAtHeads(generated: GeneratedBenchmarkRdtEventGraph, subtree: String): GeneratedBenchmarkRdtEventGraph =
+    val capability = capabilityGrantingWrite(generated.eventGraph, subtree)
+    // Nothing is invalidated, so the state stays the same. Recomputing it would also be slow: Authorization checks
+    // every affected delta for being causally before the revocation, searching almost the entire graph each time.
+    generated.copy(eventGraph = appendRevocation(generated, capability, generated.eventGraph.heads))
+
+  /** The capability event granting write access to exactly `subtree` */
+  private def capabilityGrantingWrite(eventGraph: ArdtEventGraph[BenchmarkRdt], subtree: String): Hash = {
+    val write      = PermissionTree.fromPath(s"$subtree.*")
+    val candidates = eventGraph.events.collect {
+      case (hash, (ArdtEvent(Capability(_, _, `write`), _, _, _, _), _)) => hash
+    }
+    require(candidates.size == 1, s"Expected exactly one capability granting write access to $subtree.*")
+    candidates.head
+  }
+
+  private def appendRevocation(
+      generated: GeneratedBenchmarkRdtEventGraph,
+      revokedCapability: Hash,
+      parents: Set[Hash]
+  ): ArdtEventGraph[BenchmarkRdt] = {
+    // The genesis is part of every capability's authorization chain, so the root may revoke any of them
+    val revocation = EventGraphBuilder.buildRevocationEvent(
+      revokedCapability,
+      author = generated.replicaIds(0),
+      parents = parents,
+      authorization = generated.eventGraph.genesis
+    )
+    EventGraphBuilder.receiveOrThrow(generated.eventGraph, revocation)
   }
 
   /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[ArdtEventGraph]] of [[BenchmarkRdt]]

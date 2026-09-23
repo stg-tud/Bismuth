@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
-import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange}
+import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace}
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{LocalUid, Uid}
@@ -66,23 +66,11 @@ class EvaluationBenchmarks {
   }
 
   @Benchmark
-  def receiveEventsAndDeltas(state: ArdtEventGraphBenchmarkState): Set[Hash] = {
-    val replica = new Replica[BenchmarkRdt](
-      state.genesisHash,
-      state.rootIdentity,
-      r => NoOpAntiEntropy(r),
-      noopOnStateChange
-    )
+  def receiveEventsAndDeltas(state: ArdtEventGraphBenchmarkState): Set[Hash] = receiveTrace(state)
 
-    state.trace.foreach { (hash, encodedEvent, deltaCommitment) =>
-      replica.receiveEvent(encodedEvent)
-      deltaCommitment.foreach { commitment =>
-        state.deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
-      }
-    }
-
-    replica.heads
-  }
+  /** [[receiveEventsAndDeltas]], on a trace ending in a revocation */
+  @Benchmark
+  def receiveEventsAndDeltasWithRevocation(state: RevocationBenchmarkState): Set[Hash] = receiveTrace(state)
 
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
@@ -189,14 +177,7 @@ class ArdtEventGraphBenchmarkState {
       numEventsPhase2 = numEvents - numEvents / 2,
       concurrencyProbability
     )
-
-    eventGraph = generated.eventGraph
-    deltaValueStore = generated.deltaValueStore
-    genesisHash = generated.eventGraph.genesis
-    rootIdentity = generated.replicaIds(0)
-    trace = encodeTrace(generated.eventGraph)
-
-    rdtState = generated.state
+    useGenerated(generated)
 
     val selectionRandom = Random(seed)
     selectedIdentity = generated.replicaIds(1 + selectionRandom.nextInt(generated.replicaIds.length - 1))
@@ -205,6 +186,40 @@ class ArdtEventGraphBenchmarkState {
     val permittedMutations = generated.capabilityEvent(selectedIdentity.getPublic).keys.toIndexedSeq.sorted
     selectedMutatorChoice = permittedMutations(selectionRandom.nextInt(permittedMutations.size))
     authorizationHash = generated.capabilityEvent(selectedIdentity.getPublic)(selectedMutatorChoice)
+  }
+
+  /** Replaces the graph-derived state with that of `replacement`, e.g. a modified version of [[generated]] */
+  protected def useGenerated(replacement: GeneratedBenchmarkRdtEventGraph): Unit = {
+    generated = replacement
+    eventGraph = replacement.eventGraph
+    deltaValueStore = replacement.deltaValueStore
+    genesisHash = replacement.eventGraph.genesis
+    rootIdentity = replacement.replicaIds(0)
+    trace = encodeTrace(replacement.eventGraph)
+    rdtState = replacement.state
+  }
+}
+
+/** [[ArdtEventGraphBenchmarkState]] whose trace ends in a revocation, authored by the root replica, of the
+  * capability granting write access to either `a.*` or `a.a.*`. The revocation's parents are either only the
+  * revoked capability's delegation event (making it concurrent to every other event, which forces receiving
+  * replicas to re-materialize their state) or the heads of the graph (making every other event causally before).
+  */
+@State(Scope.Benchmark)
+class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
+
+  // <revoked subtree>-<parents of the revocation>
+  @Param(Array("a-concurrent", "a-heads", "a.a-concurrent", "a.a-heads"))
+  var revocation: String = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+    val (subtree, parents) = revocation.splitAt(revocation.lastIndexOf('-'))
+    useGenerated(parents match {
+      case "-concurrent" => TraceGeneration.revokeConcurrently(generated, subtree)
+      case "-heads"      => TraceGeneration.revokeAtHeads(generated, subtree)
+    })
   }
 }
 
@@ -327,6 +342,25 @@ class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkS
 
 object EvaluationBenchmarks {
   def noopOnStateChange[T](x: => T): Unit = ()
+
+  /** Has a fresh replica of the root identity receive every event of `state`'s trace, along with its delta */
+  def receiveTrace(state: ArdtEventGraphBenchmarkState): Set[Hash] = {
+    val replica = new Replica[BenchmarkRdt](
+      state.genesisHash,
+      state.rootIdentity,
+      r => NoOpAntiEntropy(r),
+      noopOnStateChange
+    )
+
+    state.trace.foreach { (hash, encodedEvent, deltaCommitment) =>
+      replica.receiveEvent(encodedEvent)
+      deltaCommitment.foreach { commitment =>
+        state.deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
+      }
+    }
+
+    replica.heads
+  }
 
   /** Encodes every event of `eventGraph` in causal order, along with its delta commitment (if any) */
   def encodeTrace(eventGraph: ArdtEventGraph[BenchmarkRdt])

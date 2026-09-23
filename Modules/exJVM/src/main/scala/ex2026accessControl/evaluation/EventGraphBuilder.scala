@@ -5,7 +5,7 @@ import crypto.Commitment.RevealedValue
 import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, Signature}
 import rdts.filters.PermissionTree
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.{ArdtEvent, ArdtEventGraph}
 
 /** Helpers for directly constructing and inserting signed [[ArdtEvent]]s, without going through
@@ -34,6 +34,14 @@ object EventGraphBuilder {
       authorization: Hash
   ): ArdtEvent =
     buildEvent(Capability(holder, read, write), author, parents, authorization)
+
+  def buildRevocationEvent(
+      revokedCapability: Hash,
+      author: PrivateIdentity,
+      parents: Set[Hash],
+      authorization: Hash
+  ): ArdtEvent =
+    buildEvent(Revocation(revokedCapability), author, parents, authorization)
 
   def buildDeltaEvent[T: JsonValueCodec](
       delta: T,
