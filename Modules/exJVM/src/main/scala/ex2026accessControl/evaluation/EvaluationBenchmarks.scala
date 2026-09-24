@@ -401,14 +401,16 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new SendEventsWithDeltaBenchmarkState()
+    val state = new SignedHashDagBenchmarkState()
     state.numEvents = 100_000
     // state.revocation = "a-concurrent"
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
     val timeStart = System.nanoTime()
-    bench.sendEventsWithDelta(state)
+    0.until(100) foreach { _ =>
+      bench.materializeSignedHashDag(state)
+    }
     println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }

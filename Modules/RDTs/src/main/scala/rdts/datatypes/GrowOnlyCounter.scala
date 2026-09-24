@@ -17,15 +17,10 @@ object GrowOnlyCounter {
 
   given bottom: Bottom[GrowOnlyCounter] = Bottom.provide(zero)
 
-  given lattice: Lattice[GrowOnlyCounter] = new Lattice[GrowOnlyCounter]:
-      override def merge(left: GrowOnlyCounter, right: GrowOnlyCounter): GrowOnlyCounter =
-        GrowOnlyCounter(right.inner.foldLeft(left.inner) {
-          case (current, (key, l)) =>
-            current.updatedWith(key) {
-              case Some(r) => Some(if r > l then r else l)
-              case None    => Some(l)
-            }
-        })
+  given lattice: Lattice[GrowOnlyCounter] = {
+    given Lattice[Int] = math.max
+    Lattice.derived
+  }
 
   given decompose: Decompose[GrowOnlyCounter] =
       given Decompose[Int] = Decompose.atomic

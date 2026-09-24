@@ -53,7 +53,7 @@ object HashDag {
     }
 }
 
-trait HashDagEntry[P]:
+sealed trait HashDagEntry[P]:
     def payload: P
     def author: PublicIdentity
     def parents: Set[Hash]
