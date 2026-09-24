@@ -34,7 +34,7 @@ object Authorization {
     eventGraph.events.iterator.foldLeft(Bottom[T].empty) {
       case (left, (deltaEventHash, (deltaEvent @ ArdtEvent(deltaCommitment: DeltaCommitment, _, _, _, _), _))) =>
         deltaValueStore.get(deltaCommitment.commitment)
-          .map(commited => readFromArray[T](commited.value))
+          .map(commited => commited.delta)
           .filter(rdt => mayWriteAssumingCommitmentHolds(eventGraph, deltaEventHash, deltaEvent, rdt))
           .map(left.merge)
           .getOrElse(left)
@@ -49,7 +49,7 @@ object Authorization {
   ): Boolean =
     eventGraph.events.get(deltaEventHash) match {
       case Some(ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _) =>
-        val delta = deltaValueStore.get(commitment).map(deltaBytes => readFromArray[T](deltaBytes.value)).get
+        val delta = deltaValueStore.get(commitment).map((delta, _) => delta).get
         mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, delta, eventGraph)
       case _ => false
     }
@@ -66,7 +66,7 @@ object Authorization {
         else mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, readFromArray[T](deltaValue.value), eventGraph)
       case _ => false
     }
-   
+
   // assumes that delta matches hash and that the corresponding event is in the graph
   private[authz] def mayReadAssumingCommitmentHolds[T: Filter](
       replicaId: PublicIdentity,

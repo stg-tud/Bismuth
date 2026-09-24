@@ -1,6 +1,6 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Hash, PublicIdentity}
 import rdts.base.{LocalUid, Uid}
@@ -346,7 +346,7 @@ object TraceGeneration {
       if oldHash != generated.eventGraph.genesis then
           event.payload match {
             case DeltaCommitment(commitment) =>
-              val delta      = readFromArray[BenchmarkRdt](generated.deltaValueStore.get(commitment).get.value)
+              val delta      = generated.deltaValueStore.get(commitment).get.delta
               val newParents = event.parents.flatMap(resolved)
               val entry      = buildEntry(delta, identityByPublic(event.author), newParents)
               val encoded    = writeToArray(entry)

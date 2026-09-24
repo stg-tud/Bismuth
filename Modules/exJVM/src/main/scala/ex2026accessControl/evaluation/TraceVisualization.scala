@@ -1,6 +1,5 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.readFromArray
 import crypto.Hash
 import rdts.filters.{Filter, PermissionTree}
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
@@ -19,8 +18,26 @@ import scala.util.Random
 class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
 
   private val palette = Seq(
-    "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe",
-    "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1", "#000075", "#808080"
+    "#e6194b",
+    "#3cb44b",
+    "#ffe119",
+    "#4363d8",
+    "#f58231",
+    "#911eb4",
+    "#46f0f0",
+    "#f032e6",
+    "#bcf60c",
+    "#fabebe",
+    "#008080",
+    "#e6beff",
+    "#9a6324",
+    "#fffac8",
+    "#800000",
+    "#aaffc3",
+    "#808000",
+    "#ffd8b1",
+    "#000075",
+    "#808080"
   )
 
   private val replicaIndex = generated.replicaIds.map(_.getPublic).zipWithIndex.toMap
@@ -31,9 +48,10 @@ class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
   private def writtenLeaf(commitment: Hash): String =
     generated.deltaValueStore.get(commitment) match {
       case Some(revealed) =>
-        val delta = readFromArray[BenchmarkRdt](revealed.value)
-        BenchmarkRdt.leafPaths.filter(path => Filter[BenchmarkRdt].isAllowed(delta, PermissionTree.fromPath(path)))
-        match {
+        val delta = revealed.delta
+        BenchmarkRdt.leafPaths.filter(path =>
+          Filter[BenchmarkRdt].isAllowed(delta, PermissionTree.fromPath(path))
+        ) match {
           case Seq(leaf) => leaf
           case _         => "?"
         }
@@ -48,8 +66,8 @@ class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
 
     val events = generated.eventGraph.allEventsInCausalOrder
     events.zipWithIndex.foreach { case ((hash, event), index) =>
-      val author = replicaIndex(event.author)
-      val color  = palette(author % palette.size)
+      val author               = replicaIndex(event.author)
+      val color                = palette(author % palette.size)
       val (shape, description) = event.payload match {
         case Capability(holder, _, write) =>
           val kind = if hash == generated.eventGraph.genesis then "genesis" else s"→ R${replicaIndex(holder)}"

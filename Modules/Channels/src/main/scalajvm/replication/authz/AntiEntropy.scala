@@ -64,7 +64,7 @@ class AntiEntropy(
           sendEvents(destination, event.map(writeToArray(_)))
           event match {
             case Some(ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _)) =>
-              sendDeltasFiltered(destination, replica.delta(commitmentHash).map(hash -> _))
+              sendDeltasFiltered(destination, replica.revealedDeltaValue(commitmentHash).map(hash -> _))
             case _ =>
           }
       )
@@ -115,7 +115,7 @@ class AntiEntropy(
           sender,
           events.flatMap {
             case (eventHash, ArdtEvent(DeltaCommitment(deltaCommitment), _, _, _, _)) =>
-              replica.delta(deltaCommitment).map(eventHash -> _)
+              replica.revealedDeltaValue(deltaCommitment).map(eventHash -> _)
             case _ => None
           }
         )

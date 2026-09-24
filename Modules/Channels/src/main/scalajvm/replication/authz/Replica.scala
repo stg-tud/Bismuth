@@ -24,11 +24,12 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   @volatile protected var materializedState: RDT = Bottom[RDT].empty
 
-  def state: RDT                                       = synchronized { materializedState }
-  def heads: Set[Hash]                                 = eventGraph.heads
-  def event(hash: Hash): Option[ArdtEvent]             = eventGraph.events.get(hash).map(_._1)
-  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)] = eventGraph.allEventsInCausalOrder
-  def delta(commitment: Hash): Option[RevealedValue]   = deltaValueStore.get(commitment)
+  def state: RDT                                                  = synchronized { materializedState }
+  def heads: Set[Hash]                                            = eventGraph.heads
+  def event(hash: Hash): Option[ArdtEvent]                        = eventGraph.events.get(hash).map(_._1)
+  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)]            = eventGraph.allEventsInCausalOrder
+  def revealedDeltaValue(commitment: Hash): Option[RevealedValue] = deltaValueStore.getRevealedValue(commitment)
+  def delta(commitment: Hash): Option[RDT]                        = deltaValueStore.get(commitment).map(_.delta)
 
   def listenAddress: Option[(String, Int)]  = antiEntropy.listenAddress
   def connect(address: (String, Int)): Unit = antiEntropy.connect(address)
@@ -90,17 +91,17 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     *
     * @throws IllegalArgumentException if the local replica may not read the delta.
     */
-  def receiveDelta(eventHash: Hash, delta: RevealedValue): Unit = synchronized {
+  def receiveDelta(eventHash: Hash, deltaValue: RevealedValue): Unit = synchronized {
     val event      = eventGraph.events(eventHash)._1
-    val commitment = delta.commitment
+    val commitment = deltaValue.commitment
     require(commitment == event.payload.asInstanceOf[DeltaCommitment].commitment)
 
-    val deltaValue = readFromArray[RDT](delta.value)
-    require(Authorization.mayReadAssumingCommitmentHolds(localReplicaId, eventHash, deltaValue, eventGraph))
-    require(Authorization.mayWriteAssumingCommitmentHolds(eventGraph, eventHash, event, deltaValue))
+    val delta = readFromArray[RDT](deltaValue.value)
+    require(Authorization.mayReadAssumingCommitmentHolds(localReplicaId, eventHash, delta, eventGraph))
+    require(Authorization.mayWriteAssumingCommitmentHolds(eventGraph, eventHash, event, delta))
 
-    deltaValueStore.put(commitment, delta)
-    materializedState = materializedState.merge(deltaValue)
+    deltaValueStore.put(commitment, delta, deltaValue.witness)
+    materializedState = materializedState.merge(delta)
     onStateChange(state)
   }
 

@@ -382,7 +382,7 @@ object EvaluationBenchmarks {
     trace.foreach { (hash, encodedEvent, deltaCommitment) =>
       replica.receiveEvent(encodedEvent)
       deltaCommitment.foreach { commitment =>
-        deltaValueStore.get(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
+        deltaValueStore.getRevealedValue(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
       }
     }
 
