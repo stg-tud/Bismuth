@@ -73,7 +73,7 @@ class EvaluationBenchmarks {
 
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
-    val replica = new HashDagReplica[SignedHashDagEntry, BenchmarkRdt](state.hashDag.genesis, ???)
+    val replica = new HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt](state.hashDag.genesis, ???)
 
     state.hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
@@ -82,7 +82,7 @@ class EvaluationBenchmarks {
 
   @Benchmark
   def receiveEventsUnsignedHashDag(state: UnsignedHashDagBenchmarkState): Set[Hash] = {
-    val replica = new HashDagReplica[UnsignedHashDagEntry, BenchmarkRdt](state.hashDag.genesis, ???)
+    val replica = new HashDagReplica[UnsignedHashDagEntry[BenchmarkRdt], BenchmarkRdt](state.hashDag.genesis, ???)
 
     state.hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
@@ -127,11 +127,11 @@ class EvaluationBenchmarks {
     */
   @Benchmark
   def materializeSignedHashDag(state: SignedHashDagBenchmarkState): BenchmarkRdt =
-    HashDag.materialize[BenchmarkRdt](state.hashDag)
+    HashDag.materialize(state.hashDag)
 
   @Benchmark
   def materializeUnsignedHashDag(state: UnsignedHashDagBenchmarkState): BenchmarkRdt =
-    HashDag.materialize[BenchmarkRdt](state.hashDag)
+    HashDag.materialize(state.hashDag)
 }
 
 /** Holds an [[ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
@@ -249,8 +249,8 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
 @State(Scope.Benchmark)
 class SignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
 
-  var hashDag: HashDag[SignedHashDagEntry] = scala.compiletime.uninitialized
-  var hashDagTrace: Array[Array[Byte]]     = scala.compiletime.uninitialized
+  var hashDag: HashDag[BenchmarkRdt, SignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
+  var hashDagTrace: Array[Array[Byte]]                                 = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -268,8 +268,8 @@ class SignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
 @State(Scope.Benchmark)
 class UnsignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
 
-  var hashDag: HashDag[UnsignedHashDagEntry] = scala.compiletime.uninitialized
-  var hashDagTrace: Array[Array[Byte]]       = scala.compiletime.uninitialized
+  var hashDag: HashDag[BenchmarkRdt, UnsignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
+  var hashDagTrace: Array[Array[Byte]]                                   = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -316,10 +316,10 @@ class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
 @State(Scope.Benchmark)
 class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager               = scala.compiletime.uninitialized
-  var replica: HashDagReplica[SignedHashDagEntry, BenchmarkRdt] = scala.compiletime.uninitialized
-  var destination: PublicIdentity                               = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                                  = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager                             = scala.compiletime.uninitialized
+  var replica: HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: PublicIdentity                                             = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                                = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -328,7 +328,7 @@ class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState
     destination = rootIdentity.getPublic
     connectionManager = SummingConnectionManager(Set(destination))
 
-    replica = new HashDagReplica[SignedHashDagEntry, BenchmarkRdt](hashDag.genesis, connectionManager)
+    replica = new HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt](hashDag.genesis, connectionManager)
     hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
     entryHashes = hashDagTrace.map(Hash.compute)
@@ -339,10 +339,10 @@ class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState
 @State(Scope.Benchmark)
 class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager                 = scala.compiletime.uninitialized
-  var replica: HashDagReplica[UnsignedHashDagEntry, BenchmarkRdt] = scala.compiletime.uninitialized
-  var destination: PublicIdentity                                 = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                                    = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager                               = scala.compiletime.uninitialized
+  var replica: HashDagReplica[UnsignedHashDagEntry[BenchmarkRdt], BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: PublicIdentity                                               = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                                  = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -351,7 +351,7 @@ class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkS
     destination = rootIdentity.getPublic
     connectionManager = SummingConnectionManager(Set(destination))
 
-    replica = new HashDagReplica[UnsignedHashDagEntry, BenchmarkRdt](hashDag.genesis, connectionManager)
+    replica = new HashDagReplica[UnsignedHashDagEntry[BenchmarkRdt], BenchmarkRdt](hashDag.genesis, connectionManager)
     hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
     entryHashes = hashDagTrace.map(Hash.compute)

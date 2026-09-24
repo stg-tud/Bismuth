@@ -6,12 +6,12 @@ import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Lattice}
 
-case class HashDag[T <: HashDagEntry: JsonValueCodec](
+case class HashDag[P: JsonValueCodec, T <: HashDagEntry[P]: JsonValueCodec](
     genesis: Hash,
     heads: Set[Hash],
     events: Map[Hash, T]
 ) {
-  def receive(encodedEvent: Array[Byte]): Either[Set[Hash], HashDag[T]] = {
+  def receive(encodedEvent: Array[Byte]): Either[Set[Hash], HashDag[P, T]] = {
     val hash = Hash.compute(encodedEvent)
     if events.contains(hash) then return Right(this)
 
@@ -37,7 +37,7 @@ case class HashDag[T <: HashDagEntry: JsonValueCodec](
 object HashDag {
 
   /** Inserts an entry into the dag, throwing if it is invalid or references unknown dependencies. */
-  def receiveOrThrow[T <: HashDagEntry](hashDag: HashDag[T], encodedEntry: Array[Byte]): HashDag[T] =
+  def receiveOrThrow[P, T <: HashDagEntry[P]](hashDag: HashDag[P, T], encodedEntry: Array[Byte]): HashDag[P, T] =
     hashDag.receive(encodedEntry) match {
       case Right(updated) => updated
       case Left(missing)  =>
@@ -47,65 +47,50 @@ object HashDag {
   /** Full state materialization from every entry's payload, without any access control enforcement (unlike
     * [[replication.authz.Authorization.materialize]]).
     */
-  def materialize[R: {Lattice, Bottom, JsonValueCodec}](hashDag: HashDag[?]): R =
+  def materialize[R: {Lattice, Bottom}](hashDag: HashDag[R, ?]): R =
     hashDag.events.values.iterator.foldLeft(Bottom[R].empty) { (acc, entry) =>
-      acc.merge(readFromArray[R](entry.payload))
+      acc.merge(entry.payload)
     }
 }
 
-trait HashDagEntry:
-    def payload: Array[Byte]
+trait HashDagEntry[P]:
+    def payload: P
     def author: PublicIdentity
     def parents: Set[Hash]
-    def hash: Hash
-    def isValid: Boolean
+    def hash(using JsonValueCodec[P]): Hash
+    def isValid(using JsonValueCodec[P]): Boolean
 
-case class SignedHashDagEntry(
-    payload: Array[Byte],
+case class SignedHashDagEntry[P](
+    payload: P,
     author: PublicIdentity,
     parents: Set[Hash],
     signature: Signature
-) extends HashDagEntry:
-    override def hash: Hash       = Hash.compute(writeToArray(this))
-    override def isValid: Boolean =
+) extends HashDagEntry[P]:
+    override def hash(using JsonValueCodec[P]): Hash       = Hash.compute(writeToArray(this))
+    override def isValid(using JsonValueCodec[P]): Boolean =
       signature.verify(author.publicKey, writeToArray(copy(signature = Signature.allZeroSignature)))
 
-case class UnsignedHashDagEntry(
-    payload: Array[Byte],
+case class UnsignedHashDagEntry[P](
+    payload: P,
     author: PublicIdentity,
     parents: Set[Hash],
-) extends HashDagEntry:
-    override def hash: Hash       = Hash.compute(writeToArray(this))
-    override def isValid: Boolean = true
+) extends HashDagEntry[P]:
+    override def hash(using JsonValueCodec[P]): Hash       = Hash.compute(writeToArray(this))
+    override def isValid(using JsonValueCodec[P]): Boolean = true
 
 object HashDagEntry:
     import replication.JsoniterCodecsJvm.given
 
-    /** Encodes an entry's payload as base64, the way [[Hash]] and [[Signature]] are encoded, instead of
-      * jsoniter's default encoding of an `Array[Byte]` as a JSON array of decimal numbers, which inflates
-      * every payload byte to roughly 3.5 bytes on the wire. Without this, the entries of a [[HashDag]] would be
-      * several times larger than the equivalent [[replication.authz.ArdtEvent]] plus delta value message, which
-      * carries the very same payload as raw bytes, making any comparison between the two a comparison of payload
-      * encodings rather than of the cost of access control.
-      */
-    given payloadValueCodec: JsonValueCodec[Array[Byte]]:
-        override def decodeValue(in: JsonReader, default: Array[Byte]): Array[Byte] =
-          in.readBase64AsBytes(default)
-
-        override def encodeValue(x: Array[Byte], out: JsonWriter): Unit = out.writeBase64Val(x, true)
-
-        override def nullValue: Array[Byte] = null
-
-    given JsonValueCodec[SignedHashDagEntry]   = JsonCodecMaker.make
-    given JsonValueCodec[UnsignedHashDagEntry] = JsonCodecMaker.make
+    given signedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[SignedHashDagEntry[P]]     = JsonCodecMaker.make
+    given unsignedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[UnsignedHashDagEntry[P]] = JsonCodecMaker.make
 
     def createSignedEntry[P: JsonValueCodec](
         payload: P,
         privateIdentity: PrivateIdentity,
         parents: Set[Hash]
-    ): SignedHashDagEntry = {
+    ): SignedHashDagEntry[P] = {
       val unsignedEntry = SignedHashDagEntry(
-        writeToArray(payload),
+        payload,
         privateIdentity.getPublic,
         parents,
         Signature.allZeroSignature,
@@ -115,12 +100,12 @@ object HashDagEntry:
       unsignedEntry.copy(signature = signature)
     }
 
-    def createUnsignedEntry[P: JsonValueCodec](
+    def createUnsignedEntry[P](
         payload: P,
         privateIdentity: PrivateIdentity,
         parents: Set[Hash]
-    ): UnsignedHashDagEntry = UnsignedHashDagEntry(
-      writeToArray(payload),
+    ): UnsignedHashDagEntry[P] = UnsignedHashDagEntry(
+      payload,
       privateIdentity.getPublic,
       parents,
     )

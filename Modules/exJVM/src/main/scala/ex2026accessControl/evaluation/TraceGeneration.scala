@@ -318,7 +318,7 @@ object TraceGeneration {
     *
     * @param buildEntry builds one dag entry (signed or unsigned) authored by `identity`, on top of `parents`
     */
-  def translateToHashDag[T <: HashDagEntry: JsonValueCodec](
+  def translateToHashDag[T <: HashDagEntry[BenchmarkRdt]: JsonValueCodec](
       generated: GeneratedBenchmarkRdtEventGraph,
       buildEntry: (payload: BenchmarkRdt, identity: PrivateIdentity, parents: Set[Hash]) => T
   ): GeneratedHashDagEventGraph[T] = {
@@ -330,7 +330,7 @@ object TraceGeneration {
     val genesisEntry   = buildEntry(BenchmarkRdt.empty, rootIdentity, Set.empty)
     val genesisEncoded = writeToArray(genesisEntry)
     var hashDag        = HashDag.receiveOrThrow(
-      HashDag[T](genesisEntry.hash, Set(genesisEntry.hash), Map.empty),
+      HashDag[BenchmarkRdt, T](genesisEntry.hash, Set(genesisEntry.hash), Map.empty),
       genesisEncoded
     )
     trace += genesisEncoded
@@ -363,7 +363,7 @@ object TraceGeneration {
 
   /** [[translateToHashDag]], authoring [[SignedHashDagEntry]] entries. */
   def translateToSignedHashDag(generated: GeneratedBenchmarkRdtEventGraph)
-      : GeneratedHashDagEventGraph[SignedHashDagEntry] =
+      : GeneratedHashDagEventGraph[SignedHashDagEntry[BenchmarkRdt]] =
     translateToHashDag(
       generated,
       (payload, identity, parents) => HashDagEntry.createSignedEntry(payload, identity, parents)
@@ -371,7 +371,7 @@ object TraceGeneration {
 
   /** [[translateToHashDag]], authoring [[UnsignedHashDagEntry]] entries. */
   def translateToUnsignedHashDag(generated: GeneratedBenchmarkRdtEventGraph)
-      : GeneratedHashDagEventGraph[UnsignedHashDagEntry] =
+      : GeneratedHashDagEventGraph[UnsignedHashDagEntry[BenchmarkRdt]] =
     translateToHashDag(
       generated,
       (payload, identity, parents) => HashDagEntry.createUnsignedEntry(payload, identity, parents)
@@ -386,8 +386,8 @@ case class GeneratedBenchmarkRdtEventGraph(
     state: BenchmarkRdt
 )
 
-case class GeneratedHashDagEventGraph[T <: HashDagEntry](
-    hashDag: HashDag[T],
+case class GeneratedHashDagEventGraph[T <: HashDagEntry[BenchmarkRdt]](
+    hashDag: HashDag[BenchmarkRdt, T],
     trace: Array[Array[Byte]],
     replicaIds: Array[PrivateIdentity],
     state: BenchmarkRdt

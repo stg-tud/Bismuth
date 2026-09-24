@@ -1,18 +1,18 @@
 package ex2026accessControl.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.{Hash, PublicIdentity}
 import rdts.base.{Bottom, Lattice}
 import replication.authz.AntiEntropy
 import replication.sync.ConnectionManager
 
-class HashDagReplica[Entry <: HashDagEntry: JsonValueCodec, RDT: {Lattice, Bottom, JsonValueCodec}](
+class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, Bottom, JsonValueCodec}](
     genesis: Hash,
     connectionManager: => ConnectionManager
 ) {
 
-  @volatile private var hashDag: HashDag[Entry] = HashDag(genesis, Set.empty, Map.empty)
-  @volatile private var materializedState: RDT  = Bottom[RDT].empty
+  @volatile private var hashDag: HashDag[RDT, Entry] = HashDag(genesis, Set.empty, Map.empty)
+  @volatile private var materializedState: RDT       = Bottom[RDT].empty
 
   def heads: Set[Hash] = hashDag.heads
 
@@ -21,7 +21,7 @@ class HashDagReplica[Entry <: HashDagEntry: JsonValueCodec, RDT: {Lattice, Botto
     hashDag = HashDag.receiveOrThrow(hashDag, encodedEntry)
     hashDag.heads.diff(oldHeads).headOption match {
       case Some(addedEntry) =>
-        materializedState = materializedState.merge(readFromArray[RDT](hashDag.events(addedEntry).payload))
+        materializedState = materializedState.merge(hashDag.events(addedEntry).payload)
       case None => ??? // There shouldn't be any duplicates in the benchmark
     }
   }
