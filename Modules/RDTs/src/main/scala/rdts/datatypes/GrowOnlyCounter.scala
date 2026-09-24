@@ -22,7 +22,7 @@ object GrowOnlyCounter {
         GrowOnlyCounter(right.inner.foldLeft(left.inner) {
           case (current, (key, l)) =>
             current.updatedWith(key) {
-              case Some(r) => Some(r + l)
+              case Some(r) => Some(if r > l then r else l)
               case None    => Some(l)
             }
         })
