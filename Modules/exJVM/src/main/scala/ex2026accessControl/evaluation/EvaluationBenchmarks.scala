@@ -200,12 +200,7 @@ class ArdtEventGraphBenchmarkState {
 }
 
 /** [[ArdtEventGraphBenchmarkState]] whose trace ends in a revocation, authored by the root replica, of the
-  * capability granting write access to either `a.*` or `a.a.*`. The revocation's parents are either only the
-  * revoked capability's delegation event (making it concurrent to every other event, which forces receiving
-  * replicas to re-materialize their state) or the heads of the graph (making every other event causally before).
-  *
-  * Holds a replica that has received every event of the trace but the revocation, reset to that point before
-  * every invocation, so that receiving the revocation can be measured on its own.
+  * capability granting write access to either `a.*` or `a.a.*`.
   */
 @State(Scope.Benchmark)
 class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
@@ -218,8 +213,8 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
   var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
 
   // The parts of the replica's state that receiving the revocation changes, as they were before
-  private var invalidatesDeltas: Boolean                                = scala.compiletime.uninitialized
-  private var replicaSnapshot: BenchmarkReplica.Snapshot[BenchmarkRdt]                                = scala.compiletime.uninitialized
+  private var invalidatesDeltas: Boolean                               = scala.compiletime.uninitialized
+  private var replicaSnapshot: BenchmarkReplica.Snapshot[BenchmarkRdt] = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -405,14 +400,14 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new RevocationBenchmarkState()
+    val state = new SendEventsWithDeltaBenchmarkState()
     state.numEvents = 100_000
-    state.revocation = "a-concurrent"
+    //state.revocation = "a-concurrent"
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
     val timeStart = System.nanoTime()
-    bench.receiveRevocation(state)
+    bench.sendEventsWithDelta(state)
     println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }
 }
