@@ -7,8 +7,6 @@ import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
 import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
 import rdts.filters.Filter
 
-import scala.util.Random
-
 case class BenchmarkRdt(
     a: NestedCounters = Bottom.empty,
     b: NestedCounters = Bottom.empty,

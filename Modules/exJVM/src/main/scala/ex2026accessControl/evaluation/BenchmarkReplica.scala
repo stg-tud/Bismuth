@@ -7,9 +7,6 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import replication.authz.{AntiEntropy, ArdtEventGraph, DeltaValueStore, Replica}
 
-/** [[Replica]] exposing its internal state for reading and writing, so that benchmarks can manually put it back
-  * into the state it had before an invocation, and thus repeatedly measure an operation on the same state.
-  */
 class BenchmarkReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
     privateIdentity: PrivateIdentity,
@@ -46,11 +43,9 @@ class BenchmarkReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}
 }
 
 object BenchmarkReplica {
-
-  /** The state of a [[BenchmarkReplica]] at some point in time, see [[BenchmarkReplica.snapshot]] */
   final class Snapshot[RDT] private[BenchmarkReplica] (
-      private[BenchmarkReplica] val eventGraph: ArdtEventGraph[RDT],
-      private[BenchmarkReplica] val deltaValueStore: DeltaValueStore[RDT],
-      private[BenchmarkReplica] val materializedState: RDT
+      private[evaluation] val eventGraph: ArdtEventGraph[RDT],
+      private[evaluation] val deltaValueStore: DeltaValueStore[RDT],
+      private[evaluation] val materializedState: RDT
   )
 }

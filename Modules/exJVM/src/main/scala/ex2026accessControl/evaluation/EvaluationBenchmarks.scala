@@ -24,8 +24,7 @@ class EvaluationBenchmarks {
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def createSingleEvent(state: ArdtEventGraphBenchmarkState, blackhole: Blackhole): Unit = {
-    given random: Random = Random(state.seed)
-    given LocalUid       = state.selectedLocalUid
+    given LocalUid = state.selectedLocalUid
 
     val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.eventGraph.heads
@@ -40,8 +39,7 @@ class EvaluationBenchmarks {
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def createSingleEventSignedHashDag(state: SignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
-    given random: Random = Random(state.seed)
-    given LocalUid       = state.selectedLocalUid
+    given LocalUid = state.selectedLocalUid
 
     val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.hashDag.heads
@@ -54,8 +52,7 @@ class EvaluationBenchmarks {
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def createSingleEventUnsignedHashDag(state: UnsignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
-    given random: Random = Random(state.seed)
-    given LocalUid       = state.selectedLocalUid
+    given LocalUid = state.selectedLocalUid
 
     val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
     val parents = state.hashDag.heads
@@ -221,9 +218,8 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
   var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
 
   // The parts of the replica's state that receiving the revocation changes, as they were before
-  private var invalidatesDeltas: Boolean                               = scala.compiletime.uninitialized
-  private var eventGraphBeforeRevocation: ArdtEventGraph[BenchmarkRdt] = scala.compiletime.uninitialized
-  private var stateBeforeRevocation: BenchmarkRdt                      = scala.compiletime.uninitialized
+  private var invalidatesDeltas: Boolean                                = scala.compiletime.uninitialized
+  private var replicaSnapshot: BenchmarkReplica.Snapshot[BenchmarkRdt]                                = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -239,11 +235,9 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
 
     // The revocation is the last event of the trace
     encodedRevocation = trace.last.encodedEvent
-    replica =
-      new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
+    replica = new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
     replayTrace(replica, trace.init, deltaValueStore)
-    eventGraphBeforeRevocation = replica.currentEventGraph
-    stateBeforeRevocation = replica.currentMaterializedState
+    replicaSnapshot = replica.snapshot()
   }
 
   /** Removes the revocation from the replica again. The event graph is immutable, so putting back the one from
@@ -252,8 +246,8 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
     */
   @Setup(Level.Invocation)
   def resetReplica(): Unit = {
-    replica.currentEventGraph = eventGraphBeforeRevocation
-    if invalidatesDeltas then replica.currentMaterializedState = stateBeforeRevocation
+    replica.currentEventGraph = replicaSnapshot.eventGraph
+    if invalidatesDeltas then replica.restore(replicaSnapshot)
   }
 }
 
