@@ -6,6 +6,7 @@ import crypto.Hash
 import crypto.channels.PrivateIdentity
 import munit.FunSuite
 import rdts.filters.PermissionTree
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, Revocation}
 import replication.authz.AuthzTestSupport.{*, given}
 

@@ -6,6 +6,7 @@ import crypto.*
 import crypto.Commitment.RevealedValue
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import rdts.filters.{Filter, PermissionTree}
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
 import java.security.{KeyPair, PrivateKey}

@@ -6,6 +6,7 @@ import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.Capability
 import replication.authz.{AntiEntropy, ArdtEvent, Replica}
 import replication.sync.{ChannelConnectionManager, ConnectionManager, FullMeshControlPlane, MessageReceiver}

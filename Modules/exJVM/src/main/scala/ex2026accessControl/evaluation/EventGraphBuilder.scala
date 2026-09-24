@@ -5,6 +5,7 @@ import crypto.Commitment.RevealedValue
 import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, Signature}
 import rdts.filters.PermissionTree
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.{ArdtEvent, ArdtEventGraph}
 

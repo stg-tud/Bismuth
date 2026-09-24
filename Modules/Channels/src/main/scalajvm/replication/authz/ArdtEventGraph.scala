@@ -4,6 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.Lattice
 import rdts.filters.PermissionTree
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.CausalOrder.*
 

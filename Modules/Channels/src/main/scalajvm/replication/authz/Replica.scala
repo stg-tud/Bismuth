@@ -6,6 +6,7 @@ import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
 import scala.annotation.tailrec

@@ -4,6 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.{Commitment, Hash, Signature}
 import munit.FunSuite
 import rdts.filters.PermissionTree
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, Revocation}
 import replication.authz.AuthzTestSupport.{*, given}
 

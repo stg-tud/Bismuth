@@ -6,6 +6,7 @@ import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.base.{Bottom, Lattice}
 import rdts.filters.{Filter, PermissionTree}
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
 object Authorization {

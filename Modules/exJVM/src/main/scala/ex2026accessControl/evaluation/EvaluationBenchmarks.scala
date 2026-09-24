@@ -7,6 +7,7 @@ import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnS
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{LocalUid, Uid}
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
 
@@ -402,7 +403,7 @@ object EvaluationRunner {
   def main(args: Array[String]): Unit = {
     val state = new SendEventsWithDeltaBenchmarkState()
     state.numEvents = 100_000
-    //state.revocation = "a-concurrent"
+    // state.revocation = "a-concurrent"
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")

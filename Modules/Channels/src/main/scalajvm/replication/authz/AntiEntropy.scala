@@ -4,6 +4,7 @@ import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.Commitment.RevealedValue
 import crypto.{Hash, PublicIdentity}
+import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.AntiEntropy.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
 import replication.sync.{ConnectionManager, MessageReceiver}
@@ -61,10 +62,12 @@ class AntiEntropy(
   def sendEventsWithDelta(destination: PublicIdentity, eventHashes: Iterable[Hash]): Unit =
       eventHashes.foreach(hash =>
           val event = replica.event(hash)
-          sendEvents(destination, event.map(writeToArray(_)))
+          val encodedEvent = event.map(writeToArray(_))
+          sendEvents(destination, encodedEvent)
           event match {
             case Some(ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _)) =>
-              sendDeltasFiltered(destination, replica.revealedDeltaValue(commitmentHash).map(hash -> _))
+              val revealedValue = replica.revealedDeltaValue(commitmentHash).map(hash -> _)
+              sendDeltasFiltered(destination, revealedValue)
             case _ =>
           }
       )
