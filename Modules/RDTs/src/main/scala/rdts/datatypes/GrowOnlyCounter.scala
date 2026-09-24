@@ -13,9 +13,9 @@ case class GrowOnlyCounter(inner: Map[Uid, Int]) {
 
 /** A GCounter is a Delta CRDT modeling an increment-only counter. */
 object GrowOnlyCounter {
-  def zero: GrowOnlyCounter = GrowOnlyCounter(Map.empty)
+  val zero: GrowOnlyCounter = GrowOnlyCounter(Map.empty)
 
-  given bottom: Bottom[GrowOnlyCounter] = Bottom.derived
+  given bottom: Bottom[GrowOnlyCounter] = Bottom.provide(zero)
 
   given lattice: Lattice[GrowOnlyCounter] = new Lattice[GrowOnlyCounter]:
       override def merge(left: GrowOnlyCounter, right: GrowOnlyCounter): GrowOnlyCounter =
