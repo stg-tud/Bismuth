@@ -52,6 +52,13 @@ class EvaluationBenchmarks {
   def receiveRevocation(state: RevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
     state.replica.receiveEvent(state.encodedRevocation)
 
+  /** Merging every delta left in the delta value store of a replica that has received the whole trace, i.e., the
+    * re-materialization performed by [[receiveRevocation]] when the revocation invalidates deltas.
+    */
+  @Benchmark
+  def mergeDeltasAfterRevocation(state: MergeDeltasAfterRevocationBenchmarkState): BenchmarkRdt =
+    state.deltaValueStoreAfterRevocation.merged
+
   @Benchmark
   def receiveEventsSignedHashDag(state: SignedHashDagBenchmarkState): Set[Hash] = {
     val replica = new HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt](
@@ -235,18 +242,13 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
   * capability granting write access to either `a.*` or `a.a.*`.
   */
 @State(Scope.Benchmark)
-class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
+class RevokedEventGraphBenchmarkState extends ArdtEventGraphBenchmarkState {
 
   // <revoked subtree>-<parents of the revocation>
   @Param(Array("a-concurrent", "a-heads", "a.a-concurrent", "a.a-heads"))
   var revocation: String = scala.compiletime.uninitialized
 
-  var replica: BenchmarkReplica[BenchmarkRdt] = scala.compiletime.uninitialized
-  var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
-
-  // The parts of the replica's state that receiving the revocation changes, as they were before
-  private var invalidatesDeltas: Boolean                               = scala.compiletime.uninitialized
-  private var replicaSnapshot: BenchmarkReplica.Snapshot[BenchmarkRdt] = scala.compiletime.uninitialized
+  protected var invalidatesDeltas: Boolean = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -259,6 +261,24 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
         case "-heads"      => TraceGeneration.revokeAtHeads(generated, subtree)
       }
     )
+  }
+}
+
+/** [[RevokedEventGraphBenchmarkState]] with a replica of the root identity that has received every event of the
+  * trace but the revocation.
+  */
+@State(Scope.Benchmark)
+class RevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
+
+  var replica: BenchmarkReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
+
+  // The parts of the replica's state that receiving the revocation changes, as they were before
+  private var replicaSnapshot: BenchmarkReplica.Snapshot[BenchmarkRdt] = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
 
     // The revocation is the last event of the trace
     encodedRevocation = trace.last.encodedEvent
@@ -275,6 +295,25 @@ class RevocationBenchmarkState extends ArdtEventGraphBenchmarkState {
   def resetReplica(): Unit = {
     replica.currentEventGraph = replicaSnapshot.eventGraph
     if invalidatesDeltas then replica.restore(replicaSnapshot)
+  }
+}
+
+/** [[RevokedEventGraphBenchmarkState]] holding the delta value store of a replica of the root identity that has
+  * received every event of the trace, the revocation included. Merging its deltas leaves it unchanged, so it is
+  * set up only once per trial.
+  */
+@State(Scope.Benchmark)
+class MergeDeltasAfterRevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
+
+  var deltaValueStoreAfterRevocation: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+    val replica =
+      new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
+    replayTrace(replica, trace, deltaValueStore)
+    deltaValueStoreAfterRevocation = replica.currentDeltaValueStore
   }
 }
 
