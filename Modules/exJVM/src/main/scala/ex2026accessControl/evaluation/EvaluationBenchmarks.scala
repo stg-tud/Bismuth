@@ -2,7 +2,7 @@ package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity}
+import crypto.{Commitment, Hash, PublicIdentity}
 import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
@@ -24,22 +24,15 @@ class EvaluationBenchmarks {
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def createSingleEvent(state: ArdtEventGraphBenchmarkState, blackhole: Blackhole): Unit = {
-    given LocalUid = state.selectedLocalUid
-
-    val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
-    val parents = state.eventGraph.heads
-
-    delta.decomposed.foreach { decomposedDelta =>
-      blackhole.consume(
-        EventGraphBuilder.buildDeltaEvent(decomposedDelta, state.selectedIdentity, parents, state.authorizationHash)
-      )
-    }
-  }
+  def createUpdate(state: CreateUpdateBenchmarkState): Unit =
+    state.replica.mutateState(
+      BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, _)(using state.selectedLocalUid),
+      state.authorizationHash
+    )
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def createSingleEventSignedHashDag(state: SignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
+  def createUpdateSignedHashDag(state: SignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
     given LocalUid = state.selectedLocalUid
 
     val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
@@ -52,7 +45,7 @@ class EvaluationBenchmarks {
 
   @Benchmark
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
-  def createSingleEventUnsignedHashDag(state: UnsignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
+  def createUpdateUnsignedHashDag(state: UnsignedHashDagBenchmarkState, blackhole: Blackhole): Unit = {
     given LocalUid = state.selectedLocalUid
 
     val delta   = BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.rdtState)
@@ -105,14 +98,14 @@ class EvaluationBenchmarks {
     * encoded and handed to the [[SummingConnectionManager]] unfiltered.
     */
   @Benchmark
-  def sendEntriesSignedHashDag(state: SendEntriesSignedHashDagBenchmarkState): Long = {
+  def sendEntriesSignedHashDag(state: SignedHashDagBenchmarkStateWithReplica): Long = {
     state.connectionManager.reset()
     state.replica.sendEntries(state.destination, state.entryHashes)
     state.connectionManager.sentBytes
   }
 
   @Benchmark
-  def sendEntriesUnsignedHashDag(state: SendEntriesUnsignedHashDagBenchmarkState): Long = {
+  def sendEntriesUnsignedHashDag(state: UnsignedHashDagBenchmarkStateWithReplica): Long = {
     state.connectionManager.reset()
     state.replica.sendEntries(state.destination, state.entryHashes)
     state.connectionManager.sentBytes
@@ -159,7 +152,7 @@ class ArdtEventGraphBenchmarkState {
 
   var rdtState: BenchmarkRdt = scala.compiletime.uninitialized
 
-  // The single (non-root) replica and mutation used by createSingleEvent
+  // The single (non-root) replica and mutation used by createUpdate
   var selectedIdentity: PrivateIdentity = scala.compiletime.uninitialized
   var selectedMutatorChoice: String     = scala.compiletime.uninitialized
   var selectedLocalUid: LocalUid        = scala.compiletime.uninitialized
@@ -197,6 +190,47 @@ class ArdtEventGraphBenchmarkState {
     rootIdentity = replacement.replicaIds(0)
     trace = encodeTrace(replacement.eventGraph)
     rdtState = replacement.state
+  }
+}
+
+@State(Scope.Benchmark)
+class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
+  var replica: BenchmarkReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+    val tmpReplica = new BenchmarkReplica[BenchmarkRdt](
+      genesisHash,
+      selectedIdentity,
+      r => NoOpAntiEntropy(r),
+      noopOnStateChange
+    )
+    replayTrace(tmpReplica, trace, deltaValueStore)
+    val preUpdateSnapshot = tmpReplica.snapshot()
+
+    // Has hook to reset state after update
+    replica = new BenchmarkReplica[BenchmarkRdt](
+      genesisHash,
+      selectedIdentity,
+      r => NoOpAntiEntropy(r),
+      noopOnStateChange
+    ) {
+      override protected def disseminate(eventsWithDeltas: Iterable[(
+          Hash,
+          ArdtEvent,
+          Array[Byte],
+          BenchmarkRdt,
+          Commitment.RevealedValue
+      )]): Unit = {
+        this.eventGraph = preUpdateSnapshot.eventGraph
+        this.materializedState = preUpdateSnapshot.materializedState
+        eventsWithDeltas.foreach(evTpl =>
+          this.deltaValueStore.remove(evTpl._2.payload.asInstanceOf[DeltaCommitment].commitment)
+        )
+      }
+    }
+    replica.restore(preUpdateSnapshot)
   }
 }
 
@@ -310,17 +344,14 @@ class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
   }
 }
 
-/** [[SignedHashDagBenchmarkState]] holding, in addition, what the access control free counterpart of
-  * [[AntiEntropy.sendEventsWithDelta]] needs: the hashes of every translated entry, in the same (causal) order
-  * as the trace the [[ArdtEventGraph]] based benchmark sends, and a [[SummingConnectionManager]] to send them to.
-  */
 @State(Scope.Benchmark)
-class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState {
+class SignedHashDagBenchmarkStateWithReplica extends SignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager                             = scala.compiletime.uninitialized
-  var replica: HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt] = scala.compiletime.uninitialized
-  var destination: PublicIdentity                                             = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                                                = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager                              = scala.compiletime.uninitialized
+  var replica: HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt]  = scala.compiletime.uninitialized
+  var destination: PublicIdentity                                              = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                                 = scala.compiletime.uninitialized
+  var snapshotHashDag: HashDag[BenchmarkRdt, SignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -333,12 +364,12 @@ class SendEntriesSignedHashDagBenchmarkState extends SignedHashDagBenchmarkState
     hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
     entryHashes = hashDagTrace.map(Hash.compute)
+    snapshotHashDag = replica.hashDag
   }
 }
 
-/** [[SendEntriesSignedHashDagBenchmarkState]], using [[UnsignedHashDagEntry]] instead. */
 @State(Scope.Benchmark)
-class SendEntriesUnsignedHashDagBenchmarkState extends UnsignedHashDagBenchmarkState {
+class UnsignedHashDagBenchmarkStateWithReplica extends UnsignedHashDagBenchmarkState {
 
   var connectionManager: SummingConnectionManager                               = scala.compiletime.uninitialized
   var replica: HashDagReplica[UnsignedHashDagEntry[BenchmarkRdt], BenchmarkRdt] = scala.compiletime.uninitialized
@@ -401,15 +432,15 @@ object EvaluationBenchmarks {
 
 object EvaluationRunner {
   def main(args: Array[String]): Unit = {
-    val state = new SignedHashDagBenchmarkState()
+    val state = new CreateUpdateBenchmarkState()
     state.numEvents = 100_000
     // state.revocation = "a-concurrent"
     state.setup()
     val bench = new EvaluationBenchmarks()
     println("Done with setup")
     val timeStart = System.nanoTime()
-    0.until(100) foreach { _ =>
-      bench.materializeSignedHashDag(state)
+    0.until(1_000_000) foreach { _ =>
+      bench.createUpdate(state)
     }
     println((System.nanoTime() - timeStart) / 1_000_000_000.0)
   }

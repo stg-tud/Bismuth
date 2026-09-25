@@ -11,8 +11,8 @@ class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, 
     connectionManager: => ConnectionManager
 ) {
 
-  @volatile private var hashDag: HashDag[RDT, Entry] = HashDag(genesis, Set.empty, Map.empty)
-  @volatile private var materializedState: RDT       = Bottom[RDT].empty
+  @volatile var hashDag: HashDag[RDT, Entry] = HashDag(genesis, Set.empty, Map.empty)
+  @volatile var materializedState: RDT       = Bottom[RDT].empty
 
   def heads: Set[Hash] = hashDag.heads
 
