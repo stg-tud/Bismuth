@@ -112,17 +112,17 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       case (hash, capability) =>
         Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
     } match {
-      case Some(hash, capability) => createUpdate(delta, hash)
+      case Some(hash, capability) => mutateState(delta, hash)
       case None => throw new IllegalArgumentException(s"Insufficient permissions for mutation: $delta")
     }
   }
 
   def mutateState(mutator: RDT => RDT, capability: Hash): Unit = synchronized {
     val delta = mutator(state)
-    createUpdate(delta, capability)
+    mutateState(delta, capability)
   }
 
-  private def createUpdate(delta: RDT, capabilityHash: Hash): Unit = synchronized {
+  private def mutateState(delta: RDT, capabilityHash: Hash): Unit = synchronized {
     require(eventGraph.revocations(capabilityHash).isEmpty)
     require(eventGraph.events(capabilityHash) match {
       case (ArdtEvent(Capability(`localReplicaId`, _, write), _, _, _, _), _) =>
@@ -130,22 +130,37 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       case _ => false
     })
 
-    val eventsWithDeltas = Decompose.decompose(delta).map { decomposedDelta =>
-      val commitedValue = Commitment.commit(writeToArray(decomposedDelta))
-      val payload       = DeltaCommitment(commitedValue.commitment)
-      val signedEvent   = createSignedEvent(payload, capabilityHash)
-      (Hash.compute(signedEvent), signedEvent, commitedValue)
-    }
+    val eventsWithDeltas: Iterable[(Hash, ArdtEvent, Array[Byte], RDT, RevealedValue)] =
+      Decompose.decompose(delta).map { decomposedDelta =>
+        val commitedValue      = Commitment.commit(writeToArray(decomposedDelta))
+        val payload            = DeltaCommitment(commitedValue.commitment)
+        val signedEvent        = createSignedEvent(payload, capabilityHash)
+        val encodedSignedEvent = writeToArray(signedEvent)
+        (Hash.compute(encodedSignedEvent), signedEvent, encodedSignedEvent, delta, commitedValue)
+      }
 
     // Apply locally
-    eventsWithDeltas.foreach((eventHash, event, delta) =>
-        require(receiveEvent(event).isRight)
-        receiveDelta(eventHash, delta)
+    var evGraph      = eventGraph
+    var updatedState = materializedState
+    eventsWithDeltas.foreach((hash, event, _, delta, revealedValue) =>
+        assert(evGraph.heads == event.parents) // Sanity check that we apply these in the correct order
+        evGraph = evGraph.copy(
+          heads = Set(hash),
+          events = evGraph.events + (hash -> (event, evGraph.nextEventIndex)),
+          nextEventIndex = evGraph.nextEventIndex + 1
+        )
+        deltaValueStore.put(event.payload.asInstanceOf[DeltaCommitment].commitment, delta, revealedValue.witness)
+        updatedState = updatedState.merge(delta)
     )
+    eventGraph = evGraph
+    materializedState = updatedState
 
-    // Disseminate updates
-    antiEntropy.broadcastEvents(eventsWithDeltas.map(_._2))
-    antiEntropy.broadcastDeltasFiltered(eventsWithDeltas.map(d => d._1 -> d._3))
+    disseminate(eventsWithDeltas)
+  }
+
+  protected def disseminate(eventsWithDeltas: Iterable[(Hash, ArdtEvent, Array[Byte], RDT, RevealedValue)]): Unit = {
+    antiEntropy.broadcastEvents(eventsWithDeltas.map(_._3))
+    antiEntropy.broadcastDeltasFiltered(eventsWithDeltas.map(d => d._1 -> d._5))
   }
 
   def createRevocation(revokedCapability: Hash): Unit = {
@@ -161,7 +176,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
     findAuthorizationForRevocation(revokedCapability) match {
       case Some(authorization) =>
-        val revocationEvent = createSignedEvent(Revocation(revokedCapability), authorization)
+        val revocationEvent = writeToArray(createSignedEvent(Revocation(revokedCapability), authorization))
         // Apply event locally
         require(receiveEvent(revocationEvent).isRight)
         // Disseminate event
@@ -183,10 +198,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
         require(capabilityHolder == localReplicaId)
         require(readPermissions <= readUpperLimit)
         require(writePermissions <= writeUpperLimit)
-        val delegationEvent = createSignedEvent(
+        // TODO: apply unchecked
+        val delegationEvent = writeToArray(createSignedEvent(
           Capability(delegatee, readPermissions, writePermissions),
           usedCapability
-        )
+        ))
 
         // Apply event locally
         require(receiveEvent(delegationEvent).isRight)
@@ -202,7 +218,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
     eventGraph.activeCapabilitiesOf(publicIdentity)
 
-  private def createSignedEvent(payload: ArdtEvent.Payload, capability: Hash): Array[Byte] = {
+  private def createSignedEvent(payload: ArdtEvent.Payload, capability: Hash): ArdtEvent = {
     val unsignedEvent = ArdtEvent(
       payload,
       localReplicaId,
@@ -211,7 +227,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       capability
     )
     val signature = Signature.compute(writeToArray(unsignedEvent), privateIdentity.identityKey.getPrivate)
-    writeToArray(unsignedEvent.copy(signature = signature))
+    unsignedEvent.copy(signature = signature)
   }
 
   def filterDeltas(
