@@ -1,7 +1,6 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import crypto.{Hash, PublicIdentity, Signature}
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecsJvm.ardtEventCodec

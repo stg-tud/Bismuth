@@ -10,7 +10,7 @@ import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 
 object Authorization {
-  def materialize[T: {Lattice, Bottom, JsonValueCodec, Filter}](
+  def materialize[T: {Lattice, Bottom, Filter}](
       eventGraph: ArdtEventGraph[T],
       deltaValueStore: DeltaValueStore[T]
   ): T =
@@ -42,7 +42,7 @@ object Authorization {
       case (left, _) => left
     }
 
-  def mayRead[T: {JsonValueCodec, Filter}](
+  def mayRead[T: Filter](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       eventGraph: ArdtEventGraph[T],
