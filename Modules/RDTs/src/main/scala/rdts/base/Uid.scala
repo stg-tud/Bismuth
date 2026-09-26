@@ -42,7 +42,7 @@ object Uid {
   "Requires a replica ID of the current local replica that is doing the modification."
 )
 /** Operations may require an ID of the replica doing a modification.
-  * We provide it as it’s own opaque type, to make it obvious that this should not be just any ID.
+  * We provide it as its own opaque type to make it obvious that this should not be just any ID.
   * Use [[Uid]] if you want to store an ID in a replicated data structure.
   */
 case class LocalUid(uid: Uid) {
