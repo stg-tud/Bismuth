@@ -19,8 +19,8 @@ def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
 def scalafx    = "org.scalafx"   %% "scalafx"     % "26.0.0-R38"
 
 def jsoniterScala = Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.40.1",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.40.1" % Provided
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.41.2",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.41.2" % Provided
 )
 
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
@@ -104,17 +104,17 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Settings.jolSettings,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= {
-      val jettyVersion = "12.1.13"
+      val jettyVersion  = "12.1.13"
       val javaGiVerison = "1.0.0-RC3"
       Seq(
         "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
         "com.google.crypto.tink"         % "tink"                         % "1.23.0",
-        "com.softwaremill.sttp.client4" %% "core"                         % "4.0.26",
+        "com.softwaremill.sttp.client4" %% "core"                         % "4.0.27",
         "io.avaje.webview"               % "avaje-webview"                % "0.29",
-        "org.java-gi"                     % "gtk"                          % javaGiVerison,
-        "org.java-gi"                     % "adw"                          % javaGiVerison,
-        "org.java-gi"                     % "glib"                         % javaGiVerison,
-        "org.java-gi"                     % "webkit"                       % javaGiVerison,
+        "org.java-gi"                    % "gtk"                          % javaGiVerison,
+        "org.java-gi"                    % "adw"                          % javaGiVerison,
+        "org.java-gi"                    % "glib"                         % javaGiVerison,
+        "org.java-gi"                    % "webkit"                       % javaGiVerison,
         "io.bullet"                     %% "borer-core"                   % "1.18.0",
         "io.bullet"                     %% "borer-derivation"             % "1.18.0",
         "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.7.0",
@@ -123,7 +123,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
         "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
         "org.scala-lang.modules"        %% "scala-swing"                  % "3.0.0",
         "org.scala-lang.modules"        %% "scala-xml"                    % "2.5.0",
-        "org.slf4j"                      % "slf4j-nop"                    % "2.0.19" % Test,
+        "org.slf4j"                      % "slf4j-nop"                    % "2.0.20" % Test,
         decline,
         pprint,
         scalafx,
@@ -133,7 +133,8 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     javaOptions ++= Seq(
       "-XX:+IgnoreUnrecognizedVMOptions",
       "--sun-misc-unsafe-memory-access=allow",
-      "--enable-native-access=ALL-UNNAMED"
+      "--enable-native-access=ALL-UNNAMED",
+      "--enable-final-field-mutation=ALL-UNNAMED"
     ), // Reduce warnings for JavaFX application
   )
 
