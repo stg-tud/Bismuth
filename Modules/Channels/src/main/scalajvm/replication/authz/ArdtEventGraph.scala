@@ -27,8 +27,8 @@ case class ArdtEventGraph[T: Lattice](
     */
   def receive(encodedEvent: Array[Byte]): Either[Set[Hash], ArdtEventGraph[T]] = {
     // Check for duplicates before checking signature
-    val hash = Hash.compute(encodedEvent)
-    if events.contains(hash) then return Right(this)
+    val eventHash = Hash.compute(encodedEvent)
+    if events.contains(eventHash) then return Right(this)
 
     val event: ArdtEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
@@ -39,7 +39,7 @@ case class ArdtEventGraph[T: Lattice](
     ))
 
     // All events need predecessors except the genesis event
-    if hash != genesis then {
+    if eventHash != genesis then {
       require(event.parents.nonEmpty)
     } else {
       require(event.parents.isEmpty)
@@ -51,7 +51,7 @@ case class ArdtEventGraph[T: Lattice](
     val authorizingCapability: Capability = events.get(event.authorization) match {
       case None => // Return missing capability and heads
         val missingParents = event.parents.filter(events.contains)
-        if hash != genesis then return Left(missingParents + event.authorization)
+        if eventHash != genesis then return Left(missingParents + event.authorization)
         else Capability(event.author, PermissionTree.allow, PermissionTree.allow)
       case Some((ArdtEvent(cap @ Capability(capabilityHolder, _, _), _, _, _, _), _)) =>
         // Used capability matches the event author
@@ -78,21 +78,31 @@ case class ArdtEventGraph[T: Lattice](
 
     // Event is valid
     Right(copy(
-      heads = (heads -- event.parents) + hash,
-      events = events + (hash -> (event, nextEventIndex)),
+      heads = (heads -- event.parents) + eventHash,
+      events = events + (eventHash -> (event, nextEventIndex)),
       nextEventIndex = nextEventIndex + 1,
       revocationCache = event.payload match {
-        case Revocation(revokedCapability) => revocationCache.updatedWith(revokedCapability) {
-            case Some(existing) => Some(existing + hash)
-            case None           => Some(Set(hash))
-          }
-        case _ => revocationCache
+        case DeltaCommitment(_)            => revocationCache
+        case Revocation(revokedCapability) =>
+          val transitivelyRevoked = capabilityCache.values.flatMap(caps =>
+            caps.filter((capEvHash, _) =>
+              authorizationChain(capEvHash).contains(revokedCapability)
+            ).map(_._1 -> Set(eventHash))
+          ).toMap
+
+          Lattice.mapLattice(using Lattice.setLattice).merge(revocationCache, transitivelyRevoked)
+        case Capability(_, _, _) =>
+          // Transfer revocations of capability used for delegation to created capability
+          val revocationsOfParentInAuthChain = revocations(event.authorization)
+          if revocationsOfParentInAuthChain.isEmpty
+          then revocationCache
+          else revocationCache.updated(eventHash, revocationsOfParentInAuthChain)
       },
       capabilityCache = event.payload match {
         case capability @ Capability(holder, _, _) =>
           capabilityCache.updatedWith(holder) {
-            case Some(oldCache) => Some(oldCache + (hash -> capability))
-            case None           => Some(Set(hash -> capability))
+            case Some(oldCache) => Some(oldCache + (eventHash -> capability))
+            case None           => Some(Set(eventHash -> capability))
           }
         case _ => capabilityCache
       }
@@ -150,7 +160,7 @@ case class ArdtEventGraph[T: Lattice](
   // TODO: could also cache whole chain
   def revocations(capHash: Hash): Set[Hash] =
     if capHash == genesis then revocationCache.getOrElse(capHash, Set.empty)
-    else revocationCache.getOrElse(capHash, Set.empty) ++ revocations(events(capHash)._1.authorization)
+    else revocationCache.getOrElse(capHash, Set.empty)
 
   def capabilities(replicaId: PublicIdentity): Set[(Hash, Capability)] =
     capabilityCache.getOrElse(replicaId, Set.empty)

@@ -46,11 +46,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     *         Left(missing) if the event depends on events that are missing locally.
     */
   def receiveEvent(encodedEvent: Array[Byte]): Either[Set[Hash], Option[Hash]] = synchronized {
-    val oldHeads = eventGraph.heads
-    eventGraph.receive(encodedEvent) match {
+    val oldEventGraph = eventGraph
+    oldEventGraph.receive(encodedEvent) match {
       case Right(updatedEventGraph) =>
         eventGraph = updatedEventGraph
-        val addedEventHash = eventGraph.heads.diff(oldHeads).headOption
+        val addedEventHash = eventGraph.heads.diff(oldEventGraph.heads).headOption
         addedEventHash.foreach { eventHash =>
           val (event, _) = eventGraph.events(eventHash)
           event.payload match {
@@ -70,15 +70,9 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   // Deletes all deltas that depend on revoked capability that are not causallyBefore revocationEvent
   private def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Int = synchronized {
-    val transitivelyRevokedCapabilities = eventGraph.events(revocationEventHash) match {
-      case (ArdtEvent(Revocation(revokedCapability), _, _, _, _), _) =>
-        eventGraph.capabilityCache.values.flatMap(caps =>
-          caps.filter((capEvHash, _) => eventGraph.authorizationChain(capEvHash).contains(revokedCapability)).map(_._1)
-        ).toSet
-      case _ => ???
-    }
-
-    require(eventGraph.heads.contains(revocationEventHash))
+    val transitivelyRevokedCapabilities = eventGraph.revocationCache.filter((_, revocations) =>
+      revocations.size == 1 && revocations.contains(revocationEventHash)
+    ).keySet
     eventGraph.events.count {
       case evHash -> (ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, auth), idx) =>
         if transitivelyRevokedCapabilities.contains(auth) && !eventGraph.causallyBefore(evHash, revocationEventHash)
