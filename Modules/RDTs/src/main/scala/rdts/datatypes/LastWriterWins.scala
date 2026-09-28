@@ -11,9 +11,8 @@ import scala.math.Ordering.Implicits.infixOrderingOps
   * The random values are non-fair, so a specific replica is more likely to win.
   */
 case class LastWriterWins[+A](timestamp: CausalTime, payload: A) {
-  def read: A = payload
-
-  def value: A = read
+  def read: A  = payload
+  def value: A = payload
 
   def write[B](v: B): LastWriterWins[B] =
     LastWriterWins(timestamp.advance, v)
