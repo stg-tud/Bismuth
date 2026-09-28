@@ -14,6 +14,3 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.2")
 // tooling
 addSbtPlugin("pl.project13.scala" % "sbt-jmh"      % "0.4.8")
 addSbtPlugin("ch.epfl.scala"      % "sbt-scalafix" % "0.14.9")
-
-// https://github.com/rtimush/sbt-updates
-addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.7.0")
