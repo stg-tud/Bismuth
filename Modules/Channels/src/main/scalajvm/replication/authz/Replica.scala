@@ -10,6 +10,7 @@ import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
@@ -71,18 +72,53 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   // Deletes all deltas that depend on revoked capability that are not causallyBefore revocationEvent
   protected def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Boolean = synchronized {
-    val transitivelyRevokedCapabilities = eventGraph.revocationCache.filter((_, revocations) =>
-      revocations.size == 1 && revocations.contains(revocationEventHash)
-    ).keySet
-    var hasInvalidatedADelta = false
-    eventGraph.events.foreach {
-      case evHash -> (ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, auth), idx) =>
-        if transitivelyRevokedCapabilities.contains(auth) && !eventGraph.causallyBefore(evHash, revocationEventHash)
-        then hasInvalidatedADelta |= deltaValueStore.remove(commitmentHash).nonEmpty
-      case _ => false
-    }
-    hasInvalidatedADelta
+    removeDeltas(deltasInvalidatedBy(revocationEventHash))
   }
+
+  /** The delta events that `revocationEventHash` newly invalidates: those whose value is still stored, that are
+    * authorized by a capability it revokes (directly or transitively), and that are not causally before it.
+    *
+    * A capability may be revoked more than once, and its uses are only valid if causally before every one of its
+    * revocations. Checking the stored deltas against each revocation separately yields exactly that, provided this
+    * is called for every revocation as it is received, removing the returned deltas from the delta value store.
+    *
+    * Every use of a capability, like every capability delegated from it, is received after that capability, and thus
+    * has a higher index. A single search of the revocation's causal past, cut off at the earliest revoked capability,
+    * therefore suffices to tell the valid uses apart from the invalidated ones.
+    */
+  protected def deltasInvalidatedBy(revocationEventHash: Hash)
+      : Iterable[(eventHash: Hash, commitment: Hash, index: Int)] = synchronized {
+    val evGraph             = eventGraph
+    val revokedCapabilities =
+      evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
+    if revokedCapabilities.isEmpty then return Iterable.empty
+
+    val earliestRevokedCapability = revokedCapabilities.iterator.map(evGraph.events(_)._2).min
+
+    val causalPast = mutable.BitSet()
+    val toVisit    = mutable.Stack.from(evGraph.events(revocationEventHash)._1.parents)
+    while toVisit.nonEmpty do {
+      val (event, index) = evGraph.events(toVisit.pop())
+      if index > earliestRevokedCapability && !causalPast.contains(index) then
+          causalPast += index
+          toVisit.pushAll(event.parents)
+    }
+
+    evGraph.events.collect {
+      case (eventHash, (ArdtEvent(DeltaCommitment(commitment), _, _, _, authorization), index))
+          if revokedCapabilities.contains(authorization) && !causalPast.contains(index)
+          && deltaValueStore.get(commitment).nonEmpty =>
+        (eventHash = eventHash, commitment = commitment, index = index)
+    }
+  }
+
+  /** Removes the delta values of `deltaEvents`, returning whether any of them was stored */
+  protected def removeDeltas(deltaEvents: Iterable[(eventHash: Hash, commitment: Hash, index: Int)]): Boolean =
+    synchronized {
+      var hasRemovedADelta = false
+      deltaEvents.foreach(deltaEvent => hasRemovedADelta |= deltaValueStore.remove(deltaEvent.commitment).nonEmpty)
+      hasRemovedADelta
+    }
 
   protected def rematerialize(): Unit = synchronized {
     materializedState = deltaValueStore.merged

@@ -26,45 +26,19 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
 
   override protected def applyDelta(delta: RDT, eventIndex: Int): Unit = synchronized {
     materializedState = materializedState.merge(delta)
-    if eventIndex < snapshotVersion then snapshot = snapshot.merge(delta)
+    if eventIndex <= snapshotVersion then snapshot = snapshot.merge(delta)
   }
-  override protected def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Boolean = {
-    val evGraph                    = eventGraph
-    val (revocation, _)            = evGraph.events(revocationEventHash)
-    val earliestParentOfRevocation = revocation.parents.map(evGraph.events).minBy(_._2)._2
 
-    if snapshotVersion < earliestParentOfRevocation then {
+  override protected def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Boolean = synchronized {
+    val invalidated = deltasInvalidatedBy(revocationEventHash)
+
+    // The snapshot can only be rematerialized from if it contains none of the invalidated deltas
+    if invalidated.exists(_.index <= snapshotVersion) then {
       snapshotVersion = -1
       snapshot = Bottom.empty
     }
 
-    val newlyRevoked = eventGraph.revocationCache.filter((_, revocations) =>
-      revocations.size == 1 && revocations.contains(revocationEventHash)
-    ).keySet
-
-    var hasInvalidatedADelta = false
-    val toVisit              = scala.collection.mutable.Queue.from(evGraph.heads)
-    // TODO: we could instead use the indices and a bitset instead of a hashset with the event hashes
-    val visited = scala.collection.mutable.Set.from(evGraph.heads)
-
-    while toVisit.nonEmpty do {
-      val nextEvHash          = toVisit.dequeue()
-      val (nextEv, nextEvIdx) = evGraph.events(nextEvHash)
-
-      if nextEvIdx > earliestParentOfRevocation then {
-        nextEv match {
-          case ArdtEvent(DeltaCommitment(commitmentHash), _, parents, _, auth) =>
-            if newlyRevoked.contains(auth) && !eventGraph.causallyBefore(nextEvHash, revocationEventHash)
-            then hasInvalidatedADelta |= deltaValueStore.remove(commitmentHash).nonEmpty
-          case _ =>
-        }
-        val parents = nextEv.parents.diff(visited)
-        toVisit.enqueueAll(parents)
-        visited.addAll(parents)
-      }
-    }
-
-    hasInvalidatedADelta
+    removeDeltas(invalidated)
   }
 
   override protected def rematerialize(): Unit = synchronized {
