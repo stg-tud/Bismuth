@@ -57,9 +57,10 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
             case Revocation(_) =>
               if eventGraph.heads.size > 1 // Check if we have events that are concurrent to revocation.
               then
-                  if invalidateDeltasAfterRevocation(eventHash) > 0 then
-                      materializedState = deltaValueStore.merged
-                      onStateChange(materializedState)
+                  if invalidateDeltasAfterRevocation(eventHash) then {
+                    rematerialize()
+                    onStateChange(materializedState)
+                  }
             case _ => // delta values are not accepted before their commitment, new delegations don't update the state
           }
         }
@@ -69,17 +70,22 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   }
 
   // Deletes all deltas that depend on revoked capability that are not causallyBefore revocationEvent
-  private def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Int = synchronized {
+  protected def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Boolean = synchronized {
     val transitivelyRevokedCapabilities = eventGraph.revocationCache.filter((_, revocations) =>
       revocations.size == 1 && revocations.contains(revocationEventHash)
     ).keySet
-    eventGraph.events.count {
+    var hasInvalidatedADelta = false
+    eventGraph.events.foreach {
       case evHash -> (ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, auth), idx) =>
         if transitivelyRevokedCapabilities.contains(auth) && !eventGraph.causallyBefore(evHash, revocationEventHash)
-        then deltaValueStore.remove(commitmentHash).nonEmpty
-        else false
+        then hasInvalidatedADelta |= deltaValueStore.remove(commitmentHash).nonEmpty
       case _ => false
     }
+    hasInvalidatedADelta
+  }
+
+  protected def rematerialize(): Unit = synchronized {
+    materializedState = deltaValueStore.merged
   }
 
   /** Stores a received delta value and merges it into the materialized state if it is authorized.
