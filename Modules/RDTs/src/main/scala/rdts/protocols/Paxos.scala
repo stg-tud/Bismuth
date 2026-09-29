@@ -43,10 +43,22 @@ case class Paxos[A](
       currentRound.getOrElse(PaxosRound()).proposals.voteFor(value)
     )
 
-  // boolean threshold queries
+  // preconditions
+  def roundHasCandidate(ballotNum: BallotNum, candidate: Uid): Boolean = rounds.get(ballotNum) match
+      case Some(PaxosRound(leaderElection, _))
+          if leaderElection.votes.exists(_.value == candidate) => true
+      case _ => false
   def currentRoundHasCandidate: Boolean = currentRound match
       case Some(PaxosRound(leaderElection, _))
           if leaderElection.votes.nonEmpty => true
+      case _ => false
+  def isLeaderInRound(ballotNum: BallotNum)(using
+      p: Participants,
+      replicaId: ReplicaId
+  ): Boolean = rounds.get(ballotNum) match
+      case Some(PaxosRound(leaderElection, _))
+          if leaderElection.decision == Decided(replicaId.uid) =>
+        true
       case _ => false
   def isCurrentLeader(using
       participants: Participants,
@@ -56,64 +68,121 @@ case class Paxos[A](
           if leaderElection.decision == Decided(replicaId.uid) =>
         true
       case _ => false
+  def roundHasProposal(ballotNum: BallotNum, proposal: A): Boolean =
+    rounds.get(ballotNum).map(_.proposals.votes.exists(_.value == proposal)).getOrElse(false)
   def currentRoundHasProposal: Boolean = currentRound match
       case Some(PaxosRound(_, proposals))
           if proposals.votes.nonEmpty => true
       case _ => false
 
   // protocol actions:
-  def phase1a(value: A)(using replicaId: ReplicaId): Paxos[A] =
-    // try to become leader and remember a value for later
-    Paxos(Map(nextBallotNum -> voteLeader(replicaId.uid), BallotNum(replicaId.uid, -1) -> voteValue(value)))
-  def phase1a(using replicaId: ReplicaId): Paxos[A] =
+  // actual protocol action:
+  def phase1a(b: BallotNum)(using replicaId: ReplicaId): Paxos[A] =
     // try to become leader
-    Paxos(Map(nextBallotNum -> voteLeader(replicaId.uid)))
+    Paxos(Map(b -> PaxosRound(leaderElection = Voting().voteFor(replicaId.uid))))
+  def phase1a(b: BallotNum, value: A)(using replicaId: ReplicaId): Paxos[A] =
+    Paxos(Map(
+      b                            -> PaxosRound(leaderElection = Voting().voteFor(replicaId.uid)),
+      BallotNum(replicaId.uid, -1) -> PaxosRound(proposals = Voting().voteFor(value))
+    ))
+  // api:
+  def phase1a(using ReplicaId): Paxos[A] =
+    phase1a(nextBallotNum)
+  def phase1a(value: A)(using ReplicaId): Paxos[A] =
+    phase1a(nextBallotNum, value)
 
-  def phase1b(using ReplicaId): Paxos[A] =
-    precondition(currentRoundHasCandidate)(
+  // actual protocol action:
+  def phase1b(
+      currentBallotNum: BallotNum,
+      currentLeaderelection: LeaderElection,
+      currentCandidate: Uid,
+      lastPromise: Option[(BallotNum, PaxosRound[A])]
+  )(using
+      ReplicaId
+  ): Paxos[A] =
+    precondition(
+      roundHasCandidate(currentBallotNum, currentCandidate) &&
+      rounds(currentBallotNum).leaderElection.subsumes(currentLeaderelection)
+    )(
       // vote in the current leader election
-      lastValueVote match
+      lastPromise match
           case Some(promisedBallot, acceptedVal) =>
             // vote for candidate and include value most recently voted for
             Paxos(Map(
-              currentBallotNum -> voteLeader(leaderCandidate),
-              promisedBallot   -> acceptedVal
-            )) // previously accepted value
+              currentBallotNum -> PaxosRound(leaderElection = currentLeaderelection.voteFor(currentCandidate)),
+              promisedBallot   -> acceptedVal // previously accepted value
+            ))
           case None =>
             // no value voted for, just vote for candidate
             Paxos(Map(
-              currentBallotNum -> voteLeader(leaderCandidate)
+              currentBallotNum -> PaxosRound(leaderElection = currentLeaderelection.voteFor(currentCandidate))
             ))
     )
-
-  def phase2a(myValue: A)(using ReplicaId, Participants): Paxos[A] =
-    // propose a value if I am the leader
-    precondition(isCurrentLeader)(
-      if newestReceivedVal.nonEmpty then
-          // propose most recent received value
-          Paxos(Map(currentBallotNum -> voteValue(
-            newestReceivedVal.get
-          )))
-      else
-          // no values received during leader election, propose my value
-          Paxos(Map(currentBallotNum -> voteValue(myValue)))
+  // api:
+  def phase1b(using replicaId: ReplicaId): Paxos[A] =
+    phase1b(
+      currentBallotNum.getOrElse(BallotNum(replicaId.uid, -1)),
+      currentLeaderElection.getOrElse(Voting()),
+      lastPromise = lastValueVote,
+      currentCandidate = leaderCandidate.getOrElse(replicaId.uid)
     )
 
+  // actual protocol action:
+  def phase2a(myValue: A, currentBallotNum: BallotNum, currentProposals: Voting[A], newestReceivedVal: Option[A])(using
+      ReplicaId,
+      Participants
+  ): Paxos[A] =
+    // propose a value if I am the leader
+    precondition(
+      isLeaderInRound(currentBallotNum) &&
+      rounds(currentBallotNum).proposals.subsumes(currentProposals)
+    ) {
+      newestReceivedVal match
+          case Some(value) =>
+            // propose most recent received value
+            Paxos(Map(currentBallotNum -> PaxosRound(proposals = currentProposals.voteFor(value))))
+          case None =>
+            Paxos(Map(currentBallotNum -> PaxosRound(proposals = currentProposals.voteFor(myValue))))
+    }
+  // api:
+  def phase2a(myValue: A)(using ReplicaId, Participants): Paxos[A] =
+    (currentBallotNum, currentProposals) match
+        case (Some(b), Some(ps)) =>
+          phase2a(
+            myValue = myValue,
+            currentBallotNum = b,
+            currentProposals = ps,
+            newestReceivedVal = newestReceivedVal
+          )
+        case _ => Paxos() // don't do anything
   // This is a helper function that allows calling phase2a without a parameter.
   // In this case myValue has to be known from context, otherwise this does nothing.
   def phase2a(using ReplicaId, Participants): Paxos[A] =
-    // try to determine my process' value
-    precondition(myValue.nonEmpty) {
-      phase2a(myValue.get)
-    }
+    myValue match
+        case Some(m) =>
+          phase2a(m)
+        case None => Paxos() // don't do anything
 
-  def phase2b(using ReplicaId): Paxos[A] =
-    // accept proposed value
-    precondition(currentRoundHasProposal) {
-      val proposal =
-        currentRound.get.proposals.votes.head.value
-      Paxos(Map(currentBallotNum -> voteValue(proposal)))
+  // actual protocol action:
+  def phase2b(currentBallotNum: BallotNum, proposal: A, currentProposals: Voting[A])(using ReplicaId): Paxos[A] =
+    precondition(
+      roundHasProposal(currentBallotNum, proposal) &&
+      rounds(currentBallotNum).proposals.subsumes(currentProposals)
+    ) {
+      Paxos(Map(currentBallotNum -> PaxosRound(
+        proposals = currentProposals.voteFor(proposal)
+      )))
     }
+  // api:
+  def phase2b(using ReplicaId): Paxos[A] =
+    (currentBallotNum, currentProposal, currentProposals) match
+        case (Some(b), Some(p), Some(ps)) =>
+          phase2b(
+            currentBallotNum = b,
+            proposal = p,
+            currentProposals = ps
+          )
+        case _ => Paxos()
 
   // decision function
   def decision(using Participants): Agreement[A] =
@@ -132,10 +201,14 @@ case class Paxos[A](
       BallotNum(replicaId.uid, maxCounter + 1)
   def currentRound: Option[PaxosRound[A]] =
     rounds.maxOption.map(_._2)
-  def currentBallotNum: BallotNum =
-    rounds.maxOption.map(_._1).get
-  def leaderCandidate: Uid =
-    currentLeaderElection.map(_.votes.head.value).get
+  def currentBallotNum: Option[BallotNum] =
+    rounds.maxOption.map(_._1)
+  def currentProposals: Option[Voting[A]] =
+    currentRound.map(_.proposals)
+  def currentProposal: Option[A] =
+    currentProposals.flatMap(_.votes.headOption).map(_.value)
+  def leaderCandidate: Option[Uid] =
+    currentLeaderElection.flatMap(_.votes.headOption).map(_.value)
   def currentLeaderElection: Option[LeaderElection] =
     currentRound match
         case Some(PaxosRound(leaderElection, _)) =>
