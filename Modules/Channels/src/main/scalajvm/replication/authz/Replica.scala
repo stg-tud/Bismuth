@@ -135,13 +135,16 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     })
 
     val eventsWithDeltas: Iterable[(Hash, ArdtEvent, Array[Byte], RDT, RevealedValue)] =
-      Decompose.decompose(delta).map { decomposedDelta =>
-        val commitedValue      = Commitment.commit(writeToArray(decomposedDelta))
-        val payload            = DeltaCommitment(commitedValue.commitment)
-        val signedEvent        = createSignedEvent(payload, capabilityHash)
-        val encodedSignedEvent = writeToArray(signedEvent)
-        (Hash.compute(encodedSignedEvent), signedEvent, encodedSignedEvent, delta, commitedValue)
-      }
+        var parents = heads
+        Decompose.decompose(delta).map { decomposedDelta =>
+          val commitedValue      = Commitment.commit(writeToArray(decomposedDelta))
+          val payload            = DeltaCommitment(commitedValue.commitment)
+          val signedEvent        = createSignedEvent(payload, capabilityHash, parents)
+          val encodedSignedEvent = writeToArray(signedEvent)
+          val hash               = Hash.compute(encodedSignedEvent)
+          parents = Set(hash)
+          (hash, signedEvent, encodedSignedEvent, decomposedDelta, commitedValue)
+        }
 
     // Apply locally
     var evGraph      = eventGraph
@@ -180,7 +183,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
     findAuthorizationForRevocation(revokedCapability) match {
       case Some(authorization) =>
-        val revocationEvent = writeToArray(createSignedEvent(Revocation(revokedCapability), authorization))
+        val revocationEvent =
+          writeToArray(createSignedEvent(Revocation(revokedCapability), authorization, eventGraph.heads))
         // Apply event locally
         require(receiveEvent(revocationEvent).isRight)
         // Disseminate event
@@ -205,7 +209,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
         // TODO: apply unchecked
         val delegationEvent = writeToArray(createSignedEvent(
           Capability(delegatee, readPermissions, writePermissions),
-          usedCapability
+          usedCapability,
+          eventGraph.heads
         ))
 
         // Apply event locally
@@ -222,11 +227,11 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
     eventGraph.activeCapabilitiesOf(publicIdentity)
 
-  private def createSignedEvent(payload: ArdtEvent.Payload, capability: Hash): ArdtEvent = {
+  private def createSignedEvent(payload: ArdtEvent.Payload, capability: Hash, parents: Set[Hash]): ArdtEvent = {
     val unsignedEvent = ArdtEvent(
       payload,
       localReplicaId,
-      eventGraph.heads,
+      parents,
       Signature.allZeroSignature,
       capability
     )
