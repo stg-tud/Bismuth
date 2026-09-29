@@ -29,11 +29,9 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
     val (revocation, _)            = evGraph.events(revocationEventHash)
     val earliestParentOfRevocation = revocation.parents.map(evGraph.events).minBy(_._2)._2
 
-    if snapshotVersion < earliestParentOfRevocation
-    then {
+    if snapshotVersion < earliestParentOfRevocation then {
       snapshotVersion = -1
       snapshot = Bottom.empty
-      return super.invalidateDeltasAfterRevocation(revocationEventHash)
     }
 
     val newlyRevoked = eventGraph.revocationCache.filter((_, revocations) =>
@@ -56,7 +54,9 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
             then hasInvalidatedADelta |= deltaValueStore.remove(commitmentHash).nonEmpty
           case _ =>
         }
-        toVisit.enqueueAll(nextEv.parents.diff(visited))
+        val parents = nextEv.parents.diff(visited)
+        toVisit.enqueueAll(parents)
+        visited.addAll(parents)
       }
     }
 
@@ -71,8 +71,8 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
     val evGraph = eventGraph
     val toVisit = scala.collection.mutable.Queue.from(evGraph.heads)
     // TODO: we could instead use the indices and a bitset instead of a hashset with the event hashes
-    val visited = scala.collection.mutable.Set.from(evGraph.heads)
-    var state   = snapshot
+    val visited             = scala.collection.mutable.Set.from(evGraph.heads)
+    var rematerializedState = snapshot
 
     while toVisit.nonEmpty do {
       val nextEvHash          = toVisit.dequeue()
@@ -82,13 +82,17 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
         nextEv match {
           case ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _) =>
             deltaValueStore.get(commitmentHash).foreach { case (delta, _) =>
-              state = state.merge(delta)
+              rematerializedState = rematerializedState.merge(delta)
             }
           case _ =>
         }
-        toVisit.enqueueAll(nextEv.parents.diff(visited))
+        val parents = nextEv.parents.diff(visited)
+        toVisit.enqueueAll(parents)
+        visited.addAll(parents)
       }
     }
+
+    materializedState = rematerializedState
   }
 
 }
