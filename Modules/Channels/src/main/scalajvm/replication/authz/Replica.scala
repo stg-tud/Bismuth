@@ -93,8 +93,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     * @throws IllegalArgumentException if the local replica may not read the delta.
     */
   def receiveDelta(eventHash: Hash, deltaValue: RevealedValue): Unit = synchronized {
-    val event      = eventGraph.events(eventHash)._1
-    val commitment = deltaValue.commitment
+    val (event, eventIndex) = eventGraph.events(eventHash)
+    val commitment          = deltaValue.commitment
     require(commitment == event.payload.asInstanceOf[DeltaCommitment].commitment)
 
     val delta = readFromArray[RDT](deltaValue.value)
@@ -102,8 +102,12 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     require(Authorization.mayWriteAssumingCommitmentHolds(eventGraph, eventHash, event, delta))
 
     deltaValueStore.put(commitment, delta, deltaValue.witness)
-    materializedState = materializedState.merge(delta)
+    applyDelta(delta, eventIndex)
     onStateChange(state)
+  }
+
+  protected def applyDelta(delta: RDT, eventIndex: Int): Unit = synchronized {
+    materializedState = materializedState.merge(delta)
   }
 
   def mutateState(mutator: RDT => RDT): Unit = synchronized {

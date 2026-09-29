@@ -24,6 +24,10 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
     snapshotVersion = eventGraph.nextEventIndex - 1
   }
 
+  override protected def applyDelta(delta: RDT, eventIndex: Int): Unit = synchronized {
+    materializedState = materializedState.merge(delta)
+    if eventIndex < snapshotVersion then snapshot = snapshot.merge(delta)
+  }
   override protected def invalidateDeltasAfterRevocation(revocationEventHash: Hash): Boolean = {
     val evGraph                    = eventGraph
     val (revocation, _)            = evGraph.events(revocationEventHash)
