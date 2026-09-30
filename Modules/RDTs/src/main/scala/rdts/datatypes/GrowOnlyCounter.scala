@@ -2,7 +2,7 @@ package rdts.datatypes
 
 import rdts.base.*
 
-case class GrowOnlyCounter(inner: Map[Uid, Int]) {
+case class GrowOnlyCounter(inner: Map[Uid, Int] = Map.empty) {
   lazy val value: Int = inner.valuesIterator.sum
 
   def inc()(using ReplicaId): GrowOnlyCounter                       = add(1)
@@ -17,10 +17,9 @@ object GrowOnlyCounter {
 
   given bottom: Bottom[GrowOnlyCounter] = Bottom.provide(zero)
 
-  given lattice: Lattice[GrowOnlyCounter] = {
+  given lattice: Lattice[GrowOnlyCounter] =
     given Lattice[Int] = math.max
     Lattice.derived
-  }
 
   given decompose: Decompose[GrowOnlyCounter] =
       given Decompose[Int] = Decompose.atomic

@@ -213,7 +213,7 @@ By itself, the Workflow state machine does not really guarantee that steps are t
   import Workflow.*
   extension (wf: Workflow) {
 
-    def newContract: Workflow         = Documents()
+    def newProcess: Workflow          = Documents()
     def addStaffSheet: Workflow       = Documents(hasStaffSheet = true)
     def addHourConfirmation: Workflow = Documents(hasHourConfirmation = true)
 
@@ -235,7 +235,7 @@ By itself, the Workflow state machine does not really guarantee that steps are t
 
       val db     = DeltaBuffer(Workflow.Init())
       val result = db
-        .mod(_.newContract)
+        .mod(_.newProcess)
         .mod(_.addStaffSheet)
         .mod(_.addHourConfirmation)
         .mod(_.createContract)
