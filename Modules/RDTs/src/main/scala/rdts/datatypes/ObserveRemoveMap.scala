@@ -26,8 +26,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Entry[V]], removed: Dots) {
   def size: Int = inner.size
 
   /** merges `v` into the current value stored in the map */
-  def update(k: K, v: V)(using ReplicaId): Delta = {
-    val next = Dots.single(observed.nextDot(ReplicaId.replicaId))
+  def update(k: K, v: V)(using replicaId: ReplicaId): Delta = {
+    val next = Dots.single(observed.nextDot(replicaId.uid))
     ObserveRemoveMap(
       Map(k -> Entry(next, v)),
       Dots.empty

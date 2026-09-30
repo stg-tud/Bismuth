@@ -1,6 +1,5 @@
 package rdts.protocols
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.*
@@ -50,11 +49,11 @@ case class Paxos[A](
           if leaderElection.votes.nonEmpty => true
       case _ => false
   def isCurrentLeader(using
-                      Participants,
-                      ReplicaId
+                      participants: Participants,
+                      replicaId: ReplicaId
   ): Boolean = currentRound match
       case Some(PaxosRound(leaderElection, _))
-          if leaderElection.decision == Decided(replicaId) =>
+          if leaderElection.decision == Decided(replicaId.uid) =>
         true
       case _ => false
   def currentRoundHasProposal: Boolean = currentRound match
@@ -63,12 +62,12 @@ case class Paxos[A](
       case _ => false
 
   // protocol actions:
-  def phase1a(value: A)(using ReplicaId): Paxos[A] =
+  def phase1a(value: A)(using replicaId: ReplicaId): Paxos[A] =
     // try to become leader and remember a value for later
-    Paxos(Map(nextBallotNum -> voteLeader(replicaId), BallotNum(replicaId, -1) -> voteValue(value)))
-  def phase1a(using ReplicaId): Paxos[A] =
+    Paxos(Map(nextBallotNum -> voteLeader(replicaId.uid), BallotNum(replicaId.uid, -1) -> voteValue(value)))
+  def phase1a(using replicaId: ReplicaId): Paxos[A] =
     // try to become leader
-    Paxos(Map(nextBallotNum -> voteLeader(replicaId)))
+    Paxos(Map(nextBallotNum -> voteLeader(replicaId.uid)))
 
   def phase1b(using ReplicaId): Paxos[A] =
     precondition(currentRoundHasCandidate)(
@@ -125,12 +124,12 @@ case class Paxos[A](
     }.getOrElse(Undecided)
 
   // helper functions
-  def nextBallotNum(using ReplicaId): BallotNum =
+  def nextBallotNum(using replicaId: ReplicaId): BallotNum =
       val maxCounter: Long = rounds
         .map((b, _) => b.counter)
         .maxOption
         .getOrElse(-1)
-      BallotNum(replicaId, maxCounter + 1)
+      BallotNum(replicaId.uid, maxCounter + 1)
   def currentRound: Option[PaxosRound[A]] =
     rounds.maxOption.map(_._2)
   def currentBallotNum: BallotNum =
@@ -146,8 +145,8 @@ case class Paxos[A](
     rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
   def newestReceivedVal: Option[A] =
     lastValueVote.flatMap(_._2.proposals.votes.headOption).map(_.value)
-  def myValue(using ReplicaId): Option[A] = rounds.get(BallotNum(
-    replicaId,
+  def myValue(using replicaId: ReplicaId): Option[A] = rounds.get(BallotNum(
+    replicaId.uid,
     -1
   )).flatMap(_.proposals.votes.headOption).map(_.value)
   def newestBallotWithLeader(using Participants): Option[(BallotNum, PaxosRound[A])] =
@@ -191,12 +190,12 @@ object Paxos {
           }
       extension [A](c: Paxos[A])
           // upkeep can be used to perform the next protocol step automatically
-          override def upkeep()(using ReplicaId, Participants): Paxos[A] =
+          override def upkeep()(using replicaId: ReplicaId, participants: Participants): Paxos[A] =
             // check which phase we are in
             c.currentRound match
                 case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>
                   // we have a leader -> phase 2
-                  if leaderElection.result.get == replicaId then
+                  if leaderElection.result.get == replicaId.uid then
                       c.phase2a
                   else
                       c.phase2b

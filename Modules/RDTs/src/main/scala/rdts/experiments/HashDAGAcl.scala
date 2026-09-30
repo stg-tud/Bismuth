@@ -19,14 +19,14 @@ object Operation {
 
 case class HashDAGAcl(operations: Map[Hash, Operation]) {
 
-  def delegate(p: Path, to: Uid)(using ReplicaId): HashDAGAcl =
+  def delegate(p: Path, to: Uid)(using replicaId: ReplicaId): HashDAGAcl =
     operations.collectFirst {
       case (hash, Delegation(delegatee = delegatee, path = parentPath))
-          if delegatee == ReplicaId.replicaId && parentPath.startsWith(p) => hash
+          if delegatee == replicaId.uid && parentPath.startsWith(p) => hash
     } match {
       case None             => HashDAGAcl.empty
       case Some(parentHash) =>
-        val op = Delegation(ReplicaId.replicaId, to, p, Set(parentHash))
+        val op = Delegation(replicaId.uid, to, p, Set(parentHash))
         HashDAGAcl(Map(op.hash -> op))
     }
 

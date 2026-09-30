@@ -38,13 +38,13 @@ case class ReplicatedTree[A](
   def insert(parent: Dot, value: A)(using ReplicaId): Delta =
     insertWith(parent, _ => value)
 
-  def insertWith(parent: Dot, value: Dot => A)(using ReplicaId): Delta = {
+  def insertWith(parent: Dot, value: Dot => A)(using replicaId: ReplicaId): Delta = {
     if parent != ReplicatedTree.rootDot && !compact.contains(parent) then {
       throw new IllegalArgumentException(s"Dot $parent does not exist in the tree")
     }
 
     val dot =
-      observed.nextDot(ReplicaId.replicaId)
+      observed.nextDot(replicaId.uid)
 
     ReplicatedTree(
       elements =

@@ -1,6 +1,5 @@
 package rdts.protocols
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Orderings, Uid}
 import rdts.datatypes.ReplicatedSet
 
@@ -16,13 +15,13 @@ object Ownership {
 
 case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
 
-  def isOwner(using ReplicaId): Boolean = replicaId == os.owner
+  def isOwner(using replicaId: ReplicaId): Boolean = replicaId.uid == os.owner
 
-  def request(using ReplicaId): Token =
-    Token(Ownership.unchanged, wants.add(replicaId))
+  def request(using replicaId: ReplicaId): Token =
+    Token(Ownership.unchanged, wants.add(replicaId.uid))
 
-  def release(using ReplicaId): Token =
-    Token(Ownership.unchanged, wants.remove(replicaId))
+  def release(using replicaId: ReplicaId): Token =
+    Token(Ownership.unchanged, wants.remove(replicaId.uid))
 
   def upkeep(using ReplicaId): Token =
     if !isOwner then Token.unchanged
@@ -32,10 +31,10 @@ case class Token(os: Ownership, wants: ReplicatedSet[Uid]) {
             case Some(nextOwner) =>
               Token(Ownership(os.epoch + 1, nextOwner), ReplicatedSet.empty)
 
-  def selectFrom(wants: ReplicatedSet[Uid])(using ReplicaId): Option[Uid] =
+  def selectFrom(wants: ReplicatedSet[Uid])(using replicaId: ReplicaId): Option[Uid] =
     // We find the “largest” ID that wants the token.
     // This is incredibly “unfair” but does prevent deadlocks in case someone needs multiple tokens.
-    wants.elements.maxOption.filter(id => id != replicaId)
+    wants.elements.maxOption.filter(id => id != replicaId.uid)
 
 }
 

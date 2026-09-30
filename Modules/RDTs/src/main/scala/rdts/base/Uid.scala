@@ -57,7 +57,6 @@ object ReplicaId {
   def predefined(s: String): ReplicaId     = Uid.predefined(s).convert
   def unwrap(id: ReplicaId): Uid           = id.uid
   def gen(): ReplicaId                     = Uid.gen().convert
-  def replicaId(using rid: ReplicaId): Uid = rid.uid
 }
 
 object UidEncoding {

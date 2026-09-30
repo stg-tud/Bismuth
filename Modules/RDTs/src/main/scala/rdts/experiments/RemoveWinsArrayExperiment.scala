@@ -55,7 +55,7 @@ case class RemoveWinsArrayExperiment[E](
   def insert(index: Int, value: E)(using ReplicaId): RemoveWinsArrayExperiment[E] =
     insertAll(index, Iterable(value))
 
-  def insertAll(index: Int, values: Iterable[E])(using ReplicaId): RemoveWinsArrayExperiment[E] = {
+  def insertAll(index: Int, values: Iterable[E])(using replicaId: ReplicaId): RemoveWinsArrayExperiment[E] = {
     val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
 
     val entriesList = entries
@@ -67,7 +67,7 @@ case class RemoveWinsArrayExperiment[E](
     val newElements  = scala.collection.mutable.Map[Dot, RemoveWinsArrayExperiment.Entry[E]]()
     val predecessors = observed
     for (value, dot) <- values.zip(nextDots) do
-        val newPos = LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
+        val newPos = LSeq.between(beforePos, afterPos, replicaId.uid)
         newElements += (dot -> RemoveWinsArrayExperiment.Entry(LWW(timestamp, newPos), value))
         beforePos = newPos
 
@@ -101,7 +101,7 @@ case class RemoveWinsArrayExperiment[E](
       case None           => RemoveWinsArrayExperiment.empty
     }
 
-  def move(from: Int, to: Int)(using ReplicaId): RemoveWinsArrayExperiment[E] =
+  def move(from: Int, to: Int)(using replicaId: ReplicaId): RemoveWinsArrayExperiment[E] =
     if from < 0 || to < 0 || from >= size || to >= size then RemoveWinsArrayExperiment.empty
     else if from == to then RemoveWinsArrayExperiment.empty
     else
@@ -112,7 +112,7 @@ case class RemoveWinsArrayExperiment[E](
             val pos = {
               val beforePos = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.min)
               val afterPos  = entriesList.lift(to + 1).map(_._2.index.value).getOrElse(LSeq.max)
-              LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
+              LSeq.between(beforePos, afterPos, replicaId.uid)
             }
             RemoveWinsArrayExperiment(
               elements = Map(dot -> entry.copy(

@@ -273,8 +273,7 @@ its own part of the state, so concurrent writes never conflict. The library prov
    */
   import rdts.base.Uid
   import rdts.base.ReplicaId
-  import rdts.base.ReplicaId.replicaId
-  /*:scim
+    /*:scim
 
 ## A replicated counter
 
@@ -289,8 +288,8 @@ information is lost on merge.
   case class Counter(counters: Map[Uid, Int] = Map.empty):
       def value: Int = counters.values.sum
 
-      def add(amount: Int)(using ReplicaId): Counter =
-        Counter(Map(replicaId -> (counters.getOrElse(replicaId, 0) + amount)))
+      def add(amount: Int)(using replicaId: ReplicaId): Counter =
+        Counter(Map(replicaId.uid -> (counters.getOrElse(replicaId.uid, 0) + amount)))
 
   // We can derive the lattice automatically
   given Lattice[Counter] = Lattice.derived

@@ -23,10 +23,10 @@ object RubisInterface {
 
     type Delta = State
 
-    def placeBid(auctionId: AID, userId: User, price: Int)(using ReplicaId): Delta = {
+    def placeBid(auctionId: AID, userId: User, price: Int)(using replicaId: ReplicaId): Delta = {
       val (_, users, m) = current
       val newMap        =
-        if users.get(userId).contains(ReplicaId.replicaId) && m.contains(auctionId) then {
+        if users.get(userId).contains(replicaId.uid) && m.contains(auctionId) then {
           m.updatedWith(auctionId) {
             _.map(a => a.bid(userId, price))
           }
@@ -56,11 +56,11 @@ object RubisInterface {
       deltaState.make(auctions = newMap)
     }
 
-    def requestRegisterUser(userId: User)(using ReplicaId): Delta = {
+    def requestRegisterUser(userId: User)(using replicaId: ReplicaId): Delta = {
       val (req, users, _) = current
       if users.contains(userId) then deltaState.make()
       else
-          val merged = req.add(userId -> ReplicaId.replicaId)
+          val merged = req.add(userId -> replicaId.uid)
           deltaState.make(userRequests = merged)
     }
 

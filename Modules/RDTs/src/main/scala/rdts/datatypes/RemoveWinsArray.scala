@@ -36,7 +36,7 @@ case class RemoveWinsArray[E](
   def insert(index: Int, value: E)(using ReplicaId): RemoveWinsArray[E] =
     insertAll(index, Iterable(value))
 
-  def insertAll(index: Int, values: Iterable[E])(using ReplicaId): RemoveWinsArray[E] = {
+  def insertAll(index: Int, values: Iterable[E])(using replicaId: ReplicaId): RemoveWinsArray[E] = {
     val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
 
     val entriesList = entries
@@ -47,7 +47,7 @@ case class RemoveWinsArray[E](
 
     val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
     for (value, dot) <- values.zip(nextDots) do
-        val newPos = LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
+        val newPos = LSeq.between(beforePos, afterPos, replicaId.uid)
         newElements += (dot -> RemoveWinsArray.Entry(LWW(timestamp, newPos), value))
         beforePos = newPos
 
@@ -71,7 +71,7 @@ case class RemoveWinsArray[E](
       case None           => RemoveWinsArray.empty
     }
 
-  def move(from: Int, to: Int)(using ReplicaId): RemoveWinsArray[E] =
+  def move(from: Int, to: Int)(using replicaId: ReplicaId): RemoveWinsArray[E] =
     if from < 0 || to < 0 || from > size || to > size then RemoveWinsArray.empty
     else if from == to then RemoveWinsArray.empty
     else
@@ -81,7 +81,7 @@ case class RemoveWinsArray[E](
             val pos = {
               val beforePos = entriesList.lift(to - 1).map(_._2.index.value).getOrElse(LSeq.min)
               val afterPos  = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.max)
-              LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
+              LSeq.between(beforePos, afterPos, replicaId.uid)
             }
             RemoveWinsArray(
               elements = Map(dot -> entry.copy(
@@ -92,7 +92,7 @@ case class RemoveWinsArray[E](
           case None => RemoveWinsArray.empty
         }
 
-  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using ReplicaId): RemoveWinsArray[E] =
+  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using replicaId: ReplicaId): RemoveWinsArray[E] =
     if fromStart < 0 || fromEnd < 0 || toIndex < 0 then RemoveWinsArray.empty
     else if fromStart >= fromEnd then RemoveWinsArray.empty
     else if fromStart >= size || toIndex > size then RemoveWinsArray.empty
@@ -110,7 +110,7 @@ case class RemoveWinsArray[E](
             var currentPos  = beforePos
 
             for (dot, entry) <- elementsToMove do
-                val newPos = LSeq.between(currentPos, afterPos, ReplicaId.replicaId)
+                val newPos = LSeq.between(currentPos, afterPos, replicaId.uid)
                 newElements += (dot -> entry.copy(index = LWW.now(newPos)))
                 currentPos = newPos
 

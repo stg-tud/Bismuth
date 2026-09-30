@@ -16,8 +16,8 @@ case class MVRegister[A](repr: Map[Dot, A], removed: Dots) {
 
   def compact: MVRegister[A] = MVRegister(repr.filter((d, _) => !removed.contains(d)), removed)
 
-  def write(v: A)(using ReplicaId): MVRegister[A] = {
-    val nextDot = observed.nextDot(ReplicaId.replicaId)
+  def write(v: A)(using replicaId: ReplicaId): MVRegister[A] = {
+    val nextDot = observed.nextDot(replicaId.uid)
     MVRegister(
       Map(nextDot -> v),
       observed

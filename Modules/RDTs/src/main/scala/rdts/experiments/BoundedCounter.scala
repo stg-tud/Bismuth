@@ -13,28 +13,28 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
   def addParticipants(part: Set[Uid]): Delta = neutral.copy(participants = part)
 
   def allocated(id: Uid): Int       = allocations.inner.getOrElse(id, 0)
-  def reserved(using ReplicaId): Int = reserved(ReplicaId.replicaId)
+  def reserved(using replicaId: ReplicaId): Int = reserved(replicaId.uid)
   def reserved(id: Uid): Int        =
     current.reservations.pos.inner.getOrElse(id, 0) - current.reservations.neg.inner.getOrElse(id, 0)
   def available(id: Uid): Int        = reserved(id) - allocated(id)
-  def available(using ReplicaId): Int = available(ReplicaId.replicaId)
+  def available(using replicaId: ReplicaId): Int = available(replicaId.uid)
 
-  def allocate(value: Int)(using ReplicaId): Delta =
-    if value < 0 || available(ReplicaId.replicaId) < value then neutral
+  def allocate(value: Int)(using replicaId: ReplicaId): Delta =
+    if value < 0 || available(replicaId.uid) < value then neutral
     else neutral.copy(allocations = current.allocations.add(value))
 
-  def transfer(amount: Int, target: Uid)(using ReplicaId): Delta =
-    if amount > available(ReplicaId.replicaId) then neutral
+  def transfer(amount: Int, target: Uid)(using replicaId: ReplicaId): Delta =
+    if amount > available(replicaId.uid) then neutral
     else
         neutral.copy(reservations =
           current.reservations.add(amount)(using target.convert) `merge` current.reservations.add(-amount)
         )
 
-  def rebalance(using ReplicaId): Delta = {
+  def rebalance(using replicaId: ReplicaId): Delta = {
     val availableByReplica = current.participants.iterator.map(id => available(id) -> id).toList
     val most               = availableByReplica.max
     val least              = availableByReplica.min
-    if most._2 != ReplicaId.replicaId then neutral
+    if most._2 != replicaId.uid then neutral
     else
         val diff: Int = (most._1 - least._1) / 2
         current.transfer(diff, least._2)

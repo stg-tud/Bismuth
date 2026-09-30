@@ -1,7 +1,6 @@
 package rdts.protocols
 
 import rdts.base.Lattice.syntax
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.datatypes.Epoch
 import rdts.protocols.Consensus.given
@@ -84,7 +83,7 @@ case class Membership[A, C[_], D[_]](
     else bottomRound
   }
 
-  def isMember(using ReplicaId): Boolean = currentMembers.contains(replicaId)
+  def isMember(using replicaId: ReplicaId): Boolean = currentMembers.contains(replicaId.uid)
 
   def upkeep()(using rid: ReplicaId, cc: Consensus[C], cd: Consensus[D]): Membership[A, C, D] =
       if !isMember then return writeRound(bottomRound) // do nothing if we are not a member anymore

@@ -1,6 +1,5 @@
 package rdts.protocols
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Participants
 import rdts.protocols.Participants.participants
@@ -11,9 +10,9 @@ case class Vote[A](voter: Uid, value: A)
 
 case class Voting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
   // boolean threshold queries
-  def hasNotVoted(using ReplicaId): Boolean =
+  def hasNotVoted(using replicaId: ReplicaId): Boolean =
     !votes.exists {
-      case Vote(r, _) => r == replicaId
+      case Vote(r, _) => r == replicaId.uid
     }
 
   // decision function
@@ -34,9 +33,9 @@ case class Voting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
       .map((value, vts) => (value, vts.size)).maxByOption(_._2)
 
   // protocol actions
-  def voteFor(value: A)(using ReplicaId): Voting[A] =
+  def voteFor(value: A)(using replicaId: ReplicaId): Voting[A] =
     precondition(hasNotVoted)(
-      Voting(Set(Vote(replicaId, value)))
+      Voting(Set(Vote(replicaId.uid, value)))
     )
 
   // convenience function to read decision as option

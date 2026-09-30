@@ -32,8 +32,8 @@ case class NestedKeepRemoveList[E] private (
   def toList: List[E] =
     order.value.toList.flatMap { d => if isAlive(d) then payloads.get(d) else None }
 
-  def insertAt(i: Int, e: E)(using ReplicaId): C = {
-    val newDot = observed.nextDot(ReplicaId.replicaId)
+  def insertAt(i: Int, e: E)(using replicaId: ReplicaId): C = {
+    val newDot = observed.nextDot(replicaId.uid)
     findInsertIndex(i) match
         case None        => NestedKeepRemoveList.empty
         case Some(glIdx) =>

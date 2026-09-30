@@ -46,7 +46,7 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
 
   def nextDot(replicaId: Uid): Dot = Dot(replicaId, nextTime(replicaId))
 
-  def nextDot(using ReplicaId): Dot = Dot(ReplicaId.replicaId, nextTime(ReplicaId.replicaId))
+  def nextDot(using replicaId: ReplicaId): Dot = Dot(replicaId.uid, nextTime(replicaId.uid))
 
   def advanced(replicaId: Uid): Dots = {
     val next = this.nextDot(replicaId)

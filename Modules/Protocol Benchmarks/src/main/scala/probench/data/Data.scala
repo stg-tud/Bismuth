@@ -2,7 +2,6 @@ package probench.data
 
 import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.Payload
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.{MultiPaxos, Participants, Vote, Voting}
@@ -54,7 +53,7 @@ object Codecs {
 case class Heartbeat(supposedLeader: Option[Uid], senderTimestamp: Long, receiverTimestamp: Option[Long] = None)
 case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
   Map.empty[Uid, LastWriterWins[Heartbeat]]) {
-  private def currentVotes(timeoutThreshold: Long, currentTime: Long)(using ReplicaId): Map[Uid, Option[Uid]] =
+  private def currentVotes(timeoutThreshold: Long, currentTime: Long)(using replicaId: ReplicaId): Map[Uid, Option[Uid]] =
     // count votes that were received in the threshold window and current local votes
     heartbeats
       .collect {
@@ -62,7 +61,7 @@ case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
             if receiverT >= (currentTime - timeoutThreshold) =>
           (uid, leader)
         case (uid, LastWriterWins(_, Heartbeat(leader, senderT, _)))
-            if senderT >= (currentTime - timeoutThreshold) && uid == replicaId =>
+            if senderT >= (currentTime - timeoutThreshold) && uid == replicaId.uid =>
           (uid, leader)
       }
 
@@ -71,12 +70,12 @@ case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
       .map((uid, _) => uid)
       .toSet
 
-  def hasQuorum(timeoutThreshold: Long, currentTime: Long)(using ReplicaId, Participants): Boolean =
+  def hasQuorum(timeoutThreshold: Long, currentTime: Long)(using replicaId: ReplicaId, p: Participants): Boolean =
     Voting(
       currentVotes(timeoutThreshold, currentTime).collect {
         case (id, Some(leader)) => Vote(value = leader, voter = id)
       }.toSet
-    ).result.contains(replicaId)
+    ).result.contains(replicaId.uid)
 }
 
 object HeartbeatQuorum:

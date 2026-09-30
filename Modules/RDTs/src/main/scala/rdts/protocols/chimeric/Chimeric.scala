@@ -1,6 +1,5 @@
 package rdts.protocols.chimeric
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.*
@@ -43,11 +42,11 @@ case class Chimeric[A](
           case Some(PaxosRound(leaderElection, _)) if leaderElection.votes.nonEmpty => true
           case _                                                                    => false
 
-    def isCurrentLeader(using ReplicaId, QuorumConfig): Boolean =
+    def isCurrentLeader(using replicaId: ReplicaId, quorum: QuorumConfig): Boolean =
       currentRound match
           case Some(PaxosRound(leaderElection, _)) =>
             leaderDecision(leaderElection) match
-                case Decided(leader) => leader == replicaId
+                case Decided(leader) => leader == replicaId.uid
                 case _               => false
           case None => false
 
@@ -56,16 +55,16 @@ case class Chimeric[A](
           case Some(PaxosRound(_, proposals)) if proposals.votes.nonEmpty => true
           case _                                                          => false
 
-    def phase1a(value: A)(using ReplicaId): Chimeric[A] =
+    def phase1a(value: A)(using replicaId: ReplicaId): Chimeric[A] =
       Chimeric(
         Map(
-          nextBallotNum            -> voteLeader(replicaId),
-          BallotNum(replicaId, -1) -> voteValue(value)
+          nextBallotNum            -> voteLeader(replicaId.uid),
+          BallotNum(replicaId.uid, -1) -> voteValue(value)
         )
       )
 
-    def phase1a(using ReplicaId): Chimeric[A] =
-      Chimeric(Map(nextBallotNum -> voteLeader(replicaId)))
+    def phase1a(using replicaId: ReplicaId): Chimeric[A] =
+      Chimeric(Map(nextBallotNum -> voteLeader(replicaId.uid)))
 
     def phase1b(using ReplicaId): Chimeric[A] =
       precondition(currentRoundHasCandidate)(
@@ -133,10 +132,10 @@ case class Chimeric[A](
         }
         .getOrElse(Agreement.Undecided)
 
-    def nextBallotNum(using ReplicaId): BallotNum =
+    def nextBallotNum(using replicaId: ReplicaId): BallotNum =
         val maxCounter: Long =
           rounds.map((b, _) => b.counter).maxOption.getOrElse(-1)
-        BallotNum(replicaId, maxCounter + 1)
+        BallotNum(replicaId.uid, maxCounter + 1)
 
     def currentRound: Option[PaxosRound[A]] =
       rounds.maxOption.map(_._2)
@@ -158,9 +157,9 @@ case class Chimeric[A](
     def newestReceivedVal: Option[A] =
       lastValueVote.flatMap(_._2.proposals.votes.headOption).map(_.value)
 
-    def myValue(using ReplicaId): Option[A] =
+    def myValue(using replicaId: ReplicaId): Option[A] =
       rounds
-        .get(BallotNum(replicaId, -1))
+        .get(BallotNum(replicaId.uid, -1))
         .flatMap(_.proposals.votes.headOption)
         .map(_.value)
 
@@ -205,12 +204,12 @@ object Chimeric:
                   case Agreement.Undecided  => None
 
         extension [A](c: Chimeric[A])
-            override def upkeep()(using ReplicaId, Participants): Chimeric[A] =
+            override def upkeep()(using replicaId: ReplicaId, participants: Participants): Chimeric[A] =
               c.currentRound match
                   case Some(PaxosRound(leaderElection, _))
                       if c.leaderDecision(leaderElection) != Undecided =>
                     c.leaderDecision(leaderElection) match
-                        case Decided(leader) if leader == replicaId =>
+                        case Decided(leader) if leader == replicaId.uid =>
                           c.phase2a
                         case Decided(_) =>
                           c.phase2b

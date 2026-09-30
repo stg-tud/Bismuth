@@ -11,8 +11,8 @@ case class EnableWinsFlag(set: Dots, unset: Dots) derives Bottom {
 
   def read: Boolean = !unset.contains(set)
 
-  def enable(using ReplicaId)(): EnableWinsFlag = {
-    val nextDot = set.nextDot(ReplicaId.replicaId)
+  def enable(using replicaId: ReplicaId)(): EnableWinsFlag = {
+    val nextDot = set.nextDot(replicaId.uid)
     EnableWinsFlag(Dots.single(nextDot), Dots.empty)
   }
 

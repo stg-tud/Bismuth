@@ -1,6 +1,5 @@
 package rdts.protocols.spanner
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, ReplicaId, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.{Agreement, precondition}
@@ -20,7 +19,7 @@ case class Spanner[A](
     transactions: Map[Uid, TwoPhaseCommit[A]] = Map.empty[Uid, TwoPhaseCommit[A]]
 ) {
   // step 1: initialize a new TwoPhaseCommit transaction. This can only be done by leaders
-  def startTransaction(localPartitionId: Uid, t: A)(using ReplicaId): Spanner[A] =
+  def startTransaction(localPartitionId: Uid, t: A)(using replicaId: ReplicaId): Spanner[A] =
     // todo: this is not stable... fix
     precondition(
       paxosPartitions.contains(localPartitionId) &&
@@ -28,7 +27,7 @@ case class Spanner[A](
       // can only start committing if I am the leader of my partition
       paxosPartitions(localPartitionId).leader(
         using Participants(partitionMembers(localPartitionId))
-      ).contains(replicaId)
+      ).contains(replicaId.uid)
     ) {
 
       // initiate new TwoPhaseCommit
@@ -71,7 +70,7 @@ case class Spanner[A](
           case Some(twoPCMessages.Prepare(_, valid))
               // only the leader should vote in 2PC
               if paxosPartitions(partitionId).leader(using Participants(partitionMembers(partitionId))).contains(
-                replicaId
+                l.uid
               ) =>
             val twoPC =
               transactions(transactionID).prepare(valid)(using ReplicaId(partitionId))

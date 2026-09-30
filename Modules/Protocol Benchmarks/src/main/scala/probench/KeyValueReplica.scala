@@ -7,7 +7,6 @@ import channels.{BroadcastIO, ConcurrencyHelper, DeltaStorage}
 import probench.data.*
 import probench.data.Codecs.given
 import rdts.base.Lattice.syntax
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
@@ -128,9 +127,9 @@ class KeyValueReplica(
             publish(state.startLeaderElection): Unit
           case _ => ()
 
-    def maybeProposeNewValue()(using ReplicaId): Unit = currentStateLock.synchronized {
+    def maybeProposeNewValue()(using replicaId: ReplicaId): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
-      if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
+      if state.leader.contains(replicaId.uid) && state.phase == MultipaxosPhase.Idle then
           Option(client.writeQueue.poll()) match {
             case Some((_, req)) =>
               log(s"Proposing new value $req.")
@@ -162,7 +161,7 @@ class KeyValueReplica(
 
     def maybeAnswerClientFromCache(): Unit =
       // check if we are the leader and have a heartbeat quorum
-      if !commitReads && state.leader.contains(replicaId) && connInf.state.hasQuorum(
+      if !commitReads && state.leader.contains(localUid.uid) && connInf.state.hasQuorum(
             timeoutThreshold,
             System.currentTimeMillis()
           )
@@ -190,7 +189,7 @@ class KeyValueReplica(
 
         // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
         // only leader is allowed to actually respond to requests
-        if state.leader.contains(replicaId) then {
+        if state.leader.contains(localUid.uid) then {
           client.publishWrite(ClientCommWrite.WriteRes(id, result))
         }
       }
@@ -289,7 +288,7 @@ class KeyValueReplica(
         val receivedTime          = System.currentTimeMillis()
         val old                   = state
         val deltaWithReceivedTime = delta.copy(heartbeats = delta.heartbeats.map {
-          case (id, l @ LastWriterWins(t, Heartbeat(leader, senderTimestamp, _))) if id != replicaId =>
+          case (id, l @ LastWriterWins(t, Heartbeat(leader, senderTimestamp, _))) if id != localUid.uid =>
             (id, l.write(Heartbeat(leader, senderTimestamp, Some(receivedTime))))
           case h => h
         })
@@ -312,7 +311,7 @@ class KeyValueReplica(
       connInfStateLock.synchronized {
         val heartbeat = Heartbeat(supposedLeader = cluster.state.leader, senderTimestamp = System.currentTimeMillis())
         publish(HeartbeatQuorum(Map(
-          replicaId -> state.heartbeats.get(replicaId).map(_.write(heartbeat)).getOrElse(LastWriterWins.now(heartbeat))
+          localUid.uid -> state.heartbeats.get(localUid.uid).map(_.write(heartbeat)).getOrElse(LastWriterWins.now(heartbeat))
         )))
       }
     }

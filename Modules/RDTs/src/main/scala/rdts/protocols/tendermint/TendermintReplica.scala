@@ -12,7 +12,6 @@
 package rdts.protocols.tendermint
 
 import rdts.base.{Bottom, ReplicaId, Uid}
-import rdts.base.ReplicaId.replicaId
 import rdts.protocols.tendermint.TendermintState.given
 import rdts.protocols.tendermint.Step.*
 
@@ -73,21 +72,20 @@ case class TendermintReplica(
       * TenderTee deployments (the ValidatorSet's trust model decides whether
       * a counter is embedded). The empty state (bottom) encodes "no message".
       */
-    def send(using ReplicaId, ValidatorSet): TendermintState =
-        val vs = summon[ValidatorSet]
+    def send(using replicaId: ReplicaId, vs: ValidatorSet): TendermintState =
         val ev = Evidence(
           ctr = vs.model match
               case TrustModel.Tee       => Some(local.nextCounter)
               case TrustModel.Classical => None
           ,
-          sender = replicaId,
+          sender = replicaId.uid,
           signature = MockSignature(),
         )
         val h = local.currentHeight
         val r = local.currentRound
         local.currentStep match
             case Proposal =>
-              if replicaId == leader(h, r)(using vs) && local.proposal.isDefined then
+              if replicaId.uid == leader(h, r)(using vs) && local.proposal.isDefined then
                   TendermintState.proposal(h, r, ProposalMsg(local.proposal.get, local.validRound, ev))
               else Bottom[TendermintState].empty
             case Prevote   => TendermintState.prevote(h, r, Vote(local.proposal, ev))

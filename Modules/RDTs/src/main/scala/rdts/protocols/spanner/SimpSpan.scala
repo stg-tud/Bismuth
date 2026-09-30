@@ -1,6 +1,5 @@
 package rdts.protocols.spanner
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.Agreement.Decided
@@ -15,11 +14,11 @@ case class SimpSpan[A](
 ) {
 
   // helper functions
-  def localPartitionId(using ReplicaId): Option[Uid] = partitionMembers.find(_._2.contains(replicaId)).map(_._1)
+  def localPartitionId(using replicaId: ReplicaId): Option[Uid] = partitionMembers.find(_._2.contains(replicaId.uid)).map(_._1)
   def partitionIds: Set[Uid]                        = partitionMembers.keySet
 
   // step 1: initialize a new transaction. This can only be done by leaders
-  def startTransaction(localPartitionId: Uid, t: A)(using ReplicaId): SimpSpan[A] =
+  def startTransaction(localPartitionId: Uid, t: A)(using replicaId: ReplicaId): SimpSpan[A] =
     // todo: this is not stable... fix
     precondition(
       paxosPrepare.contains(localPartitionId) &&
@@ -27,7 +26,7 @@ case class SimpSpan[A](
       // can only start committing if I am the leader of my partition
       paxosPrepare(localPartitionId).leader(
         using Participants(partitionMembers(localPartitionId))
-      ).contains(replicaId)
+      ).contains(replicaId.uid)
     ) {
 
       // initiate new transaction
@@ -41,7 +40,7 @@ case class SimpSpan[A](
     precondition(
       paxosPrepare.contains(localPartitionId) &&
       partitionMembers.contains(localPartitionId) &&
-      partitionMembers(localPartitionId).contains(replicaId) &&
+      partitionMembers(localPartitionId).contains(l.uid) &&
       transactions.contains(transactionID)
     ) {
       val newPaxos = paxosPrepare(localPartitionId)
@@ -58,7 +57,7 @@ case class SimpSpan[A](
       paxosAcknowledge.contains(localPartitionId) &&
       paxosPrepare.contains(localPartitionId) &&
       partitionMembers.contains(localPartitionId) &&
-      partitionMembers(localPartitionId).contains(replicaId) &&
+      partitionMembers(localPartitionId).contains(l.uid) &&
       transactions.contains(transactionID) &&
       (transactions(transactionID).prepare.decision(using
         Participants(partitionIds),

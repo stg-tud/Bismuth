@@ -17,7 +17,7 @@ case class Spreadsheet[A](
     Dots.from(rowIds.toList)
     `union` Dots.from(colIds.toList)
 
-  private def newRowOrColId(using ReplicaId): Dot = observed.nextDot(ReplicaId.replicaId)
+  private def newRowOrColId(using replicaId: ReplicaId): Dot = observed.nextDot(replicaId.uid)
 
   class SpreadsheetInternal {
     def keepRow(index: RowIndex)(using ReplicaId): Spreadsheet[A] = Spreadsheet(
@@ -220,11 +220,11 @@ case class Spreadsheet[A](
 
   override def toString: String = pprint.apply(this).toString
 
-  def printToConsole()(using ReplicaId): Unit = {
+  def printToConsole()(using replicaId: ReplicaId): Unit = {
     println("\nSpreadsheet Data Structure Print:")
 
     println(
-      s"""|Replica Id: ${ReplicaId.replicaId}
+      s"""|Replica Id: ${replicaId.uid}
           |Size: ${rowIds.size}x${colIds.size}"""
         .stripMargin
     )

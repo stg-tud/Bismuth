@@ -1,6 +1,5 @@
 package rdts.protocols
 
-import rdts.base.ReplicaId.replicaId
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.{Agreement, precondition}
@@ -13,8 +12,8 @@ case class TwoPhaseCommit[A](
     commit: FlexibleVoting[Boolean] = FlexibleVoting()
 ):
     // phase1: as the coordinator, propose a transaction
-    def proposeTransaction(using ReplicaId): TwoPhaseCommit[A] =
-      precondition(coordinator == Some(replicaId)) {
+    def proposeTransaction(using replicaId: ReplicaId): TwoPhaseCommit[A] =
+      precondition(coordinator == Some(replicaId.uid)) {
         TwoPhaseCommit(prepare = prepare.voteFor(true))
       }
 
