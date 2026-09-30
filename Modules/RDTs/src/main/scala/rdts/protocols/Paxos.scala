@@ -29,41 +29,15 @@ case class Paxos[A](
           if leaderElection.result.nonEmpty && proposals.votes.isEmpty => MultipaxosPhase.Idle
       case _ => throw new Error("Inconsistent Paxos State")
 
-  // voting
-  def voteLeader(leader: Uid)(using
-      ReplicaId
-  ): PaxosRound[A] =
-    PaxosRound(leaderElection =
-      currentRound.getOrElse(PaxosRound()).leaderElection.voteFor(leader)
-    )
-  def voteValue(value: A)(using
-      ReplicaId
-  ): PaxosRound[A] =
-    PaxosRound(proposals =
-      currentRound.getOrElse(PaxosRound()).proposals.voteFor(value)
-    )
-
   // preconditions
   def roundHasCandidate(ballotNum: BallotNum, candidate: Uid): Boolean = rounds.get(ballotNum) match
       case Some(PaxosRound(leaderElection, _))
           if leaderElection.votes.exists(_.value == candidate) => true
       case _ => false
-  def currentRoundHasCandidate: Boolean = currentRound match
-      case Some(PaxosRound(leaderElection, _))
-          if leaderElection.votes.nonEmpty => true
-      case _ => false
   def isLeaderInRound(ballotNum: BallotNum)(using
       p: Participants,
       replicaId: ReplicaId
   ): Boolean = rounds.get(ballotNum) match
-      case Some(PaxosRound(leaderElection, _))
-          if leaderElection.decision == Decided(replicaId.uid) =>
-        true
-      case _ => false
-  def isCurrentLeader(using
-      participants: Participants,
-      replicaId: ReplicaId
-  ): Boolean = currentRound match
       case Some(PaxosRound(leaderElection, _))
           if leaderElection.decision == Decided(replicaId.uid) =>
         true
