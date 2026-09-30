@@ -172,6 +172,29 @@ class ReplicaTest extends FunSuite {
     assertEquals(readFromArray[Set[Int]](broadcastDelta.delta.value), Set(42))
   }
 
+  test("mutateState(mutator) stores each decomposed part's own value, which another replica accepts when sent later") {
+    val (replica, mock, rootIdentity, genesisEvent) = newReplica()
+
+    replica.mutateState(_ => Set(1, 2, 3))
+
+    assertEquals(mock.broadcastedEvents.size, 3)
+    assertEquals(mock.broadcastedDeltas.size, 3)
+
+    // Values sent later, e.g. by anti-entropy, are taken from the delta value store, not those broadcast on creation
+    val (otherReplica, _) = newReplicaWithGenesis(rootIdentity, genesisEvent)
+    mock.broadcastedEvents.foreach(encodedEvent => assert(otherReplica.receiveEvent(encodedEvent).isRight))
+    mock.broadcastedDeltas.foreach { (eventHash, broadcastValue) =>
+      val storedValue = replica.revealedDeltaValue(broadcastValue.commitment)
+      assertEquals(
+        storedValue.map(value => readFromArray[Set[Int]](value.value)),
+        Some(readFromArray[Set[Int]](broadcastValue.value))
+      )
+      otherReplica.receiveDelta(eventHash, storedValue.get)
+    }
+
+    assertEquals(otherReplica.state, Set(1, 2, 3))
+  }
+
   test("mutateState(mutator) throws exception when no owned, unrevoked capability allows the delta") {
     val (replica, _, rootIdentity, genesisEvent) = newReplica()
     val revocation                               =
