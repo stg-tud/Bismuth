@@ -52,6 +52,14 @@ class EvaluationBenchmarks {
   def receiveRevocation(state: RevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
     state.replica.receiveEvent(state.encodedRevocation)
 
+  /** [[receiveRevocation]], into a [[replication.authz.SnapshotAwareReplica]] that took a snapshot right before the
+    * first delta invalidated by the revocation, and thus only merges the deltas received after it when rematerializing.
+    */
+  @Benchmark
+  @OutputTimeUnit(TimeUnit.MICROSECONDS)
+  def receiveRevocationSnapshotAware(state: SnapshotAwareRevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
+    state.replica.receiveEvent(state.encodedRevocation)
+
   /** Merging every delta left in the delta value store of a replica that has received the whole trace, i.e., the
     * re-materialization performed by [[receiveRevocation]] when the revocation invalidates deltas.
     */
@@ -211,7 +219,7 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
       noopOnStateChange
     )
     replayTrace(tmpReplica, trace, deltaValueStore)
-    val preUpdateSnapshot = tmpReplica.snapshot()
+    val preUpdateBackup = tmpReplica.backup()
 
     // Has hook to reset state after update
     replica = new BenchmarkReplica[BenchmarkRdt](
@@ -227,14 +235,14 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
           BenchmarkRdt,
           Commitment.RevealedValue
       )]): Unit = {
-        this.eventGraph = preUpdateSnapshot.eventGraph
-        this.materializedState = preUpdateSnapshot.materializedState
+        this.eventGraph = preUpdateBackup.eventGraph
+        this.materializedState = preUpdateBackup.materializedState
         eventsWithDeltas.foreach(evTpl =>
           this.deltaValueStore.remove(evTpl._2.payload.asInstanceOf[DeltaCommitment].commitment)
         )
       }
     }
-    replica.restore(preUpdateSnapshot)
+    replica.restore(preUpdateBackup)
   }
 }
 
@@ -245,7 +253,7 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
 class RevokedEventGraphBenchmarkState extends ArdtEventGraphBenchmarkState {
 
   // <revoked subtree>-<parents of the revocation>
-  @Param(Array("a-concurrent", "a-heads", "a.a-concurrent", "a.a-heads"))
+  @Param(Array("a-concurrent", "a-heads", "a.a-concurrent", "a.a-lastUse", "a.a-heads"))
   var revocation: String = scala.compiletime.uninitialized
 
   protected var invalidatesDeltas: Boolean = scala.compiletime.uninitialized
@@ -254,10 +262,11 @@ class RevokedEventGraphBenchmarkState extends ArdtEventGraphBenchmarkState {
   override def setup(): Unit = {
     super.setup()
     val (subtree, parents) = revocation.splitAt(revocation.lastIndexOf('-'))
-    invalidatesDeltas = parents == "-concurrent"
+    invalidatesDeltas = parents != "-heads"
     useGenerated(
       parents match {
         case "-concurrent" => TraceGeneration.revokeConcurrently(generated, subtree)
+        case "-lastUse"    => TraceGeneration.revokeConcurrentlyToLastUse(generated, subtree)
         case "-heads"      => TraceGeneration.revokeAtHeads(generated, subtree)
       }
     )
@@ -274,7 +283,7 @@ class RevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
   var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
 
   // The parts of the replica's state that receiving the revocation changes, as they were before
-  private var replicaSnapshot: BenchmarkReplica.Snapshot[BenchmarkRdt] = scala.compiletime.uninitialized
+  private var replicaBackup: BenchmarkReplica.Backup[BenchmarkRdt] = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -284,17 +293,68 @@ class RevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
     encodedRevocation = trace.last.encodedEvent
     replica = new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
     replayTrace(replica, trace.init, deltaValueStore)
-    replicaSnapshot = replica.snapshot()
+    replicaBackup = replica.backup()
   }
 
   /** Removes the revocation from the replica again. The event graph is immutable, so putting back the one from
-    * before the revocation also restores its heads. Only a concurrent revocation invalidates deltas, making the
-    * replica re-materialize its state. Receiving a revocation never touches the delta value store.
+    * before the revocation also restores its heads. Only a revocation concurrent to uses of the revoked capability
+    * invalidates deltas, making the replica re-materialize its state. Receiving a revocation never touches the delta value store.
     */
   @Setup(Level.Invocation)
   def resetReplica(): Unit = {
-    replica.currentEventGraph = replicaSnapshot.eventGraph
-    if invalidatesDeltas then replica.restore(replicaSnapshot)
+    replica.currentEventGraph = replicaBackup.eventGraph
+    if invalidatesDeltas then replica.restore(replicaBackup)
+  }
+}
+
+/** [[RevocationBenchmarkState]] with a [[replication.authz.SnapshotAwareReplica]] instead. Right before receiving the
+  * first delta event that the revocation invalidates, it takes a snapshot, which receiving the revocation thus keeps.
+  * If the revocation invalidates nothing, the snapshot is taken after every event but the revocation.
+  */
+@State(Scope.Benchmark)
+class SnapshotAwareRevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
+
+  var replica: BenchmarkSnapshotAwareReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var encodedRevocation: Array[Byte]                       = scala.compiletime.uninitialized
+
+  // The parts of the replica's state that receiving the revocation changes, as they were before
+  private var replicaBackup: BenchmarkReplica.Backup[BenchmarkRdt] = scala.compiletime.uninitialized
+
+  @Setup(Level.Trial)
+  override def setup(): Unit = {
+    super.setup()
+
+    // The revocation is the last event of the trace
+    encodedRevocation = trace.last.encodedEvent
+    val traceBeforeRevocation = trace.init
+
+    // Every delta of the generated trace is valid, except for those the revocation invalidates
+    val firstInvalidated = traceBeforeRevocation.indexWhere { entry =>
+      entry.deltaCommitment.exists { commitment =>
+        !Authorization.mayWrite(eventGraph, entry.hash, deltaValueStore.getRevealedValue(commitment).get)
+      }
+    }
+    val snapshotPosition = if firstInvalidated == -1 then traceBeforeRevocation.length else firstInvalidated
+
+    replica = new BenchmarkSnapshotAwareReplica[BenchmarkRdt](
+      genesisHash,
+      rootIdentity,
+      r => NoOpAntiEntropy(r),
+      noopOnStateChange
+    )
+    replayTrace(replica, traceBeforeRevocation.take(snapshotPosition), deltaValueStore)
+    replica.createSnapshot()
+    replayTrace(replica, traceBeforeRevocation.drop(snapshotPosition), deltaValueStore)
+    replicaBackup = replica.backup()
+  }
+
+  /** Removes the revocation from the replica again, like [[RevocationBenchmarkState.resetReplica]]. Since the
+    * revocation invalidates no delta the snapshot contains, receiving it keeps the snapshot.
+    */
+  @Setup(Level.Invocation)
+  def resetReplica(): Unit = {
+    replica.currentEventGraph = replicaBackup.eventGraph
+    if invalidatesDeltas then replica.restore(replicaBackup)
   }
 }
 
@@ -383,12 +443,12 @@ class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
 @State(Scope.Benchmark)
 class SignedHashDagBenchmarkStateWithReplica extends SignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager                              = scala.compiletime.uninitialized
-  var replica: HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt]  = scala.compiletime.uninitialized
-  var destination: PublicIdentity                                              = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                                                 = scala.compiletime.uninitialized
-  var snapshotHashDag: HashDag[BenchmarkRdt, SignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
-  var snapshotMaterializedState: BenchmarkRdt                                  = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager                             = scala.compiletime.uninitialized
+  var replica: HashDagReplica[SignedHashDagEntry[BenchmarkRdt], BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: PublicIdentity                                             = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                                = scala.compiletime.uninitialized
+  var backupHashDag: HashDag[BenchmarkRdt, SignedHashDagEntry[BenchmarkRdt]]  = scala.compiletime.uninitialized
+  var backupMaterializedState: BenchmarkRdt                                   = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -406,27 +466,27 @@ class SignedHashDagBenchmarkStateWithReplica extends SignedHashDagBenchmarkState
     ) {
       override protected def disseminate(entries: Iterable[(Hash, SignedHashDagEntry[BenchmarkRdt], Array[Byte])])
           : Unit = {
-        this.hashDag = snapshotHashDag
-        this.materializedState = snapshotMaterializedState
+        this.hashDag = backupHashDag
+        this.materializedState = backupMaterializedState
       }
     }
     hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
     entryHashes = hashDagTrace.map(Hash.compute)
-    snapshotHashDag = replica.hashDag
-    snapshotMaterializedState = replica.materializedState
+    backupHashDag = replica.hashDag
+    backupMaterializedState = replica.materializedState
   }
 }
 
 @State(Scope.Benchmark)
 class UnsignedHashDagBenchmarkStateWithReplica extends UnsignedHashDagBenchmarkState {
 
-  var connectionManager: SummingConnectionManager                                = scala.compiletime.uninitialized
-  var replica: HashDagReplica[UnsignedHashDagEntry[BenchmarkRdt], BenchmarkRdt]  = scala.compiletime.uninitialized
-  var destination: PublicIdentity                                                = scala.compiletime.uninitialized
-  var entryHashes: Array[Hash]                                                   = scala.compiletime.uninitialized
-  var snapshotHashDag: HashDag[BenchmarkRdt, UnsignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
-  var snapshotMaterializedState: BenchmarkRdt                                    = scala.compiletime.uninitialized
+  var connectionManager: SummingConnectionManager                               = scala.compiletime.uninitialized
+  var replica: HashDagReplica[UnsignedHashDagEntry[BenchmarkRdt], BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: PublicIdentity                                               = scala.compiletime.uninitialized
+  var entryHashes: Array[Hash]                                                  = scala.compiletime.uninitialized
+  var backupHashDag: HashDag[BenchmarkRdt, UnsignedHashDagEntry[BenchmarkRdt]]  = scala.compiletime.uninitialized
+  var backupMaterializedState: BenchmarkRdt                                     = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -444,15 +504,15 @@ class UnsignedHashDagBenchmarkStateWithReplica extends UnsignedHashDagBenchmarkS
     ) {
       override protected def disseminate(entries: Iterable[(Hash, UnsignedHashDagEntry[BenchmarkRdt], Array[Byte])])
           : Unit = {
-        this.hashDag = snapshotHashDag
-        this.materializedState = snapshotMaterializedState
+        this.hashDag = backupHashDag
+        this.materializedState = backupMaterializedState
       }
     }
     hashDagTrace.foreach { encodedEntry => replica.receiveEntry(encodedEntry) }
 
     entryHashes = hashDagTrace.map(Hash.compute)
-    snapshotHashDag = replica.hashDag
-    snapshotMaterializedState = replica.materializedState
+    backupHashDag = replica.hashDag
+    backupMaterializedState = replica.materializedState
   }
 }
 

@@ -122,16 +122,16 @@ object TraceGeneration {
               Set(walkBackAFewSteps(eventGraph, chosenHead, backSteps))
           else eventGraph.heads
 
-        // Mirrors Replica.createUpdate: every decomposed part of the delta is authorized by the same
-        // capability and built on top of the same parents, making them concurrent siblings of each other.
-        val authorization    = capabilityEvent(author)(mutatorChoice)
-        val decomposedEvents = delta.decomposed.map { decomposedDelta =>
-          EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, parents, authorization)
-        }.toArray
-
-        decomposedEvents.foreach { case (event, revealed) =>
+        // Mirrors Replica.mutateState: every decomposed part of the delta is authorized by the same capability.
+        // The first part is built on top of the chosen parents, and every further part on top of the previous one.
+        val authorization = capabilityEvent(author)(mutatorChoice)
+        var partParents   = parents
+        delta.decomposed.foreach { decomposedDelta =>
+          val (event, revealed) =
+            EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
           eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
           deltaValueStore.put(revealed)
+          partParents = Set(event.hash)
         }
 
     GeneratedBenchmarkRdtEventGraph(
@@ -226,13 +226,16 @@ object TraceGeneration {
           val isConcurrentWrite = random.nextDouble() < concurrencyProbability
           val parents           = if isConcurrentWrite then Set(previousEvent(author)) else eventGraph.heads
 
-          // Mirrors Replica.createUpdate: every decomposed part of the delta is authorized by the same
-          // capability and built on top of the same parents, making them concurrent siblings of each other.
+          // Mirrors Replica.mutateState: every decomposed part of the delta is authorized by the same capability.
+          // The first part is built on top of the chosen parents, and every further part on top of the previous one.
           val authorization = capabilityEvent(author)(mutatorChoice)
+          var partParents   = parents
           delta.decomposed.foreach { decomposedDelta =>
-            val (event, revealed) = EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, parents, authorization)
+            val (event, revealed) =
+              EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
             eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
             deltaValueStore.put(revealed)
+            partParents = Set(event.hash)
             previousEvent(author) = event.hash
           }
     }
@@ -282,6 +285,50 @@ object TraceGeneration {
       // Nothing is invalidated, so the state stays the same. Recomputing it would also be slow: Authorization checks
       // every affected delta for being causally before the revocation, searching almost the entire graph each time.
       generated.copy(eventGraph = appendRevocation(generated, capability, generated.eventGraph.heads))
+
+  /** Appends to `generated` the root replica's revocation of the capability granting write access to `subtree`
+    * (e.g. `"a"` or `"a.a"`), built on top of the parents of the last event using that capability, i.e. the last
+    * delta event authorized by it or by any capability delegated from it. The revocation is thus concurrent to that
+    * event, and receiving it invalidates only those uses that are not causally before the revocation: that last
+    * event and any earlier uses concurrent to it. Since the decomposed parts of an update form a chain, the earlier
+    * parts of the same update are causally before the revocation.
+    */
+  def revokeConcurrentlyToLastUse(
+      generated: GeneratedBenchmarkRdtEventGraph,
+      subtree: String
+  ): GeneratedBenchmarkRdtEventGraph =
+      val eventGraph = generated.eventGraph
+      val capability = capabilityGrantingWrite(eventGraph, subtree)
+      val events     = eventGraph.allEventsInCausalOrder
+
+      def usesCapability(event: ArdtEvent): Boolean =
+        event.payload.isInstanceOf[DeltaCommitment] &&
+        eventGraph.authorizationChain(event.authorization).contains(capability)
+
+      val lastUse = events.findLast((_, event) => usesCapability(event))
+      require(lastUse.nonEmpty, s"Expected at least one event using the capability granting write access to $subtree.*")
+      val parents = lastUse.get._2.parents
+
+      // Authorization.materialize would check every use for being causally before the revocation, searching almost
+      // the entire graph each time (see revokeAtHeads). A single search for the revocation's causal past suffices.
+      val causalPast = causalPastOf(eventGraph, parents)
+      val state      = events.iterator.collect {
+        case (hash, event @ ArdtEvent(DeltaCommitment(commitment), _, _, _, _))
+            if !usesCapability(event) || causalPast.contains(hash) =>
+          generated.deltaValueStore.get(commitment).get.delta
+      }.foldLeft(BenchmarkRdt.empty)(_.merge(_))
+
+      generated.copy(eventGraph = appendRevocation(generated, capability, parents), state = state)
+
+  /** `hashes`, together with every event causally before any of them */
+  private def causalPastOf(eventGraph: ArdtEventGraph[BenchmarkRdt], hashes: Set[Hash]): collection.Set[Hash] = {
+    val visited = mutable.Set.empty[Hash]
+    val toVisit = mutable.Stack.from(hashes)
+    while toVisit.nonEmpty do
+        val next = toVisit.pop()
+        if visited.add(next) then toVisit.pushAll(eventGraph.events(next)._1.parents)
+    visited
+  }
 
   /** The capability event granting write access to exactly `subtree` */
   private def capabilityGrantingWrite(eventGraph: ArdtEventGraph[BenchmarkRdt], subtree: String): Hash = {

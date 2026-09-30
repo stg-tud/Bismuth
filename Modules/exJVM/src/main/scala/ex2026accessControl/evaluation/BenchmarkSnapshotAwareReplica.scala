@@ -5,26 +5,20 @@ import crypto.Hash
 import crypto.channels.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
-import replication.authz.{AntiEntropy, ArdtEventGraph, DeltaValueStore, Replica}
+import replication.authz.{AntiEntropy, ArdtEventGraph, Replica, SnapshotAwareReplica}
 
-class BenchmarkReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
+/** [[BenchmarkReplica]] for [[SnapshotAwareReplica]]. Its [[backup]] and [[restore]] leave the snapshot taken by
+  * [[SnapshotAwareReplica.createSnapshot]] alone.
+  */
+class BenchmarkSnapshotAwareReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
     privateIdentity: PrivateIdentity,
     antiEntropyProvider: Replica[?] => AntiEntropy,
     onStateChange: RDT => Unit
-) extends Replica[RDT](genesis, privateIdentity, antiEntropyProvider, onStateChange) {
+) extends SnapshotAwareReplica[RDT](genesis, privateIdentity, antiEntropyProvider, onStateChange) {
 
   def currentEventGraph: ArdtEventGraph[RDT]                      = eventGraph
   def currentEventGraph_=(replacement: ArdtEventGraph[RDT]): Unit = synchronized { eventGraph = replacement }
-
-  def currentDeltaValueStore: DeltaValueStore[RDT]                      = deltaValueStore
-  def currentDeltaValueStore_=(replacement: DeltaValueStore[RDT]): Unit = synchronized {
-    deltaValueStore = replacement
-  }
-
-  /** Replaces the materialized state without notifying `onStateChange` */
-  def currentMaterializedState: RDT                      = materializedState
-  def currentMaterializedState_=(replacement: RDT): Unit = synchronized { materializedState = replacement }
 
   /** Backs up the current event graph, delta values and materialized state, to later [[restore]] them. */
   def backup(): BenchmarkReplica.Backup[RDT] = synchronized {
@@ -40,12 +34,4 @@ class BenchmarkReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}
     materializedState = backup.materializedState
     onStateChange(materializedState)
   }
-}
-
-object BenchmarkReplica {
-  final class Backup[RDT] private[evaluation] (
-      private[evaluation] val eventGraph: ArdtEventGraph[RDT],
-      private[evaluation] val deltaValueStore: DeltaValueStore[RDT],
-      private[evaluation] val materializedState: RDT
-  )
 }
