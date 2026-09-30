@@ -62,8 +62,8 @@ object Authorization {
       eventGraph: ArdtEventGraph[T]
   ): Boolean =
     eventGraph.events.get(deltaEventHash) match {
-      case Some((ArdtEvent(DeltaCommitment(commitment), _, _, _, _), _)) =>
-        if deltaValue.commitment != commitment then false
+      case Some((ArdtEvent(DeltaCommitment(commitment), author, _, _, _), _)) =>
+        if deltaValue.commitment(author.id) != commitment then false
         else mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, readFromArray[T](deltaValue.value), eventGraph)
       case _ => false
     }
@@ -100,7 +100,7 @@ object Authorization {
   ): Boolean =
     deltaEvent.payload match {
       case DeltaCommitment(commitment) =>
-        if revealedValue.commitment != commitment then return false
+        if revealedValue.commitment(deltaEvent.author.id) != commitment then return false
         val delta = readFromArray[T](revealedValue.value)
         mayWriteAssumingCommitmentHolds(eventGraph, deltaEventHash, deltaEvent, delta)
       case _ => throw IllegalArgumentException(s"$deltaEvent is not a delta commitment")

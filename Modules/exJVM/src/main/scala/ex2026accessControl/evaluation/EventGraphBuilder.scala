@@ -50,8 +50,8 @@ object EventGraphBuilder {
       parents: Set[Hash],
       authorization: Hash
   ): (ArdtEvent, RevealedValue) = {
-    val revealed = Commitment.commit(writeToArray(delta))
-    val event    = buildEvent(DeltaCommitment(revealed.commitment), author, parents, authorization)
+    val revealed = Commitment.commit(author.getPublic.id, writeToArray(delta))
+    val event    = buildEvent(DeltaCommitment(revealed.commitment(author.getPublic.id)), author, parents, authorization)
     (event, revealed)
   }
 

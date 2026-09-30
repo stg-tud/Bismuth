@@ -1,6 +1,6 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.{Commitment, Hash, Signature}
 import munit.FunSuite
 import rdts.filters.PermissionTree
@@ -202,7 +202,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, revealed) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
     val updated                = receiveOrFail(graph, deltaEvent)
     val store                  = new DeltaValueStore[Set[Int]]()
-    store.put(revealed)
+    store.put(revealed.commitment(holder.id), readFromArray[Set[Int]](revealed.value), revealed.witness)
 
     assert(Authorization.mayRead(holder, deltaEvent.hash, updated, store))
   }
@@ -251,13 +251,13 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, _) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
     val updated         = receiveOrFail(graph, deltaEvent)
 
-    val unrelated = Commitment.commit(writeToArray(Set(9)))
+    val unrelated = Commitment.commit(holder.id, writeToArray(Set(9)))
     assert(!Authorization.mayWrite(updated, deltaEvent.hash, unrelated))
   }
 
   test("mayWrite throws IllegalArgumentException when the event at deltaEventHash is not a DeltaCommitment") {
-    val (graph, _, _, genesis) = freshGraph()
-    val revealed               = Commitment.commit(writeToArray(Set(1)))
+    val (graph, holder, _, genesis) = freshGraph()
+    val revealed               = Commitment.commit(holder.id, writeToArray(Set(1)))
 
     intercept[IllegalArgumentException] {
       Authorization.mayWrite(graph, genesis.hash, revealed)
@@ -325,8 +325,8 @@ class AuthorizationTest extends FunSuite {
   }
 
   test("mayWrite throws NoSuchElementException when deltaEventHash is not present in the graph") {
-    val (graph, _, _, genesis) = freshGraph()
-    val revealed               = Commitment.commit(writeToArray(Set(1)))
+    val (graph, holder, _, genesis) = freshGraph()
+    val revealed               = Commitment.commit(holder.id, writeToArray(Set(1)))
 
     intercept[NoSuchElementException] {
       Authorization.mayWrite(graph, Hash.compute("unknown".getBytes), revealed)
@@ -361,8 +361,8 @@ class AuthorizationTest extends FunSuite {
     val graph2              = receiveOrFail(graph1, delta2)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed1)
-    store.put(revealed2)
+    store.put(revealed1.commitment(holder.id), readFromArray[Set[Int]](revealed1.value), revealed1.witness)
+    store.put(revealed2.commitment(holder.id), readFromArray[Set[Int]](revealed2.value), revealed2.witness)
 
     assertEquals(Authorization.materialize(graph2, store), Set(1, 2, 3))
   }
@@ -375,7 +375,7 @@ class AuthorizationTest extends FunSuite {
     val graph2              = receiveOrFail(graph1, delta2)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed1) // delta2's revealed value is never put
+    store.put(revealed1.commitment(holder.id), readFromArray[Set[Int]](revealed1.value), revealed1.witness) // delta2's revealed value is never put
 
     assertEquals(Authorization.materialize(graph2, store), Set(1))
   }
@@ -396,7 +396,7 @@ class AuthorizationTest extends FunSuite {
     val graph2                 = receiveOrFail(graph1, deltaEvent)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed)
+    store.put(revealed.commitment(holder.id), readFromArray[Set[Int]](revealed.value), revealed.witness)
 
     assertEquals(Authorization.materialize(graph2, store), Set.empty[Int])
   }
@@ -420,7 +420,7 @@ class AuthorizationTest extends FunSuite {
     val graph3                 = receiveOrFail(graph2, deltaEvent)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed)
+    store.put(revealed.commitment(holder.id), readFromArray[Set[Int]](revealed.value), revealed.witness)
 
     assertEquals(Authorization.materialize(graph3, store), Set.empty[Int])
   }

@@ -11,9 +11,6 @@ class DeltaValueStore[Delta: JsonValueCodec] {
   // Stores delta and witness (salt of commitment)
   private val backingStore: mutable.Map[Hash, (delta: Delta, witness: Array[Byte])] = mutable.Map.empty
 
-  def put(value: RevealedValue): Unit =
-    put(value.commitment, readFromArray(value.value), value.witness)
-
   /** Assumes that commitment is correct */
   def put(commitment: Hash, value: Delta, witness: Array[Byte]): Unit =
     backingStore.put(commitment, (value, witness)): Unit

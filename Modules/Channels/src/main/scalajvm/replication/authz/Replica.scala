@@ -128,7 +128,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     */
   def receiveDelta(eventHash: Hash, deltaValue: RevealedValue): Unit = synchronized {
     val (event, eventIndex) = eventGraph.events(eventHash)
-    val commitment          = deltaValue.commitment
+    val commitment          = deltaValue.commitment(event.author.id)
     require(commitment == event.payload.asInstanceOf[DeltaCommitment].commitment)
 
     val delta = readFromArray[RDT](deltaValue.value)
@@ -171,8 +171,8 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     val eventsWithDeltas: Iterable[(Hash, ArdtEvent, Array[Byte], RDT, RevealedValue)] =
         var parents = heads
         Decompose.decompose(delta).map { decomposedDelta =>
-          val commitedValue      = Commitment.commit(writeToArray(decomposedDelta))
-          val payload            = DeltaCommitment(commitedValue.commitment)
+          val commitedValue      = Commitment.commit(localReplicaId.id, writeToArray(decomposedDelta))
+          val payload            = DeltaCommitment(commitedValue.commitment(localReplicaId.id))
           val signedEvent        = createSignedEvent(payload, capabilityHash, parents)
           val encodedSignedEvent = writeToArray(signedEvent)
           val hash               = Hash.compute(encodedSignedEvent)

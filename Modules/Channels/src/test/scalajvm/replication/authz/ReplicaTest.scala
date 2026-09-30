@@ -184,7 +184,7 @@ class ReplicaTest extends FunSuite {
     val (otherReplica, _) = newReplicaWithGenesis(rootIdentity, genesisEvent)
     mock.broadcastedEvents.foreach(encodedEvent => assert(otherReplica.receiveEvent(encodedEvent).isRight))
     mock.broadcastedDeltas.foreach { (eventHash, broadcastValue) =>
-      val storedValue = replica.revealedDeltaValue(broadcastValue.commitment)
+      val storedValue = replica.revealedDeltaValue(broadcastValue.commitment(replica.localReplicaId.id))
       assertEquals(
         storedValue.map(value => readFromArray[Set[Int]](value.value)),
         Some(readFromArray[Set[Int]](broadcastValue.value))

@@ -130,7 +130,7 @@ object TraceGeneration {
           val (event, revealed) =
             EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
           eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
-          deltaValueStore.put(revealed)
+          deltaValueStore.put(revealed.commitment(event.author.id), decomposedDelta, revealed.witness)
           partParents = Set(event.hash)
         }
 
@@ -234,7 +234,7 @@ object TraceGeneration {
             val (event, revealed) =
               EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
             eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
-            deltaValueStore.put(revealed)
+            deltaValueStore.put(revealed.commitment(event.author.id), decomposedDelta, revealed.witness)
             partParents = Set(event.hash)
             previousEvent(author) = event.hash
           }

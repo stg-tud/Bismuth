@@ -1,6 +1,6 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import crypto.Commitment.RevealedValue
 import crypto.channels.PrivateIdentity
 import crypto.{Hash, PublicIdentity}
@@ -94,15 +94,15 @@ class RevocationTest extends FunSuite {
     }
 
     def receiveValue(write: Write): Unit = {
-      everyDelta.put(write.revealed)
+      everyDelta.put(write.revealed.commitment(write.event.author.id), readFromArray[Set[Int]](write.revealed.value), write.revealed.witness)
       replica.receiveDelta(write.hash, write.revealed)
     }
 
     /** Hands the replica a delta value that it must reject and not store */
     def receiveRejectedValue(write: Write)(using Location): Unit = {
-      everyDelta.put(write.revealed)
+      everyDelta.put(write.revealed.commitment(write.event.author.id), readFromArray[Set[Int]](write.revealed.value), write.revealed.witness)
       intercept[IllegalArgumentException](replica.receiveDelta(write.hash, write.revealed))
-      assertEquals(replica.delta(write.revealed.commitment), None)
+      assertEquals(replica.delta(write.revealed.commitment(write.event.author.id)), None)
     }
 
     /** The commitments of the deltas that the replica itself created and broadcast, whose values are recorded for the
@@ -110,8 +110,9 @@ class RevocationTest extends FunSuite {
       */
     def broadcastCommitments(): Set[Hash] = {
       val broadcast = antiEntropy.nn.broadcastedDeltas
-      broadcast.foreach(d => everyDelta.put(d.delta))
-      broadcast.map(_.delta.commitment).toSet
+      def author(eventHash: Hash) = replica.graph.events(eventHash)._1.author
+      broadcast.foreach(d => everyDelta.put(d.delta.commitment(author(d.eventHash).id), readFromArray[Set[Int]](d.delta.value), d.delta.witness))
+      broadcast.map(d => d.delta.commitment(author(d.eventHash).id)).toSet
     }
 
     def oracle: Set[Int] = Authorization.materialize(replica.graph, everyDelta)
@@ -124,7 +125,7 @@ class RevocationTest extends FunSuite {
     def assertInvalidated(revocation: ArdtEvent, expected: Write*)(using Location): Unit =
       assertEquals(
         replica.invalidatedBy(revocation.hash),
-        expected.map(_.revealed.commitment).toSet,
+        expected.map(w => w.revealed.commitment(w.event.author.id)).toSet,
         "deltasInvalidatedBy returned the wrong deltas"
       )
   }
@@ -158,7 +159,7 @@ class RevocationTest extends FunSuite {
 
       fx.assertInvalidated(revocation)
       fx.assertState(Set(1, 2))
-      assertEquals(fx.replica.delta(dA.revealed.commitment), Some(Set(1)))
+      assertEquals(fx.replica.delta(dA.revealed.commitment(dA.event.author.id)), Some(Set(1)))
       assertEquals(fx.notifications.toList, notificationsBefore)
     }
 
@@ -180,8 +181,8 @@ class RevocationTest extends FunSuite {
 
       fx.assertInvalidated(revocation, dA1)
       fx.assertState(Set(1))
-      assertEquals(fx.replica.delta(dA1.revealed.commitment), None)
-      assertEquals(fx.replica.delta(dA0.revealed.commitment), Some(Set(1)))
+      assertEquals(fx.replica.delta(dA1.revealed.commitment(dA1.event.author.id)), None)
+      assertEquals(fx.replica.delta(dA0.revealed.commitment(dA0.event.author.id)), Some(Set(1)))
       assertEquals(fx.notifications.lastOption, Some(Set(1)))
     }
 
