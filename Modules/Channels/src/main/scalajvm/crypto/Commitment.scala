@@ -15,9 +15,10 @@ object Commitment {
       RevealedValue(value, witness)
 
   def commit(context: String, value: Array[Byte]): RevealedValue =
-      commit(context.getBytes(StandardCharsets.UTF_8), value)
+    commit(context.getBytes(StandardCharsets.UTF_8), value)
 
   case class RevealedValue(value: Array[Byte], witness: Array[Byte]) {
+
     /** The commitment is only valid for the same context that was passed to [[commit]] */
     def commitment(context: Array[Byte]): Hash =
         val digest = MessageDigest.getInstance("SHA3-256", "SUN")

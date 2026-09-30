@@ -13,7 +13,7 @@ import rdts.time.{Dot, Dots}
   * It has no value in a real program.
   */
 class Replica[A](init: A) {
-  val replicaId: ReplicaId             = ReplicaId.gen()
+  val replicaId: ReplicaId            = ReplicaId.gen()
   val buffer: DeltaBufferContainer[A] = DeltaBuffer(init).mutable
   val dots: Dots                      = Dots.empty
 

@@ -58,7 +58,7 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def editCell(coordinate: SpreadsheetCoordinate, value: Option[S], solveSeenConflict: Boolean = true)(using
-                                                                                                                ReplicaId
+      ReplicaId
   ): Spreadsheet[S] = {
     val rowIdOpt = delegate.getRowId(coordinate.rowIdx)
     val colIdOpt = delegate.getColId(coordinate.colIdx)
@@ -80,7 +80,7 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using
-                                                                                             ReplicaId
+      ReplicaId
   ): Spreadsheet[S] = {
     val before = delegate.getRange(id)
     if before.isDefined then {

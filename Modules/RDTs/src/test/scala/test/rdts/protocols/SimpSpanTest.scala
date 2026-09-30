@@ -27,10 +27,10 @@ class SimpSpanTest extends munit.FunSuite {
 
   /** Commit `value` into the log of `paxos` (assumes leader is already elected). */
   def proposeAndCommit(
-                        paxos: MultiPaxos[twoPCMessages],
-                        value: twoPCMessages,
-                        leader: ReplicaId,
-                        members: Seq[ReplicaId]
+      paxos: MultiPaxos[twoPCMessages],
+      value: twoPCMessages,
+      leader: ReplicaId,
+      members: Seq[ReplicaId]
   ): MultiPaxos[twoPCMessages] = {
     given Participants = Participants(members.map(_.uid).toSet)
     var p              = paxos.merge(paxos.proposeIfLeader(value)(using leader))

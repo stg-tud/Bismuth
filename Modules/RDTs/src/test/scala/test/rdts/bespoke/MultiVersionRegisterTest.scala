@@ -33,8 +33,8 @@ class MultiVersionRegisterTest extends munit.FunSuite {
   test("new write does not overrides all previous deltas") {
 
     val localId: ReplicaId = ReplicaId.gen()
-    var dots              = Dots.empty
-    val dot1              = dots.nextDot(using localId)
+    var dots               = Dots.empty
+    val dot1               = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -73,8 +73,8 @@ class MultiVersionRegisterTest extends munit.FunSuite {
 
   test("concurrentWrite results in multiple versions") {
     given localId: ReplicaId = ReplicaId(Uid.predefined("alice"))
-    val mvReg               = MultiVersionRegister.of("a")
-    val delta               = mvReg.writeConcurrent("b")
+    val mvReg                = MultiVersionRegister.of("a")
+    val delta                = mvReg.writeConcurrent("b")
     assertEquals(mvReg.merge(delta).read, Set("a", "b"))
     assertEquals(delta.read, Set("b"))
 
@@ -91,8 +91,8 @@ class MultiVersionRegisterTest extends munit.FunSuite {
 
   test("concurrentWrite results in multiple versions") {
     given localId: ReplicaId = ReplicaId(Uid.predefined("alice"))
-    val mvReg               = MultiVersionRegister.of("a")
-    val delta               = mvReg.writeConcurrent("b")
+    val mvReg                = MultiVersionRegister.of("a")
+    val delta                = mvReg.writeConcurrent("b")
     assertEquals(mvReg.merge(delta).read, Set("a", "b"))
     assertEquals(delta.read, Set("b"))
 
@@ -104,9 +104,9 @@ class MultiVersionRegisterTest extends munit.FunSuite {
 
   test("concurrentWrite keeps prefix") {
     given localId: ReplicaId = ReplicaId(Uid.predefined("alice"))
-    val mvReg               = MultiVersionRegister.of("a")
-    val delta               = mvReg.write("b")
-    val delta2              = mvReg.merge(delta).writeConcurrent("c")
+    val mvReg                = MultiVersionRegister.of("a")
+    val delta                = mvReg.write("b")
+    val delta2               = mvReg.merge(delta).writeConcurrent("c")
     assertEquals(mvReg.merge(delta).read, Set("b"))
     assertEquals(mvReg.merge(delta2).read, Set("c"))
     assertEquals(mvReg.merge(delta).merge(delta2).read, Set("b", "c"))

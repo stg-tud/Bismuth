@@ -94,13 +94,21 @@ class RevocationTest extends FunSuite {
     }
 
     def receiveValue(write: Write): Unit = {
-      everyDelta.put(write.revealed.commitment(write.event.author.id), readFromArray[Set[Int]](write.revealed.value), write.revealed.witness)
+      everyDelta.put(
+        write.revealed.commitment(write.event.author.id),
+        readFromArray[Set[Int]](write.revealed.value),
+        write.revealed.witness
+      )
       replica.receiveDelta(write.hash, write.revealed)
     }
 
     /** Hands the replica a delta value that it must reject and not store */
     def receiveRejectedValue(write: Write)(using Location): Unit = {
-      everyDelta.put(write.revealed.commitment(write.event.author.id), readFromArray[Set[Int]](write.revealed.value), write.revealed.witness)
+      everyDelta.put(
+        write.revealed.commitment(write.event.author.id),
+        readFromArray[Set[Int]](write.revealed.value),
+        write.revealed.witness
+      )
       intercept[IllegalArgumentException](replica.receiveDelta(write.hash, write.revealed))
       assertEquals(replica.delta(write.revealed.commitment(write.event.author.id)), None)
     }
@@ -109,9 +117,15 @@ class RevocationTest extends FunSuite {
       * oracle
       */
     def broadcastCommitments(): Set[Hash] = {
-      val broadcast = antiEntropy.nn.broadcastedDeltas
+      val broadcast               = antiEntropy.nn.broadcastedDeltas
       def author(eventHash: Hash) = replica.graph.events(eventHash)._1.author
-      broadcast.foreach(d => everyDelta.put(d.delta.commitment(author(d.eventHash).id), readFromArray[Set[Int]](d.delta.value), d.delta.witness))
+      broadcast.foreach(d =>
+        everyDelta.put(
+          d.delta.commitment(author(d.eventHash).id),
+          readFromArray[Set[Int]](d.delta.value),
+          d.delta.witness
+        )
+      )
       broadcast.map(d => d.delta.commitment(author(d.eventHash).id)).toSet
     }
 

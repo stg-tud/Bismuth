@@ -134,7 +134,7 @@ class MembershipTest extends munit.FunSuite {
     extension (m: Replika)
         def trans(f: ReplicaId ?=> Membership[Int, Paxos, Paxos] => Membership[Int, Paxos, Paxos]): Unit = {
           given ReplicaId = m.uid.convert
-          val delta      = f(m.mem)
+          val delta       = f(m.mem)
 
           r1.mem = r1.mem `merge` delta
           r2.mem = r2.mem `merge` delta

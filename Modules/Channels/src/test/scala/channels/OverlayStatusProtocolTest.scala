@@ -15,7 +15,7 @@ import scala.util.Random
 class OverlayStatusProtocolTest extends FunSuite {
 
   final case class Node(id: String) {
-    val uid: ReplicaId             = ReplicaId.gen()
+    val uid: ReplicaId            = ReplicaId.gen()
     val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
     var status: Status            = OverlayStatusProtocol.empty
     val io: BroadcastIO[Status]   = BroadcastIO[Status](
@@ -26,7 +26,7 @@ class OverlayStatusProtocolTest extends FunSuite {
 
     def publishStatus(round: Long): Unit = {
       given ReplicaId = uid
-      val delta      = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
+      val delta       = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
       status = status.merge(delta)
       io.broadcast(delta)
     }
@@ -97,7 +97,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     )
 
     final case class HyparNode(id: String, random: Random) {
-      val uid: ReplicaId             = ReplicaId.gen()
+      val uid: ReplicaId            = ReplicaId.gen()
       val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       var status: Status            = OverlayStatusProtocol.empty
       val io: BroadcastIO[Status]   = BroadcastIO[Status](
@@ -115,7 +115,7 @@ class OverlayStatusProtocolTest extends FunSuite {
 
       def publishStatus(round: Long): Unit = {
         given ReplicaId = uid
-        val delta      = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
+        val delta       = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
         status = status.merge(delta)
         io.broadcast(delta)
       }

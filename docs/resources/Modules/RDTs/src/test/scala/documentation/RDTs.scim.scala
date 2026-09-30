@@ -349,7 +349,7 @@ component-wise merge automatically.
 
   // A PosNegCounter is a product of two Counters: one for positive, one for negative
   case class PosNeg(pos: Counter, neg: Counter):
-      def value: Int                               = pos.value - neg.value
+      def value: Int                                = pos.value - neg.value
       def add(amount: Int)(using ReplicaId): PosNeg =
         if amount >= 0 then PosNeg(pos.add(amount), Counter())
         else PosNeg(Counter(), neg.add(-amount))

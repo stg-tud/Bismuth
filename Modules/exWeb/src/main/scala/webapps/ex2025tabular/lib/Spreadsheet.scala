@@ -93,7 +93,7 @@ case class Spreadsheet[A](
       )
 
   def editCell(coordinate: SpreadsheetCoordinate, value: Option[A], solveSeenConflict: Boolean = true)(using
-                                                                                                       ReplicaId
+      ReplicaId
   ): Spreadsheet[A] = {
     val rowId      = rowIds.readAt(coordinate.rowIdx).get
     val colId      = colIds.readAt(coordinate.colIdx).get
@@ -168,7 +168,7 @@ case class Spreadsheet[A](
         case None      => this
 
   def editCellById(rowId: RowId, colId: ColumnId, value: Option[A], solveSeenConflict: Boolean = true)(using
-                                                                                                       ReplicaId
+      ReplicaId
   ): Spreadsheet[A] =
     (getRowIndex(rowId), getColIndex(colId)) match
         case (Some(rIdx), Some(cIdx)) =>

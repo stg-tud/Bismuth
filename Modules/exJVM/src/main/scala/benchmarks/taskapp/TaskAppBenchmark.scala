@@ -119,7 +119,7 @@ object TaskAppBenchmark {
   }
 
   // Helper to get the current active app
-  inline def currentApp: App      = if activeReplica == 1 then app1 else app2
+  inline def currentApp: App       = if activeReplica == 1 then app1 else app2
   inline def currentUid: ReplicaId = if activeReplica == 1 then localUid1 else localUid2
 
   inline def timedRead: ReplicatedTree[Entry] = timed("read")(currentApp.read)
@@ -384,7 +384,7 @@ object TaskAppBenchmark {
 
   private def performInteraction(interaction: TaskAppInteraction): DeltaHistory[ReplicatedTree[Entry]] = {
     given ReplicaId = currentUid
-    val app        = currentApp
+    val app         = currentApp
 
     val delta: DeltaHistory[ReplicatedTree[Entry]] = interaction match {
       case AddFolder(parentFolder, name) =>

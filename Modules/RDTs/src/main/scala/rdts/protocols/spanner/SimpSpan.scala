@@ -14,8 +14,9 @@ case class SimpSpan[A](
 ) {
 
   // helper functions
-  def localPartitionId(using replicaId: ReplicaId): Option[Uid] = partitionMembers.find(_._2.contains(replicaId.uid)).map(_._1)
-  def partitionIds: Set[Uid]                        = partitionMembers.keySet
+  def localPartitionId(using replicaId: ReplicaId): Option[Uid] =
+    partitionMembers.find(_._2.contains(replicaId.uid)).map(_._1)
+  def partitionIds: Set[Uid] = partitionMembers.keySet
 
   // step 1: initialize a new transaction. This can only be done by leaders
   def startTransaction(localPartitionId: Uid, t: A)(using replicaId: ReplicaId): SimpSpan[A] =

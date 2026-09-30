@@ -14,15 +14,15 @@ import java.util.{Timer, TimerTask}
 import scala.util.Random
 
 class OverlayDemoNode(
-                       selfDetails: Set[ConnectionDescriptor],
-                       listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
-                       envelopeResolver: ChannelResolver,
-                       random: Random = Random(0),
-                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-                       onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
-                       printOverlayEventsToStdout: Boolean = false,
-                       runBackgroundTasks: Boolean = true,
-                       val localUid: ReplicaId = ReplicaId.gen(),
+    selfDetails: Set[ConnectionDescriptor],
+    listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
+    envelopeResolver: ChannelResolver,
+    random: Random = Random(0),
+    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+    onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
+    printOverlayEventsToStdout: Boolean = false,
+    runBackgroundTasks: Boolean = true,
+    val localUid: ReplicaId = ReplicaId.gen(),
 )(using Lattice[Payload[OverlayStatusProtocol.Status]]) {
 
   @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty

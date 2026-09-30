@@ -53,7 +53,9 @@ object Codecs {
 case class Heartbeat(supposedLeader: Option[Uid], senderTimestamp: Long, receiverTimestamp: Option[Long] = None)
 case class HeartbeatQuorum(heartbeats: Map[Uid, LastWriterWins[Heartbeat]] =
   Map.empty[Uid, LastWriterWins[Heartbeat]]) {
-  private def currentVotes(timeoutThreshold: Long, currentTime: Long)(using replicaId: ReplicaId): Map[Uid, Option[Uid]] =
+  private def currentVotes(timeoutThreshold: Long, currentTime: Long)(using
+      replicaId: ReplicaId
+  ): Map[Uid, Option[Uid]] =
     // count votes that were received in the threshold window and current local votes
     heartbeats
       .collect {

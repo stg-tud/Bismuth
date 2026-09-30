@@ -6,7 +6,7 @@ import rdts.base.{ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
 
 class TravelPlanTest extends FunSuite {
-  given uid: ReplicaId              = ReplicaId(Uid.gen())
+  given uid: ReplicaId             = ReplicaId(Uid.gen())
   given filter: Filter[TravelPlan] = summon[Filter[TravelPlan]]
 
   test("changeTitle") {

@@ -6,11 +6,11 @@ import rdts.protocols.{Ownership, Token}
 import rdts.time.Dots
 
 class TokensTest extends munit.FunSuite {
-  given dots: Dots            = Dots.empty
-  given Lattice[Token]        = Lattice.derived
-  val numOfReplicas           = 5
+  given dots: Dots             = Dots.empty
+  given Lattice[Token]         = Lattice.derived
+  val numOfReplicas            = 5
   val replicas: Seq[ReplicaId] = List.tabulate(numOfReplicas)(_ => ReplicaId.gen())
-  var token: Token            = Token(
+  var token: Token             = Token(
     os = Ownership.unchanged,
     wants = ReplicatedSet.empty
   )

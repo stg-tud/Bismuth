@@ -27,14 +27,14 @@ object BroadcastIO {
   }
 
   def apply[State](
-                    replicaId: ReplicaId,
-                    receiveCallback: State => Unit,
-                    overlay: Option[OverlayController] = None,
-                    resolver: ChannelResolver = ChannelResolver.disconnected,
-                    sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
-                    globalAbort: Abort = Abort(),
-                    broadcast: Option[BroadcastProtocol[State]] = None,
-                    aead: Aead = Aead.identity,
+      replicaId: ReplicaId,
+      receiveCallback: State => Unit,
+      overlay: Option[OverlayController] = None,
+      resolver: ChannelResolver = ChannelResolver.disconnected,
+      sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
+      globalAbort: Abort = Abort(),
+      broadcast: Option[BroadcastProtocol[State]] = None,
+      aead: Aead = Aead.identity,
   )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
     new BroadcastIO[State](
       replicaId = replicaId,
@@ -75,14 +75,14 @@ object BroadcastIO {
   * - this class handles payload storage, message encoding/decoding, and callback side effects.
   */
 class BroadcastIO[State](
-                          val replicaId: ReplicaId,
-                          receiveCallback: State => Unit,
-                          @volatile private var overlay: OverlayController,
-                          resolver: ChannelResolver,
-                          sendingActor: ExecutionContext,
-                          val globalAbort: Abort,
-                          @volatile private var broadcast: BroadcastProtocol[State],
-                          val aead: Aead
+    val replicaId: ReplicaId,
+    receiveCallback: State => Unit,
+    @volatile private var overlay: OverlayController,
+    resolver: ChannelResolver,
+    sendingActor: ExecutionContext,
+    val globalAbort: Abort,
+    @volatile private var broadcast: BroadcastProtocol[State],
+    val aead: Aead
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef                                                                       = new {}

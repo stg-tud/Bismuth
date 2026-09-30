@@ -145,7 +145,7 @@ case class ReplicatedUniqueList[E](
       markerId: MarkerId,
       newMarkerValue: MarkerValue,
   )(using
-    ReplicaId
+      ReplicaId
   )
       : ObserveRemoveMap[MarkerId, MarkerValue] = {
     val updatedMapEntry = base.update(markerId, newMarkerValue).inner(markerId)
@@ -164,7 +164,7 @@ case class ReplicatedUniqueList[E](
       removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None,
       opPrecedence: OpPrecedence = OpPrecedence.Generic
   )(using
-    ReplicaId
+      ReplicaId
   )
       : ReplicatedUniqueList[E] = {
     val markedElementId = elementIdsAndOperations.read(index).get.elementId
@@ -182,7 +182,7 @@ case class ReplicatedUniqueList[E](
       removalBehavior: MarkerRemovalBehavior = MarkerRemovalBehavior.None,
       opPrecedence: OpPrecedence = OpPrecedence.Generic
   )(using
-    ReplicaId
+      ReplicaId
   )
       : ReplicatedUniqueList[E] = {
     val markedElementId = elementIdsAndOperations.read(index).get.elementId

@@ -55,7 +55,7 @@ trait SpreadsheetOps[A] {
   def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using ReplicaId): Spreadsheet[A]
 
   def editCell(coordinate: SpreadsheetCoordinate, value: Option[A], solveSeenConflict: Boolean = true)(using
-                                                                                                       ReplicaId
+      ReplicaId
   ): Spreadsheet[A]
 
   def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using ReplicaId): Spreadsheet[A]

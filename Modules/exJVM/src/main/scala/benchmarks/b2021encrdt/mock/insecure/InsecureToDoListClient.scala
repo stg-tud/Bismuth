@@ -12,9 +12,9 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 class InsecureToDoListClient(
-                              replicaId1: ReplicaId,
-                              crdt: DeltaAWLWWMContainer[UUID, ToDoEntry],
-                              untrustedReplica: ToDoListIntermediary
+    replicaId1: ReplicaId,
+    crdt: DeltaAWLWWMContainer[UUID, ToDoEntry],
+    untrustedReplica: ToDoListIntermediary
 ) extends SecureToDoListClient(replicaId1, crdt, null, untrustedReplica) {
   override protected def encryptAndDisseminate(newDeltaGroup: DecryptedDeltaGroup[ToDoMapLattice]): Unit = {
     // Serialize but don't encrypt!

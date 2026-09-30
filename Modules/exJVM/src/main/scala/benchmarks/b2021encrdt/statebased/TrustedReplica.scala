@@ -6,7 +6,7 @@ import rdts.base.ReplicaId
 import rdts.time.VectorClock
 
 abstract class TrustedReplica[T](val localReplicaId: ReplicaId, private val aead: Aead)(using
-                                                                                        val stateJsonCodec: JsonValueCodec[T]
+    val stateJsonCodec: JsonValueCodec[T]
 ) extends Replica {
 
   var versionVector: VectorClock = VectorClock.zero

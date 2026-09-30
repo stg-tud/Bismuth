@@ -15,8 +15,8 @@ class GrowOnlyCounterTest extends munit.FunSuite {
     import GrowOnlyCounter.given
 
     val localId: ReplicaId = ReplicaId.gen()
-    var dots              = Dots.empty
-    val dot1              = dots.nextDot(using localId)
+    var dots               = Dots.empty
+    val dot1               = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -50,8 +50,8 @@ class GrowOnlyCounterTest extends munit.FunSuite {
     import GrowOnlyCounter.given
 
     val localId: ReplicaId = ReplicaId.gen()
-    var dots              = Dots.empty
-    val dot1              = dots.nextDot(using localId)
+    var dots               = Dots.empty
+    val dot1               = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -84,8 +84,8 @@ class GrowOnlyCounterTest extends munit.FunSuite {
 
     val localId1: ReplicaId = ReplicaId.gen()
     val localId2: ReplicaId = ReplicaId.gen()
-    var dots               = Dots.empty
-    val dot11              = dots.nextDot(using localId1)
+    var dots                = Dots.empty
+    val dot11               = dots.nextDot(using localId1)
     dots = dots.add(dot11)
     val dot21 = dots.nextDot(using localId2)
     dots = dots.add(dot21)

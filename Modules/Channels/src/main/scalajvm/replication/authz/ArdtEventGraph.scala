@@ -81,7 +81,7 @@ case class ArdtEventGraph[T: Lattice](
     }
 
     // Event is valid, update graph and return
-    val concurrentHeads = (heads -- event.parents)
+    val concurrentHeads = heads -- event.parents
     Right(copy(
       heads = concurrentHeads + eventHash,
       events = events + (eventHash -> (event, nextEventIndex)),

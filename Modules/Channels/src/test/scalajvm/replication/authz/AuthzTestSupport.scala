@@ -63,7 +63,8 @@ object AuthzTestSupport extends munit.Assertions {
       authorization: Hash
   ): (ArdtEvent, RevealedValue) = {
     val revealed = Commitment.commit(author.id, writeToArray(delta))
-    val event    = buildEvent(DeltaCommitment(revealed.commitment(author.id)), author, authorPrivateKey, parents, authorization)
+    val event    =
+      buildEvent(DeltaCommitment(revealed.commitment(author.id)), author, authorPrivateKey, parents, authorization)
     (event, revealed)
   }
 

@@ -60,17 +60,17 @@ class AntiEntropy(
     )
 
   def sendEventsWithDelta(destination: PublicIdentity, eventHashes: Iterable[Hash]): Unit =
-      eventHashes.foreach(hash =>
-          val event = replica.event(hash)
-          val encodedEvent = event.map(writeToArray(_))
-          sendEvents(destination, encodedEvent)
-          event match {
-            case Some(ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _)) =>
-              val revealedValue = replica.revealedDeltaValue(commitmentHash).map(hash -> _)
-              sendDeltasFiltered(destination, revealedValue)
-            case _ =>
-          }
-      )
+    eventHashes.foreach(hash =>
+        val event        = replica.event(hash)
+        val encodedEvent = event.map(writeToArray(_))
+        sendEvents(destination, encodedEvent)
+        event match {
+          case Some(ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _)) =>
+            val revealedValue = replica.revealedDeltaValue(commitmentHash).map(hash -> _)
+            sendDeltasFiltered(destination, revealedValue)
+          case _ =>
+        }
+    )
 
   def broadcastDeltasFiltered(deltas: Iterable[(eventHash: Hash, delta: RevealedValue)]): Unit =
     connectionManager.connectedPeers.foreach { peer =>

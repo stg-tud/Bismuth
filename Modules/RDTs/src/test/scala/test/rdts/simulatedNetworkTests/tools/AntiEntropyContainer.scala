@@ -20,8 +20,8 @@ class AntiEntropyContainer[State](
     s"AntiEntropy($replicaID, $state)"
 
   inline def map(f: ReplicaId ?=> State => State)(using
-                                                  Lattice[State],
-                                                  Decompose[State]
+      Lattice[State],
+      Decompose[State]
   ): AntiEntropyContainer[State] =
     applyDelta(Named(replicaID.uid, f(using replicaID)(state)))
 

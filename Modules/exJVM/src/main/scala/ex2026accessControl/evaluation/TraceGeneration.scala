@@ -108,7 +108,7 @@ object TraceGeneration {
         val identity = replicaIds(1 + random.nextInt(numReplicas - 1))
         val author   = identity.getPublic
 
-        given ReplicaId    = ReplicaId(Uid(author.id))
+        given ReplicaId   = ReplicaId(Uid(author.id))
         val mutatorChoice = BenchmarkRdt.leafPaths.drop(random.nextInt(BenchmarkRdt.leafPaths.size)).head
         val delta         = BenchmarkRdt.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
         sharedState = sharedState.merge(delta)
@@ -217,7 +217,7 @@ object TraceGeneration {
           val identity    = authors(authorIndex)
           val author      = identity.getPublic
 
-          given ReplicaId    = ReplicaId(Uid(author.id))
+          given ReplicaId   = ReplicaId(Uid(author.id))
           val mutations     = permittedMutations(authorIndex)
           val mutatorChoice = mutations(random.nextInt(mutations.size))
           val delta         = BenchmarkRdt.applyBenchmarkRdtMutator(mutatorChoice, sharedState)

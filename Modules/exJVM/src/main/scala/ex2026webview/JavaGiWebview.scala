@@ -25,7 +25,7 @@ object JavaGiWebview {
         println("requires a url or a path to an html file as a first argument")
         return
 
-    val target = args.head
+    val target   = args.head
     val startUri =
       if target.startsWith("http://") || target.startsWith("https://") then target
       else Path.of(target).toUri.toString
@@ -102,7 +102,7 @@ object JavaGiWebview {
           stopOrReload.setIconName("view-refresh-symbolic")
           stopOrReload.setTooltipText("Reload")
         case _ =>
-          // Ignore all other events
+        // Ignore all other events
       }
     }
 

@@ -12,11 +12,11 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
 
   def addParticipants(part: Set[Uid]): Delta = neutral.copy(participants = part)
 
-  def allocated(id: Uid): Int       = allocations.inner.getOrElse(id, 0)
+  def allocated(id: Uid): Int                   = allocations.inner.getOrElse(id, 0)
   def reserved(using replicaId: ReplicaId): Int = reserved(replicaId.uid)
-  def reserved(id: Uid): Int        =
+  def reserved(id: Uid): Int                    =
     current.reservations.pos.inner.getOrElse(id, 0) - current.reservations.neg.inner.getOrElse(id, 0)
-  def available(id: Uid): Int        = reserved(id) - allocated(id)
+  def available(id: Uid): Int                    = reserved(id) - allocated(id)
   def available(using replicaId: ReplicaId): Int = available(replicaId.uid)
 
   def allocate(value: Int)(using replicaId: ReplicaId): Delta =

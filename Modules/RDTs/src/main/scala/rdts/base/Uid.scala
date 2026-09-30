@@ -54,9 +54,9 @@ object ReplicaId {
 
   extension (s: String) def asId: ReplicaId = predefined(s)
 
-  def predefined(s: String): ReplicaId     = Uid.predefined(s).convert
-  def unwrap(id: ReplicaId): Uid           = id.uid
-  def gen(): ReplicaId                     = Uid.gen().convert
+  def predefined(s: String): ReplicaId = Uid.predefined(s).convert
+  def unwrap(id: ReplicaId): Uid       = id.uid
+  def gen(): ReplicaId                 = Uid.gen().convert
 }
 
 object UidEncoding {

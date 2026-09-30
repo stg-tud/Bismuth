@@ -8,7 +8,7 @@ class PaperPaxosTest extends munit.FunSuite {
   given Bottom[Int] with
       override def empty: Int = Int.MinValue
 
-  given dots: Dots  = Dots.empty
+  given dots: Dots   = Dots.empty
   val id1: ReplicaId = ReplicaId.gen()
   val id2: ReplicaId = ReplicaId.gen()
   val id3: ReplicaId = ReplicaId.gen()

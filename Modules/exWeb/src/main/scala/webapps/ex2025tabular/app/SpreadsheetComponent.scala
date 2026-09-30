@@ -46,12 +46,12 @@ object SpreadsheetComponent {
       (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
     private def modSpreadsheet(
-                                f: ReplicaId ?=> SpreadsheetOps[String] => Spreadsheet[String],
-                                allowUndo: Boolean = true
+        f: ReplicaId ?=> SpreadsheetOps[String] => Spreadsheet[String],
+        allowUndo: Boolean = true
     ): Callback =
       $.props.flatMap { props =>
         given ReplicaId = props.replicaId
-        val delta      = props.spreadsheetAggregator.editAndGetDelta()(f, allowUndo)
+        val delta       = props.spreadsheetAggregator.editAndGetDelta()(f, allowUndo)
         props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)
       }

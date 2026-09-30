@@ -7,8 +7,8 @@ import rdts.time.Dots
 
 /** This is used for the encrypted todolist and associated benchmark */
 class DeltaAWLWWMContainer[K, V](
-                                  val replicaId: ReplicaId,
-                                  initialState: State[K, V] = DeltaAWLWWMContainer.empty[K, V],
+    val replicaId: ReplicaId,
+    initialState: State[K, V] = DeltaAWLWWMContainer.empty[K, V],
 ) {
   protected var _state: State[K, V] = initialState
 

@@ -16,8 +16,8 @@ class EvalState {
   var numOperations: Int     = 0
   val random                 = new scala.util.Random(123456789)
   var randomArr: List[Int]   = List.empty
-  val localUid: ReplicaId     = ReplicaId.gen()
-  val foreignUid: ReplicaId   = ReplicaId.gen()
+  val localUid: ReplicaId    = ReplicaId.gen()
+  val foreignUid: ReplicaId  = ReplicaId.gen()
   val localReplicaShare: Int = 9
 
   @Setup(Level.Trial)
@@ -560,9 +560,9 @@ object Eval {
   }
 
   def performORMapOperationLWW(
-                                orMap: ObserveRemoveMap[Int, LastWriterWins[Int]],
-                                localUid: ReplicaId,
-                                random: Int
+      orMap: ObserveRemoveMap[Int, LastWriterWins[Int]],
+      localUid: ReplicaId,
+      random: Int
   ): ObserveRemoveMap[Int, LastWriterWins[Int]] = {
     given Bottom[Int] = Bottom.provide(0)
     if orMap.entries.isEmpty then return orMap.update(random, LastWriterWins.empty[Int].write(random))(using localUid)

@@ -78,38 +78,39 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   /** The delta events that `revocationEventHash` newly invalidates: those whose value is still stored, that are
     * authorized by a capability it revokes (directly or transitively), and that are not causally before it.
     */
-  protected def deltasInvalidatedBy(revocationEventHash: Hash): Iterable[(commitment: Hash, index: Int)] = synchronized {
-    val evGraph             = eventGraph
-    val revokedCapabilities =
-      evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
-    if revokedCapabilities.isEmpty then return Iterable.empty
+  protected def deltasInvalidatedBy(revocationEventHash: Hash): Iterable[(commitment: Hash, index: Int)] =
+    synchronized {
+      val evGraph             = eventGraph
+      val revokedCapabilities =
+        evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
+      if revokedCapabilities.isEmpty then return Iterable.empty
 
-    // Every use of a capability, like every capability delegated from it, is received after that capability, and thus
-    // has a higher index. Every event up to the latest cut in the revocation's causal past is causally before it. A
-    // single search of the revocation's causal past, cut off at the later of the two, therefore suffices to tell the
-    // valid uses apart from the invalidated ones.
-    val revocationParents = evGraph.events(revocationEventHash)._1.parents
-    val cutoff            = math.max(
-      revokedCapabilities.iterator.map(evGraph.events(_)._2).min,
-      evGraph.latestCutBefore(revocationParents)
-    )
+      // Every use of a capability, like every capability delegated from it, is received after that capability, and thus
+      // has a higher index. Every event up to the latest cut in the revocation's causal past is causally before it. A
+      // single search of the revocation's causal past, cut off at the later of the two, therefore suffices to tell the
+      // valid uses apart from the invalidated ones.
+      val revocationParents = evGraph.events(revocationEventHash)._1.parents
+      val cutoff            = math.max(
+        revokedCapabilities.iterator.map(evGraph.events(_)._2).min,
+        evGraph.latestCutBefore(revocationParents)
+      )
 
-    val causalPast = mutable.BitSet()
-    val toVisit    = mutable.Stack.from(revocationParents)
-    while toVisit.nonEmpty do {
-      val (event, index) = evGraph.events(toVisit.pop())
-      if index > cutoff && !causalPast.contains(index) then
-          causalPast += index
-          toVisit.pushAll(event.parents)
+      val causalPast = mutable.BitSet()
+      val toVisit    = mutable.Stack.from(revocationParents)
+      while toVisit.nonEmpty do {
+        val (event, index) = evGraph.events(toVisit.pop())
+        if index > cutoff && !causalPast.contains(index) then
+            causalPast += index
+            toVisit.pushAll(event.parents)
+      }
+
+      evGraph.events.collect {
+        case (eventHash, (ArdtEvent(DeltaCommitment(commitment), _, _, _, authorization), index))
+            if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index)
+            && deltaValueStore.get(commitment).nonEmpty =>
+          (commitment = commitment, index = index)
+      }
     }
-
-    evGraph.events.collect {
-      case (eventHash, (ArdtEvent(DeltaCommitment(commitment), _, _, _, authorization), index))
-          if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index)
-          && deltaValueStore.get(commitment).nonEmpty =>
-        (commitment = commitment, index = index)
-    }
-  }
 
   /** Removes the delta values of `deltaEvents`, returning whether any of them was stored */
   protected def removeDeltas(deltaEvents: Iterable[(commitment: Hash, index: Int)]): Boolean = synchronized {

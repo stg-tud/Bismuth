@@ -53,7 +53,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
     val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
     val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
-    val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
+    val p1   = Uid.gen(); val p2         = Uid.gen(); val p3         = Uid.gen()
 
     val paxos1 = electLeader(Seq(id1a, id1b, id1c), id1a)
     val paxos2 = electLeader(Seq(id2a, id2b, id2c), id2a)
@@ -79,7 +79,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
     val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
     val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
-    val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
+    val p1   = Uid.gen(); val p2         = Uid.gen(); val p3         = Uid.gen()
 
     val state = SimpSpan[String](
       partitionMembers = Map(
@@ -127,7 +127,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
     val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
     val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
-    val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
+    val p1   = Uid.gen(); val p2         = Uid.gen(); val p3         = Uid.gen()
 
     val paxos1 = electLeader(Seq(id1a, id1b, id1c), id1a)
     val paxos2 = electLeader(Seq(id2a, id2b, id2c), id2b) // different member is leader
@@ -161,7 +161,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
     val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
     val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
-    val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
+    val p1   = Uid.gen(); val p2         = Uid.gen(); val p3         = Uid.gen()
 
     // Kick off leader elections by merging startLeaderElection deltas
     val rawPaxos1 = MultiPaxos[twoPCMessages]()
@@ -790,7 +790,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
     val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
     val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
     val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
-    val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
+    val p1   = Uid.gen(); val p2         = Uid.gen(); val p3         = Uid.gen()
 
     // Only p1 has an elected leader; p2 and p3 are fresh
     val paxos1 = electLeader(Seq(id1a, id1b, id1c), id1a)

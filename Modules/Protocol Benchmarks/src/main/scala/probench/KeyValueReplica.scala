@@ -311,7 +311,9 @@ class KeyValueReplica(
       connInfStateLock.synchronized {
         val heartbeat = Heartbeat(supposedLeader = cluster.state.leader, senderTimestamp = System.currentTimeMillis())
         publish(HeartbeatQuorum(Map(
-          localUid.uid -> state.heartbeats.get(localUid.uid).map(_.write(heartbeat)).getOrElse(LastWriterWins.now(heartbeat))
+          localUid.uid -> state.heartbeats.get(
+            localUid.uid
+          ).map(_.write(heartbeat)).getOrElse(LastWriterWins.now(heartbeat))
         )))
       }
     }

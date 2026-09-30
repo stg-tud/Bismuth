@@ -79,7 +79,7 @@ object TraceGeneration {
   )(using random: Random): Array[Array[TravelPlan]] =
     identities.map { id =>
       val permittedMutators = TraceGeneration.permittedMutators(acl.write(id))
-      given ReplicaId        = ReplicaId(Uid(id.id))
+      given ReplicaId       = ReplicaId(Uid(id.id))
 
       @tailrec
       def genRec(deltas: List[TravelPlan], accState: TravelPlan, remaining: Int): Array[TravelPlan] =

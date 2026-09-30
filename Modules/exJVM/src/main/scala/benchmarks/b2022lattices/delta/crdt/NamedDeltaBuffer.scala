@@ -9,9 +9,9 @@ case class Named[T](replicaId: Uid, anon: T)
   * have been read and propagated by the middleware, it should call resetDeltaBuffer to empty the deltaBuffer.
   */
 case class NamedDeltaBuffer[State](
-                                    replicaID: ReplicaId,
-                                    state: State,
-                                    deltaBuffer: List[Named[State]] = Nil
+    replicaID: ReplicaId,
+    state: State,
+    deltaBuffer: List[Named[State]] = Nil
 ) {
 
   inline def map(f: ReplicaId ?=> State => State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =

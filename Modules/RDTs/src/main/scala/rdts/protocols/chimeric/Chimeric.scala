@@ -58,7 +58,7 @@ case class Chimeric[A](
     def phase1a(value: A)(using replicaId: ReplicaId): Chimeric[A] =
       Chimeric(
         Map(
-          nextBallotNum            -> voteLeader(replicaId.uid),
+          nextBallotNum                -> voteLeader(replicaId.uid),
           BallotNum(replicaId.uid, -1) -> voteValue(value)
         )
       )

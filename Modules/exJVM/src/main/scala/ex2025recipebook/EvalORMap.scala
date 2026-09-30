@@ -14,8 +14,8 @@ class EvalORMapState {
   var numOperations: Int     = 10000
   val random                 = new scala.util.Random(123456789)
   var randomArr: List[Int]   = List.empty
-  val localUid: ReplicaId     = ReplicaId.gen()
-  val foreignUid: ReplicaId   = ReplicaId.gen()
+  val localUid: ReplicaId    = ReplicaId.gen()
+  val foreignUid: ReplicaId  = ReplicaId.gen()
   val localReplicaShare: Int = 9
 
   @Param(Array("1", "10", "100", "1000", "10000"))
@@ -313,11 +313,11 @@ object EvalORMap {
   }
 
   def performORMapOperationEWFlag(
-                                   orMap: ObserveRemoveMap[Int, EnableWinsFlag],
-                                   localUid: ReplicaId,
-                                   ewFlag: EnableWinsFlag,
-                                   random: Int,
-                                   mapSize: Int
+      orMap: ObserveRemoveMap[Int, EnableWinsFlag],
+      localUid: ReplicaId,
+      ewFlag: EnableWinsFlag,
+      random: Int,
+      mapSize: Int
   ): ObserveRemoveMap[Int, EnableWinsFlag] = {
     if orMap.entries.isEmpty then
         return orMap.update(

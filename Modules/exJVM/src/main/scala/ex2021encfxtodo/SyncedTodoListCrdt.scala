@@ -12,8 +12,8 @@ import scala.concurrent.duration.{DurationInt, MILLISECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 class SyncedTodoListCrdt(
-                          val replicaId: ReplicaId,
-                          onUpdated: (Map[UUID, TodoEntry], Map[UUID, TodoEntry]) => Unit = (_, _) => (),
+    val replicaId: ReplicaId,
+    onUpdated: (Map[UUID, TodoEntry], Map[UUID, TodoEntry]) => Unit = (_, _) => (),
 ) {
 
   private val crdt: DeltaAWLWWMContainer[UUID, TodoEntry] =

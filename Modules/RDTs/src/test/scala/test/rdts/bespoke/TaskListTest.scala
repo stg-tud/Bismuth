@@ -79,7 +79,7 @@ object TaskList {
       state.mod(tree => updateTaskList(tree, id, tl => tl.copy(items = tl.items.move(from, to))))
 
     def updateTaskTitle(taskListId: Dot, itemIx: Int, newTitle: String)(using
-                                                                        ReplicaId
+        ReplicaId
     ): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree =>
         updateTaskList(
@@ -90,7 +90,7 @@ object TaskList {
       )
 
     def updateTaskDescription(taskListId: Dot, itemIx: Int, newDescription: Option[String])(using
-                                                                                            ReplicaId
+        ReplicaId
     ): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree =>
         updateTaskList(

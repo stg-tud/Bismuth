@@ -257,7 +257,7 @@ class AuthorizationTest extends FunSuite {
 
   test("mayWrite throws IllegalArgumentException when the event at deltaEventHash is not a DeltaCommitment") {
     val (graph, holder, _, genesis) = freshGraph()
-    val revealed               = Commitment.commit(holder.id, writeToArray(Set(1)))
+    val revealed                    = Commitment.commit(holder.id, writeToArray(Set(1)))
 
     intercept[IllegalArgumentException] {
       Authorization.mayWrite(graph, genesis.hash, revealed)
@@ -326,7 +326,7 @@ class AuthorizationTest extends FunSuite {
 
   test("mayWrite throws NoSuchElementException when deltaEventHash is not present in the graph") {
     val (graph, holder, _, genesis) = freshGraph()
-    val revealed               = Commitment.commit(holder.id, writeToArray(Set(1)))
+    val revealed                    = Commitment.commit(holder.id, writeToArray(Set(1)))
 
     intercept[NoSuchElementException] {
       Authorization.mayWrite(graph, Hash.compute("unknown".getBytes), revealed)
@@ -375,7 +375,11 @@ class AuthorizationTest extends FunSuite {
     val graph2              = receiveOrFail(graph1, delta2)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed1.commitment(holder.id), readFromArray[Set[Int]](revealed1.value), revealed1.witness) // delta2's revealed value is never put
+    store.put(
+      revealed1.commitment(holder.id),
+      readFromArray[Set[Int]](revealed1.value),
+      revealed1.witness
+    ) // delta2's revealed value is never put
 
     assertEquals(Authorization.materialize(graph2, store), Set(1))
   }

@@ -167,7 +167,7 @@ class ArdtEventGraphBenchmarkState {
   // The single (non-root) replica and mutation used by createUpdate
   var selectedIdentity: PrivateIdentity = scala.compiletime.uninitialized
   var selectedMutatorChoice: String     = scala.compiletime.uninitialized
-  var selectedLocalUid: ReplicaId        = scala.compiletime.uninitialized
+  var selectedLocalUid: ReplicaId       = scala.compiletime.uninitialized
   var authorizationHash: Hash           = scala.compiletime.uninitialized
 
   // Exposed so that state classes extending this one (e.g. those translating the generated graph into a

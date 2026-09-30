@@ -27,7 +27,7 @@ class MVRegisterBench {
     reg = (0 until numWrites).foldLeft(NamedDeltaBuffer("-1".asId, MultiVersionRegister.empty[Int])) {
       case (r, i) =>
         given rid: ReplicaId = i.toString.asId
-        val delta           = MultiVersionRegister.empty[Int].write(i)
+        val delta            = MultiVersionRegister.empty[Int].write(i)
         r.applyDelta(rid.uid, delta)
     }
 

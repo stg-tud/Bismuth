@@ -54,8 +54,8 @@ class LastWriterWinsTest extends munit.FunSuite {
     import LastWriterWins.given
 
     val localId: ReplicaId = ReplicaId.gen()
-    var dots              = Dots.empty
-    val dot1              = dots.nextDot(using localId)
+    var dots               = Dots.empty
+    val dot1               = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)
@@ -78,8 +78,8 @@ class LastWriterWinsTest extends munit.FunSuite {
     import LastWriterWins.given
 
     val localId: ReplicaId = ReplicaId.gen()
-    var dots              = Dots.empty
-    val dot1              = dots.nextDot(using localId)
+    var dots               = Dots.empty
+    val dot1               = dots.nextDot(using localId)
     dots = dots.add(dot1)
     val dot2 = dots.nextDot(using localId)
     dots = dots.add(dot2)

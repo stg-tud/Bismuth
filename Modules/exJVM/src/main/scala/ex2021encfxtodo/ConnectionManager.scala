@@ -27,8 +27,8 @@ class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends experiments.Aead 
 }
 
 class ConnectionManager[State: JsonValueCodec](
-                                                replicaId: ReplicaId,
-                                                receiveCallback: State => Unit
+    replicaId: ReplicaId,
+    receiveCallback: State => Unit
 ) {
   import ConnectionManager.*
 
