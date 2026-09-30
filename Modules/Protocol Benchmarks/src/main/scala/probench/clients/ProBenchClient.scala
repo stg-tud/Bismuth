@@ -5,14 +5,14 @@ import channels.{BroadcastIO, KeepAllHistory}
 import probench.data
 import probench.data.Codecs.given
 import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
 class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, logTimings) {
 
-  given localUid: LocalUid = LocalUid(name)
+  given localUid: ReplicaId = ReplicaId(name)
 
   val currentStateLock: AnyRef = new {}
 

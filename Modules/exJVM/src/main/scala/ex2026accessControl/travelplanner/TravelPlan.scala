@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026accessControl.permission_pane.SelectorFactory
 import ex2026accessControl.travelplanner.TravelPlan.{*, given}
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, Lattice, ReplicaId}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.Filter
 import rdts.syntax.deltalens.*
@@ -21,7 +21,7 @@ case class TravelPlan(
   def setTitle(newTitle: String): Delta =
     this.deltaModify(_.title).using(_.write(newTitle))
 
-  def addBucketListEntry(text: String)(using localUid: LocalUid): Delta = {
+  def addBucketListEntry(text: String)(using localUid: ReplicaId): Delta = {
     val key = randomIdentifier
     this.deltaModify(_.bucketList).using { ormap =>
       ormap.transform(key) {
@@ -31,7 +31,7 @@ case class TravelPlan(
     }
   }
 
-  def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta =
+  def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.bucketList).using { ormap =>
       ormap.transform(bucketListId) {
         case Some(prior) => Some(prior.write(text))
@@ -44,7 +44,7 @@ case class TravelPlan(
       ormap.remove(bucketListId)
     }
 
-  def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta = {
+  def addExpense(description: String, amount: String)(using localUid: ReplicaId): Delta = {
     val key = randomIdentifier
     this.deltaModify(_.expenses).using { ormap =>
       val expense =
@@ -61,7 +61,7 @@ case class TravelPlan(
       ormap.remove(key)
     }
 
-  def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta =
+  def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.expenses).using { ormap =>
       ormap.transform(expenseId) {
         case Some(prior: Expense) =>
@@ -70,7 +70,7 @@ case class TravelPlan(
       }
     }
 
-  def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta =
+  def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.expenses).using { ormap =>
       ormap.transform(expenseId) {
         case Some(prior) =>
@@ -79,7 +79,7 @@ case class TravelPlan(
       }
     }
 
-  def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta = {
+  def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: ReplicaId): Delta = {
     val commentValue = if comment.isEmpty then None else Some(comment)
     this.deltaModify(_.expenses).using { ormap =>
       ormap.transform(expenseId) {

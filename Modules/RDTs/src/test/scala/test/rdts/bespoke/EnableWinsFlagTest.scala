@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.EnableWinsFlag
 import rdts.time.Dots
 
@@ -14,7 +14,7 @@ class EnableWinsFlagTest extends munit.FunSuite {
   test("new unset overrides all previous deltas") {
     import EnableWinsFlag.given
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -70,7 +70,7 @@ class EnableWinsFlagTest extends munit.FunSuite {
   test("new unset overrides all deltas containing a subset of the observed dots") {
     import EnableWinsFlag.given
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -109,7 +109,7 @@ class EnableWinsFlagTest extends munit.FunSuite {
   test("subsumption previous from same replica") {
     import EnableWinsFlag.given
 
-    val localUid1 = LocalUid.gen()
+    val localUid1 = ReplicaId.gen()
     var ewFlag    = EnableWinsFlag.empty
     var dots      = Dots.empty
 

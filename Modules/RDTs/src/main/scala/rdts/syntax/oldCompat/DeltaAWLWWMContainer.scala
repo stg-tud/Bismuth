@@ -1,20 +1,20 @@
 package rdts.syntax.oldCompat
 
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
 import rdts.time.Dots
 
 /** This is used for the encrypted todolist and associated benchmark */
 class DeltaAWLWWMContainer[K, V](
-    val replicaId: LocalUid,
-    initialState: State[K, V] = DeltaAWLWWMContainer.empty[K, V],
+                                  val replicaId: ReplicaId,
+                                  initialState: State[K, V] = DeltaAWLWWMContainer.empty[K, V],
 ) {
   protected var _state: State[K, V] = initialState
 
   def state: State[K, V] = _state
 
-  given LocalUid = replicaId
+  given ReplicaId = replicaId
 
   def get(key: K): Option[V] = _state.get(key).map(_.value)
 

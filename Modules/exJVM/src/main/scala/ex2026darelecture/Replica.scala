@@ -1,6 +1,6 @@
 package ex2026darelecture
 
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.syntax.{DeltaBuffer, DeltaBufferContainer}
 import rdts.time.{Dot, Dots}
 
@@ -13,11 +13,11 @@ import rdts.time.{Dot, Dots}
   * It has no value in a real program.
   */
 class Replica[A](init: A) {
-  val replicaId: LocalUid             = LocalUid.gen()
+  val replicaId: ReplicaId             = ReplicaId.gen()
   val buffer: DeltaBufferContainer[A] = DeltaBuffer(init).mutable
   val dots: Dots                      = Dots.empty
 
-  def mod(f: LocalUid ?=> A => A)(using Lattice[A]): this.type = {
+  def mod(f: ReplicaId ?=> A => A)(using Lattice[A]): this.type = {
     buffer.mod(f(using replicaId))
     this
   }

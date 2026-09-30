@@ -1,6 +1,6 @@
 package test.rdts.simulatedNetworkTests.tools
 
-import rdts.base.{Decompose, Lattice, LocalUid}
+import rdts.base.{Decompose, Lattice, ReplicaId}
 
 /** BasicCRDTs are Delta CRDTs that use [[IAntiEntropy]] and [[Network]] as Middleware for exchanging deltas between replicas.
   * They cannot actually be used on multiple connected replicas, but are useful for locally testing the behavior of
@@ -12,16 +12,16 @@ import rdts.base.{Decompose, Lattice, LocalUid}
 class AntiEntropyContainer[State](
     protected val antiEntropy: AntiEntropy[State]
 ) {
-  val replicaID: LocalUid = antiEntropy.localUid
+  val replicaID: ReplicaId = antiEntropy.localUid
 
   def state: State = antiEntropy.state
 
   override def toString: String =
     s"AntiEntropy($replicaID, $state)"
 
-  inline def map(f: LocalUid ?=> State => State)(using
-      Lattice[State],
-      Decompose[State]
+  inline def map(f: ReplicaId ?=> State => State)(using
+                                                  Lattice[State],
+                                                  Decompose[State]
   ): AntiEntropyContainer[State] =
     applyDelta(Named(replicaID.uid, f(using replicaID)(state)))
 
@@ -50,7 +50,7 @@ class AntiEntropyContainer[State](
 
   def data: State = state
 
-  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]): AntiEntropyContainer[State] =
+  def mod(f: ReplicaId ?=> State => State)(using Lattice[State], Decompose[State]): AntiEntropyContainer[State] =
     applyDelta(Named(replicaID.uid, f(using replicaID)(state)))
 }
 

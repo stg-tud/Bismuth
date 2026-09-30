@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 object BasicCodecs {
 
   // every client has an id
-  val myReplicaID: rdts.base.LocalUid = rdts.base.LocalUid.gen()
+  val myReplicaID: rdts.base.ReplicaId = rdts.base.ReplicaId.gen()
 
   given stringCodec: JsonValueCodec[String] = JsonCodecMaker.make
 

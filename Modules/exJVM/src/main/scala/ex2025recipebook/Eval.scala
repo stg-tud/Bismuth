@@ -2,7 +2,7 @@ package ex2025recipebook
 
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
 import rdts.datatypes
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, ObserveRemoveMap, PosNegCounter, ReplicatedSet}
 
@@ -16,8 +16,8 @@ class EvalState {
   var numOperations: Int     = 0
   val random                 = new scala.util.Random(123456789)
   var randomArr: List[Int]   = List.empty
-  val localUid: LocalUid     = LocalUid.gen()
-  val foreignUid: LocalUid   = LocalUid.gen()
+  val localUid: ReplicaId     = ReplicaId.gen()
+  val foreignUid: ReplicaId   = ReplicaId.gen()
   val localReplicaShare: Int = 9
 
   @Setup(Level.Trial)
@@ -445,7 +445,7 @@ object Eval {
       state: EvalState,
       resultCapture: ResultCapture,
       initialState: A,
-      f: (A, Int, LocalUid) => A
+      f: (A, Int, ReplicaId) => A
   ): Unit = {
     val localReplica   = Replica(state.localUid, initialState, deltaBuffer)
     val foreignReplica = Replica(state.foreignUid, initialState, deltaBuffer)
@@ -466,7 +466,7 @@ object Eval {
     keys(randomIndex)
   }
 
-  def performRecipeBookOperation(recipeBook: RecipeBook, random: Int, replicaID: LocalUid): RecipeBook = {
+  def performRecipeBookOperation(recipeBook: RecipeBook, random: Int, replicaID: ReplicaId): RecipeBook = {
     def addIngredient(): RecipeBook = {
       val randomRecipeKey = lottery(recipeBook.keys.toList, random)
       recipeBook.addIngredient(randomRecipeKey, Ingredient(random.toString, random.toDouble, random.toString))(using
@@ -521,7 +521,7 @@ object Eval {
   def performKRListOperation(
       krList: NestedKeepRemoveList[Int],
       random: Int,
-      replicaID: LocalUid
+      replicaID: ReplicaId
   ): NestedKeepRemoveList[Int] = {
     if krList.size == 0 then return krList.insertAt(0, random)(using replicaID)
     math.abs(random % 3) match {
@@ -537,7 +537,7 @@ object Eval {
     }
   }
 
-  def initializeRecipeBook(localUid: LocalUid, num: Int): RecipeBook = {
+  def initializeRecipeBook(localUid: ReplicaId, num: Int): RecipeBook = {
     var recipeBook: RecipeBook = RecipeBook.empty
 
     (0 to num).foreach(i =>
@@ -549,7 +549,7 @@ object Eval {
     recipeBook
   }
 
-  def performORSetOperation(orSet: ReplicatedSet[Int], localUid: LocalUid, random: Int): ReplicatedSet[Int] = {
+  def performORSetOperation(orSet: ReplicatedSet[Int], localUid: ReplicaId, random: Int): ReplicatedSet[Int] = {
     if orSet.size == 0 then return orSet.add(random)(using localUid)
     math.abs(random % 2) match {
       case 0 => orSet.add(random)(using localUid)
@@ -560,9 +560,9 @@ object Eval {
   }
 
   def performORMapOperationLWW(
-      orMap: ObserveRemoveMap[Int, LastWriterWins[Int]],
-      localUid: LocalUid,
-      random: Int
+                                orMap: ObserveRemoveMap[Int, LastWriterWins[Int]],
+                                localUid: ReplicaId,
+                                random: Int
   ): ObserveRemoveMap[Int, LastWriterWins[Int]] = {
     given Bottom[Int] = Bottom.provide(0)
     if orMap.entries.isEmpty then return orMap.update(random, LastWriterWins.empty[Int].write(random))(using localUid)

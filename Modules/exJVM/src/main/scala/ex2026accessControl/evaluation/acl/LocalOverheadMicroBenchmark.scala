@@ -5,7 +5,7 @@ import crypto.{Hash, PublicIdentity}
 import ex2026accessControl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
 import replication.HashDag
@@ -123,7 +123,7 @@ class BenchmarkInput {
   val (acl: Acl, aclVersion: Set[Hash]) = LocalOverheadMicroBenchmark.getAcl(author, receiver)
 
   val deltas: Array[TravelPlan] =
-    LocalOverheadMicroBenchmark.generateDeltas(using LocalUid(authorUid))
+    LocalOverheadMicroBenchmark.generateDeltas(using ReplicaId(authorUid))
       .filterNot(Filter[TravelPlan].filter(_, acl.write(author)).isEmpty)
 
   val decomposedFilteredDeltas: Array[Seq[SignedDelta[TravelPlan]]] =
@@ -175,7 +175,7 @@ object LocalOverheadMicroBenchmark {
     (aclRdt.reconstruct(hashDag.heads, hashDag), hashDag.heads)
   }
 
-  def generateDeltas(using localUid: LocalUid): Array[TravelPlan] = {
+  def generateDeltas(using localUid: ReplicaId): Array[TravelPlan] = {
     given random: Random     = Random(42)
     var state                = TravelPlan.empty
     val bucketListEntryDelta = state.addBucketListEntry(dummy)

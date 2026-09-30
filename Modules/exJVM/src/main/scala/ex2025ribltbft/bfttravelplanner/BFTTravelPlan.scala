@@ -4,7 +4,7 @@ import crypto.Ed25519Util
 import ex2025ribltbft.dag.{Event, HashDAG}
 import ex2026accessControl.travelplanner.TravelPlan
 import ex2026accessControl.travelplanner.TravelPlan.UniqueId
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 type Delta = BFTTravelPlan
 
@@ -15,27 +15,27 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan]):
       BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
     }
 
-    def addBucketListEntry(text: String)(using localUid: LocalUid): Delta =
+    def addBucketListEntry(text: String)(using localUid: ReplicaId): Delta =
         val delta = state.addBucketListEntry(text)
         BFTTravelPlan(delta, hashDAG.generateDelta(delta))
 
-    def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: LocalUid): Delta =
+    def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: ReplicaId): Delta =
         val delta = state.setBucketListEntryText(bucketListId, text)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def addExpense(description: String, amount: String)(using localUid: LocalUid): Delta =
+    def addExpense(description: String, amount: String)(using localUid: ReplicaId): Delta =
         val delta = state.addExpense(description, amount)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: LocalUid): Delta =
+    def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: ReplicaId): Delta =
         val delta = state.setExpenseAmount(expenseId, amount)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: LocalUid): Delta =
+    def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: ReplicaId): Delta =
         val delta = state.setExpenseDescription(expenseId, description)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: LocalUid): Delta =
+    def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: ReplicaId): Delta =
         val delta = state.setExpenseComment(expenseId, comment)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 

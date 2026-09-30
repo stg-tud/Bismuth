@@ -1,6 +1,6 @@
 package test.rdts.simulatedNetworkTests.tests
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
 import test.rdts.DataGenerator.ReplicatedListGen.makeRGA
 import test.rdts.simulatedNetworkTests.tests.NetworkGenerators.*
@@ -35,7 +35,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
 
     assertEquals(aec.data.toList, lots.reverse ::: List("UPD", "100"))
 
-    aec.mod(_.insert(1, "b00")(using LocalUid.predefined("b")))
+    aec.mod(_.insert(1, "b00")(using ReplicaId.predefined("b")))
 
     assertEquals(aec.data.read(1), Some("b00"))
 
@@ -86,7 +86,7 @@ class AntiEntropyBasicTest extends munit.ScalaCheckSuite {
     val la0 = AntiEntropyContainer(aea)
     la0.applyDelta(Named(
       Uid.predefined(aea.replicaID),
-      makeRGA(inserted, removed, LocalUid.predefined(aea.replicaID))
+      makeRGA(inserted, removed, ReplicaId.predefined(aea.replicaID))
     ))
     network.startReliablePhase()
     AntiEntropy.sync(aea, aeb)

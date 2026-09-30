@@ -1,6 +1,6 @@
 package rdts.protocols.raft
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.syntax.DeltaBuffer
 
@@ -17,7 +17,7 @@ case class RaftTokens(
     tokenFreed: DeltaBuffer[ReplicatedSet[RaftToken]],
 ) {
 
-  given LocalUid = replicaID.convert
+  given ReplicaId = replicaID.convert
 
   def owned(value: String): List[RaftToken] = {
     val freed  = tokenFreed.state.elements

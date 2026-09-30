@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import crypto.{Hash, PublicIdentity}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.filters.PermissionTree
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 import replication.authz.{ArdtEvent, ArdtEventGraph, Authorization, DeltaValueStore}
@@ -108,7 +108,7 @@ object TraceGeneration {
         val identity = replicaIds(1 + random.nextInt(numReplicas - 1))
         val author   = identity.getPublic
 
-        given LocalUid    = LocalUid(Uid(author.id))
+        given ReplicaId    = ReplicaId(Uid(author.id))
         val mutatorChoice = BenchmarkRdt.leafPaths.drop(random.nextInt(BenchmarkRdt.leafPaths.size)).head
         val delta         = BenchmarkRdt.applyBenchmarkRdtMutator(mutatorChoice, sharedState)
         sharedState = sharedState.merge(delta)
@@ -217,7 +217,7 @@ object TraceGeneration {
           val identity    = authors(authorIndex)
           val author      = identity.getPublic
 
-          given LocalUid    = LocalUid(Uid(author.id))
+          given ReplicaId    = ReplicaId(Uid(author.id))
           val mutations     = permittedMutations(authorIndex)
           val mutatorChoice = mutations(random.nextInt(mutations.size))
           val delta         = BenchmarkRdt.applyBenchmarkRdtMutator(mutatorChoice, sharedState)

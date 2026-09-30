@@ -1,15 +1,15 @@
 package test.rdts.bespoke
 
-import rdts.base.LocalUid.asId
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.ReplicaId.asId
+import rdts.base.{Bottom, Decompose, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, MultiVersionRegister, PosNegCounter}
 
 import scala.annotation.unused
 
 class DiffManualTests extends munit.ScalaCheckSuite {
 
-  val r1: LocalUid = "r1".asId
-  val r2: LocalUid = "r2".asId
+  val r1: ReplicaId = "r1".asId
+  val r2: ReplicaId = "r2".asId
 
   test("GrowOnlyCounter diff") {
     val empty: GrowOnlyCounter = Bottom[GrowOnlyCounter].empty

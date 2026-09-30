@@ -1,56 +1,56 @@
 package webapps.ex2025tabular.lib
 
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
 
 class UndoRecordingSpreadsheet[S](
     val delegate: Spreadsheet[S],
-    pushUndo: (LocalUid ?=> Spreadsheet[S] => Spreadsheet[S]) => Unit
+    pushUndo: (ReplicaId ?=> Spreadsheet[S] => Spreadsheet[S]) => Unit
 ) extends SpreadsheetOps[S] {
-  override def addRow()(using LocalUid): RowResult[S] = {
+  override def addRow()(using ReplicaId): RowResult[S] = {
     val res = delegate.addRow()
     pushUndo { s => s.removeRowById(res.newRowId) }
     res
   }
 
-  override def addColumn()(using LocalUid): ColumnResult[S] = {
+  override def addColumn()(using ReplicaId): ColumnResult[S] = {
     val res = delegate.addColumn()
     pushUndo { s => s.removeColumnById(res.newColumnId) }
     res
   }
 
-  override def removeRow(rowIdx: RowIndex)(using LocalUid): Spreadsheet[S] = {
+  override def removeRow(rowIdx: RowIndex)(using ReplicaId): Spreadsheet[S] = {
     val undo = delegate.internal.keepRow(rowIdx)
     val id   = delegate.getRowId(rowIdx).get
     pushUndo { s => if !s.listRowIds.contains(id) then s `merge` undo else s }
     delegate.removeRow(rowIdx)
   }
 
-  override def removeColumn(colIdx: ColumnIndex)(using LocalUid): Spreadsheet[S] = {
+  override def removeColumn(colIdx: ColumnIndex)(using ReplicaId): Spreadsheet[S] = {
     val undo = delegate.internal.keepColumn(colIdx)
     val id   = delegate.getColId(colIdx).get
     pushUndo { s => if !s.listColumnIds.contains(id) then s `merge` undo else s }
     delegate.removeColumn(colIdx)
   }
 
-  override def insertRow(rowIdx: RowIndex)(using LocalUid): RowResult[S] = {
+  override def insertRow(rowIdx: RowIndex)(using ReplicaId): RowResult[S] = {
     val res = delegate.insertRow(rowIdx)
     pushUndo { s => s.removeRowById(res.newRowId) }
     res
   }
 
-  override def insertColumn(colIdx: ColumnIndex)(using LocalUid): ColumnResult[S] = {
+  override def insertColumn(colIdx: ColumnIndex)(using ReplicaId): ColumnResult[S] = {
     val res = delegate.insertColumn(colIdx)
     pushUndo { s => s.removeColumnById(res.newColumnId) }
     res
   }
 
-  override def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using LocalUid): Spreadsheet[S] = {
+  override def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using ReplicaId): Spreadsheet[S] = {
     pushUndo { s => s.moveRow(if sourceIdx < targetIdx then (targetIdx - 1).toRowIndex else targetIdx, sourceIdx) }
     delegate.moveRow(sourceIdx, targetIdx)
   }
 
-  override def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using LocalUid): Spreadsheet[S] = {
+  override def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using ReplicaId): Spreadsheet[S] = {
     pushUndo { s =>
       s.moveColumn(if sourceIdx < targetIdx then (targetIdx - 1).toColumnIndex else targetIdx, sourceIdx)
     }
@@ -58,7 +58,7 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def editCell(coordinate: SpreadsheetCoordinate, value: Option[S], solveSeenConflict: Boolean = true)(using
-      LocalUid
+                                                                                                                ReplicaId
   ): Spreadsheet[S] = {
     val rowIdOpt = delegate.getRowId(coordinate.rowIdx)
     val colIdOpt = delegate.getColId(coordinate.colIdx)
@@ -80,7 +80,7 @@ class UndoRecordingSpreadsheet[S](
   }
 
   override def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using
-      LocalUid
+                                                                                             ReplicaId
   ): Spreadsheet[S] = {
     val before = delegate.getRange(id)
     if before.isDefined then {

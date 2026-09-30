@@ -2,11 +2,11 @@ package ex2026accessControl.travelplanner
 
 import ex2026accessControl.travelplanner.TravelPlan
 import munit.FunSuite
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
 
 class TravelPlanTest extends FunSuite {
-  given uid: LocalUid              = LocalUid(Uid.gen())
+  given uid: ReplicaId              = ReplicaId(Uid.gen())
   given filter: Filter[TravelPlan] = summon[Filter[TravelPlan]]
 
   test("changeTitle") {

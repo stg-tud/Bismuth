@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import ex2025ribltbft.riblt.RIBLT
 import ex2025ribltbft.riblt.RIBLT.{given_Hashable_Array, given_Xorable_Array}
 import ex2026accessControl.travelplanner.TravelPlan
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 
 import scala.annotation.unused
 import scala.util.Random
@@ -12,9 +12,9 @@ import scala.util.Random
 class TravelPlanTest extends munit.FunSuite:
 
     type Delta = TravelPlan
-    private val replica1Uid = LocalUid(Uid("replica 1"))
-    private val replica2Uid = LocalUid(Uid("replica 2"))
-    private val replica3Uid = LocalUid(Uid("replica 3"))
+    private val replica1Uid = ReplicaId(Uid("replica 1"))
+    private val replica2Uid = ReplicaId(Uid("replica 2"))
+    private val replica3Uid = ReplicaId(Uid("replica 3"))
     private val testSetSize = 500
 
     test("Example 1: Synchronise TravelPlan's deltas using RIBLT") {

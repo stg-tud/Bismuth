@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{LastWriterWins as LWW, RemoveWinsArray as ReplicatedList, ReplicatedTree}
 import rdts.experiments.{DeltaHistory, UndoRedoReplica}
 import rdts.time.Dot
@@ -33,7 +33,7 @@ object TaskList {
         this.state.receive(delta)
         this
 
-    def addTaskList(parentFolder: Dot, name: String)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def addTaskList(parentFolder: Dot, name: String)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree =>
         tree.insertWith(
           parentFolder,
@@ -47,7 +47,7 @@ object TaskList {
         )
       )
 
-    def addFolder(parentFolder: Dot, name: String)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def addFolder(parentFolder: Dot, name: String)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree =>
         tree.insertWith(
           parentFolder,
@@ -60,26 +60,26 @@ object TaskList {
         )
       )
 
-    def moveEntry(entryId: Dot, newParent: Dot)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def moveEntry(entryId: Dot, newParent: Dot)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree => tree.move(entryId, newParent))
 
-    def updateFolderName(folder: Dot, newName: String)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def updateFolderName(folder: Dot, newName: String)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree => updateFolder(tree, folder, f => f.copy(name = LWW.now(newName))))
 
-    def updateTaskListName(id: Dot, newName: String)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def updateTaskListName(id: Dot, newName: String)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree => updateTaskList(tree, id, tl => tl.copy(name = LWW.now(newName), items = ReplicatedList.empty)))
 
-    def addTaskList(id: Dot, item: Task)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def addTaskList(id: Dot, item: Task)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree => updateTaskList(tree, id, tl => tl.copy(items = tl.items.append(item))))
 
-    def removeTaskListItem(id: Dot, itemIx: Int)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def removeTaskListItem(id: Dot, itemIx: Int)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree => updateTaskList(tree, id, tl => tl.copy(items = tl.items.remove(itemIx))))
 
-    def moveTaskListItem(id: Dot, from: Int, to: Int)(using LocalUid): DeltaHistory[ReplicatedTree[Entry]] =
+    def moveTaskListItem(id: Dot, from: Int, to: Int)(using ReplicaId): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree => updateTaskList(tree, id, tl => tl.copy(items = tl.items.move(from, to))))
 
     def updateTaskTitle(taskListId: Dot, itemIx: Int, newTitle: String)(using
-        LocalUid
+                                                                        ReplicaId
     ): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree =>
         updateTaskList(
@@ -90,7 +90,7 @@ object TaskList {
       )
 
     def updateTaskDescription(taskListId: Dot, itemIx: Int, newDescription: Option[String])(using
-        LocalUid
+                                                                                            ReplicaId
     ): DeltaHistory[ReplicatedTree[Entry]] =
       state.mod(tree =>
         updateTaskList(
@@ -136,8 +136,8 @@ class TaskListTest extends munit.FunSuite {
   import TaskList.*
 
   test("example") {
-    given aid: LocalUid = LocalUid.predefined("a")
-    given bid: LocalUid = LocalUid.predefined("b")
+    given aid: ReplicaId = ReplicaId.predefined("a")
+    given bid: ReplicaId = ReplicaId.predefined("b")
 
     // Initialize two replicas
     val replica1 = App(UndoRedoReplica.empty[ReplicatedTree[Entry]])

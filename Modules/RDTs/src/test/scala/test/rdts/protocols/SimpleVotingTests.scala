@@ -1,15 +1,15 @@
 package test.rdts.protocols
 
 import rdts.base.Lattice.syntax.merge
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.protocols.{LeaderElection, Participants, Voting}
 
 class SimpleVotingTests extends munit.FunSuite {
 
-  val id1: LocalUid = LocalUid.gen()
-  val id2: LocalUid = LocalUid.gen()
-  val id3: LocalUid = LocalUid.gen()
-  val id4: LocalUid = LocalUid.gen()
+  val id1: ReplicaId = ReplicaId.gen()
+  val id2: ReplicaId = ReplicaId.gen()
+  val id3: ReplicaId = ReplicaId.gen()
+  val id4: ReplicaId = ReplicaId.gen()
   given Participants(Set(id1, id2, id3, id4).map(_.uid))
 
   test("Voting for 4 participants") {

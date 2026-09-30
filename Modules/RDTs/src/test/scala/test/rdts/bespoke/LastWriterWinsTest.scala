@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.LastWriterWins
 import rdts.time.Dots
 
@@ -53,7 +53,7 @@ class LastWriterWinsTest extends munit.FunSuite {
   test("newer delta marks older deltas as redundant") {
     import LastWriterWins.given
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -77,7 +77,7 @@ class LastWriterWinsTest extends munit.FunSuite {
   test("delta marks older deltas as redundant but not newer") {
     import LastWriterWins.given
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)

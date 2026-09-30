@@ -1,6 +1,6 @@
 package webapps.ex2025tabular.lib
 
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, Epoch, GrowOnlyList, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
@@ -35,8 +35,8 @@ case class KeepRemoveList[E] private (
   def toList: List[E] =
     order.value.toList.flatMap { d => if isAlive(d) then payloads.get(d).map(_.payload) else None }
 
-  def insertAt(i: Int, e: E)(using LocalUid): C = {
-    val newDot = observed.nextDot(LocalUid.replicaId)
+  def insertAt(i: Int, e: E)(using ReplicaId): C = {
+    val newDot = observed.nextDot(ReplicaId.replicaId)
     findInsertIndex(i) match
         case None        => KeepRemoveList.empty
         case Some(glIdx) =>
@@ -46,9 +46,9 @@ case class KeepRemoveList[E] private (
           KeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
-  def append(using LocalUid)(e: E): C = insertAt(sizeIncludingDead, e)
+  def append(using ReplicaId)(e: E): C = insertAt(sizeIncludingDead, e)
 
-  def keep(idx: Int)(using LocalUid): C =
+  def keep(idx: Int)(using ReplicaId): C =
     updateFlag(idx) { case flag =>
       flag.enable()
     }

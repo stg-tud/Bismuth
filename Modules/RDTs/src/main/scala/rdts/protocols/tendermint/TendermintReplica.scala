@@ -11,8 +11,8 @@
 // performed.
 package rdts.protocols.tendermint
 
-import rdts.base.{Bottom, LocalUid, Uid}
-import rdts.base.LocalUid.replicaId
+import rdts.base.{Bottom, ReplicaId, Uid}
+import rdts.base.ReplicaId.replicaId
 import rdts.protocols.tendermint.TendermintState.given
 import rdts.protocols.tendermint.Step.*
 
@@ -73,7 +73,7 @@ case class TendermintReplica(
       * TenderTee deployments (the ValidatorSet's trust model decides whether
       * a counter is embedded). The empty state (bottom) encodes "no message".
       */
-    def send(using LocalUid, ValidatorSet): TendermintState =
+    def send(using ReplicaId, ValidatorSet): TendermintState =
         val vs = summon[ValidatorSet]
         val ev = Evidence(
           ctr = vs.model match

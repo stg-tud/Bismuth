@@ -2,13 +2,13 @@ package ex2025tabular
 
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import webapps.ex2025tabular.lib.KeepRemoveList
 
 final class KeepRemoveListSuite extends FunSuite:
 
-    inline def withUid[A](id: String)(body: LocalUid ?=> A): A =
-      body(using LocalUid(Uid(id)))
+    inline def withUid[A](id: String)(body: ReplicaId ?=> A): A =
+      body(using ReplicaId(Uid(id)))
 
     extension [E](state: KeepRemoveList[E])
         inline def +(delta: KeepRemoveList[E]): KeepRemoveList[E] =
@@ -104,7 +104,7 @@ final class KeepRemoveListSuite extends FunSuite:
     assertEqualsList(merged, List("y", "z"))*/
     }
 
-    private def fromElements[E](elems: E*)(using uid: LocalUid): KeepRemoveList[E] =
+    private def fromElements[E](elems: E*)(using uid: ReplicaId): KeepRemoveList[E] =
       elems.foldLeft(KeepRemoveList.empty[E]) { (state, e) => state + state.append(e) }
 
     private def assertEqualsList[E](actual: KeepRemoveList[E], expected: List[E]): Unit =

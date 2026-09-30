@@ -9,7 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.Async
 import munit.FunSuite
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 
 /** Verifies the simplified full-mesh bootstrap chain:
   *
@@ -66,7 +66,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val resolver = LocalConnectionRegistry(Map("listener" -> link))
 
     final case class Node(id: String) {
-      val uid: LocalUid                = LocalUid.gen()
+      val uid: ReplicaId                = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,

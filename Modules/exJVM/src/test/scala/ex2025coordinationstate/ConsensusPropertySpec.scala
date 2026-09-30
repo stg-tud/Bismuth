@@ -3,7 +3,7 @@ package ex2025coordinationstate
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.{Arbitrary, Gen, Prop}
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.protocols.{Consensus, Participants}
 
 import scala.util.Try
@@ -19,7 +19,7 @@ class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
   override def genInitialState: Gen[State] =
     for
         numDevices <- Gen.choose(minDevices, maxDevices)
-        ids = Range(0, numDevices).map(_ => LocalUid.gen()).toList
+        ids = Range(0, numDevices).map(_ => ReplicaId.gen()).toList
     yield ids.map(id => (id, Consensus[C].empty)).toMap
 
   // generators
@@ -41,28 +41,28 @@ class ConsensusPropertySpec[A: Arbitrary, C[_]: Consensus](
     yield Merge(left, right)
 
   // commands that change state
-  class Write(writer: LocalUid, value: A) extends ACommand(writer):
+  class Write(writer: ReplicaId, value: A) extends ACommand(writer):
       override def toString: String = s"Write($writer, $value)"
 
-      def nextLocalState(states: Map[LocalUid, C[A]]): C[A] =
+      def nextLocalState(states: Map[ReplicaId, C[A]]): C[A] =
           given Participants = Participants(states.keySet.map(_.uid))
           val written        = Lattice.merge(states(writer), states(writer).propose(value)(using writer))
           Lattice.merge(written, written.upkeep()(using writer))
 
-      override def postCondition(state: Map[LocalUid, C[A]], result: Try[Map[LocalUid, C[A]]]): Prop =
+      override def postCondition(state: Map[ReplicaId, C[A]], result: Try[Map[ReplicaId, C[A]]]): Prop =
           given Participants = Participants(state.keySet.map(_.uid))
           (state(writer).members == result.get(writer).members)
           :| s"Members do not change during writes.\nBefore: ${state(writer)}\nAfter:${result.get(writer)}"
 
-  class Merge(left: LocalUid, right: LocalUid) extends ACommand(left):
+  class Merge(left: ReplicaId, right: ReplicaId) extends ACommand(left):
       override def toString: String = s"Merge($right, $left)"
 
-      def nextLocalState(states: Map[LocalUid, C[A]]): C[A] =
+      def nextLocalState(states: Map[ReplicaId, C[A]]): C[A] =
           given Participants = Participants(states.keySet.map(_.uid))
           val merged: C[A]   = Lattice.merge(states(left), states(right))
           Lattice.merge(merged, merged.upkeep()(using left))
 
-      override def postCondition(state: Map[LocalUid, C[A]], result: Try[Map[LocalUid, C[A]]]): Prop =
+      override def postCondition(state: Map[ReplicaId, C[A]], result: Try[Map[ReplicaId, C[A]]]): Prop =
           given Participants = Participants(state.keySet.map(_.uid))
 
           val res      = result.get

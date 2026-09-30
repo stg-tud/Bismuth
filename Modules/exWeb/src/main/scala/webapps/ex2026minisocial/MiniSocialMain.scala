@@ -1,7 +1,7 @@
 package webapps.ex2026minisocial
 
 import org.scalajs.dom.document
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
 import webapps.WebRTCConnectionView
@@ -10,7 +10,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 
 object MiniSocialMain {
 
-  val replicaId: LocalUid = LocalUid.gen()
+  val replicaId: ReplicaId = ReplicaId.gen()
 
   @JSExportTopLevel("MiniSocial")
   def run(): Unit = {

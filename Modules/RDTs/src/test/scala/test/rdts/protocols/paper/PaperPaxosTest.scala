@@ -1,14 +1,14 @@
 package test.rdts.protocols.paper
 
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.protocols.Paxos.given
 import rdts.protocols.{Participants, Paxos}
 
 class PaperPaxosTest extends munit.FunSuite {
 
-  val id1: LocalUid = LocalUid.gen()
-  val id2: LocalUid = LocalUid.gen()
-  val id3: LocalUid = LocalUid.gen()
+  val id1: ReplicaId = ReplicaId.gen()
+  val id2: ReplicaId = ReplicaId.gen()
+  val id3: ReplicaId = ReplicaId.gen()
 
   given Participants = Participants(Set(id1, id2, id3).map(_.uid))
 

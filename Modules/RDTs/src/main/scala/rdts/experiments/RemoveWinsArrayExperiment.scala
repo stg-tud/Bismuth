@@ -1,6 +1,6 @@
 package rdts.experiments
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins as LWW
 import rdts.time.{CausalTime, Dot, Dots}
 
@@ -46,16 +46,16 @@ case class RemoveWinsArrayExperiment[E](
 
   def size: Int = compactElements.size
 
-  def prepend(value: E)(using LocalUid): RemoveWinsArrayExperiment[E]               = insert(0, value)
-  def prependAll(values: Iterable[E])(using LocalUid): RemoveWinsArrayExperiment[E] = insertAll(0, values)
+  def prepend(value: E)(using ReplicaId): RemoveWinsArrayExperiment[E]               = insert(0, value)
+  def prependAll(values: Iterable[E])(using ReplicaId): RemoveWinsArrayExperiment[E] = insertAll(0, values)
 
-  def append(value: E)(using LocalUid): RemoveWinsArrayExperiment[E]               = insert(size, value)
-  def appendAll(values: Iterable[E])(using LocalUid): RemoveWinsArrayExperiment[E] = insertAll(size, values)
+  def append(value: E)(using ReplicaId): RemoveWinsArrayExperiment[E]               = insert(size, value)
+  def appendAll(values: Iterable[E])(using ReplicaId): RemoveWinsArrayExperiment[E] = insertAll(size, values)
 
-  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArrayExperiment[E] =
+  def insert(index: Int, value: E)(using ReplicaId): RemoveWinsArrayExperiment[E] =
     insertAll(index, Iterable(value))
 
-  def insertAll(index: Int, values: Iterable[E])(using LocalUid): RemoveWinsArrayExperiment[E] = {
+  def insertAll(index: Int, values: Iterable[E])(using ReplicaId): RemoveWinsArrayExperiment[E] = {
     val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
 
     val entriesList = entries
@@ -67,7 +67,7 @@ case class RemoveWinsArrayExperiment[E](
     val newElements  = scala.collection.mutable.Map[Dot, RemoveWinsArrayExperiment.Entry[E]]()
     val predecessors = observed
     for (value, dot) <- values.zip(nextDots) do
-        val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+        val newPos = LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
         newElements += (dot -> RemoveWinsArrayExperiment.Entry(LWW(timestamp, newPos), value))
         beforePos = newPos
 
@@ -78,10 +78,10 @@ case class RemoveWinsArrayExperiment[E](
     )
   }
 
-  def update(index: Int, elem: E)(using LocalUid): RemoveWinsArrayExperiment[E] =
+  def update(index: Int, elem: E)(using ReplicaId): RemoveWinsArrayExperiment[E] =
     updateWith(index, _ => elem)
 
-  def updateWith(index: Int, elem: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] =
+  def updateWith(index: Int, elem: E => E)(using ReplicaId): RemoveWinsArrayExperiment[E] =
     entries.lift(index) match {
       case Some((oldDot, e)) =>
         val predecessors = observed
@@ -101,7 +101,7 @@ case class RemoveWinsArrayExperiment[E](
       case None           => RemoveWinsArrayExperiment.empty
     }
 
-  def move(from: Int, to: Int)(using LocalUid): RemoveWinsArrayExperiment[E] =
+  def move(from: Int, to: Int)(using ReplicaId): RemoveWinsArrayExperiment[E] =
     if from < 0 || to < 0 || from >= size || to >= size then RemoveWinsArrayExperiment.empty
     else if from == to then RemoveWinsArrayExperiment.empty
     else
@@ -112,7 +112,7 @@ case class RemoveWinsArrayExperiment[E](
             val pos = {
               val beforePos = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.min)
               val afterPos  = entriesList.lift(to + 1).map(_._2.index.value).getOrElse(LSeq.max)
-              LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+              LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
             }
             RemoveWinsArrayExperiment(
               elements = Map(dot -> entry.copy(
@@ -124,7 +124,7 @@ case class RemoveWinsArrayExperiment[E](
           case None => RemoveWinsArrayExperiment.empty
         }
 
-  def apply(fn: E => E)(using LocalUid): RemoveWinsArrayExperiment[E] = {
+  def apply(fn: E => E)(using ReplicaId): RemoveWinsArrayExperiment[E] = {
     val predecessors = observed
     val dot          = predecessors.nextDot
     RemoveWinsArrayExperiment(

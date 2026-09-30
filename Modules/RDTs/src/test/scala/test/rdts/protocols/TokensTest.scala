@@ -1,6 +1,6 @@
 package test.rdts.protocols
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.{Ownership, Token}
 import rdts.time.Dots
@@ -9,13 +9,13 @@ class TokensTest extends munit.FunSuite {
   given dots: Dots            = Dots.empty
   given Lattice[Token]        = Lattice.derived
   val numOfReplicas           = 5
-  val replicas: Seq[LocalUid] = List.tabulate(numOfReplicas)(_ => LocalUid.gen())
+  val replicas: Seq[ReplicaId] = List.tabulate(numOfReplicas)(_ => ReplicaId.gen())
   var token: Token            = Token(
     os = Ownership.unchanged,
     wants = ReplicatedSet.empty
   )
   // set replica 0 the initial owner
-  token = token.merge(Token(Ownership(1, LocalUid.unwrap(replicas(0))), ReplicatedSet.empty))
+  token = token.merge(Token(Ownership(1, ReplicaId.unwrap(replicas(0))), ReplicatedSet.empty))
 
   test("Some replica initially owns the token") {
     assert(List.range(0, numOfReplicas).map(n => token.isOwner(using replicas(n))).reduce((x, y) => x || y))
@@ -31,7 +31,7 @@ class TokensTest extends munit.FunSuite {
     var updatedToken = token.merge(token.request(using replicas(1)))
     updatedToken = updatedToken.merge(updatedToken.request(using replicas(2)))
     // find biggest id in wants
-    val biggestIdIndex = replicas.indexOf(LocalUid(updatedToken.wants.elements.max))
+    val biggestIdIndex = replicas.indexOf(ReplicaId(updatedToken.wants.elements.max))
     // replica 0, the current owner, calls upkeep
     updatedToken = updatedToken.merge(updatedToken.upkeep(using replicas(0)))
     // assert that the new owner is the one with the biggest id

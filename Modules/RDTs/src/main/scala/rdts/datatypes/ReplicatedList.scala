@@ -17,7 +17,7 @@ case class ReplicatedList[E](
 
   def nextTime: CausalTime = now.map(_.advance).getOrElse(CausalTime.now())
 
-  def insertAfter(predecessor: Dot, values: Iterable[E])(using LocalUid): ReplicatedList[E] = {
+  def insertAfter(predecessor: Dot, values: Iterable[E])(using ReplicaId): ReplicatedList[E] = {
     if values.isEmpty then return ReplicatedList.empty[E]
 
     val nextDots  = Iterable.iterate(observed.nextDot, values.size)(_.advance)
@@ -82,13 +82,13 @@ case class ReplicatedList[E](
 
   def read(i: Int): Option[E] = toList.lift(i)
 
-  def insert(index: Int, elem: E)(using LocalUid): ReplicatedList[E]   = insertAt(index, elem)
-  def insertAt(index: Int, elem: E)(using LocalUid): ReplicatedList[E] = {
+  def insert(index: Int, elem: E)(using ReplicaId): ReplicatedList[E]   = insertAt(index, elem)
+  def insertAt(index: Int, elem: E)(using ReplicaId): ReplicatedList[E] = {
     val pos = findOptimizedInsertionPoint(dotList(index))
     insertAfter(pos, Iterable(elem))
   }
 
-  def insertAll(index: Int, elems: Iterable[E])(using LocalUid): ReplicatedList[E] = {
+  def insertAll(index: Int, elems: Iterable[E])(using ReplicaId): ReplicatedList[E] = {
     val pos = findOptimizedInsertionPoint(dotList(index))
     insertAfter(pos, elems)
   }
@@ -120,18 +120,18 @@ case class ReplicatedList[E](
       elements = elements.filterNot((d, _) => removed.contains(d)),
     )
 
-  def appendAll(elements: Iterable[E])(using LocalUid): ReplicatedList[E] = {
+  def appendAll(elements: Iterable[E])(using ReplicaId): ReplicatedList[E] = {
     val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(ReplicatedList.headDot))
     insertAfter(pos, elements)
   }
 
-  def prependAll(e: Iterable[E])(using LocalUid): ReplicatedList[E] = insertAfter(headDot, e)
-  def prepend(e: E)(using LocalUid): ReplicatedList[E]              = insertAfter(dotList(0), List(e))
-  def append(e: E)(using LocalUid): ReplicatedList[E]               =
+  def prependAll(e: Iterable[E])(using ReplicaId): ReplicatedList[E] = insertAfter(headDot, e)
+  def prepend(e: E)(using ReplicaId): ReplicatedList[E]              = insertAfter(dotList(0), List(e))
+  def append(e: E)(using ReplicaId): ReplicatedList[E]               =
       val pos = findOptimizedInsertionPoint(dotList.lastOption.getOrElse(ReplicatedList.headDot))
       insertAfter(pos, List(e))
 
-  def update(index: Int, elem: E)(using LocalUid): ReplicatedList[E] = {
+  def update(index: Int, elem: E)(using ReplicaId): ReplicatedList[E] = {
     val pos = dotList(index + 1)
     insertAfter(pos, List(elem)).copy(removed = Dots.single(pos))
   }

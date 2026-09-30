@@ -8,21 +8,21 @@ import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.{BroadcastIO, MergingHistory}
 import rdts.base.Lattice.syntax
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 
 import java.util.{Timer, TimerTask}
 import scala.util.Random
 
 class OverlayDemoNode(
-    selfDetails: Set[ConnectionDescriptor],
-    listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
-    envelopeResolver: ChannelResolver,
-    random: Random = Random(0),
-    config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
-    onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
-    printOverlayEventsToStdout: Boolean = false,
-    runBackgroundTasks: Boolean = true,
-    val localUid: LocalUid = LocalUid.gen(),
+                       selfDetails: Set[ConnectionDescriptor],
+                       listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
+                       envelopeResolver: ChannelResolver,
+                       random: Random = Random(0),
+                       config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
+                       onStateChanged: OverlayStatusProtocol.Status => Unit = _ => (),
+                       printOverlayEventsToStdout: Boolean = false,
+                       runBackgroundTasks: Boolean = true,
+                       val localUid: ReplicaId = ReplicaId.gen(),
 )(using Lattice[Payload[OverlayStatusProtocol.Status]]) {
 
   @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty
@@ -96,7 +96,7 @@ class OverlayDemoNode(
 
   def overlayInfoTick(): Unit =
     broadcastIO.foreach { io =>
-      given LocalUid = localUid
+      given ReplicaId = localUid
       publish(OverlayStatusProtocol.statusDelta(state, io, nowMillis()))
     }
 

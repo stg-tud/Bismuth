@@ -1,13 +1,13 @@
 package test.rdts
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 
-class TestReplica[A](val replicaId: LocalUid, var anon: A) {
+class TestReplica[A](val replicaId: ReplicaId, var anon: A) {
   def apply(delta: A)(using Lattice[A]): TestReplica[A] =
       anon = anon `merge` delta
       this
 
-  def mod(f: A => LocalUid ?=> A)(using Lattice[A]): TestReplica[A] =
+  def mod(f: A => ReplicaId ?=> A)(using Lattice[A]): TestReplica[A] =
     apply(f(anon)(using replicaId))
 }
 

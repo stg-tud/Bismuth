@@ -8,14 +8,14 @@ import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import munit.FunSuite
 import rdts.base.Lattice.syntax.merge
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 import scala.util.Random
 
 class OverlayStatusProtocolTest extends FunSuite {
 
   final case class Node(id: String) {
-    val uid: LocalUid             = LocalUid.gen()
+    val uid: ReplicaId             = ReplicaId.gen()
     val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
     var status: Status            = OverlayStatusProtocol.empty
     val io: BroadcastIO[Status]   = BroadcastIO[Status](
@@ -25,7 +25,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     )
 
     def publishStatus(round: Long): Unit = {
-      given LocalUid = uid
+      given ReplicaId = uid
       val delta      = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
       status = status.merge(delta)
       io.broadcast(delta)
@@ -97,7 +97,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     )
 
     final case class HyparNode(id: String, random: Random) {
-      val uid: LocalUid             = LocalUid.gen()
+      val uid: ReplicaId             = ReplicaId.gen()
       val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       var status: Status            = OverlayStatusProtocol.empty
       val io: BroadcastIO[Status]   = BroadcastIO[Status](
@@ -114,7 +114,7 @@ class OverlayStatusProtocolTest extends FunSuite {
         io.bootstrapVia(peer)
 
       def publishStatus(round: Long): Unit = {
-        given LocalUid = uid
+        given ReplicaId = uid
         val delta      = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
         status = status.merge(delta)
         io.broadcast(delta)

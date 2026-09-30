@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins as LWW
 import rdts.time.{CausalTime, Dot, Dots}
 
@@ -27,16 +27,16 @@ case class RemoveWinsArray[E](
 
   def size: Int = compactElements.size
 
-  def prepend(value: E)(using LocalUid): RemoveWinsArray[E]               = insert(0, value)
-  def prependAll(values: Iterable[E])(using LocalUid): RemoveWinsArray[E] = insertAll(0, values)
+  def prepend(value: E)(using ReplicaId): RemoveWinsArray[E]               = insert(0, value)
+  def prependAll(values: Iterable[E])(using ReplicaId): RemoveWinsArray[E] = insertAll(0, values)
 
-  def append(value: E)(using LocalUid): RemoveWinsArray[E]               = insert(size, value)
-  def appendAll(values: Iterable[E])(using LocalUid): RemoveWinsArray[E] = insertAll(size, values)
+  def append(value: E)(using ReplicaId): RemoveWinsArray[E]               = insert(size, value)
+  def appendAll(values: Iterable[E])(using ReplicaId): RemoveWinsArray[E] = insertAll(size, values)
 
-  def insert(index: Int, value: E)(using LocalUid): RemoveWinsArray[E] =
+  def insert(index: Int, value: E)(using ReplicaId): RemoveWinsArray[E] =
     insertAll(index, Iterable(value))
 
-  def insertAll(index: Int, values: Iterable[E])(using LocalUid): RemoveWinsArray[E] = {
+  def insertAll(index: Int, values: Iterable[E])(using ReplicaId): RemoveWinsArray[E] = {
     val nextDots = Iterable.iterate(observed.nextDot, values.size)(_.advance)
 
     val entriesList = entries
@@ -47,7 +47,7 @@ case class RemoveWinsArray[E](
 
     val newElements = scala.collection.mutable.Map[Dot, RemoveWinsArray.Entry[E]]()
     for (value, dot) <- values.zip(nextDots) do
-        val newPos = LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+        val newPos = LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
         newElements += (dot -> RemoveWinsArray.Entry(LWW(timestamp, newPos), value))
         beforePos = newPos
 
@@ -71,7 +71,7 @@ case class RemoveWinsArray[E](
       case None           => RemoveWinsArray.empty
     }
 
-  def move(from: Int, to: Int)(using LocalUid): RemoveWinsArray[E] =
+  def move(from: Int, to: Int)(using ReplicaId): RemoveWinsArray[E] =
     if from < 0 || to < 0 || from > size || to > size then RemoveWinsArray.empty
     else if from == to then RemoveWinsArray.empty
     else
@@ -81,7 +81,7 @@ case class RemoveWinsArray[E](
             val pos = {
               val beforePos = entriesList.lift(to - 1).map(_._2.index.value).getOrElse(LSeq.min)
               val afterPos  = entriesList.lift(to).map(_._2.index.value).getOrElse(LSeq.max)
-              LSeq.between(beforePos, afterPos, LocalUid.replicaId)
+              LSeq.between(beforePos, afterPos, ReplicaId.replicaId)
             }
             RemoveWinsArray(
               elements = Map(dot -> entry.copy(
@@ -92,7 +92,7 @@ case class RemoveWinsArray[E](
           case None => RemoveWinsArray.empty
         }
 
-  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using LocalUid): RemoveWinsArray[E] =
+  def moveRange(fromStart: Int, fromEnd: Int, toIndex: Int)(using ReplicaId): RemoveWinsArray[E] =
     if fromStart < 0 || fromEnd < 0 || toIndex < 0 then RemoveWinsArray.empty
     else if fromStart >= fromEnd then RemoveWinsArray.empty
     else if fromStart >= size || toIndex > size then RemoveWinsArray.empty
@@ -110,7 +110,7 @@ case class RemoveWinsArray[E](
             var currentPos  = beforePos
 
             for (dot, entry) <- elementsToMove do
-                val newPos = LSeq.between(currentPos, afterPos, LocalUid.replicaId)
+                val newPos = LSeq.between(currentPos, afterPos, ReplicaId.replicaId)
                 newElements += (dot -> entry.copy(index = LWW.now(newPos)))
                 currentPos = newPos
 
@@ -140,7 +140,7 @@ object RemoveWinsArray {
 
   def empty[A]: RemoveWinsArray[A] = RemoveWinsArray(Map.empty, Dots.empty)
 
-  def of[A](values: A*)(using LocalUid): RemoveWinsArray[A] =
+  def of[A](values: A*)(using ReplicaId): RemoveWinsArray[A] =
     values.foldLeft(RemoveWinsArray.empty[A]) { (arr, v) =>
       arr.append(v)
     }

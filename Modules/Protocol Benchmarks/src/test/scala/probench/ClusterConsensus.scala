@@ -3,7 +3,7 @@ package probench
 import channels.connection.SynchronousLocalConnection
 import probench.clients.ProBenchClient
 import probench.data.{ClusterState, KVOperation}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.Participants
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,7 +50,7 @@ class ClusterConsensus extends munit.FunSuite {
     assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)
     assertEquals(nodes(2).cluster.state, nodes(0).cluster.state)
 
-    def investigateUpkeep(state: ClusterState)(using LocalUid) = {
+    def investigateUpkeep(state: ClusterState)(using ReplicaId) = {
       val delta  = state.upkeep
       val merged = state `merge` delta
       assert(state != merged)
@@ -146,7 +146,7 @@ class ClusterConsensus extends munit.FunSuite {
 
     assertEquals(primary.cluster.state.closedRounds.size, 1000)
 
-    def investigateUpkeep(state: ClusterState)(using LocalUid) = {
+    def investigateUpkeep(state: ClusterState)(using ReplicaId) = {
       val delta  = state.upkeep
       val merged = state `merge` delta
       assert(state != merged)

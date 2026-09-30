@@ -1,7 +1,7 @@
 package benchmarks.b2022lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
-import rdts.base.{Decompose, LocalUid}
+import rdts.base.{Decompose, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, ObserveRemoveMap}
 
 import java.util.concurrent.TimeUnit
@@ -24,7 +24,7 @@ class ORMapBench {
 
   var map: SUT = scala.compiletime.uninitialized
 
-  given LocalUid = LocalUid.predefined("a")
+  given ReplicaId = ReplicaId.predefined("a")
 
   @Setup
   def setup(): Unit =

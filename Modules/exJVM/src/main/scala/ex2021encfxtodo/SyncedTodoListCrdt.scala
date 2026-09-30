@@ -3,7 +3,7 @@ package ex2021encfxtodo
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2021encfxtodo.SyncedTodoListCrdt.{StateType, stateCodec1}
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 
 import java.util.UUID
@@ -12,8 +12,8 @@ import scala.concurrent.duration.{DurationInt, MILLISECONDS}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 class SyncedTodoListCrdt(
-    val replicaId: LocalUid,
-    onUpdated: (Map[UUID, TodoEntry], Map[UUID, TodoEntry]) => Unit = (_, _) => (),
+                          val replicaId: ReplicaId,
+                          onUpdated: (Map[UUID, TodoEntry], Map[UUID, TodoEntry]) => Unit = (_, _) => (),
 ) {
 
   private val crdt: DeltaAWLWWMContainer[UUID, TodoEntry] =

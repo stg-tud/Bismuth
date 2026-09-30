@@ -7,8 +7,8 @@ import channels.{BroadcastIO, ConcurrencyHelper, DeltaStorage}
 import probench.data.*
 import probench.data.Codecs.given
 import rdts.base.Lattice.syntax
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.{MultiPaxos, MultipaxosPhase, Participants}
 
@@ -43,7 +43,7 @@ class KeyValueReplica(
   val readReplyActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(false)
 
   given Participants(votingReplicas)
-  given localUid: LocalUid = LocalUid(uid)
+  given localUid: ReplicaId = ReplicaId(uid)
 
   val currentStateLock: AnyRef = new {}
   val connInfStateLock: AnyRef = new {}
@@ -128,7 +128,7 @@ class KeyValueReplica(
             publish(state.startLeaderElection): Unit
           case _ => ()
 
-    def maybeProposeNewValue()(using LocalUid): Unit = currentStateLock.synchronized {
+    def maybeProposeNewValue()(using ReplicaId): Unit = currentStateLock.synchronized {
       // check if we are the leader and ready to handle a request
       if state.leader.contains(replicaId) && state.phase == MultipaxosPhase.Idle then
           Option(client.writeQueue.poll()) match {

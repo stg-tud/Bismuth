@@ -1,6 +1,6 @@
 package test.rdts.containers
 
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.EnableWinsFlag
 import rdts.syntax.DeltaBuffer
 
@@ -8,7 +8,7 @@ class DeltaBufferDottedTest extends munit.FunSuite {
 
   test("basic interaction") {
 
-    given LocalUid = LocalUid.gen()
+    given ReplicaId = ReplicaId.gen()
 
     val dbe = DeltaBuffer[EnableWinsFlag](EnableWinsFlag.empty)
 

@@ -1,16 +1,16 @@
 package webapps.ex2025tabular.lib
 
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 import scala.annotation.unused
 
 class SpreadsheetDeltaAggregator[S](
     private var spreadsheet: Spreadsheet[S],
-    replicaId: LocalUid
+    replicaId: ReplicaId
 ) {
 
-  private type EditFunction = LocalUid ?=> SpreadsheetOps[S] => Spreadsheet[S]
-  private type UndoFunction = LocalUid ?=> Spreadsheet[S] => Spreadsheet[S]
+  private type EditFunction = ReplicaId ?=> SpreadsheetOps[S] => Spreadsheet[S]
+  private type UndoFunction = ReplicaId ?=> Spreadsheet[S] => Spreadsheet[S]
 
   private var undoStack: List[UndoFunction] = Nil
 

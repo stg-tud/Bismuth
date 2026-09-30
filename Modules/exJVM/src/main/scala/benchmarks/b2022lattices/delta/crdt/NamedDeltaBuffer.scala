@@ -1,6 +1,6 @@
 package benchmarks.b2022lattices.delta.crdt
 
-import rdts.base.{Decompose, Lattice, LocalUid, Uid}
+import rdts.base.{Decompose, Lattice, ReplicaId, Uid}
 
 case class Named[T](replicaId: Uid, anon: T)
 
@@ -9,12 +9,12 @@ case class Named[T](replicaId: Uid, anon: T)
   * have been read and propagated by the middleware, it should call resetDeltaBuffer to empty the deltaBuffer.
   */
 case class NamedDeltaBuffer[State](
-    replicaID: LocalUid,
-    state: State,
-    deltaBuffer: List[Named[State]] = Nil
+                                    replicaID: ReplicaId,
+                                    state: State,
+                                    deltaBuffer: List[Named[State]] = Nil
 ) {
 
-  inline def map(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =
+  inline def map(f: ReplicaId ?=> State => State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =
     applyDelta(replicaID.uid, f(using replicaID)(state))
 
   def applyDelta(source: Uid, delta: State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =
@@ -25,6 +25,6 @@ case class NamedDeltaBuffer[State](
       case None => this
     }
 
-  def mod(f: LocalUid ?=> State => State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =
+  def mod(f: ReplicaId ?=> State => State)(using Lattice[State], Decompose[State]): NamedDeltaBuffer[State] =
     applyDelta(replicaID.uid, f(using replicaID)(state))
 }

@@ -1,7 +1,7 @@
 package rdts.protocols.chimeric
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Util.Agreement
 import rdts.protocols.Util.Agreement.*
 import rdts.protocols.{BallotNum, Consensus, Participants, PaxosRound, Voting}
@@ -72,14 +72,14 @@ case class ChimericOpen[A](
       .map(_.value)
 
   /** Value proposed locally in the active configuration. */
-  def myValue(using LocalUid): Option[A] =
+  def myValue(using ReplicaId): Option[A] =
     rounds
       .get((activeConfigId, BallotNum(replicaId, -1)))
       .flatMap(_.proposals.votes.headOption)
       .map(_.value)
 
   /** Next ballot number for the local replica. */
-  def nextBallotNum(using LocalUid): BallotNum =
+  def nextBallotNum(using ReplicaId): BallotNum =
     val maxCounter =
       rounds.keys
         .collect {
@@ -92,7 +92,7 @@ case class ChimericOpen[A](
     BallotNum(replicaId, maxCounter + 1)
 
   /** Add a leader vote to the active round. */
-  def voteLeader(leader: Uid)(using LocalUid): PaxosRound[A] =
+  def voteLeader(leader: Uid)(using ReplicaId): PaxosRound[A] =
     PaxosRound(
       leaderElection =
         activeRound
@@ -106,7 +106,7 @@ case class ChimericOpen[A](
     )
 
   /** Add a value vote to the active round. */
-  def voteValue(value: A)(using LocalUid): PaxosRound[A] =
+  def voteValue(value: A)(using ReplicaId): PaxosRound[A] =
     PaxosRound(
       leaderElection =
         activeRound
@@ -134,7 +134,7 @@ case class ChimericOpen[A](
     }
 
   /** Whether the local replica is the elected leader. */
-  def isCurrentLeader(using LocalUid): Boolean =
+  def isCurrentLeader(using ReplicaId): Boolean =
     activeRound match
       case Some((_, PaxosRound(leaderElection, _))) =>
         leaderDecision(leaderElection)(
@@ -146,7 +146,7 @@ case class ChimericOpen[A](
         false
 
   /** Start a leader-election round and record the local value. */
-  def phase1a(value: A)(using LocalUid): ChimericOpen[A] =
+  def phase1a(value: A)(using ReplicaId): ChimericOpen[A] =
     copy(
       rounds = rounds ++ Map(
         (activeConfigId, nextBallotNum) ->
@@ -159,7 +159,7 @@ case class ChimericOpen[A](
       )
 
   /** Start a leader-election round without proposing a value. */
-  def phase1a(using LocalUid): ChimericOpen[A] =
+  def phase1a(using ReplicaId): ChimericOpen[A] =
     copy(
       rounds = rounds ++ Map(
         (activeConfigId, nextBallotNum) ->
@@ -168,7 +168,7 @@ case class ChimericOpen[A](
     )
 
   /** Respond to the current leader-election proposal. */
-  def phase1b(using LocalUid): ChimericOpen[A] =
+  def phase1b(using ReplicaId): ChimericOpen[A] =
     if !currentRoundHasCandidate then
       this
     else
@@ -192,7 +192,7 @@ case class ChimericOpen[A](
           )
 
   /** As leader, propose the newest accepted value or `myProposal`. */
-  def phase2a(myProposal: A)(using LocalUid): ChimericOpen[A] =
+  def phase2a(myProposal: A)(using ReplicaId): ChimericOpen[A] =
     if !isCurrentLeader then
       this
     else
@@ -214,13 +214,13 @@ case class ChimericOpen[A](
           )
 
   /** Propose the value previously recorded by this replica. */
-  def phase2a(using LocalUid): ChimericOpen[A] =
+  def phase2a(using ReplicaId): ChimericOpen[A] =
     myValue match
       case Some(v) => phase2a(v)
       case None    => this
 
   /** Accept the value currently proposed in the active round. */
-  def phase2b(using LocalUid): ChimericOpen[A] =
+  def phase2b(using ReplicaId): ChimericOpen[A] =
     if !currentRoundHasProposal then
       this
     else
@@ -237,7 +237,7 @@ case class ChimericOpen[A](
   /** Propose and vote for a network reconfiguration. */
   def proposeReconfiguration(
       op: ReconfigOp
-  )(using LocalUid): ChimericOpen[A] =
+  )(using ReplicaId): ChimericOpen[A] =
     val nextCfg =
       op match
         case AddNode(nextId, node, nodeSlices, updatedExistingSlices) =>
@@ -395,7 +395,7 @@ object ChimericOpen:
       /** Start a consensus proposal. */
       override def propose(
           value: A
-      )(using LocalUid, Participants): ChimericOpen[A] =
+      )(using ReplicaId, Participants): ChimericOpen[A] =
         c.phase1a(value)
 
     extension [A](c: ChimericOpen[A])(using Participants)
@@ -409,7 +409,7 @@ object ChimericOpen:
     extension [A](c: ChimericOpen[A])
       /** Advance the local consensus state by one protocol step. */
       override def upkeep()(
-          using LocalUid,
+          using ReplicaId,
           Participants
       ): ChimericOpen[A] =
         val afterReconfig =

@@ -2,7 +2,7 @@ package webapps.ex2019todo
 
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.{Element, document, window}
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
 import webapps.WebRTCConnectionView
@@ -12,7 +12,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 
 object Todolist {
 
-  val replicaId: LocalUid = LocalUid.gen()
+  val replicaId: ReplicaId = ReplicaId.gen()
 
   val timer = new Timer()
 

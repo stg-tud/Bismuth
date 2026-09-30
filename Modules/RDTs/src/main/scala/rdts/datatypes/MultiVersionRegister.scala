@@ -14,10 +14,10 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
 
   def compact: MultiVersionRegister[A] = MultiVersionRegister(repr.filter((d, _) => !removed.contains(d)), removed)
 
-  def write(v: A)(using LocalUid): MultiVersionRegister[A] = {
+  def write(v: A)(using ReplicaId): MultiVersionRegister[A] = {
 
     val containedDots = Dots.from(repr.keys)
-    val nextDot       = removed.union(containedDots).nextDot(LocalUid.replicaId)
+    val nextDot       = removed.union(containedDots).nextDot(ReplicaId.replicaId)
 
     MultiVersionRegister(
       Map(nextDot -> v),
@@ -25,9 +25,9 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
     )
   }
 
-  def writeConcurrent(v: A)(using LocalUid): MultiVersionRegister[A] = {
+  def writeConcurrent(v: A)(using ReplicaId): MultiVersionRegister[A] = {
 
-    val nextDot = removed.union(Dots.from(repr.keys)).nextDot(LocalUid.replicaId)
+    val nextDot = removed.union(Dots.from(repr.keys)).nextDot(ReplicaId.replicaId)
 
     MultiVersionRegister(
       Map(nextDot -> v),
@@ -46,7 +46,7 @@ case class MultiVersionRegister[A](repr: Map[Dot, A], removed: Dots) {
 
 object MultiVersionRegister {
 
-  def of[A](a: A)(using LocalUid): MultiVersionRegister[A] = empty.write(a)
+  def of[A](a: A)(using ReplicaId): MultiVersionRegister[A] = empty.write(a)
 
   given bottomInstance[A]: Bottom[MultiVersionRegister[A]] = Bottom.derived
   def empty[A]: MultiVersionRegister[A]                    = Bottom.empty

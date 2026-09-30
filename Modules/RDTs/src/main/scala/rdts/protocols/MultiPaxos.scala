@@ -1,7 +1,7 @@
 package rdts.protocols
 
 import rdts.base.Lattice.syntax
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.datatypes.Epoch
 import rdts.protocols.Participants
 import rdts.protocols.Paxos.given
@@ -44,13 +44,13 @@ case class MultiPaxos[A](
     def readDecisionsSince(time: Time): Iterable[A] =
       NumericRange(time, rounds.counter, 1L).view.flatMap(log.get)
 
-    def startLeaderElection(using LocalUid): MultiPaxos[A] =
+    def startLeaderElection(using ReplicaId): MultiPaxos[A] =
       MultiPaxos(rounds.write(currentPaxos.phase1a)) // start new Paxos round with self proposed as leader
 
-    def proposeIfLeader(value: A)(using LocalUid, Participants): MultiPaxos[A] =
+    def proposeIfLeader(value: A)(using ReplicaId, Participants): MultiPaxos[A] =
       MultiPaxos(rounds = rounds.write(currentPaxos.phase2a(value))) // phase 2a already checks if I am the leader
 
-    def upkeep(using LocalUid, Participants): MultiPaxos[A] = {
+    def upkeep(using ReplicaId, Participants): MultiPaxos[A] = {
       // perform upkeep in Paxos
       val deltaPaxos = currentPaxos.upkeep()
       val newPaxos   = currentPaxos.merge(deltaPaxos)

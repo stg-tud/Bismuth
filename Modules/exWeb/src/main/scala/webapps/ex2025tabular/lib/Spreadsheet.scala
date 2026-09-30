@@ -1,6 +1,6 @@
 package webapps.ex2025tabular.lib
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
 import webapps.ex2025tabular.lib.ReplicatedUniqueList.MarkerRemovalBehavior
@@ -17,18 +17,18 @@ case class Spreadsheet[A](
     Dots.from(rowIds.toList)
     `union` Dots.from(colIds.toList)
 
-  private def newRowOrColId(using LocalUid): Dot = observed.nextDot(LocalUid.replicaId)
+  private def newRowOrColId(using ReplicaId): Dot = observed.nextDot(ReplicaId.replicaId)
 
   class SpreadsheetInternal {
-    def keepRow(index: RowIndex)(using LocalUid): Spreadsheet[A] = Spreadsheet(
+    def keepRow(index: RowIndex)(using ReplicaId): Spreadsheet[A] = Spreadsheet(
       rowIds = rowIds.insertAt(index, getRowId(index).get)
     )
 
-    def keepColumn(index: ColumnIndex)(using LocalUid): Spreadsheet[A] = Spreadsheet(
+    def keepColumn(index: ColumnIndex)(using ReplicaId): Spreadsheet[A] = Spreadsheet(
       colIds = colIds.insertAt(index, getColId(index).get)
     )
 
-    def removeValueFromConflict(rowId: RowId, colId: ColumnId, value: A)(using LocalUid): Spreadsheet[A] =
+    def removeValueFromConflict(rowId: RowId, colId: ColumnId, value: A)(using ReplicaId): Spreadsheet[A] =
         val newContent = rowAndColIdPairToContent.transform(rowId, colId) {
           case None      => None
           case Some(set) => Some(set.remove(value))
@@ -40,29 +40,29 @@ case class Spreadsheet[A](
 
   lazy val internal: SpreadsheetInternal = SpreadsheetInternal()
 
-  def addRow()(using LocalUid): RowResult[A] =
+  def addRow()(using ReplicaId): RowResult[A] =
       val id = newRowOrColId.toRowId
       RowResult(id, Spreadsheet[A](rowIds = rowIds.append(id)))
 
-  def addColumn()(using LocalUid): ColumnResult[A] =
+  def addColumn()(using ReplicaId): ColumnResult[A] =
       val id = newRowOrColId.toColumnId
       ColumnResult(id, Spreadsheet[A](colIds = colIds.append(id)))
 
-  def removeRow(rowIdx: RowIndex)(using LocalUid): Spreadsheet[A] =
+  def removeRow(rowIdx: RowIndex)(using ReplicaId): Spreadsheet[A] =
     Spreadsheet[A](rowIds = rowIds.removeAt(rowIdx))
 
-  def removeColumn(colIdx: ColumnIndex)(using LocalUid): Spreadsheet[A] =
+  def removeColumn(colIdx: ColumnIndex)(using ReplicaId): Spreadsheet[A] =
     Spreadsheet[A](colIds = colIds.removeAt(colIdx))
 
-  def insertRow(rowIdx: RowIndex)(using LocalUid): RowResult[A] =
+  def insertRow(rowIdx: RowIndex)(using ReplicaId): RowResult[A] =
       val id = newRowOrColId.toRowId
       RowResult(id, Spreadsheet[A](rowIds = rowIds.insertAt(rowIdx, id)))
 
-  def insertColumn(colIdx: ColumnIndex)(using LocalUid): ColumnResult[A] =
+  def insertColumn(colIdx: ColumnIndex)(using ReplicaId): ColumnResult[A] =
       val id = newRowOrColId.toColumnId
       ColumnResult(id, Spreadsheet[A](colIds = colIds.insertAt(colIdx, id)))
 
-  def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using LocalUid): Spreadsheet[A] =
+  def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using ReplicaId): Spreadsheet[A] =
       val touchedRanges = listRangesWithIds.filter(_._2.touchedRows(sourceIdx))
       val rangeIds      =
         touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]) { (accumulator, rangeAndId) =>
@@ -77,7 +77,7 @@ case class Spreadsheet[A](
         rangeIds = rangeIds
       )
 
-  def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using LocalUid): Spreadsheet[A] =
+  def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using ReplicaId): Spreadsheet[A] =
       val touchedRanges = listRangesWithIds.filter(_._2.touchedCols(sourceIdx))
       val rangeIds      =
         touchedRanges.foldLeft(ReplicatedSet.empty[RangeId]) { (accumulator, rangeAndId) =>
@@ -93,7 +93,7 @@ case class Spreadsheet[A](
       )
 
   def editCell(coordinate: SpreadsheetCoordinate, value: Option[A], solveSeenConflict: Boolean = true)(using
-      LocalUid
+                                                                                                       ReplicaId
   ): Spreadsheet[A] = {
     val rowId      = rowIds.readAt(coordinate.rowIdx).get
     val colId      = colIds.readAt(coordinate.colIdx).get
@@ -157,18 +157,18 @@ case class Spreadsheet[A](
     if idx >= 0 then Some(idx) else None
   }
 
-  def removeRowById(id: RowId)(using LocalUid): Spreadsheet[A] =
+  def removeRowById(id: RowId)(using ReplicaId): Spreadsheet[A] =
     getRowIndex(id) match
         case Some(idx) => removeRow(idx)
         case None      => this
 
-  def removeColumnById(id: ColumnId)(using LocalUid): Spreadsheet[A] =
+  def removeColumnById(id: ColumnId)(using ReplicaId): Spreadsheet[A] =
     getColIndex(id) match
         case Some(idx) => removeColumn(idx)
         case None      => this
 
   def editCellById(rowId: RowId, colId: ColumnId, value: Option[A], solveSeenConflict: Boolean = true)(using
-      LocalUid
+                                                                                                       ReplicaId
   ): Spreadsheet[A] =
     (getRowIndex(rowId), getColIndex(colId)) match
         case (Some(rIdx), Some(cIdx)) =>
@@ -176,7 +176,7 @@ case class Spreadsheet[A](
         case _ =>
           this
 
-  def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A] =
+  def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using ReplicaId): Spreadsheet[A] =
       val idFrom = Uid(id.asInstanceOf[Uid].show + ":from")
       val idTo   = Uid(id.asInstanceOf[Uid].show + ":to")
       Spreadsheet[A](
@@ -187,7 +187,7 @@ case class Spreadsheet[A](
         rangeIds = rangeIds.add(id)
       )
 
-  def keepRange(id: RangeId)(using LocalUid): Spreadsheet[A] =
+  def keepRange(id: RangeId)(using ReplicaId): Spreadsheet[A] =
     Spreadsheet[A](rangeIds = rangeIds.add(id))
 
   def removeRange(id: RangeId): Spreadsheet[A] =
@@ -220,11 +220,11 @@ case class Spreadsheet[A](
 
   override def toString: String = pprint.apply(this).toString
 
-  def printToConsole()(using LocalUid): Unit = {
+  def printToConsole()(using ReplicaId): Unit = {
     println("\nSpreadsheet Data Structure Print:")
 
     println(
-      s"""|Replica Id: ${LocalUid.replicaId}
+      s"""|Replica Id: ${ReplicaId.replicaId}
           |Size: ${rowIds.size}x${colIds.size}"""
         .stripMargin
     )

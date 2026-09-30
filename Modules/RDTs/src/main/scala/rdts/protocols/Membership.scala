@@ -1,8 +1,8 @@
 package rdts.protocols
 
 import rdts.base.Lattice.syntax
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.datatypes.Epoch
 import rdts.protocols.Consensus.given
 import rdts.time.Time
@@ -53,7 +53,7 @@ case class Membership[A, C[_], D[_]](
   def writeRound(membershipRound: MembershipRound[A, C, D]): Membership[A, C, D] =
     Membership(rounds.write(membershipRound))
 
-  def addMember(id: Uid)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
+  def addMember(id: Uid)(using ReplicaId, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if isMember then
         bottomRound.copy(
           membershipChanging = true,
@@ -62,7 +62,7 @@ case class Membership[A, C[_], D[_]](
     else bottomRound
   }
 
-  def removeMember(id: Uid)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
+  def removeMember(id: Uid)(using ReplicaId, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if currentMembers.size > 1 && isMember then // cannot remove last member
         bottomRound.copy(
           membershipChanging = true,
@@ -76,7 +76,7 @@ case class Membership[A, C[_], D[_]](
   def readDecisionsSince(time: Time): Iterable[A] =
     NumericRange(time, rounds.counter, 1L).view.flatMap(log.get)
 
-  def write(value: A)(using LocalUid, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
+  def write(value: A)(using ReplicaId, Consensus[C], Consensus[D]): Membership[A, C, D] = writeRound {
     if !rounds.value.membershipChanging && isMember then
         bottomRound.copy(
           innerConsensus = rounds.value.innerConsensus.propose(value)
@@ -84,9 +84,9 @@ case class Membership[A, C[_], D[_]](
     else bottomRound
   }
 
-  def isMember(using LocalUid): Boolean = currentMembers.contains(replicaId)
+  def isMember(using ReplicaId): Boolean = currentMembers.contains(replicaId)
 
-  def upkeep()(using rid: LocalUid, cc: Consensus[C], cd: Consensus[D]): Membership[A, C, D] =
+  def upkeep()(using rid: ReplicaId, cc: Consensus[C], cd: Consensus[D]): Membership[A, C, D] =
       if !isMember then return writeRound(bottomRound) // do nothing if we are not a member anymore
       val deltaMembers = rounds.value.membersConsensus.upkeep()
       val newMembers   = rounds.value.membersConsensus.merge(deltaMembers)

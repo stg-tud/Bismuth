@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.Ingredient.{Delta, stringBottom}
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
 import rdts.datatypes.LastWriterWins
 import rdts.syntax.deltalens.*
 
@@ -56,7 +56,7 @@ object Ingredient {
 
   def main(args: Array[String]): Unit = {
     val replica1: Replica[Ingredient, DeltaBufferNonRedundant[Ingredient]] =
-      Replica(LocalUid.gen(), Ingredient.empty, DeltaBufferNonRedundant[Ingredient]())
+      Replica(ReplicaId.gen(), Ingredient.empty, DeltaBufferNonRedundant[Ingredient]())
     def ingredient = replica1.state
 
     println("---0")

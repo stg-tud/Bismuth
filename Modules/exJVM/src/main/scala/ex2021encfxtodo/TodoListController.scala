@@ -1,7 +1,7 @@
 package ex2021encfxtodo
 
 import javafx.collections.{FXCollections, ObservableList}
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 
@@ -11,7 +11,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object TodoListController {
-  val replicaId: LocalUid = LocalUid.gen()
+  val replicaId: ReplicaId = ReplicaId.gen()
 
   private val crdt: SyncedTodoListCrdt = new SyncedTodoListCrdt(replicaId, handleUpdated)
 

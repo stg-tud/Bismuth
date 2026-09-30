@@ -1,7 +1,7 @@
 package rdts.protocols
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.*
 import rdts.protocols.Util.Agreement.*
@@ -32,13 +32,13 @@ case class Paxos[A](
 
   // voting
   def voteLeader(leader: Uid)(using
-      LocalUid
+                              ReplicaId
   ): PaxosRound[A] =
     PaxosRound(leaderElection =
       currentRound.getOrElse(PaxosRound()).leaderElection.voteFor(leader)
     )
   def voteValue(value: A)(using
-      LocalUid
+                          ReplicaId
   ): PaxosRound[A] =
     PaxosRound(proposals =
       currentRound.getOrElse(PaxosRound()).proposals.voteFor(value)
@@ -50,8 +50,8 @@ case class Paxos[A](
           if leaderElection.votes.nonEmpty => true
       case _ => false
   def isCurrentLeader(using
-      Participants,
-      LocalUid
+                      Participants,
+                      ReplicaId
   ): Boolean = currentRound match
       case Some(PaxosRound(leaderElection, _))
           if leaderElection.decision == Decided(replicaId) =>
@@ -63,14 +63,14 @@ case class Paxos[A](
       case _ => false
 
   // protocol actions:
-  def phase1a(value: A)(using LocalUid): Paxos[A] =
+  def phase1a(value: A)(using ReplicaId): Paxos[A] =
     // try to become leader and remember a value for later
     Paxos(Map(nextBallotNum -> voteLeader(replicaId), BallotNum(replicaId, -1) -> voteValue(value)))
-  def phase1a(using LocalUid): Paxos[A] =
+  def phase1a(using ReplicaId): Paxos[A] =
     // try to become leader
     Paxos(Map(nextBallotNum -> voteLeader(replicaId)))
 
-  def phase1b(using LocalUid): Paxos[A] =
+  def phase1b(using ReplicaId): Paxos[A] =
     precondition(currentRoundHasCandidate)(
       // vote in the current leader election
       lastValueVote match
@@ -87,7 +87,7 @@ case class Paxos[A](
             ))
     )
 
-  def phase2a(myValue: A)(using LocalUid, Participants): Paxos[A] =
+  def phase2a(myValue: A)(using ReplicaId, Participants): Paxos[A] =
     // propose a value if I am the leader
     precondition(isCurrentLeader)(
       if newestReceivedVal.nonEmpty then
@@ -102,13 +102,13 @@ case class Paxos[A](
 
   // This is a helper function that allows calling phase2a without a parameter.
   // In this case myValue has to be known from context, otherwise this does nothing.
-  def phase2a(using LocalUid, Participants): Paxos[A] =
+  def phase2a(using ReplicaId, Participants): Paxos[A] =
     // try to determine my process' value
     precondition(myValue.nonEmpty) {
       phase2a(myValue.get)
     }
 
-  def phase2b(using LocalUid): Paxos[A] =
+  def phase2b(using ReplicaId): Paxos[A] =
     // accept proposed value
     precondition(currentRoundHasProposal) {
       val proposal =
@@ -125,7 +125,7 @@ case class Paxos[A](
     }.getOrElse(Undecided)
 
   // helper functions
-  def nextBallotNum(using LocalUid): BallotNum =
+  def nextBallotNum(using ReplicaId): BallotNum =
       val maxCounter: Long = rounds
         .map((b, _) => b.counter)
         .maxOption
@@ -146,7 +146,7 @@ case class Paxos[A](
     rounds.filter(_._2.proposals.votes.nonEmpty).maxOption
   def newestReceivedVal: Option[A] =
     lastValueVote.flatMap(_._2.proposals.votes.headOption).map(_.value)
-  def myValue(using LocalUid): Option[A] = rounds.get(BallotNum(
+  def myValue(using ReplicaId): Option[A] = rounds.get(BallotNum(
     replicaId,
     -1
   )).flatMap(_.proposals.votes.headOption).map(_.value)
@@ -175,7 +175,7 @@ object Paxos {
   // implementation of consensus typeclass for the testing framework
   given consensus: Consensus[Paxos] with
       extension [A](c: Paxos[A])
-          override def propose(value: A)(using LocalUid, Participants): Paxos[A] =
+          override def propose(value: A)(using ReplicaId, Participants): Paxos[A] =
               // check if I can propose a value
               val afterProposal = c.phase2a
               if Lattice.subsumption(afterProposal, c) then
@@ -191,7 +191,7 @@ object Paxos {
           }
       extension [A](c: Paxos[A])
           // upkeep can be used to perform the next protocol step automatically
-          override def upkeep()(using LocalUid, Participants): Paxos[A] =
+          override def upkeep()(using ReplicaId, Participants): Paxos[A] =
             // check which phase we are in
             c.currentRound match
                 case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>

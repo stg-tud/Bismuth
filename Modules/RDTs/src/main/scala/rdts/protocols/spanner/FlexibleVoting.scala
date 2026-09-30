@@ -1,7 +1,7 @@
 package rdts.protocols.spanner
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.protocols.Quorum.isQuorum
 import rdts.protocols.Util.*
 import rdts.protocols.Util.Agreement.*
@@ -9,7 +9,7 @@ import rdts.protocols.{Participants, Quorum, Vote}
 
 case class FlexibleVoting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
   // boolean threshold queries
-  def hasNotVoted(using LocalUid): Boolean =
+  def hasNotVoted(using ReplicaId): Boolean =
     !votes.exists {
       case Vote(r, _) => r == replicaId
     }
@@ -27,7 +27,7 @@ case class FlexibleVoting[A](votes: Set[Vote[A]] = Set.empty[Vote[A]]) {
         case None                 => Undecided
 
   // protocol actions
-  def voteFor(value: A)(using LocalUid): FlexibleVoting[A] =
+  def voteFor(value: A)(using ReplicaId): FlexibleVoting[A] =
     precondition(hasNotVoted)(
       FlexibleVoting(Set(Vote(replicaId, value)))
     )

@@ -1,6 +1,6 @@
 package webapps.ex2026minisocial
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 
 /** A grow-only counter: a map of counts per replica, where the current value is the sum over all replicas.
   *
@@ -10,7 +10,7 @@ import rdts.base.{Bottom, Lattice, LocalUid, Uid}
 case class GrowOnlyCounter(counts: Map[Uid, Int] = Map.empty) {
 
   /** Add `n` to this replica's own count. The returned delta only contains this replica's updated entry. */
-  def add(n: Int)(using replicaId: LocalUid): GrowOnlyCounter =
+  def add(n: Int)(using replicaId: ReplicaId): GrowOnlyCounter =
     GrowOnlyCounter(Map(replicaId.uid -> (counts.getOrElse(replicaId.uid, 0) + n)))
 
   /** Get the value of the counter by summing all per-replica counts. */

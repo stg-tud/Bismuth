@@ -1,14 +1,14 @@
 package ex2025recipebook
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
-class Replica[A, D <: DeltaBuffer[A, D]](val replicaId: LocalUid, var state: A, var buffer: DeltaBuffer[A, D]) {
+class Replica[A, D <: DeltaBuffer[A, D]](val replicaId: ReplicaId, var state: A, var buffer: DeltaBuffer[A, D]) {
   var dots: Dots = Dots.empty
 
-  def mod(f: LocalUid ?=> A => A)(using Lattice[A]): this.type = {
+  def mod(f: ReplicaId ?=> A => A)(using Lattice[A]): this.type = {
     val dot = nextDot
     dots = dots.add(dot)
 
@@ -31,7 +31,7 @@ class Replica[A, D <: DeltaBuffer[A, D]](val replicaId: LocalUid, var state: A, 
     buffer = buffer.applyDelta(metaDelta)
   }
 
-  def produceDelta(f: LocalUid ?=> A => A)(using Lattice[A]): MetaDelta[A] = {
+  def produceDelta(f: ReplicaId ?=> A => A)(using Lattice[A]): MetaDelta[A] = {
     val dot = nextDot
     dots = dots.add(dot)
 
@@ -79,7 +79,7 @@ object Replica {
     val list: List[Int] = List.fill(10)(random.nextInt())
 
     val deltaBuffer = DeltaBufferNonRedundant[EnableWinsFlag]()
-    val replica     = Replica(LocalUid.gen(), EnableWinsFlag.empty, deltaBuffer)
+    val replica     = Replica(ReplicaId.gen(), EnableWinsFlag.empty, deltaBuffer)
 
     list.foreach { r =>
       println(s"r: $r ${if r % 2 != 0 then "enable" else "disable"}")
@@ -94,7 +94,7 @@ object Replica {
     val list: List[Int] = List.fill(10)(random.nextInt())
 
     val deltaBuffer = DeltaBufferSubsumed[LastWriterWins[Int]]()
-    val replica     = Replica(LocalUid.gen(), LastWriterWins.empty, deltaBuffer)
+    val replica     = Replica(ReplicaId.gen(), LastWriterWins.empty, deltaBuffer)
 
     list.foreach { r =>
       replica.mod(lww => lww.write(r))

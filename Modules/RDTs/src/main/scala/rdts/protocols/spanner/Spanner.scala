@@ -1,7 +1,7 @@
 package rdts.protocols.spanner
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, ReplicaId, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.{MultiPaxos, Participants, TwoPhaseCommit}
@@ -20,7 +20,7 @@ case class Spanner[A](
     transactions: Map[Uid, TwoPhaseCommit[A]] = Map.empty[Uid, TwoPhaseCommit[A]]
 ) {
   // step 1: initialize a new TwoPhaseCommit transaction. This can only be done by leaders
-  def startTransaction(localPartitionId: Uid, t: A)(using LocalUid): Spanner[A] =
+  def startTransaction(localPartitionId: Uid, t: A)(using ReplicaId): Spanner[A] =
     // todo: this is not stable... fix
     precondition(
       paxosPartitions.contains(localPartitionId) &&
@@ -34,13 +34,13 @@ case class Spanner[A](
       // initiate new TwoPhaseCommit
       val init2PC            = TwoPhaseCommit(coordinator = Some(localPartitionId), transaction = Some(t))
       val proposeTransaction =
-        init2PC.proposeTransaction(using LocalUid(localPartitionId))
+        init2PC.proposeTransaction(using ReplicaId(localPartitionId))
 
       Spanner(transactions = Map(Uid.gen() -> init2PC.merge(proposeTransaction)))
     }
 
   // step 2 & 3: validate per partition if the transaction should be committed. Then persist upcoming 2PC vote in the partition's paxos log
-  def validate2PC(localPartitionId: Uid, transactionID: Uid, valid: Boolean)(using l: LocalUid): Spanner[A] =
+  def validate2PC(localPartitionId: Uid, transactionID: Uid, valid: Boolean)(using l: ReplicaId): Spanner[A] =
     precondition(
       paxosPartitions.contains(localPartitionId) &&
       partitionMembers.contains(localPartitionId) &&
@@ -55,7 +55,7 @@ case class Spanner[A](
     }
 
   // step 4: after logging the 2PC vote, send the vote in the commit phase
-  def voteIn2PC(partitionId: Uid, transactionID: Uid, valid: Boolean)(using l: LocalUid): Spanner[A] =
+  def voteIn2PC(partitionId: Uid, transactionID: Uid, valid: Boolean)(using l: ReplicaId): Spanner[A] =
     precondition(
       paxosPartitions.contains(partitionId) &&
       partitionMembers.contains(partitionId) &&
@@ -74,14 +74,14 @@ case class Spanner[A](
                 replicaId
               ) =>
             val twoPC =
-              transactions(transactionID).prepare(valid)(using LocalUid(partitionId))
+              transactions(transactionID).prepare(valid)(using ReplicaId(partitionId))
             Spanner(transactions = Map(transactionID -> twoPC))
           case _ => Spanner()
     }
 
   // step 5: log overall 2PC decision in the coordinator's paxos log
   // seems unnecessary with PRDT
-  def log2PCDecisionCoordinator(partitionId: Uid, transactionID: Uid)(using l: LocalUid): Spanner[A] =
+  def log2PCDecisionCoordinator(partitionId: Uid, transactionID: Uid)(using l: ReplicaId): Spanner[A] =
     precondition(
       paxosPartitions.contains(partitionId) &&
       partitionMembers.contains(partitionId) &&
@@ -112,7 +112,7 @@ case class Spanner[A](
 
   // step 8: every participant logs the 2PC decision in their paxos log
   // also seem unnecessary?
-  def log2PCDecisionParticipant(partitionId: Uid, transactionID: Uid)(using l: LocalUid): Spanner[A] =
+  def log2PCDecisionParticipant(partitionId: Uid, transactionID: Uid)(using l: ReplicaId): Spanner[A] =
     precondition(
       paxosPartitions.contains(partitionId) &&
       partitionMembers.contains(partitionId) &&
@@ -144,7 +144,7 @@ case class Spanner[A](
     precondition(paxosPartitions.contains(partitionId) && transactions.contains(transactionID)) {
       val transaction     = transactions(transactionID)
       val acknowledgement =
-        transaction.acknowledge(using LocalUid(partitionId), Participants(paxosPartitions.keySet))
+        transaction.acknowledge(using ReplicaId(partitionId), Participants(paxosPartitions.keySet))
 
       Spanner(transactions = Map(transactionID -> acknowledgement))
     }

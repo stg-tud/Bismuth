@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.MultiVersionRegister
 import rdts.time.Dots
 
@@ -32,7 +32,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
 
   test("new write does not overrides all previous deltas") {
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -72,7 +72,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
   }
 
   test("concurrentWrite results in multiple versions") {
-    given localId: LocalUid = LocalUid(Uid.predefined("alice"))
+    given localId: ReplicaId = ReplicaId(Uid.predefined("alice"))
     val mvReg               = MultiVersionRegister.of("a")
     val delta               = mvReg.writeConcurrent("b")
     assertEquals(mvReg.merge(delta).read, Set("a", "b"))
@@ -90,7 +90,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
   }
 
   test("concurrentWrite results in multiple versions") {
-    given localId: LocalUid = LocalUid(Uid.predefined("alice"))
+    given localId: ReplicaId = ReplicaId(Uid.predefined("alice"))
     val mvReg               = MultiVersionRegister.of("a")
     val delta               = mvReg.writeConcurrent("b")
     assertEquals(mvReg.merge(delta).read, Set("a", "b"))
@@ -103,7 +103,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
   }
 
   test("concurrentWrite keeps prefix") {
-    given localId: LocalUid = LocalUid(Uid.predefined("alice"))
+    given localId: ReplicaId = ReplicaId(Uid.predefined("alice"))
     val mvReg               = MultiVersionRegister.of("a")
     val delta               = mvReg.write("b")
     val delta2              = mvReg.merge(delta).writeConcurrent("c")

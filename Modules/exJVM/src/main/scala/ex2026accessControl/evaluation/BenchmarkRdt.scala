@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2026accessControl.evaluation.BenchmarkRdt.given
-import rdts.base.{Bottom, Decompose, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, Lattice, ReplicaId}
 import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
 import rdts.filters.Filter
 
@@ -62,7 +62,7 @@ object BenchmarkRdt {
   def applyBenchmarkRdtMutator(
       choice: String,
       state: BenchmarkRdt,
-  )(using author: LocalUid): BenchmarkRdt = {
+  )(using author: ReplicaId): BenchmarkRdt = {
     val choiceSplit = choice.split('.')
 
     inline def one(in: BenchmarkRdt): BenchmarkRdt = choiceSplit(0) match {

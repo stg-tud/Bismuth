@@ -32,8 +32,8 @@ case class NestedKeepRemoveList[E] private (
   def toList: List[E] =
     order.value.toList.flatMap { d => if isAlive(d) then payloads.get(d) else None }
 
-  def insertAt(i: Int, e: E)(using LocalUid): C = {
-    val newDot = observed.nextDot(LocalUid.replicaId)
+  def insertAt(i: Int, e: E)(using ReplicaId): C = {
+    val newDot = observed.nextDot(ReplicaId.replicaId)
     findInsertIndex(i) match
         case None        => NestedKeepRemoveList.empty
         case Some(glIdx) =>
@@ -43,16 +43,16 @@ case class NestedKeepRemoveList[E] private (
           NestedKeepRemoveList(order = nOrder, payloads = nPayload, flags = nFlag)
   }
 
-  def append(e: E)(using LocalUid): C = insertAt(sizeIncludingDead, e)
+  def append(e: E)(using ReplicaId): C = insertAt(sizeIncludingDead, e)
 
-  def appendAll(es: Iterable[E])(using LocalUid): C = es.foldLeft(this)((list, e) => list.append(e))
+  def appendAll(es: Iterable[E])(using ReplicaId): C = es.foldLeft(this)((list, e) => list.append(e))
 
-  def keep(idx: Int)(using LocalUid): C =
+  def keep(idx: Int)(using ReplicaId): C =
     updateFlag(idx) { case flag =>
       flag.enable()
     }
 
-  def update(idx: Int, mod: (E) => E)(using LocalUid): C =
+  def update(idx: Int, mod: (E) => E)(using ReplicaId): C =
     read(idx) match {
       case Some(value) =>
         findRealIndex(idx) match

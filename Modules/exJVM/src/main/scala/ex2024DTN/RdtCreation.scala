@@ -5,7 +5,7 @@ import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2024DTN.rdt.{Channel, ClientOperationMode}
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.time.Dot
 
@@ -29,7 +29,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
   val dataManager: BroadcastIO[RdtType] = BroadcastIO[RdtType](
-    LocalUid.gen(),
+    ReplicaId.gen(),
     _ => println("replica received new state information"),
   )
 
@@ -77,7 +77,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   given Lattice[Dot] = Lattice.assertEquals
 
-  given replicaId: LocalUid = LocalUid.gen()
+  given replicaId: ReplicaId = ReplicaId.gen()
 
   val dataManager: BroadcastIO[RdtType] = BroadcastIO[RdtType](
     replicaId,
@@ -155,7 +155,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  given replicaId: LocalUid = LocalUid.gen()
+  given replicaId: ReplicaId = ReplicaId.gen()
 
   val dataManager: BroadcastIO[RdtType] = BroadcastIO[RdtType](
     replicaId,

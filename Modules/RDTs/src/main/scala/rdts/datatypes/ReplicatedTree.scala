@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.datatypes.ReplicatedTree.Node
 import rdts.time.{Dot, Dots}
 
@@ -35,16 +35,16 @@ case class ReplicatedTree[A](
   def children(dot: Dot): Iterable[ReplicatedTree.Node[A]] =
     compact.values.filter(n => n.parent == dot)
 
-  def insert(parent: Dot, value: A)(using LocalUid): Delta =
+  def insert(parent: Dot, value: A)(using ReplicaId): Delta =
     insertWith(parent, _ => value)
 
-  def insertWith(parent: Dot, value: Dot => A)(using LocalUid): Delta = {
+  def insertWith(parent: Dot, value: Dot => A)(using ReplicaId): Delta = {
     if parent != ReplicatedTree.rootDot && !compact.contains(parent) then {
       throw new IllegalArgumentException(s"Dot $parent does not exist in the tree")
     }
 
     val dot =
-      observed.nextDot(LocalUid.replicaId)
+      observed.nextDot(ReplicaId.replicaId)
 
     ReplicatedTree(
       elements =

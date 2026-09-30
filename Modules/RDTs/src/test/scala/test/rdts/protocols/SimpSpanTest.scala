@@ -1,7 +1,7 @@
 package test.rdts.protocols
 
 import rdts.base.Lattice.syntax
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.*
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.Agreement
@@ -14,7 +14,7 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   /** Elect `leader` as leader of a fresh MultiPaxos for the given members. */
-  def electLeader(members: Seq[LocalUid], leader: LocalUid): MultiPaxos[twoPCMessages] = {
+  def electLeader(members: Seq[ReplicaId], leader: ReplicaId): MultiPaxos[twoPCMessages] = {
     given Participants = Participants(members.map(_.uid).toSet)
     var paxos          = MultiPaxos[twoPCMessages]()
     paxos = paxos.merge(paxos.startLeaderElection(using leader))
@@ -27,10 +27,10 @@ class SimpSpanTest extends munit.FunSuite {
 
   /** Commit `value` into the log of `paxos` (assumes leader is already elected). */
   def proposeAndCommit(
-      paxos: MultiPaxos[twoPCMessages],
-      value: twoPCMessages,
-      leader: LocalUid,
-      members: Seq[LocalUid]
+                        paxos: MultiPaxos[twoPCMessages],
+                        value: twoPCMessages,
+                        leader: ReplicaId,
+                        members: Seq[ReplicaId]
   ): MultiPaxos[twoPCMessages] = {
     given Participants = Participants(members.map(_.uid).toSet)
     var p              = paxos.merge(paxos.proposeIfLeader(value)(using leader))
@@ -49,7 +49,7 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("upkeep on empty SimpSpan returns empty delta") {
-    given id: LocalUid = LocalUid.gen()
+    given id: ReplicaId = ReplicaId.gen()
     assertEquals(SimpSpan[String]().upkeep, SimpSpan[String]())
   }
 
@@ -58,8 +58,8 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("localPartitionId returns Some for a member replica") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
@@ -71,8 +71,8 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("localPartitionId returns None for a non-member replica") {
-    val id1         = LocalUid.gen()
-    val outsider    = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val outsider    = ReplicaId.gen()
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
@@ -83,8 +83,8 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("localPartitionId distinguishes between multiple partitions") {
-    val id1 = LocalUid.gen()
-    val id2 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
+    val id2 = ReplicaId.gen()
     val p1  = Uid.gen()
     val p2  = Uid.gen()
 
@@ -104,7 +104,7 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("startTransaction returns empty delta when partition not in paxosPrepare") {
-    val id          = LocalUid.gen()
+    val id          = ReplicaId.gen()
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
@@ -116,7 +116,7 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("startTransaction returns empty delta when partition not in partitionMembers") {
-    val id          = LocalUid.gen()
+    val id          = ReplicaId.gen()
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
@@ -128,9 +128,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("startTransaction returns empty delta when there is no leader yet") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -145,9 +145,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("startTransaction returns empty delta when replica is not the leader") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -167,9 +167,9 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("startTransaction creates a new transaction when leader") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -190,9 +190,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("multiple startTransaction deltas can be merged and accumulate monotonically") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -220,7 +220,7 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("merge with Bottom (empty) is identity") {
-    val id1         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
     val partitionId = Uid.gen()
 
     val state  = SimpSpan[String](partitionMembers = Map(partitionId -> Set(id1.uid)))
@@ -231,9 +231,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("merge is idempotent for a non-empty SimpSpan") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -247,9 +247,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("merge is commutative for startTransaction deltas") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -274,8 +274,8 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("upkeep returns empty delta for a non-member replica") {
-    val id1         = LocalUid.gen()
-    val outsider    = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val outsider    = ReplicaId.gen()
     val partitionId = Uid.gen()
 
     val state = SimpSpan[String](
@@ -286,9 +286,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("upkeep progresses Paxos leader election for partition members") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -314,9 +314,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("upkeep transfers a committed Prepare log entry into the 2PC prepare phase") {
-    val id1     = LocalUid.gen()
-    val id2     = LocalUid.gen()
-    val id3     = LocalUid.gen()
+    val id1     = ReplicaId.gen()
+    val id2     = ReplicaId.gen()
+    val id3     = ReplicaId.gen()
     val p1      = Uid.gen()
     val p2      = Uid.gen() // second partition (used as a second 2PC voter)
     val txId    = Uid.gen()
@@ -474,9 +474,9 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("validate2PC returns empty SimpSpan when transaction does not exist") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -493,8 +493,8 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("validate2PC returns empty SimpSpan when replica is not in partitionMembers") {
-    val id1         = LocalUid.gen()
-    val outsider    = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val outsider    = ReplicaId.gen()
     val partitionId = Uid.gen()
     val txId        = Uid.gen()
 
@@ -511,9 +511,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("validate2PC proposes a Prepare message into the partition paxosPrepare when leader") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val txId        = Uid.gen()
     val members     = Seq(id1, id2, id3)
@@ -541,9 +541,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("acknowledge2PC returns empty SimpSpan when transaction has no prepare decision yet") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val txId        = Uid.gen()
     val members     = Seq(id1, id2, id3)
@@ -565,9 +565,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("acknowledge2PC proposes Commit when all partitions voted true in prepare") {
-    val id1     = LocalUid.gen()
-    val id2     = LocalUid.gen()
-    val id3     = LocalUid.gen()
+    val id1     = ReplicaId.gen()
+    val id2     = ReplicaId.gen()
+    val id3     = ReplicaId.gen()
     val p1      = Uid.gen()
     val p2      = Uid.gen()
     val txId    = Uid.gen()
@@ -605,9 +605,9 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("acknowledge2PC proposes Abort when any partition voted false in prepare") {
-    val id1     = LocalUid.gen()
-    val id2     = LocalUid.gen()
-    val id3     = LocalUid.gen()
+    val id1     = ReplicaId.gen()
+    val id2     = ReplicaId.gen()
+    val id3     = ReplicaId.gen()
     val p1      = Uid.gen()
     val p2      = Uid.gen()
     val txId    = Uid.gen()
@@ -658,9 +658,9 @@ class SimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("end-to-end: leader election, startTransaction, and state accumulation") {
-    val id1         = LocalUid.gen()
-    val id2         = LocalUid.gen()
-    val id3         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
+    val id2         = ReplicaId.gen()
+    val id3         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1, id2, id3)
 
@@ -743,7 +743,7 @@ class SimpSpanTest extends munit.FunSuite {
   }
 
   test("end-to-end with one node: leader election, startTransaction, and state accumulation") {
-    val id1         = LocalUid.gen()
+    val id1         = ReplicaId.gen()
     val partitionId = Uid.gen()
     val members     = Seq(id1)
 

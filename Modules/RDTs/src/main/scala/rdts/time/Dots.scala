@@ -1,6 +1,6 @@
 package rdts.time
 
-import rdts.base.{Decompose, Lattice, LocalUid, Uid}
+import rdts.base.{Decompose, Lattice, ReplicaId, Uid}
 
 import scala.annotation.targetName
 
@@ -46,7 +46,7 @@ case class Dots(internal: Map[Uid, ArrayRanges]) {
 
   def nextDot(replicaId: Uid): Dot = Dot(replicaId, nextTime(replicaId))
 
-  def nextDot(using LocalUid): Dot = Dot(LocalUid.replicaId, nextTime(LocalUid.replicaId))
+  def nextDot(using ReplicaId): Dot = Dot(ReplicaId.replicaId, nextTime(ReplicaId.replicaId))
 
   def advanced(replicaId: Uid): Dots = {
     val next = this.nextDot(replicaId)

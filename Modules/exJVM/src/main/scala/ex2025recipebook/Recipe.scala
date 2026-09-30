@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.Recipe.Delta
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.syntax.deltalens.*
 
@@ -20,10 +20,10 @@ case class Recipe(
   def editTitle(newTitle: String): Delta =
     mod(_.title, _.write(newTitle))
 
-  def addIngredient(newIngredient: Ingredient)(using localUid: LocalUid): Delta =
+  def addIngredient(newIngredient: Ingredient)(using localUid: ReplicaId): Delta =
     mod(_.ingredients, _.append(newIngredient))
 
-  def updateIngredient(index: Int, modify: (Ingredient) => Ingredient)(using localUid: LocalUid): Delta =
+  def updateIngredient(index: Int, modify: (Ingredient) => Ingredient)(using localUid: ReplicaId): Delta =
     mod(_.ingredients, _.update(index, modify))
 
   def removeIngredient(index: Int): Delta =
@@ -35,7 +35,7 @@ case class Recipe(
 
   def updateDescription(newDescription: String): Delta = mod(_.description, _.write(newDescription))
 
-  def setFavorite(value: Boolean)(using localUid: LocalUid): Delta =
+  def setFavorite(value: Boolean)(using localUid: ReplicaId): Delta =
     if value then mod(_.favorite, _.enable()) else mod(_.favorite, _.disable())
 
   override def toString: String = {
@@ -77,7 +77,7 @@ object Recipe {
     EnableWinsFlag.empty
   )
 
-  def apply(title: String, ingredient: Ingredient)(using localUid: LocalUid): Recipe =
+  def apply(title: String, ingredient: Ingredient)(using localUid: ReplicaId): Recipe =
     Recipe(
       LastWriterWins.empty[String].write(title),
       NestedKeepRemoveList.empty[Ingredient].append(ingredient),
@@ -87,7 +87,7 @@ object Recipe {
       EnableWinsFlag.empty
     )
 
-  def apply(title: String, ingredients: Iterable[Ingredient])(using localUid: LocalUid): Recipe =
+  def apply(title: String, ingredients: Iterable[Ingredient])(using localUid: ReplicaId): Recipe =
     Recipe(
       LastWriterWins.empty[String].write(title),
       NestedKeepRemoveList.empty[Ingredient].appendAll(ingredients),
@@ -99,7 +99,7 @@ object Recipe {
 
   def main(args: Array[String]): Unit = {
     val replica1, replica2: Replica[Recipe, DeltaBufferNonRedundant[Recipe]] =
-      Replica(LocalUid.gen(), Recipe.empty, DeltaBufferNonRedundant[Recipe]())
+      Replica(ReplicaId.gen(), Recipe.empty, DeltaBufferNonRedundant[Recipe]())
 
     println("---0")
     val delta0 = Recipe("Piza")

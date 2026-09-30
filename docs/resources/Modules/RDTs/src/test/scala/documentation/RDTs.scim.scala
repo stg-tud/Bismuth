@@ -272,8 +272,8 @@ its own part of the state, so concurrent writes never conflict. The library prov
 
    */
   import rdts.base.Uid
-  import rdts.base.LocalUid
-  import rdts.base.LocalUid.replicaId
+  import rdts.base.ReplicaId
+  import rdts.base.ReplicaId.replicaId
   /*:scim
 
 ## A replicated counter
@@ -289,7 +289,7 @@ information is lost on merge.
   case class Counter(counters: Map[Uid, Int] = Map.empty):
       def value: Int = counters.values.sum
 
-      def add(amount: Int)(using LocalUid): Counter =
+      def add(amount: Int)(using ReplicaId): Counter =
         Counter(Map(replicaId -> (counters.getOrElse(replicaId, 0) + amount)))
 
   // We can derive the lattice automatically
@@ -303,7 +303,7 @@ to be merged into the state to take effect.
    */
   test("Using a counter"):
 
-      given LocalUid = LocalUid.predefined("replica-alice")
+      given ReplicaId = ReplicaId.predefined("replica-alice")
 
       var counter = Counter()
 
@@ -314,7 +314,7 @@ to be merged into the state to take effect.
       // merging deltas from multiple replicas adds their contributions
       val deltaAlice = counter.add(1)
       val deltaBob   =
-          given LocalUid = LocalUid.predefined("replica-bob")
+          given ReplicaId = ReplicaId.predefined("replica-bob")
           counter.add(1)
 
       val total = counter `merge` deltaAlice `merge` deltaBob
@@ -328,7 +328,7 @@ Our :m{Counter} only grows.  If we try to add a negative value, the map merge wi
    */
 
   test("Counter cannot decrease"):
-      given LocalUid = LocalUid.predefined("replica-alice")
+      given ReplicaId = ReplicaId.predefined("replica-alice")
 
       var counter = Counter()
       counter = counter `merge` counter.add(1)
@@ -350,14 +350,14 @@ component-wise merge automatically.
   // A PosNegCounter is a product of two Counters: one for positive, one for negative
   case class PosNeg(pos: Counter, neg: Counter):
       def value: Int                               = pos.value - neg.value
-      def add(amount: Int)(using LocalUid): PosNeg =
+      def add(amount: Int)(using ReplicaId): PosNeg =
         if amount >= 0 then PosNeg(pos.add(amount), Counter())
         else PosNeg(Counter(), neg.add(-amount))
 
   given Lattice[PosNeg] = Lattice.derived
 
   test("PosNegCounter from scratch"):
-      given LocalUid = LocalUid.predefined("replica-alice")
+      given ReplicaId = ReplicaId.predefined("replica-alice")
 
       var pn = PosNeg(Counter(), Counter())
       pn = pn `merge` pn.add(5)
@@ -368,11 +368,11 @@ component-wise merge automatically.
       assertEquals(pn.value, 4)
 
   test("PosNegCounter concurrent from scratch"):
-      given LocalUid = LocalUid.predefined("replica-alice")
+      given ReplicaId = ReplicaId.predefined("replica-alice")
 
       val deltaA = PosNeg(Counter(), Counter()).add(5)
       val deltaB =
-          given LocalUid = LocalUid.predefined("replica-bob")
+          given ReplicaId = ReplicaId.predefined("replica-bob")
           PosNeg(Counter(), Counter()).add(3)
 
       val merged = PosNeg(Counter(), Counter()) `merge` deltaA `merge` deltaB
@@ -419,8 +419,8 @@ replica can write to its own map key.
    */
 
   test("GrowOnlyCounter"):
-      val localId  = rdts.base.LocalUid.predefined("replica-alice")
-      val remoteId = rdts.base.LocalUid.predefined("replica-bob")
+      val localId  = rdts.base.ReplicaId.predefined("replica-alice")
+      val remoteId = rdts.base.ReplicaId.predefined("replica-bob")
 
       var gCounter = GrowOnlyCounter.zero
 
@@ -442,7 +442,7 @@ Counters (positive and negative), merged component-wise.  Needs an identity.
    */
 
   test("PosNegCounter"):
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
+      val localId = rdts.base.ReplicaId.predefined("replica-alice")
 
       val pnCounter = PosNegCounter.zero
 
@@ -504,7 +504,7 @@ Needs an identity to create fresh dots for added elements.
    */
 
   test("ReplicatedSet"):
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
+      val localId = rdts.base.ReplicaId.predefined("replica-alice")
 
       var rSet = ReplicatedSet.empty[String]
 
@@ -526,7 +526,7 @@ Needs an identity to allocate fresh dots on enable.
    */
 
   test("EnableWinsFlag"):
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
+      val localId = rdts.base.ReplicaId.predefined("replica-alice")
 
       val flag = EnableWinsFlag.empty
 
@@ -549,8 +549,8 @@ Needs an identity to create fresh dots for written values.
    */
 
   test("MultiVersionRegister"):
-      val localId  = rdts.base.LocalUid.predefined("replica-alice")
-      val remoteId = rdts.base.LocalUid.predefined("replica-bob")
+      val localId  = rdts.base.ReplicaId.predefined("replica-alice")
+      val remoteId = rdts.base.ReplicaId.predefined("replica-bob")
 
       val mvReg = MultiVersionRegister.empty[String]
 
@@ -574,7 +574,7 @@ override concurrent updates.  Needs an identity for update operations.
 
   test("ObserveRemoveMap"):
       given Lattice[String] = Lattice.assertEquals
-      val localId           = rdts.base.LocalUid.predefined("replica-alice")
+      val localId           = rdts.base.ReplicaId.predefined("replica-alice")
 
       val orMap = ObserveRemoveMap.empty[String, String]
 
@@ -597,7 +597,7 @@ Needs an identity for all modifying operations.
    */
 
   test("ReplicatedList"):
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
+      val localId = rdts.base.ReplicaId.predefined("replica-alice")
 
       var rList = ReplicatedList.empty[String]
 
@@ -622,7 +622,7 @@ merge semantics.
    */
 
   test("Epoch"):
-      val localId = rdts.base.LocalUid.predefined("replica-alice")
+      val localId = rdts.base.ReplicaId.predefined("replica-alice")
 
       val epoch = Epoch.empty[GrowOnlyCounter]
 

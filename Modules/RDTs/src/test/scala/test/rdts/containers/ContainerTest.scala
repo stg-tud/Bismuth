@@ -1,7 +1,7 @@
 package test.rdts.containers
 
-import rdts.base.LocalUid.asId
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.ReplicaId.asId
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins, ReplicatedSet}
 import rdts.experiments.AuctionInterface
 import rdts.experiments.AuctionInterface.{AuctionData, Bid}
@@ -11,7 +11,7 @@ class ContainerTest extends munit.FunSuite {
 
   object helper {
 
-    given r: LocalUid = "me".asId
+    given r: ReplicaId = "me".asId
 
     given bottomString: Bottom[String] with {
       override def empty: String = ""

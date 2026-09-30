@@ -6,7 +6,7 @@ import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 import scala.util.Random
 
@@ -39,7 +39,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     val networkConfig = config.getOrElse(HyParViewConfig.fromEstimatedNetworkSize(n))
 
     val nodes = (0 until n).toVector.map { i =>
-      val uid      = LocalUid.gen()
+      val uid      = ReplicaId.gen()
       val id       = s"n$i"
       val selfInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val random   = Random(0xb15 + i)

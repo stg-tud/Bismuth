@@ -1,15 +1,15 @@
 package test.rdts.protocols
 
 import rdts.base.Lattice.syntax
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.{Membership, Paxos}
 
 class MembershipTest extends munit.FunSuite {
 
-  val id1: LocalUid = LocalUid.gen()
-  val id2: LocalUid = LocalUid.gen()
-  val id3: LocalUid = LocalUid.gen()
-  val id4: LocalUid = LocalUid.gen()
+  val id1: ReplicaId = ReplicaId.gen()
+  val id2: ReplicaId = ReplicaId.gen()
+  val id3: ReplicaId = ReplicaId.gen()
+  val id4: ReplicaId = ReplicaId.gen()
 
   test("basic membership merge") {
     val membership = Membership.init[Int, Paxos, Paxos](Set(id1, id2, id3).map(_.uid))
@@ -132,8 +132,8 @@ class MembershipTest extends munit.FunSuite {
     val r3 = Replika(id3, Membership.init(Set(id1, id2, id3)))
 
     extension (m: Replika)
-        def trans(f: LocalUid ?=> Membership[Int, Paxos, Paxos] => Membership[Int, Paxos, Paxos]): Unit = {
-          given LocalUid = m.uid.convert
+        def trans(f: ReplicaId ?=> Membership[Int, Paxos, Paxos] => Membership[Int, Paxos, Paxos]): Unit = {
+          given ReplicaId = m.uid.convert
           val delta      = f(m.mem)
 
           r1.mem = r1.mem `merge` delta

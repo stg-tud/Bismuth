@@ -6,7 +6,7 @@ import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, experimen
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
@@ -27,8 +27,8 @@ class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends experiments.Aead 
 }
 
 class ConnectionManager[State: JsonValueCodec](
-    replicaId: LocalUid,
-    receiveCallback: State => Unit
+                                                replicaId: ReplicaId,
+                                                receiveCallback: State => Unit
 ) {
   import ConnectionManager.*
 

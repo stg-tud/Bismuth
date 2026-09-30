@@ -6,7 +6,7 @@ import japgolly.scalajs.react.component.Scala.Component
 import japgolly.scalajs.react.internal.Box
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import webapps.ex2025tabular.lib.*
 import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
 
@@ -16,14 +16,14 @@ import scala.scalajs.js.timers.SetTimeoutHandle
 object SpreadsheetComponent {
 
   def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] =
-    new SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.gen())
+    new SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.gen())
       .repeatEdit(6, _.addRow().delta, allowUndo = false)
       .repeatEdit(6, _.addColumn().delta, allowUndo = false)
 
   case class Props(
       spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
       onDelta: Spreadsheet[String] => Callback,
-      replicaId: LocalUid
+      replicaId: ReplicaId
   )
 
   case class State(
@@ -42,15 +42,15 @@ object SpreadsheetComponent {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    private val replicaEventPrint: (LocalUid, String) => Callback =
+    private val replicaEventPrint: (ReplicaId, String) => Callback =
       (replicaId, msg) => Callback(println(s"[${replicaId.show}]: $msg"))
 
     private def modSpreadsheet(
-        f: LocalUid ?=> SpreadsheetOps[String] => Spreadsheet[String],
-        allowUndo: Boolean = true
+                                f: ReplicaId ?=> SpreadsheetOps[String] => Spreadsheet[String],
+                                allowUndo: Boolean = true
     ): Callback =
       $.props.flatMap { props =>
-        given LocalUid = props.replicaId
+        given ReplicaId = props.replicaId
         val delta      = props.spreadsheetAggregator.editAndGetDelta()(f, allowUndo)
         props.spreadsheetAggregator.visit(_.printToConsole())
         props.onDelta(delta)

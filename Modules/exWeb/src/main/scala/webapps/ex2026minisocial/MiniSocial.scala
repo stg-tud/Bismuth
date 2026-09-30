@@ -2,7 +2,7 @@ package webapps.ex2026minisocial
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.LastWriterWins
 
 /** Replicated state of the mini social example: a message and two (up/down) vote counters. */
@@ -11,10 +11,10 @@ case class MiniSocial(
     upvotes: GrowOnlyCounter = GrowOnlyCounter.zero,
     downvotes: GrowOnlyCounter = GrowOnlyCounter.zero
 ) {
-  def like()(using LocalUid): MiniSocial =
+  def like()(using ReplicaId): MiniSocial =
     MiniSocial(upvotes = upvotes.add(1))
 
-  def dislike()(using LocalUid): MiniSocial =
+  def dislike()(using ReplicaId): MiniSocial =
     MiniSocial(downvotes = downvotes.add(1))
 
   def setMessage(newMessage: String): MiniSocial =

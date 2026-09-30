@@ -6,7 +6,7 @@ import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, Local
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.datatypes.ReplicatedSet
 
 class BroadcastIOTest extends munit.FunSuite {
@@ -16,7 +16,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     // I have no clue why this syntax is still not deprecated xD
     val dd1, dd2, dd3 = {
-      val uid = LocalUid.gen()
+      val uid = ReplicaId.gen()
       BroadcastIO[Set[String]](uid, _ => ())
     }
 
@@ -45,7 +45,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val nodes = Vector.fill(5)(BroadcastIO[Set[String]](LocalUid.gen(), _ => ()))
+    val nodes = Vector.fill(5)(BroadcastIO[Set[String]](ReplicaId.gen(), _ => ()))
 
     val queue = LocalMessageQueue()
 
@@ -83,7 +83,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val dd1, dd2, dd3 = BroadcastIO[Set[String]](LocalUid.gen(), _ => ())
+    val dd1, dd2, dd3 = BroadcastIO[Set[String]](ReplicaId.gen(), _ => ())
 
     val queue  = LocalMessageQueue()
     val queued = QueuedLocalConnection("queued-basics", queue)
@@ -141,7 +141,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val resolver = LocalConnectionRegistry(links)
 
     final case class Node(id: String) {
-      val uid: LocalUid                = LocalUid.gen()
+      val uid: ReplicaId                = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,
@@ -197,7 +197,7 @@ class BroadcastIOTest extends munit.FunSuite {
     val resolver = LocalConnectionRegistry(links)
 
     final case class Node(id: String) {
-      val uid: LocalUid                = LocalUid.gen()
+      val uid: ReplicaId                = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,
@@ -276,7 +276,7 @@ class BroadcastIOTest extends munit.FunSuite {
     given JsonValueCodec[String]                = JsonCodecMaker.make
     given JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
 
-    class Node(val uid: LocalUid) {
+    class Node(val uid: ReplicaId) {
       var state: ReplicatedSet[String]                      = ReplicatedSet.empty[String]
       val dissemination: BroadcastIO[ReplicatedSet[String]] =
         BroadcastIO[ReplicatedSet[String]](
@@ -299,7 +299,7 @@ class BroadcastIOTest extends munit.FunSuite {
             continue = !queueWasEmpty || queue.nonEmpty
         assert(safety < 10000, s"queue did not quiesce, remaining=${queue.size}")
 
-    def mkNode(): Node = new Node(LocalUid.gen())
+    def mkNode(): Node = new Node(ReplicaId.gen())
 
     val nodes = Vector.fill(5)(mkNode())
 
@@ -316,15 +316,15 @@ class BroadcastIOTest extends munit.FunSuite {
     drainAll(nodes)
 
     publish(nodes(0)) {
-      given LocalUid = nodes(0).uid
+      given ReplicaId = nodes(0).uid
       nodes(0).state.add("apple")
     }
     publish(nodes(2)) {
-      given LocalUid = nodes(2).uid
+      given ReplicaId = nodes(2).uid
       nodes(2).state.add("banana")
     }
     publish(nodes(4)) {
-      given LocalUid = nodes(4).uid
+      given ReplicaId = nodes(4).uid
       nodes(4).state.add("carrot")
     }
 
@@ -332,7 +332,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     publish(nodes(1))(nodes(1).state.remove("apple"))
     publish(nodes(3)) {
-      given LocalUid = nodes(3).uid
+      given ReplicaId = nodes(3).uid
       nodes(3).state.add("date")
     }
 
@@ -340,7 +340,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     publish(nodes(0))(nodes(0).state.remove("carrot"))
     publish(nodes(2)) {
-      given LocalUid = nodes(2).uid
+      given ReplicaId = nodes(2).uid
       nodes(2).state.add("eggplant")
     }
 

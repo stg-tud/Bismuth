@@ -19,7 +19,7 @@ case class Attribute[T](register: MultiVersionRegister[T]) {
   def hasValue: Boolean = register.repr.nonEmpty
 
   def set(newValue: T): Attribute[T] = {
-    given rdts.base.LocalUid = myReplicaID
+    given rdts.base.ReplicaId = myReplicaID
     this.copy(register = register.write(newValue))
   }
 

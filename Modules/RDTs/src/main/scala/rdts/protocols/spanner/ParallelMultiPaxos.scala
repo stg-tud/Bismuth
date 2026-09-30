@@ -1,7 +1,7 @@
 package rdts.protocols.spanner
 
 import rdts.base.Lattice.syntax
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.{MultipaxosPhase, Participants, Paxos, PaxosRound, Voting}
@@ -45,7 +45,7 @@ case class ParallelMultiPaxos[A](
         .takeWhile(_.result.isDefined) // return log until first undecided round
         .map(_.result.get)
 
-    def startLeaderElection(index: Long)(using LocalUid): ParallelMultiPaxos[A] =
+    def startLeaderElection(index: Long)(using ReplicaId): ParallelMultiPaxos[A] =
       precondition(index == 0L || log.contains(index - 1)) {
         val currentPaxos = log.getOrElse(index, Paxos[A]())
         ParallelMultiPaxos(
@@ -53,10 +53,10 @@ case class ParallelMultiPaxos[A](
         ) // start new Paxos round with self proposed as leader
       }
 
-    def startLeaderElection(using LocalUid): ParallelMultiPaxos[A] =
+    def startLeaderElection(using ReplicaId): ParallelMultiPaxos[A] =
       startLeaderElection(commitIndex + 1)
 
-    def proposeIfLeader(index: Long, value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
+    def proposeIfLeader(index: Long, value: A)(using ReplicaId, Participants): ParallelMultiPaxos[A] =
       precondition(index == 0L || log.contains(index - 1)) {
         def openNextSlot =
           // opens a new slot for the next log entry, either by reusing the old ballot or starting a new one
@@ -78,10 +78,10 @@ case class ParallelMultiPaxos[A](
         )
       }
 
-    def proposeIfLeader(value: A)(using LocalUid, Participants): ParallelMultiPaxos[A] =
+    def proposeIfLeader(value: A)(using ReplicaId, Participants): ParallelMultiPaxos[A] =
       proposeIfLeader(commitIndex + 1, value)
 
-    def upkeep(using LocalUid, Participants): ParallelMultiPaxos[A] = {
+    def upkeep(using ReplicaId, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds
       val open        = NumericRange(commitIndex + 1, log.size.toLong, 1L).view.map(index => (index, log(index)))
       val paxosDeltas = open.map {

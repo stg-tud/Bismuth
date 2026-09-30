@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.RecipeBook.Delta
-import rdts.base.{Bottom, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
 import rdts.datatypes.ObserveRemoveMap
 import rdts.syntax.deltalens.*
 
@@ -13,13 +13,13 @@ case class RecipeBook(
 
   def get(recipeKey: String): Option[Recipe] = recipes.inner.get(recipeKey).map(_.value)
 
-  def addRecipe(key: String, recipe: Recipe)(using localUid: LocalUid): Delta =
+  def addRecipe(key: String, recipe: Recipe)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using(_.update(key, recipe))
 
   def deleteRecipe(key: String): Delta =
     this.deltaModify(_.recipes).using(_.remove(key))
 
-  def updateRecipeTitle(recipeKey: String, updatedRecipeTitle: String)(using localUid: LocalUid): Delta =
+  def updateRecipeTitle(recipeKey: String, updatedRecipeTitle: String)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.title).using(_.write(updatedRecipeTitle)))
@@ -27,7 +27,7 @@ case class RecipeBook(
       }
     }
 
-  def addIngredient(recipeKey: String, ingredient: Ingredient)(using localUid: LocalUid): Delta =
+  def addIngredient(recipeKey: String, ingredient: Ingredient)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.append(ingredient)))
@@ -36,7 +36,7 @@ case class RecipeBook(
     }
 
   def updateIngredient(recipeKey: String, ingredientIndex: Int, mod: (Ingredient) => Ingredient)(using
-      localUid: LocalUid
+      localUid: ReplicaId
   ): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
@@ -45,7 +45,7 @@ case class RecipeBook(
       }
     }
 
-  def deleteIngredient(recipeKey: String, ingredientIndex: Int)(using localUid: LocalUid): Delta =
+  def deleteIngredient(recipeKey: String, ingredientIndex: Int)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.ingredients).using(_.remove(ingredientIndex)))
@@ -53,7 +53,7 @@ case class RecipeBook(
       }
     }
 
-  def updateServings(recipeKey: String, newServings: Int)(using localUid: LocalUid): Delta =
+  def updateServings(recipeKey: String, newServings: Int)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateServings(newServings))
@@ -61,7 +61,7 @@ case class RecipeBook(
       }
     }
 
-  def updateCookingTime(recipeKey: String, newCookingTime: Int)(using localUid: LocalUid): Delta =
+  def updateCookingTime(recipeKey: String, newCookingTime: Int)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateCookingTime(newCookingTime))
@@ -69,7 +69,7 @@ case class RecipeBook(
       }
     }
 
-  def updateDescription(recipeKey: String, newDescription: String)(using localUid: LocalUid): Delta =
+  def updateDescription(recipeKey: String, newDescription: String)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.updateDescription(newDescription))
@@ -77,7 +77,7 @@ case class RecipeBook(
       }
     }
 
-  def updateFavorite(recipeKey: String, newValue: Boolean)(using localUid: LocalUid): Delta =
+  def updateFavorite(recipeKey: String, newValue: Boolean)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using { ormap =>
       ormap.transform(recipeKey) {
         case Some(prior) => Some(prior.deltaModify(_.favorite).using(ew =>
@@ -112,7 +112,7 @@ object RecipeBook {
 
   def main(args: Array[String]): Unit = {
     val replica1: Replica[RecipeBook, DeltaBufferNonRedundant[RecipeBook]] =
-      Replica(LocalUid.gen(), RecipeBook.empty, DeltaBufferNonRedundant[RecipeBook]())
+      Replica(ReplicaId.gen(), RecipeBook.empty, DeltaBufferNonRedundant[RecipeBook]())
 
     println("--- add recipe")
     val recipe1 = Recipe(

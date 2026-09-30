@@ -5,7 +5,7 @@ import channels.connection.{LocalMessageQueue, PeerConnectInfo, QueuedLocalConne
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 
 /** Regression tests for the handshake graft race that made `ex2021encfxtodo.TodoSignalingIntegrationTest`
   * flaky (updates to a replicated todo randomly stopped replicating right after connecting).
@@ -35,7 +35,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
     var receivedB: List[Set[String]] = Nil
 
     private def mkNode(cb: Set[String] => Unit): BroadcastIO[Set[String]] = {
-      val uid = LocalUid.gen()
+      val uid = ReplicaId.gen()
       BroadcastIO[Set[String]](
         replicaId = uid,
         receiveCallback = cb,

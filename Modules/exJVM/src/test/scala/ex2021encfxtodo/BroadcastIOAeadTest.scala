@@ -9,7 +9,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead as TinkAead, KeyTemplates, KeysetHandle, RegistryConfiguration}
 import munit.FunSuite
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 import scala.collection.mutable
 
@@ -30,8 +30,8 @@ class BroadcastIOAeadTest extends FunSuite {
     val received1 = mutable.ListBuffer.empty[Set[String]]
     val received2 = mutable.ListBuffer.empty[Set[String]]
 
-    val dd1 = BroadcastIO[Set[String]](LocalUid.gen(), received1 += _, aead = aead)
-    val dd2 = BroadcastIO[Set[String]](LocalUid.gen(), received2 += _, aead = aead)
+    val dd1 = BroadcastIO[Set[String]](ReplicaId.gen(), received1 += _, aead = aead)
+    val dd2 = BroadcastIO[Set[String]](ReplicaId.gen(), received2 += _, aead = aead)
 
     val sync = SynchronousLocalConnection("sync-aead")
     dd1.addServerConnection(sync.server)
@@ -47,7 +47,7 @@ class BroadcastIOAeadTest extends FunSuite {
   test("AEAD encrypted envelopes are not readable with the identity AEAD") {
     val aead    = newAead()
     val encoded = BroadcastIO.encodeEnvelope[Set[String]](
-      BroadcastIO.Envelope.Broadcast(LocalUid.gen().uid, PlumtreeMessage.Graft(rdts.time.Dots.empty)),
+      BroadcastIO.Envelope.Broadcast(ReplicaId.gen().uid, PlumtreeMessage.Graft(rdts.time.Dots.empty)),
       aead
     )
 

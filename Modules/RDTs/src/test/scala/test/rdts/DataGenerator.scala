@@ -142,7 +142,7 @@ object DataGenerator {
     def makeRGA[E](
         inserted: List[(Int, E)],
         removed: List[Int],
-        rid: LocalUid
+        rid: ReplicaId
     ): ReplicatedList[E] = {
 
       def clamp(v: Int, max: Int): Int = math.max(0, math.min(v, max))

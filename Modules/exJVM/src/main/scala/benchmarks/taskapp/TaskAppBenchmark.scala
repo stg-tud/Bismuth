@@ -2,7 +2,7 @@ package benchmarks.taskapp
 
 import benchmarks.taskapp.TaskApp.{App, Entry, given}
 import org.openjdk.jol.info.GraphLayout
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.datatypes.{LastWriterWins, ReplicatedTree}
 import rdts.experiments.{DeltaHistory, UndoRedoReplica}
 
@@ -22,8 +22,8 @@ object TaskAppBenchmark {
   val memorySampleEvery = 1_000 // 1 = every interaction; increase to reduce overhead
 
   // Two replicas with separate LocalUids
-  val localUid1: LocalUid = LocalUid.predefined("benchmark-client-1")
-  val localUid2: LocalUid = LocalUid.predefined("benchmark-client-2")
+  val localUid1: ReplicaId = ReplicaId.predefined("benchmark-client-1")
+  val localUid2: ReplicaId = ReplicaId.predefined("benchmark-client-2")
 
   var app1: App = scala.compiletime.uninitialized
   var app2: App = scala.compiletime.uninitialized
@@ -120,7 +120,7 @@ object TaskAppBenchmark {
 
   // Helper to get the current active app
   inline def currentApp: App      = if activeReplica == 1 then app1 else app2
-  inline def currentUid: LocalUid = if activeReplica == 1 then localUid1 else localUid2
+  inline def currentUid: ReplicaId = if activeReplica == 1 then localUid1 else localUid2
 
   inline def timedRead: ReplicatedTree[Entry] = timed("read")(currentApp.read)
 
@@ -383,7 +383,7 @@ object TaskAppBenchmark {
   }
 
   private def performInteraction(interaction: TaskAppInteraction): DeltaHistory[ReplicatedTree[Entry]] = {
-    given LocalUid = currentUid
+    given ReplicaId = currentUid
     val app        = currentApp
 
     val delta: DeltaHistory[ReplicatedTree[Entry]] = interaction match {

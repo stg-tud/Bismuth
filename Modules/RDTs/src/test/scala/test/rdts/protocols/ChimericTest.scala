@@ -1,6 +1,6 @@
 package test.rdts.protocols
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.Util.Agreement.*
 import rdts.protocols.chimeric.{Chimeric, QuorumConfig}
 import rdts.protocols.{Consensus, Participants}
@@ -11,16 +11,16 @@ class ChimericTest extends munit.FunSuite {
   val u2: Uid = Uid("node2")
   val u3: Uid = Uid("node3")
 
-  val id1: LocalUid = LocalUid(u1)
-  val id2: LocalUid = LocalUid(u2)
-  val id3: LocalUid = LocalUid(u3)
+  val id1: ReplicaId = ReplicaId(u1)
+  val id2: ReplicaId = ReplicaId(u2)
+  val id3: ReplicaId = ReplicaId(u3)
 
   given Participants = Participants(Set(u1, u2, u3))
 
   private def runSingleProposal(
       cfg: QuorumConfig,
       value: Int,
-      proposer: LocalUid = id1
+      proposer: ReplicaId = id1
   ): Chimeric[Int] = {
     given QuorumConfig = cfg
 

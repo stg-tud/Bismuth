@@ -2,7 +2,7 @@ package webapps.ex2026minisocial
 
 import org.scalajs.dom.UIEvent
 import org.scalajs.dom.html.{Button, Div, Input}
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.reattach
@@ -13,7 +13,7 @@ import scalatags.JsDom.all.*
 object MiniSocialUI {
 
   /** A `given` allows methods to find this replica id by its type if it is in scope. */
-  given replicaId: LocalUid = MiniSocialMain.replicaId
+  given replicaId: ReplicaId = MiniSocialMain.replicaId
 
   /** helper function to remove some boilerplate in the Fold below */
   extension [T](event: Event[T])

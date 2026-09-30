@@ -2,11 +2,11 @@ package ex2026accessControl.travelplanner
 
 import ex2026accessControl.travelplanner.TravelPlan
 import munit.FunSuite
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 
 class DecompositionTest extends FunSuite {
 
-  given uid: LocalUid = LocalUid(Uid("id42"))
+  given uid: ReplicaId = ReplicaId(Uid("id42"))
 
   private val mutators: Vector[TravelPlan => TravelPlan] = Vector(
     _.setTitle("Test"),

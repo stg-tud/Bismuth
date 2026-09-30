@@ -4,7 +4,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.protocols.MultipaxosPhase.LeaderElection
 import rdts.protocols.{MultiPaxos, Participants}
 
@@ -40,7 +40,7 @@ class MultiPaxosSpec[A: Arbitrary](
   override def genInitialState: Gen[State] =
     for
         numDevices <- Gen.choose(minDevices, maxDevices)
-        ids = Range(0, numDevices).map(_ => LocalUid.gen()).toList
+        ids = Range(0, numDevices).map(_ => ReplicaId.gen()).toList
     yield ids.map(id => (id, MultiPaxos())).toMap
 
   override def genCommand(state: State): Gen[Command] =
@@ -64,8 +64,8 @@ class MultiPaxosSpec[A: Arbitrary](
     yield Merge(left, right)
 
   // commands: (merge), upkeep, write, addMember, removeMember
-  case class Merge(left: LocalUid, right: LocalUid) extends ACommand(left):
-      override def nextLocalState(states: Map[LocalUid, MultiPaxos[A]]): MultiPaxos[A] =
+  case class Merge(left: ReplicaId, right: ReplicaId) extends ACommand(left):
+      override def nextLocalState(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =
           given Participants(states.keySet.map(_.uid))
           val merged = states(left).merge(states(right))
           val result = merged.merge(merged.upkeep(using left))
@@ -77,7 +77,7 @@ class MultiPaxosSpec[A: Arbitrary](
 
       override def postCondition(state: State, result: Try[Result]): Prop =
           given Participants(state.keySet.map(_.uid))
-          val res: Map[LocalUid, MultiPaxos[A]] = result.get
+          val res: Map[ReplicaId, MultiPaxos[A]] = result.get
           Prop.forAll(genId2(res)) {
             (index1, index2) =>
               (state(index1), state(index2), res(index1), res(index2)) match
@@ -92,15 +92,15 @@ class MultiPaxosSpec[A: Arbitrary](
                     (multipaxos1.phase != LeaderElection || multipaxos1.leader.isEmpty) && (multipaxos1.phase == LeaderElection || multipaxos1.leader.nonEmpty) :| s"leader is only undefined during leader election, got ${multipaxos1.leader} in phase ${multipaxos1.phase}"
           }
 
-  case class Propose(proposer: LocalUid, value: A) extends ACommand(proposer):
-      override def nextLocalState(states: Map[LocalUid, MultiPaxos[A]]): MultiPaxos[A] =
+  case class Propose(proposer: ReplicaId, value: A) extends ACommand(proposer):
+      override def nextLocalState(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =
           given Participants(states.keySet.map(_.uid))
           val delta    = states(proposer).proposeIfLeader(value)(using proposer)
           val proposed = Lattice.merge(states(proposer), delta)
           Lattice.merge(proposed, proposed.upkeep(using proposer))
 
-  case class StartElection(initiator: LocalUid) extends ACommand(initiator):
-      override def nextLocalState(states: Map[LocalUid, MultiPaxos[A]]): MultiPaxos[A] =
+  case class StartElection(initiator: ReplicaId) extends ACommand(initiator):
+      override def nextLocalState(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =
           given Participants(states.keySet.map(_.uid))
           val delta  = states(initiator).startLeaderElection(using initiator)
           val merged = Lattice.merge(states(initiator), delta)

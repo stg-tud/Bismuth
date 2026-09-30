@@ -1,7 +1,7 @@
 package test.rdts.protocols
 
 import rdts.base.Lattice.syntax
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.protocols.*
 import rdts.protocols.Util.Agreement
 import rdts.protocols.spanner.{FlexibleVoting, SimpSpan, twoPCMessages}
@@ -21,7 +21,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   /** Elect `leader` as leader of a fresh MultiPaxos for the given members. */
-  def electLeader(members: Seq[LocalUid], leader: LocalUid): MultiPaxos[twoPCMessages] = {
+  def electLeader(members: Seq[ReplicaId], leader: ReplicaId): MultiPaxos[twoPCMessages] = {
     given Participants = Participants(members.map(_.uid).toSet)
     var paxos          = MultiPaxos[twoPCMessages]()
     paxos = paxos.merge(paxos.startLeaderElection(using leader))
@@ -31,7 +31,7 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   }
 
   /** Run one full round of upkeep for all replicas in every partition. */
-  def runUpkeepRound(state: SimpSpan[String], allReplicas: Seq[LocalUid]): SimpSpan[String] =
+  def runUpkeepRound(state: SimpSpan[String], allReplicas: Seq[ReplicaId]): SimpSpan[String] =
     allReplicas.foldLeft(state) { (s, m) => s.merge(s.upkeep(using m)) }
 
   /** Build the standard three-partition base state with elected leaders. */
@@ -40,19 +40,19 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
       Uid,
       Uid,
       Uid,
-      LocalUid,
-      LocalUid,
-      LocalUid,
-      LocalUid,
-      LocalUid,
-      LocalUid,
-      LocalUid,
-      LocalUid,
-      LocalUid
+      ReplicaId,
+      ReplicaId,
+      ReplicaId,
+      ReplicaId,
+      ReplicaId,
+      ReplicaId,
+      ReplicaId,
+      ReplicaId,
+      ReplicaId
   ) = {
-    val id1a = LocalUid.gen(); val id1b = LocalUid.gen(); val id1c = LocalUid.gen()
-    val id2a = LocalUid.gen(); val id2b = LocalUid.gen(); val id2c = LocalUid.gen()
-    val id3a = LocalUid.gen(); val id3b = LocalUid.gen(); val id3c = LocalUid.gen()
+    val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
+    val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
+    val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
     val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
 
     val paxos1 = electLeader(Seq(id1a, id1b, id1c), id1a)
@@ -76,9 +76,9 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("localPartitionId identifies all nine replicas across three partitions") {
-    val id1a = LocalUid.gen(); val id1b = LocalUid.gen(); val id1c = LocalUid.gen()
-    val id2a = LocalUid.gen(); val id2b = LocalUid.gen(); val id2c = LocalUid.gen()
-    val id3a = LocalUid.gen(); val id3b = LocalUid.gen(); val id3c = LocalUid.gen()
+    val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
+    val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
+    val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
     val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
 
     val state = SimpSpan[String](
@@ -104,15 +104,15 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   }
 
   test("localPartitionId returns None for an outsider when three partitions exist") {
-    val id1a     = LocalUid.gen()
-    val outsider = LocalUid.gen()
+    val id1a     = ReplicaId.gen()
+    val outsider = ReplicaId.gen()
     val p1       = Uid.gen(); val p2 = Uid.gen(); val p3 = Uid.gen()
 
     val state = SimpSpan[String](
       partitionMembers = Map(
         p1 -> Set(id1a.uid),
-        p2 -> Set(LocalUid.gen().uid),
-        p3 -> Set(LocalUid.gen().uid)
+        p2 -> Set(ReplicaId.gen().uid),
+        p3 -> Set(ReplicaId.gen().uid)
       )
     )
 
@@ -124,9 +124,9 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("each partition can elect its own leader independently") {
-    val id1a = LocalUid.gen(); val id1b = LocalUid.gen(); val id1c = LocalUid.gen()
-    val id2a = LocalUid.gen(); val id2b = LocalUid.gen(); val id2c = LocalUid.gen()
-    val id3a = LocalUid.gen(); val id3b = LocalUid.gen(); val id3c = LocalUid.gen()
+    val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
+    val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
+    val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
     val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
 
     val paxos1 = electLeader(Seq(id1a, id1b, id1c), id1a)
@@ -158,9 +158,9 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   }
 
   test("upkeep drives leader election across all three partitions simultaneously via SimpSpan") {
-    val id1a = LocalUid.gen(); val id1b = LocalUid.gen(); val id1c = LocalUid.gen()
-    val id2a = LocalUid.gen(); val id2b = LocalUid.gen(); val id2c = LocalUid.gen()
-    val id3a = LocalUid.gen(); val id3b = LocalUid.gen(); val id3c = LocalUid.gen()
+    val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
+    val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
+    val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
     val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
 
     // Kick off leader elections by merging startLeaderElection deltas
@@ -787,9 +787,9 @@ class ThreePartitionSimpSpanTest extends munit.FunSuite {
   // ============================================================
 
   test("election delta and transaction delta for different partitions can be merged independently") {
-    val id1a = LocalUid.gen(); val id1b = LocalUid.gen(); val id1c = LocalUid.gen()
-    val id2a = LocalUid.gen(); val id2b = LocalUid.gen(); val id2c = LocalUid.gen()
-    val id3a = LocalUid.gen(); val id3b = LocalUid.gen(); val id3c = LocalUid.gen()
+    val id1a = ReplicaId.gen(); val id1b = ReplicaId.gen(); val id1c = ReplicaId.gen()
+    val id2a = ReplicaId.gen(); val id2b = ReplicaId.gen(); val id2c = ReplicaId.gen()
+    val id3a = ReplicaId.gen(); val id3b = ReplicaId.gen(); val id3c = ReplicaId.gen()
     val p1   = Uid.gen(); val p2        = Uid.gen(); val p3        = Uid.gen()
 
     // Only p1 has an elected leader; p2 and p3 are fresh

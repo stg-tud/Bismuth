@@ -1,7 +1,7 @@
 package benchmarks.b2022lattices
 
 import org.openjdk.jmh.annotations.*
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.datatypes.ReplicatedList
 
 import java.util.concurrent.TimeUnit
@@ -23,7 +23,7 @@ class CausalQueueBenchWithRGA {
 
   var lca: ReplicatedList[Int] = scala.compiletime.uninitialized
 
-  given LocalUid = LocalUid.predefined("a")
+  given ReplicaId = ReplicaId.predefined("a")
 
   @Setup
   def setup(): Unit =

@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, Historized, Lattice, ReplicaId}
 
 case class PosNegCounter(pos: GrowOnlyCounter, neg: GrowOnlyCounter) derives Lattice, Bottom, Decompose {
   def value: Int =
@@ -8,11 +8,11 @@ case class PosNegCounter(pos: GrowOnlyCounter, neg: GrowOnlyCounter) derives Lat
       val negv = neg.value
       posv - negv
 
-  def inc()(using LocalUid): PosNegCounter = add(1)
+  def inc()(using ReplicaId): PosNegCounter = add(1)
 
-  def dec()(using LocalUid): PosNegCounter = add(-1)
+  def dec()(using ReplicaId): PosNegCounter = add(-1)
 
-  def add(delta: Int)(using LocalUid): PosNegCounter =
+  def add(delta: Int)(using ReplicaId): PosNegCounter =
     if delta > 0 then PosNegCounter(pos.add(delta), GrowOnlyCounter.zero)
     else if delta < 0 then PosNegCounter(GrowOnlyCounter.zero, neg.add(-delta))
     else PosNegCounter.zero

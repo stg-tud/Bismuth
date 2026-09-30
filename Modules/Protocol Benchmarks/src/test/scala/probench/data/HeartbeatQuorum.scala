@@ -1,6 +1,6 @@
 package probench.data
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.Participants
 
@@ -20,12 +20,12 @@ class HeartbeatQuorumTest extends munit.FunSuite {
 
     assert(hbq.heartbeats.size == nums.size)
 
-    given LocalUid(Uid.predefined("leader"))
+    given ReplicaId(Uid.predefined("leader"))
 
     assertEquals(hbq.alivePeers(timeoutThreshold = 2, currentTime = 5), Set(Uid("id5"), Uid("id4"), Uid("id3")))
-    assert(hbq.hasQuorum(timeoutThreshold = 2, currentTime = 5)(using LocalUid(Uid.predefined("leader"))))
+    assert(hbq.hasQuorum(timeoutThreshold = 2, currentTime = 5)(using ReplicaId(Uid.predefined("leader"))))
     assertEquals(hbq.alivePeers(timeoutThreshold = 1, currentTime = 5), Set(Uid("id5"), Uid("id4")))
-    assert(!hbq.hasQuorum(timeoutThreshold = 1, currentTime = 5)(using LocalUid(Uid.predefined("leader"))))
+    assert(!hbq.hasQuorum(timeoutThreshold = 1, currentTime = 5)(using ReplicaId(Uid.predefined("leader"))))
 
   }
 

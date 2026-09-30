@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{LastWriterWins, MultiVersionRegister, ObserveRemoveMap}
 import rdts.time.{Dot, Dots}
 
@@ -12,7 +12,7 @@ class ObserveRemoveMapTest extends munit.FunSuite {
   test("basic usage") {
     val obremmap = ObserveRemoveMap.empty[String, Dot]
 
-    given replicaId: LocalUid = LocalUid.gen()
+    given replicaId: ReplicaId = ReplicaId.gen()
 
     val added = {
       val nextDot = obremmap.observed.nextDot(replicaId.uid)
@@ -31,7 +31,7 @@ class ObserveRemoveMapTest extends munit.FunSuite {
   test("redundancy test add") {
     given Bottom[String] = Bottom.provide("")
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -79,7 +79,7 @@ class ObserveRemoveMapTest extends munit.FunSuite {
   test("redundancy test remove") {
     given Bottom[String] = Bottom.provide("")
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -138,8 +138,8 @@ class ObserveRemoveMapTest extends munit.FunSuite {
   }
 
   test("ORMap[MVReg[A]] outer delete implies inner clear") {
-    val replicaId1: LocalUid = LocalUid.gen()
-    val replicaId2: LocalUid = LocalUid.gen()
+    val replicaId1: ReplicaId = ReplicaId.gen()
+    val replicaId2: ReplicaId = ReplicaId.gen()
 
     val empty  = ObserveRemoveMap.empty[String, MultiVersionRegister[Int]]
     val delta1 = empty.update("a", MultiVersionRegister.empty[Int].write(1)(using replicaId1))(using replicaId1)

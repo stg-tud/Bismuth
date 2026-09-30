@@ -1,6 +1,6 @@
 package ex2024socialMedia
 
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.datatypes.{GrowOnlyCounter as Counter, LastWriterWins as LWW, ReplicatedList}
 import reactives.default.*
 
@@ -24,12 +24,12 @@ object UI {
 }
 
 case class SocialMedia(sm: Map[ID, SocialPost] = Map.empty):
-    def like(post: ID)(using replicaId: LocalUid): SocialMedia =
+    def like(post: ID)(using replicaId: ReplicaId): SocialMedia =
         val increment = sm(post).likes.inc()
         SocialMedia(Map(post -> SocialPost(likes = increment)))
 
-    def comment(post: ID, text: String)(using replicaId: LocalUid): SocialMedia = ???
-    def post(text: String)(using replicaId: LocalUid): SocialMedia              = ???
+    def comment(post: ID, text: String)(using replicaId: ReplicaId): SocialMedia = ???
+    def post(text: String)(using replicaId: ReplicaId): SocialMedia              = ???
 
 case class SocialPost(
     message: Option[LWW[String]] = None,
@@ -40,7 +40,7 @@ case class SocialPost(
 
 object SocialMediaTest {
 
-  given LocalUid = LocalUid.gen()
+  given ReplicaId = ReplicaId.gen()
 
   val likeEvent: Event[ID]        = UI.likeButton.event.snap { UI.currentPostID.value }
   val commentEvent: Event[String] = UI.submitCommentButton.event.snap { UI.textInput.value }

@@ -1,7 +1,7 @@
 package rdts.protocols.spanner
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.Agreement.Decided
 import rdts.protocols.Util.{Agreement, precondition}
@@ -15,11 +15,11 @@ case class SimpSpan[A](
 ) {
 
   // helper functions
-  def localPartitionId(using LocalUid): Option[Uid] = partitionMembers.find(_._2.contains(replicaId)).map(_._1)
+  def localPartitionId(using ReplicaId): Option[Uid] = partitionMembers.find(_._2.contains(replicaId)).map(_._1)
   def partitionIds: Set[Uid]                        = partitionMembers.keySet
 
   // step 1: initialize a new transaction. This can only be done by leaders
-  def startTransaction(localPartitionId: Uid, t: A)(using LocalUid): SimpSpan[A] =
+  def startTransaction(localPartitionId: Uid, t: A)(using ReplicaId): SimpSpan[A] =
     // todo: this is not stable... fix
     precondition(
       paxosPrepare.contains(localPartitionId) &&
@@ -37,7 +37,7 @@ case class SimpSpan[A](
     }
 
   // step 2: validate per partition if the transaction should be committed. Then persist upcoming 2PC vote in the partition's paxos log
-  def validate2PC(localPartitionId: Uid, transactionID: Uid, valid: Boolean)(using l: LocalUid): SimpSpan[A] =
+  def validate2PC(localPartitionId: Uid, transactionID: Uid, valid: Boolean)(using l: ReplicaId): SimpSpan[A] =
     precondition(
       paxosPrepare.contains(localPartitionId) &&
       partitionMembers.contains(localPartitionId) &&
@@ -53,7 +53,7 @@ case class SimpSpan[A](
     }
 
   // step 3: commit/acknowledge 2PC outcome in each partition's paxos log
-  def acknowledge2PC(localPartitionId: Uid, transactionID: Uid)(using l: LocalUid): SimpSpan[A] =
+  def acknowledge2PC(localPartitionId: Uid, transactionID: Uid)(using l: ReplicaId): SimpSpan[A] =
     precondition(
       paxosAcknowledge.contains(localPartitionId) &&
       paxosPrepare.contains(localPartitionId) &&
@@ -85,7 +85,7 @@ case class SimpSpan[A](
       )
     }
 
-  def upkeep(using l: LocalUid): SimpSpan[A] = {
+  def upkeep(using l: ReplicaId): SimpSpan[A] = {
     localPartitionId.map { partitionId =>
       // upkeep local multi-paxos instance
       val paxosPrepareDelta = paxosPrepare(partitionId).upkeep(using l, Participants(partitionMembers(partitionId)))
@@ -134,7 +134,7 @@ case class SimpSpan[A](
         // TODO: should this be a protocol action too?
         paxos.read.foldLeft(Map.empty[Uid, TwoPhaseCommit[A]]) {
           case (acc, twoPCMessages.Prepare(transactionID, valid)) =>
-            val delta = transactions(transactionID).prepare(valid)(using LocalUid(partitionId))
+            val delta = transactions(transactionID).prepare(valid)(using ReplicaId(partitionId))
             if delta != Bottom[TwoPhaseCommit[A]].empty then
                 acc + (transactionID -> delta)
             else
@@ -152,7 +152,7 @@ case class SimpSpan[A](
           case (acc, twoPCMessages.Commit(transactionID)) =>
             val delta =
               transactions(transactionID).acknowledge(using
-                LocalUid(partitionId),
+                ReplicaId(partitionId),
                 Participants(partitionIds)
               )
 
@@ -163,7 +163,7 @@ case class SimpSpan[A](
           case (acc, twoPCMessages.Abort(transactionID)) =>
             val delta =
               transactions(transactionID).acknowledge(using
-                LocalUid(partitionId),
+                ReplicaId(partitionId),
                 Participants(partitionIds)
               )
 

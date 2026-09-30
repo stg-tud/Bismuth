@@ -1,6 +1,6 @@
 package ex2024dare
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.time.{Dot, Dots}
 
 import scala.annotation.unused
@@ -26,7 +26,7 @@ object ACL {
 
     def dots: Dots = Dots.from(ops.keys)
 
-    def create()(using context: Dots, replicaId: LocalUid): Dotted[OpGraph] = {
+    def create()(using context: Dots, replicaId: ReplicaId): Dotted[OpGraph] = {
       val next = context.nextDot(replicaId.uid)
 
       val op = Operation.Create(User(replicaId.uid), next, Uid.gen())
@@ -34,7 +34,7 @@ object ACL {
       Dotted(OpGraph(Map(next -> op)), Dots.single(next))
     }
 
-    def add(user: User)(using context: Dots, replicaId: LocalUid): Dotted[OpGraph] = {
+    def add(user: User)(using context: Dots, replicaId: ReplicaId): Dotted[OpGraph] = {
       val next = context.nextDot(replicaId.uid)
 
       val op = Operation.Add(User(replicaId.uid), user, next, dots)
@@ -42,7 +42,7 @@ object ACL {
       Dotted(OpGraph(Map(next -> op)), Dots.single(next))
     }
 
-    def remove(user: User)(using context: Dots, replicaId: LocalUid): Dotted[OpGraph] = {
+    def remove(user: User)(using context: Dots, replicaId: ReplicaId): Dotted[OpGraph] = {
       val next = context.nextDot(replicaId.uid)
 
       val op = Operation.Remove(User(replicaId.uid), user, next, dots)

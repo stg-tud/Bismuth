@@ -1,6 +1,6 @@
 package rdts.protocols.smr
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.{MultiPaxos, Participants}
 import rdts.time.Time
 
@@ -59,8 +59,8 @@ case class MultiPaxosStateMachine[A](
         val (newIndex, lastCommand) =
           stateMachine.commandAfter(commitIndex(uid)).get // should be safe because maxIndex is higher
         val delta: MultiPaxos[A] = lastCommand match {
-          case MultiPaxosCommands.propose(value)      => multiPaxos.proposeIfLeader(value)(using LocalUid(uid))
-          case MultiPaxosCommands.startLeaderElection => multiPaxos.startLeaderElection(using LocalUid(uid))
+          case MultiPaxosCommands.propose(value)      => multiPaxos.proposeIfLeader(value)(using ReplicaId(uid))
+          case MultiPaxosCommands.startLeaderElection => multiPaxos.startLeaderElection(using ReplicaId(uid))
         }
         ((uid, newIndex), delta)
       case (uid, _) => ((uid, commitIndex(uid)), MultiPaxos())

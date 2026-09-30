@@ -1,14 +1,14 @@
 package rdts.protocols
 
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Participants.participants
 
 // Type class for consensus algorithms
 trait Consensus[C[_]] {
-  extension [A](c: C[A]) def propose(value: A)(using LocalUid, Participants): C[A]
+  extension [A](c: C[A]) def propose(value: A)(using ReplicaId, Participants): C[A]
   extension [A](c: C[A]) def result(using Participants): Option[A]
   extension [A](c: C[A]) def members(using Participants): Set[Uid] = participants
-  extension [A](c: C[A]) def upkeep()(using LocalUid, Participants): C[A]
+  extension [A](c: C[A]) def upkeep()(using ReplicaId, Participants): C[A]
 
   def empty[A]: C[A]
   def lattice[A]: Lattice[C[A]]

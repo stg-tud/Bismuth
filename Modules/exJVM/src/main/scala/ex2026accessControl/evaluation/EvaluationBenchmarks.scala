@@ -5,7 +5,7 @@ import crypto.channels.PrivateIdentity
 import crypto.{Commitment, Hash, PublicIdentity}
 import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment
@@ -167,7 +167,7 @@ class ArdtEventGraphBenchmarkState {
   // The single (non-root) replica and mutation used by createUpdate
   var selectedIdentity: PrivateIdentity = scala.compiletime.uninitialized
   var selectedMutatorChoice: String     = scala.compiletime.uninitialized
-  var selectedLocalUid: LocalUid        = scala.compiletime.uninitialized
+  var selectedLocalUid: ReplicaId        = scala.compiletime.uninitialized
   var authorizationHash: Hash           = scala.compiletime.uninitialized
 
   // Exposed so that state classes extending this one (e.g. those translating the generated graph into a
@@ -186,7 +186,7 @@ class ArdtEventGraphBenchmarkState {
 
     val selectionRandom = Random(seed)
     selectedIdentity = generated.replicaIds(1 + selectionRandom.nextInt(generated.replicaIds.length - 1))
-    selectedLocalUid = LocalUid(Uid(selectedIdentity.getPublic.id))
+    selectedLocalUid = ReplicaId(Uid(selectedIdentity.getPublic.id))
     // A non-root replica may only write to its own subtree
     val permittedMutations = generated.capabilityEvent(selectedIdentity.getPublic).keys.toIndexedSeq.sorted
     selectedMutatorChoice = permittedMutations(selectionRandom.nextInt(permittedMutations.size))

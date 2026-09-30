@@ -22,7 +22,7 @@ object EWFlagGenerators {
 
       ops.foldLeft(AntiEntropyContainer[EnableWinsFlag](ae)) {
         case (f, 0) => f.mod(_.disable())
-        case (f, 1) => f.mod(_.enable(using rdts.base.LocalUid.predefined(ae.replicaID))())
+        case (f, 1) => f.mod(_.enable(using rdts.base.ReplicaId.predefined(ae.replicaID))())
         // default case is only needed to stop the compiler from complaining about non-exhaustive match
         case (f, _) => f
       }

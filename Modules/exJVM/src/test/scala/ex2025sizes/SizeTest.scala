@@ -4,7 +4,7 @@ import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.datatypes.ObserveRemoveMap
 
 import scala.annotation.unused
@@ -14,7 +14,7 @@ class SizeTest extends munit.FunSuite {
   test("size does not grow indefinetely") {
     given Lattice[Int] = math.max
 
-    given LocalUid = LocalUid.gen()
+    given ReplicaId = ReplicaId.gen()
 
     val empty = ObserveRemoveMap.empty[String, Int]
 

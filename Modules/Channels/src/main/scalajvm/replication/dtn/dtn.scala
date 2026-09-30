@@ -3,7 +3,7 @@ package replication.dtn
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.*
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.PosNegCounter
 
 import java.net.URI
@@ -146,7 +146,7 @@ def run(): Unit =
       sget(URI.create(s"$api/register?$service")).bind
 
       val replica    = Replica(Uid.gen(), nodeId, service, PosNegCounter.zero)
-      given LocalUid = replica.id.convert
+      given ReplicaId = replica.id.convert
 
       val bundleString    = sget(URI.create(s"$api/status/bundles")).bind
       @unused val bundles = traverse(readFromString[List[String]](bundleString)(using JsonCodecMaker.make).map { id =>

@@ -1,7 +1,7 @@
 package rdts.protocols
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Quorum.FullQuorum
 import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.spanner.FlexibleVoting
@@ -13,13 +13,13 @@ case class TwoPhaseCommit[A](
     commit: FlexibleVoting[Boolean] = FlexibleVoting()
 ):
     // phase1: as the coordinator, propose a transaction
-    def proposeTransaction(using LocalUid): TwoPhaseCommit[A] =
+    def proposeTransaction(using ReplicaId): TwoPhaseCommit[A] =
       precondition(coordinator == Some(replicaId)) {
         TwoPhaseCommit(prepare = prepare.voteFor(true))
       }
 
     // phase1: as a participant, vote for commit or abort in the request phase
-    def prepare(commit: Boolean)(using LocalUid): TwoPhaseCommit[A] =
+    def prepare(commit: Boolean)(using ReplicaId): TwoPhaseCommit[A] =
       precondition(transaction.isDefined) {
         TwoPhaseCommit(prepare = prepare.voteFor(commit))
       }
@@ -27,7 +27,7 @@ case class TwoPhaseCommit[A](
     // phase2: everybody,
     // check if request phase was accepted by everyone
     // commit the transaction and send ack to the others
-    def acknowledge(using l: LocalUid, p: Participants): TwoPhaseCommit[A] =
+    def acknowledge(using l: ReplicaId, p: Participants): TwoPhaseCommit[A] =
       // check if there is a transaction and everybody has voted
       precondition(transaction.isDefined &&
         // we can start acknowledging if
@@ -53,7 +53,7 @@ case class TwoPhaseCommit[A](
       else
           commit.decision(using p, FullQuorum)
 
-    def upkeep(using LocalUid, Participants): TwoPhaseCommit[A] =
+    def upkeep(using ReplicaId, Participants): TwoPhaseCommit[A] =
       acknowledge
 
 object TwoPhaseCommit:

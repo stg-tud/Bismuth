@@ -1,7 +1,7 @@
 package test.rdts.simulatedNetworkTests.tools
 
 import rdts.base.Uid.asId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import test.rdts.simulatedNetworkTests.tools.AntiEntropy.{AckMsg, DeltaMsg}
 
 import scala.collection.mutable
@@ -29,7 +29,7 @@ class AntiEntropy[A](
 
   def state: A = fullState
 
-  def localUid: LocalUid = LocalUid.predefined(replicaID)
+  def localUid: ReplicaId = ReplicaId.predefined(replicaID)
 
   private val deltaBufferOut: mutable.Map[Int, Named[A]] = mutable.Map()
 

@@ -1,6 +1,6 @@
 package webapps.ex2019todo
 
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
@@ -17,11 +17,11 @@ object TaskOps {
 
 // `taskrefs` is unused as a reference, but is used indirectly so this parameter serves as a requirement
 // that a `taskrefs` needs to be created before taskops may be used
-class TaskOps(@unused taskrefs: TaskReferences, replicaID: LocalUid) {
+class TaskOps(@unused taskrefs: TaskReferences, replicaID: ReplicaId) {
 
   type State = DeltaBuffer[ReplicatedList[TaskRef]]
 
-  given LocalUid = replicaID
+  given ReplicaId = replicaID
 
   def handleCreateTodo(createTodo: Event[String]): Fold.Branch[State] = createTodo.branch { desc =>
     val taskid = s"Task(${ThreadLocalRandom.current().nextLong().toHexString})"

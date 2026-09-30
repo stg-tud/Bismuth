@@ -1,7 +1,7 @@
 package ex2026darelecture
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Participants.participants
 import rdts.protocols.Util.*
 import rdts.protocols.{BallotNum, Participants}
@@ -14,7 +14,7 @@ case class Voting[A](votes: Map[Uid, A] = Map.empty[Uid, A]) {
         case Some((v, count)) if count >= threshold => Agreement.Decided(v)
         case _                                      => Agreement.Undecided
 
-  def voteFor(v: A)(using LocalUid, Participants): Voting[A] =
+  def voteFor(v: A)(using ReplicaId, Participants): Voting[A] =
     precondition(participants.contains(replicaId) && !votes.contains(replicaId)):
         Voting(Map(replicaId -> v))
 

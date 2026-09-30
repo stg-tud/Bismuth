@@ -4,7 +4,7 @@ import crypto.PublicIdentity
 import crypto.channels.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.evaluation.acl.TravelPlanMutatorChoice.*
 import ex2026accessControl.travelplanner.TravelPlan
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.filters.PermissionTree
 import rdts.time.{ArrayRanges, Dots}
 import replication.acl.{Acl, AclRdt, BftDelta}
@@ -36,7 +36,7 @@ object TraceGeneration {
       minEntriesPerMap: Int,
       maxEntriesPerMap: Int,
       state: TravelPlan,
-  )(using random: Random, author: LocalUid): TravelPlan = {
+  )(using random: Random, author: ReplicaId): TravelPlan = {
     val delta = retryUntilSuccess { // Need to retry, because removal/update doesn't work on empty collection
       permittedMutators(random.nextInt(permittedMutators.length)) match {
         case SET_TITLE                                                            => state.setTitle(dummy)
@@ -79,7 +79,7 @@ object TraceGeneration {
   )(using random: Random): Array[Array[TravelPlan]] =
     identities.map { id =>
       val permittedMutators = TraceGeneration.permittedMutators(acl.write(id))
-      given LocalUid        = LocalUid(Uid(id.id))
+      given ReplicaId        = ReplicaId(Uid(id.id))
 
       @tailrec
       def genRec(deltas: List[TravelPlan], accState: TravelPlan, remaining: Int): Array[TravelPlan] =

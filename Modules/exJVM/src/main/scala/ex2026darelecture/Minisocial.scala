@@ -1,6 +1,6 @@
 package ex2026darelecture
 
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import rdts.datatypes.{GrowOnlyCounter, LastWriterWins}
 
 /** Mini Social models a social network … except that there is only a single global message which can be voted for.
@@ -12,10 +12,10 @@ case class MiniSocial(
     upvotes: GrowOnlyCounter = GrowOnlyCounter.zero,
     downvotes: GrowOnlyCounter = GrowOnlyCounter.zero
 ) {
-  def like()(using LocalUid): MiniSocial =
+  def like()(using ReplicaId): MiniSocial =
     MiniSocial(upvotes = upvotes.add(1))
 
-  def dislike()(using LocalUid): MiniSocial =
+  def dislike()(using ReplicaId): MiniSocial =
     MiniSocial(downvotes = downvotes.add(1))
 
   def setMessage(newMessage: String): MiniSocial =

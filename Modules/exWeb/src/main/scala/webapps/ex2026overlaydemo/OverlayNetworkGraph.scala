@@ -7,7 +7,7 @@ import channels.experiments.{OverlayDemoNode, OverlayStatusProtocol}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, document, window}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import scalatags.JsDom.all.*
 import webapps.ex2026overlaydemo.OverlayNetworkGraphModel.LocalViews
 import webapps.ex2026overlaydemo.OverlayNetworkGraphNetworking.WebRtcSignalingBridge
@@ -97,7 +97,7 @@ object OverlayNetworkGraph {
     stopCurrentNode()
     val seedDetails = seedConnectionString.filter(_.nonEmpty).map(parseConnectionString)
     val localUid    =
-      defaultUidString.filter(_.nonEmpty).map(value => LocalUid(Uid.predefined(value))).getOrElse(LocalUid.gen())
+      defaultUidString.filter(_.nonEmpty).map(value => ReplicaId(Uid.predefined(value))).getOrElse(ReplicaId.gen())
     val signalDetails = defaultSignalUrl.filter(_.nonEmpty).map(parseConnectionString)
     val selfDetails   =
       signalDetails.map(_ => Set(ConnectionDescriptor.WebRtc(Uid.unwrap(localUid.uid)))).getOrElse(Set.empty)

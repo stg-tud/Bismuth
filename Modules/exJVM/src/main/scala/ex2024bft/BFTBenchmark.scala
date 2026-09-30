@@ -2,7 +2,7 @@ package ex2024bft
 
 import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Fork, Level, Measurement, Mode, OutputTimeUnit, Param, Scope, Setup, State, Warmup}
 import org.openjdk.jmh.infra.Blackhole
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{GrowOnlyCounter, ReplicatedList}
 
 import java.util.concurrent.TimeUnit
@@ -67,7 +67,7 @@ class BFTBenchmark {
 
 object BFTBenchmark {
   def generateGOCList(size: Int): List[GrowOnlyCounter] = {
-    val id1 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
 
     var goc = summon[Bottom[GrowOnlyCounter]].empty
 
@@ -87,7 +87,7 @@ object BFTBenchmark {
   def gocLattice: Lattice[GrowOnlyCounter] = summon[Lattice[GrowOnlyCounter]]
 
   def generateGOCBFTList(size: Int): List[BFT[GrowOnlyCounter]] = {
-    val id1 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
 
     var bft = BFT(summon[Bottom[GrowOnlyCounter]].empty)(using byteableGOC)
 
@@ -107,7 +107,7 @@ object BFTBenchmark {
   def bftGOCLattice: Lattice[BFT[GrowOnlyCounter]] = BFT.lattice(using byteableGOC)
 
   def generateListDeltaList(size: Int): List[ReplicatedList[Int]] = {
-    val id1 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
 
     var repList = summon[Bottom[ReplicatedList[Int]]].empty
 
@@ -126,7 +126,7 @@ object BFTBenchmark {
   def dottedRepListIntLattice: Lattice[ReplicatedList[Int]] = summon[Lattice[ReplicatedList[Int]]]
 
   def generateBFTListDeltaList(size: Int): List[BFT[ReplicatedList[Int]]] = {
-    val id1 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
 
     var bft = BFT(bottomListDeltaList.empty)(using byteableListDeltaList)
 

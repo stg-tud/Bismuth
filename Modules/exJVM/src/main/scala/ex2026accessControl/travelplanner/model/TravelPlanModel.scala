@@ -4,7 +4,7 @@ import crypto.PublicIdentity
 import crypto.channels.PrivateIdentity
 import ex2026accessControl.travelplanner.TravelPlan.given
 import ex2026accessControl.travelplanner.{Invitation, Sync, TravelPlan}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.filters.PermissionTree
 import scalafx.application.Platform
@@ -20,7 +20,7 @@ class TravelPlanModel(
 ) {
   val publicId: PublicIdentity = localIdentity.getPublic
 
-  private given localUid: LocalUid = LocalUid(Uid(publicId.id))
+  private given localUid: ReplicaId = ReplicaId(Uid(publicId.id))
 
   def state: TravelPlan = sync.currentState
 

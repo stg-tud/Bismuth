@@ -3,7 +3,7 @@ import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentCo
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromString, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Sync}
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 import webview.WebView
 
 import java.net.URI
@@ -44,7 +44,7 @@ object Webview {
       if target.startsWith("http://") || target.startsWith("https://") then URI(target)
       else Path.of(target).toUri
 
-    val dataManager = BroadcastIO[TodoRepState](LocalUid.gen(), receiveCallback)
+    val dataManager = BroadcastIO[TodoRepState](ReplicaId.gen(), receiveCallback)
 
     val w = WebView()
     dataManager.addClientConnection(WebviewNativeChannel.listen(w))

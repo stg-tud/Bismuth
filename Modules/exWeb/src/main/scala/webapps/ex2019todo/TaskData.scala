@@ -3,7 +3,7 @@ package webapps.ex2019todo
 import org.scalajs.dom
 import org.scalajs.dom.Element
 import org.scalajs.dom.html.{Input, LI}
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.LastWriterWins
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
@@ -62,7 +62,7 @@ object TaskReferences {
 }
 
 class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
-  given fixedId: LocalUid = replicaId
+  given fixedId: ReplicaId = replicaId
 
   def createTaskRef(
       taskID: String,

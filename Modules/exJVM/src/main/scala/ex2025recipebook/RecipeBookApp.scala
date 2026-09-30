@@ -1,11 +1,11 @@
 package ex2025recipebook
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 
 object RecipeBookApp {
 
   def main(args: Array[String]): Unit = {
-    val localUid1, localUid2     = LocalUid(Uid.gen())
+    val localUid1, localUid2     = ReplicaId(Uid.gen())
     var recipeBook1, recipeBook2 = RecipeBook()
 
     def printRecipes(): Unit = {

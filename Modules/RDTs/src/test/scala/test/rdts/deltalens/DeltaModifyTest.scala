@@ -1,6 +1,6 @@
 package test.rdts.deltalens
 
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.*
 import rdts.syntax.deltalens.*
 import rdts.time.{CausalTime, Dots}
@@ -15,7 +15,7 @@ class DeltaModifyTest extends munit.FunSuite {
 
   given Bottom[Int]    = Bottom.provide(42)
   given Bottom[String] = Bottom.provide("BOTTOM")
-  given LocalUid       = LocalUid.predefined("delta-modify-test")
+  given ReplicaId       = ReplicaId.predefined("delta-modify-test")
 
   case class Address(street: String, zip: Int) derives Bottom
   case class Person(name: String, age: Int, address: Address) derives Bottom

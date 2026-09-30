@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.GrowOnlyCounter
 import rdts.time.Dots
 
@@ -14,7 +14,7 @@ class GrowOnlyCounterTest extends munit.FunSuite {
   test("single replica: delta marks deltas with smaller value as redundant") {
     import GrowOnlyCounter.given
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -49,7 +49,7 @@ class GrowOnlyCounterTest extends munit.FunSuite {
   ) {
     import GrowOnlyCounter.given
 
-    val localId: LocalUid = LocalUid.gen()
+    val localId: ReplicaId = ReplicaId.gen()
     var dots              = Dots.empty
     val dot1              = dots.nextDot(using localId)
     dots = dots.add(dot1)
@@ -82,8 +82,8 @@ class GrowOnlyCounterTest extends munit.FunSuite {
   ) {
     import GrowOnlyCounter.given
 
-    val localId1: LocalUid = LocalUid.gen()
-    val localId2: LocalUid = LocalUid.gen()
+    val localId1: ReplicaId = ReplicaId.gen()
+    val localId2: ReplicaId = ReplicaId.gen()
     var dots               = Dots.empty
     val dot11              = dots.nextDot(using localId1)
     dots = dots.add(dot11)

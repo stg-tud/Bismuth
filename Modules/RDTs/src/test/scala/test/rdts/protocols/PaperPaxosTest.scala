@@ -1,6 +1,6 @@
 package test.rdts.protocols
 
-import rdts.base.{Bottom, LocalUid}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.protocols.{Participants, Paxos}
 import rdts.time.Dots
 
@@ -9,9 +9,9 @@ class PaperPaxosTest extends munit.FunSuite {
       override def empty: Int = Int.MinValue
 
   given dots: Dots  = Dots.empty
-  val id1: LocalUid = LocalUid.gen()
-  val id2: LocalUid = LocalUid.gen()
-  val id3: LocalUid = LocalUid.gen()
+  val id1: ReplicaId = ReplicaId.gen()
+  val id2: ReplicaId = ReplicaId.gen()
+  val id3: ReplicaId = ReplicaId.gen()
 
   given participants: Participants = Participants(Set(id1, id2, id3).map(_.uid))
 

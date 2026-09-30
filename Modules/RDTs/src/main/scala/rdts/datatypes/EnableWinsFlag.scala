@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, Historized, Lattice, ReplicaId}
 import rdts.time.Dots
 
 /** An EWFlag (Enable-Wins Flag) is a Delta CRDT modeling a boolean flag.
@@ -11,8 +11,8 @@ case class EnableWinsFlag(set: Dots, unset: Dots) derives Bottom {
 
   def read: Boolean = !unset.contains(set)
 
-  def enable(using LocalUid)(): EnableWinsFlag = {
-    val nextDot = set.nextDot(LocalUid.replicaId)
+  def enable(using ReplicaId)(): EnableWinsFlag = {
+    val nextDot = set.nextDot(ReplicaId.replicaId)
     EnableWinsFlag(Dots.single(nextDot), Dots.empty)
   }
 

@@ -1,6 +1,6 @@
 package ex2025recipebook
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
@@ -16,8 +16,8 @@ case class MVRegister[A](repr: Map[Dot, A], removed: Dots) {
 
   def compact: MVRegister[A] = MVRegister(repr.filter((d, _) => !removed.contains(d)), removed)
 
-  def write(v: A)(using LocalUid): MVRegister[A] = {
-    val nextDot = observed.nextDot(LocalUid.replicaId)
+  def write(v: A)(using ReplicaId): MVRegister[A] = {
+    val nextDot = observed.nextDot(ReplicaId.replicaId)
     MVRegister(
       Map(nextDot -> v),
       observed
@@ -35,7 +35,7 @@ case class MVRegister[A](repr: Map[Dot, A], removed: Dots) {
 
 object MVRegister {
 
-  def of[A](a: A)(using LocalUid): MVRegister[A] = empty.write(a)
+  def of[A](a: A)(using ReplicaId): MVRegister[A] = empty.write(a)
 
   given bottomInstance[A]: Bottom[MVRegister[A]] = Bottom.derived
   def empty[A]: MVRegister[A]                    = Bottom.empty

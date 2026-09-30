@@ -1,7 +1,7 @@
 package benchmarks.b2022lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
-import rdts.base.LocalUid.asId
+import rdts.base.ReplicaId.asId
 import rdts.datatypes.EnableWinsFlag
 
 import java.util.concurrent.TimeUnit

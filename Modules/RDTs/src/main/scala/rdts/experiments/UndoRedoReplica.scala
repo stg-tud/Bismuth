@@ -1,6 +1,6 @@
 package rdts.experiments
 
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 case class DeltaHistory[A](val deltas: Map[Dot, A], val removed: Dots, val base: Option[A], val dots: Dots) {
@@ -104,7 +104,7 @@ case class UndoRedoReplica[A: Lattice](
       }
       this.history = Lattice.merge(this.history, delta)
 
-  def mod(f: LocalUid ?=> A => A)(using LocalUid)(using Lattice[A])(using Bottom[A]): DeltaHistory[A] =
+  def mod(f: ReplicaId ?=> A => A)(using ReplicaId)(using Lattice[A])(using Bottom[A]): DeltaHistory[A] =
       ReplicaTimings.callCount += 1
 
       var t0           = System.nanoTime()
@@ -129,13 +129,13 @@ case class UndoRedoReplica[A: Lattice](
       this.redoStack.push(deltaToUndo)
       historyDelta
 
-  def redo()(using LocalUid): DeltaHistory[A] =
+  def redo()(using ReplicaId): DeltaHistory[A] =
       if redoStack.isEmpty then return DeltaHistory.empty[A]
       val deltaToRedo         = redoStack.pop()
       val (dot, historyDelta) = this.pushDelta(deltaToRedo)
       historyDelta
 
-  private def pushDelta(delta: A)(using LocalUid): (Dot, DeltaHistory[A]) =
+  private def pushDelta(delta: A)(using ReplicaId): (Dot, DeltaHistory[A]) =
       var t0  = System.nanoTime()
       val dot = this.history.dots.nextDot
       ReplicaTimings.getDotsNanos += System.nanoTime() - t0

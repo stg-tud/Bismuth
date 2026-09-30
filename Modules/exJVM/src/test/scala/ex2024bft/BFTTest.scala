@@ -9,7 +9,7 @@ class BFTTest extends munit.ScalaCheckSuite {
   given lat: Lattice[BFT[GrowOnlyCounter]] = BFT.lattice
 
   test("basic update") {
-    val id1 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
 
     val bottom = BFT(summon[Bottom[GrowOnlyCounter]].empty)
 
@@ -29,8 +29,8 @@ class BFTTest extends munit.ScalaCheckSuite {
   }
 
   test("reject incorrect delta") {
-    val id1 = LocalUid.gen()
-    val id2 = LocalUid.gen()
+    val id1 = ReplicaId.gen()
+    val id2 = ReplicaId.gen()
 
     val bottom = BFT(summon[Bottom[GrowOnlyCounter]].empty)
 

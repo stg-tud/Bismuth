@@ -2,7 +2,7 @@ package benchmarks.b2022lattices.delta
 
 import org.openjdk.jmh.annotations
 import org.openjdk.jmh.annotations.*
-import rdts.base.LocalUid.asId
+import rdts.base.ReplicaId.asId
 import rdts.base.{Lattice, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.time.{Dot, Dots}

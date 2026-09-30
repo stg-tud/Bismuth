@@ -1,6 +1,6 @@
 package ex2025tabular
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import webapps.ex2025tabular.lib.*
 import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 
@@ -11,7 +11,7 @@ class UndoSuite extends munit.FunSuite {
   private val cellCoord = SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex)
 
   private def emptySheetWithOneCell(): Spreadsheet[String] =
-    SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+    SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("setup"))
       .edit(_.addRow().delta, allowUndo = false)
       .edit(_.addColumn().delta, allowUndo = false)
       .current
@@ -22,8 +22,8 @@ class UndoSuite extends munit.FunSuite {
   test("replicated edit undos restore previous values in order") {
     val initialSheet = emptySheetWithOneCell()
 
-    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
-    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaB"))
 
     val initDelta = replicaA.editAndGetDelta()(_.editCell(cellCoord, Some("init")))
     replicaB.accumulate(initDelta)
@@ -57,8 +57,8 @@ class UndoSuite extends munit.FunSuite {
   test("undo edit restores all previous conflicting values") {
     val initialSheet = emptySheetWithOneCell()
 
-    val replica1 = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replica1"))
-    val replica2 = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replica2"))
+    val replica1 = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replica1"))
+    val replica2 = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replica2"))
 
     @unused val replica1Edit = replica1.editAndGetDelta()(_.editCell(cellCoord, Some("a")))
     val replica2Edit         = replica2.editAndGetDelta()(_.editCell(cellCoord, Some("b")))
@@ -67,7 +67,7 @@ class UndoSuite extends munit.FunSuite {
 
     assertCellValues(replica1, Set("a", "b"))
 
-    val undoingReplica = SpreadsheetDeltaAggregator(replica1.current, LocalUid.predefined("undo"))
+    val undoingReplica = SpreadsheetDeltaAggregator(replica1.current, ReplicaId.predefined("undo"))
     undoingReplica.edit(_.editCell(cellCoord, Some("c")))
 
     assertCellValues(undoingReplica, Set("c"))
@@ -76,7 +76,7 @@ class UndoSuite extends munit.FunSuite {
   }
 
   test("undo add and remove row/column restores structure") {
-    val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("replica"))
+    val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("replica"))
 
     aggregator.edit(_.addRow().delta)
     aggregator.edit(_.addColumn().delta)
@@ -111,13 +111,13 @@ class UndoSuite extends munit.FunSuite {
   }
 
   test("undo removed column restores it locally and across replicas") {
-    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("setup"))
       .edit(_.addRow().delta, allowUndo = false)
       .repeatEdit(2, _.addColumn().delta, allowUndo = false)
       .current
 
-    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
-    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaB"))
 
     val removeDelta = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
     replicaB.accumulate(removeDelta)
@@ -133,13 +133,13 @@ class UndoSuite extends munit.FunSuite {
   }
 
   test("undo removed column is a no-op if merge already kept the column") {
-    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("setup"))
       .edit(_.addRow().delta, allowUndo = false)
       .repeatEdit(2, _.addColumn().delta, allowUndo = false)
       .current
 
-    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
-    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaB"))
 
     val removeDelta    = replicaA.editAndGetDelta()(_.removeColumn(0.toColumnIndex))
     val keepAliveDelta =
@@ -162,13 +162,13 @@ class UndoSuite extends munit.FunSuite {
   }
 
   test("undo inserted column is a no-op if merge already deleted that column") {
-    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("setup"))
+    val initialSheet = SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("setup"))
       .edit(_.addRow().delta, allowUndo = false)
       .edit(_.addColumn().delta, allowUndo = false)
       .current
 
-    val replicaA = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaA"))
-    val replicaB = SpreadsheetDeltaAggregator(initialSheet, LocalUid.predefined("replicaB"))
+    val replicaA = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaA"))
+    val replicaB = SpreadsheetDeltaAggregator(initialSheet, ReplicaId.predefined("replicaB"))
 
     val insertDelta = replicaA.editAndGetDelta()(_.insertColumn(0.toColumnIndex).delta)
     replicaB.accumulate(insertDelta)
@@ -194,7 +194,7 @@ class UndoSuite extends munit.FunSuite {
   }
 
   test("undo row and column moves restores order") {
-    val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("replica"))
+    val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("replica"))
       .repeatEdit(3, _.addRow().delta)
       .repeatEdit(3, _.addColumn().delta)
 
@@ -219,7 +219,7 @@ class UndoSuite extends munit.FunSuite {
     val range   =
       Range(SpreadsheetCoordinate(0.toRowIndex, 0.toColumnIndex), SpreadsheetCoordinate(1.toRowIndex, 1.toColumnIndex))
 
-    val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), LocalUid.predefined("replica"))
+    val aggregator = SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("replica"))
       .repeatEdit(2, _.addRow().delta)
       .repeatEdit(2, _.addColumn().delta)
 

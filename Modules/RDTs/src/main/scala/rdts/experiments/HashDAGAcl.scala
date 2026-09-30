@@ -1,6 +1,6 @@
 package rdts.experiments
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 
 import scala.annotation.tailrec
 
@@ -19,14 +19,14 @@ object Operation {
 
 case class HashDAGAcl(operations: Map[Hash, Operation]) {
 
-  def delegate(p: Path, to: Uid)(using LocalUid): HashDAGAcl =
+  def delegate(p: Path, to: Uid)(using ReplicaId): HashDAGAcl =
     operations.collectFirst {
       case (hash, Delegation(delegatee = delegatee, path = parentPath))
-          if delegatee == LocalUid.replicaId && parentPath.startsWith(p) => hash
+          if delegatee == ReplicaId.replicaId && parentPath.startsWith(p) => hash
     } match {
       case None             => HashDAGAcl.empty
       case Some(parentHash) =>
-        val op = Delegation(LocalUid.replicaId, to, p, Set(parentHash))
+        val op = Delegation(ReplicaId.replicaId, to, p, Set(parentHash))
         HashDAGAcl(Map(op.hash -> op))
     }
 

@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, LocalUid}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 /** A set that allows deletes.
@@ -17,16 +17,16 @@ case class ReplicatedSet[E](inner: Map[E, Dots], deleted: Dots) {
 
   lazy val observed: Dots = inner.values.foldLeft(deleted)(_ `union` _)
 
-  def add(e: E)(using LocalUid): Delta = {
-    val nextDot = observed.nextDot(LocalUid.replicaId)
+  def add(e: E)(using ReplicaId): Delta = {
+    val nextDot = observed.nextDot(ReplicaId.replicaId)
     val v: Dots = inner.getOrElse(e, Dots.empty)
 
     ReplicatedSet(Map(e -> Dots.single(nextDot)), v)
   }
 
-  def addAll(elems: Iterable[E])(using LocalUid): Delta = {
-    val nextCounter = observed.nextTime(LocalUid.replicaId)
-    val nextDots    = Dots.from((nextCounter until nextCounter + elems.size).map(Dot(LocalUid.replicaId, _)))
+  def addAll(elems: Iterable[E])(using ReplicaId): Delta = {
+    val nextCounter = observed.nextTime(ReplicaId.replicaId)
+    val nextDots    = Dots.from((nextCounter until nextCounter + elems.size).map(Dot(ReplicaId.replicaId, _)))
 
     val ccontextSet = elems.flatMap(inner.get).foldLeft(Dots.empty)(_ `union` _)
 

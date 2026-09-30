@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 import munit.Assertions
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.{LastWriterWins as LWW, ReplicatedTree}
 import rdts.time.Dot
 
@@ -573,7 +573,7 @@ class ReplicatedTreeTest extends munit.FunSuite {
 
 def randomTree(treeSize: Int): (ReplicatedTree[Int], List[ReplicatedTree[Int]]) = {
   given Lattice[Int] = math.max
-  val id             = LocalUid.predefined("test")
+  val id             = ReplicaId.predefined("test")
   var tree           = ReplicatedTree.empty[Int]
   val root           = tree.insert(ReplicatedTree.rootDot, 0)(using id)
   var deltas         = List(root)

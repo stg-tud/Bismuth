@@ -1,11 +1,11 @@
 package rdts.protocols
 
-import rdts.base.LocalUid.replicaId
-import rdts.base.{Bottom, Lattice, LocalUid, Uid}
+import rdts.base.ReplicaId.replicaId
+import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 
 /** Assumes that all local modifications are totally ordered. */
 case class SingleWriterWriteOnceMap[A](inner: Map[Uid, A]) {
-  def write(v: A)(using LocalUid): SingleWriterWriteOnceMap[A] =
+  def write(v: A)(using ReplicaId): SingleWriterWriteOnceMap[A] =
     if inner.contains(replicaId)
     then SingleWriterWriteOnceMap.unchanged
     else SingleWriterWriteOnceMap(Map(replicaId -> v))

@@ -1,6 +1,6 @@
 package webapps.ex2025tabular.lib
 
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.time.Dot
 import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
 
@@ -38,27 +38,27 @@ extension (raw: Dot)
     def toColumnId: ColumnId = raw
 
 trait SpreadsheetOps[A] {
-  def addRow()(using LocalUid): RowResult[A]
+  def addRow()(using ReplicaId): RowResult[A]
 
-  def addColumn()(using LocalUid): ColumnResult[A]
+  def addColumn()(using ReplicaId): ColumnResult[A]
 
-  def removeRow(rowIdx: RowIndex)(using LocalUid): Spreadsheet[A]
+  def removeRow(rowIdx: RowIndex)(using ReplicaId): Spreadsheet[A]
 
-  def removeColumn(colIdx: ColumnIndex)(using LocalUid): Spreadsheet[A]
+  def removeColumn(colIdx: ColumnIndex)(using ReplicaId): Spreadsheet[A]
 
-  def insertRow(rowIdx: RowIndex)(using LocalUid): RowResult[A]
+  def insertRow(rowIdx: RowIndex)(using ReplicaId): RowResult[A]
 
-  def insertColumn(colIdx: ColumnIndex)(using LocalUid): ColumnResult[A]
+  def insertColumn(colIdx: ColumnIndex)(using ReplicaId): ColumnResult[A]
 
-  def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using LocalUid): Spreadsheet[A]
+  def moveRow(sourceIdx: RowIndex, targetIdx: RowIndex)(using ReplicaId): Spreadsheet[A]
 
-  def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using LocalUid): Spreadsheet[A]
+  def moveColumn(sourceIdx: ColumnIndex, targetIdx: ColumnIndex)(using ReplicaId): Spreadsheet[A]
 
   def editCell(coordinate: SpreadsheetCoordinate, value: Option[A], solveSeenConflict: Boolean = true)(using
-      LocalUid
+                                                                                                       ReplicaId
   ): Spreadsheet[A]
 
-  def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using LocalUid): Spreadsheet[A]
+  def addRange(id: RangeId, from: SpreadsheetCoordinate, to: SpreadsheetCoordinate)(using ReplicaId): Spreadsheet[A]
 
   def removeRange(id: RangeId): Spreadsheet[A]
 

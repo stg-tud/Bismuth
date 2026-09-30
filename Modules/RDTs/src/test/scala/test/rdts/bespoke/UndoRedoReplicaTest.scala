@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 
-import rdts.base.{Bottom, Lattice, LocalUid}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.experiments.UndoRedoReplica
 
 class UndoRedoReplicaTest extends munit.FunSuite {
@@ -16,7 +16,7 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       given bottom: Bottom[State] = Bottom.provide(State(value = 0))
     }
 
-    val aid     = LocalUid.predefined("a")
+    val aid     = ReplicaId.predefined("a")
     val replica = UndoRedoReplica.empty[State]
 
     replica.mod(_.setValue(1))(using aid)
@@ -47,16 +47,16 @@ class UndoRedoReplicaTest extends munit.FunSuite {
         def materialized_nodes: Map[ID, MaterializedNode] =
           nodes.inner.view.mapValues(post => MaterializedNode.from(post.value)).toMap
 
-        def add(nodeId: ID, node: Node)(using replicaId: LocalUid): Document =
+        def add(nodeId: ID, node: Node)(using replicaId: ReplicaId): Document =
           Document(nodes.update(nodeId, node))
 
-        def setPosition(nodeId: ID, position: Position)(using replicaId: LocalUid): Document =
+        def setPosition(nodeId: ID, position: Position)(using replicaId: ReplicaId): Document =
           nodes.get(nodeId) match {
             case Some(n) => Document(nodes.update(nodeId, n.copy(position = LWW.now(position))))
             case None    => Document.bottom.empty
           }
 
-        def setColor(nodeId: ID, color: Color)(using replicaId: LocalUid): Document =
+        def setColor(nodeId: ID, color: Color)(using replicaId: ReplicaId): Document =
           nodes.get(nodeId) match {
             case Some(n) => Document(nodes.update(nodeId, n.copy(color = LWW.now(color))))
             case None    => Document.bottom.empty
@@ -114,8 +114,8 @@ class UndoRedoReplicaTest extends munit.FunSuite {
       given bottom: Bottom[Color] = Bottom.provide(Color.White)
     }
 
-    val aid      = LocalUid.predefined("A")
-    val bid      = LocalUid.predefined("B")
+    val aid      = ReplicaId.predefined("A")
+    val bid      = ReplicaId.predefined("B")
     val replica1 = UndoRedoReplica.empty[Document]
     val replica2 = UndoRedoReplica.empty[Document]
 

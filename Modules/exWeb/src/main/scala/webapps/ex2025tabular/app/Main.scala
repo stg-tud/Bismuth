@@ -3,7 +3,7 @@ package webapps.ex2025tabular.app
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom.document
-import rdts.base.{Lattice, LocalUid}
+import rdts.base.{Lattice, ReplicaId}
 import webapps.ex2025tabular.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
 
 import scala.scalajs.js.annotation.JSExportTopLevel
@@ -22,7 +22,7 @@ object Main {
       id: Int,
       isOnline: Boolean,
       aggregator: SpreadsheetDeltaAggregator[String],
-      replicaId: LocalUid
+      replicaId: ReplicaId
   )
   case class State(spreadsheets: List[SpreadsheetData], nextId: Int)
 
@@ -30,7 +30,7 @@ object Main {
     def addSpreadsheet(): Callback =
       $.modState { state =>
         val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
-        val replicaId          = LocalUid.gen()
+        val replicaId          = ReplicaId.gen()
 
         val newAggregator =
           if state.spreadsheets.isEmpty then {
@@ -98,7 +98,7 @@ object Main {
   private val App = ScalaComponent
     .builder[Unit]("App")
     .initialState {
-      given LocalUid = LocalUid.gen()
+      given ReplicaId = ReplicaId.gen()
       State(
         List(SpreadsheetData(1, isOnline = true, SpreadsheetComponent.createSampleSpreadsheet(), summon)),
         2

@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 import rdts.base.Lattice.syntax.merge
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.{GrowOnlyList, ReplicatedList}
 import rdts.syntax.DeltaBuffer
 
@@ -73,7 +73,7 @@ class ReplicatedListTest extends munit.FunSuite {
     val withPurging = {
       var l = ReplicatedList.empty[String]
 
-      given LocalUid = LocalUid.gen()
+      given ReplicaId = ReplicaId.gen()
 
       l = l `merge` l.append("A")
       l = l `merge` l.append("B")
@@ -85,7 +85,7 @@ class ReplicatedListTest extends munit.FunSuite {
     val withoutPurging = {
       var m = ReplicatedList.empty[String]
 
-      given LocalUid = LocalUid.gen()
+      given ReplicaId = ReplicaId.gen()
 
       m = m `merge` m.append("A")
       m = m `merge` m.append("B")

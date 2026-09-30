@@ -5,7 +5,7 @@ import channels.connection.{LocalMessageQueue, PeerConnectInfo, QueuedLocalConne
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 
 /** Deterministic reproduction of the rare CI stall in
   * `ex2021encfxtodo.TodoSignalingIntegrationTest`, using the exact overlay setup the todo app's
@@ -33,7 +33,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     var receivedB: List[Set[String]] = Nil
 
     private def mkNode(cb: Set[String] => Unit): BroadcastIO[Set[String]] = {
-      val uid = LocalUid.gen()
+      val uid = ReplicaId.gen()
       BroadcastIO[Set[String]](
         replicaId = uid,
         receiveCallback = cb,

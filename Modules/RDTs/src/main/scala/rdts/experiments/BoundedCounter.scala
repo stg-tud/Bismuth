@@ -1,6 +1,6 @@
 package rdts.experiments
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
 import rdts.experiments.BoundedCounter.neutral
 
@@ -13,28 +13,28 @@ case class BoundedCounter(reservations: PosNegCounter, allocations: GrowOnlyCoun
   def addParticipants(part: Set[Uid]): Delta = neutral.copy(participants = part)
 
   def allocated(id: Uid): Int       = allocations.inner.getOrElse(id, 0)
-  def reserved(using LocalUid): Int = reserved(LocalUid.replicaId)
+  def reserved(using ReplicaId): Int = reserved(ReplicaId.replicaId)
   def reserved(id: Uid): Int        =
     current.reservations.pos.inner.getOrElse(id, 0) - current.reservations.neg.inner.getOrElse(id, 0)
   def available(id: Uid): Int        = reserved(id) - allocated(id)
-  def available(using LocalUid): Int = available(LocalUid.replicaId)
+  def available(using ReplicaId): Int = available(ReplicaId.replicaId)
 
-  def allocate(value: Int)(using LocalUid): Delta =
-    if value < 0 || available(LocalUid.replicaId) < value then neutral
+  def allocate(value: Int)(using ReplicaId): Delta =
+    if value < 0 || available(ReplicaId.replicaId) < value then neutral
     else neutral.copy(allocations = current.allocations.add(value))
 
-  def transfer(amount: Int, target: Uid)(using LocalUid): Delta =
-    if amount > available(LocalUid.replicaId) then neutral
+  def transfer(amount: Int, target: Uid)(using ReplicaId): Delta =
+    if amount > available(ReplicaId.replicaId) then neutral
     else
         neutral.copy(reservations =
           current.reservations.add(amount)(using target.convert) `merge` current.reservations.add(-amount)
         )
 
-  def rebalance(using LocalUid): Delta = {
+  def rebalance(using ReplicaId): Delta = {
     val availableByReplica = current.participants.iterator.map(id => available(id) -> id).toList
     val most               = availableByReplica.max
     val least              = availableByReplica.min
-    if most._2 != LocalUid.replicaId then neutral
+    if most._2 != ReplicaId.replicaId then neutral
     else
         val diff: Int = (most._1 - least._1) / 2
         current.transfer(diff, least._2)

@@ -3,7 +3,7 @@ package webapps.ex2024calendar
 import lore.dsl.{Interaction, InteractionWithExecutes, Invariant}
 import org.scalajs.dom.HTMLInputElement
 import org.scalajs.dom.html.{Div, Input}
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.syntax.DeltaBuffer
 import reactives.core.CreationTicket
@@ -71,7 +71,7 @@ class NewAppointment(private val typeName: String) {
 
 class CalendarUI(val storagePrefix: String, val replicaId: Uid) {
 
-  given LocalUid = replicaId.convert
+  given ReplicaId = replicaId.convert
 
   type Calendar = DeltaBuffer[ReplicatedSet[Appointment]]
 

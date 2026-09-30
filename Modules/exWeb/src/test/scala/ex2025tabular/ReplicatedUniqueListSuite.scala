@@ -2,14 +2,14 @@ package ex2025tabular
 
 import munit.FunSuite
 import rdts.base.Lattice.syntax.*
-import rdts.base.{LocalUid, Uid}
+import rdts.base.{ReplicaId, Uid}
 import webapps.ex2025tabular.lib.ReplicatedUniqueList
 import webapps.ex2025tabular.lib.ReplicatedUniqueList.MarkerRemovalBehavior
 
 final class ReplicatedUniqueListSuite extends FunSuite:
 
-    inline def withUid[A](id: String)(body: LocalUid ?=> A): A =
-      body(using LocalUid(Uid(id)))
+    inline def withUid[A](id: String)(body: ReplicaId ?=> A): A =
+      body(using ReplicaId(Uid(id)))
 
     extension [E](state: ReplicatedUniqueList[E])
         inline def +(delta: ReplicatedUniqueList[E]): ReplicatedUniqueList[E] =
@@ -588,7 +588,7 @@ final class ReplicatedUniqueListSuite extends FunSuite:
       assertEquals(merged.toList.size, merged.size)
     }
 
-    private def fromElements[E](elems: E*)(using uid: LocalUid): ReplicatedUniqueList[E] =
+    private def fromElements[E](elems: E*)(using uid: ReplicaId): ReplicatedUniqueList[E] =
       elems.foldLeft(ReplicatedUniqueList.empty[E]) { (state, e) => state + state.append(e) }
 
     private def assertEqualsList[E](actual: ReplicatedUniqueList[E], expected: List[E]): Unit =

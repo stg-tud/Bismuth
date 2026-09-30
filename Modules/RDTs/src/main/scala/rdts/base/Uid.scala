@@ -21,7 +21,7 @@ object Uid {
 
   extension (s: String) def asId: Uid = Uid(s)
 
-  given toLocal: Conversion[Uid, LocalUid] = x => LocalUid(x)
+  given toLocal: Conversion[Uid, ReplicaId] = x => ReplicaId(x)
 
   val jvmID: String = UidEncoding.encode(scala.util.Random.nextLong(1L << 48))
 
@@ -45,19 +45,19 @@ object Uid {
   * We provide it as its own opaque type to make it obvious that this should not be just any ID.
   * Use [[Uid]] if you want to store an ID in a replicated data structure.
   */
-case class LocalUid(uid: Uid) {
+case class ReplicaId(uid: Uid) {
   override def toString: String = show
   def show: String              = uid.show
 }
-object LocalUid {
-  given ordering: Ordering[LocalUid] = Uid.ordering.on(_.uid)
+object ReplicaId {
+  given ordering: Ordering[ReplicaId] = Uid.ordering.on(_.uid)
 
-  extension (s: String) def asId: LocalUid = predefined(s)
+  extension (s: String) def asId: ReplicaId = predefined(s)
 
-  def predefined(s: String): LocalUid     = Uid.predefined(s).convert
-  def unwrap(id: LocalUid): Uid           = id.uid
-  def gen(): LocalUid                     = Uid.gen().convert
-  def replicaId(using rid: LocalUid): Uid = rid.uid
+  def predefined(s: String): ReplicaId     = Uid.predefined(s).convert
+  def unwrap(id: ReplicaId): Uid           = id.uid
+  def gen(): ReplicaId                     = Uid.gen().convert
+  def replicaId(using rid: ReplicaId): Uid = rid.uid
 }
 
 object UidEncoding {

@@ -1,6 +1,6 @@
 package rdts.protocols.chimeric
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 
 type ConfigId = Long
 
@@ -100,8 +100,8 @@ final case class OpenNetwork(
     )
 
   /** Add the local node's vote for a known transition. */
-  def voteTransition(from: ConfigId, to: ConfigId)(using LocalUid): OpenNetwork =
-    val voter = summon[LocalUid].uid
+  def voteTransition(from: ConfigId, to: ConfigId)(using ReplicaId): OpenNetwork =
+    val voter = summon[ReplicaId].uid
 
     require(
       knownTransitions.contains((from, to)),

@@ -1,7 +1,7 @@
 package ex2021encfxtodo
 
 import munit.FunSuite
-import rdts.base.LocalUid
+import rdts.base.ReplicaId
 
 import java.util.UUID
 
@@ -22,8 +22,8 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   test("two todo states bootstrap directly and replicate") {
-    val a = new SyncedTodoListCrdt(LocalUid.gen())
-    val b = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(ReplicaId.gen())
+    val b = new SyncedTodoListCrdt(ReplicaId.gen())
 
     try
         b.connect(a.address)
@@ -52,8 +52,8 @@ class TodoSignalingIntegrationTest extends FunSuite {
   // BroadcastIO.tick() nothing repaired the stall. Fixed by adding plumtree peers as lazy and
   // letting the graft exchange promote them to eager (see channels.BroadcastIOHandshakeRaceTest).
   test("synchronized updates to the same todo keep replicating") {
-    val a = new SyncedTodoListCrdt(LocalUid.gen())
-    val b = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(ReplicaId.gen())
+    val b = new SyncedTodoListCrdt(ReplicaId.gen())
 
     try
         b.connect(a.address)
@@ -89,9 +89,9 @@ class TodoSignalingIntegrationTest extends FunSuite {
   // edges, see channels.BroadcastIOHandshakeRaceTest); fixed by lazy edge initialization, so this
   // is enabled again.
   test("late join after many edits still converges and keeps replicating") {
-    val a = new SyncedTodoListCrdt(LocalUid.gen())
-    val b = new SyncedTodoListCrdt(LocalUid.gen())
-    val c = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(ReplicaId.gen())
+    val b = new SyncedTodoListCrdt(ReplicaId.gen())
+    val c = new SyncedTodoListCrdt(ReplicaId.gen())
 
     try
         b.connect(a.address)
@@ -148,9 +148,9 @@ class TodoSignalingIntegrationTest extends FunSuite {
   }
 
   test("adding a replica after prior edits backfills history and keeps future replication working") {
-    val a = new SyncedTodoListCrdt(LocalUid.gen())
-    val b = new SyncedTodoListCrdt(LocalUid.gen())
-    val c = new SyncedTodoListCrdt(LocalUid.gen())
+    val a = new SyncedTodoListCrdt(ReplicaId.gen())
+    val b = new SyncedTodoListCrdt(ReplicaId.gen())
+    val c = new SyncedTodoListCrdt(ReplicaId.gen())
 
     try
         b.connect(a.address)
