@@ -16,7 +16,11 @@ case class ArdtEventGraph[T: Lattice](
     events: Map[Hash, (ArdtEvent, Int)],
     private[authz] val revocationCache: Map[Hash, Set[Hash]],
     private[authz] val capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
-    nextEventIndex: Int
+    nextEventIndex: Int,
+    // By event index: the index of the latest cut in the causal past of the event, the event itself included. A cut is
+    // an event that was the only head right after it was received, and thus has every event received before it in its
+    // causal past. Receiving further events never changes these, since they don't change any event's causal past.
+    private[authz] val latestCuts: Vector[Int]
 ) {
 
   /** Adds an event to the event graph unless the event is invalid or causally-before events are missing from the graph.
@@ -76,11 +80,16 @@ case class ArdtEventGraph[T: Lattice](
         require(authorizationChain(revokedCapability).contains(event.authorization))
     }
 
-    // Event is valid
+    // Event is valid, update graph and return
+    val concurrentHeads = (heads -- event.parents)
     Right(copy(
-      heads = (heads -- event.parents) + eventHash,
+      heads = concurrentHeads + eventHash,
       events = events + (eventHash -> (event, nextEventIndex)),
       nextEventIndex = nextEventIndex + 1,
+      latestCuts = latestCuts :+ (
+        if concurrentHeads.isEmpty then nextEventIndex
+        else latestCutBefore(event.parents)
+      ),
       revocationCache = event.payload match {
         case DeltaCommitment(_)            => revocationCache
         case Revocation(revokedCapability) =>
@@ -109,32 +118,40 @@ case class ArdtEventGraph[T: Lattice](
     ))
   }
 
-  // This performs an optimized BFS for computing the reachability from event2 to event1 along the predecessors.
+  /** The index of the latest cut in the causal past of any of `parents`, or -1 if there is none: every event with an
+    * index up to it is causally before an event built on top of `parents`.
+    */
+  def latestCutBefore(parents: Set[Hash]): Int =
+    parents.iterator.map(parent => latestCuts(events(parent)._2)).maxOption.getOrElse(-1)
+
+  /** Whether `event1` is causally before `event2`, searching the causal past of `event2` backwards.
+    *
+    * An event received after `event2` cannot be causally before it. If `event1` is at most as old as the latest cut in the
+    * causal past of `event2`, or of any event on the way, it is before it as well. Only events received after `event1`
+    * need to be searched.
+    */
   def causallyBefore(event1: Hash, event2: Hash): Boolean = {
     if event1 == event2 then return false
 
-    val (ev1, ev1Idx, ev2, ev2Idx) = (events.get(event1), events.get(event2)) match {
-      case (Some((ev1, ev1Idx)), Some((ev2, ev2Idx))) => (ev1, ev1Idx, ev2, ev2Idx)
-      case _                                          => return false
+    val (index1, ev2, index2) = (events.get(event1), events.get(event2)) match {
+      case (Some((_, index1)), Some((ev2, index2))) => (index1, ev2, index2)
+      case _                                        => return false
     }
 
-    // If ev1Idx > ev2Idx, we applied ev1 after ev2, thus ev1 is not reachable by ev2
-    if ev1Idx > ev2Idx then return false
-    if ev2.parents.contains(event1) then return true
+    if index1 > index2 then return false
+    if index1 <= latestCuts(index2) then return true
 
-    val toSearch = mutable.Queue.from(ev2.parents)
-    val searched = mutable.Set(event2)
-
-    while toSearch.nonEmpty do {
-      val next                = toSearch.dequeue()
-      val (nextEv, nextEvIdx) = events(next)
-
-      if nextEvIdx >= ev1Idx then // If nextEvIdx < ev1Idx, then ev1 is not reachable via nextEv
-          val parents = nextEv.parents
-          if parents.contains(event1) then return true
-          toSearch.enqueueAll(nextEv.parents.diff(searched))
-
-      searched += next
+    val visited = mutable.BitSet(index2)
+    val toVisit = mutable.Stack.from(ev2.parents)
+    while toVisit.nonEmpty do {
+      val next = toVisit.pop()
+      if next == event1 then return true
+      val (nextEv, nextIndex) = events(next)
+      if nextIndex > index1 && !visited.contains(nextIndex) then {
+        if index1 <= latestCuts(nextIndex) then return true
+        visited += nextIndex
+        toVisit.pushAll(nextEv.parents)
+      }
     }
 
     false
@@ -183,13 +200,21 @@ object ArdtEventGraph {
     val hash = genesis.hash
     genesis.payload match {
       case cap @ Capability(holder, _, _) =>
-        ArdtEventGraph(hash, Set(hash), Map(hash -> (genesis, 0)), Map.empty, Map(holder -> Set((hash, cap))), 1)
+        ArdtEventGraph(
+          hash,
+          Set(hash),
+          Map(hash -> (genesis, 0)),
+          Map.empty,
+          Map(holder -> Set((hash, cap))),
+          1,
+          Vector(0)
+        )
       case _ => ???
     }
   }
 
   def apply[T: Lattice](genesis: Hash): ArdtEventGraph[T] =
-    ArdtEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0)
+    ArdtEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0, Vector.empty)
 }
 
 enum CausalOrder:

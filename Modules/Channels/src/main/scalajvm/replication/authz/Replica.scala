@@ -77,48 +77,46 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   /** The delta events that `revocationEventHash` newly invalidates: those whose value is still stored, that are
     * authorized by a capability it revokes (directly or transitively), and that are not causally before it.
-    *
-    * A capability may be revoked more than once, and its uses are only valid if causally before every one of its
-    * revocations. Checking the stored deltas against each revocation separately yields exactly that, provided this
-    * is called for every revocation as it is received, removing the returned deltas from the delta value store.
-    *
-    * Every use of a capability, like every capability delegated from it, is received after that capability, and thus
-    * has a higher index. A single search of the revocation's causal past, cut off at the earliest revoked capability,
-    * therefore suffices to tell the valid uses apart from the invalidated ones.
     */
-  protected def deltasInvalidatedBy(revocationEventHash: Hash)
-      : Iterable[(eventHash: Hash, commitment: Hash, index: Int)] = synchronized {
+  protected def deltasInvalidatedBy(revocationEventHash: Hash): Iterable[(commitment: Hash, index: Int)] = synchronized {
     val evGraph             = eventGraph
     val revokedCapabilities =
       evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
     if revokedCapabilities.isEmpty then return Iterable.empty
 
-    val earliestRevokedCapability = revokedCapabilities.iterator.map(evGraph.events(_)._2).min
+    // Every use of a capability, like every capability delegated from it, is received after that capability, and thus
+    // has a higher index. Every event up to the latest cut in the revocation's causal past is causally before it. A
+    // single search of the revocation's causal past, cut off at the later of the two, therefore suffices to tell the
+    // valid uses apart from the invalidated ones.
+    val revocationParents = evGraph.events(revocationEventHash)._1.parents
+    val cutoff            = math.max(
+      revokedCapabilities.iterator.map(evGraph.events(_)._2).min,
+      evGraph.latestCutBefore(revocationParents)
+    )
 
     val causalPast = mutable.BitSet()
-    val toVisit    = mutable.Stack.from(evGraph.events(revocationEventHash)._1.parents)
+    val toVisit    = mutable.Stack.from(revocationParents)
     while toVisit.nonEmpty do {
       val (event, index) = evGraph.events(toVisit.pop())
-      if index > earliestRevokedCapability && !causalPast.contains(index) then
+      if index > cutoff && !causalPast.contains(index) then
           causalPast += index
           toVisit.pushAll(event.parents)
     }
 
     evGraph.events.collect {
       case (eventHash, (ArdtEvent(DeltaCommitment(commitment), _, _, _, authorization), index))
-          if revokedCapabilities.contains(authorization) && !causalPast.contains(index)
+          if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index)
           && deltaValueStore.get(commitment).nonEmpty =>
-        (eventHash = eventHash, commitment = commitment, index = index)
+        (commitment = commitment, index = index)
     }
   }
 
   /** Removes the delta values of `deltaEvents`, returning whether any of them was stored */
-  protected def removeDeltas(deltaEvents: Iterable[(eventHash: Hash, commitment: Hash, index: Int)]): Boolean =
-    synchronized {
-      var hasRemovedADelta = false
-      deltaEvents.foreach(deltaEvent => hasRemovedADelta |= deltaValueStore.remove(deltaEvent.commitment).nonEmpty)
-      hasRemovedADelta
-    }
+  protected def removeDeltas(deltaEvents: Iterable[(commitment: Hash, index: Int)]): Boolean = synchronized {
+    var hasRemovedADelta = false
+    deltaEvents.foreach(deltaEvent => hasRemovedADelta |= deltaValueStore.remove(deltaEvent.commitment).nonEmpty)
+    hasRemovedADelta
+  }
 
   protected def rematerialize(): Unit = synchronized {
     materializedState = deltaValueStore.merged
@@ -182,14 +180,14 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
           (hash, signedEvent, encodedSignedEvent, decomposedDelta, commitedValue)
         }
 
-    // Apply locally
+    // Apply locally, skipping redundant checks (e.g., signature)
     var evGraph      = eventGraph
     var updatedState = materializedState
     eventsWithDeltas.foreach((hash, event, _, delta, revealedValue) =>
-        assert(evGraph.heads == event.parents) // Sanity check that we apply these in the correct order
         evGraph = evGraph.copy(
           heads = Set(hash),
           events = evGraph.events + (hash -> (event, evGraph.nextEventIndex)),
+          latestCuts = evGraph.latestCuts :+ evGraph.nextEventIndex,
           nextEventIndex = evGraph.nextEventIndex + 1
         )
         deltaValueStore.put(event.payload.asInstanceOf[DeltaCommitment].commitment, delta, revealedValue.witness)
