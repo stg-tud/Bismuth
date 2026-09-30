@@ -1,6 +1,6 @@
 package replication.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import crypto.Commitment.RevealedValue
 import crypto.Hash
 import rdts.base.{Bottom, Lattice}

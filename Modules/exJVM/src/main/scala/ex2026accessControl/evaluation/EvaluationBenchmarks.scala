@@ -253,7 +253,7 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
 class RevokedEventGraphBenchmarkState extends ArdtEventGraphBenchmarkState {
 
   // <revoked subtree>-<parents of the revocation>
-  @Param(Array("a-concurrent", "a-heads", "a.a-concurrent", "a.a-lastUse", "a.a-heads"))
+  @Param(Array("a-concurrent", "a-heads", "a-lastUse", "a.a-concurrent", "a.a-lastUse", "a.a-heads"))
   var revocation: String = scala.compiletime.uninitialized
 
   protected var invalidatesDeltas: Boolean = scala.compiletime.uninitialized
