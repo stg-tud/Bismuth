@@ -46,6 +46,9 @@ webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKi
 	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
 	sbt 'exJVM / runMain ex2026webview.JavaGiWebview "http://localhost:5173/"'
 
+webappsDenoDesktopRun: webappsPrepare
+	cd Modules/exWeb && deno desktop --hmr -A .
+
 # Build the exWeb examples and deploy them to the docs/examples folder for static hosting
 deploy-examples: webappsBundle
 	rm -rf docs/examples
