@@ -1,10 +1,13 @@
 {
 	"type": "module",
+	"scripts": {
+		"build": "vite build"
+	},
 	"dependencies": {
 		"react": "18.3.1",
 		"react-dom": "18.3.1"
 	},
 	"devDependencies": {
-		"vite": "8.2.2"
+		"vite": "8.3.2"
 	}
 }
