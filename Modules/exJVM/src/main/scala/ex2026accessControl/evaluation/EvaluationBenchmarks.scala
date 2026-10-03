@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 import scala.util.Random
 
 @BenchmarkMode(Array(Mode.AverageTime))
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
@@ -22,7 +22,6 @@ import scala.util.Random
 class EvaluationBenchmarks {
 
   @Benchmark
-  @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def createUpdate(state: CreateUpdateBenchmarkState): Unit =
     state.replica.mutateState(
       BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, _)(using state.selectedLocalUid),
@@ -30,14 +29,12 @@ class EvaluationBenchmarks {
     )
 
   @Benchmark
-  @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def createUpdateSignedHashDag(state: SignedHashDagBenchmarkStateWithReplica): Unit =
     state.replica.mutateState(
       BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, _)(using state.selectedLocalUid)
     )
 
   @Benchmark
-  @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def createUpdateUnsignedHashDag(state: UnsignedHashDagBenchmarkStateWithReplica): Unit =
     state.replica.mutateState(
       BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, _)(using state.selectedLocalUid)
@@ -48,7 +45,6 @@ class EvaluationBenchmarks {
 
   /** Receiving only a revocation, into a replica that has already received every other event of the trace */
   @Benchmark
-  @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def receiveRevocation(state: RevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
     state.replica.receiveEvent(state.encodedRevocation)
 
@@ -56,7 +52,6 @@ class EvaluationBenchmarks {
     * first delta invalidated by the revocation, and thus only merges the deltas received after it when rematerializing.
     */
   @Benchmark
-  @OutputTimeUnit(TimeUnit.MICROSECONDS)
   def receiveRevocationSnapshotAware(state: SnapshotAwareRevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
     state.replica.receiveEvent(state.encodedRevocation)
 
