@@ -65,8 +65,8 @@ class AntiEntropy(
         val encodedEvent = event.map(writeToArray(_))
         sendEvents(destination, encodedEvent)
         event match {
-          case Some(ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _)) =>
-            val revealedValue = replica.revealedDeltaValue(commitmentHash).map(hash -> _)
+          case Some(ArdtEvent(_: DeltaCommitment, _, _, _, _)) =>
+            val revealedValue = replica.deltaValue(hash).map(hash -> _)
             sendDeltasFiltered(destination, revealedValue)
           case _ =>
         }
@@ -117,8 +117,8 @@ class AntiEntropy(
         sendDeltasFiltered(
           sender,
           events.flatMap {
-            case (eventHash, ArdtEvent(DeltaCommitment(deltaCommitment), _, _, _, _)) =>
-              replica.revealedDeltaValue(deltaCommitment).map(eventHash -> _)
+            case (eventHash, ArdtEvent(_: DeltaCommitment, _, _, _, _)) =>
+              replica.deltaValue(eventHash).map(eventHash -> _)
             case _ => None
           }
         )

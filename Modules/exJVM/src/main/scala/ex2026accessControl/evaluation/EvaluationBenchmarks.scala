@@ -154,7 +154,7 @@ class ArdtEventGraphBenchmarkState {
   var deltaValueStore: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
   var genesisHash: Hash                              = scala.compiletime.uninitialized
   var rootIdentity: PrivateIdentity                  = scala.compiletime.uninitialized
-  var trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])] =
+  var trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaIndex: Option[Int])] =
     scala.compiletime.uninitialized
 
   var rdtState: BenchmarkRdt = scala.compiletime.uninitialized
@@ -230,11 +230,9 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
           BenchmarkRdt,
           Commitment.RevealedValue
       )]): Unit = {
+        eventsWithDeltas.foreach(evTpl => this.deltaValueStore.remove(this.eventGraph.events(evTpl._1)._2))
         this.eventGraph = preUpdateBackup.eventGraph
         this.materializedState = preUpdateBackup.materializedState
-        eventsWithDeltas.foreach(evTpl =>
-          this.deltaValueStore.remove(evTpl._2.payload.asInstanceOf[DeltaCommitment].commitment)
-        )
       }
     }
     replica.restore(preUpdateBackup)
@@ -325,8 +323,8 @@ class SnapshotAwareRevocationBenchmarkState extends RevokedEventGraphBenchmarkSt
 
     // Every delta of the generated trace is valid, except for those the revocation invalidates
     val firstInvalidated = traceBeforeRevocation.indexWhere { entry =>
-      entry.deltaCommitment.exists { commitment =>
-        !Authorization.mayWrite(eventGraph, entry.hash, deltaValueStore.getRevealedValue(commitment).get)
+      entry.deltaIndex.exists { index =>
+        !Authorization.mayWrite(eventGraph, entry.hash, deltaValueStore.getRevealedValue(index).get)
       }
     }
     val snapshotPosition = if firstInvalidated == -1 then traceBeforeRevocation.length else firstInvalidated
@@ -529,25 +527,25 @@ object EvaluationBenchmarks {
   /** Has `replica` receive every event of `trace` in order, each directly followed by its delta (if any) */
   def replayTrace(
       replica: Replica[BenchmarkRdt],
-      trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])],
+      trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaIndex: Option[Int])],
       deltaValueStore: DeltaValueStore[BenchmarkRdt]
   ): Unit =
-    trace.foreach { (hash, encodedEvent, deltaCommitment) =>
+    trace.foreach { (hash, encodedEvent, deltaIndex) =>
       replica.receiveEvent(encodedEvent)
-      deltaCommitment.foreach { commitment =>
-        deltaValueStore.getRevealedValue(commitment).foreach(revealed => replica.receiveDelta(hash, revealed))
+      deltaIndex.foreach { index =>
+        deltaValueStore.getRevealedValue(index).foreach(revealed => replica.receiveDelta(hash, revealed))
       }
     }
 
-  /** Encodes every event of `eventGraph` in causal order, along with its delta commitment (if any) */
+  /** Encodes every event of `eventGraph` in causal order, along with its event index if it is a delta (if any) */
   def encodeTrace(eventGraph: ArdtEventGraph[BenchmarkRdt])
-      : Array[(hash: Hash, encodedEvent: Array[Byte], deltaCommitment: Option[Hash])] =
-    eventGraph.allEventsInCausalOrder.map { (hash, event) =>
-      val deltaCommitment = event.payload match {
-        case DeltaCommitment(commitment) => Some(commitment)
-        case _                           => None
+      : Array[(hash: Hash, encodedEvent: Array[Byte], deltaIndex: Option[Int])] =
+    eventGraph.allEventsInCausalOrder.zipWithIndex.map { case ((hash, event), index) =>
+      val deltaIndex = event.payload match {
+        case _: DeltaCommitment => Some(index)
+        case _                  => None
       }
-      (hash = hash, encodedEvent = writeToArray(event), deltaCommitment = deltaCommitment)
+      (hash = hash, encodedEvent = writeToArray(event), deltaIndex = deltaIndex)
     }
 }
 

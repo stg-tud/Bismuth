@@ -26,12 +26,14 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   @volatile protected var materializedState: RDT = Bottom[RDT].empty
 
-  def state: RDT                                                  = synchronized { materializedState }
-  def heads: Set[Hash]                                            = eventGraph.heads
-  def event(hash: Hash): Option[ArdtEvent]                        = eventGraph.events.get(hash).map(_._1)
-  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)]            = eventGraph.allEventsInCausalOrder
-  def revealedDeltaValue(commitment: Hash): Option[RevealedValue] = deltaValueStore.getRevealedValue(commitment)
-  def delta(commitment: Hash): Option[RDT]                        = deltaValueStore.get(commitment).map(_.delta)
+  def state: RDT                                         = synchronized { materializedState }
+  def heads: Set[Hash]                                   = eventGraph.heads
+  def event(hash: Hash): Option[ArdtEvent]               = eventGraph.events.get(hash).map(_._1)
+  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)]   = eventGraph.allEventsInCausalOrder
+  def deltaValue(eventHash: Hash): Option[RevealedValue] =
+    eventGraph.events.get(eventHash).flatMap((_, index) => deltaValueStore.getRevealedValue(index))
+  def delta(eventHash: Hash): Option[RDT] =
+    eventGraph.events.get(eventHash).flatMap((_, index) => deltaValueStore.get(index)).map(_.delta)
 
   def listenAddress: Option[(String, Int)]  = antiEntropy.listenAddress
   def connect(address: (String, Int)): Unit = antiEntropy.connect(address)
@@ -75,47 +77,44 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     removeDeltas(deltasInvalidatedBy(revocationEventHash))
   }
 
-  /** The delta events that `revocationEventHash` newly invalidates: those whose value is still stored, that are
-    * authorized by a capability it revokes (directly or transitively), and that are not causally before it.
-    */
-  protected def deltasInvalidatedBy(revocationEventHash: Hash): Iterable[(commitment: Hash, index: Int)] =
-    synchronized {
-      val evGraph             = eventGraph
-      val revokedCapabilities =
-        evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
-      if revokedCapabilities.isEmpty then return Iterable.empty
+  /** The indices of the delta events that `revocationEventHash` newly invalidates */
+  protected def deltasInvalidatedBy(revocationEventHash: Hash): Iterable[Int] = synchronized {
+    val evGraph             = eventGraph
+    val revokedCapabilities =
+      evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
+    if revokedCapabilities.isEmpty then return Iterable.empty
 
-      // Every use of a capability, like every capability delegated from it, is received after that capability, and thus
-      // has a higher index. Every event up to the latest cut in the revocation's causal past is causally before it. A
-      // single search of the revocation's causal past, cut off at the later of the two, therefore suffices to tell the
-      // valid uses apart from the invalidated ones.
-      val revocationParents = evGraph.events(revocationEventHash)._1.parents
-      val cutoff            = math.max(
-        revokedCapabilities.iterator.map(evGraph.events(_)._2).min,
-        evGraph.latestCutBefore(revocationParents)
-      )
+    // Every use of a capability, like every capability delegated from it, is received after that capability, and thus
+    // has a higher index. Every event up to the latest cut in the revocation's causal past is causally before it. A
+    // single search of the revocation's causal past, cut off at the later of the two, therefore suffices to tell the
+    // valid uses apart from the invalidated ones.
+    val revocationParents = evGraph.events(revocationEventHash)._1.parents
+    val cutoff            = math.max(
+      revokedCapabilities.iterator.map(evGraph.events(_)._2).min,
+      evGraph.latestCutBefore(revocationParents)
+    )
 
-      val causalPast = mutable.BitSet()
-      val toVisit    = mutable.Stack.from(revocationParents)
-      while toVisit.nonEmpty do {
-        val (event, index) = evGraph.events(toVisit.pop())
-        if index > cutoff && !causalPast.contains(index) then
-            causalPast += index
-            toVisit.pushAll(event.parents)
-      }
-
-      evGraph.events.collect {
-        case (eventHash, (ArdtEvent(DeltaCommitment(commitment), _, _, _, authorization), index))
-            if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index)
-            && deltaValueStore.get(commitment).nonEmpty =>
-          (commitment = commitment, index = index)
-      }
+    val causalPast = mutable.BitSet()
+    val toVisit    = mutable.Stack.from(revocationParents)
+    while toVisit.nonEmpty do {
+      val (event, index) = evGraph.events(toVisit.pop())
+      if index > cutoff && !causalPast.contains(index) then
+          causalPast += index
+          toVisit.pushAll(event.parents)
     }
 
+    evGraph.events.collect {
+      case (eventHash, (ArdtEvent(_: DeltaCommitment, _, _, _, authorization), index))
+          if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index)
+          && deltaValueStore.get(index).nonEmpty =>
+        index
+    }
+  }
+
   /** Removes the delta values of `deltaEvents`, returning whether any of them was stored */
-  protected def removeDeltas(deltaEvents: Iterable[(commitment: Hash, index: Int)]): Boolean = synchronized {
+  protected def removeDeltas(deltaEvents: Iterable[Int]): Boolean = synchronized {
     var hasRemovedADelta = false
-    deltaEvents.foreach(deltaEvent => hasRemovedADelta |= deltaValueStore.remove(deltaEvent.commitment).nonEmpty)
+    deltaEvents.foreach(deltaEvent => hasRemovedADelta |= deltaValueStore.remove(deltaEvent).nonEmpty)
     hasRemovedADelta
   }
 
@@ -136,7 +135,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     require(Authorization.mayReadAssumingCommitmentHolds(localReplicaId, eventHash, delta, eventGraph))
     require(Authorization.mayWriteAssumingCommitmentHolds(eventGraph, eventHash, event, delta))
 
-    deltaValueStore.put(commitment, delta, deltaValue.witness)
+    deltaValueStore.put(eventIndex, delta, deltaValue.witness)
     applyDelta(delta, eventIndex)
     onStateChange(state)
   }
@@ -191,7 +190,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
           latestCuts = evGraph.latestCuts :+ evGraph.nextEventIndex,
           nextEventIndex = evGraph.nextEventIndex + 1
         )
-        deltaValueStore.put(event.payload.asInstanceOf[DeltaCommitment].commitment, delta, revealedValue.witness)
+        deltaValueStore.put(evGraph.nextEventIndex - 1, delta, revealedValue.witness)
         updatedState = updatedState.merge(delta)
     )
     eventGraph = evGraph

@@ -95,7 +95,7 @@ class RevocationTest extends FunSuite {
 
     def receiveValue(write: Write): Unit = {
       everyDelta.put(
-        write.revealed.commitment(write.event.author.id),
+        replica.graph.events(write.hash)._2,
         readFromArray[Set[Int]](write.revealed.value),
         write.revealed.witness
       )
@@ -105,28 +105,28 @@ class RevocationTest extends FunSuite {
     /** Hands the replica a delta value that it must reject and not store */
     def receiveRejectedValue(write: Write)(using Location): Unit = {
       everyDelta.put(
-        write.revealed.commitment(write.event.author.id),
+        replica.graph.events(write.hash)._2,
         readFromArray[Set[Int]](write.revealed.value),
         write.revealed.witness
       )
       intercept[IllegalArgumentException](replica.receiveDelta(write.hash, write.revealed))
-      assertEquals(replica.delta(write.revealed.commitment(write.event.author.id)), None)
+      assertEquals(replica.delta(write.hash), None)
     }
 
-    /** The commitments of the deltas that the replica itself created and broadcast, whose values are recorded for the
+    /** The event indices of the deltas that the replica itself created and broadcast, whose values are recorded for the
       * oracle
       */
-    def broadcastCommitments(): Set[Hash] = {
+    def broadcastIndices(): Set[Int] = {
       val broadcast               = antiEntropy.nn.broadcastedDeltas
       def author(eventHash: Hash) = replica.graph.events(eventHash)._1.author
       broadcast.foreach(d =>
         everyDelta.put(
-          d.delta.commitment(author(d.eventHash).id),
+          replica.graph.events(d.eventHash)._2,
           readFromArray[Set[Int]](d.delta.value),
           d.delta.witness
         )
       )
-      broadcast.map(d => d.delta.commitment(author(d.eventHash).id)).toSet
+      broadcast.map(d => replica.graph.events(d.eventHash)._2).toSet
     }
 
     def oracle: Set[Int] = Authorization.materialize(replica.graph, everyDelta)
@@ -139,7 +139,7 @@ class RevocationTest extends FunSuite {
     def assertInvalidated(revocation: ArdtEvent, expected: Write*)(using Location): Unit =
       assertEquals(
         replica.invalidatedBy(revocation.hash),
-        expected.map(w => w.revealed.commitment(w.event.author.id)).toSet,
+        expected.map(w => replica.graph.events(w.hash)._2).toSet,
         "deltasInvalidatedBy returned the wrong deltas"
       )
   }
@@ -173,7 +173,7 @@ class RevocationTest extends FunSuite {
 
       fx.assertInvalidated(revocation)
       fx.assertState(Set(1, 2))
-      assertEquals(fx.replica.delta(dA.revealed.commitment(dA.event.author.id)), Some(Set(1)))
+      assertEquals(fx.replica.delta(dA.hash), Some(Set(1)))
       assertEquals(fx.notifications.toList, notificationsBefore)
     }
 
@@ -195,8 +195,8 @@ class RevocationTest extends FunSuite {
 
       fx.assertInvalidated(revocation, dA1)
       fx.assertState(Set(1))
-      assertEquals(fx.replica.delta(dA1.revealed.commitment(dA1.event.author.id)), None)
-      assertEquals(fx.replica.delta(dA0.revealed.commitment(dA0.event.author.id)), Some(Set(1)))
+      assertEquals(fx.replica.delta(dA1.hash), None)
+      assertEquals(fx.replica.delta(dA0.hash), Some(Set(1)))
       assertEquals(fx.notifications.lastOption, Some(Set(1)))
     }
 
@@ -340,7 +340,7 @@ class RevocationTest extends FunSuite {
       fx.receive(ownCapR)
 
       fx.replica.mutateState(_ => Set(1, 2, 3), ownCapR.hash)
-      val decomposed = fx.broadcastCommitments()
+      val decomposed = fx.broadcastIndices()
       assertEquals(decomposed.size, 3)
       fx.assertState(Set(1, 2, 3))
 
@@ -640,12 +640,12 @@ object RevocationTest {
   trait Inspection {
     def graph: ArdtEventGraph[Set[Int]]
 
-    /** The commitments of the deltas the replica invalidated when receiving `revocation`. Since receiving it removes their
+    /** The event indices of the deltas the replica invalidated when receiving `revocation`. Since receiving it removes their
       * values, and `deltasInvalidatedBy` only returns deltas whose value is still stored, its result is recorded at
       * that point. For a revocation the replica did not process, e.g. one built on all current heads, this asks
       * `deltasInvalidatedBy` now instead.
       */
-    def invalidatedBy(revocation: Hash): Set[Hash]
+    def invalidatedBy(revocation: Hash): Set[Int]
   }
 
   type ReplicaUnderTest = Replica[Set[Int]] & Inspection
@@ -659,19 +659,19 @@ object RevocationTest {
       onChange: Set[Int] => Unit
   ) extends Replica[Set[Int]](genesisHash, identity, provider, onChange) with Inspection {
     def graph: ArdtEventGraph[Set[Int]] = eventGraph
-    private val recordedInvalidations   = mutable.Map.empty[Hash, Set[Hash]]
+    private val recordedInvalidations   = mutable.Map.empty[Hash, Set[Int]]
 
     override protected def deltasInvalidatedBy(revocation: Hash)
-        : Iterable[(commitment: Hash, index: Int)] = {
+        : Iterable[Int] = {
       val invalidated = super.deltasInvalidatedBy(revocation)
-      recordedInvalidations.getOrElseUpdate(revocation, invalidated.iterator.map(_.commitment).toSet)
+      recordedInvalidations.getOrElseUpdate(revocation, invalidated.toSet)
       invalidated
     }
 
-    def invalidatedBy(revocation: Hash): Set[Hash] =
+    def invalidatedBy(revocation: Hash): Set[Int] =
       recordedInvalidations.getOrElse(
         revocation,
-        super.deltasInvalidatedBy(revocation).iterator.map(_.commitment).toSet
+        super.deltasInvalidatedBy(revocation).toSet
       )
   }
 
@@ -682,19 +682,19 @@ object RevocationTest {
       onChange: Set[Int] => Unit
   ) extends SnapshotAwareReplica[Set[Int]](genesisHash, identity, provider, onChange) with Inspection {
     def graph: ArdtEventGraph[Set[Int]] = eventGraph
-    private val recordedInvalidations   = mutable.Map.empty[Hash, Set[Hash]]
+    private val recordedInvalidations   = mutable.Map.empty[Hash, Set[Int]]
 
     override protected def deltasInvalidatedBy(revocation: Hash)
-        : Iterable[(commitment: Hash, index: Int)] = {
+        : Iterable[Int] = {
       val invalidated = super.deltasInvalidatedBy(revocation)
-      recordedInvalidations.getOrElseUpdate(revocation, invalidated.iterator.map(_.commitment).toSet)
+      recordedInvalidations.getOrElseUpdate(revocation, invalidated.toSet)
       invalidated
     }
 
-    def invalidatedBy(revocation: Hash): Set[Hash] =
+    def invalidatedBy(revocation: Hash): Set[Int] =
       recordedInvalidations.getOrElse(
         revocation,
-        super.deltasInvalidatedBy(revocation).iterator.map(_.commitment).toSet
+        super.deltasInvalidatedBy(revocation).toSet
       )
 
     /** The private `snapshotVersion` of [[SnapshotAwareReplica]], read by reflection; -1 means no snapshot */

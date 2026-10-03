@@ -45,8 +45,8 @@ class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
   private def nodeId(hash: Hash): String = s"\"${hash.toString}\""
 
   /** The leaf a delta writes, or `?` if it writes none or more than one */
-  private def writtenLeaf(commitment: Hash): String =
-    generated.deltaValueStore.get(commitment) match {
+  private def writtenLeaf(eventIndex: Int): String =
+    generated.deltaValueStore.get(eventIndex) match {
       case Some(revealed) =>
         val delta = revealed.delta
         BenchmarkRdt.leafPaths.filter(path =>
@@ -72,8 +72,8 @@ class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
         case Capability(holder, _, write) =>
           val kind = if hash == generated.eventGraph.genesis then "genesis" else s"→ R${replicaIndex(holder)}"
           ("box", s"$kind\\nwrite ${write.toPathStringSet.toSeq.sorted.mkString(", ")}")
-        case DeltaCommitment(commitment) => ("ellipse", writtenLeaf(commitment))
-        case Revocation(_)               => ("octagon", "revocation")
+        case _: DeltaCommitment => ("ellipse", writtenLeaf(index))
+        case Revocation(_)      => ("octagon", "revocation")
       }
       builder ++= s"  ${nodeId(hash)} [label=\"#$index R$author\\n$description\", shape=$shape, fillcolor=\"$color\"];\n"
     }
@@ -97,12 +97,15 @@ class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
   */
 object TraceVisualization {
   def main(args: Array[String]): Unit = {
-    val output          = Paths.get(args.lift(0).getOrElse("trace.dot"))
-    val numEventsPhase1 = args.lift(1).map(_.toInt).getOrElse(20)
-    val numEventsPhase2 = args.lift(2).map(_.toInt).getOrElse(30)
+    val output          = Paths.get(args.headOption.getOrElse("trace.dot"))
+    val numEventsPhase1 = args.lift(1).map(_.toInt).getOrElse(10)
+    val numEventsPhase2 = args.lift(2).map(_.toInt).getOrElse(10)
 
     given Random  = Random(42L)
-    val generated = TraceGeneration.generateDelegationHierarchyEventGraph(numEventsPhase1, numEventsPhase2, 0.2)
+    val generated = TraceGeneration.revokeConcurrently(
+      TraceGeneration.generateDelegationHierarchyEventGraph(numEventsPhase1, numEventsPhase2, 0.4),
+      "a"
+    )
 
     TraceVisualization(generated).writeTo(output)
     println(s"Wrote ${generated.eventGraph.events.size} events to ${output.toAbsolutePath}")

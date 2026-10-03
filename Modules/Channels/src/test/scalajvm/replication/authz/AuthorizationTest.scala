@@ -202,7 +202,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, revealed) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
     val updated                = receiveOrFail(graph, deltaEvent)
     val store                  = new DeltaValueStore[Set[Int]]()
-    store.put(revealed.commitment(holder.id), readFromArray[Set[Int]](revealed.value), revealed.witness)
+    store.put(updated.events(deltaEvent.hash)._2, readFromArray[Set[Int]](revealed.value), revealed.witness)
 
     assert(Authorization.mayRead(holder, deltaEvent.hash, updated, store))
   }
@@ -361,8 +361,8 @@ class AuthorizationTest extends FunSuite {
     val graph2              = receiveOrFail(graph1, delta2)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed1.commitment(holder.id), readFromArray[Set[Int]](revealed1.value), revealed1.witness)
-    store.put(revealed2.commitment(holder.id), readFromArray[Set[Int]](revealed2.value), revealed2.witness)
+    store.put(graph2.events(delta1.hash)._2, readFromArray[Set[Int]](revealed1.value), revealed1.witness)
+    store.put(graph2.events(delta2.hash)._2, readFromArray[Set[Int]](revealed2.value), revealed2.witness)
 
     assertEquals(Authorization.materialize(graph2, store), Set(1, 2, 3))
   }
@@ -376,7 +376,7 @@ class AuthorizationTest extends FunSuite {
 
     val store = new DeltaValueStore[Set[Int]]()
     store.put(
-      revealed1.commitment(holder.id),
+      graph2.events(delta1.hash)._2,
       readFromArray[Set[Int]](revealed1.value),
       revealed1.witness
     ) // delta2's revealed value is never put
@@ -400,7 +400,7 @@ class AuthorizationTest extends FunSuite {
     val graph2                 = receiveOrFail(graph1, deltaEvent)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed.commitment(holder.id), readFromArray[Set[Int]](revealed.value), revealed.witness)
+    store.put(graph2.events(deltaEvent.hash)._2, readFromArray[Set[Int]](revealed.value), revealed.witness)
 
     assertEquals(Authorization.materialize(graph2, store), Set.empty[Int])
   }
@@ -424,7 +424,7 @@ class AuthorizationTest extends FunSuite {
     val graph3                 = receiveOrFail(graph2, deltaEvent)
 
     val store = new DeltaValueStore[Set[Int]]()
-    store.put(revealed.commitment(holder.id), readFromArray[Set[Int]](revealed.value), revealed.witness)
+    store.put(graph3.events(deltaEvent.hash)._2, readFromArray[Set[Int]](revealed.value), revealed.witness)
 
     assertEquals(Authorization.materialize(graph3, store), Set.empty[Int])
   }

@@ -33,7 +33,7 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
     val invalidated = deltasInvalidatedBy(revocationEventHash)
 
     // The snapshot can only be rematerialized from if it contains none of the invalidated deltas
-    if invalidated.exists(_.index <= snapshotVersion) then {
+    if invalidated.exists(_ <= snapshotVersion) then {
       snapshotVersion = -1
       snapshot = Bottom.empty
     }
@@ -58,8 +58,8 @@ class SnapshotAwareReplica[RDT: {Lattice, Bottom, Filter, Decompose, JsonValueCo
 
       if nextEvIdx > snapshotVersion then {
         nextEv match {
-          case ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _) =>
-            deltaValueStore.get(commitmentHash).foreach { case (delta, _) =>
+          case ArdtEvent(_: DeltaCommitment, _, _, _, _) =>
+            deltaValueStore.get(nextEvIdx).foreach { case (delta, _) =>
               rematerializedState = rematerializedState.merge(delta)
             }
           case _ =>

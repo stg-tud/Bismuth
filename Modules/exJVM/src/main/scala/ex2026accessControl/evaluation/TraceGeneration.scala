@@ -130,7 +130,7 @@ object TraceGeneration {
           val (event, revealed) =
             EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
           eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
-          deltaValueStore.put(revealed.commitment(event.author.id), decomposedDelta, revealed.witness)
+          deltaValueStore.put(eventGraph.nextEventIndex - 1, decomposedDelta, revealed.witness)
           partParents = Set(event.hash)
         }
 
@@ -234,7 +234,7 @@ object TraceGeneration {
             val (event, revealed) =
               EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
             eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
-            deltaValueStore.put(revealed.commitment(event.author.id), decomposedDelta, revealed.witness)
+            deltaValueStore.put(eventGraph.nextEventIndex - 1, decomposedDelta, revealed.witness)
             partParents = Set(event.hash)
             previousEvent(author) = event.hash
           }
@@ -312,10 +312,10 @@ object TraceGeneration {
       // Authorization.materialize would check every use for being causally before the revocation, searching almost
       // the entire graph each time (see revokeAtHeads). A single search for the revocation's causal past suffices.
       val causalPast = causalPastOf(eventGraph, parents)
-      val state      = events.iterator.collect {
-        case (hash, event @ ArdtEvent(DeltaCommitment(commitment), _, _, _, _))
+      val state      = events.iterator.zipWithIndex.collect {
+        case ((hash, event @ ArdtEvent(_: DeltaCommitment, _, _, _, _)), index)
             if !usesCapability(event) || causalPast.contains(hash) =>
-          generated.deltaValueStore.get(commitment).get.delta
+          generated.deltaValueStore.get(index).get.delta
       }.foldLeft(BenchmarkRdt.empty)(_.merge(_))
 
       generated.copy(eventGraph = appendRevocation(generated, capability, parents), state = state)
@@ -389,11 +389,11 @@ object TraceGeneration {
     // ancestor delta event(s)/the genesis once translated.
     val resolved = mutable.Map(generated.eventGraph.genesis -> Set(genesisEntry.hash))
 
-    generated.eventGraph.allEventsInCausalOrder.foreach { (oldHash, event) =>
+    generated.eventGraph.allEventsInCausalOrder.zipWithIndex.foreach { case ((oldHash, event), oldIndex) =>
       if oldHash != generated.eventGraph.genesis then
           event.payload match {
-            case DeltaCommitment(commitment) =>
-              val delta      = generated.deltaValueStore.get(commitment).get.delta
+            case _: DeltaCommitment =>
+              val delta      = generated.deltaValueStore.get(oldIndex).get.delta
               val newParents = event.parents.flatMap(resolved)
               val entry      = buildEntry(delta, identityByPublic(event.author), newParents)
               val encoded    = writeToArray(entry)
