@@ -37,6 +37,14 @@ object Uid {
     if idCounter != 0 then Uid(s"${UidEncoding.encode(idCounter)}.$jvmID")
     else Uid(s"$jvmID")
   }
+
+  /** Generate a new ID from 48 bits of `random` alone (no counter), i.e., 8 characters
+    * (fewer if the leading bits are zero).
+    * Unlike [[gen]], the result is unguessable if `random` is a secure generator (e.g. `java.security.SecureRandom`),
+    * so it can be used where knowing an id grants access. Uniqueness is only probabilistic (48 bits).
+    */
+  def gen(random: java.util.Random): Uid =
+    Uid(UidEncoding.encode(random.nextLong() & ((1L << 48) - 1)))
 }
 @implicitNotFound(
   "Requires a replica ID of the current local replica that is doing the modification."
