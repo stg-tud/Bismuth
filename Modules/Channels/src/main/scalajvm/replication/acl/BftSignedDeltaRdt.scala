@@ -58,4 +58,4 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
 
 }
 
-type StateReconstructor[D <: Delta[RDT], RDT] = (prefix: Set[Hash], hashDag: HashDag[D, RDT]) => RDT
+type StateReconstructor[D <: Delta[RDT], RDT] = (Set[Hash], HashDag[D, RDT]) => RDT
