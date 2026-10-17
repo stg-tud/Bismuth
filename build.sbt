@@ -16,11 +16,11 @@ def decline    = "com.monovore"  %% "decline"     % "2.6.2"
 def pprint     = "com.lihaoyi"   %% "pprint"      % "0.9.6"
 def scalajsDom = "org.scala-js"  %% "scalajs-dom" % "2.8.1"
 def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
-def scalafx    = "org.scalafx"   %% "scalafx"     % "26.0.0-R38"
+def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
 
 def jsoniterScala = Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.41.2",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.41.2" % Provided
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.41.6",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.41.6" % Provided
 )
 
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
@@ -78,7 +78,7 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     scalaVersions = Seq(s3v),
     settings = Seq(
       Test / fork                               := true,
-      libraryDependencies += "io.github.hakky54" % "ayza-for-pem" % "10.0.7",
+      libraryDependencies += "io.github.hakky54" % "ayza-for-pem" % "10.1.0",
     )
   )
   .jsPlatform(
@@ -104,11 +104,11 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
     Settings.jolSettings,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= {
-      val jettyVersion  = "12.1.13"
+      val jettyVersion  = "12.1.14"
       val javaGiVerison = "1.0.0-RC3"
       Seq(
         "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
-        "com.google.crypto.tink"         % "tink"                         % "1.23.0",
+        "com.google.crypto.tink"         % "tink"                         % "1.24.0",
         "com.softwaremill.sttp.client4" %% "core"                         % "4.0.27",
         "io.avaje.webview"               % "avaje-webview"                % "0.29",
         "org.java-gi"                    % "gtk"                          % javaGiVerison,

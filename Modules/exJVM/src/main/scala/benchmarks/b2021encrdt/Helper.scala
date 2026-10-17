@@ -22,7 +22,7 @@ object Helper {
     } else
         System.err.println("Conscrypt could not be loaded, continuing anyway")
     AeadConfig.register()
-    val keyset: KeysetHandle = KeysetHandle.generateNew(KeyTemplates.get(keyTemplateString))
+    val keyset: KeysetHandle = KeysetHandle.generateNew(KeyTemplates.get(keyTemplateString).toParameters, RegistryConfiguration.get())
     keyset.getPrimitive(RegistryConfiguration.get, classOf[Aead])
   }
 }
