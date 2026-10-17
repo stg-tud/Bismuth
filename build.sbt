@@ -3,7 +3,7 @@ import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitSt
 import scala.scalanative.build.{LTO, Mode, NativeConfig}
 
 // for some reason, project matrix REALLY likes to require this everywhere
-lazy val s3v = "3.9.0"
+lazy val s3v = "3.10.0"
 scalaVersion := s3v
 Settings.defaultScalacFlags
 

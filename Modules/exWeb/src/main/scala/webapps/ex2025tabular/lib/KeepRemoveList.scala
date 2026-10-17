@@ -4,8 +4,6 @@ import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, Epoch, GrowOnlyList, LastWriterWins}
 import rdts.time.{Dot, Dots}
 
-import scala.annotation.nowarn
-
 /** KeepRemoveList — a list CRDT with **keep‑wins** semantics.
   *
   * A delete is effective *only* if the replica had already observed every keep
@@ -20,7 +18,7 @@ import scala.annotation.nowarn
 case class KeepRemoveList[E] private (
     order: Epoch[GrowOnlyList[Dot]] = empty.order,
     payloads: Map[Dot, LastWriterWins[E]] = Map.empty,
-    flags: Map[Dot, EnableWinsFlag] = Map.empty: @nowarn("id=E198")
+    flags: Map[Dot, EnableWinsFlag] = Map.empty
 ) {
   private type C = KeepRemoveList[E]
 

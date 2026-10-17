@@ -346,7 +346,7 @@ object SpreadsheetComponent {
       def bgClass(idx: Int): String     = s"bg-${palette(idx % palette.length)}-100"
       def borderClass(idx: Int): String = s"border-${palette(idx % palette.length)}-500"
 
-      def colorIndexForId(id: RangeId): Int = id.hashCode.abs % palette.length
+      def colorIndexForId(id: RangeId): Int = id.##.abs % palette.length
 
       val previewRangeOpt = for {
         start <- state.rangeDragStart
