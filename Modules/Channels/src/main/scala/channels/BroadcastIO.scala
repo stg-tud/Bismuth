@@ -220,28 +220,42 @@ class BroadcastIO[State](
           }.run(printExceptionHandler)
         case None => ()
 
-  /** Resolve connection details, establish a connection, register it, and optionally send the first payload. */
+  /** Resolve connection details, establish a connection, and optionally send a first payload.
+    *
+    * A persistent connection is registered with the overlay (and its failures are reported back to it).
+    * A temporary connection is never registered: it is closed right after the payload was sent, anything
+    * received on it is ignored, and neither its establishment nor its closure reaches the overlay.
+    */
   private def connectAndSend(
       details: Iterable[ConnectionDescriptor],
-      expectedPeer: Uid,
-      payload: Option[Envelope[State]]
+      payload: Option[Envelope[State]],
+      temporary: Boolean,
   ): Unit =
-    details.iterator.flatMap(detail => resolver.connect(detail).map(detail -> _)).nextOption() match
-        case Some((detail, latentConnection)) =>
-          Async.provided(globalAbort) {
-            val conn = latentConnection.prepare((conn: Connection) => messageReceiver(conn)).bind
-            registerConnection(conn, Some(detail))
-            payload.foreach(send(conn, _))
-          }.run(printExceptionHandler)
-        case None =>
-          ()
+    details.iterator.flatMap(detail => resolver.connect(detail).map(detail -> _)).nextOption().foreach {
+      case (detail, latentConnection) =>
+        Async.provided(globalAbort) {
+          val conn = latentConnection.prepare { (conn: Connection) =>
+            if temporary then ((_: Try[MessageBuffer]) => ()): Callback[MessageBuffer]
+            else messageReceiver(conn)
+          }.bind
+          if temporary then
+              payload.foreach(p =>
+                sendingActor.execute(() => conn.send(BroadcastIO.encodeEnvelope(p, aead)).run(_ => conn.close()))
+              )
+          else
+              registerConnection(conn, Some(detail))
+              payload.foreach(send(conn, _))
+        }.run(printExceptionHandler)
+    }
 
   private def handleOverlayAction(action: OverlayAction): Unit =
     action match
         case OverlayAction.Send(connection, message) =>
           send(connection, Envelope.Membership(message))
         case OverlayAction.Connect(details, expectedPeer, message) =>
-          connectAndSend(details, expectedPeer, message.map(Envelope.Membership(_)))
+          connectAndSend(details, message.map(Envelope.Membership(_)), temporary = false)
+        case OverlayAction.ConnectSendClose(details, _, message) =>
+          connectAndSend(details, Some(Envelope.Membership(message)), temporary = true)
         case OverlayAction.Disconnect(connection) =>
           connection.close()
           removePeer(connection)

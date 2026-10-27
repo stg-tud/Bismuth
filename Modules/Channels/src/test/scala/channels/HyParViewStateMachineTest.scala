@@ -213,6 +213,25 @@ class HyParViewStateMachineTest extends FunSuite {
     assert(!next.pendingConnections.exists(_.peer.uid == candidate.uid))
   }
 
+  test("shuffle endpoint replies over a temporary connection if the origin is not an active neighbor") {
+    val origin = peer("origin")
+    val hop    = peer("hop")
+    val hopC   = TestConnection("hop")
+
+    val machine                                     = withActive(state(), hop -> hopC)
+    val HyParViewStateMachine.Result(next, actions) =
+      receive(machine, Shuffle(origin, Set(origin), 0, hop.uid), hopC)
+
+    assertEquals(sent(actions), Nil)
+    actions match
+        case List(OverlayAction.ConnectSendClose(to, expected, ShuffleReply(from, _))) =>
+          assertEquals(to, origin.channelConnectors)
+          assertEquals(expected, origin.uid)
+          assertEquals(from, defaultSelf.uid)
+        case other => fail(s"expected a single ConnectSendClose(ShuffleReply), got $other")
+    assertEquals(next.activeView, Set(hop.uid))
+  }
+
   test("shuffle replies at the endpoint and merges connectable samples into the passive view") {
     val origin   = peer("origin")
     val activeP  = peer("active")

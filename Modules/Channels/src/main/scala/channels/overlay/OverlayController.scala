@@ -75,6 +75,13 @@ object OverlayController {
       */
     case Connect(to: Set[ConnectionDescriptor], expectedPeer: Uid, message: Option[OverlayMessage])
 
+    /** Like [[Connect]], but the newly dialed connection is temporary: it carries exactly one message and is
+      * closed right after sending. The connection is never handed to the overlay (no `activateConnection` /
+      * `removeConnection`), so it does not affect any view. Used for the paper's `ShuffleReply` to an origin
+      * that is not an active neighbor ("send back, using a temporary TCP connection").
+      */
+    case ConnectSendClose(to: Set[ConnectionDescriptor], expectedPeer: Uid, message: OverlayMessage)
+
     /** Close a live transport connection; the resulting closure must be fed back through `removeConnection`. */
     case Disconnect(connection: Connection)
 

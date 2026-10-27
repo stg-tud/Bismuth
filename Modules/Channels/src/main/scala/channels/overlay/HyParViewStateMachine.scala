@@ -286,7 +286,14 @@ final case class HyParViewStateMachine(
   private def acceptShuffle(origin: PeerConnectInfo, incomingSample: Set[PeerConnectInfo]): Result = {
     val replySample = randomSubset(passivePeers, incomingSample.size)
     val next        = mergeShuffleSample(incomingSample, replySample)
-    Result(next, next.connectionFor(origin.uid).toList.map(OverlayAction.Send(_, ShuffleReply(self.uid, replySample))))
+    val reply       = ShuffleReply(self.uid, replySample)
+    // Paper: the reply is sent back using a temporary connection if the origin is not an active neighbor.
+    val action = next.connectionFor(origin.uid) match
+        case Some(conn)                                                     => List(OverlayAction.Send(conn, reply))
+        case None if origin.uid != self.uid && next.canConnectTo(origin) =>
+          List(OverlayAction.ConnectSendClose(origin.channelConnectors, origin.uid, reply))
+        case None => Nil
+    Result(next, action)
   }
 
   private def mergeShuffleSample(
