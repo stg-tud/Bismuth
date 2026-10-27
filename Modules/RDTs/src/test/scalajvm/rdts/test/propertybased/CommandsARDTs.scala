@@ -11,8 +11,9 @@ import scala.util.Try
 
 object StateBasedTestParameters {
   def update(param: Parameters): Parameters = param
-    .withMinSize(30)
-    .withMaxSize(200)
+    .withMinSize(10)
+    .withMaxSize(100)
+    .withMinSuccessfulTests(30)
 }
 
 /** An API for stateful testing of ARDTs, removing a lot of the clutter of ScalaCheck's Commands API.

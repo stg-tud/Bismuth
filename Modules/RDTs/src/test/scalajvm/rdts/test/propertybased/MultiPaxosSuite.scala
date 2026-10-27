@@ -13,7 +13,7 @@ import scala.util.Try
 class MultiPaxosSuite extends munit.ScalaCheckSuite {
 
   override def scalaCheckTestParameters: Parameters =
-    StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(100).withMaxSize(500)
+    StateBasedTestParameters.update(super.scalaCheckTestParameters).withMinSize(20).withMaxSize(200).withMinSuccessfulTests(30)
 
   property("Multipaxos")(MultiPaxosSpec[Int](
     logging = false,

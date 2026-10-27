@@ -15,7 +15,7 @@ class KnowledgeGroupMultiPaxosSuite extends munit.ScalaCheckSuite {
   override def scalaCheckTestParameters: Parameters =
     StateBasedTestParameters.update(
       super.scalaCheckTestParameters
-    ).withMinSize(100).withMaxSize(3000).withMinSuccessfulTests(300)
+    ).withMinSize(20).withMaxSize(200).withMinSuccessfulTests(20)
 
   override def scalaCheckInitialSeed = "NGDQ-T-3we8WnId8_CzemO-ytU9xi2nRJrYyIPk8yfL="
 

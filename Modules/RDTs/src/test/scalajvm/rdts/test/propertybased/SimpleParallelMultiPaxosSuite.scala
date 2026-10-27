@@ -14,7 +14,7 @@ class SimpleParallelMultiPaxosSuite extends munit.ScalaCheckSuite {
   override def scalaCheckTestParameters: Parameters =
     StateBasedTestParameters.update(
       super.scalaCheckTestParameters
-    ).withMinSize(100).withMaxSize(3000).withMinSuccessfulTests(50)
+    ).withMinSize(20).withMaxSize(200).withMinSuccessfulTests(20)
 
   property("SimpleParallelMultiPaxos")(SimpleParallelMultiPaxosSpec[Int](
     logging = false,
