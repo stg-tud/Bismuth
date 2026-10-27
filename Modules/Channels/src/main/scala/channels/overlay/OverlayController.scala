@@ -59,7 +59,11 @@ object OverlayController {
     case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
     case NeighborReply(from: Uid, accepted: Boolean)
     case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
-    case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo])
+
+    /** `answeredSample` echoes the sample of the answered [[Shuffle]] (empty if the reply answers no shuffle),
+      * so the receiver can prefer evicting the peers it sent without keeping per-shuffle state.
+      */
+    case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo], answeredSample: Set[PeerConnectInfo])
   }
 
   enum OverlayAction {

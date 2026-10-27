@@ -53,12 +53,12 @@ class FullMeshOverlayTest extends FunSuite {
     assertEquals(joined.known.get(contact.uid), None)
     assertEquals(
       joinActions,
-      List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, Set(self, other))))
+      List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, Set(self, other), Set.empty)))
     )
 
     val fresh                     = FullMeshOverlay(self, active = Map(contact.uid -> conn))
     val (afterInfo0, infoActions) =
-      fresh.receiveActions(OverlayMessage.ShuffleReply(contact.uid, Set(contact, other)), conn)
+      fresh.receiveActions(OverlayMessage.ShuffleReply(contact.uid, Set(contact, other), Set.empty), conn)
 
     assertEquals(
       infoActions,

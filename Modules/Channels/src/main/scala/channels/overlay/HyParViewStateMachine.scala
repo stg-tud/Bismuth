@@ -69,7 +69,6 @@ object HyParViewStateMachine {
       config = config,
       known = Map(self.uid -> self),
       active = Vector.empty,
-      pendingShuffleSamples = Map.empty,
       pendingConnections = Vector.empty,
       randomIndex = randomIndex,
       canConnectTo = canConnectTo,
@@ -81,7 +80,6 @@ final case class HyParViewStateMachine(
     config: HyParViewConfig,
     known: Map[Uid, PeerConnectInfo],
     active: Vector[HyParViewStateMachine.ActivePeer],
-    pendingShuffleSamples: Map[Uid, Set[PeerConnectInfo]],
     pendingConnections: Vector[HyParViewStateMachine.PendingConnection],
     randomIndex: (Int, Int) => Int,
     canConnectTo: PeerConnectInfo => Boolean,
@@ -113,7 +111,7 @@ final case class HyParViewStateMachine(
             config.shuffleActiveSample
           ) ++ randomSubset(passivePeers, config.shufflePassiveSample)
           Result(
-            copy(pendingShuffleSamples = pendingShuffleSamples.updated(target.peer.uid, sample)),
+            this,
             List(OverlayAction.Send(
               target.connection,
               Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid)
@@ -230,14 +228,11 @@ final case class HyParViewStateMachine(
                   case None => remembered.acceptShuffle(origin, sample)
           else remembered.acceptShuffle(origin, sample)
 
-        case ShuffleReply(fromPeer, sample) =>
-          // Paper shuffle completion at the initiator: merge the reply sample, preferring eviction of entries previously sent to the peer.
+        case ShuffleReply(_, sample, answeredSample) =>
+          // Paper shuffle completion at the initiator: merge the reply sample, preferring eviction of entries
+          // previously sent to the peer. The reply echoes what we sent, so no per-shuffle state is needed.
           val remembered = sample.foldLeft(this)((state, peer) => state.rememberPeer(peer))
-          val next       =
-            remembered.mergeShuffleSample(sample, remembered.pendingShuffleSamples.getOrElse(fromPeer, Set.empty)).copy(
-              pendingShuffleSamples = remembered.pendingShuffleSamples.removed(fromPeer)
-            )
-          Result(next, Nil)
+          Result(remembered.mergeShuffleSample(sample, answeredSample), Nil)
 
   }
 
@@ -286,7 +281,7 @@ final case class HyParViewStateMachine(
   private def acceptShuffle(origin: PeerConnectInfo, incomingSample: Set[PeerConnectInfo]): Result = {
     val replySample = randomSubset(passivePeers, incomingSample.size)
     val next        = mergeShuffleSample(incomingSample, replySample)
-    val reply       = ShuffleReply(self.uid, replySample)
+    val reply       = ShuffleReply(self.uid, replySample, incomingSample)
     // Paper: the reply is sent back using a temporary connection if the origin is not an active neighbor.
     val action = next.connectionFor(origin.uid) match
         case Some(conn)                                                     => List(OverlayAction.Send(conn, reply))

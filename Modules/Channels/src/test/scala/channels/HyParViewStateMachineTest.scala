@@ -224,10 +224,11 @@ class HyParViewStateMachineTest extends FunSuite {
 
     assertEquals(sent(actions), Nil)
     actions match
-        case List(OverlayAction.ConnectSendClose(to, expected, ShuffleReply(from, _))) =>
+        case List(OverlayAction.ConnectSendClose(to, expected, ShuffleReply(from, _, answered))) =>
           assertEquals(to, origin.channelConnectors)
           assertEquals(expected, origin.uid)
           assertEquals(from, defaultSelf.uid)
+          assertEquals(answered, Set(origin))
         case other => fail(s"expected a single ConnectSendClose(ShuffleReply), got $other")
     assertEquals(next.activeView, Set(hop.uid))
   }
@@ -251,7 +252,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assert(!next.passiveView.contains(rejected.uid), "undialable peers should be filtered out")
     assertEquals(
       sent(actions),
-      List((originC, ShuffleReply(defaultSelf.uid, Set(passiveP, sampleA, sampleB))))
+      List((originC, ShuffleReply(defaultSelf.uid, Set(passiveP, sampleA, sampleB), Set(sampleA, sampleB, rejected))))
     )
   }
 }

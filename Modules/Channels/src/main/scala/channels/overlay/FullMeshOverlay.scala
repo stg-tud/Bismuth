@@ -62,12 +62,12 @@ case class FullMeshOverlay(
     message match
         case OverlayMessage.Join(peer) =>
           val bootstrapPeers = known.valuesIterator.toSet + self
-          (this, List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, bootstrapPeers))))
+          (this, List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, bootstrapPeers, Set.empty))))
 
         case OverlayMessage.Neighbor(peer, _) =>
           rememberAndActivatePeer(peer, conn)
 
-        case OverlayMessage.ShuffleReply(_, peers) =>
+        case OverlayMessage.ShuffleReply(_, peers, _) =>
           discoverPassive(peers)
 
         case _ =>
